@@ -1,7 +1,9 @@
-# Upload a New App Store Version
+# Build the iOS app (release)
 
-Short guide for submitting updates after the initial submission. For first-time
-setup, see [appstore_first.md](appstore_first.md).
+Produce a signed `Zwipe.ipa` ready to upload. This is the recurring build for
+version updates; for the one-time account/cert/App-ID setup see
+[first_release.md](first_release.md). To upload + submit the `.ipa` this
+produces, continue to [publish.md](publish.md).
 
 ---
 
@@ -10,8 +12,8 @@ setup, see [appstore_first.md](appstore_first.md).
 Apple's App Store submission allowlist requires the binary to be linked against the
 very latest Xcode/SDK. Older GM versions get rejected at "Add for Review" with a
 misleading "beta Xcode" UI message (actual API error:
-`BUILD_SDK_NOT_ALLOWED_FOR_APP_STORE_SUBMISSION`). See `appstore_debug.md` for
-the full investigation.
+`BUILD_SDK_NOT_ALLOWED_FOR_APP_STORE_SUBMISSION`). See [debugging.md](debugging.md)
+for the full investigation.
 
 **Before building, update Xcode via the Mac App Store** and verify:
 
@@ -159,40 +161,7 @@ zip -r Zwipe.ipa Payload
 rm -rf Payload
 ```
 
-## 6. Upload via Transporter
-
-**Do NOT use `xcrun altool`** — it is deprecated and causes metadata parsing errors
-that can trigger false "beta Xcode" rejections. See `appstore_debug.md` for details.
-
-**Do NOT use `xcrun iTMSTransporter`** — it expects `.itmsp` directories, not `.ipa` files.
-
-1. Open **Transporter** (Mac App Store, free, by Apple)
-2. Sign in with your Apple ID if prompted
-3. Drag `~/Developer/zwipe/Zwipe.ipa` into the window
-4. Click **Deliver** — validates and uploads in one step
-5. Wait for "Upload Successful" confirmation
-
-The build will appear in App Store Connect after 5–10 minutes.
-
-### Fallback: altool (deprecated — use only if Transporter is unavailable)
-
-```bash
-xcrun altool --validate-app -f ~/Developer/zwipe/Zwipe.ipa -t ios \
-  --apiKey C2L47TDDPV --apiIssuer 644db668-17b6-4d50-ac1a-70f8ea838d0d
-
-xcrun altool --upload-app -f ~/Developer/zwipe/Zwipe.ipa -t ios \
-  --apiKey C2L47TDDPV --apiIssuer 644db668-17b6-4d50-ac1a-70f8ea838d0d
-```
-
-API key file: `~/.private_keys/AuthKey_C2L47TDDPV.p8`
-
-## 7. Submit
-
-1. App Store Connect → your app → build appears after 5–10 min
-2. Create new version if needed (click **+** next to iOS App)
-3. Select the build
-4. Export Compliance → **No**
-5. **Submit for Review**
+**Next:** upload + submit the `.ipa` → [publish.md](publish.md).
 
 ---
 

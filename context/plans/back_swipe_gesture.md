@@ -79,7 +79,7 @@ and dispatches `window.dispatchEvent(new Event('zwipe:back'))` into the WebView
 `dx bundle`/`dx serve`/`dx build`**, so the patch must run *after* the last dx
 invocation and *before* the Gradle build — the same post-`dx bundle` window as
 `launcher_icons.sh`. Documented in
-[`../operations/android/play-store-submission/build-and-submit.md`](../operations/android/play-store-submission/build-and-submit.md).
+[`../operations/android/play-store/submission/build.md`](../operations/android/play-store/submission/build.md).
 Dev-loop gotcha: you can't verify via plain `dx serve` (it rebuilds and wipes the
 patch); build through Gradle yourself after patching (`dx build` → `back_handler.sh`
 → `./gradlew :app:assembleDebug` → `adb install`). If `:app:compileDebugKotlin`

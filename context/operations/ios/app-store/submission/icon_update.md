@@ -2,7 +2,7 @@
 
 Short guide for refreshing the iOS app icon without a full Rust rebuild. Use this when only the icon changed — same Rust code, same Info.plist, just new artwork.
 
-For a fresh release build (icon + Rust changes), follow [appstore_update.md](appstore_update.md) and let step 3 swap the icons as part of the normal flow.
+For a fresh release build (icon + Rust changes), follow [build.md](build.md) and let step 3 swap the icons as part of the normal flow.
 
 ---
 
@@ -79,12 +79,12 @@ magick "$DEST/icon-1024.png" -format "%[pixel:p{512,500}]" info:    # center = f
 
 ## 2. Repack into the existing `.app` (no Rust rebuild)
 
-This assumes you ran `dx build --release --platform ios` recently and `~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app` already exists. If not, do that first (step 1 of `appstore_update.md`).
+This assumes you ran `dx build --release --platform ios` recently and `~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app` already exists. If not, do that first (step 1 of `build.md`).
 
 ```bash
 APP=~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app
 
-# Stage the icon catalog (same Contents.json as appstore_update.md step 3).
+# Stage the icon catalog (same Contents.json as build.md step 3).
 rm -rf /tmp/Assets.xcassets
 mkdir -p /tmp/Assets.xcassets/AppIcon.appiconset
 cat > /tmp/Assets.xcassets/AppIcon.appiconset/Contents.json << 'EOF'
@@ -170,7 +170,7 @@ open ~/Developer/zwipe/zwiper/assets/favicon/icon-1024.png
 
 ## 6. Upload
 
-Same as [appstore_update.md](appstore_update.md) step 6 — drag `~/Developer/zwipe/Zwipe.ipa` into Transporter and click Deliver.
+Same as [publish.md](publish.md) step 1 — drag `~/Developer/zwipe/Zwipe.ipa` into Transporter and click Deliver.
 
 ---
 

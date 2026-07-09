@@ -3,7 +3,7 @@
 Copy-paste commands for running, wiping, and serving the app to the `Pixel_9a`
 emulator. First-time machine setup (Android Studio, SDK, NDK) lives in
 [setup.md](setup.md); release/Play builds in
-[play-store-submission/build-and-submit.md](play-store-submission/build-and-submit.md).
+[play-store/submission/build.md](play-store/submission/build.md).
 
 ---
 

@@ -4,7 +4,7 @@
 #
 # dx regenerates the Android Gradle project's res/ on EVERY `dx bundle`, so run
 # this AFTER `dx bundle` and BEFORE the Gradle repackage. See
-# context/operations/android/play-store-submission/build-and-submit.md.
+# context/operations/android/play-store/submission/build.md.
 #
 # Usage: zcripts/android/launcher_icons.sh [RES_DIR]
 set -euo pipefail

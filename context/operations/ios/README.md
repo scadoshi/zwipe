@@ -12,8 +12,7 @@ Everything needed to build, test, and ship Zwipe on iOS.
 
 ## App Store
 
-4. **[appstore_first.md](appstore_first.md)** — First submission (full walkthrough, one-time steps)
-5. **[appstore_update.md](appstore_update.md)** — Upload new versions (short, recurring)
+4. **[app-store/submission/](app-store/submission/overview.md)** — the submission process, split into parts: [build.md](app-store/submission/build.md) + [publish.md](app-store/submission/publish.md) (recurring), [first_release.md](app-store/submission/first_release.md) (one-time), plus form fields, TestFlight, icon update, debugging, and the build history.
 
 ## Reference
 
