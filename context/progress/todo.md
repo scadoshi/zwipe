@@ -89,7 +89,7 @@ Android build compiles and runs — **emulator-confirmed on Pixel_9a 2026-06-22*
 
 - [ ] Card images show white corners — the white is baked into the image data from Scryfall (white-bordered card editions). iOS clips correctly via WKWebView; Android WebView does not honor `overflow: hidden` + `border-radius` on `object-fit: contain` images. Tried: `overflow: hidden` on img, wrapper div with `border-radius` + `overflow: hidden`, `-webkit-mask-image` hack. None work on Android WebView. Options: crop with `object-fit: cover` (loses card edges), mask SVG overlay, or accept as-is for black-bordered cards (majority) and revisit for white-bordered.
 - [ ] Swipe gesture doesn't tilt the card — cards should rotate slightly during drag like they do on iOS
-- [ ] Android tap flash — clicked elements highlight blue for a moment before their onclick runs. Android WebView's default tap highlight; iOS WKWebView doesn't show it. Likely fix: `-webkit-tap-highlight-color: transparent` on interactive elements (or globally) in the app CSS; verify nothing relies on the flash for touch feedback afterward.
+- [x] Android tap flash — FIXED 2026-07-09: `-webkit-tap-highlight-color: transparent` on the universal selector in `main.css` kills Android WebView's default blue tap highlight (iOS never showed it). Emulator-verified; rides the next build.
 - [ ] Lock screen orientation to portrait — need `android:screenOrientation="portrait"` on main activity. Dioxus may support this via `[android.raw.manifest]` or activity-level config. Test on Pixel once available.
 
 ---
