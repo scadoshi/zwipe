@@ -12,6 +12,8 @@ pub(crate) mod card_row;
 pub(crate) mod card_stack;
 /// Card image with built-in flip control for double-faced cards.
 pub(crate) mod flippable_card_image;
+/// Per-(screen, deck) filter memory.
+pub(crate) mod filter_store;
 /// Fullscreen image preview overlay.
 pub(crate) mod image_preview;
 /// Bottom sheet for selecting card printings.
