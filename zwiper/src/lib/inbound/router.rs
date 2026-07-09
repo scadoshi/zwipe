@@ -2,6 +2,7 @@
 //!
 //! Defines all client-side routes and maps them to their corresponding screen components.
 
+use crate::inbound::components::navigation::back_handler::BackHandlerLayout;
 use crate::inbound::screens::{
     auth::{forgot_password::ForgotPassword, login::Login, register::Register},
     deck::{
@@ -27,6 +28,9 @@ use uuid::Uuid;
 #[rustfmt::skip]
 #[allow(missing_docs)]
 pub enum Router {
+    // Wrap every route so the OS back-intent bridge (edge swipe / hardware
+    // back) mounts once inside the router context and persists across routes.
+    #[layout(BackHandlerLayout)]
     /// Landing screen — greeting, navigation to login/register/decks.
     #[route("/")]
     Home {},
