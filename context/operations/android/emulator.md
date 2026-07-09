@@ -118,4 +118,5 @@ force it for visual work, temporarily flip `zwiper/src/bin/zwipe.rs`:
 if true || upgrade_required.required() {   // forces the update screen — REVERT before shipping
 ```
 
-Full context + status in [../../plans/update_required_screen.md](../../plans/update_required_screen.md).
+The gate itself (server-driven `MIN_CLIENT_VERSION`) is documented in
+[`../../progress/overview.md`](../../progress/overview.md) (see "1.0.5 — Min-Version Gate").
