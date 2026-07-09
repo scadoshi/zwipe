@@ -24,6 +24,9 @@ First-time listing copy lives in [form_fields.md](form_fields.md). Dev-env setup
    rollout — a debug build passing proves nothing about the release.
 4. **targetSdk 35 enables edge-to-edge enforcement.** Verify the WebView layout
    isn't drawing critical content under the status/nav bars (checked in step 7).
+5. **dx regenerates `MainActivity.kt` too** (bare `class MainActivity :
+   WryActivity()`), which closes the app on the OS back gesture. Re-apply the
+   back-navigation patch after `dx bundle` (step 1c) or back-swipe ships broken.
 
 ---
 
@@ -72,6 +75,22 @@ zcripts/android/launcher-icons.sh
 This rewrites the legacy webp at every density and the adaptive foreground (a
 full-bleed `icon-1024.png`) + background (solid `#282828`, the icon's bg). Skip
 it and the build ships the green droid — testers will notice.
+
+## 1c. Patch the back-navigation handler (dx ships a no-op MainActivity)
+
+dx generates a bare `MainActivity.kt` (`class MainActivity : WryActivity()`),
+whose default back handling **closes the app** on the OS back gesture instead of
+navigating. Overwrite it with the version that routes back into the Dioxus
+router. Like the icons, dx **wipes this on every `dx bundle`**, so run it
+**after `dx bundle`** and **before** the Gradle repackage:
+
+```bash
+zcripts/android/back-handler.sh
+```
+
+Skip it and the edge-swipe / hardware back closes the app from any screen (the
+pre-2026-07-09 bug). See [`../../../plans/back_swipe_gesture.md`](../../../plans/back_swipe_gesture.md).
+R8 keeps the handler (it's used), but the step-7 smoke test is the confirmation.
 
 ## 2. Bump targetSdk (and versionCode) in the generated Gradle
 
