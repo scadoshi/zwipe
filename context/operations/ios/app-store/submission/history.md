@@ -8,6 +8,7 @@ iOS-side build-number log.
 
 | Version | iOS build | Notes |
 |---------|-----------|-------|
+| 1.5.0 | 62 | Edge back-swipe nav, per-screen filter persistence, session-platform tracking, CardRow/skeleton polish. Submitted to review 2026-07-09. Android counterpart vc23. |
 | 1.4.0 | 61 | Feature batch: commander popularity ordering, partner autofill, Deck MVPs phase 1, deck share links. Android counterpart vc22. |
 | 1.3.1 | 60 | Anonymous pre-auth funnel telemetry. Android vc21. |
 | 1.3.0 | 59 | Filter-intent + Reset pass. (58 added the profile About section.) Android vc20. |

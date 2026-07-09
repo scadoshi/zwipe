@@ -2,6 +2,20 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-07-09 — `1.5.0`, versionCode `24`** (edge back-swipe navigation, per-screen
+  per-deck filter persistence, session-platform tracking on the refresh-token row,
+  Android tap-highlight fix, and the CardRow/skeleton polish batch). Built per the
+  recipe — `dx bundle` → `launcher_icons.sh` → `back_handler.sh` (the new
+  back-navigation patch, step 1c) → gradle patch (compileSdk 36 / targetSdk 35 /
+  versionCode 24) → `gradlew :app:bundleRelease` → jarsigner (0600 scratchpad
+  password, deleted after). Artifact `zwipe-1.5.0-vc24.aab`, signed + `jar
+  verified`. **vc23 was burned** — Play rejected it ("Version code 23 has already
+  been used"), so bumped to 24 (just re-patch versionCode + re-run gradle/jarsigner,
+  no full rebuild). Server halves (session-platform additive migration) deployed to
+  prod first. iOS counterpart: build 62 (submitted to review 2026-07-09).
+  *R8/edge-to-edge smoke test still to run — first thing to check if back-swipe
+  misbehaves on a tester device (R8 could strip the OnBackPressedCallback path).*
+
 - **2026-07-07 — `1.4.0`, versionCode `22`** (feature batch: commander picks now
   lead with the community's most-built commanders in a fresh daily order
   (Zwipe-select popularity ordering + wildcard deep slice), partners that name

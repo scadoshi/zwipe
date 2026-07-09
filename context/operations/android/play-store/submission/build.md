@@ -139,6 +139,24 @@ jarsigner -verify zwipe-<VERSION>.aab   # -> "jar verified."
 
 (`self-signed certificate` is expected and fine for an upload key.)
 
+## 4b. Remove old AABs
+
+Once the new AAB is signed and verified, delete the previous versions' artifacts
+from the repo root — they're already uploaded and superseded, and keeping them
+around just invites uploading the wrong file. Keep only the current one:
+
+```bash
+cd ~/Developer/zwipe
+ls zwipe-*.aab                          # review what's there
+ls zwipe-*.aab | grep -v "zwipe-<VERSION>.aab" | xargs rm -v   # remove all but current
+```
+
+> **If Play rejects with "Version code N has already been used":** a prior
+> upload (even a superseded/internal one) burned that code. Bump `versionCode`
+> in the generated `app/build.gradle.kts` and re-run steps 3–4 (`gradlew
+> :app:bundleRelease` → jarsigner) — no full rebuild, the patched project is
+> still in place. Always bump; never reuse.
+
 ## 5. Smoke-test the RELEASE build on the emulator
 
 Build an installable universal APK from the **signed** AAB and run it — this
