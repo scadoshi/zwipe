@@ -39,6 +39,15 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
+## What's New in This Version (1.5.0)
+
+- Swipe back: drag from the left edge of the screen to return to the previous page, the way you navigate everywhere else on your phone.
+- Filters that remember: every screen now keeps its own filters for each deck, so switching decks or stepping away picks up right where you left off.
+- Cleaner card browsing: an expanded card now stays highlighted so you keep your place while you look through your deck.
+- Smoother loading screens and a fix for a filter that could sometimes carry over between screens, plus general polish.
+
+---
+
 ## What's New in This Version (1.4.0)
 
 - Pick your commander by popularity: the commander picker now leads with the community's most-built commanders, in a fresh order each day, so you start from what people are actually building.
