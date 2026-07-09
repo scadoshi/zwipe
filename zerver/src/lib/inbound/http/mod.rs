@@ -11,6 +11,7 @@ pub mod routes;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
+        auth::access_token::JwtSecret,
         auth::ports::{AuthService, ErasedAuthService},
         card::ports::{CardService, ErasedCardService},
         deck::ports::{DeckService, ErasedDeckService},
@@ -257,6 +258,69 @@ pub struct HttpServer {
     listener: net::TcpListener,
 }
 
+/// Assembles the full Axum router (routes + the middleware stack) from
+/// application state. Split out of `HttpServer::new` so integration tests can
+/// drive the router directly (`tower::ServiceExt::oneshot`) with no socket bind.
+#[cfg(feature = "zerver")]
+pub fn build_router(
+    state: AppState,
+    jwt_secret: JwtSecret,
+    allowed_origins: Vec<HeaderValue>,
+) -> axum::Router {
+    // RequestId is set by SetRequestIdLayer before TraceLayer fires, so it's
+    // available as a request extension when we build the span.
+    let trace_layer = tower_http::trace::TraceLayer::new_for_http().make_span_with(
+        |request: &axum::extract::Request<_>| {
+            let uri = request.uri().to_string();
+            let request_id = request
+                .extensions()
+                .get::<tower_http::request_id::RequestId>()
+                .and_then(|id| id.header_value().to_str().ok())
+                .unwrap_or("");
+            tracing::info_span!(
+                "http_request",
+                method = ?request.method(),
+                uri,
+                request_id = %request_id,
+            )
+        },
+    );
+
+    // Layer order is innermost-first, outermost-last. Request flows outer→inner;
+    // response flows inner→outer. Effective stack: SetRequestId → PropagateRequestId
+    // → trace → CatchPanic → Compression → Cors → security_headers → Timeout(30s)
+    // → RequestBodyLimit(2 MiB, innermost).
+    let x_request_id = header::HeaderName::from_static("x-request-id");
+    axum::Router::new()
+        .merge(
+            // last-active layer wraps private routes only — it peeks the Bearer
+            // token, so it must sit where every request carries one
+            private_routes(jwt_secret).layer(axum::middleware::from_fn_with_state(
+                state.clone(),
+                middleware::track_last_active,
+            )),
+        )
+        .merge(public_routes())
+        .layer(RequestBodyLimitLayer::new(2 * 1024 * 1024))
+        .layer(TimeoutLayer::with_status_code(
+            StatusCode::REQUEST_TIMEOUT,
+            Duration::from_secs(30),
+        ))
+        .layer(axum::middleware::from_fn(security_headers))
+        .layer(
+            CorsLayer::new()
+                .allow_origin(allowed_origins)
+                .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+                .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]),
+        )
+        .layer(CompressionLayer::new())
+        .layer(CatchPanicLayer::new())
+        .layer(trace_layer)
+        .layer(PropagateRequestIdLayer::new(x_request_id.clone()))
+        .layer(SetRequestIdLayer::new(x_request_id, MakeRequestUuid))
+        .with_state(state)
+}
+
 #[cfg(feature = "zerver")]
 impl HttpServer {
     /// Builds routes, applies tracing and CORS middleware, and binds the TCP listener.
@@ -271,23 +335,6 @@ impl HttpServer {
     ) -> anyhow::Result<Self> {
         // RequestId is set by SetRequestIdLayer (below) before TraceLayer fires,
         // so it's available as a request extension when we build the span.
-        let trace_layer = tower_http::trace::TraceLayer::new_for_http().make_span_with(
-            |request: &axum::extract::Request<_>| {
-                let uri = request.uri().to_string();
-                let request_id = request
-                    .extensions()
-                    .get::<tower_http::request_id::RequestId>()
-                    .and_then(|id| id.header_value().to_str().ok())
-                    .unwrap_or("");
-                tracing::info_span!(
-                    "http_request",
-                    method = ?request.method(),
-                    uri,
-                    request_id = %request_id,
-                )
-            },
-        );
-
         let jwt_secret = auth_service.jwt_secret().clone();
         let state = AppState {
             auth_service: Arc::new(auth_service),
@@ -301,52 +348,7 @@ impl HttpServer {
             web_base_url: Arc::from(config.web_base_url.as_str()),
         };
 
-        // Layer order is innermost-first, outermost-last. Request flows
-        // outer→inner; response flows inner→outer. Effective stack:
-        //
-        //   SetRequestIdLayer       (outermost — generates UUID, sets header
-        //                            and extension on the request)
-        //   PropagateRequestIdLayer (captures the id from the request so it
-        //                            can copy it onto the response on the way
-        //                            out; must be inside Set, before trace)
-        //   trace_layer             (reads request_id from extensions into the
-        //                            span so every log line carries it)
-        //   CatchPanicLayer         (turn handler panics into 500s)
-        //   CompressionLayer        (gzip/br response bodies based on Accept-Encoding;
-        //                            outside CORS so headers ride along uncompressed)
-        //   CorsLayer
-        //   security_headers
-        //   TimeoutLayer            (30s per request; rejects with 408)
-        //   RequestBodyLimitLayer   (innermost — 2 MiB cap on request bodies)
-        let x_request_id = header::HeaderName::from_static("x-request-id");
-        let router = axum::Router::new()
-            .merge(
-                // last-active layer wraps private routes only — it peeks the
-                // Bearer token, so it must sit where every request carries one
-                private_routes(jwt_secret).layer(axum::middleware::from_fn_with_state(
-                    state.clone(),
-                    middleware::track_last_active,
-                )),
-            )
-            .merge(public_routes())
-            .layer(RequestBodyLimitLayer::new(2 * 1024 * 1024))
-            .layer(TimeoutLayer::with_status_code(
-                StatusCode::REQUEST_TIMEOUT,
-                Duration::from_secs(30),
-            ))
-            .layer(axum::middleware::from_fn(security_headers))
-            .layer(
-                CorsLayer::new()
-                    .allow_origin(config.allowed_origins)
-                    .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
-                    .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]),
-            )
-            .layer(CompressionLayer::new())
-            .layer(CatchPanicLayer::new())
-            .layer(trace_layer)
-            .layer(PropagateRequestIdLayer::new(x_request_id.clone()))
-            .layer(SetRequestIdLayer::new(x_request_id, MakeRequestUuid))
-            .with_state(state);
+        let router = build_router(state, jwt_secret, config.allowed_origins);
 
         let listener = net::TcpListener::bind(&config.bind_address)
             .await
