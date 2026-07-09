@@ -61,7 +61,7 @@ kept separate so this page stays first-time-setup only.
 ## Releasing to the Play Store
 
 This page is **dev/emulator** setup only. To build a signed release `.aab` and
-submit it, follow [play-store-submission/build-and-submit.md](play-store-submission/build-and-submit.md)
+submit it, follow [play-store/submission/build.md](play-store/submission/build.md)
 — it covers the dx gotchas (hardcoded `targetSdk = 34` / `versionCode = 1`,
 unsigned release output), signing with the upload key, the R8 + edge-to-edge
-smoke test, and the Console rollout steps. Listing copy: [play-store-submission/form_fields.md](play-store-submission/form_fields.md).
+smoke test, and the Console rollout steps. Listing copy: [play-store/submission/form_fields.md](play-store/submission/form_fields.md).

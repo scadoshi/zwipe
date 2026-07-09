@@ -1,9 +1,9 @@
 # First App Store Submission
 
 Full walkthrough for the initial App Store submission. For subsequent version
-uploads, see [appstore_update.md](appstore_update.md).
+uploads, see [build.md](build.md).
 
-**Prerequisites:** All steps in [setup.md](setup.md) completed (certs, App ID, App Store
+**Prerequisites:** All steps in [setup.md](../../setup.md) completed (certs, App ID, App Store
 provisioning profile).
 
 ---
@@ -102,7 +102,7 @@ Go to [appstoreconnect.apple.com](https://appstoreconnect.apple.com).
 
 | Field | Notes |
 |-------|-------|
-| **Screenshots** | 6.5" iPhone required (1242×2688). Use iPhone 11 Pro Max simulator. See [simulator.md](simulator.md). |
+| **Screenshots** | 6.5" iPhone required (1242×2688). Use iPhone 11 Pro Max simulator. See [simulator.md](../../simulator.md). |
 | **Description** | Up to 4000 chars. What the app does, key features. |
 | **Keywords** | Up to 100 chars: `MTG,Magic the Gathering,deck builder,commander,EDH,card game` |
 | **Support URL** | `https://zwipe.net` |

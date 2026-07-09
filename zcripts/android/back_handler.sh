@@ -13,7 +13,7 @@
 # dx REGENERATES MainActivity.kt on every `dx bundle`, so run this AFTER
 # `dx bundle` and BEFORE the Gradle repackage — the same window as
 # launcher_icons.sh. See
-# context/operations/android/play-store-submission/build-and-submit.md and
+# context/operations/android/play-store/submission/build.md and
 # context/plans/back_swipe_gesture.md.
 #
 # Usage: zcripts/android/back_handler.sh [MAIN_ACTIVITY_KT]

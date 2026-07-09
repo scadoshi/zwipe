@@ -1,7 +1,7 @@
 # Google Play Console Submission
 
 Text to paste into Google Play Console fields for **Zwipe TCG**. Mirrors the
-iOS [form_fields.md](../../ios/app-store-submission/form_fields.md); where the two
+iOS [form_fields.md](../../../ios/app-store/submission/form_fields.md); where the two
 stores share copy, this keeps it consistent so the brand reads the same on both.
 
 The public listing stays **generic ("TCG")** — no "Magic", "MTG", "Commander",

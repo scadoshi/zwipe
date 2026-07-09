@@ -74,4 +74,4 @@ The server itself is unaffected by your Mac wipe. Nothing to worry about there.
 7. Set up SSH keys (new or restored) + Tailscale
 8. Create `.env` files for zerver and zwiper
 9. Build and test: `dx serve --platform ios`
-10. Rebuild release, sign, package, upload to App Store — follow `operations/ios/appstore_update.md`
+10. Rebuild release, sign, package, upload to App Store — follow `operations/ios/app-store/submission/build.md`

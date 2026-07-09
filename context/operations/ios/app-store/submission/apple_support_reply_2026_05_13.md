@@ -1,6 +1,6 @@
 Apple Support Reply — 2026-05-13
 
-STATUS: SENT 2026-05-13. Apple replied 2026-05-22 recommending upgrade to Xcode 26.5 (released 2026-05-11). After upgrading, build 13 cleared "Add for Review" and is now in "Waiting for Review". Case resolved. See appstore_debug.md for full resolution. Now we wait!
+STATUS: SENT 2026-05-13. Apple replied 2026-05-22 recommending upgrade to Xcode 26.5 (released 2026-05-11). After upgrading, build 13 cleared "Add for Review" and is now in "Waiting for Review". Case resolved. See debugging.md for full resolution. Now we wait!
 
 Reply to case 102856406657 (Xue) following the request to upload a new build with a higher build number and provide a video. Includes API-level evidence captured from browser DevTools.
 
