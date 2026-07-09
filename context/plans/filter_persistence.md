@@ -1,6 +1,6 @@
 # Per-screen, per-deck filter persistence (zwiper)
 
-**Status: BUILT 2026-07-09, sim verification pending. Owner calls: in-memory only (restart
+**Status: SHIPPED-READY 2026-07-09, sim-verified by owner. Owner calls: in-memory only (restart
 forgets), unbounded map (builders are tiny), Zwipe-select out of scope (a new
 deck is a new context — no old filter should follow into it).**
 
