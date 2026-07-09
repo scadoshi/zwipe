@@ -7,8 +7,8 @@ The answers below are pasted into that in-console form and reviewed by Google
 (~72h). The 14-day cycle **completed 2026-07-09** (QA partner Teekam Suthar /
 12testers); ~400 testers on the Alpha closed track.
 
-Answers are written as single plain-text paragraphs (no blockquotes / hard
-wraps) so they copy-paste cleanly into the web form fields.
+Answers are plain single-paragraph text, **each ≤300 characters**, so they
+copy-paste cleanly into the web form fields.
 
 ## Framing rules (read before pasting)
 
@@ -28,17 +28,17 @@ wraps) so they copy-paste cleanly into the web form fields.
 
 **Q1. How did you recruit users for your closed test?**
 
-We recruited testers three ways: friends and coworkers, independent external testers engaged for unbiased feedback, and an open invitation to our closed-testing program shared on social media via a public opt-in group. This brought over 400 testers into the closed test, giving us a broad range of devices and real-world usage.
+We recruited testers three ways: friends and coworkers, independent external testers for unbiased feedback, and an open invitation to our closed-testing program shared on social media via a public opt-in group. That brought 400+ testers in, across a broad range of devices.
 
 **Q2. How easy was it to recruit testers?** → **Easy**
 
 **Q3. Describe the engagement you received from testers.**
 
-With 400+ testers opted in, we saw broad, active engagement across the core flows: account creation, swipe-based deck building, filtering, commander search, and deck import/export. A core group, including our external testers and active community members, went further and filed detailed bug reports and suggestions, while others exercised the app as typical Commander players would.
+With 400+ testers opted in, we saw broad, active engagement across all core flows: account creation, deck building, filtering, commander search, and import/export. A core group of external and community testers filed detailed bug reports and suggestions.
 
 **Q4. Summary of the feedback received, and how you collected it.**
 
-Feedback covered UI/UX polish, stability, and ease of use, delivered as bug reports and concrete suggestions. We collected it through direct chat and group threads, which let us turn fixes around quickly and push updated builds during the test. Recurring themes were filter behavior, deck-management flow, and loading states, which we addressed across successive builds.
+Feedback covered UI/UX, stability, and ease of use, as bug reports and suggestions, collected via direct chat and groups so we could fix fast and push new builds during the test. Recurring themes: filter behavior, deck-management flow, and loading states, all addressed across builds.
 
 ---
 
@@ -62,12 +62,8 @@ Recommended for a niche first-year MTG app: more credible and less likely to inv
 
 **Q1. What changes did you make based on what you learned during the closed test?**
 
-Across the test we improved card filtering and search (sort-only and synergy-only searches now return results, and a Reset control returns each screen to its default view), added per-deck swipe memory so skipped and removed cards stay hidden, refined deck management with MVP card starring and shareable deck links, smoothed image and loading-skeleton states, and fixed several stability issues (session persistence on Android, a launch flash, and report-a-problem links now opening the OS mail app).
-
-*(Reflects changes that actually shipped to testers during the cycle; excludes
-back-swipe and per-screen filter persistence, which are in the not-yet-shipped
-1.4.1 build.)*
+From tester feedback we improved filtering and search (sort/synergy-only searches now serve, plus a Reset per screen), added per-deck swipe memory, refined deck management (MVP starring, shareable links), smoothed loading states, and fixed stability issues (session persistence, launch flash).
 
 **Q2. How did you decide that your app is ready for production?**
 
-We judged it production-ready after testing across a range of devices and Android versions through the closed-testing cycle. Tester feedback drove successive builds that resolved the reported bugs, and the final builds ran cleanly with no crashes and positive stability feedback, confirming it was ready to launch.
+We decided it was ready after testing across many devices and Android versions through the closed cycle. Tester feedback drove successive builds that resolved reported bugs, and the final builds ran cleanly with no crashes and positive stability feedback.
