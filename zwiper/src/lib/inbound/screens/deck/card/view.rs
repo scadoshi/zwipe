@@ -1,5 +1,8 @@
 use super::components::{
-    card_row::CardRow, image_preview::ImagePreview, printing_sheet::PrintingSheet,
+    card_row::CardRow,
+    filter_store::{FilterScope, FilterStore},
+    image_preview::ImagePreview,
+    printing_sheet::PrintingSheet,
 };
 use crate::{
     inbound::{
@@ -78,7 +81,19 @@ enum CommandZoneSlot {
 pub fn View(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
 
-    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
+    // This screen's own filter: seeded from the per-(screen, deck) store,
+    // provided as context so the filter modules bind to it, parked on leave.
+    let filter_store: FilterStore = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_signal(|| {
+        filter_store
+            .restore(FilterScope::Cards, deck_id)
+            .unwrap_or_default()
+    });
+    use_context_provider(|| filter_builder);
+    use_drop(move || {
+        let mut store = filter_store;
+        store.park(FilterScope::Cards, deck_id, filter_builder.peek().clone());
+    });
 
     // Filter overlay state
     let mut filters_overlay_open = use_signal(|| false);

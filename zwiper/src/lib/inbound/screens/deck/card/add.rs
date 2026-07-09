@@ -19,6 +19,7 @@ use crate::{
                 },
                 add_stack_cache::{AddStackCache, ParkedStack},
                 card_stack::{CardStack, use_card_stack},
+                filter_store::{FilterScope, FilterStore},
                 flippable_card_image::reset_image_ease,
             },
             filter::card_filter_sheet::CardFilterSheet,
@@ -119,7 +120,17 @@ fn ensure_lands_excluded(mut filter_builder: Signal<CardQueryBuilder>) {
 pub fn Add(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
 
-    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
+    // This screen's own filter: seeded from the per-(screen, deck) store,
+    // provided as context so the filter modules bind to it, parked on leave
+    // (see the use_drop below the source selector). Mount always starts on
+    // the Search source, so the seed is the AddSearch scope; a fresh filter
+    // gets the deck-context defaults from the deck-load effect as usual.
+    let filter_store: FilterStore = use_context();
+    let restored_filter = filter_store.restore(FilterScope::AddSearch, deck_id);
+    let had_restored_filter = restored_filter.is_some();
+    let mut filter_builder: Signal<CardQueryBuilder> =
+        use_signal(move || restored_filter.unwrap_or_default());
+    use_context_provider(|| filter_builder);
     // App-scoped search stack (cards, cursor, undo history, animation) —
     // survives navigation so re-entry resumes mid-stack.
     let mut stack: CardStack<AddAction> = use_context();
@@ -158,6 +169,17 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     // Source selector: search (API) vs maybeboard (local)
     let mut add_source: Signal<AddSource> = use_signal(AddSource::default);
+
+    // Park this screen's filter under whichever source is live on leave; the
+    // other source's filter was already parked by the toggle when switching.
+    use_drop(move || {
+        let scope = match *add_source.peek() {
+            AddSource::Search => FilterScope::AddSearch,
+            AddSource::Maybeboard => FilterScope::AddMaybeboard,
+        };
+        let mut store = filter_store;
+        store.park(scope, deck_id, filter_builder.peek().clone());
+    });
     // True when synergy was requested but the commander's cache is still warming
     // (server fell back to the full pool); drives the inline "warming up" note.
     let mut synergy_warming = use_signal(|| false);
@@ -670,12 +692,13 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                     deck_has_commander.set(deck.deck_profile.commander_id.is_some());
                     // Default Synergy ON when the deck has a commander (the
-                    // curated pool); OFF otherwise. Set once on load — the user
-                    // flips it via the toggle, and the server falls back to the
-                    // full pool if the commander's synergy cache is still warming.
-                    filter_builder
-                        .write()
-                        .set_synergy(deck.deck_profile.commander_id.is_some());
+                    // curated pool); OFF otherwise. Only for a fresh filter —
+                    // a restored one keeps the user's own toggle state.
+                    if !had_restored_filter {
+                        filter_builder
+                            .write()
+                            .set_synergy(deck.deck_profile.commander_id.is_some());
+                    }
                     deck_loaded.set(true);
 
                     // Seed the land signal: count mainboard lands (quantity-aware,
@@ -1032,28 +1055,49 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 onclick: move |_| {
                                     if add_source() == variant { return; }
 
+                                    // Each source keeps its own remembered filter:
+                                    // park the one we're leaving, restore the one
+                                    // we're entering (or build its default fresh).
+                                    let mut store = filter_store;
                                     match variant {
                                         AddSource::Maybeboard => {
-                                            // If filter is just the Search defaults (deck context
-                                            // plus the automatic land exclusion), blank it —
+                                            store.park(
+                                                FilterScope::AddSearch,
+                                                deck_id,
+                                                filter_builder.peek().clone(),
+                                            );
                                             // Maybeboard's default is a blank filter.
-                                            if filter_builder
-                                                .read()
-                                                .is_empty_ignoring_deck_context_and_auto_lands(lands_at_target())
-                                            {
-                                                filter_builder.write().clear();
-                                            }
+                                            filter_builder.set(
+                                                store
+                                                    .restore(FilterScope::AddMaybeboard, deck_id)
+                                                    .unwrap_or_default(),
+                                            );
                                         }
                                         AddSource::Search => {
-                                            // If filter is truly blank, re-apply deck-context defaults
-                                            if filter_builder.read().is_empty() {
-                                                if let Some(fmt) = deck_format() {
-                                                    filter_builder.write().set_legalities_contains_any(
-                                                        vec![fmt.to_legality_key().to_string()]
-                                                    );
-                                                }
-                                                if let Some(colors) = deck_color_identity() {
-                                                    filter_builder.write().set_color_identity_within(colors);
+                                            store.park(
+                                                FilterScope::AddMaybeboard,
+                                                deck_id,
+                                                filter_builder.peek().clone(),
+                                            );
+                                            match store.restore(FilterScope::AddSearch, deck_id) {
+                                                Some(f) => filter_builder.set(f),
+                                                None => {
+                                                    // Fresh Search default: deck context in
+                                                    // synergy order, lands out at target.
+                                                    let mut fresh = CardQueryBuilder::default();
+                                                    if let Some(fmt) = deck_format() {
+                                                        fresh.set_legalities_contains_any(
+                                                            vec![fmt.to_legality_key().to_string()]
+                                                        );
+                                                    }
+                                                    if let Some(colors) = deck_color_identity() {
+                                                        fresh.set_color_identity_within(colors);
+                                                    }
+                                                    fresh.set_synergy(deck_has_commander());
+                                                    filter_builder.set(fresh);
+                                                    if lands_at_target() {
+                                                        ensure_lands_excluded(filter_builder);
+                                                    }
                                                 }
                                             }
                                         }
@@ -1276,20 +1320,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             ActionBar {
                 Button {
                     variant: ButtonVariant::Util,
-                    onclick: move |_| {
-                        // Clear auto-populated defaults so view/remove screens
-                        // start fresh. The automatic land exclusion (land
-                        // target met) is part of this screen's default too —
-                        // without counting it, the exclude-lands filter leaked
-                        // into the Cards screen.
-                        if filter_builder
-                            .read()
-                            .is_empty_ignoring_deck_context_and_auto_lands(lands_at_target())
-                        {
-                            filter_builder.write().clear();
-                        }
-                        navigator.go_back();
-                    },
+                    onclick: move |_| navigator.go_back(),
                     "Back"
                 }
                 Button {
