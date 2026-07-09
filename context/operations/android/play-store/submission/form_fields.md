@@ -153,13 +153,20 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.4.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.5.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.5.0:**
+
+- Swipe back: drag from the left edge of the screen to go back a page.
+- Your filters now stay put: each screen keeps its own filters for every deck, so you pick up right where you left off.
+- Cleaner browsing: an expanded card stays highlighted so you keep your place.
+- Smoother loading screens and a filter fix, plus general polish.
 
 **1.4.0:**
 
