@@ -48,6 +48,7 @@ use crate::domain::auth::requests::{
     create_session::CreateSessionError, delete_user::DeleteUser,
 };
 use thiserror::Error;
+use zwipe_core::domain::auth::models::platform::ClientPlatform;
 
 #[cfg(feature = "zerver")]
 /// Errors that can occur during user authentication.
@@ -170,6 +171,10 @@ pub struct AuthenticateUser {
     /// This is verified against the stored Argon2 hash. The plaintext is
     /// only held temporarily during verification and never stored.
     pub password: String,
+
+    /// Client platform of the session being created (recorded on the token).
+    /// `None` for re-authentication and older clients.
+    pub platform: Option<ClientPlatform>,
 }
 
 impl AuthenticateUser {
@@ -210,6 +215,7 @@ impl AuthenticateUser {
         Ok(AuthenticateUser {
             identifier: identifier.to_string(),
             password: password.to_string(),
+            platform: None,
         })
     }
 }
@@ -231,6 +237,7 @@ impl From<&ChangePassword> for AuthenticateUser {
         Self {
             identifier: value.user_id.to_string(),
             password: value.current_password.to_owned(),
+            platform: None,
         }
     }
 }
@@ -244,6 +251,7 @@ impl From<&ChangeUsername> for AuthenticateUser {
         Self {
             identifier: value.user_id.to_string(),
             password: value.password.to_string(),
+            platform: None,
         }
     }
 }
@@ -257,6 +265,7 @@ impl From<&ChangeEmail> for AuthenticateUser {
         Self {
             identifier: value.user_id.to_string(),
             password: value.password.to_string(),
+            platform: None,
         }
     }
 }
@@ -270,6 +279,7 @@ impl From<&DeleteUser> for AuthenticateUser {
         Self {
             identifier: value.user_id.to_string(),
             password: value.password.to_string(),
+            platform: None,
         }
     }
 }

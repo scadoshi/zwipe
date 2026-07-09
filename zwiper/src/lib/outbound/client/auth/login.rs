@@ -6,7 +6,8 @@ use std::future::Future;
 use tracing::info;
 use zwipe::inbound::http::{ApiError, routes::login_route};
 use zwipe_core::{
-    domain::auth::models::session::Session, http::contracts::auth::HttpAuthenticateUser,
+    domain::auth::models::{platform::ClientPlatform, session::Session},
+    http::contracts::auth::HttpAuthenticateUser,
 };
 
 /// Trait for authenticating users via the login endpoint.
@@ -20,6 +21,9 @@ pub trait ClientLogin {
 
 impl ClientLogin for ZwipeClient {
     async fn authenticate_user(&self, request: HttpAuthenticateUser) -> Result<Session, ApiError> {
+        let mut request = request;
+        request.platform = Some(ClientPlatform::CURRENT);
+
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&login_route());
         info!("POST {}", url);

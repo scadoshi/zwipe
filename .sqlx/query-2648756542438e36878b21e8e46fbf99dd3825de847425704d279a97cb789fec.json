@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, user_id, expires_at, revoked FROM refresh_tokens WHERE value_hash = $1 FOR UPDATE",
+  "query": "SELECT id, user_id, expires_at, revoked, platform FROM refresh_tokens WHERE value_hash = $1 FOR UPDATE",
   "describe": {
     "columns": [
       {
@@ -22,6 +22,11 @@
         "ordinal": 3,
         "name": "revoked",
         "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "platform",
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -33,8 +38,9 @@
       false,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "ba2f855c624f8b1874a7e6d8af88106b1be34d30db96bb5826fb3236345eba8f"
+  "hash": "2648756542438e36878b21e8e46fbf99dd3825de847425704d279a97cb789fec"
 }

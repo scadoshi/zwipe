@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO refresh_tokens (user_id, value_hash, expires_at) VALUES ($1, $2, $3) RETURNING id, user_id, expires_at, revoked",
+  "query": "INSERT INTO refresh_tokens (user_id, value_hash, expires_at, platform) VALUES ($1, $2, $3, $4) RETURNING id, user_id, expires_at, revoked, platform",
   "describe": {
     "columns": [
       {
@@ -22,21 +22,28 @@
         "ordinal": 3,
         "name": "revoked",
         "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "platform",
+        "type_info": "Text"
       }
     ],
     "parameters": {
       "Left": [
         "Uuid",
         "Text",
-        "Timestamptz"
+        "Timestamptz",
+        "Text"
       ]
     },
     "nullable": [
       false,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "23a4c4292957171b267a59878dd57c4a1c146ca76959aa68f1194823e29eb121"
+  "hash": "3ed9531e4e9faea40e9492498eec99de99f18e2c45538d2f390b5a2caacdb280"
 }

@@ -59,6 +59,8 @@ use crate::domain::auth::models::password::HashedPassword;
 use crate::domain::auth::models::password::Password;
 #[cfg(feature = "zerver")]
 use crate::domain::auth::requests::create_session::CreateSessionError;
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use thiserror::Error;
 use zwipe_core::domain::{
     Email, InvalidEmail,
@@ -263,6 +265,10 @@ pub struct RegisterUser {
     ///
     /// Never contains the plaintext password.
     pub password_hash: HashedPassword,
+
+    /// Client platform, recorded on the auto-login session. `None` for older
+    /// clients; set by the HTTP handler from the request body.
+    pub platform: Option<ClientPlatform>,
 }
 
 #[cfg(feature = "zerver")]
@@ -310,6 +316,7 @@ impl RegisterUser {
             username,
             email,
             password_hash,
+            platform: None,
         })
     }
 }

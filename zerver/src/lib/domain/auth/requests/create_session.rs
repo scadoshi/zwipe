@@ -41,6 +41,8 @@ use crate::domain::{
 use thiserror::Error;
 #[cfg(feature = "zerver")]
 use uuid::Uuid;
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::auth::models::platform::ClientPlatform;
 
 #[cfg(feature = "zerver")]
 /// Validation errors when constructing a [`CreateSession`] request.
@@ -91,6 +93,7 @@ impl FromStr for CreateSession {
     fn from_str(s: &str) -> Result<Self, InvalidCreateSession> {
         Ok(Self {
             user_id: Uuid::try_parse(s)?,
+            platform: None,
         })
     }
 }
@@ -129,6 +132,10 @@ impl FromStr for CreateSession {
 pub struct CreateSession {
     /// The ID of the user for whom to create a session.
     pub user_id: Uuid,
+
+    /// Client platform of the session (recorded on the token). `None` for
+    /// admin/impersonation paths and older clients.
+    pub platform: Option<ClientPlatform>,
 }
 
 #[cfg(feature = "zerver")]
@@ -141,6 +148,9 @@ impl From<Uuid> for CreateSession {
     /// let request = CreateSession::from(user_id);
     /// ```
     fn from(value: Uuid) -> Self {
-        Self { user_id: value }
+        Self {
+            user_id: value,
+            platform: None,
+        }
     }
 }

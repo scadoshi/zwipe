@@ -14,6 +14,7 @@ use crate::{
 use sqlx::{PgTransaction, query, query_as};
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::{
+    platform::ClientPlatform,
     refresh_token::{RefreshToken, Sha256Hash},
     session::MAXIMUM_SESSION_COUNT,
 };
@@ -30,6 +31,7 @@ pub trait TxHelper {
     fn create_refresh_token(
         &mut self,
         user_id: Uuid,
+        platform: Option<ClientPlatform>,
     ) -> impl Future<Output = Result<RefreshToken, CreateSessionError>> + Send;
 
     /// Enforces the maximum number of concurrent sessions per user.
@@ -46,14 +48,17 @@ impl<'a> TxHelper for PgTransaction<'a> {
     async fn create_refresh_token(
         &mut self,
         user_id: Uuid,
+        platform: Option<ClientPlatform>,
     ) -> Result<RefreshToken, CreateSessionError> {
         let refresh_token = RefreshToken::generate();
+        let platform = platform.map(|p| p.to_string());
         let _result = query_as!(
             DatabaseRefreshToken,
-            "INSERT INTO refresh_tokens (user_id, value_hash, expires_at) VALUES ($1, $2, $3) RETURNING id, user_id, expires_at, revoked",
+            "INSERT INTO refresh_tokens (user_id, value_hash, expires_at, platform) VALUES ($1, $2, $3, $4) RETURNING id, user_id, expires_at, revoked, platform",
             user_id,
             refresh_token.sha256_hash(),
-            refresh_token.expires_at
+            refresh_token.expires_at,
+            platform
         )
         .fetch_one(&mut **self)
         .await?;

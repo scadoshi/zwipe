@@ -39,7 +39,10 @@ use chrono::{DateTime, Utc};
 use sqlx::{query, query_as, query_scalar};
 use uuid::Uuid;
 use zwipe_core::domain::{
-    auth::models::refresh_token::{RefreshToken, Sha256Hash},
+    auth::models::{
+        platform::ClientPlatform,
+        refresh_token::{RefreshToken, Sha256Hash},
+    },
     user::User,
 };
 
@@ -62,7 +65,7 @@ impl AuthRepository for Postgres {
         ).fetch_one(&mut *tx).await?;
 
         let user: User = database_user.try_into()?;
-        let refresh_token = tx.create_refresh_token(user.id).await?;
+        let refresh_token = tx.create_refresh_token(user.id, request.platform).await?;
         tx.commit().await?;
 
         Ok((user, refresh_token))
@@ -71,9 +74,10 @@ impl AuthRepository for Postgres {
     async fn create_refresh_token(
         &self,
         user_id: Uuid,
+        platform: Option<ClientPlatform>,
     ) -> Result<RefreshToken, CreateSessionError> {
         let mut tx = self.pool.begin().await?;
-        let refresh_token = tx.create_refresh_token(user_id).await?;
+        let refresh_token = tx.create_refresh_token(user_id, platform).await?;
         tx.commit().await?;
 
         Ok(refresh_token)
@@ -234,7 +238,7 @@ impl AuthRepository for Postgres {
         // and get 401. Makes the token strictly single-use under concurrency.
         let existing = query_as!(
             DatabaseRefreshToken,
-            "SELECT id, user_id, expires_at, revoked FROM refresh_tokens WHERE value_hash = $1 FOR UPDATE",
+            "SELECT id, user_id, expires_at, revoked, platform FROM refresh_tokens WHERE value_hash = $1 FOR UPDATE",
             request.refresh_token.sha256_hash()
         )
         .fetch_one(&mut *tx)
@@ -266,7 +270,13 @@ impl AuthRepository for Postgres {
             return Err(RefreshSessionError::Revoked(request.user_id));
         }
 
-        let new = tx.create_refresh_token(request.user_id).await?;
+        // Carry the platform forward across rotation so it survives even if a
+        // client stops sending it (an invalid stored value degrades to None).
+        let carried = existing
+            .platform
+            .as_deref()
+            .and_then(|p| p.parse::<ClientPlatform>().ok());
+        let new = tx.create_refresh_token(request.user_id, carried).await?;
 
         tx.commit().await?;
 

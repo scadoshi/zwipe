@@ -5,7 +5,10 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use zwipe::inbound::http::{ApiError, routes::register_route};
-use zwipe_core::{domain::auth::models::session::Session, http::contracts::auth::HttpRegisterUser};
+use zwipe_core::{
+    domain::auth::models::{platform::ClientPlatform, session::Session},
+    http::contracts::auth::HttpRegisterUser,
+};
 
 /// Trait for registering new user accounts.
 #[allow(missing_docs)]
@@ -18,6 +21,9 @@ pub trait ClientRegister {
 
 impl ClientRegister for ZwipeClient {
     async fn register(&self, request: HttpRegisterUser) -> Result<Session, ApiError> {
+        let mut request = request;
+        request.platform = Some(ClientPlatform::CURRENT);
+
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&register_route());
         info!("POST {}", url);

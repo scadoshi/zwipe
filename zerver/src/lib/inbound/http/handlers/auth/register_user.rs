@@ -105,7 +105,8 @@ pub async fn register_user(
     State(state): State<AppState>,
     Json(body): Json<HttpRegisterUser>,
 ) -> Result<(StatusCode, Json<Session>), ApiError> {
-    let request = RegisterUser::new(&body.username, &body.email, &body.password)?;
+    let mut request = RegisterUser::new(&body.username, &body.email, &body.password)?;
+    request.platform = body.platform;
     tracing::info!(event = "register", username = %body.username);
     let session = state
         .auth_service

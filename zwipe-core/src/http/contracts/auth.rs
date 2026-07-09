@@ -2,40 +2,51 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::domain::auth::models::platform::ClientPlatform;
+
 /// Login request body.
 ///
-/// `identifier` accepts either an email address or a username.
+/// `identifier` accepts either an email address or a username. `platform` is the
+/// client's platform, recorded on the session; additive and `#[serde(default)]`
+/// so older clients that omit it deserialize to `None`.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpAuthenticateUser {
     pub identifier: String,
     pub password: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub platform: Option<ClientPlatform>,
 }
 
 impl HttpAuthenticateUser {
-    /// Creates a new login request.
+    /// Creates a new login request (no platform; set `.platform` to record one).
     pub fn new(identifier: &str, password: &str) -> Self {
         Self {
             identifier: identifier.to_string(),
             password: password.to_string(),
+            platform: None,
         }
     }
 }
 
-/// Registration request body.
+/// Registration request body. `platform` (additive, `#[serde(default)]`) is
+/// recorded on the auto-login session created by registration.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpRegisterUser {
     pub username: String,
     pub email: String,
     pub password: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub platform: Option<ClientPlatform>,
 }
 
 impl HttpRegisterUser {
-    /// Creates a new registration request.
+    /// Creates a new registration request (no platform; set `.platform` to record one).
     pub fn new(username: &str, email: &str, password: &str) -> Self {
         Self {
             username: username.to_string(),
             email: email.to_string(),
             password: password.to_string(),
+            platform: None,
         }
     }
 }
