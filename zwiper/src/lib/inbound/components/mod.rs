@@ -20,6 +20,8 @@ pub mod hint_dialog;
 pub mod interactions;
 /// Logout confirmation dialog.
 pub mod logout_dialog;
+/// Navigation plumbing (OS back-intent bridge).
+pub mod navigation;
 /// Shared screen header (centered title + optional "?" hint trigger).
 pub mod screen_header;
 /// Global floating help/support button + bottom sheet.
