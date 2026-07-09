@@ -1,6 +1,6 @@
 # Todo
 
-**Primary goal: grow the user base — Android launch + marketing.** (iOS App Store: LIVE. Full webapp at zwipe.net: in progress.)
+**Primary goal: grow the user base — production launch + marketing + tester-feedback intake.** (iOS App Store: LIVE. Android: closed testing LIVE ~400 testers, production access next. Full webapp at zwipe.net: in progress.)
 
 Only open, actionable items live here. When something ships, its outcome moves to
 [`overview.md`](overview.md) and leaves this list. Older completed work is archived
@@ -34,9 +34,9 @@ at `context/archive/complete_2026_q1.md`.
 - [ ] **Suggestion signal — Phase 3c (pair-level ranking).** Phases 3a+3b **shipped 2026-07-06** (server 1.3.2): the default synergy ordering now blends base score + pooled net-rate (`added + 0.5·maybed − removed`, shrunk/centered) + per-(deck, day) seeded jitter — different decks serve differently, the same deck stays stable within a day, and crowd favorites drift up as signal accrues. Remaining: the commander-specific pair-level term, gated on pair-depth (baseline 2026-07-06: 0 pairs ≥20 impressions — re-run the readiness queries after the user base grows). Plan: [`../plans/suggestion_signal.md`](../plans/suggestion_signal.md).
 - [ ] **Draw-odds — Phase 4 (premium gating).** Phases 1–3 shipped in 1.2.0 (engine + deck-view section + per-turn `<- / ->`). Remaining: decide which depth is free vs premium, and optionally add the play/draw toggle (turn 1 = 7 on the play vs 8 on the draw). Client-only. (Plan doc removed once Phases 1–3 shipped; only this gating decision remains.)
 
-**The next big three (set 2026-06-11, in order):**
-1. **Android — get the clock ticking.** Confirm the Play account's closed-testing requirement and start the 14-day clock immediately; polish items ride alongside (see Android section below).
-2. **Marketing — get users.** Business cards for LGSs, Reddit/X posts (see Marketing & Discovery below). The first wave doubles as the Android closed-test tester pool.
+**The next big three (set 2026-06-11):**
+1. ~~**Android — get the clock ticking.**~~ **DONE 2026-07-09** — ~400 active closed testers (hired testing service + organic); the 12-tester / 14-continuous-day requirement is satisfied. Next: apply for production access + intake tester feedback (see Android section).
+2. **Marketing — get users.** Business cards for LGSs, Reddit/X posts (see Marketing & Discovery below).
 3. **VPS — stabilize.** Cutover is done (see `overview.md`); remaining follow-ups are the two items below.
 
 - [ ] **Refine the launcher/app logo (deferred from 1.1.1).** 1.1.1 shipped a *functional* Android icon — the Z was repadded into the adaptive-icon safe zone (`zwiper/assets/favicon/icon-1024-android.png`, Z ≈ 47% of canvas) so the circular mask stops clipping it, but the design wasn't polished. Revisit the actual logo/icon art (and consider whether iOS/web want the same treatment). The mechanism + safe-zone math are in `operations/android/play-store/submission/history.md` (1.1.1 history entry).
@@ -61,29 +61,24 @@ launches on both stores in one pass (StoreKit + Play Billing designed together).
   rollout to the Alpha closed track across 176 countries (in Google's review
   queue). Pipeline + gotchas captured in `operations/android/play-store/submission/build.md`;
   listing copy in `.../form_fields.md`.
-- [ ] **Recruit ≥12 closed testers + run the 14-day clock.** New personal accounts
-  need **12 testers opted in for 14 *continuous* days** before applying for
-  production access. Track the live opted-in count **in Play Console** — the clock
-  starts only when 12 are opted in *simultaneously*, not when invites are sent.
-  - **Setup done 2026-06-24:** public Google Group **`zwipers`**
-    (`groups.google.com/g/zwipers`) created and attached to the Alpha closed-testing
-    track (Testers → Google Groups); self-opt-in verified ("You are a tester").
-    Tester flow is 3 steps: **join group → opt in**
-    (`play.google.com/apps/testing/com.scadoshi.zwipe`) **→ install**
-    (`play.google.com/store/apps/details?id=com.scadoshi.zwipe`). A bare opt-in/store
-    link does nothing for non-members — the group join is what makes someone eligible.
-  - **Recruiting progress 2026-06-24:** 3 personal-network testers emailed (still
-    need to confirm they actually completed opt-in). Started **reciprocal
-    comment-swapping on r/AndroidTesting** (test theirs ↔ they test yours) — note
-    our own *posts* there are **karma/age-gated** (so are the MTG subs r/EDH /
-    r/magicTCG), but *comments* aren't, so swap via comments now + build karma toward
-    posting later. Un-gated bulk channel to try next: **Discord/Telegram
-    closed-testing exchange servers** (search "Android closed testing" on disboard.org).
-  - **Open before driving strangers in:** verify `zwipers` is joinable from a
-    **logged-out/incognito** session — a non-public group silently blocks every
-    opt-in (saw this exact failure on two other devs' groups: "Content unavailable" /
-    "no permission" = their join setting wasn't "Anyone can join"). Then chase the 3
-    emailed testers and keep swapping toward 12.
+- [x] **Closed-testing clock — DONE 2026-07-09.** **~400 active testers** on the
+  Alpha closed track (hired testing service + organic), well past the 12-tester /
+  14-*continuous*-day requirement for production access. The Google Group `zwipers`
+  flow worked (**join group → opt in → install**; a bare opt-in/store link does
+  nothing for non-members — the group join is what makes someone eligible). Play
+  App Signing enrolled, `com.scadoshi.zwipe` live to testers across 176 countries.
+- [ ] **Apply for production access + full launch.** 14-day cycle **confirmed
+  complete 2026-07-09** by the QA partner (Teekam Suthar / 12testers); the
+  production questionnaire is in hand (Zwipe-tailored answers drafted in
+  [`../operations/android/play-store/submission/production_access.md`](../operations/android/play-store/submission/production_access.md)).
+  Submit the production-access application in the Play Console (~72h review), then
+  promote a build to the Production track.
+  (Coordinate with review state: 1.4.0 / vc22 is the live closed-testing build;
+  the next build 1.4.1 adds back-swipe + filter persistence + the polish batch.)
+- [ ] **Intake tester feedback → `feature_requests.md`.** ~400 testers + hired
+  testers are generating suggestions; triage them into the weighted request queue
+  ([`feature_requests.md`](feature_requests.md)) and surface anything actionable
+  into this list. This is the near-term driver now that the launch gate is cleared.
 
 Android build compiles and runs — **emulator-confirmed on Pixel_9a 2026-06-22** (login → decks → swipe all working against prod). Build gotcha: must point `JAVA_HOME` at Android Studio's bundled JDK 21, not the system-default JDK 26 — see `operations/android/setup.md`. The home-screen ASCII logo (block glyphs) now renders correctly via the self-hosted font (ships in 1.0.9). None of the below blocked the closed-testing submission — they're polish for a future build:
 
