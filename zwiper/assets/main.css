@@ -13,6 +13,11 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    /* Android WebView flashes its own translucent highlight on any tappable
+       element (blue on stock Android) before our styles react; iOS keeps this
+       effectively invisible by default. Kill it — the app provides its own
+       touch feedback. */
+    -webkit-tap-highlight-color: transparent;
 }
 
 html {
