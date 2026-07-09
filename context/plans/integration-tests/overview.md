@@ -1,7 +1,20 @@
 # Integration tests — cover the untested server half
 
-**Status: PLANNED (2026-07-06). Not started. Server-only, no deploy risk,
-buildable in slices anytime.**
+**Status: IN PROGRESS (started 2026-07-09). Server-only, no deploy risk, built
+in slices.**
+
+## Progress tracker (update as slices land)
+
+- [ ] **Slice 1 — harness + auth flow** (`harness.md`): dev-deps, `build_router`
+  extraction, `FakeEmailSender`, `TestApp`, first `tests/auth_flows.rs`.
+- [ ] **Slice 2 — CI workflow** (`ci.md`): GitHub Actions + Postgres service.
+- [ ] **Slice 3 — deck lifecycle** (`coverage.md`): create/edit/get/delete, cards add/remove.
+- [ ] **Slice 4 — card serving** (`coverage.md`): search, filters, color-identity gating, ordering (needs card fixtures).
+- [ ] **Slice 5 — repo-level** (`coverage.md`): clone, suppressions, band shuffle, signal rollup.
+- [ ] **Slice 6 — metrics/auth edges** (`coverage.md`): lockout, rate-limit, verify/reset email flows.
+
+Each slice is standalone and committable; if we stop mid-way, the checklist marks
+the resume point.
 
 **What this builds, in one sentence:** a real-database test suite for zerver
 — HTTP-level flows driven through the actual Axum router plus repo-level
