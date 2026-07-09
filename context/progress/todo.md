@@ -91,7 +91,7 @@ Android build compiles and runs — **emulator-confirmed on Pixel_9a 2026-06-22*
 - [x] Swipe gesture card tilt — CONFIRMED WORKING 2026-07-09 (cards rotate during drag on Android, same as iOS; the earlier note was stale).
 - [x] Android tap flash — FIXED 2026-07-09: `-webkit-tap-highlight-color: transparent` on the universal selector in `main.css` kills Android WebView's default blue tap highlight (iOS never showed it). Emulator-verified; rides the next build.
 - [x] Lock screen orientation to portrait — CONFIRMED WORKING 2026-07-09 (verified on a physical Android device; already portrait-locked, no change needed).
-- [x] **Edge back-swipe navigation (Android + iOS) — SHIPPED-READY 2026-07-09** (rides the next store build). The OS back intent now drives the router's `go_back()` (or exits at a root screen) instead of the old broken behavior (Android closed the app; iOS did nothing). iOS: a custom `UIScreenEdgePanGestureRecognizer` (objc2) → tokio channel → `go_back` (instant; the WKWebView-history approach was ~3s and got dropped). Android: a `MainActivity` patch (`zcripts/android/back-handler.sh`, re-applied after `dx bundle` — see build-and-submit.md step 1c) registers an `OnBackPressedCallback` catching both gesture + button, dispatches `zwipe:back` → Rust `go_back`/JNI `finish`. Both verified (iPhone + Pixel_9a emulator). Plan/record: [`../plans/back_swipe_gesture.md`](../plans/back_swipe_gesture.md).
+- [x] **Edge back-swipe navigation (Android + iOS) — SHIPPED-READY 2026-07-09** (rides the next store build). The OS back intent now drives the router's `go_back()` (or exits at a root screen) instead of the old broken behavior (Android closed the app; iOS did nothing). iOS: a custom `UIScreenEdgePanGestureRecognizer` (objc2) → tokio channel → `go_back` (instant; the WKWebView-history approach was ~3s and got dropped). Android: a `MainActivity` patch (`zcripts/android/back_handler.sh`, re-applied after `dx bundle` — see build-and-submit.md step 1c) registers an `OnBackPressedCallback` catching both gesture + button, dispatches `zwipe:back` → Rust `go_back`/JNI `finish`. Both verified (iPhone + Pixel_9a emulator). Plan/record: [`../plans/back_swipe_gesture.md`](../plans/back_swipe_gesture.md).
 
 ---
 
@@ -208,7 +208,7 @@ Phases 1+2 shipped (see archive). ~73% classification rate today; refinement tar
 
 ## Testing
 
-- [ ] **Integration tests — PLANNED 2026-07-06, full plan at [`../plans/integration_tests/`](../plans/integration_tests/overview.md).** External audit confirmed the gap: zero coverage on sqlx repos, HTTP handlers, and most domain services; no CI test run at all. Decisions settled: `#[sqlx::test]` harness (fresh DB per test), both HTTP-level and repo-level coverage, plus a GitHub Actions test workflow (non-gating on deploy). Build in slices: harness + auth flow first, then deck lifecycle, then card serving (replaces the throwaway band-shuffle dev harness with permanent regression tests).
+- [ ] **Integration tests — PLANNED 2026-07-06, full plan at [`../plans/integration-tests/`](../plans/integration-tests/overview.md).** External audit confirmed the gap: zero coverage on sqlx repos, HTTP handlers, and most domain services; no CI test run at all. Decisions settled: `#[sqlx::test]` harness (fresh DB per test), both HTTP-level and repo-level coverage, plus a GitHub Actions test workflow (non-gating on deploy). Build in slices: harness + auth flow first, then deck lifecycle, then card serving (replaces the throwaway band-shuffle dev harness with permanent regression tests).
 
 ---
 

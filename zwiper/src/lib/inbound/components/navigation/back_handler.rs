@@ -52,7 +52,7 @@ pub fn BackHandlerLayout() -> Element {
     // Android: the patched MainActivity intercepts the OS back (gesture + button)
     // and dispatches a `zwipe:back` DOM event; we route it to the router, and
     // exit the app (finish the Activity) from a root screen. Inert until that
-    // native patch is in place (see zcripts/android/back-handler patch).
+    // native patch is in place (see zcripts/android/back_handler patch).
     #[cfg(all(target_os = "android", feature = "mobile"))]
     {
         let nav = use_navigator();

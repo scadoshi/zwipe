@@ -62,7 +62,7 @@ manually-set token for testing/marketing.
 
 ## Later (explicitly out of v1)
 
-- MVP stars on the page (once `deck_mvps` ships — the share page is where
+- MVP stars on the page (once `deck-mvps` ships — the share page is where
   MVPs become a personality statement).
 - "Open in Zwipe" / import-this-deck CTA (growth v2).
 - OG meta / link-preview card (title = deck name + commander; GitHub Pages

@@ -10,8 +10,8 @@ Distinct from `feature_requests.md` (already-weighted candidates) and `todo.md`
 
 | Item | Source | Verdict |
 |------|--------|---------|
-| [price-target-field-size](price-target-field-size.md) | Self-noted | **Decided — build** (small) |
-| [empty-filter-warning](empty-filter-warning.md) | Self-noted | Undecided — consider |
+| [price_target_field_size](price_target_field_size.md) | Self-noted | **Decided — build** (small) |
+| [empty_filter_warning](empty_filter_warning.md) | Self-noted | Undecided — consider |
 
 Logged 2026-06-29; to be built out / triaged the following day.
 

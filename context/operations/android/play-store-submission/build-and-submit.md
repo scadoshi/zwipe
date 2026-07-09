@@ -69,7 +69,7 @@ Regenerate them from the Zwipe source icon. Like the Gradle edits, this runs
 **after `dx bundle`** (which wipes `res/`) and before the repackage:
 
 ```bash
-zcripts/android/launcher-icons.sh
+zcripts/android/launcher_icons.sh
 ```
 
 This rewrites the legacy webp at every density and the adaptive foreground (a
@@ -85,7 +85,7 @@ router. Like the icons, dx **wipes this on every `dx bundle`**, so run it
 **after `dx bundle`** and **before** the Gradle repackage:
 
 ```bash
-zcripts/android/back-handler.sh
+zcripts/android/back_handler.sh
 ```
 
 Skip it and the edge-swipe / hardware back closes the app from any screen (the
@@ -220,7 +220,7 @@ the bundle → **Upload native debug symbols** (a zip containing
   each other auto-pair, Deck MVPs phase 1 (star up to three cards per deck), and
   share-a-deck public links from the More sheet; commander-select signal ingest
   ships dormant. First minor bump since 1.3.x; workspace version bumped 1.3.2 →
-  1.4.0). Built per this recipe — `dx bundle` → `launcher-icons.sh` → gradle
+  1.4.0). Built per this recipe — `dx bundle` → `launcher_icons.sh` → gradle
   patch (compileSdk 36 / targetSdk 35 / versionCode 22) → `gradlew
   :app:bundleRelease` → jarsigner (0600 scratchpad password, deleted after).
   Artifact `zwipe-1.4.0-vc22.aab`, signed + `jar verified`. **R8/edge-to-edge
@@ -234,7 +234,7 @@ the bundle → **Upload native debug symbols** (a zip containing
   client posts anonymous session events — app_opened, register_viewed,
   register_submitted — to the new `/api/metrics/anonymous` endpoint; plus the
   server-side AppState type-erasure refactor, no behavior change). Built per
-  this recipe — `dx bundle` → `launcher-icons.sh` → gradle patch (compileSdk 36 /
+  this recipe — `dx bundle` → `launcher_icons.sh` → gradle patch (compileSdk 36 /
   targetSdk 35 / versionCode 21) → `gradlew :app:bundleRelease` → jarsigner
   (0600 scratchpad password, deleted after). Artifact `zwipe-1.3.1-vc21.aab`,
   signed + `jar verified`. iOS counterpart: build 60. Server (anonymous_events +
@@ -254,7 +254,7 @@ the bundle → **Upload native debug symbols** (a zip containing
   CardStack refactor across the three swipe screens; image/skeleton ease-ins +
   swipe-layout spacing; stack cap 1000 → 500; profile About section with the
   website link. Supersedes 1.2.3/vc17, withdrawn from review — release notes
-  folded into 1.3.0). Built per this recipe — `dx bundle` → `launcher-icons.sh`
+  folded into 1.3.0). Built per this recipe — `dx bundle` → `launcher_icons.sh`
   → gradle patch (compileSdk 36 / targetSdk 35 / versionCode 19) →
   `gradlew :app:bundleRelease` → jarsigner (0600 scratchpad password, deleted
   after). Artifact `zwipe-1.3.0-vc19.aab`, signed + `jar verified`, uploaded to
@@ -305,7 +305,7 @@ the bundle → **Upload native debug symbols** (a zip containing
   108dp canvas but only the inner ~66dp is the guaranteed-visible safe zone, and a
   wide logo like the Z has bars at the very top/bottom of its bbox that land outside
   the circle. Fix: a separate **padded** source `icon-1024-android.png` (Z ≈ 47% of
-  the canvas, centered, generous `#282828` padding) wired into `launcher-icons.sh`;
+  the canvas, centered, generous `#282828` padding) wired into `launcher_icons.sh`;
   iOS/web keep the full-bleed `icon-1024.png` (square icons aren't masked). Verify a
   candidate by simulating the mask: crop the foreground to the center 66.6% and
   circle-mask it before rebuilding. *Logo design polish still deferred (see `todo.md`).*
@@ -316,7 +316,7 @@ the bundle → **Upload native debug symbols** (a zip containing
 - **2026-06-28 — `1.1.3`, versionCode `11`** (media-day release: card names while
   swiping, deck-form overhaul, expanded tags + format/power pickers, in-app privacy
   policy, under-field validation). Built per this recipe — `dx bundle` →
-  `launcher-icons.sh` → gradle patch (compileSdk 36 / targetSdk 35 / versionCode 11)
+  `launcher_icons.sh` → gradle patch (compileSdk 36 / targetSdk 35 / versionCode 11)
   → `gradlew :app:bundleRelease` → jarsigner (password via a 0600 scratchpad file,
   deleted after). Artifact `zwipe-1.1.3.aab`, signed + `jar verified`, uploaded to the
   Alpha closed-testing track. iOS counterpart: build 51. *R8/edge-to-edge emulator
@@ -331,7 +331,7 @@ the bundle → **Upload native debug symbols** (a zip containing
   suppressions with server-side filtering + Clear skips in the deck More sheet;
   alphabetical deck lists; profile System/version row; email-verification row
   rework; updated privacy policy. 1.2.2 skipped, versionCode 16 shipped as 1.2.1).
-  Built per this recipe — `dx bundle` → `launcher-icons.sh` → gradle patch
+  Built per this recipe — `dx bundle` → `launcher_icons.sh` → gradle patch
   (compileSdk 36 / targetSdk 35 / versionCode 17) → `gradlew :app:bundleRelease` →
   jarsigner (0600 scratchpad password, deleted after). Artifact `zwipe-1.2.3.aab`,
   signed + `jar verified`, uploaded to the Alpha closed-testing track. iOS
@@ -348,7 +348,7 @@ the bundle → **Upload native debug symbols** (a zip containing
   hypergeometric draw-odds, Synergy on/off toggle, power level + other-tags,
   deck tags 85→117, include/exclude filter guard, PDH commander fix, `edhrec_rank`
   index, proliferate→Counters, create/edit top-scroll fix). Built per this recipe —
-  `dx bundle` → `launcher-icons.sh` → gradle patch (compileSdk 36 / targetSdk 35 /
+  `dx bundle` → `launcher_icons.sh` → gradle patch (compileSdk 36 / targetSdk 35 /
   versionCode 15) → `gradlew :app:bundleRelease` → jarsigner (0600 scratchpad
   password, deleted after). Artifact `zwipe-1.2.0.aab`, signed + `jar verified`,
   uploaded to the Alpha closed-testing track. iOS counterpart: build 54. Server

@@ -69,8 +69,8 @@ slice replaces the throwaway dev harness with permanent tests:
 ## Slice 5 — future features land WITH tests
 
 Once this harness exists, the plans in flight each ship with their tests
-instead of extending the gap: share tokens (`deck_share_page`: public
-endpoint 404-on-revoked, identity stripping), MVPs (`deck_mvps`: 3-slot cap
+instead of extending the gap: share tokens (`deck-share-page`: public
+endpoint 404-on-revoked, identity stripping), MVPs (`deck-mvps`: 3-slot cap
 422, vesting math **[repo]**), wildcard slot (page splice position,
 deep-pool floor **[repo]**). Their plan docs already specify the cases;
 this harness is where they run.

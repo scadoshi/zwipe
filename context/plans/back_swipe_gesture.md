@@ -65,7 +65,7 @@ Activity's back dispatcher straight to the default `finish()`. tao *does* surfac
 `KEYCODE_BACK` as `Key::BrowserBack` to the event loop, but that's the button
 path only, not the gesture. So catching the gesture requires Activity code.
 
-**What shipped:** `zcripts/android/back-handler.sh` overwrites the dx-generated
+**What shipped:** `zcripts/android/back_handler.sh` overwrites the dx-generated
 `MainActivity.kt` (trivially `class MainActivity : WryActivity()`) with an
 override that registers an `OnBackPressedCallback` on the **unified**
 `onBackPressedDispatcher` — which catches **both** the gesture and the button —
@@ -78,10 +78,10 @@ and dispatches `window.dispatchEvent(new Event('zwipe:back'))` into the WebView
 **Build integration (critical):** `dx` **regenerates `MainActivity.kt` on every
 `dx bundle`/`dx serve`/`dx build`**, so the patch must run *after* the last dx
 invocation and *before* the Gradle build — the same post-`dx bundle` window as
-`launcher-icons.sh`. Documented in
+`launcher_icons.sh`. Documented in
 [`../operations/android/play-store-submission/build-and-submit.md`](../operations/android/play-store-submission/build-and-submit.md).
 Dev-loop gotcha: you can't verify via plain `dx serve` (it rebuilds and wipes the
-patch); build through Gradle yourself after patching (`dx build` → `back-handler.sh`
+patch); build through Gradle yourself after patching (`dx build` → `back_handler.sh`
 → `./gradlew :app:assembleDebug` → `adb install`). If `:app:compileDebugKotlin`
 reports `UP-TO-DATE`, the patch didn't take (dx ran after it). R8 keeps the
 callback/`evaluateJavascript` (both are used), but smoke-test the release build.
@@ -137,7 +137,7 @@ starts to bother.
 - Both verified 2026-07-09: iOS on a physical iPhone, Android on the Pixel_9a
   emulator (back arrow + edge swipe navigate back mid-stack, exit at root).
 - Ships in the next store build (1.4.1+). The Android release AAB **must** run
-  `back-handler.sh` in the build pipeline or it ships without the fix.
+  `back_handler.sh` in the build pipeline or it ships without the fix.
 - Open refinements (not blocking): iOS interactive slide animation (parked, see
   above); Android "double-back-to-exit" instead of immediate finish at root.
 - If wry [#1564](https://github.com/tauri-apps/wry/issues/1564) lands a

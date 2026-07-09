@@ -175,7 +175,7 @@ build.
   hand, the signal tables experience it as coverage. `WILDCARD_SLOTS = 0`
   reverts. Build found that Postgres doesn't guarantee UNION ALL order and
   that the plan's offset math would have skipped one ranked card per page —
-  both fixed (as-built notes in [`../archive/wildcard_slot/server.md`](../archive/wildcard_slot/server.md)).
+  both fixed (as-built notes in [`../archive/wildcard-slot/server.md`](../archive/wildcard-slot/server.md)).
 - **Commander popularity pipeline** (`b10c3c7f` + zynergy `1.1.0`): measured
   that `edhrec_rank` is the wrong base for commander select — it ranks decks
   *containing* a card, so 99-staples (Ragavan, Toski) topped the pool while
@@ -209,7 +209,7 @@ build.
   starred rows only + Star/Unstar in the expanded row (outline-star-on-every-
   row was tried and rejected as noise). Phases 2 (W_MVP signal weight) and 3
   (deck steering) are server-only follow-ups, deliberately after stars
-  accrue: [`../plans/deck_mvps/`](../plans/deck_mvps/overview.md).
+  accrue: [`../plans/deck-mvps/`](../plans/deck-mvps/overview.md).
 
 ---
 
@@ -527,7 +527,7 @@ Features (shipped from the `feat/zwipe-select` branch, merged via PR #18):
 
 Android-only fixes:
 - **Session persistence** — `keyring` has no Android backend (it was silently using its in-memory mock → users logged out on restart). Now cfg-gated: Apple/desktop keep the OS keychain; Android persists the session to a JSON file in internal storage (`/data/data/<pkg>/files/`), path resolved via JNI through `ndk-context` + `jni`. Verified end-to-end on Pixel_9a (login survives force-stop). iOS was never affected.
-- **Launcher icon** — dx ships its default green droid; `zcripts/android/launcher-icons.sh` now regenerates the real Zwipe icon (legacy webp + adaptive layers) from `icon-1024.png` after each `dx bundle` (runbook step 1b).
+- **Launcher icon** — dx ships its default green droid; `zcripts/android/launcher_icons.sh` now regenerates the real Zwipe icon (legacy webp + adaptive layers) from `icon-1024.png` after each `dx bundle` (runbook step 1b).
 
 Other: `Opdate` now defaults to `Unchanged` so older shipped clients (which don't send the new `tags` field) still parse deck-profile updates; SwipeSelect now records the select (right) swipe in usage metrics. Build re-cuts within 1.1.0: iOS 47→48 (mana-pill consistency fix), Android vc7→vc8 (the metrics line). Server redeployed with the deck-tags migration + 65-tag enum.
 

@@ -7,7 +7,7 @@ button in the expanded row — an outline star on every row was 97% noise). Phas
 (steering) remain server-only follow-ups. As-built deltas: export carries NO
 MVP marker (a trailing `*` would corrupt pastes into Archidekt/Moxfield —
 cross-tool safety won; MVPs travel via clone); the star renders inside the
-name cell (the row grid is fixed-width columns); the one-time `deck_mvps`
+name cell (the row grid is fixed-width columns); the one-time `deck-mvps`
 hint fires only for users who already saw the deck-cards hint, and new users
 get a star bullet inside that hint instead (two dialogs on one visit would
 bury both). Dev E2E matrix: 3 stars OK, 4th → 422 "This deck already has 3
@@ -60,5 +60,5 @@ feed the strongest per-card signal the system collects.
    statement this plan envisioned. Weekly share cards remain.
 
 Related: [`../suggestion_signal.md`](../suggestion_signal.md) (the ordering
-this feeds), [`../../archive/wildcard_slot/`](../../archive/wildcard_slot/overview.md) (exposure
+this feeds), [`../../archive/wildcard-slot/`](../../archive/wildcard-slot/overview.md) (exposure
 for deep cards; MVPs are the confirmation layer on what wildcards surface).
