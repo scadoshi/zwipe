@@ -40,3 +40,26 @@ jobs:
       # compiling zwiper pulls Dioxus desktop's GTK stack (glib-sys) and fails.
       - name: Test
         run: cargo test -p zwipe-core -p zerver
+
+  # Format + lint gate. fmt runs workspace-wide (parse-only, no GTK); clippy is
+  # scoped to zwipe-core + zerver for the same headless-GTK reason as Test.
+  lint:
+    runs-on: ubuntu-latest
+    env:
+      SQLX_OFFLINE: "true" # clippy compiles the query! macros against committed .sqlx
+    steps:
+      - uses: actions/checkout@v7
+      # nightly first, stable last so `cargo`/`cargo clippy` default to stable;
+      # nightly is only for `cargo +nightly fmt` (rustfmt.toml uses the unstable
+      # imports_granularity = "Crate", which stable rustfmt ignores).
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo +nightly fmt --check
+      - name: Clippy
+        run: cargo clippy -p zwipe-core -p zerver --all-targets -- -D warnings
