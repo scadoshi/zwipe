@@ -8,7 +8,7 @@ marked **[repo]**. Every slice ends green with `cargo test -p zerver`.
 ## Status (2026-07-09)
 
 **Harness + CI shipped + the card fixture builder is built** (overview slices 1–2,
-plus `card()`/`seed_cards()` in `tests/common/mod.rs`). **17 integration tests green.
+plus `card()`/`seed_cards()` in `tests/common/mod.rs`). **21 integration tests green.
 Covered so far:**
 - `tests/auth_flows.rs` — register → authed `GET /api/user` → login → refresh, plus
   no-token/wrong-password 401s.
@@ -18,11 +18,14 @@ Covered so far:**
   (resolved + unresolved).
 - `tests/card_serving.rs` — get-by-id round-trip, missing→404, search by
   name_contains / cmc_range / color_identity_within, search-requires-auth.
+- `tests/repo_card.rs` — [repo] synergy ordering (scored-desc vs UNSCORED_ANCHOR),
+  `exclude_oracle_ids` drop, NULL-`oracle_id` deck-aware-shuffle regression,
+  `card_signal_rollup` math.
 
-**Next:** the [repo]-level card tests (`tests/repo_card.rs`) — synergy ordering,
-band-shuffle determinism + the NULL-`oracle_id` regression, rollup math — plus
-deck-aware serve at HTTP level. Then Slice 4 (metrics/user/health) and the auth
-edges. Everything else below is open.
+**Next:** Slice 4 below (metrics/user/health) and the auth edges. Deferred within
+card serving (optional): deck-aware serve suppression exclusion + land auto-stop
+(HTTP), band-boundary/different-deck shuffle + clone card-copy ([repo]). Everything
+else below is open.
 
 ## Recommended build order — fastest path to full-system coverage
 

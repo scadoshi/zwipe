@@ -5,9 +5,10 @@ in slices.**
 
 ## ▶ Resume here (next session)
 
-**Done:** slices 1–3 + the Slice-4 **HTTP half** → **17 integration tests green**
+**Done:** slices 1–3 + Slice 4 (HTTP + core [repo]) → **21 integration tests green**
 (`tests/auth_flows.rs` ×3, `tests/deck_flows.rs` ×5, `tests/card_serving.rs` ×6,
-`tests/deck_cards.rs` ×3) + CI gating live (see below) + a 404-IDOR server fix.
+`tests/deck_cards.rs` ×3, `tests/repo_card.rs` ×4) + CI gating live (see below) + a
+404-IDOR server fix.
 
 **The card fixture builder is BUILT** (`tests/common/mod.rs`): `card(name)` (chainable
 setters: `.mono/.colors/.color_identity/.cmc/.type_line/.mana_cost/.power/.toughness/
@@ -20,15 +21,24 @@ Rows round-trip cleanly through `DatabaseScryfallData::try_from`.
 **Run the tests:** `set -a; source zerver/.env; set +a; cargo test -p zerver`
 (CI parity: prepend `SQLX_OFFLINE=true`). Needs local Postgres up.
 
-**Next task — finish Slice 4 (the [repo] half):** with the fixture in hand, write
-`tests/repo_card.rs` (construct `Postgres { pool }`, call repo methods directly, no
-router) for the highest-*regression* surface — synergy ordering (scored vs
-UNSCORED_ANCHOR), **band-shuffle determinism + the NULL-`oracle_id` regression**,
-and `refresh_card_signal_rollup` math (net = added + 0.5·maybed − removed over shown;
-seed `commander_card_signal` rows then `refresh_card_views`). See `coverage.md`
-Slice 3 for the case list. Also still open at HTTP level: deck-aware **serve**
-(suppressed/deck-card exclusion, land auto-stop) and `[repo]` clone card-copy +
-suppression eviction. Then Slice 5 (metrics/user/health) and Slice 6 (auth edges).
+**`tests/repo_card.rs` is BUILT** (construct `Postgres { pool }`, call
+`CardRepository` directly): synergy ordering (scored-desc vs UNSCORED_ANCHOR via
+`deck_id=None` = pure score, no shuffle), `exclude_oracle_ids` drop, the
+**NULL-`oracle_id` deck-aware-shuffle regression** (card survives + determinism),
+and `card_signal_rollup` math (net = Σ(added + 0.5·maybed − removed), shown = Σ shown;
+seed `commander_card_signal` then `refresh_card_views`). Key facts learned:
+`deck_id=None` → pure score order (deterministic, testable); `deck_id=Some` → banded
+shuffle (BAND_SIZE=25, so <25 cards = one band ordered by the `hashtext` shuffle,
+NOT score); `W_SIGNAL=0.15` but the signal term is 0 with no rollup rows;
+`WILDCARD_SLOTS=1`/`DEEP_POOL_FLOOR=500` so small sets get no wildcard splice.
+
+**Next task — Slice 5 (metrics + user + health):** usage-batch ingest → `user_week_signal`
+/ `user_week_facet_signal` rows + deck_skips ride-along, `POST /api/metrics/anonymous`
+(3 kinds accepted, garbage rejected, no auth), change username/email/password (password
+re-auth), delete-account cascade, health endpoint, last-active debounce. Then Slice 6
+(auth edges via `FakeEmailSender` token). **Still open in Slice 4** (lower priority,
+grab if convenient): deck-aware serve **suppression** exclusion + land-target auto-stop
+(HTTP), band-boundary/different-deck shuffle + clone card-copy ([repo]).
 
 **Harness map:** `zerver/tests/common/mod.rs` = `TestApp` (real router via
 `build_router`, driven with `tower::oneshot`), `FakeEmailSender`, the card fixtures
@@ -78,13 +88,13 @@ per-slice case list + the endpoint coverage map = the full-system target):
   resolved+unresolved). Added harness helpers `put`/`delete`/`verify_email`. Still
   open at repo level: **[repo]** clone card-copy + suppression eviction (folded into
   the Slice-4 [repo] file).
-- [~] **Slice 4 — card serving + repo** (highest *regression* risk). **HTTP half DONE
-  2026-07-09** (`tests/card_serving.rs`, 6 tests: get-by-id round-trip, 404, name /
-  cmc-range / color-identity-within search, search-requires-auth) + the `card(...)` /
-  `seed_cards(...)` **fixture helper is built** (`tests/common/mod.rs`). **Remaining:**
-  deck-aware serve (suppressed/deck-card exclusion, land auto-stop) + **[repo]**
-  synergy ordering, band-shuffle determinism + the NULL-`oracle_id` regression, rollup
-  math (`tests/repo_card.rs`, not yet created).
+- [x] **Slice 4 — card serving + repo** (highest *regression* risk) — **DONE
+  2026-07-09** for the core surface. `tests/card_serving.rs` (6: get-by-id round-trip,
+  404, name / cmc-range / color-identity search, requires-auth) + the `card(...)` /
+  `seed_cards(...)` **fixture helper** + `tests/repo_card.rs` (4: synergy ordering,
+  exclude-oracle, NULL-`oracle_id` regression, rollup math). **Deferred (optional):**
+  deck-aware serve suppression exclusion + land auto-stop (HTTP), band-boundary /
+  different-deck shuffle + clone card-copy ([repo]).
 - [ ] **Slice 5 — metrics + user + health**: usage-batch ingest + signal rows,
   anonymous events, change username/email/password (re-auth), delete-cascade,
   health, last-active debounce.
