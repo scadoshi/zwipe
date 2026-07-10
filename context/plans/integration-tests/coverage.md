@@ -28,6 +28,9 @@ plus `card()`/`seed_cards()` in `tests/common/mod.rs`). **All 6 slices done —
   delete-account cascade.
 - `tests/auth_edges.rs` — verify-email + password-reset via captured `FakeEmailSender`
   token, garbage token rejected, refresh single-use rotation, login lockout 429.
+- `tests/card_filter_parity.rs` — **SQL adapter vs `CardCriteria::matches` parity**
+  over 55 criteria (every predicate branch bar the 3 server-only pool flags); caught
+  the rarity long-word-vs-short-code fixture bug. (todo "SQL-vs-predicate parity test".)
 
 **Core complete.** Optional backlog (none blocking): deck-aware serve suppression
 exclusion + land auto-stop, band-boundary shuffle + clone card-copy ([repo]),
