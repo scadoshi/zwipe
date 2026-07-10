@@ -1,0 +1,48 @@
+name: test
+
+# Runs the server integration + unit tests on push to main and on every PR.
+# Deliberately NOT a gate on the deploy workflows (server patches keep their
+# ship-in-minutes latency); this is a signal. Add a branch-protection status
+# check for `test` later only if a red main ever burns us.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16 # match the VPS major version
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      # Compile the query!/query_as! macros against the committed .sqlx offline
+      # data, NOT the (empty, un-migrated) service DB — otherwise compile-time
+      # validation fails on "relation does not exist". #[sqlx::test] ignores this
+      # (compile-time only) and still uses DATABASE_URL at runtime to create +
+      # migrate a fresh database per test. .sqlx drift is already guarded by the
+      # deploy workflow's `cargo sqlx prepare --check`.
+      SQLX_OFFLINE: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      # -p zwipe-core -p zerver, never --workspace: on a headless Linux runner,
+      # compiling zwiper pulls Dioxus desktop's GTK stack (glib-sys) and fails.
+      # zwiper/zite tests stay a local `cargo test --workspace` concern on macOS.
+      - name: Test
+        run: cargo test -p zwipe-core -p zerver

@@ -16,6 +16,17 @@ Triggers automatically on push to `main` when any of these paths change:
 
 Also has `workflow_dispatch` for manual runs from the GitHub Actions tab.
 
+### Test workflow (separate, non-gating)
+
+`.github/workflows/test.yml` runs the server test suite on push to `main` and on
+every PR: a `postgres:16` service container + `cargo test -p zwipe-core -p zerver`
+(never `--workspace` — zwiper's Dioxus/GTK stack won't build headless). It uses
+`SQLX_OFFLINE=true` to compile against the committed `.sqlx`, while `#[sqlx::test]`
+creates and migrates a fresh DB per test at runtime via `DATABASE_URL`. It does
+**not** gate deploys — a red `test` run won't block a `deploy-zerver` run (by
+design; revisit if a red main ever ships a regression). Plan/design:
+[`../../plans/integration-tests/`](../../plans/integration-tests/overview.md).
+
 ---
 
 ## What the Workflow Does
