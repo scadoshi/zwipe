@@ -33,7 +33,7 @@ test via `DATABASE_URL`) runs in two places:
   PR-only (no double-run). `workflow_dispatch` still lets you force a deploy (it runs
   after the test job).
 
-Plan/design: [`../../plans/integration-tests/`](../../plans/integration-tests/overview.md).
+Plan/design: [`../../archive/integration-tests/`](../../archive/integration-tests/overview.md).
 
 ---
 

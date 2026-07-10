@@ -4,6 +4,28 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
+## Latest — 2026-07-10
+
+- **Integration test suite complete** (`archive/integration-tests/`): grew from
+  the initial 8 to **42 tests across 13 files + 1 on-demand live test**, all through
+  the real Axum router on a fresh `#[sqlx::test]` DB. Covers auth flows + edges
+  (email-token verify/reset, refresh single-use, lockout), deck lifecycle + card
+  ops + suppression serve + clone-copy, card serving/search + metadata + printings,
+  the `[repo]` SQL logic (synergy ordering, NULL-`oracle_id` shuffle regression,
+  `card_signal_rollup` math), metrics ingest, user mutations + delete-cascade, and
+  health. Foundation: `card()`/`seed_cards()` fixture, `FakeEmailSender`, per-app
+  fake IPs for the governor. All CI-gated (deploys `needs:` the test job).
+- **SQL-vs-predicate parity test** (`card_filter_parity.rs`): asserts the backend
+  SQL adapter and the client `CardCriteria::matches` agree across **55 criteria** —
+  the guard against the "field wired everywhere except the frontend predicate" bug
+  class (commander/legality, 1.0.2). Caught a fixture-accuracy bug on first run
+  (rarity long-word vs production short-code).
+- **Live Archidekt contract test** (`archidekt_import.rs`, `#[ignore]`d): fetch +
+  parse a real permanent deck to guard the undocumented API shape; verified 83/83
+  entries resolved. Runs on demand (`-- --ignored`), never in CI.
+
+---
+
 ## Latest — 2026-07-09
 
 - **1.5.0 shipped to both stores** (edge back-swipe nav, per-screen filter
@@ -18,12 +40,12 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 - **Session-platform tracking** (built → tested → deployed): each session's
   refresh-token row records the client platform (ios/android/desktop/web); refresh
   carries it forward. Additive, server-first. Query users by platform for comms.
-- **Integration test suite stood up from zero** (`plans/integration-tests/`):
-  `#[sqlx::test]` harness driving the real router via `tower::oneshot`; **8 tests**
-  green (auth flows + deck lifecycle). **CI now gates deploys** — a `test` job in
-  each deploy workflow (`needs:`), `Test` on PRs; GitHub Actions bumped to Node-24.
-  Server-side security fix along the way: another user's deck now returns **404,
-  not 403** (no existence leak). IN PROGRESS — next is card-serving coverage.
+- **Integration test suite stood up from zero**: `#[sqlx::test]` harness driving the
+  real router via `tower::oneshot`; **8 tests** green (auth flows + deck lifecycle).
+  **CI now gates deploys** — a `test` job in each deploy workflow (`needs:`), `Test`
+  on PRs; GitHub Actions bumped to Node-24. Server-side security fix along the way:
+  another user's deck now returns **404, not 403** (no existence leak). (Completed
+  2026-07-10 — see above.)
 
 ---
 
