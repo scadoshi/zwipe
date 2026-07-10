@@ -201,7 +201,7 @@ Phases 1+2 shipped (see archive). ~73% classification rate today; refinement tar
 
 ## Testing
 
-- [ ] **Integration tests — PLANNED 2026-07-06, full plan at [`../plans/integration-tests/`](../plans/integration-tests/overview.md).** External audit confirmed the gap: zero coverage on sqlx repos, HTTP handlers, and most domain services; no CI test run at all. Decisions settled: `#[sqlx::test]` harness (fresh DB per test), both HTTP-level and repo-level coverage, plus a GitHub Actions test workflow (non-gating on deploy). Build in slices: harness + auth flow first, then deck lifecycle, then card serving (replaces the throwaway band-shuffle dev harness with permanent regression tests).
+- [~] **Integration tests — IN PROGRESS (started 2026-07-09).** `#[sqlx::test]` harness driving the real Axum router via `tower::oneshot`. **Done: slices 1–3** — harness + auth flows (3 tests), CI (a gating `test` job in each deploy `needs:`, `Test` PR-only), deck-profile lifecycle (5 tests) + a 404-IDOR server fix; **8 integration tests green**. **Next: Slice 4** — build the `seed_cards`/`card()` fixture (wide `cards` schema), then deck-**card** ops + card serving/search/signal. Full resume context (how to run, harness map, gotchas, remaining slices + endpoint coverage map) at [`../plans/integration-tests/overview.md`](../plans/integration-tests/overview.md) → "▶ Resume here".
 
 ---
 
@@ -209,7 +209,7 @@ Phases 1+2 shipped (see archive). ~73% classification rate today; refinement tar
 
 - **sqlx 0.8 → 0.9** — major bump. 0.9 has breaking changes around type mappings and connection options. Needs a dedicated branch where the integration tests run against a real Postgres before merge.
 - **keyring 3 → 4** (zwiper) — major bump. Used for iOS Keychain on `apple-native`. Needs on-device test before merging; don't ship blind.
-- **GitHub Actions Node.js 20 deprecation** — forced to Node.js 24 on June 2, 2026. All workflows already on latest major versions. No action needed — monitor for v5 releases.
+- [x] **GitHub Actions Node.js 20 deprecation — DONE 2026-07-09.** Bumped the offenders to Node-24 majors: `checkout@v4→v7`, `cache@v4→v6`, `deploy-pages@v4→v5`, `upload-pages-artifact@v3→v5` (its internal `upload-artifact` was the last transitive offender). Verified live: all three workflow runs now annotation-free.
 - **Pin other git deps** (optional follow-up) — `dioxus-primitives` is now pinned to rev `02801f27` (commit `b40d2019`). Audit remaining workspace deps: `grep "git = " **/Cargo.toml`. Currently no other floating git deps, but worth a periodic check.
 
 ---
