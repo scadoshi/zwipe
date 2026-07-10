@@ -10,6 +10,10 @@ workspace = true
 default = ["zerver"]
 zerver = ["axum", "axum-extra", "tower", "tower-http", "tower_governor", "tokio", "sqlx", "sqlx-macros", "strum", "jsonwebtoken", "argon2", "urlencoding", "derive_more", "itertools", "dashmap"]
 
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }   # ServiceExt::oneshot
+http-body-util = "0.1"                             # collect response bodies
+
 [lib]
 name = "zwipe"
 path = "src/lib/lib.rs"

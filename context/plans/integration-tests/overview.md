@@ -5,8 +5,10 @@ in slices.**
 
 ## Progress tracker (update as slices land)
 
-- [ ] **Slice 1 — harness + auth flow** (`harness.md`): dev-deps, `build_router`
-  extraction, `FakeEmailSender`, `TestApp`, first `tests/auth_flows.rs`.
+- [x] **Slice 1 — harness + auth flow** (`harness.md`): **DONE 2026-07-09.** dev-deps,
+  `build_router` extraction, `FakeEmailSender`, `TestApp` (oneshot + governor
+  ConnectInfo), `tests/auth_flows.rs` — 3 tests green (register → authed GET → login
+  → refresh; wrong-password 401; no-token 401). Run: `set -a; source zerver/.env; set +a; cargo test -p zerver`.
 - [ ] **Slice 2 — CI workflow** (`ci.md`): GitHub Actions + Postgres service.
 - [ ] **Slice 3 — deck lifecycle** (`coverage.md`): create/edit/get/delete, cards add/remove.
 - [ ] **Slice 4 — card serving** (`coverage.md`): search, filters, color-identity gating, ordering (needs card fixtures).
