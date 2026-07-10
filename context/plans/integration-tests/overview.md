@@ -5,27 +5,40 @@ in slices.**
 
 ## ▶ Resume here (next session)
 
-**Done:** slices 1–3 → **8 integration tests green** (`tests/auth_flows.rs` ×3,
-`tests/deck_flows.rs` ×5) + CI gating live (see below) + a 404-IDOR server fix.
+**Done:** slices 1–3 + the Slice-4 **HTTP half** → **17 integration tests green**
+(`tests/auth_flows.rs` ×3, `tests/deck_flows.rs` ×5, `tests/card_serving.rs` ×6,
+`tests/deck_cards.rs` ×3) + CI gating live (see below) + a 404-IDOR server fix.
+
+**The card fixture builder is BUILT** (`tests/common/mod.rs`): `card(name)` (chainable
+setters: `.mono/.colors/.color_identity/.cmc/.type_line/.mana_cost/.power/.toughness/
+.keywords/.produced_mana/.rarity/.edhrec_rank/.usd/.set/.legal/.commander_legal/
+.oracle/.with_ids`, plus `.id()/.oracle_id()/.name()` accessors) + `seed_cards(pool,
+&[CardFixture])` (raw unchecked INSERT of all NOT NULL cols + the `card_profiles`
+mate, then REFRESHes `latest_cards` + `card_signal_rollup`) + `refresh_card_views`.
+Rows round-trip cleanly through `DatabaseScryfallData::try_from`.
 
 **Run the tests:** `set -a; source zerver/.env; set +a; cargo test -p zerver`
 (CI parity: prepend `SQLX_OFFLINE=true`). Needs local Postgres up.
 
-**Next task — Slice 4:** first build the **card fixture helper** in
-`tests/common/mod.rs` — `card(name) -> CardFixture` (builder over the wide `cards`
-schema) + `seed_cards(pool, Vec<CardFixture>)` that INSERTs + REFRESHes the
-`latest_cards` / `card_signal_rollup` matviews (see `harness.md` §5). That helper
-unblocks BOTH the deferred deck-**card** ops (add/qty/remove/import via
-`POST/PUT/DELETE /api/deck/{id}/card/...`) AND all of card serving/search/signal.
+**Next task — finish Slice 4 (the [repo] half):** with the fixture in hand, write
+`tests/repo_card.rs` (construct `Postgres { pool }`, call repo methods directly, no
+router) for the highest-*regression* surface — synergy ordering (scored vs
+UNSCORED_ANCHOR), **band-shuffle determinism + the NULL-`oracle_id` regression**,
+and `refresh_card_signal_rollup` math (net = added + 0.5·maybed − removed over shown;
+seed `commander_card_signal` rows then `refresh_card_views`). See `coverage.md`
+Slice 3 for the case list. Also still open at HTTP level: deck-aware **serve**
+(suppressed/deck-card exclusion, land auto-stop) and `[repo]` clone card-copy +
+suppression eviction. Then Slice 5 (metrics/user/health) and Slice 6 (auth edges).
 
 **Harness map:** `zerver/tests/common/mod.rs` = `TestApp` (real router via
-`build_router`, driven with `tower::oneshot`), `FakeEmailSender`, and helpers
-`register`/`verify_email`/`post`/`get`/`put`/`delete`. New areas go in
-`tests/<area>.rs` starting with `mod common;` + `use common::TestApp;`.
+`build_router`, driven with `tower::oneshot`), `FakeEmailSender`, the card fixtures
+above, and helpers `register`/`verify_email`/`post`/`get`/`put`/`delete`. New areas
+go in `tests/<area>.rs` starting with `mod common;` + `use common::{TestApp, ...};`.
 
 **Gotchas already learned (save time):**
-- Collection route is `POST/GET /api/deck` — **no trailing slash** (the `/{id}`
-  paths are fine).
+- Collection route is `POST/GET /api/deck` **and** deck-card create
+  `POST /api/deck/{id}/card` — **no trailing slash** (the nested `/` leaf resolves
+  without one; the `/{id}` and `/{sid}` paths are fine).
 - Deck **update** JSON: the `Opdate` fields `commander_id`, `partner_commander_id`,
   `background_id`, `signature_spell_id`, `format` lack `#[serde(default)]`, so they
   must be present — send the string `"Unchanged"` for each.
@@ -33,6 +46,13 @@ unblocks BOTH the deferred deck-**card** ops (add/qty/remove/import via
   `app.verify_email(&uid)` to lift to 20 / 250.
 - In harness helpers use **unchecked `sqlx::query(...)`** (not the `query!` macro)
   so test-only queries don't need `.sqlx` offline entries.
+- `latest_cards` / `card_signal_rollup` are created `WITH NO DATA` — **must be
+  refreshed before any card query even with zero rows** (`seed_cards` does this;
+  `seed_cards(&pool, &[])` populates the empty views so a 404-lookup test works).
+- Card wire shapes: `GET /api/card/{id}` → `{card_profile, scryfall_data{...}}`;
+  `colors`/`color_identity` serialize as short-name arrays (`["R"]`); `rarity` is
+  lowercase long name (`"rare"`); `update_deck_card.update_quantity` is a **delta**,
+  not an absolute; `DeckCard.board` serializes lowercase (`"deck"`/`"maybeboard"`).
 
 ## Progress tracker (update as slices land)
 
@@ -52,16 +72,19 @@ unblocks BOTH the deferred deck-**card** ops (add/qty/remove/import via
 Remaining slices in **recommended build order** (see `coverage.md` for the
 per-slice case list + the endpoint coverage map = the full-system target):
 
-- [~] **Slice 3 — deck lifecycle** — **profile half DONE 2026-07-09** (`tests/deck_flows.rs`,
-  5 tests: profile CRUD, unverified cap → verify unlock, dup-name reject, cross-user
-  isolation, clone). **Remaining (moved into Slice 4 with the fixture):** deck **card**
-  ops (add/qty/remove/import) + **[repo]** clone card-copy + suppressions — all need
-  real `cards` rows. Added harness helpers `put`/`delete`/`verify_email`.
-- [ ] **Slice 4 — card serving + repo** (highest *regression* risk). Search/filters/
-  color-identity gating, deck-aware serve (suppressed/deck-card exclusion, land
-  auto-stop); **[repo]** synergy ordering, band-shuffle determinism + the NULL-
-  `oracle_id` regression, rollup math. **Prereq: build the `card(...)`/`seed_cards(...)`
-  fixture helper (`harness.md` §5) first** — the only real scaffolding left.
+- [x] **Slice 3 — deck lifecycle** — **DONE 2026-07-09.** Profile half in
+  `tests/deck_flows.rs` (5 tests) + the deferred deck-**card** ops in
+  `tests/deck_cards.rs` (3 tests: add/bump/remove, maybeboard placement, text import
+  resolved+unresolved). Added harness helpers `put`/`delete`/`verify_email`. Still
+  open at repo level: **[repo]** clone card-copy + suppression eviction (folded into
+  the Slice-4 [repo] file).
+- [~] **Slice 4 — card serving + repo** (highest *regression* risk). **HTTP half DONE
+  2026-07-09** (`tests/card_serving.rs`, 6 tests: get-by-id round-trip, 404, name /
+  cmc-range / color-identity-within search, search-requires-auth) + the `card(...)` /
+  `seed_cards(...)` **fixture helper is built** (`tests/common/mod.rs`). **Remaining:**
+  deck-aware serve (suppressed/deck-card exclusion, land auto-stop) + **[repo]**
+  synergy ordering, band-shuffle determinism + the NULL-`oracle_id` regression, rollup
+  math (`tests/repo_card.rs`, not yet created).
 - [ ] **Slice 5 — metrics + user + health**: usage-batch ingest + signal rows,
   anonymous events, change username/email/password (re-auth), delete-cascade,
   health, last-active debounce.

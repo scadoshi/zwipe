@@ -7,12 +7,22 @@ marked **[repo]**. Every slice ends green with `cargo test -p zerver`.
 
 ## Status (2026-07-09)
 
-**Harness + CI shipped** (overview slices 1–2). **Covered so far:**
-`tests/auth_flows.rs` (register → authed `GET /api/user` → login → refresh, plus
-no-token/wrong-password 401s) and `tests/deck_flows.rs` (profile CRUD, unverified
-deck cap → verify unlock, duplicate-name reject, cross-user isolation, clone).
-Deck **card** ops + card serving are next (need the fixture builder). Everything
-else below is open.
+**Harness + CI shipped + the card fixture builder is built** (overview slices 1–2,
+plus `card()`/`seed_cards()` in `tests/common/mod.rs`). **17 integration tests green.
+Covered so far:**
+- `tests/auth_flows.rs` — register → authed `GET /api/user` → login → refresh, plus
+  no-token/wrong-password 401s.
+- `tests/deck_flows.rs` — profile CRUD, unverified deck cap → verify unlock,
+  duplicate-name reject, cross-user isolation (404), clone.
+- `tests/deck_cards.rs` — add/bump(delta)/remove, maybeboard placement, text import
+  (resolved + unresolved).
+- `tests/card_serving.rs` — get-by-id round-trip, missing→404, search by
+  name_contains / cmc_range / color_identity_within, search-requires-auth.
+
+**Next:** the [repo]-level card tests (`tests/repo_card.rs`) — synergy ordering,
+band-shuffle determinism + the NULL-`oracle_id` regression, rollup math — plus
+deck-aware serve at HTTP level. Then Slice 4 (metrics/user/health) and the auth
+edges. Everything else below is open.
 
 ## Recommended build order — fastest path to full-system coverage
 
@@ -44,10 +54,14 @@ Track full coverage against this. ✅ = has an integration test; ⬜ = open.
 **User** — ✅ `GET /api/user` · ⬜ `GET /api/user/preferences`, change
 `username`/`email`/`password`, `DELETE` account, `/api/user/hint`
 **Deck** — ✅ `GET/POST /api/deck`, `GET/PUT/DELETE /api/deck/{id}`,
-`profile/{id}`, `clone` (`tests/deck_flows.rs`) · ⬜ cards add/remove/import,
-`import/archidekt`, `share`, `tokens`, public `GET /api/deck/{token}`
-**Card** — ⬜ all: `search`, `{scryfall_data_id}`, `{oracle_id}/printings`,
-`artists`, `types`, `keywords`, `oracle-words`, `languages`, `sets`
+`profile/{id}`, `clone` (`tests/deck_flows.rs`), `POST/PUT/DELETE
+/api/deck/{id}/card`, `card/import` (`tests/deck_cards.rs`) · ⬜ deck-aware
+`card/search` (serve), `import/archidekt`, `share`, `tokens`, public
+`GET /api/deck/{token}`
+**Card** — ✅ `POST /api/card/search` (name/cmc/color-identity),
+`GET /api/card/{scryfall_data_id}` (`tests/card_serving.rs`) · ⬜
+`{oracle_id}/printings`, `artists`, `types`, `keywords`, `oracle-words`,
+`languages`, `sets`; **[repo]** synergy/band-shuffle/rollup
 **Metrics** — ⬜ all: usage batch, `anonymous`, `stats`
 **Health / client** — ⬜ `health`, `/server`, `/database`, `min-version`
 
