@@ -1,14 +1,16 @@
 # Integration tests — cover the untested server half
 
-**Status: IN PROGRESS (started 2026-07-09). Server-only, no deploy risk, built
-in slices.**
+**Status: CORE COMPLETE (2026-07-09). All 6 slices shipped, 36 integration tests
+green + CI gating. Server-only, no deploy risk. Optional backlog remains (below).**
 
 ## ▶ Resume here (next session)
 
-**Done:** slices 1–5 → **31 integration tests green** (`tests/auth_flows.rs` ×3,
-`tests/deck_flows.rs` ×5, `tests/card_serving.rs` ×6, `tests/deck_cards.rs` ×3,
-`tests/repo_card.rs` ×4, `tests/health.rs` ×1, `tests/metrics_flows.rs` ×4,
-`tests/user_flows.rs` ×5) + CI gating live (see below) + a 404-IDOR server fix.
+**Done: all 6 slices → 36 integration tests green** (`tests/auth_flows.rs` ×3,
+`tests/auth_edges.rs` ×5, `tests/deck_flows.rs` ×5, `tests/card_serving.rs` ×6,
+`tests/deck_cards.rs` ×3, `tests/repo_card.rs` ×4, `tests/health.rs` ×1,
+`tests/metrics_flows.rs` ×4, `tests/user_flows.rs` ×5) + CI gating live (see below)
++ a 404-IDOR server fix. The core system is covered end to end; what remains is a
+short **optional** backlog (below), not a blocking gap.
 
 **The card fixture builder is BUILT** (`tests/common/mod.rs`): `card(name)` (chainable
 setters: `.mono/.colors/.color_identity/.cmc/.type_line/.mana_cost/.power/.toughness/
@@ -32,22 +34,27 @@ shuffle (BAND_SIZE=25, so <25 cards = one band ordered by the `hashtext` shuffle
 NOT score); `W_SIGNAL=0.15` but the signal term is 0 with no rollup rows;
 `WILDCARD_SLOTS=1`/`DEEP_POOL_FLOOR=500` so small sets get no wildcard splice.
 
-**Slice 5 is BUILT** (`tests/health.rs`, `tests/metrics_flows.rs`, `tests/user_flows.rs`):
-health/server/database/root all 200; usage batch folds `signals` into
-`commander_card_signal` (upsert accumulates across flushes); `POST /api/metrics/anonymous`
-accepts the 3 snake_case kinds with no auth + garbage kind → 422; change username / email /
-password all re-auth on the current password (wrong pw → 401, new pw logs in, old fails);
-delete-account cascades decks (FK `ON DELETE CASCADE`). Added harness helper `delete_json`
-(DELETE with a body, for `delete-user`). Governor note: sensitive routes are burst-2 then
-1/30min keyed by **user id**, so each account-mutation test uses its own user.
+**Slice 6 is BUILT** (`tests/auth_edges.rs`): verify-email + password-reset driven
+through the captured `FakeEmailSender` token (harness helper `emails.last_token(segment)`
+pulls the raw token out of the `{base}/verify/{raw}` / `/reset/{raw}` link), garbage
+verify token rejected, refresh-token single-use rotation (2nd use of a rotated token
+401s), and the login rate-limit lockout (burst 5 / 6s per IP → 429, correct creds stay
+locked while limited). Governor keys login on peer IP (`CfConnectingIpKeyExtractor` falls
+back to `ConnectInfo` when no `CF-Connecting-IP` header), so one `TestApp`'s fake IP
+accumulates across rapid attempts.
 
-**Next task — Slice 6 (remaining auth edges):** verify-email + password-reset driven via
-the captured `FakeEmailSender` token (`app.emails.last_body()` → extract the URL token),
-refresh-rotation single-use (2nd use of an old refresh token 401s), lockout 429 after N
-bad passwords. Lower priority — auth already has strong unit coverage; these are the
-gaps units can't reach. **Also still open from Slice 4** (optional): deck-aware serve
-**suppression** exclusion + land-target auto-stop (HTTP), band-boundary/different-deck
-shuffle + clone card-copy ([repo]).
+**The plan's core is complete.** Optional backlog if more coverage is wanted later
+(none blocking):
+- **Slice 4 leftovers:** deck-aware serve **suppression** exclusion + land-target
+  auto-stop (HTTP), band-boundary/different-deck shuffle + clone card-copy ([repo]).
+- **Slice 5 leftovers:** `user_week_signal`/facet rows from usage, last-active debounce
+  (`users.last_active_at`), `GET /api/user/preferences` + `/hint`.
+- **Card metadata endpoints:** `get_printings`, `artists`, `types`, `keywords`,
+  `oracle-words`, `languages`, `sets` (thin DISTINCT queries).
+- **Deck extras:** `share`/`tokens` + public `GET /api/share/deck/{token}`,
+  `import/archidekt`, deck-aware `card/search`.
+- **Future features land WITH tests** (share tokens, MVPs vesting, wildcard slot) —
+  the harness is ready; their plan docs specify the cases.
 
 **Harness map:** `zerver/tests/common/mod.rs` = `TestApp` (real router via
 `build_router`, driven with `tower::oneshot`), `FakeEmailSender`, the card fixtures
@@ -110,10 +117,10 @@ per-slice case list + the endpoint coverage map = the full-system target):
   username/email/password re-auth + wrong-pw reject, delete-cascade). Harness gained
   `delete_json`. Not covered (optional follow-up): `user_week_signal`/facet rows,
   last-active debounce, preferences/hint endpoints.
-- [ ] **Slice 6 — remaining auth edges**: verify-email + password-reset via the
-  captured `FakeEmailSender` token, refresh single-use rotation, lockout 429.
-  Lower priority — auth already has strong unit coverage. (IDOR A-hits-B already
-  covered in `deck_flows.rs`.)
+- [x] **Slice 6 — remaining auth edges** — **DONE 2026-07-09.** `tests/auth_edges.rs`
+  (5): verify-email + password-reset via the captured `FakeEmailSender` token, garbage
+  token rejected, refresh single-use rotation, login lockout 429. Harness gained
+  `emails.last_token(segment)`. (IDOR A-hits-B already covered in `deck_flows.rs`.)
 - [ ] **Ongoing — future features land WITH tests**: share tokens, MVPs vesting,
   wildcard slot (their plan docs specify the cases; this harness is where they run).
 
