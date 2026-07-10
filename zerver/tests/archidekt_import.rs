@@ -39,16 +39,32 @@ async fn fetches_and_parses_the_real_satya_deck() {
         .await
         .expect("public deck should fetch + parse");
 
-    eprintln!("fetched {} distinct entries from Archidekt deck {DECK_ID}", cards.len());
+    eprintln!(
+        "fetched {} distinct entries from Archidekt deck {DECK_ID}",
+        cards.len()
+    );
 
     assert!(!cards.is_empty(), "a real deck should return cards");
-    assert!(cards.len() >= 10, "a real commander deck should have many cards, got {}", cards.len());
-    assert!(cards.iter().all(|c| c.quantity >= 1), "every entry has quantity >= 1");
-    assert!(cards.iter().all(|c| !c.name.is_empty()), "every entry has a name");
+    assert!(
+        cards.len() >= 10,
+        "a real commander deck should have many cards, got {}",
+        cards.len()
+    );
+    assert!(
+        cards.iter().all(|c| c.quantity >= 1),
+        "every entry has quantity >= 1"
+    );
+    assert!(
+        cards.iter().all(|c| !c.name.is_empty()),
+        "every entry has a name"
+    );
 
     // Unparseable printings become nil ids (surfaced as unresolved on import),
     // but a real, mostly-standard deck should resolve the majority.
     let resolved = cards.iter().filter(|c| !c.scryfall_id.is_nil()).count();
-    assert!(resolved > 0, "at least some printings should resolve to Scryfall ids");
+    assert!(
+        resolved > 0,
+        "at least some printings should resolve to Scryfall ids"
+    );
     eprintln!("{resolved}/{} entries resolved a Scryfall id", cards.len());
 }

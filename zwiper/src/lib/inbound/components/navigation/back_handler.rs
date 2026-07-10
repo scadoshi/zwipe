@@ -79,9 +79,12 @@ pub fn BackHandlerLayout() -> Element {
 #[cfg(all(target_os = "ios", feature = "mobile"))]
 mod ios {
     use dioxus::mobile::wry::WebViewExtIOS;
-    use objc2::rc::{Allocated, Retained};
-    use objc2::runtime::{AnyObject, NSObject};
-    use objc2::{AnyThread, DefinedClass, MainThreadMarker, class, define_class, msg_send, sel};
+    use objc2::{
+        AnyThread, DefinedClass, MainThreadMarker, class, define_class, msg_send,
+        rc::{Allocated, Retained},
+        runtime::{AnyObject, NSObject},
+        sel,
+    };
     use tokio::sync::mpsc::UnboundedSender;
 
     /// `UIGestureRecognizerStateBegan` — fire once as the pan starts, so the

@@ -2,23 +2,26 @@
 //!
 //! Defines all client-side routes and maps them to their corresponding screen components.
 
-use crate::inbound::components::navigation::back_handler::BackHandlerLayout;
-use crate::inbound::screens::{
-    auth::{forgot_password::ForgotPassword, login::Login, register::Register},
-    deck::{
-        card::{
-            add::Add as AddDeckCard, remove::Remove as RemoveDeckCard, view::View as ViewDeckCard,
+use crate::inbound::{
+    components::navigation::back_handler::BackHandlerLayout,
+    screens::{
+        auth::{forgot_password::ForgotPassword, login::Login, register::Register},
+        deck::{
+            card::{
+                add::Add as AddDeckCard, remove::Remove as RemoveDeckCard,
+                view::View as ViewDeckCard,
+            },
+            create::CreateDeck,
+            edit::EditDeck,
+            export::ExportDeck,
+            import::ImportDeck,
+            list::DeckList,
+            view::ViewDeck,
         },
-        create::CreateDeck,
-        edit::EditDeck,
-        export::ExportDeck,
-        import::ImportDeck,
-        list::DeckList,
-        view::ViewDeck,
+        home::Home,
+        legal::privacy_policy::PrivacyPolicy,
+        profile::Profile,
     },
-    home::Home,
-    legal::privacy_policy::PrivacyPolicy,
-    profile::Profile,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;

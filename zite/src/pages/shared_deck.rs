@@ -311,7 +311,10 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let mvp_cards: Vec<Card> = mvp_entries.iter().map(|e| e.card.clone()).collect();
     // A format with a signature spell is Oathbreaker: the "commander" is the
     // oathbreaker planeswalker.
-    let is_oathbreaker = deck.format.as_ref().is_some_and(|f| f.has_signature_spell());
+    let is_oathbreaker = deck
+        .format
+        .as_ref()
+        .is_some_and(|f| f.has_signature_spell());
 
     let price = mainboard_total_price(&deck.entries, PriceCurrency::Usd);
 

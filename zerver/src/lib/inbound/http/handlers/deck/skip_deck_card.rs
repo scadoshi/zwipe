@@ -20,9 +20,7 @@ impl From<SkipDeckCardError> for ApiError {
     fn from(value: SkipDeckCardError) -> Self {
         match value {
             SkipDeckCardError::Database(e) => e.log_500(),
-            SkipDeckCardError::Forbidden => {
-                Self::NotFound("deck not found".to_string())
-            }
+            SkipDeckCardError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
     }
 }

@@ -14,8 +14,7 @@ use common::{card, refresh_card_views, seed_cards};
 use serde_json::json;
 use uuid::Uuid;
 
-use zwipe::domain::card::ports::CardRepository;
-use zwipe::outbound::sqlx::postgres::Postgres;
+use zwipe::{domain::card::ports::CardRepository, outbound::sqlx::postgres::Postgres};
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 
 /// A default `CardQuery` — no criteria, no explicit sort (so the synergy /
@@ -134,7 +133,11 @@ async fn deck_aware_serve_excludes_oracle_ids(pool: sqlx::PgPool) {
         .await
         .unwrap();
     let names: Vec<&str> = served.iter().map(|s| s.name.as_str()).collect();
-    assert_eq!(names, vec!["Keeper"], "excluded oracle_id must not be served");
+    assert_eq!(
+        names,
+        vec!["Keeper"],
+        "excluded oracle_id must not be served"
+    );
 }
 
 /// Regression (2026-07-06): a card with a NULL `oracle_id` must survive the
@@ -167,8 +170,15 @@ async fn null_oracle_card_survives_deck_aware_shuffle(pool: sqlx::PgPool) {
         .unwrap();
     let names: Vec<&str> = first.iter().map(|s| s.name.as_str()).collect();
 
-    assert_eq!(first.len(), 4, "all four cards served, none dropped: {names:?}");
-    assert!(names.contains(&"Null Oracle"), "NULL-oracle card must be served: {names:?}");
+    assert_eq!(
+        first.len(),
+        4,
+        "all four cards served, none dropped: {names:?}"
+    );
+    assert!(
+        names.contains(&"Null Oracle"),
+        "NULL-oracle card must be served: {names:?}"
+    );
 
     // deterministic for a fixed (deck, day) seed
     let second = repo

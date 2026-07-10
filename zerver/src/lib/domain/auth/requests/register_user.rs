@@ -59,9 +59,9 @@ use crate::domain::auth::models::password::HashedPassword;
 use crate::domain::auth::models::password::Password;
 #[cfg(feature = "zerver")]
 use crate::domain::auth::requests::create_session::CreateSessionError;
+use thiserror::Error;
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
-use thiserror::Error;
 use zwipe_core::domain::{
     Email, InvalidEmail,
     auth::password::InvalidPassword,

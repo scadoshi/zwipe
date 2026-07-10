@@ -17,7 +17,11 @@ use serde_json::json;
 /// pool for the deck).
 async fn deck_search_names(app: &TestApp, deck_id: &str, token: &str) -> Vec<String> {
     let (status, body) = app
-        .post(&format!("/api/deck/{deck_id}/card/search"), json!({}), Some(token))
+        .post(
+            &format!("/api/deck/{deck_id}/card/search"),
+            json!({}),
+            Some(token),
+        )
         .await;
     assert_eq!(status, StatusCode::OK, "deck search: {body}");
     body.as_array()
@@ -39,15 +43,25 @@ async fn skipped_card_is_excluded_then_unskip_restores(pool: sqlx::PgPool) {
     seed_cards(&pool, &[skip_me, keep_me]).await;
 
     let (status, deck) = app
-        .post("/api/deck", json!({ "name": "Suppressor", "format": "commander" }), Some(&token))
+        .post(
+            "/api/deck",
+            json!({ "name": "Suppressor", "format": "commander" }),
+            Some(&token),
+        )
         .await;
     assert_eq!(status, StatusCode::CREATED);
     let did = deck["id"].as_str().unwrap().to_string();
 
     // both cards serve before any suppression
     let before = deck_search_names(&app, &did, &token).await;
-    assert!(before.contains(&"Skip Me".to_string()), "before: {before:?}");
-    assert!(before.contains(&"Keep Me".to_string()), "before: {before:?}");
+    assert!(
+        before.contains(&"Skip Me".to_string()),
+        "before: {before:?}"
+    );
+    assert!(
+        before.contains(&"Keep Me".to_string()),
+        "before: {before:?}"
+    );
 
     // skip the target
     let (status, _) = app
@@ -61,15 +75,25 @@ async fn skipped_card_is_excluded_then_unskip_restores(pool: sqlx::PgPool) {
 
     // it no longer serves; the other card is untouched
     let after = deck_search_names(&app, &did, &token).await;
-    assert!(!after.contains(&"Skip Me".to_string()), "skipped card must not re-serve: {after:?}");
+    assert!(
+        !after.contains(&"Skip Me".to_string()),
+        "skipped card must not re-serve: {after:?}"
+    );
     assert!(after.contains(&"Keep Me".to_string()), "after: {after:?}");
 
     // unskip restores it (Clear-skips is the escape hatch)
-    let (status, _) =
-        app.delete(&format!("/api/deck/{did}/suppressions/{skip_oracle}"), Some(&token)).await;
+    let (status, _) = app
+        .delete(
+            &format!("/api/deck/{did}/suppressions/{skip_oracle}"),
+            Some(&token),
+        )
+        .await;
     assert_eq!(status, StatusCode::NO_CONTENT, "unskip");
     let restored = deck_search_names(&app, &did, &token).await;
-    assert!(restored.contains(&"Skip Me".to_string()), "unskipped card returns: {restored:?}");
+    assert!(
+        restored.contains(&"Skip Me".to_string()),
+        "unskipped card returns: {restored:?}"
+    );
 }
 
 #[sqlx::test]
@@ -85,7 +109,11 @@ async fn clear_suppressions_restores_all(pool: sqlx::PgPool) {
     seed_cards(&pool, &[a, b]).await;
 
     let (_, deck) = app
-        .post("/api/deck", json!({ "name": "Clearable", "format": "commander" }), Some(&token))
+        .post(
+            "/api/deck",
+            json!({ "name": "Clearable", "format": "commander" }),
+            Some(&token),
+        )
         .await;
     let did = deck["id"].as_str().unwrap().to_string();
 
@@ -99,13 +127,22 @@ async fn clear_suppressions_restores_all(pool: sqlx::PgPool) {
             .await;
         assert_eq!(status, StatusCode::NO_CONTENT);
     }
-    assert!(deck_search_names(&app, &did, &token).await.is_empty(), "both suppressed → empty pool");
+    assert!(
+        deck_search_names(&app, &did, &token).await.is_empty(),
+        "both suppressed → empty pool"
+    );
 
     // clear reports the count removed and restores the pool
-    let (status, cleared) = app.delete(&format!("/api/deck/{did}/suppressions"), Some(&token)).await;
+    let (status, cleared) = app
+        .delete(&format!("/api/deck/{did}/suppressions"), Some(&token))
+        .await;
     assert_eq!(status, StatusCode::OK, "clear: {cleared}");
     assert_eq!(cleared["cleared"], 2, "two suppressions cleared");
 
     let restored = deck_search_names(&app, &did, &token).await;
-    assert_eq!(restored.len(), 2, "all cards serve again after clear: {restored:?}");
+    assert_eq!(
+        restored.len(),
+        2,
+        "all cards serve again after clear: {restored:?}"
+    );
 }

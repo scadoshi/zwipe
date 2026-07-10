@@ -35,9 +35,7 @@ impl From<UpdateDeckProfileError> for ApiError {
             UpdateDeckProfileError::GetDeckProfileError(e) => ApiError::from(e),
             UpdateDeckProfileError::DeckFromDb(e) => e.log_500(),
             UpdateDeckProfileError::Database(e) => e.log_500(),
-            UpdateDeckProfileError::Forbidden => {
-                Self::NotFound("deck not found".to_string())
-            }
+            UpdateDeckProfileError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
     }
 }

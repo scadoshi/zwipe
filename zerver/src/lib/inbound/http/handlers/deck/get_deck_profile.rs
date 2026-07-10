@@ -24,9 +24,7 @@ impl From<GetDeckProfileError> for ApiError {
         match value {
             GetDeckProfileError::Database(e) => e.log_500(),
             GetDeckProfileError::DeckProfileFromDb(e) => e.log_500(),
-            GetDeckProfileError::Forbidden => {
-                Self::NotFound("deck not found".to_string())
-            }
+            GetDeckProfileError::Forbidden => Self::NotFound("deck not found".to_string()),
             GetDeckProfileError::NotFound => Self::NotFound("deck not found".to_string()),
         }
     }
