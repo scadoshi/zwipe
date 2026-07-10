@@ -14,7 +14,10 @@ in slices.**
   `SQLX_OFFLINE=true` for compile (the plan's no-offline note was wrong — the service DB
   is empty, so macro validation needs the committed `.sqlx`; `#[sqlx::test]` still uses
   `DATABASE_URL` at runtime). Exact command validated locally: 108 + 3 + 358 tests green.
-  Non-gating on deploy.
+  **Gating (owner call 2026-07-09):** `Test` runs on PRs; deploy-zerver + deploy-zite each
+  got an inline `test` job the deploy `needs:` (keeps path filters + blocks a red deploy;
+  GitHub can't make a push-triggered workflow wait on a separate one). Node-24 action bumps
+  (checkout@v7, cache@v6, deploy-pages@v5) rode along.
 - [ ] **Slice 3 — deck lifecycle** (`coverage.md`): create/edit/get/delete, cards add/remove.
 - [ ] **Slice 4 — card serving** (`coverage.md`): search, filters, color-identity gating, ordering (needs card fixtures).
 - [ ] **Slice 5 — repo-level** (`coverage.md`): clone, suppressions, band shuffle, signal rollup.
