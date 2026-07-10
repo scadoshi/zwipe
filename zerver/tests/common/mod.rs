@@ -9,17 +9,20 @@
 #![allow(clippy::unwrap_used, clippy::indexing_slicing, dead_code)]
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use axum::body::Body;
 use axum::extract::ConnectInfo;
 use axum::http::{Method, Request, StatusCode, header};
+use chrono::NaiveDate;
 use dashmap::DashMap;
 use http_body_util::BodyExt;
-use serde_json::Value;
-use sqlx::PgPool;
+use serde_json::{Value, json};
+use sqlx::types::Json;
+use sqlx::{PgPool, QueryBuilder};
 use tower::ServiceExt; // oneshot
+use uuid::Uuid;
 
 use zwipe::domain::auth::models::access_token::JwtSecret;
 use zwipe::domain::email::models::{SendEmail, SendEmailError};
@@ -83,7 +86,7 @@ impl TestApp {
         let card_service = card::services::Service::new(db.clone());
         let deck_service = deck::services::Service::new(db.clone(), db.clone());
         let metrics_service: Arc<dyn metrics::ports::ErasedMetricsService> =
-            Arc::new(metrics::services::Service::new(db.clone()));
+            Arc::new(metrics::services::Service::new(db));
 
         let state = AppState {
             auth_service: Arc::new(auth_service),
@@ -184,4 +187,299 @@ impl TestApp {
             v["user"]["id"].as_str().unwrap().to_string(),
         )
     }
+}
+
+// =====================================================================
+//  Card fixtures
+// =====================================================================
+//
+// `cards` (the `scryfall_data` table) is a ~90-column wire mirror of the
+// Scryfall API with ~35 NOT NULL columns and no domain `Default`. Building a
+// full `ScryfallData` per test would drown the intent, so `card(name)` is a
+// small builder over only the fields search / serve / ordering assert on;
+// everything else gets a realistic constant. `seed_cards` writes the row plus
+// its required `card_profiles` mate (the `latest_cards` view JOINs it) and
+// refreshes both materialized views the migrations create empty.
+//
+// The raw INSERT is an unchecked `sqlx` query on purpose — test-only columns
+// stay out of the committed `.sqlx` offline data. The defaults are chosen so
+// every row round-trips back through `DatabaseScryfallData::try_from`: colors
+// are WUBRG short names, rarity is a valid variant, and the JSONB columns
+// deserialize into `Legalities` / `Prices` (both all-`Option`, so `{}` works).
+
+// Distinct, stable ids in allocation order — no `Uuid::new_v4()` (feature) and
+// no `Math.random`-style nondeterminism, so ordering assertions are repeatable.
+static CARD_SEQ: AtomicU64 = AtomicU64::new(1);
+
+const ID_NS: u128 = 0x1000_0000_0000_0000_0000_0000_0000_0000;
+const ORACLE_NS: u128 = 0x2000_0000_0000_0000_0000_0000_0000_0000;
+
+/// A card row to seed. Build with [`card`] and the chainable setters; only the
+/// fields tests care about are exposed, the rest are sane constants.
+#[derive(Clone)]
+pub struct CardFixture {
+    id: Uuid,
+    oracle_id: Option<Uuid>,
+    name: String,
+    layout: String,
+    cmc: Option<f64>,
+    colors: Vec<String>,
+    color_identity: Vec<String>,
+    keywords: Option<Vec<String>>,
+    mana_cost: Option<String>,
+    oracle_text: Option<String>,
+    power: Option<String>,
+    toughness: Option<String>,
+    produced_mana: Option<Vec<String>>,
+    type_line: Option<String>,
+    rarity: String,
+    edhrec_rank: Option<i32>,
+    usd: Option<String>,
+    set: String,
+    set_name: String,
+    set_id: Uuid,
+    collector_number: String,
+    legalities: Value,
+}
+
+/// Start a card fixture. Distinct `id` and `oracle_id` are assigned up front so
+/// tests can reference them (`.id()`, `.oracle_id()`) for `/api/card/{id}`
+/// lookups and ordering checks before seeding.
+pub fn card(name: &str) -> CardFixture {
+    let n = u128::from(CARD_SEQ.fetch_add(1, Ordering::Relaxed));
+    CardFixture {
+        id: Uuid::from_u128(ID_NS | n),
+        oracle_id: Some(Uuid::from_u128(ORACLE_NS | n)),
+        name: name.to_string(),
+        layout: "normal".to_string(),
+        cmc: Some(0.0),
+        colors: Vec::new(),
+        color_identity: Vec::new(),
+        keywords: None,
+        mana_cost: None,
+        oracle_text: None,
+        power: None,
+        toughness: None,
+        produced_mana: None,
+        type_line: Some("Creature".to_string()),
+        rarity: "common".to_string(),
+        edhrec_rank: None,
+        usd: None,
+        set: "TST".to_string(),
+        set_name: "Test Set".to_string(),
+        set_id: Uuid::from_u128(0x5E7),
+        collector_number: n.to_string(),
+        legalities: json!({}),
+    }
+}
+
+/// Splits a compact color string like `"WU"` into Scryfall short names
+/// (`["W", "U"]`), ignoring anything that isn't a WUBRG letter. Pass `""` for
+/// colorless.
+fn colors_of(s: &str) -> Vec<String> {
+    s.chars()
+        .filter_map(|c| match c.to_ascii_uppercase() {
+            l @ ('W' | 'U' | 'B' | 'R' | 'G') => Some(l.to_string()),
+            _ => None,
+        })
+        .collect()
+}
+
+impl CardFixture {
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
+    pub fn oracle_id(&self) -> Option<Uuid> {
+        self.oracle_id
+    }
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Set both `id` and `oracle_id` — use when a test needs two printings of
+    /// the same card (same `oracle_id`, different `id`).
+    pub fn with_ids(mut self, id: Uuid, oracle_id: Option<Uuid>) -> Self {
+        self.id = id;
+        self.oracle_id = oracle_id;
+        self
+    }
+    pub fn oracle(mut self, oracle_id: Option<Uuid>) -> Self {
+        self.oracle_id = oracle_id;
+        self
+    }
+    pub fn layout(mut self, layout: &str) -> Self {
+        self.layout = layout.to_string();
+        self
+    }
+    pub fn cmc(mut self, cmc: f64) -> Self {
+        self.cmc = Some(cmc);
+        self
+    }
+    /// Card colors, compact form (`"R"`, `"WU"`, `""` for colorless).
+    pub fn colors(mut self, colors: &str) -> Self {
+        self.colors = colors_of(colors);
+        self
+    }
+    /// Color identity, compact form. Defaults to whatever `colors` was set to
+    /// is NOT assumed — set both explicitly when they differ.
+    pub fn color_identity(mut self, ci: &str) -> Self {
+        self.color_identity = colors_of(ci);
+        self
+    }
+    /// Shorthand: set `colors` and `color_identity` to the same value.
+    pub fn mono(self, colors: &str) -> Self {
+        let v = colors_of(colors);
+        let mut s = self.colors(colors);
+        s.color_identity = v;
+        s
+    }
+    pub fn keywords(mut self, keywords: &[&str]) -> Self {
+        self.keywords = Some(keywords.iter().map(|k| k.to_string()).collect());
+        self
+    }
+    pub fn mana_cost(mut self, mana_cost: &str) -> Self {
+        self.mana_cost = Some(mana_cost.to_string());
+        self
+    }
+    pub fn oracle_text(mut self, text: &str) -> Self {
+        self.oracle_text = Some(text.to_string());
+        self
+    }
+    pub fn power(mut self, power: &str) -> Self {
+        self.power = Some(power.to_string());
+        self
+    }
+    pub fn toughness(mut self, toughness: &str) -> Self {
+        self.toughness = Some(toughness.to_string());
+        self
+    }
+    pub fn produced_mana(mut self, colors: &str) -> Self {
+        self.produced_mana = Some(colors_of(colors));
+        self
+    }
+    pub fn type_line(mut self, type_line: &str) -> Self {
+        self.type_line = Some(type_line.to_string());
+        self
+    }
+    pub fn rarity(mut self, rarity: &str) -> Self {
+        self.rarity = rarity.to_string();
+        self
+    }
+    pub fn edhrec_rank(mut self, rank: i32) -> Self {
+        self.edhrec_rank = Some(rank);
+        self
+    }
+    pub fn usd(mut self, usd: &str) -> Self {
+        self.usd = Some(usd.to_string());
+        self
+    }
+    pub fn set(mut self, code: &str, name: &str) -> Self {
+        self.set = code.to_string();
+        self.set_name = name.to_string();
+        self
+    }
+    /// Mark this card legal in a format (e.g. `"commander"`). Repeatable.
+    pub fn legal(mut self, format: &str) -> Self {
+        self.legalities[format] = json!("legal");
+        self
+    }
+    pub fn commander_legal(self) -> Self {
+        self.legal("commander")
+    }
+}
+
+/// Seed `cards` with the given fixtures, write their `card_profiles` rows, and
+/// refresh the `latest_cards` / `card_signal_rollup` materialized views (both
+/// start empty — the views must be refreshed before any card query, even with
+/// zero rows, or Postgres errors that they are unpopulated).
+pub async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
+    if !cards.is_empty() {
+        let released = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+        let mut qb = QueryBuilder::new(
+            "INSERT INTO scryfall_data (\
+             id, lang, object, layout, oracle_id, \
+             prints_search_uri, rulings_uri, scryfall_uri, uri, \
+             cmc, color_identity, colors, keywords, legalities, mana_cost, name, \
+             oracle_text, power, produced_mana, reserved, toughness, type_line, edhrec_rank, \
+             border_color, booster, collector_number, digital, finishes, frame, full_art, \
+             highres_image, image_status, oversized, prices, promo, rarity, related_uris, \
+             released_at, reprint, scryfall_set_uri, set_name, set_search_uri, set_type, \
+             set_uri, set, set_id, story_spotlight, textless, variation) ",
+        );
+        qb.push_values(cards.iter(), |mut b, c| {
+            let prices = json!({ "usd": c.usd });
+            b.push_bind(c.id)
+                .push_bind("en")
+                .push_bind("card")
+                .push_bind(c.layout.as_str())
+                .push_bind(c.oracle_id)
+                .push_bind("https://scryfall.test/prints")
+                .push_bind("https://scryfall.test/rulings")
+                .push_bind("https://scryfall.test/card")
+                .push_bind("https://scryfall.test/uri")
+                .push_bind(c.cmc)
+                .push_bind(c.color_identity.as_slice())
+                .push_bind(c.colors.as_slice())
+                .push_bind(c.keywords.as_deref())
+                .push_bind(Json(&c.legalities))
+                .push_bind(c.mana_cost.as_deref())
+                .push_bind(c.name.as_str())
+                .push_bind(c.oracle_text.as_deref())
+                .push_bind(c.power.as_deref())
+                .push_bind(c.produced_mana.as_deref())
+                .push_bind(false)
+                .push_bind(c.toughness.as_deref())
+                .push_bind(c.type_line.as_deref())
+                .push_bind(c.edhrec_rank)
+                .push_bind("black")
+                .push_bind(true)
+                .push_bind(c.collector_number.as_str())
+                .push_bind(false)
+                .push_bind(vec!["nonfoil".to_string()])
+                .push_bind("2015")
+                .push_bind(false)
+                .push_bind(true)
+                .push_bind("highres_scan")
+                .push_bind(false)
+                .push_bind(Json(prices))
+                .push_bind(false)
+                .push_bind(c.rarity.as_str())
+                .push_bind(Json(json!({})))
+                .push_bind(released)
+                .push_bind(false)
+                .push_bind("https://scryfall.test/set")
+                .push_bind(c.set_name.as_str())
+                .push_bind("https://scryfall.test/set-search")
+                .push_bind("expansion")
+                .push_bind("https://scryfall.test/set-uri")
+                .push_bind(c.set.as_str())
+                .push_bind(c.set_id)
+                .push_bind(false)
+                .push_bind(false)
+                .push_bind(false);
+        });
+        qb.build().execute(pool).await.unwrap();
+
+        let mut pb =
+            QueryBuilder::new("INSERT INTO card_profiles (scryfall_data_id, is_token) ");
+        pb.push_values(cards.iter(), |mut b, c| {
+            b.push_bind(c.id).push_bind(c.layout == "token");
+        });
+        pb.build().execute(pool).await.unwrap();
+    }
+
+    refresh_card_views(pool).await;
+}
+
+/// Refresh the card materialized views. Call after mutating
+/// `commander_card_signal` in a signal test (`seed_cards` already refreshes).
+pub async fn refresh_card_views(pool: &PgPool) {
+    sqlx::query("REFRESH MATERIALIZED VIEW latest_cards")
+        .execute(pool)
+        .await
+        .unwrap();
+    sqlx::query("REFRESH MATERIALIZED VIEW card_signal_rollup")
+        .execute(pool)
+        .await
+        .unwrap();
 }
