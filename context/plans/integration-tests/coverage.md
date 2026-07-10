@@ -8,7 +8,7 @@ marked **[repo]**. Every slice ends green with `cargo test -p zerver`.
 ## Status (2026-07-09)
 
 **Harness + CI shipped + the card fixture builder is built** (overview slices 1–2,
-plus `card()`/`seed_cards()` in `tests/common/mod.rs`). **21 integration tests green.
+plus `card()`/`seed_cards()` in `tests/common/mod.rs`). **31 integration tests green.
 Covered so far:**
 - `tests/auth_flows.rs` — register → authed `GET /api/user` → login → refresh, plus
   no-token/wrong-password 401s.
@@ -21,11 +21,16 @@ Covered so far:**
 - `tests/repo_card.rs` — [repo] synergy ordering (scored-desc vs UNSCORED_ANCHOR),
   `exclude_oracle_ids` drop, NULL-`oracle_id` deck-aware-shuffle regression,
   `card_signal_rollup` math.
+- `tests/health.rs` — health/server/database/root 200.
+- `tests/metrics_flows.rs` — usage batch → `commander_card_signal` fold + accumulate,
+  anonymous 3-kinds no-auth, garbage kind 422.
+- `tests/user_flows.rs` — change username/email/password (re-auth + wrong-pw reject),
+  delete-account cascade.
 
-**Next:** Slice 4 below (metrics/user/health) and the auth edges. Deferred within
-card serving (optional): deck-aware serve suppression exclusion + land auto-stop
-(HTTP), band-boundary/different-deck shuffle + clone card-copy ([repo]). Everything
-else below is open.
+**Next:** Slice 6 (auth edges: verify/reset via captured email, refresh single-use,
+lockout 429). Deferred/optional: deck-aware serve suppression exclusion + land
+auto-stop, band-boundary shuffle + clone card-copy ([repo]), `user_week_signal` rows,
+last-active debounce, preferences/hint. Everything else below is open.
 
 ## Recommended build order — fastest path to full-system coverage
 
@@ -54,8 +59,8 @@ Track full coverage against this. ✅ = has an integration test; ⬜ = open.
 
 **Auth** — ✅ `POST /api/auth/{register,login,refresh}` · ⬜ `verify-email`,
 `request-password-reset`, `reset-password`, `resend-verification`, `logout`
-**User** — ✅ `GET /api/user` · ⬜ `GET /api/user/preferences`, change
-`username`/`email`/`password`, `DELETE` account, `/api/user/hint`
+**User** — ✅ `GET /api/user`, change `username`/`email`/`password`, `DELETE` account
+(`tests/user_flows.rs`) · ⬜ `GET /api/user/preferences`, `/api/user/hint`
 **Deck** — ✅ `GET/POST /api/deck`, `GET/PUT/DELETE /api/deck/{id}`,
 `profile/{id}`, `clone` (`tests/deck_flows.rs`), `POST/PUT/DELETE
 /api/deck/{id}/card`, `card/import` (`tests/deck_cards.rs`) · ⬜ deck-aware
@@ -65,8 +70,10 @@ Track full coverage against this. ✅ = has an integration test; ⬜ = open.
 `GET /api/card/{scryfall_data_id}` (`tests/card_serving.rs`) · ⬜
 `{oracle_id}/printings`, `artists`, `types`, `keywords`, `oracle-words`,
 `languages`, `sets`; **[repo]** synergy/band-shuffle/rollup
-**Metrics** — ⬜ all: usage batch, `anonymous`, `stats`
-**Health / client** — ⬜ `health`, `/server`, `/database`, `min-version`
+**Metrics** — ✅ `POST /api/metrics/usage`, `POST /api/metrics/anonymous`
+(`tests/metrics_flows.rs`) · ⬜ `stats`
+**Health / client** — ✅ `health`, `/server`, `/database`, root (`tests/health.rs`)
+· ⬜ `min-version`
 
 ## Slice 1 — auth flows (proves the harness)
 
