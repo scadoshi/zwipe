@@ -19,14 +19,26 @@ async fn verify_email_via_captured_token(pool: sqlx::PgPool) {
     let (token, _uid) = app.register("verifier").await;
 
     // Registration sends the verification email; pull the raw token out of it.
-    let raw = app.emails.last_token("verify").expect("verification email with a /verify/ link");
+    let raw = app
+        .emails
+        .last_token("verify")
+        .expect("verification email with a /verify/ link");
 
-    let (status, _) = app.post("/api/auth/verify-email", json!({ "token": raw }), None).await;
-    assert_eq!(status, StatusCode::OK, "verify-email with the captured token");
+    let (status, _) = app
+        .post("/api/auth/verify-email", json!({ "token": raw }), None)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "verify-email with the captured token"
+    );
 
     // the account now reads as verified
     let (_, me) = app.get("/api/user", Some(&token)).await;
-    assert!(me["email_verified_at"].is_string(), "email_verified_at set: {me}");
+    assert!(
+        me["email_verified_at"].is_string(),
+        "email_verified_at set: {me}"
+    );
 }
 
 #[sqlx::test]
@@ -34,7 +46,11 @@ async fn verify_email_rejects_garbage_token(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let _ = app.register("skeptic").await;
     let (status, _) = app
-        .post("/api/auth/verify-email", json!({ "token": "deadbeef-not-a-real-token" }), None)
+        .post(
+            "/api/auth/verify-email",
+            json!({ "token": "deadbeef-not-a-real-token" }),
+            None,
+        )
         .await;
     assert_ne!(status, StatusCode::OK, "an invalid token must not verify");
 }
@@ -46,10 +62,17 @@ async fn password_reset_via_captured_token(pool: sqlx::PgPool) {
 
     // request the reset, then read the raw token from the captured email
     let (status, _) = app
-        .post("/api/auth/forgot-password", json!({ "email": "forgetful@test.local" }), None)
+        .post(
+            "/api/auth/forgot-password",
+            json!({ "email": "forgetful@test.local" }),
+            None,
+        )
         .await;
     assert_eq!(status, StatusCode::OK, "forgot-password accepted");
-    let raw = app.emails.last_token("reset").expect("reset email with a /reset/ link");
+    let raw = app
+        .emails
+        .last_token("reset")
+        .expect("reset email with a /reset/ link");
 
     let (status, _) = app
         .post(
@@ -58,17 +81,33 @@ async fn password_reset_via_captured_token(pool: sqlx::PgPool) {
             None,
         )
         .await;
-    assert_eq!(status, StatusCode::OK, "reset-password with the captured token");
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "reset-password with the captured token"
+    );
 
     // the new password authenticates; the old one does not
     let (status, _) = app
-        .post("/api/auth/login", json!({ "identifier": "forgetful", "password": "Reset456!" }), None)
+        .post(
+            "/api/auth/login",
+            json!({ "identifier": "forgetful", "password": "Reset456!" }),
+            None,
+        )
         .await;
     assert_eq!(status, StatusCode::OK, "login with the reset password");
     let (status, _) = app
-        .post("/api/auth/login", json!({ "identifier": "forgetful", "password": "TestPass123!" }), None)
+        .post(
+            "/api/auth/login",
+            json!({ "identifier": "forgetful", "password": "TestPass123!" }),
+            None,
+        )
         .await;
-    assert_eq!(status, StatusCode::UNAUTHORIZED, "old password rejected after reset");
+    assert_eq!(
+        status,
+        StatusCode::UNAUTHORIZED,
+        "old password rejected after reset"
+    );
 }
 
 #[sqlx::test]
@@ -77,11 +116,18 @@ async fn refresh_token_is_single_use(pool: sqlx::PgPool) {
     let _ = app.register("roller").await;
 
     let (status, session) = app
-        .post("/api/auth/login", json!({ "identifier": "roller", "password": "TestPass123!" }), None)
+        .post(
+            "/api/auth/login",
+            json!({ "identifier": "roller", "password": "TestPass123!" }),
+            None,
+        )
         .await;
     assert_eq!(status, StatusCode::OK, "login: {session}");
     let user_id = session["user"]["id"].as_str().unwrap().to_string();
-    let refresh = session["refresh_token"]["value"].as_str().unwrap().to_string();
+    let refresh = session["refresh_token"]["value"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     // first use rotates the token and succeeds
     let (status, rotated) = app
@@ -101,7 +147,11 @@ async fn refresh_token_is_single_use(pool: sqlx::PgPool) {
             None,
         )
         .await;
-    assert_eq!(status, StatusCode::UNAUTHORIZED, "a rotated refresh token is single-use");
+    assert_eq!(
+        status,
+        StatusCode::UNAUTHORIZED,
+        "a rotated refresh token is single-use"
+    );
 }
 
 #[sqlx::test]
@@ -115,19 +165,38 @@ async fn login_rate_limit_locks_out(pool: sqlx::PgPool) {
     let mut saw_429 = false;
     for _ in 0..8 {
         let (status, _) = app
-            .post("/api/auth/login", json!({ "identifier": "target", "password": "WrongPass123!" }), None)
+            .post(
+                "/api/auth/login",
+                json!({ "identifier": "target", "password": "WrongPass123!" }),
+                None,
+            )
             .await;
         if status == StatusCode::TOO_MANY_REQUESTS {
             saw_429 = true;
             break;
         }
-        assert_eq!(status, StatusCode::UNAUTHORIZED, "pre-limit attempts are 401");
+        assert_eq!(
+            status,
+            StatusCode::UNAUTHORIZED,
+            "pre-limit attempts are 401"
+        );
     }
-    assert!(saw_429, "the login limiter should 429 after the burst is spent");
+    assert!(
+        saw_429,
+        "the login limiter should 429 after the burst is spent"
+    );
 
     // once limited, even the correct credentials are refused (429, not 200)
     let (status, _) = app
-        .post("/api/auth/login", json!({ "identifier": "target", "password": "TestPass123!" }), None)
+        .post(
+            "/api/auth/login",
+            json!({ "identifier": "target", "password": "TestPass123!" }),
+            None,
+        )
         .await;
-    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS, "correct creds stay locked out while limited");
+    assert_eq!(
+        status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "correct creds stay locked out while limited"
+    );
 }

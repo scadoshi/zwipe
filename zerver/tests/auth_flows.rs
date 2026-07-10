@@ -33,7 +33,10 @@ async fn register_authed_login_refresh(pool: sqlx::PgPool) {
         )
         .await;
     assert_eq!(status, StatusCode::OK, "login: {session}");
-    let refresh = session["refresh_token"]["value"].as_str().unwrap().to_string();
+    let refresh = session["refresh_token"]["value"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     // 4. Refresh — old token rotates into a new session.
     let (status, refreshed) = app

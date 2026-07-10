@@ -32,7 +32,9 @@ async fn deck_profile_lifecycle(pool: sqlx::PgPool) {
     assert_eq!(deck["name"], "My First Deck");
 
     // get profile + full deck
-    let (status, prof) = app.get(&format!("/api/deck/profile/{id}"), Some(&token)).await;
+    let (status, prof) = app
+        .get(&format!("/api/deck/profile/{id}"), Some(&token))
+        .await;
     assert_eq!(status, StatusCode::OK, "get profile: {prof}");
     assert_eq!(prof["name"], "My First Deck");
     let (status, _full) = app.get(&format!("/api/deck/{id}"), Some(&token)).await;
@@ -42,7 +44,10 @@ async fn deck_profile_lifecycle(pool: sqlx::PgPool) {
     let (status, list) = app.get("/api/deck", Some(&token)).await;
     assert_eq!(status, StatusCode::OK);
     assert!(
-        list.as_array().unwrap().iter().any(|d| d["id"] == deck["id"]),
+        list.as_array()
+            .unwrap()
+            .iter()
+            .any(|d| d["id"] == deck["id"]),
         "deck list missing the created deck: {list}"
     );
 
@@ -63,13 +68,17 @@ async fn deck_profile_lifecycle(pool: sqlx::PgPool) {
         )
         .await;
     assert_eq!(status, StatusCode::OK, "update: {updated}");
-    let (_, prof) = app.get(&format!("/api/deck/profile/{id}"), Some(&token)).await;
+    let (_, prof) = app
+        .get(&format!("/api/deck/profile/{id}"), Some(&token))
+        .await;
     assert_eq!(prof["name"], "Renamed");
 
     // delete => 204, then gone
     let (status, _) = app.delete(&format!("/api/deck/{id}"), Some(&token)).await;
     assert_eq!(status, StatusCode::NO_CONTENT, "delete");
-    let (status, _) = app.get(&format!("/api/deck/profile/{id}"), Some(&token)).await;
+    let (status, _) = app
+        .get(&format!("/api/deck/profile/{id}"), Some(&token))
+        .await;
     assert_eq!(status, StatusCode::NOT_FOUND, "profile after delete");
 }
 
@@ -79,14 +88,24 @@ async fn unverified_deck_cap_then_verify_unlocks(pool: sqlx::PgPool) {
     let (token, uid) = app.register("bob").await;
 
     // unverified cap = 1 deck
-    let (s1, _) = app.post("/api/deck", json!({ "name": "Deck 1" }), Some(&token)).await;
+    let (s1, _) = app
+        .post("/api/deck", json!({ "name": "Deck 1" }), Some(&token))
+        .await;
     assert_eq!(s1, StatusCode::CREATED);
-    let (s2, e) = app.post("/api/deck", json!({ "name": "Deck 2" }), Some(&token)).await;
-    assert_eq!(s2, StatusCode::UNPROCESSABLE_ENTITY, "unverified 2nd deck should be capped: {e}");
+    let (s2, e) = app
+        .post("/api/deck", json!({ "name": "Deck 2" }), Some(&token))
+        .await;
+    assert_eq!(
+        s2,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "unverified 2nd deck should be capped: {e}"
+    );
 
     // verifying lifts the cap
     app.verify_email(&uid).await;
-    let (s3, _) = app.post("/api/deck", json!({ "name": "Deck 2" }), Some(&token)).await;
+    let (s3, _) = app
+        .post("/api/deck", json!({ "name": "Deck 2" }), Some(&token))
+        .await;
     assert_eq!(s3, StatusCode::CREATED, "verified 2nd deck should succeed");
 }
 
@@ -96,17 +115,27 @@ async fn duplicate_deck_name_rejected(pool: sqlx::PgPool) {
     let (token, uid) = app.register("carol").await;
     app.verify_email(&uid).await; // lift the cap so the 2nd create reaches the dup check
 
-    let (s1, _) = app.post("/api/deck", json!({ "name": "Twin" }), Some(&token)).await;
+    let (s1, _) = app
+        .post("/api/deck", json!({ "name": "Twin" }), Some(&token))
+        .await;
     assert_eq!(s1, StatusCode::CREATED);
-    let (s2, _) = app.post("/api/deck", json!({ "name": "Twin" }), Some(&token)).await;
-    assert_eq!(s2, StatusCode::UNPROCESSABLE_ENTITY, "duplicate name should be rejected");
+    let (s2, _) = app
+        .post("/api/deck", json!({ "name": "Twin" }), Some(&token))
+        .await;
+    assert_eq!(
+        s2,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "duplicate name should be rejected"
+    );
 }
 
 #[sqlx::test]
 async fn cannot_touch_another_users_deck(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (a_token, _) = app.register("dave").await;
-    let (_, deck) = app.post("/api/deck", json!({ "name": "Private" }), Some(&a_token)).await;
+    let (_, deck) = app
+        .post("/api/deck", json!({ "name": "Private" }), Some(&a_token))
+        .await;
     let id = deck["id"].as_str().unwrap().to_string();
 
     // 404 (not 403) — another user's deck must look nonexistent, no existence leak.
@@ -114,7 +143,11 @@ async fn cannot_touch_another_users_deck(pool: sqlx::PgPool) {
     let (status, _) = app.get(&format!("/api/deck/{id}"), Some(&b_token)).await;
     assert_eq!(status, StatusCode::NOT_FOUND, "B reading A's deck must 404");
     let (status, _) = app.delete(&format!("/api/deck/{id}"), Some(&b_token)).await;
-    assert_eq!(status, StatusCode::NOT_FOUND, "B deleting A's deck must 404");
+    assert_eq!(
+        status,
+        StatusCode::NOT_FOUND,
+        "B deleting A's deck must 404"
+    );
     // A's deck still there
     let (status, _) = app.get(&format!("/api/deck/{id}"), Some(&a_token)).await;
     assert_eq!(status, StatusCode::OK, "A's deck should be untouched");
@@ -127,12 +160,20 @@ async fn clone_creates_a_new_deck(pool: sqlx::PgPool) {
     app.verify_email(&uid).await;
 
     let (_, deck) = app
-        .post("/api/deck", json!({ "name": "Original", "format": "commander" }), Some(&token))
+        .post(
+            "/api/deck",
+            json!({ "name": "Original", "format": "commander" }),
+            Some(&token),
+        )
         .await;
     let id = deck["id"].as_str().unwrap().to_string();
 
     let (status, cloned) = app
-        .post(&format!("/api/deck/{id}/clone"), json!({ "new_name": "Original Copy" }), Some(&token))
+        .post(
+            &format!("/api/deck/{id}/clone"),
+            json!({ "new_name": "Original Copy" }),
+            Some(&token),
+        )
         .await;
     assert_eq!(status, StatusCode::CREATED, "clone: {cloned}");
     let clone_id = cloned["deck_id"].as_str().unwrap();
@@ -141,6 +182,8 @@ async fn clone_creates_a_new_deck(pool: sqlx::PgPool) {
     // now two decks exist, and the clone carries the new name
     let (_, list) = app.get("/api/deck", Some(&token)).await;
     assert_eq!(list.as_array().unwrap().len(), 2);
-    let (_, clone_prof) = app.get(&format!("/api/deck/profile/{clone_id}"), Some(&token)).await;
+    let (_, clone_prof) = app
+        .get(&format!("/api/deck/profile/{clone_id}"), Some(&token))
+        .await;
     assert_eq!(clone_prof["name"], "Original Copy");
 }

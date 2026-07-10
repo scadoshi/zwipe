@@ -5,8 +5,7 @@
 //! for platform analytics and targeted comms. Serialized/stored as a lowercase
 //! string (`"ios"`, `"android"`, `"desktop"`, `"web"`).
 
-use std::fmt;
-use std::str::FromStr;
+use std::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
@@ -37,7 +36,10 @@ impl ClientPlatform {
     pub const CURRENT: ClientPlatform = ClientPlatform::Ios;
     #[cfg(target_os = "android")]
     pub const CURRENT: ClientPlatform = ClientPlatform::Android;
-    #[cfg(all(target_arch = "wasm32", not(any(target_os = "ios", target_os = "android"))))]
+    #[cfg(all(
+        target_arch = "wasm32",
+        not(any(target_os = "ios", target_os = "android"))
+    ))]
     pub const CURRENT: ClientPlatform = ClientPlatform::Web;
     #[cfg(all(
         not(target_os = "ios"),

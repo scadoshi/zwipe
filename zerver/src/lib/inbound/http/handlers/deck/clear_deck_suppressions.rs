@@ -21,9 +21,7 @@ impl From<ClearDeckSuppressionsError> for ApiError {
     fn from(value: ClearDeckSuppressionsError) -> Self {
         match value {
             ClearDeckSuppressionsError::Database(e) => e.log_500(),
-            ClearDeckSuppressionsError::Forbidden => {
-                Self::NotFound("deck not found".to_string())
-            }
+            ClearDeckSuppressionsError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
     }
 }

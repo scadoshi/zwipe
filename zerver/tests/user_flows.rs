@@ -29,7 +29,10 @@ async fn change_username_updates_profile(pool: sqlx::PgPool) {
     assert_eq!(updated["username"], "newuser");
 
     let (_, me) = app.get("/api/user", Some(&token)).await;
-    assert_eq!(me["username"], "newuser", "GET /api/user reflects the new name");
+    assert_eq!(
+        me["username"], "newuser",
+        "GET /api/user reflects the new name"
+    );
 }
 
 #[sqlx::test]
@@ -44,7 +47,11 @@ async fn change_username_wrong_password_rejected(pool: sqlx::PgPool) {
             Some(&token),
         )
         .await;
-    assert_eq!(status, StatusCode::UNAUTHORIZED, "wrong password must not change the username");
+    assert_eq!(
+        status,
+        StatusCode::UNAUTHORIZED,
+        "wrong password must not change the username"
+    );
 
     let (_, me) = app.get("/api/user", Some(&token)).await;
     assert_eq!(me["username"], "stayput");
@@ -66,15 +73,27 @@ async fn change_password_then_login_with_new(pool: sqlx::PgPool) {
 
     // the new password authenticates
     let (status, _) = app
-        .post("/api/auth/login", json!({ "identifier": "pwuser", "password": "NewPass456!" }), None)
+        .post(
+            "/api/auth/login",
+            json!({ "identifier": "pwuser", "password": "NewPass456!" }),
+            None,
+        )
         .await;
     assert_eq!(status, StatusCode::OK, "login with new password");
 
     // the old one no longer does
     let (status, _) = app
-        .post("/api/auth/login", json!({ "identifier": "pwuser", "password": "TestPass123!" }), None)
+        .post(
+            "/api/auth/login",
+            json!({ "identifier": "pwuser", "password": "TestPass123!" }),
+            None,
+        )
         .await;
-    assert_eq!(status, StatusCode::UNAUTHORIZED, "old password must be rejected");
+    assert_eq!(
+        status,
+        StatusCode::UNAUTHORIZED,
+        "old password must be rejected"
+    );
 }
 
 #[sqlx::test]
@@ -101,12 +120,20 @@ async fn delete_user_cascades_decks(pool: sqlx::PgPool) {
 
     // give the user a deck to prove the FK cascade removes it
     let (status, _) = app
-        .post("/api/deck", json!({ "name": "Doomed", "format": "commander" }), Some(&token))
+        .post(
+            "/api/deck",
+            json!({ "name": "Doomed", "format": "commander" }),
+            Some(&token),
+        )
         .await;
     assert_eq!(status, StatusCode::CREATED);
 
     let (status, _) = app
-        .delete_json("/api/user/delete-user", json!({ "password": "TestPass123!" }), Some(&token))
+        .delete_json(
+            "/api/user/delete-user",
+            json!({ "password": "TestPass123!" }),
+            Some(&token),
+        )
         .await;
     assert_eq!(status, StatusCode::NO_CONTENT, "delete account");
 

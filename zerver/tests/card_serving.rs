@@ -74,12 +74,20 @@ async fn search_by_name_contains(pool: sqlx::PgPool) {
     .await;
 
     let (status, results) = app
-        .post("/api/card/search", json!({ "name_contains": "Goblin" }), Some(&token))
+        .post(
+            "/api/card/search",
+            json!({ "name_contains": "Goblin" }),
+            Some(&token),
+        )
         .await;
     assert_eq!(status, StatusCode::OK, "search: {results}");
     let mut got = names(&results);
     got.sort();
-    assert_eq!(got, vec!["Goblin Guide", "Goblin Matron"], "name filter should match only goblins");
+    assert_eq!(
+        got,
+        vec!["Goblin Guide", "Goblin Matron"],
+        "name filter should match only goblins"
+    );
 }
 
 #[sqlx::test]
@@ -97,10 +105,18 @@ async fn search_by_cmc_range(pool: sqlx::PgPool) {
     .await;
 
     let (status, results) = app
-        .post("/api/card/search", json!({ "cmc_range": [2.0, 4.0] }), Some(&token))
+        .post(
+            "/api/card/search",
+            json!({ "cmc_range": [2.0, 4.0] }),
+            Some(&token),
+        )
         .await;
     assert_eq!(status, StatusCode::OK, "search: {results}");
-    assert_eq!(names(&results), vec!["Three Drop"], "only the cmc-3 card is in [2,4]");
+    assert_eq!(
+        names(&results),
+        vec!["Three Drop"],
+        "only the cmc-3 card is in [2,4]"
+    );
 }
 
 #[sqlx::test]
@@ -120,18 +136,28 @@ async fn search_color_identity_within(pool: sqlx::PgPool) {
     // Empty color identity is a subset of {R}, so the colorless card rides along;
     // the green card is excluded.
     let (status, results) = app
-        .post("/api/card/search", json!({ "color_identity_within": ["R"] }), Some(&token))
+        .post(
+            "/api/card/search",
+            json!({ "color_identity_within": ["R"] }),
+            Some(&token),
+        )
         .await;
     assert_eq!(status, StatusCode::OK, "search: {results}");
     let mut got = names(&results);
     got.sort();
-    assert_eq!(got, vec!["Colorless Card", "Red Card"], "within-R must exclude the green card");
+    assert_eq!(
+        got,
+        vec!["Colorless Card", "Red Card"],
+        "within-R must exclude the green card"
+    );
 }
 
 #[sqlx::test]
 async fn search_requires_auth(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     seed_cards(&pool, &[card("Any Card").mono("R")]).await;
-    let (status, _) = app.post("/api/card/search", json!({ "name_contains": "Any" }), None).await;
+    let (status, _) = app
+        .post("/api/card/search", json!({ "name_contains": "Any" }), None)
+        .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }

@@ -68,7 +68,9 @@ async fn usage_batch_signal_deltas_accumulate(pool: sqlx::PgPool) {
         }]
     });
     for _ in 0..2 {
-        let (status, _) = app.post("/api/metrics/usage", batch.clone(), Some(&token)).await;
+        let (status, _) = app
+            .post("/api/metrics/usage", batch.clone(), Some(&token))
+            .await;
         assert_eq!(status, StatusCode::NO_CONTENT);
     }
 
@@ -81,7 +83,11 @@ async fn usage_batch_signal_deltas_accumulate(pool: sqlx::PgPool) {
     .fetch_one(&pool)
     .await
     .unwrap();
-    assert_eq!((shown, added), (4, 2), "two flushes accumulate (upsert adds)");
+    assert_eq!(
+        (shown, added),
+        (4, 2),
+        "two flushes accumulate (upsert adds)"
+    );
 }
 
 #[sqlx::test]
@@ -97,14 +103,19 @@ async fn anonymous_events_accept_the_three_kinds_no_auth(pool: sqlx::PgPool) {
                 None, // no auth required
             )
             .await;
-        assert_eq!(status, StatusCode::NO_CONTENT, "kind {kind} accepted without auth");
+        assert_eq!(
+            status,
+            StatusCode::NO_CONTENT,
+            "kind {kind} accepted without auth"
+        );
     }
 
-    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM anonymous_events WHERE session_id = $1")
-        .bind(session)
-        .fetch_one(&pool)
-        .await
-        .unwrap();
+    let count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM anonymous_events WHERE session_id = $1")
+            .bind(session)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
     assert_eq!(count, 3, "all three funnel events recorded");
 }
 
@@ -118,5 +129,9 @@ async fn anonymous_event_garbage_kind_rejected(pool: sqlx::PgPool) {
             None,
         )
         .await;
-    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "closed enum rejects unknown kinds");
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "closed enum rejects unknown kinds"
+    );
 }

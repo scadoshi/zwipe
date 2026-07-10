@@ -8,29 +8,42 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing, dead_code)]
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicU32, AtomicU64, Ordering},
+    },
+};
 
-use axum::body::Body;
-use axum::extract::ConnectInfo;
-use axum::http::{Method, Request, StatusCode, header};
+use axum::{
+    body::Body,
+    extract::ConnectInfo,
+    http::{Method, Request, StatusCode, header},
+};
 use chrono::NaiveDate;
 use dashmap::DashMap;
 use http_body_util::BodyExt;
 use serde_json::{Value, json};
-use sqlx::types::Json;
-use sqlx::{PgPool, QueryBuilder};
+use sqlx::{PgPool, QueryBuilder, types::Json};
 use tower::ServiceExt; // oneshot
 use uuid::Uuid;
 
-use zwipe::domain::auth::models::access_token::JwtSecret;
+use zwipe::{
+    domain::{
+        auth,
+        auth::models::access_token::JwtSecret,
+        card, deck,
+        email::{
+            models::{SendEmail, SendEmailError},
+            ports::EmailSender,
+        },
+        health, metrics, user,
+    },
+    inbound::http::{AppState, build_router},
+    outbound::sqlx::postgres::Postgres,
+};
 use zwipe_core::domain::card::scryfall_data::rarity::Rarity;
-use zwipe::domain::email::models::{SendEmail, SendEmailError};
-use zwipe::domain::email::ports::EmailSender;
-use zwipe::domain::{auth, card, deck, health, metrics, user};
-use zwipe::inbound::http::{AppState, build_router};
-use zwipe::outbound::sqlx::postgres::Postgres;
 
 const TEST_JWT_SECRET: &str = "test-jwt-secret-that-is-at-least-32-characters-long";
 
@@ -51,7 +64,11 @@ impl EmailSender for FakeEmailSender {
 impl FakeEmailSender {
     /// HTML body of the most recently sent email.
     pub fn last_body(&self) -> Option<String> {
-        self.sent.lock().unwrap().last().map(|e| e.html_body.clone())
+        self.sent
+            .lock()
+            .unwrap()
+            .last()
+            .map(|e| e.html_body.clone())
     }
 
     /// Extracts the raw token from a `/{segment}/{token}` link in the most
@@ -125,7 +142,12 @@ impl TestApp {
             40000 + (n as u16 & 0x0fff),
         );
 
-        Self { router, pool, emails, fake_ip }
+        Self {
+            router,
+            pool,
+            emails,
+            fake_ip,
+        }
     }
 
     async fn send(

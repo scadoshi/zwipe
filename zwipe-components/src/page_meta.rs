@@ -34,9 +34,7 @@ pub fn PageMeta(site: SiteMeta, title: String, description: String, path: String
     } else {
         format!("{title} | {}", site.site_name)
     };
-    let og_image = site
-        .og_image_path
-        .map(|p| format!("{}{p}", site.base_url));
+    let og_image = site.og_image_path.map(|p| format!("{}{p}", site.base_url));
     let twitter_card = if og_image.is_some() {
         "summary_large_image"
     } else {

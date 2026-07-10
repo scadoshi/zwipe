@@ -21,7 +21,11 @@ async fn deck_for(app: &TestApp, username: &str) -> (String, String) {
     let (token, uid) = app.register(username).await;
     app.verify_email(&uid).await;
     let (status, deck) = app
-        .post("/api/deck", json!({ "name": "Test Deck", "format": "commander" }), Some(&token))
+        .post(
+            "/api/deck",
+            json!({ "name": "Test Deck", "format": "commander" }),
+            Some(&token),
+        )
         .await;
     assert_eq!(status, StatusCode::CREATED, "deck create: {deck}");
     (token, deck["id"].as_str().unwrap().to_string())
@@ -32,7 +36,10 @@ async fn deck_card_add_bump_remove(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, did) = deck_for(&app, "builder").await;
 
-    let bolt = card("Lightning Bolt").mono("R").cmc(1.0).type_line("Instant");
+    let bolt = card("Lightning Bolt")
+        .mono("R")
+        .cmc(1.0)
+        .type_line("Instant");
     let sid = bolt.id();
     let oid = bolt.oracle_id().unwrap();
     seed_cards(&pool, &[bolt]).await;
@@ -51,7 +58,11 @@ async fn deck_card_add_bump_remove(pool: sqlx::PgPool) {
 
     // update_quantity is a delta: +2 => 3
     let (status, dc) = app
-        .put(&format!("/api/deck/{did}/card/{sid}"), json!({ "update_quantity": 2 }), Some(&token))
+        .put(
+            &format!("/api/deck/{did}/card/{sid}"),
+            json!({ "update_quantity": 2 }),
+            Some(&token),
+        )
         .await;
     assert_eq!(status, StatusCode::OK, "bump qty: {dc}");
     assert_eq!(dc["quantity"], 3);
@@ -60,14 +71,23 @@ async fn deck_card_add_bump_remove(pool: sqlx::PgPool) {
     let (_, full) = app.get(&format!("/api/deck/{did}"), Some(&token)).await;
     let entries = full["entries"].as_array().unwrap();
     assert_eq!(entries.len(), 1, "one entry expected: {full}");
-    assert_eq!(entries[0]["card"]["scryfall_data"]["name"], "Lightning Bolt");
+    assert_eq!(
+        entries[0]["card"]["scryfall_data"]["name"],
+        "Lightning Bolt"
+    );
     assert_eq!(entries[0]["deck_card"]["quantity"], 3);
 
     // remove => 204, deck empties
-    let (status, _) = app.delete(&format!("/api/deck/{did}/card/{sid}"), Some(&token)).await;
+    let (status, _) = app
+        .delete(&format!("/api/deck/{did}/card/{sid}"), Some(&token))
+        .await;
     assert_eq!(status, StatusCode::NO_CONTENT, "delete card");
     let (_, full) = app.get(&format!("/api/deck/{did}"), Some(&token)).await;
-    assert_eq!(full["entries"].as_array().unwrap().len(), 0, "deck should be empty after remove");
+    assert_eq!(
+        full["entries"].as_array().unwrap().len(),
+        0,
+        "deck should be empty after remove"
+    );
 }
 
 #[sqlx::test]
@@ -107,7 +127,9 @@ async fn clone_copies_the_cards(pool: sqlx::PgPool) {
     let (token, did) = deck_for(&app, "cloner").await;
 
     let a = card("Sol Ring").color_identity("").type_line("Artifact");
-    let b = card("Arcane Signet").color_identity("").type_line("Artifact");
+    let b = card("Arcane Signet")
+        .color_identity("")
+        .type_line("Artifact");
     let (a_sid, a_oid) = (a.id(), a.oracle_id().unwrap());
     let (b_sid, b_oid) = (b.id(), b.oracle_id().unwrap());
     seed_cards(&pool, &[a, b]).await;
@@ -124,26 +146,41 @@ async fn clone_copies_the_cards(pool: sqlx::PgPool) {
     }
 
     let (status, cloned) = app
-        .post(&format!("/api/deck/{did}/clone"), json!({ "new_name": "Sol Ring Copy" }), Some(&token))
+        .post(
+            &format!("/api/deck/{did}/clone"),
+            json!({ "new_name": "Sol Ring Copy" }),
+            Some(&token),
+        )
         .await;
     assert_eq!(status, StatusCode::CREATED, "clone: {cloned}");
     let clone_id = cloned["deck_id"].as_str().unwrap();
 
     // the clone carries both cards with their quantities
-    let (_, full) = app.get(&format!("/api/deck/{clone_id}"), Some(&token)).await;
+    let (_, full) = app
+        .get(&format!("/api/deck/{clone_id}"), Some(&token))
+        .await;
     let entries = full["entries"].as_array().unwrap();
     assert_eq!(entries.len(), 2, "clone should copy both cards: {full}");
     let mut by_name: Vec<(String, i64)> = entries
         .iter()
         .map(|e| {
             (
-                e["card"]["scryfall_data"]["name"].as_str().unwrap().to_string(),
+                e["card"]["scryfall_data"]["name"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
                 e["deck_card"]["quantity"].as_i64().unwrap(),
             )
         })
         .collect();
     by_name.sort();
-    assert_eq!(by_name, vec![("Arcane Signet".to_string(), 3), ("Sol Ring".to_string(), 1)]);
+    assert_eq!(
+        by_name,
+        vec![
+            ("Arcane Signet".to_string(), 3),
+            ("Sol Ring".to_string(), 1)
+        ]
+    );
 }
 
 #[sqlx::test]
@@ -155,7 +192,9 @@ async fn import_resolves_known_cards_and_reports_the_rest(pool: sqlx::PgPool) {
         &pool,
         &[
             card("Lightning Bolt").mono("R").type_line("Instant"),
-            card("Llanowar Elves").mono("G").type_line("Creature — Elf Druid"),
+            card("Llanowar Elves")
+                .mono("G")
+                .type_line("Creature — Elf Druid"),
         ],
     )
     .await;
@@ -172,7 +211,11 @@ async fn import_resolves_known_cards_and_reports_the_rest(pool: sqlx::PgPool) {
     let imported = result["imported"].as_array().unwrap();
     let unresolved = result["unresolved"].as_array().unwrap();
     assert_eq!(imported.len(), 1, "one card should resolve: {result}");
-    assert_eq!(unresolved.len(), 1, "the bogus line should be unresolved: {result}");
+    assert_eq!(
+        unresolved.len(),
+        1,
+        "the bogus line should be unresolved: {result}"
+    );
 
     // the imported card really landed in the deck
     let (_, full) = app.get(&format!("/api/deck/{did}"), Some(&token)).await;
