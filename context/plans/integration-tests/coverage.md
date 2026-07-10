@@ -77,9 +77,10 @@ reset-password}` (`auth_flows.rs` + `auth_edges.rs`) · ⬜ `resend-verification
 (`tests/deck_suppressions.rs`) · ⬜ `import/archidekt`, `share`, `tokens`, public
 `GET /api/share/deck/{token}`
 **Card** — ✅ `POST /api/card/search` (name/cmc/color-identity),
-`GET /api/card/{scryfall_data_id}` (`tests/card_serving.rs`) · ⬜
-`{oracle_id}/printings`, `artists`, `types`, `keywords`, `oracle-words`,
-`languages`, `sets`; **[repo]** synergy/band-shuffle/rollup
+`GET /api/card/{scryfall_data_id}` (`tests/card_serving.rs`),
+`{oracle_id}/printings`, `artists`, `types`, `keywords`, `languages`, `sets`
+(`tests/card_metadata.rs`), full SQL/predicate parity (`tests/card_filter_parity.rs`),
+[repo] synergy/rollup (`tests/repo_card.rs`) · ⬜ `oracle-words`; [repo] band-shuffle boundary
 **Metrics** — ✅ `POST /api/metrics/usage`, `POST /api/metrics/anonymous`
 (`tests/metrics_flows.rs`) · ⬜ `stats`
 **Health / client** — ✅ `health`, `/server`, `/database`, root (`tests/health.rs`)
