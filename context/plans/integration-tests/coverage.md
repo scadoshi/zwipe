@@ -3,6 +3,52 @@
 Priority-ordered slices; each is one buildable session. HTTP-level unless
 marked **[repo]**. Every slice ends green with `cargo test -p zerver`.
 
+---
+
+## Status (2026-07-09)
+
+**Harness + CI shipped** (overview slices 1–2). **Covered so far** (in
+`tests/auth_flows.rs`): register → authed `GET /api/user` → login → refresh
+rotation (happy path), plus no-token 401 and wrong-password 401. Everything
+below is open.
+
+## Recommended build order — fastest path to full-system coverage
+
+Optimized for coverage-per-hour, not for the slice numbers below (which are
+grouped by area). Grab them in this order:
+
+1. **Deck lifecycle + its repo tests** — biggest untested surface, the core
+   product, **zero coverage today**. Highest coverage-per-hour. (Slice 2 below.)
+2. **Card serving + its repo tests** — highest *regression* risk (the band-shuffle
+   NULL bug lived here). **Do the `card(...)` / `seed_cards(...)` fixture builder
+   first** (`harness.md` §5) — a one-time investment that unlocks every
+   search/serve/signal test. (Slice 3.)
+3. **Metrics + user + health** — smaller surface, mostly straightforward. (Slice 4.)
+4. **Remaining auth edges** — verify/reset via captured email, lockout 429, IDOR
+   spot-check. Lower priority: auth already has strong *unit* coverage, so these
+   are the gaps units can't reach, not virgin territory. (rest of Slice 1.)
+5. **Future features land WITH tests** — ongoing (Slice 5).
+
+Rationale: deck + card are the product and have **no** server-side coverage;
+auth is already the best-tested area. Front-load the `seed_cards` fixture (step 2)
+because it's the only real scaffolding left after the harness.
+
+## Endpoint coverage map — the "entire system" target
+
+Track full coverage against this. ✅ = has an integration test; ⬜ = open.
+
+**Auth** — ✅ `POST /api/auth/{register,login,refresh}` · ⬜ `verify-email`,
+`request-password-reset`, `reset-password`, `resend-verification`, `logout`
+**User** — ✅ `GET /api/user` · ⬜ `GET /api/user/preferences`, change
+`username`/`email`/`password`, `DELETE` account, `/api/user/hint`
+**Deck** — ⬜ all: `GET/POST /api/deck`, `GET/PUT/DELETE /api/deck/{id}`,
+`profile/{id}`, cards add/remove, `clone`, `import`, `import/archidekt`,
+`export`, `share`, `tokens`, public `GET /api/deck/{token}`
+**Card** — ⬜ all: `search`, `{scryfall_data_id}`, `{oracle_id}/printings`,
+`artists`, `types`, `keywords`, `oracle-words`, `languages`, `sets`
+**Metrics** — ⬜ all: usage batch, `anonymous`, `stats`
+**Health / client** — ⬜ `health`, `/server`, `/database`, `min-version`
+
 ## Slice 1 — auth flows (proves the harness)
 
 Auth has the best unit coverage already; this slice is thin on purpose —

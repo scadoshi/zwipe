@@ -18,13 +18,29 @@ in slices.**
   got an inline `test` job the deploy `needs:` (keeps path filters + blocks a red deploy;
   GitHub can't make a push-triggered workflow wait on a separate one). Node-24 action bumps
   (checkout@v7, cache@v6, deploy-pages@v5) rode along.
-- [ ] **Slice 3 — deck lifecycle** (`coverage.md`): create/edit/get/delete, cards add/remove.
-- [ ] **Slice 4 — card serving** (`coverage.md`): search, filters, color-identity gating, ordering (needs card fixtures).
-- [ ] **Slice 5 — repo-level** (`coverage.md`): clone, suppressions, band shuffle, signal rollup.
-- [ ] **Slice 6 — metrics/auth edges** (`coverage.md`): lockout, rate-limit, verify/reset email flows.
+Remaining slices in **recommended build order** (see `coverage.md` for the
+per-slice case list + the endpoint coverage map = the full-system target):
 
-Each slice is standalone and committable; if we stop mid-way, the checklist marks
-the resume point.
+- [ ] **Slice 3 — deck lifecycle + repo** ← **NEXT (biggest untested surface).**
+  Deck CRUD, cards add/remove/maybeboard, import, unverified-email cap; **[repo]**
+  `clone_deck` exclusions + suppressions (skip/removal/eviction). Uses the harness
+  as-is (register-and-go); no new scaffolding.
+- [ ] **Slice 4 — card serving + repo** (highest *regression* risk). Search/filters/
+  color-identity gating, deck-aware serve (suppressed/deck-card exclusion, land
+  auto-stop); **[repo]** synergy ordering, band-shuffle determinism + the NULL-
+  `oracle_id` regression, rollup math. **Prereq: build the `card(...)`/`seed_cards(...)`
+  fixture helper (`harness.md` §5) first** — the only real scaffolding left.
+- [ ] **Slice 5 — metrics + user + health**: usage-batch ingest + signal rows,
+  anonymous events, change username/email/password (re-auth), delete-cascade,
+  health, last-active debounce.
+- [ ] **Slice 6 — remaining auth edges**: verify-email + password-reset via the
+  captured `FakeEmailSender` token, lockout 429, IDOR spot-check (A hits B's deck).
+  Lower priority — auth already has strong unit coverage.
+- [ ] **Ongoing — future features land WITH tests**: share tokens, MVPs vesting,
+  wildcard slot (their plan docs specify the cases; this harness is where they run).
+
+Each slice is standalone and committable; if we stop mid-way, this checklist +
+`coverage.md`'s endpoint map mark the resume point and remaining surface.
 
 **What this builds, in one sentence:** a real-database test suite for zerver
 — HTTP-level flows driven through the actual Axum router plus repo-level
