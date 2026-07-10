@@ -38,8 +38,27 @@ jobs:
       - name: Test
         run: cargo test -p zwipe-core -p zerver
 
+  # Format + lint gate (GitHub-hosted; the deploy below needs it too).
+  lint:
+    runs-on: ubuntu-latest
+    env:
+      SQLX_OFFLINE: "true"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo +nightly fmt --check
+      - name: Clippy
+        run: cargo clippy -p zwipe-core -p zerver --all-targets -- -D warnings
+
   deploy:
-    needs: test # blocked if tests fail
+    needs: [test, lint] # blocked if tests or lints fail
     runs-on: self-hosted
 
     steps:
