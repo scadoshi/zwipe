@@ -21,10 +21,11 @@ in slices.**
 Remaining slices in **recommended build order** (see `coverage.md` for the
 per-slice case list + the endpoint coverage map = the full-system target):
 
-- [ ] **Slice 3 — deck lifecycle + repo** ← **NEXT (biggest untested surface).**
-  Deck CRUD, cards add/remove/maybeboard, import, unverified-email cap; **[repo]**
-  `clone_deck` exclusions + suppressions (skip/removal/eviction). Uses the harness
-  as-is (register-and-go); no new scaffolding.
+- [~] **Slice 3 — deck lifecycle** — **profile half DONE 2026-07-09** (`tests/deck_flows.rs`,
+  5 tests: profile CRUD, unverified cap → verify unlock, dup-name reject, cross-user
+  isolation, clone). **Remaining (moved into Slice 4 with the fixture):** deck **card**
+  ops (add/qty/remove/import) + **[repo]** clone card-copy + suppressions — all need
+  real `cards` rows. Added harness helpers `put`/`delete`/`verify_email`.
 - [ ] **Slice 4 — card serving + repo** (highest *regression* risk). Search/filters/
   color-identity gating, deck-aware serve (suppressed/deck-card exclusion, land
   auto-stop); **[repo]** synergy ordering, band-shuffle determinism + the NULL-

@@ -151,6 +151,25 @@ impl TestApp {
         self.send(Method::GET, path, None, token).await
     }
 
+    pub async fn put(&self, path: &str, json: Value, token: Option<&str>) -> (StatusCode, Value) {
+        self.send(Method::PUT, path, Some(json), token).await
+    }
+
+    pub async fn delete(&self, path: &str, token: Option<&str>) -> (StatusCode, Value) {
+        self.send(Method::DELETE, path, None, token).await
+    }
+
+    /// Mark a user's email verified via a direct write. Unverified accounts hit
+    /// the deck/card caps; tests that need the higher limits call this.
+    pub async fn verify_email(&self, user_id: &str) {
+        let uid: uuid::Uuid = user_id.parse().unwrap();
+        sqlx::query("UPDATE users SET email_verified_at = now() WHERE id = $1")
+            .bind(uid)
+            .execute(&self.pool)
+            .await
+            .unwrap();
+    }
+
     /// Register a fresh user; returns `(access_token, user_id)`.
     pub async fn register(&self, username: &str) -> (String, String) {
         let body = serde_json::json!({

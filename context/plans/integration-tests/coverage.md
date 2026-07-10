@@ -7,10 +7,12 @@ marked **[repo]**. Every slice ends green with `cargo test -p zerver`.
 
 ## Status (2026-07-09)
 
-**Harness + CI shipped** (overview slices 1–2). **Covered so far** (in
-`tests/auth_flows.rs`): register → authed `GET /api/user` → login → refresh
-rotation (happy path), plus no-token 401 and wrong-password 401. Everything
-below is open.
+**Harness + CI shipped** (overview slices 1–2). **Covered so far:**
+`tests/auth_flows.rs` (register → authed `GET /api/user` → login → refresh, plus
+no-token/wrong-password 401s) and `tests/deck_flows.rs` (profile CRUD, unverified
+deck cap → verify unlock, duplicate-name reject, cross-user isolation, clone).
+Deck **card** ops + card serving are next (need the fixture builder). Everything
+else below is open.
 
 ## Recommended build order — fastest path to full-system coverage
 
@@ -41,9 +43,9 @@ Track full coverage against this. ✅ = has an integration test; ⬜ = open.
 `request-password-reset`, `reset-password`, `resend-verification`, `logout`
 **User** — ✅ `GET /api/user` · ⬜ `GET /api/user/preferences`, change
 `username`/`email`/`password`, `DELETE` account, `/api/user/hint`
-**Deck** — ⬜ all: `GET/POST /api/deck`, `GET/PUT/DELETE /api/deck/{id}`,
-`profile/{id}`, cards add/remove, `clone`, `import`, `import/archidekt`,
-`export`, `share`, `tokens`, public `GET /api/deck/{token}`
+**Deck** — ✅ `GET/POST /api/deck`, `GET/PUT/DELETE /api/deck/{id}`,
+`profile/{id}`, `clone` (`tests/deck_flows.rs`) · ⬜ cards add/remove/import,
+`import/archidekt`, `share`, `tokens`, public `GET /api/deck/{token}`
 **Card** — ⬜ all: `search`, `{scryfall_data_id}`, `{oracle_id}/printings`,
 `artists`, `types`, `keywords`, `oracle-words`, `languages`, `sets`
 **Metrics** — ⬜ all: usage batch, `anonymous`, `stats`
