@@ -9,7 +9,12 @@ in slices.**
   `build_router` extraction, `FakeEmailSender`, `TestApp` (oneshot + governor
   ConnectInfo), `tests/auth_flows.rs` — 3 tests green (register → authed GET → login
   → refresh; wrong-password 401; no-token 401). Run: `set -a; source zerver/.env; set +a; cargo test -p zerver`.
-- [ ] **Slice 2 — CI workflow** (`ci.md`): GitHub Actions + Postgres service.
+- [x] **Slice 2 — CI workflow** (`ci.md`): **DONE 2026-07-09.** `.github/workflows/test.yml`
+  — push-to-main + PR, Postgres 16 service, `cargo test -p zwipe-core -p zerver`. Uses
+  `SQLX_OFFLINE=true` for compile (the plan's no-offline note was wrong — the service DB
+  is empty, so macro validation needs the committed `.sqlx`; `#[sqlx::test]` still uses
+  `DATABASE_URL` at runtime). Exact command validated locally: 108 + 3 + 358 tests green.
+  Non-gating on deploy.
 - [ ] **Slice 3 — deck lifecycle** (`coverage.md`): create/edit/get/delete, cards add/remove.
 - [ ] **Slice 4 — card serving** (`coverage.md`): search, filters, color-identity gating, ordering (needs card fixtures).
 - [ ] **Slice 5 — repo-level** (`coverage.md`): clone, suppressions, band shuffle, signal rollup.
