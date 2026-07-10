@@ -109,17 +109,12 @@ async fn cannot_touch_another_users_deck(pool: sqlx::PgPool) {
     let (_, deck) = app.post("/api/deck", json!({ "name": "Private" }), Some(&a_token)).await;
     let id = deck["id"].as_str().unwrap().to_string();
 
+    // 404 (not 403) — another user's deck must look nonexistent, no existence leak.
     let (b_token, _) = app.register("erin").await;
     let (status, _) = app.get(&format!("/api/deck/{id}"), Some(&b_token)).await;
-    assert!(
-        status == StatusCode::NOT_FOUND || status == StatusCode::FORBIDDEN,
-        "B must not read A's deck, got {status}"
-    );
+    assert_eq!(status, StatusCode::NOT_FOUND, "B reading A's deck must 404");
     let (status, _) = app.delete(&format!("/api/deck/{id}"), Some(&b_token)).await;
-    assert!(
-        status == StatusCode::NOT_FOUND || status == StatusCode::FORBIDDEN,
-        "B must not delete A's deck, got {status}"
-    );
+    assert_eq!(status, StatusCode::NOT_FOUND, "B deleting A's deck must 404");
     // A's deck still there
     let (status, _) = app.get(&format!("/api/deck/{id}"), Some(&a_token)).await;
     assert_eq!(status, StatusCode::OK, "A's deck should be untouched");

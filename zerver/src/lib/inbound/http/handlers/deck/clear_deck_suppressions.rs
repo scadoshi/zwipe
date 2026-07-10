@@ -22,7 +22,7 @@ impl From<ClearDeckSuppressionsError> for ApiError {
         match value {
             ClearDeckSuppressionsError::Database(e) => e.log_500(),
             ClearDeckSuppressionsError::Forbidden => {
-                Self::Forbidden(ClearDeckSuppressionsError::Forbidden.to_string())
+                Self::NotFound("deck not found".to_string())
             }
         }
     }

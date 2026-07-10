@@ -22,7 +22,7 @@ impl From<ShareDeckError> for ApiError {
     fn from(value: ShareDeckError) -> Self {
         match value {
             ShareDeckError::Database(e) => e.log_500(),
-            ShareDeckError::Forbidden => Self::Forbidden(ShareDeckError::Forbidden.to_string()),
+            ShareDeckError::Forbidden => Self::NotFound("deck not found".to_string()),
             ShareDeckError::NotFound => Self::NotFound(ShareDeckError::NotFound.to_string()),
         }
     }
