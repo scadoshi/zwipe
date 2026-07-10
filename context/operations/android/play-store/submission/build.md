@@ -88,7 +88,7 @@ zcripts/android/back_handler.sh
 ```
 
 Skip it and the edge-swipe / hardware back closes the app from any screen (the
-pre-2026-07-09 bug). See [`../../../../plans/back_swipe_gesture.md`](../../../../plans/back_swipe_gesture.md).
+pre-2026-07-09 bug). See [`../../../../archive/back_swipe_gesture.md`](../../../../archive/back_swipe_gesture.md).
 R8 keeps the handler (it's used), but the step-5 smoke test is the confirmation.
 
 ## 2. Bump targetSdk (and versionCode) in the generated Gradle
