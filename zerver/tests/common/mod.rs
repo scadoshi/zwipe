@@ -52,6 +52,21 @@ impl FakeEmailSender {
     pub fn last_body(&self) -> Option<String> {
         self.sent.lock().unwrap().last().map(|e| e.html_body.clone())
     }
+
+    /// Extracts the raw token from a `/{segment}/{token}` link in the most
+    /// recent email body — the verify/reset flows embed the raw token there
+    /// (`{web_base_url}/verify/{raw}`, `.../reset/{raw}`), exactly as a user
+    /// would receive it. Returns `None` if no such link is present.
+    pub fn last_token(&self, segment: &str) -> Option<String> {
+        let body = self.last_body()?;
+        let marker = format!("/{segment}/");
+        let start = body.find(&marker)? + marker.len();
+        let rest = &body[start..];
+        let end = rest
+            .find(|c: char| c.is_whitespace() || matches!(c, '"' | '\'' | '<' | '>' | '/'))
+            .unwrap_or(rest.len());
+        Some(rest[..end].to_string())
+    }
 }
 
 // Distinct fake peer IP per TestApp so the per-IP governor limiter never shares

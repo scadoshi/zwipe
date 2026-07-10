@@ -8,8 +8,8 @@ marked **[repo]**. Every slice ends green with `cargo test -p zerver`.
 ## Status (2026-07-09)
 
 **Harness + CI shipped + the card fixture builder is built** (overview slices 1–2,
-plus `card()`/`seed_cards()` in `tests/common/mod.rs`). **31 integration tests green.
-Covered so far:**
+plus `card()`/`seed_cards()` in `tests/common/mod.rs`). **All 6 slices done —
+36 integration tests green. Covered so far:**
 - `tests/auth_flows.rs` — register → authed `GET /api/user` → login → refresh, plus
   no-token/wrong-password 401s.
 - `tests/deck_flows.rs` — profile CRUD, unverified deck cap → verify unlock,
@@ -26,11 +26,13 @@ Covered so far:**
   anonymous 3-kinds no-auth, garbage kind 422.
 - `tests/user_flows.rs` — change username/email/password (re-auth + wrong-pw reject),
   delete-account cascade.
+- `tests/auth_edges.rs` — verify-email + password-reset via captured `FakeEmailSender`
+  token, garbage token rejected, refresh single-use rotation, login lockout 429.
 
-**Next:** Slice 6 (auth edges: verify/reset via captured email, refresh single-use,
-lockout 429). Deferred/optional: deck-aware serve suppression exclusion + land
-auto-stop, band-boundary shuffle + clone card-copy ([repo]), `user_week_signal` rows,
-last-active debounce, preferences/hint. Everything else below is open.
+**Core complete.** Optional backlog (none blocking): deck-aware serve suppression
+exclusion + land auto-stop, band-boundary shuffle + clone card-copy ([repo]),
+`user_week_signal` rows, last-active debounce, preferences/hint, the card-metadata
+DISTINCT endpoints, deck share/tokens + public share page, archidekt import.
 
 ## Recommended build order — fastest path to full-system coverage
 
@@ -57,8 +59,8 @@ because it's the only real scaffolding left after the harness.
 
 Track full coverage against this. ✅ = has an integration test; ⬜ = open.
 
-**Auth** — ✅ `POST /api/auth/{register,login,refresh}` · ⬜ `verify-email`,
-`request-password-reset`, `reset-password`, `resend-verification`, `logout`
+**Auth** — ✅ `POST /api/auth/{register,login,refresh,verify-email,forgot-password,
+reset-password}` (`auth_flows.rs` + `auth_edges.rs`) · ⬜ `resend-verification`, `logout`
 **User** — ✅ `GET /api/user`, change `username`/`email`/`password`, `DELETE` account
 (`tests/user_flows.rs`) · ⬜ `GET /api/user/preferences`, `/api/user/hint`
 **Deck** — ✅ `GET/POST /api/deck`, `GET/PUT/DELETE /api/deck/{id}`,
