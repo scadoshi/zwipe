@@ -102,6 +102,51 @@ async fn deck_card_added_to_maybeboard(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
+async fn clone_copies_the_cards(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "cloner").await;
+
+    let a = card("Sol Ring").color_identity("").type_line("Artifact");
+    let b = card("Arcane Signet").color_identity("").type_line("Artifact");
+    let (a_sid, a_oid) = (a.id(), a.oracle_id().unwrap());
+    let (b_sid, b_oid) = (b.id(), b.oracle_id().unwrap());
+    seed_cards(&pool, &[a, b]).await;
+
+    for (sid, oid, qty) in [(a_sid, a_oid, 1), (b_sid, b_oid, 3)] {
+        let (status, _) = app
+            .post(
+                &format!("/api/deck/{did}/card"),
+                json!({ "scryfall_data_id": sid.to_string(), "oracle_id": oid.to_string(), "quantity": qty }),
+                Some(&token),
+            )
+            .await;
+        assert_eq!(status, StatusCode::CREATED);
+    }
+
+    let (status, cloned) = app
+        .post(&format!("/api/deck/{did}/clone"), json!({ "new_name": "Sol Ring Copy" }), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "clone: {cloned}");
+    let clone_id = cloned["deck_id"].as_str().unwrap();
+
+    // the clone carries both cards with their quantities
+    let (_, full) = app.get(&format!("/api/deck/{clone_id}"), Some(&token)).await;
+    let entries = full["entries"].as_array().unwrap();
+    assert_eq!(entries.len(), 2, "clone should copy both cards: {full}");
+    let mut by_name: Vec<(String, i64)> = entries
+        .iter()
+        .map(|e| {
+            (
+                e["card"]["scryfall_data"]["name"].as_str().unwrap().to_string(),
+                e["deck_card"]["quantity"].as_i64().unwrap(),
+            )
+        })
+        .collect();
+    by_name.sort();
+    assert_eq!(by_name, vec![("Arcane Signet".to_string(), 3), ("Sol Ring".to_string(), 1)]);
+}
+
+#[sqlx::test]
 async fn import_resolves_known_cards_and_reports_the_rest(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, did) = deck_for(&app, "importer").await;

@@ -31,6 +31,10 @@ plus `card()`/`seed_cards()` in `tests/common/mod.rs`). **All 6 slices done —
 - `tests/card_filter_parity.rs` — **SQL adapter vs `CardCriteria::matches` parity**
   over 55 criteria (every predicate branch bar the 3 server-only pool flags); caught
   the rarity long-word-vs-short-code fixture bug. (todo "SQL-vs-predicate parity test".)
+- `tests/deck_suppressions.rs` — deck-aware serve excludes a skipped card, unskip
+  restores it, clear wipes the set (the `NOT EXISTS deck_card_suppressions` clause).
+- `tests/deck_cards.rs::clone_copies_the_cards` — clone copies the deck's cards with
+  their quantities.
 
 **Core complete.** Optional backlog (none blocking): deck-aware serve suppression
 exclusion + land auto-stop, band-boundary shuffle + clone card-copy ([repo]),
@@ -67,10 +71,11 @@ reset-password}` (`auth_flows.rs` + `auth_edges.rs`) · ⬜ `resend-verification
 **User** — ✅ `GET /api/user`, change `username`/`email`/`password`, `DELETE` account
 (`tests/user_flows.rs`) · ⬜ `GET /api/user/preferences`, `/api/user/hint`
 **Deck** — ✅ `GET/POST /api/deck`, `GET/PUT/DELETE /api/deck/{id}`,
-`profile/{id}`, `clone` (`tests/deck_flows.rs`), `POST/PUT/DELETE
-/api/deck/{id}/card`, `card/import` (`tests/deck_cards.rs`) · ⬜ deck-aware
-`card/search` (serve), `import/archidekt`, `share`, `tokens`, public
-`GET /api/deck/{token}`
+`profile/{id}`, `clone` + clone card-copy (`tests/deck_flows.rs`,
+`tests/deck_cards.rs`), `POST/PUT/DELETE /api/deck/{id}/card`, `card/import`
+(`tests/deck_cards.rs`), deck-aware `card/search` + `suppressions` skip/unskip/clear
+(`tests/deck_suppressions.rs`) · ⬜ `import/archidekt`, `share`, `tokens`, public
+`GET /api/share/deck/{token}`
 **Card** — ✅ `POST /api/card/search` (name/cmc/color-identity),
 `GET /api/card/{scryfall_data_id}` (`tests/card_serving.rs`) · ⬜
 `{oracle_id}/printings`, `artists`, `types`, `keywords`, `oracle-words`,

@@ -43,10 +43,13 @@ locked while limited). Governor keys login on peer IP (`CfConnectingIpKeyExtract
 back to `ConnectInfo` when no `CF-Connecting-IP` header), so one `TestApp`'s fake IP
 accumulates across rapid attempts.
 
-**The plan's core is complete.** Optional backlog if more coverage is wanted later
-(none blocking):
-- **Slice 4 leftovers:** deck-aware serve **suppression** exclusion + land-target
-  auto-stop (HTTP), band-boundary/different-deck shuffle + clone card-copy ([repo]).
+**The plan's core is complete** (plus follow-ups since: the SQL-vs-predicate parity
+test `card_filter_parity.rs`, suppression-serve `deck_suppressions.rs`, and
+clone-card-copy in `deck_cards.rs`). Optional backlog if more coverage is wanted
+later (none blocking):
+- **Slice 4 leftovers:** land-target auto-stop (HTTP), band-boundary/different-deck
+  shuffle ([repo]). ~~suppression exclusion~~ **DONE** (`deck_suppressions.rs`),
+  ~~clone card-copy~~ **DONE** (`deck_cards.rs::clone_copies_the_cards`).
 - **Slice 5 leftovers:** `user_week_signal`/facet rows from usage, last-active debounce
   (`users.last_active_at`), `GET /api/user/preferences` + `/hint`.
 - **Card metadata endpoints:** `get_printings`, `artists`, `types`, `keywords`,
