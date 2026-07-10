@@ -16,16 +16,24 @@ Triggers automatically on push to `main` when any of these paths change:
 
 Also has `workflow_dispatch` for manual runs from the GitHub Actions tab.
 
-### Test workflow (separate, non-gating)
+### Tests gate the deploys
 
-`.github/workflows/test.yml` runs the server test suite on push to `main` and on
-every PR: a `postgres:16` service container + `cargo test -p zwipe-core -p zerver`
-(never `--workspace` — zwiper's Dioxus/GTK stack won't build headless). It uses
-`SQLX_OFFLINE=true` to compile against the committed `.sqlx`, while `#[sqlx::test]`
-creates and migrates a fresh DB per test at runtime via `DATABASE_URL`. It does
-**not** gate deploys — a red `test` run won't block a `deploy-zerver` run (by
-design; revisit if a red main ever ships a regression). Plan/design:
-[`../../plans/integration-tests/`](../../plans/integration-tests/overview.md).
+The test suite (`postgres:16` service + `cargo test -p zwipe-core -p zerver`, never
+`--workspace` — zwiper's Dioxus/GTK stack won't build headless; `SQLX_OFFLINE=true`
+compiles against the committed `.sqlx` while `#[sqlx::test]` migrates a fresh DB per
+test via `DATABASE_URL`) runs in two places:
+
+- **`.github/workflows/test.yml` (`Test`)** — on **pull requests only**, the
+  pre-merge signal.
+- **A `test` job inside `deploy-zerver.yml` and `deploy-zite.yml`** — the `deploy`
+  (and zite's `build`) job `needs: test`, so **a red suite blocks the deploy**.
+  This keeps the deploys' path filters (a docs-only push still won't redeploy) while
+  gating on tests — GitHub can't make a `push`-triggered workflow wait on a *separate*
+  workflow, hence the inline job. Push-time testing lives here, so `test.yml` stays
+  PR-only (no double-run). `workflow_dispatch` still lets you force a deploy (it runs
+  after the test job).
+
+Plan/design: [`../../plans/integration-tests/`](../../plans/integration-tests/overview.md).
 
 ---
 
