@@ -4,6 +4,29 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
+## Latest — 2026-07-09
+
+- **1.5.0 shipped to both stores** (edge back-swipe nav, per-screen filter
+  persistence, session-platform tracking, CardRow/skeleton polish). iOS **build 62**
+  in review; Android **vc24** AAB uploaded (internal testing). Store copy in each
+  `form_fields.md`. Build recipe now documents the back-handler patch (step 1c),
+  old-AAB cleanup (4b), and the versionCode-burn recovery.
+- **Android production access:** closed-testing 14-day cycle **complete** (~400
+  testers via a hired service + organic); questionnaire answers drafted in
+  `operations/android/play-store/submission/production_access.md`. Production
+  application submittable (~72h review), then promote to the Production track.
+- **Session-platform tracking** (built → tested → deployed): each session's
+  refresh-token row records the client platform (ios/android/desktop/web); refresh
+  carries it forward. Additive, server-first. Query users by platform for comms.
+- **Integration test suite stood up from zero** (`plans/integration-tests/`):
+  `#[sqlx::test]` harness driving the real router via `tower::oneshot`; **8 tests**
+  green (auth flows + deck lifecycle). **CI now gates deploys** — a `test` job in
+  each deploy workflow (`needs:`), `Test` on PRs; GitHub Actions bumped to Node-24.
+  Server-side security fix along the way: another user's deck now returns **404,
+  not 403** (no existence leak). IN PROGRESS — next is card-serving coverage.
+
+---
+
 ## Infrastructure — ✅ Done
 
 Prod migrated off the home box to a **Hetzner CPX31 VPS** on 2026-06-13 (see entry below).

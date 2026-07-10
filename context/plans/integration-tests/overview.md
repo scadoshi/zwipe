@@ -3,6 +3,37 @@
 **Status: IN PROGRESS (started 2026-07-09). Server-only, no deploy risk, built
 in slices.**
 
+## ▶ Resume here (next session)
+
+**Done:** slices 1–3 → **8 integration tests green** (`tests/auth_flows.rs` ×3,
+`tests/deck_flows.rs` ×5) + CI gating live (see below) + a 404-IDOR server fix.
+
+**Run the tests:** `set -a; source zerver/.env; set +a; cargo test -p zerver`
+(CI parity: prepend `SQLX_OFFLINE=true`). Needs local Postgres up.
+
+**Next task — Slice 4:** first build the **card fixture helper** in
+`tests/common/mod.rs` — `card(name) -> CardFixture` (builder over the wide `cards`
+schema) + `seed_cards(pool, Vec<CardFixture>)` that INSERTs + REFRESHes the
+`latest_cards` / `card_signal_rollup` matviews (see `harness.md` §5). That helper
+unblocks BOTH the deferred deck-**card** ops (add/qty/remove/import via
+`POST/PUT/DELETE /api/deck/{id}/card/...`) AND all of card serving/search/signal.
+
+**Harness map:** `zerver/tests/common/mod.rs` = `TestApp` (real router via
+`build_router`, driven with `tower::oneshot`), `FakeEmailSender`, and helpers
+`register`/`verify_email`/`post`/`get`/`put`/`delete`. New areas go in
+`tests/<area>.rs` starting with `mod common;` + `use common::TestApp;`.
+
+**Gotchas already learned (save time):**
+- Collection route is `POST/GET /api/deck` — **no trailing slash** (the `/{id}`
+  paths are fine).
+- Deck **update** JSON: the `Opdate` fields `commander_id`, `partner_commander_id`,
+  `background_id`, `signature_spell_id`, `format` lack `#[serde(default)]`, so they
+  must be present — send the string `"Unchanged"` for each.
+- Fresh registered users are **unverified** (deck cap 1 / card cap 100); call
+  `app.verify_email(&uid)` to lift to 20 / 250.
+- In harness helpers use **unchecked `sqlx::query(...)`** (not the `query!` macro)
+  so test-only queries don't need `.sqlx` offline entries.
+
 ## Progress tracker (update as slices land)
 
 - [x] **Slice 1 — harness + auth flow** (`harness.md`): **DONE 2026-07-09.** dev-deps,
