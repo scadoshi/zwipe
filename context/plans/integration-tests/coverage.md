@@ -74,8 +74,9 @@ reset-password}` (`auth_flows.rs` + `auth_edges.rs`) · ⬜ `resend-verification
 `profile/{id}`, `clone` + clone card-copy (`tests/deck_flows.rs`,
 `tests/deck_cards.rs`), `POST/PUT/DELETE /api/deck/{id}/card`, `card/import`
 (`tests/deck_cards.rs`), deck-aware `card/search` + `suppressions` skip/unskip/clear
-(`tests/deck_suppressions.rs`) · ⬜ `import/archidekt`, `share`, `tokens`, public
-`GET /api/share/deck/{token}`
+(`tests/deck_suppressions.rs`), `import/archidekt` fetch+parse (`tests/archidekt_import.rs`,
+`#[ignore]`d live test vs a permanent real deck — run `-- --ignored`) · ⬜ `share`,
+`tokens`, public `GET /api/share/deck/{token}`
 **Card** — ✅ `POST /api/card/search` (name/cmc/color-identity),
 `GET /api/card/{scryfall_data_id}` (`tests/card_serving.rs`),
 `{oracle_id}/printings`, `artists`, `types`, `keywords`, `languages`, `sets`
