@@ -30,7 +30,7 @@ impl From<CloneDeckError> for ApiError {
         match value {
             CloneDeckError::SourceNotFound => Self::NotFound("source deck not found".to_string()),
             CloneDeckError::Forbidden => {
-                Self::Forbidden("cannot clone another user's deck".to_string())
+                Self::NotFound("deck not found".to_string())
             }
             CloneDeckError::Duplicate => {
                 Self::UnprocessableEntity("a deck with that name already exists".to_string())
@@ -50,7 +50,7 @@ impl From<CloneDeckError> for ApiError {
                     Self::NotFound("source deck not found".to_string())
                 }
                 GetDeckProfileError::Forbidden => {
-                    Self::Forbidden("cannot clone another user's deck".to_string())
+                    Self::NotFound("deck not found".to_string())
                 }
                 GetDeckProfileError::Database(e) => e.log_500(),
                 GetDeckProfileError::DeckProfileFromDb(e) => e.log_500(),

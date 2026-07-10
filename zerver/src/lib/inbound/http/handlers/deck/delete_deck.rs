@@ -18,7 +18,7 @@ impl From<DeleteDeckError> for ApiError {
         match value {
             DeleteDeckError::NotFound => Self::NotFound("deck not found".to_string()),
             DeleteDeckError::Database(e) => e.log_500(),
-            DeleteDeckError::Forbidden => Self::Forbidden(DeleteDeckError::Forbidden.to_string()),
+            DeleteDeckError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
     }
 }
