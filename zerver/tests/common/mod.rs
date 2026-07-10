@@ -162,6 +162,17 @@ impl TestApp {
         self.send(Method::DELETE, path, None, token).await
     }
 
+    /// DELETE carrying a JSON body (e.g. `delete-user`, which re-auths on a
+    /// password in the request body).
+    pub async fn delete_json(
+        &self,
+        path: &str,
+        json: Value,
+        token: Option<&str>,
+    ) -> (StatusCode, Value) {
+        self.send(Method::DELETE, path, Some(json), token).await
+    }
+
     /// Mark a user's email verified via a direct write. Unverified accounts hit
     /// the deck/card caps; tests that need the higher limits call this.
     pub async fn verify_email(&self, user_id: &str) {
