@@ -25,6 +25,7 @@ use tower::ServiceExt; // oneshot
 use uuid::Uuid;
 
 use zwipe::domain::auth::models::access_token::JwtSecret;
+use zwipe_core::domain::card::scryfall_data::rarity::Rarity;
 use zwipe::domain::email::models::{SendEmail, SendEmailError};
 use zwipe::domain::email::ports::EmailSender;
 use zwipe::domain::{auth, card, deck, health, metrics, user};
@@ -266,6 +267,14 @@ pub struct CardFixture {
     set_id: Uuid,
     collector_number: String,
     legalities: Value,
+    flavor_text: Option<String>,
+    artist: Option<String>,
+    lang: String,
+    digital: bool,
+    oversized: bool,
+    promo: bool,
+    content_warning: Option<bool>,
+    mechanical_categories: Vec<String>,
 }
 
 /// Start a card fixture. Distinct `id` and `oracle_id` are assigned up front so
@@ -296,6 +305,14 @@ pub fn card(name: &str) -> CardFixture {
         set_id: Uuid::from_u128(0x5E7),
         collector_number: n.to_string(),
         legalities: json!({}),
+        flavor_text: None,
+        artist: None,
+        lang: "en".to_string(),
+        digital: false,
+        oversized: false,
+        promo: false,
+        content_warning: None,
+        mechanical_categories: Vec::new(),
     }
 }
 
@@ -412,6 +429,46 @@ impl CardFixture {
     pub fn commander_legal(self) -> Self {
         self.legal("commander")
     }
+    pub fn flavor_text(mut self, text: &str) -> Self {
+        self.flavor_text = Some(text.to_string());
+        self
+    }
+    pub fn artist(mut self, artist: &str) -> Self {
+        self.artist = Some(artist.to_string());
+        self
+    }
+    pub fn lang(mut self, lang: &str) -> Self {
+        self.lang = lang.to_string();
+        self
+    }
+    pub fn digital(mut self, digital: bool) -> Self {
+        self.digital = digital;
+        self
+    }
+    pub fn oversized(mut self, oversized: bool) -> Self {
+        self.oversized = oversized;
+        self
+    }
+    pub fn promo(mut self, promo: bool) -> Self {
+        self.promo = promo;
+        self
+    }
+    pub fn content_warning(mut self, warning: bool) -> Self {
+        self.content_warning = Some(warning);
+        self
+    }
+    /// A token card (`layout = "token"`); the seeded `card_profiles.is_token`
+    /// tracks the layout, so this also flips the `is_token` flag.
+    pub fn token(mut self) -> Self {
+        self.layout = "token".to_string();
+        self
+    }
+    /// Mechanical categories (snake_case, e.g. `"ramp"`, `"graveyard_hate"`) —
+    /// written to `card_profiles.mechanical_categories`.
+    pub fn categories(mut self, cats: &[&str]) -> Self {
+        self.mechanical_categories = cats.iter().map(|c| c.to_string()).collect();
+        self
+    }
 }
 
 /// Seed `cards` with the given fixtures, write their `card_profiles` rows, and
@@ -427,6 +484,7 @@ pub async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
              prints_search_uri, rulings_uri, scryfall_uri, uri, \
              cmc, color_identity, colors, keywords, legalities, mana_cost, name, \
              oracle_text, power, produced_mana, reserved, toughness, type_line, edhrec_rank, \
+             artist, flavor_text, content_warning, \
              border_color, booster, collector_number, digital, finishes, frame, full_art, \
              highres_image, image_status, oversized, prices, promo, rarity, related_uris, \
              released_at, reprint, scryfall_set_uri, set_name, set_search_uri, set_type, \
@@ -434,8 +492,15 @@ pub async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
         );
         qb.push_values(cards.iter(), |mut b, c| {
             let prices = json!({ "usd": c.usd });
+            // Production stores rarity as the short code ("R"/"C"/…) — the SQL
+            // rarity filters compare against `to_short_name()`. Storing the long
+            // word here would read back fine (try_from accepts both) but silently
+            // break those filters, so mirror the real write form.
+            let rarity = Rarity::try_from(c.rarity.as_str())
+                .map(|r| r.to_short_name())
+                .unwrap_or_else(|_| c.rarity.clone());
             b.push_bind(c.id)
-                .push_bind("en")
+                .push_bind(c.lang.as_str())
                 .push_bind("card")
                 .push_bind(c.layout.as_str())
                 .push_bind(c.oracle_id)
@@ -453,26 +518,29 @@ pub async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
                 .push_bind(c.oracle_text.as_deref())
                 .push_bind(c.power.as_deref())
                 .push_bind(c.produced_mana.as_deref())
-                .push_bind(false)
+                .push_bind(false) // reserved
                 .push_bind(c.toughness.as_deref())
                 .push_bind(c.type_line.as_deref())
                 .push_bind(c.edhrec_rank)
-                .push_bind("black")
-                .push_bind(true)
+                .push_bind(c.artist.as_deref())
+                .push_bind(c.flavor_text.as_deref())
+                .push_bind(c.content_warning)
+                .push_bind("black") // border_color
+                .push_bind(true) // booster
                 .push_bind(c.collector_number.as_str())
-                .push_bind(false)
-                .push_bind(vec!["nonfoil".to_string()])
-                .push_bind("2015")
-                .push_bind(false)
-                .push_bind(true)
-                .push_bind("highres_scan")
-                .push_bind(false)
+                .push_bind(c.digital)
+                .push_bind(vec!["nonfoil".to_string()]) // finishes
+                .push_bind("2015") // frame
+                .push_bind(false) // full_art
+                .push_bind(true) // highres_image
+                .push_bind("highres_scan") // image_status
+                .push_bind(c.oversized)
                 .push_bind(Json(prices))
-                .push_bind(false)
-                .push_bind(c.rarity.as_str())
-                .push_bind(Json(json!({})))
+                .push_bind(c.promo)
+                .push_bind(rarity)
+                .push_bind(Json(json!({}))) // related_uris
                 .push_bind(released)
-                .push_bind(false)
+                .push_bind(false) // reprint
                 .push_bind("https://scryfall.test/set")
                 .push_bind(c.set_name.as_str())
                 .push_bind("https://scryfall.test/set-search")
@@ -480,16 +548,19 @@ pub async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
                 .push_bind("https://scryfall.test/set-uri")
                 .push_bind(c.set.as_str())
                 .push_bind(c.set_id)
-                .push_bind(false)
-                .push_bind(false)
-                .push_bind(false);
+                .push_bind(false) // story_spotlight
+                .push_bind(false) // textless
+                .push_bind(false); // variation
         });
         qb.build().execute(pool).await.unwrap();
 
-        let mut pb =
-            QueryBuilder::new("INSERT INTO card_profiles (scryfall_data_id, is_token) ");
+        let mut pb = QueryBuilder::new(
+            "INSERT INTO card_profiles (scryfall_data_id, is_token, mechanical_categories) ",
+        );
         pb.push_values(cards.iter(), |mut b, c| {
-            b.push_bind(c.id).push_bind(c.layout == "token");
+            b.push_bind(c.id)
+                .push_bind(c.layout == "token")
+                .push_bind(Json(c.mechanical_categories.clone()));
         });
         pb.build().execute(pool).await.unwrap();
     }
