@@ -35,7 +35,7 @@ pub fn Contribute() -> Element {
                             target: "_blank",
                             rel: "noopener noreferrer",
                             class: "card-action",
-                            "Contribute →"
+                            "Contribute ↗"
                         }
                     }
                     div { class: "card",
@@ -47,7 +47,7 @@ pub fn Contribute() -> Element {
                             target: "_blank",
                             rel: "noopener noreferrer",
                             class: "card-action",
-                            "buymeacoffee.com/scadoshi →"
+                            "buymeacoffee.com/scadoshi ↗"
                         }
                     }
                     div { class: "card",
@@ -59,7 +59,7 @@ pub fn Contribute() -> Element {
                             target: "_blank",
                             rel: "noopener noreferrer",
                             class: "card-action",
-                            "github.com/sponsors/scadoshi →"
+                            "github.com/sponsors/scadoshi ↗"
                         }
                     }
                 }
