@@ -149,11 +149,13 @@ pub fn Nav() -> Element {
                     a {
                         class: "store-link",
                         href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
-                        target: "_blank",
-                        rel: "noopener",
                         "App Store ↗"
                     }
-                    Link { to: Route::Android {}, class: "store-link", "Play Store ↗" }
+                    a {
+                        class: "store-link",
+                        href: "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe",
+                        "Play Store ↗"
+                    }
                 }
             },
             links: rsx! {
@@ -173,14 +175,17 @@ pub fn Nav() -> Element {
                     a {
                         class: "store-link",
                         href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
-                        target: "_blank",
-                        rel: "noopener",
                         onclick: move |_| open.set(false),
                         "App Store ↗"
                     }
                 }
                 li { class: "nav-link-store",
-                    Link { to: Route::Android {}, class: "store-link", onclick: move |_| open.set(false), "Play Store ↗" }
+                    a {
+                        class: "store-link",
+                        href: "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe",
+                        onclick: move |_| open.set(false),
+                        "Play Store ↗"
+                    }
                 }
             },
             trailing: rsx! {
