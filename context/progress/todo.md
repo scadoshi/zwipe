@@ -25,7 +25,7 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Bugs (owner-reported 2026-07-11)
 
-- [ ] **Printing shifting bug** — [zwiper] visual layout shift when a card's printing changes. Owner-observed; needs repro + which surface (card detail / printing picker) and whether it's an image-size / reflow issue.
+- [x] **Printing shifting bug — FIXED 2026-07-11** (`900001bd`). The printing carousel drifted right as you swiped (worse on many-printing cards, reload cleared it): it translated the strip by `-index * page_width_px` off a one-time `window.innerWidth` read, so `index * (measured - actual)` error accumulated. Now positions by `-index * 100%` (percentage of the one-viewport-wide flex strip), which needs no measurement and can't drift. Device-verified on the 6.5" sim.
 - [x] **Flip-card down-shift — FIXED 2026-07-11** (`02aab440`). Wasn't the button padding; the DFC-only `aspect-ratio: 5/7` wrapper rule made double-faced cards render a few px smaller/lower than single-faced ones. Now the button pins to an image-sized `.flip-face` (absolute, top-right) and DFC/single-face size identically. Sim-verified.
 
 ---
