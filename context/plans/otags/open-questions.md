@@ -49,9 +49,26 @@ recent-release lag we feared did not appear (13/13 latest-window cards already t
 authored and parity-tested live. **Tokens** derives from `all_parts` component=token
 (structured Scryfall data, 4,614 cards — better than otags *or* the old regex). **Finisher**
 is **dropped** (owner-approved; its old rule `power≥6 OR "you win the game" OR "extra turn"`
-was an incoherent grab-bag). 19 categories map cleanly; the parity gate flagged **5**
-(pump/anthem/stax/protection + a note on graveyard_hate) for root rework before `classify.rs`
-is deleted — implementation is the remaining Phase 2 work.
+was an incoherent grab-bag).
+
+**FINAL (owner, 2026-07-11) — Option A: keep ~4 straggler heuristics, don't force-fit.** The
+parity gate confirmed **20 categories map cleanly** to otag subtrees (anthem fixed via the
+mass-buff swap). But **Pump / Stax / Protection / GraveyardHate have no clean otag concept**
+(the otag taxonomy carves those differently), and their old heuristic rules are simple and
+stable, not the brittle guesswork. So `classify.rs` is **not deleted** — it is **trimmed to
+those ~4 rules, renamed `oracle_tag_gaps.rs` (`classify_oracle_tag_gaps`), and documented**
+to state it now only fills the gaps otags can't express. Net: heuristic shrinks from 24
+branches to ~4; the other 20 + Tokens come from otags/`all_parts`. (This makes the §3
+stax-breadth question moot — stax stays heuristic.) Forcing lossy otags on the 4 (option B)
+was rejected: it makes those filters measurably worse for no real gain.
+
+**Naming (owner, 2026-07-11):** the coarse-category concept survives but the word
+`mechanical_category` clashes with `oracle_tag` canon, so `MechanicalCategory` is renamed
+**`CardRole`** (module `card/models/mechanical_category/ → card_role/`; heuristic file
+`classify.rs → card_role/oracle_tag_gaps.rs`). The type rename is free; the **wire word
+`mechanical_categories` is migrated to `card_roles` in a dedicated version-gated phase**
+(`sequencing.md` Phase M, `compatibility.md` §Naming) — dual-emit → migrate clients → sunset
+behind `MIN_CLIENT_VERSION`. Committed for sure, accepting the calendar cost.
 
 ## 2. Deck-tag reconciliation — DECIDED: demote `DeckTag`, one drives the other
 

@@ -16,12 +16,13 @@ and cross-format swipe-signal collection.
 
 ## Naming
 
-**Canonical name: `oracle_tag` / `oracle_tags`** — DB (`oracle_tags`, `card_oracle_tags`,
-`card_profiles.oracle_tags`), Rust (`OracleTag`), and wire (`oracle_tags` field +
-`oracle_tags_*` filter criteria). The old `mechanical_categories` name is retired as a concept
-but kept on the wire as a **deprecated translation** during the client-migration window
-(`compatibility.md` §Naming). `otag`/`otags` appears only as informal prose shorthand in
-these docs; the concrete identifiers are all spelled out.
+**Canonical name: `oracle_tag` / `oracle_tags`** (the granular tags) — DB (`oracle_tags`,
+`card_oracle_tags`, `card_profiles.oracle_tags`), Rust (`OracleTag`), wire (`oracle_tags` +
+`oracle_tags_*` criteria). Separately, the **coarse ~24 functional categories** survive as a
+distinct concept but are renamed off our old word: **`MechanicalCategory → CardRole`**, and
+the legacy wire field `mechanical_categories` is migrated to **`card_roles`** in a version-gated
+phase (`compatibility.md` §Naming, `sequencing.md` Phase M). `otag`/`otags` appears only as
+informal prose shorthand in these docs; concrete identifiers are all spelled out.
 
 ## The files
 
@@ -51,7 +52,9 @@ Full phase-by-phase build (files touched + per-phase additive-wire guarantee) li
 0. **Spike** — confirm the bulk file shape (keying, descriptions). ✅ done
 1. **Ingest** — `oracle_tags` catalog + `card_oracle_tags` + daily `zervice` sync. ✅ **shipped**
 2. **Filtering + retire heuristic** — `card_profiles.oracle_tags` projection, otag filter fields,
-   otags on served cards; delete `classify.rs`, derive `mechanical_categories` from otags.
+   otags on served cards; rename `MechanicalCategory→CardRole`, trim `classify.rs→oracle_tag_gaps.rs`
+   (keep 4 stragglers), derive the other 20 categories + Tokens from otags/`all_parts`.
+   (Wire rename `mechanical_categories→card_roles` is version-gated Phase M.)
 3. **Deck otags** — `decks.oracle_tags` + archetype→otag seeding + searchable picker.
 4. **Serving** — one small `W_ORACLE_TAG` correlation term in the ranking query.
 5. **Signal collection** — generalized-context per-otag signal, shipped dark.

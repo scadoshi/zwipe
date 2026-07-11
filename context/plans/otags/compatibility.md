@@ -22,7 +22,8 @@ follow them:
   already carries `mechanical_categories`; the new `oracle_tags` field must be
   `#[serde(default)]` so an **old client** deserializing a **new server's** `Card` does not
   choke on the unknown-but-present field, and a **new client** reading an **old server**
-  gets an empty default. (`mechanical_categories` is dual-emitted — see §Naming below.)
+  gets an empty default. (The separate `mechanical_categories → card_roles` rename is
+  dual-emitted through its own migration — see §Naming below.)
 - **Enums are append-only.** `DeckOtherTag` (`zwipe-core/src/domain/deck/models/deck_other_tag.rs`)
   documents that variants are *only added, never removed or renamed*, so stored values keep
   parsing. If otags become an enum, same rule. (otags are more likely a `String`/newtype
@@ -67,26 +68,35 @@ Treat any design that *seems* to require removing/renaming a wire field or route
 mistake to redesign around first, and only reach for the min-version gate as the last
 resort.
 
-## Naming: `oracle_tag` is canon; `mechanical_categories` is a wire-compat translation
+## Naming: `oracle_tag` canon + the `mechanical_categories → card_roles` wire migration
 
-**Settled 2026-07-11 (owner).** The concept is canonically **`oracle_tag` / `oracle_tags`**
-everywhere — DB (`oracle_tags`, `card_oracle_tags`, `card_profiles.oracle_tags`), Rust
-(`OracleTag`), and the wire (`oracle_tags` field + `oracle_tags_*` filter criteria). The old
-`mechanical_categories` name is **retired as a concept** (Q1) but **kept on the wire as a
-deprecated translation** so installed clients don't break.
+**Settled 2026-07-11 (owner).** Two **distinct** functional concepts live on the wire and
+**both survive** — they are different granularities, not replacements for each other:
 
-The subtlety that dictates the mechanism: **serde `alias`/`rename` only fixes
-*deserialization*** (a new server reading an *old client's request*). It does **not** fix
-*serialization* — an old client reading a new server's *response* looks for the exact key it
-was built with. So a rename-plus-alias alone would silently blank out old clients' category
-display. Therefore, during the transition:
+- **`oracle_tags`** — the granular community tags (hundreds). Canon everywhere: DB
+  (`oracle_tags`, `card_oracle_tags`, `card_profiles.oracle_tags`), Rust (`OracleTag`), wire
+  (`oracle_tags` field + `oracle_tags_*` criteria). This is an **additive new field** — no
+  migration, just `#[serde(default)]` (see Guardrail 1).
+- **The coarse ~24 categories** — human-friendly filter buttons (removal, ramp, …), derived
+  from oracle_tag subtrees + `all_parts` (Tokens) + ~4 kept heuristics (Q1). This concept is
+  **renamed** `mechanical_category → CardRole`. The old word `mechanical_categories` is our
+  pre-otag term and clashes with canon, so it is being **migrated off the wire too.**
 
-- **Responses emit both keys:** `oracle_tags` (canonical, granular — new clients read this)
-  **and** `mechanical_categories` (legacy, the 24 coarse categories *derived from oracle_tag
-  subtrees*, precomputed nightly — old clients keep working). Non-breaking.
-- **Requests accept both:** legacy `mechanical_categories_*` filter criteria **and**
-  canonical `oracle_tags_*`.
-- **Sunset:** once a `MIN_CLIENT_VERSION` floor guarantees every install reads `oracle_tags`,
-  drop the legacy `mechanical_categories` response field + criteria. That is the *only*
-  removal in this whole feature that needs the gate — and it happens long after ship, when
-  old installs have aged out. The owner has explicitly accepted this transition window.
+**The `mechanical_categories → card_roles` wire migration is a committed, version-gated track
+(owner, 2026-07-11)** — deliberately, not the cheap "keep the ugly key forever" shortcut. It
+follows the standard dual-emit dance because **serde `rename`/`alias` only fixes
+deserialization** (new server reading an old client's *request*), NOT serialization (an old
+client reading the new server's *response* looks for the exact key it shipped with):
+
+- **Internal rename is free + first** (Phase 2): `MechanicalCategory → CardRole`, module
+  `card/models/mechanical_category/ → card_role/`, `classify.rs → card_role/oracle_tag_gaps.rs`.
+  The `CardProfile` field name stays `mechanical_categories` and the DB column stays
+  `card_profiles.mechanical_categories` — renaming the *type* doesn't touch the JSON key.
+- **Wire migration** (its own later phase — see `sequencing.md`): responses **dual-emit**
+  `card_roles` (new) **and** `mechanical_categories` (legacy, same values); requests accept
+  **both** `card_roles_*` and `mechanical_categories_*` criteria; clients migrate to
+  `card_roles`; then **sunset** `mechanical_categories` (field + criteria + rename the DB
+  column) behind a `MIN_CLIENT_VERSION` floor once installs age out.
+
+Net wire end-state: **`oracle_tags`** (granular) + **`card_roles`** (coarse). `mechanical_categories`
+is a legacy alias of `card_roles` that exists only through the migration window.
