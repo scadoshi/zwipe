@@ -97,9 +97,10 @@ guesswork) is retired and `mechanical_categories` is repopulated from otags. Q1 
   `zervice.rs` after `sync_oracle_tags`. Verified live: 115,913 profiles updated, 111,783
   carry tags (e.g. Swords to Plowshares → `spot-removal`/`removal-exile`/`lifegain`/…). 2 new
   `#[sqlx::test]` regression tests.
-- **Deploy hardening:** the `zervice` oracle-tag steps (network fetch from Scryfall) are
-  **non-fatal** — an outage logs an error and the run continues, so the serve-critical
-  `latest_cards` / `card_signal_rollup` refreshes downstream always run.
+- **Deploy hardening:** the whole `zervice` pipeline is **non-fatal per step** — every step
+  (card sync, oracle tags + projection, classify, matview refreshes, session prune) logs
+  `step N/5 …: starting/ok/FAILED (continuing)` and tallies failures, so one broken step
+  can't skip the rest; the job exits non-zero if any step failed (for monitoring).
 
 **Retire the heuristic (Q1) — DISCOVERY + PARITY DONE 2026-07-11; implementation pending.**
 
