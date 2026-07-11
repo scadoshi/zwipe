@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO card_profiles (scryfall_data_id, is_token)\n             VALUES ($1, $2)\n             ON CONFLICT (scryfall_data_id)\n             DO UPDATE SET updated_at = NOW(), is_token = EXCLUDED.is_token\n             RETURNING scryfall_data_id, is_token, mechanical_categories, created_at, updated_at",
+  "query": "SELECT scryfall_data_id, is_token, mechanical_categories, oracle_tags, created_at, updated_at\n            FROM card_profiles WHERE scryfall_data_id = ANY($1)",
   "describe": {
     "columns": [
       {
@@ -20,19 +20,23 @@
       },
       {
         "ordinal": 3,
+        "name": "oracle_tags",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 4,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Bool"
+        "UuidArray"
       ]
     },
     "nullable": [
@@ -40,8 +44,9 @@
       false,
       true,
       false,
+      false,
       false
     ]
   },
-  "hash": "01a45c45b9d545359f0a7409ef3613c77500347ae178cc41a33020d07dc76df6"
+  "hash": "85944ff6e4618b35951298824270afcae2e184572bfcae72f3c929c396c11fef"
 }

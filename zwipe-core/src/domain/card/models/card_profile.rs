@@ -21,6 +21,10 @@ pub struct CardProfile {
     pub is_token: bool,
     /// Mechanical categories assigned by heuristics or AI classification.
     pub mechanical_categories: Vec<MechanicalCategory>,
+    /// Community Oracle Tags (granular functional tags) carried by this card.
+    /// `#[serde(default)]` so older clients that omit it still deserialize.
+    #[serde(default)]
+    pub oracle_tags: Vec<String>,
     /// When this profile was created in database.
     pub created_at: DateTime<Utc>,
     /// When this profile was last updated.
