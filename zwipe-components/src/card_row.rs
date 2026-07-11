@@ -1,4 +1,4 @@
-//! Expandable card row: a compact grid line (qty, name, MV, P/T, color pips)
+//! Expandable card row: a compact grid line (qty, name, price, color pips)
 //! that eases open to the card's full detail (cost, type, rarity, keywords,
 //! oracle text, stats) plus an optional action row.
 //!
@@ -11,8 +11,12 @@
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::{
-    card::{Card, scryfall_data::ImageSize},
-    deck::Board,
+    card::{
+        Card,
+        scryfall_data::ImageSize,
+        search_card::card_filter::price_currency::PriceCurrency,
+    },
+    deck::{Board, deck_metrics::card_price},
 };
 
 use crate::{KeywordChips, OracleText};
@@ -55,23 +59,19 @@ pub fn CardRow(
     /// fires on touch devices (no mouseenter), so touch hosts can omit them.
     on_hover_enter: Option<EventHandler<()>>,
     on_hover_leave: Option<EventHandler<()>>,
+    /// Currency for the compact-row price, from the deck's price-target
+    /// setting. Defaults to USD.
+    #[props(default)]
+    price_currency: PriceCurrency,
 ) -> Element {
     let card_id = card.scryfall_data.id;
     let is_expanded = expanded_card() == Some(card_id);
     let sd = &card.scryfall_data;
 
     let name = sd.name.clone();
-    let cmc_display = sd
-        .cmc
-        .map(|c| {
-            let floored = c.floor() as i64;
-            if c == c.floor() {
-                format!("{floored}")
-            } else {
-                format!("{c}")
-            }
-        })
-        .unwrap_or_default();
+    // Compact-row price in the deck's chosen currency (nonfoil→foil fallback);
+    // `None` (no price in that currency) omits the tag entirely.
+    let price_display = card_price(sd, price_currency).map(|p| price_currency.format_amount(p));
     let pt_display = match (&sd.power, &sd.toughness) {
         (Some(p), Some(t)) => format!("{p}/{t}"),
         _ => String::new(),
@@ -141,8 +141,16 @@ pub fn CardRow(
                     }
                     "{name}"
                 }
-                span { class: "card-row-cmc", "{cmc_display}" }
-                span { class: "card-row-pt", "{pt_display}" }
+                // Card-stat tag: P/T (always slashed, e.g. 4/5) for creatures,
+                // else a bare loyalty number for planeswalkers.
+                if !pt_display.is_empty() {
+                    span { class: "card-row-stat", "{pt_display}" }
+                } else if !loyalty_display.is_empty() {
+                    span { class: "card-row-stat", "{loyalty_display}" }
+                }
+                if let Some(price) = price_display {
+                    span { class: "card-row-price", "{price}" }
+                }
                 span { class: "card-row-colors",
                     for code in color_codes.iter() {
                         i { key: "{code}", class: "ms ms-{code} ms-cost ms-shadow" }
