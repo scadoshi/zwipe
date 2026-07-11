@@ -452,11 +452,20 @@ where
             .await
             .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
 
-        // Build lookup map: lowercase name -> Card
-        let card_map: HashMap<String, Card> = cards
-            .into_iter()
-            .map(|c| (c.scryfall_data.name.to_lowercase(), c))
-            .collect();
+        // Build lookup map: lowercase name -> Card. Double-faced cards are also
+        // aliased by their front face ("Boggart Trawler" -> "Boggart Trawler //
+        // Boggart Bog") so entries that use just the front resolve; a real
+        // full-name entry always wins over a front-face alias on collision.
+        let mut card_map: HashMap<String, Card> = HashMap::new();
+        for card in cards {
+            let full = card.scryfall_data.name.to_lowercase();
+            if let Some(front) = full.split(" // ").next()
+                && front != full
+            {
+                card_map.entry(front.to_string()).or_insert_with(|| card.clone());
+            }
+            card_map.insert(full, card);
+        }
 
         // Resolve oracle_ids for additional cards (commander, partner, background, signature spell)
         // so we can skip them by oracle_id rather than scryfall_data_id (which is printing-specific).
@@ -489,7 +498,17 @@ where
 
         for line in &request.lines {
             let key = line.card_name.to_lowercase();
-            if let Some(card) = card_map.get(&key) {
+            // Try the entry as written, then its front face (before a slash), so
+            // "A // B", "A / B", and "A" all resolve to the same card.
+            let matched = card_map.get(&key).or_else(|| {
+                let front = key.split('/').next().map(str::trim).unwrap_or("");
+                if front.is_empty() || front == key {
+                    None
+                } else {
+                    card_map.get(front)
+                }
+            });
+            if let Some(card) = matched {
                 let scryfall_id = card.scryfall_data.id;
                 let oracle_id = match card.scryfall_data.oracle_id {
                     Some(id) => id,
