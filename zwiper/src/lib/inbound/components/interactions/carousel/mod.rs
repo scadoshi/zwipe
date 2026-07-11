@@ -17,15 +17,15 @@ use state::CarouselState;
 /// tracks drag gestures and snaps to the nearest page on release.
 #[component]
 pub fn Carousel(mut state: Signal<CarouselState>, children: Element) -> Element {
-    let translate_x = state().translate_x_px();
+    let translate = state().translate_x_css();
     let transition_ms = state().snap_transition_ms;
 
     let transition_style = if transition_ms > 0 {
         format!(
-            "transform: translateX({translate_x}px); transition: transform {transition_ms}ms ease-out;"
+            "transform: translateX({translate}); transition: transform {transition_ms}ms ease-out;"
         )
     } else {
-        format!("transform: translateX({translate_x}px); transition: none;")
+        format!("transform: translateX({translate}); transition: none;")
     };
 
     rsx! {
