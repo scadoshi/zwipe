@@ -1,0 +1,32 @@
+name: Security audit
+
+# Scans Cargo.lock against the RustSec Advisory DB (https://rustsec.org). Fails
+# — which emails the repo owner — when a dependency (direct or transitive) has a
+# known vulnerability. Runs weekly to catch newly-published advisories against
+# already-pinned deps, and on any lockfile/manifest change to catch a vulnerable
+# dep the moment it's introduced. `cargo audit` exits non-zero on vulnerabilities
+# only; unmaintained/yanked warnings are reported but don't fail the run.
+
+on:
+  schedule:
+    - cron: "0 8 * * 1" # Mondays 08:00 UTC
+  push:
+    paths:
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - ".github/workflows/audit.yml"
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Prebuilt binary — no from-source compile (keeps the run under a minute).
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+      - name: Audit dependencies
+        # Ignore RUSTSEC-2023-0071 (rsa): we sign JWTs with HS256/HMAC, never RSA. rsa
+        # only rides in via jsonwebtoken's RustCrypto backend + sqlx's unbuilt mysql driver.
+        run: cargo audit --ignore RUSTSEC-2023-0071
