@@ -237,6 +237,27 @@ impl CardRepository for MyPostgres {
         crate::outbound::sqlx::card::helpers::oracle_tags::sync_oracle_tags(&self.pool, tags).await
     }
 
+    async fn refresh_card_oracle_tags(&self) -> anyhow::Result<()> {
+        // Aggregate oracle tags per oracle_id once, then fan out to every printing's
+        // card_profile. LEFT JOIN so cards that lost all tags reset to '[]'.
+        sqlx::query(
+            "WITH oracle_agg AS (
+                 SELECT oracle_id, jsonb_agg(oracle_tag ORDER BY oracle_tag) AS tags
+                 FROM card_oracle_tags
+                 GROUP BY oracle_id
+             )
+             UPDATE card_profiles cp
+             SET oracle_tags = COALESCE(oa.tags, '[]'::jsonb)
+             FROM scryfall_data sd
+             LEFT JOIN oracle_agg oa ON oa.oracle_id = sd.oracle_id
+             WHERE cp.scryfall_data_id = sd.id",
+        )
+        .execute(&self.pool)
+        .await
+        .context("failed to refresh card_profiles.oracle_tags projection")?;
+        Ok(())
+    }
+
     // =====
     //  get
     // =====

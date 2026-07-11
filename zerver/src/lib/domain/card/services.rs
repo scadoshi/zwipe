@@ -147,6 +147,10 @@ impl<R: CardRepository> CardService for Service<R> {
         Ok(counts)
     }
 
+    async fn refresh_card_oracle_tags(&self) -> anyhow::Result<()> {
+        self.repo.refresh_card_oracle_tags().await
+    }
+
     // =====
     //  get
     // =====

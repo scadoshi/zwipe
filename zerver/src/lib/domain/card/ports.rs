@@ -92,6 +92,10 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         tags: &[OracleTag],
     ) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
 
+    /// Rebuilds the `card_profiles.oracle_tags` JSONB projection from
+    /// `card_oracle_tags` (aggregated per `oracle_id`, fanned to every printing).
+    fn refresh_card_oracle_tags(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
+
     // =====
     //  get
     // =====
@@ -344,6 +348,9 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// Syncs the oracle_tag catalog + card correlation from Scryfall's Oracle
     /// Tags bulk file (nightly, zervice). Returns `(catalog_rows, correlation_rows)`.
     fn sync_oracle_tags(&self) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
+
+    /// Rebuilds the `card_profiles.oracle_tags` projection (nightly, zervice).
+    fn refresh_card_oracle_tags(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
     // =====
     //  get

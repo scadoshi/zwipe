@@ -7,6 +7,9 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
+mod common;
+
+use common::{card, seed_cards};
 use uuid::Uuid;
 
 use zwipe::{
@@ -155,4 +158,57 @@ async fn re_sync_preserves_heuristic_rows(pool: sqlx::PgPool) {
         .await,
         1
     );
+}
+
+/// `refresh_card_oracle_tags` aggregates a card's correlations into the sorted
+/// JSONB projection on its `card_profiles` row.
+#[sqlx::test]
+async fn projection_aggregates_onto_card_profiles(pool: sqlx::PgPool) {
+    let fixture = card("Test Removal").mono("W");
+    let oracle_id = fixture.oracle_id().unwrap();
+    seed_cards(&pool, &[fixture]).await;
+
+    sqlx::query(
+        "INSERT INTO card_oracle_tags (oracle_id, oracle_tag, source) \
+         VALUES ($1, 'spot-removal', 'scryfall'), ($1, 'lifegain', 'scryfall')",
+    )
+    .bind(oracle_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let repo = Postgres { pool: pool.clone() };
+    repo.refresh_card_oracle_tags().await.unwrap();
+
+    let tags: serde_json::Value = sqlx::query_scalar(
+        "SELECT cp.oracle_tags FROM card_profiles cp \
+         JOIN scryfall_data sd ON sd.id = cp.scryfall_data_id WHERE sd.oracle_id = $1",
+    )
+    .bind(oracle_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    // jsonb_agg is ORDER BY oracle_tag, so alphabetical
+    assert_eq!(tags, serde_json::json!(["lifegain", "spot-removal"]));
+}
+
+/// A card with no correlations projects to an empty array (LEFT JOIN + COALESCE).
+#[sqlx::test]
+async fn projection_untagged_card_is_empty(pool: sqlx::PgPool) {
+    let fixture = card("No Tags").mono("U");
+    let oracle_id = fixture.oracle_id().unwrap();
+    seed_cards(&pool, &[fixture]).await;
+
+    let repo = Postgres { pool: pool.clone() };
+    repo.refresh_card_oracle_tags().await.unwrap();
+
+    let tags: serde_json::Value = sqlx::query_scalar(
+        "SELECT cp.oracle_tags FROM card_profiles cp \
+         JOIN scryfall_data sd ON sd.id = cp.scryfall_data_id WHERE sd.oracle_id = $1",
+    )
+    .bind(oracle_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(tags, serde_json::json!([]));
 }

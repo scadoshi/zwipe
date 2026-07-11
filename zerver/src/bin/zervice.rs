@@ -78,6 +78,9 @@ async fn main() -> anyhow::Result<()> {
     let (otag_count, correlation_count) = card_service.sync_oracle_tags().await?;
     tracing::info!("oracle tags synced: {otag_count} tags, {correlation_count} card correlations");
 
+    card_service.refresh_card_oracle_tags().await?;
+    tracing::info!("card_profiles.oracle_tags projection refreshed");
+
     if recategorize {
         tracing::info!("clearing all categories for recategorization");
         card_service.clear_all_categories().await?;
