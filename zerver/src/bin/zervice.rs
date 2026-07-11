@@ -75,11 +75,23 @@ async fn main() -> anyhow::Result<()> {
         .scryfall_sync(BulkEndpoint::DefaultCards)
         .await?;
 
-    let (otag_count, correlation_count) = card_service.sync_oracle_tags().await?;
-    tracing::info!("oracle tags synced: {otag_count} tags, {correlation_count} card correlations");
-
-    card_service.refresh_card_oracle_tags().await?;
-    tracing::info!("card_profiles.oracle_tags projection refreshed");
+    // Non-fatal: the oracle-tags fetch hits Scryfall over the network. An outage here
+    // must not abort the run and skip the serve-critical matview refreshes further down.
+    match card_service.sync_oracle_tags().await {
+        Ok((otag_count, correlation_count)) => {
+            tracing::info!(
+                "oracle tags synced: {otag_count} tags, {correlation_count} card correlations"
+            );
+            if let Err(e) = card_service.refresh_card_oracle_tags().await {
+                tracing::error!("failed to refresh card_profiles.oracle_tags projection: {e:#}");
+            } else {
+                tracing::info!("card_profiles.oracle_tags projection refreshed");
+            }
+        }
+        Err(e) => {
+            tracing::error!("oracle tags sync failed (non-fatal, skipping projection): {e:#}");
+        }
+    }
 
     if recategorize {
         tracing::info!("clearing all categories for recategorization");
