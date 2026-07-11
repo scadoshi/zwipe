@@ -12,9 +12,7 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::{
     card::{
-        Card,
-        scryfall_data::ImageSize,
-        search_card::card_filter::price_currency::PriceCurrency,
+        Card, scryfall_data::ImageSize, search_card::card_filter::price_currency::PriceCurrency,
     },
     deck::{Board, deck_metrics::card_price},
 };

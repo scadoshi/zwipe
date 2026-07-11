@@ -28,9 +28,7 @@ fn tag(id: u128, slug: &str, description: Option<&str>, cards: &[Uuid]) -> Oracl
         aliases: vec![],
         taggings: cards
             .iter()
-            .map(|&c| Tagging {
-                oracle_id: Some(c),
-            })
+            .map(|&c| Tagging { oracle_id: Some(c) })
             .collect(),
     }
 }
@@ -94,7 +92,10 @@ async fn re_sync_fully_replaces_scryfall_rows(pool: sqlx::PgPool) {
     ])
     .await
     .unwrap();
-    assert_eq!(count(&pool, "SELECT count(*) FROM card_oracle_tags").await, 2);
+    assert_eq!(
+        count(&pool, "SELECT count(*) FROM card_oracle_tags").await,
+        2
+    );
 
     // Second sync drops 'ramp' and re-sends 'removal' — full replace, no dupes.
     let (catalog, correlations) = repo
@@ -103,7 +104,10 @@ async fn re_sync_fully_replaces_scryfall_rows(pool: sqlx::PgPool) {
         .unwrap();
     assert_eq!(catalog, 1);
     assert_eq!(correlations, 1);
-    assert_eq!(count(&pool, "SELECT count(*) FROM card_oracle_tags").await, 1);
+    assert_eq!(
+        count(&pool, "SELECT count(*) FROM card_oracle_tags").await,
+        1
+    );
     assert_eq!(count(&pool, "SELECT count(*) FROM oracle_tags").await, 1);
     assert_eq!(
         count(

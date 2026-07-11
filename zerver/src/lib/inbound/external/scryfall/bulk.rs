@@ -1,5 +1,7 @@
-use crate::inbound::external::scryfall::oracle_tag::OracleTag;
-use crate::inbound::external::scryfall::planeswalker::{Planeswalker, SCRYFALL_API_BASE};
+use crate::inbound::external::scryfall::{
+    oracle_tag::OracleTag,
+    planeswalker::{Planeswalker, SCRYFALL_API_BASE},
+};
 use anyhow::Context;
 use reqwest::Client;
 use serde::Deserialize;

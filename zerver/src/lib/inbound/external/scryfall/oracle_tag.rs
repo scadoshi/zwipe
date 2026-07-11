@@ -79,7 +79,8 @@ mod tests {
     /// Missing optional collections default rather than failing.
     #[test]
     fn missing_optional_fields_default() {
-        let json = r#"{ "id": "00155182-3099-4742-be68-f8b4ea259d78", "slug": "ramp", "label": "Ramp" }"#;
+        let json =
+            r#"{ "id": "00155182-3099-4742-be68-f8b4ea259d78", "slug": "ramp", "label": "Ramp" }"#;
         let tag: OracleTag = serde_json::from_str(json).unwrap();
         assert!(tag.description.is_none());
         assert!(tag.parent_ids.is_empty());
