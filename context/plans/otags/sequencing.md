@@ -119,24 +119,25 @@ graveyard_hate→`hate-graveyard` (thin but likely correct — other `*-graveyar
 - **Finisher → DROPPED** (owner-approved). Old rule was `power≥6 creature OR "you win the game"
   OR "extra turn"` — an incoherent grab-bag. No coherent otag equivalent.
 
-*Flagged by the parity gate — rework before implementing (5):* the gate caught bad roots —
-- **pump** (35/1577 agree): the `-to-all` boosts I used are *mass* buffs = **anthem**; real
-  Pump roots are `combat-trick`/`firebreathing`/`shade-pump` (individual).
-- **anthem** (needs the `power-boost-to-all`/`toughness-boost-to-all` roots moved here).
-- **stax** (`hate`, 124 children, over-broad → 4,408 derived): narrow to
-  `lockdown`/`mass-land-denial`/tax-style; needs an owner call on breadth.
-- **protection**: `protects-creature`/`protects-all`/`damage-prevention`/`gives-indestructible`/
-  `gives-hexproof`/`regenerates-self`.
+*Resolved — Option A, FINAL (`open-questions.md` §1):* anthem fixed by the mass-buff swap
+(89% agree). **Pump / Stax / Protection / GraveyardHate have no clean otag concept → keep
+their heuristic** (their rules are simple + stable, not the brittle guesswork).
 
-**Implementation (after the 5 are fixed):**
-- Put the map on `MechanicalCategory` in `zwipe-core` (pure static roots) + the `all_parts`
-  Tokens rule.
-- New repo method derives `card_profiles.mechanical_categories` from a recursive-CTE subtree
-  expansion of the map + the `all_parts` token condition; **replace** `classify_untagged_cards`
-  in `zervice.rs`.
-- **Delete `classify.rs`** + `get_unclassified_card_ids` / `update_mechanical_categories`
-  plumbing — the **last, gated** step, once parity on the reworked map is clean. Break-glass in
-  git history.
+**Implementation (Option A):**
+- **Rename first (free, no wire impact):** `MechanicalCategory → CardRole`, module
+  `card/models/mechanical_category/ → card_role/`. Renaming the *type* doesn't touch the
+  `mechanical_categories` JSON key/column (those move in the migration phase below).
+- **20 categories → otags:** author the `CardRole → otag-root(s)` map (pure static roots on
+  the enum in `zwipe-core`); derive via a recursive-CTE subtree expansion of the map.
+- **Tokens → `all_parts`** component=token (SQL condition).
+- **Pump / Stax / Protection / GraveyardHate → keep heuristic:** trim `classify.rs` to those
+  4 branches; **rename** it `card_role/oracle_tag_gaps.rs`, fn
+  `classify_by_heuristics → classify_oracle_tag_gaps`, with a header documenting it now only
+  fills the gaps otags can't express. Delete the other 20 branches + Finisher.
+- **Combine + write:** a derivation step produces `card_profiles.mechanical_categories` from
+  (otag-subtree 20) ∪ (`all_parts` Tokens) ∪ (`oracle_tag_gaps` 4), replacing
+  `classify_untagged_cards` in `zervice.rs`. `card_profiles.oracle_tags` (raw otags) stays.
+- `classify.rs` is **not deleted — demoted** to the 4 stragglers; break-glass history preserved.
 
 **Shared (`zwipe-core`):**
 - `.../search_card/card_filter/criteria/mod.rs` — add `oracle_tags_contains_any` /
@@ -144,9 +145,9 @@ graveyard_hate→`hate-graveyard` (thin but likely correct — other `*-graveyar
   `matches.rs`/`query.rs`. All **`#[serde(default)]`**. Keep the legacy
   `mechanical_categories_*` criteria accepted (deprecated).
 - `.../card/models/card_profile.rs` — add `oracle_tags: Vec<OracleTag>` to `CardProfile`,
-  **`#[serde(default)]`**. `mechanical_categories` **stays on the wire as a deprecated
-  translation** (shape unchanged, values now oracle_tag-derived), **dual-emitted** alongside
-  `oracle_tags` — see `compatibility.md` §Naming.
+  **`#[serde(default)]`** (additive, granular). The existing `mechanical_categories` field is
+  unchanged in Phase 2 (its type is now `Vec<CardRole>`); its wire rename to `card_roles` is
+  the dedicated migration phase below, **not** Phase 2.
 
 **Backend:**
 - `zerver/src/lib/outbound/sqlx/card/mod.rs` (~912-926) — add oracle_tag jsonb predicates
@@ -158,10 +159,10 @@ graveyard_hate→`hate-graveyard` (thin but likely correct — other `*-graveyar
   `card_filter_sheet.rs`. The existing category filter UI is untouched (now oracle_tag-accurate).
   Surface oracle_tags on the swipe card in `.../card/components/card_info.rs`.
 
-**Wire & compat:** additive only. New filter fields + new `oracle_tags` response field are
-`#[serde(default)]`; `mechanical_categories` is **dual-emitted** (deprecated translation,
-shape unchanged), so no old client breaks. **No bump** (the eventual legacy-field removal is
-the one gated step — long after ship; `compatibility.md` §Naming).
+**Wire & compat:** Phase 2 is additive — the new `oracle_tags` field + `oracle_tags_*` criteria
+are `#[serde(default)]`, and the internal `MechanicalCategory → CardRole` rename doesn't touch
+the `mechanical_categories` JSON key. **No bump.** (The `mechanical_categories → card_roles`
+wire rename is its own version-gated phase — see below.)
 
 **Exit:** oracle_tag filters work end-to-end; oracle_tags visible on served cards;
 `classify.rs` gone; categories oracle_tag-derived and parity-validated.
@@ -255,13 +256,39 @@ client must send new context, hold it behind the min-version gate (last resort).
 
 ---
 
+## Phase M — `mechanical_categories → card_roles` wire migration (version-gated)
+
+**Goal:** finish the rename off the wire — the coarse-category field becomes `card_roles`
+everywhere, and the legacy `mechanical_categories` word disappears. Committed by owner
+(2026-07-11). **Independent track:** can run any time after Phase 2 (once `CardRole` exists);
+spans client upgrades, so it takes real calendar time. Full rationale: `compatibility.md`
+§Naming.
+
+**Steps (dual-emit → migrate clients → sunset):**
+1. **Add `card_roles`** beside `mechanical_categories` — server **dual-emits** both (same
+   `Vec<CardRole>` values) on `Card`/`CardProfile`; requests **accept both** `card_roles_*`
+   and legacy `mechanical_categories_*` criteria (`#[serde(default)]`). Additive, no bump.
+2. **Migrate clients** (`zwiper`, `zite`) to read `card_roles` + send `card_roles_*`; ship and
+   let installs upgrade.
+3. **Sunset** once a `MIN_CLIENT_VERSION` floor guarantees every install uses `card_roles`:
+   drop the `mechanical_categories` response field + legacy criteria, and rename the DB column
+   `card_profiles.mechanical_categories → card_roles`. This is the **one gated removal** in the
+   whole feature; bump `MIN_CLIENT_VERSION`.
+
+**Wire & compat:** additive through step 2 (no bump); step 3 is the single gated removal —
+long after ship, when old installs have aged out.
+
+---
+
 ## Dependency order
 
 ```
 0 spike ─▶ 1 ingest ─▶ 2 filtering + retire heuristic (needs card_profiles.oracle_tags)
                         1 ─▶ 3 deck otags ─▶ 4 serving term
                                     3 ─▶ 5 signal collection ─▶ 6 non-EDH serving
+                        2 ─▶ M card_roles wire migration (independent, version-gated)
 ```
 
 1 unblocks everything. 2 and 3 are parallel after 1. 4 needs 3. 5 needs 3 (decks must have
-otags to key on). 6 needs 5 to have run long enough to matter.
+otags to key on). 6 needs 5 to have run long enough to matter. **M** needs only 2 (the
+`CardRole` rename) and runs on its own client-upgrade timeline.
