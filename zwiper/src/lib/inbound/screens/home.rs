@@ -4,8 +4,8 @@ use crate::{
     inbound::{
         components::{
             alert_dialog::{
-                AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-                AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
+                AlertDialogActions, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+                AlertDialogRoot, AlertDialogTitle,
             },
             auth::{bouncer::Bouncer, session_upkeep::FlavorCard},
             hint_dialog::{
@@ -35,8 +35,7 @@ use zwipe_core::domain::{
     card::{
         scryfall_data::ScryfallData,
         search_card::card_filter::{
-            builder::CardQueryBuilder, card_sort_key::CardSortKey,
-            price_currency::PriceCurrency,
+            builder::CardQueryBuilder, card_sort_key::CardSortKey, price_currency::PriceCurrency,
         },
     },
     deck::deck_metrics::card_price,

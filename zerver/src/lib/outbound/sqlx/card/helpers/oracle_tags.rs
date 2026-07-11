@@ -98,7 +98,10 @@ mod tests {
             description: None,
             parent_ids: vec![],
             aliases: vec![],
-            taggings: oracle_ids.iter().map(|&oracle_id| Tagging { oracle_id }).collect(),
+            taggings: oracle_ids
+                .iter()
+                .map(|&oracle_id| Tagging { oracle_id })
+                .collect(),
         }
     }
 
@@ -108,10 +111,7 @@ mod tests {
         let b = Uuid::from_u128(0xB);
         let tags = vec![tag("removal", &[Some(a), Some(b)]), tag("ramp", &[Some(a)])];
         let rows = flatten_correlations(&tags);
-        assert_eq!(
-            rows,
-            vec![(a, "removal"), (b, "removal"), (a, "ramp")]
-        );
+        assert_eq!(rows, vec![(a, "removal"), (b, "removal"), (a, "ramp")]);
     }
 
     #[test]

@@ -3,8 +3,7 @@ use dioxus::{document::eval, prelude::*};
 use crate::{Footer, Nav, components::PageMeta};
 
 /// Live Google Play listing for Zwipe (Android). Locale-adaptive; no `&hl`.
-const PLAY_STORE_URL: &str =
-    "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe";
+const PLAY_STORE_URL: &str = "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe";
 
 /// `/download/android`: immediately redirects to Google Play. The mobile app and
 /// any marketing can point here permanently; the destination is controlled from
