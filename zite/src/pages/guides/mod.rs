@@ -90,9 +90,9 @@ pub fn Guides() -> Element {
         }
         Nav {}
         div { class: "page content-enter",
-            div { class: "section",
+            div { class: "page-header section panel",
                 h1 { "Guides" }
-                p { class: "arch-subtitle", "How Zwipe works, one feature at a time." }
+                p { class: "tagline", "How Zwipe works, one feature at a time." }
             }
             for cat in CATEGORY_ORDER.iter() {
                 section { class: "section guide-cat",
