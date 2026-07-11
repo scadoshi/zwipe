@@ -20,8 +20,11 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use zwipe_core::domain::card::{
-    Card, card_profile::CardProfile, mechanical_category::classify_by_heuristics,
-    scryfall_data::ScryfallData, search_card::card_filter::CardQuery,
+    Card,
+    card_profile::CardProfile,
+    mechanical_category::{classify_by_heuristics, classify_oracle_tag_gaps},
+    scryfall_data::ScryfallData,
+    search_card::card_filter::CardQuery,
 };
 
 /// PostgreSQL parameter limit per query (~65k parameters).
@@ -125,6 +128,44 @@ impl<R: CardRepository> CardService for Service<R> {
         }
 
         Ok((classified, total))
+    }
+
+    async fn derive_card_categories(&self, batch_size: usize) -> anyhow::Result<(u32, u32)> {
+        // 1. Oracle-tag subtrees (18) + Tokens via all_parts — one SQL pass, all cards.
+        let otag_rows = self.repo.derive_oracle_tag_categories().await?;
+
+        // 2. Merge the 4 heuristic stragglers otags can't express (oracle_tag_gaps).
+        let ids = self.repo.get_card_ids_with_oracle_text().await?;
+        let mut merged = 0u32;
+        for chunk in ids.chunks(batch_size) {
+            let cards = self.repo.get_cards_batch(chunk).await?;
+            let updates: Vec<_> = cards
+                .iter()
+                .filter_map(|card| {
+                    let gaps = classify_oracle_tag_gaps(card);
+                    if gaps.is_empty() {
+                        return None;
+                    }
+                    let mut union = card.card_profile.mechanical_categories.clone();
+                    let before = union.len();
+                    for g in gaps {
+                        if !union.contains(&g) {
+                            union.push(g);
+                        }
+                    }
+                    if union.len() == before {
+                        return None; // gaps already present, nothing to write
+                    }
+                    union.sort_by_key(|c| *c as u8);
+                    Some((card.scryfall_data.id, union))
+                })
+                .collect();
+            merged += updates.len() as u32;
+            if !updates.is_empty() {
+                self.repo.update_mechanical_categories(&updates).await?;
+            }
+        }
+        Ok((otag_rows as u32, merged))
     }
 
     async fn clear_all_categories(&self) -> anyhow::Result<()> {

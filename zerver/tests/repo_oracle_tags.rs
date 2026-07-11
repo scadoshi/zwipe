@@ -13,7 +13,10 @@ use common::{card, seed_cards};
 use uuid::Uuid;
 
 use zwipe::{
-    domain::card::ports::CardRepository,
+    domain::card::{
+        ports::{CardRepository, CardService},
+        services::Service,
+    },
     inbound::external::scryfall::oracle_tag::{OracleTag, Tagging},
     outbound::sqlx::{card::helpers::derive_categories::derive_categories, postgres::Postgres},
 };
@@ -268,6 +271,67 @@ async fn derive_tokens_from_all_parts(pool: sqlx::PgPool) {
     .await
     .unwrap();
     assert_eq!(cats, serde_json::json!(["tokens"]));
+}
+
+/// `derive_card_categories` combines the otag-derived category with a merged
+/// heuristic-gap category: a card tagged `spot-removal` (→ `removal` via otags)
+/// whose text grants protection ends up with both `removal` and `protection`.
+#[sqlx::test]
+async fn derive_card_categories_combines_otags_and_gaps(pool: sqlx::PgPool) {
+    let removal_id = Uuid::from_u128(0x200);
+    let spot_id = Uuid::from_u128(0x201);
+    sqlx::query("INSERT INTO oracle_tags (id, slug, label) VALUES ($1, 'removal', 'Removal')")
+        .bind(removal_id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query(
+        "INSERT INTO oracle_tags (id, slug, label, parent_ids) \
+         VALUES ($1, 'spot-removal', 'Spot removal', ARRAY[$2]::uuid[])",
+    )
+    .bind(spot_id)
+    .bind(removal_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let fixture = card("Combo").mono("W");
+    let oracle_id = fixture.oracle_id().unwrap();
+    seed_cards(&pool, &[fixture]).await;
+    sqlx::query(
+        "INSERT INTO card_oracle_tags (oracle_id, oracle_tag, source) \
+         VALUES ($1, 'spot-removal', 'scryfall')",
+    )
+    .bind(oracle_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    // text triggers the Protection gap heuristic
+    sqlx::query(
+        "UPDATE scryfall_data SET oracle_text = 'Target creature gains protection from red.' \
+         WHERE oracle_id = $1",
+    )
+    .bind(oracle_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let service = Service::new(Postgres { pool: pool.clone() });
+    let (_otag_rows, merges) = service.derive_card_categories(100).await.unwrap();
+    assert_eq!(merges, 1, "the one card should get a straggler merge");
+
+    let value: serde_json::Value = sqlx::query_scalar(
+        "SELECT cp.mechanical_categories FROM card_profiles cp \
+         JOIN scryfall_data sd ON sd.id = cp.scryfall_data_id WHERE sd.oracle_id = $1",
+    )
+    .bind(oracle_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let cats: Vec<String> = serde_json::from_value(value).unwrap();
+    assert_eq!(cats.len(), 2, "removal (otag) + protection (gap): {cats:?}");
+    assert!(cats.contains(&"removal".to_string()));
+    assert!(cats.contains(&"protection".to_string()));
 }
 
 /// A card with no correlations projects to an empty array (LEFT JOIN + COALESCE).
