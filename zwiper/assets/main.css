@@ -99,6 +99,15 @@ button {
     justify-content: center;
 }
 
+/* Width wrapper for the shared changelog (screen-content centers full-width
+   children, so the content needs its own inset like the privacy screen). */
+.changelog-screen {
+    width: calc(100% - 4rem);
+    max-width: 40rem;
+    padding-bottom: 1rem;
+    text-align: left;
+}
+
 .screen-content.card-swipe {
     overflow-y: hidden;
     justify-content: flex-start;
