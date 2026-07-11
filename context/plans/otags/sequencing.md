@@ -89,11 +89,14 @@ Phase 3/serving-tier + `DeckTag → otag` authoring (`open-questions.md` §3).
 **Goal:** players filter cards by otag; served cards surface their otags; `classify.rs` (the
 guesswork) is retired and `mechanical_categories` is repopulated from otags. Q1 + Q6 decisions.
 
-**Tables (the projection deferred from Phase 1):**
-- **Add `oracle_tags JSONB NOT NULL DEFAULT '[]'` + GIN index to `card_profiles`** — the
-  denormalized serve/filter projection; mirrors `card_profiles.mechanical_categories`.
-- Extend `zervice.rs` to rebuild it after the Phase-1 sync via one `GROUP BY oracle_id`
-  (`UPDATE card_profiles SET oracle_tags = agg FROM card_oracle_tags WHERE ... GROUP BY oracle_id`).
+**Tables (the projection deferred from Phase 1) — BUILT 2026-07-11 (slice 1):**
+- **`card_profiles.oracle_tags JSONB + GIN`** — migration `20260712020000_add_card_profiles_oracle_tags.sql`.
+  Denormalized serve/filter projection; mirrors `card_profiles.mechanical_categories`.
+- `CardRepository::refresh_card_oracle_tags` (`outbound/sqlx/card/mod.rs`) rebuilds it via one
+  `WITH oracle_agg ... UPDATE card_profiles SET oracle_tags = jsonb_agg ...`, wired into
+  `zervice.rs` after `sync_oracle_tags`. Verified live: 115,913 profiles updated, 111,783
+  carry tags (e.g. Swords to Plowshares → `spot-removal`/`removal-exile`/`lifegain`/…). 2 new
+  `#[sqlx::test]` regression tests.
 
 **Retire the heuristic (Q1):**
 - Author a `category → oracle_tag-root(s)` map (~24 categories), multi-root for `evasion`
