@@ -69,9 +69,29 @@ impl CarouselState {
         Self::new(0, 0, 0.0)
     }
 
-    /// Returns the CSS `translateX` value in pixels for the carousel strip.
-    pub fn translate_x_px(&self) -> f64 {
-        -(self.current_index as f64 * self.page_width_px) + self.drag_offset_px
+    /// The CSS `translateX` for the carousel strip: the resting page position as
+    /// a **percentage** plus the live pixel drag offset.
+    ///
+    /// The flex strip's own box is exactly one viewport wide (each page is
+    /// `flex: 0 0 100%` and the extra pages *overflow* the strip, clipped by the
+    /// viewport's `overflow: hidden`), so `100%` of the strip equals one page —
+    /// translating by `index * 100%` lands on page `index`. This is drift-proof:
+    /// unlike a pixel-per-page translate off a measured `page_width_px` (whose
+    /// error accumulates as `index * error` and veers sideways more with each
+    /// page — the printing-carousel drift), the percentage needs no measurement.
+    /// `page_width_px` is still used for snap *thresholds*, where a small error is
+    /// harmless.
+    pub fn translate_x_css(&self) -> String {
+        let percent = if self.current_index > 0 {
+            -(self.current_index as f64) * 100.0
+        } else {
+            0.0
+        };
+        if self.drag_offset_px >= 0.0 {
+            format!("calc({percent}% + {}px)", self.drag_offset_px)
+        } else {
+            format!("calc({percent}% - {}px)", -self.drag_offset_px)
+        }
     }
 
     /// Records the start of a drag gesture.
@@ -173,25 +193,28 @@ mod tests {
         assert_eq!(state.current_index, 0);
     }
 
-    // ── translate_x_px ─────────────────────────────────────────────────────
+    // ── translate_x_css (percentage-of-strip, drift-proof) ─────────────────
 
     #[test]
     fn translate_at_rest_page_zero() {
         let state = CarouselState::new(5, 0, 375.0);
-        assert_eq!(state.translate_x_px(), 0.0);
+        assert_eq!(state.translate_x_css(), "calc(0% + 0px)");
     }
 
     #[test]
     fn translate_at_rest_page_two() {
+        // page 2 => -2 * 100% = -200% (the strip box is one viewport wide, so
+        // 100% == one page; pages overflow and are clipped by the viewport)
         let state = CarouselState::new(5, 2, 375.0);
-        assert_eq!(state.translate_x_px(), -750.0);
+        assert_eq!(state.translate_x_css(), "calc(-200% + 0px)");
     }
 
     #[test]
     fn translate_with_drag_offset() {
         let mut state = CarouselState::new(5, 1, 375.0);
         state.drag_offset_px = -100.0;
-        assert_eq!(state.translate_x_px(), -475.0); // -375 + (-100)
+        // page 1 resting (-100%) minus the 100px live drag
+        assert_eq!(state.translate_x_css(), "calc(-100% - 100px)");
     }
 
     // ── snap logic ──────────────────────────────────────────────────────────
