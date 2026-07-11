@@ -3,6 +3,10 @@
 use crate::{
     inbound::{
         components::{
+            alert_dialog::{
+                AlertDialogActions, AlertDialogCancel, AlertDialogContent,
+                AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
+            },
             auth::{bouncer::Bouncer, session_upkeep::FlavorCard},
             hint_dialog::{
                 HintBullet, HintBullets, HintColored, HintDialog, HintKey, use_one_time_hint,
@@ -13,10 +17,13 @@ use crate::{
         router::Router,
         screens::deck::card::components::image_preview::ImagePreview,
     },
-    outbound::client::{
-        ZwipeClient,
-        card::search_cards::ClientSearchCards,
-        user::{get_user::ClientGetUser, preferences::ClientGetPreferences},
+    outbound::{
+        buy_links,
+        client::{
+            ZwipeClient,
+            card::search_cards::ClientSearchCards,
+            user::{get_user::ClientGetUser, preferences::ClientGetPreferences},
+        },
     },
 };
 use dioxus::prelude::*;
@@ -27,8 +34,12 @@ use zwipe_core::domain::{
     auth::models::session::Session,
     card::{
         scryfall_data::ScryfallData,
-        search_card::card_filter::{builder::CardQueryBuilder, card_sort_key::CardSortKey},
+        search_card::card_filter::{
+            builder::CardQueryBuilder, card_sort_key::CardSortKey,
+            price_currency::PriceCurrency,
+        },
     },
+    deck::deck_metrics::card_price,
     logo,
     user::models::{hints::HINT_FIRST_LOGIN, theme::ThemeConfig},
 };
@@ -54,6 +65,8 @@ pub fn Home() -> Element {
     // Tap the card name in the flavor quote to preview that card's image.
     let mut preview_card: Signal<Option<ScryfallData>> = use_signal(|| None);
     let preview_dismissing: Signal<bool> = use_signal(|| false);
+    // Tap the flavor card's price tag to open its buy sheet (TCGplayer / CK).
+    let mut show_buy_sheet = use_signal(|| false);
 
     // Refresh user on mount so email_verified_at is current without re-login,
     // then greet: verified users get "Hello, username!", unverified users get
@@ -158,6 +171,18 @@ pub fn Home() -> Element {
         });
     });
 
+    // Buy links for the current flavor card, for the Buy-card dialog.
+    let (buy_tcg_url, buy_ck_url) = match flavor.read().as_ref() {
+        Some(entry) => {
+            let sd = &entry.card.scryfall_data;
+            (
+                Some(buy_links::tcgplayer_card_url(&sd.name, sd.tcgplayer_id)),
+                Some(buy_links::cardkingdom_card_url(&sd.name)),
+            )
+        }
+        None => (None, None),
+    };
+
     rsx! {
         Bouncer {
             div { class: "screen",
@@ -171,16 +196,27 @@ pub fn Home() -> Element {
                         Some(entry) => {
                             if let Some(flavor_text) = entry.card.scryfall_data.flavor_text.as_ref() {
                                 let sd = entry.card.scryfall_data.clone();
+                                let usd_price = card_price(&entry.card.scryfall_data, PriceCurrency::Usd)
+                                    .map(|p| PriceCurrency::Usd.format_amount(p));
                                 rsx! {
                                     div { class: "card-header", style: "justify-content: center;",
                                         span { class: "card-title", "Flavor of the hour" }
                                     }
                                     div { class: "flavor-quote", style: "padding: 1rem;",
                                         "{flavor_text} "
+                                    }
+                                    div { class: "flavor-buy-row",
                                         span {
                                             class: "flavor-source flavor-source-link",
                                             onclick: move |_| preview_card.set(Some(sd.clone())),
                                             "{entry.card.scryfall_data.name}"
+                                        }
+                                        if let Some(price) = usd_price {
+                                            span {
+                                                class: "flavor-price",
+                                                onclick: move |_| show_buy_sheet.set(true),
+                                                "{price}"
+                                            }
                                         }
                                     }
                                 }
@@ -249,6 +285,43 @@ pub fn Home() -> Element {
             }
 
             LogoutDialog { open: show_logout_dialog }
+
+            AlertDialogRoot {
+                open: show_buy_sheet(),
+                on_open_change: move |open| show_buy_sheet.set(open),
+                AlertDialogContent {
+                    AlertDialogTitle { "Buy card" }
+                    hr { class: "dialog-rule" }
+                    AlertDialogDescription { "Buy this card from a retailer." }
+                    hr { class: "dialog-rule" }
+                    AlertDialogActions {
+                        AlertDialogCancel {
+                            on_click: move |_| show_buy_sheet.set(false),
+                            "Close"
+                        }
+                        if let Some(ref url) = buy_tcg_url {
+                            a {
+                                class: "alert-dialog-action",
+                                href: "{url}",
+                                target: "_blank",
+                                rel: "noopener",
+                                onclick: move |_| show_buy_sheet.set(false),
+                                "TCGplayer ↗"
+                            }
+                        }
+                        if let Some(ref url) = buy_ck_url {
+                            a {
+                                class: "alert-dialog-action",
+                                href: "{url}",
+                                target: "_blank",
+                                rel: "noopener",
+                                onclick: move |_| show_buy_sheet.set(false),
+                                "Card Kingdom ↗"
+                            }
+                        }
+                    }
+                }
+            }
             }
         }
     }

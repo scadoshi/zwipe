@@ -63,3 +63,23 @@ pub fn cardkingdom_url(entries: &[DeckEntry], command_zone_names: &[&str]) -> St
         cards.join("%0A")
     )
 }
+
+/// Single-card TCGplayer link: the exact product page when the card's TCGplayer
+/// id is known, else a one-copy mass-entry by name.
+pub fn tcgplayer_card_url(name: &str, tcgplayer_id: Option<i32>) -> String {
+    match tcgplayer_id {
+        Some(id) => format!("https://www.tcgplayer.com/product/{id}"),
+        None => format!(
+            "https://www.tcgplayer.com/massentry?c=1+{}",
+            encode_name(name)
+        ),
+    }
+}
+
+/// Single-card CardKingdom builder link (one copy).
+pub fn cardkingdom_card_url(name: &str) -> String {
+    format!(
+        "https://www.cardkingdom.com/builder?c=1+{}",
+        encode_name(name)
+    )
+}
