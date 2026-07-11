@@ -34,7 +34,7 @@ at `context/archive/complete_2026_q1.md`.
 
 - [ ] **Maybeboard for commander select** — let users "maybe" a commander during Zwipe-select and revisit a list of maybed commanders (mirror of the deck maybeboard; would tie into the commander-select signal already collected).
 - [ ] **Metric capture for non-commander decks** — the suggestion/usage signal is commander-keyed today (`commander_card_signal` keyed by `commander_oracle_id`); non-commander formats (Standard/Modern/etc.) have no commander to key on, so their building generates no signal. Design a capture path for them.
-- [ ] **Deck folders** — let users organize the deck list into folders/groups.
+- [ ] **Deck folders** — let users organize the deck list into folders/groups. **Spec'd** ([`../plans/deck_folders.md`](../plans/deck_folders.md)): custom user-named folders, one per deck, collapsible grouped list; `FolderName` reuses `DeckName` validation; ~1–1.5 days (client UI is the bulk, backend is mechanical). Not started.
 - [ ] **Oracle tags (otags) — HORIZON, big.** Ingest Scryfall's community-maintained functional tags (hundreds; daily `zervice` sync → `card_otags`), let players select strategy otags per deck (reconciled with deck tags), show the distribution, and use them as a new algorithmic serving axis (commander + otags, MVP otags, non-EDH formats via color-identity + otags + swipe data). Community-accurate replacement/complement for our heuristic `mechanical_categories`. Full vision + open research questions in [`../plans/otags.md`](../plans/otags.md).
 
 ---
