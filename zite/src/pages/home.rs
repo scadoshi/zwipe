@@ -134,7 +134,7 @@ pub fn Home() -> Element {
                 category: "Announcement",
                 status: BannerStatus::Done,
                 "Zwipe is now on Android. "
-                Link { to: Route::Android {}, "Get it" }
+                Link { to: Route::Android {}, "Download now" }
             }
             Banner {
                 category: "Release",
