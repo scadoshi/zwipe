@@ -2,13 +2,18 @@
 //!
 //! A small faded "!" button rendered at the left of every screen header (via
 //! [`ScreenHeader`](super::screen_header::ScreenHeader)), mirroring the "?"
-//! hint on the right. Tapping it opens a bottom sheet with ways to reach the
+//! hint on the right. Tapping it opens a dialog with ways to reach the
 //! team: email a problem report or join the Discord. The report email is
 //! pre-filled with the app version and platform so every report self-documents.
 
-use crate::{inbound::components::bottom_sheet::BottomSheet, outbound::open_url};
+use crate::{
+    inbound::components::alert_dialog::{
+        AlertDialogActions, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+        AlertDialogRoot, AlertDialogTitle,
+    },
+    outbound::open_url,
+};
 use dioxus::prelude::*;
-use zwipe_components::Button;
 use zwipe_core::domain::site::{DISCORD_URL, SUPPORT_EMAIL};
 
 /// App version, baked at compile time.
@@ -38,7 +43,7 @@ fn urlencode(input: &str) -> String {
     out
 }
 
-/// Floating help button + support bottom sheet, rendered globally.
+/// Floating help button + support dialog, rendered globally.
 #[component]
 pub fn SupportButton() -> Element {
     let mut open = use_signal(|| false);
@@ -57,25 +62,39 @@ pub fn SupportButton() -> Element {
             "{GLYPH}"
         }
 
-        BottomSheet { open, title: "Help & feedback".to_string(),
-            // A plain `<a href="mailto:">` does nothing on mobile: the webview's
-            // navigation handler hands it to `webbrowser`, which rejects
-            // non-http(s) URLs. Open it through the OS ourselves instead.
-            Button {
-                onclick: move |_| {
-                    open_url::open(&mailto);
-                    open.set(false);
-                },
-                "Report a problem \u{2197}"
-            }
-            a {
-                class: "btn",
-                href: "{DISCORD_URL}",
-                target: "_blank",
-                rel: "noopener noreferrer",
-                style: "text-decoration: none; text-align: center;",
-                onclick: move |_| open.set(false),
-                "Join the Discord \u{2197}"
+        AlertDialogRoot {
+            open: open(),
+            on_open_change: move |v| open.set(v),
+            AlertDialogContent {
+                AlertDialogTitle { "Help & feedback" }
+                hr { class: "dialog-rule" }
+                AlertDialogDescription { "Reach the team or join the community." }
+                hr { class: "dialog-rule" }
+                AlertDialogActions {
+                    AlertDialogCancel {
+                        on_click: move |_| open.set(false),
+                        "Close"
+                    }
+                    // A plain `<a href="mailto:">` does nothing on mobile: the
+                    // webview's navigation handler hands it to `webbrowser`,
+                    // which rejects non-http(s) URLs. Open it through the OS.
+                    button {
+                        class: "alert-dialog-action",
+                        onclick: move |_| {
+                            open_url::open(&mailto);
+                            open.set(false);
+                        },
+                        "Report a problem \u{2197}"
+                    }
+                    a {
+                        class: "alert-dialog-action",
+                        href: "{DISCORD_URL}",
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        onclick: move |_| open.set(false),
+                        "Join the Discord \u{2197}"
+                    }
+                }
             }
         }
     }
