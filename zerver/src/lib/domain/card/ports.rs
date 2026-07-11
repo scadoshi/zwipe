@@ -291,6 +291,16 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 
     /// Clears all mechanical_categories (resets to empty array).
     fn clear_all_categories(&self) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+
+    /// Rebuilds `card_profiles.mechanical_categories` from Oracle Tags (18 category
+    /// subtrees) + `Tokens` via `all_parts`. Returns rows affected. The 4 heuristic
+    /// stragglers are merged separately (see `CardService::derive_card_categories`).
+    fn derive_oracle_tag_categories(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
+
+    /// IDs of every card with oracle text (candidates for the oracle_tag_gaps merge).
+    fn get_card_ids_with_oracle_text(
+        &self,
+    ) -> impl Future<Output = Result<Vec<uuid::Uuid>, anyhow::Error>> + Send;
 }
 
 /// Service port for MTG card business logic.
@@ -332,6 +342,15 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// Classifies cards with empty mechanical_categories using heuristics.
     /// Returns (classified_count, total_untagged_count).
     fn classify_untagged_cards(
+        &self,
+        batch_size: usize,
+    ) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
+
+    /// Derives `mechanical_categories` from Oracle Tags (18 subtrees + Tokens via
+    /// `all_parts`), then merges the 4 heuristic stragglers (Pump/Stax/Protection/
+    /// GraveyardHate) via `oracle_tag_gaps`. Replaces `classify_untagged_cards`.
+    /// Returns `(otag_rows_written, gap_merges)`.
+    fn derive_card_categories(
         &self,
         batch_size: usize,
     ) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;

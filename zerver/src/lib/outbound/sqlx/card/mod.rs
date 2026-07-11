@@ -1583,4 +1583,19 @@ impl CardRepository for MyPostgres {
         }
         Ok(())
     }
+
+    async fn derive_oracle_tag_categories(&self) -> anyhow::Result<u64> {
+        crate::outbound::sqlx::card::helpers::derive_categories::derive_categories(&self.pool).await
+    }
+
+    async fn get_card_ids_with_oracle_text(&self) -> Result<Vec<uuid::Uuid>, anyhow::Error> {
+        let ids: Vec<uuid::Uuid> = sqlx::query_scalar(
+            "SELECT cp.scryfall_data_id FROM card_profiles cp \
+             JOIN scryfall_data sd ON cp.scryfall_data_id = sd.id \
+             WHERE sd.oracle_text IS NOT NULL AND sd.oracle_id IS NOT NULL",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(ids)
+    }
 }

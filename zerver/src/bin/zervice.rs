@@ -113,14 +113,16 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    tracing::info!("step 3/5 classify untagged cards: starting");
-    match card_service.classify_untagged_cards(1000).await {
-        Ok((classified, total)) => {
-            tracing::info!("step 3/5 classify: {classified} / {total} cards categorized");
+    tracing::info!("step 3/5 derive categories (otags + gaps): starting");
+    match card_service.derive_card_categories(1000).await {
+        Ok((otag_rows, merges)) => {
+            tracing::info!(
+                "step 3/5 derive categories: {otag_rows} rows from otags, {merges} straggler merges"
+            );
         }
         Err(e) => {
             failures += 1;
-            tracing::error!("step 3/5 classify FAILED (continuing): {e:#}");
+            tracing::error!("step 3/5 derive categories FAILED (continuing): {e:#}");
         }
     }
 
