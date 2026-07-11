@@ -13,5 +13,3 @@ Dioxus static website for Zwipe at [zwipe.net](https://zwipe.net).
 ```bash
 dx build --release --platform web
 ```
-
-<!-- ci: zite redeploy trigger -->
