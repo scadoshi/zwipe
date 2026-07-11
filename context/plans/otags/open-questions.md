@@ -1,0 +1,133 @@
+# Open questions — decisions still to make
+
+The original doc's #1 open question (**data source access**) is **RESOLVED**: Oracle Tags
+is now a standard Scryfall bulk file (README §"what changed"). What remains:
+
+## 1. mechanical_categories fate — DECIDED: complement + seed, not replace
+
+**Settled 2026-07-11 (owner).** otags win on accuracy for tagged cards but lose on
+coverage (obscure cards may be untagged), so:
+- Where an otag exists, prefer it.
+- Where it does not, **backfill with heuristics** — but only the *serve/filter-critical*
+  otag subset (~20-40 tags), not the full hundreds. This bounds maintenance to a fraction
+  of today's, instead of "generate way more heuristics for every otag."
+- **Track provenance per tag** (`source: otag | heuristic`) so filtering can trust otags
+  fully, weight heuristic fills lower, and we can measure heuristic accuracy against the
+  otag ground truth for free.
+- Full replacement (deprecating `classify.rs` + `card_profiles.mechanical_categories`) is
+  **not** on the table for early phases; revisit only after coverage and provenance data
+  prove it safe.
+
+## 2. Deck-tag reconciliation — DECIDED: demote `DeckTag`, one drives the other
+
+**Settled 2026-07-11 (owner).** `DeckTag` does **not** go extinct — it is **demoted** to a
+high-level archetype **container** that maps to card-level otags:
+
+- Author a curated **`DeckTag` → otag-set correlation** (~120 archetypes, one-time,
+  stable). E.g. `voltron → {auras, equipment, hexproof}`, `aristocrats → {sacrifice,
+  tokens, death-triggers, drain}`.
+- **One selection drives the other:** picking an archetype seeds the deck's otags, which
+  the user can then refine. Archetype = the human-facing browse/display label; otags = the
+  functional serving axis.
+- This correlation does triple duty: archetype-seeds-otags, cold-start serving, and *would
+  be* the migration tool if `DeckTag` is ever dropped later (reversible — not doing that
+  now).
+
+**Storage (also settled — see §6 for the perf reconciliation):**
+- **`card_otags` (card → otags): normalized, indexed table** = source of truth + bulk-file
+  landing + rollup/analytics source. Serving does **not** join it directly.
+- **Serve path reads a denormalized JSONB otag array on `card_profiles`** (GIN `?|`, like
+  `mechanical_categories`), built from `card_otags` by a nightly `GROUP BY`.
+- **Deck-selected otags: JSONB `decks.otags` column** (matches existing `decks.tags`
+  pattern). The serve reads it once in `search_deck_cards` and passes it as a param list —
+  no bulk decks↔otags join, so no `deck_otags` table needed.
+
+## 3. otag granularity — DECIDED: store full tree, curate at query time
+
+**Settled 2026-07-11 (owner).** Storage and serving are separate decisions and compose:
+
+- **Store the full tree everywhere** (every otag a card carries, at every level). Ingest
+  takes what Scryfall gives; complexity is pushed to query time.
+- **Curate at serve time.** A hand-picked serving list (~40-80 meaningful mid-tier otags,
+  largely the same set named in the `DeckTag → otag-set` correlation from §2) selects which
+  otags actually drive serving. Tweakable as we go — it's a query-time filter, not a
+  storage shape.
+- **Roll up swipe signal at FULL-tree granularity, not the curated tier.** This is the key
+  to keeping §3's "learned tier" (option c) open: if the rollup only aggregated the
+  hand-picked otags, we'd never gather discrimination data on the rest. Aggregate all
+  otags; the curated list filters *over* the full rollup at query time. Then tweaking the
+  list needs no re-aggregation, and a future data-driven pruning has full-granularity
+  history to learn from.
+
+## 4. Serving weight + cold-start — DECIDED: one term first, fallback ladder
+
+**Settled 2026-07-11 (owner).** Phase the algorithm change:
+
+- **Phase 1 — one new term.** Add a single `W_OTAG` **otag-correlation** term to
+  `search_scryfall_data_deck_aware` = how well a card's otags overlap the deck's selected
+  otags (`card_otags` × `decks.otags`), scored beside `base` (synergy) and `signal`
+  (rollup). Keep `W_OTAG` **small at launch** (the revert lever, like `BAND_SIZE=1`) so it
+  nudges rather than dominates; dial up as trust grows.
+- **Phase 2 — the otag *signal* term** (deeper cuts + cold-start for new cards) comes
+  later, once the full-tree rollup (§3) has data. Higher value, data-hungry.
+- **Cold-start ladder** (before a deck has selected otags):
+  1. Deck has selected otags → use them.
+  2. No selected otags but has a commander → use the **commander's most-popular otags**.
+  3. No commander (non-EDH, pre-moat) → otag term contributes nothing; fall back to today's
+     synergy+signal behavior. **No regression** when otag data is absent.
+
+## 5. UI for hundreds of otags — DECIDED: firehose + search, definitions bounded
+
+**Settled 2026-07-11 (owner).**
+
+- **Selection surface: show the full firehose, alphabetical, plus search.** Not a new
+  problem — `tag_select.rs` already renders ~120 `DeckTag` chips with search; hundreds is
+  "more of the same." Generalize that component for otags; picker is **in v1** (archetype
+  seed from §2 fills the default set, the picker is for refining). Do **not** use the 5-chip
+  inline `deck_fields.rs` grid for otags.
+- **Distribution view: scoped**, never the full vocabulary — the deck's selected otags +
+  top-N otags actually present in the decklist (`card_otags` over the cards). Answers "is my
+  deck doing what I said" without the firehose.
+- **Definitions: do NOT hand-write all hundreds.**
+  1. **First check the bulk file** — it may ship a per-tag description; if so, carry it
+     through ingest (free). On the Phase-1 ingest checklist.
+  2. If not: **humanize the slug** for the display label (`unconditional-creature-removal`
+     → "Unconditional creature removal") — deterministic, zero authoring. Hand-write prose
+     **only for the curated serving tier** (~40-80, the same set from §2/§3). Long-tail
+     otags show humanized label + optional example card / count. Slugs are self-descriptive
+     enough that the undefined tail still reads fine.
+
+## 6. Volume / perf — DECIDED: two representations, each for its query shape
+
+**Settled 2026-07-11 (owner).** Scale is hundreds of otags × 110k+ cards × many-per-card
+(~1-1.5M `card_otags` rows). "Table vs JSONB" is a false split — a JSONB column lives on an
+indexed table too; the point is matching index shape to query shape, and there are two:
+
+- **Serve path** ("does this card's otag set overlap the deck's ~3-10 selected otags?", per
+  page, hot): **denormalized JSONB otag array on `card_profiles` + GIN**, tested with `?|` —
+  no join, no GROUP BY, *identical to how `mechanical_categories` already serves*.
+- **Inverse / aggregation** ("all cards with otag X", the Phase-2 `otag × commander` signal
+  rollup): the **normalized `card_otags(oracle_id, otag)` table** — naturally relational.
+
+**Keep both.** `card_otags` normalized = source of truth (also the natural landing spot for
+the bulk file, which arrives tag→oracle_id[]) + rollup + analytics. The JSONB-on-
+`card_profiles` copy = serve path, built by one `GROUP BY oracle_id` at the end of the
+nightly sync. Write-time cost on a batch job, read-time win on every swipe. Phase-2 signal
+aggregation is a nightly **matview** like `card_signal_rollup`, never computed in-request.
+
+## 7. Non-EDH signal schema — DECIDED: per-otag keying, one generalized-context table
+
+**Settled 2026-07-11 (owner).** Do **not** key on the literal otag *set* — set-cardinality
+is astronomical, every context is unique, ~zero signal accumulates per key. Instead:
+
+- **Key per individual otag: `(format, color_identity, otag)`.** Each swipe credits one row
+  per otag the deck has selected (a `{ramp, removal, draw}` deck credits three rows). Dense
+  (hundreds of keys, not astronomical), composes at serve time by summing the deck's
+  selected otags' signals.
+- **One generalized-context signal model, not a second pipeline.** This is the *same* shape
+  as the Phase-2 commander otag-signal (`otag × context`) — the commander case is just
+  "context = this commander," non-EDH is "context = (format, CI)." Generalize the context
+  column so Commander and format signal live in one table/rollup, not two systems.
+- **Start collecting early.** Turn on per-otag signal keying as soon as deck otag selection
+  ships, before non-EDH serving is good, so the flywheel has months of head start
+  (`moat.md`).
