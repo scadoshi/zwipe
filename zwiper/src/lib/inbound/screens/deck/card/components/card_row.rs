@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_components::CardRow as SharedCardRow;
 use zwipe_core::domain::{
-    card::{Card, scryfall_data::ScryfallData},
+    card::{Card, scryfall_data::ScryfallData, search_card::card_filter::price_currency::PriceCurrency},
     deck::Board,
 };
 
@@ -28,6 +28,12 @@ pub(crate) fn CardRow(
     on_toggle_mvp: Option<EventHandler<()>>,
 ) -> Element {
     let scryfall_data_for_preview = card.scryfall_data.clone();
+    // Deck's price-target currency, shared by the parent view via context so
+    // every row prices in the same currency without threading a prop through
+    // each call site. Falls back to USD outside that provider.
+    let price_currency = try_use_context::<Signal<PriceCurrency>>()
+        .map(|c| c())
+        .unwrap_or_default();
     rsx! {
         SharedCardRow {
             card,
@@ -43,6 +49,7 @@ pub(crate) fn CardRow(
             on_printing,
             mvp,
             on_toggle_mvp,
+            price_currency,
         }
     }
 }
