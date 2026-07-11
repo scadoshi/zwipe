@@ -15,7 +15,7 @@ use uuid::Uuid;
 use zwipe::{
     domain::card::ports::CardRepository,
     inbound::external::scryfall::oracle_tag::{OracleTag, Tagging},
-    outbound::sqlx::postgres::Postgres,
+    outbound::sqlx::{card::helpers::derive_categories::derive_categories, postgres::Postgres},
 };
 
 fn tag(id: u128, slug: &str, description: Option<&str>, cards: &[Uuid]) -> OracleTag {
@@ -194,6 +194,80 @@ async fn projection_aggregates_onto_card_profiles(pool: sqlx::PgPool) {
     .unwrap();
     // jsonb_agg is ORDER BY oracle_tag, so alphabetical
     assert_eq!(tags, serde_json::json!(["lifegain", "spot-removal"]));
+}
+
+/// `derive_categories` maps an otag under a mapped root's subtree to its category:
+/// a card tagged `spot-removal` (child of `removal`) derives category `removal`.
+#[sqlx::test]
+async fn derive_maps_otag_subtree_to_category(pool: sqlx::PgPool) {
+    let removal_id = Uuid::from_u128(0x100);
+    let spot_id = Uuid::from_u128(0x101);
+    sqlx::query("INSERT INTO oracle_tags (id, slug, label) VALUES ($1, 'removal', 'Removal')")
+        .bind(removal_id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query(
+        "INSERT INTO oracle_tags (id, slug, label, parent_ids) \
+         VALUES ($1, 'spot-removal', 'Spot removal', ARRAY[$2]::uuid[])",
+    )
+    .bind(spot_id)
+    .bind(removal_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let fixture = card("Test Removal").mono("W");
+    let oracle_id = fixture.oracle_id().unwrap();
+    seed_cards(&pool, &[fixture]).await;
+    sqlx::query(
+        "INSERT INTO card_oracle_tags (oracle_id, oracle_tag, source) \
+         VALUES ($1, 'spot-removal', 'scryfall')",
+    )
+    .bind(oracle_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    derive_categories(&pool).await.unwrap();
+
+    let cats: serde_json::Value = sqlx::query_scalar(
+        "SELECT cp.mechanical_categories FROM card_profiles cp \
+         JOIN scryfall_data sd ON sd.id = cp.scryfall_data_id WHERE sd.oracle_id = $1",
+    )
+    .bind(oracle_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(cats, serde_json::json!(["removal"]));
+}
+
+/// `derive_categories` adds `tokens` for any card whose `all_parts` has a token component.
+#[sqlx::test]
+async fn derive_tokens_from_all_parts(pool: sqlx::PgPool) {
+    let fixture = card("Token Maker").mono("G");
+    let oracle_id = fixture.oracle_id().unwrap();
+    seed_cards(&pool, &[fixture]).await;
+    sqlx::query(
+        "UPDATE scryfall_data SET all_parts = '[{\"component\":\"token\",\"name\":\"Goblin\"}]'::jsonb \
+         WHERE oracle_id = $1",
+    )
+    .bind(oracle_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    derive_categories(&pool).await.unwrap();
+
+    let cats: serde_json::Value = sqlx::query_scalar(
+        "SELECT cp.mechanical_categories FROM card_profiles cp \
+         JOIN scryfall_data sd ON sd.id = cp.scryfall_data_id WHERE sd.oracle_id = $1",
+    )
+    .bind(oracle_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(cats, serde_json::json!(["tokens"]));
 }
 
 /// A card with no correlations projects to an empty array (LEFT JOIN + COALESCE).
