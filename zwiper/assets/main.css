@@ -1806,45 +1806,45 @@ button {
    sets `display: block` which would otherwise win at equal specificity. */
 .flippable-card-wrapper {
     position: relative;
-    display: grid !important;
-    grid-template: 1fr / 1fr;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
     line-height: 0;
     flex: 0 0 auto;
-    justify-self: center;
-    align-self: center;
-    place-items: center;
+    min-height: 0;
 }
 
-/* Only applied when the card has multiple faces (and the flip button is
-   actually visible). Forces the wrapper to MTG portrait aspect ratio so the
-   button anchors to the real card bounds — without it, the wrapper expands
-   wider than 5:7 and the button lands in the empty space next to the card.
-   DFC layouts (transform, modal_dfc, etc.) are always 5:7, so this is safe.
-   Split / adventure / normal layouts skip this rule and keep natural sizing. */
-/* Reserved for DFC-specific tweaks; the wrapper itself is already 5/7 above. */
-.flippable-card-wrapper.flippable {
+/* Shrink-wraps the image so the flip button (absolute) pins to the image's own
+   corner without resizing the wrapper — no DFC-vs-single-face layout shift. */
+.flip-face {
+    position: relative;
+    display: flex;
+    min-height: 0;
+    max-width: 100%;
+    max-height: 100%;
 }
 
 /* Img owns its own sizing and rounding. Per-context max bounds below.
    Hidden until the bytes actually arrive (`onload` adds .img-loaded), then
    eased in — otherwise slow loads pop in a fully-formed card. */
-.flippable-card-wrapper > img {
-    grid-area: 1 / 1;
+.flippable-card-wrapper img {
     display: block;
     width: auto;
     height: auto;
     max-width: calc(100vw - 2rem);
+    max-height: 100%;
+    min-height: 0;
     border-radius: 1rem;
     opacity: 0;
     transition: opacity 250ms ease;
 }
 
-.flippable-card-wrapper > img.img-loaded {
+.flippable-card-wrapper img.img-loaded {
     opacity: 1;
 }
 
 /* Swipe stack (Add/Remove Deck Cards) */
-.flippable-card-wrapper.card-image > img {
+.flippable-card-wrapper.card-image img {
     max-height: 55vh;
     box-shadow: var(--shadow-md);
 }
@@ -1858,35 +1858,25 @@ button {
     min-height: 0;
 }
 
-.swipe-stack-card .flippable-card-wrapper.card-image > img {
+.swipe-stack-card .flippable-card-wrapper.card-image img {
     max-height: min(55vh, 100%);
     max-width: 100%;
 }
 
-/* DFC wrapper hugs the card's 5:7 bounds so the flip button anchors to the
-   image corner instead of the stretched layer. */
-.swipe-stack-card .flippable-card-wrapper.card-image.flippable {
-    height: auto;
-    aspect-ratio: 5 / 7;
-    max-height: 100%;
-    max-width: 100%;
-}
-
 /* Printing carousel + single-printing view */
-.flippable-card-wrapper.carousel-card-image > img {
+.flippable-card-wrapper.carousel-card-image img {
     max-height: 45vh;
 }
 
 /* Printing sheet inside a bottom sheet — tighter cap */
-.bottom-sheet .flippable-card-wrapper.carousel-card-image > img {
+.bottom-sheet .flippable-card-wrapper.carousel-card-image img {
     max-height: 38vh;
 }
 
 .card-flip-button {
-    grid-area: 1 / 1;
-    align-self: start;
-    justify-self: end;
-    margin: 0.6rem;
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
     z-index: 2;
     padding: 0.35rem 0.7rem;
     border: 1px solid var(--border-primary);

@@ -71,32 +71,37 @@ pub(crate) fn FlippableCardImage(
 
     rsx! {
         div { class: "flippable-card-wrapper{flippable_class} {class}",
-            if let Some(url) = image_url {
-                img {
-                    src: "{url}",
-                    alt: "{alt}",
-                    draggable,
-                    class: if already_loaded { "img-loaded" } else { "" },
-                    onload: move |_| {
-                        if let Ok(mut seen) = seen_urls().lock() {
-                            seen.insert(url.clone());
-                        }
-                        load_nudge += 1;
-                    },
+            // Inner box shrink-wraps the image so the flip button anchors to the
+            // image's own top-right corner, not the letterboxed wrapper — no layout
+            // shift between DFC and single-faced cards.
+            div { class: "flip-face",
+                if let Some(url) = image_url {
+                    img {
+                        src: "{url}",
+                        alt: "{alt}",
+                        draggable,
+                        class: if already_loaded { "img-loaded" } else { "" },
+                        onload: move |_| {
+                            if let Ok(mut seen) = seen_urls().lock() {
+                                seen.insert(url.clone());
+                            }
+                            load_nudge += 1;
+                        },
+                    }
                 }
-            }
-            if flippable && total > 1 {
-                button {
-                    class: "card-flip-button",
-                    "aria-label": "Flip card",
-                    onclick: move |e| {
-                        e.stop_propagation();
-                        face_idx.set((face_idx() + 1) % total);
-                    },
-                    onpointerdown: move |e| { e.stop_propagation(); },
-                    onmousedown: move |e| { e.stop_propagation(); },
-                    ontouchstart: move |e| { e.stop_propagation(); },
-                    "Flip"
+                if flippable && total > 1 {
+                    button {
+                        class: "card-flip-button",
+                        "aria-label": "Flip card",
+                        onclick: move |e| {
+                            e.stop_propagation();
+                            face_idx.set((face_idx() + 1) % total);
+                        },
+                        onpointerdown: move |e| { e.stop_propagation(); },
+                        onmousedown: move |e| { e.stop_propagation(); },
+                        ontouchstart: move |e| { e.stop_propagation(); },
+                        "Flip"
+                    }
                 }
             }
         }
