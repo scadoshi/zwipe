@@ -27,11 +27,13 @@ recent-release lag we feared did not appear (13/13 latest-window cards already t
 - **Retire `classify.rs`** (the guesswork) and remove `classify_untagged_cards` from
   `zervice`. Owner's rule: don't hand-maintain a heuristic when the community keeps a gold
   standard.
-- **Keep the `mechanical_categories` column + wire field, but repopulate it from otag
-  subtrees** via an authored `category → otag-root(s)` map, each root expanded through the
-  hierarchy. This is **non-breaking** — the served `Card` shape is unchanged, the values just
-  become gold-standard accurate — and it mirrors the Q2 "keep the vocabulary, back it with
-  otags" pattern.
+- **`oracle_tag` is the canonical name** (DB/Rust/wire); `mechanical_categories` is retired
+  as a concept but **kept on the wire as a deprecated translation** — the served `Card` emits
+  *both* `oracle_tags` (canonical, granular) and `mechanical_categories` (legacy 24 coarse
+  categories, derived from oracle_tag subtrees) so old clients don't break. Dual-emit now,
+  drop the legacy key behind a `MIN_CLIENT_VERSION` floor later. Full mechanism in
+  `compatibility.md` §Naming. Mirrors the Q2 "keep the vocabulary, back it with oracle tags"
+  pattern.
 - **Two fuzzy categories need multi-root mappings:** `evasion` (spans `flying` / `menace` /
   `can't-be-blocked` …) and `ramp` (`ramp` + `mana-producer`). Author with care.
 - **Gate the switchover behind a filter-parity check** on the overlap set, and sample the
@@ -40,7 +42,7 @@ recent-release lag we feared did not appear (13/13 latest-window cards already t
 - The 24-category *vocabulary* can be fully sunset later behind a min-version floor if the
   new granular otag filters make it redundant; not now.
 - **Phase 2 (heuristic backfill) is cut** — there is nothing to backfill.
-- **Provenance** (`source` on `card_otags`) stays for the rare hand-added correlation but is
+- **Provenance** (`source` on `card_oracle_tags`) stays for the rare hand-added correlation but is
   no longer load-bearing.
 
 ## 2. Deck-tag reconciliation — DECIDED: demote `DeckTag`, one drives the other
@@ -59,11 +61,11 @@ high-level archetype **container** that maps to card-level otags:
   now).
 
 **Storage (also settled — see §6 for the perf reconciliation):**
-- **`card_otags` (card → otags): normalized, indexed table** = source of truth + bulk-file
+- **`card_oracle_tags` (card → otags): normalized, indexed table** = source of truth + bulk-file
   landing + rollup/analytics source. Serving does **not** join it directly.
 - **Serve path reads a denormalized JSONB otag array on `card_profiles`** (GIN `?|`, like
-  `mechanical_categories`), built from `card_otags` by a nightly `GROUP BY`.
-- **Deck-selected otags: JSONB `decks.otags` column** (matches existing `decks.tags`
+  `mechanical_categories`), built from `card_oracle_tags` by a nightly `GROUP BY`.
+- **Deck-selected otags: JSONB `decks.oracle_tags` column** (matches existing `decks.tags`
   pattern). The serve reads it once in `search_deck_cards` and passes it as a param list —
   no bulk decks↔otags join, so no `deck_otags` table needed.
 
@@ -96,10 +98,10 @@ that matter).
 
 **Settled 2026-07-11 (owner).** Phase the algorithm change:
 
-- **Phase 1 — one new term.** Add a single `W_OTAG` **otag-correlation** term to
+- **Phase 1 — one new term.** Add a single `W_ORACLE_TAG` **otag-correlation** term to
   `search_scryfall_data_deck_aware` = how well a card's otags overlap the deck's selected
-  otags (`card_otags` × `decks.otags`), scored beside `base` (synergy) and `signal`
-  (rollup). Keep `W_OTAG` **small at launch** (the revert lever, like `BAND_SIZE=1`) so it
+  otags (`card_oracle_tags` × `decks.oracle_tags`), scored beside `base` (synergy) and `signal`
+  (rollup). Keep `W_ORACLE_TAG` **small at launch** (the revert lever, like `BAND_SIZE=1`) so it
   nudges rather than dominates; dial up as trust grows.
 - **Phase 2 — the otag *signal* term** (deeper cuts + cold-start for new cards) comes
   later, once the full-tree rollup (§3) has data. Higher value, data-hungry.
@@ -119,7 +121,7 @@ that matter).
   seed from §2 fills the default set, the picker is for refining). Do **not** use the 5-chip
   inline `deck_fields.rs` grid for otags.
 - **Distribution view: scoped**, never the full vocabulary — the deck's selected otags +
-  top-N otags actually present in the decklist (`card_otags` over the cards). Answers "is my
+  top-N otags actually present in the decklist (`card_oracle_tags` over the cards). Answers "is my
   deck doing what I said" without the firehose.
 - **Definitions: do NOT hand-write all hundreds.**
   1. **First check the bulk file** — it may ship a per-tag description; if so, carry it
@@ -133,16 +135,16 @@ that matter).
 ## 6. Volume / perf — DECIDED: two representations, each for its query shape
 
 **Settled 2026-07-11 (owner).** Scale is hundreds of otags × 110k+ cards × many-per-card
-(~1-1.5M `card_otags` rows). "Table vs JSONB" is a false split — a JSONB column lives on an
+(~1-1.5M `card_oracle_tags` rows). "Table vs JSONB" is a false split — a JSONB column lives on an
 indexed table too; the point is matching index shape to query shape, and there are two:
 
 - **Serve path** ("does this card's otag set overlap the deck's ~3-10 selected otags?", per
   page, hot): **denormalized JSONB otag array on `card_profiles` + GIN**, tested with `?|` —
   no join, no GROUP BY, *identical to how `mechanical_categories` already serves*.
 - **Inverse / aggregation** ("all cards with otag X", the Phase-2 `otag × commander` signal
-  rollup): the **normalized `card_otags(oracle_id, otag)` table** — naturally relational.
+  rollup): the **normalized `card_oracle_tags(oracle_id, otag)` table** — naturally relational.
 
-**Keep both.** `card_otags` normalized = source of truth (also the natural landing spot for
+**Keep both.** `card_oracle_tags` normalized = source of truth (also the natural landing spot for
 the bulk file, which arrives tag→oracle_id[]) + rollup + analytics. The JSONB-on-
 `card_profiles` copy = serve path, built by one `GROUP BY oracle_id` at the end of the
 nightly sync. Write-time cost on a batch job, read-time win on every swipe. Phase-2 signal

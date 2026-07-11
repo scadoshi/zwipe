@@ -18,8 +18,8 @@ is greenfield, built alongside the existing systems below, not on top of them.
   **tag → oracle_id[]**, so fan each tag out to its oracle ids.
 
 **New table.** `zerver/migrations/` (naming `YYYYMMDDHHMMSS_snake_case.sql`, forward-only;
-latest is `20260711...`). Add e.g. `20260712000000_create_card_otags.sql`:
-- `card_otags(oracle_id UUID, otag TEXT, ...)` keyed by `oracle_id`, GIN/btree indexed for
+latest is `20260711...`). Add e.g. `20260712000000_create_card_oracle_tags.sql`:
+- `card_oracle_tags(oracle_id UUID, otag TEXT, ...)` keyed by `oracle_id`, GIN/btree indexed for
   "cards with otag X in color identity Y". Mirror the style of
   `20260611120000_create_synergy_tables.sql` / `20260706200000_create_card_signal_rollup.sql`.
 - Likely a rollup matview later (like `card_signal_rollup`) for perf at hundreds-of-otags ×
@@ -39,7 +39,7 @@ helper in `zerver/src/lib/outbound/sqlx/card/helpers/upsert_card.rs` — batched
 
 Parallels the three `mechanical_categories_*` predicates exactly:
 - `zwipe-core/src/domain/card/models/search_card/card_filter/criteria/mod.rs` — add
-  `otags_contains_any` / `_contains_all` / `_excludes` (`Option<Vec<String>>`), plus the
+  `oracle_tags_contains_any` / `_contains_all` / `_excludes` (`Option<Vec<String>>`), plus the
   matching getters/setters/builder/`matches.rs`/`query.rs`.
 - `zerver/src/lib/outbound/sqlx/card/mod.rs` (~lines 912-926) — add otag jsonb/join
   predicates next to the existing `?|` / `@>` / `NOT ?|` category predicates.
@@ -51,15 +51,15 @@ The ranking query is `search_scryfall_data_deck_aware` in
 `commander_synergy`) + **signal** (`card_signal_rollup` net-rate) + **band jitter**, with a
 wildcard deep-pool slot.
 
-- Add an **otag-correlation term** with its own `W_OTAG`-style constant next to `W_SIGNAL`.
+- Add an **otag-correlation term** with its own `W_ORACLE_TAG`-style constant next to `W_SIGNAL`.
 - `zerver/src/lib/domain/deck/services.rs` `search_deck_cards` loads the deck profile +
   commander synergy today; it would also load the deck's **selected otags** (JSONB
-  `decks.otags`) to weight the new term.
-- **The serve does NOT join `card_otags`.** It reads a **denormalized JSONB otag array on
+  `decks.oracle_tags`) to weight the new term.
+- **The serve does NOT join `card_oracle_tags`.** It reads a **denormalized JSONB otag array on
   `card_profiles`** and tests overlap with `?|` — inline with the existing
   `mechanical_categories` predicate, no new join, no GROUP BY (see `open-questions.md` §6).
 - **Join-key note:** the `oracle_id`-vs-`scryfall_data_id` reconciliation moves to the
-  **nightly sync** (build the `card_profiles` JSONB from `card_otags` by `oracle_id`), out
+  **nightly sync** (build the `card_profiles` JSONB from `card_oracle_tags` by `oracle_id`), out
   of the hot path.
 
 ## Backend — signal keying for non-EDH (extend existing)
@@ -79,13 +79,13 @@ jsonb + `decks.power_level` text; migrations `20260625000000_add_deck_tags.sql`,
 variants) live in `zwipe-core/src/domain/deck/models/`.
 
 Decided (`open-questions.md` §2, §6): the deck's selected otags go in a **new JSONB
-`decks.otags` column** (not a join table) — the serve reads it once and passes it as a
+`decks.oracle_tags` column** (not a join table) — the serve reads it once and passes it as a
 param list. `DeckTag` is **demoted to an archetype container**: a curated `DeckTag → otag-set`
 correlation (authored, ~120 entries) seeds a deck's otags when an archetype is picked, and
-`decks.tags` stays for browse/display. On the card side, **`card_otags` is the normalized
+`decks.tags` stays for browse/display. On the card side, **`card_oracle_tags` is the normalized
 truth/rollup table**, while the serve reads a **denormalized JSONB otag array on
-`card_profiles`** (GIN `?|`, built nightly from `card_otags`) — serving never joins
-`card_otags` directly.
+`card_profiles`** (GIN `?|`, built nightly from `card_oracle_tags`) — serving never joins
+`card_oracle_tags` directly.
 
 ## Frontend — `zwiper` (mostly UI)
 
@@ -114,7 +114,7 @@ not complemented:
 - **Keep** the `card_profiles.mechanical_categories` column and its wire field, but
   **repopulate it from otag subtrees** via an authored `category → otag-root(s)` map (expand
   each root through `otags.parent_ids`) in the same nightly `zervice` pass that builds the
-  `card_profiles.otags` projection. Non-breaking: served `Card` shape unchanged, values now
+  `card_profiles.oracle_tags` projection. Non-breaking: served `Card` shape unchanged, values now
   gold-standard.
 - **Gate** the deletion behind a filter-parity check on the overlap set; `evasion`/`ramp`
   need multi-root mappings. All of this lands in **Phase 2** (`sequencing.md`).

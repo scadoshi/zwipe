@@ -1,20 +1,19 @@
 //! Oracle Tags ingest.
 //!
-//! Full-replaces the `otags` catalog and the `scryfall`-sourced rows of
-//! `card_otags` from a fresh Oracle Tags pull, all in one transaction. Rows with
-//! a non-`scryfall` `source` (e.g. heuristic backfill in a later phase) are left
-//! untouched. See `context/plans/otags/`.
+//! Full-replaces the `oracle_tags` catalog and the `scryfall`-sourced rows of
+//! `card_oracle_tags` from a fresh Oracle Tags pull, all in one transaction. Rows
+//! with a non-`scryfall` `source` are left untouched. See `context/plans/otags/`.
 
 use crate::inbound::external::scryfall::oracle_tag::OracleTag;
 use anyhow::Context;
 use sqlx::{PgPool, QueryBuilder};
 
 /// Catalog rows per INSERT batch (6 bind params/row, well under Postgres' 65535).
-const OTAG_CATALOG_BATCH: usize = 4_000;
+const CATALOG_BATCH: usize = 4_000;
 /// Correlation rows per INSERT batch (3 bind params/row).
-const CARD_OTAG_BATCH: usize = 20_000;
+const CORRELATION_BATCH: usize = 20_000;
 
-/// Inverts tag -> `[card]` into flat card -> otag correlations, dropping any
+/// Inverts tag -> `[card]` into flat card -> oracle_tag correlations, dropping any
 /// tagging without an oracle id. Borrows each slug from `tags`.
 fn flatten_correlations(tags: &[OracleTag]) -> Vec<(uuid::Uuid, &str)> {
     let mut correlations = Vec::new();
@@ -28,22 +27,23 @@ fn flatten_correlations(tags: &[OracleTag]) -> Vec<(uuid::Uuid, &str)> {
     correlations
 }
 
-/// Replaces the otag catalog and the scryfall-sourced card correlations from
-/// `tags`. Returns `(catalog_rows, correlation_rows)`.
+/// Replaces the oracle_tag catalog and the scryfall-sourced card correlations
+/// from `tags`. Returns `(catalog_rows, correlation_rows)`.
 pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Result<(u32, u32)> {
     let correlations = flatten_correlations(tags);
 
     let mut tx = pool.begin().await?;
 
     // Catalog: full replace.
-    sqlx::query("DELETE FROM otags")
+    sqlx::query("DELETE FROM oracle_tags")
         .execute(&mut *tx)
         .await
-        .context("failed to clear otags catalog")?;
+        .context("failed to clear oracle_tags catalog")?;
 
-    for chunk in tags.chunks(OTAG_CATALOG_BATCH) {
-        let mut qb =
-            QueryBuilder::new("INSERT INTO otags (id, slug, label, description, parent_ids, aliases) ");
+    for chunk in tags.chunks(CATALOG_BATCH) {
+        let mut qb = QueryBuilder::new(
+            "INSERT INTO oracle_tags (id, slug, label, description, parent_ids, aliases) ",
+        );
         qb.push_values(chunk, |mut b, tag| {
             b.push_bind(tag.id)
                 .push_bind(tag.slug.clone())
@@ -56,27 +56,28 @@ pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Resu
         qb.build()
             .execute(&mut *tx)
             .await
-            .context("failed to insert otags catalog batch")?;
+            .context("failed to insert oracle_tags catalog batch")?;
     }
 
     // Correlations: replace only the scryfall-sourced rows, preserving other sources.
-    sqlx::query("DELETE FROM card_otags WHERE source = 'scryfall'")
+    sqlx::query("DELETE FROM card_oracle_tags WHERE source = 'scryfall'")
         .execute(&mut *tx)
         .await
-        .context("failed to clear scryfall card_otags")?;
+        .context("failed to clear scryfall card_oracle_tags")?;
 
-    for chunk in correlations.chunks(CARD_OTAG_BATCH) {
-        let mut qb = QueryBuilder::new("INSERT INTO card_otags (oracle_id, otag, source) ");
-        qb.push_values(chunk, |mut b, (oracle_id, otag)| {
+    for chunk in correlations.chunks(CORRELATION_BATCH) {
+        let mut qb =
+            QueryBuilder::new("INSERT INTO card_oracle_tags (oracle_id, oracle_tag, source) ");
+        qb.push_values(chunk, |mut b, (oracle_id, oracle_tag)| {
             b.push_bind(*oracle_id)
-                .push_bind(*otag)
+                .push_bind(*oracle_tag)
                 .push_bind("scryfall");
         });
-        qb.push(" ON CONFLICT (oracle_id, otag) DO NOTHING");
+        qb.push(" ON CONFLICT (oracle_id, oracle_tag) DO NOTHING");
         qb.build()
             .execute(&mut *tx)
             .await
-            .context("failed to insert card_otags batch")?;
+            .context("failed to insert card_oracle_tags batch")?;
     }
 
     tx.commit().await?;

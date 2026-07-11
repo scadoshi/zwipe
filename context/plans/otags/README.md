@@ -14,6 +14,15 @@ card to its otags by `oracle_id`, let players select the otags that describe a d
 strategy, and use that community-accurate tagging as a new axis for filtering, serving,
 and cross-format swipe-signal collection.
 
+## Naming
+
+**Canonical name: `oracle_tag` / `oracle_tags`** — DB (`oracle_tags`, `card_oracle_tags`,
+`card_profiles.oracle_tags`), Rust (`OracleTag`), and wire (`oracle_tags` field +
+`oracle_tags_*` filter criteria). The old `mechanical_categories` name is retired as a concept
+but kept on the wire as a **deprecated translation** during the client-migration window
+(`compatibility.md` §Naming). `otag`/`otags` appears only as informal prose shorthand in
+these docs; the concrete identifiers are all spelled out.
+
 ## The files
 
 | File | Owns |
@@ -22,7 +31,7 @@ and cross-format swipe-signal collection.
 | `moat.md` | The non-EDH cross-format dataset moat (the long game) |
 | `payoff.md` | Immediate vs long-term payoff, honestly separated |
 | `scope.md` | Every backend + frontend file/table touched, grounded in the current code |
-| `compatibility.md` | How to NOT break already-installed mobile clients |
+| `compatibility.md` | How to NOT break installed clients + the `oracle_tag` naming / wire translation |
 | `open-questions.md` | The 7 decisions, all resolved (2026-07-11) with rationale |
 | `sequencing.md` | The phased build — per-phase files touched + additive-wire guarantee |
 
@@ -40,11 +49,11 @@ Full phase-by-phase build (files touched + per-phase additive-wire guarantee) li
 **`sequencing.md`**. In brief:
 
 0. **Spike** — confirm the bulk file shape (keying, descriptions). ✅ done
-1. **Ingest** — `otags` catalog + `card_otags` + daily `zervice` sync. ✅ **shipped**
-2. **Filtering + retire heuristic** — `card_profiles.otags` projection, otag filter fields,
+1. **Ingest** — `oracle_tags` catalog + `card_oracle_tags` + daily `zervice` sync. ✅ **shipped**
+2. **Filtering + retire heuristic** — `card_profiles.oracle_tags` projection, otag filter fields,
    otags on served cards; delete `classify.rs`, derive `mechanical_categories` from otags.
-3. **Deck otags** — `decks.otags` + archetype→otag seeding + searchable picker.
-4. **Serving** — one small `W_OTAG` correlation term in the ranking query.
+3. **Deck otags** — `decks.oracle_tags` + archetype→otag seeding + searchable picker.
+4. **Serving** — one small `W_ORACLE_TAG` correlation term in the ranking query.
 5. **Signal collection** — generalized-context per-otag signal, shipped dark.
 6. **Non-EDH serving** — deferred; serve on the accrued dataset once it matures.
 
