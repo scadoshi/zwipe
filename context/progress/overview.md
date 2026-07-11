@@ -23,6 +23,17 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 - **Live Archidekt contract test** (`archidekt_import.rs`, `#[ignore]`d): fetch +
   parse a real permanent deck to guard the undocumented API shape; verified 83/83
   entries resolved. Runs on demand (`-- --ignored`), never in CI.
+- **CI lint gate** (`test.yml` + both deploy workflows): a `lint` job runs
+  `cargo +nightly fmt --check` + `cargo clippy … -D warnings`; deploys now
+  `needs: [test, lint]`. Proven live — it caught a real `useless_borrows_in_formatting`
+  (a newer CI clippy than local) and blocked the deploy until fixed. Also cleaned
+  workspace-wide fmt drift (nightly, `imports_granularity = "Crate"`). See
+  [`../operations/infrastructure/cicd.md`](../operations/infrastructure/cicd.md).
+- **Security automation** (`audit.yml`): weekly `cargo audit` against the RustSec DB
+  (+ on lockfile change), fails → emails on vulnerabilities. Surfaced and fixed two:
+  `crossbeam-epoch` 0.9.18→0.9.20 and `quinn-proto` 0.11.14→0.11.16 (high-sev QUIC
+  DoS). `RUSTSEC-2023-0071` (rsa) documented-ignored — we sign JWTs with HMAC, never
+  RSA (unexercised path via jsonwebtoken + sqlx's unbuilt mysql driver).
 
 ---
 

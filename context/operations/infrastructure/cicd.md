@@ -16,7 +16,7 @@ Triggers automatically on push to `main` when any of these paths change:
 
 Also has `workflow_dispatch` for manual runs from the GitHub Actions tab.
 
-### Tests gate the deploys
+### Tests + lint gate the deploys
 
 The test suite (`postgres:16` service + `cargo test -p zwipe-core -p zerver`, never
 `--workspace` — zwiper's Dioxus/GTK stack won't build headless; `SQLX_OFFLINE=true`
@@ -26,14 +26,36 @@ test via `DATABASE_URL`) runs in two places:
 - **`.github/workflows/test.yml` (`Test`)** — on **pull requests only**, the
   pre-merge signal.
 - **A `test` job inside `deploy-zerver.yml` and `deploy-zite.yml`** — the `deploy`
-  (and zite's `build`) job `needs: test`, so **a red suite blocks the deploy**.
-  This keeps the deploys' path filters (a docs-only push still won't redeploy) while
-  gating on tests — GitHub can't make a `push`-triggered workflow wait on a *separate*
-  workflow, hence the inline job. Push-time testing lives here, so `test.yml` stays
-  PR-only (no double-run). `workflow_dispatch` still lets you force a deploy (it runs
-  after the test job).
+  (and zite's `build`) job `needs: [test, lint]`, so **a red suite or lint blocks the
+  deploy**. This keeps the deploys' path filters (a docs-only push still won't
+  redeploy) while gating — GitHub can't make a `push`-triggered workflow wait on a
+  *separate* workflow, hence the inline jobs. Push-time testing lives here, so
+  `test.yml` stays PR-only (no double-run). `workflow_dispatch` still lets you force
+  a deploy (it runs after the gate jobs).
+
+A parallel **`lint` job** (in all three of `test.yml` / `deploy-zerver.yml` /
+`deploy-zite.yml`) runs `cargo +nightly fmt --check` (workspace-wide; nightly because
+`rustfmt.toml` sets the unstable `imports_granularity = "Crate"`) + `cargo clippy -p
+zwipe-core -p zerver --all-targets -- -D warnings` (same headless-GTK scoping as Test;
+`SQLX_OFFLINE=true`). Added 2026-07-10 after finding fmt had silently drifted. **Note:
+CI rides newest-stable clippy** — a local `rustup update stable` keeps you from being
+surprised by new lints (e.g. clippy 1.97 flagged a `useless_borrows_in_formatting` that
+1.94 didn't, and correctly blocked a deploy until fixed).
 
 Plan/design: [`../../archive/integration-tests/`](../../archive/integration-tests/overview.md).
+
+### Security audit
+
+`.github/workflows/audit.yml` (`Security audit`) runs `cargo audit --ignore
+RUSTSEC-2023-0071` (prebuilt binary via `taiki-e/install-action`) **weekly** (Mon 08:00
+UTC), on any `Cargo.toml`/`Cargo.lock` change, and on manual dispatch. It scans
+`Cargo.lock` against the RustSec DB and **fails (→ GitHub emails you) on vulnerabilities**
+— unmaintained/unsound *warnings* (e.g. the GTK3 desktop stack, `anyhow`, `rand 0.7`)
+don't fail. The one ignore, `RUSTSEC-2023-0071` (rsa Marvin timing sidechannel), is
+intentional: we sign JWTs with HS256/HMAC, never RSA — rsa only rides in as an
+unexercised code path via jsonwebtoken's `rust_crypto` backend + sqlx's never-compiled
+`mysql` driver. Backstop: turn on **Dependabot alerts** (repo Settings → Code security)
+for the passive GitHub-Advisory feed.
 
 ---
 
