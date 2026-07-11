@@ -124,6 +124,8 @@ pub fn View(deck_id: Uuid) -> Element {
     // crossing toasts on quantity changes.
     let mut price_budget: Signal<Option<f64>> = use_signal(|| None);
     let mut price_budget_currency: Signal<PriceCurrency> = use_signal(|| PriceCurrency::Usd);
+    // Shared with every CardRow so compact-row prices use the deck's currency.
+    use_context_provider(|| price_budget_currency);
     // What the UI renders — grouped card lists (active cards only)
     let mut displayed_groups: Signal<Vec<CardGroup>> = use_signal(Vec::new);
     // Current grouping mode
@@ -756,16 +758,6 @@ pub fn View(deck_id: Uuid) -> Element {
                             onclick: move |_| show_command_zone.set(!show_command_zone()),
                             "Command zone"
                         }
-                    }
-
-                    // Column headers
-                    div { class: "card-row-compact card-row-header",
-                        span { class: "card-row-arrow" }
-                        span { class: "card-row-qty", "Qty" }
-                        span { class: "card-row-name", "Name" }
-                        span { class: "card-row-cmc", "MV" }
-                        span { class: "card-row-pt", "P/T" }
-                        span { class: "card-row-colors", "Colors" }
                     }
 
                     if !deck_loaded() {
