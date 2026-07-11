@@ -46,13 +46,14 @@ testers via a hired service + organic, past the 12-tester / 14-continuous-day ga
 `com.scadoshi.zwipe` live to testers across 176 countries. Build pipeline + gotchas
 in `operations/android/play-store/submission/`.
 
-- [ ] **Apply for production access + full launch.** 14-day cycle **confirmed
-  complete 2026-07-09** by the QA partner (Teekam Suthar / 12testers); the
-  production questionnaire is in hand (Zwipe-tailored answers drafted in
-  [`../operations/android/play-store/submission/production_access.md`](../operations/android/play-store/submission/production_access.md)).
-  Submit the production-access application in the Play Console (~72h review), then
-  promote a build to the Production track. (1.5.0 / vc24 is the live closed-testing
-  build.)
+- [~] **Android production launch — SUBMITTED FOR REVIEW 2026-07-11** (Submission 21,
+  "Production", **all countries** selected; status: In review). 14-day closed-testing
+  cycle confirmed complete 2026-07-09 (QA partner Teekam Suthar / 12testers);
+  questionnaire answers in [`../operations/android/play-store/submission/production_access.md`](../operations/android/play-store/submission/production_access.md).
+  Gotcha hit: the **Production track needs its own country list** (separate from closed
+  testing's 176) — set via Test and release → Production → Countries/regions, not the
+  release page or the bundle. Now: **wait for Google review**, then it goes live on Play.
+  Once live, do the website link + announcement item below.
 - [ ] **Intake tester feedback → `feature_requests.md`.** ~400 testers + hired
   testers are generating suggestions; triage them into the weighted request queue
   ([`feature_requests.md`](feature_requests.md)) and surface anything actionable

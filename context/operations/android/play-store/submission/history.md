@@ -2,6 +2,13 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-07-11 — Production launch submitted for review** (Play Console Submission 21,
+  "Production" track, **all countries**). Promoted the `1.5.0` / vc24 build from closed
+  testing to Production. Gotcha: the Production track starts with **no countries** — set
+  its own list via Test and release → Production → Countries/regions (separate from the
+  176 on closed testing; not on the release page, not in the bundle). Now awaiting Google
+  review, then live on Play.
+
 - **2026-07-09 — `1.5.0`, versionCode `24`** (edge back-swipe navigation, per-screen
   per-deck filter persistence, session-platform tracking on the refresh-token row,
   Android tap-highlight fix, and the CardRow/skeleton polish batch). Built per the
