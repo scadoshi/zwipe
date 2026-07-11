@@ -93,7 +93,7 @@ pub(crate) fn CloneDeckDialog(
                                     Ok(cloned) => {
                                         open.set(false);
                                         toast.info(
-                                            format!("Cloned as '{name}'"),
+                                            format!("Cloned as \"{name}\""),
                                             ToastOptions::default().duration(Duration::from_millis(2000)),
                                         );
                                         navigator.push(Router::ViewDeck { deck_id: cloned.deck_id });
