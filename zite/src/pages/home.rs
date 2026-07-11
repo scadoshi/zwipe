@@ -134,14 +134,14 @@ pub fn Home() -> Element {
                 category: "Announcement",
                 status: BannerStatus::Done,
                 "Zwipe is now on Android. "
-                Link { to: Route::Android {}, "Get it \u{2192}" }
+                Link { to: Route::Android {}, "Get it" }
             }
             Banner {
                 category: "Release",
                 status: BannerStatus::Done,
                 status_label: "New",
                 "Version 1.5.0 just shipped. "
-                Link { to: Route::Changelog {}, "See what's new \u{2192}" }
+                Link { to: Route::Changelog {}, "See what's new" }
             }
         }
         div { class: "hero",
