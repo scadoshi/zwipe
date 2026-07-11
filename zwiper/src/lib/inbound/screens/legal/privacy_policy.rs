@@ -14,6 +14,19 @@ use zwipe_core::{
     legal::{PRIVACY_LAST_UPDATED, PRIVACY_POLICY_HTML},
 };
 
+/// Splits the shared policy HTML into one fragment per `<h2>` heading so each
+/// section can render inside its own card, matching the panelled look of the
+/// other screens. The leading `<h2>` is re-attached to every chunk and an `<hr>`
+/// is inserted under the heading to divide it from the body copy.
+fn privacy_sections() -> Vec<String> {
+    PRIVACY_POLICY_HTML
+        .split("<h2>")
+        .map(str::trim)
+        .filter(|chunk| !chunk.is_empty())
+        .map(|chunk| format!("<h2>{chunk}").replacen("</h2>", "</h2>\n<hr>", 1))
+        .collect()
+}
+
 /// Full privacy policy, reachable from the Profile screen.
 #[component]
 pub fn PrivacyPolicy() -> Element {
@@ -26,23 +39,29 @@ pub fn PrivacyPolicy() -> Element {
             div { class: "screen-content content-enter",
                 div { class: "privacy-content",
                     p { class: "privacy-updated", "Last updated: {PRIVACY_LAST_UPDATED}" }
-                    div { dangerous_inner_html: PRIVACY_POLICY_HTML }
 
-                    h2 { "Contact" }
-                    p {
-                        "Questions or requests? Email "
-                        span {
-                            class: "privacy-link",
-                            onclick: move |_| open_url::open(&format!("mailto:{SUPPORT_EMAIL}")),
-                            "{SUPPORT_EMAIL}"
+                    for section in privacy_sections() {
+                        div { class: "privacy-section", dangerous_inner_html: section }
+                    }
+
+                    div { class: "privacy-section",
+                        h2 { "Contact" }
+                        hr {}
+                        p {
+                            "Questions or requests? Email "
+                            span {
+                                class: "privacy-link",
+                                onclick: move |_| open_url::open(&format!("mailto:{SUPPORT_EMAIL}")),
+                                "{SUPPORT_EMAIL}"
+                            }
+                            " or join the "
+                            span {
+                                class: "privacy-link",
+                                onclick: move |_| open_url::open(DISCORD_URL),
+                                "Discord"
+                            }
+                            " for support."
                         }
-                        " or join the "
-                        span {
-                            class: "privacy-link",
-                            onclick: move |_| open_url::open(DISCORD_URL),
-                            "Discord"
-                        }
-                        " for support."
                     }
                 }
             }
