@@ -215,8 +215,14 @@ mod tests {
 
     #[test]
     fn entry_front_face_collapses_separators() {
-        assert_eq!(entry_front_face("Boggart Trawler // Boggart Bog"), "Boggart Trawler");
-        assert_eq!(entry_front_face("Boggart Trawler / Boggart Bog"), "Boggart Trawler");
+        assert_eq!(
+            entry_front_face("Boggart Trawler // Boggart Bog"),
+            "Boggart Trawler"
+        );
+        assert_eq!(
+            entry_front_face("Boggart Trawler / Boggart Bog"),
+            "Boggart Trawler"
+        );
         assert_eq!(entry_front_face("Boggart Trawler"), "Boggart Trawler");
         assert_eq!(entry_front_face("Lightning Bolt"), "Lightning Bolt");
     }
@@ -230,7 +236,10 @@ mod tests {
             "Boggart Trawler",                // front face only
             "boggart trawler",                // case-insensitive front
         ] {
-            assert!(resolves(entry, card), "entry {entry:?} should resolve to {card:?}");
+            assert!(
+                resolves(entry, card),
+                "entry {entry:?} should resolve to {card:?}"
+            );
         }
     }
 
