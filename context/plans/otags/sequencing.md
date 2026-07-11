@@ -34,19 +34,21 @@ Output: a one-page note pinning the parse contract. Nothing else starts until th
 
 **Goal:** every card carries its otag set, synced daily.
 
-**BUILT 2026-07-11.** Migration `20260712000000_create_oracle_tags.sql`.
+**BUILT 2026-07-11.** Migrations `20260712000000_create_oracle_tags.sql` +
+`20260712010000_rename_otag_tables_to_oracle_tags.sql` (the rename landed the canonical
+`oracle_tag` naming — see `compatibility.md` §Naming).
 
-**Tables:**
-- `otags(id UUID PK, slug UNIQUE, label, description, parent_ids UUID[], aliases TEXT[],
-  updated_at)` — **catalog**: one row per otag with its metadata + hierarchy. Added beyond
-  the minimal plan because the bulk file carries descriptions + parent ids for free, and
-  Phases 3-5 (definitions UI, granularity curation) need them; persisting now avoids a
-  second ingest pass.
-- `card_otags(oracle_id UUID, otag TEXT, source TEXT DEFAULT 'scryfall', PK(oracle_id,otag))`
-  — normalized source of truth. Indexed on `otag` and `oracle_id`.
-- **Deferred to Phase 3:** the denormalized `card_profiles.otags` JSONB serve projection.
-  Nothing reads it until filtering/serving, and keeping Phase 1 to brand-new tables keeps it
-  fully additive with zero risk to existing `card_profiles` queries.
+**Tables (canonical names):**
+- `oracle_tags(id UUID PK, slug UNIQUE, label, description, parent_ids UUID[], aliases
+  TEXT[], updated_at)` — **catalog**: one row per oracle tag with its metadata + hierarchy.
+  Added beyond the minimal plan because the bulk file carries descriptions + parent ids for
+  free, and Phases 2-4 (definitions UI, category mapping, granularity curation) need them.
+- `card_oracle_tags(oracle_id UUID, oracle_tag TEXT, source TEXT DEFAULT 'scryfall',
+  PK(oracle_id, oracle_tag))` — normalized source of truth. Indexed on `oracle_tag` and
+  `oracle_id`.
+- **Deferred to Phase 2:** the denormalized `card_profiles.oracle_tags` JSONB serve
+  projection. Nothing reads it until filtering/serving, and keeping Phase 1 to brand-new
+  tables keeps it fully additive with zero risk to existing `card_profiles` queries.
 
 **Backend (built):**
 - `.../external/scryfall/oracle_tag.rs` — `OracleTag` / `Tagging` deserialize DTOs.
@@ -88,48 +90,52 @@ Phase 3/serving-tier + `DeckTag → otag` authoring (`open-questions.md` §3).
 guesswork) is retired and `mechanical_categories` is repopulated from otags. Q1 + Q6 decisions.
 
 **Tables (the projection deferred from Phase 1):**
-- **Add `otags JSONB NOT NULL DEFAULT '[]'` + GIN index to `card_profiles`** — the
+- **Add `oracle_tags JSONB NOT NULL DEFAULT '[]'` + GIN index to `card_profiles`** — the
   denormalized serve/filter projection; mirrors `card_profiles.mechanical_categories`.
-- Extend `zervice.rs` to rebuild it after the Phase-1 otag sync via one `GROUP BY oracle_id`
-  (`UPDATE card_profiles SET otags = agg FROM card_otags WHERE ... GROUP BY oracle_id`).
+- Extend `zervice.rs` to rebuild it after the Phase-1 sync via one `GROUP BY oracle_id`
+  (`UPDATE card_profiles SET oracle_tags = agg FROM card_oracle_tags WHERE ... GROUP BY oracle_id`).
 
 **Retire the heuristic (Q1):**
-- Author a `category → otag-root(s)` map (~24 categories), multi-root for `evasion`
+- Author a `category → oracle_tag-root(s)` map (~24 categories), multi-root for `evasion`
   (`flying`/`menace`/`can't-be-blocked`…) and `ramp` (`ramp` + `mana-producer`). Lives in
-  code near `MechanicalCategory` (stable, authored, uses the `otags.parent_ids` hierarchy).
+  code near `MechanicalCategory` (stable, authored, uses the `oracle_tags.parent_ids` hierarchy).
 - In `zervice.rs`, **replace** `classify_untagged_cards` (heuristic) with a step that derives
-  `card_profiles.mechanical_categories` from otag subtrees (expand each root through the
-  hierarchy). Same nightly pass that rebuilds the `otags` projection.
+  `card_profiles.mechanical_categories` from oracle_tag subtrees (expand each root through the
+  hierarchy). Same nightly pass that rebuilds the `card_profiles.oracle_tags` projection.
 - **Delete `zwipe-core/.../mechanical_category/classify.rs`** and the
   `get_unclassified_card_ids` / `update_mechanical_categories` heuristic plumbing — *after*
   the parity check below. Keep it in git history as break-glass.
-- **Parity check (gate):** compare otag-derived categories vs the old heuristic on the
+- **Parity check (gate):** compare oracle_tag-derived categories vs the old heuristic on the
   overlap set; sample the `evasion`/`ramp` heuristic-only residue once to confirm it's mostly
-  heuristic false positives, not otag gaps. Only then delete `classify.rs`.
+  heuristic false positives, not gaps. Only then delete `classify.rs`.
 
 **Shared (`zwipe-core`):**
-- `.../search_card/card_filter/criteria/mod.rs` — add `otags_contains_any` / `_contains_all`
-  / `_excludes` (`Option<Vec<String>>`), plus getters/setters/builder/`matches.rs`/`query.rs`.
-  All **`#[serde(default)]`**.
-- `.../card/models/card_profile.rs` — add `otags: Vec<Otag>` to `CardProfile`, **`#[serde(default)]`**.
-  `mechanical_categories` **stays on the wire, unchanged in shape** (values now otag-derived).
+- `.../search_card/card_filter/criteria/mod.rs` — add `oracle_tags_contains_any` /
+  `_contains_all` / `_excludes` (`Option<Vec<String>>`), plus getters/setters/builder/
+  `matches.rs`/`query.rs`. All **`#[serde(default)]`**. Keep the legacy
+  `mechanical_categories_*` criteria accepted (deprecated).
+- `.../card/models/card_profile.rs` — add `oracle_tags: Vec<OracleTag>` to `CardProfile`,
+  **`#[serde(default)]`**. `mechanical_categories` **stays on the wire as a deprecated
+  translation** (shape unchanged, values now oracle_tag-derived), **dual-emitted** alongside
+  `oracle_tags` — see `compatibility.md` §Naming.
 
 **Backend:**
-- `zerver/src/lib/outbound/sqlx/card/mod.rs` (~912-926) — add otag jsonb predicates
-  (`otags ?|`, `@>`, `NOT ?|`) beside the `mechanical_categories` ones, over
-  `card_profiles.otags`.
+- `zerver/src/lib/outbound/sqlx/card/mod.rs` (~912-926) — add oracle_tag jsonb predicates
+  (`oracle_tags ?|`, `@>`, `NOT ?|`) beside the `mechanical_categories` ones, over
+  `card_profiles.oracle_tags`.
 
 **Frontend (`zwiper`):**
-- New otag include/exclude filter beside `.../deck/card/filter/category.rs`, hosted in
-  `card_filter_sheet.rs`. The existing category filter UI is untouched (now otag-accurate).
-  Surface otags on the swipe card in `.../card/components/card_info.rs`.
+- New oracle_tag include/exclude filter beside `.../deck/card/filter/category.rs`, hosted in
+  `card_filter_sheet.rs`. The existing category filter UI is untouched (now oracle_tag-accurate).
+  Surface oracle_tags on the swipe card in `.../card/components/card_info.rs`.
 
-**Wire & compat:** additive only. New filter fields + new `otags` response field are
-`#[serde(default)]`; `mechanical_categories` is **preserved** (shape unchanged, values
-improved), so no old client breaks. **No bump.**
+**Wire & compat:** additive only. New filter fields + new `oracle_tags` response field are
+`#[serde(default)]`; `mechanical_categories` is **dual-emitted** (deprecated translation,
+shape unchanged), so no old client breaks. **No bump** (the eventual legacy-field removal is
+the one gated step — long after ship; `compatibility.md` §Naming).
 
-**Exit:** otag filters work end-to-end; otags visible on served cards; `classify.rs` gone;
-categories otag-derived and parity-validated.
+**Exit:** oracle_tag filters work end-to-end; oracle_tags visible on served cards;
+`classify.rs` gone; categories oracle_tag-derived and parity-validated.
 
 ---
 
@@ -144,13 +150,13 @@ mirrors `20260625000000_add_deck_tags.sql`).
 - Authored **`DeckTag → otag-set` correlation** (~120 entries) as a curated map in
   `domain/deck/models/` (same home + style as `deck_tag.rs`; stable data, lives in code not
   DB).
-- `http/contracts/deck.rs` — add `otags` to `HttpCreateDeckProfile` (`Option<Vec<String>>`,
+- `http/contracts/deck.rs` — add `oracle_tags` to `HttpCreateDeckProfile` (`Option<Vec<String>>`,
   `#[serde(default)]`) and `HttpUpdateDeckProfile` (`Opdate<Vec<String>>`, `#[serde(default)]`);
   add to `HttpSharedDeck` (`#[serde(default)]`). `domain/deck/models/deck_profile.rs` +
   `requests/{create,update}_deck_profile.rs` — validate/carry the field (mirror `other_tags`).
 
 **Backend:**
-- `zerver/src/lib/outbound/sqlx/deck/{mod.rs,models.rs}` — persist/read `decks.otags` in
+- `zerver/src/lib/outbound/sqlx/deck/{mod.rs,models.rs}` — persist/read `decks.oracle_tags` in
   create/update/get/clone (mirror the `other_tags` serializer + `clone_deck` column copy).
 
 **Frontend (`zwiper`):**
@@ -168,13 +174,13 @@ back-compat-safe (tests in `contracts/deck.rs`). **No bump.**
 
 ## Phase 4 — Serving term (backend-only, ordering change)
 
-**Goal:** fold otags into the serve (Q4 decision: one small `W_OTAG` term first).
+**Goal:** fold otags into the serve (Q4 decision: one small `W_ORACLE_TAG` term first).
 
 **Backend:**
 - `zerver/src/lib/outbound/sqlx/card/mod.rs` `search_scryfall_data_deck_aware` — add a
-  `W_OTAG` **otag-correlation** term = overlap of `card_profiles.otags` with the deck's
-  selected otags (`?|` inline, no new join). Keep `W_OTAG` **small** (revert lever).
-- `zerver/src/lib/domain/deck/services.rs` `search_deck_cards` — load `decks.otags`; apply
+  `W_ORACLE_TAG` **otag-correlation** term = overlap of `card_profiles.oracle_tags` with the deck's
+  selected otags (`?|` inline, no new join). Keep `W_ORACLE_TAG` **small** (revert lever).
+- `zerver/src/lib/domain/deck/services.rs` `search_deck_cards` — load `decks.oracle_tags`; apply
   the cold-start ladder (selected otags → commander's popular otags → nothing / today's
   behavior).
 
@@ -195,7 +201,7 @@ CI)`; + a nightly rollup matview (mirror `card_signal_rollup`).
 
 **Backend:**
 - `zerver/src/lib/outbound/sqlx/metrics/mod.rs` — on each swipe, also credit **one row per
-  otag** the deck has selected (derive `format`/`CI`/`otags` server-side from the deck, so
+  otag** the deck has selected (derive `format`/`CI`/`oracle_tags` server-side from the deck, so
   likely **no client wire change** to `POST /api/metrics/usage`; confirm the handler
   `handlers/metrics/record_usage.rs` has deck context).
 - `zerver/src/bin/zervice.rs` — refresh the new rollup nightly.
@@ -223,7 +229,7 @@ client must send new context, hold it behind the min-version gate (last resort).
 ## Dependency order
 
 ```
-0 spike ─▶ 1 ingest ─▶ 2 filtering + retire heuristic (needs card_profiles.otags)
+0 spike ─▶ 1 ingest ─▶ 2 filtering + retire heuristic (needs card_profiles.oracle_tags)
                         1 ─▶ 3 deck otags ─▶ 4 serving term
                                     3 ─▶ 5 signal collection ─▶ 6 non-EDH serving
 ```

@@ -52,28 +52,30 @@ async fn sync_populates_catalog_and_correlations(pool: sqlx::PgPool) {
 
     // null description round-trips as NULL
     let desc: Option<String> =
-        sqlx::query_scalar("SELECT description FROM otags WHERE slug = 'ramp'")
+        sqlx::query_scalar("SELECT description FROM oracle_tags WHERE slug = 'ramp'")
             .fetch_one(&pool)
             .await
             .unwrap();
     assert!(desc.is_none());
 
-    // card_a carries both otags
-    let a_otags: Vec<String> =
-        sqlx::query_scalar("SELECT otag FROM card_otags WHERE oracle_id = $1 ORDER BY otag")
-            .bind(card_a)
-            .fetch_all(&pool)
-            .await
-            .unwrap();
-    assert_eq!(a_otags, vec!["ramp".to_string(), "removal".to_string()]);
+    // card_a carries both oracle tags
+    let a_tags: Vec<String> = sqlx::query_scalar(
+        "SELECT oracle_tag FROM card_oracle_tags WHERE oracle_id = $1 ORDER BY oracle_tag",
+    )
+    .bind(card_a)
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(a_tags, vec!["ramp".to_string(), "removal".to_string()]);
 
     // source defaults to 'scryfall'
-    let source: String =
-        sqlx::query_scalar("SELECT source FROM card_otags WHERE oracle_id = $1 AND otag = 'ramp'")
-            .bind(card_a)
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+    let source: String = sqlx::query_scalar(
+        "SELECT source FROM card_oracle_tags WHERE oracle_id = $1 AND oracle_tag = 'ramp'",
+    )
+    .bind(card_a)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
     assert_eq!(source, "scryfall");
 }
 
@@ -82,14 +84,14 @@ async fn re_sync_fully_replaces_scryfall_rows(pool: sqlx::PgPool) {
     let repo = Postgres { pool: pool.clone() };
     let card = Uuid::from_u128(0xC);
 
-    // First sync: two otags on the card.
+    // First sync: two oracle tags on the card.
     repo.sync_oracle_tags(&[
         tag(0x1, "removal", None, &[card]),
         tag(0x2, "ramp", None, &[card]),
     ])
     .await
     .unwrap();
-    assert_eq!(count(&pool, "SELECT count(*) FROM card_otags").await, 2);
+    assert_eq!(count(&pool, "SELECT count(*) FROM card_oracle_tags").await, 2);
 
     // Second sync drops 'ramp' and re-sends 'removal' — full replace, no dupes.
     let (catalog, correlations) = repo
@@ -98,18 +100,22 @@ async fn re_sync_fully_replaces_scryfall_rows(pool: sqlx::PgPool) {
         .unwrap();
     assert_eq!(catalog, 1);
     assert_eq!(correlations, 1);
-    assert_eq!(count(&pool, "SELECT count(*) FROM card_otags").await, 1);
-    assert_eq!(count(&pool, "SELECT count(*) FROM otags").await, 1);
+    assert_eq!(count(&pool, "SELECT count(*) FROM card_oracle_tags").await, 1);
+    assert_eq!(count(&pool, "SELECT count(*) FROM oracle_tags").await, 1);
     assert_eq!(
         count(
             &pool,
-            "SELECT count(*) FROM card_otags WHERE otag = 'removal'"
+            "SELECT count(*) FROM card_oracle_tags WHERE oracle_tag = 'removal'"
         )
         .await,
         1
     );
     assert_eq!(
-        count(&pool, "SELECT count(*) FROM card_otags WHERE otag = 'ramp'").await,
+        count(
+            &pool,
+            "SELECT count(*) FROM card_oracle_tags WHERE oracle_tag = 'ramp'"
+        )
+        .await,
         0
     );
 }
@@ -120,13 +126,15 @@ async fn re_sync_preserves_heuristic_rows(pool: sqlx::PgPool) {
     let card = Uuid::from_u128(0xD);
 
     // Seed a heuristic-sourced correlation (as a later phase would).
-    sqlx::query("INSERT INTO card_otags (oracle_id, otag, source) VALUES ($1, 'ramp', 'heuristic')")
-        .bind(card)
-        .execute(&pool)
-        .await
-        .unwrap();
+    sqlx::query(
+        "INSERT INTO card_oracle_tags (oracle_id, oracle_tag, source) VALUES ($1, 'ramp', 'heuristic')",
+    )
+    .bind(card)
+    .execute(&pool)
+    .await
+    .unwrap();
 
-    // A scryfall sync of a different otag must leave the heuristic row intact.
+    // A scryfall sync of a different tag must leave the heuristic row intact.
     repo.sync_oracle_tags(&[tag(0x1, "removal", None, &[card])])
         .await
         .unwrap();
@@ -134,7 +142,7 @@ async fn re_sync_preserves_heuristic_rows(pool: sqlx::PgPool) {
     assert_eq!(
         count(
             &pool,
-            "SELECT count(*) FROM card_otags WHERE source = 'heuristic'"
+            "SELECT count(*) FROM card_oracle_tags WHERE source = 'heuristic'"
         )
         .await,
         1
@@ -142,7 +150,7 @@ async fn re_sync_preserves_heuristic_rows(pool: sqlx::PgPool) {
     assert_eq!(
         count(
             &pool,
-            "SELECT count(*) FROM card_otags WHERE source = 'scryfall'"
+            "SELECT count(*) FROM card_oracle_tags WHERE source = 'scryfall'"
         )
         .await,
         1

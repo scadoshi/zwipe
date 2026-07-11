@@ -17,12 +17,12 @@ follow them:
   parse." Any new otag field on a request contract gets `#[serde(default)]`.
 - **Partial updates use `Opdate<T>`** (`zwipe-core/src/http/helpers.rs`) so *absent* means
   "unchanged," never "clear." Deck otag updates must use `Opdate`, like `other_tags` today.
-- **New response fields are `#[serde(default)]` too.** If otags get added to the served
-  `Card` payload, note `CardProfile` (`zwipe-core/src/domain/card/models/card_profile.rs`)
-  already carries `mechanical_categories`; a new `otags` field there must be
+- **New response fields are `#[serde(default)]` too.** When `oracle_tags` gets added to the
+  served `Card` payload, note `CardProfile` (`zwipe-core/src/domain/card/models/card_profile.rs`)
+  already carries `mechanical_categories`; the new `oracle_tags` field must be
   `#[serde(default)]` so an **old client** deserializing a **new server's** `Card` does not
   choke on the unknown-but-present field, and a **new client** reading an **old server**
-  gets an empty default.
+  gets an empty default. (`mechanical_categories` is dual-emitted — see §Naming below.)
 - **Enums are append-only.** `DeckOtherTag` (`zwipe-core/src/domain/deck/models/deck_other_tag.rs`)
   documents that variants are *only added, never removed or renamed*, so stored values keep
   parsing. If otags become an enum, same rule. (otags are more likely a `String`/newtype
@@ -54,7 +54,7 @@ floor rather than shipping a break:
 - **otags on served cards** — additive `#[serde(default)]` field on `CardProfile`. No bump.
 - **New filter predicates** — additive request fields. No bump. An old client simply never
   sends them.
-- **New `card_otags` table + `zervice` sync** — server-internal, invisible to clients. No
+- **New `card_oracle_tags` table + `zervice` sync** — server-internal, invisible to clients. No
   wire impact at all.
 - **`(format, CI, otag)` signal keying** — additive new tables + a new/extended metrics
   write. Ship dark and collect; no client break.
@@ -66,3 +66,27 @@ floor rather than shipping a break:
 Treat any design that *seems* to require removing/renaming a wire field or route as a
 mistake to redesign around first, and only reach for the min-version gate as the last
 resort.
+
+## Naming: `oracle_tag` is canon; `mechanical_categories` is a wire-compat translation
+
+**Settled 2026-07-11 (owner).** The concept is canonically **`oracle_tag` / `oracle_tags`**
+everywhere — DB (`oracle_tags`, `card_oracle_tags`, `card_profiles.oracle_tags`), Rust
+(`OracleTag`), and the wire (`oracle_tags` field + `oracle_tags_*` filter criteria). The old
+`mechanical_categories` name is **retired as a concept** (Q1) but **kept on the wire as a
+deprecated translation** so installed clients don't break.
+
+The subtlety that dictates the mechanism: **serde `alias`/`rename` only fixes
+*deserialization*** (a new server reading an *old client's request*). It does **not** fix
+*serialization* — an old client reading a new server's *response* looks for the exact key it
+was built with. So a rename-plus-alias alone would silently blank out old clients' category
+display. Therefore, during the transition:
+
+- **Responses emit both keys:** `oracle_tags` (canonical, granular — new clients read this)
+  **and** `mechanical_categories` (legacy, the 24 coarse categories *derived from oracle_tag
+  subtrees*, precomputed nightly — old clients keep working). Non-breaking.
+- **Requests accept both:** legacy `mechanical_categories_*` filter criteria **and**
+  canonical `oracle_tags_*`.
+- **Sunset:** once a `MIN_CLIENT_VERSION` floor guarantees every install reads `oracle_tags`,
+  drop the legacy `mechanical_categories` response field + criteria. That is the *only*
+  removal in this whole feature that needs the gate — and it happens long after ship, when
+  old installs have aged out. The owner has explicitly accepted this transition window.

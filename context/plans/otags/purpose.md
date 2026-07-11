@@ -54,7 +54,7 @@ serve gets richer than any single source.
 - Oracle Tags is a **standard Scryfall bulk file**: `data.scryfall.io/oracle-tags/...`,
   ~17.2 MB, refreshed daily ~09:00 UTC (same cadence as our card sync).
 - The bulk file is keyed **tag → oracle_id[]**, not card → tag[]. Ingest fans each tag
-  out to its oracle ids and upserts a `card_otags(oracle_id, otag)` correlation.
+  out to its oracle ids and upserts a `card_oracle_tags(oracle_id, otag)` correlation.
 - Because otags ride on `oracle_id`, and our Archidekt/text import already resolves cards
   to oracle ids, **imported decks inherit their cards' otags for free**.
 - Note the decoy: Scryfall also ships **Art Tags** (38.5 MB) — illustration tags
