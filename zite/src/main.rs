@@ -4,8 +4,8 @@ use zwipe_components::{BRAND_RESET_JS, NavBar, ThemeConfig, ThemePicker};
 mod components;
 mod pages;
 use pages::{
-    About, Android, Contribute, Discord, GuidePage, Guides, Home, Ios, Privacy, Reset, SharedDeck,
-    Verify,
+    About, Android, Changelog, Contribute, Discord, GuidePage, Guides, Home, Ios, Privacy, Reset,
+    SharedDeck, Verify,
 };
 
 // Base URLs + contact points live in zwipe-core's `site` module (shared with
@@ -34,6 +34,8 @@ enum Route {
     GuidePage { slug: String },
     #[route("/about")]
     About {},
+    #[route("/changelog")]
+    Changelog {},
     #[route("/contribute")]
     Contribute {},
     #[route("/discord")]
@@ -164,6 +166,9 @@ pub fn Nav() -> Element {
                 }
                 li {
                     Link { to: Route::About {}, onclick: move |_| open.set(false), "About" }
+                }
+                li {
+                    Link { to: Route::Changelog {}, onclick: move |_| open.set(false), "Changelog" }
                 }
                 li {
                     Link { to: Route::Contribute {}, onclick: move |_| open.set(false), "Contribute" }

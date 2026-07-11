@@ -1009,6 +1009,23 @@ code {
     gap: 0.75rem;
 }
 
+.changelog-header {
+    margin-bottom: 2rem;
+}
+
+.changelog-header h1 {
+    margin-bottom: 0.25rem;
+}
+
+.changelog-header .tagline {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* The changelog content (chip filter + release list) is the shared
+   zwipe_components::Changelog; its styles live in components.css. Only the
+   page header above is zite-specific. */
+
 .profile-link {
     color: var(--accent-primary);
     background-color: var(--bg-primary);
@@ -1212,16 +1229,44 @@ code {
         privacy
  ==================== */
 
+.privacy-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.privacy-section > :first-child {
+    margin-top: 0;
+}
+
+.privacy-section > :last-child {
+    margin-bottom: 0;
+}
+
 .privacy-content h2 {
     font-size: 1rem;
+    letter-spacing: 0.1em;
     color: var(--accent-tertiary);
-    margin-top: 1.75rem;
-    margin-bottom: 0.5rem;
+}
+
+.privacy-section hr {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 0.85rem -1.5rem 1rem;
 }
 
 .privacy-content p,
 .privacy-content ul {
     font-size: 0.85rem;
+    margin-top: 0.6rem;
+}
+
+.privacy-content ul {
+    padding-left: 1.25rem;
+}
+
+.privacy-content li {
+    margin-bottom: 0.4rem;
 }
 
 /* ==================
@@ -1606,7 +1651,7 @@ footer {
     position: fixed;
     top: 5.5rem;
     left: 1.5rem;
-    width: 15rem;
+    width: 18rem;
     z-index: 50;
     pointer-events: none;
 }
