@@ -47,6 +47,7 @@ use zwipe_core::domain::{
             get_deck_profiles::GetDeckProfiles,
             import_deck_cards::{
                 ImportDeckCards, ImportDeckCardsResult, ImportedCard, UnresolvedCard,
+                dfc_front_face, entry_front_face,
             },
             skip_deck_card::SkipDeckCard,
             update_deck_card::UpdateDeckCard,
@@ -459,10 +460,10 @@ where
         let mut card_map: HashMap<String, Card> = HashMap::new();
         for card in cards {
             let full = card.scryfall_data.name.to_lowercase();
-            if let Some(front) = full.split(" // ").next()
-                && front != full
-            {
-                card_map.entry(front.to_string()).or_insert_with(|| card.clone());
+            if let Some(front) = dfc_front_face(&full) {
+                card_map
+                    .entry(front.to_string())
+                    .or_insert_with(|| card.clone());
             }
             card_map.insert(full, card);
         }
@@ -501,7 +502,7 @@ where
             // Try the entry as written, then its front face (before a slash), so
             // "A // B", "A / B", and "A" all resolve to the same card.
             let matched = card_map.get(&key).or_else(|| {
-                let front = key.split('/').next().map(str::trim).unwrap_or("");
+                let front = entry_front_face(&key);
                 if front.is_empty() || front == key {
                     None
                 } else {
