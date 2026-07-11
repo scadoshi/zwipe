@@ -27,7 +27,7 @@ use crate::{
             get_sets::GetSetsError,
         },
     },
-    inbound::external::scryfall::bulk::BulkEndpoint,
+    inbound::external::scryfall::{bulk::BulkEndpoint, oracle_tag::OracleTag},
 };
 use zwipe_core::domain::card::{
     Card, card_profile::CardProfile, scryfall_data::ScryfallData,
@@ -83,6 +83,14 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// Refreshes the `card_signal_rollup` materialized view (pooled per-card
     /// suggestion signal feeding the default synergy ordering).
     fn refresh_card_signal_rollup(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
+
+    /// Full-replaces the `otags` catalog and the scryfall-sourced rows of
+    /// `card_otags` from a fresh Oracle Tags pull. Returns
+    /// `(catalog_rows, correlation_rows)`.
+    fn sync_oracle_tags(
+        &self,
+        tags: &[OracleTag],
+    ) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
 
     // =====
     //  get
@@ -332,6 +340,10 @@ pub trait CardService: Clone + Send + Sync + 'static {
 
     /// Refreshes the card_signal_rollup materialized view (nightly, zervice).
     fn refresh_card_signal_rollup(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
+
+    /// Syncs the otag catalog + card correlation from Scryfall's Oracle Tags
+    /// bulk file (nightly, zervice). Returns `(catalog_rows, correlation_rows)`.
+    fn sync_oracle_tags(&self) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
 
     // =====
     //  get

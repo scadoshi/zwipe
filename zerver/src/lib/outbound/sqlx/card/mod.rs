@@ -230,6 +230,13 @@ impl CardRepository for MyPostgres {
         Ok(())
     }
 
+    async fn sync_oracle_tags(
+        &self,
+        tags: &[crate::inbound::external::scryfall::oracle_tag::OracleTag],
+    ) -> anyhow::Result<(u32, u32)> {
+        crate::outbound::sqlx::card::helpers::oracle_tags::sync_oracle_tags(&self.pool, tags).await
+    }
+
     // =====
     //  get
     // =====

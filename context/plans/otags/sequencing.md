@@ -32,28 +32,51 @@ Output: a one-page note pinning the parse contract. Nothing else starts until th
 
 **Goal:** every card carries its otag set, synced daily.
 
-**Tables (new migration, e.g. `..._create_card_otags.sql`):**
-- `card_otags(oracle_id UUID, otag TEXT, source TEXT DEFAULT 'scryfall', ...)` — normalized
-  source of truth. Index for the inverse lookup (`otag`, and `oracle_id`).
-- **Add `otags JSONB NOT NULL DEFAULT '[]'` + GIN index to `card_profiles`** (the
-  denormalized serve projection; mirrors `card_profiles.mechanical_categories`). Same
-  migration or a sibling.
+**BUILT 2026-07-11.** Migration `20260712000000_create_oracle_tags.sql`.
 
-**Backend:**
-- `zerver/src/lib/inbound/external/scryfall/bulk.rs` — add `BulkEndpoint::OracleTags`
-  (`/bulk-data/oracle-tags`); reuse `amass()` two-step + `planeswalker.rs` HTTP. Parse
-  **line-by-line** (`.lines()` + `serde_json::from_str`), not whole-array `from_value`.
-- `zerver/src/lib/domain/card/ports.rs` + `outbound/sqlx/card/helpers/upsert_card.rs` — new
-  batched `INSERT ... ON CONFLICT` into `card_otags` (follow `batch_delta_upsert` + the
-  65535-param batch-sizing in `scryfall_data_fields.rs`).
-- `zerver/src/bin/zervice.rs` `main` — add two steps in the daily sequence: (1) fetch +
-  upsert `card_otags`; (2) rebuild the `card_profiles.otags` JSONB via one
-  `GROUP BY oracle_id` (`UPDATE card_profiles SET otags = agg FROM card_otags ...`). Add
-  `tracing::info!` lines like the others.
+**Tables:**
+- `otags(id UUID PK, slug UNIQUE, label, description, parent_ids UUID[], aliases TEXT[],
+  updated_at)` — **catalog**: one row per otag with its metadata + hierarchy. Added beyond
+  the minimal plan because the bulk file carries descriptions + parent ids for free, and
+  Phases 3-5 (definitions UI, granularity curation) need them; persisting now avoids a
+  second ingest pass.
+- `card_otags(oracle_id UUID, otag TEXT, source TEXT DEFAULT 'scryfall', PK(oracle_id,otag))`
+  — normalized source of truth. Indexed on `otag` and `oracle_id`.
+- **Deferred to Phase 3:** the denormalized `card_profiles.otags` JSONB serve projection.
+  Nothing reads it until filtering/serving, and keeping Phase 1 to brand-new tables keeps it
+  fully additive with zero risk to existing `card_profiles` queries.
+
+**Backend (built):**
+- `.../external/scryfall/oracle_tag.rs` — `OracleTag` / `Tagging` deserialize DTOs.
+- `.../external/scryfall/bulk.rs` — `BulkEndpoint::OracleTags` (`/bulk-data/oracle-tags`) +
+  `amass_oracle_tags()` (same two-step as `amass()`; the file is an 18 MB JSON **array** of
+  tag objects, so whole-array `from_value` matches the existing pattern — no jsonl streaming
+  needed).
+- `.../outbound/sqlx/card/helpers/oracle_tags.rs` — `sync_oracle_tags(pool, tags)`: inverts
+  tag→cards into card→otag rows, then in one tx full-replaces the catalog and the
+  `source='scryfall'` correlations (heuristic rows preserved), batched under the 65535-param
+  limit. Runtime `QueryBuilder`, so **no `.sqlx` regeneration needed**.
+- `domain/card/ports.rs` + `services.rs` + `outbound/sqlx/card/mod.rs` —
+  `CardRepository::sync_oracle_tags(&[OracleTag])` and `CardService::sync_oracle_tags()`.
+- `zerver/src/bin/zervice.rs` — one new step after `scryfall_sync`, with a `tracing::info!`.
 
 **Wire & compat:** none. Server-internal only. No client, no contract, no bump.
 
-**Exit:** `card_otags` populated, `card_profiles.otags` reflects it, sync runs clean nightly.
+**Tests:** 5 unit (`oracle_tag.rs` deserialization incl. null/missing/unknown fields;
+`oracle_tags.rs` correlation inversion incl. skip-missing-oracle_id) + 3 integration
+(`tests/repo_oracle_tags.rs`, `#[sqlx::test]`: populate + null-description + source default;
+idempotent full-replace of scryfall rows; heuristic-source rows preserved across re-sync).
+
+**Exit: DONE ✅.** compiles + clippy clean (lib/bins/tests); all 8 tests green; live
+`zervice` run verified against the dev DB — **4,494 otags, 227,732 correlations, 35,577
+tagged oracle_ids**, descriptions present.
+
+**Live finding — the firehose is noisy.** Top otags by frequency are dominated by
+structural/trivia tags (`activated-ability`, `triggered-ability`, `alliteration`,
+`unique-type-line`, `intervening-if-clause`) mixed with the useful functional ones
+(`spot-removal`, `evasion`). Confirms the Q3 decision: serving must run on a *curated* tier,
+never raw tag frequency, or cards would rank by whether their name alliterates. Feeds the
+Phase 3/serving-tier + `DeckTag → otag` authoring (`open-questions.md` §3).
 
 ---
 
@@ -88,6 +111,12 @@ complement + seed).
 - `.../card/models/card_profile.rs` — add `otags: Vec<Otag>` to `CardProfile`, **`#[serde(default)]`**
   (so old clients reading a new server's `Card` don't choke, new clients reading old server
   get empty).
+
+**Tables (deferred from Phase 1):**
+- **Add `otags JSONB NOT NULL DEFAULT '[]'` + GIN index to `card_profiles`** (the
+  denormalized serve/filter projection; mirrors `card_profiles.mechanical_categories`).
+- Extend `zervice.rs` to rebuild it after the Phase-1 otag sync via one `GROUP BY oracle_id`
+  (`UPDATE card_profiles SET otags = agg FROM card_otags WHERE ... GROUP BY oracle_id`).
 
 **Backend:**
 - `zerver/src/lib/outbound/sqlx/card/mod.rs` (~912-926) — add otag jsonb predicates
