@@ -1394,13 +1394,32 @@ impl CardRepository for MyPostgres {
         if names.is_empty() {
             return Ok(vec![]);
         }
-        let lowered: Vec<String> = names.iter().map(|n| n.to_lowercase()).collect();
-        let db_rows: Vec<DatabaseScryfallData> =
-            query_as("SELECT * FROM latest_cards WHERE LOWER(name) = ANY($1)")
-                .bind(&lowered)
-                .fetch_all(&self.pool)
-                .await
-                .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
+        // Match the full name, and also the front face of double-faced cards, so
+        // "Boggart Trawler // Boggart Bog" resolves whether the entry is the full
+        // name, just the front ("Boggart Trawler"), or a "/" spelling. Each entry
+        // contributes both itself and its pre-slash front to the match set, and
+        // the query checks each card's full name and its front face.
+        let mut lowered: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for name in names {
+            let lower = name.to_lowercase();
+            if let Some(front) = lower.split('/').next() {
+                let front = front.trim();
+                if !front.is_empty() {
+                    lowered.insert(front.to_string());
+                }
+            }
+            lowered.insert(lower);
+        }
+        let lowered: Vec<String> = lowered.into_iter().collect();
+        let db_rows: Vec<DatabaseScryfallData> = query_as(
+            "SELECT * FROM latest_cards \
+             WHERE LOWER(name) = ANY($1) \
+                OR LOWER(split_part(name, ' // ', 1)) = ANY($1)",
+        )
+        .bind(&lowered)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
         let scryfall_data: Vec<ScryfallData> = db_rows
             .into_iter()
             .map(ScryfallData::try_from)
