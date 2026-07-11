@@ -238,11 +238,13 @@
     box-shadow: var(--shadow-sm);
 }
 
+/* Flowing row: chevron + qty prefix, then the name with its metadata trailing
+   as tags (price pill, mana pips) right after it, rather than locked into
+   vertical columns across rows. */
 .card-row-compact {
-    display: grid;
-    grid-template-columns: 1.2rem 1.5rem 1fr 2rem 3rem auto;
+    display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.4rem;
     font-size: 0.8rem;
     cursor: pointer;
 }
@@ -267,6 +269,8 @@
 }
 
 .card-row-name {
+    flex: 0 1 auto;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -282,16 +286,45 @@
     vertical-align: 0.02rem;
 }
 
-.card-row-cmc,
-.card-row-pt,
 .card-row-qty {
     text-align: center;
     color: var(--text-muted);
     font-size: 0.75rem;
 }
 
+/* Price reads as a money tag: a small green (success) pill, right-aligned in
+   its column. */
+/* Compact-row metadata tags (price, P/T, loyalty) share the deck-list stat-chip
+   look: colored text on a faint tint with a soft same-hue outline. */
+.card-row-price,
+.card-row-stat {
+    flex: 0 0 auto;
+    padding: 0.1rem 0.4rem;
+    border: 1px solid transparent;
+    border-radius: 0.4rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
+}
+
+/* Price reads as money: green (success). */
+.card-row-price {
+    font-variant-numeric: tabular-nums;
+    color: var(--color-success);
+    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+
+/* P/T (creatures) and loyalty (planeswalkers): neutral accent stat. */
+.card-row-stat {
+    color: var(--accent-primary);
+    background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+    border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
+}
+
 .card-row-colors {
-    text-align: right;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
     font-size: 0.75rem;
     color: var(--text-muted);
     white-space: nowrap;
@@ -387,7 +420,7 @@
     vertical-align: baseline;
 }
 
-/* Roomier grey circle around the number, closer to a real card. Applied to the
+/* Roomier grey pill around the number, closer to a real card. Applied to the
    mana cost, the oracle-text symbols, and the compact-row color pips alike so
    the glyph stays centered in the pill everywhere. */
 .card-detail-cost .ms-cost,
@@ -398,20 +431,58 @@
     line-height: 1.5em;
 }
 
+/* Squircle every mana pip so it shares the app's rounded-rect grammar (buttons,
+   mana filter boxes) instead of mana-font's default circle. The element+two-class
+   selector outranks mana-font's own border-radius; box-shadow follows the radius. */
+i.ms.ms-cost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    border-radius: 0.3em;
+    border: 1px solid var(--border-secondary);
+    padding: 0 1px;
+    /* Override mana-font's hard double `.ms-cost.ms-shadow` offset with a plain
+       soft drop shadow that follows the squircle. */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* Colorless/generic pips render a numeral that crowds the squircle border.
+   Shrink just the glyph (the ::before) so the number sits inset; the badge box
+   itself (set on the element) keeps its size. Covers 0-20 plus X/Y/Z. */
+.ms-cost.ms-0::before,
+.ms-cost.ms-1::before,
+.ms-cost.ms-2::before,
+.ms-cost.ms-3::before,
+.ms-cost.ms-4::before,
+.ms-cost.ms-5::before,
+.ms-cost.ms-6::before,
+.ms-cost.ms-7::before,
+.ms-cost.ms-8::before,
+.ms-cost.ms-9::before,
+.ms-cost.ms-10::before,
+.ms-cost.ms-11::before,
+.ms-cost.ms-12::before,
+.ms-cost.ms-13::before,
+.ms-cost.ms-14::before,
+.ms-cost.ms-15::before,
+.ms-cost.ms-16::before,
+.ms-cost.ms-17::before,
+.ms-cost.ms-18::before,
+.ms-cost.ms-19::before,
+.ms-cost.ms-20::before,
+.ms-cost.ms-x::before,
+.ms-cost.ms-y::before,
+.ms-cost.ms-z::before {
+    font-size: 0.82em;
+}
+
 .card-detail-oracle {
     margin: 0 0 0.5rem;
     white-space: pre-wrap;
     word-wrap: break-word;
     overflow-wrap: break-word;
     line-height: 1.4;
-}
-
-/* Card-style drop shadow under mana glyphs. mana-font's own ms-shadow offset is
-   em-based and sub-pixel at our sizes, so use a slightly larger, visible one. */
-.oracle-sym.ms-cost,
-.card-detail-cost .ms-cost,
-.card-row-colors .ms-cost {
-    box-shadow: -0.5px 1.5px 1px rgba(0, 0, 0, 0.6);
 }
 
 .card-detail-meta {
