@@ -59,6 +59,14 @@ high-level archetype **container** that maps to card-level otags:
   list needs no re-aggregation, and a future data-driven pruning has full-granularity
   history to learn from.
 
+**Live evidence (Phase 1 ingest, 2026-07-11):** the raw firehose is noisier than expected.
+The most frequent otags are structural/trivia (`activated-ability` 9026, `triggered-ability`
+7886, `alliteration` 4346, `unique-type-line` 2182, `intervening-if-clause` 2170) sitting
+right alongside the useful functional ones (`spot-removal` 4979, `evasion` 4567). Serving on
+raw frequency would be actively wrong. The curated serving tier is not optional polish — it
+is load-bearing, and authoring it is real work (filtering ~4,494 tags down to the ~40-80
+that matter).
+
 ## 4. Serving weight + cold-start — DECIDED: one term first, fallback ladder
 
 **Settled 2026-07-11 (owner).** Phase the algorithm change:

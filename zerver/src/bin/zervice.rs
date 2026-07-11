@@ -75,6 +75,9 @@ async fn main() -> anyhow::Result<()> {
         .scryfall_sync(BulkEndpoint::DefaultCards)
         .await?;
 
+    let (otag_count, correlation_count) = card_service.sync_oracle_tags().await?;
+    tracing::info!("oracle tags synced: {otag_count} tags, {correlation_count} card correlations");
+
     if recategorize {
         tracing::info!("clearing all categories for recategorization");
         card_service.clear_all_categories().await?;

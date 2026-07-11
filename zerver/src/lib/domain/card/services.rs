@@ -139,6 +139,14 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.refresh_card_signal_rollup().await
     }
 
+    async fn sync_oracle_tags(&self) -> anyhow::Result<(u32, u32)> {
+        tracing::info!("performing oracle tags sync");
+        let tags = BulkEndpoint::OracleTags.amass_oracle_tags().await?;
+        tracing::info!("fetched {} oracle tags", tags.len());
+        let counts = self.repo.sync_oracle_tags(&tags).await?;
+        Ok(counts)
+    }
+
     // =====
     //  get
     // =====
