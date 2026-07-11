@@ -23,6 +23,21 @@ at `context/archive/complete_2026_q1.md`.
 
 ---
 
+## Bugs (owner-reported 2026-07-11)
+
+- [ ] **Printing shifting bug** — [zwiper] visual layout shift when a card's printing changes. Owner-observed; needs repro + which surface (card detail / printing picker) and whether it's an image-size / reflow issue.
+- [ ] **Flip-card down-shift** — [zwiper] DFC / flip cards shift downward when flipped. Owner-observed; likely a height difference between the two faces pushing layout down on the flip.
+
+---
+
+## Features — queued (owner 2026-07-11)
+
+- [ ] **Maybeboard for commander select** — let users "maybe" a commander during Zwipe-select and revisit a list of maybed commanders (mirror of the deck maybeboard; would tie into the commander-select signal already collected).
+- [ ] **Metric capture for non-commander decks** — the suggestion/usage signal is commander-keyed today (`commander_card_signal` keyed by `commander_oracle_id`); non-commander formats (Standard/Modern/etc.) have no commander to key on, so their building generates no signal. Design a capture path for them.
+- [ ] **Deck folders** — let users organize the deck list into folders/groups.
+
+---
+
 ## Android — production access next
 
 Decision (2026-06-10): grow the user base before monetizing — Android ships
@@ -42,6 +57,7 @@ in `operations/android/play-store/submission/`.
   testers are generating suggestions; triage them into the weighted request queue
   ([`feature_requests.md`](feature_requests.md)) and surface anything actionable
   into this list. This is the near-term driver now that the launch gate is cleared.
+- [ ] **Android store announcement + website link** (owner 2026-07-11) — once Android is live on Play: announce it across the marketing waves, and add a Play Store download link/button on zwipe.net (zite has `/download/ios` today — add the Android equivalent). Gated on production launch above.
 
 ---
 
