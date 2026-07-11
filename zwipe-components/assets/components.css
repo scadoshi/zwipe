@@ -905,3 +905,355 @@ a.nav-dropdown-item.active:visited {
     margin-top: 0;
     padding-top: 0;
 }
+
+/* ---- Banner (zwipe_components::Banner) ---- */
+
+/* Fixed toast column. Each site renders this wrapper and drops Banners inside;
+   position is a site layout concern, so sites may override placement. */
+.banner-stack {
+    position: fixed;
+    top: 6rem;
+    left: 1.5rem;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-width: 420px;
+    transition: transform 0.25s ease;
+}
+
+.announcement-banner {
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.4rem;
+    padding: 0.8rem 2.4rem 0.9rem 1.2rem;
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    animation: banner-slide-in 0.5s ease-out both;
+    animation-delay: 1s;
+    box-shadow: var(--shadow-md);
+}
+
+.banner-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.banner-category {
+    font-size: 0.7rem;
+    color: var(--border-success);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.banner-text {
+    line-height: 1.45;
+}
+
+.announcement-banner .banner-dismiss {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.7rem;
+}
+
+.announcement-banner + .announcement-banner {
+    animation-delay: 1.2s;
+}
+
+/* Fade out, then collapse so a remaining toast slides up instead of jumping;
+   the element leaves the DOM when this animation ends. Compound selector +
+   placement after the slide-in rules so it overrides them. */
+.announcement-banner.banner-leaving {
+    animation: banner-leave 0.45s ease forwards;
+    animation-delay: 0s;
+    pointer-events: none;
+}
+
+@keyframes banner-leave {
+    0% {
+        opacity: 1;
+        max-height: 10rem;
+    }
+    45% {
+        opacity: 0;
+        max-height: 10rem;
+    }
+    100% {
+        opacity: 0;
+        max-height: 0;
+        margin-bottom: -0.6rem;
+        padding-top: 0;
+        padding-bottom: 0;
+        border-top-width: 0;
+        border-bottom-width: 0;
+    }
+}
+
+/* Auto-dismiss countdown. Duration is set inline per banner (auto_dismiss_secs);
+   the shorthand's 10s is the fallback. */
+.banner-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    width: 100%;
+    background: var(--accent-primary);
+    transform-origin: left;
+    animation: banner-countdown 10s linear forwards;
+    animation-delay: 1s;
+}
+
+.announcement-banner + .announcement-banner .banner-progress {
+    animation-delay: 1.2s;
+}
+
+.announcement-banner:hover .banner-progress {
+    animation-play-state: paused;
+}
+
+@keyframes banner-countdown {
+    from {
+        transform: scaleX(1);
+    }
+    to {
+        transform: scaleX(0);
+    }
+}
+
+.announcement-banner a,
+.announcement-banner a:visited {
+    color: var(--accent-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.banner-dismiss {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0;
+    line-height: 1;
+}
+
+.banner-dismiss:hover {
+    color: var(--text-primary);
+}
+
+@keyframes banner-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(-80px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Status pills, shared with the banner header. Filled to match the app's stat
+   chips: the status color as text over a 12% tint, with a 35% border. */
+.status-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    padding: 0.05rem 0.4rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    vertical-align: middle;
+    text-transform: none;
+}
+
+.status-done {
+    color: var(--color-success);
+    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+
+.status-doing {
+    color: var(--color-warning);
+    background-color: color-mix(in srgb, var(--color-warning) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
+}
+
+/* ---- Changelog (zwipe_components::Changelog) ---- */
+
+/* Self-contained so it renders identically on the site and in the app: does
+   not lean on any host stylesheet's card/bullet rules. */
+
+.changelog-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.changelog-filter .chip {
+    font-family: inherit;
+}
+
+.changelog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.changelog-card {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    animation: changelog-card-in 0.35s ease-out both;
+}
+
+/* Ease each release card in on mount and when a filter change remounts the
+   visible set. */
+@keyframes changelog-card-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.changelog-version-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.changelog-version {
+    font-size: 1.1rem;
+    color: var(--accent-primary);
+    font-weight: 700;
+    margin: 0;
+}
+
+.changelog-date {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.changelog-bullets {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.changelog-bullets li {
+    font-size: 0.8rem;
+    color: var(--text-subtle);
+    line-height: 1.7;
+    padding-left: 1rem;
+    position: relative;
+    margin-bottom: 0.35rem;
+}
+
+.changelog-bullets li:last-child {
+    margin-bottom: 0;
+}
+
+.changelog-bullets li::before {
+    content: "\203A";
+    position: absolute;
+    left: 0;
+    color: var(--accent-primary);
+}
+
+/* ---- Panel (zwipe_components::Panel) ---- */
+
+/* The canonical card shape: header <hr> body <hr> actions. Self-contained so it
+   renders identically on the site, in the app, and on the portfolio. */
+
+.panel-card {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.2s;
+}
+
+.panel-card:hover {
+    border-color: var(--accent-primary);
+}
+
+.panel-eyebrow-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+
+.panel-eyebrow {
+    font-size: 0.75rem;
+    color: var(--accent-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.panel-title {
+    font-size: 1.1rem;
+    color: var(--accent-primary);
+    font-weight: 700;
+    margin: 0;
+}
+
+/* Full-bleed divider to the card edges, matching the dialogs. */
+.panel-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 1rem -1.5rem;
+}
+
+.panel-body > :first-child {
+    margin-top: 0;
+}
+
+.panel-body > :last-child {
+    margin-bottom: 0;
+}
+
+.panel-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* Footer action buttons/links — pill buttons with the util-bar look. Works on
+   both <a> (external links) and <button>; add "\u{2197}" to external labels. */
+.panel-action {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.9rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+        border-color 0.2s,
+        color 0.2s;
+}
+
+.panel-action:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}

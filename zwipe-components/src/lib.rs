@@ -19,25 +19,31 @@
 //! features) and `zwipe-core`, so any Dioxus target can consume them.
 
 mod action_bar;
+mod banner;
 mod button;
 mod card_row;
+mod changelog;
 mod chip;
 mod keyword_chips;
 mod nav_bar;
 mod nav_dropdown;
 mod oracle_text;
 mod page_meta;
+mod panel;
 mod theme_picker;
 
 pub use action_bar::ActionBar;
+pub use banner::{Banner, BannerStatus};
 pub use button::{Button, ButtonVariant};
 pub use card_row::CardRow;
+pub use changelog::Changelog;
 pub use chip::Chip;
 pub use keyword_chips::KeywordChips;
 pub use nav_bar::{BRAND_RESET_JS, NavBar};
 pub use nav_dropdown::NavDropdown;
 pub use oracle_text::OracleText;
 pub use page_meta::{PageMeta, SiteMeta};
+pub use panel::Panel;
 pub use theme_picker::ThemePicker;
 // The theme domain types live in zwipe-core (user preferences persist them
 // server-side); re-exported here so UI consumers have one import path.
