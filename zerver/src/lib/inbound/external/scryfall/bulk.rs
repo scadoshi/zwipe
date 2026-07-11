@@ -49,7 +49,7 @@ impl BulkEndpoint {
     /// Fetches bulk card data in two steps: metadata endpoint → download URI → card data.
     pub async fn amass(&self) -> anyhow::Result<Vec<ScryfallData>> {
         // first get the bulk data object with our main url
-        let url = format!("{}{}", SCRYFALL_API_BASE, &self.resolve());
+        let url = format!("{}{}", SCRYFALL_API_BASE, self.resolve());
         let urza = Planeswalker::untap(Client::new(), &url);
 
         let bulk_response = urza
