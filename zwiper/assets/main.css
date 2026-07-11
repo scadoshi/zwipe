@@ -78,6 +78,15 @@ button {
     --bg-sink: color-mix(in srgb, var(--bg-primary), #000 15%);
 }
 
+/* Light themes: the #000-darkened sink reads as a muddy, "dirty" panel on a
+   light palette. Lighten it toward white instead, so the content area sits a
+   touch brighter than the chrome (fresh paper-on-desk depth) rather than
+   dirtier. Dark theme classes end in `-dark`, so their recessed sink is left
+   byte-identical. */
+.app-shell[class$="-light"] {
+    --bg-sink: color-mix(in srgb, var(--bg-primary), #fff 35%);
+}
+
 .screen-content {
     flex: 1;
     overflow-x: hidden;
@@ -2489,7 +2498,7 @@ button {
     flex-direction: column;
     justify-content: flex-start;
     transition: min-height 0.3s ease;
-    padding: 0;
+    padding: 0 0 1rem;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
@@ -2550,21 +2559,45 @@ button {
     color: var(--accent-primary);
 }
 
-.flavor-source-link {
-    display: block;
-    width: fit-content;
-    margin: calc(0.8rem + 2px) auto -2px;
-    padding: 0.1rem 0.4rem;
-    font-size: 0.65rem;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--accent-primary);
-    border-radius: 0.4rem;
+/* Card name + price tag, centered on their own line below the quote. */
+.flavor-buy-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: calc(0.8rem + 2px);
+}
+
+/* Tag fills, but sized like the util buttons so they read as buttons. */
+.flavor-source-link,
+.flavor-price {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    border-radius: 0.5rem;
     cursor: pointer;
     transition: all 0.2s ease;
     animation: flavor-enter 0.3s ease-out 0.15s backwards;
 }
 
-.flavor-source-link:active {
+.flavor-source-link {
+    background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
+}
+
+/* USD price, styled as a green (success) money tag; opens the buy dialog. */
+.flavor-price {
+    color: var(--color-success);
+    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
+    font-variant-numeric: tabular-nums;
+}
+
+.flavor-source-link:active,
+.flavor-price:active {
     transform: scale(0.97);
 }
 
@@ -2664,24 +2697,6 @@ button {
     border-bottom: 1px solid var(--border-secondary);
 }
 
-.card-row-header {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--accent-primary);
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    box-shadow: var(--shadow-sm);
-    padding: 0.6rem 1rem;
-    margin: 1rem 0;
-    cursor: default;
-}
-
-.card-row-header span {
-    color: var(--accent-primary);
-    font-weight: inherit;
-}
-
 /* =========================
   specific - info list (read-only card layout)
  =========================== */
@@ -2737,6 +2752,7 @@ button {
     gap: 1rem;
     width: calc(100% - 4rem);
     max-width: 40rem;
+    padding-bottom: 1rem;
 }
 
 .profile-list {
@@ -2814,8 +2830,8 @@ button {
 .badge-verified {
     display: inline-block;
     padding: 0.15rem 0.4rem;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-success);
+    border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
+    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
     border-radius: 0.4rem;
     font-size: 0.7rem;
     color: var(--color-success);
@@ -2826,11 +2842,11 @@ button {
 .badge-unverified {
     display: inline-block;
     padding: 0.15rem 0.4rem;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-muted);
+    border: 1px solid color-mix(in srgb, var(--color-error) 35%, transparent);
+    background-color: color-mix(in srgb, var(--color-error) 12%, transparent);
     border-radius: 0.4rem;
     font-size: 0.7rem;
-    color: var(--text-muted);
+    color: var(--color-error);
     white-space: nowrap;
     flex-shrink: 0;
 }
@@ -2891,40 +2907,6 @@ button {
     letter-spacing: 0.1em;
     text-align: center;
     margin: 0.75rem 0 0.4rem;
-}
-
-.pref-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.6rem 1rem;
-    margin-bottom: 0.8rem;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
-    font-size: 0.85rem;
-    color: var(--text-muted);
-}
-
-.pref-toggle.disabled {
-    opacity: 0.4;
-}
-
-.pref-toggle-btn {
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: 0.3rem;
-    color: var(--text-primary);
-    font-family: "JetBrains Mono", monospace;
-    font-weight: 400;
-    font-size: 0.75rem;
-    padding: 0.25rem 0.6rem;
-    cursor: pointer;
-}
-
-.pref-toggle-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
 }
 
 /* ================================
@@ -3070,30 +3052,55 @@ button {
  ==================== */
 
 .privacy-content {
-    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: calc(100% - 4rem);
     max-width: 40rem;
-    padding: 0 1.25rem 1.5rem;
+    padding-bottom: 1rem;
     text-align: left;
     color: var(--text-primary);
     line-height: 1.6;
 }
 
+.privacy-section {
+    padding: 1.25rem 1.5rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.privacy-section > :first-child {
+    margin-top: 0;
+}
+
+.privacy-section > :last-child {
+    margin-bottom: 0;
+}
+
 .privacy-content .privacy-updated {
     color: var(--text-muted);
     font-size: 0.8rem;
-    margin-bottom: 1rem;
+    padding: 0 0.25rem;
 }
 
 .privacy-content h2 {
     font-size: 1rem;
+    letter-spacing: 0.1em;
     color: var(--accent-tertiary);
-    margin-top: 1.75rem;
-    margin-bottom: 0.5rem;
+}
+
+.privacy-section hr {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 0.85rem -1.5rem 1rem;
 }
 
 .privacy-content p,
 .privacy-content ul {
     font-size: 0.85rem;
+    margin-top: 0.6rem;
 }
 
 .privacy-content ul {
