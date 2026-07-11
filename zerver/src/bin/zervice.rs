@@ -71,44 +71,86 @@ async fn main() -> anyhow::Result<()> {
         config.support_email_address,
     );
 
-    card_service
-        .scryfall_sync(BulkEndpoint::DefaultCards)
-        .await?;
+    // Every step runs non-fatally: a failure logs and the pipeline continues, so one
+    // broken step can't skip the rest (e.g. the serve-critical matview refreshes).
+    // Failures are tallied and surfaced as a non-zero exit at the end.
+    let mut failures = 0u32;
 
-    // Non-fatal: the oracle-tags fetch hits Scryfall over the network. An outage here
-    // must not abort the run and skip the serve-critical matview refreshes further down.
-    match card_service.sync_oracle_tags().await {
-        Ok((otag_count, correlation_count)) => {
-            tracing::info!(
-                "oracle tags synced: {otag_count} tags, {correlation_count} card correlations"
-            );
-            if let Err(e) = card_service.refresh_card_oracle_tags().await {
-                tracing::error!("failed to refresh card_profiles.oracle_tags projection: {e:#}");
-            } else {
-                tracing::info!("card_profiles.oracle_tags projection refreshed");
-            }
-        }
+    tracing::info!("step 1/5 card sync (default_cards): starting");
+    match card_service.scryfall_sync(BulkEndpoint::DefaultCards).await {
+        Ok(_) => tracing::info!("step 1/5 card sync: ok"),
         Err(e) => {
-            tracing::error!("oracle tags sync failed (non-fatal, skipping projection): {e:#}");
+            failures += 1;
+            tracing::error!("step 1/5 card sync FAILED (continuing): {e:#}");
         }
     }
 
     if recategorize {
-        tracing::info!("clearing all categories for recategorization");
-        card_service.clear_all_categories().await?;
+        tracing::info!("clearing all categories (--recategorize)");
+        if let Err(e) = card_service.clear_all_categories().await {
+            failures += 1;
+            tracing::error!("clear categories FAILED (continuing): {e:#}");
+        }
     }
 
-    let (classified, total) = card_service.classify_untagged_cards(1000).await?;
-    tracing::info!("classification: {classified} / {total} cards categorized");
+    tracing::info!("step 2/5 oracle tags: starting");
+    match card_service.sync_oracle_tags().await {
+        Ok((tags, correlations)) => {
+            tracing::info!("step 2/5 oracle tags: synced {tags} tags, {correlations} correlations");
+            match card_service.refresh_card_oracle_tags().await {
+                Ok(()) => tracing::info!("step 2/5 oracle tags projection: ok"),
+                Err(e) => {
+                    failures += 1;
+                    tracing::error!("step 2/5 oracle tags projection FAILED (continuing): {e:#}");
+                }
+            }
+        }
+        Err(e) => {
+            failures += 1;
+            tracing::error!(
+                "step 2/5 oracle tags sync FAILED (skipping projection, continuing): {e:#}"
+            );
+        }
+    }
 
-    card_service.refresh_latest_cards().await?;
-    tracing::info!("latest_cards materialized view refreshed");
+    tracing::info!("step 3/5 classify untagged cards: starting");
+    match card_service.classify_untagged_cards(1000).await {
+        Ok((classified, total)) => {
+            tracing::info!("step 3/5 classify: {classified} / {total} cards categorized");
+        }
+        Err(e) => {
+            failures += 1;
+            tracing::error!("step 3/5 classify FAILED (continuing): {e:#}");
+        }
+    }
 
-    card_service.refresh_card_signal_rollup().await?;
-    tracing::info!("card_signal_rollup materialized view refreshed");
+    tracing::info!("step 4/5 refresh materialized views: starting");
+    if let Err(e) = card_service.refresh_latest_cards().await {
+        failures += 1;
+        tracing::error!("step 4/5 latest_cards refresh FAILED (continuing): {e:#}");
+    } else {
+        tracing::info!("step 4/5 latest_cards: refreshed");
+    }
+    if let Err(e) = card_service.refresh_card_signal_rollup().await {
+        failures += 1;
+        tracing::error!("step 4/5 card_signal_rollup refresh FAILED (continuing): {e:#}");
+    } else {
+        tracing::info!("step 4/5 card_signal_rollup: refreshed");
+    }
 
-    auth_service.delete_expired_sessions().await?;
+    tracing::info!("step 5/5 prune expired sessions: starting");
+    if let Err(e) = auth_service.delete_expired_sessions().await {
+        failures += 1;
+        tracing::error!("step 5/5 prune sessions FAILED (continuing): {e:#}");
+    } else {
+        tracing::info!("step 5/5 prune sessions: ok");
+    }
 
-    tracing::info!("zervice completed");
-    Ok(())
+    if failures == 0 {
+        tracing::info!("zervice completed: all 5 steps ok");
+        Ok(())
+    } else {
+        tracing::error!("zervice completed with {failures} failed step(s) — see errors above");
+        anyhow::bail!("zervice finished with {failures} failed step(s)")
+    }
 }
