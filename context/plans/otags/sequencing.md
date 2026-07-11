@@ -97,20 +97,45 @@ guesswork) is retired and `mechanical_categories` is repopulated from otags. Q1 
   `zervice.rs` after `sync_oracle_tags`. Verified live: 115,913 profiles updated, 111,783
   carry tags (e.g. Swords to Plowshares → `spot-removal`/`removal-exile`/`lifegain`/…). 2 new
   `#[sqlx::test]` regression tests.
+- **Deploy hardening:** the `zervice` oracle-tag steps (network fetch from Scryfall) are
+  **non-fatal** — an outage logs an error and the run continues, so the serve-critical
+  `latest_cards` / `card_signal_rollup` refreshes downstream always run.
 
-**Retire the heuristic (Q1):**
-- Author a `category → oracle_tag-root(s)` map (~24 categories), multi-root for `evasion`
-  (`flying`/`menace`/`can't-be-blocked`…) and `ramp` (`ramp` + `mana-producer`). Lives in
-  code near `MechanicalCategory` (stable, authored, uses the `oracle_tags.parent_ids` hierarchy).
-- In `zervice.rs`, **replace** `classify_untagged_cards` (heuristic) with a step that derives
-  `card_profiles.mechanical_categories` from oracle_tag subtrees (expand each root through the
-  hierarchy). Same nightly pass that rebuilds the `card_profiles.oracle_tags` projection.
-- **Delete `zwipe-core/.../mechanical_category/classify.rs`** and the
-  `get_unclassified_card_ids` / `update_mechanical_categories` heuristic plumbing — *after*
-  the parity check below. Keep it in git history as break-glass.
-- **Parity check (gate):** compare oracle_tag-derived categories vs the old heuristic on the
-  overlap set; sample the `evasion`/`ramp` heuristic-only residue once to confirm it's mostly
-  heuristic false positives, not gaps. Only then delete `classify.rs`.
+**Retire the heuristic (Q1) — DISCOVERY + PARITY DONE 2026-07-11; implementation pending.**
+
+The `MechanicalCategory → oracle_tag-root(s)` map (each root expands through
+`oracle_tags.parent_ids`). Derived per-category vs the old heuristic measured live (`derived`
+= otag subtree, or `all_parts` for tokens):
+
+*Clean (19, ship):* removal→`removal`, tutor→`tutor`, draw→`card-advantage`,
+counterspell→`counterspell`, evasion→`evasion`, lifegain→`lifegain`, mill→`mill`, burn→`burn`,
+wipe→`sweeper`, blink→`flicker`, drain→`drain-life`, sacrifice→`sacrifice-outlet`,
+untap→`untapper`, recursion→`recursion`+`reanimate`, ramp→`ramp`+`mana-producer`,
+counters→`gains/gives/repeatable-pp-counters`+`counters-matter`, copy→`copy`+`clone`,
+graveyard_hate→`hate-graveyard` (thin but likely correct — other `*-graveyard` are recursion).
+- **Tokens → `all_parts` component=token** (structured Scryfall token metadata, 4,614 cards) —
+  beats otags (1,282) and the old regex. One SQL condition, not an otag subtree.
+- **Finisher → DROPPED** (owner-approved). Old rule was `power≥6 creature OR "you win the game"
+  OR "extra turn"` — an incoherent grab-bag. No coherent otag equivalent.
+
+*Flagged by the parity gate — rework before implementing (5):* the gate caught bad roots —
+- **pump** (35/1577 agree): the `-to-all` boosts I used are *mass* buffs = **anthem**; real
+  Pump roots are `combat-trick`/`firebreathing`/`shade-pump` (individual).
+- **anthem** (needs the `power-boost-to-all`/`toughness-boost-to-all` roots moved here).
+- **stax** (`hate`, 124 children, over-broad → 4,408 derived): narrow to
+  `lockdown`/`mass-land-denial`/tax-style; needs an owner call on breadth.
+- **protection**: `protects-creature`/`protects-all`/`damage-prevention`/`gives-indestructible`/
+  `gives-hexproof`/`regenerates-self`.
+
+**Implementation (after the 5 are fixed):**
+- Put the map on `MechanicalCategory` in `zwipe-core` (pure static roots) + the `all_parts`
+  Tokens rule.
+- New repo method derives `card_profiles.mechanical_categories` from a recursive-CTE subtree
+  expansion of the map + the `all_parts` token condition; **replace** `classify_untagged_cards`
+  in `zervice.rs`.
+- **Delete `classify.rs`** + `get_unclassified_card_ids` / `update_mechanical_categories`
+  plumbing — the **last, gated** step, once parity on the reworked map is clean. Break-glass in
+  git history.
 
 **Shared (`zwipe-core`):**
 - `.../search_card/card_filter/criteria/mod.rs` — add `oracle_tags_contains_any` /

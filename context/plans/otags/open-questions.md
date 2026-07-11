@@ -45,6 +45,14 @@ recent-release lag we feared did not appear (13/13 latest-window cards already t
 - **Provenance** (`source` on `card_oracle_tags`) stays for the rare hand-added correlation but is
   no longer load-bearing.
 
+**Resolution (2026-07-11), full detail in `sequencing.md` Phase 2:** the 24-category map is
+authored and parity-tested live. **Tokens** derives from `all_parts` component=token
+(structured Scryfall data, 4,614 cards — better than otags *or* the old regex). **Finisher**
+is **dropped** (owner-approved; its old rule `power≥6 OR "you win the game" OR "extra turn"`
+was an incoherent grab-bag). 19 categories map cleanly; the parity gate flagged **5**
+(pump/anthem/stax/protection + a note on graveyard_hate) for root rework before `classify.rs`
+is deleted — implementation is the remaining Phase 2 work.
+
 ## 2. Deck-tag reconciliation — DECIDED: demote `DeckTag`, one drives the other
 
 **Settled 2026-07-11 (owner).** `DeckTag` does **not** go extinct — it is **demoted** to a
