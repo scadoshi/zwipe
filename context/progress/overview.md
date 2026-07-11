@@ -4,6 +4,17 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
+## Latest — 2026-07-11
+
+- **Android production launch submitted for review** (Play Console Submission 21,
+  "Production" track, **all countries**). Closed-testing 14-day gate was cleared
+  2026-07-09; this is the real launch submission, now awaiting Google review. Gotcha:
+  the Production track needs its own country list (separate from closed testing) —
+  Test and release → Production → Countries/regions. Once it's live, add the Play
+  Store link + button to zwipe.net and run the launch announcement.
+
+---
+
 ## Latest — 2026-07-10
 
 - **Integration test suite complete** (`archive/integration-tests/`): grew from
