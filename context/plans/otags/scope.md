@@ -104,10 +104,17 @@ truth/rollup table**, while the serve reads a **denormalized JSONB otag array on
 - **Shared types** (`otag` newtype/enum + `CardQuery` filter fields) live in `zwipe-core`,
   same pattern as `MechanicalCategory`, so frontend and backend share one contract.
 
-## mechanical_categories fate (touches all of the above)
+## mechanical_categories fate — DECIDED: retire the heuristic (Phase 2)
 
-If otags eventually replace categories, the deprecation candidates are
-`mechanical_category/classify.rs`, the `classify_untagged_cards` service path in
-`zerver/src/lib/domain/card/services.rs`, and the `card_profiles.mechanical_categories`
-column. Do **not** do this in early phases — see `open-questions.md` §mechanical_categories
-fate (lean complement/seed).
+Per `open-questions.md` §1 (revised after Phase 1 coverage data), the heuristic is **retired**,
+not complemented:
+- **Delete** `mechanical_category/classify.rs` and the `classify_untagged_cards` /
+  `get_unclassified_card_ids` / `update_mechanical_categories` heuristic plumbing in
+  `zerver/src/lib/domain/card/{services.rs,ports.rs}` + `outbound/sqlx/card/mod.rs`.
+- **Keep** the `card_profiles.mechanical_categories` column and its wire field, but
+  **repopulate it from otag subtrees** via an authored `category → otag-root(s)` map (expand
+  each root through `otags.parent_ids`) in the same nightly `zervice` pass that builds the
+  `card_profiles.otags` projection. Non-breaking: served `Card` shape unchanged, values now
+  gold-standard.
+- **Gate** the deletion behind a filter-parity check on the overlap set; `evasion`/`ramp`
+  need multi-root mappings. All of this lands in **Phase 2** (`sequencing.md`).
