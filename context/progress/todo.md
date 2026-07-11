@@ -26,7 +26,7 @@ at `context/archive/complete_2026_q1.md`.
 ## Bugs (owner-reported 2026-07-11)
 
 - [ ] **Printing shifting bug** — [zwiper] visual layout shift when a card's printing changes. Owner-observed; needs repro + which surface (card detail / printing picker) and whether it's an image-size / reflow issue.
-- [ ] **Flip-card down-shift** — [zwiper] DFC / flip cards shift downward when flipped. Owner-observed; likely a height difference between the two faces pushing layout down on the flip.
+- [x] **Flip-card down-shift — FIXED 2026-07-11** (`02aab440`). Wasn't the button padding; the DFC-only `aspect-ratio: 5/7` wrapper rule made double-faced cards render a few px smaller/lower than single-faced ones. Now the button pins to an image-sized `.flip-face` (absolute, top-right) and DFC/single-face size identically. Sim-verified.
 
 ---
 
