@@ -6,6 +6,7 @@ use crate::inbound::{
     components::navigation::back_handler::BackHandlerLayout,
     screens::{
         auth::{forgot_password::ForgotPassword, login::Login, register::Register},
+        changelog::Changelog,
         deck::{
             card::{
                 add::Add as AddDeckCard, remove::Remove as RemoveDeckCard,
@@ -55,6 +56,10 @@ pub enum Router {
     /// Privacy policy — shared legal copy, reached from Profile.
     #[route("/privacy")]
     PrivacyPolicy {},
+
+    /// Release history — shared changelog, reached from Profile.
+    #[route("/changelog")]
+    Changelog {},
 
     /// List all user's decks with name, format, and card count.
     #[route("/deck")]

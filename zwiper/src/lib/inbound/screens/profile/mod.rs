@@ -241,6 +241,13 @@ pub fn Profile() -> Element {
                                     span { class: "profile-row-label", "Version" }
                                     div { class: "profile-row-value",
                                         span { "v{APP_VERSION}" }
+                                        Button {
+                                            variant: ButtonVariant::Util,
+                                            onclick: move |_| {
+                                                navigator.push(Router::Changelog {});
+                                            },
+                                            "Changelog"
+                                        }
                                     }
                                 }
                             }

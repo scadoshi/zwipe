@@ -4,6 +4,8 @@
 
 /// Authentication screens (login, register).
 pub mod auth;
+/// Release history screen (shared changelog).
+pub mod changelog;
 /// Deck builder and card management screens.
 pub mod deck;
 /// Home/landing page screen.
