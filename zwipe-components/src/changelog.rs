@@ -18,6 +18,23 @@ struct Release {
     entries: &'static [&'static str],
 }
 
+/// Versions in progress for the next release. Rendered at the top of the
+/// changelog with an "Upcoming" badge instead of "Latest".
+const UPCOMING: &[Release] = &[Release {
+    version: "1.6.0",
+    date: "Coming soon",
+    entries: &[
+        "In-app changelog. Browse every release without leaving the app, right from your Profile.",
+        "A cleaner deck card screen with squircle mana pips, an inline price tag, and power/toughness on each row.",
+        "Theme and dark-mode controls now live in your Profile.",
+        "Buy a card straight from the home screen, tap its price for TCGplayer or Card Kingdom.",
+        "Fixed importing double-faced cards like Boggart Trawler // Boggart Bog.",
+        "A light-mode polish pass across every theme, cleaner panels and softer mana-pip shadows.",
+        "Oracle tags, find and build with community-maintained tags for what cards actually do (removal, ramp, card advantage, tutors, and more).",
+        "Deck color identity shown as mana pips on your deck list.",
+    ],
+}];
+
 const RELEASES: &[Release] = &[
     Release {
         version: "1.5.0",
@@ -224,19 +241,22 @@ fn major_minor(version: &str) -> &str {
 pub fn Changelog() -> Element {
     // major.minor keys in display order (newest first), deduped, for the filter.
     let mut minors: Vec<&'static str> = Vec::new();
-    for release in RELEASES {
+    for release in UPCOMING.iter().chain(RELEASES.iter()) {
         let key = major_minor(release.version);
         if !minors.contains(&key) {
             minors.push(key);
         }
     }
 
-    // None = "All"; Some(key) narrows to one major.minor line. Defaults to the
-    // latest release's line (the first minor); "All" stays an option.
-    let mut selected = use_signal(|| minors.first().copied());
+    // None = "All"; Some(key) narrows to one line. Defaults to the latest
+    // released line (not the upcoming teaser); "All" stays an option.
+    let mut selected = use_signal(|| RELEASES.first().map(|r| major_minor(r.version)));
     // Included in each card's key so switching filters remounts the visible
     // cards, replaying their ease-in animation.
     let filter_key = selected().unwrap_or("all");
+    // Upcoming entries render first with an "Upcoming" badge; the first released
+    // entry after them is the "Latest".
+    let upcoming_count = UPCOMING.len();
 
     rsx! {
         div { class: "changelog-filter",
@@ -254,13 +274,15 @@ pub fn Changelog() -> Element {
             }
         }
         div { class: "changelog-list",
-            for (i, release) in RELEASES.iter().enumerate() {
+            for (i, release) in UPCOMING.iter().chain(RELEASES.iter()).enumerate() {
                 if selected().is_none_or(|key| key == major_minor(release.version)) {
                     div { key: "{filter_key}-{release.version}", class: "changelog-card",
                         div { class: "changelog-version-row",
                             h2 { class: "changelog-version", "{release.version}" }
                             span { class: "changelog-date", "{release.date}" }
-                            if i == 0 {
+                            if i < upcoming_count {
+                                span { class: "status-tag status-doing", "Upcoming" }
+                            } else if i == upcoming_count {
                                 span { class: "status-tag status-done", "Latest" }
                             }
                         }
