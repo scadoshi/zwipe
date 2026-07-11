@@ -1,5 +1,6 @@
 mod about;
 mod android;
+mod changelog;
 mod contribute;
 mod discord;
 mod guides;
@@ -12,6 +13,7 @@ mod verify;
 
 pub use about::About;
 pub use android::Android;
+pub use changelog::Changelog;
 pub use contribute::Contribute;
 pub use discord::Discord;
 pub use guides::{GuidePage, Guides};

@@ -1,8 +1,9 @@
 use crate::{
-    Footer, Nav,
+    Footer, Nav, Route,
     components::{PageMeta, StatsStrip},
 };
 use dioxus::prelude::*;
+use zwipe_components::{Banner, BannerStatus};
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
 
@@ -128,6 +129,21 @@ pub fn Home() -> Element {
         }
         HomeJsonLd {}
         Nav {}
+        div { class: "banner-stack",
+            Banner {
+                category: "Announcement",
+                status: BannerStatus::Done,
+                "Zwipe is now on Android. "
+                Link { to: Route::Android {}, "Get it \u{2192}" }
+            }
+            Banner {
+                category: "Release",
+                status: BannerStatus::Done,
+                status_label: "New",
+                "Version 1.5.0 just shipped. "
+                Link { to: Route::Changelog {}, "See what's new \u{2192}" }
+            }
+        }
         div { class: "hero",
             // Semantic page heading for crawlers and screen readers; the ASCII
             // logo is the visual title, so this is visually hidden.
