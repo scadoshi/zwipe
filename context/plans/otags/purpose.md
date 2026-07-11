@@ -10,6 +10,10 @@ heuristics (`classify.rs`, self-documented at ~70-80% accuracy). It is:
 - **Brittle** — text-pattern derivation, not real semantics.
 - **Internal-only** — it does not match the tags players see on Scryfall or elsewhere.
 
+**Decision (Q1, after measuring live coverage):** we **retire** this heuristic entirely.
+The `mechanical_categories` vocabulary stays as a wire field but gets **derived from otag
+subtrees** instead of guesswork. See `open-questions.md` §1 for the coverage evidence.
+
 ## What otags give us
 
 Scryfall's **Oracle Tags** are hundreds of functional tags maintained by the community
@@ -20,12 +24,11 @@ Scryfall's **Oracle Tags** are hundreds of functional tags maintained by the com
 - **A formalized vocabulary** our invented `deck_tag` / `deck_other_tag` feature can be
   backed by, instead of a hand-curated archetype list that overlaps otags anyway.
 
-This is **not** a strict accuracy win — it is a precision-vs-coverage trade. Heuristics
-give 100% coverage at ~70-80% accuracy; otags give higher accuracy on tagged cards but
-**uneven coverage** (popular cards richly tagged, obscure cards thin or empty). So the
-plan is complement/seed, not blind replace — see `open-questions.md`. Bonus: cards that
-carry *both* an otag and our heuristic label become a free labeled test set to finally
-measure that "~70-80%".
+We initially expected a precision-vs-coverage trade (heuristics 100% coverage at ~70-80%
+accuracy vs otags accurate-but-uneven). **The live data disproved that:** at the oracle
+level otags cover ~all cards, and per functional category they run 2-2.6x more complete than
+the heuristic (`open-questions.md` §1). Hence the retire decision above — otags supersede,
+they don't just complement.
 
 ## The real payoff — swipe signal at the otag level
 

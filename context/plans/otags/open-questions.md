@@ -3,20 +3,45 @@
 The original doc's #1 open question (**data source access**) is **RESOLVED**: Oracle Tags
 is now a standard Scryfall bulk file (README §"what changed"). What remains:
 
-## 1. mechanical_categories fate — DECIDED: complement + seed, not replace
+## 1. mechanical_categories fate — DECIDED: retire the heuristic, otags supersede
 
-**Settled 2026-07-11 (owner).** otags win on accuracy for tagged cards but lose on
-coverage (obscure cards may be untagged), so:
-- Where an otag exists, prefer it.
-- Where it does not, **backfill with heuristics** — but only the *serve/filter-critical*
-  otag subset (~20-40 tags), not the full hundreds. This bounds maintenance to a fraction
-  of today's, instead of "generate way more heuristics for every otag."
-- **Track provenance per tag** (`source: otag | heuristic`) so filtering can trust otags
-  fully, weight heuristic fills lower, and we can measure heuristic accuracy against the
-  otag ground truth for free.
-- Full replacement (deprecating `classify.rs` + `card_profiles.mechanical_categories`) is
-  **not** on the table for early phases; revisit only after coverage and provenance data
-  prove it safe.
+**Settled 2026-07-11 (owner), reversing the earlier "complement + seed" call after
+measuring live coverage post-Phase-1.** The community set is not merely as good as our regex
+heuristic (`classify.rs`, ~70-80% accuracy) — it is markedly **more complete**. Per category,
+counting distinct oracle_ids (otag column = the category's otag root expanded through the
+ingested `parent_ids` hierarchy; heuristic-only = cards the heuristic tags that the subtree
+misses):
+
+| category | heuristic | otag subtree | heuristic-only |
+|---|---|---|---|
+| removal | 2,534 | 6,626 | 301 |
+| tutor | 511 | 1,197 | 12 |
+| draw | 4,277 | 6,526 | 201 |
+| counterspell | 236 | 551 | 1 |
+| ramp | 1,505 | 2,388 | 410 |
+| evasion | 5,656 | 5,499 | 1,218 |
+
+otags dominate removal/tutor/draw/counterspell (2-2.6x coverage, tiny residue), and the
+recent-release lag we feared did not appear (13/13 latest-window cards already tagged). So:
+
+- **Retire `classify.rs`** (the guesswork) and remove `classify_untagged_cards` from
+  `zervice`. Owner's rule: don't hand-maintain a heuristic when the community keeps a gold
+  standard.
+- **Keep the `mechanical_categories` column + wire field, but repopulate it from otag
+  subtrees** via an authored `category → otag-root(s)` map, each root expanded through the
+  hierarchy. This is **non-breaking** — the served `Card` shape is unchanged, the values just
+  become gold-standard accurate — and it mirrors the Q2 "keep the vocabulary, back it with
+  otags" pattern.
+- **Two fuzzy categories need multi-root mappings:** `evasion` (spans `flying` / `menace` /
+  `can't-be-blocked` …) and `ramp` (`ramp` + `mana-producer`). Author with care.
+- **Gate the switchover behind a filter-parity check** on the overlap set, and sample the
+  `evasion`/`ramp` heuristic-only residue once (much of it is heuristic *false positives*,
+  not otag gaps) before deleting `classify.rs`.
+- The 24-category *vocabulary* can be fully sunset later behind a min-version floor if the
+  new granular otag filters make it redundant; not now.
+- **Phase 2 (heuristic backfill) is cut** — there is nothing to backfill.
+- **Provenance** (`source` on `card_otags`) stays for the rare hand-added correlation but is
+  no longer load-bearing.
 
 ## 2. Deck-tag reconciliation — DECIDED: demote `DeckTag`, one drives the other
 

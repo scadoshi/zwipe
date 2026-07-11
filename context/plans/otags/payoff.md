@@ -5,14 +5,15 @@ accrual honestly.
 
 ## Immediate (ships with the first phases, Commander)
 
-- **Drop a maintenance burden.** otags replace the hand-owned regex categories on any
-  card that is tagged; we stop chasing corner cases the community already handles.
-- **Accuracy on tagged cards** goes up over our ~70-80% heuristics, and we finally get a
-  labeled set (cards with both otag + heuristic label) to measure the heuristics against.
+- **Kill a maintenance burden outright.** We **retire `classify.rs`** (the ~70-80% regex
+  heuristic) rather than complement it — measured coverage showed otags are 2-2.6x more
+  complete on removal/tutor/draw/counterspell (`open-questions.md` §1). `mechanical_categories`
+  survives as a wire field but is now **derived from otags**, gold-standard accurate, and no
+  longer our guesswork to grow.
 - **Player-facing alignment.** The tags on a card in-app match what players see on
   Scryfall — less "why does Zwipe think this is X".
-- **Richer filtering.** otag filter predicates sit right beside the existing three
-  `mechanical_categories_*` predicates — more precise deck-building filters at low cost.
+- **Richer filtering.** New otag filter predicates sit beside the (now otag-derived)
+  category filter — far more granular deck-building filters at low cost.
 - **Better Commander serving.** The otag-level swipe rollup surfaces **deeper cuts** and
   fixes **cold-start for new cards** (see `purpose.md` §real payoff). This is the headline
   near-term win.
@@ -24,12 +25,13 @@ accrual honestly.
 - **MVP "more like this"** — otag overlap with starred cards, once the MVP feature and
   otag data coexist.
 - **A unified tagging vocabulary** — `deck_tag` / `deck_other_tag` / `mechanical_category`
-  collapse toward one otag-backed system instead of three overlapping hand-curated lists
-  (`open-questions.md` §reconciliation).
+  all become otag-backed (the first two demoted per Q2, the last derived per Q1) instead of
+  three overlapping hand-curated lists.
 
 ## What is NOT a payoff (manage expectations)
 
-- otags do **not** improve coverage on obscure cards; they can make it worse until
-  heuristic backfill fills the gaps. Coverage is a cost to pay, not a benefit.
+- **The two fuzzy categories are work, not a freebie.** `evasion` and `ramp` need
+  multi-root otag mappings and a parity check before `classify.rs` is deleted
+  (`open-questions.md` §1) — the retirement is safe but not zero-effort.
 - Non-EDH serving is **not** launch-quality; treat any day-1 non-EDH serving as a data
   collector wearing a UI, not a finished feature.

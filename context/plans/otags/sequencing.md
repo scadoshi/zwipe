@@ -1,8 +1,10 @@
 # Sequencing — the phased build
 
-Seven phases, each independently shippable, ordered so backend data lands before any
+Seven phases (0-6), each independently shippable, ordered so backend data lands before any
 client sees it. **Every phase is additive** — see the per-phase "Wire & compat" line and
-`compatibility.md`. No phase here requires a `MIN_CLIENT_VERSION` bump.
+`compatibility.md`. No phase here requires a `MIN_CLIENT_VERSION` bump. (The old "Phase 2 —
+heuristic backfill" was cut when Q1 flipped to retiring the heuristic; filtering absorbed the
+retirement and the phases renumbered.)
 
 Cross-cutting reminders:
 - **SQLx offline:** after any `query!`/`query_as!`/`query_scalar!` change, run
@@ -80,43 +82,37 @@ Phase 3/serving-tier + `DeckTag → otag` authoring (`open-questions.md` §3).
 
 ---
 
-## Phase 2 — Heuristic backfill + provenance (backend-only)
+## Phase 2 — Filtering + retire the heuristic (first client-visible piece, additive)
 
-**Goal:** fill serve/filter-critical otags on cards Scryfall left untagged (Q1 decision:
-complement + seed).
+**Goal:** players filter cards by otag; served cards surface their otags; `classify.rs` (the
+guesswork) is retired and `mechanical_categories` is repopulated from otags. Q1 + Q6 decisions.
 
-**Backend:**
-- Mirror `zwipe-core/src/domain/card/models/mechanical_category/classify.rs` for the
-  **curated serve-critical otag subset (~40-80 only)** — not the full vocabulary.
-- Extend the `classify_untagged_cards` path in `zerver/src/lib/domain/card/services.rs` (or
-  a sibling step in `zervice.rs`) to write heuristic otags into `card_otags` with
-  `source = 'heuristic'`, then rebuild the JSONB projection.
-- **Free win:** cards carrying *both* an otag and our heuristic label form a labeled set —
-  emit an accuracy metric (heuristic vs otag ground truth) to finally measure the ~70-80%.
+**Tables (the projection deferred from Phase 1):**
+- **Add `otags JSONB NOT NULL DEFAULT '[]'` + GIN index to `card_profiles`** — the
+  denormalized serve/filter projection; mirrors `card_profiles.mechanical_categories`.
+- Extend `zervice.rs` to rebuild it after the Phase-1 otag sync via one `GROUP BY oracle_id`
+  (`UPDATE card_profiles SET otags = agg FROM card_otags WHERE ... GROUP BY oracle_id`).
 
-**Wire & compat:** none. Internal.
-
-**Exit:** coverage gap on the curated tier closed; provenance queryable; accuracy metric logged.
-
----
-
-## Phase 3 — Filtering (first client-visible piece, fully additive)
-
-**Goal:** players filter cards by otag; served cards surface their otags.
+**Retire the heuristic (Q1):**
+- Author a `category → otag-root(s)` map (~24 categories), multi-root for `evasion`
+  (`flying`/`menace`/`can't-be-blocked`…) and `ramp` (`ramp` + `mana-producer`). Lives in
+  code near `MechanicalCategory` (stable, authored, uses the `otags.parent_ids` hierarchy).
+- In `zervice.rs`, **replace** `classify_untagged_cards` (heuristic) with a step that derives
+  `card_profiles.mechanical_categories` from otag subtrees (expand each root through the
+  hierarchy). Same nightly pass that rebuilds the `otags` projection.
+- **Delete `zwipe-core/.../mechanical_category/classify.rs`** and the
+  `get_unclassified_card_ids` / `update_mechanical_categories` heuristic plumbing — *after*
+  the parity check below. Keep it in git history as break-glass.
+- **Parity check (gate):** compare otag-derived categories vs the old heuristic on the
+  overlap set; sample the `evasion`/`ramp` heuristic-only residue once to confirm it's mostly
+  heuristic false positives, not otag gaps. Only then delete `classify.rs`.
 
 **Shared (`zwipe-core`):**
 - `.../search_card/card_filter/criteria/mod.rs` — add `otags_contains_any` / `_contains_all`
   / `_excludes` (`Option<Vec<String>>`), plus getters/setters/builder/`matches.rs`/`query.rs`.
   All **`#[serde(default)]`**.
-- `.../card/models/card_profile.rs` — add `otags: Vec<Otag>` to `CardProfile`, **`#[serde(default)]`**
-  (so old clients reading a new server's `Card` don't choke, new clients reading old server
-  get empty).
-
-**Tables (deferred from Phase 1):**
-- **Add `otags JSONB NOT NULL DEFAULT '[]'` + GIN index to `card_profiles`** (the
-  denormalized serve/filter projection; mirrors `card_profiles.mechanical_categories`).
-- Extend `zervice.rs` to rebuild it after the Phase-1 otag sync via one `GROUP BY oracle_id`
-  (`UPDATE card_profiles SET otags = agg FROM card_otags WHERE ... GROUP BY oracle_id`).
+- `.../card/models/card_profile.rs` — add `otags: Vec<Otag>` to `CardProfile`, **`#[serde(default)]`**.
+  `mechanical_categories` **stays on the wire, unchanged in shape** (values now otag-derived).
 
 **Backend:**
 - `zerver/src/lib/outbound/sqlx/card/mod.rs` (~912-926) — add otag jsonb predicates
@@ -125,16 +121,19 @@ complement + seed).
 
 **Frontend (`zwiper`):**
 - New otag include/exclude filter beside `.../deck/card/filter/category.rs`, hosted in
-  `card_filter_sheet.rs`. Surface otags on the swipe card in `.../card/components/card_info.rs`.
+  `card_filter_sheet.rs`. The existing category filter UI is untouched (now otag-accurate).
+  Surface otags on the swipe card in `.../card/components/card_info.rs`.
 
-**Wire & compat:** additive only. Old client omits the new filter fields (`#[serde(default)]`
-→ `None`); old client tolerates the new response field. **No bump.**
+**Wire & compat:** additive only. New filter fields + new `otags` response field are
+`#[serde(default)]`; `mechanical_categories` is **preserved** (shape unchanged, values
+improved), so no old client breaks. **No bump.**
 
-**Exit:** otag filters work end-to-end; otags visible on served cards.
+**Exit:** otag filters work end-to-end; otags visible on served cards; `classify.rs` gone;
+categories otag-derived and parity-validated.
 
 ---
 
-## Phase 4 — Deck otag selection + archetype demotion (additive)
+## Phase 3 — Deck otag selection + archetype demotion (additive)
 
 **Goal:** a deck declares its strategy otags; picking an archetype seeds them (Q2 decision).
 
@@ -167,7 +166,7 @@ back-compat-safe (tests in `contracts/deck.rs`). **No bump.**
 
 ---
 
-## Phase 5 — Serving term (backend-only, ordering change)
+## Phase 4 — Serving term (backend-only, ordering change)
 
 **Goal:** fold otags into the serve (Q4 decision: one small `W_OTAG` term first).
 
@@ -180,13 +179,13 @@ back-compat-safe (tests in `contracts/deck.rs`). **No bump.**
   behavior).
 
 **Wire & compat:** the serve **response shape is unchanged** — only ordering shifts. No
-contract change, **no bump**. (Phase-2 otag *signal* term is deferred to Phase 7.)
+contract change, **no bump**. (The otag *signal* term is deferred to Phase 6.)
 
 **Exit:** decks with selected otags get otag-aware ordering; zero regression when otags absent.
 
 ---
 
-## Phase 6 — Non-EDH signal collection (backend, ship dark)
+## Phase 5 — Non-EDH signal collection (backend, ship dark)
 
 **Goal:** start accruing the moat dataset *before* serving on it (Q7 decision).
 
@@ -208,12 +207,12 @@ client must send new context, hold it behind the min-version gate (last resort).
 
 ---
 
-## Phase 7 — Non-EDH serving + otag signal term (deferred, data-hungry)
+## Phase 6 — Non-EDH serving + otag signal term (deferred, data-hungry)
 
-**Goal:** once Phase 6 data has volume, serve on it.
+**Goal:** once Phase 5 data has volume, serve on it.
 
-- Fold the **otag signal term** (Phase-2 of Q4) into `search_scryfall_data_deck_aware` for
-  the deeper-cuts / new-card cold-start win, reading the generalized-context rollup.
+- Fold the **otag signal term** (the deferred half of Q4) into `search_scryfall_data_deck_aware`
+  for the deeper-cuts / new-card cold-start win, reading the generalized-context rollup.
 - Enable non-EDH serving pivoting on `(format, CI, selected otags)`.
 
 **Wire & compat:** ordering/behavior only; additive. Revisit only after the dataset matures
@@ -224,11 +223,10 @@ client must send new context, hold it behind the min-version gate (last resort).
 ## Dependency order
 
 ```
-0 spike ─▶ 1 ingest ─▶ 2 backfill ─┐
-                        1 ─▶ 3 filtering (needs card_profiles.otags)
-                        1 ─▶ 4 deck otags ─▶ 5 serving term
-                                    4 ─▶ 6 signal collection ─▶ 7 non-EDH serving
+0 spike ─▶ 1 ingest ─▶ 2 filtering + retire heuristic (needs card_profiles.otags)
+                        1 ─▶ 3 deck otags ─▶ 4 serving term
+                                    3 ─▶ 5 signal collection ─▶ 6 non-EDH serving
 ```
 
-1 unblocks everything. 3, 4 are parallel after 1. 5 needs 4. 6 needs 4 (decks must have
-otags to key on). 7 needs 6 to have run long enough to matter.
+1 unblocks everything. 2 and 3 are parallel after 1. 4 needs 3. 5 needs 3 (decks must have
+otags to key on). 6 needs 5 to have run long enough to matter.

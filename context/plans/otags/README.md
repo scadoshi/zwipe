@@ -1,10 +1,10 @@
 # Oracle tags (otags) — plan index
 
-**Status: PLANNING / decisions locked (updated 2026-07-11).** Concept validated with the
-owner, and **all 7 open questions are resolved** (`open-questions.md`) — data access,
-`mechanical_categories` fate, deck-tag reconciliation, granularity, serving weights, UI,
-perf, and the non-EDH signal schema are all decided. Scope is grounded in a codebase map.
-Not started; next step is breaking the sequencing below into tickets.
+**Status: BUILDING (updated 2026-07-11).** Phase 1 (ingest) is **shipped + committed**; all
+7 open questions are resolved (`open-questions.md`). Note Q1 was **revised after Phase 1**:
+measured coverage showed otags supersede our heuristic, so the plan now **retires
+`classify.rs`** (was "complement + seed") and the old heuristic-backfill phase is cut. Scope
+is grounded in a codebase map.
 
 ## One sentence
 
@@ -39,14 +39,14 @@ routine bulk ingest that mirrors our existing Scryfall sync. See `purpose.md` §
 Full phase-by-phase build (files touched + per-phase additive-wire guarantee) lives in
 **`sequencing.md`**. In brief:
 
-0. **Spike** — confirm the bulk file shape (keying, descriptions).
-1. **Ingest** — `card_otags` table + `card_profiles.otags` projection + daily `zervice` sync.
-2. **Backfill** — heuristics fill the curated serve-critical otags, with `source` provenance.
-3. **Filtering** — otag filter fields + otags on served cards (first client-visible piece).
-4. **Deck otags** — `decks.otags` + archetype→otag seeding + searchable picker.
-5. **Serving** — one small `W_OTAG` correlation term in the ranking query.
-6. **Signal collection** — generalized-context per-otag signal, shipped dark.
-7. **Non-EDH serving** — deferred; serve on the accrued dataset once it matures.
+0. **Spike** — confirm the bulk file shape (keying, descriptions). ✅ done
+1. **Ingest** — `otags` catalog + `card_otags` + daily `zervice` sync. ✅ **shipped**
+2. **Filtering + retire heuristic** — `card_profiles.otags` projection, otag filter fields,
+   otags on served cards; delete `classify.rs`, derive `mechanical_categories` from otags.
+3. **Deck otags** — `decks.otags` + archetype→otag seeding + searchable picker.
+4. **Serving** — one small `W_OTAG` correlation term in the ranking query.
+5. **Signal collection** — generalized-context per-otag signal, shipped dark.
+6. **Non-EDH serving** — deferred; serve on the accrued dataset once it matures.
 
-Land 1-5 on Commander first (that is where the data and usage are); 6-7 accrue over time.
+Land 1-4 on Commander first (that is where the data and usage are); 5-6 accrue over time.
 **Every phase is additive — no `MIN_CLIENT_VERSION` bump required.**
