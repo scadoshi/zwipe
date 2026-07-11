@@ -43,6 +43,13 @@ body {
     isolation: isolate;
 }
 
+/* Light themes: lift the sink toward white (fresh-paper feel) instead of the
+   #000 15% darkening that reads muddy on cream palettes. The theme class is
+   "theme-{name}-{mode}", so only "-light" matches; dark mode is untouched. */
+body[class$="-light"] {
+    --bg-sink: color-mix(in srgb, var(--bg-primary), #fff 35%);
+}
+
 /* Pinned grid: a viewport-fixed layer behind all content, so scrolling moves
    the elements over a stationary grid instead of dragging the grid with them.
    A fixed pseudo-element is used rather than `background-attachment: fixed`
