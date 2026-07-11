@@ -1,6 +1,7 @@
-# Deploy Dev Build to Phone
+# Deploy a Build to Phone
 
-Build and install a debug build on a connected iPhone. This is the daily workflow.
+Build and install on a connected iPhone. **Debug** is the daily workflow; **release**
+is for verifying the store-parity build on-device.
 
 **Prerequisites:** Device registered and dev profile installed (see [devices.md](devices.md)).
 
@@ -8,18 +9,25 @@ Build and install a debug build on a connected iPhone. This is the daily workflo
 
 ## Build and deploy
 
+Paste each as a **single line**. Multi-line `\` continuations get mangled on paste into
+zsh (`--device` and the `.app` path split off into their own commands → `command not
+found: --device` / `permission denied: …Zwipe.app`).
+
+**Debug** — outputs to `target/dx/zwipe/debug/ios/`:
+
 ```bash
-cd ~/Developer/zwipe/zwiper
-
-# Build for physical device with production backend
-BACKEND_URL=https://api.zwipe.net dx build --platform ios --device "scotland-mobile"
-
-# Deploy to connected iPhone
-ios-deploy --bundle ~/Developer/zwipe/target/dx/zwipe/debug/ios/Zwipe.app
-
-# Full command for convenience
 cd ~/Developer/zwipe/zwiper && BACKEND_URL=https://api.zwipe.net dx build --platform ios --device "scotland-mobile" && ios-deploy --bundle ~/Developer/zwipe/target/dx/zwipe/debug/ios/Zwipe.app
 ```
+
+**Release** — outputs to `target/dx/zwipe/release/ios/` (note `release/`, not `debug/`):
+
+```bash
+cd ~/Developer/zwipe/zwiper && BACKEND_URL=https://api.zwipe.net dx build --release --platform ios --device "scotland-mobile" && ios-deploy --bundle ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app
+```
+
+> A `--release` build lands in `release/ios/`. Deploying the `debug/ios/` path after a
+> release build installs the stale/unsigned debug app and fails with
+> `Error 0xe8008014: The executable contains an invalid signature`.
 
 That's it. The app is installed and ready to open.
 
