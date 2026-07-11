@@ -16,7 +16,7 @@ pub mod preferences;
 use crate::{
     inbound::{
         components::{
-            auth::bouncer::Bouncer,
+            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
             bottom_sheet::BottomSheet,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
             logout_dialog::LogoutDialog,
@@ -25,7 +25,10 @@ use crate::{
         router::Router,
     },
     outbound::{
-        client::{ZwipeClient, user::get_user::ClientGetUser},
+        client::{
+            ZwipeClient,
+            user::{get_user::ClientGetUser, preferences::ClientUpdatePreferences},
+        },
         open_url,
     },
 };
@@ -37,12 +40,17 @@ use components::{
     email_verification::{EmailVerification, VerificationActions},
 };
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use preferences::{PreferencesSheet, display_theme_name};
+use std::time::Duration;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
-use zwipe_core::domain::{
-    auth::models::session::Session,
-    site::WEB_BASE,
-    user::models::{hints::HINT_PROFILE, theme::ThemeConfig},
+use zwipe_core::{
+    domain::{
+        auth::models::session::Session,
+        site::WEB_BASE,
+        user::models::{hints::HINT_PROFILE, theme::ThemeConfig},
+    },
+    http::contracts::user::HttpUpdatePreferences,
 };
 
 /// Client version baked in at compile time, shown at the bottom of the screen
@@ -54,7 +62,8 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn Profile() -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
-    let theme_config: Signal<ThemeConfig> = use_context();
+    let mut theme_config: Signal<ThemeConfig> = use_context();
+    let toast = use_toast();
 
     let mut show_logout_dialog = use_signal(|| false);
     let mut show_delete_dialog = use_signal(|| false);
@@ -91,6 +100,45 @@ pub fn Profile() -> Element {
 
     let navigator = use_navigator();
 
+    // Dark-mode toggle that lives on the profile page: flips the theme live and
+    // persists it immediately, reverting the UI if the save fails.
+    let mut toggle_dark_mode = move || {
+        let prev = theme_config.peek().clone();
+        let next = ThemeConfig {
+            name: prev.name.clone(),
+            is_dark: !prev.is_dark,
+        };
+        theme_config.set(next.clone());
+        let request = HttpUpdatePreferences {
+            theme: Some(next.name.clone()),
+            dark_mode: Some(next.is_dark),
+        };
+        spawn(async move {
+            let session_val = match session.ensure_fresh(client).await {
+                Ok(session_val) => session_val,
+                Err(e) => {
+                    theme_config.set(prev);
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
+                    return;
+                }
+            };
+            match client().update_preferences(request, &session_val).await {
+                Ok(prefs) => theme_config.set(ThemeConfig::from(&prefs)),
+                Err(e) => {
+                    theme_config.set(prev);
+                    tracing::warn!("update dark mode failed: {e}");
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
+                }
+            }
+        });
+    };
+
     rsx! {
         Bouncer {
             div { class: "screen",
@@ -106,8 +154,11 @@ pub fn Profile() -> Element {
                             " to update your username, email or password"
                         }
                         HintBullet {
-                            "Find your theme and dark mode under "
-                            HintKey { "Preferences" }
+                            "Toggle "
+                            HintKey { "Dark mode" }
+                            " right here, or tap "
+                            HintKey { "Change" }
+                            " on Theme to pick a palette"
                         }
                         HintBullet {
                             "Tap "
@@ -180,11 +231,6 @@ pub fn Profile() -> Element {
 
                                 div { class: "card-header",
                                     span { class: "card-title", "Preferences" }
-                                    Button {
-                                        variant: ButtonVariant::Util,
-                                        onclick: move |_| preferences_open.set(true),
-                                        "Change"
-                                    }
                                 }
 
                                 div {
@@ -192,6 +238,11 @@ pub fn Profile() -> Element {
                                     span { class: "profile-row-label", "Theme" }
                                     div { class: "profile-row-value",
                                         span { { display_theme_name(&theme_config().name) } }
+                                        Button {
+                                            variant: ButtonVariant::Util,
+                                            onclick: move |_| preferences_open.set(true),
+                                            "Change"
+                                        }
                                     }
                                 }
 
@@ -199,7 +250,11 @@ pub fn Profile() -> Element {
                                     class: "profile-row",
                                     span { class: "profile-row-label", "Dark mode" }
                                     div { class: "profile-row-value",
-                                        span { if theme_config().is_dark { "On" } else { "Off" } }
+                                        Button {
+                                            variant: ButtonVariant::Util,
+                                            onclick: move |_| toggle_dark_mode(),
+                                            if theme_config().is_dark { "On" } else { "Off" }
+                                        }
                                     }
                                 }
                             }

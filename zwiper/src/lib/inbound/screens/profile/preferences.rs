@@ -98,13 +98,6 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
         }
     });
 
-    let mut apply_preview = move || {
-        theme_config.set(ThemeConfig {
-            name: selected_theme(),
-            is_dark: selected_dark(),
-        });
-    };
-
     let mut save = move || {
         let request = HttpUpdatePreferences {
             theme: Some(selected_theme()),
@@ -126,7 +119,7 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
                 Ok(prefs) => {
                     theme_config.set(ThemeConfig::from(&prefs));
                     toast.success(
-                        "Preferences saved".to_string(),
+                        "Theme saved".to_string(),
                         ToastOptions::default().duration(Duration::from_millis(1500)),
                     );
                 }
@@ -154,7 +147,7 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
     rsx! {
         BottomSheet {
             open,
-            title: "Preferences".to_string(),
+            title: "Themes".to_string(),
             on_dismiss: move |_| { theme_config.set(original_theme()); },
             footer: rsx! {
                 Button {
@@ -171,21 +164,6 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
                     "Save"
                 }
             },
-
-            div {
-                class: "pref-toggle",
-                span { "Dark mode" }
-                button {
-                    class: "pref-toggle-btn",
-                    onclick: move |_| {
-                        selected_dark.set(!selected_dark());
-                        apply_preview();
-                    },
-                    if selected_dark() { "On" } else { "Off" }
-                }
-            }
-
-            div { class: "pref-section-label", "Themes" }
 
             for theme in regular_themes {
                 ThemeRow {
