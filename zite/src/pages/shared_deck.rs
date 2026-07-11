@@ -573,7 +573,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                     for card_type in [
                         CardType::Creature, CardType::Instant, CardType::Sorcery,
                         CardType::Artifact, CardType::Enchantment,
-                        CardType::Planeswalker, CardType::Land,
+                        CardType::Planeswalker,
                     ] {
                         Chip {
                             key: "{card_type}",
