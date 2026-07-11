@@ -333,6 +333,10 @@
 .card-row-colors .ms {
     font-size: 0.8rem;
     margin-left: 1px;
+    /* Align pip boxes by their middle, not baseline: the colorless numeral's
+       smaller ::before glyph shifts the flex box's synthesized baseline, so
+       baseline alignment drops the generic pip below the colored ones. */
+    vertical-align: middle;
 }
 
 .card-row-detail {
@@ -349,6 +353,10 @@
 .card-row-collapse {
     display: grid;
     grid-template-rows: 0fr;
+    /* Clamp the single implicit column to the container width; without this the
+       auto track expands to the oracle text's max-content and blows the row
+       (and page) wider than the viewport on narrow screens. */
+    grid-template-columns: minmax(0, 1fr);
     opacity: 0;
     margin: 0 -1rem;
     pointer-events: none;
@@ -366,6 +374,7 @@
 .card-row-collapse-inner {
     overflow: hidden;
     min-height: 0;
+    min-width: 0;
 }
 
 /* Dividers framing the expanded detail. Span the full row width — the collapse
@@ -417,7 +426,9 @@
 /* Match the mana pips on the compact card line (0.8rem). */
 .card-detail-cost .ms {
     font-size: 0.8rem;
-    vertical-align: baseline;
+    /* Middle-align for the same reason as .card-row-colors: baseline drops the
+       colorless numeral pip below the colored ones. */
+    vertical-align: middle;
 }
 
 /* Roomier grey pill around the number, closer to a real card. Applied to the
