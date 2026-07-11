@@ -202,6 +202,19 @@ impl CardCriteria {
         self.mechanical_categories_excludes.as_deref()
     }
 
+    // oracle tags
+    pub fn oracle_tags_contains_any(&self) -> Option<&[String]> {
+        self.oracle_tags_contains_any.as_deref()
+    }
+
+    pub fn oracle_tags_contains_all(&self) -> Option<&[String]> {
+        self.oracle_tags_contains_all.as_deref()
+    }
+
+    pub fn oracle_tags_excludes(&self) -> Option<&[String]> {
+        self.oracle_tags_excludes.as_deref()
+    }
+
     // excludes
     pub fn name_not_contains(&self) -> Option<&str> {
         self.name_not_contains.as_deref()

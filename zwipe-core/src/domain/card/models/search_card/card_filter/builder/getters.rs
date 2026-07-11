@@ -283,6 +283,21 @@ impl CardQueryBuilder {
         self.mechanical_categories_excludes.as_deref()
     }
 
+    /// Returns the oracle tags ANY filter.
+    pub fn oracle_tags_contains_any(&self) -> Option<&[String]> {
+        self.oracle_tags_contains_any.as_deref()
+    }
+
+    /// Returns the oracle tags ALL filter.
+    pub fn oracle_tags_contains_all(&self) -> Option<&[String]> {
+        self.oracle_tags_contains_all.as_deref()
+    }
+
+    /// Returns the oracle tags excludes filter.
+    pub fn oracle_tags_excludes(&self) -> Option<&[String]> {
+        self.oracle_tags_excludes.as_deref()
+    }
+
     // =================================
     // Exclude Filter Getters
     // =================================

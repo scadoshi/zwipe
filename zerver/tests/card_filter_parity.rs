@@ -87,6 +87,7 @@ async fn sql_and_predicate_agree_on_every_criterion(pool: sqlx::PgPool) {
             .type_line("Sorcery")
             .oracle_text("Destroy all creatures.")
             .categories(&["wipe", "removal"])
+            .oracle_tags(&["sweeper"])
             .rarity("rare"),
         card("Lightning Bolt")
             .mono("R")
@@ -94,6 +95,7 @@ async fn sql_and_predicate_agree_on_every_criterion(pool: sqlx::PgPool) {
             .type_line("Instant")
             .oracle_text("Lightning Bolt deals 3 damage to any target.")
             .categories(&["burn", "removal"])
+            .oracle_tags(&["burn-any", "spot-removal"])
             .rarity("common")
             .usd("1.00"),
         card("Krenko, Mob Boss")
@@ -269,6 +271,19 @@ async fn sql_and_predicate_agree_on_every_criterion(pool: sqlx::PgPool) {
         (
             "mechanical_categories_excludes",
             json!({ "mechanical_categories_excludes": ["burn"] }),
+        ),
+        // oracle tags
+        (
+            "oracle_tags_contains_any",
+            json!({ "oracle_tags_contains_any": ["spot-removal"] }),
+        ),
+        (
+            "oracle_tags_contains_all",
+            json!({ "oracle_tags_contains_all": ["burn-any", "spot-removal"] }),
+        ),
+        (
+            "oracle_tags_excludes",
+            json!({ "oracle_tags_excludes": ["sweeper"] }),
         ),
         // flavor
         (

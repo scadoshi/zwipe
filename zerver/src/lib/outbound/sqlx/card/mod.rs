@@ -956,6 +956,25 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(")");
         }
 
+        if let Some(tags) = criteria.oracle_tags_contains_any() {
+            sep.push("(card_profiles.oracle_tags ?| ");
+            sep.push_bind_unseparated(tags.to_vec());
+            sep.push_unseparated(")");
+        }
+
+        if let Some(tags) = criteria.oracle_tags_contains_all() {
+            let json = serde_json::to_value(tags).unwrap_or_default();
+            sep.push("(card_profiles.oracle_tags @> ");
+            sep.push_bind_unseparated(json);
+            sep.push_unseparated(")");
+        }
+
+        if let Some(tags) = criteria.oracle_tags_excludes() {
+            sep.push("NOT (card_profiles.oracle_tags ?| ");
+            sep.push_bind_unseparated(tags.to_vec());
+            sep.push_unseparated(")");
+        }
+
         // Deck-aware exclusion: omit cards already in the deck. Null-oracle
         // printings are kept — they can't match a deck's oracle_ids anyway,
         // and a bare NOT(= ANY) would NULL them out of the results.
