@@ -12,7 +12,7 @@ pub fn Changelog() -> Element {
         }
         Nav {}
         div { class: "page content-enter",
-            div { class: "changelog-header section panel",
+            div { class: "page-header section panel",
                 h1 { "Changelog" }
                 p { class: "tagline", "Every release, newest first." }
             }
