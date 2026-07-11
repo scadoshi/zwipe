@@ -703,6 +703,61 @@ impl CardQueryBuilder {
         self
     }
 
+    /// Sets the oracle tags ANY filter (cards with at least one of these tags).
+    pub fn set_oracle_tags_contains_any<I, S>(&mut self, tags: I) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = tags.into_iter().map(|s| s.into()).collect();
+        self.oracle_tags_contains_any = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the oracle tags ANY filter.
+    pub fn unset_oracle_tags_contains_any(&mut self) -> &mut Self {
+        self.oracle_tags_contains_any = None;
+        self
+    }
+
+    /// Sets the oracle tags ALL filter (cards with every one of these tags).
+    pub fn set_oracle_tags_contains_all<I, S>(&mut self, tags: I) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = tags.into_iter().map(|s| s.into()).collect();
+        self.oracle_tags_contains_all = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the oracle tags ALL filter.
+    pub fn unset_oracle_tags_contains_all(&mut self) -> &mut Self {
+        self.oracle_tags_contains_all = None;
+        self
+    }
+
+    /// Sets the oracle tags excludes filter ("has none of these tags").
+    pub fn set_oracle_tags_excludes<I, S>(&mut self, oracle_tags_excludes: I) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = oracle_tags_excludes
+            .into_iter()
+            .map(|s| s.into().trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+        self.oracle_tags_excludes = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the oracle tags excludes filter.
+    pub fn unset_oracle_tags_excludes(&mut self) -> &mut Self {
+        self.oracle_tags_excludes = None;
+        self
+    }
+
     // =================================
     // Pagination & Config Setters
     // =================================

@@ -199,6 +199,41 @@ impl CardCriteria {
             }
         }
 
+        // ── oracle tags ─────────────────────────────────────────────
+        if let Some(values) = self.oracle_tags_contains_any() {
+            let matches = card
+                .card_profile
+                .oracle_tags
+                .iter()
+                .any(|tag| values.iter().any(|v| tag.eq_ignore_ascii_case(v)));
+            if !matches {
+                return false;
+            }
+        }
+
+        if let Some(values) = self.oracle_tags_contains_all() {
+            let matches = values.iter().all(|v| {
+                card.card_profile
+                    .oracle_tags
+                    .iter()
+                    .any(|tag| tag.eq_ignore_ascii_case(v))
+            });
+            if !matches {
+                return false;
+            }
+        }
+
+        if let Some(values) = self.oracle_tags_excludes() {
+            let excluded = card
+                .card_profile
+                .oracle_tags
+                .iter()
+                .any(|tag| values.iter().any(|v| tag.eq_ignore_ascii_case(v)));
+            if excluded {
+                return false;
+            }
+        }
+
         // ── produced mana ────────────────────────────────────────────
         if let Some(values) = self.produced_mana_contains_any() {
             let matches = match &sd.produced_mana {

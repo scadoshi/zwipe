@@ -201,6 +201,10 @@ pub struct CardQueryBuilder {
     mechanical_categories_contains_any: Option<Vec<String>>,
     mechanical_categories_contains_all: Option<Vec<String>>,
     mechanical_categories_excludes: Option<Vec<String>>,
+    // oracle tags
+    oracle_tags_contains_any: Option<Vec<String>>,
+    oracle_tags_contains_all: Option<Vec<String>>,
+    oracle_tags_excludes: Option<Vec<String>>,
     // config
     limit: u32,
     offset: u32,
@@ -268,6 +272,9 @@ impl Default for CardQueryBuilder {
             mechanical_categories_contains_any: None,
             mechanical_categories_contains_all: None,
             mechanical_categories_excludes: None,
+            oracle_tags_contains_any: None,
+            oracle_tags_contains_all: None,
+            oracle_tags_excludes: None,
             limit: 25,
             offset: 0,
             sort: None,
@@ -803,6 +810,14 @@ impl CardQueryBuilder {
             self.mechanical_categories_excludes.as_deref(),
         )?;
         check_include_exclude_clash(
+            "oracle tags",
+            &[
+                self.oracle_tags_contains_any.as_deref(),
+                self.oracle_tags_contains_all.as_deref(),
+            ],
+            self.oracle_tags_excludes.as_deref(),
+        )?;
+        check_include_exclude_clash(
             "sets",
             &[self.set_equals_any.as_deref()],
             self.set_excludes_any.as_deref(),
@@ -928,6 +943,9 @@ impl CardQueryBuilder {
             mechanical_categories_contains_any: self.mechanical_categories_contains_any.clone(),
             mechanical_categories_contains_all: self.mechanical_categories_contains_all.clone(),
             mechanical_categories_excludes: self.mechanical_categories_excludes.clone(),
+            oracle_tags_contains_any: self.oracle_tags_contains_any.clone(),
+            oracle_tags_contains_all: self.oracle_tags_contains_all.clone(),
+            oracle_tags_excludes: self.oracle_tags_excludes.clone(),
         })
     }
 }

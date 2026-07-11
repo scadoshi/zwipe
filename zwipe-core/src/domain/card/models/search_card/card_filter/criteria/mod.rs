@@ -103,4 +103,8 @@ pub struct CardCriteria {
     pub(super) mechanical_categories_contains_any: Option<Vec<String>>,
     pub(super) mechanical_categories_contains_all: Option<Vec<String>>,
     pub(super) mechanical_categories_excludes: Option<Vec<String>>,
+    // oracle tags (granular functional tags)
+    pub(super) oracle_tags_contains_any: Option<Vec<String>>,
+    pub(super) oracle_tags_contains_all: Option<Vec<String>>,
+    pub(super) oracle_tags_excludes: Option<Vec<String>>,
 }
