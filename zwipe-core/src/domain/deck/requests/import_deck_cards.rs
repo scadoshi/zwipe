@@ -137,6 +137,25 @@ fn strip_trailing_metadata(s: &str) -> String {
     name.trim().to_string()
 }
 
+/// The front face of a double-faced card's canonical name (`"A // B"` -> `"A"`),
+/// or `None` for a single-faced name. Import indexes a card under both its full
+/// name and this front face, so a decklist entry that names only the front
+/// still resolves.
+pub fn dfc_front_face(name: &str) -> Option<&str> {
+    name.split_once(" // ").map(|(front, _)| front.trim())
+}
+
+/// The front face of a user-entered card name: everything before the first
+/// slash, trimmed. Collapses `"A // B"`, `"A / B"`, and `"A"` to the same key so
+/// all three resolve to the double-faced card. Returns the whole trimmed name
+/// when there's no slash.
+pub fn entry_front_face(name: &str) -> &str {
+    match name.split_once('/') {
+        Some((front, _)) => front.trim(),
+        None => name.trim(),
+    }
+}
+
 /// A successfully imported card.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImportedCard {
@@ -171,6 +190,61 @@ mod tests {
 
     fn parse_lines(text: &str) -> Vec<ImportLine> {
         ImportDeckCards::parse(Uuid::nil(), Uuid::nil(), text, false, None, ImportMode::Add).lines
+    }
+
+    /// Does an entry (as the user typed it) resolve to a card stored under
+    /// `stored_name`? Mirrors the import: the card is indexed by its full name
+    /// and front face; the entry is tried as-written then by its front face.
+    fn resolves(entry: &str, stored_name: &str) -> bool {
+        let index: Vec<String> = std::iter::once(stored_name.to_lowercase())
+            .chain(dfc_front_face(stored_name).map(str::to_lowercase))
+            .collect();
+        let entry = entry.to_lowercase();
+        let front = entry_front_face(&entry).to_lowercase();
+        index.contains(&entry) || index.contains(&front)
+    }
+
+    #[test]
+    fn dfc_front_face_extracts_only_double_faced() {
+        assert_eq!(
+            dfc_front_face("Boggart Trawler // Boggart Bog"),
+            Some("Boggart Trawler")
+        );
+        assert_eq!(dfc_front_face("Lightning Bolt"), None);
+    }
+
+    #[test]
+    fn entry_front_face_collapses_separators() {
+        assert_eq!(entry_front_face("Boggart Trawler // Boggart Bog"), "Boggart Trawler");
+        assert_eq!(entry_front_face("Boggart Trawler / Boggart Bog"), "Boggart Trawler");
+        assert_eq!(entry_front_face("Boggart Trawler"), "Boggart Trawler");
+        assert_eq!(entry_front_face("Lightning Bolt"), "Lightning Bolt");
+    }
+
+    #[test]
+    fn double_faced_card_resolves_from_every_format() {
+        let card = "Boggart Trawler // Boggart Bog";
+        for entry in [
+            "Boggart Trawler // Boggart Bog", // full name
+            "Boggart Trawler / Boggart Bog",  // single-slash spelling
+            "Boggart Trawler",                // front face only
+            "boggart trawler",                // case-insensitive front
+        ] {
+            assert!(resolves(entry, card), "entry {entry:?} should resolve to {card:?}");
+        }
+    }
+
+    #[test]
+    fn single_faced_card_still_resolves_exactly() {
+        assert!(resolves("Lightning Bolt", "Lightning Bolt"));
+        assert!(!resolves("Lightning", "Lightning Bolt"));
+    }
+
+    #[test]
+    fn back_face_alone_does_not_resolve() {
+        // Decklists name double-faced cards by the front (or full name); the back
+        // face on its own is intentionally not a match.
+        assert!(!resolves("Boggart Bog", "Boggart Trawler // Boggart Bog"));
     }
 
     #[test]

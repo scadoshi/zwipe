@@ -54,7 +54,7 @@ use zwipe_core::domain::{
             CardQuery, card_sort_key::CardSortKey, criteria::PLAYABLE_LAYOUTS,
         },
     },
-    deck::Format,
+    deck::{Format, requests::import_deck_cards::entry_front_face},
 };
 
 use anyhow::Context;
@@ -1402,19 +1402,20 @@ impl CardRepository for MyPostgres {
         let mut lowered: std::collections::HashSet<String> = std::collections::HashSet::new();
         for name in names {
             let lower = name.to_lowercase();
-            if let Some(front) = lower.split('/').next() {
-                let front = front.trim();
-                if !front.is_empty() {
-                    lowered.insert(front.to_string());
-                }
+            let front = entry_front_face(&lower);
+            if !front.is_empty() {
+                lowered.insert(front.to_string());
             }
             lowered.insert(lower);
         }
         let lowered: Vec<String> = lowered.into_iter().collect();
+        // ORDER BY makes the row order stable, so when an entry is ambiguous
+        // (two double-faced cards share a front face) resolution is deterministic.
         let db_rows: Vec<DatabaseScryfallData> = query_as(
             "SELECT * FROM latest_cards \
              WHERE LOWER(name) = ANY($1) \
-                OR LOWER(split_part(name, ' // ', 1)) = ANY($1)",
+                OR LOWER(split_part(name, ' // ', 1)) = ANY($1) \
+             ORDER BY name",
         )
         .bind(&lowered)
         .fetch_all(&self.pool)
