@@ -334,6 +334,45 @@ async fn derive_card_categories_combines_otags_and_gaps(pool: sqlx::PgPool) {
     assert!(cats.contains(&"protection".to_string()));
 }
 
+/// `get_oracle_tags` returns the catalog ordered by slug, with `parent_ids`
+/// resolved to parent slugs and null descriptions preserved.
+#[sqlx::test]
+async fn get_oracle_tags_returns_catalog_with_parent_slugs(pool: sqlx::PgPool) {
+    let removal_id = Uuid::from_u128(0x300);
+    let spot_id = Uuid::from_u128(0x301);
+    sqlx::query(
+        "INSERT INTO oracle_tags (id, slug, label, description) \
+         VALUES ($1, 'removal', 'Removal', 'Removes stuff')",
+    )
+    .bind(removal_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO oracle_tags (id, slug, label, parent_ids) \
+         VALUES ($1, 'spot-removal', 'Spot removal', ARRAY[$2]::uuid[])",
+    )
+    .bind(spot_id)
+    .bind(removal_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let repo = Postgres { pool: pool.clone() };
+    let tags = repo.get_oracle_tags().await.unwrap();
+
+    // ordered by slug: removal, then spot-removal
+    assert_eq!(tags.len(), 2);
+    assert_eq!(tags[0].slug, "removal");
+    assert_eq!(tags[0].label, "Removal");
+    assert_eq!(tags[0].description.as_deref(), Some("Removes stuff"));
+    assert!(tags[0].parent_slugs.is_empty());
+
+    assert_eq!(tags[1].slug, "spot-removal");
+    assert_eq!(tags[1].description, None);
+    assert_eq!(tags[1].parent_slugs, vec!["removal".to_string()]);
+}
+
 /// A card with no correlations projects to an empty array (LEFT JOIN + COALESCE).
 #[sqlx::test]
 async fn projection_untagged_card_is_empty(pool: sqlx::PgPool) {

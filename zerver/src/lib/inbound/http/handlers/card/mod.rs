@@ -10,6 +10,8 @@ pub mod get_card_types;
 pub mod get_keywords;
 /// Distinct language names handler.
 pub mod get_languages;
+/// Oracle tag catalog handler.
+pub mod get_oracle_tags;
 /// Distinct oracle text word names handler.
 pub mod get_oracle_words;
 /// All printings of a card by oracle ID.

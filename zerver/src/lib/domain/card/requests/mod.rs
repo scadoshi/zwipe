@@ -17,6 +17,8 @@ pub mod get_card_types;
 pub mod get_keywords;
 /// Get distinct languages from card database.
 pub mod get_languages;
+/// Get the oracle tag catalog.
+pub mod get_oracle_tags;
 /// Get distinct normalized words from oracle text.
 pub mod get_oracle_words;
 /// Get Scryfall data operations.

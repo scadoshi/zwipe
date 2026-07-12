@@ -8,6 +8,8 @@ pub mod error;
 pub mod helpers;
 /// Database-to-domain Scryfall data conversion.
 pub mod models;
+/// Database-to-domain oracle tag catalog conversion.
+pub mod oracle_tag;
 /// Sync metrics JSONB codecs and database model.
 pub mod zervice_metrics;
 
@@ -26,6 +28,7 @@ use crate::{
             get_card_types::GetCardTypesError,
             get_keywords::GetKeywordsError,
             get_languages::GetLanguagesError,
+            get_oracle_tags::GetOracleTagsError,
             get_oracle_words::GetOracleWordsError,
             get_scryfall_data::{
                 GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
@@ -40,6 +43,7 @@ use crate::{
                 BatchDeltaUpsertWithTx, BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
             },
             models::DatabaseScryfallData,
+            oracle_tag::DatabaseOracleTag,
             zervice_metrics::DatabaseZerviceMetrics,
         },
         postgres::Postgres as MyPostgres,
@@ -49,6 +53,7 @@ use zwipe_core::domain::{
     card::{
         Card,
         card_profile::CardProfile,
+        oracle_tag::OracleTag,
         scryfall_data::ScryfallData,
         search_card::card_filter::{
             CardQuery, card_sort_key::CardSortKey, criteria::PLAYABLE_LAYOUTS,
@@ -1263,6 +1268,35 @@ impl CardRepository for MyPostgres {
         .flatten()
         .collect();
         Ok(keywords)
+    }
+
+    /// Returns the full oracle tag catalog: every row of `oracle_tags` with its
+    /// `parent_ids` resolved to parent slugs, ordered by slug.
+    async fn get_oracle_tags(&self) -> Result<Vec<OracleTag>, GetOracleTagsError> {
+        let oracle_tags: Vec<OracleTag> = query_as!(
+            DatabaseOracleTag,
+            r#"SELECT
+                 o.slug AS "slug!",
+                 o.label AS "label!",
+                 o.description,
+                 COALESCE(
+                     ARRAY(
+                         SELECT p.slug FROM oracle_tags p
+                         WHERE p.id = ANY(o.parent_ids)
+                         ORDER BY p.slug
+                     ),
+                     ARRAY[]::text[]
+                 ) AS "parent_slugs!"
+               FROM oracle_tags o
+               ORDER BY o.slug ASC"#
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| GetOracleTagsError::Database(e.into()))?
+        .into_iter()
+        .map(OracleTag::from)
+        .collect();
+        Ok(oracle_tags)
     }
 
     /// Returns distinct normalized words extracted from oracle text, noise-filtered.

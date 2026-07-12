@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n                 o.slug AS \"slug!\",\n                 o.label AS \"label!\",\n                 o.description,\n                 COALESCE(\n                     ARRAY(\n                         SELECT p.slug FROM oracle_tags p\n                         WHERE p.id = ANY(o.parent_ids)\n                         ORDER BY p.slug\n                     ),\n                     ARRAY[]::text[]\n                 ) AS \"parent_slugs!\"\n               FROM oracle_tags o\n               ORDER BY o.slug ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "slug!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "label!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "parent_slugs!",
+        "type_info": "TextArray"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "0d663bb724214a202627fe237b3b681d9d25b76065f93e668dbc0b83ce8205dc"
+}

@@ -20,6 +20,7 @@ use crate::{
             get_card_types::GetCardTypesError,
             get_keywords::GetKeywordsError,
             get_languages::GetLanguagesError,
+            get_oracle_tags::GetOracleTagsError,
             get_oracle_words::GetOracleWordsError,
             get_scryfall_data::{
                 GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
@@ -27,10 +28,10 @@ use crate::{
             get_sets::GetSetsError,
         },
     },
-    inbound::external::scryfall::{bulk::BulkEndpoint, oracle_tag::OracleTag},
+    inbound::external::scryfall::{bulk::BulkEndpoint, oracle_tag::OracleTag as ScryfallOracleTag},
 };
 use zwipe_core::domain::card::{
-    Card, card_profile::CardProfile, scryfall_data::ScryfallData,
+    Card, card_profile::CardProfile, oracle_tag::OracleTag, scryfall_data::ScryfallData,
     search_card::card_filter::CardQuery,
 };
 
@@ -89,7 +90,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// `(catalog_rows, correlation_rows)`.
     fn sync_oracle_tags(
         &self,
-        tags: &[OracleTag],
+        tags: &[ScryfallOracleTag],
     ) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
 
     /// Rebuilds the `card_profiles.oracle_tags` JSONB projection from
@@ -167,6 +168,11 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 
     /// Retrieves all distinct keyword abilities from card database.
     fn get_keywords(&self) -> impl Future<Output = Result<Vec<String>, GetKeywordsError>> + Send;
+
+    /// Retrieves the full oracle tag catalog (slug, label, description, parent slugs).
+    fn get_oracle_tags(
+        &self,
+    ) -> impl Future<Output = Result<Vec<OracleTag>, GetOracleTagsError>> + Send;
 
     /// Retrieves all distinct normalized words from oracle text.
     fn get_oracle_words(
@@ -417,6 +423,11 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// Retrieves all distinct keyword abilities from card database.
     fn get_keywords(&self) -> impl Future<Output = Result<Vec<String>, GetKeywordsError>> + Send;
 
+    /// Retrieves the full oracle tag catalog (slug, label, description, parent slugs).
+    fn get_oracle_tags(
+        &self,
+    ) -> impl Future<Output = Result<Vec<OracleTag>, GetOracleTagsError>> + Send;
+
     /// Retrieves all distinct normalized words from oracle text.
     fn get_oracle_words(
         &self,
@@ -549,6 +560,9 @@ pub trait ErasedCardService: Send + Sync + 'static {
     /// See [`CardService::get_keywords`].
     fn get_keywords<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetKeywordsError>>;
 
+    /// See [`CardService::get_oracle_tags`].
+    fn get_oracle_tags<'a>(&'a self) -> BoxFuture<'a, Result<Vec<OracleTag>, GetOracleTagsError>>;
+
     /// See [`CardService::get_oracle_words`].
     fn get_oracle_words<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetOracleWordsError>>;
 
@@ -675,6 +689,10 @@ where
 
     fn get_keywords<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetKeywordsError>> {
         Box::pin(CardService::get_keywords(self))
+    }
+
+    fn get_oracle_tags<'a>(&'a self) -> BoxFuture<'a, Result<Vec<OracleTag>, GetOracleTagsError>> {
+        Box::pin(CardService::get_oracle_tags(self))
     }
 
     fn get_oracle_words<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetOracleWordsError>> {
