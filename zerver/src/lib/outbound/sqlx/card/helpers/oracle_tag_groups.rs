@@ -5,9 +5,9 @@
 //!
 //! Writes two `card_profiles` columns per card:
 //! - `oracle_tags_by_role`: `{ role: [tags] }` for the card's tags that fall in a
-//!   role's subtree (only the 18 otag-derived roles have subtrees; the heuristic
-//!   roles + Tokens have none, so they never appear here and stay non-expandable
-//!   on the client).
+//!   role's subtree (from `CATEGORY_ROOTS`) or match a `ROLE_TAG_OVERRIDES` leaf
+//!   patch. Roles with neither (e.g. Tokens) never appear here and stay
+//!   non-expandable on the client.
 //! - `other_oracle_tags`: the card's functional tags under no role, with the
 //!   structural noise stripped (mirrors `is_noise_oracle_tag` in zwipe-core).
 
@@ -15,7 +15,7 @@ use anyhow::Context;
 use sqlx::PgPool;
 use zwipe_core::domain::card::oracle_tag::NOISE_ORACLE_TAG_SLUGS;
 
-use super::derive_categories::CATEGORY_ROOTS;
+use super::derive_categories::{CATEGORY_ROOTS, override_pairs};
 
 /// Rebuilds `card_profiles.oracle_tags_by_role` and `.other_oracle_tags` from the
 /// tag hierarchy + [`CATEGORY_ROOTS`]. Returns rows affected.
@@ -33,6 +33,7 @@ pub async fn refresh_oracle_tag_groups(pool: &PgPool) -> anyhow::Result<u64> {
         .iter()
         .map(|s| (*s).to_string())
         .collect();
+    let (ov_roles, ov_slugs) = override_pairs();
 
     // The `other` bucket's noise predicate mirrors `is_noise_oracle_tag`: the
     // explicit list is bound as $3; the four slug patterns are inlined below.
@@ -45,7 +46,12 @@ pub async fn refresh_oracle_tag_groups(pool: &PgPool) -> anyhow::Result<u64> {
              UNION
              SELECT st.role, c.id, c.slug FROM subtree st JOIN oracle_tags c ON st.id = ANY(c.parent_ids)
          ),
-         membership(role, slug) AS (SELECT DISTINCT role, slug FROM subtree),
+         membership(role, slug) AS (
+             SELECT DISTINCT role, slug FROM subtree
+             UNION
+             -- exact leaf overrides: matched as-is, no subtree expansion
+             SELECT r, s FROM unnest($4::text[], $5::text[]) AS o(r, s)
+         ),
          grouped(oracle_id, role, tags) AS (
              SELECT co.oracle_id, m.role, jsonb_agg(DISTINCT co.oracle_tag ORDER BY co.oracle_tag)
              FROM card_oracle_tags co JOIN membership m ON m.slug = co.oracle_tag
@@ -76,6 +82,8 @@ pub async fn refresh_oracle_tag_groups(pool: &PgPool) -> anyhow::Result<u64> {
     .bind(&roles)
     .bind(&root_slugs)
     .bind(&noise)
+    .bind(&ov_roles)
+    .bind(&ov_slugs)
     .execute(pool)
     .await
     .context("failed to refresh oracle_tags_by_role / other_oracle_tags")?;
