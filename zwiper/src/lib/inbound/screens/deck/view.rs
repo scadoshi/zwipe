@@ -4,7 +4,6 @@ use super::components::{
     deck_budget_section::{DeckBudgetSection, has_budget},
     deck_charts::{DeckCharts, DrawOdds, ManaBalanceRow, ManaCurve, ManaFulfillment},
     deck_profile::DeckProfileSection,
-    deck_stats::DeckStats,
     deck_tags_section::{DeckTagsSection, has_any_tags, total_tag_count},
     deck_warnings::DeckWarnings,
     more_buttons::MoreButtons,
@@ -59,7 +58,7 @@ use zwipe_core::{
     },
 };
 
-type DeckResult = Result<(Vec<DeckEntry>, Vec<DeckWarning>), ApiError>;
+type DeckResult = Result<(Vec<DeckEntry>, Vec<DeckWarning>, Vec<Card>), ApiError>;
 
 #[component]
 pub fn ViewDeck(deck_id: Uuid) -> Element {
@@ -97,7 +96,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             client()
                 .get_deck(deck_id, &session)
                 .await
-                .map(|d| (d.entries, d.warnings))
+                .map(|d| (d.entries, d.warnings, d.command_zone_cards))
         }));
     use_effect(move || {
         if let Some(Err(e)) = &*deck_profile_resource.read() {
@@ -128,9 +127,23 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let show_buy_dialog = use_signal(|| false);
     // Accordion state for the deck-view sections — holds the title of the one
     // open section. Stats is auto-expanded on load.
-    let open_section: Signal<Option<String>> = use_signal(|| Some("Stats".to_string()));
-    // Currency selected in the Stats header chips, shared with the price rows.
+    let open_section: Signal<Option<String>> = use_signal(|| Some("Budget".to_string()));
+    // Currency selected in the Budget header chips, shared with the price rows.
     let mut selected_currency: Signal<&'static str> = use_signal(|| "usd");
+    // Seed the chip once from the deck's price-target currency so the price
+    // fraction (total / target) reads in one currency by default; the user can
+    // still switch chips afterward without it snapping back.
+    let mut currency_seeded = use_signal(|| false);
+    use_effect(move || {
+        if !currency_seeded()
+            && let Some(Ok(p)) = &*deck_profile_resource.read()
+        {
+            if let Some(c) = p.price_target_currency {
+                selected_currency.set(c.json_key());
+            }
+            currency_seeded.set(true);
+        }
+    });
     let mut show_more_sheet = use_signal(|| false);
     let mut show_delete_dialog = use_signal(|| false);
     let show_clone_dialog = use_signal(|| false);
@@ -179,35 +192,22 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let deck_data = deck_resource().and_then(|r| r.ok());
     let warnings: Vec<DeckWarning> = deck_data
         .as_ref()
-        .map(|(_, w)| w.clone())
+        .map(|(_, w, _)| w.clone())
         .unwrap_or_default();
+    // Metrics fold the command zone (commander, partner, background, signature
+    // spell) into card count + prices; present when there is a mainboard card or
+    // a command-zone card. Distributions/charts stay mainboard-only.
     let metrics = deck_data
         .as_ref()
-        .filter(|(entries, _)| !entries.is_empty())
-        .map(|(entries, _)| {
-            let mut m = DeckMetrics::from_entries(entries);
-
-            // Count variant cards (commander, partner, etc.) stored on the profile
-            // but not in deck_cards — mirrors check_card_count in validate_deck.
-            if let Some(Ok(p)) = deck_profile_resource() {
-                let in_entries = |id: Uuid| entries.iter().any(|e| e.card.scryfall_data.id == id);
-                let has_commander_format = p.format.as_ref().is_some_and(|f| f.has_commander());
-                if has_commander_format && p.commander_id.is_some_and(|id| !in_entries(id)) {
-                    m.total_cards += 1;
-                }
-                if p.partner_commander_id.is_some_and(|id| !in_entries(id)) {
-                    m.total_cards += 1;
-                }
-                if p.background_id.is_some_and(|id| !in_entries(id)) {
-                    m.total_cards += 1;
-                }
-                if p.signature_spell_id.is_some_and(|id| !in_entries(id)) {
-                    m.total_cards += 1;
-                }
-            }
-
-            m
+        .filter(|(entries, _, command_zone)| !entries.is_empty() || !command_zone.is_empty())
+        .map(|(entries, _, command_zone)| {
+            DeckMetrics::from_entries_and_command_zone(entries, command_zone)
         });
+    // Chart data reflects the mainboard only, so suppress it for a deck that so
+    // far holds only its command zone (no mainboard cards to distribute).
+    let chart_metrics = metrics
+        .as_ref()
+        .filter(|m| m.land_count + m.nonland_count > 0);
 
     let command_zone_names: Vec<String> = deck_profile_resource()
         .and_then(|r| r.ok())
@@ -226,7 +226,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         .unwrap_or_default();
     let cz_refs: Vec<&str> = command_zone_names.iter().map(|s| s.as_str()).collect();
 
-    let tcg_url = deck_data.as_ref().map(|(entries, _)| {
+    let tcg_url = deck_data.as_ref().map(|(entries, _, _)| {
         let active: Vec<_> = entries
             .iter()
             .filter(|e| e.deck_card.board.is_active() || e.deck_card.board.is_sideboard())
@@ -234,7 +234,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             .collect();
         buy_links::tcgplayer_url(&active, &cz_refs)
     });
-    let ck_url = deck_data.as_ref().map(|(entries, _)| {
+    let ck_url = deck_data.as_ref().map(|(entries, _, _)| {
         let active: Vec<_> = entries
             .iter()
             .filter(|e| e.deck_card.board.is_active() || e.deck_card.board.is_sideboard())
@@ -243,7 +243,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         buy_links::cardkingdom_url(&active, &cz_refs)
     });
 
-    let mana_curve_bars: Option<[(usize, u32); 7]> = metrics.as_ref().map(|m| {
+    let mana_curve_bars: Option<[(usize, u32); 7]> = chart_metrics.map(|m| {
         let max_count = m.cmc_histogram.iter().copied().max().unwrap_or(0);
         std::array::from_fn(|i| {
             let count = m.cmc_histogram.get(i).copied().unwrap_or(0);
@@ -256,7 +256,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         })
     });
 
-    let type_bars: Option<Vec<(&str, usize, u32)>> = metrics.as_ref().map(|m| {
+    let type_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(|m| {
         let max_count = m.type_counts.iter().map(|(_, c)| *c).max().unwrap_or(0);
         m.type_counts
             .iter()
@@ -271,7 +271,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             .collect()
     });
 
-    let color_bars: Option<Vec<(&str, usize, u32)>> = metrics.as_ref().map(|m| {
+    let color_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(|m| {
         let max_count = m.color_counts.iter().map(|(_, c)| *c).max().unwrap_or(0);
         m.color_counts
             .iter()
@@ -286,7 +286,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             .collect()
     });
 
-    let category_bars: Option<Vec<(&str, usize, u32)>> = metrics.as_ref().and_then(|m| {
+    let category_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.and_then(|m| {
         if m.mechanical_category_counts.is_empty() {
             return None;
         }
@@ -314,7 +314,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     // Draw-odds buckets: (deck_size, [(label, count)]). Library size = the
     // mainboard (the commander sits in the command zone, not the library). The
     // DrawOdds component turns these into per-turn P(>=1) live.
-    let draw_odds_data: Option<(u32, Vec<(&'static str, u32)>)> = metrics.as_ref().map(|m| {
+    let draw_odds_data: Option<(u32, Vec<(&'static str, u32)>)> = chart_metrics.map(|m| {
         let deck_size = (m.land_count + m.nonland_count) as u32;
         let mut buckets: Vec<(&'static str, u32)> = vec![("Land", m.land_count as u32)];
         buckets.extend(
@@ -325,7 +325,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         (deck_size, buckets)
     });
 
-    let mana_balance_rows = metrics.as_ref().map(|m| -> Vec<_> {
+    let mana_balance_rows = chart_metrics.map(|m| -> Vec<_> {
         let labels = ["W", "U", "B", "R", "G"];
         labels
             .iter()
@@ -371,13 +371,35 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                 DeckProfileSection {
                                     deck_profile: deck_profile.clone(),
                                     commander: commander(),
+                                    card_count: metrics.as_ref().map(|m| m.total_cards).unwrap_or_else(|| deck_profile.card_count.max(0) as usize),
                                 }
 
-                                if has_budget(&deck_profile) {
+                                if has_budget(&deck_profile, metrics.is_some()) {
                                     CollapsibleSection {
                                         title: "Budget",
                                         open_section: open_section,
-                                        DeckBudgetSection { deck_profile: deck_profile.clone() }
+                                        header_accessory: {
+                                            if metrics.is_some() {
+                                                rsx! {
+                                                    div { class: "chip-row", style: "margin-bottom:0;",
+                                                        for (label, key) in [("USD", "usd"), ("EUR", "eur"), ("TIX", "tix")] {
+                                                            div {
+                                                                class: if selected_currency() == key { "chip selected" } else { "chip" },
+                                                                onclick: move |_| selected_currency.set(key),
+                                                                "{label}"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            } else {
+                                                rsx! {}
+                                            }
+                                        },
+                                        DeckBudgetSection {
+                                            deck_profile: deck_profile.clone(),
+                                            metrics: metrics.clone(),
+                                            selected_currency: selected_currency,
+                                        }
                                     }
                                 }
 
@@ -396,26 +418,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                           div { class: "content-enter",
                                                 style: "display: flex; flex-direction: column; gap: 0.75rem;",
                                             CollapsibleSection {
-                                                title: "Stats",
-                                                open_section: open_section,
-                                                header_accessory: rsx! {
-                                                    div { class: "chip-row", style: "margin-bottom:0;",
-                                                        for (label, key) in [("USD", "usd"), ("EUR", "eur"), ("TIX", "tix")] {
-                                                            div {
-                                                                class: if selected_currency() == key { "chip selected" } else { "chip" },
-                                                                onclick: move |_| selected_currency.set(key),
-                                                                "{label}"
-                                                            }
-                                                        }
-                                                    }
-                                                },
-                                                DeckStats {
-                                                    metrics: m.clone(),
-                                                    selected_currency: selected_currency,
-                                                }
-                                            }
-
-                                            CollapsibleSection {
                                                 title: "Distributions",
                                                 open_section: open_section,
                                                 DeckCharts {
@@ -428,6 +430,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             CollapsibleSection {
                                                 title: "Mana",
                                                 open_section: open_section,
+                                                div { class: "info-row",
+                                                    span { class: "info-row-label", "Average mana value" }
+                                                    span { class: "info-row-value", "{m.avg_cmc:.1}" }
+                                                }
                                                 ManaCurve { mana_curve_bars: *mana_curve_bars }
                                                 if let Some(rows) = mana_balance_rows {
                                                     ManaFulfillment { rows: rows }
@@ -463,7 +469,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                         on_fix_quantity: move |(card_id, target_qty): (Uuid, i32)| {
                                             let current_qty = deck_resource()
                                                 .and_then(|r| r.ok())
-                                                .and_then(|(entries, _)| {
+                                                .and_then(|(entries, _, _)| {
                                                     entries.iter()
                                                         .find(|e| e.card.scryfall_data.id == card_id)
                                                         .map(|e| *e.deck_card.quantity)
