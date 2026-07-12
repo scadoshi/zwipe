@@ -12,8 +12,6 @@ pub(crate) fn DeckProfileSection(deck_profile: DeckProfile, commander: Option<Ca
     } else {
         "Commander"
     };
-    // Only show targets the user explicitly set (no heuristic fallback here).
-    let land_target = deck_profile.land_target;
 
     rsx! {
         div { class: "info-list",
@@ -70,23 +68,6 @@ pub(crate) fn DeckProfileSection(deck_profile: DeckProfile, commander: Option<Ca
                 div { class: "info-row",
                     span { class: "info-row-label", "Power level" }
                     span { class: "info-row-value", { pl.display_name().to_string() } }
-                }
-            }
-            if let Some(target) = land_target {
-                div { class: "info-row",
-                    span { class: "info-row-label", "Land target" }
-                    span { class: "info-row-value", "{target}" }
-                }
-            }
-            if let Some(budget) = deck_profile.price_target {
-                {
-                    let currency = deck_profile.price_target_currency.unwrap_or_default();
-                    rsx! {
-                        div { class: "info-row",
-                            span { class: "info-row-label", "Price target" }
-                            span { class: "info-row-value", "{currency.format_amount(budget)}" }
-                        }
-                    }
                 }
             }
         }

@@ -1,6 +1,7 @@
 use super::components::{
     clone_deck_dialog::CloneDeckDialog,
     collapsible_section::CollapsibleSection,
+    deck_budget_section::{DeckBudgetSection, has_budget},
     deck_charts::{DeckCharts, DrawOdds, ManaBalanceRow, ManaCurve, ManaFulfillment},
     deck_profile::DeckProfileSection,
     deck_stats::DeckStats,
@@ -370,6 +371,14 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                 DeckProfileSection {
                                     deck_profile: deck_profile.clone(),
                                     commander: commander(),
+                                }
+
+                                if has_budget(&deck_profile) {
+                                    CollapsibleSection {
+                                        title: "Budget",
+                                        open_section: open_section,
+                                        DeckBudgetSection { deck_profile: deck_profile.clone() }
+                                    }
                                 }
 
                                 if has_any_tags(&deck_profile) {
