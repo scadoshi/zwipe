@@ -14,13 +14,18 @@ use crate::NavDropdown;
 
 /// Themes shown in their own bottom section of the picker. Mirrors the app's
 /// preferences sheet (zwiper) so every surface groups these identically.
-const COLORBLIND_THEMES: &[&str] = &["protanopia", "deuteranopia", "tritanopia"];
+const COLORBLIND_THEMES: &[&str] = &["protanopia", "deuteranopia", "tritanopia", "achromatopsia"];
 
 /// Human-readable label for a theme slug: title-cased words, with the accents
-/// that title-casing can't produce special-cased.
+/// and brand casings that title-casing can't produce special-cased.
 fn display_theme_name(slug: &str) -> String {
-    if slug == "rose-pine" {
-        return "Rosé Pine".to_string();
+    match slug {
+        "rose-pine" => return "Rosé Pine".to_string(),
+        "vscode" => return "VS Code".to_string(),
+        "github" => return "GitHub".to_string(),
+        "synthwave-84" => return "Synthwave '84".to_string(),
+        "powershell" => return "PowerShell".to_string(),
+        _ => {}
     }
     slug.split('-')
         .map(|word| {
