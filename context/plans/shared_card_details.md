@@ -22,9 +22,11 @@ same card details, MDFCs included, differing only in the bottom action bar.
   (`type_line`, `oracle_text`). For modal DFCs (e.g. Valki // Tibalt) the top-level
   `oracle_text` is empty (text lives per-face), so **the row shows no oracle text**.
   Old block order (keywords/roles before text), no flip.
-- **`CardRulesDialog`** has its own renderer with per-face `build_rules` (handles
-  MDFCs), the new **reorder** (type -> text -> stats, then keywords + card roles),
-  and **one-face-at-a-time + Flip** (in progress, uncommitted).
+- **`CardDetailsDialog`** (still named `CardRulesDialog` in code until the rename)
+  has its own renderer with per-face `build_rules` (handles MDFCs), the **reorder**
+  (type -> text -> stats, then keywords + card roles), and **one-face-at-a-time +
+  Flip** — all shipped in commit **`013d862e`**. That commit is the reference
+  implementation to lift into `CardDetails`.
 
 Two renderers, only one of which handles MDFCs and the new layout.
 
@@ -94,18 +96,42 @@ aesthetic (a small util-styled control, no glow).
 - Eyeball dialog: **`CardDetailsDialog`** (was `CardRulesDialog`) — a configured
   wrapper (view-only printing) around `CardDetails`.
 
+## Reference & inventory (for the executor)
+
+- **Lift from** `zwiper/src/lib/inbound/screens/deck/card/components/card_info.rs`
+  (commit `013d862e`): `FaceRules`, `stats_line`, `build_rules` (~lines 9-70), and
+  the `CardRulesDialog` render (per-face selection via a `face` signal, the reorder,
+  the Flip `AlertDialogAction`). Move `build_rules`/`FaceRules`/`stats_line` verbatim
+  into `card_details.rs`; they depend only on `zwipe_core::domain::card::Card`
+  (available to zwipe-components).
+- **CardRow action props to migrate** into the `actions` slot (read
+  `zwipe-components/src/card_row.rs` for the live set): `on_qty_change`, `on_image`,
+  `on_printing`, `mvp` + `on_toggle_mvp`, `on_move_to`, plus `show_classification`
+  and the desktop `on_hover_enter`/`on_hover_leave`. `on_image` becomes a
+  `CardDetails` default; the rest are consumer-supplied buttons.
+- **`CardRow`'s compact row** (name/qty/price/colors + expand-collapse) stays on
+  `CardRow`; only the *detail body + action bar* move into `CardDetails`.
+
 ## Sequencing
 
-**Gate: after the Phase M `DeckTag` rename settles** (the tree is mid-broken by it;
-`DeckTag` -> `String`). Then:
-1. Build `CardDetails` in zwipe-components (move `build_rules`, add face + flip).
-2. Point `CardRow` and `CardRulesDialog` at it.
+**Gate: after the Phase M `DeckTag`/catalog rename settles and the tree compiles**
+(it was mid-broken by `DeckTag` -> catalog `DeckTagView` + `TagSelect` needing a
+`catalog` prop, in `tag_select.rs`/`create.rs`/`edit.rs`). Confirm green first:
+`cargo clippy -p zwiper -p zwipe-components --all-targets -- -D warnings`.
+
+Then:
+1. Build `CardDetails` in `zwipe-components/src/card_details.rs`: move
+   `build_rules`/`FaceRules`/`stats_line`; add the internal `face` signal + flip;
+   render the reordered detail; add the action bar (default Flip + Image via
+   `on_image`; consumer `actions: Element` slot) + a printing-mode enum.
+2. Rewrap `CardRow` (thin: compact row + expand around `CardDetails`) and rename
+   `CardRulesDialog` -> `CardDetailsDialog`, both rendering `CardDetails`.
 3. Verify: `clippy -p zwiper -p zwipe-components --all-targets -D warnings`, nightly
    fmt, and confirm the portfolio (another `zwipe-components` consumer) still builds.
 4. Commit.
 
 ## Note
 
-This **supersedes** the in-progress one-off reorder + flip in `card_info.rs`
-(uncommitted) — those get folded into the shared `CardDetails`. Keep them as a
-working reference until the shared component lands, then remove.
+This **supersedes** the reorder + flip shipped in `card_info.rs` (`013d862e`) — that
+logic is lifted into the shared `CardDetails` and the local copy removed. `013d862e`
+is the reference for the per-face `build_rules`, the reorder, and the flip.
