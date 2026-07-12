@@ -474,22 +474,23 @@ rationale: `compatibility.md` §Naming.
   - Tests: `card_roles_dual_emits_alongside_mechanical_categories` (card_profile.rs),
     `accepts_card_roles_alias_and_legacy_keys` (criteria/mod.rs). All gates green.
 
-### ▶ Step 2 — migrate clients (additive, no bump) — NOT STARTED
+### ▶ Step 2 — migrate clients (additive, no bump) — DONE 2026-07-12 (built + green, NOT committed)
 
-The next agent starts here. Two independent pieces:
-- **Read side (display):** point `zwiper` + `zite` at `CardProfile.card_roles` instead of
-  `.mechanical_categories` wherever they render the coarse axis (chips/role chart). The
-  `CardRoleChips` component in `zwipe-components/src/card_role_chips.rs` and its consumers.
-  Grep the clients for `mechanical_categories` reads. Pure client, no wire change.
-- **Send side (filter):** so clients *emit* `card_roles_*`, flip the criteria field's primary
-  serde name — `#[serde(rename = "card_roles_contains_any", alias =
-  "mechanical_categories_contains_any")]` (and the two siblings) in `criteria/mod.rs`. Because the
-  server already accepts both (Step 1), this is additive: rebuilt clients send `card_roles_*`,
-  the deployed server takes it; un-upgraded clients still send `mechanical_categories_*`. The
-  `CardQueryBuilder` (`builder/{mod,getters,setters}.rs`) Rust field/method names can stay
-  `mechanical_categories_*` or be renamed for clarity — only the **serde name** on `CardCriteria`
-  affects the wire. Update the filter picker `zwiper/.../deck/card/filter/category.rs` labels if
-  desired.
+Delegated to a Sonnet agent, reviewed green (clippy `--workspace`, tests, `build --workspace`,
+nightly fmt). Sits in the working tree intermingled with two other concurrent efforts (mana-pip
+fix, education hints) — the owner commits as-is. What landed:
+- **Read side (display):** `zwiper`/`zite`/`zwipe-components` read `CardProfile.card_roles` —
+  `zwiper/.../card/components/card_info.rs`, `zwipe-components/src/card_row.rs`,
+  `zwipe-core/.../deck/models/deck_metrics.rs` (role-distribution chart),
+  `zwipe-core/.../search_card/group_cards.rs` (grouped lists). `CardRoleChips` takes `roles` as a
+  prop (no `CardProfile` read), so only its callers changed.
+- **Send side (filter):** `criteria/mod.rs` flipped the three fields to
+  `#[serde(rename = "card_roles_*", alias = "mechanical_categories_*")]` — the wire now **emits**
+  `card_roles_*` and still **accepts** the legacy key (server took both since Step 1).
+- **Left as-is (correct):** `matches.rs` (in-memory match) still reads `.mechanical_categories` —
+  fine, it equals `card_roles` under the dual-emit; and the `CardQueryBuilder`
+  (`builder/{mod,getters,setters}.rs`) Rust field/method names stay `mechanical_categories_*` —
+  only the serde name on `CardCriteria` is wire-visible.
 
 ### Step 3 — sunset (the one gated removal) — after adoption
 

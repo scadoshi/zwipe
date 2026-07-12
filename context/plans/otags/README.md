@@ -21,16 +21,34 @@ on the next prod `zervice` run.
   client-compatible.
 - **Phase M — type rename `MechanicalCategory → CardRole` + Step 1 dual-emit DONE** (`4455fd20`,
   `a20d56ca`): responses emit `card_roles` beside `mechanical_categories`; criteria accept
-  `card_roles_*` via serde alias. Additive, no bump. See `sequencing.md` Phase M for **Step 2**
-  (client migration) the next agent starts on.
+  `card_roles_*` via serde alias. Additive, no bump.
+- **Phase M Step 2 (client migration) DONE — built + green, NOT yet committed** (2026-07-12): read
+  side (`zwiper`/`zite`/`zwipe-components` read `CardProfile.card_roles` — `card_info.rs`,
+  `card_row.rs`, `deck_metrics.rs`, `group_cards.rs`) + send side (`criteria/mod.rs` flipped to
+  `#[serde(rename = "card_roles_*", alias = "mechanical_categories_*")]`, so the wire now emits
+  `card_roles_*` and still accepts the legacy key). `matches.rs` + `CardQueryBuilder` Rust names
+  stay `mechanical_categories_*` (only the serde name is wire-visible). Sits in the working tree
+  intermingled with two other concurrent efforts (mana-pip fix, education hints) — commit as-is.
 - **Cleanup:** `DeckServeContext` struct replaced the 8-arg serve signature (`9f783745`).
 
-**▶ Still open:**
-- **Phase M Step 2** (clients read/send `card_roles`) then **Step 3** (gated sunset + DB column
-  rename + `MIN_CLIENT_VERSION` bump). Precise file-level plan in `sequencing.md` §Phase M.
-- **Phase 5 test gap:** no test refreshes `otag_context_signal_rollup` asserting `net`/`shown` yet.
-- **Phase 5S (gated):** sunset the legacy `commander_oracle_id` wire once `deck_id` is guaranteed.
-- **Phase 6:** non-EDH serving on the accrued dataset (deferred, data-hungry).
+## Where we stand (2026-07-12) — the build phase is essentially DONE
+
+**Everything buildable-now is built.** What remains is **gated**, not effort:
+
+1. **Ship, to start both clocks.** The ~15 unpushed commits + the two client builds (deck_id
+   emitter, card_roles reader) are the highest-leverage next move: pushing/deploying + shipping the
+   clients is what starts (a) the adoption clock for the sunsets and (b) the moat-data accrual for
+   serving. Until then, non-EDH signal isn't accruing and no version can be gated.
+2. **Adoption-gated sunsets** (need a `MIN_CLIENT_VERSION` floor first): **Phase M Step 3** (drop
+   `mechanical_categories` field/criteria, rename the DB column, bump) and **Phase 5S** (drop the
+   legacy `commander_oracle_id` wire, derive commander from `deck_id`, bump). Calendar-time.
+3. **Data-gated payoff** — **Phase 6:** fold the otag-signal term into ranking + non-EDH serving on
+   `(format, CI, otags)`. Needs months of accrued swipe volume ("REALLY drive serving").
+4. **Tiny non-gated leftover:** a test that refreshes `otag_context_signal_rollup` and asserts
+   `net`/`shown` (base-table crediting is covered; ~15 lines).
+
+So after shipping, otags goes quiet and *waits*: revisit for the sunsets once client versions age
+out, and for the serving payoff once the dataset has weight.
 
 All 7 open questions resolved; Q1 revised after Phase 1 (otags supersede the heuristic).
 
