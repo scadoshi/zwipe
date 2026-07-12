@@ -37,6 +37,7 @@ pub const CATEGORY_ROOTS: &[(&str, &[&str])] = &[
             "attacking-matters-self",
             "attacking-matters-any",
             "attack-trigger",
+            "gives-haste",
         ],
     ),
     ("blink", &["flicker"]),
@@ -90,6 +91,9 @@ pub const CATEGORY_ROOTS: &[(&str, &[&str])] = &[
     ("removal", &["removal"]),
     ("sacrifice", &["sacrifice-outlet"]),
     ("stax", &["tax"]),
+    // Supplements the all_parts-based Tokens membership: nests the token-generation
+    // otag family under the Tokens role instead of dumping it in "Other".
+    ("tokens", &["repeatable-token-generator", "synergy-token"]),
     ("tutor", &["tutor"]),
     ("untap", &["untapper"]),
     ("wipe", &["sweeper"]),
@@ -102,10 +106,15 @@ pub const CATEGORY_ROOTS: &[(&str, &[&str])] = &[
 /// checked by unit test; value = real oracle-tag slugs, checked by a non-fatal
 /// `zervice` warn. Fed into both derivation and grouping. Grow as you audit;
 /// applies on the next `zervice` run.
-pub const ROLE_TAG_OVERRIDES: &[(&str, &[&str])] = &[(
-    "protection",
-    &["fog-selective", "damage-prevention", "phasing"],
-)];
+pub const ROLE_TAG_OVERRIDES: &[(&str, &[&str])] = &[
+    (
+        "protection",
+        &["fog-selective", "damage-prevention", "phasing"],
+    ),
+    // Mana acceleration the `ramp`/`mana-producer` subtree misses (treasure nests
+    // under Tokens too; the overlap is intended).
+    ("ramp", &["gives-mana-ability", "repeatable-treasures"]),
+];
 
 /// Flatten [`ROLE_TAG_OVERRIDES`] into parallel `(role, slug)` arrays for `unnest`.
 pub fn override_pairs() -> (Vec<String>, Vec<String>) {
@@ -231,24 +240,22 @@ mod tests {
         }
     }
 
-    /// The map covers the 18 otag-derived roles plus the 4 heuristic stragglers as
-    /// supplements (Protection/Pump/Stax/GraveyardHate — for grouping + union
-    /// coverage). Only Tokens (all_parts) and Finisher (dropped) stay out.
+    /// The map covers the otag-derived roles plus the heuristic stragglers and
+    /// Tokens as supplements (Protection/Pump/Stax/GraveyardHate/Tokens — for
+    /// grouping + union coverage). Only Finisher (dropped) stays out.
     #[test]
     fn map_covers_otag_roles_plus_stragglers() {
         let mapped: Vec<&str> = CATEGORY_ROOTS.iter().map(|(c, _)| *c).collect();
-        for straggler in ["pump", "stax", "protection", "graveyard_hate"] {
+        for supplement in ["pump", "stax", "protection", "graveyard_hate", "tokens"] {
             assert!(
-                mapped.contains(&straggler),
-                "{straggler} should be otag-mapped as a supplement"
+                mapped.contains(&supplement),
+                "{supplement} should be otag-mapped as a supplement"
             );
         }
-        for excluded in ["tokens", "finisher"] {
-            assert!(
-                !mapped.contains(&excluded),
-                "{excluded} should not be otag-mapped"
-            );
-        }
-        assert_eq!(mapped.len(), 25);
+        assert!(
+            !mapped.contains(&"finisher"),
+            "finisher should not be otag-mapped"
+        );
+        assert_eq!(mapped.len(), 26);
     }
 }
