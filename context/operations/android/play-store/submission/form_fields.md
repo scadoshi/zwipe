@@ -153,13 +153,21 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.5.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.6.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.6.0:**
+
+- Card roles on every card: expand a card to see what it does, removal, ramp, card advantage, and tap a role for the community tags underneath.
+- Give your deck a game plan: pick the tags for your strategy, or choose an archetype to seed them.
+- 31 color themes (17 new), now sticking across the app and website.
+- A reorganized deck view with tidy Profile, Budget, and Tags sections.
+- In-app changelog, buy-from-home, and lots of polish.
 
 **1.5.0:**
 

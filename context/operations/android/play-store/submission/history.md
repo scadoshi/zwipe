@@ -2,6 +2,16 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-07-12 — `1.6.0`, versionCode `25`** (card roles + oracle tags, deck-view reorg
+  into Profile/Budget/Tags, shared CardDetails + flippable card images across app and
+  site, 31 themes (17 new) + theme persistence, in-app changelog). Built per the recipe:
+  `dx bundle` → `launcher_icons.sh` → `back_handler.sh` → gradle patch (compileSdk 36 /
+  targetSdk 35 / versionCode 25) → `gradlew :app:bundleRelease` → jarsigner. Artifact
+  `zwipe-1.6.0-vc25.aab`, signed + `jar verified`, targetSdk 35 confirmed. Release
+  smoke-test on Pixel_9a: launched clean (no libmain/R8 crash, layout clear of the
+  system bars). iOS counterpart build 63. **Submitted to Production for review
+  2026-07-12.**
+
 - **2026-07-11 — Production launch submitted for review** (Play Console Submission 21,
   "Production" track, **all countries**). Promoted the `1.5.0` / vc24 build from closed
   testing to Production. Gotcha: the Production track starts with **no countries** — set

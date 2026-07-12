@@ -39,6 +39,18 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
+## What's New in This Version (1.6.0)
+
+(Kept within Android's 500-char release-note limit so both stores read the same length.)
+
+- Card roles on every card: expand a card to see what it does, removal, ramp, card advantage, and tap a role for the community oracle tags underneath.
+- Give your deck a game plan: pick the oracle tags for your strategy, or choose an archetype like Aggro to seed them.
+- 31 color themes (17 new), now sticking across the app and website.
+- A reorganized deck view with tidy Profile, Budget, and Tags sections.
+- In-app changelog, buy-from-home, and lots of polish.
+
+---
+
 ## What's New in This Version (1.5.0)
 
 - Swipe back: drag from the left edge of the screen to return to the previous page, the way you navigate everywhere else on your phone.
@@ -213,7 +225,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.4.0 |
+| Version | 1.6.0 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
