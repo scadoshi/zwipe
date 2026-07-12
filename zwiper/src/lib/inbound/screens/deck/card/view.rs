@@ -481,7 +481,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 .peek()
                 .as_ref()
                 .and_then(|c| c.scryfall_data.oracle_id);
-            usage_buffer().record_removal(commander_oracle_id, card_oracle_id);
+            usage_buffer().record_removal(deck_id, commander_oracle_id, card_oracle_id);
 
             // Optimistic: remove from entries
             deck_entries

@@ -1151,7 +1151,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 entering: stack.entering(),
                                 on_swipe_left: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Left);
-                                    usage_buffer().record_signal(commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Left);
+                                    usage_buffer().record_signal(deck_id, commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Left);
                                     // Post the durable skip immediately — a buffered
                                     // skip is lost to a quick app kill.
                                     if let Some(oracle_id) = card.scryfall_data.oracle_id {
@@ -1170,7 +1170,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 },
                                 on_swipe_right: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Right);
-                                    usage_buffer().record_signal(commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Right);
+                                    usage_buffer().record_signal(deck_id, commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Right);
                                     stack.record(AddAction::Add);
                                     let added_land = card.scryfall_data.is_land();
                                     let added_price = card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
@@ -1218,7 +1218,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 },
                                 on_swipe_up: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Up);
-                                    usage_buffer().record_signal(commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Up);
+                                    usage_buffer().record_signal(deck_id, commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Up);
                                     stack.record(AddAction::Maybe);
                                     add_card_to_maybeboard(card);
                                     toast.info("Added to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));

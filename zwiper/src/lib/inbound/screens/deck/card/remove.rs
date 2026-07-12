@@ -522,7 +522,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             on_swipe_right: move |card: Card| {
                                 usage_buffer().record_swipe(Direction::Right);
                                 // Removal signal (delayed negative) keyed by commander + card.
-                                usage_buffer().record_removal(commander_oracle_id(), card.scryfall_data.oracle_id);
+                                usage_buffer().record_removal(deck_id, commander_oracle_id(), card.scryfall_data.oracle_id);
                                 stack.record(RemoveAction::Remove { card: Box::new(card) });
                                 delete_card_from_deck();
                                 toast.success(
