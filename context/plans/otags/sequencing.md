@@ -242,7 +242,12 @@ back-compat-safe (tests in `contracts/deck.rs`). **No bump.**
 `Vec<String>` slugs (free strings from the `oracle_tags` catalog), NOT an enum. Store/decode as
 `Vec<String>` (no `TryFrom` enum filter). Everything else mirrors `other_tags` exactly.
 
-- **Slice A — backend plumbing (mechanical, additive):**
+- **Slice A — backend plumbing (mechanical, additive): ✅ DONE `08b485eb`.** Migration
+  `20260712040000`, `DeckProfile.oracle_tags` + `deck_oracle_tags.rs` (dedupe + cap 30),
+  create/update requests, HTTP contracts (create/update/shared), sqlx create/get/get_all/update/
+  clone + decode, handlers, `.sqlx` regen, HTTP round-trip test in `deck_flows`. Not yet pushed.
+  <details><summary>original checklist</summary>
+
   - Migration `decks.oracle_tags JSONB NOT NULL DEFAULT '[]'` + GIN (next ts after `20260712030000`).
   - `deck_profile.rs`: `#[serde(default)] pub oracle_tags: Vec<String>` (line ~35, beside `other_tags`).
   - `create_deck_profile.rs` / `update_deck_profile.rs`: carry `oracle_tags` (create: `Vec<String>`;
@@ -258,6 +263,7 @@ back-compat-safe (tests in `contracts/deck.rs`). **No bump.**
   - `outbound/sqlx/deck/mod.rs`: `deck_oracle_tags_to_json` helper; add the column to **create**
     INSERT+RETURNING, **get**/**get_all** SELECT, **update** QueryBuilder branch + RETURNING, and
     **clone_deck** INSERT+SELECT copy. `.sqlx` regen (create/get use macros; update is QueryBuilder).
+  </details>
 - **Slice B — the seed map (AUTHORING DECISION):** `impl DeckTag { fn oracle_tag_slugs(&self) ->
   &'static [&'static str] }` in `deck_tag.rs` (match-on-self like `display_name`), + a test iterating
   `DeckTag::all()`. ~117 archetypes → curated otag-slug sets. **Owner should eyeball this** like the
