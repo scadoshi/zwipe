@@ -1,7 +1,6 @@
 # Announcement banners + changelog page
 
-**Status: Pieces 1 & 2 IMPLEMENTED in the working tree (2026-07-11); Piece 3
-(portfolio) pending, sequenced after merge.** Prompted by the Android release: a
+**Status: SHIPPED (owner-confirmed 2026-07-12; pieces built 2026-07-11).** Prompted by the Android release: a
 dismissible "Zwipe is now on Android" banner on the site, plus a browsable
 changelog so people can see every version's changes. Banners are modeled on the
 portfolio's existing toast banners, promoted into `zwipe-components` so `zite`
