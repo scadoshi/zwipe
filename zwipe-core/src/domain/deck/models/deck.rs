@@ -42,10 +42,18 @@ pub struct Deck {
 
     /// Deck-building warnings (informational, not blocking).
     pub warnings: Vec<DeckWarning>,
+
+    /// Command-zone cards (commander, partner, background, signature spell) that
+    /// live on the profile rather than in `entries`. Carried here so clients can
+    /// fold them into price and card-count calcs. `#[serde(default)]` keeps older
+    /// servers (which omit the field) and older clients (which ignore it) working.
+    #[serde(default)]
+    pub command_zone_cards: Vec<Card>,
 }
 
 impl Deck {
-    /// Creates a new deck from profile, entries, and warnings.
+    /// Creates a new deck from profile, entries, and warnings. The command zone
+    /// starts empty; attach it with [`with_command_zone_cards`](Self::with_command_zone_cards).
     pub fn new(
         deck_profile: DeckProfile,
         entries: Vec<DeckEntry>,
@@ -55,6 +63,14 @@ impl Deck {
             deck_profile,
             entries,
             warnings,
+            command_zone_cards: Vec::new(),
         }
+    }
+
+    /// Attaches the command-zone cards (commander, partner, background, signature
+    /// spell) so clients can include them in price and card-count calcs.
+    pub fn with_command_zone_cards(mut self, cards: Vec<Card>) -> Self {
+        self.command_zone_cards = cards;
+        self
     }
 }

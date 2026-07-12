@@ -84,6 +84,16 @@ impl DeckMetrics {
     ///
     /// Maybeboard and sideboard cards are excluded — metrics reflect the active deck only.
     pub fn from_entries(entries: &[DeckEntry]) -> Self {
+        Self::from_entries_and_command_zone(entries, &[])
+    }
+
+    /// Like [`from_entries`](Self::from_entries), but also folds the command-zone
+    /// cards (commander, partner, background, signature spell) into the card count
+    /// and price totals. Command-zone cards contribute one copy each and are
+    /// *not* mixed into the type/color/mana/category distributions (those reflect
+    /// the mainboard). Cards already present as active entries are skipped so a
+    /// commander that also sits in the deck list is not double-counted.
+    pub fn from_entries_and_command_zone(entries: &[DeckEntry], command_zone: &[Card]) -> Self {
         let active_entries: Vec<DeckEntry> = entries
             .iter()
             .filter(|e| e.deck_card.board.is_active())
@@ -196,6 +206,33 @@ impl DeckMetrics {
         } else {
             0.0
         };
+
+        // Fold the command zone into card count + price totals only (one copy
+        // each), after mainboard-only stats (nonland_count, avg_cmc) are fixed.
+        // Command-zone cards do not enter the type/color/mana/category
+        // distributions. Cards already present as active entries are skipped so a
+        // commander that also sits in the deck list is not double-counted.
+        for card in command_zone {
+            let already_active = entries
+                .iter()
+                .any(|e| e.card.scryfall_data.id == card.scryfall_data.id);
+            if already_active {
+                continue;
+            }
+            total_cards += 1;
+            if let Some(p) = card_price(&card.scryfall_data, PriceCurrency::Usd) {
+                usd_sum += p;
+                usd_count += 1;
+            }
+            if let Some(p) = card_price(&card.scryfall_data, PriceCurrency::Eur) {
+                eur_sum += p;
+                eur_count += 1;
+            }
+            if let Some(p) = card_price(&card.scryfall_data, PriceCurrency::Tix) {
+                tix_sum += p;
+                tix_count += 1;
+            }
+        }
 
         const TYPE_LABELS: [&str; 8] = [
             "lands",
@@ -418,6 +455,23 @@ pub fn mainboard_total_price(entries: &[DeckEntry], currency: PriceCurrency) -> 
                 * (*e.deck_card.quantity as f64)
         })
         .sum()
+}
+
+/// Full deck price in the given currency: the mainboard total plus the command
+/// zone (commander, partner, background, signature spell). Command-zone cards
+/// already present as active entries are skipped so they are not double-counted.
+/// Cards without a price in that currency contribute 0.
+pub fn deck_price(entries: &[DeckEntry], command_zone: &[Card], currency: PriceCurrency) -> f64 {
+    let command_zone_total: f64 = command_zone
+        .iter()
+        .filter(|c| {
+            !entries.iter().any(|e| {
+                e.deck_card.board.is_active() && e.card.scryfall_data.id == c.scryfall_data.id
+            })
+        })
+        .map(|c| card_price(&c.scryfall_data, currency).unwrap_or(0.0))
+        .sum();
+    mainboard_total_price(entries, currency) + command_zone_total
 }
 
 /// Color identity classification — WUBRG order + multicolor + colorless.
@@ -697,6 +751,52 @@ mod tests {
 
         let metrics = DeckMetrics::from_entries(&[entry]);
         assert!((metrics.total_price_usd.unwrap() - 5.00).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn command_zone_folds_into_count_and_price() {
+        let mut spell = make_entry("Sol Ring", 1);
+        spell.card.scryfall_data.prices.usd = Some("2.00".to_string());
+        spell.card.scryfall_data.type_line = Some("Artifact".to_string());
+
+        let mut commander = make_entry("Atraxa", 1).card;
+        commander.scryfall_data.prices.usd = Some("10.00".to_string());
+        commander.scryfall_data.type_line = Some("Creature".to_string());
+        commander.scryfall_data.cmc = Some(4.0);
+
+        let metrics = DeckMetrics::from_entries_and_command_zone(&[spell], &[commander]);
+        // Card count includes the commander.
+        assert_eq!(metrics.total_cards, 2);
+        // Price includes the commander (2.00 + 10.00).
+        assert!((metrics.total_price_usd.unwrap() - 12.00).abs() < f64::EPSILON);
+        assert!((metrics.avg_price_usd.unwrap() - 6.00).abs() < f64::EPSILON);
+        // The commander does NOT dilute the mainboard-only avg_cmc (Sol Ring is
+        // an artifact = nonland with cmc 0, so avg stays 0.0).
+        assert_eq!(metrics.avg_cmc, 0.0);
+    }
+
+    #[test]
+    fn command_zone_skips_card_already_in_entries() {
+        let mut entry = make_entry("Sol Ring", 1);
+        entry.card.scryfall_data.prices.usd = Some("2.00".to_string());
+        let commander = entry.card.clone();
+
+        let metrics = DeckMetrics::from_entries_and_command_zone(&[entry], &[commander]);
+        // Same scryfall id already active — not double-counted.
+        assert_eq!(metrics.total_cards, 1);
+        assert!((metrics.total_price_usd.unwrap() - 2.00).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn deck_price_includes_command_zone() {
+        let mut entry = make_entry("Forest", 1);
+        entry.card.scryfall_data.prices.usd = Some("1.00".to_string());
+
+        let mut commander = make_entry("Atraxa", 1).card;
+        commander.scryfall_data.prices.usd = Some("10.00".to_string());
+
+        let total = deck_price(&[entry], &[commander], PriceCurrency::Usd);
+        assert!((total - 11.00).abs() < f64::EPSILON);
     }
 
     #[test]

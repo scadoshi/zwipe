@@ -63,7 +63,7 @@ use zwipe_core::{
         },
         deck::{
             Board, DeckEntry, Quantity,
-            deck_metrics::{budget_tier, card_price, mainboard_total_price},
+            deck_metrics::{budget_tier, card_price, deck_price},
             format::Format,
         },
         user::models::hints::HINT_ADD_DECK_CARDS,
@@ -738,7 +738,11 @@ pub fn Add(deck_id: Uuid) -> Element {
                         .deck_profile
                         .price_target_currency
                         .unwrap_or(PriceCurrency::Usd);
-                    deck_total_price.set(mainboard_total_price(&deck.entries, currency));
+                    deck_total_price.set(deck_price(
+                        &deck.entries,
+                        &deck.command_zone_cards,
+                        currency,
+                    ));
                     price_budget.set(deck.deck_profile.price_target);
                     price_budget_currency.set(currency);
 
