@@ -22,6 +22,7 @@ use crate::{
     outbound::{
         client::{ZwipeClient, version::get_min_client_version::ClientGetMinClientVersion},
         session::Persist,
+        theme_store::PersistTheme,
     },
 };
 use chrono::{DateTime, Utc};
@@ -129,15 +130,22 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     let flavor_card: Signal<Option<FlavorCard>> = use_signal(|| None);
     use_context_provider(|| flavor_card);
 
-    // Theme — initialize from session preferences if logged in
+    // Theme — a live session's preferences win (freshest for this account),
+    // else the last-used theme cached locally (so pre-auth screens render in it
+    // even logged out / after a device-to-device change), else the default.
     let theme = use_signal(|| {
         session
             .peek()
             .as_ref()
             .map(|s| ThemeConfig::from(&s.preferences))
+            .or_else(ThemeConfig::infallible_load)
             .unwrap_or_default()
     });
     use_context_provider(|| theme);
+
+    // Persist every theme change at one point (login, prefs update, picker), so
+    // the choice survives logout and themes the next launch's pre-auth screens.
+    use_effect(move || theme.read().infallible_save());
 
     // Usage telemetry buffer (swipe / search counters + suggestion signals).
     // Flushed by two tasks sharing this one buffer: a 30s timer, and a
