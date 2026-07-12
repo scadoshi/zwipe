@@ -1726,33 +1726,15 @@ footer {
     }
 }
 
-/* Actions row at the bottom of an expanded card, mirroring the app's
-   card_row. On the read-only shared page the only action is Image, and it is
-   shown only at hamburger width — above that the desktop hover preview covers
-   it, so the whole row stays hidden. */
-/* The expanded row's actions and muted separator come from zwipe-components;
-   on this read-only page they only carry the mobile Image button, so both
-   show only at hamburger width — desktop uses the hover preview instead. */
-.card-row-actions,
-.card-row-rule-muted {
-    display: none;
-}
-
+/* The expanded row's actions (Image + Flip for DFCs) and muted separator come
+   from zwipe-components. Shown at every width: the Flip control has to be
+   reachable on desktop too, and Image opens the full overlay. */
 .card-row-rule-muted {
     margin-top: 0;
 }
 
-@media (max-width: 60rem) {
-    .card-row-actions {
-        display: block;
-    }
-    .card-row-rule-muted {
-        display: block;
-    }
-}
-
 .sd-image-overlay-backdrop {
-    display: none;
+    display: block;
     position: fixed;
     inset: 0;
     background: var(--bg-overlay, rgba(0, 0, 0, 0.78));
@@ -1760,7 +1742,7 @@ footer {
 }
 
 .sd-image-overlay {
-    display: none;
+    display: flex;
     position: fixed;
     inset: 0;
     align-items: center;
@@ -1770,26 +1752,17 @@ footer {
     cursor: pointer;
 }
 
-@media (max-width: 60rem) {
-    .sd-image-overlay-backdrop {
-        display: block;
-    }
-    .sd-image-overlay {
-        display: flex;
-    }
-}
-
-.sd-image-overlay-img {
+/* `.sd-image-overlay-img` is the FlippableCardImage wrapper; size + shape its
+   inner img. Specificity clears the shared `.flippable-card-wrapper img` base
+   regardless of stylesheet order. */
+.sd-image-overlay .sd-image-overlay-img img {
     max-width: min(28rem, 92vw);
     max-height: 92vh;
-    width: auto;
-    height: auto;
     border-radius: 4.75% / 3.5%;
     box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.6);
-    animation: sd-preview-in 0.3s ease-out both;
 }
 
-.sd-image-overlay.dismissing .sd-image-overlay-img {
+.sd-image-overlay.dismissing .sd-image-overlay-img img {
     animation: sd-image-out 0.2s ease-in both;
 }
 
@@ -1934,13 +1907,20 @@ footer {
     text-align: center;
 }
 
+/* `.sd-cz-image` is now the FlippableCardImage wrapper; fill the card and style
+   its inner img. Specificity clears the shared `.flippable-card-wrapper img`
+   base regardless of stylesheet order. */
 .sd-cz-image {
     width: 100%;
+}
+
+.sd-cz-card .sd-cz-image img {
+    width: 100%;
     height: auto;
+    max-width: 100%;
     border-radius: 4.75% / 3.5%;
     border: 1px solid var(--border-secondary);
     box-shadow: var(--shadow-md);
-    display: block;
 }
 
 .sd-cz-name {
@@ -1976,11 +1956,7 @@ footer {
     flex-direction: column;
     gap: 0.7rem;
     margin-bottom: 1.75rem;
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    background-color: var(--bg-primary);
-    box-shadow: var(--shadow-sm);
-    padding: 1.25rem;
+    padding: 1.25rem 0;
 }
 
 .sd-control-row {
