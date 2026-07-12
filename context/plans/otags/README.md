@@ -1,15 +1,15 @@
 # Oracle tags (otags) — plan index
 
-**Status: BUILDING (updated 2026-07-11).** Phase 1 (ingest) shipped; **Phase 2 backend + the
-filter UI are DONE + committed** — projection, derivation, `oracle_tag_gaps`, zervice wiring
-(retirement), `CardProfile.oracle_tags` display field, the `oracle_tags` filter, the
-`GET /api/card/oracle-tags` catalog endpoint (`f11cc1e3`), and the otag filter picker
-(`41512c59`) (all additive, tested, committed; see `sequencing.md` Phase 2 §STATUS for hashes).
-**▶ Resume at:** an OPEN DECISION — whether/how to surface `oracle_tags` on the swipe card face
-(raw direct-tag set is noisy) — then cleanup (`classify.rs` delete after prod proof), `CardRole`
-rename, and Phase M wire migration. All 7 open questions resolved; Q1 was revised after Phase 1
-(otags supersede the heuristic → `classify.rs` retired, kept only for the 4 stragglers + as a
-revert safety net).
+**Status: BUILDING (updated 2026-07-11).** Phase 1 (ingest) shipped; **Phase 2 is effectively
+DONE + committed** — projection, derivation, `oracle_tag_gaps`, zervice wiring (retirement),
+the `oracle_tags` filter, the `GET /api/card/oracle-tags` catalog endpoint (`f11cc1e3`), the
+otag filter picker (`41512c59`), and the **server-grouped card roles → oracle-tags drill-down**
+with UI naming alignment (`b404180d` backend, `6fc32c40` frontend). All additive, tested,
+committed; see `sequencing.md` Phase 2 §STATUS for hashes. **▶ Resume at:** cleanup
+(`classify.rs` delete after a prod zervice run proves the retirement), then the `CardRole`
+wire/DB rename + Phase M version-gated migration (frontend display labels already say "Card
+roles"). All 7 open questions resolved; Q1 was revised after Phase 1 (otags supersede the
+heuristic → `classify.rs` retired, kept only for the 4 stragglers + as a revert safety net).
 
 ## One sentence
 
