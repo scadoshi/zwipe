@@ -294,14 +294,9 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         commander_printing_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Option<serde_json::Value>, SearchCardsError>> + Send;
 
-    // ============
-    //  classify
-    // ============
-
-    /// Retrieves IDs of cards with empty mechanical_categories.
-    fn get_unclassified_card_ids(
-        &self,
-    ) -> impl Future<Output = Result<Vec<uuid::Uuid>, anyhow::Error>> + Send;
+    // ====================
+    //  category derivation
+    // ====================
 
     /// Fetches a batch of cards by their IDs.
     fn get_cards_batch(
@@ -372,17 +367,9 @@ pub trait CardService: Clone + Send + Sync + 'static {
         bulk_endpoint: BulkEndpoint,
     ) -> impl Future<Output = anyhow::Result<ZerviceMetrics>> + Send;
 
-    /// Classifies cards with empty mechanical_categories using heuristics.
-    /// Returns (classified_count, total_untagged_count).
-    fn classify_untagged_cards(
-        &self,
-        batch_size: usize,
-    ) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
-
     /// Derives `mechanical_categories` from Oracle Tags (18 subtrees + Tokens via
     /// `all_parts`), then merges the 4 heuristic stragglers (Pump/Stax/Protection/
-    /// GraveyardHate) via `oracle_tag_gaps`. Replaces `classify_untagged_cards`.
-    /// Returns `(otag_rows_written, gap_merges)`.
+    /// GraveyardHate) via `oracle_tag_gaps`. Returns `(otag_rows_written, gap_merges)`.
     fn derive_card_categories(
         &self,
         batch_size: usize,
@@ -540,12 +527,6 @@ pub trait ErasedCardService: Send + Sync + 'static {
         bulk_endpoint: BulkEndpoint,
     ) -> BoxFuture<'a, anyhow::Result<ZerviceMetrics>>;
 
-    /// See [`CardService::classify_untagged_cards`].
-    fn classify_untagged_cards<'a>(
-        &'a self,
-        batch_size: usize,
-    ) -> BoxFuture<'a, anyhow::Result<(u32, u32)>>;
-
     /// See [`CardService::clear_all_categories`].
     fn clear_all_categories<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
 
@@ -660,13 +641,6 @@ where
         bulk_endpoint: BulkEndpoint,
     ) -> BoxFuture<'a, anyhow::Result<ZerviceMetrics>> {
         Box::pin(CardService::scryfall_sync(self, bulk_endpoint))
-    }
-
-    fn classify_untagged_cards<'a>(
-        &'a self,
-        batch_size: usize,
-    ) -> BoxFuture<'a, anyhow::Result<(u32, u32)>> {
-        Box::pin(CardService::classify_untagged_cards(self, batch_size))
     }
 
     fn clear_all_categories<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {

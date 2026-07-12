@@ -1591,22 +1591,9 @@ impl CardRepository for MyPostgres {
         Ok(payload)
     }
 
-    // ============
-    //  classify
-    // ============
-
-    async fn get_unclassified_card_ids(&self) -> Result<Vec<uuid::Uuid>, anyhow::Error> {
-        let ids = sqlx::query_scalar!(
-            "SELECT cp.scryfall_data_id FROM card_profiles cp
-             JOIN scryfall_data sd ON cp.scryfall_data_id = sd.id
-             WHERE (cp.mechanical_categories = '[]'::jsonb OR cp.mechanical_categories IS NULL)
-               AND sd.oracle_text IS NOT NULL
-               AND sd.oracle_id IS NOT NULL"
-        )
-        .fetch_all(&self.pool)
-        .await?;
-        Ok(ids)
-    }
+    // ====================
+    //  category derivation
+    // ====================
 
     async fn get_cards_batch(&self, ids: &[uuid::Uuid]) -> Result<Vec<Card>, anyhow::Error> {
         if ids.is_empty() {
