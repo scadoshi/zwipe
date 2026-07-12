@@ -1,15 +1,15 @@
 # Oracle tags (otags) — plan index
 
-**Status: Phase 2 DONE + DEPLOYED (prod v1.6.0, 2026-07-12).** Phase 1 (ingest) shipped;
-**Phase 2 is complete and live** — projection, derivation, `oracle_tag_gaps`, zervice wiring
-(retirement), the `oracle_tags` filter, the `GET /api/card/oracle-tags` catalog endpoint
-(`f11cc1e3`), the otag filter picker (`41512c59`), and the **server-grouped card roles →
-oracle-tags drill-down** with UI naming alignment (`b404180d` backend, `6fc32c40` frontend).
-All additive; shipped in the v1.6.0 push (all CI gates green, migration `20260712030000` ran on
-prod). ⚠ **The retirement + grouping populate on the next prod `zervice` run** (until then the
-new columns sit at defaults — no breakage). See `sequencing.md` Phase 2 §STATUS for hashes.
-**▶ Next:** **Phase 3 — deck-level oracle-tag selection** (buildable now; see below). Then the
-Phase 2 tail: `classify.rs` delete (after a prod zervice run proves the retirement) + the
+**Status: Phase 2 LIVE (prod v1.6.0); Phase 3 A/B/C built locally (unpushed).** Phase 1 (ingest)
+shipped; **Phase 2 is complete and live in prod** — retirement, the `oracle_tags` filter, the
+`GET /api/card/oracle-tags` endpoint, and the server-grouped card roles → oracle-tags drill-down
+(shipped in v1.6.0, migration `20260712030000` ran on prod; grouping populated by the
+2026-07-12 prod `zervice` run). **Phase 3 — deck-level oracle-tag selection — is built locally
+(committed, NOT pushed):** Slice A backend plumbing (`08b485eb`), Slice B `DeckTag→otag` seed map
+(`7690f984`), Slice C the deck picker + archetype seeding + deck-view Profile/Budget/Tags
+refactor (`789a0b70`, `baf23278`, `36ce531e`, `ef708a08`). Needs a migration on next deploy
+(`20260712040000_add_deck_oracle_tags`, additive). **▶ Next:** push Phase 3 when ready; then the
+Phase 2 tail — `classify.rs` delete (retirement now proven by the prod zervice run) + the
 `CardRole` wire/DB rename / Phase M (frontend labels already say "Card roles"). All 7 open
 questions resolved; Q1 revised after Phase 1 (otags supersede the heuristic).
 
