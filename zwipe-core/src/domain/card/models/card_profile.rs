@@ -4,7 +4,7 @@
 //! - Token status (whether this is a token vs. real card)
 //! - Timestamps (when card was added/updated in database)
 
-use super::mechanical_category::MechanicalCategory;
+use super::mechanical_category::CardRole;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -21,7 +21,7 @@ pub struct CardProfile {
     /// Whether this is a token (not a real card).
     pub is_token: bool,
     /// Mechanical categories assigned by heuristics or AI classification.
-    pub mechanical_categories: Vec<MechanicalCategory>,
+    pub mechanical_categories: Vec<CardRole>,
     /// Community Oracle Tags (granular functional tags) carried by this card.
     /// `#[serde(default)]` so older clients that omit it still deserialize.
     #[serde(default)]

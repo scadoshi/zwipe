@@ -4,9 +4,7 @@ use chrono::{DateTime, Utc};
 use sqlx_macros::FromRow;
 use std::collections::BTreeMap;
 use uuid::Uuid;
-use zwipe_core::domain::card::{
-    card_profile::CardProfile, mechanical_category::MechanicalCategory,
-};
+use zwipe_core::domain::card::{card_profile::CardProfile, mechanical_category::CardRole};
 
 /// Raw database card profile record (unvalidated data from PostgreSQL).
 #[derive(Debug, Clone, FromRow)]
@@ -30,7 +28,7 @@ impl From<DatabaseCardProfile> for CardProfile {
             .map(|strings| {
                 strings
                     .iter()
-                    .filter_map(|s| MechanicalCategory::try_from(s.as_str()).ok())
+                    .filter_map(|s| CardRole::try_from(s.as_str()).ok())
                     .collect()
             })
             .unwrap_or_default();

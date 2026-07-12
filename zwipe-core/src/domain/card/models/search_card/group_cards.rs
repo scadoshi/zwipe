@@ -15,9 +15,7 @@
 //! }
 //! ```
 
-use crate::domain::card::{
-    Card, mechanical_category::MechanicalCategory, scryfall_data::colors::Color,
-};
+use crate::domain::card::{Card, mechanical_category::CardRole, scryfall_data::colors::Color};
 
 /// Grouping strategies for partitioning cards.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -125,7 +123,7 @@ impl GroupCards for Vec<Card> {
 /// appear in each matching group (cloned). Cards with no categories
 /// go into "uncategorized".
 fn group_by_category(cards: Vec<Card>) -> Vec<CardGroup> {
-    let all_cats = MechanicalCategory::all();
+    let all_cats = CardRole::all();
     let mut buckets: Vec<Vec<Card>> = vec![Vec::new(); all_cats.len() + 1]; // +1 for uncategorized
 
     let uncategorized_idx = all_cats.len();

@@ -11,15 +11,15 @@
 use dioxus::prelude::*;
 use std::collections::BTreeMap;
 use zwipe_core::domain::card::{
-    mechanical_category::MechanicalCategory, oracle_tag::prettify_oracle_tag_slug,
+    mechanical_category::CardRole, oracle_tag::prettify_oracle_tag_slug,
 };
 
 /// Card roles as chips; expandable to their grouped oracle tags, plus an "Other
-/// tags" bucket. `tags_by_role` is keyed by role slug (`MechanicalCategory`'s
+/// tags" bucket. `tags_by_role` is keyed by role slug (`CardRole`'s
 /// snake_case form); `other_tags` are the uncategorized functional tags.
 #[component]
 pub fn CardRoleChips(
-    roles: Vec<MechanicalCategory>,
+    roles: Vec<CardRole>,
     tags_by_role: BTreeMap<String, Vec<String>>,
     other_tags: Vec<String>,
 ) -> Element {

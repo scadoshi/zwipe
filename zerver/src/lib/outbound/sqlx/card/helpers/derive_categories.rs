@@ -1,6 +1,6 @@
 //! Derive card categories from Oracle Tags (the retirement of the regex heuristic).
 //!
-//! For the ~18 `MechanicalCategory` variants that map cleanly to an Oracle-tag
+//! For the ~18 `CardRole` variants that map cleanly to an Oracle-tag
 //! subtree, plus `Tokens` from Scryfall's `all_parts` token metadata, this computes
 //! `card_profiles.mechanical_categories` directly from the community gold standard.
 //! See `context/plans/otags/` (Phase 2, Option A).
@@ -16,7 +16,7 @@
 use anyhow::Context;
 use sqlx::PgPool;
 
-/// `MechanicalCategory` (serde snake_case) → the Oracle-tag root slug(s) whose
+/// `CardRole` (serde snake_case) → the Oracle-tag root slug(s) whose
 /// subtree defines it. Each root is expanded through `oracle_tags.parent_ids`.
 /// The 4 heuristic stragglers are also here as supplements (see module docs);
 /// only `Finisher` is absent.
@@ -102,7 +102,7 @@ pub const CATEGORY_ROOTS: &[(&str, &[&str])] = &[
 /// Manual one-off patches: exact oracle-tag slugs whose wording dodges Scryfall's
 /// hierarchy but clearly belong to a role. Unlike [`CATEGORY_ROOTS`], these are
 /// matched **exactly** — never subtree-expanded — so an entry adds precisely that
-/// tag and nothing beneath it. Key = a real `MechanicalCategory` (snake_case),
+/// tag and nothing beneath it. Key = a real `CardRole` (snake_case),
 /// checked by unit test; value = real oracle-tag slugs, checked by a non-fatal
 /// `zervice` warn. Fed into both derivation and grouping. Grow as you audit;
 /// applies on the next `zervice` run.
@@ -214,16 +214,16 @@ pub async fn derive_categories(pool: &PgPool) -> anyhow::Result<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use zwipe_core::domain::card::mechanical_category::MechanicalCategory;
+    use zwipe_core::domain::card::mechanical_category::CardRole;
 
-    /// Every mapped category string must round-trip to a real `MechanicalCategory`,
+    /// Every mapped category string must round-trip to a real `CardRole`,
     /// so the map can't drift from the enum's snake_case serde.
     #[test]
     fn category_strings_are_valid_variants() {
         for (cat, _) in CATEGORY_ROOTS {
             assert!(
-                MechanicalCategory::try_from(*cat).is_ok(),
-                "'{cat}' is not a MechanicalCategory variant",
+                CardRole::try_from(*cat).is_ok(),
+                "'{cat}' is not a CardRole variant",
             );
         }
     }
@@ -234,8 +234,8 @@ mod tests {
     fn override_roles_are_valid_variants() {
         for (role, _) in ROLE_TAG_OVERRIDES {
             assert!(
-                MechanicalCategory::try_from(*role).is_ok(),
-                "'{role}' is not a MechanicalCategory variant",
+                CardRole::try_from(*role).is_ok(),
+                "'{role}' is not a CardRole variant",
             );
         }
     }
