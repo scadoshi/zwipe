@@ -24,15 +24,18 @@ pub struct DeckProfile {
     pub signature_spell_id: Option<Uuid>,
     /// Optional deck format.
     pub format: Option<Format>,
-    /// Deck archetype/strategy tags.
+    /// Deck archetype/strategy tags. Lossy-deserialized (unknown tag slugs dropped)
+    /// so a newer server's deck tags never crash an older client — see
+    /// `serde_helpers::lossy_vec`.
+    #[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]
     pub tags: Vec<DeckTag>,
     /// Power level (WotC Commander Bracket). `None` = unset. `#[serde(default)]`
     /// so an older client reading a payload without it parses to `None`.
     #[serde(default)]
     pub power_level: Option<PowerLevel>,
     /// Secondary, non-gameplay labels (Budget, Jank, …). `#[serde(default)]` so
-    /// older payloads without the field parse to an empty vec.
-    #[serde(default)]
+    /// older payloads without the field parse to an empty vec. Lossy-deserialized.
+    #[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]
     pub other_tags: Vec<DeckOtherTag>,
     /// Granular Oracle-tag slugs the deck declares as its strategy (from the
     /// `oracle_tags` catalog, e.g. `spot-removal`). Free strings, not a curated
