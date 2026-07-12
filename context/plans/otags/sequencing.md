@@ -278,11 +278,16 @@ back-compat-safe (tests in `contracts/deck.rs`). **No bump.**
   UX polish landed (`baf23278`): reconcile-on-Done seeding (drop old seed, add new from final deck
   tags, keep manual picks; one info toast) instead of per-tap; Cancel buttons on the deck-tag,
   oracle-tag, and format pickers (snapshot on open; format restores its command-zone cascade);
-  "Tags"→"Deck tags" rename; chip-wrap CSS. Deck **view** split the three tag rows out of the profile
-  card into a collapsible **Tags** section (`DeckTagsSection`, count badge, collapsed by default); the
-  create/edit **form** groups the tag fields at the bottom under a "Tags" heading, mirroring view order.
-  `CURATED_ORACLE_TAGS` lives in zwipe-core, shared by the card filter + deck picker. Not pushed.
-- **Slice D — the grouped/raw hint page** (polish; the picker's grouped view doubles as this).
+  "Tags"→"Deck tags" rename; chip-wrap CSS. **Deck-view refactor** (`baf23278`, `36ce531e`): the
+  profile card is now just name/format/commander/power level; the tag rows moved to a collapsible
+  **Tags** section (`DeckTagsSection`, count badge) and the budget rows to a collapsible **Budget**
+  section (`DeckBudgetSection`), both collapsed by default, ordered Profile → Budget → Tags. The
+  create/edit **form** mirrors that: `Profile` / `Budget` / `Tags` sub-headings (`ef708a08`), tag
+  fields grouped at the bottom. `CURATED_ORACLE_TAGS` lives in zwipe-core, shared by the card filter +
+  deck picker. All green (clippy + fmt); **not pushed**. Slice C is effectively done bar further visual
+  tuning.
+- **Slice D — the grouped/raw hint page** (polish; the picker's grouped view doubles as this). Optional
+  now that the picker's def-bar + curated grid cover most of it.
 
 **Exit:** decks carry otags; archetype seeds them; picker + distribution ship.
 
