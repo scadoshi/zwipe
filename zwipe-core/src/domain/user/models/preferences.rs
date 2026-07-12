@@ -9,20 +9,36 @@ use uuid::Uuid;
 
 /// Allowed theme identifiers. Validated on update.
 pub const ALLOWED_THEMES: &[&str] = &[
+    "achromatopsia",
+    "ayu",
     "catppuccin",
     "deuteranopia",
     "dracula",
+    "ethereal",
     "everforest",
+    "github",
     "gruvbox",
+    "hackerman",
+    "kanagawa",
+    "matte-black",
+    "miasma",
     "monokai",
+    "night-owl",
     "nord",
     "one-dark",
+    "osaka-jade",
+    "powershell",
     "protanopia",
+    "ristretto",
     "rose-pine",
     "rustbox",
     "solarized",
+    "synthwave-84",
     "tokyo-night",
     "tritanopia",
+    "vantablack",
+    "vscode",
+    "zenburn",
 ];
 
 /// User display preferences.

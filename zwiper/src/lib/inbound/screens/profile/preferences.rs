@@ -18,8 +18,13 @@ use zwipe_core::{
 
 /// Capitalize each word of a theme slug for display ("tokyo-night" → "Tokyo Night").
 pub(crate) fn display_theme_name(slug: &str) -> String {
-    if slug == "rose-pine" {
-        return "Rosé Pine".to_string();
+    match slug {
+        "rose-pine" => return "Rosé Pine".to_string(),
+        "vscode" => return "VS Code".to_string(),
+        "github" => return "GitHub".to_string(),
+        "synthwave-84" => return "Synthwave '84".to_string(),
+        "powershell" => return "PowerShell".to_string(),
+        _ => {}
     }
     slug.split('-')
         .map(|w| {
@@ -35,7 +40,7 @@ pub(crate) fn display_theme_name(slug: &str) -> String {
 
 /// Themes with adjusted palettes for color-vision deficiency — grouped at the
 /// bottom of the picker.
-const COLORBLIND_THEMES: &[&str] = &["protanopia", "deuteranopia", "tritanopia"];
+const COLORBLIND_THEMES: &[&str] = &["protanopia", "deuteranopia", "tritanopia", "achromatopsia"];
 
 /// One selectable theme row: name on the left, color-swatch dots on the right.
 /// The dots pull their colors from the theme's own CSS variables by applying
