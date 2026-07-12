@@ -99,14 +99,23 @@ pub struct CardCriteria {
     pub(super) is_partner: Option<bool>,
     pub(super) is_background: Option<bool>,
     pub(super) is_signature_spell: Option<bool>,
-    // mechanical category (aka card roles — Phase M dual-accept: the server takes
-    // either the legacy `mechanical_categories_*` or the canonical `card_roles_*`
-    // wire key into the same field; applied identically downstream).
-    #[serde(alias = "card_roles_contains_any")]
+    // mechanical category (aka card roles — Phase M step 2: the wire's primary
+    // name is now `card_roles_*`; `mechanical_categories_*` is kept as an alias
+    // for un-upgraded clients. Applied identically downstream either way.)
+    #[serde(
+        rename = "card_roles_contains_any",
+        alias = "mechanical_categories_contains_any"
+    )]
     pub(super) mechanical_categories_contains_any: Option<Vec<String>>,
-    #[serde(alias = "card_roles_contains_all")]
+    #[serde(
+        rename = "card_roles_contains_all",
+        alias = "mechanical_categories_contains_all"
+    )]
     pub(super) mechanical_categories_contains_all: Option<Vec<String>>,
-    #[serde(alias = "card_roles_excludes")]
+    #[serde(
+        rename = "card_roles_excludes",
+        alias = "mechanical_categories_excludes"
+    )]
     pub(super) mechanical_categories_excludes: Option<Vec<String>>,
     // oracle tags (granular functional tags)
     pub(super) oracle_tags_contains_any: Option<Vec<String>>,

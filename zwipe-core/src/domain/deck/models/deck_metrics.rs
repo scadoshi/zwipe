@@ -144,8 +144,8 @@ impl DeckMetrics {
                 *slot += qty;
             }
 
-            // Mechanical categories
-            for cat in &card.card_profile.mechanical_categories {
+            // Card roles
+            for cat in &card.card_profile.card_roles {
                 if let Some(idx) = all_cats.iter().position(|c| c == cat)
                     && let Some(slot) = cat_buckets.get_mut(idx)
                 {
