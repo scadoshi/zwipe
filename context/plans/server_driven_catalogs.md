@@ -1,10 +1,13 @@
 # Server-driven catalogs — roles & deck tags without client releases
 
-**Status: PLANNED (2026-07-12).** Goal: make the **card-role catalog**, the **deck-tag
-catalog**, and their **otag relationships** something the server delivers, so adding a role,
-a deck tag, or a tag correlation is a server const edit + deploy — never an app-store
-turnaround. Pairs with the otags work (`plans/otags/`); this is the delivery layer that lets
-all that tagging grow without waiting on client release cycles.
+**Status: PLANNED — GATED (2026-07-12).** Deliberately deferred until the in-flight otags
+implementation (the deck-tag picker / Slice C and its `zwipe-core` + `zerver` deck work)
+lands. This overhaul touches core, server, and both clients, so starting it mid-build would
+collide; pick it up once the otags impls are committed. Goal: make the **card-role catalog**,
+the **deck-tag catalog**, and their **otag relationships** something the server delivers, so
+adding a role, a deck tag, or a tag correlation is a server const edit + deploy — never an
+app-store turnaround. Pairs with the otags work (`plans/otags/`); this is the delivery layer
+that lets all that tagging grow without waiting on client release cycles.
 
 ## The problem
 
