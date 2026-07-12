@@ -871,6 +871,23 @@ button {
     word-break: break-word;
 }
 
+.deck-list-identity {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Identity pips read as tags in the deck row: square, matching the stat-chip
+   height instead of the small inline glyph size. */
+.deck-list-identity i.ms.ms-cost {
+    box-sizing: border-box;
+    width: 1.55rem;
+    height: 1.55rem;
+    font-size: 1rem;
+    border-radius: 0.5rem;
+    padding: 0;
+}
+
 .stat-chip {
     display: inline-block;
     padding: 0.2rem 0.55rem;

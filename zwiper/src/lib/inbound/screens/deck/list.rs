@@ -19,7 +19,10 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe::inbound::http::ApiError;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
-use zwipe_core::domain::{auth::models::session::Session, deck::deck_profile::DeckProfile};
+use zwipe_core::domain::{
+    auth::models::session::Session, card::scryfall_data::colors::Color,
+    deck::deck_profile::DeckProfile,
+};
 
 /// Screen displaying all user's decks with navigation to view/edit.
 #[component]
@@ -135,6 +138,24 @@ pub fn DeckList() -> Element {
                                                     div { class: "deck-list-row",
                                                         h3 { class: "font-light text-base tracking-wide deck-list-name",
                                                             { profile.name.to_string() }
+                                                        }
+                                                        {
+                                                            let present: std::collections::HashSet<Color> = profile
+                                                                .color_identity
+                                                                .iter()
+                                                                .filter_map(|s| Color::try_from(s.as_str()).ok())
+                                                                .collect();
+                                                            (!present.is_empty())
+                                                                .then(|| rsx! {
+                                                                    span { class: "deck-list-identity",
+                                                                        for color in Color::all().into_iter().filter(|c| present.contains(c)) {
+                                                                            i {
+                                                                                key: "{color.to_short_name()}",
+                                                                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                })
                                                         }
                                                         span {
                                                             class: if count_bad { "stat-chip stat-chip-bad" } else { "stat-chip" },

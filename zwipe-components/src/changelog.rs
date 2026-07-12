@@ -34,7 +34,8 @@ const UPCOMING: &[Release] = &[Release {
         "Fixed importing double-faced cards like Boggart Trawler // Boggart Bog.",
         "A light-mode polish pass across every theme, cleaner panels and softer mana-pip shadows.",
         "Oracle tags, find and build with community-maintained tags for what cards actually do (removal, ramp, card advantage, tutors, and more).",
-        "Deck color identity shown as mana pips on your deck list.",
+        "Deck color identity shows as mana pips right after each deck's name.",
+        "Every mana pip now tints its outline and glyph to its own mana color, so the colors stay instantly recognizable in any theme.",
     ],
 }];
 
