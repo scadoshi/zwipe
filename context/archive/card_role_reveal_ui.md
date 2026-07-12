@@ -1,6 +1,11 @@
 # Card-role otag reveal — block-quote framing + optional hint drill-down
 
-**Status: PLANNED (2026-07-12).** Two UI polish ideas for the `CardRoleChips` drill-down
+**Status: DONE 2026-07-12.** Part 1 (block-quote the revealed otags) SHIPPED (`d8f5fac2`).
+Part 2 (per-chip clickable hint text) was **superseded** — the otag-education need was met
+instead by in-app education pages + a help affordance (`38014ca9`, and the `help` prop on
+`CardRoleChips`), with otags shown as raw slugs (`ffd52c5e`). No live remaining work.
+
+Two UI polish ideas for the `CardRoleChips` drill-down
 (`zwipe-components/src/card_role_chips.rs`): (1) frame the revealed otags in a block-quote
 container so it's obvious they're the exposed otags of the tapped role, and (2) optionally
 make an otag chip clickable to reveal its hint text when it has one.
