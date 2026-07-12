@@ -1,15 +1,17 @@
 # Oracle tags (otags) — plan index
 
-**Status: BUILDING (updated 2026-07-11).** Phase 1 (ingest) shipped; **Phase 2 is effectively
-DONE + committed** — projection, derivation, `oracle_tag_gaps`, zervice wiring (retirement),
-the `oracle_tags` filter, the `GET /api/card/oracle-tags` catalog endpoint (`f11cc1e3`), the
-otag filter picker (`41512c59`), and the **server-grouped card roles → oracle-tags drill-down**
-with UI naming alignment (`b404180d` backend, `6fc32c40` frontend). All additive, tested,
-committed; see `sequencing.md` Phase 2 §STATUS for hashes. **▶ Resume at:** cleanup
-(`classify.rs` delete after a prod zervice run proves the retirement), then the `CardRole`
-wire/DB rename + Phase M version-gated migration (frontend display labels already say "Card
-roles"). All 7 open questions resolved; Q1 was revised after Phase 1 (otags supersede the
-heuristic → `classify.rs` retired, kept only for the 4 stragglers + as a revert safety net).
+**Status: Phase 2 DONE + DEPLOYED (prod v1.6.0, 2026-07-12).** Phase 1 (ingest) shipped;
+**Phase 2 is complete and live** — projection, derivation, `oracle_tag_gaps`, zervice wiring
+(retirement), the `oracle_tags` filter, the `GET /api/card/oracle-tags` catalog endpoint
+(`f11cc1e3`), the otag filter picker (`41512c59`), and the **server-grouped card roles →
+oracle-tags drill-down** with UI naming alignment (`b404180d` backend, `6fc32c40` frontend).
+All additive; shipped in the v1.6.0 push (all CI gates green, migration `20260712030000` ran on
+prod). ⚠ **The retirement + grouping populate on the next prod `zervice` run** (until then the
+new columns sit at defaults — no breakage). See `sequencing.md` Phase 2 §STATUS for hashes.
+**▶ Next:** **Phase 3 — deck-level oracle-tag selection** (buildable now; see below). Then the
+Phase 2 tail: `classify.rs` delete (after a prod zervice run proves the retirement) + the
+`CardRole` wire/DB rename / Phase M (frontend labels already say "Card roles"). All 7 open
+questions resolved; Q1 revised after Phase 1 (otags supersede the heuristic).
 
 ## One sentence
 
