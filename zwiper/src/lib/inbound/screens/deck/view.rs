@@ -287,17 +287,17 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     });
 
     let category_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.and_then(|m| {
-        if m.mechanical_category_counts.is_empty() {
+        if m.card_role_counts.is_empty() {
             return None;
         }
         let max_count = m
-            .mechanical_category_counts
+            .card_role_counts
             .iter()
             .map(|(_, c)| *c)
             .max()
             .unwrap_or(0);
         Some(
-            m.mechanical_category_counts
+            m.card_role_counts
                 .iter()
                 .map(|(label, count)| {
                     let pct = if max_count > 0 && *count > 0 {
@@ -318,7 +318,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         let deck_size = (m.land_count + m.nonland_count) as u32;
         let mut buckets: Vec<(&'static str, u32)> = vec![("Land", m.land_count as u32)];
         buckets.extend(
-            m.mechanical_category_counts
+            m.card_role_counts
                 .iter()
                 .map(|(label, count)| (*label, *count as u32)),
         );

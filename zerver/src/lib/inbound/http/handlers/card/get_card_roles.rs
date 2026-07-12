@@ -3,7 +3,7 @@ use axum::Json;
 #[cfg(feature = "zerver")]
 use reqwest::StatusCode;
 #[cfg(feature = "zerver")]
-use zwipe_core::domain::card::mechanical_category::{CardRole, CardRoleView};
+use zwipe_core::domain::card::card_role::{CardRole, CardRoleView};
 
 /// Returns the full card-role catalog (slug, display name, short name), built
 /// straight from the `CardRole` enum — no DB read. The server-delivered role

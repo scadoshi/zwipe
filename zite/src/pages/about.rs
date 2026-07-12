@@ -13,7 +13,8 @@ const URL_TOKIO: &str = "https://tokio.rs";
 const URL_SQLX: &str = "https://github.com/launchbadge/sqlx";
 const URL_POSTGRES: &str = "https://www.postgresql.org";
 const URL_SCRYFALL: &str = "https://scryfall.com/docs/api";
-const URL_MECHANICAL_CATEGORY: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-core/src/domain/card/models/mechanical_category";
+const URL_CARD_ROLE: &str =
+    "https://github.com/scadoshi/zwipe/tree/main/zwipe-core/src/domain/card/models/card_role";
 
 #[component]
 pub fn About() -> Element {
@@ -340,7 +341,7 @@ pub fn About() -> Element {
                                 "24 roles (ramp, removal, anthem, tokens, blink, mill, tutor, "
                                 em { "…" }
                                 "). See "
-                                a { href: URL_MECHANICAL_CATEGORY, target: "_blank", rel: "noopener noreferrer", "mechanical_category" }
+                                a { href: URL_CARD_ROLE, target: "_blank", rel: "noopener noreferrer", "card_role" }
                             }
                             li {
                                 "Multi-label: "

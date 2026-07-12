@@ -2,7 +2,7 @@
 
 use dioxus::prelude::*;
 use zwipe_core::domain::card::{
-    mechanical_category::CardRole, search_card::card_filter::builder::CardQueryBuilder,
+    card_role::CardRole, search_card::card_filter::builder::CardQueryBuilder,
 };
 
 use super::match_mode::MatchMode;

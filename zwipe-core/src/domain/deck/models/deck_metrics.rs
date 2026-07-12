@@ -7,7 +7,7 @@
 use crate::domain::{
     card::{
         Card,
-        mechanical_category::CardRole,
+        card_role::CardRole,
         scryfall_data::{ScryfallData, colors::Color},
         search_card::card_filter::price_currency::PriceCurrency,
     },
@@ -47,7 +47,7 @@ pub struct DeckMetrics {
     /// Average card price in MTGO Event Tickets. `None` if no cards priced.
     pub avg_price_tix: Option<f64>,
     /// Non-empty mechanical category counts, sorted by count descending.
-    pub mechanical_category_counts: Vec<(&'static str, usize)>,
+    pub card_role_counts: Vec<(&'static str, usize)>,
 }
 
 impl DeckMetrics {
@@ -267,13 +267,13 @@ impl DeckMetrics {
             .map(|(&label, &count)| (label, count))
             .collect();
 
-        let mut mechanical_category_counts: Vec<(&'static str, usize)> = all_cats
+        let mut card_role_counts: Vec<(&'static str, usize)> = all_cats
             .iter()
             .zip(cat_buckets.iter())
             .filter(|&(_, count)| *count > 0)
             .map(|(cat, &count)| (cat.to_short_name(), count))
             .collect();
-        mechanical_category_counts.sort_by_key(|a| std::cmp::Reverse(a.1));
+        card_role_counts.sort_by_key(|a| std::cmp::Reverse(a.1));
 
         let total_price_usd = if usd_count > 0 { Some(usd_sum) } else { None };
         let avg_price_usd = if usd_count > 0 {
@@ -309,7 +309,7 @@ impl DeckMetrics {
             avg_price_eur,
             total_price_tix,
             avg_price_tix,
-            mechanical_category_counts,
+            card_role_counts,
         }
     }
 }

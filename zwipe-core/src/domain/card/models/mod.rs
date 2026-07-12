@@ -2,10 +2,10 @@
 
 /// User-specific card metadata (favorites, notes - future expansion).
 pub mod card_profile;
+/// Mechanical category classification (ramp, draw, removal, etc.).
+pub mod card_role;
 /// Reminder text for keyword abilities (Flying, Trample, …).
 pub mod keyword;
-/// Mechanical category classification (ramp, draw, removal, etc.).
-pub mod mechanical_category;
 /// Oracle tag catalog entry (community-maintained functional tags).
 pub mod oracle_tag;
 /// Scryfall API data models.

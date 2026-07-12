@@ -21,8 +21,8 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use zwipe_core::domain::card::{
-    Card, card_profile::CardProfile, mechanical_category::classify_oracle_tag_gaps,
-    oracle_tag::OracleTag, scryfall_data::ScryfallData, search_card::card_filter::CardQuery,
+    Card, card_profile::CardProfile, card_role::classify_oracle_tag_gaps, oracle_tag::OracleTag,
+    scryfall_data::ScryfallData, search_card::card_filter::CardQuery,
 };
 
 /// PostgreSQL parameter limit per query (~65k parameters).
