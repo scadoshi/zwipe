@@ -13,6 +13,7 @@ pub const ALLOWED_THEMES: &[&str] = &[
     "ayu",
     "catppuccin",
     "deuteranopia",
+    "docs-rs",
     "dracula",
     "ethereal",
     "everforest",

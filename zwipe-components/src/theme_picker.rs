@@ -25,6 +25,7 @@ fn display_theme_name(slug: &str) -> String {
         "github" => return "GitHub".to_string(),
         "synthwave-84" => return "Synthwave '84".to_string(),
         "powershell" => return "PowerShell".to_string(),
+        "docs-rs" => return "docs.rs".to_string(),
         _ => {}
     }
     slug.split('-')
