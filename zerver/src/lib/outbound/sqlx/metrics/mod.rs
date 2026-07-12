@@ -234,9 +234,9 @@ impl MetricsRepository for Postgres {
                     r#"SELECT d.id, d.format,
                               (SELECT array_agg(DISTINCT ci)
                                  FROM scryfall_data sci, unnest(sci.color_identity) AS ci
-                                WHERE sci.id IN (d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id)
-                                   OR sci.id IN (SELECT dc.scryfall_data_id FROM deck_cards dc
-                                                 WHERE dc.deck_id = d.id AND dc.board = 'deck')) AS color_identity
+                                WHERE sci.id = ANY(ARRAY[d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id]
+                                                   || ARRAY(SELECT dc.scryfall_data_id FROM deck_cards dc
+                                                            WHERE dc.deck_id = d.id AND dc.board = 'deck'))) AS color_identity
                        FROM decks d
                        WHERE d.id = ANY($1) AND d.user_id = $2"#,
                     &deck_ids[..],
