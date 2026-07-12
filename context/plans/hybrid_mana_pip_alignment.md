@@ -1,8 +1,16 @@
 # Hybrid mana pip glyph misalignment — investigation & fix plan
 
-**Status: PLANNED (2026-07-12).** The glyph inside a **hybrid/twobrid** mana pip sits off-center
-in its squircle; single-color pips and generic numerals are fine. Owner-reported across both
-zite and the app (todo: Bugs section). This doc is the investigation + how to resolve.
+**Status: SHIPPED 2026-07-12 (`bb4bef05`).** Fixed via Path A: for the ~20 hybrid classes,
+restore mana-font's box geometry (`display: inline-block; 1.3em; line-height: 1.35em`) plus
+`box-sizing: content-box` so the 1px squircle border sits *outside* the padding box the
+half-offsets target — matching mana-font's native border-less box. Kept our border/radius/
+shadow. Verified on Reaper King (`{2/W}..{2/G}`) in both zwiper and zite. The `::before`
+font-size approach was a confirmed no-op (below). Minor cosmetic note deferred: the twobrid
+numeral sits close to the pip edge, judged too small to matter. The record below is kept for
+context.
+
+The glyph inside a **hybrid/twobrid** mana pip sat off-center in its squircle; single-color
+pips and generic numerals were fine. Owner-reported across both zite and the app.
 
 ## Reproduction
 
