@@ -1,6 +1,6 @@
 # Local theme persistence (zwiper + zite)
 
-**Status: PLANNED / scoping (2026-07-11). Client-only, additive. No server,
+**Status: SHIPPED (owner-confirmed 2026-07-12; scoped 2026-07-11). Client-only, additive. No server,
 contract, or DB change — the theme is already account-level (JWT prefs); this
 adds a *local* last-known cache so pre-auth screens are themed.**
 

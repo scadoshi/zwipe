@@ -1,6 +1,6 @@
 # Portfolio → shared zwipe-components migration
 
-**Status: PLANNED (2026-07-11).** Targets the **portfolio repo**
+**Status: SHIPPED (owner-confirmed 2026-07-12; planned 2026-07-11).** Targets the **portfolio repo**
 (`~/Developer/portfolio`), not this one. Follow-on to
 [[zite_banners_changelog]] (its "Piece 3" is superseded/expanded here). Adopts
 the shared `Banner`, `Panel`, filled `status-tag`, and `panel-action` button
