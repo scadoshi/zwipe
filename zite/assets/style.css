@@ -2116,7 +2116,9 @@ footer {
     font-size: 0.72rem;
 }
 
-.detail-chip {
+/* Scoped so it outranks components.css's .detail-chip (equal specificity,
+   loads later) — matches the .shared-deck .keyword-chip rule below. */
+.shared-deck .detail-chip {
     font-size: 0.7rem;
 }
 
