@@ -19,7 +19,7 @@ use crate::{
             helpers::SleeveCardProfile, search_card::error::SearchCardsError,
             zervice_metrics::ZerviceMetrics,
         },
-        ports::CardRepository,
+        ports::{CardRepository, DeckServeContext},
         requests::{
             create_card::CreateCardError,
             get_artists::GetArtistsError,
@@ -320,7 +320,7 @@ impl CardRepository for MyPostgres {
         &self,
         request: &CardQuery,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
-        self.search_scryfall_data_deck_aware(request, None, &[], None, false, None, &[])
+        self.search_scryfall_data_deck_aware(request, DeckServeContext::default())
             .await
     }
 
@@ -334,21 +334,22 @@ impl CardRepository for MyPostgres {
     /// ordering, banded + wildcarded by that caller-supplied seed (typically
     /// `{user_id}:{date}` — no deck required), and token/emblem printings
     /// excluded from the candidate pool. Exposed as `search_commanders`; every
-    /// other caller passes `None` and is unaffected.
-    // Deck-serving context (deck_id, exclusions, synergy scores, otags, seed)
-    // is passed positionally rather than as a struct — it is threaded straight
-    // into one QueryBuilder and never stored.
-    #[allow(clippy::too_many_arguments)]
+    /// other caller passes a default context and is unaffected.
     async fn search_scryfall_data_deck_aware(
         &self,
         request: &CardQuery,
-        deck_id: Option<uuid::Uuid>,
-        exclude_oracle_ids: &[uuid::Uuid],
-        synergy_scores: Option<&serde_json::Value>,
-        synergy_only: bool,
-        commander_seed: Option<String>,
-        deck_oracle_tags: &[String],
+        context: DeckServeContext<'_>,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
+        // Deck-serving inputs arrive bundled; unpack them into the locals the
+        // QueryBuilder threads them into (never stored beyond this call).
+        let DeckServeContext {
+            deck_id,
+            exclude_oracle_ids,
+            synergy_scores,
+            synergy_only,
+            commander_seed,
+            deck_oracle_tags,
+        } = context;
         // WHERE clauses read the predicate fields; LIMIT/OFFSET/ORDER BY read
         // the query config — the CardCriteria/CardQuery split, mirrored here.
         let criteria = request.criteria();
@@ -1525,22 +1526,12 @@ impl CardRepository for MyPostgres {
     async fn search_cards_deck_aware(
         &self,
         request: &CardQuery,
-        deck_id: Option<uuid::Uuid>,
-        exclude_oracle_ids: &[uuid::Uuid],
-        synergy_scores: Option<&serde_json::Value>,
-        synergy_only: bool,
-        deck_oracle_tags: &[String],
+        context: DeckServeContext<'_>,
     ) -> Result<Vec<Card>, SearchCardsError> {
+        // Card-level wrapper: forward the deck-serve context straight through
+        // (its callers never set a commander seed — that path is commander-select).
         let scryfall_data = self
-            .search_scryfall_data_deck_aware(
-                request,
-                deck_id,
-                exclude_oracle_ids,
-                synergy_scores,
-                synergy_only,
-                None,
-                deck_oracle_tags,
-            )
+            .search_scryfall_data_deck_aware(request, context)
             .await?;
         if scryfall_data.is_empty() {
             return Ok(vec![]);
@@ -1565,7 +1556,13 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<Card>, SearchCardsError> {
         let seed = format!("{user_id}:{}", Utc::now().date_naive());
         let scryfall_data = self
-            .search_scryfall_data_deck_aware(request, None, &[], None, false, Some(seed), &[])
+            .search_scryfall_data_deck_aware(
+                request,
+                DeckServeContext {
+                    commander_seed: Some(seed),
+                    ..Default::default()
+                },
+            )
             .await?;
         if scryfall_data.is_empty() {
             return Ok(vec![]);

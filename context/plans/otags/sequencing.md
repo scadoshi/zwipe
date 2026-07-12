@@ -298,8 +298,17 @@ back-compat-safe (tests in `contracts/deck.rs`). **No bump.**
 **Status: BUILT + PUSHED 2026-07-12.** `W_ORACLE_TAG = 0.20` otag-correlation term
 (`card_profiles.oracle_tags ?|` deck otags) in `search_scryfall_data_deck_aware`;
 `search_deck_cards` loads `decks.oracle_tags`. Ordering-only, additive, revert lever = zero the
-const. Tests in `tests/card_serving.rs` + `tests/repo_card.rs`. (The 8th positional arg keeps the
-documented `#[allow(too_many_arguments)]`; a `DeckServeContext` struct is the eventual cleanup.)
+const. Tests in `tests/card_serving.rs` + `tests/repo_card.rs`.
+
+**Cleanup (DONE 2026-07-12, committed) — `DeckServeContext`:** the serve entry points had grown a
+6-field positional "deck-serve context" bundle (`deck_id`, `exclude_oracle_ids`, `synergy_scores`,
+`synergy_only`, `commander_seed`, `deck_oracle_tags`) — `search_scryfall_data_deck_aware` tripped
+`too_many_arguments (8/7)` and its wrapper `search_cards_deck_aware` sat at the threshold. Refactor
+bundles them into a `DeckServeContext<'a>` (`Default` = plain search) so both methods are 2-arg
+(`request` + `ctx`), and **removes the `#[allow(too_many_arguments)]`**. Pure signature reshaping,
+zero behavior change (`repo_card` + `card_serving` tests pass unchanged). Touches `ports.rs`
+(struct + both trait decls), `card/mod.rs` (both impls + 3 internal call sites), `deck/services.rs`
+(1 call site), `tests/repo_card.rs` (8 call sites). No wire/DB change, no migration.
 
 **Goal:** fold otags into the serve (Q4 decision: one small `W_ORACLE_TAG` term first).
 

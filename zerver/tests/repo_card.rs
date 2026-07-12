@@ -14,7 +14,10 @@ use common::{card, refresh_card_views, seed_cards};
 use serde_json::json;
 use uuid::Uuid;
 
-use zwipe::{domain::card::ports::CardRepository, outbound::sqlx::postgres::Postgres};
+use zwipe::{
+    domain::card::ports::{CardRepository, DeckServeContext},
+    outbound::sqlx::postgres::Postgres,
+};
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 
 /// A default `CardQuery` — no criteria, no explicit sort (so the synergy /
@@ -105,12 +108,10 @@ async fn synergy_ordering_scored_before_unscored(pool: sqlx::PgPool) {
     let served = repo
         .search_scryfall_data_deck_aware(
             &default_query(),
-            None,
-            &[],
-            Some(&scores),
-            false,
-            None,
-            &[],
+            DeckServeContext {
+                synergy_scores: Some(&scores),
+                ..Default::default()
+            },
         )
         .await
         .unwrap();
@@ -132,12 +133,11 @@ async fn deck_aware_serve_excludes_oracle_ids(pool: sqlx::PgPool) {
     let served = repo
         .search_scryfall_data_deck_aware(
             &default_query(),
-            None,
-            &[drop_oracle],
-            Some(&scores),
-            false,
-            None,
-            &[],
+            DeckServeContext {
+                exclude_oracle_ids: &[drop_oracle],
+                synergy_scores: Some(&scores),
+                ..Default::default()
+            },
         )
         .await
         .unwrap();
@@ -174,7 +174,14 @@ async fn null_oracle_card_survives_deck_aware_shuffle(pool: sqlx::PgPool) {
     let q = default_query();
 
     let first = repo
-        .search_scryfall_data_deck_aware(&q, Some(deck), &[], Some(&scores), false, None, &[])
+        .search_scryfall_data_deck_aware(
+            &q,
+            DeckServeContext {
+                deck_id: Some(deck),
+                synergy_scores: Some(&scores),
+                ..Default::default()
+            },
+        )
         .await
         .unwrap();
     let names: Vec<&str> = first.iter().map(|s| s.name.as_str()).collect();
@@ -191,7 +198,14 @@ async fn null_oracle_card_survives_deck_aware_shuffle(pool: sqlx::PgPool) {
 
     // deterministic for a fixed (deck, day) seed
     let second = repo
-        .search_scryfall_data_deck_aware(&q, Some(deck), &[], Some(&scores), false, None, &[])
+        .search_scryfall_data_deck_aware(
+            &q,
+            DeckServeContext {
+                deck_id: Some(deck),
+                synergy_scores: Some(&scores),
+                ..Default::default()
+            },
+        )
         .await
         .unwrap();
     let names2: Vec<&str> = second.iter().map(|s| s.name.as_str()).collect();
@@ -224,12 +238,11 @@ async fn deck_oracle_tags_lift_matching_cards(pool: sqlx::PgPool) {
     let served = repo
         .search_scryfall_data_deck_aware(
             &default_query(),
-            None,
-            &[],
-            Some(&scores),
-            false,
-            None,
-            &["spot-removal".to_string()],
+            DeckServeContext {
+                synergy_scores: Some(&scores),
+                deck_oracle_tags: &["spot-removal".to_string()],
+                ..Default::default()
+            },
         )
         .await
         .unwrap();
@@ -245,12 +258,10 @@ async fn deck_oracle_tags_lift_matching_cards(pool: sqlx::PgPool) {
     let served = repo
         .search_scryfall_data_deck_aware(
             &default_query(),
-            None,
-            &[],
-            Some(&scores),
-            false,
-            None,
-            &[],
+            DeckServeContext {
+                synergy_scores: Some(&scores),
+                ..Default::default()
+            },
         )
         .await
         .unwrap();
@@ -290,7 +301,14 @@ async fn deck_oracle_tags_lift_matching_cards_in_banded_serve(pool: sqlx::PgPool
     let q = default_query();
 
     let served_without = repo
-        .search_scryfall_data_deck_aware(&q, Some(deck), &[], Some(&scores), false, None, &[])
+        .search_scryfall_data_deck_aware(
+            &q,
+            DeckServeContext {
+                deck_id: Some(deck),
+                synergy_scores: Some(&scores),
+                ..Default::default()
+            },
+        )
         .await
         .unwrap();
     let zzz_without = served_without
@@ -305,12 +323,12 @@ async fn deck_oracle_tags_lift_matching_cards_in_banded_serve(pool: sqlx::PgPool
     let served_with = repo
         .search_scryfall_data_deck_aware(
             &q,
-            Some(deck),
-            &[],
-            Some(&scores),
-            false,
-            None,
-            &["spot-removal".to_string()],
+            DeckServeContext {
+                deck_id: Some(deck),
+                synergy_scores: Some(&scores),
+                deck_oracle_tags: &["spot-removal".to_string()],
+                ..Default::default()
+            },
         )
         .await
         .unwrap();
