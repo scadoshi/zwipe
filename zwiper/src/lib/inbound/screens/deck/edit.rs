@@ -3,6 +3,7 @@
 use super::components::{
     deck_fields::{DeckFields, DeckFieldsHint, autofill_named_partner},
     format_select::FormatSelect,
+    oracle_tag_select::OracleTagSelect,
     skeletons::EditDeckSkeleton,
     swipe_select::{SwipeMode, SwipeSelect},
     tag_select::TagSelect,
@@ -33,8 +34,9 @@ use zwipe_core::{
         auth::models::session::Session,
         card::{Card, search_card::card_filter::price_currency::PriceCurrency},
         deck::{
-            Deck, DeckName, DeckOtherTag, DeckTag, PowerLevel, deck_profile::DeckProfile,
-            format::Format, requests::update_deck_profile::InvalidUpdateDeckProfile,
+            Deck, DeckName, DeckOtherTag, DeckTag, MAX_DECK_ORACLE_TAGS, PowerLevel,
+            deck_profile::DeckProfile, format::Format,
+            requests::update_deck_profile::InvalidUpdateDeckProfile, seed_oracle_tags,
         },
         user::models::hints::HINT_EDIT_DECK,
     },
@@ -74,6 +76,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut price_target_currency = use_signal(|| PriceCurrency::Usd);
     let mut power_level: Signal<Option<PowerLevel>> = use_signal(|| None);
     let mut other_tags: Signal<Vec<DeckOtherTag>> = use_signal(Vec::new);
+    let mut oracle_tags: Signal<Vec<String>> = use_signal(Vec::new);
+    let mut show_oracle_tags_select = use_signal(|| false);
+    // Deck tags already reflected in the seed (so re-seeding fires only for
+    // newly-added deck tags). Initialised to the loaded tags so editing an
+    // existing deck doesn't re-seed what's already there.
+    let mut seeded_from = use_signal(Vec::<DeckTag>::new);
 
     // Reactive Zwipe-select modes — derived from the current format / commander.
     let commander_mode = use_memo(move || selected_format().map(SwipeMode::Commander));
@@ -94,6 +102,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         use_signal(|| PriceCurrency::Usd);
     let mut original_power_level: Signal<Option<PowerLevel>> = use_signal(|| None);
     let mut original_other_tags: Signal<Vec<DeckOtherTag>> = use_signal(Vec::new);
+    let mut original_oracle_tags: Signal<Vec<String>> = use_signal(Vec::new);
     let mut original_partner: Signal<Option<Card>> = use_signal(|| None);
     let mut original_background: Signal<Option<Card>> = use_signal(|| None);
     let mut original_signature_spell: Signal<Option<Card>> = use_signal(|| None);
@@ -115,7 +124,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             original_format.set(deck.deck_profile.format);
             selected_format.set(deck.deck_profile.format);
             original_tags.set(deck.deck_profile.tags.clone());
-            selected_tags.set(deck.deck_profile.tags);
+            selected_tags.set(deck.deck_profile.tags.clone());
             original_land_target.set(deck.deck_profile.land_target);
             land_target.set(deck.deck_profile.land_target);
             let pt = deck
@@ -135,6 +144,11 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             power_level.set(deck.deck_profile.power_level);
             original_other_tags.set(deck.deck_profile.other_tags.clone());
             other_tags.set(deck.deck_profile.other_tags);
+            original_oracle_tags.set(deck.deck_profile.oracle_tags.clone());
+            oracle_tags.set(deck.deck_profile.oracle_tags.clone());
+            // Treat the loaded deck tags as already-seeded so the seeding effect
+            // won't re-add their otags over the user's saved set.
+            seeded_from.set(deck.deck_profile.tags);
         }
         Some(Err(e)) => {
             toast.error(
@@ -143,6 +157,33 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             );
         }
         None => (),
+    });
+
+    // Seed oracle tags from newly-selected deck tags (flat auto-select), additive
+    // only — mirrors create.rs. `seeded_from` starts at the loaded tags (above), so
+    // this fires only for tags the user adds while editing.
+    use_effect(move || {
+        let current = selected_tags();
+        let prev = seeded_from.peek().clone();
+        let newly: Vec<DeckTag> = current
+            .iter()
+            .copied()
+            .filter(|t| !prev.contains(t))
+            .collect();
+        if !newly.is_empty() {
+            let mut ot = oracle_tags.peek().clone();
+            let mut changed = false;
+            for slug in seed_oracle_tags(&newly) {
+                if !ot.contains(&slug) && ot.len() < MAX_DECK_ORACLE_TAGS {
+                    ot.push(slug);
+                    changed = true;
+                }
+            }
+            if changed {
+                oracle_tags.set(ot);
+            }
+        }
+        seeded_from.set(current);
     });
 
     // ========================================
@@ -381,6 +422,13 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             Opdate::Unchanged
         }
     });
+    let oracle_tags_update = use_memo(move || {
+        if oracle_tags() != original_oracle_tags() {
+            Opdate::Set(Some(oracle_tags()))
+        } else {
+            Opdate::Unchanged
+        }
+    });
     let has_made_changes = use_memo(move || {
         deck_name_update().is_some()
             || commander_id_update().is_changed()
@@ -394,6 +442,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             || price_currency_update().is_changed()
             || power_level_update().is_changed()
             || other_tags_update().is_changed()
+            || oracle_tags_update().is_changed()
     });
 
     // save state
@@ -441,6 +490,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 .price_target_currency(price_currency_update())
                 .power_level(power_level_update())
                 .other_tags(other_tags_update())
+                .oracle_tags(oracle_tags_update())
                 .build();
 
             match client()
@@ -500,6 +550,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     price_target_currency,
                                     power_level,
                                     other_tags,
+                                    oracle_tags,
+                                    show_oracle_tags_select,
                                 }
 
                             }
@@ -585,6 +637,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 open: show_tags_select,
                 selected_tags,
                 on_close: move |_| show_tags_select.set(false),
+            }
+
+            OracleTagSelect {
+                open: show_oracle_tags_select,
+                selected: oracle_tags,
+                on_close: move |_| show_oracle_tags_select.set(false),
             }
 
             FormatSelect {

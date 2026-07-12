@@ -3,6 +3,7 @@
 use super::components::{
     deck_fields::{DeckFields, DeckFieldsHint, autofill_named_partner},
     format_select::FormatSelect,
+    oracle_tag_select::OracleTagSelect,
     swipe_select::{SwipeMode, SwipeSelect},
     tag_select::TagSelect,
 };
@@ -25,7 +26,10 @@ use zwipe_core::{
     domain::{
         auth::models::session::Session,
         card::{Card, search_card::card_filter::price_currency::PriceCurrency},
-        deck::{DeckName, DeckOtherTag, DeckTag, PowerLevel, format::Format},
+        deck::{
+            DeckName, DeckOtherTag, DeckTag, MAX_DECK_ORACLE_TAGS, PowerLevel, format::Format,
+            seed_oracle_tags,
+        },
         user::models::hints::HINT_CREATE_DECK,
     },
     http::contracts::deck::HttpCreateDeckProfile,
@@ -63,7 +67,39 @@ pub fn CreateDeck() -> Element {
     let price_target_currency = use_signal(|| PriceCurrency::Usd);
     let power_level: Signal<Option<PowerLevel>> = use_signal(|| None);
     let other_tags: Signal<Vec<DeckOtherTag>> = use_signal(Vec::new);
+    let mut oracle_tags: Signal<Vec<String>> = use_signal(Vec::new);
+    let mut show_oracle_tags_select = use_signal(|| false);
     let create_hint = use_one_time_hint(HINT_CREATE_DECK);
+
+    // Seed oracle tags from newly-selected deck tags (the flat auto-select): when
+    // a deck tag is added, union its `oracle_tag_slugs` in (capped, deduped).
+    // Additive only — deselecting a deck tag or a manual removal both stick, so the
+    // user stays in control. `peek()` on the written signals keeps this keyed on
+    // `selected_tags` alone (no feedback loop).
+    let mut seeded_from = use_signal(Vec::<DeckTag>::new);
+    use_effect(move || {
+        let current = selected_tags();
+        let prev = seeded_from.peek().clone();
+        let newly: Vec<DeckTag> = current
+            .iter()
+            .copied()
+            .filter(|t| !prev.contains(t))
+            .collect();
+        if !newly.is_empty() {
+            let mut ot = oracle_tags.peek().clone();
+            let mut changed = false;
+            for slug in seed_oracle_tags(&newly) {
+                if !ot.contains(&slug) && ot.len() < MAX_DECK_ORACLE_TAGS {
+                    ot.push(slug);
+                    changed = true;
+                }
+            }
+            if changed {
+                oracle_tags.set(ot);
+            }
+        }
+        seeded_from.set(current);
+    });
 
     // Reactive Zwipe-select modes — derived from the current format / commander.
     let commander_mode = use_memo(move || selected_format().map(SwipeMode::Commander));
@@ -112,6 +148,10 @@ pub fn CreateDeck() -> Element {
                 .tags(if tags.is_empty() { None } else { Some(tags) })
                 .power_level(power_level().map(|p| p.to_string()))
                 .other_tags(if other.is_empty() { None } else { Some(other) })
+                .oracle_tags({
+                    let ot = oracle_tags();
+                    if ot.is_empty() { None } else { Some(ot) }
+                })
                 .land_target(land_target())
                 .price_target(price_target_val)
                 .price_target_currency(price_target_val.map(|_| price_target_currency()))
@@ -167,6 +207,8 @@ pub fn CreateDeck() -> Element {
                             price_target_currency,
                             power_level,
                             other_tags,
+                            oracle_tags,
+                            show_oracle_tags_select,
                         }
                     }
                 }
@@ -241,6 +283,12 @@ pub fn CreateDeck() -> Element {
                 open: show_tags_select,
                 selected_tags,
                 on_close: move |_| show_tags_select.set(false),
+            }
+
+            OracleTagSelect {
+                open: show_oracle_tags_select,
+                selected: oracle_tags,
+                on_close: move |_| show_oracle_tags_select.set(false),
             }
 
             FormatSelect {

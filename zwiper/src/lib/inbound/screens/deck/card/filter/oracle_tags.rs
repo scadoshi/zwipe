@@ -12,65 +12,9 @@ use crate::outbound::client::{ZwipeClient, card::get_oracle_tags::ClientGetOracl
 use dioxus::prelude::*;
 use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::card::{
-    oracle_tag::OracleTag, search_card::card_filter::builder::CardQueryBuilder,
+    oracle_tag::{CURATED_ORACLE_TAGS, OracleTag},
+    search_card::card_filter::builder::CardQueryBuilder,
 };
-
-/// Curated default oracle tags shown before searching: the 24 original mechanical
-/// categories mapped to their best-populated real slug, plus hand-picked functional
-/// fills. Any slug the backend no longer serves is silently skipped. The full
-/// catalog remains reachable via search.
-const CURATED_ORACLE_TAGS: &[&str] = &[
-    // ── the original mechanical categories → best-populated slug ──
-    "spot-removal",
-    "evasion",
-    "draw-engine",
-    "repeatable-creature-tokens",
-    "burn-any",
-    "sacrifice-outlet-creature",
-    "lifegain",
-    "sweeper",
-    "protects-creature",
-    "combat-trick",
-    "ramp",
-    "tutor-to-hand",
-    "reanimate-creature",
-    "anthem",
-    "untapper-creature",
-    "drain-life",
-    "copy-creature",
-    "mill-self",
-    "hate-graveyard",
-    "gives-pp-counters",
-    "counterspell",
-    // ── functional fills ──
-    "multi-removal",
-    "removal-exile",
-    "removal-bounce",
-    "cantrip",
-    "scry",
-    "discard",
-    "discard-outlet",
-    "opponent-loses-life",
-    "mana-sink",
-    "pinger",
-    "gives-haste",
-    "tapper-creature",
-    "death-trigger",
-    "modal",
-    "utility-land",
-    "creaturefall",
-    "martyr",
-    "land-ramp",
-    "gives-flying",
-    "gives-trample",
-    "mana-dork",
-    "castable-from-exile",
-    "free-cast-another",
-    "castable-from-graveyard",
-    "damage-prevention",
-    "regrowth-creature",
-    "mill-opponent",
-];
 
 fn read_selected(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
