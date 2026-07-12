@@ -151,6 +151,11 @@ impl UsageBuffer {
             .map(|((commander, card), t)| CardSignalDelta {
                 commander_oracle_id: commander,
                 card_oracle_id: card,
+                // Not yet populated: the signal buffer keys on (commander, card).
+                // Sending the deck id lets the server derive the richer
+                // generalized-context per-otag signal (context/plans/otags/
+                // Phase 5) and unlocks non-Commander decks. Follow-up client work.
+                deck_id: None,
                 // `shown` is derived from add-stack actions for now; a removal is
                 // not an impression, so it doesn't count toward `shown`.
                 shown: t.added + t.skipped + t.maybed,

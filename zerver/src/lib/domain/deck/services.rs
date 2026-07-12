@@ -344,6 +344,13 @@ where
             _ => None,
         };
 
+        // Oracle-tag-aware ordering (Phase 4): the deck's explicitly selected
+        // otags lift matching cards within the synergy serve. Ladder v1 is just
+        // the selected set — empty leaves ordering byte-identical (a future rung
+        // could fall back to the commander's own otags, but commander decks are
+        // already synergy-ordered, so it buys little).
+        let deck_oracle_tags = &deck_profile.oracle_tags;
+
         let cards = self
             .card_repo
             .search_cards_deck_aware(
@@ -352,6 +359,7 @@ where
                 &exclude_oracle_ids,
                 synergy_scores.as_ref(),
                 synergy_only,
+                deck_oracle_tags,
             )
             .await?;
         // Synergy was requested but the commander's cache wasn't available (cold

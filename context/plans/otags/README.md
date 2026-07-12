@@ -66,7 +66,12 @@ Full phase-by-phase build (files touched + per-phase additive-wire guarantee) li
    the `CardRole` wire/DB rename + Phase M (display labels already say "Card roles").
 3. **Deck otags** — `decks.oracle_tags` + archetype→otag seeding + searchable picker.
 4. **Serving** — one small `W_ORACLE_TAG` correlation term in the ranking query.
-5. **Signal collection** — generalized-context per-otag signal, shipped dark.
+5. **Signal collection** — generalized-context per-otag signal, shipped dark. **Slice A
+   (server + wire) BUILT 2026-07-12, unpushed** (`otag_context_signal` + rollup, `deck_id` added
+   additively to `CardSignalDelta`, credit loop keyed on the swiped card's otags by commander OR
+   `(format, CI)`); Commander accrues from existing clients immediately, non-EDH waits on the
+   Slice B client update. **Phase 5S** later sunsets the legacy `commander_oracle_id` wire field
+   once `deck_id` is guaranteed — the **first `MIN_CLIENT_VERSION` gate** the feature needs.
 6. **Non-EDH serving** — deferred; serve on the accrued dataset once it matures.
 
 Land 1-4 on Commander first (that is where the data and usage are); 5-6 accrue over time.

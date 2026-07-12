@@ -283,9 +283,7 @@ async fn get_deck_carries_command_zone_cards(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::OK, "get deck: {full}");
 
     // Command zone carries the commander (with its price), separate from entries.
-    let cz = full["command_zone_cards"]
-        .as_array()
-        .expect("command_zone_cards present");
+    let cz = full["command_zone_cards"].as_array().unwrap();
     assert_eq!(cz.len(), 1, "one command-zone card: {full}");
     assert_eq!(cz[0]["scryfall_data"]["name"], "Atraxa, Praetors' Voice");
     assert_eq!(cz[0]["scryfall_data"]["prices"]["usd"], "10.00");

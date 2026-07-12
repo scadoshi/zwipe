@@ -161,3 +161,123 @@ async fn search_requires_auth(pool: sqlx::PgPool) {
         .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
+
+/// Phase 4 end-to-end: a deck's *persisted* selected oracle tags lift matching
+/// cards through the real serve endpoint (`POST /api/deck/{id}/card/search`).
+/// Proves the whole path — `search_deck_cards` loading `deck_profile.oracle_tags`
+/// and threading them into the banded synergy serve. A spoofed commander synergy
+/// payload activates the signal-ordering path (its one scored entry is the
+/// commander itself, which the serve excludes, so every servable card is
+/// unscored and the otag term is the sole differentiator).
+#[sqlx::test]
+async fn deck_selected_otags_lift_matching_cards_end_to_end(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("otagserve").await;
+    app.verify_email(&uid).await;
+
+    let commander = card("Otag Commander")
+        .mono("R")
+        .type_line("Legendary Creature — Human")
+        .commander_legal();
+    let cmd_sid = commander.id();
+    let cmd_oid = commander.oracle_id().unwrap();
+
+    let mut fixtures = vec![commander];
+    fixtures.extend((1..=26).map(|i| card(&format!("Aaa{i:02}")).mono("R")));
+    for i in 1..=4 {
+        fixtures.push(
+            card(&format!("Zzz{i:02}"))
+                .mono("R")
+                .oracle_tags(&["spot-removal"]),
+        );
+    }
+    seed_cards(&pool, &fixtures).await;
+
+    // Spoof the commander's synergy cache so the deck serve enters the banded
+    // signal-ordering path (shape per SynergyPayload::into_scores).
+    let payload = json!({
+        "lists": [ { "tag": "hi", "cards": [ { "name": "Otag Commander", "synergy": 0.9 } ] } ]
+    });
+    sqlx::query(
+        "INSERT INTO commander_synergy (oracle_id, commander_name, payload) VALUES ($1, $2, $3)",
+    )
+    .bind(cmd_oid)
+    .bind("Otag Commander")
+    .bind(sqlx::types::Json(&payload))
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let (status, deck) = app
+        .post(
+            "/api/deck",
+            json!({ "name": "Otag Deck", "format": "commander" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "create: {deck}");
+    let did = deck["id"].as_str().unwrap().to_string();
+
+    // Set the commander and the deck's selected oracle tag.
+    let (status, updated) = app
+        .put(
+            &format!("/api/deck/{did}"),
+            json!({
+                "commander_id": { "Set": cmd_sid.to_string() },
+                "partner_commander_id": "Unchanged",
+                "background_id": "Unchanged",
+                "signature_spell_id": "Unchanged",
+                "format": "Unchanged",
+                "oracle_tags": { "Set": ["spot-removal"] }
+            }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "set commander + otags: {updated}");
+
+    // WITH the selected otag: matching cards reach the first page.
+    let (status, body) = app
+        .post(
+            &format!("/api/deck/{did}/card/search"),
+            json!({}),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "serve: {body}");
+    let with_zzz = names(&body).iter().filter(|n| n.starts_with("Zzz")).count();
+    assert!(
+        with_zzz >= 1,
+        "with the deck's selected otag, matching cards reach the first page (got {with_zzz})"
+    );
+
+    // Clear the otag: matching cards fall back to band 1, off the first page.
+    let (status, cleared) = app
+        .put(
+            &format!("/api/deck/{did}"),
+            json!({
+                "commander_id": "Unchanged",
+                "partner_commander_id": "Unchanged",
+                "background_id": "Unchanged",
+                "signature_spell_id": "Unchanged",
+                "format": "Unchanged",
+                "oracle_tags": { "Set": [] }
+            }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "clear otags: {cleared}");
+
+    let (status, body) = app
+        .post(
+            &format!("/api/deck/{did}/card/search"),
+            json!({}),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "serve (no otags): {body}");
+    let without_zzz = names(&body).iter().filter(|n| n.starts_with("Zzz")).count();
+    assert_eq!(
+        without_zzz, 0,
+        "no selected otags => matching cards stay in band 1, off the first page"
+    );
+}

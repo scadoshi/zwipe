@@ -89,6 +89,15 @@ pub struct CardSignalDelta {
     pub commander_oracle_id: Uuid,
     /// Card oracle id.
     pub card_oracle_id: Uuid,
+    /// Deck the swipe belongs to, when the client knows it. Additive
+    /// (`#[serde(default)]`) so existing clients that omit it keep flushing
+    /// commander-keyed signal unchanged. Long term this is the *richer* key: the
+    /// server derives the deck's commander, format, color identity, and tags from
+    /// it (context/plans/otags/ Phase 5), so a non-Commander deck (no commander
+    /// oracle id) can still contribute a generalized `(format, color-identity)`
+    /// per-otag signal. `None` → the server falls back to the commander context.
+    #[serde(default)]
+    pub deck_id: Option<Uuid>,
     /// Times the card was shown for a decision (add-stack impressions).
     pub shown: u32,
     /// Right swipes on the add stack (added to deck).
@@ -214,6 +223,7 @@ impl CardSignalDelta {
         Self {
             commander_oracle_id: self.commander_oracle_id,
             card_oracle_id: self.card_oracle_id,
+            deck_id: self.deck_id,
             shown: self.shown.min(HttpUsageBatch::MAX_PER_FLUSH),
             added: self.added.min(HttpUsageBatch::MAX_PER_FLUSH),
             skipped: self.skipped.min(HttpUsageBatch::MAX_PER_FLUSH),
@@ -308,6 +318,7 @@ mod tests {
         let delta = CardSignalDelta {
             commander_oracle_id: Uuid::nil(),
             card_oracle_id: Uuid::nil(),
+            deck_id: None,
             shown: u32::MAX,
             added: 3,
             skipped: HttpUsageBatch::MAX_PER_FLUSH + 1,
@@ -337,6 +348,21 @@ mod tests {
         assert!(batch.deck_skips.is_empty());
         assert!(batch.select_signals.is_empty());
         assert_eq!(batch.swipes_right, 2);
+    }
+
+    #[test]
+    fn signal_deck_id_defaults_to_none_when_omitted() {
+        // An existing client sends a signal with no deck_id; it must still parse
+        // (→ None) so the server keeps crediting commander-keyed signal.
+        let json = r#"{"swipes_right":0,"swipes_left":0,"swipes_up":0,"swipes_down":0,"searches":0,
+            "signals":[{"commander_oracle_id":"00000000-0000-0000-0000-000000000000",
+                        "card_oracle_id":"00000000-0000-0000-0000-000000000000",
+                        "shown":1,"added":1,"skipped":0,"maybed":0,"removed":0}]}"#;
+        let batch: HttpUsageBatch = serde_json::from_str(json).unwrap();
+        assert_eq!(batch.signals.len(), 1);
+        let signal = batch.signals.first().unwrap();
+        assert_eq!(signal.deck_id, None);
+        assert!(signal.clamped().deck_id.is_none());
     }
 
     #[test]

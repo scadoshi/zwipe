@@ -85,6 +85,11 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// suggestion signal feeding the default synergy ordering).
     fn refresh_card_signal_rollup(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
+    /// Refreshes the `otag_context_signal_rollup` materialized view
+    /// (generalized-context per-otag signal — the cross-format moat dataset).
+    fn refresh_otag_context_signal_rollup(&self)
+    -> impl Future<Output = anyhow::Result<()>> + Send;
+
     /// Full-replaces the `oracle_tags` catalog and the scryfall-sourced rows of
     /// `card_oracle_tags` from a fresh Oracle Tags pull. Returns
     /// `(catalog_rows, correlation_rows)`.
@@ -125,6 +130,9 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// results to the commander's synergy pool. With `synergy_only` set and a
     /// score map present, the result set is the synergistic cards only, sorted
     /// by the filter's `order_by` (or by synergy score when no sort is given).
+    // Deck-serving context is passed positionally (matching the impl) rather than
+    // as a struct — it is threaded straight into one QueryBuilder and never stored.
+    #[allow(clippy::too_many_arguments)]
     fn search_scryfall_data_deck_aware(
         &self,
         request: &CardQuery,
@@ -133,6 +141,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         synergy_scores: Option<&serde_json::Value>,
         synergy_only: bool,
         commander_seed: Option<String>,
+        deck_oracle_tags: &[String],
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
     /// Retrieves complete card by Scryfall ID.
@@ -250,6 +259,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
         synergy_only: bool,
+        deck_oracle_tags: &[String],
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// First-class commander search (context/archive/commander_select_ordering.md):
@@ -373,6 +383,10 @@ pub trait CardService: Clone + Send + Sync + 'static {
 
     /// Refreshes the card_signal_rollup materialized view (nightly, zervice).
     fn refresh_card_signal_rollup(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
+
+    /// Refreshes the otag_context_signal_rollup materialized view (nightly, zervice).
+    fn refresh_otag_context_signal_rollup(&self)
+    -> impl Future<Output = anyhow::Result<()>> + Send;
 
     /// Syncs the oracle_tag catalog + card correlation from Scryfall's Oracle
     /// Tags bulk file (nightly, zervice). Returns `(catalog_rows, correlation_rows)`.
@@ -528,6 +542,9 @@ pub trait ErasedCardService: Send + Sync + 'static {
     /// See [`CardService::refresh_card_signal_rollup`].
     fn refresh_card_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
 
+    /// See [`CardService::refresh_otag_context_signal_rollup`].
+    fn refresh_otag_context_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
+
     /// See [`CardService::get_card`].
     fn get_card<'a>(
         &'a self,
@@ -645,6 +662,10 @@ where
 
     fn refresh_card_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {
         Box::pin(CardService::refresh_card_signal_rollup(self))
+    }
+
+    fn refresh_otag_context_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {
+        Box::pin(CardService::refresh_otag_context_signal_rollup(self))
     }
 
     fn refresh_latest_cards<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {

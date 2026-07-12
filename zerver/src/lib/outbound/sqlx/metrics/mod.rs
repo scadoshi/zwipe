@@ -23,6 +23,29 @@ fn db(err: sqlx::Error) -> MetricsError {
     MetricsError::Database(err.into())
 }
 
+/// Accumulated gesture counts for one `(context, otag)` pair within a flush.
+#[derive(Default)]
+struct OtagTally {
+    shown: i64,
+    added: i64,
+    skipped: i64,
+    maybed: i64,
+    removed: i64,
+}
+
+/// Canonical color-identity key for the generalized `(format, CI)` context:
+/// WUBRG-ordered single-letter codes, colorless collapses to `C` (matching the
+/// weekly facet-signal convention). Stable regardless of the stored color order.
+fn canonical_color_identity(colors: &[String]) -> String {
+    let mut key = String::new();
+    for c in ["W", "U", "B", "R", "G"] {
+        if colors.iter().any(|x| x.as_str() == c) {
+            key.push_str(c);
+        }
+    }
+    if key.is_empty() { "C".to_string() } else { key }
+}
+
 use crate::outbound::sqlx::deck::MAX_SUPPRESSIONS_PER_DECK;
 
 impl MetricsRepository for Postgres {
@@ -141,6 +164,136 @@ impl MetricsRepository for Postgres {
             .execute(&mut *tx)
             .await
             .map_err(db)?;
+        }
+
+        // Generalized-context per-otag signal (Phase 5 — the cross-format moat
+        // dataset, context/plans/otags/moat.md; shipped dark). For every add-stack
+        // signal we credit each OTAG OF THE SWIPED CARD (card_profiles.oracle_tags),
+        // keyed by the deck's generalized context:
+        //   * commander present → 'commander:<oracle_id>' (every existing client),
+        //   * else deck_id present → 'format_ci:<format>:<CI>' from the deck row
+        //     (non-Commander decks; ownership-scoped). Nothing otag/format/CI is on
+        //     the wire — it is all derived here. Pure aggregate, no user_id.
+        if !batch.signals.is_empty() {
+            // Otags of every swiped card (cards with none contribute nothing).
+            let signal_card_ids: Vec<Uuid> =
+                batch.signals.iter().map(|s| s.card_oracle_id).collect();
+            let otag_rows = query!(
+                r#"SELECT lc.oracle_id, cp.oracle_tags
+                   FROM latest_cards lc
+                   JOIN card_profiles cp ON cp.scryfall_data_id = lc.id
+                   WHERE lc.oracle_id = ANY($1)"#,
+                &signal_card_ids[..],
+            )
+            .fetch_all(&mut *tx)
+            .await
+            .map_err(db)?;
+
+            let mut card_otags: HashMap<Uuid, Vec<String>> = HashMap::new();
+            for row in otag_rows {
+                let Some(oracle_id) = row.oracle_id else {
+                    continue;
+                };
+                let tags: Vec<String> = row
+                    .oracle_tags
+                    .as_array()
+                    .map(|a| {
+                        a.iter()
+                            .filter_map(|t| t.as_str().map(str::to_string))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                if !tags.is_empty() {
+                    card_otags.insert(oracle_id, tags);
+                }
+            }
+
+            // Non-Commander context: derive (format, CI) from the deck. Only signals
+            // with no commander but a deck_id need it; scoped to the caller's decks
+            // so a client can't attribute signal to a deck it doesn't own. CI mirrors
+            // the deck read: union of command-zone + mainboard card identities.
+            let deck_ids: Vec<Uuid> = batch
+                .signals
+                .iter()
+                .filter(|s| s.commander_oracle_id.is_nil())
+                .filter_map(|s| s.deck_id)
+                .collect();
+            let mut deck_context: HashMap<Uuid, String> = HashMap::new();
+            if !deck_ids.is_empty() {
+                let deck_rows = query!(
+                    r#"SELECT d.id, d.format,
+                              (SELECT array_agg(DISTINCT ci)
+                                 FROM scryfall_data sci, unnest(sci.color_identity) AS ci
+                                WHERE sci.id IN (d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id)
+                                   OR sci.id IN (SELECT dc.scryfall_data_id FROM deck_cards dc
+                                                 WHERE dc.deck_id = d.id AND dc.board = 'deck')) AS color_identity
+                       FROM decks d
+                       WHERE d.id = ANY($1) AND d.user_id = $2"#,
+                    &deck_ids[..],
+                    user_id,
+                )
+                .fetch_all(&mut *tx)
+                .await
+                .map_err(db)?;
+                for row in deck_rows {
+                    // No format → no meaningful (format, CI) context; skip.
+                    let Some(format) = row.format else {
+                        continue;
+                    };
+                    let ci = canonical_color_identity(row.color_identity.as_deref().unwrap_or(&[]));
+                    deck_context.insert(row.id, format!("format_ci:{format}:{ci}"));
+                }
+            }
+
+            // Aggregate gesture counts per (context_key, otag), then upsert once each.
+            let mut otag_tallies: HashMap<(String, String), OtagTally> = HashMap::new();
+            for sig in &batch.signals {
+                let context_key = if !sig.commander_oracle_id.is_nil() {
+                    format!("commander:{}", sig.commander_oracle_id)
+                } else if let Some(key) = sig.deck_id.and_then(|id| deck_context.get(&id)) {
+                    key.clone()
+                } else {
+                    continue;
+                };
+                let Some(otags) = card_otags.get(&sig.card_oracle_id) else {
+                    continue;
+                };
+                for otag in otags {
+                    let t = otag_tallies
+                        .entry((context_key.clone(), otag.clone()))
+                        .or_default();
+                    t.shown += sig.shown as i64;
+                    t.added += sig.added as i64;
+                    t.skipped += sig.skipped as i64;
+                    t.maybed += sig.maybed as i64;
+                    t.removed += sig.removed as i64;
+                }
+            }
+
+            for ((context_key, oracle_tag), t) in &otag_tallies {
+                query!(
+                    r#"INSERT INTO otag_context_signal
+                           (context_key, oracle_tag, shown, added, skipped, maybed, removed, updated_at)
+                       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+                       ON CONFLICT (context_key, oracle_tag) DO UPDATE SET
+                           shown      = otag_context_signal.shown   + EXCLUDED.shown,
+                           added      = otag_context_signal.added   + EXCLUDED.added,
+                           skipped    = otag_context_signal.skipped + EXCLUDED.skipped,
+                           maybed     = otag_context_signal.maybed  + EXCLUDED.maybed,
+                           removed    = otag_context_signal.removed + EXCLUDED.removed,
+                           updated_at = NOW()"#,
+                    context_key,
+                    oracle_tag,
+                    t.shown,
+                    t.added,
+                    t.skipped,
+                    t.maybed,
+                    t.removed,
+                )
+                .execute(&mut *tx)
+                .await
+                .map_err(db)?;
+            }
         }
 
         // Commander-select signal: pooled shown/selected/skipped per candidate.

@@ -146,6 +146,12 @@ async fn main() -> anyhow::Result<()> {
     } else {
         tracing::info!("step 4/5 card_signal_rollup: refreshed");
     }
+    if let Err(e) = card_service.refresh_otag_context_signal_rollup().await {
+        failures += 1;
+        tracing::error!("step 4/5 otag_context_signal_rollup refresh FAILED (continuing): {e:#}");
+    } else {
+        tracing::info!("step 4/5 otag_context_signal_rollup: refreshed");
+    }
 
     tracing::info!("step 5/5 prune expired sessions: starting");
     if let Err(e) = auth_service.delete_expired_sessions().await {
