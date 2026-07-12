@@ -4,10 +4,12 @@ use std::time::Duration;
 use tokio::time::sleep;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
-/// Fullscreen image preview overlay with dismiss animation.
+/// Fullscreen image preview overlay with dismiss animation. The payload carries
+/// the face to open on (0 = front) so it lands on whichever side the caller was
+/// showing; the shared flip control still cycles from there.
 #[component]
 pub(crate) fn ImagePreview(
-    mut card: Signal<Option<ScryfallData>>,
+    mut card: Signal<Option<(ScryfallData, usize)>>,
     mut dismissing: Signal<bool>,
 ) -> Element {
     rsx! {
@@ -27,11 +29,12 @@ pub(crate) fn ImagePreview(
                         dismissing.set(false);
                     });
                 },
-                if let Some(sd) = card() {
+                if let Some((sd, face)) = card() {
                     FlippableCardImage {
                         sd,
                         size: ImageSize::Large,
                         class: "card-image".to_string(),
+                        initial_face: face,
                     }
                 }
             }

@@ -1,5 +1,5 @@
 use super::components::{
-    card_info::{CardInfoDisplay, CardRulesDialog, CardSkeleton, RulesButton},
+    card_info::{CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton},
     filter_store::{FilterScope, FilterStore},
     printing_sheet::PrintingSheet,
 };
@@ -564,7 +564,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
                         if let Some(card) = current_card() {
                             CardInfoDisplay { card: card.clone() }
-                            CardRulesDialog {
+                            CardDetailsDialog {
                                 open: show_rules,
                                 card,
                                 on_printings: move |_| printing_open.set(true),
