@@ -1,16 +1,41 @@
 # Server-driven catalogs — roles & deck tags without client releases
 
-**Status: Part 0 DONE (`d036b86b`, 2026-07-12, unpushed); B + C PLANNED.** The otags impls have
-landed, so this is unblocked. Goal: make the **card-role catalog**, the **deck-tag catalog**, and
-their **otag relationships** something the server delivers, so adding a role, a deck tag, or a tag
-correlation is a server const edit + deploy — never an app-store turnaround. Pairs with the otags
-work (`plans/otags/`); this is the delivery layer that lets all that tagging grow without waiting
-on client release cycles.
+**Status: Part 0 + B + C DONE 2026-07-12 (committed, UNPUSHED).** Goal met: adding a role, a deck
+tag, or a tag correlation is now a server const edit + deploy — no app-store turnaround. Everything
+is **additive and existing-client-safe** (the wire is byte-identical slug arrays either way; the
+type changes are internal to `zwipe-core` and only affect the next client build). No
+`MIN_CLIENT_VERSION` bump. Full workspace green (clippy `--workspace -D warnings`, tests, build).
 
-> **NOTE (2026-07-12): `MechanicalCategory` is now `CardRole`** (Phase M rename shipped). Read every
-> `MechanicalCategory` below as `CardRole`; the module dir + wire/DB field `mechanical_categories`
-> still exist (they move at the Phase M sunset). **Part 0 shipped** — see its section below; B + C
-> (the catalog endpoints + client rendering) are the remaining "big effort," phase-able later.
+### DONE (commits, in order)
+- **Part 0 — lossy deserialization** (`d036b86b`): `serde_helpers::lossy_vec` on the served enum-vecs
+  (`mechanical_categories`, deck `other_tags`) so an unknown slug never crashes an old client.
+- **Catalog endpoints + fetchers** (`e16c0ba2`): `GET /api/card/roles` (public, `CardRoleView`) +
+  `GET /api/deck/tags` (authed, `DeckTagView` incl. `seed_otags`); `ClientGetCardRoles` /
+  `ClientGetDeckTags`.
+- **Part B — roles fully server-driven:** the filter fetches the role catalog (`3948829a`); and
+  **`CardProfile.card_roles: Vec<CardRole> → Vec<String>` slugs** (`3c3b83f2`) so a new server role
+  renders on cards/lists/chips without a release. `card_role::role_label(slug)` resolves labels
+  (curated for known, prettified for new). `group_by_category` buckets dynamically by slug.
+- **Part C — deck tags fully server-driven:** `DeckProfile.tags` / `HttpSharedDeck.tags →
+  Vec<String>` slugs (`fe2e1896`); `deck_tag::deck_tag_label(slug)` resolver; display sites (deck
+  view, deck list, zite shared deck) + `seed_oracle_tags` take slugs; **the picker (`TagSelect`)
+  now renders options from the fetched `GET /api/deck/tags` catalog** (`818af097`), so a new deck
+  tag is selectable — create/edit fetch it and pass it as a `catalog` prop.
+
+### Remaining follow-ups (small, non-gating)
+- **Catalog-based seeding:** `seed_oracle_tags` still uses the compiled `DeckTag::oracle_tag_slugs`,
+  so a *new* tag's otag seeds don't apply until a release. Finish: seed from the catalog's
+  `seed_otags` (a `seed_oracle_tags_from_catalog(slugs, &[DeckTagView])` helper, used in the
+  create/edit reconcile which already has the catalog loaded).
+- **Deck role-distribution chart** (`deck_metrics.rs`) stays keyed on the known `CardRole` set
+  (fixed compact-label axes) — a new role isn't charted there (it still shows in grouped lists +
+  on cards). Making it dynamic would change its output type + the chart consumer; deferred.
+- **Ship it:** deploy + the next client build (the payoff only reaches users on the client that
+  carries these changes; deployed clients are untouched).
+
+> **NOTE:** `MechanicalCategory` is now `CardRole` and its module dir is `card_role/` (both renames
+> shipped). The wire/DB field `mechanical_categories` still exists (moves at the Phase M sunset).
+> Read `MechanicalCategory` below as `CardRole`. The original plan text is kept for rationale.
 
 ## The problem
 
