@@ -491,6 +491,13 @@ pub(crate) fn DeckFields(
 
     rsx! {
         // ========================================
+        // Profile — name, format, command zone, power level.
+        // ========================================
+        div { style: "margin-bottom: 0.5rem;",
+            span { class: "card-title", "Profile" }
+        }
+
+        // ========================================
         // Deck name
         // ========================================
         TextInput {
@@ -884,6 +891,13 @@ pub(crate) fn DeckFields(
                     }
                 }
             }
+        }
+
+        // ========================================
+        // Budget — land target + price target.
+        // ========================================
+        div { style: "margin-top: 1.5rem;",
+            span { class: "card-title", "Budget" }
         }
 
         // ========================================
