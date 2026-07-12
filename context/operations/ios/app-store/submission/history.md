@@ -8,6 +8,7 @@ iOS-side build-number log.
 
 | Version | iOS build | Notes |
 |---------|-----------|-------|
+| 1.6.0 | 63 | Card roles + oracle tags, deck-view reorg (Profile/Budget/Tags), shared CardDetails + flippable card images across app/site, 31 themes (17 new) + theme persistence, in-app changelog. Built 2026-07-12, uploading. |
 | 1.5.0 | 62 | Edge back-swipe nav, per-screen filter persistence, session-platform tracking, CardRow/skeleton polish. Submitted to review 2026-07-09. Android counterpart vc23. |
 | 1.4.0 | 61 | Feature batch: commander popularity ordering, partner autofill, Deck MVPs phase 1, deck share links. Android counterpart vc22. |
 | 1.3.1 | 60 | Anonymous pre-auth funnel telemetry. Android vc21. |
