@@ -32,13 +32,16 @@ migration, no backfill, no sync-on-write, and no second source of truth**.
 object), not to any table — the same way `commander_name` lives on that DTO.
 
 **DTO field type: `Vec<String>` (WUBRG short codes), not `Colors`.** The original
-draft used the `Colors` newtype, but `Colors` (and `Color`) currently derive only
-`Debug, Clone, PartialEq` — **no `Serialize`/`Deserialize`, no `Default`** (verified
-2026-07-11, `colors.rs:121`), so putting it on a `#[serde(default)]` DTO field would
-mean adding serde + a short-name adapter to a shared type. `Vec<String>` of short
-codes is leaner, serializes trivially, matches the DB `text[]` column exactly (the
-subquery returns `text[]` straight onto the field), and the client already needs a
-WUBRG sort helper either way. No shared-type changes.
+draft used the `Colors` newtype. `Color` and `Colors` now **do** carry manual
+`Serialize`/`Deserialize` impls (verified 2026-07-11, `colors.rs:57-84,143-168` —
+`Color` serializes to its short code), so the earlier "no serde" rationale is
+stale. But `Colors` still has **no `Default`** (`colors.rs:121` derives only
+`Debug, Clone, PartialEq`), which a `#[serde(default)]` field requires, and adding
+`#[derive(Default)]` to a shared type just to satisfy the DTO is churn we don't
+need. `Vec<String>` is leaner, serializes trivially, and matches the DB `text[]`
+column exactly (the subquery returns `text[]` straight onto the field). No
+shared-type changes. Sorting is handled client-side by iterating `Color::all()`
+(already WUBRG) and filtering to members, so no separate sort helper is needed.
 
 ## Considered and declined: a stored field for non-derivable formats
 
@@ -56,15 +59,20 @@ queries + DeckProfile change with `decks.oracle_tags`). Until then: derive-only.
 
 ## Sequencing vs otags
 
-This slice overlaps **otags Phase 3 ("deck otag selection")** — both add a field
-to `DeckProfile` / `DatabaseDeckProfile` and edit the same deck-profile
-constructor queries + `.sqlx/`. They are additive and coexist fine, but **do not
-build them on parallel branches** (git + `.sqlx/` conflicts on the same queries).
-Land them sequentially. Per the owner's ordering, **otags goes first**; once
-Phase 3's DeckProfile/deck-query changes are in, adding `color_identity` next to
-`oracle_tags` in the same 4 sites is trivial. (This derive-only slice has **no
-migration**, so if it must ship before Phase 3 it can — just re-`sqlx prepare`
-after whichever lands second.)
+otags **Phase 2 (card-level oracle tags) is DONE and committed** (`f11cc1e3`,
+2026-07-11); main is clean and compiles. This slice does **not** collide with
+anything landed so far — Phase 2 touched `card_profiles`, not `decks`/`DeckProfile`.
+
+The collision is only with **otags Phase 3 ("deck otag selection")**, which is
+**not started yet** — both it and this slice add a field to `DeckProfile` /
+`DatabaseDeckProfile` and edit the same 4 deck-profile constructor queries +
+`.sqlx/`. They are additive and coexist fine, but **do not build them on parallel
+branches** (git + `.sqlx/` conflicts on the same queries). Land them sequentially.
+Per the owner's ordering, **otags goes first**; once Phase 3's DeckProfile/deck-query
+changes are in, adding `color_identity` next to `oracle_tags` in the same 4 sites is
+trivial. (This derive-only slice has **no migration**, so if it must ship before
+Phase 3 it can — just re-`sqlx prepare` after whichever lands second.) **Green-light
+question for the owner:** does this go now (Phase 3 not started) or wait for Phase 3?
 
 ## Approach
 
@@ -82,14 +90,18 @@ after whichever lands second.)
 All four build a `DatabaseDeckProfile` and need the subquery. The **3 macros**
 require `cargo sqlx prepare --workspace` + committing `.sqlx/`; the QueryBuilder
 one is a runtime query (no `.sqlx`):
-1. `create_deck_profile` — `query_as!` `RETURNING …` (~L84-90).
-2. `get_deck_profile` — `query_as!` `SELECT …` (~L209-227). **Has GROUP BY** — the
-   correlated subquery references `d.commander_id` etc.; they're covered by
-   `GROUP BY d.id` functional dependency (confirm the GROUP BY leads with `d.id`,
-   else the subquery errors).
-3. `get_deck_profiles` — `query_as!` `SELECT …` (~L239-257). Same GROUP BY note.
-4. `update_deck_profile` — **runtime `QueryBuilder`** `.push(" RETURNING …")` (~L368).
-   Runtime, so no `.sqlx` entry, but still returns a `DatabaseDeckProfile`.
+1. `create_deck_profile` — `query_as!` `RETURNING …` (**L83-92**; existing
+   `commander_name?` subqueries at L89-92 are the template).
+2. `get_deck_profile` — `query_as!` `SELECT …` (**L209-227**). **Has GROUP BY**
+   (L226-227) — the correlated subquery references `d.commander_id` etc. Confirmed:
+   the GROUP BY **leads with `d.id`**, so the command-zone id columns are covered by
+   functional dependency and a `d.`-aliased subquery is legal. This is the site that
+   also covers the shared-deck page (see share-link note above).
+3. `get_deck_profiles` — `query_as!` `SELECT …` (**L239-257**). Same GROUP BY,
+   also leads with `d.id` (L256-257).
+4. `update_deck_profile` — **runtime `QueryBuilder`** `.push(" RETURNING …")`
+   (**L368-371**). Runtime, so no `.sqlx` entry, but still returns a
+   `DatabaseDeckProfile`; use the **unaliased** subquery form (bare `commander_id`).
 
 Subquery to add to each RETURNING/SELECT list (unaliased for the RETURNING sites,
 `d.`-aliased for the two `SELECT` sites):
@@ -103,28 +115,43 @@ Subquery to add to each RETURNING/SELECT list (unaliased for the RETURNING sites
 NULL command-zone IDs simply don't match, so it's null-safe (no command zone →
 NULL → `unwrap_or_default()` → empty).
 
-- **Share-link fetch:** the zite `/deck/:token` page renders a shared deck. Find
-  the by-share-token fetch (it is **not** `set_share_token`/`clear_share_token`,
-  which only rotate the token) — if it constructs a `DeckProfile`, add the
-  subquery there too; if it reuses one of the 4 above, it's already covered.
+- **Share-link fetch — RESOLVED, no extra work.** `get_shared_deck`
+  (`services.rs:900`) resolves the token to `(deck_id, owner_id)` via
+  `get_deck_id_by_share_token` (which selects only `id, user_id` — no profile),
+  then calls `get_deck` → `get_deck_profile` (site #2). So fixing the 4 sites above
+  covers the shared-deck page automatically; no separate query.
 - `cargo sqlx prepare --workspace`, commit `.sqlx/`.
 
 ### client — `zwiper/src/lib/inbound/screens/deck/list.rs`
 - The zone chips render as `stat-chip stat-chip-zone` for commander / partner /
-  background / signature spell (~L149-156). Render the identity pips **right after
-  that block**, before the user-tag loops:
+  background / signature spell (confirmed **L149-160**, signature spell ends L159-160).
+  Render the identity pips **right after that block**, before the tag loops at L161.
+- **Pip class must be lowercase, no `ms-shadow`** — mirror the live pattern at
+  `card/filter/mana/color_identity.rs:131`: `i { class: "ms ms-{code_lower} ms-cost" }`
+  (`ms-w`/`ms-u`/…; `ms-shadow` is not used anywhere and would be a dead class).
+- **No sort helper needed** — `Color::all()` already returns WUBRG order, so filter
+  it by membership. Parse the DTO codes into a set of `Color` (via `Color::try_from`,
+  case-insensitive), then iterate `Color::all()`:
   ```rust
-  if !profile.color_identity.is_empty() {
-      span { class: "deck-list-identity",
-          for code in sorted_short_codes(&profile.color_identity) {
-              i { key: "{code}", class: "ms ms-{code} ms-cost ms-shadow" }
+  {
+      let present: std::collections::HashSet<Color> = profile
+          .color_identity
+          .iter()
+          .filter_map(|s| Color::try_from(s.as_str()).ok())
+          .collect();
+      (!present.is_empty()).then(|| rsx! {
+          span { class: "deck-list-identity",
+              for color in Color::all().into_iter().filter(|c| present.contains(c)) {
+                  i {
+                      key: "{color.to_short_name()}",
+                      class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                  }
+              }
           }
-      }
+      })
   }
   ```
-- `sorted_short_codes(&[String]) -> Vec<String>`: sort to canonical WUBRG (map
-  each short code to `Color` for its `Ord`, then back to short — mirror how
-  `card_row.rs` sorts today). Add it where the list can reach it.
+  (`use zwipe_core::domain::card::models::scryfall_data::colors::Color;` at file scope.)
 - `deck-list-identity` CSS in `zwiper/assets/main.css`: `inline-flex`, small gap.
   Pips inherit the global squircle + border rule from `components.css`
   automatically (they use `ms-cost`).
