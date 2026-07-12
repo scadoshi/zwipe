@@ -73,6 +73,7 @@ fn render_block(b: &'static Block) -> Element {
             }
         },
         Block::Note(t) => rsx! { aside { class: "guide-note", {inline(t)} } },
+        Block::Diagram(t) => rsx! { pre { class: "guide-diagram", "{t}" } },
     }
 }
 
