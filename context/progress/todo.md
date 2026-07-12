@@ -23,13 +23,10 @@ at `context/archive/complete_2026_q1.md`.
 
 ---
 
-## Bugs (owner-reported 2026-07-11)
+## Bugs
 
-- [x] **Printing shifting bug — FIXED 2026-07-11** (`900001bd`). The printing carousel drifted right as you swiped (worse on many-printing cards, reload cleared it): it translated the strip by `-index * page_width_px` off a one-time `window.innerWidth` read, so `index * (measured - actual)` error accumulated. Now positions by `-index * 100%` (percentage of the one-viewport-wide flex strip), which needs no measurement and can't drift. Device-verified on the 6.5" sim.
-- [x] **Flip-card down-shift — FIXED 2026-07-11** (`02aab440`). Wasn't the button padding; the DFC-only `aspect-ratio: 5/7` wrapper rule made double-faced cards render a few px smaller/lower than single-faced ones. Now the button pins to an image-sized `.flip-face` (absolute, top-right) and DFC/single-face size identically. Sim-verified.
-- [x] **Clone toast — DONE 2026-07-12.** Settled on `format!("Cloned as \"{name}\"")` (double quotes) at `clone_deck_dialog.rs:96`. The accent-1 colored-name idea was dropped: `dioxus_primitives` toast takes a plain `String`, and a custom Element toast body wasn't worth it — plain quoted text is fine.
-- [ ] **Keyword / Card-role reveal collapses abruptly** (owner-reported 2026-07-12). The inline reveal in `KeywordChips` / `CardRoleChips` (shared `.keyword-reveal` container) eases open nicely but snaps shut on close instead of animating out. Likely cause: the reveal *content* is conditionally rendered (`reveal_text` / `reveal_tags` is `Some` only while open), so on collapse the inner element is removed from the DOM immediately and the exit transition has nothing to animate. Fix later: keep the content mounted and drive only the `open` class (grid-rows/opacity) for both directions, or hold the last content through the close transition. Shared component, so a fix lands in app + zite together.
-- [x] **Dual-color (hybrid) mana pip glyph misalignment — FIXED 2026-07-12** (`bb4bef05`). Hybrid/twobrid pips (`{2/W}`, `{W/U}`) rendered off-center on both zite + app. mana-font draws hybrids as two absolutely-positioned halves (`::before`+`::after`) tuned for its native border-less 1.3em box; our 1.5em inline-flex squircle broke the offsets. Fix: restore mana-font's box geometry for hybrids + `box-sizing: content-box` (border outside the offset reference). Verified on Reaper King. Detail: [`plans/hybrid_mana_pip_alignment.md`](../plans/hybrid_mana_pip_alignment.md).
+_No open bugs._ Completed fixes are archived to
+[`archive/complete_2026_q3.md`](../archive/complete_2026_q3.md) (hashes stay searchable there).
 
 ---
 
