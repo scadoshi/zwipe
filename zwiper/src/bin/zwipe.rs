@@ -11,8 +11,6 @@ use zwiper::{
 };
 
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
-const THEMES_CSS: Asset = asset!("/assets/themes.css");
-const COMPONENTS_CSS: Asset = asset!("/assets/components.css");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const ACCORDION_CSS: Asset = asset!("/assets/accordion.css");
 const ALERT_DIALOG_CSS: Asset = asset!("/assets/alert-dialog.css");
@@ -96,8 +94,8 @@ fn App() -> Element {
                  @font-face{{font-family:'JetBrains Mono';font-style:normal;font-weight:700;font-display:swap;src:url({FONT_JBM_700}) format('woff2');}}"
             )}
         }
-        document::Link { rel: "stylesheet", href: THEMES_CSS }
-        document::Link { rel: "stylesheet", href: COMPONENTS_CSS }
+        document::Style { {zwipe_components::THEMES_CSS} }
+        document::Style { {zwipe_components::COMPONENTS_CSS} }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: ACCORDION_CSS }
         document::Link { rel: "stylesheet", href: ALERT_DIALOG_CSS }

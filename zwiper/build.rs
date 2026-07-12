@@ -5,20 +5,6 @@ const RUST_LOG_KEY: &str = "RUST_LOG";
 const RUST_BACKTRACE_KEY: &str = "RUST_BACKTRACE";
 
 fn main() {
-    // Copy the shared themes (zwipe-components owns them) into assets so
-    // asset!() can find them.
-    std::fs::copy("../zwipe-components/assets/themes.css", "assets/themes.css")
-        .expect("failed to copy zwipe-components/assets/themes.css into zwiper/assets/");
-    println!("cargo:rerun-if-changed=../zwipe-components/assets/themes.css");
-
-    // Copy the shared component styles (zwipe-components) the same way.
-    std::fs::copy(
-        "../zwipe-components/assets/components.css",
-        "assets/components.css",
-    )
-    .expect("failed to copy zwipe-components/assets/components.css into zwiper/assets/");
-    println!("cargo:rerun-if-changed=../zwipe-components/assets/components.css");
-
     dotenvy::dotenv().expect("failed to load .env");
 
     let backend_url = std::env::var(BACKEND_URL_KEY)
