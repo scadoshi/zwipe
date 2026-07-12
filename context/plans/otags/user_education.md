@@ -188,3 +188,154 @@ dense, prefer trimming a bullet and leaning on the "?" over adding one.
 
 Mobile 3-4 gate a client release; guides (2, 4/zite) can go anytime. **Step 3 is
 the star**; step 4 is deliberately minimal to avoid hint fatigue.
+
+---
+
+## 7. Execution spec (build tickets)
+
+Written so a Claude Sonnet agent can execute each ticket without re-deriving the
+design. Line numbers drift — every anchor is quoted so it's greppable. All
+user-facing copy: sentence case, no em dashes, lead with benefit (§2). Verify
+after each ticket: `cargo +nightly fmt` then
+`cargo clippy -p zwipe-core -p zerver --all-targets -- -D warnings`, and for
+zwiper/zite `cargo clippy -p zwiper -p zite --all-targets -- -D warnings` +
+`dx check` if available.
+
+### Ticket 1 — canonical concept explainers (shared copy, DRY source)
+
+**Goal:** one source of truth for each concept's copy, rendered as rsx, reused by
+both the "?" buttons (Ticket 2) and the hint refreshes (Ticket 3).
+
+**Model after:** the hint body composition in
+`zwiper/src/lib/inbound/components/hint_dialog.rs` — `HintBullets`, `HintBullet`,
+`HintColored` (accent word), `HintKey` (button reference). See the existing
+bodies in `tag_select.rs` (title "Deck tags") and `oracle_tag_select.rs`
+(title "Oracle tags") for tone.
+
+**New file:** `zwiper/src/lib/inbound/components/concept_explainers.rs`, three
+`#[component]`s returning the *body* only (no dialog shell), each a `HintBullets`:
+- `DeckTagsExplainer` — lead: pick the archetypes your deck is built around; they
+  auto-select matching oracle tags; that sharpens suggested cards. Accent
+  "archetype" / "oracle tags".
+- `OracleTagsExplainer` — lead: the specific things your deck does (spot removal,
+  ramp, reanimation); selecting them sharpens which cards we suggest; deck tags
+  pre-pick a starter set (leave them if unsure); ~4,500, cap `MAX_DECK_ORACLE_TAGS`.
+- `CardRolesExplainer` — read-side framing: the chips on a card are its roles;
+  tap a role to see the specific oracle tags under it; you never pick roles, they
+  come from the card's oracle tags.
+
+Register the module in `zwiper/src/lib/inbound/components/mod.rs`. Keep each body
+to 3 bullets max. These three are the §1 model in copy form.
+
+### Ticket 2 — the `InfoButton` "?" component + 4 placements (the star)
+
+**Goal:** a persistent, on-demand inline "?" that opens a `HintDialog` with a
+concept explainer. NOT one-time (no `use_one_time_hint`, no session/client).
+
+**Model after:** `ScreenHeader`'s trigger
+(`zwiper/src/lib/inbound/components/screen_header.rs`: `Button { variant: Util,
+class: "page-header-corner", onclick: move |_| hint.set(true), "?" }`) for the
+glyph, and `HintDialog` (`hint_dialog.rs`) for the shell. Note `HintDialog` has
+**no** session/client dependency — it's just `AlertDialog` — so `InfoButton` is a
+pure local component.
+
+**New file:** `zwiper/src/lib/inbound/components/info_button.rs`:
+```rust
+#[component]
+pub fn InfoButton(title: String, children: Element) -> Element {
+    let mut open = use_signal(|| false);
+    rsx! {
+        button {
+            // small inline "?" — style like the faded header trigger but sized
+            // for a label row; reuse an existing util/ghost class if one fits,
+            // else a minimal inline style. No glow (owner aesthetic).
+            class: "info-button",
+            onclick: move |_| open.set(true),
+            "?"
+        }
+        HintDialog { open, title, {children} }
+    }
+}
+```
+Add a `.info-button` rule to `zwiper/assets/main.css` (faded "?", tap-target
+≥1.5rem, inline-flex, no glow). Register in `components/mod.rs`.
+
+**Placements (each: label + `InfoButton { title, ExplainerComponent {} }`):**
+
+1. **Edit/create Tags section** — `deck_fields.rs`. Beside
+   `label { class: "label", "Deck tags" }` add `InfoButton { title: "Deck tags",
+   DeckTagsExplainer {} }`; beside `label { class: "label", "Oracle tags" }` add
+   `InfoButton { title: "Oracle tags", OracleTagsExplainer {} }`. (Leave "Other
+   tags" as-is.)
+2. **Card profile role chips** — needs a slot because `CardRoleChips` is in
+   `zwipe-components` (shared with the portfolio; cannot import zwiper's
+   `HintDialog`). Edit `zwipe-components/src/card_role_chips.rs`: add
+   `#[props(default)] help: Option<Element>` and render it right after
+   `span { class: "chips-label", "Card roles" }` (line ~61). Portfolio passes
+   nothing. The **zwiper** consumer (`card_row.rs` / the swipe eyeball
+   `CardRulesDialog`, wherever `CardRoleChips { .. }` is constructed) passes
+   `help: rsx! { InfoButton { title: "Card roles", CardRolesExplainer {} } }`.
+3. **Deck view Tags section** — `deck_tags_section.rs` (zwiper, so `InfoButton`
+   works directly). Add "?" on the Deck tags + Oracle tags rows (or one on the
+   section header). Reuse the same explainers.
+4. **Filter sheet Oracle tags section** — the otag filter section title in
+   `zwiper/.../deck/card/filter/oracle_tags.rs` (+ its host
+   `card_filter_sheet.rs`). Add `InfoButton { title: "Oracle tags",
+   OracleTagsExplainer {} }` next to the section title.
+
+**Acceptance:** each "?" opens the right explainer; portfolio still builds
+(`CardRoleChips.help` defaults to `None`); no new auto-dialogs fire.
+
+### Ticket 3 — hint copy refreshes (in-place only, NO new auto-hints)
+
+**Goal:** align existing one-time hints to the §1 vocabulary; add zero new
+auto-firing dialogs.
+
+**Files + edits (refresh the `HintDialog` bodies in place):**
+- `tag_select.rs` (title "Deck tags") — reword to reference oracle-tag seeding +
+  the suggestion payoff; ideally render `DeckTagsExplainer {}` for the concept
+  bullets, keeping one action bullet ("tap to add/remove, search to jump").
+- `oracle_tag_select.rs` (title "Oracle tags") — already close; align wording,
+  optionally reuse `OracleTagsExplainer {}`.
+- `card_filter_sheet.rs` (title "Filters") — add one bullet: filter by Oracle tags.
+- `deck/card/view.rs` (title "Browsing your deck") — one bullet: the Card roles
+  chips on a card expand to their oracle tags.
+- `deck_fields.rs` (title "Building a deck") — align to Profile / Budget / Tags
+  structure; one line that tags/oracle tags shape suggestions.
+- Leave `HINT_*` constants (`hints.rs`) untouched — no new keys.
+
+**Acceptance:** no new `use_one_time_hint` calls added; only existing dialog
+bodies change.
+
+### Ticket 4 — zite guides
+
+**Goal:** new + updated static guides. Independent of the mobile release.
+
+**Model after:** `zite/src/pages/guides/content.rs` — the `Guide { slug, title,
+summary, category, blocks: &[Block] }` shape and `Block::{Lead, H2, P, Swipe,
+Note}`. Copy the structure of the existing `deck-tags` guide.
+
+**Add to `GUIDES` (category "Decks"):**
+- `oracle-tags` — "Sharpen suggestions with oracle tags." Lead on the payoff;
+  cover selecting them on a deck, how deck tags seed them, the ~4,500 + cap.
+  Cross-link (Note or P) to `deck-tags` and `synergy`.
+- `card-roles` — "Read a card at a glance." The role chips, the role→oracle-tag
+  drill-down, the "Role distribution" chart. Read-side framing.
+- `tags-roles-and-oracle-tags` (keystone) — "Deck tags, card roles & oracle tags:
+  how they fit." Prose version of the §1 diagram; the single disambiguation page.
+
+**Update existing guides (edit their `blocks`):**
+- `deck-tags` — add: picking an archetype seeds oracle tags, which feed
+  suggestions; link to `oracle-tags`.
+- `filtering` — add the Oracle tags filter (curated set + search).
+- `synergy` — note selected oracle tags now contribute to ordering (Phase 4).
+- `deck-stats` — reflect the Profile/Budget/Tags reorg + Role distribution chart.
+
+**Acceptance:** `cargo clippy -p zite --all-targets -- -D warnings` clean; new
+slugs render; the guides sitemap/JSON-LD (already wired in `guides/mod.rs`) picks
+them up automatically from `GUIDES`.
+
+### Suggested agent split
+- **Agent A (mobile, one PR):** Tickets 1 → 2 → 3 in order (2 depends on 1;
+  3 can reuse 1's explainers). Touches zwiper + one `zwipe-components` prop add.
+- **Agent B (zite, parallel):** Ticket 4. Fully independent, different crate.
