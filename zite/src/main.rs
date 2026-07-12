@@ -1,5 +1,7 @@
 use dioxus::{document::eval, prelude::*};
-use zwipe_components::{BRAND_RESET_JS, NavBar, ThemeConfig, ThemePicker};
+use zwipe_components::{
+    BRAND_RESET_JS, COMPONENTS_CSS, NavBar, THEMES_CSS, ThemeConfig, ThemePicker,
+};
 
 mod components;
 mod pages;
@@ -14,8 +16,6 @@ use pages::{
 // them from crate root. Debug builds resolve the URLs to the local dev servers.
 pub use zwipe_core::domain::site::{API_BASE, DISCORD_URL, SUPPORT_EMAIL, WEB_BASE};
 
-const THEMES: Asset = asset!("/assets/themes.css");
-const COMPONENTS: Asset = asset!("/assets/components.css");
 const STYLE: Asset = asset!("/assets/style.css");
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
@@ -144,8 +144,8 @@ fn App() -> Element {
         document::Link { rel: "icon", r#type: "image/png", sizes: "32x32", href: FAVICON_32 }
         document::Link { rel: "apple-touch-icon", href: APPLE_TOUCH_ICON }
         document::Link { rel: "manifest", href: MANIFEST }
-        document::Stylesheet { href: THEMES }
-        document::Stylesheet { href: COMPONENTS }
+        document::Style { {THEMES_CSS} }
+        document::Style { {COMPONENTS_CSS} }
         document::Stylesheet { href: STYLE }
         Router::<Route> {}
     }
