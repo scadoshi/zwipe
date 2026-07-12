@@ -20,7 +20,10 @@ use crate::{
     outbound::client::{
         ZwipeClient,
         card::get_card::ClientGetCard,
-        deck::{get_deck::ClientGetDeck, update_deck_profile::ClientUpdateDeckProfile},
+        deck::{
+            get_deck::ClientGetDeck, get_deck_tags::ClientGetDeckTags,
+            update_deck_profile::ClientUpdateDeckProfile,
+        },
     },
 };
 use dioxus::prelude::*;
@@ -34,7 +37,7 @@ use zwipe_core::{
         auth::models::session::Session,
         card::{Card, search_card::card_filter::price_currency::PriceCurrency},
         deck::{
-            Deck, DeckName, DeckOtherTag, MAX_DECK_ORACLE_TAGS, PowerLevel,
+            Deck, DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel,
             deck_profile::DeckProfile, format::Format,
             requests::update_deck_profile::InvalidUpdateDeckProfile, seed_oracle_tags,
         },
@@ -65,6 +68,13 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let edit_hint = use_one_time_hint(HINT_EDIT_DECK);
     let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
     let mut selected_tags: Signal<Vec<String>> = use_signal(Vec::new);
+    // Server-driven deck-tag catalog for the picker (no fallback; empty until loaded).
+    let deck_tags_catalog: Resource<Vec<DeckTagView>> = use_resource(move || async move {
+        match session() {
+            Some(s) => client().get_deck_tags(&s).await.unwrap_or_default(),
+            None => Vec::new(),
+        }
+    });
     let mut partner_commander: Signal<Option<Card>> = use_signal(|| None);
     let mut partner_commander_display = use_signal(String::new);
     let mut background: Signal<Option<Card>> = use_signal(|| None);
@@ -630,6 +640,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             TagSelect {
                 open: show_tags_select,
                 selected_tags,
+                catalog: deck_tags_catalog().unwrap_or_default(),
                 on_close: move |_| {
                     show_tags_select.set(false);
                     // Reconcile seeded oracle tags with the final deck-tag set:
