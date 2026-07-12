@@ -34,8 +34,14 @@ const UPCOMING: &[Release] = &[Release {
         "Fixed importing double-faced cards like Boggart Trawler // Boggart Bog.",
         "A light-mode polish pass across every theme, cleaner panels and softer mana-pip shadows.",
         "Oracle tags, find and build with community-maintained tags for what cards actually do (removal, ramp, card advantage, tutors, and more).",
+        "Card roles on every card: expand a card to see what it does, like removal, ramp, card advantage, or aggression, and tap a role to open the community oracle tags underneath.",
+        "Give your deck a game plan: choose the oracle tags that describe your strategy, and picking an archetype like Aggro or Aristocrats seeds the matching ones for you.",
+        "New in-app guides explain deck tags, card roles, and oracle tags, so it's clear what each one means and how they shape your suggestions.",
         "Deck color identity shows as mana pips right after each deck's name.",
         "Every mana pip now tints its outline and glyph to its own mana color, so the colors stay instantly recognizable in any theme.",
+        "A reorganized deck view: Profile, Budget, and Tags are now tidy sections, your land and price targets read as clear goal-versus-actual rows, and the Budget section collapses to stay out of the way.",
+        "Shared deck pages now show each card's roles and the deck's full price to the cent, command zone included.",
+        "More polish: two-color hybrid mana symbols now sit centered in their pips, keyword and card-role sections are clearly labeled, and the card-detail reveals ease open and closed instead of snapping.",
     ],
 }];
 
