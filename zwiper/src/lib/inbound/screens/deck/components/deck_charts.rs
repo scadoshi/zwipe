@@ -55,7 +55,7 @@ pub(crate) fn DeckCharts(
         if let Some(cat_bars) = category_bars.as_ref() {
             if !cat_bars.is_empty() {
                 div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
-                    ChartLabel { text: "Category distribution" }
+                    ChartLabel { text: "Role distribution" }
                     for (label, count, pct) in cat_bars.iter() {
                         div { style: "display:flex;align-items:center;gap:0.5rem;",
                             span { style: "width:5ch;font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;text-transform:uppercase;",

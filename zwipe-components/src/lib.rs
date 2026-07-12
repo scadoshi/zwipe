@@ -21,6 +21,7 @@
 mod action_bar;
 mod banner;
 mod button;
+mod card_role_chips;
 mod card_row;
 mod changelog;
 mod chip;
@@ -35,6 +36,7 @@ mod theme_picker;
 pub use action_bar::ActionBar;
 pub use banner::{Banner, BannerStatus};
 pub use button::{Button, ButtonVariant};
+pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
 pub use changelog::Changelog;
 pub use chip::Chip;

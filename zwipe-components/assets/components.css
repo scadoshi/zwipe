@@ -559,6 +559,26 @@ i.ms.ms-cost {
     text-align: center;
 }
 
+.card-detail-otags {
+    margin-top: 0.5rem;
+}
+
+.card-detail-otags .detail-chip {
+    border-color: var(--accent-tertiary);
+    color: var(--accent-tertiary);
+}
+
+.card-roles {
+    margin-bottom: 0.5rem;
+}
+
+.card-roles-label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.7rem;
+    color: var(--accent-primary);
+}
+
 /* ---- NavBar (zwipe_components::NavBar) ---- */
 
 .nav-wrapper {

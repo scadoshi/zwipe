@@ -74,7 +74,7 @@ pub fn Category() -> Element {
         div { class: "flex-col gap-half",
             // ── category includes ─────────────────────────────────
             div { class: "label-row mt-2",
-                label { class: "label-xs", "Category includes" }
+                label { class: "label-xs", "Card roles include" }
                 if !selected.is_empty() {
                     button {
                         class: "chip-xs",
@@ -125,7 +125,7 @@ pub fn Category() -> Element {
 
             // ── category excludes ─────────────────────────────────
             div { class: "label-row mt-2",
-                label { class: "label-xs", "Category excludes" }
+                label { class: "label-xs", "Card roles exclude" }
                 if !excluded.is_empty() {
                     button {
                         class: "clear-btn",

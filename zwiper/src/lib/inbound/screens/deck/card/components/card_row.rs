@@ -52,6 +52,7 @@ pub(crate) fn CardRow(
             mvp,
             on_toggle_mvp,
             price_currency,
+            show_classification: true,
         }
     }
 }

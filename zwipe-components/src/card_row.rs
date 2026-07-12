@@ -17,7 +17,7 @@ use zwipe_core::domain::{
     deck::{Board, deck_metrics::card_price},
 };
 
-use crate::{KeywordChips, OracleText};
+use crate::{CardRoleChips, KeywordChips, OracleText};
 
 /// A card's displayable mana cost, falling back to the front face for
 /// double-faced layouts whose top-level cost is absent.
@@ -61,10 +61,28 @@ pub fn CardRow(
     /// setting. Defaults to USD.
     #[props(default)]
     price_currency: PriceCurrency,
+    /// Opt-in: render the card's classification beside the keywords - the coarse
+    /// roles it fulfills, each drilling down to its grouped oracle tags, plus an
+    /// "Other tags" bucket. Off by default so read-only/embed hosts (e.g. the
+    /// portfolio) are unaffected.
+    #[props(default)]
+    show_classification: bool,
 ) -> Element {
     let card_id = card.scryfall_data.id;
     let is_expanded = expanded_card() == Some(card_id);
     let sd = &card.scryfall_data;
+
+    // Card roles (with their grouped oracle tags) render as classification beside
+    // the keywords, but only when the host opts in via `show_classification`.
+    let (roles, tags_by_role, other_tags) = if show_classification {
+        (
+            card.card_profile.mechanical_categories.clone(),
+            card.card_profile.oracle_tags_by_role.clone(),
+            card.card_profile.other_oracle_tags.clone(),
+        )
+    } else {
+        (Vec::new(), Default::default(), Vec::new())
+    };
 
     let name = sd.name.clone();
     // Compact-row price in the deck's chosen currency (nonfoil→foil fallback);
@@ -174,6 +192,9 @@ pub fn CardRow(
                     }
                     if !keywords.is_empty() {
                         KeywordChips { keywords }
+                    }
+                    if show_classification {
+                        CardRoleChips { roles, tags_by_role, other_tags }
                     }
                     if !oracle_text.is_empty() {
                         OracleText { text: oracle_text, class: "card-detail-oracle".to_string() }
