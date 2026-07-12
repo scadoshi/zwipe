@@ -37,6 +37,13 @@ pub(crate) fn OracleTagSelect(
     let mut query = use_signal(String::new);
     let mut focused = use_signal(|| Option::<OracleTag>::None);
     let hint_open = use_signal(|| false);
+    // Snapshot the selection when the picker opens, so Cancel can revert to it.
+    let mut snapshot = use_signal(Vec::<String>::new);
+    use_effect(move || {
+        if open() {
+            snapshot.set(selected.peek().clone());
+        }
+    });
 
     let catalog: Resource<Result<Vec<OracleTag>, ApiError>> =
         use_resource(move || async move { client().get_oracle_tags().await });
@@ -183,6 +190,14 @@ pub(crate) fn OracleTagSelect(
                 }
 
                 ActionBar {
+                    Button {
+                        variant: ButtonVariant::Util,
+                        onclick: move |_| {
+                            selected.set(snapshot());
+                            on_close.call(());
+                        },
+                        "Cancel"
+                    }
                     Button {
                         variant: ButtonVariant::Util,
                         onclick: move |_| on_close.call(()),

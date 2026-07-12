@@ -893,6 +893,11 @@ button {
     padding: 0.2rem 0.55rem;
     border-radius: 0.6rem;
     font-size: 0.75rem;
+    /* Cap the pill at the row width and wrap long labels (e.g. "French vanilla
+       equipment") onto a second line, centered — instead of overflowing the
+       border. Short labels stay single-line. */
+    max-width: 100%;
+    text-align: center;
     color: var(--accent-primary);
     background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
