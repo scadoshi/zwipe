@@ -264,15 +264,16 @@ back-compat-safe (tests in `contracts/deck.rs`). **No bump.**
     INSERT+RETURNING, **get**/**get_all** SELECT, **update** QueryBuilder branch + RETURNING, and
     **clone_deck** INSERT+SELECT copy. `.sqlx` regen (create/get use macros; update is QueryBuilder).
   </details>
-- **Slice B — the seed map (AUTHORING DECISION):** `impl DeckTag { fn oracle_tag_slugs(&self) ->
-  &'static [&'static str] }` in `deck_tag.rs` (match-on-self like `display_name`), + a test iterating
-  `DeckTag::all()`. ~117 archetypes → curated otag-slug sets. **Owner should eyeball this** like the
-  curated-48 (no deck-otag data exists yet to derive it — it's hand-authored).
-- **Slice C — frontend:** reuse the card-filter oracle-tag picker (`deck/card/filter/oracle_tags.rs`
-  fetches the catalog + curated grouping) rather than the static `tag_select.rs`. Host in
-  `deck/components/deck_fields.rs` + `create.rs` / `edit.rs` (Opdate diff, mirror `other_tags`
-  at `edit.rs:325`). Seed on archetype select via a side-effect like `autofill_named_partner`
-  (`deck_fields.rs:107`): union each selected `DeckTag`'s `oracle_tag_slugs()` into the signal.
+- **Slice B — the seed map: ✅ DONE `7690f984`.** `DeckTag::oracle_tag_slugs(&self)` in `deck_tag.rs`
+  maps ~50 common archetypes → curated slugs (all 107 owner-approved + validated against the live
+  catalog; unmapped → `&[]`). `seed_oracle_tags(&[DeckTag])` (deck_oracle_tags.rs) unions + dedupes.
+  Tuned over time via feedback. Not yet pushed.
+- **Slice C — frontend (▶ NEXT):** reuse the card-filter oracle-tag picker (`deck/card/filter/
+  oracle_tags.rs`) rather than the static `tag_select.rs`. Host in `deck/components/deck_fields.rs`
+  + `create.rs` / `edit.rs` (Opdate diff, mirror `other_tags` at `edit.rs:325`). **Flat UX (owner-
+  decided):** selecting archetypes pre-selects their otags via `seed_oracle_tags` (side-effect like
+  `autofill_named_partner`, `deck_fields.rs:107`) — no nested/hierarchy visual; user then adds,
+  searches the full catalog, or removes the auto-picked ones.
 - **Slice D — the grouped/raw hint page** (polish; the picker's grouped view doubles as this).
 
 **Exit:** decks carry otags; archetype seeds them; picker + distribution ship.
