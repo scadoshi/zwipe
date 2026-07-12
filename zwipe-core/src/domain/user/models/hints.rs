@@ -26,10 +26,6 @@ pub const HINT_EDIT_DECK: &str = "edit_deck";
 pub const HINT_FIRST_DECK: &str = "first_deck";
 /// Browsing dialog on the deck cards list (fires only once cards exist).
 pub const HINT_DECK_CARDS: &str = "deck_cards";
-/// Deck MVPs (star up to three) on the deck cards screen. Shown only to users
-/// who already saw the deck-cards hint; new users learn the star from a
-/// bullet inside that hint instead (two dialogs on one visit would bury both).
-pub const HINT_DECK_MVPS: &str = "deck_mvps";
 /// Account management dialog on the profile screen.
 pub const HINT_PROFILE: &str = "profile";
 /// Explainer for the shared card-filter bottom sheet (add/remove/view screens).

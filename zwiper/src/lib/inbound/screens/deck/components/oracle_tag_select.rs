@@ -9,7 +9,7 @@
 
 use crate::{
     inbound::components::{
-        hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog},
+        concept_explainers::OracleTagsExplainer, hint_dialog::HintDialog,
         screen_header::ScreenHeader,
     },
     outbound::client::{ZwipeClient, card::get_oracle_tags::ClientGetOracleTags},
@@ -208,23 +208,7 @@ pub(crate) fn OracleTagSelect(
                 HintDialog {
                     open: hint_open,
                     title: "Oracle tags",
-                    HintBullets {
-                        HintBullet {
-                            "Oracle tags are the "
-                            HintColored { color: "--accent-tertiary", "specific" }
-                            " things your deck does (spot removal, ramp, reanimation…)."
-                        }
-                        HintBullet {
-                            "Your "
-                            HintColored { color: "--accent-secondary", "deck tags" }
-                            " pre-pick a starter set. Don't care? Just leave them and move on."
-                        }
-                        HintBullet {
-                            "Tap to add or remove; search to find any of the ~4,500. Up to "
-                            HintColored { color: "--accent-tertiary", "{MAX_DECK_ORACLE_TAGS}" }
-                            "."
-                        }
-                    }
+                    OracleTagsExplainer {}
                 }
             }
         }

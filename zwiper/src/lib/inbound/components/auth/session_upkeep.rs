@@ -8,6 +8,7 @@ use crate::{
     inbound::{
         components::{
             auth::ensure_session::EnsureFresh,
+            hint_host::HintTopic,
             telemetry::{
                 anonymous::record_anonymous_event,
                 flush_loop::{spawn_usage_flusher, spawn_visibility_flusher},
@@ -125,6 +126,12 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
 
     let last_search_filter: Signal<Option<CardQueryBuilder>> = use_signal(|| None);
     use_context_provider(|| last_search_filter);
+
+    // On-demand hint channel: an InfoButton anywhere posts a HintTopic here and
+    // the app-root HintHost renders the dialog (hint_host.rs). One Option = one
+    // hint at a time.
+    let hint_topic: Signal<Option<HintTopic>> = use_signal(|| None);
+    use_context_provider(|| hint_topic);
 
     // Home flavor card — cached above the router with a TTL (see FlavorCard).
     let flavor_card: Signal<Option<FlavorCard>> = use_signal(|| None);
