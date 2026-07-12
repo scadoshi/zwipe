@@ -25,6 +25,7 @@ pub struct DatabaseDeckProfile {
     pub tags: Option<serde_json::Value>,
     pub power_level: Option<String>,
     pub other_tags: Option<serde_json::Value>,
+    pub oracle_tags: Option<serde_json::Value>,
     pub land_target: Option<i32>,
     pub price_target: Option<f64>,
     pub price_target_currency: Option<String>,
@@ -72,6 +73,11 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
                     .collect()
             })
             .unwrap_or_default();
+        // Free slugs from the oracle_tags catalog - no enum filter.
+        let oracle_tags = value
+            .oracle_tags
+            .and_then(|v| serde_json::from_value::<Vec<String>>(v).ok())
+            .unwrap_or_default();
 
         Ok(Self {
             id: value.id,
@@ -84,6 +90,7 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
             tags,
             power_level,
             other_tags,
+            oracle_tags,
             land_target: value.land_target,
             price_target: value.price_target,
             // Unrecognized currency strings fall back to None (USD), forward-compatible.
@@ -154,6 +161,7 @@ mod tests {
             tags: None,
             power_level: None,
             other_tags: None,
+            oracle_tags: None,
             land_target: None,
             price_target: None,
             price_target_currency: None,

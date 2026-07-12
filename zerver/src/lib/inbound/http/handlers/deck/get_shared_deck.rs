@@ -55,6 +55,7 @@ pub async fn get_shared_deck(
         power_level: shared.deck.deck_profile.power_level,
         tags: shared.deck.deck_profile.tags,
         other_tags: shared.deck.deck_profile.other_tags,
+        oracle_tags: shared.deck.deck_profile.oracle_tags,
         commander: shared.commander,
         partner_commander: shared.partner_commander,
         background: shared.background,

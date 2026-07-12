@@ -65,6 +65,9 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
             InvalidUpdateDeckProfile::TooManyOtherTags => {
                 Self::UnprocessableEntity("a deck may have at most 5 other-tags".to_string())
             }
+            InvalidUpdateDeckProfile::TooManyOracleTags => {
+                Self::UnprocessableEntity("a deck may have at most 30 oracle tags".to_string())
+            }
             InvalidUpdateDeckProfile::NoUpdates => {
                 Self::UnprocessableEntity("must update at least one field".to_string())
             }
@@ -93,6 +96,7 @@ pub async fn update_deck_profile(
         .signature_spell_id(body.signature_spell_id.into_option())
         .format(format_option)
         .tags(body.tags.into_option())
+        .oracle_tags(body.oracle_tags.into_option())
         .power_level(power_level_option)
         .other_tags(body.other_tags.into_option())
         .land_target(body.land_target.into_option())

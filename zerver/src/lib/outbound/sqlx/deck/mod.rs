@@ -69,6 +69,15 @@ fn deck_other_tags_to_json(tags: &[DeckOtherTag]) -> serde_json::Value {
     )
 }
 
+/// Serializes deck oracle-tag slugs to a JSONB array of strings for storage.
+fn deck_oracle_tags_to_json(tags: &[String]) -> serde_json::Value {
+    serde_json::Value::Array(
+        tags.iter()
+            .map(|t| serde_json::Value::String(t.clone()))
+            .collect(),
+    )
+}
+
 impl DeckRepository for Postgres {
     // ========
     //  create
@@ -80,11 +89,12 @@ impl DeckRepository for Postgres {
         let mut tx = self.pool.begin().await?;
         let tags_json = deck_tags_to_json(&request.tags);
         let other_tags_json = deck_other_tags_to_json(&request.other_tags);
+        let oracle_tags_json = deck_oracle_tags_to_json(&request.oracle_tags);
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
-            r#"INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, land_target, price_target, price_target_currency, user_id)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-               RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags as "tags?", power_level, other_tags as "other_tags?", land_target, price_target, price_target_currency, share_token, user_id,
+            r#"INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, oracle_tags, land_target, price_target, price_target_currency, user_id)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+               RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags as "tags?", power_level, other_tags as "other_tags?", oracle_tags as "oracle_tags?", land_target, price_target, price_target_currency, share_token, user_id,
                          0::bigint as "card_count",
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as "commander_name?",
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = partner_commander_id) as "partner_commander_name?",
@@ -103,6 +113,7 @@ impl DeckRepository for Postgres {
             tags_json,
             request.power_level.map(|p| p.to_string()) as Option<String>,
             other_tags_json,
+            oracle_tags_json,
             request.land_target,
             request.price_target,
             request.price_target_currency.map(|c| c.json_key().to_string()) as Option<String>,
@@ -217,7 +228,7 @@ impl DeckRepository for Postgres {
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
             r#"SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
-                      d.format, d.tags as "tags?", d.power_level, d.other_tags as "other_tags?", d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id,
+                      d.format, d.tags as "tags?", d.power_level, d.other_tags as "other_tags?", d.oracle_tags as "oracle_tags?", d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id,
                       COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as "card_count",
                       sd.name as "commander_name?",
                       (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as "partner_commander_name?",
@@ -251,7 +262,7 @@ impl DeckRepository for Postgres {
         let database_deck_profiles = query_as!(
             DatabaseDeckProfile,
             r#"SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
-                      d.format, d.tags as "tags?", d.power_level, d.other_tags as "other_tags?", d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id,
+                      d.format, d.tags as "tags?", d.power_level, d.other_tags as "other_tags?", d.oracle_tags as "oracle_tags?", d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id,
                       COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as "card_count",
                       sd.name as "commander_name?",
                       (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as "partner_commander_name?",
@@ -360,6 +371,10 @@ impl DeckRepository for Postgres {
             sep.push("other_tags = ")
                 .push_bind_unseparated(deck_other_tags_to_json(other_tags));
         }
+        if let Some(oracle_tags) = &request.oracle_tags {
+            sep.push("oracle_tags = ")
+                .push_bind_unseparated(deck_oracle_tags_to_json(oracle_tags));
+        }
         if let Some(land_target) = &request.land_target {
             sep.push("land_target = ")
                 .push_bind_unseparated(*land_target);
@@ -377,7 +392,7 @@ impl DeckRepository for Postgres {
 
         qb.push(" WHERE id = ")
             .push_bind(request.deck_id)
-            .push(r#" RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, land_target, price_target, price_target_currency, share_token, user_id,
+            .push(r#" RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, oracle_tags, land_target, price_target, price_target_currency, share_token, user_id,
                        (SELECT COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) FROM deck_cards dc WHERE dc.deck_id = decks.id) as card_count,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.commander_id) as commander_name,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.partner_commander_id) as partner_commander_name,
@@ -714,12 +729,12 @@ impl DeckRepository for Postgres {
             r#"
             INSERT INTO decks (
                 name, commander_id, partner_commander_id, background_id,
-                signature_spell_id, format, tags, power_level, other_tags,
+                signature_spell_id, format, tags, power_level, other_tags, oracle_tags,
                 land_target, price_target, price_target_currency, user_id
             )
             SELECT
                 $1, commander_id, partner_commander_id, background_id,
-                signature_spell_id, format, tags, power_level, other_tags,
+                signature_spell_id, format, tags, power_level, other_tags, oracle_tags,
                 land_target, price_target, price_target_currency, $2
             FROM decks
             WHERE id = $3

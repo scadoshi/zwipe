@@ -573,6 +573,7 @@ mod tests {
             tags: Vec::new(),
             power_level: None,
             other_tags: Vec::new(),
+            oracle_tags: Vec::new(),
             land_target: None,
             price_target: None,
             price_target_currency: None,
