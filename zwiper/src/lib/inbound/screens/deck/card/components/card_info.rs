@@ -8,6 +8,7 @@ use zwipe_core::domain::card::Card;
 
 /// One card face's rules text, extracted for display. Single-faced cards yield
 /// one of these; multi-faced cards (DFCs, split, etc.) yield one per face.
+#[derive(Clone)]
 struct FaceRules {
     type_line: String,
     mana_cost: String,
@@ -163,11 +164,15 @@ pub(crate) fn CardRulesDialog(
     let tags_by_role = card.card_profile.oracle_tags_by_role.clone();
     let other_tags = card.card_profile.other_oracle_tags.clone();
     let faces = build_rules(&card);
-    // Show the primary (first face) mana cost up on the title row, right-aligned
-    // next to the name. Extra faces keep their own cost in the body below.
-    let title_cost = faces
+    // Multi-faced cards (DFCs) show one face at a time with a Flip control, so a
+    // long two-face card can't overflow the non-scrolling dialog.
+    let face_count = faces.as_ref().map(|f| f.len()).unwrap_or(0);
+    let mut face_idx = use_signal(|| 0usize);
+    let cur = face_idx().min(face_count.saturating_sub(1));
+    let current_face = faces.as_ref().and_then(|f| f.get(cur)).cloned();
+    // Title cost tracks the shown face.
+    let title_cost = current_face
         .as_ref()
-        .and_then(|f| f.first())
         .map(|f| f.mana_cost.clone())
         .unwrap_or_default();
     rsx! {
@@ -188,49 +193,33 @@ pub(crate) fn CardRulesDialog(
                 }
                 hr { class: "dialog-rule" }
                 AlertDialogDescription {
-                    if let Some(faces) = faces {
+                    if let Some(face) = current_face {
                         div { class: "card-rules",
-                            for (i, face) in faces.into_iter().enumerate() {
-                                div { key: "{i}", class: "card-rules-face",
-                                    if i > 0 && !face.mana_cost.is_empty() {
-                                        div { class: "card-detail-head",
-                                            OracleText {
-                                                text: face.mana_cost,
-                                                class: "card-detail-cost".to_string(),
-                                            }
-                                        }
+                            div { class: "card-rules-face",
+                                div { class: "card-detail-meta",
+                                    if !face.type_line.is_empty() {
+                                        span { class: "detail-chip", "{face.type_line}" }
                                     }
-                                    div { class: "card-detail-meta",
-                                        if !face.type_line.is_empty() {
-                                            span { class: "detail-chip", "{face.type_line}" }
-                                        }
-                                        if i == 0 {
-                                            span { class: "detail-chip", "{rarity_name}" }
-                                        }
+                                    span { class: "detail-chip", "{rarity_name}" }
+                                }
+                                if !face.oracle.is_empty() {
+                                    OracleText {
+                                        text: face.oracle,
+                                        class: "card-detail-oracle".to_string(),
                                     }
-                                    if i == 0 && !keywords.is_empty() {
-                                        KeywordChips { keywords: keywords.clone() }
-                                    }
-                                    if i == 0 {
-                                        CardRoleChips {
-                                            roles: roles.clone(),
-                                            tags_by_role: tags_by_role.clone(),
-                                            other_tags: other_tags.clone(),
-                                        }
-                                    }
-                                    if !face.oracle.is_empty() {
-                                        OracleText {
-                                            text: face.oracle,
-                                            class: "card-detail-oracle".to_string(),
-                                        }
-                                    }
-                                    if let Some(stats) = face.stats {
-                                        div { class: "card-detail-stats",
-                                            span { class: "detail-chip", "{stats}" }
-                                        }
+                                }
+                                if let Some(stats) = face.stats {
+                                    div { class: "card-detail-stats",
+                                        span { class: "detail-chip", "{stats}" }
                                     }
                                 }
                             }
+                            // Analysis cluster below the face: all keywords and all
+                            // card roles for the whole card, shown once.
+                            if !keywords.is_empty() {
+                                KeywordChips { keywords }
+                            }
+                            CardRoleChips { roles, tags_by_role, other_tags }
                         }
                     } else {
                         p { style: "text-align: left; margin: 0;", "No rules text for this card." }
@@ -241,6 +230,12 @@ pub(crate) fn CardRulesDialog(
                     AlertDialogAction {
                         on_click: move |_| open.set(false),
                         "Close"
+                    }
+                    if face_count > 1 {
+                        AlertDialogAction {
+                            on_click: move |_| face_idx.set((cur + 1) % face_count),
+                            "Flip"
+                        }
                     }
                     if let Some(handler) = on_printings {
                         AlertDialogAction {
