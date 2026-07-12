@@ -76,7 +76,7 @@ pub fn CardRow(
     // the keywords, but only when the host opts in via `show_classification`.
     let (roles, tags_by_role, other_tags) = if show_classification {
         (
-            card.card_profile.mechanical_categories.clone(),
+            card.card_profile.card_roles.clone(),
             card.card_profile.oracle_tags_by_role.clone(),
             card.card_profile.other_oracle_tags.clone(),
         )

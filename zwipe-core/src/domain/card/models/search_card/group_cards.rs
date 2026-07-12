@@ -128,13 +128,13 @@ fn group_by_category(cards: Vec<Card>) -> Vec<CardGroup> {
 
     let uncategorized_idx = all_cats.len();
     for card in cards {
-        if card.card_profile.mechanical_categories.is_empty() {
+        if card.card_profile.card_roles.is_empty() {
             if let Some(bucket) = buckets.get_mut(uncategorized_idx) {
                 bucket.push(card);
             }
         } else {
             let mut placed = false;
-            for cat in &card.card_profile.mechanical_categories {
+            for cat in &card.card_profile.card_roles {
                 if let Some(idx) = all_cats.iter().position(|c| c == cat)
                     && let Some(bucket) = buckets.get_mut(idx)
                 {
