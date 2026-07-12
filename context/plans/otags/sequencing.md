@@ -275,7 +275,13 @@ back-compat-safe (tests in `contracts/deck.rs`). **No bump.**
   `seed_oracle_tags` for **newly-added** deck tags only (peek-based, additive; deselects + manual
   removals stick; edit inits `seeded_from` to the loaded tags so it doesn't re-seed). `CURATED_ORACLE_TAGS`
   promoted to zwipe-core, shared with the card filter. Compiles + clippy + fmt green; **not pushed**.
-  ▶ **Owner is revamping the tag-picking visuals here** — expect iteration on the overlay look/UX.
+  UX polish landed (`baf23278`): reconcile-on-Done seeding (drop old seed, add new from final deck
+  tags, keep manual picks; one info toast) instead of per-tap; Cancel buttons on the deck-tag,
+  oracle-tag, and format pickers (snapshot on open; format restores its command-zone cascade);
+  "Tags"→"Deck tags" rename; chip-wrap CSS. Deck **view** split the three tag rows out of the profile
+  card into a collapsible **Tags** section (`DeckTagsSection`, count badge, collapsed by default); the
+  create/edit **form** groups the tag fields at the bottom under a "Tags" heading, mirroring view order.
+  `CURATED_ORACLE_TAGS` lives in zwipe-core, shared by the card filter + deck picker. Not pushed.
 - **Slice D — the grouped/raw hint page** (polish; the picker's grouped view doubles as this).
 
 **Exit:** decks carry otags; archetype seeds them; picker + distribution ship.
