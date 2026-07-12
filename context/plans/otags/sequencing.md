@@ -190,6 +190,19 @@ parity confirmed keeping their simple regex beats a lossy otag mapping.
 
 **Goal:** a deck declares its strategy otags; picking an archetype seeds them (Q2 decision).
 
+**Selection UX (owner-decided 2026-07-11).** Give decks **direct oracle-tag selection**, not just
+Deck Tags/roles — not everything maps to a Deck Tag, so power users need the granular axis.
+Layered so beginners aren't dumped into 4,494 tags:
+- **Deck Tag = easy on-ramp** — picking an archetype **seeds** its oracle tags (the authored
+  `DeckTag → otag-set` map). Most users never open the raw list.
+- **Direct otag selection = advanced refinement** on top of the seed. Hint it as *advanced*
+  ("~4,500 of them, expect some sifting").
+- **Hint/help page** = the card drill-down's structure at catalog scale: a **grouped** view
+  (reuse `oracle_tags_by_role` grouping + the curated ~48, tags under their role) + a **raw**
+  searchable list of everything else (off `GET /api/card/oracle-tags`, all 4,494).
+- NB: Card **roles** are NOT a deck-level pick (they're computed from the deck's cards → the
+  distribution chart). The two things a user *selects* at deck creation are Deck Tags + Oracle tags.
+
 **Tables:** add `otags JSONB NOT NULL DEFAULT '[]'` + GIN index to `decks` (new migration,
 mirrors `20260625000000_add_deck_tags.sql`).
 
