@@ -32,6 +32,9 @@ pub const CATEGORY_ROOTS: &[(&str, &[&str])] = &[
     ),
     ("blink", &["flicker"]),
     ("burn", &["burn"]),
+    // Broad umbrella: everything that nets cards. Draw (below) is the literal-draw
+    // subset of this, so the two intentionally overlap.
+    ("card_advantage", &["card-advantage"]),
     ("copy", &["copy", "clone"]),
     ("counterspell", &["counterspell"]),
     (
@@ -44,7 +47,29 @@ pub const CATEGORY_ROOTS: &[(&str, &[&str])] = &[
         ],
     ),
     ("drain", &["drain-life"]),
-    ("draw", &["card-advantage"]),
+    // Literal card-drawing only — the narrow subset of `card_advantage`.
+    (
+        "draw",
+        &[
+            "pure-draw",
+            "repeatable-pure-draw",
+            "burst-draw",
+            "draw-engine",
+            "impulsive-draw",
+            "repeatable-impulsive-draw",
+            "long-term-impulsive-draw",
+            "force-draw",
+        ],
+    ),
+    (
+        "energy",
+        &[
+            "energy-generator",
+            "counter-fuel-energy",
+            "energy-increaser",
+            "synergy-energy",
+        ],
+    ),
     ("evasion", &["evasion"]),
     ("graveyard_hate", &["hate-graveyard"]),
     ("lifegain", &["lifegain"]),
@@ -215,6 +240,6 @@ mod tests {
                 "{excluded} should not be otag-mapped"
             );
         }
-        assert_eq!(mapped.len(), 22);
+        assert_eq!(mapped.len(), 24);
     }
 }
