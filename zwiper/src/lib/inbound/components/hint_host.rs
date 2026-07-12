@@ -14,7 +14,7 @@ use crate::inbound::components::{
         AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
         AlertDialogRoot, AlertDialogTitle,
     },
-    concept_explainers::{CardRolesExplainer, DeckTagsExplainer, OracleTagsExplainer},
+    concept_explainers::{DeckTagsExplainer, OracleTagsExplainer},
 };
 
 /// A concept a "?" button can explain. Cheap `Copy` message on the hint channel.
@@ -24,8 +24,6 @@ pub enum HintTopic {
     DeckTags,
     /// The granular functional tags that sharpen suggestions.
     OracleTags,
-    /// The read-side role chips shown on a card.
-    CardRoles,
 }
 
 impl HintTopic {
@@ -34,7 +32,6 @@ impl HintTopic {
         match self {
             Self::DeckTags => "Deck tags",
             Self::OracleTags => "Oracle tags",
-            Self::CardRoles => "Card roles",
         }
     }
 }
@@ -62,7 +59,6 @@ pub fn HintHost() -> Element {
                         match topic {
                             HintTopic::DeckTags => rsx! { DeckTagsExplainer {} },
                             HintTopic::OracleTags => rsx! { OracleTagsExplainer {} },
-                            HintTopic::CardRoles => rsx! { CardRolesExplainer {} },
                         }
                     }
                     hr { class: "dialog-rule" }
