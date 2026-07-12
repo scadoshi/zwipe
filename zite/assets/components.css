@@ -331,12 +331,18 @@
 }
 
 .card-row-colors .ms {
-    font-size: 0.8rem;
-    margin-left: 1px;
+    font-size: 0.95rem;
+    margin-left: 2px;
     /* Align pip boxes by their middle, not baseline: the colorless numeral's
        smaller ::before glyph shifts the flex box's synthesized baseline, so
        baseline alignment drops the generic pip below the colored ones. */
     vertical-align: middle;
+}
+
+/* Match the neighboring price/stat tags' corner radius (0.4rem) so the pips read
+   as part of the same tag row. Element+3-class selector beats the base pip's. */
+.card-row-colors i.ms.ms-cost {
+    border-radius: 0.4rem;
 }
 
 .card-row-detail {
@@ -451,11 +457,36 @@ i.ms.ms-cost {
     justify-content: center;
     line-height: 1;
     border-radius: 0.3em;
-    border: 1px solid var(--border-secondary);
+    /* Outline + glyph in the pip's own mana color, 70% darker than mana-font's
+       fill, as fixed hex so they stay recognizable across every theme (replaces
+       the old theme border, which clashed with the fixed fill). Base is MTG's
+       colorless grey for {C}/generic numerals; the five colors override below. */
+    border: 1px solid #393835;
+    color: #393835;
     padding: 0 1px;
     /* Override mana-font's hard double `.ms-cost.ms-shadow` offset with a plain
        soft drop shadow that follows the squircle. */
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+i.ms.ms-cost.ms-w {
+    border-color: #48493a;
+    color: #48493a;
+}
+i.ms.ms-cost.ms-u {
+    border-color: #363e44;
+    color: #363e44;
+}
+i.ms.ms-cost.ms-b {
+    border-color: #34312e;
+    color: #34312e;
+}
+i.ms.ms-cost.ms-r {
+    border-color: #42281e;
+    color: #42281e;
+}
+i.ms.ms-cost.ms-g {
+    border-color: #2c3627;
+    color: #2c3627;
 }
 
 /* Colorless/generic pips render a numeral that crowds the squircle border.
