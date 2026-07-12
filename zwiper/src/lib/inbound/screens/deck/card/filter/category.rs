@@ -1,16 +1,25 @@
-//! Mechanical category filter component.
+//! Card-role filter component. The role list is server-driven: fetched from the
+//! card-role catalog (`GET /api/card/roles`), not a compiled enum — so new roles
+//! appear without a client release. No fallback (same as artists/oracle-tags).
 
+use crate::outbound::client::{ZwipeClient, card::get_card_roles::ClientGetCardRoles};
 use dioxus::prelude::*;
+use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::card::{
-    card_role::CardRole, search_card::card_filter::builder::CardQueryBuilder,
+    card_role::CardRoleView, search_card::card_filter::builder::CardQueryBuilder,
 };
 
 use super::match_mode::MatchMode;
 
-/// Filter component for mechanical categories with separate include and exclude grids.
+/// Filter component for card roles with separate include and exclude grids.
 #[component]
 pub fn Category() -> Element {
     let mut filter_builder: Signal<CardQueryBuilder> = use_context();
+    let client: Signal<ZwipeClient> = use_context();
+
+    // Server-driven role catalog; no compiled fallback.
+    let all_roles: Resource<Result<Vec<CardRoleView>, ApiError>> =
+        use_resource(move || async move { client().get_card_roles().await });
 
     let mode = use_memo(move || {
         let fb = filter_builder();
@@ -72,7 +81,7 @@ pub fn Category() -> Element {
 
     rsx! {
         div { class: "flex-col gap-half",
-            // ── category includes ─────────────────────────────────
+            // ── role includes ─────────────────────────────────────
             div { class: "label-row mt-2",
                 label { class: "label-xs", "Card roles include" }
                 if !selected.is_empty() {
@@ -98,32 +107,33 @@ pub fn Category() -> Element {
             }
 
             div { class: "flex flex-wrap gap-1 flex-center",
-                for cat in CardRole::all().iter() {
-                    {
-                        let cat_str = cat.to_string();
-                        let display = cat.display_name().to_string();
-                        let is_selected = selected.contains(&cat_str);
-                        rsx! {
-                            div {
-                                class: if is_selected { "chip selected" } else { "chip" },
-                                onclick: move |_| {
-                                    let mut current = read_selected();
-                                    let key = cat.to_string();
-                                    if current.contains(&key) {
-                                        current.retain(|s| s != &key);
-                                    } else {
-                                        current.push(key);
-                                    }
-                                    write_categories(current, mode());
-                                },
-                                { display }
+                if let Some(Ok(roles)) = all_roles.read().as_ref() {
+                    for role in roles {
+                        {
+                            let slug = role.slug.clone();
+                            let display = role.display_name.clone();
+                            let is_selected = selected.contains(&slug);
+                            rsx! {
+                                div {
+                                    class: if is_selected { "chip selected" } else { "chip" },
+                                    onclick: move |_| {
+                                        let mut current = read_selected();
+                                        if current.contains(&slug) {
+                                            current.retain(|s| s != &slug);
+                                        } else {
+                                            current.push(slug.clone());
+                                        }
+                                        write_categories(current, mode());
+                                    },
+                                    { display }
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // ── category excludes ─────────────────────────────────
+            // ── role excludes ─────────────────────────────────────
             div { class: "label-row mt-2",
                 label { class: "label-xs", "Card roles exclude" }
                 if !excluded.is_empty() {
@@ -138,25 +148,26 @@ pub fn Category() -> Element {
             }
 
             div { class: "flex flex-wrap gap-1 flex-center",
-                for cat in CardRole::all().iter() {
-                    {
-                        let cat_str = cat.to_string();
-                        let display = cat.display_name().to_string();
-                        let is_excluded = excluded.contains(&cat_str);
-                        rsx! {
-                            div {
-                                class: if is_excluded { "chip selected" } else { "chip" },
-                                onclick: move |_| {
-                                    let mut current = read_excluded();
-                                    let key = cat.to_string();
-                                    if current.contains(&key) {
-                                        current.retain(|s| s != &key);
-                                    } else {
-                                        current.push(key);
-                                    }
-                                    write_excluded_cats(current);
-                                },
-                                { display }
+                if let Some(Ok(roles)) = all_roles.read().as_ref() {
+                    for role in roles {
+                        {
+                            let slug = role.slug.clone();
+                            let display = role.display_name.clone();
+                            let is_excluded = excluded.contains(&slug);
+                            rsx! {
+                                div {
+                                    class: if is_excluded { "chip selected" } else { "chip" },
+                                    onclick: move |_| {
+                                        let mut current = read_excluded();
+                                        if current.contains(&slug) {
+                                            current.retain(|s| s != &slug);
+                                        } else {
+                                            current.push(slug.clone());
+                                        }
+                                        write_excluded_cats(current);
+                                    },
+                                    { display }
+                                }
                             }
                         }
                     }
