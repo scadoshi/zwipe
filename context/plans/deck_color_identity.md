@@ -1,179 +1,137 @@
 # Deck color identity on the profile
 
-**Status: PLANNED, conservative scope (updated 2026-07-11).** Part of the
-deck-cards-screen revamp (squircle mana pips, price/stat tags, flowing card
-rows — those shipped). This slice is the one piece that needs a server half.
-Scope is deliberately **derive-only**: pips for decks whose color identity is
-derivable from a command zone. A stored/declared field for other formats was
-**considered and declined** (see below).
+**Status: SHIPPED (local, unpushed) 2026-07-11.** Client render committed in
+`c46ee448` (with pip color tinting); server derivation + DTO field + `.sqlx` in
+`4ae63435`. Not yet pushed to `main` (push auto-deploys prod). Derive-only: **no
+migration, no stored column.**
 
-## Goal
+Part of the deck-cards-screen revamp (squircle mana pips, price/stat tags, flowing
+card rows — those shipped separately). This slice added the server half.
 
-Show a deck's color identity as mana pips on the deck **list** row, right after
-the commander/zone chips:
+## What it does
+
+Mana pips on the deck **list** row showing the deck's color identity:
 
 ```
-[deck name] [12 cards] [Commander] [Nteza…] [W][U][B]
+[deck name] [W][U][B] [12 cards] [Commander] [Nteza…]
 ```
 
-Derived from the command zone only: the union of the color identities of the
-commander, partner, background, and signature spell. Decks with no command-zone
-cards (a 60-card Modern deck, etc.) simply show no pips.
+(Pips render right after the deck name — the owner moved them there from the
+originally-planned position after the zone chips.)
+
+**Derivation (the key design point): union of the command zone AND every mainboard
+card.** For a given deck the identity is the DISTINCT union of `color_identity`
+across:
+- the command-zone cards (`commander_id`, `partner_commander_id`, `background_id`,
+  `signature_spell_id`), and
+- every `deck_cards` row with `board = 'deck'` (mainboard only; maybeboard and
+  sideboard excluded, matching how card_count is computed).
+
+Consequences, all intended:
+- **Commander decks** → the commander's legal identity. Cards are always within the
+  commander's identity, so the union equals it, and the command-zone half covers it
+  even for a brand-new deck with zero cards.
+- **Non-Commander decks** (Modern, etc., no command zone) → the colors the deck
+  **actually plays**, from the mainboard.
+- **Empty decks** (no zone, no cards) → colorless → no pips.
+
+This replaced the original **command-zone-only** scope (which left every non-EDH
+deck blank). Verified against real dev decks: an 83-card non-Commander deck went
+from blank → RUW, while Commander decks were unchanged (union == command-zone
+identity).
 
 ## Key decision: derive at read time, do NOT store
 
-The identity comes from at most four card IDs already on the `decks` row
-(`commander_id`, `partner_commander_id`, `background_id`, `signature_spell_id`),
-so it is a few indexed PK lookups into `scryfall_data` — the same shape as the
-existing `commander_name` subquery. Deriving it in the query means **no
-migration, no backfill, no sync-on-write, and no second source of truth**.
+Identity is computed in the deck-profile queries — a correlated subquery over the
+command-zone IDs plus the deck's mainboard rows. No migration, no backfill, no
+sync-on-write, no second source of truth. `color_identity` lives on the
+`DeckProfile` **DTO** only (like `commander_name`), never on a table.
 
-`color_identity` is added to the `DeckProfile` **DTO** (the per-request response
-object), not to any table — the same way `commander_name` lives on that DTO.
+### Considered and declined: a stored, user-declared field
 
-**DTO field type: `Vec<String>` (WUBRG short codes), not `Colors`.** The original
-draft used the `Colors` newtype. `Color` and `Colors` now **do** carry manual
-`Serialize`/`Deserialize` impls (verified 2026-07-11, `colors.rs:57-84,143-168` —
-`Color` serializes to its short code), so the earlier "no serde" rationale is
-stale. But `Colors` still has **no `Default`** (`colors.rs:121` derives only
-`Debug, Clone, PartialEq`), which a `#[serde(default)]` field requires, and adding
-`#[derive(Default)]` to a shared type just to satisfy the DTO is churn we don't
-need. `Vec<String>` is leaner, serializes trivially, and matches the DB `text[]`
-column exactly (the subquery returns `text[]` straight onto the field). No
-shared-type changes. Sorting is handled client-side by iterating `Color::all()`
-(already WUBRG) and filtering to members, so no separate sort helper is needed.
+Idea: a `decks.color_identity` column so any format carries a formal, user-set
+identity (a metrics axis for the otags non-EDH moat, `otags/moat.md` keying signal
+on `(format, color_identity, otag_set)`). **Declined** — the read-time union now
+gives non-EDH decks an identity for free, so the stored column buys only a
+*declared-vs-actual* distinction that isn't worth a column + WUBRG picker UI + write
+path + sparse data. Revisit only if the moat needs declared identity specifically;
+if so, build it in the same wave as otags Phase 3 (shares the `decks` column +
+create/update queries + DeckProfile change with `decks.oracle_tags`).
 
-## Considered and declined: a stored field for non-derivable formats
+### DTO field type: `Vec<String>`, not `Colors`
 
-Idea (2026-07-11): give **any** format a formal, user-declared `color_identity`
-(a stored `decks.color_identity` column) so non-Commander decks also carry one —
-useful as a metrics dimension for the otags non-EDH moat (`otags/moat.md` keys
-signal on `(format, color_identity, otag_set)`).
+`Vec<String>` of WUBRG short codes: matches the DB `text[]` the subquery returns,
+serializes trivially, `#[serde(default)]`-friendly. `Colors` was rejected because
+it has no `Default` (`colors.rs:121` derives only `Debug, Clone, PartialEq`) and
+adding one to a shared type just for the DTO is needless churn. (`Color`/`Colors`
+*do* have serde impls now, `colors.rs:57-84,143-168` — the old "no serde" note was
+stale.) Client sorting iterates `Color::all()` (already WUBRG) filtered to members;
+no sort helper needed.
 
-**Declined for now — stay conservative.** It reverses the no-store/no-migration
-decision, adds a column + a WUBRG picker UI + DTO write path, and the declared
-data would be sparse (most users won't set it). Revisit **only if** the non-EDH
-signal moat actually needs a color axis; at that point build it in the **same
-wave as otags Phase 3** (it would share the `decks` column + create/update
-queries + DeckProfile change with `decks.oracle_tags`). Until then: derive-only.
-
-## Sequencing vs otags
-
-otags **Phase 2 (card-level oracle tags) is DONE and committed** (`f11cc1e3`,
-2026-07-11); main is clean and compiles. This slice does **not** collide with
-anything landed so far — Phase 2 touched `card_profiles`, not `decks`/`DeckProfile`.
-
-The collision is only with **otags Phase 3 ("deck otag selection")**, which is
-**not started yet** — both it and this slice add a field to `DeckProfile` /
-`DatabaseDeckProfile` and edit the same 4 deck-profile constructor queries +
-`.sqlx/`. They are additive and coexist fine, but **do not build them on parallel
-branches** (git + `.sqlx/` conflicts on the same queries). Land them sequentially.
-Per the owner's ordering, **otags goes first**; once Phase 3's DeckProfile/deck-query
-changes are in, adding `color_identity` next to `oracle_tags` in the same 4 sites is
-trivial. (This derive-only slice has **no migration**, so if it must ship before
-Phase 3 it can — just re-`sqlx prepare` after whichever lands second.) **Green-light
-question for the owner:** does this go now (Phase 3 not started) or wait for Phase 3?
-
-## Approach
+## What was built
 
 ### zwipe-core — `domain/deck/models/deck_profile.rs`
-- `DeckProfile` (struct ~L12) gains `#[serde(default)] pub color_identity:
-  Vec<String>` (empty = colorless / not derivable). No other core changes; do
-  **not** touch the `Colors` type.
+`DeckProfile` gained `#[serde(default)] pub color_identity: Vec<String>` (empty =
+colorless / empty deck). No `Colors` changes.
 
 ### zerver — `outbound/sqlx/deck/models.rs`
-- `DatabaseDeckProfile` (struct ~L17): add `pub color_identity: Option<Vec<String>>`.
-- In `TryFrom<DatabaseDeckProfile> for DeckProfile` (~L78): set
-  `color_identity: value.color_identity.unwrap_or_default()`.
+`DatabaseDeckProfile` gained `pub color_identity: Option<Vec<String>>`; `TryFrom`
+sets `color_identity: value.color_identity.unwrap_or_default()`. Two unit tests
+cover the present-passes-through and null-becomes-empty mappings.
 
-### zerver — `outbound/sqlx/deck/mod.rs` — **4 constructor sites** (not 3)
-All four build a `DatabaseDeckProfile` and need the subquery. The **3 macros**
-require `cargo sqlx prepare --workspace` + committing `.sqlx/`; the QueryBuilder
-one is a runtime query (no `.sqlx`):
-1. `create_deck_profile` — `query_as!` `RETURNING …` (**L83-92**; existing
-   `commander_name?` subqueries at L89-92 are the template).
-2. `get_deck_profile` — `query_as!` `SELECT …` (**L209-227**). **Has GROUP BY**
-   (L226-227) — the correlated subquery references `d.commander_id` etc. Confirmed:
-   the GROUP BY **leads with `d.id`**, so the command-zone id columns are covered by
-   functional dependency and a `d.`-aliased subquery is legal. This is the site that
-   also covers the shared-deck page (see share-link note above).
-3. `get_deck_profiles` — `query_as!` `SELECT …` (**L239-257**). Same GROUP BY,
-   also leads with `d.id` (L256-257).
-4. `update_deck_profile` — **runtime `QueryBuilder`** `.push(" RETURNING …")`
-   (**L368-371**). Runtime, so no `.sqlx` entry, but still returns a
-   `DatabaseDeckProfile`; use the **unaliased** subquery form (bare `commander_id`).
+### zerver — `outbound/sqlx/deck/mod.rs` — 4 constructor sites
+All four build a `DatabaseDeckProfile`; the 3 macros needed `sqlx prepare`, the 4th
+is runtime:
+1. `create_deck_profile` — `query_as!` RETURNING (unaliased; mainboard clause keys
+   on the inserted row's `id`, which has no cards yet, so on create only the command
+   zone contributes).
+2. `get_deck_profile` — `query_as!` SELECT, `d.`-aliased. GROUP BY leads with
+   `d.id`, so the correlated subquery is legal. **Also covers the shared-deck page**
+   (`get_shared_deck` → `get_deck` → `get_deck_profile`).
+3. `get_deck_profiles` — `query_as!` SELECT, `d.`-aliased.
+4. `update_deck_profile` — runtime `QueryBuilder` RETURNING, `decks.`-prefixed, no
+   `.sqlx` entry.
 
-Subquery to add to each RETURNING/SELECT list (unaliased for the RETURNING sites,
-`d.`-aliased for the two `SELECT` sites):
+The subquery (shape shown `d.`-aliased; RETURNING sites use bare / `decks.` forms).
+Note the inner alias is **`sci`** — the SELECT sites already use `sd` for the
+commander name join, so a distinct alias is required:
 ```sql
 (SELECT array_agg(DISTINCT ci)
-   FROM scryfall_data sd, unnest(sd.color_identity) AS ci
-  WHERE sd.id IN (commander_id, partner_commander_id,
-                  background_id, signature_spell_id))
+   FROM scryfall_data sci, unnest(sci.color_identity) AS ci
+  WHERE sci.id IN (d.commander_id, d.partner_commander_id,
+                   d.background_id, d.signature_spell_id)
+     OR sci.id IN (SELECT dc2.scryfall_data_id FROM deck_cards dc2
+                    WHERE dc2.deck_id = d.id AND dc2.board = 'deck'))
   as "color_identity?: Vec<String>"
 ```
-NULL command-zone IDs simply don't match, so it's null-safe (no command zone →
-NULL → `unwrap_or_default()` → empty).
+No matching rows (empty deck) → NULL → `unwrap_or_default()` → empty. Cost is
+negligible: `deck_cards(deck_id)` is indexed (leading col of the unique
+constraint), and the list query already joins `deck_cards` for card_count.
 
-- **Share-link fetch — RESOLVED, no extra work.** `get_shared_deck`
-  (`services.rs:900`) resolves the token to `(deck_id, owner_id)` via
-  `get_deck_id_by_share_token` (which selects only `id, user_id` — no profile),
-  then calls `get_deck` → `get_deck_profile` (site #2). So fixing the 4 sites above
-  covers the shared-deck page automatically; no separate query.
-- `cargo sqlx prepare --workspace`, commit `.sqlx/`.
+### client — `zwiper/.../deck/list.rs` + `zwiper/assets/main.css`
+Pips parse the DTO codes into a `HashSet<Color>`, then iterate `Color::all()`
+filtered to members, rendering `i.ms.ms-{code_lower}.ms-cost` (lowercase mana-font
+classes). `.deck-list-identity` is `inline-flex` with a small gap; pips inherit the
+global squircle/border from `components.css` via `ms-cost`. `c46ee448` also tinted
+each pip's outline + glyph to its own mana color.
 
-### client — `zwiper/src/lib/inbound/screens/deck/list.rs`
-- The zone chips render as `stat-chip stat-chip-zone` for commander / partner /
-  background / signature spell (confirmed **L149-160**, signature spell ends L159-160).
-  Render the identity pips **right after that block**, before the tag loops at L161.
-- **Pip class must be lowercase, no `ms-shadow`** — mirror the live pattern at
-  `card/filter/mana/color_identity.rs:131`: `i { class: "ms ms-{code_lower} ms-cost" }`
-  (`ms-w`/`ms-u`/…; `ms-shadow` is not used anywhere and would be a dead class).
-- **No sort helper needed** — `Color::all()` already returns WUBRG order, so filter
-  it by membership. Parse the DTO codes into a set of `Color` (via `Color::try_from`,
-  case-insensitive), then iterate `Color::all()`:
-  ```rust
-  {
-      let present: std::collections::HashSet<Color> = profile
-          .color_identity
-          .iter()
-          .filter_map(|s| Color::try_from(s.as_str()).ok())
-          .collect();
-      (!present.is_empty()).then(|| rsx! {
-          span { class: "deck-list-identity",
-              for color in Color::all().into_iter().filter(|c| present.contains(c)) {
-                  i {
-                      key: "{color.to_short_name()}",
-                      class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                  }
-              }
-          }
-      })
-  }
-  ```
-  (`use zwipe_core::domain::card::models::scryfall_data::colors::Color;` at file scope.)
-- `deck-list-identity` CSS in `zwiper/assets/main.css`: `inline-flex`, small gap.
-  Pips inherit the global squircle + border rule from `components.css`
-  automatically (they use `ms-cost`).
+## Still open
 
-## Open toggle
+- **Deck view header pips.** The same pips on the `deck/view.rs` header (`[deck
+  name] [commander]` line) are **not** done — list-only for now. Fast-follow if the
+  list version looks good. Owner to confirm.
+- **Push / deploy.** Both commits are local. Pushing to `main` auto-deploys prod;
+  server derivation ships ahead of the client, and the `#[serde(default)]` field
+  keeps older payloads valid. No migration, no min-version gate. Owner triggers the
+  push.
 
-Also render the same pips on the deck **view** header (the `[deck name]
-[commander]` line in `deck/view.rs`)? Default: **list only** first; add the view
-header as a fast follow if it looks good. Owner to confirm.
+## Verification (all green before commit)
 
-## Ship
-
-Server and client are the same repo/main, so the server half deploys ahead of
-the client on the normal pipeline; the additive `#[serde(default)]` field means
-older payloads parse fine and the client render is inert until the server ships.
-No migration, no min-version gate.
-
-Verify (pre-push checklist, `context/development/commit_guidelines.md`):
-- `cargo +nightly fmt` (the CI gate — stable fmt silently passes but CI fails).
-- `cargo clippy -p zwipe-core -p zerver --all-targets -- -D warnings`.
-- `set -a; source zerver/.env; set +a; cargo test -p zwipe-core -p zerver` (add a
-  `TryFrom` union unit test).
-- `cargo sqlx prepare --workspace --check` (touched 3 query macros → must be fresh).
-- Manual `dx serve` pass of the deck list on a Commander deck (pips present) and a
-  non-command-zone deck (no pips).
+- `cargo +nightly fmt` (CI gate — stable fmt silently passes, nightly is required).
+- `cargo clippy -p zwipe-core -p zerver -p zwiper --all-targets -- -D warnings`.
+- `cargo test -p zwipe-core -p zerver` — 117 zerver (incl. the 2 `color_identity`
+  tests) + all zwipe-core, 0 failures.
+- `cargo sqlx prepare --workspace --check` — cache fresh (3 macro queries changed).
+- Functional check on dev DB: non-Commander deck derives its mainboard colors;
+  Commander decks unchanged; empty decks blank.
+- Pending: manual `dx serve` eyeball pass (owner).

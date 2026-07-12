@@ -1,8 +1,8 @@
 # Printings while swiping (add / remove / commander)
 
-**Status: PLANNED, all decisions resolved (2026-07-11). Client-only — the client
-already has every tool (the `PrintingSheet` bottom sheet, `get_printings`, both
-ids on every `Card`); no server or contract changes.**
+**Status: SHIPPED 2026-07-11 (`999ef00a`, "view printings while swiping"). All
+three screens (add, remove, commander) done; remove is view-only as decided.
+Client-only — no server or contract changes. The spec below records what was built.**
 
 ## Goal
 
