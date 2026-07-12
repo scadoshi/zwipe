@@ -303,6 +303,10 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// stragglers are merged separately (see `CardService::derive_card_categories`).
     fn derive_oracle_tag_categories(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
 
+    /// Rebuilds `card_profiles.oracle_tags_by_role` + `.other_oracle_tags` (the
+    /// server-grouped card display). Returns rows affected.
+    fn refresh_oracle_tag_groups(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
+
     /// IDs of every card with oracle text (candidates for the oracle_tag_gaps merge).
     fn get_card_ids_with_oracle_text(
         &self,
@@ -376,6 +380,10 @@ pub trait CardService: Clone + Send + Sync + 'static {
 
     /// Rebuilds the `card_profiles.oracle_tags` projection (nightly, zervice).
     fn refresh_card_oracle_tags(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
+
+    /// Rebuilds the server-grouped card display (`oracle_tags_by_role` +
+    /// `other_oracle_tags`) from the tag hierarchy (nightly, zervice).
+    fn refresh_oracle_tag_groups(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
 
     // =====
     //  get

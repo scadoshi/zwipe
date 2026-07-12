@@ -194,6 +194,10 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.refresh_card_oracle_tags().await
     }
 
+    async fn refresh_oracle_tag_groups(&self) -> anyhow::Result<u64> {
+        self.repo.refresh_oracle_tag_groups().await
+    }
+
     // =====
     //  get
     // =====
