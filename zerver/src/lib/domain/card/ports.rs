@@ -35,6 +35,29 @@ use zwipe_core::domain::card::{
     search_card::card_filter::CardQuery,
 };
 
+/// The optional deck-serving inputs threaded into the deck-aware search entry
+/// points ([`CardRepository::search_scryfall_data_deck_aware`] +
+/// [`CardRepository::search_cards_deck_aware`]). Bundled into one struct so those
+/// serve paths stay two-arg calls rather than a long positional list. Every field
+/// defaults to plain-search behavior (no deck, no scores, no otag term), so a
+/// non-deck caller passes [`DeckServeContext::default()`].
+#[derive(Debug, Clone, Default)]
+pub struct DeckServeContext<'a> {
+    /// Deck whose suppression set (skipped / removed cards) is filtered out.
+    pub deck_id: Option<uuid::Uuid>,
+    /// Oracle ids omitted from the candidate pool.
+    pub exclude_oracle_ids: &'a [uuid::Uuid],
+    /// Lowercased card name → synergy score. Present ⇒ default synergy ordering.
+    pub synergy_scores: Option<&'a serde_json::Value>,
+    /// Constrain results to the score map's cards (the synergy membership fence).
+    pub synergy_only: bool,
+    /// Commander-select shuffle seed (`{user_id}:{date}`) — enables token/emblem
+    /// exclusion + the banded shuffle. `None` on every non-commander-select path.
+    pub commander_seed: Option<String>,
+    /// The deck's selected oracle tags for the `W_ORACLE_TAG` correlation term.
+    pub deck_oracle_tags: &'a [String],
+}
+
 /// Database port for MTG card operations.
 pub trait CardRepository: Clone + Send + Sync + 'static {
     // ========
@@ -130,18 +153,12 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// results to the commander's synergy pool. With `synergy_only` set and a
     /// score map present, the result set is the synergistic cards only, sorted
     /// by the filter's `order_by` (or by synergy score when no sort is given).
-    // Deck-serving context is passed positionally (matching the impl) rather than
-    // as a struct — it is threaded straight into one QueryBuilder and never stored.
-    #[allow(clippy::too_many_arguments)]
+    /// The optional deck-serve inputs travel in [`DeckServeContext`]; pass
+    /// `DeckServeContext::default()` for a plain search.
     fn search_scryfall_data_deck_aware(
         &self,
         request: &CardQuery,
-        deck_id: Option<uuid::Uuid>,
-        exclude_oracle_ids: &[uuid::Uuid],
-        synergy_scores: Option<&serde_json::Value>,
-        synergy_only: bool,
-        commander_seed: Option<String>,
-        deck_oracle_tags: &[String],
+        context: DeckServeContext<'_>,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
     /// Retrieves complete card by Scryfall ID.
@@ -255,11 +272,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn search_cards_deck_aware(
         &self,
         request: &CardQuery,
-        deck_id: Option<uuid::Uuid>,
-        exclude_oracle_ids: &[uuid::Uuid],
-        synergy_scores: Option<&serde_json::Value>,
-        synergy_only: bool,
-        deck_oracle_tags: &[String],
+        context: DeckServeContext<'_>,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// First-class commander search (context/archive/commander_select_ordering.md):

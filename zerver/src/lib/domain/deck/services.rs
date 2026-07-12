@@ -4,7 +4,8 @@ use uuid::Uuid;
 
 use crate::domain::{
     card::{
-        models::synergy::SynergyPayload, ports::CardRepository,
+        models::synergy::SynergyPayload,
+        ports::{CardRepository, DeckServeContext},
         requests::get_scryfall_data::ScryfallDataIds,
     },
     deck::{
@@ -355,11 +356,14 @@ where
             .card_repo
             .search_cards_deck_aware(
                 filter,
-                Some(deck_profile.id),
-                &exclude_oracle_ids,
-                synergy_scores.as_ref(),
-                synergy_only,
-                deck_oracle_tags,
+                DeckServeContext {
+                    deck_id: Some(deck_profile.id),
+                    exclude_oracle_ids: &exclude_oracle_ids,
+                    synergy_scores: synergy_scores.as_ref(),
+                    synergy_only,
+                    deck_oracle_tags,
+                    ..Default::default()
+                },
             )
             .await?;
         // Synergy was requested but the commander's cache wasn't available (cold
