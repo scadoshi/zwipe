@@ -2600,13 +2600,24 @@ button {
     animation: flavor-enter 0.3s ease-out 0.15s backwards;
 }
 
+/* Cap the name chip's width and let a long name wrap inside it, keeping
+   horizontal padding so wrapped lines never touch the chip's walls. */
 .flavor-source-link {
+    display: inline-block;
+    max-width: 55%;
+    flex-shrink: 0;
+    padding: 0.5rem 1.5rem;
+    font-size: 0.75rem;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.3;
     background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
 }
 
 /* USD price, styled as a green (success) money tag; opens the buy dialog. */
 .flavor-price {
+    flex-shrink: 0;
     color: var(--color-success);
     background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
