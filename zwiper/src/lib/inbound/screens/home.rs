@@ -62,7 +62,7 @@ pub fn Home() -> Element {
     let mut theme_config: Signal<ThemeConfig> = use_context();
 
     // Tap the card name in the flavor quote to preview that card's image.
-    let mut preview_card: Signal<Option<ScryfallData>> = use_signal(|| None);
+    let mut preview_card: Signal<Option<(ScryfallData, usize)>> = use_signal(|| None);
     let preview_dismissing: Signal<bool> = use_signal(|| false);
     // Tap the flavor card's price tag to open its buy sheet (TCGplayer / CK).
     let mut show_buy_sheet = use_signal(|| false);
@@ -207,7 +207,7 @@ pub fn Home() -> Element {
                                     div { class: "flavor-buy-row",
                                         span {
                                             class: "flavor-source flavor-source-link",
-                                            onclick: move |_| preview_card.set(Some(sd.clone())),
+                                            onclick: move |_| preview_card.set(Some((sd.clone(), 0))),
                                             "{entry.card.scryfall_data.name}"
                                         }
                                         if let Some(price) = usd_price {

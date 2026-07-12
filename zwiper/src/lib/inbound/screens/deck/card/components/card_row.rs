@@ -18,7 +18,7 @@ pub(crate) fn CardRow(
     card: Card,
     qty: i32,
     expanded_card: Signal<Option<Uuid>>,
-    mut preview_card: Signal<Option<ScryfallData>>,
+    mut preview_card: Signal<Option<(ScryfallData, usize)>>,
     mut preview_dismissing: Signal<bool>,
     on_qty_change: Option<EventHandler<i32>>,
     on_move_to: Option<EventHandler<Board>>,
@@ -30,6 +30,10 @@ pub(crate) fn CardRow(
     on_toggle_mvp: Option<EventHandler<()>>,
 ) -> Element {
     let scryfall_data_for_preview = card.scryfall_data.clone();
+    // Which face the expanded detail is flipped to (0 = front), so the fullscreen
+    // preview opens on the side the user was viewing. Kept in sync via the shared
+    // detail's `on_face_change`.
+    let mut current_face = use_signal(|| 0usize);
     // Deck's price-target currency, shared by the parent view via context so
     // every row prices in the same currency without threading a prop through
     // each call site. Falls back to USD outside that provider.
@@ -42,9 +46,10 @@ pub(crate) fn CardRow(
             qty,
             expanded_card,
             on_image: move |()| {
-                preview_card.set(Some(scryfall_data_for_preview.clone()));
+                preview_card.set(Some((scryfall_data_for_preview.clone(), current_face())));
                 preview_dismissing.set(false);
             },
+            on_face_change: move |face: usize| current_face.set(face),
             on_qty_change,
             on_move_to,
             current_board,

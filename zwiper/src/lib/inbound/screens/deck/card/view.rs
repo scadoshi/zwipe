@@ -163,8 +163,9 @@ pub fn View(deck_id: Uuid) -> Element {
 
     // Card image preview — stores the card to preview (None = closed). Carries the
     // full ScryfallData so the modal's FlippableCardImage can read both faces of DFCs.
-    let preview_card: Signal<Option<zwipe_core::domain::card::scryfall_data::ScryfallData>> =
-        use_signal(|| None);
+    let preview_card: Signal<
+        Option<(zwipe_core::domain::card::scryfall_data::ScryfallData, usize)>,
+    > = use_signal(|| None);
     // Printing sheet state
     let mut printing_sheet_open: Signal<bool> = use_signal(|| false);
     let mut printing_sheet_card: Signal<Option<Card>> = use_signal(|| None);

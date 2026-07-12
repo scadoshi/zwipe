@@ -3,76 +3,11 @@ use crate::inbound::components::alert_dialog::{
     AlertDialogRoot, AlertDialogTitle,
 };
 use dioxus::prelude::*;
-use zwipe_components::{Button, ButtonVariant, CardRoleChips, KeywordChips, OracleText};
+use zwipe_components::{Button, ButtonVariant, CardDetails};
 use zwipe_core::domain::card::Card;
 
-/// One card face's rules text, extracted for display. Single-faced cards yield
-/// one of these; multi-faced cards (DFCs, split, etc.) yield one per face.
-#[derive(Clone)]
-struct FaceRules {
-    type_line: String,
-    mana_cost: String,
-    stats: Option<String>,
-    oracle: String,
-}
-
-/// Format the power/toughness, loyalty, or defense line for a face. Returns the
-/// first that applies; `None` if the face has none (e.g. an instant).
-fn stats_line(
-    power: &Option<String>,
-    toughness: &Option<String>,
-    loyalty: &Option<String>,
-    defense: &Option<String>,
-) -> Option<String> {
-    if let (Some(p), Some(t)) = (power, toughness) {
-        Some(format!("{p}/{t}"))
-    } else if let Some(l) = loyalty {
-        Some(format!("Loyalty {l}"))
-    } else {
-        defense.as_ref().map(|d| format!("Defense {d}"))
-    }
-}
-
-/// Pull the oracle text and stats off a card so it can be shown in-app when the
-/// printing's image is text-light (Secret Lair, full-art, foreign-language).
-/// Prefers a multi-faced card's per-face text when the top level has none.
-/// Returns `None` when there's nothing worth showing.
-fn build_rules(card: &Card) -> Option<Vec<FaceRules>> {
-    let sd = &card.scryfall_data;
-
-    if sd.oracle_text.is_none()
-        && let Some(faces) = sd.card_faces.as_ref()
-    {
-        let per_face: Vec<FaceRules> = faces
-            .iter()
-            .map(|f| FaceRules {
-                type_line: f.type_line.clone().unwrap_or_default(),
-                mana_cost: f.mana_cost.clone(),
-                stats: stats_line(&f.power, &f.toughness, &f.loyalty, &None),
-                oracle: f.oracle_text.clone().unwrap_or_default(),
-            })
-            .filter(|f| !f.oracle.is_empty() || !f.type_line.is_empty())
-            .collect();
-        if !per_face.is_empty() {
-            return Some(per_face);
-        }
-    }
-
-    let oracle = sd.oracle_text.clone().unwrap_or_default();
-    let type_line = sd.type_line.clone().unwrap_or_default();
-    if oracle.is_empty() && type_line.is_empty() {
-        return None;
-    }
-    Some(vec![FaceRules {
-        type_line,
-        mana_cost: sd.mana_cost.clone().unwrap_or_default(),
-        stats: stats_line(&sd.power, &sd.toughness, &sd.loyalty, &sd.defense),
-        oracle,
-    }])
-}
-
 /// Displays card metadata: prices, set, release date, artist. The card's oracle
-/// text and stats live in [`CardRulesDialog`], opened from the header eyeball.
+/// text and stats live in [`CardDetailsDialog`], opened from the header eyeball.
 #[component]
 pub(crate) fn CardInfoDisplay(card: Card) -> Element {
     let has_prices = card.scryfall_data.prices.usd.is_some()
@@ -122,7 +57,7 @@ pub(crate) fn CardInfoDisplay(card: Card) -> Element {
     }
 }
 
-/// Util-bar button (eye icon) that toggles the [`CardRulesDialog`] for the
+/// Util-bar button (eye icon) that toggles the [`CardDetailsDialog`] for the
 /// active swipe card via the shared `open` signal.
 #[component]
 pub(crate) fn RulesButton(open: Signal<bool>) -> Element {
@@ -142,11 +77,14 @@ pub(crate) fn RulesButton(open: Signal<bool>) -> Element {
     }
 }
 
-/// Dialog showing a card's oracle text and stats, for printings whose image is
-/// text-light (Secret Lair, full-art, foreign-language). Opened from the
-/// util-bar [`RulesButton`] via the shared `open` signal. Handles multi-faced cards.
+/// Dialog showing a card's full details (type, oracle text, stats, keywords,
+/// card roles), for printings whose image is text-light (Secret Lair, full-art,
+/// foreign-language). Opened from the util-bar [`RulesButton`] via the shared
+/// `open` signal. Wraps the shared [`CardDetails`], which handles multi-faced
+/// cards and owns the Flip control; the dialog adds only its Close (and an
+/// optional view-only Printings) action.
 #[component]
-pub(crate) fn CardRulesDialog(
+pub(crate) fn CardDetailsDialog(
     open: Signal<bool>,
     card: Card,
     /// Opens the printings sheet. When set, a "Printings" action shows in the
@@ -154,27 +92,7 @@ pub(crate) fn CardRulesDialog(
     #[props(default)]
     on_printings: Option<EventHandler<()>>,
 ) -> Element {
-    let sd = &card.scryfall_data;
-    let name = sd.name.clone();
-    let rarity_name = sd.rarity.to_long_name();
-    let keywords = sd.keywords.clone().unwrap_or_default();
-    // Card classification beside the keywords: roles that drill down to their
-    // grouped oracle tags, plus an "Other tags" bucket.
-    let roles = card.card_profile.card_roles.clone();
-    let tags_by_role = card.card_profile.oracle_tags_by_role.clone();
-    let other_tags = card.card_profile.other_oracle_tags.clone();
-    let faces = build_rules(&card);
-    // Multi-faced cards (DFCs) show one face at a time with a Flip control, so a
-    // long two-face card can't overflow the non-scrolling dialog.
-    let face_count = faces.as_ref().map(|f| f.len()).unwrap_or(0);
-    let mut face_idx = use_signal(|| 0usize);
-    let cur = face_idx().min(face_count.saturating_sub(1));
-    let current_face = faces.as_ref().and_then(|f| f.get(cur)).cloned();
-    // Title cost tracks the shown face.
-    let title_cost = current_face
-        .as_ref()
-        .map(|f| f.mana_cost.clone())
-        .unwrap_or_default();
+    let name = card.scryfall_data.name.clone();
     rsx! {
         AlertDialogRoot {
             open: open(),
@@ -183,46 +101,19 @@ pub(crate) fn CardRulesDialog(
                 AlertDialogTitle {
                     div { class: "card-rules-title",
                         span { class: "card-rules-title-name", "{name}" }
-                        if !title_cost.is_empty() {
-                            OracleText {
-                                text: title_cost,
-                                class: "card-detail-cost".to_string(),
-                            }
-                        }
                     }
                 }
                 hr { class: "dialog-rule" }
                 AlertDialogDescription {
-                    if let Some(face) = current_face {
-                        div { class: "card-rules",
-                            div { class: "card-rules-face",
-                                div { class: "card-detail-meta",
-                                    if !face.type_line.is_empty() {
-                                        span { class: "detail-chip", "{face.type_line}" }
-                                    }
-                                    span { class: "detail-chip", "{rarity_name}" }
-                                }
-                                if !face.oracle.is_empty() {
-                                    OracleText {
-                                        text: face.oracle,
-                                        class: "card-detail-oracle".to_string(),
-                                    }
-                                }
-                                if let Some(stats) = face.stats {
-                                    div { class: "card-detail-stats",
-                                        span { class: "detail-chip", "{stats}" }
-                                    }
-                                }
-                            }
-                            // Analysis cluster below the face: all keywords and all
-                            // card roles for the whole card, shown once.
-                            if !keywords.is_empty() {
-                                KeywordChips { keywords }
-                            }
-                            CardRoleChips { roles, tags_by_role, other_tags }
+                    // The name lives in the title; the shared body shows the
+                    // per-face cost, so `show_name` is off here. `card-rules`
+                    // scrolls a long single face.
+                    div { class: "card-rules",
+                        CardDetails {
+                            card,
+                            show_name: false,
+                            show_classification: true,
                         }
-                    } else {
-                        p { style: "text-align: left; margin: 0;", "No rules text for this card." }
                     }
                 }
                 hr { class: "dialog-rule" }
@@ -230,12 +121,6 @@ pub(crate) fn CardRulesDialog(
                     AlertDialogAction {
                         on_click: move |_| open.set(false),
                         "Close"
-                    }
-                    if face_count > 1 {
-                        AlertDialogAction {
-                            on_click: move |_| face_idx.set((cur + 1) % face_count),
-                            "Flip"
-                        }
                     }
                     if let Some(handler) = on_printings {
                         AlertDialogAction {

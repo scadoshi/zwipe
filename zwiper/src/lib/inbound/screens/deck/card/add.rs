@@ -1,5 +1,5 @@
 use super::components::{
-    card_info::{CardInfoDisplay, CardRulesDialog, CardSkeleton, RulesButton},
+    card_info::{CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton},
     printing_sheet::PrintingSheet,
 };
 use crate::{
@@ -1232,7 +1232,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                             if let Some(card) = current_card() {
                                 CardInfoDisplay { card: card.clone() }
-                                CardRulesDialog {
+                                CardDetailsDialog {
                                     open: show_rules,
                                     card,
                                     on_printings: move |_| printing_open.set(true),
@@ -1319,7 +1319,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                             if let Some(card) = mb_current_card() {
                                 CardInfoDisplay { card: card.clone() }
-                                CardRulesDialog { open: show_rules, card }
+                                CardDetailsDialog { open: show_rules, card }
                             }
                         } else {
                             CardSkeleton {}
