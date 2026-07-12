@@ -29,6 +29,7 @@ const UPCOMING: &[Release] = &[Release {
         "Theme and dark-mode controls now live in your Profile.",
         "Seventeen new themes, thirty-one in all: editor classics like VS Code, GitHub, One Dark, Kanagawa, Ayu, and Night Owl, a warm-grey docs.rs look for the Rustaceans, plus bolder picks like Synthwave '84, Vantablack, PowerShell, and a green-on-black Hackerman mode.",
         "A new Achromatopsia theme for total color blindness joins the colorblind set, and every theme got a contrast pass so dimmed text stays easy to read.",
+        "Your theme now sticks: the app and website open in your last-used theme, so the sign-in screens are already themed before you log in, and the website remembers your pick between visits.",
         "Buy a card straight from the home screen, tap its price for TCGplayer or Card Kingdom.",
         "Fixed importing double-faced cards like Boggart Trawler // Boggart Bog.",
         "A light-mode polish pass across every theme, cleaner panels and softer mana-pip shadows.",
