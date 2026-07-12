@@ -29,6 +29,13 @@ pub(crate) fn TagSelect(
     let mut query = use_signal(String::new);
     let mut focused = use_signal(|| Option::<DeckTag>::None);
     let hint_open = use_signal(|| false);
+    // Snapshot the selection when the picker opens, so Cancel can revert to it.
+    let mut snapshot = use_signal(Vec::<DeckTag>::new);
+    use_effect(move || {
+        if open() {
+            snapshot.set(selected_tags.peek().clone());
+        }
+    });
 
     let screen_class = if open() {
         "screen swipe-select-screen show"
@@ -50,7 +57,7 @@ pub(crate) fn TagSelect(
     rsx! {
         div { class: "{screen_class}",
             if open() {
-                ScreenHeader { title: "Tags", hint: hint_open }
+                ScreenHeader { title: "Deck tags", hint: hint_open }
 
                 div { class: "screen-content content-enter tag-screen",
                     div { class: "tag-controls",
@@ -127,6 +134,14 @@ pub(crate) fn TagSelect(
                 ActionBar {
                     Button {
                         variant: ButtonVariant::Util,
+                        onclick: move |_| {
+                            selected_tags.set(snapshot());
+                            on_close.call(());
+                        },
+                        "Cancel"
+                    }
+                    Button {
+                        variant: ButtonVariant::Util,
                         onclick: move |_| on_close.call(()),
                         "Done"
                     }
@@ -134,7 +149,7 @@ pub(crate) fn TagSelect(
 
                 HintDialog {
                     open: hint_open,
-                    title: "Tags",
+                    title: "Deck tags",
                     HintBullets {
                         HintBullet {
                             "Tap a tag to "

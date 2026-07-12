@@ -44,6 +44,11 @@ use zwipe_core::{
 };
 
 /// Screen for editing a deck with name and settings.
+/// Snapshot of the format + command-zone state, captured when the format picker
+/// opens so Cancel can revert it: (format, commander, commander name, signature
+/// spell, signature spell name).
+type FormatSnapshot = (Option<Format>, Option<Card>, String, Option<Card>, String);
+
 #[component]
 pub fn EditDeck(deck_id: Uuid) -> Element {
     // config
@@ -78,10 +83,26 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut other_tags: Signal<Vec<DeckOtherTag>> = use_signal(Vec::new);
     let mut oracle_tags: Signal<Vec<String>> = use_signal(Vec::new);
     let mut show_oracle_tags_select = use_signal(|| false);
-    // Deck tags already reflected in the seed (so re-seeding fires only for
-    // newly-added deck tags). Initialised to the loaded tags so editing an
-    // existing deck doesn't re-seed what's already there.
-    let mut seeded_from = use_signal(Vec::<DeckTag>::new);
+    // Oracle tags currently contributed by deck-tag seeding. Reconciled when the
+    // deck-tag picker closes (drop old seed, add new, keep manual picks). Init to
+    // the loaded tags' seed so editing an existing deck reconciles cleanly.
+    let mut applied_seed: Signal<Vec<String>> = use_signal(Vec::new);
+
+    // Snapshot the format + its command-zone cascade when the format picker opens,
+    // so Cancel can revert (format edits clear commander/spell live).
+    let mut fmt_snapshot: Signal<FormatSnapshot> =
+        use_signal(|| (None, None, String::new(), None, String::new()));
+    use_effect(move || {
+        if show_format_select() {
+            fmt_snapshot.set((
+                *selected_format.peek(),
+                commander.peek().clone(),
+                commander_display.peek().clone(),
+                signature_spell.peek().clone(),
+                signature_spell_display.peek().clone(),
+            ));
+        }
+    });
 
     // Reactive Zwipe-select modes — derived from the current format / commander.
     let commander_mode = use_memo(move || selected_format().map(SwipeMode::Commander));
@@ -146,9 +167,9 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             other_tags.set(deck.deck_profile.other_tags);
             original_oracle_tags.set(deck.deck_profile.oracle_tags.clone());
             oracle_tags.set(deck.deck_profile.oracle_tags.clone());
-            // Treat the loaded deck tags as already-seeded so the seeding effect
-            // won't re-add their otags over the user's saved set.
-            seeded_from.set(deck.deck_profile.tags);
+            // Seed contribution the saved deck tags account for, so the next
+            // deck-tag reconcile drops exactly those and keeps manual picks.
+            applied_seed.set(seed_oracle_tags(&deck.deck_profile.tags));
         }
         Some(Err(e)) => {
             toast.error(
@@ -157,33 +178,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             );
         }
         None => (),
-    });
-
-    // Seed oracle tags from newly-selected deck tags (flat auto-select), additive
-    // only — mirrors create.rs. `seeded_from` starts at the loaded tags (above), so
-    // this fires only for tags the user adds while editing.
-    use_effect(move || {
-        let current = selected_tags();
-        let prev = seeded_from.peek().clone();
-        let newly: Vec<DeckTag> = current
-            .iter()
-            .copied()
-            .filter(|t| !prev.contains(t))
-            .collect();
-        if !newly.is_empty() {
-            let mut ot = oracle_tags.peek().clone();
-            let mut changed = false;
-            for slug in seed_oracle_tags(&newly) {
-                if !ot.contains(&slug) && ot.len() < MAX_DECK_ORACLE_TAGS {
-                    ot.push(slug);
-                    changed = true;
-                }
-            }
-            if changed {
-                oracle_tags.set(ot);
-            }
-        }
-        seeded_from.set(current);
     });
 
     // ========================================
@@ -636,7 +630,33 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             TagSelect {
                 open: show_tags_select,
                 selected_tags,
-                on_close: move |_| show_tags_select.set(false),
+                on_close: move |_| {
+                    show_tags_select.set(false);
+                    // Reconcile seeded oracle tags with the final deck-tag set:
+                    // drop the previous seed contribution, add the new one, keep
+                    // manual picks. Cap at MAX; toast if anything was auto-added.
+                    let new_seed = seed_oracle_tags(&selected_tags());
+                    let old_seed = applied_seed();
+                    let mut ot: Vec<String> = oracle_tags()
+                        .into_iter()
+                        .filter(|s| !old_seed.contains(s))
+                        .collect();
+                    let mut added = false;
+                    for slug in &new_seed {
+                        if !ot.contains(slug) && ot.len() < MAX_DECK_ORACLE_TAGS {
+                            ot.push(slug.clone());
+                            added = true;
+                        }
+                    }
+                    oracle_tags.set(ot);
+                    applied_seed.set(new_seed);
+                    if added {
+                        toast.info(
+                            "Oracle tags derived from your deck tags".to_string(),
+                            ToastOptions::default().duration(Duration::from_millis(2500)),
+                        );
+                    }
+                },
             }
 
             OracleTagSelect {
@@ -665,6 +685,15 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     signature_spell_display.set(String::new());
                 },
                 on_close: move |_| show_format_select.set(false),
+                on_cancel: move |_| {
+                    let (f, c, cd, ss, ssd) = fmt_snapshot();
+                    selected_format.set(f);
+                    commander.set(c);
+                    commander_display.set(cd);
+                    signature_spell.set(ss);
+                    signature_spell_display.set(ssd);
+                    show_format_select.set(false);
+                },
             }
 
             DeckFieldsHint { open: edit_hint }

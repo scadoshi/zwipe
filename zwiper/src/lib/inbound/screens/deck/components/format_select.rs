@@ -48,7 +48,9 @@ fn command_zone_text(fmt: Format) -> &'static str {
 }
 
 /// In-place format picker. Toggled by `open`. `on_select` fires with the chosen
-/// format, `on_clear` cancels the current pick, `on_close` returns to the form.
+/// format, `on_clear` clears the current pick, `on_close` commits (Done),
+/// `on_cancel` reverts (the parent restores the format + its command-zone cascade
+/// snapshot). Single-select with a live cascade, so cancel is parent-owned.
 #[component]
 pub(crate) fn FormatSelect(
     open: Signal<bool>,
@@ -56,6 +58,7 @@ pub(crate) fn FormatSelect(
     on_select: EventHandler<Format>,
     on_clear: EventHandler<()>,
     on_close: EventHandler<()>,
+    on_cancel: EventHandler<()>,
 ) -> Element {
     let mut query = use_signal(String::new);
     let mut focused = use_signal(|| Option::<Format>::None);
@@ -145,6 +148,11 @@ pub(crate) fn FormatSelect(
                 }
 
                 ActionBar {
+                    Button {
+                        variant: ButtonVariant::Util,
+                        onclick: move |_| on_cancel.call(()),
+                        "Cancel"
+                    }
                     Button {
                         variant: ButtonVariant::Util,
                         onclick: move |_| on_close.call(()),

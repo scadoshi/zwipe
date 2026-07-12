@@ -35,6 +35,11 @@ use zwipe_core::{
     http::contracts::deck::HttpCreateDeckProfile,
 };
 
+/// Snapshot of the format + command-zone state, captured when the format picker
+/// opens so Cancel can revert it: (format, commander, commander name, signature
+/// spell, signature spell name).
+type FormatSnapshot = (Option<Format>, Option<Card>, String, Option<Card>, String);
+
 /// Screen for creating a new deck with name and settings.
 #[component]
 pub fn CreateDeck() -> Element {
@@ -71,34 +76,27 @@ pub fn CreateDeck() -> Element {
     let mut show_oracle_tags_select = use_signal(|| false);
     let create_hint = use_one_time_hint(HINT_CREATE_DECK);
 
-    // Seed oracle tags from newly-selected deck tags (the flat auto-select): when
-    // a deck tag is added, union its `oracle_tag_slugs` in (capped, deduped).
-    // Additive only — deselecting a deck tag or a manual removal both stick, so the
-    // user stays in control. `peek()` on the written signals keeps this keyed on
-    // `selected_tags` alone (no feedback loop).
-    let mut seeded_from = use_signal(Vec::<DeckTag>::new);
+    let toast = use_toast();
+    // Oracle tags currently contributed by deck-tag seeding. Seeding is reconciled
+    // once when the deck-tag picker closes (see the TagSelect `on_close`): drop the
+    // old seed set, add the new one, keep manual picks. So selecting then
+    // deselecting an archetype nets out, and there's no per-tap confusion.
+    let mut applied_seed: Signal<Vec<String>> = use_signal(Vec::new);
+
+    // Snapshot the format + its command-zone cascade when the format picker opens,
+    // so Cancel can revert the change (format edits clear commander/spell live).
+    let mut fmt_snapshot: Signal<FormatSnapshot> =
+        use_signal(|| (None, None, String::new(), None, String::new()));
     use_effect(move || {
-        let current = selected_tags();
-        let prev = seeded_from.peek().clone();
-        let newly: Vec<DeckTag> = current
-            .iter()
-            .copied()
-            .filter(|t| !prev.contains(t))
-            .collect();
-        if !newly.is_empty() {
-            let mut ot = oracle_tags.peek().clone();
-            let mut changed = false;
-            for slug in seed_oracle_tags(&newly) {
-                if !ot.contains(&slug) && ot.len() < MAX_DECK_ORACLE_TAGS {
-                    ot.push(slug);
-                    changed = true;
-                }
-            }
-            if changed {
-                oracle_tags.set(ot);
-            }
+        if show_format_select() {
+            fmt_snapshot.set((
+                *selected_format.peek(),
+                commander.peek().clone(),
+                commander_display.peek().clone(),
+                signature_spell.peek().clone(),
+                signature_spell_display.peek().clone(),
+            ));
         }
-        seeded_from.set(current);
     });
 
     // Reactive Zwipe-select modes — derived from the current format / commander.
@@ -110,7 +108,6 @@ pub fn CreateDeck() -> Element {
     });
 
     // save state
-    let toast = use_toast();
     let mut is_saving = use_signal(|| false);
 
     let mut attempt_submit = move || {
@@ -282,7 +279,33 @@ pub fn CreateDeck() -> Element {
             TagSelect {
                 open: show_tags_select,
                 selected_tags,
-                on_close: move |_| show_tags_select.set(false),
+                on_close: move |_| {
+                    show_tags_select.set(false);
+                    // Reconcile seeded oracle tags with the final deck-tag set:
+                    // drop the previous seed contribution, add the new one, keep
+                    // manual picks. Cap at MAX; toast if anything was auto-added.
+                    let new_seed = seed_oracle_tags(&selected_tags());
+                    let old_seed = applied_seed();
+                    let mut ot: Vec<String> = oracle_tags()
+                        .into_iter()
+                        .filter(|s| !old_seed.contains(s))
+                        .collect();
+                    let mut added = false;
+                    for slug in &new_seed {
+                        if !ot.contains(slug) && ot.len() < MAX_DECK_ORACLE_TAGS {
+                            ot.push(slug.clone());
+                            added = true;
+                        }
+                    }
+                    oracle_tags.set(ot);
+                    applied_seed.set(new_seed);
+                    if added {
+                        toast.info(
+                            "Oracle tags derived from your deck tags".to_string(),
+                            ToastOptions::default().duration(Duration::from_millis(2500)),
+                        );
+                    }
+                },
             }
 
             OracleTagSelect {
@@ -311,6 +334,15 @@ pub fn CreateDeck() -> Element {
                     signature_spell_display.set(String::new());
                 },
                 on_close: move |_| show_format_select.set(false),
+                on_cancel: move |_| {
+                    let (f, c, cd, ss, ssd) = fmt_snapshot();
+                    selected_format.set(f);
+                    commander.set(c);
+                    commander_display.set(cd);
+                    signature_spell.set(ss);
+                    signature_spell_display.set(ssd);
+                    show_format_select.set(false);
+                },
             }
 
             DeckFieldsHint { open: create_hint }

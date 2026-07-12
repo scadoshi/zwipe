@@ -855,47 +855,6 @@ pub(crate) fn DeckFields(
         }
 
         // ========================================
-        // Tags (open the full-screen picker to choose)
-        // ========================================
-        div {
-            div { class: "label-row",
-                label { class: "label", "Tags" }
-                span { class: "field-count", "{selected_tags().len()}/{MAX_DECK_TAGS}" }
-                if !selected_tags().is_empty() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| selected_tags.set(Vec::new()),
-                        "\u{00d7}"
-                    }
-                }
-            }
-
-            if selected_tags().is_empty() {
-                div { class: "input input-placeholder input-tappable", onclick: move |_| show_tags_select.set(true), "Not set" }
-            } else {
-                div { class: "chip-box input-tappable", onclick: move |_| show_tags_select.set(true),
-                    for tag in selected_tags().iter().copied() {
-                        div {
-                            key: "{tag}",
-                            class: "chip selected flex items-center gap-05",
-                            "{tag.display_name()}"
-                            // Remove just this tag; stop propagation so the
-                            // chip-box's own onclick doesn't also open the picker.
-                            button {
-                                class: "chip-remove",
-                                onclick: move |evt| {
-                                    evt.stop_propagation();
-                                    selected_tags.write().retain(|t| *t != tag);
-                                },
-                                "\u{00d7}"
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // ========================================
         // Power level (single-select WotC bracket; Not set = none)
         // ========================================
         div { style: "margin-top: 1rem;",
@@ -922,83 +881,6 @@ pub(crate) fn DeckFields(
                             }
                         },
                         "{pl.display_name()}"
-                    }
-                }
-            }
-        }
-
-        // ========================================
-        // Other tags (non-gameplay labels; multi-select)
-        // ========================================
-        div { style: "margin-top: 1rem;",
-            div { class: "label-row",
-                label { class: "label", "Other tags" }
-                if !other_tags().is_empty() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| other_tags.set(Vec::new()),
-                        "\u{00d7}"
-                    }
-                }
-            }
-            div { class: "chip-row", style: "flex-wrap: wrap; justify-content: center;",
-                for tag in DeckOtherTag::all().iter().copied() {
-                    div {
-                        key: "{tag}",
-                        class: if other_tags().contains(&tag) { "chip selected" } else { "chip" },
-                        onclick: move |_| {
-                            let mut v = other_tags();
-                            if let Some(pos) = v.iter().position(|t| *t == tag) {
-                                v.remove(pos);
-                            } else {
-                                v.push(tag);
-                            }
-                            other_tags.set(v);
-                        },
-                        "{tag.display_name()}"
-                    }
-                }
-            }
-        }
-
-        // ========================================
-        // Oracle tags (granular strategy; opens the fetched-catalog picker)
-        // ========================================
-        div { style: "margin-top: 1rem;",
-            div { class: "label-row",
-                label { class: "label", "Oracle tags" }
-                span { class: "field-count", "{oracle_tags().len()}/{MAX_DECK_ORACLE_TAGS}" }
-                if !oracle_tags().is_empty() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| oracle_tags.set(Vec::new()),
-                        "\u{00d7}"
-                    }
-                }
-            }
-
-            if oracle_tags().is_empty() {
-                div {
-                    class: "input input-placeholder input-tappable",
-                    onclick: move |_| show_oracle_tags_select.set(true),
-                    "Not set"
-                }
-            } else {
-                div { class: "chip-box input-tappable", onclick: move |_| show_oracle_tags_select.set(true),
-                    for slug in oracle_tags().iter().cloned() {
-                        div {
-                            key: "{slug}",
-                            class: "chip selected flex items-center gap-05",
-                            { prettify_oracle_tag_slug(&slug) }
-                            button {
-                                class: "chip-remove",
-                                onclick: move |evt| {
-                                    evt.stop_propagation();
-                                    oracle_tags.write().retain(|s| s != &slug);
-                                },
-                                "\u{00d7}"
-                            }
-                        }
                     }
                 }
             }
@@ -1088,6 +970,126 @@ pub(crate) fn DeckFields(
                     // Digits and a single decimal point only.
                     let filtered: String = event.value().chars().filter(|c| c.is_ascii_digit() || *c == '.').collect();
                     price_target.set(filtered);
+                }
+            }
+        }
+
+        // ========================================
+        // Tags — deck tags, oracle tags, other tags. Grouped at the bottom
+        // (under a "Tags" heading) to mirror the deck view's Tags section.
+        // ========================================
+        div { style: "margin-top: 1.5rem;",
+            span { class: "card-title", "Tags" }
+        }
+
+        // Deck tags (open the full-screen picker to choose)
+        div { style: "margin-top: 1rem;",
+            div { class: "label-row",
+                label { class: "label", "Deck tags" }
+                span { class: "field-count", "{selected_tags().len()}/{MAX_DECK_TAGS}" }
+                if !selected_tags().is_empty() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| selected_tags.set(Vec::new()),
+                        "\u{00d7}"
+                    }
+                }
+            }
+
+            if selected_tags().is_empty() {
+                div { class: "input input-placeholder input-tappable", onclick: move |_| show_tags_select.set(true), "Not set" }
+            } else {
+                div { class: "chip-box input-tappable", onclick: move |_| show_tags_select.set(true),
+                    for tag in selected_tags().iter().copied() {
+                        div {
+                            key: "{tag}",
+                            class: "chip selected flex items-center gap-05",
+                            "{tag.display_name()}"
+                            // Remove just this tag; stop propagation so the
+                            // chip-box's own onclick doesn't also open the picker.
+                            button {
+                                class: "chip-remove",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    selected_tags.write().retain(|t| *t != tag);
+                                },
+                                "\u{00d7}"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Oracle tags (granular strategy; deck tags seed these)
+        div { style: "margin-top: 1rem;",
+            div { class: "label-row",
+                label { class: "label", "Oracle tags" }
+                span { class: "field-count", "{oracle_tags().len()}/{MAX_DECK_ORACLE_TAGS}" }
+                if !oracle_tags().is_empty() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| oracle_tags.set(Vec::new()),
+                        "\u{00d7}"
+                    }
+                }
+            }
+
+            if oracle_tags().is_empty() {
+                div {
+                    class: "input input-placeholder input-tappable",
+                    onclick: move |_| show_oracle_tags_select.set(true),
+                    "Not set"
+                }
+            } else {
+                div { class: "chip-box input-tappable", onclick: move |_| show_oracle_tags_select.set(true),
+                    for slug in oracle_tags().iter().cloned() {
+                        div {
+                            key: "{slug}",
+                            class: "chip selected flex items-center gap-05",
+                            { prettify_oracle_tag_slug(&slug) }
+                            button {
+                                class: "chip-remove",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    oracle_tags.write().retain(|s| s != &slug);
+                                },
+                                "\u{00d7}"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Other tags (non-gameplay labels; multi-select)
+        div { style: "margin-top: 1rem;",
+            div { class: "label-row",
+                label { class: "label", "Other tags" }
+                if !other_tags().is_empty() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| other_tags.set(Vec::new()),
+                        "\u{00d7}"
+                    }
+                }
+            }
+            div { class: "chip-row", style: "flex-wrap: wrap; justify-content: center;",
+                for tag in DeckOtherTag::all().iter().copied() {
+                    div {
+                        key: "{tag}",
+                        class: if other_tags().contains(&tag) { "chip selected" } else { "chip" },
+                        onclick: move |_| {
+                            let mut v = other_tags();
+                            if let Some(pos) = v.iter().position(|t| *t == tag) {
+                                v.remove(pos);
+                            } else {
+                                v.push(tag);
+                            }
+                            other_tags.set(v);
+                        },
+                        "{tag.display_name()}"
+                    }
                 }
             }
         }

@@ -4,6 +4,7 @@ use super::components::{
     deck_charts::{DeckCharts, DrawOdds, ManaBalanceRow, ManaCurve, ManaFulfillment},
     deck_profile::DeckProfileSection,
     deck_stats::DeckStats,
+    deck_tags_section::{DeckTagsSection, has_any_tags, total_tag_count},
     deck_warnings::DeckWarnings,
     more_buttons::MoreButtons,
     skeletons::{DeckProfileSkeleton, DeckStatsSkeleton},
@@ -367,8 +368,17 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                             div { class: "content-enter",
                                   style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;",
                                 DeckProfileSection {
-                                    deck_profile: deck_profile,
+                                    deck_profile: deck_profile.clone(),
                                     commander: commander(),
+                                }
+
+                                if has_any_tags(&deck_profile) {
+                                    CollapsibleSection {
+                                        title: "Tags",
+                                        badge: format!("{}", total_tag_count(&deck_profile)),
+                                        open_section: open_section,
+                                        DeckTagsSection { deck_profile }
+                                    }
                                 }
 
                                 {
