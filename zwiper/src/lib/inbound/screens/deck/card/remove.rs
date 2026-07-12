@@ -1,6 +1,7 @@
 use super::components::{
     card_info::{CardInfoDisplay, CardRulesDialog, CardSkeleton, RulesButton},
     filter_store::{FilterScope, FilterStore},
+    printing_sheet::PrintingSheet,
 };
 use crate::{
     inbound::{
@@ -98,6 +99,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
     // grayed "?" in the util bar reopens it on demand.
     let swipe_hint_open = use_one_time_hint(HINT_REMOVE_DECK_CARDS);
     let show_rules = use_signal(|| false);
+    let mut printing_open = use_signal(|| false);
 
     // Incrementing this re-runs the filter effect
     let mut filter_reset_counter: Signal<u32> = use_signal(|| 0);
@@ -554,7 +556,11 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
                         if let Some(card) = current_card() {
                             CardInfoDisplay { card: card.clone() }
-                            CardRulesDialog { open: show_rules, card }
+                            CardRulesDialog {
+                                open: show_rules,
+                                card,
+                                on_printings: move |_| printing_open.set(true),
+                            }
                         }
                     } else {
                         CardSkeleton {}
@@ -594,6 +600,18 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
                 if current_card().is_some() {
                     RulesButton { open: show_rules }
+                }
+            }
+
+            // Root-mounted so the bottom sheet covers the footer. View-only:
+            // browsing printings never changes the deck (remove keys on the
+            // exact scryfall_data_id).
+            if let Some(card) = current_card() {
+                PrintingSheet {
+                    card,
+                    open: printing_open,
+                    on_save: move |_: Card| {},
+                    read_only: true,
                 }
             }
 

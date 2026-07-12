@@ -23,6 +23,11 @@ pub(crate) fn PrintingSheet(
     card: Card,
     mut open: Signal<bool>,
     on_save: EventHandler<Card>,
+    /// Browse-only: hide Save and never fire `on_save`. Used on the remove
+    /// screen, where changing a card's printing would break the delete (which is
+    /// keyed on the exact `scryfall_data_id` already on the deck).
+    #[props(default)]
+    read_only: bool,
 ) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
@@ -99,7 +104,7 @@ pub(crate) fn PrintingSheet(
         div {
             class: if open() { "modal-backdrop show" } else { "modal-backdrop" },
             onclick: move |_| {
-                if has_changed {
+                if !read_only && has_changed {
                     toast.warning(
                         "Printing discarded".to_string(),
                         ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -166,7 +171,7 @@ pub(crate) fn PrintingSheet(
                 Button {
                     variant: ButtonVariant::Util,
                     onclick: move |_| {
-                        if has_changed {
+                        if !read_only && has_changed {
                             toast.info(
                                 "Printing discarded".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -177,7 +182,7 @@ pub(crate) fn PrintingSheet(
                     "Close"
                 }
 
-                if has_changed {
+                if !read_only && has_changed {
                     if let Some(new_card) = visible_card {
                         {
                             rsx! {
