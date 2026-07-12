@@ -2060,6 +2060,12 @@ footer {
 .sd-column {
     flex: 1 1 0;
     min-width: 0;
+    /* Cap to the container: on iOS WebKit a flex-column item is sized to its
+       content's max-content (the card name's white-space:nowrap width) instead
+       of the column width, pushing the whole deck past the viewport. Blink/Gecko
+       don't, so this only shows on mobile. min-width:0 governs the main axis, not
+       this cross-axis width, hence the explicit cap. */
+    max-width: 100%;
     display: flex;
     flex-direction: column;
 }

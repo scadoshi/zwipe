@@ -730,9 +730,11 @@ i.ms.ms-cost {
         grid-template-columns: minmax(0, 1fr);
         flex-basis: 100%;
         /* bleed through the nav's side padding so the divider rules run
-           edge to edge; the inner re-adds the inset for content */
-        margin-left: -1.5rem;
-        margin-right: -1.5rem;
+           edge to edge; the inner re-adds the inset for content. Must match the
+           mobile nav padding (0.75rem above) exactly: -1.5rem overhung the edge
+           and forced a horizontal scroll on narrow viewports. */
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
         opacity: 0;
         visibility: hidden;
         margin-top: 0;
@@ -767,8 +769,8 @@ i.ms.ms-cost {
         gap: 1rem;
         overflow: hidden;
         min-height: 0;
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
     }
     .nav-panel .nav-links {
         flex-direction: column;
@@ -810,9 +812,10 @@ i.ms.ms-cost {
         border-top: 1px solid var(--border-primary);
         height: auto;
         /* bleed to the panel edges so this divider also runs edge to edge
-           (stays inside the inner's padding box, so overflow won't clip it) */
-        margin-left: -1.5rem;
-        margin-right: -1.5rem;
+           (stays inside the inner's padding box, so overflow won't clip it).
+           Matches the inner's 0.75rem mobile padding. */
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
     }
     .nav-panel .nav-dropdown-trigger,
     .nav-panel .mode-toggle {
