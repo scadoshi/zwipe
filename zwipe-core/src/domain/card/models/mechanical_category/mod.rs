@@ -169,6 +169,30 @@ impl TryFrom<&str> for CardRole {
     }
 }
 
+/// Wire view of a card role for the server-delivered role catalog
+/// (`GET /api/card/roles`). Lets a client label any role slug it's sent without
+/// a compiled enum — see `context/plans/server_driven_catalogs.md` (Part B).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CardRoleView {
+    /// snake_case slug (matches the served role values, e.g. `graveyard_hate`).
+    pub slug: String,
+    /// Human-readable label (e.g. `Graveyard Hate`).
+    pub display_name: String,
+    /// Compact (<=5 char) label for chart axes.
+    pub short_name: String,
+}
+
+impl CardRole {
+    /// This role as a wire catalog view (slug + labels).
+    pub fn to_view(&self) -> CardRoleView {
+        CardRoleView {
+            slug: self.to_string(),
+            display_name: self.display_name().to_string(),
+            short_name: self.to_short_name().to_string(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

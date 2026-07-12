@@ -7,6 +7,8 @@
 pub mod get_artists;
 /// Fetch a single card by ID.
 pub mod get_card;
+/// Fetch the card-role catalog (slug, display name, short name).
+pub mod get_card_roles;
 /// Fetch all card types (creature, instant, etc.).
 pub mod get_card_types;
 /// Fetch all keyword abilities.

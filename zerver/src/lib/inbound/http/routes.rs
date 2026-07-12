@@ -15,10 +15,11 @@ use crate::inbound::http::handlers::{
         verify_email::verify_email,
     },
     card::{
-        get_artists::get_artists, get_card::get_card, get_card_types::get_card_types,
-        get_keywords::get_keywords, get_languages::get_languages, get_oracle_tags::get_oracle_tags,
-        get_oracle_words::get_oracle_words, get_printings::get_printings, get_sets::get_sets,
-        search_card::search_cards, search_commanders::search_commanders,
+        get_artists::get_artists, get_card::get_card, get_card_roles::get_card_roles,
+        get_card_types::get_card_types, get_keywords::get_keywords, get_languages::get_languages,
+        get_oracle_tags::get_oracle_tags, get_oracle_words::get_oracle_words,
+        get_printings::get_printings, get_sets::get_sets, search_card::search_cards,
+        search_commanders::search_commanders,
     },
     client::get_min_client_version,
     deck::{
@@ -29,6 +30,7 @@ use crate::inbound::http::handlers::{
         get_deck::get_deck,
         get_deck_profile::get_deck_profile,
         get_deck_profiles::get_deck_profiles,
+        get_deck_tags::get_deck_tags,
         get_deck_tokens::get_deck_tokens,
         get_shared_deck::get_shared_deck,
         import_archidekt::import_archidekt_deck,
@@ -261,6 +263,7 @@ pub fn public_routes() -> Router<AppState> {
                         .route("/artists", get(get_artists))
                         .route("/types", get(get_card_types))
                         .route("/keywords", get(get_keywords))
+                        .route("/roles", get(get_card_roles))
                         .route("/oracle-tags", get(get_oracle_tags))
                         .route("/oracle-words", get(get_oracle_words))
                         .route("/languages", get(get_languages))
@@ -430,6 +433,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                     "/deck",
                     Router::new()
                         .route("/", get(get_deck_profiles).post(create_deck_profile))
+                        .route("/tags", get(get_deck_tags))
                         .route("/{deck_id}/import/archidekt", post(import_archidekt_deck))
                         .route("/profile/{deck_id}", get(get_deck_profile))
                         .route(

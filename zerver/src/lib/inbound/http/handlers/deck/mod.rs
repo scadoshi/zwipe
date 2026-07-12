@@ -14,6 +14,8 @@ pub mod get_deck;
 pub mod get_deck_profile;
 /// All decks for user handler.
 pub mod get_deck_profiles;
+/// Deck-tag catalog handler (`GET /api/deck/tags`).
+pub mod get_deck_tags;
 /// Deck tokens handler.
 pub mod get_deck_tokens;
 /// Public shared-deck read handler (token-addressed, no auth).
