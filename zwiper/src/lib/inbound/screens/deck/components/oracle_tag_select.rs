@@ -64,7 +64,7 @@ pub(crate) fn OracleTagSelect(
     // Empty search → the curated default grid (entries the backend still serves)
     // plus any selected slug not already in it. Non-empty search → catalog matches.
     let q = query().to_lowercase();
-    let results: Vec<OracleTag> = if !open() || tags.is_empty() {
+    let mut results: Vec<OracleTag> = if !open() || tags.is_empty() {
         Vec::new()
     } else if q.is_empty() {
         let mut slugs: Vec<String> = CURATED_ORACLE_TAGS
@@ -94,10 +94,15 @@ pub(crate) fn OracleTagSelect(
     } else {
         tags.iter()
             .filter(|t| t.label.to_lowercase().contains(&q) || t.slug.contains(&q))
-            .take(40)
             .cloned()
             .collect()
     };
+    // Chips render the slug, so sort by slug for an alphabetical grid. Sort
+    // before the search cap so the shown 40 are the alphabetically-first matches.
+    results.sort_by(|a, b| a.slug.cmp(&b.slug));
+    if !q.is_empty() {
+        results.truncate(40);
+    }
 
     rsx! {
         div { class: "{screen_class}",
