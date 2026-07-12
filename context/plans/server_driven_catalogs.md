@@ -1,13 +1,16 @@
 # Server-driven catalogs — roles & deck tags without client releases
 
-**Status: PLANNED — GATED (2026-07-12).** Deliberately deferred until the in-flight otags
-implementation (the deck-tag picker / Slice C and its `zwipe-core` + `zerver` deck work)
-lands. This overhaul touches core, server, and both clients, so starting it mid-build would
-collide; pick it up once the otags impls are committed. Goal: make the **card-role catalog**,
-the **deck-tag catalog**, and their **otag relationships** something the server delivers, so
-adding a role, a deck tag, or a tag correlation is a server const edit + deploy — never an
-app-store turnaround. Pairs with the otags work (`plans/otags/`); this is the delivery layer
-that lets all that tagging grow without waiting on client release cycles.
+**Status: Part 0 DONE (`d036b86b`, 2026-07-12, unpushed); B + C PLANNED.** The otags impls have
+landed, so this is unblocked. Goal: make the **card-role catalog**, the **deck-tag catalog**, and
+their **otag relationships** something the server delivers, so adding a role, a deck tag, or a tag
+correlation is a server const edit + deploy — never an app-store turnaround. Pairs with the otags
+work (`plans/otags/`); this is the delivery layer that lets all that tagging grow without waiting
+on client release cycles.
+
+> **NOTE (2026-07-12): `MechanicalCategory` is now `CardRole`** (Phase M rename shipped). Read every
+> `MechanicalCategory` below as `CardRole`; the module dir + wire/DB field `mechanical_categories`
+> still exist (they move at the Phase M sunset). **Part 0 shipped** — see its section below; B + C
+> (the catalog endpoints + client rendering) are the remaining "big effort," phase-able later.
 
 ## The problem
 
@@ -47,7 +50,23 @@ minimal machinery.
 > change with a **DB write and no deploy at all**. Bigger change (admin tooling, derivation
 > reads from DB). Note it; don't build it yet.
 
-## Part 0 — the compatibility bridge: lossy slug deserialization (do this FIRST)
+## Part 0 — the compatibility bridge: lossy slug deserialization — ✅ DONE (`d036b86b`)
+
+**Built 2026-07-12 (unpushed).** `zwipe-core/src/serde_helpers.rs::lossy_vec` — reads `Vec<String>`,
+`filter_map`s into the enum, drops unknowns — applied via
+`#[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]` to the served enum-vecs:
+`CardProfile.{mechanical_categories, card_roles}` (`Vec<CardRole>`), `DeckProfile.{tags, other_tags}`,
+`HttpSharedDeck.{tags, other_tags}`. Deserialize-only (serialization + wire unchanged → deployed
+clients unaffected); ships in the not-yet-deployed client so that release and every later one
+survives catalog growth. Requests (create/update deck) left strict — the server is always newest.
+Tests: `unknown_role_slug_is_dropped_not_errored` (card_profile.rs) + `lossy_vec` unit tests.
+
+**Reminder (operational):** Part 0 protects clients *from this release forward*, not the
+already-deployed strict ones. Until a `MIN_CLIENT_VERSION` floor guarantees everyone is on a
+Part-0 client, **do not actually add a new role/tag slug** that reaches older clients — it still
+crashes them. Part 0 is the enabler; the hot-patch payoff is safe only once old clients age out.
+
+Original rationale below (still accurate):
 
 This is what makes the whole thing "work forever **and** work with existing clients until
 they switch." It is a permanent foundation, **not** a stopgap.
@@ -153,8 +172,9 @@ it, it's stored as a slug and re-served — end to end, no client enum change.
 
 ## Sequencing
 
-0. **Part 0 — lossy slug deserialization** (`zwipe-core`, foundational): the compatibility
-   bridge above. Must land in the first role/deck-tag-carrying client release.
+0. **Part 0 — lossy slug deserialization** (`zwipe-core`, foundational): ✅ **DONE** (`d036b86b`,
+   unpushed). Must ship in the first role/deck-tag-carrying client release — it's baked into the
+   pending (un-deployed) client, so that's satisfied on the next deploy + client ship.
 1. **B — role catalog** (self-contained, our lane): DTO + `GET /api/card/roles` + make
    `CardRoleChips` / category filter / chart catalog-driven, with the compiled enum as an
    offline fallback.
