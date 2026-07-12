@@ -11,29 +11,11 @@
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::{
-    card::{
-        Card, scryfall_data::ImageSize, search_card::card_filter::price_currency::PriceCurrency,
-    },
+    card::{Card, search_card::card_filter::price_currency::PriceCurrency},
     deck::{Board, deck_metrics::card_price},
 };
 
-use crate::{CardRoleChips, KeywordChips, OracleText};
-
-/// A card's displayable mana cost, falling back to the front face for
-/// double-faced layouts whose top-level cost is absent.
-fn display_mana_cost(card: &Card) -> String {
-    if let Some(cost) = &card.scryfall_data.mana_cost
-        && !cost.is_empty()
-    {
-        return cost.clone();
-    }
-    card.scryfall_data
-        .card_faces
-        .as_ref()
-        .and_then(|faces| faces.first())
-        .map(|face| face.mana_cost.clone())
-        .unwrap_or_default()
-}
+use crate::CardDetails;
 
 /// Expandable card row with compact view and optional actions.
 #[component]
@@ -45,6 +27,9 @@ pub fn CardRow(
     /// provided; what "view image" means (fullscreen preview, overlay) is the
     /// host's business.
     on_image: Option<EventHandler<()>>,
+    /// Fires with the new face index when the expanded detail is flipped, so a
+    /// host can mirror the shown side (e.g. zite's hover preview + image overlay).
+    on_face_change: Option<EventHandler<usize>>,
     on_qty_change: Option<EventHandler<i32>>,
     on_move_to: Option<EventHandler<Board>>,
     current_board: Option<Board>,
@@ -72,18 +57,6 @@ pub fn CardRow(
     let is_expanded = expanded_card() == Some(card_id);
     let sd = &card.scryfall_data;
 
-    // Card roles (with their grouped oracle tags) render as classification beside
-    // the keywords, but only when the host opts in via `show_classification`.
-    let (roles, tags_by_role, other_tags) = if show_classification {
-        (
-            card.card_profile.card_roles.clone(),
-            card.card_profile.oracle_tags_by_role.clone(),
-            card.card_profile.other_oracle_tags.clone(),
-        )
-    } else {
-        (Vec::new(), Default::default(), Vec::new())
-    };
-
     let name = sd.name.clone();
     // Compact-row price in the deck's chosen currency (nonfoil→foil fallback);
     // `None` (no price in that currency) omits the tag entirely.
@@ -100,17 +73,10 @@ pub fn CardRow(
         .iter()
         .map(|c| c.to_short_name().to_lowercase())
         .collect::<Vec<_>>();
-    let type_line = sd.type_line.clone().unwrap_or_default();
-    let keywords = sd.keywords.clone().unwrap_or_default();
-    let oracle_text = sd.oracle_text.clone().unwrap_or_default();
-    let mana_cost = display_mana_cost(&card);
     let loyalty_display = sd.loyalty.clone().unwrap_or_default();
-    let rarity_name = sd.rarity.to_long_name();
-    let has_image: bool = sd.primary_image_url(ImageSize::Large).is_some();
-    // The muted rule + actions container render only when at least one action
-    // will — an actionless row (read-only, imageless) ends at the bottom rule.
-    let has_actions = on_qty_change.is_some()
-        || (has_image && on_image.is_some())
+    // The `actions` slot the shared detail hangs its bar on: qty stepper,
+    // printing, star, move-to. Image is a `CardDetails` default, not part of it.
+    let has_slot_actions = on_qty_change.is_some()
         || on_printing.is_some()
         || (mvp.is_some() && on_toggle_mvp.is_some())
         || on_move_to.is_some();
@@ -177,146 +143,108 @@ pub fn CardRow(
             div { class: "{collapse_class}",
                 div { class: "card-row-collapse-inner",
                 hr { class: "card-row-rule" }
-                div { class: "card-row-detail",
-                    div { class: "card-detail-head",
-                        p { class: "card-detail-name", "{name}" }
-                        if !mana_cost.is_empty() {
-                            OracleText { text: mana_cost, class: "card-detail-cost".to_string() }
-                        }
-                    }
-                    div { class: "card-detail-meta",
-                        if !type_line.is_empty() {
-                            span { class: "detail-chip", "{type_line}" }
-                        }
-                        span { class: "detail-chip", "{rarity_name}" }
-                    }
-                    if !keywords.is_empty() {
-                        KeywordChips { keywords }
-                    }
-                    if show_classification {
-                        CardRoleChips { roles, tags_by_role, other_tags }
-                    }
-                    if !oracle_text.is_empty() {
-                        OracleText { text: oracle_text, class: "card-detail-oracle".to_string() }
-                    }
-                    if !pt_display.is_empty() {
-                        div { class: "card-detail-stats",
-                            span { class: "detail-chip", "{pt_display}" }
-                        }
-                    } else if !loyalty_display.is_empty() {
-                        div { class: "card-detail-stats",
-                            span { class: "detail-chip", "Loyalty {loyalty_display}" }
-                        }
-                    }
-                }
-                if has_actions {
-                hr { class: "card-row-rule card-row-rule-muted" }
-                div { class: "card-row-actions",
-                    div { class: "card-action-row",
-                        if let Some(handler) = on_qty_change {
-                            button {
-                                class: "card-action-btn",
-                                onclick: move |evt| {
-                                    evt.stop_propagation();
-                                    handler.call(-1);
-                                },
-                                "-"
+                CardDetails {
+                    card: card.clone(),
+                    show_classification,
+                    on_image,
+                    on_face_change,
+                    has_actions: has_slot_actions,
+                    actions: rsx! {
+                        div { class: "card-action-row",
+                            if let Some(handler) = on_qty_change {
+                                button {
+                                    class: "card-action-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        handler.call(-1);
+                                    },
+                                    "-"
+                                }
+                                span { class: "card-action-count", "{qty}" }
+                                button {
+                                    class: "card-action-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        handler.call(1);
+                                    },
+                                    "+"
+                                }
                             }
-                            span { class: "card-action-count", "{qty}" }
-                            button {
-                                class: "card-action-btn",
-                                onclick: move |evt| {
-                                    evt.stop_propagation();
-                                    handler.call(1);
-                                },
-                                "+"
-                            }
-                        }
-                        if let (true, Some(handler)) = (has_image, on_image) {
-                            button {
-                                class: "card-action-btn",
-                                onclick: move |evt| {
-                                    evt.stop_propagation();
-                                    handler.call(());
-                                },
-                                "Image"
-                            }
-                        }
-                        if let Some(handler) = on_printing {
-                            {
-                                let card_clone = card.clone();
-                                rsx! {
-                                    button {
-                                        class: "card-action-btn",
-                                        onclick: move |evt| {
-                                            evt.stop_propagation();
-                                            handler.call(card_clone.clone());
-                                        },
-                                        "Printing"
+                            if let Some(handler) = on_printing {
+                                {
+                                    let card_clone = card.clone();
+                                    rsx! {
+                                        button {
+                                            class: "card-action-btn",
+                                            onclick: move |evt| {
+                                                evt.stop_propagation();
+                                                handler.call(card_clone.clone());
+                                            },
+                                            "Printing"
+                                        }
                                     }
                                 }
                             }
-                        }
-                        if let (Some(is_mvp), Some(handler)) = (mvp, on_toggle_mvp) {
-                            button {
-                                class: "card-action-btn",
-                                onclick: move |evt| {
-                                    evt.stop_propagation();
-                                    handler.call(());
-                                },
-                                if is_mvp { "Unstar" } else { "Star" }
+                            if let (Some(is_mvp), Some(handler)) = (mvp, on_toggle_mvp) {
+                                button {
+                                    class: "card-action-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        handler.call(());
+                                    },
+                                    if is_mvp { "Unstar" } else { "Star" }
+                                }
                             }
                         }
-                    }
-                    if let Some(handler) = on_move_to {
-                        div { class: "card-action-row",
-                            match current_board.unwrap_or(Board::Deck) {
-                                Board::Deck => rsx! {
-                                    button {
-                                        class: "card-action-btn",
-                                        style: "white-space:nowrap;",
-                                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Maybeboard); },
-                                        "To maybeboard"
-                                    }
-                                    button {
-                                        class: "card-action-btn",
-                                        style: "white-space:nowrap;",
-                                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Sideboard); },
-                                        "To sideboard"
-                                    }
-                                },
-                                Board::Maybeboard => rsx! {
-                                    button {
-                                        class: "card-action-btn",
-                                        style: "white-space:nowrap;",
-                                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
-                                        "To mainboard"
-                                    }
-                                    button {
-                                        class: "card-action-btn",
-                                        style: "white-space:nowrap;",
-                                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Sideboard); },
-                                        "To sideboard"
-                                    }
-                                },
-                                Board::Sideboard => rsx! {
-                                    button {
-                                        class: "card-action-btn",
-                                        style: "white-space:nowrap;",
-                                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
-                                        "To mainboard"
-                                    }
-                                    button {
-                                        class: "card-action-btn",
-                                        style: "white-space:nowrap;",
-                                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Maybeboard); },
-                                        "To maybeboard"
-                                    }
-                                },
+                        if let Some(handler) = on_move_to {
+                            div { class: "card-action-row",
+                                match current_board.unwrap_or(Board::Deck) {
+                                    Board::Deck => rsx! {
+                                        button {
+                                            class: "card-action-btn",
+                                            style: "white-space:nowrap;",
+                                            onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Maybeboard); },
+                                            "To maybeboard"
+                                        }
+                                        button {
+                                            class: "card-action-btn",
+                                            style: "white-space:nowrap;",
+                                            onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Sideboard); },
+                                            "To sideboard"
+                                        }
+                                    },
+                                    Board::Maybeboard => rsx! {
+                                        button {
+                                            class: "card-action-btn",
+                                            style: "white-space:nowrap;",
+                                            onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
+                                            "To mainboard"
+                                        }
+                                        button {
+                                            class: "card-action-btn",
+                                            style: "white-space:nowrap;",
+                                            onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Sideboard); },
+                                            "To sideboard"
+                                        }
+                                    },
+                                    Board::Sideboard => rsx! {
+                                        button {
+                                            class: "card-action-btn",
+                                            style: "white-space:nowrap;",
+                                            onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
+                                            "To mainboard"
+                                        }
+                                        button {
+                                            class: "card-action-btn",
+                                            style: "white-space:nowrap;",
+                                            onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Maybeboard); },
+                                            "To maybeboard"
+                                        }
+                                    },
+                                }
                             }
                         }
-                    }
-                }
+                    },
                 }
                 hr { class: "card-row-rule card-row-rule-bottom" }
                 }
