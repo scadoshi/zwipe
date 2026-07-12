@@ -89,7 +89,11 @@ impl DeckRepository for Postgres {
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as "commander_name?",
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = partner_commander_id) as "partner_commander_name?",
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = background_id) as "background_name?",
-                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = signature_spell_id) as "signature_spell_name?""#,
+                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = signature_spell_id) as "signature_spell_name?",
+                         (SELECT array_agg(DISTINCT ci)
+                            FROM scryfall_data sci, unnest(sci.color_identity) AS ci
+                           WHERE sci.id IN (commander_id, partner_commander_id, background_id, signature_spell_id)
+                              OR sci.id IN (SELECT dc2.scryfall_data_id FROM deck_cards dc2 WHERE dc2.deck_id = id AND dc2.board = 'deck')) as "color_identity?: Vec<String>""#,
             request.name.to_string(),
             request.commander_id,
             request.partner_commander_id,
@@ -218,7 +222,11 @@ impl DeckRepository for Postgres {
                       sd.name as "commander_name?",
                       (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as "partner_commander_name?",
                       (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as "background_name?",
-                      (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as "signature_spell_name?"
+                      (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as "signature_spell_name?",
+                      (SELECT array_agg(DISTINCT ci)
+                         FROM scryfall_data sci, unnest(sci.color_identity) AS ci
+                        WHERE sci.id IN (d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id)
+                           OR sci.id IN (SELECT dc2.scryfall_data_id FROM deck_cards dc2 WHERE dc2.deck_id = d.id AND dc2.board = 'deck')) as "color_identity?: Vec<String>"
                FROM decks d
                LEFT JOIN deck_cards dc ON d.id = dc.deck_id
                LEFT JOIN scryfall_data sd ON d.commander_id = sd.id
@@ -248,7 +256,11 @@ impl DeckRepository for Postgres {
                       sd.name as "commander_name?",
                       (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as "partner_commander_name?",
                       (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as "background_name?",
-                      (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as "signature_spell_name?"
+                      (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as "signature_spell_name?",
+                      (SELECT array_agg(DISTINCT ci)
+                         FROM scryfall_data sci, unnest(sci.color_identity) AS ci
+                        WHERE sci.id IN (d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id)
+                           OR sci.id IN (SELECT dc2.scryfall_data_id FROM deck_cards dc2 WHERE dc2.deck_id = d.id AND dc2.board = 'deck')) as "color_identity?: Vec<String>"
                FROM decks d
                LEFT JOIN deck_cards dc ON d.id = dc.deck_id
                LEFT JOIN scryfall_data sd ON d.commander_id = sd.id
@@ -370,7 +382,11 @@ impl DeckRepository for Postgres {
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.commander_id) as commander_name,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.partner_commander_id) as partner_commander_name,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.background_id) as background_name,
-                       (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.signature_spell_id) as signature_spell_name"#);
+                       (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.signature_spell_id) as signature_spell_name,
+                       (SELECT array_agg(DISTINCT ci)
+                          FROM scryfall_data sci, unnest(sci.color_identity) AS ci
+                         WHERE sci.id IN (decks.commander_id, decks.partner_commander_id, decks.background_id, decks.signature_spell_id)
+                            OR sci.id IN (SELECT dc2.scryfall_data_id FROM deck_cards dc2 WHERE dc2.deck_id = decks.id AND dc2.board = 'deck')) as color_identity"#);
         let database_deck: DatabaseDeckProfile = qb.build_query_as().fetch_one(&mut *tx).await?;
         let deck_profile: DeckProfile = database_deck.try_into()?;
 

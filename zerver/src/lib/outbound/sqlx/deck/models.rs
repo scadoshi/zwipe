@@ -35,6 +35,7 @@ pub struct DatabaseDeckProfile {
     pub partner_commander_name: Option<String>,
     pub background_name: Option<String>,
     pub signature_spell_name: Option<String>,
+    pub color_identity: Option<Vec<String>>,
 }
 
 /// converts database deck to validated domain deck
@@ -97,6 +98,7 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
             partner_commander_name: value.partner_commander_name,
             background_name: value.background_name,
             signature_spell_name: value.signature_spell_name,
+            color_identity: value.color_identity.unwrap_or_default(),
         })
     }
 }
@@ -133,5 +135,56 @@ impl TryFrom<DatabaseDeckCard> for DeckCard {
             board,
             mvp_at: value.mvp_at,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn base_profile() -> DatabaseDeckProfile {
+        DatabaseDeckProfile {
+            id: Uuid::new_v4(),
+            name: "Test Deck".to_string(),
+            commander_id: None,
+            partner_commander_id: None,
+            background_id: None,
+            signature_spell_id: None,
+            format: None,
+            tags: None,
+            power_level: None,
+            other_tags: None,
+            land_target: None,
+            price_target: None,
+            price_target_currency: None,
+            share_token: None,
+            user_id: Uuid::new_v4(),
+            card_count: Some(0),
+            commander_name: None,
+            partner_commander_name: None,
+            background_name: None,
+            signature_spell_name: None,
+            color_identity: None,
+        }
+    }
+
+    #[test]
+    fn color_identity_present_passes_through() {
+        let db = DatabaseDeckProfile {
+            color_identity: Some(vec!["W".to_string(), "U".to_string(), "B".to_string()]),
+            ..base_profile()
+        };
+        let profile = DeckProfile::try_from(db).unwrap();
+        assert_eq!(profile.color_identity, vec!["W", "U", "B"]);
+    }
+
+    #[test]
+    fn color_identity_null_becomes_empty() {
+        let db = DatabaseDeckProfile {
+            color_identity: None,
+            ..base_profile()
+        };
+        let profile = DeckProfile::try_from(db).unwrap();
+        assert!(profile.color_identity.is_empty());
     }
 }

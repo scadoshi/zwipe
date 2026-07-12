@@ -583,6 +583,7 @@ mod tests {
             partner_commander_name: None,
             background_name: None,
             signature_spell_name: None,
+            color_identity: Vec::new(),
         }
     }
 
