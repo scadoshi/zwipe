@@ -19,6 +19,8 @@ pub enum Block {
     Swipe(&'static [(&'static str, &'static str)]),
     /// Aside callout for a tip or caveat.
     Note(&'static str),
+    /// Monospace flow diagram (whitespace preserved), for showing how steps connect.
+    Diagram(&'static str),
 }
 
 pub struct Guide {
@@ -416,7 +418,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Role distribution"),
             Block::P(
-                "The deck view's Charts section includes a Role distribution chart, the same roles as the card chips, but counted across your whole deck, so you can see at a glance where it's thin.",
+                "The deck view's Distributions section includes a Role distribution chart, the same roles as the card chips, but counted across your whole deck, so you can see at a glance where it's thin.",
             ),
         ],
     },
@@ -440,6 +442,13 @@ pub static GUIDES: &[Guide] = &[
             Block::H2("Card roles: the read-side view"),
             Block::P(
                 "Card roles are different from the other two: you never pick them. Each card's oracle tags are rolled up into a small set of coarse roles, Removal, Ramp, Card advantage, shown as chips on the card. Tap a role to see the oracle tags underneath it.",
+            ),
+            Block::H2("How it flows"),
+            Block::Diagram(
+                "You configure\n  Deck tags\n     │ seed\n     ▼\n  Oracle tags  (refine freely)\n     │ match\n     ▼\nZwipe serves\n  cards that fit your deck\n     │ you swipe\n     ▼\n  better data over time\n     │ sharpens\n     ▼\n  smarter serving",
+            ),
+            Block::P(
+                "It's a flywheel: the more you configure a deck, the better the cards Zwipe suggests, and the better Zwipe gets at serving them over time.",
             ),
             Block::H2("The one-liner"),
             Block::P(

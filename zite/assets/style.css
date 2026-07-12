@@ -1381,6 +1381,18 @@ code {
     margin: 1rem 0;
 }
 
+.guide-diagram {
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--text-subtle);
+    border: 1px solid var(--accent-tertiary);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin: 1.25rem 0;
+    overflow-x: auto;
+    white-space: pre;
+}
+
 /* ==================
         theme switcher
  ==================== */
