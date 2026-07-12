@@ -7,6 +7,7 @@
 use super::mechanical_category::MechanicalCategory;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use uuid::Uuid;
 
 /// Application metadata for a card.
@@ -25,6 +26,15 @@ pub struct CardProfile {
     /// `#[serde(default)]` so older clients that omit it still deserialize.
     #[serde(default)]
     pub oracle_tags: Vec<String>,
+    /// This card's functional oracle tags grouped under the coarse role they
+    /// fall beneath (role slug -> its tags). Server-computed for the card
+    /// display, so the role<->tag mapping updates on deploy. `#[serde(default)]`.
+    #[serde(default)]
+    pub oracle_tags_by_role: BTreeMap<String, Vec<String>>,
+    /// Functional oracle tags that fall under no role (the "other" bucket),
+    /// noise already stripped server-side. `#[serde(default)]`.
+    #[serde(default)]
+    pub other_oracle_tags: Vec<String>,
     /// When this profile was created in database.
     pub created_at: DateTime<Utc>,
     /// When this profile was last updated.

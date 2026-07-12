@@ -1368,7 +1368,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<CardProfile, GetCardProfileError> {
         let card_profile: CardProfile = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, mechanical_categories, oracle_tags, created_at, updated_at FROM card_profiles WHERE scryfall_data_id = $1",
+            "SELECT scryfall_data_id, is_token, mechanical_categories, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at FROM card_profiles WHERE scryfall_data_id = $1",
             **request
         )
         .fetch_one(&self.pool)
@@ -1383,7 +1383,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<CardProfile, GetCardProfileError> {
         let card_profile: CardProfile = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, mechanical_categories, oracle_tags, created_at, updated_at
+            "SELECT scryfall_data_id, is_token, mechanical_categories, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = $1",
             **request
         )
@@ -1399,7 +1399,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, mechanical_categories, oracle_tags, created_at, updated_at
+            "SELECT scryfall_data_id, is_token, mechanical_categories, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = ANY($1)",
             &**request
         )
@@ -1417,7 +1417,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, mechanical_categories, oracle_tags, created_at, updated_at
+            "SELECT scryfall_data_id, is_token, mechanical_categories, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = ANY($1)",
             &**request
         )
@@ -1639,6 +1639,13 @@ impl CardRepository for MyPostgres {
 
     async fn derive_oracle_tag_categories(&self) -> anyhow::Result<u64> {
         crate::outbound::sqlx::card::helpers::derive_categories::derive_categories(&self.pool).await
+    }
+
+    async fn refresh_oracle_tag_groups(&self) -> anyhow::Result<u64> {
+        crate::outbound::sqlx::card::helpers::oracle_tag_groups::refresh_oracle_tag_groups(
+            &self.pool,
+        )
+        .await
     }
 
     async fn get_card_ids_with_oracle_text(&self) -> Result<Vec<uuid::Uuid>, anyhow::Error> {

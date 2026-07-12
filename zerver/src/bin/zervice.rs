@@ -104,6 +104,13 @@ async fn main() -> anyhow::Result<()> {
                     tracing::error!("step 2/5 oracle tags projection FAILED (continuing): {e:#}");
                 }
             }
+            match card_service.refresh_oracle_tag_groups().await {
+                Ok(rows) => tracing::info!("step 2/5 oracle tags grouping: {rows} rows"),
+                Err(e) => {
+                    failures += 1;
+                    tracing::error!("step 2/5 oracle tags grouping FAILED (continuing): {e:#}");
+                }
+            }
         }
         Err(e) => {
             failures += 1;

@@ -373,6 +373,58 @@ async fn get_oracle_tags_returns_catalog_with_parent_slugs(pool: sqlx::PgPool) {
     assert_eq!(tags[1].parent_slugs, vec!["removal".to_string()]);
 }
 
+/// `refresh_oracle_tag_groups` buckets a card's tags under their role and drops
+/// noise + role-less tags into `other_oracle_tags` (noise stripped).
+#[sqlx::test]
+async fn grouping_buckets_tags_under_roles_and_other(pool: sqlx::PgPool) {
+    let removal_id = Uuid::from_u128(0x400);
+    let spot_id = Uuid::from_u128(0x401);
+    sqlx::query("INSERT INTO oracle_tags (id, slug, label) VALUES ($1, 'removal', 'Removal')")
+        .bind(removal_id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query(
+        "INSERT INTO oracle_tags (id, slug, label, parent_ids) \
+         VALUES ($1, 'spot-removal', 'Spot removal', ARRAY[$2]::uuid[])",
+    )
+    .bind(spot_id)
+    .bind(removal_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let fixture = card("Grouped").mono("W");
+    let oracle_id = fixture.oracle_id().unwrap();
+    seed_cards(&pool, &[fixture]).await;
+    // spot-removal → role removal; scry → other (functional, no role);
+    // alliteration → dropped (noise pattern).
+    sqlx::query(
+        "INSERT INTO card_oracle_tags (oracle_id, oracle_tag, source) VALUES \
+         ($1, 'spot-removal', 'scryfall'), ($1, 'scry', 'scryfall'), ($1, 'alliteration', 'scryfall')",
+    )
+    .bind(oracle_id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let repo = Postgres { pool: pool.clone() };
+    repo.refresh_oracle_tag_groups().await.unwrap();
+
+    let (by_role, other): (serde_json::Value, serde_json::Value) = sqlx::query_as(
+        "SELECT cp.oracle_tags_by_role, cp.other_oracle_tags FROM card_profiles cp \
+         JOIN scryfall_data sd ON sd.id = cp.scryfall_data_id WHERE sd.oracle_id = $1",
+    )
+    .bind(oracle_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    assert_eq!(by_role, serde_json::json!({ "removal": ["spot-removal"] }));
+    // scry is functional-but-role-less → other; alliteration noise dropped.
+    assert_eq!(other, serde_json::json!(["scry"]));
+}
+
 /// A card with no correlations projects to an empty array (LEFT JOIN + COALESCE).
 #[sqlx::test]
 async fn projection_untagged_card_is_empty(pool: sqlx::PgPool) {
