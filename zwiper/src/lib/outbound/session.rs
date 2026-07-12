@@ -120,30 +120,8 @@ mod platform {
 #[cfg(target_os = "android")]
 mod platform {
     use super::Session;
-    use jni::objects::{JObject, JString};
+    use crate::outbound::android_fs::files_dir;
     use std::path::PathBuf;
-
-    /// The app's private internal files dir (e.g. `/data/data/<pkg>/files`),
-    /// resolved via JNI from the Android `Context` `ndk-context` exposes.
-    fn files_dir() -> anyhow::Result<PathBuf> {
-        let ctx = ndk_context::android_context();
-        // SAFETY: ndk-context guarantees a valid JavaVM and Context jobject for
-        // the running app.
-        let vm = unsafe { jni::JavaVM::from_raw(ctx.vm().cast()) }?;
-        let mut env = vm.attach_current_thread()?;
-        let context = unsafe { JObject::from_raw(ctx.context().cast()) };
-
-        // File dir = context.getFilesDir();
-        let dir = env
-            .call_method(&context, "getFilesDir", "()Ljava/io/File;", &[])?
-            .l()?;
-        // String path = dir.getAbsolutePath();
-        let path = env
-            .call_method(&dir, "getAbsolutePath", "()Ljava/lang/String;", &[])?
-            .l()?;
-        let path: String = env.get_string(&JString::from(path))?.into();
-        Ok(PathBuf::from(path))
-    }
 
     fn session_path() -> anyhow::Result<PathBuf> {
         Ok(files_dir()?.join("session.json"))

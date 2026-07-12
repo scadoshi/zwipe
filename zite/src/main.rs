@@ -3,6 +3,7 @@ use zwipe_components::{BRAND_RESET_JS, NavBar, ThemeConfig, ThemePicker};
 
 mod components;
 mod pages;
+mod theme_store;
 use pages::{
     About, Android, Changelog, Contribute, Discord, GuidePage, Guides, Home, Ios, Privacy, Reset,
     SharedDeck, Verify,
@@ -96,13 +97,19 @@ async fn static_routes() -> ServerFnResult<Vec<String>> {
 
 #[component]
 fn App() -> Element {
-    let theme = use_signal(ThemeConfig::default);
+    // Seed from the last-used theme in localStorage (client), falling back to
+    // the default on the server build where localStorage doesn't exist.
+    let theme = use_signal(|| theme_store::load().unwrap_or_default());
     use_context_provider(|| theme);
 
     // Apply theme class to <body> so all CSS variable lookups, including
-    // body { background-color: var(--bg-primary) }, resolve from the theme.
+    // body { background-color: var(--bg-primary) }, resolve from the theme, and
+    // persist the choice so the next visit opens in it. Seeding the signal from
+    // storage above means this saves the same value back (no clobber).
     use_effect(move || {
-        let class = theme.read().css_class();
+        let cfg = theme.read().clone();
+        theme_store::save(&cfg);
+        let class = cfg.css_class();
         spawn(async move {
             let _ = eval(&format!("document.body.className = '{class}';")).await;
         });

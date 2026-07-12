@@ -3,10 +3,14 @@
 //! Maps a theme name + dark mode flag to the CSS class that should be applied
 //! to the root element. Shared across zwiper and zite.
 
+use serde::{Deserialize, Serialize};
+
 use super::preferences::UserPreferences;
 
-/// Display theme configuration used by the UI.
-#[derive(Clone, PartialEq)]
+/// Display theme configuration used by the UI. Serializable so clients can cache
+/// the last-used theme locally (see zwiper `theme_store`, zite `theme_store`) and
+/// theme pre-auth screens before a session loads.
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct ThemeConfig {
     /// Theme identifier (e.g. "gruvbox", "dracula").
     pub name: String,
