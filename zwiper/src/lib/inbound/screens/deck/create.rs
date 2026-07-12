@@ -31,7 +31,7 @@ use zwipe_core::{
         card::{Card, search_card::card_filter::price_currency::PriceCurrency},
         deck::{
             DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel, format::Format,
-            seed_oracle_tags,
+            seed_oracle_tags_from_catalog,
         },
         user::models::hints::HINT_CREATE_DECK,
     },
@@ -295,7 +295,12 @@ pub fn CreateDeck() -> Element {
                     // Reconcile seeded oracle tags with the final deck-tag set:
                     // drop the previous seed contribution, add the new one, keep
                     // manual picks. Cap at MAX; toast if anything was auto-added.
-                    let new_seed = seed_oracle_tags(&selected_tags());
+                    // Seed from the server catalog so a newly-served tag's otags
+                    // apply without a client release; empty catalog seeds nothing.
+                    let new_seed = seed_oracle_tags_from_catalog(
+                        &selected_tags(),
+                        &deck_tags_catalog().unwrap_or_default(),
+                    );
                     let old_seed = applied_seed();
                     let mut ot: Vec<String> = oracle_tags()
                         .into_iter()

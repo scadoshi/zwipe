@@ -5,7 +5,7 @@
 //! Picking an archetype seeds these client-side (the `DeckTag → otag-set` map
 //! arrives in Phase 3 Slice B).
 
-use super::deck_tag::DeckTag;
+use super::deck_tag::{DeckTag, DeckTagView};
 use std::collections::HashSet;
 
 /// Maximum oracle tags a deck may declare. Higher than `MAX_DECK_TAGS` (5)
@@ -23,6 +23,21 @@ pub fn seed_oracle_tags(tags: &[String]) -> Vec<String> {
         .flat_map(|t| t.oracle_tag_slugs())
         .filter(|s| seen.insert(**s))
         .map(|s| (*s).to_string())
+        .collect()
+}
+
+/// Like [`seed_oracle_tags`] but resolves seeds from a server-delivered catalog
+/// ([`DeckTagView::seed_otags`]) instead of the compiled [`DeckTag`] map. Lets a
+/// newly-served deck tag (or a re-tuned seed set) pre-select its oracle tags
+/// without a client release. Union of each selected tag's `seed_otags`, deduped,
+/// first-seen order; slugs absent from the catalog seed nothing.
+pub fn seed_oracle_tags_from_catalog(tags: &[String], catalog: &[DeckTagView]) -> Vec<String> {
+    let mut seen = HashSet::new();
+    tags.iter()
+        .filter_map(|slug| catalog.iter().find(|v| &v.slug == slug))
+        .flat_map(|v| v.seed_otags.iter())
+        .filter(|s| seen.insert((*s).clone()))
+        .cloned()
         .collect()
 }
 
@@ -72,5 +87,36 @@ mod tests {
     fn unmapped_archetype_seeds_empty() {
         assert!(DeckTag::Chaos.oracle_tag_slugs().is_empty());
         assert!(seed_oracle_tags(&["chaos".to_string()]).is_empty());
+    }
+
+    /// Catalog seeding unions each view's `seed_otags`, deduped/first-seen, and
+    /// mirrors the compiled seed for known tags. A slug missing from the catalog
+    /// (e.g. a hypothetical server-added tag the client hasn't fetched) seeds
+    /// nothing rather than erroring.
+    #[test]
+    fn catalog_seeds_and_unions_views() {
+        let catalog: Vec<DeckTagView> = [DeckTag::Aristocrats, DeckTag::Sacrifice]
+            .iter()
+            .map(DeckTag::to_view)
+            .collect();
+        let selected = vec!["aristocrats".to_string(), "sacrifice".to_string()];
+
+        let out = seed_oracle_tags_from_catalog(&selected, &catalog);
+        // Same union the compiled path produces for these tags.
+        assert_eq!(out, seed_oracle_tags(&selected));
+        // Overlap is deduped to a single entry.
+        assert_eq!(
+            out.iter()
+                .filter(|s| *s == "sacrifice-outlet-creature")
+                .count(),
+            1
+        );
+
+        // A slug absent from the catalog contributes nothing.
+        let with_unknown = vec!["aristocrats".to_string(), "not-in-catalog".to_string()];
+        assert_eq!(
+            seed_oracle_tags_from_catalog(&with_unknown, &catalog),
+            seed_oracle_tags(&["aristocrats".to_string()])
+        );
     }
 }
