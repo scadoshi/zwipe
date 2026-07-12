@@ -1,17 +1,28 @@
 # Oracle tags (otags) — plan index
 
-**Status: Phase 2 LIVE (prod v1.6.0); Phase 3 A/B/C built locally (unpushed).** Phase 1 (ingest)
-shipped; **Phase 2 is complete and live in prod** — retirement, the `oracle_tags` filter, the
-`GET /api/card/oracle-tags` endpoint, and the server-grouped card roles → oracle-tags drill-down
-(shipped in v1.6.0, migration `20260712030000` ran on prod; grouping populated by the
-2026-07-12 prod `zervice` run). **Phase 3 — deck-level oracle-tag selection — is built locally
-(committed, NOT pushed):** Slice A backend plumbing (`08b485eb`), Slice B `DeckTag→otag` seed map
-(`7690f984`), Slice C the deck picker + archetype seeding + deck-view Profile/Budget/Tags
-refactor (`789a0b70`, `baf23278`, `36ce531e`, `ef708a08`). Needs a migration on next deploy
-(`20260712040000_add_deck_oracle_tags`, additive). **▶ Next:** push Phase 3 when ready; then the
-Phase 2 tail — `classify.rs` delete (retirement now proven by the prod zervice run) + the
-`CardRole` wire/DB rename / Phase M (frontend labels already say "Card roles"). All 7 open
-questions resolved; Q1 revised after Phase 1 (otags supersede the heuristic).
+**Status: Phases 2–5A PUSHED 2026-07-12 (deploying to prod).** Phase 1 (ingest) + Phase 2
+(retirement, `oracle_tags` filter, `GET /api/card/oracle-tags`, server-grouped card roles →
+oracle-tags drill-down) live since v1.6.0. **Phase 3 (deck-level otag selection), Phase 4
+(serving term), and Phase 5 Slice A (generalized-context signal, dark) all shipped in the
+2026-07-12 push** — Phase 3 A/B/C (`08b485eb`, `7690f984`, `789a0b70`+polish), Phase 4
+`W_ORACLE_TAG` serve term, Phase 5A `otag_context_signal` + rollup + additive `deck_id` wire.
+Two additive migrations run on this deploy (`20260712040000_add_deck_oracle_tags`,
+`20260712060000_create_otag_context_signal`); the Phase 5 rollup + retirement/grouping repopulate
+on the next prod `zervice` run.
+
+**▶ What's left after this push:**
+- **Phase 5 Slice B (client):** `zwiper` must populate `CardSignalDelta.deck_id` and emit signals
+  for commander-less decks (`usage_buffer.rs` + `screens/deck/card/{add,remove}.rs`). Until it
+  ships, Commander otag signal accrues but **non-EDH accrues nothing**. Additive, no bump. Ships a
+  client build (server-first is already satisfied).
+- **Phase 5 test gap:** no test yet refreshes `otag_context_signal_rollup` and asserts `net`/`shown`
+  (base-table crediting is covered). Low risk (mirrors proven `card_signal_rollup`); add when tightening.
+- **Phase 5S (gated):** sunset the legacy `commander_oracle_id` wire once `deck_id` is guaranteed —
+  the first `MIN_CLIENT_VERSION` bump. **Phase 6:** non-EDH serving on the accrued dataset (deferred).
+- **Phase 2 tail:** `classify.rs` delete (retirement proven by prod zervice) + `CardRole` wire/DB
+  rename / **Phase M** (display labels already say "Card roles").
+
+All 7 open questions resolved; Q1 revised after Phase 1 (otags supersede the heuristic).
 
 ## One sentence
 
