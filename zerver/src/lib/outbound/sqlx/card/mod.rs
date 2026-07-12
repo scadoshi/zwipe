@@ -1609,7 +1609,7 @@ impl CardRepository for MyPostgres {
         &self,
         updates: &[(
             uuid::Uuid,
-            Vec<zwipe_core::domain::card::mechanical_category::MechanicalCategory>,
+            Vec<zwipe_core::domain::card::mechanical_category::CardRole>,
         )],
     ) -> Result<(), anyhow::Error> {
         if updates.is_empty() {

@@ -7,7 +7,7 @@
 use crate::domain::{
     card::{
         Card,
-        mechanical_category::MechanicalCategory,
+        mechanical_category::CardRole,
         scryfall_data::{ScryfallData, colors::Color},
         search_card::card_filter::price_currency::PriceCurrency,
     },
@@ -108,7 +108,7 @@ impl DeckMetrics {
         let mut total_cards = 0usize;
         let mut pip_consumed = [0usize; 5];
         let mut pip_produced = [0usize; 5];
-        let all_cats = MechanicalCategory::all();
+        let all_cats = CardRole::all();
         let mut cat_buckets = vec![0usize; all_cats.len()];
         let mut usd_sum = 0.0f64;
         let mut usd_count = 0usize;

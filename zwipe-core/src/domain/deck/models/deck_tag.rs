@@ -2,7 +2,7 @@
 //!
 //! A deck can be labeled with a small set of these to describe its overall
 //! strategy (Aggro, Tokens, Reanimator, …). Distinct from the card-level
-//! `MechanicalCategory`: these describe a whole deck's game plan, not a single
+//! `CardRole`: these describe a whole deck's game plan, not a single
 //! card's role. The set is curated (from EDHREC themes and Archidekt/Moxfield
 //! tags) and fixed so tags stay clean and filterable.
 //!

@@ -2,7 +2,7 @@
 
 use dioxus::prelude::*;
 use zwipe_core::domain::card::{
-    mechanical_category::MechanicalCategory, search_card::card_filter::builder::CardQueryBuilder,
+    mechanical_category::CardRole, search_card::card_filter::builder::CardQueryBuilder,
 };
 
 use super::match_mode::MatchMode;
@@ -98,7 +98,7 @@ pub fn Category() -> Element {
             }
 
             div { class: "flex flex-wrap gap-1 flex-center",
-                for cat in MechanicalCategory::all().iter() {
+                for cat in CardRole::all().iter() {
                     {
                         let cat_str = cat.to_string();
                         let display = cat.display_name().to_string();
@@ -138,7 +138,7 @@ pub fn Category() -> Element {
             }
 
             div { class: "flex flex-wrap gap-1 flex-center",
-                for cat in MechanicalCategory::all().iter() {
+                for cat in CardRole::all().iter() {
                     {
                         let cat_str = cat.to_string();
                         let display = cat.display_name().to_string();

@@ -1,4 +1,4 @@
-//! Heuristic classification for the handful of `MechanicalCategory` variants that
+//! Heuristic classification for the handful of `CardRole` variants that
 //! Oracle Tags cannot cleanly express: `Pump`, `Stax`, `Protection`, `GraveyardHate`.
 //!
 //! As of 2026-07-11 the other ~18 categories are derived from Oracle-tag subtrees
@@ -11,7 +11,7 @@
 //! This is deliberately NOT the old brittle 24-category guesswork — it is the residual
 //! ~4 with no gold-standard equivalent. Everything else was retired to Oracle Tags.
 
-use super::MechanicalCategory;
+use super::CardRole;
 use crate::domain::card::Card;
 use regex::Regex;
 use std::sync::LazyLock;
@@ -19,7 +19,7 @@ use std::sync::LazyLock;
 /// Classifies a card into the subset of `{Pump, Stax, Protection, GraveyardHate}`
 /// it matches — the categories with no clean Oracle-tag equivalent. All other
 /// categories come from Oracle Tags (`helpers::derive_categories`), not here.
-pub fn classify_oracle_tag_gaps(card: &Card) -> Vec<MechanicalCategory> {
+pub fn classify_oracle_tag_gaps(card: &Card) -> Vec<CardRole> {
     let sd = &card.scryfall_data;
     let oracle = sd.oracle_text.as_deref().unwrap_or("").to_lowercase();
     let keywords: Vec<String> = sd
@@ -41,22 +41,22 @@ pub fn classify_oracle_tag_gaps(card: &Card) -> Vec<MechanicalCategory> {
         || oracle.contains("gains hexproof")
         || oracle.contains("gains indestructible")
     {
-        cats.push(MechanicalCategory::Protection);
+        cats.push(CardRole::Protection);
     }
 
     // Pump: single-target buff (excluding team-wide, which is Anthem via otags).
     if PUMP.is_match(&oracle) && !oracle.contains("creatures you control") {
-        cats.push(MechanicalCategory::Pump);
+        cats.push(CardRole::Pump);
     }
 
     // Stax: "players can't …" denial or symmetric "each player …" taxes.
     if STAX_CANT.is_match(&oracle) || STAX_EACH.is_match(&oracle) {
-        cats.push(MechanicalCategory::Stax);
+        cats.push(CardRole::Stax);
     }
 
     // GraveyardHate: exile from graveyard(s).
     if GRAVEYARD_HATE.is_match(&oracle) {
-        cats.push(MechanicalCategory::GraveyardHate);
+        cats.push(CardRole::GraveyardHate);
     }
 
     cats.sort_by_key(|c| *c as u8);
@@ -89,7 +89,7 @@ use patterns::*;
 mod tests {
     use super::*;
     use crate::test_utils::make_card;
-    use MechanicalCategory::*;
+    use CardRole::*;
 
     fn card_with(oracle: &str) -> Card {
         let mut card = make_card("Test");
