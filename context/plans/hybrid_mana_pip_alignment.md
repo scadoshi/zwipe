@@ -26,49 +26,71 @@ zite and the app (todo: Bugs section). This doc is the investigation + how to re
   border + box-shadow). Plus two special-cases: single-color border/color for `ms-w/u/b/r/g`
   only, and a `::before { font-size:0.82em }` **numeral shrink** for `ms-0..ms-20/x/y/z` only.
 
-## Root cause
+## Root cause (CONFIRMED via the mana-font source, 2026-07-12)
 
-The squircle overrides + the numeral shrink were calibrated for **single-color glyphs and
-generic numerals**. Hybrid glyphs are a different glyph family in the mana font with their own
-em-box geometry/baseline, and they match **none** of our special-cases:
-- Not in the numeral-shrink list (`ms-2w` ≠ `ms-2`), so the denser split glyph renders at full
-  `1em` and crowds/offsets inside the squircle.
-- Not in the single-color list, so they also fall back to base grey (`#393835`) instead of
-  two-tone — a *secondary* cosmetic miss.
+Hybrid/twobrid symbols are **not a single `::before` glyph** — mana-font renders them as **two
+absolutely-positioned pseudo-elements** over a gradient split-circle background:
 
-The visible symptom is a vertical/positional offset of the `::before` glyph within the flex-
-centered squircle.
+```css
+.ms-cost.ms-2w::before, .ms-cost.ms-2w::after { font-size: 0.55em !important; position: absolute; }
+.ms-cost.ms-2w::before { top: -0.38em; left: 0.28em; }   /* top-left half */
+.ms-cost.ms-2w::after  { top:  0.5em;  left: 1em;   }   /* bottom-right half */
+.ms-cost.ms-2w { background: linear-gradient(135deg, var(--ms-split-top) 50%, var(--ms-split-bottom) 50%); }
+```
 
-## Resolution
+Those `top`/`left` offsets are hardcoded against **mana-font's native `.ms-cost` box**:
+`width/height: 1.3em; line-height: 1.35em; font-size: 0.95em; display: inline-block`.
 
-**Step 1 — measure.** In dev tools, compare the `::before` box of a hybrid pip (`ms-2w`) to a
-single-color one (`ms-w`): baseline, glyph height, and offset within the `1.5em` squircle.
-That pins whether the fix is vertical-align, line-height, a `translateY`, and/or the shrink.
+**Our `i.ms.ms-cost` override changes that box** — `width/height: 1.5em`, `line-height: 1`,
+`display: inline-flex`, `padding`, squircle radius. The absolute half-offsets were calibrated
+for the 1.3em/1.35em inline-block box, so in our larger flex box they land in the wrong place →
+the visible misalignment. (Flex centering is irrelevant here — the halves are `position:
+absolute`, so they ignore `align-items`/`justify-content` and depend only on the box geometry +
+their `top`/`left`.)
 
-**Step 2 — give hybrids a target.** Two options:
-- **(preferred) Emit-time marker.** `sym_to_class` already knows a symbol contained a `/`
-  (hybrid). Have it also emit `ms-cost-hybrid` (from both emit sites: `oracle_text.rs:63` and
-  the `card_row.rs` mana-cost render). Then CSS corrects **one class** instead of enumerating.
-  Lives in the shared component → app + zite both fixed. ⚠ These are files the otags agent has
-  been editing — coordinate before touching.
-- **(no-Rust) enumerated selector.** Target the hybrid classes directly in CSS: two-color
-  `ms-wu, ms-wb, ms-ub, ms-ur, ms-br, ms-bg, ms-rg, ms-rw, ms-gw, ms-gu`; twobrid
-  `ms-2w..ms-2g`; Phyrexian `ms-wp..ms-gp` (+ hybrid-Phyrexian). Verbose but pure CSS, no
-  component change.
+**Why the first attempt did nothing:** it set `::before { font-size: 0.72em }` — beaten by
+mana-font's `font-size: 0.55em !important` — plus a 0.5px `translateY`, and it never touched
+`::after` or the `top`/`left` offsets that actually position the halves. So zero visible change
+across rebuilds.
 
-**Step 3 — apply the correction** on the hybrid target: the measured `vertical-align` /
-`line-height` fix (and the `0.82em` shrink if the split glyph is oversized like the numerals).
-All in `components.css`, so both clients inherit it.
+Secondary: the two-tone color comes from `--ms-split-top`/`--ms-split-bottom` (gradient
+background) + the glyph `color`; our fixed `color: #393835` tints both glyphs grey.
 
-**Step 4 (optional, cosmetic) — two-tone color.** Our fixed-hex single-color border/color
-scheme can't express two colors in one pip. Either leave hybrids to mana-font's native two-tone
-fill (don't override their color), or accept the grey. Decide separately from the alignment fix.
+## Resolution — the fix targets absolute positioning, NOT glyph size
+
+The lever is the two halves' `top`/`left` (absolute), scaled to whatever box we give the pip.
+`font-size` needs `!important` to move at all (mana-font pins it). Two paths:
+
+**Path A (recommended) — normalize the hybrid box so mana-font's native offsets land.** For the
+hybrid classes, override *our* `i.ms.ms-cost` back toward what mana-font's offsets assume:
+`display: inline-block` (drop the flex), and the `line-height`/dimensions its `top`/`left` were
+tuned for — while keeping our border + border-radius for the squircle look. Fewest magic
+numbers; the halves fall where mana-font intends.
+
+**Path B — re-place the halves for our box.** Keep our 1.5em flex squircle and override the
+hybrid `::before`/`::after` `top`/`left` (and `font-size … !important`) to re-center the two
+halves in it. More hand-tuned offsets; enumerate the ~20 hybrid classes (or add an
+`ms-cost-hybrid` emit-time marker — but that touches `oracle_text.rs`/`card_row.rs`, the otags
+agent's files, so prefer the enumerated CSS for now).
+
+**This must be tuned live in dev tools.** It's absolute positioning against a resized box —
+blind/headless iteration won't converge. Whoever executes needs to inspect a real `ms-2w` pip
+(Reaper King), read the computed `::before`/`::after` box, and dial `top`/`left` until both
+halves sit in the squircle. Start by proving the rule is live (set an obviously-large offset,
+confirm a half jumps), then dial in.
+
+**Two-tone color (separate, optional):** the split colors come from `--ms-split-top`/
+`--ms-split-bottom` (gradient bg) + glyph `color`; our `color: #393835` greys both glyphs. To
+restore two-tone, stop overriding `color` on hybrids and let mana-font's vars drive it. Decide
+independently of alignment.
 
 ## Verification
 
-- Dev-tools measurement before/after.
-- Visual: Reaper King `{2/W}..{2/G}`, a `{W/U}` card, a `{W/P}` Phyrexian card.
-- **Both zite and the app**, **light + dark** themes (border/color hexes are theme-fixed).
+- Inspect the real pip's `::before`/`::after` computed box in dev tools before/after.
+- Visual: Reaper King `{2/W}..{2/G}` (twobrid), a `{W/U}` card (hybrid), a `{W/P}` card
+  (Phyrexian).
+- **Both zite and the app**, **light + dark** themes (our border/color hexes are theme-fixed).
+- Remember: `COMPONENTS_CSS` is `include_str!` — restart `dx serve` / rebuild, not hot-reload.
 
 ## Notes
 
