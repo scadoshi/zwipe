@@ -189,6 +189,7 @@ pub static GUIDES: &[Guide] = &[
                 "`Rarity`, `Set`, `Artist`: include or exclude values.",
                 "`Flavor text`: contains, or doesn't contain.",
                 "`Category`: 24 strategic roles (`Ramp`, `Removal`, `Draw`, `Board Wipe`, and so on).",
+                "`Oracle tags`: the granular, community-maintained functional tags (spot removal, ramp, reanimation, and thousands more); include or exclude, with a curated set up front and search for the rest.",
                 "`Format`: `Is commander in` and `Is legal in`.",
                 "`Price`: a currency (`USD`, `EUR`, or `TIX`) with optional min and max.",
             ]),
@@ -223,6 +224,9 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "A category is a card's role, and cards can hold several (`Lightning Bolt` is `Burn` and `Removal`). Zwipe assigns them automatically, so you just pick the roles you want.",
             ),
+            Block::Note(
+                "A card's roles are drawn from its oracle tags. See Read a card at a glance for the card-level view of the same idea.",
+            ),
         ],
     },
     Guide {
@@ -244,6 +248,10 @@ pub static GUIDES: &[Guide] = &[
             Block::H2("Synergy vs. sorting"),
             Block::P(
                 "Synergy sets which cards appear and their order; Sort only reorders the current set. Keep Synergy on to stay on-theme, then sort within those picks.",
+            ),
+            Block::H2("Oracle tags sharpen the order"),
+            Block::P(
+                "Any oracle tags you've selected on the deck contribute to that ordering too, alongside commander synergy, so the cards up top fit both your commander and what your deck is trying to do. See Sharpen suggestions with oracle tags.",
             ),
         ],
     },
@@ -357,6 +365,89 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Up to five tags per deck (shown as N/5), from one flat alphabetical list. Tags are only ever added, never renamed, so old ones keep working.",
             ),
+            Block::H2("Tags seed oracle tags"),
+            Block::P(
+                "Picking a deck tag auto-selects the oracle tags that define that archetype, so an Aggro tag pulls in things like haste and burn. Those oracle tags are what sharpen the cards Zwipe suggests. See the Oracle tags guide for the full picture.",
+            ),
+        ],
+    },
+    Guide {
+        slug: "oracle-tags",
+        title: "Sharpen suggestions with oracle tags",
+        summary: "Pick the specific things your deck does, spot removal, ramp, reanimation, and Zwipe suggests cards that fit them better.",
+        category: "Decks",
+        blocks: &[
+            Block::Lead(
+                "Oracle tags are the granular, community-maintained tags for what a card actually does: `spot-removal`, `ramp`, `sacrifice-outlet`, and thousands more. Select them on a deck and Zwipe suggests cards that fit them better.",
+            ),
+            Block::H2("Where they come from"),
+            Block::P(
+                "Picking a deck tag (Aggro, Reanimator, Voltron, and so on) auto-selects a starter set of oracle tags for that archetype. Leave them as-is if you're not sure, or open Tags on the edit form to add or remove oracle tags directly.",
+            ),
+            Block::H2("Selecting them"),
+            Block::P(
+                "The Oracle tags field shows a curated set of the most useful tags up front, and search reaches the rest, about 4,500 in all. A deck can hold up to 30.",
+            ),
+            Block::H2("What they do"),
+            Block::P(
+                "Selected oracle tags sharpen which cards Zwipe suggests while you swipe, and on a commander deck they contribute to the synergy order alongside your commander. See Synergy-ranked cards.",
+            ),
+            Block::Note(
+                "Deck tags are the easy on-ramp; oracle tags are the specific dial. See Deck tags, card roles & oracle tags: how they fit for how all three connect.",
+            ),
+        ],
+    },
+    Guide {
+        slug: "card-roles",
+        title: "Read a card at a glance",
+        summary: "Every card shows chips for the roles it fills, Removal, Ramp, Card advantage, and so on, drawn straight from its oracle tags.",
+        category: "Decks",
+        blocks: &[
+            Block::Lead(
+                "Card roles are the read-side view of a card's oracle tags: coarse chips like Removal, Ramp, or Card advantage that tell you what a card does at a glance.",
+            ),
+            Block::H2("The chips"),
+            Block::P(
+                "Expand a card's row and its Card roles chips show every role that card fills. You never pick roles yourself, they're computed from the card's oracle tags.",
+            ),
+            Block::H2("Drilling down"),
+            Block::P(
+                "Tap a role chip to reveal the specific oracle tags underneath it. A trailing \"Other tags\" chip holds any of the card's functional tags that don't fall under a role.",
+            ),
+            Block::H2("Role distribution"),
+            Block::P(
+                "The deck view's Charts section includes a Role distribution chart, the same roles as the card chips, but counted across your whole deck, so you can see at a glance where it's thin.",
+            ),
+        ],
+    },
+    Guide {
+        slug: "tags-roles-and-oracle-tags",
+        title: "Deck tags, card roles & oracle tags: how they fit",
+        summary: "One mental model for the three tagging concepts in Zwipe: deck tags seed oracle tags, oracle tags sharpen suggestions, and card roles are the read-side view.",
+        category: "Decks",
+        blocks: &[
+            Block::Lead(
+                "Zwipe has three related tagging concepts, and they're easy to mix up. Here's how they fit together: deck tags seed oracle tags, oracle tags sharpen suggestions, and card roles are the read-side view of a card's oracle tags.",
+            ),
+            Block::H2("Deck tags: the archetype you pick"),
+            Block::P(
+                "Deck tags label your deck's game plan, Aggro, Tokens, Reanimator, and so on. Picking one auto-selects the oracle tags that define it. This is the easy on-ramp: pick an archetype and the rest follows.",
+            ),
+            Block::H2("Oracle tags: the specific things your deck does"),
+            Block::P(
+                "Oracle tags are granular and functional: `spot-removal`, `ramp`, `sacrifice-outlet`. Deck tags seed a starter set, but you can add or remove them directly if you want to dial things in further. Selected oracle tags are what sharpen which cards Zwipe suggests.",
+            ),
+            Block::H2("Card roles: the read-side view"),
+            Block::P(
+                "Card roles are different from the other two: you never pick them. Each card's oracle tags are rolled up into a small set of coarse roles, Removal, Ramp, Card advantage, shown as chips on the card. Tap a role to see the oracle tags underneath it.",
+            ),
+            Block::H2("The one-liner"),
+            Block::P(
+                "Tell us what your deck does, and we'll suggest cards that fit. Deck tags and oracle tags are how you tell Zwipe; card roles are how Zwipe shows you what any given card brings to the table.",
+            ),
+            Block::Note(
+                "For the full detail on each piece, see Tag decks by archetype, Sharpen suggestions with oracle tags, and Read a card at a glance.",
+            ),
         ],
     },
     Guide {
@@ -398,9 +489,9 @@ pub static GUIDES: &[Guide] = &[
             Block::Lead(
                 "Open a deck and its stats build themselves. Everything reflects your mainboard; sideboard and maybeboard cards are excluded.",
             ),
-            Block::H2("Profile"),
+            Block::H2("Profile, Budget & Tags"),
             Block::P(
-                "Summarizes the deck: name, format, commander (and partner, background, or signature spell), tags, land and price targets, and a Power level, the Commander bracket from Exhibition (1) to cEDH (5).",
+                "Profile summarizes the deck: name, format, commander (and partner, background, or signature spell), and a Power level, the Commander bracket from Exhibition (1) to cEDH (5). Budget holds your price and land targets. Tags holds your deck tags and oracle tags.",
             ),
             Block::H2("Stats"),
             Block::P(
@@ -408,7 +499,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Charts"),
             Block::P(
-                "Distributions cover card type, strategic category, and color. Mana holds the mana curve (nonland cards by cost, 0 to 6+) and mana fulfillment (whether your mana base makes enough of each color, with a ✔ when covered).",
+                "Distributions cover card type, strategic role, and color. Role distribution reads on the same roles shown as chips on each card. Mana holds the mana curve (nonland cards by cost, 0 to 6+) and mana fulfillment (whether your mana base makes enough of each color, with a ✔ when covered).",
             ),
             Block::H2("Draw odds"),
             Block::P(
