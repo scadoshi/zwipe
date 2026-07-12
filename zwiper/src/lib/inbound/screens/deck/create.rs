@@ -27,7 +27,7 @@ use zwipe_core::{
         auth::models::session::Session,
         card::{Card, search_card::card_filter::price_currency::PriceCurrency},
         deck::{
-            DeckName, DeckOtherTag, DeckTag, MAX_DECK_ORACLE_TAGS, PowerLevel, format::Format,
+            DeckName, DeckOtherTag, MAX_DECK_ORACLE_TAGS, PowerLevel, format::Format,
             seed_oracle_tags,
         },
         user::models::hints::HINT_CREATE_DECK,
@@ -52,7 +52,7 @@ pub fn CreateDeck() -> Element {
     let deck_name = use_signal(String::new);
     let mut deck_name_error: Signal<Option<String>> = use_signal(|| None);
     let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
-    let selected_tags: Signal<Vec<DeckTag>> = use_signal(Vec::new);
+    let selected_tags: Signal<Vec<String>> = use_signal(Vec::new);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
     let mut partner_commander: Signal<Option<Card>> = use_signal(|| None);

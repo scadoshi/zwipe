@@ -16,9 +16,10 @@ pub const MAX_DECK_ORACLE_TAGS: usize = 30;
 /// archetype's [`DeckTag::oracle_tag_slugs`], deduped, first-seen order. This is
 /// what a client unions into the deck's oracle tags when archetypes are picked
 /// (the flat "select a deck tag, its oracle tags pre-select" behavior).
-pub fn seed_oracle_tags(tags: &[DeckTag]) -> Vec<String> {
+pub fn seed_oracle_tags(tags: &[String]) -> Vec<String> {
     let mut seen = HashSet::new();
     tags.iter()
+        .filter_map(|slug| DeckTag::try_from(slug.as_str()).ok())
         .flat_map(|t| t.oracle_tag_slugs())
         .filter(|s| seen.insert(**s))
         .map(|s| (*s).to_string())
@@ -53,7 +54,7 @@ mod tests {
     fn seeds_and_unions_deck_tags() {
         // Aristocrats + Sacrifice overlap on sacrifice-outlet-creature + death-trigger;
         // the union dedupes them.
-        let out = seed_oracle_tags(&[DeckTag::Aristocrats, DeckTag::Sacrifice]);
+        let out = seed_oracle_tags(&["aristocrats".to_string(), "sacrifice".to_string()]);
         assert!(out.contains(&"sacrifice-outlet-creature".to_string()));
         assert!(out.contains(&"blood-artist-ability".to_string())); // Aristocrats-only
         assert!(out.contains(&"repeatable-sacrifice-outlet".to_string())); // Sacrifice-only
@@ -70,6 +71,6 @@ mod tests {
     #[test]
     fn unmapped_archetype_seeds_empty() {
         assert!(DeckTag::Chaos.oracle_tag_slugs().is_empty());
-        assert!(seed_oracle_tags(&[DeckTag::Chaos]).is_empty());
+        assert!(seed_oracle_tags(&["chaos".to_string()]).is_empty());
     }
 }

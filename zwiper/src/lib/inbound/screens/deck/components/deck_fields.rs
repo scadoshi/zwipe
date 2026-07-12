@@ -26,7 +26,7 @@ use zwipe_core::domain::{
         },
     },
     deck::{
-        DeckName, DeckOtherTag, DeckTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel,
+        DeckName, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel, deck_tag_label,
         format::Format,
     },
 };
@@ -121,7 +121,7 @@ pub(crate) fn autofill_named_partner(
 pub(crate) fn DeckFields(
     mut deck_name: Signal<String>,
     mut selected_format: Signal<Option<Format>>,
-    mut selected_tags: Signal<Vec<DeckTag>>,
+    mut selected_tags: Signal<Vec<String>>,
     mut commander: Signal<Option<Card>>,
     mut commander_display: Signal<String>,
     mut partner_commander: Signal<Option<Card>>,
@@ -1016,18 +1016,19 @@ pub(crate) fn DeckFields(
                 div { class: "input input-placeholder input-tappable", onclick: move |_| show_tags_select.set(true), "Not set" }
             } else {
                 div { class: "chip-box input-tappable", onclick: move |_| show_tags_select.set(true),
-                    for tag in selected_tags().iter().copied() {
+                    for tag in selected_tags().iter().cloned() {
                         div {
                             key: "{tag}",
                             class: "chip selected flex items-center gap-05",
-                            "{tag.display_name()}"
+                            "{deck_tag_label(&tag)}"
                             // Remove just this tag; stop propagation so the
                             // chip-box's own onclick doesn't also open the picker.
                             button {
                                 class: "chip-remove",
                                 onclick: move |evt| {
                                     evt.stop_propagation();
-                                    selected_tags.write().retain(|t| *t != tag);
+                                    let slug = tag.clone();
+                                    selected_tags.write().retain(|t| *t != slug);
                                 },
                                 "\u{00d7}"
                             }

@@ -34,7 +34,7 @@ use zwipe_core::{
         auth::models::session::Session,
         card::{Card, search_card::card_filter::price_currency::PriceCurrency},
         deck::{
-            Deck, DeckName, DeckOtherTag, DeckTag, MAX_DECK_ORACLE_TAGS, PowerLevel,
+            Deck, DeckName, DeckOtherTag, MAX_DECK_ORACLE_TAGS, PowerLevel,
             deck_profile::DeckProfile, format::Format,
             requests::update_deck_profile::InvalidUpdateDeckProfile, seed_oracle_tags,
         },
@@ -64,7 +64,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut show_commander_swipe = use_signal(|| false);
     let edit_hint = use_one_time_hint(HINT_EDIT_DECK);
     let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
-    let mut selected_tags: Signal<Vec<DeckTag>> = use_signal(Vec::new);
+    let mut selected_tags: Signal<Vec<String>> = use_signal(Vec::new);
     let mut partner_commander: Signal<Option<Card>> = use_signal(|| None);
     let mut partner_commander_display = use_signal(String::new);
     let mut background: Signal<Option<Card>> = use_signal(|| None);
@@ -116,7 +116,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut original_deck_name: Signal<String> = use_signal(String::new);
     let mut original_commander: Signal<Option<Card>> = use_signal(|| None);
     let mut original_format: Signal<Option<Format>> = use_signal(|| None);
-    let mut original_tags: Signal<Vec<DeckTag>> = use_signal(Vec::new);
+    let mut original_tags: Signal<Vec<String>> = use_signal(Vec::new);
     let mut original_land_target: Signal<Option<i32>> = use_signal(|| None);
     let mut original_price_target: Signal<String> = use_signal(String::new);
     let mut original_price_target_currency: Signal<PriceCurrency> =

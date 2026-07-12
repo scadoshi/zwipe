@@ -5,8 +5,8 @@ use crate::outbound::sqlx::deck::error::{IntoDeckCardError, IntoDeckProfileError
 use zwipe_core::domain::{
     card::search_card::card_filter::price_currency::PriceCurrency,
     deck::{
-        Board, DeckCard, DeckOtherTag, DeckTag, PowerLevel, deck_name::DeckName,
-        deck_profile::DeckProfile, format::Format, quantity::Quantity,
+        Board, DeckCard, DeckOtherTag, PowerLevel, deck_name::DeckName, deck_profile::DeckProfile,
+        format::Format, quantity::Quantity,
     },
 };
 
@@ -47,15 +47,10 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
         let format = value.format.map(Format::try_from).transpose()?;
         // Unrecognized tag strings are dropped (forward-compatible), like card
         // mechanical_categories.
+        // Deck tags are stored + carried as slugs (Vec<String>); no enum parse.
         let tags = value
             .tags
             .and_then(|v| serde_json::from_value::<Vec<String>>(v).ok())
-            .map(|strings| {
-                strings
-                    .iter()
-                    .filter_map(|s| DeckTag::try_from(s.as_str()).ok())
-                    .collect()
-            })
             .unwrap_or_default();
         // Unrecognized power level falls back to None (unset), forward-compatible.
         let power_level = value

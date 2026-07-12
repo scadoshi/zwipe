@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::{
     domain::{
         card::{Card, search_card::card_filter::price_currency::PriceCurrency},
-        deck::{DeckEntry, DeckOtherTag, DeckTag, ImportMode, PowerLevel, format::Format},
+        deck::{DeckEntry, DeckOtherTag, ImportMode, PowerLevel, format::Format},
     },
     http::helpers::Opdate,
 };
@@ -448,10 +448,11 @@ pub struct HttpSharedDeck {
     /// Power level (WotC bracket), if set.
     #[serde(default)]
     pub power_level: Option<PowerLevel>,
-    /// Deck archetype/strategy tags. Lossy-deserialized (unknown slugs dropped) so
-    /// a newer server never crashes an older client — see `serde_helpers::lossy_vec`.
-    #[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]
-    pub tags: Vec<DeckTag>,
+    /// Deck archetype/strategy tags, as server-delivered **slugs** (`Vec<String>`)
+    /// so a server-added tag shows on a shared deck without a client release; labels
+    /// via `deck_tag_label`. `#[serde(default)]`.
+    #[serde(default)]
+    pub tags: Vec<String>,
     /// Secondary, non-gameplay labels (Budget, Jank, …). Lossy-deserialized.
     #[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]
     pub other_tags: Vec<DeckOtherTag>,
