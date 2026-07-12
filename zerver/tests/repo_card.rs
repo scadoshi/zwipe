@@ -103,7 +103,15 @@ async fn synergy_ordering_scored_before_unscored(pool: sqlx::PgPool) {
     let repo = Postgres { pool: pool.clone() };
 
     let served = repo
-        .search_scryfall_data_deck_aware(&default_query(), None, &[], Some(&scores), false, None)
+        .search_scryfall_data_deck_aware(
+            &default_query(),
+            None,
+            &[],
+            Some(&scores),
+            false,
+            None,
+            &[],
+        )
         .await
         .unwrap();
     let names: Vec<&str> = served.iter().map(|s| s.name.as_str()).collect();
@@ -129,6 +137,7 @@ async fn deck_aware_serve_excludes_oracle_ids(pool: sqlx::PgPool) {
             Some(&scores),
             false,
             None,
+            &[],
         )
         .await
         .unwrap();
@@ -165,7 +174,7 @@ async fn null_oracle_card_survives_deck_aware_shuffle(pool: sqlx::PgPool) {
     let q = default_query();
 
     let first = repo
-        .search_scryfall_data_deck_aware(&q, Some(deck), &[], Some(&scores), false, None)
+        .search_scryfall_data_deck_aware(&q, Some(deck), &[], Some(&scores), false, None, &[])
         .await
         .unwrap();
     let names: Vec<&str> = first.iter().map(|s| s.name.as_str()).collect();
@@ -182,9 +191,135 @@ async fn null_oracle_card_survives_deck_aware_shuffle(pool: sqlx::PgPool) {
 
     // deterministic for a fixed (deck, day) seed
     let second = repo
-        .search_scryfall_data_deck_aware(&q, Some(deck), &[], Some(&scores), false, None)
+        .search_scryfall_data_deck_aware(&q, Some(deck), &[], Some(&scores), false, None, &[])
         .await
         .unwrap();
     let names2: Vec<&str> = second.iter().map(|s| s.name.as_str()).collect();
     assert_eq!(names, names2, "same deck seed must yield the same order");
+}
+
+/// Phase 4: a deck's selected oracle tags lift matching cards within the
+/// synergy serve. Both cards are unscored (equal base), so the otag term is the
+/// only differentiator — and with no selected otags the term is dormant and the
+/// name tiebreak wins (the zero-regression / revert guarantee).
+#[sqlx::test]
+async fn deck_oracle_tags_lift_matching_cards(pool: sqlx::PgPool) {
+    seed_cards(
+        &pool,
+        &[
+            // Alphabetically first, so it leads on the name tiebreak absent otags.
+            card("Aaa Plain").mono("R"),
+            card("Zzz Removal").mono("R").oracle_tags(&["spot-removal"]),
+        ],
+    )
+    .await;
+
+    // Empty score map: both cards take the unscored anchor, so base + signal are
+    // equal and the otag term alone decides the order.
+    let scores = json!({});
+    let repo = Postgres { pool: pool.clone() };
+
+    // With the deck's selected otag, the matching card is lifted to the front,
+    // overriding the alphabetical tiebreak.
+    let served = repo
+        .search_scryfall_data_deck_aware(
+            &default_query(),
+            None,
+            &[],
+            Some(&scores),
+            false,
+            None,
+            &["spot-removal".to_string()],
+        )
+        .await
+        .unwrap();
+    let names: Vec<&str> = served.iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(
+        names,
+        vec!["Zzz Removal", "Aaa Plain"],
+        "otag-matching card should lead when the deck selected that otag"
+    );
+
+    // Zero-regression: no selected otags => the term is dormant and ordering
+    // falls back to the name tiebreak (byte-identical to pre-Phase-4).
+    let served = repo
+        .search_scryfall_data_deck_aware(
+            &default_query(),
+            None,
+            &[],
+            Some(&scores),
+            false,
+            None,
+            &[],
+        )
+        .await
+        .unwrap();
+    let names: Vec<&str> = served.iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(
+        names,
+        vec!["Aaa Plain", "Zzz Removal"],
+        "no selected otags => name order, no otag lift"
+    );
+}
+
+/// Phase 4 (production path): the otag term must reorder within the *banded /
+/// wildcard* serve (deck_id present), not just the pure-score path. 30 unscored
+/// cards; four otag-matching cards are named to sort last, so absent otags they
+/// land in band 1 (off the 24-card first page). With the deck's selected otag
+/// the `W_ORACLE_TAG` lift pulls them into band 0 and onto the first page. This
+/// exercises the wildcard CTE's `push_score` ranking (the path real serves use).
+#[sqlx::test]
+async fn deck_oracle_tags_lift_matching_cards_in_banded_serve(pool: sqlx::PgPool) {
+    let mut fixtures: Vec<_> = (1..=26)
+        .map(|i| card(&format!("Aaa{i:02}")).mono("R"))
+        .collect();
+    for i in 1..=4 {
+        fixtures.push(
+            card(&format!("Zzz{i:02}"))
+                .mono("R")
+                .oracle_tags(&["spot-removal"]),
+        );
+    }
+    seed_cards(&pool, &fixtures).await;
+
+    // Empty score map => every card takes the unscored anchor, so the otag term
+    // is the only thing that moves a card between bands.
+    let scores = json!({});
+    let repo = Postgres { pool: pool.clone() };
+    let deck = Uuid::from_u128(0xB4_0004);
+    let q = default_query();
+
+    let served_without = repo
+        .search_scryfall_data_deck_aware(&q, Some(deck), &[], Some(&scores), false, None, &[])
+        .await
+        .unwrap();
+    let zzz_without = served_without
+        .iter()
+        .filter(|s| s.name.starts_with("Zzz"))
+        .count();
+    assert_eq!(
+        zzz_without, 0,
+        "absent otags, the otag cards sit in band 1, off the first page"
+    );
+
+    let served_with = repo
+        .search_scryfall_data_deck_aware(
+            &q,
+            Some(deck),
+            &[],
+            Some(&scores),
+            false,
+            None,
+            &["spot-removal".to_string()],
+        )
+        .await
+        .unwrap();
+    let zzz_with = served_with
+        .iter()
+        .filter(|s| s.name.starts_with("Zzz"))
+        .count();
+    assert!(
+        zzz_with >= 1,
+        "with the deck's selected otag, matching cards are lifted onto the first page (got {zzz_with})"
+    );
 }

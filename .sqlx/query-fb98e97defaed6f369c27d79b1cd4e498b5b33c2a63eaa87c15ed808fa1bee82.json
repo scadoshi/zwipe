@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT lc.oracle_id, cp.oracle_tags\n                   FROM latest_cards lc\n                   JOIN card_profiles cp ON cp.scryfall_data_id = lc.id\n                   WHERE lc.oracle_id = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "oracle_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "oracle_tags",
+        "type_info": "Jsonb"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      true,
+      false
+    ]
+  },
+  "hash": "fb98e97defaed6f369c27d79b1cd4e498b5b33c2a63eaa87c15ed808fa1bee82"
+}

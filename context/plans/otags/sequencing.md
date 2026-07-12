@@ -312,25 +312,106 @@ contract change, **no bump**. (The otag *signal* term is deferred to Phase 6.)
 
 ---
 
-## Phase 5 — Non-EDH signal collection (backend, ship dark)
+## Phase 5 — Generalized-context per-otag signal collection (backend, ship dark)
 
 **Goal:** start accruing the moat dataset *before* serving on it (Q7 decision).
 
-**Tables:** new **generalized-context** per-otag signal table keyed
-`(context, otag, shown/added/skipped/...)` where `context` = a commander **or** `(format,
-CI)`; + a nightly rollup matview (mirror `card_signal_rollup`).
+### Design resolved + owner-signed-off 2026-07-12 (two forks the plan left open)
 
-**Backend:**
-- `zerver/src/lib/outbound/sqlx/metrics/mod.rs` — on each swipe, also credit **one row per
-  otag** the deck has selected (derive `format`/`CI`/`oracle_tags` server-side from the deck, so
-  likely **no client wire change** to `POST /api/metrics/usage`; confirm the handler
-  `handlers/metrics/record_usage.rs` has deck context).
-- `zerver/src/bin/zervice.rs` — refresh the new rollup nightly.
+The old plan hand-waved the schema and assumed "no client wire change." Scouting the live
+wire settled it: `CardSignalDelta` carries **only** `commander_oracle_id` + `card_oracle_id`
+— no deck reference — so the server can neither recover a deck's selected otags nor, for a
+**non-Commander deck (no commander id at all)**, learn its `(format, CI)`. The moat's whole
+non-EDH point is therefore impossible without adding context to the wire. Two decisions:
 
-**Wire & compat:** signal derived server-side; ship dark. **No bump.** If it turns out the
-client must send new context, hold it behind the min-version gate (last resort).
+1. **Context reaches the server via `deck_id`, derived server-side** (not commander-only, not
+   client-sends-format/CI). Add `deck_id: Option<Uuid>` `#[serde(default)]` to `CardSignalDelta`
+   — additive, no bump. The server derives the deck's `format` + color identity from the `decks`
+   row (ownership-scoped). **This is the richer long-term key:** eventually commander, format,
+   CI, *and* deck/tag relationships all derive from one `deck_id` (owner steer 2026-07-12).
+2. **The signal is keyed on the SWIPED CARD's otags**, not the deck's selected otags. For a
+   swipe on card C, credit each of C's otags (`card_profiles.oracle_tags`). This is directly
+   rankable in Phase 6 (mirrors `card_signal_rollup`'s role); the deck-selected reading measures
+   strategy engagement but can't rank individual cards.
 
-**Exit:** per-otag `(context)` signal accumulating for both Commander and non-EDH decks.
+### BUILT 2026-07-12 (server + shared contract; unpushed, dark) — Slice A
+
+- **Migration `20260712060000_create_otag_context_signal.sql`:** table
+  `otag_context_signal(context_key TEXT, oracle_tag TEXT, shown/added/skipped/maybed/removed
+  BIGINT, updated_at, PK(context_key, oracle_tag))` + lead-key index + nightly rollup matview
+  `otag_context_signal_rollup` (`net = added + 0.5·maybed − removed`, `shown`), mirroring
+  `card_signal_rollup`. `context_key` is a **single TEXT** encoding
+  `commander:<commander_oracle_id>` **or** `format_ci:<format>:<color_identity>` (format =
+  `Format::as_str`; CI = canonical WUBRG, colorless → `C`, matching the weekly-facet convention)
+  — one text key because a commander-OR-`(format,CI)` union can't be nullable PK columns; the
+  prefix keeps future context kinds (e.g. `deck:<id>`) additive. Pure aggregate, **no user_id**.
+- **Wire (`zwipe-core` `http/contracts/metrics.rs`):** `CardSignalDelta.deck_id: Option<Uuid>`
+  `#[serde(default)]`, preserved through `clamped()`. Additive round-trip test (old payload →
+  `deck_id: None`).
+- **Credit loop (`zerver/src/lib/outbound/sqlx/metrics/mod.rs` `apply_usage`, same tx):** batch
+  the swiped cards' otags (`latest_cards ⋈ card_profiles.oracle_tags`), batch the non-EDH decks'
+  `(format, CI)` (ownership-scoped `WHERE d.user_id = $caller`, CI derived exactly like the deck
+  read), aggregate gesture counts per `(context_key, otag)` in Rust, then one upsert per pair.
+  Context = commander when `commander_oracle_id` is non-nil (**every existing client**), else
+  `(format, CI)` from `deck_id`, else skip. `.sqlx` regenerated.
+- **Rollup refresh:** `CardService::refresh_otag_context_signal_rollup` (mirrors
+  `refresh_card_signal_rollup` across ports/services/erased/sqlx) + one appended line in
+  `zervice.rs` step 4.
+- **Tests:** 4 `#[sqlx::test]` (`tests/otag_context_signal.rs`): commander context credits each
+  swiped-card otag; non-EDH deck credits `format_ci:<format>:<CI>` from `deck_id`; deck ownership
+  enforced (foreign `deck_id` dropped); no-context signal credits nothing. + 1 core contract test.
+  `metrics_flows` regression green; nightly fmt + clippy clean (on this slice).
+
+**Existing clients already contribute.** Every shipped client sends a real `commander_oracle_id`
+on every add-stack signal, so **Commander otag signal accrues the moment the server ships** — no
+client build required. Only the **non-EDH** half waits on the client update below.
+
+### Slice B — client update (populates `deck_id`, unlocks non-EDH) — TODO, separate build
+
+`UsageBuffer::record_signal` currently early-returns when the deck has **no commander**, so
+non-Commander swipes produce *no* signal at all — non-EDH collection needs a client change, not
+just the server. Additive, still **no bump**:
+- `zwiper/.../telemetry/usage_buffer.rs` — key the signal tally by `(deck_id, commander, card)`
+  (or carry `deck_id` alongside) and set `CardSignalDelta.deck_id` on flush (today it sends
+  `None`). Relax `record_signal`/`record_removal` to emit for commander-less decks (deck_id is
+  now enough to attribute).
+- `zwiper/.../screens/deck/card/{add,remove}.rs` — pass the deck id into the record calls.
+  *(Left untouched by Slice A: these are mid-flight in the deck-screen session — coordinate.)*
+- Deploy order: **server (Slice A) ships first**, then this client build (project rule).
+
+**Wire & compat:** additive throughout (`#[serde(default)]` `deck_id`); ship dark. **No bump.**
+
+**Exit:** per-otag `(context)` signal accumulating for **Commander (from existing clients now)
+and non-EDH decks (once Slice B ships)**.
+
+---
+
+## Phase 5S — Sunset the legacy commander-keyed signal wire (version-gated) ⚠ FIRST GATE
+
+**Goal:** once every install sends `deck_id`, make it the *single* signal key and derive
+everything else server-side — dropping the legacy client-sent `commander_oracle_id` off the wire.
+**This is the first `MIN_CLIENT_VERSION` bump the otags feature requires** (Phases 1–5 are all
+additive / no-bump); treat it like Phase M's step 3 — the one gated removal, long after ship.
+
+Rationale (owner, 2026-07-12): `deck_id` is strictly richer — from it the server derives the
+commander, format, color identity, deck tags, and oracle-tag relationships. Once clients are
+guaranteed to send it, the client-sent `commander_oracle_id` is redundant everywhere (it also
+leads `commander_card_signal` / `user_card_signal`).
+
+**Steps (dual-accept → migrate clients → gated removal):**
+1. **Server derives commander from `deck_id`** wherever the wire commander is used
+   (`commander_card_signal`, `user_card_signal`, the otag context), **accepting both** the legacy
+   `commander_oracle_id` and a `deck_id`-only delta. Additive, no bump.
+2. **Client sends `deck_id` only** (drops `commander_oracle_id` from the delta it builds); ship
+   and let installs upgrade. (This is Slice B's client already sending `deck_id`, now made the
+   sole key.)
+3. **Sunset** once a `MIN_CLIENT_VERSION` floor guarantees every install sends `deck_id`: drop
+   `CardSignalDelta.commander_oracle_id` (and the server's commander-first branch / legacy
+   derivation), leaving the wire `{ deck_id, card_oracle_id, gestures }`. **Bump
+   `MIN_CLIENT_VERSION`.**
+
+**Wire & compat:** additive through step 2 (no bump); step 3 is the single gated removal. Runs on
+its own client-upgrade timeline, same shape as Phase M.
 
 ---
 
@@ -376,10 +457,14 @@ long after ship, when old installs have aged out.
 ```
 0 spike ─▶ 1 ingest ─▶ 2 filtering + retire heuristic (needs card_profiles.oracle_tags)
                         1 ─▶ 3 deck otags ─▶ 4 serving term
-                                    3 ─▶ 5 signal collection ─▶ 6 non-EDH serving
+                                    3 ─▶ 5 signal collection ─▶ 5S sunset legacy wire (gated)
+                                         5 ─▶ 6 non-EDH serving
                         2 ─▶ M card_roles wire migration (independent, version-gated)
 ```
 
 1 unblocks everything. 2 and 3 are parallel after 1. 4 needs 3. 5 needs 3 (decks must have
-otags to key on). 6 needs 5 to have run long enough to matter. **M** needs only 2 (the
+otags to key on); 5 splits into Slice A (server, shipped dark — Commander accrues immediately)
+and Slice B (client update — unlocks non-EDH). **5S** (the first `MIN_CLIENT_VERSION` gate)
+follows 5's client rollout, on its own upgrade timeline. 6 needs 5 to have run long enough to
+matter. **M** needs only 2 (the
 `CardRole` rename) and runs on its own client-upgrade timeline.

@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO otag_context_signal\n                           (context_key, oracle_tag, shown, added, skipped, maybed, removed, updated_at)\n                       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())\n                       ON CONFLICT (context_key, oracle_tag) DO UPDATE SET\n                           shown      = otag_context_signal.shown   + EXCLUDED.shown,\n                           added      = otag_context_signal.added   + EXCLUDED.added,\n                           skipped    = otag_context_signal.skipped + EXCLUDED.skipped,\n                           maybed     = otag_context_signal.maybed  + EXCLUDED.maybed,\n                           removed    = otag_context_signal.removed + EXCLUDED.removed,\n                           updated_at = NOW()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4f537f14057ad9ca509f07a5c5a3aa406eaa81f0c5833912686e52d02d6e7c92"
+}

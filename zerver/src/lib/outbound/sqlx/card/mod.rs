@@ -97,6 +97,14 @@ const BAND_SIZE: i64 = 25;
 /// outweighs the global prior.
 const SHRINK_K: f64 = 10.0;
 
+/// Weight of the oracle-tag correlation term (Phase 4): a fixed lift for cards
+/// whose `card_profiles.oracle_tags` overlap the deck's selected otags. Units
+/// are synergy-score points (scores span roughly -0.6..1.0), sized to float a
+/// strategy-relevant card up a band or so without swamping commander synergy.
+/// The term only applies when the deck has selected otags; `0.0` disables it
+/// exactly (the revert lever), and an empty otag set is a no-op regardless.
+const W_ORACLE_TAG: f64 = 0.20;
+
 /// Base score for cards absent from the commander's synergy map. Sits below
 /// the scoreless-list floor (-10, see `SynergyPayload::into_scores`) so the
 /// unscored tail stays below every scored card — at zero dials this exactly
@@ -235,6 +243,14 @@ impl CardRepository for MyPostgres {
         Ok(())
     }
 
+    async fn refresh_otag_context_signal_rollup(&self) -> anyhow::Result<()> {
+        sqlx::query("REFRESH MATERIALIZED VIEW otag_context_signal_rollup")
+            .execute(&self.pool)
+            .await
+            .context("failed to refresh otag_context_signal_rollup materialized view")?;
+        Ok(())
+    }
+
     async fn sync_oracle_tags(
         &self,
         tags: &[crate::inbound::external::scryfall::oracle_tag::OracleTag],
@@ -304,7 +320,7 @@ impl CardRepository for MyPostgres {
         &self,
         request: &CardQuery,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
-        self.search_scryfall_data_deck_aware(request, None, &[], None, false, None)
+        self.search_scryfall_data_deck_aware(request, None, &[], None, false, None, &[])
             .await
     }
 
@@ -319,6 +335,10 @@ impl CardRepository for MyPostgres {
     /// `{user_id}:{date}` — no deck required), and token/emblem printings
     /// excluded from the candidate pool. Exposed as `search_commanders`; every
     /// other caller passes `None` and is unaffected.
+    // Deck-serving context (deck_id, exclusions, synergy scores, otags, seed)
+    // is passed positionally rather than as a struct — it is threaded straight
+    // into one QueryBuilder and never stored.
+    #[allow(clippy::too_many_arguments)]
     async fn search_scryfall_data_deck_aware(
         &self,
         request: &CardQuery,
@@ -327,6 +347,7 @@ impl CardRepository for MyPostgres {
         synergy_scores: Option<&serde_json::Value>,
         synergy_only: bool,
         commander_seed: Option<String>,
+        deck_oracle_tags: &[String],
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
         // WHERE clauses read the predicate fields; LIMIT/OFFSET/ORDER BY read
         // the query config — the CardCriteria/CardQuery split, mirrored here.
@@ -361,6 +382,17 @@ impl CardRepository for MyPostgres {
                 " + {W_SIGNAL} * ((COALESCE(sig.net, 0) + {SHRINK_K} * g.rate) \
                    / (COALESCE(sig.shown, 0) + {SHRINK_K}) - g.rate)"
             ));
+            // Oracle-tag term (Phase 4): a flat lift for cards whose otags overlap
+            // the deck's selected otags. Dormant when the deck selected none, so
+            // decks without otags keep byte-identical ordering. Mirrors the
+            // filter's `?|` jsonb-array overlap probe.
+            if !deck_oracle_tags.is_empty() {
+                qb.push(format!(
+                    " + {W_ORACLE_TAG} * (card_profiles.oracle_tags ?| "
+                ));
+                qb.push_bind(deck_oracle_tags.to_vec());
+                qb.push(")::int");
+            }
         };
         // Banding/wildcard shuffle seed: synergy serves seed by deck+day,
         // commander-select by the caller's `commander_seed` (user+day, no deck).
@@ -1497,6 +1529,7 @@ impl CardRepository for MyPostgres {
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
         synergy_only: bool,
+        deck_oracle_tags: &[String],
     ) -> Result<Vec<Card>, SearchCardsError> {
         let scryfall_data = self
             .search_scryfall_data_deck_aware(
@@ -1506,6 +1539,7 @@ impl CardRepository for MyPostgres {
                 synergy_scores,
                 synergy_only,
                 None,
+                deck_oracle_tags,
             )
             .await?;
         if scryfall_data.is_empty() {
@@ -1531,7 +1565,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<Card>, SearchCardsError> {
         let seed = format!("{user_id}:{}", Utc::now().date_naive());
         let scryfall_data = self
-            .search_scryfall_data_deck_aware(request, None, &[], None, false, Some(seed))
+            .search_scryfall_data_deck_aware(request, None, &[], None, false, Some(seed), &[])
             .await?;
         if scryfall_data.is_empty() {
             return Ok(vec![]);
