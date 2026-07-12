@@ -268,12 +268,14 @@ back-compat-safe (tests in `contracts/deck.rs`). **No bump.**
   maps ~50 common archetypes → curated slugs (all 107 owner-approved + validated against the live
   catalog; unmapped → `&[]`). `seed_oracle_tags(&[DeckTag])` (deck_oracle_tags.rs) unions + dedupes.
   Tuned over time via feedback. Not yet pushed.
-- **Slice C — frontend (▶ NEXT):** reuse the card-filter oracle-tag picker (`deck/card/filter/
-  oracle_tags.rs`) rather than the static `tag_select.rs`. Host in `deck/components/deck_fields.rs`
-  + `create.rs` / `edit.rs` (Opdate diff, mirror `other_tags` at `edit.rs:325`). **Flat UX (owner-
-  decided):** selecting archetypes pre-selects their otags via `seed_oracle_tags` (side-effect like
-  `autofill_named_partner`, `deck_fields.rs:107`) — no nested/hierarchy visual; user then adds,
-  searches the full catalog, or removes the auto-picked ones.
+- **Slice C — frontend: ✅ FIRST CUT `789a0b70` (visuals to tune).** New `OracleTagSelect` overlay
+  (`deck/components/oracle_tag_select.rs`) — fetched catalog + curated default grid + full-catalog
+  search + def-bar, cap 30; wired as an "Oracle tags" field in `deck_fields.rs` + `create.rs`/`edit.rs`
+  (create `Option`, update `Opdate` diff). Seeding: a `use_effect` on `selected_tags` unions
+  `seed_oracle_tags` for **newly-added** deck tags only (peek-based, additive; deselects + manual
+  removals stick; edit inits `seeded_from` to the loaded tags so it doesn't re-seed). `CURATED_ORACLE_TAGS`
+  promoted to zwipe-core, shared with the card filter. Compiles + clippy + fmt green; **not pushed**.
+  ▶ **Owner is revamping the tag-picking visuals here** — expect iteration on the overlay look/UX.
 - **Slice D — the grouped/raw hint page** (polish; the picker's grouped view doubles as this).
 
 **Exit:** decks carry otags; archetype seeds them; picker + distribution ship.
