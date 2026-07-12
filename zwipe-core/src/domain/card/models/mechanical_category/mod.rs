@@ -44,12 +44,14 @@ pub enum MechanicalCategory {
     GraveyardHate,
     CardAdvantage,
     Energy,
+    Aggression,
 }
 
 impl MechanicalCategory {
-    /// All 26 category variants, alphabetical.
+    /// All 27 category variants, alphabetical.
     pub fn all() -> &'static [MechanicalCategory] {
         &[
+            Self::Aggression,
             Self::Anthem,
             Self::Blink,
             Self::Burn,
@@ -108,6 +110,7 @@ impl MechanicalCategory {
             Self::GraveyardHate => "grvht",
             Self::CardAdvantage => "cadv",
             Self::Energy => "enrgy",
+            Self::Aggression => "aggro",
         }
     }
 
@@ -140,6 +143,7 @@ impl MechanicalCategory {
             Self::GraveyardHate => "Graveyard Hate",
             Self::CardAdvantage => "Card advantage",
             Self::Energy => "Energy",
+            Self::Aggression => "Aggression",
         }
     }
 }
@@ -217,7 +221,7 @@ mod tests {
     }
 
     #[test]
-    fn all_has_26_variants() {
-        assert_eq!(MechanicalCategory::all().len(), 26);
+    fn all_has_27_variants() {
+        assert_eq!(MechanicalCategory::all().len(), 27);
     }
 }

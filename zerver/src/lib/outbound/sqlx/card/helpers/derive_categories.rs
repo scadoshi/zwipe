@@ -30,6 +30,15 @@ pub const CATEGORY_ROOTS: &[(&str, &[&str])] = &[
             "toughness-boost-to-all",
         ],
     ),
+    (
+        "aggression",
+        &[
+            "attacking-matters",
+            "attacking-matters-self",
+            "attacking-matters-any",
+            "attack-trigger",
+        ],
+    ),
     ("blink", &["flicker"]),
     ("burn", &["burn"]),
     // Broad umbrella: everything that nets cards. Draw (below) is the literal-draw
@@ -240,6 +249,6 @@ mod tests {
                 "{excluded} should not be otag-mapped"
             );
         }
-        assert_eq!(mapped.len(), 24);
+        assert_eq!(mapped.len(), 25);
     }
 }
