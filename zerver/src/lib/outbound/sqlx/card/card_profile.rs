@@ -51,8 +51,11 @@ impl From<DatabaseCardProfile> for CardProfile {
         Self {
             scryfall_data_id: value.scryfall_data_id,
             is_token: value.is_token,
-            // Phase M dual-emit: card_roles mirrors mechanical_categories exactly.
-            card_roles: mechanical_categories.clone(),
+            // Phase M dual-emit: card_roles carries the same roles as slugs.
+            card_roles: mechanical_categories
+                .iter()
+                .map(|r| r.to_string())
+                .collect(),
             mechanical_categories,
             oracle_tags,
             oracle_tags_by_role,

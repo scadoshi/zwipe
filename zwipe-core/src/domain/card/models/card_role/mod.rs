@@ -193,6 +193,32 @@ impl CardRole {
     }
 }
 
+/// Display label for a role **slug**: the curated `display_name` if the slug is a
+/// known `CardRole`, otherwise the prettified slug. Lets card-role display work off
+/// server-delivered slugs (`CardProfile.card_roles`) — a server-added role still
+/// shows a readable label without a client release, while known roles keep their
+/// curated labels (e.g. `counters` → "+1/+1 Counters").
+pub fn role_label(slug: &str) -> String {
+    CardRole::try_from(slug)
+        .map(|r| r.display_name().to_string())
+        .unwrap_or_else(|_| prettify_role_slug(slug))
+}
+
+/// Title-cases a `snake_case`/`kebab-case` slug (`future_role` → "Future Role").
+fn prettify_role_slug(slug: &str) -> String {
+    slug.split(['_', '-'])
+        .filter(|w| !w.is_empty())
+        .map(|w| {
+            let mut chars = w.chars();
+            match chars.next() {
+                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -225,6 +251,16 @@ mod tests {
     #[test]
     fn try_from_invalid() {
         assert!(CardRole::try_from("not_a_category").is_err());
+    }
+
+    #[test]
+    fn role_label_known_curated_unknown_prettified() {
+        // Known slug -> curated display name (incl. non-title-case ones that a
+        // plain prettify would get wrong, e.g. "Card advantage" not "Card Advantage").
+        assert_eq!(role_label("card_advantage"), "Card advantage");
+        assert_eq!(role_label("graveyard_hate"), "Graveyard Hate");
+        // Unknown (server-added) slug -> prettified, no client release needed.
+        assert_eq!(role_label("future_role_2099"), "Future Role 2099");
     }
 
     #[test]

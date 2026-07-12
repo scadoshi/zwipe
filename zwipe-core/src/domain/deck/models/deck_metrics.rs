@@ -144,9 +144,13 @@ impl DeckMetrics {
                 *slot += qty;
             }
 
-            // Card roles
-            for cat in &card.card_profile.card_roles {
-                if let Some(idx) = all_cats.iter().position(|c| c == cat)
+            // Card roles. `card_roles` are server slugs; this compact chart keys off
+            // the known CardRole set (fixed short-label axes), so a server-added role
+            // slug isn't charted here — it still shows in grouped lists + on the card.
+            for slug in &card.card_profile.card_roles {
+                if let Some(idx) = all_cats
+                    .iter()
+                    .position(|c| c.to_string().as_str() == slug.as_str())
                     && let Some(slot) = cat_buckets.get_mut(idx)
                 {
                     *slot += qty;

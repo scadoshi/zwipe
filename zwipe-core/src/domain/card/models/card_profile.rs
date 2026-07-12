@@ -28,11 +28,13 @@ pub struct CardProfile {
     /// never crash an older client — see `serde_helpers::lossy_vec`.
     #[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]
     pub mechanical_categories: Vec<CardRole>,
-    /// Canonical `card_roles` name for the coarse role axis (Phase M). Always
-    /// equal to `mechanical_categories` — the server emits both so a client can
-    /// read either. Lossy-deserialized (see `mechanical_categories`).
-    #[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]
-    pub card_roles: Vec<CardRole>,
+    /// Canonical `card_roles` — the coarse role axis as server-delivered **slugs**
+    /// (e.g. `graveyard_hate`), carrying the same roles as `mechanical_categories`.
+    /// A plain `Vec<String>` (not the `CardRole` enum) on purpose: a newer server's
+    /// role slug renders on the card without a client release (no lossy drop),
+    /// labels resolved by prettifying the slug / the role catalog. `#[serde(default)]`.
+    #[serde(default)]
+    pub card_roles: Vec<String>,
     /// Community Oracle Tags (granular functional tags) carried by this card.
     /// `#[serde(default)]` so older clients that omit it still deserialize.
     #[serde(default)]
@@ -65,7 +67,7 @@ mod tests {
             scryfall_data_id: Uuid::nil(),
             is_token: false,
             mechanical_categories: vec![CardRole::Ramp, CardRole::Removal],
-            card_roles: vec![CardRole::Ramp, CardRole::Removal],
+            card_roles: vec!["ramp".to_string(), "removal".to_string()],
             oracle_tags: vec![],
             oracle_tags_by_role: BTreeMap::new(),
             other_oracle_tags: vec![],
@@ -77,9 +79,7 @@ mod tests {
         assert_eq!(json.get("mechanical_categories"), Some(&expected));
         assert_eq!(json.get("card_roles"), Some(&expected));
 
-        // Round-trips, and a payload omitting card_roles still deserializes.
-        let back: CardProfile = serde_json::from_value(json).unwrap();
-        assert_eq!(back.card_roles, back.mechanical_categories);
+        // A payload omitting card_roles still deserializes (defaults empty).
         let legacy = r#"{"scryfall_data_id":"00000000-0000-0000-0000-000000000000",
             "is_token":false,"mechanical_categories":["ramp"],
             "created_at":"1970-01-01T00:00:00Z","updated_at":"1970-01-01T00:00:00Z"}"#;
@@ -91,10 +91,11 @@ mod tests {
     }
 
     #[test]
-    fn unknown_role_slug_is_dropped_not_errored() {
-        // Part 0 forward-compat: a newer server sends a role slug this binary's
-        // CardRole enum doesn't know. The whole card must still deserialize, with
-        // the unknown dropped and the known roles kept — not error the payload.
+    fn unknown_role_slug_dropped_from_enum_but_kept_in_card_roles() {
+        // A newer server sends a role slug this binary's CardRole enum doesn't know.
+        // mechanical_categories (strict enum, lossy) drops it; card_roles (slugs)
+        // KEEPS it — so new roles still render on the card. That's the server-driven
+        // display win: card display is not gated on the compiled enum.
         let json = r#"{"scryfall_data_id":"00000000-0000-0000-0000-000000000000",
             "is_token":false,
             "mechanical_categories":["ramp","future_role_2099","removal"],
@@ -105,6 +106,13 @@ mod tests {
             p.mechanical_categories,
             vec![CardRole::Ramp, CardRole::Removal]
         );
-        assert_eq!(p.card_roles, vec![CardRole::Ramp, CardRole::Removal]);
+        assert_eq!(
+            p.card_roles,
+            vec![
+                "ramp".to_string(),
+                "future_role_2099".to_string(),
+                "removal".to_string(),
+            ]
+        );
     }
 }
