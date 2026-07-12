@@ -208,6 +208,11 @@ pub fn SharedDeck(token: String) -> Element {
         }
     });
 
+    // Drives the Retry button's transient "Retrying…" state so a click is
+    // legible even when the refetch fails again instantly (held for a minimum
+    // beat on click, below — the request itself fires without delay).
+    let mut retrying = use_signal(|| false);
+
     rsx! {
         // Reachable only by having the link; keep crawlers out.
         document::Meta { name: "robots", content: "noindex" }
@@ -247,10 +252,30 @@ pub fn SharedDeck(token: String) -> Element {
                     path: "/deck".to_string(),
                 }
                 div { class: "form-page content-enter",
-                    h1 { "Could not load this deck" }
-                    p { class: "subtitle", "Check your connection and try again." }
-                    div { class: "status-message error", "{e}" }
-                    button { class: "sd-retry", onclick: move |_| result.restart(), "Retry" }
+                    span { class: "sd-alert-title", "Could not load this deck" }
+                    hr {
+                        style: "border: none; border-top: 1px solid var(--border-secondary); margin: 0.75rem -2rem;",
+                    }
+                    p { class: "subtitle", style: "text-align: center; margin-bottom: 1rem;",
+                        "Error: {e}"
+                    }
+                    div { class: "sd-retry-row",
+                        button {
+                            class: "sd-retry",
+                            disabled: retrying(),
+                            onclick: move |_| {
+                                retrying.set(true);
+                                result.restart();
+                                spawn(async move {
+                                    // Minimum visible spinner so an instant
+                                    // failure still reads as a click.
+                                    sleep_ms(500).await;
+                                    retrying.set(false);
+                                });
+                            },
+                            if retrying() { "Retrying\u{2026}" } else { "Retry" }
+                        }
+                    }
                 }
             },
             Some(Ok(deck)) => rsx! {
