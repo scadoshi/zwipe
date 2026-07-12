@@ -24,11 +24,14 @@ pub struct CardProfile {
     ///
     /// Legacy name for the coarse role axis; dual-emitted alongside `card_roles`
     /// (identical values) during the Phase M rename, and dropped at the sunset.
+    /// Deserialized lossily (unknown role slugs dropped) so a newer server's roles
+    /// never crash an older client — see `serde_helpers::lossy_vec`.
+    #[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]
     pub mechanical_categories: Vec<CardRole>,
     /// Canonical `card_roles` name for the coarse role axis (Phase M). Always
     /// equal to `mechanical_categories` — the server emits both so a client can
-    /// read either; `#[serde(default)]` so input omitting it still deserializes.
-    #[serde(default)]
+    /// read either. Lossy-deserialized (see `mechanical_categories`).
+    #[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]
     pub card_roles: Vec<CardRole>,
     /// Community Oracle Tags (granular functional tags) carried by this card.
     /// `#[serde(default)]` so older clients that omit it still deserialize.
@@ -85,5 +88,23 @@ mod tests {
             old.card_roles.is_empty(),
             "card_roles defaults when omitted"
         );
+    }
+
+    #[test]
+    fn unknown_role_slug_is_dropped_not_errored() {
+        // Part 0 forward-compat: a newer server sends a role slug this binary's
+        // CardRole enum doesn't know. The whole card must still deserialize, with
+        // the unknown dropped and the known roles kept — not error the payload.
+        let json = r#"{"scryfall_data_id":"00000000-0000-0000-0000-000000000000",
+            "is_token":false,
+            "mechanical_categories":["ramp","future_role_2099","removal"],
+            "card_roles":["ramp","future_role_2099","removal"],
+            "created_at":"1970-01-01T00:00:00Z","updated_at":"1970-01-01T00:00:00Z"}"#;
+        let p: CardProfile = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            p.mechanical_categories,
+            vec![CardRole::Ramp, CardRole::Removal]
+        );
+        assert_eq!(p.card_roles, vec![CardRole::Ramp, CardRole::Removal]);
     }
 }

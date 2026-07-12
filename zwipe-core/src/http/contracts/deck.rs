@@ -448,11 +448,12 @@ pub struct HttpSharedDeck {
     /// Power level (WotC bracket), if set.
     #[serde(default)]
     pub power_level: Option<PowerLevel>,
-    /// Deck archetype/strategy tags.
-    #[serde(default)]
+    /// Deck archetype/strategy tags. Lossy-deserialized (unknown slugs dropped) so
+    /// a newer server never crashes an older client — see `serde_helpers::lossy_vec`.
+    #[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]
     pub tags: Vec<DeckTag>,
-    /// Secondary, non-gameplay labels (Budget, Jank, …).
-    #[serde(default)]
+    /// Secondary, non-gameplay labels (Budget, Jank, …). Lossy-deserialized.
+    #[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]
     pub other_tags: Vec<DeckOtherTag>,
     /// Granular oracle-tag slugs the deck declares.
     #[serde(default)]
