@@ -1,6 +1,6 @@
 # Batch-add coding themes (+ Vantablack / Whiteout)
 
-**Status: PLANNED (2026-07-11). Pure additive, client + shared-const only — no
+**Status: SHIPPED (owner-confirmed 2026-07-12; planned 2026-07-11). Pure additive, client + shared-const only — no
 server, DB, or contract changes. Theme validation lives in `ALLOWED_THEMES`;
 the picker and CSS derive everything else from it.**
 

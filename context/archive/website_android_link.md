@@ -1,6 +1,6 @@
 # Website: wire the live Google Play link (Android launched 2026-07-11)
 
-**Status: READY TO BUILD. Small, self-contained. Android is now PUBLISHED on Google
+**Status: SHIPPED (owner-confirmed 2026-07-12). Small, self-contained. Android is now PUBLISHED on Google
 Play, so the site + download page need to point at the real store instead of the
 closed-beta tester flow.**
 
