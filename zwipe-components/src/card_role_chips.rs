@@ -58,7 +58,7 @@ pub fn CardRoleChips(
 
     rsx! {
         div { class: "card-roles",
-            span { class: "card-roles-label", "Card roles" }
+            span { class: "chips-label", "Card roles" }
             div { class: "keyword-chips",
                 for (i , (label , tags)) in items.iter().enumerate() {
                     if tags.is_empty() {
