@@ -122,6 +122,18 @@ tests + clippy + nightly-fmt green; `.sqlx` regenerated where needed):
 - **Filter** `oracle_tags_contains_any/all/excludes` end-to-end (criteria → getters → in-memory
   `matches` → builder fields/default/clash/getters/setters/construction → SQL `?|`/`@>`/`NOT ?|`
   on `card_profiles.oracle_tags`) + card_filter_parity case — `4411204e`.
+- **Catalog endpoint** `GET /api/card/oracle-tags` (nested under `/api/card` with the keyword/artist
+  family, not the bare `/api/oracle-tags`) — serves all **4,494** tags as
+  `OracleTag { slug, label, description, parent_slugs }` (new zwipe-core DTO; repo resolves
+  `parent_ids`→parent slugs, slug-ordered). `CardRepository/CardService/ErasedCardService` +
+  handler + route + `ClientGetOracleTags` zwiper client + `.sqlx` + read test. Live-smoke verified
+  (4,494; ~29% carry a Scryfall description) — `f11cc1e3`.
+- **Filter picker** `zwiper/.../deck/card/filter/oracle_tags.rs` — `OracleTags` accordion section:
+  curated default grid (`CURATED_ORACLE_TAGS`, 48 = the 24 originals→best-populated real slug +
+  functional fills, only those the catalog still serves), any/all toggle, exclude section, typeahead
+  over the full catalog. Wired into `card_filter_sheet.rs` (import + active-indicator + clear). Note:
+  filters on a card's **direct** slugs (not hierarchy-expanded), hence concrete slugs like
+  `spot-removal` over the parent `removal` — `41512c59`.
 - **Deploy hardening (earlier):** whole `zervice` pipeline is **non-fatal per step** with
   `step N/5 …: starting/ok/FAILED` logging + non-zero exit on any failure.
 
@@ -133,20 +145,21 @@ a prod zervice run, then deleted (cleanup below).
 
 ### ▶ RESUME HERE (next session) — remaining Phase 2
 
-1. **`GET /api/oracle-tags` endpoint** — owner-decided (option 1): serve ALL **4,494** catalog
-   tags (slug, label, description, parent_ids) read-only; the frontend decides display. New
-   handler + route in `zwipe-core/http/paths.rs` + `zerver/.../handlers/` + a zwiper client
-   module + an `oracle_tags` repo read. Additive.
-2. **Frontend otag filter UI** — searchable picker (generalize
-   `zwiper/.../deck/components/tag_select.rs`) fed by the endpoint, beside
-   `deck/card/filter/category.rs` / hosted in `card_filter_sheet.rs`, wiring the already-built
-   `set_oracle_tags_contains_any/all/excludes` builder setters. Owner wants: show ~40-80 curated
-   + a "show all" button (frontend-side; the endpoint serves everything). Also surface
-   `oracle_tags` on the swipe card (`card/components/card_info.rs`).
-3. **Cleanup (only after retirement proven in a prod zervice run):** delete `classify.rs`
+1. ✅ **DONE** — `GET /api/card/oracle-tags` endpoint (`f11cc1e3`).
+2. ✅ **DONE** — otag filter picker (`41512c59`).
+3. **Surface `oracle_tags` on the swipe card face** — OPEN DESIGN DECISION, not a clean mirror.
+   `CardRulesDialog(card: Card)` already has `card.card_profile.oracle_tags` (no plumbing), but the
+   raw direct-tag set is **noisy** (a card carries structural/trivia tags like `alliteration`,
+   `french-vanilla`, `activated-ability` alongside functional ones). So we can't dump all of them.
+   Options: (a) render only tags in a functional allowlist (e.g. reuse `CURATED_ORACLE_TAGS`),
+   (b) prettify+show all (noisy), (c) skip the card face and rely on the filter picker. Awaiting
+   owner call before building. Chip render precedent: `KeywordChips` in `card_info.rs`.
+4. **Cleanup (only after retirement proven in a prod zervice run):** delete `classify.rs`
    (24-branch) + `classify_untagged_cards` from `ports.rs`/`services.rs`/`ErasedCardService`.
-4. **`CardRole` rename** (65 refs, all crates) + **Phase M** (`mechanical_categories → card_roles`
-   version-gated wire migration) — see `open-questions.md` §1 and Phase M below.
+5. **`CardRole` rename** (65 refs, all crates) + **Phase M** (`mechanical_categories → card_roles`
+   version-gated wire migration) — see `open-questions.md` §1 and Phase M below. Owner confirmed
+   (2026-07-11) the coarse axis stays `card_roles` (NOT folded into the granular `oracle_tags`
+   name); the "Category distribution" chart in `deck/view.rs` relabels under Phase M.
 
 ### The authored map (in `derive_categories.rs` `CATEGORY_ROOTS` + `oracle_tag_gaps.rs`)
 
