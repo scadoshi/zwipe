@@ -102,7 +102,12 @@ guesswork) is retired and `mechanical_categories` is repopulated from otags. Q1 
   `step N/5 …: starting/ok/FAILED (continuing)` and tallies failures, so one broken step
   can't skip the rest; the job exits non-zero if any step failed (for monitoring).
 
-### STATUS (2026-07-11) — backend DONE + committed; frontend + rename remaining
+### STATUS — Phase 2 DONE + DEPLOYED (prod v1.6.0, 2026-07-12)
+
+Shipped in the v1.6.0 push (all CI gates green; migration `20260712030000` ran on prod).
+⚠ **Retirement + grouping populate on the next prod `zervice` run** — until then the new
+`card_profiles` columns sit at defaults (no breakage). Only the `CardRole` wire/DB rename
+(Phase M) and the `classify.rs` cleanup remain from this phase.
 
 **BUILT + committed** (unpushed at time of writing; every commit additive → no client break;
 tests + clippy + nightly-fmt green; `.sqlx` regenerated where needed):
@@ -115,7 +120,7 @@ tests + clippy + nightly-fmt green; `.sqlx` regenerated where needed):
   self-explaining header. Additive (`classify.rs` still present) — `8bdad628`.
 - **Wiring** `CardService::derive_card_categories` (SQL derive 18+Tokens, then a Rust merge pass
   adding the 4 gaps) **replaces** `classify_untagged_cards` in `zervice` step 3 — `b7dbd9d0`.
-  ⚠ **Retirement goes live on the next zervice run after this deploys** (nightly 4am / manual
+  ⚠ **DEPLOYED (v1.6.0); populates on the next prod `zervice` run** (nightly / manual
   `./zervice`) — same wire shape, better values, reversible.
 - **Display field** `CardProfile.oracle_tags: Vec<String>` (`#[serde(default)]`) on served cards;
   `.sqlx` regenerated + `prepare --check` passes — `ff57c776`.
@@ -155,7 +160,7 @@ a prod zervice run, then deleted (cleanup below).
    (one recursive-CTE `UPDATE` over the hierarchy + `CATEGORY_ROOTS`; explicit noise list bound
    from core `NOISE_ORACLE_TAG_SLUGS`, the four patterns inlined). Refreshed in `zervice` step 2.
    Migration `20260712030000`; two `#[serde(default)]` `CardProfile` fields; `.sqlx` regen.
-   ⚠ **Populates on the next zervice run after deploy** (like the retirement).
+   ⚠ **DEPLOYED (v1.6.0); populates on the next prod `zervice` run** (like the retirement).
    **Frontend:** `zwipe-components/CardRoleChips` = roles as chips (accent-1 "Card roles" label),
    each easing open to its grouped tags (keyword-reveal animation, accent-3 chips); empty roles
    are plain chips; trailing "Other tags" bucket. Shown in the expanded card row + swipe eyeball
