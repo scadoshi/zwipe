@@ -2,7 +2,12 @@ use dioxus::prelude::*;
 use zwipe_core::domain::{card::Card, deck::deck_profile::DeckProfile};
 
 #[component]
-pub(crate) fn DeckProfileSection(deck_profile: DeckProfile, commander: Option<Card>) -> Element {
+pub(crate) fn DeckProfileSection(
+    deck_profile: DeckProfile,
+    commander: Option<Card>,
+    /// Total card count (command-zone variants included) for the "Cards" row.
+    card_count: usize,
+) -> Element {
     let is_oathbreaker = deck_profile
         .format
         .as_ref()
@@ -21,6 +26,10 @@ pub(crate) fn DeckProfileSection(deck_profile: DeckProfile, commander: Option<Ca
             div { class: "info-row",
                 span { class: "info-row-label", "Name" }
                 span { class: "info-row-value", "{deck_profile.name}" }
+            }
+            div { class: "info-row",
+                span { class: "info-row-label", "Cards" }
+                span { class: "info-row-value", "{card_count}" }
             }
             div { class: "info-row",
                 span { class: "info-row-label", "Format" }
