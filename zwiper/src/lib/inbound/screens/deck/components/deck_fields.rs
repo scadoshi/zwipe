@@ -15,6 +15,7 @@ use zwipe_core::domain::{
     auth::models::session::Session,
     card::{
         Card,
+        oracle_tag::prettify_oracle_tag_slug,
         search_card::{
             card_filter::{
                 builder::CardQueryBuilder, error::InvalidCardCriteria,
@@ -23,7 +24,10 @@ use zwipe_core::domain::{
             commander_eligibility::{PartnerKind, has_choose_a_background, partner_kind},
         },
     },
-    deck::{DeckName, DeckOtherTag, DeckTag, MAX_DECK_TAGS, PowerLevel, format::Format},
+    deck::{
+        DeckName, DeckOtherTag, DeckTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel,
+        format::Format,
+    },
 };
 
 /// Upper bound for the land-target stepper — no deck runs more lands than this.
@@ -144,6 +148,10 @@ pub(crate) fn DeckFields(
     mut power_level: Signal<Option<PowerLevel>>,
     // Other tags (non-gameplay labels). Multi-select chips.
     mut other_tags: Signal<Vec<DeckOtherTag>>,
+    // Oracle tags (granular strategy slugs). Opens a fetched-catalog picker;
+    // seeded from the selected deck tags by the parent screen.
+    mut oracle_tags: Signal<Vec<String>>,
+    mut show_oracle_tags_select: Signal<bool>,
 ) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
@@ -948,6 +956,49 @@ pub(crate) fn DeckFields(
                             other_tags.set(v);
                         },
                         "{tag.display_name()}"
+                    }
+                }
+            }
+        }
+
+        // ========================================
+        // Oracle tags (granular strategy; opens the fetched-catalog picker)
+        // ========================================
+        div { style: "margin-top: 1rem;",
+            div { class: "label-row",
+                label { class: "label", "Oracle tags" }
+                span { class: "field-count", "{oracle_tags().len()}/{MAX_DECK_ORACLE_TAGS}" }
+                if !oracle_tags().is_empty() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| oracle_tags.set(Vec::new()),
+                        "\u{00d7}"
+                    }
+                }
+            }
+
+            if oracle_tags().is_empty() {
+                div {
+                    class: "input input-placeholder input-tappable",
+                    onclick: move |_| show_oracle_tags_select.set(true),
+                    "Not set"
+                }
+            } else {
+                div { class: "chip-box input-tappable", onclick: move |_| show_oracle_tags_select.set(true),
+                    for slug in oracle_tags().iter().cloned() {
+                        div {
+                            key: "{slug}",
+                            class: "chip selected flex items-center gap-05",
+                            { prettify_oracle_tag_slug(&slug) }
+                            button {
+                                class: "chip-remove",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    oracle_tags.write().retain(|s| s != &slug);
+                                },
+                                "\u{00d7}"
+                            }
+                        }
                     }
                 }
             }

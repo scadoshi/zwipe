@@ -22,6 +22,64 @@ pub struct OracleTag {
     pub parent_slugs: Vec<String>,
 }
 
+/// Curated default oracle tags surfaced up front in any otag picker (card filter
+/// and deck selection): the 24 original mechanical categories mapped to their
+/// best-populated real slug, plus hand-picked functional fills. The full catalog
+/// (~4,500) stays reachable via search; a picker renders only the entries its
+/// fetched catalog still serves. Tuned over time.
+pub const CURATED_ORACLE_TAGS: &[&str] = &[
+    // the original mechanical categories -> best-populated slug
+    "spot-removal",
+    "evasion",
+    "draw-engine",
+    "repeatable-creature-tokens",
+    "burn-any",
+    "sacrifice-outlet-creature",
+    "lifegain",
+    "sweeper",
+    "protects-creature",
+    "combat-trick",
+    "ramp",
+    "tutor-to-hand",
+    "reanimate-creature",
+    "anthem",
+    "untapper-creature",
+    "drain-life",
+    "copy-creature",
+    "mill-self",
+    "hate-graveyard",
+    "gives-pp-counters",
+    "counterspell",
+    // functional fills
+    "multi-removal",
+    "removal-exile",
+    "removal-bounce",
+    "cantrip",
+    "scry",
+    "discard",
+    "discard-outlet",
+    "opponent-loses-life",
+    "mana-sink",
+    "pinger",
+    "gives-haste",
+    "tapper-creature",
+    "death-trigger",
+    "modal",
+    "utility-land",
+    "creaturefall",
+    "martyr",
+    "land-ramp",
+    "gives-flying",
+    "gives-trample",
+    "mana-dork",
+    "castable-from-exile",
+    "free-cast-another",
+    "castable-from-graveyard",
+    "damage-prevention",
+    "regrowth-creature",
+    "mill-opponent",
+];
+
 /// Structural / trivia oracle-tag slugs that are noise on a player-facing card
 /// display: card-name quirks, vanilla flavor, raw ability templating, mana-value
 /// and border/errata metadata. The full tag set still powers filtering and

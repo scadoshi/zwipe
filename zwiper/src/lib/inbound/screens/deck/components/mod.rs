@@ -18,6 +18,8 @@ pub(crate) mod deck_warnings;
 pub(crate) mod format_select;
 /// Buy sheet and more actions bottom sheets for the view screen.
 pub(crate) mod more_buttons;
+/// Full-screen oracle-tag picker (fetched catalog + curated defaults + search).
+pub(crate) mod oracle_tag_select;
 /// Skeleton placeholders shown while deck data loads.
 pub(crate) mod skeletons;
 /// Full-screen "Zwipe select" command-zone swipe picker.
