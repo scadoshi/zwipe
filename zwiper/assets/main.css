@@ -2581,9 +2581,11 @@ button {
     color: var(--accent-primary);
 }
 
-/* Card name + price tag, centered on their own line below the quote. */
+/* Card name + price tag, centered on their own line below the quote. Wraps
+   the price tag to its own line before the name is forced to wrap internally. */
 .flavor-buy-row {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     gap: 0.4rem;
@@ -2611,7 +2613,7 @@ button {
    stays the exact height of the price tag while wrapped names just grow taller. */
 .flavor-source-link {
     display: inline-block;
-    max-width: 55%;
+    max-width: 100%;
     flex-shrink: 0;
     padding: 0.28rem 0.8rem;
     line-height: 1.3;
