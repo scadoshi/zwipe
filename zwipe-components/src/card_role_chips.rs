@@ -83,9 +83,13 @@ pub fn CardRoleChips(
             div { class: "{reveal_class}",
                 div { class: "keyword-reveal-inner",
                     if let Some(tags) = reveal_tags {
-                        div { class: "card-detail-meta card-detail-otags",
-                            for tag in tags {
-                                span { key: "{tag}", class: "detail-chip", "{tag}" }
+                        // Block-quote frame (matches the keyword reminder) so it
+                        // reads as the tapped role's exposed oracle tags.
+                        div { class: "otag-reveal-block",
+                            div { class: "card-detail-meta card-detail-otags",
+                                for tag in tags {
+                                    span { key: "{tag}", class: "detail-chip", "{tag}" }
+                                }
                             }
                         }
                     }

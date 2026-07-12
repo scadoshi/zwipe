@@ -599,6 +599,23 @@ i.ms.ms-cost.ms-g {
     color: var(--accent-tertiary);
 }
 
+/* Block-quote frame for a role's exposed otags, echoing .keyword-reveal-text. */
+.otag-reveal-block {
+    margin-top: 0.35rem;
+    padding: 0.4rem 0.5rem;
+    border-left: 2px solid var(--accent-tertiary);
+    border-radius: 0.25rem;
+    background-color: var(--bg-primary);
+}
+
+.otag-reveal-block .card-detail-otags {
+    margin: 0;
+}
+
+.otag-reveal-block .card-detail-meta {
+    margin-bottom: 0;
+}
+
 .card-roles {
     margin-bottom: 0.5rem;
 }
