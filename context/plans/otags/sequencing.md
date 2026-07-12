@@ -235,6 +235,42 @@ back-compat-safe (tests in `contracts/deck.rs`). **No bump.**
 
 **Exit:** decks carry otags; archetype seeds them; picker + distribution ship.
 
+### Grounded touchpoints (scouted 2026-07-12) — build in 4 additive slices
+
+**Key correction:** `decks.other_tags` is NOT free-text — it's a second **curated enum**
+(`DeckOtherTag`, `deck_other_tag.rs`). So `decks.oracle_tags` is a **new shape for decks**:
+`Vec<String>` slugs (free strings from the `oracle_tags` catalog), NOT an enum. Store/decode as
+`Vec<String>` (no `TryFrom` enum filter). Everything else mirrors `other_tags` exactly.
+
+- **Slice A — backend plumbing (mechanical, additive):**
+  - Migration `decks.oracle_tags JSONB NOT NULL DEFAULT '[]'` + GIN (next ts after `20260712030000`).
+  - `deck_profile.rs`: `#[serde(default)] pub oracle_tags: Vec<String>` (line ~35, beside `other_tags`).
+  - `create_deck_profile.rs` / `update_deck_profile.rs`: carry `oracle_tags` (create: `Vec<String>`;
+    update: `Option<Vec<String>>` domain / `Opdate` wire). Validation = just a `MAX_DECK_ORACLE_TAGS`
+    cap (no enum parse — free slugs).
+  - `http/contracts/deck.rs`: `HttpCreateDeckProfile.oracle_tags: Option<Vec<String>>`,
+    `HttpUpdateDeckProfile.oracle_tags: Opdate<Vec<String>>`, `HttpSharedDeck.oracle_tags: Vec<String>`
+    (all `#[serde(default)]`).
+  - handlers `create_deck_profile.rs` (`.oracle_tags(body.oracle_tags.unwrap_or_default())`) +
+    `update_deck_profile.rs` (`.oracle_tags(body.oracle_tags.into_option())`).
+  - `outbound/sqlx/deck/models.rs`: `DatabaseDeckProfile.oracle_tags: Option<serde_json::Value>` +
+    `serde_json::from_value::<Vec<String>>` in `TryFrom`.
+  - `outbound/sqlx/deck/mod.rs`: `deck_oracle_tags_to_json` helper; add the column to **create**
+    INSERT+RETURNING, **get**/**get_all** SELECT, **update** QueryBuilder branch + RETURNING, and
+    **clone_deck** INSERT+SELECT copy. `.sqlx` regen (create/get use macros; update is QueryBuilder).
+- **Slice B — the seed map (AUTHORING DECISION):** `impl DeckTag { fn oracle_tag_slugs(&self) ->
+  &'static [&'static str] }` in `deck_tag.rs` (match-on-self like `display_name`), + a test iterating
+  `DeckTag::all()`. ~117 archetypes → curated otag-slug sets. **Owner should eyeball this** like the
+  curated-48 (no deck-otag data exists yet to derive it — it's hand-authored).
+- **Slice C — frontend:** reuse the card-filter oracle-tag picker (`deck/card/filter/oracle_tags.rs`
+  fetches the catalog + curated grouping) rather than the static `tag_select.rs`. Host in
+  `deck/components/deck_fields.rs` + `create.rs` / `edit.rs` (Opdate diff, mirror `other_tags`
+  at `edit.rs:325`). Seed on archetype select via a side-effect like `autofill_named_partner`
+  (`deck_fields.rs:107`): union each selected `DeckTag`'s `oracle_tag_slugs()` into the signal.
+- **Slice D — the grouped/raw hint page** (polish; the picker's grouped view doubles as this).
+
+**Exit:** decks carry otags; archetype seeds them; picker + distribution ship.
+
 ---
 
 ## Phase 4 — Serving term (backend-only, ordering change)
