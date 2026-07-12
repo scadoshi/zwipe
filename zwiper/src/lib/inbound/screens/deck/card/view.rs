@@ -60,7 +60,7 @@ use zwipe_core::{
             deck_metrics::{budget_tier, deck_price},
             quantity::Quantity,
         },
-        user::models::hints::{HINT_DECK_CARDS, HINT_DECK_MVPS},
+        user::models::hints::HINT_DECK_CARDS,
     },
     http::{
         contracts::{deck::HttpUpdateDeckProfile, deck_card::HttpUpdateDeckCard},
@@ -182,23 +182,11 @@ pub fn View(deck_id: Uuid) -> Element {
     // deck actually has cards. An empty list has nothing to tap, so the
     // hint waits for a later visit instead of burning its one showing.
     let deck_cards_hint_open = use_signal(|| false);
-    let deck_mvps_hint_open = use_signal(|| false);
     let mut deck_cards_hint_fired = use_signal(|| false);
     use_effect(move || {
         if !deck_entries.read().is_empty() && !*deck_cards_hint_fired.peek() {
             deck_cards_hint_fired.set(true);
-            // MVP hint goes only to users who already saw the deck-cards
-            // hint (i.e. existing users after the update) — new users learn
-            // the star from that hint's bullet, and stacking two dialogs on
-            // one visit would bury both.
-            let deck_cards_seen = session
-                .peek()
-                .as_ref()
-                .is_none_or(|s| s.user.has_seen_hint(HINT_DECK_CARDS));
             open_and_record_hint(HINT_DECK_CARDS, session, client, deck_cards_hint_open);
-            if deck_cards_seen {
-                open_and_record_hint(HINT_DECK_MVPS, session, client, deck_mvps_hint_open);
-            }
         }
     });
 
@@ -1096,6 +1084,9 @@ pub fn View(deck_id: Uuid) -> Element {
                         " appear as chips. Tap one for a short reminder of what it does."
                     }
                     HintBullet {
+                        "Card roles show what a card does at a glance; tap one to see the oracle tags underneath."
+                    }
+                    HintBullet {
                         HintKey { "Printing" }
                         " swaps the art and set for that card."
                     }
@@ -1109,16 +1100,8 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
                     HintBullet {
                         HintKey { "★" }
-                        " marks a deck MVP. Star up to three cards that define this deck."
+                        " stars a deck MVP: up to three cards that define this deck. Zwipe leans your suggestions toward them."
                     }
-                }
-            }
-
-            HintDialog {
-                open: deck_mvps_hint_open,
-                title: "Deck MVPs",
-                HintLine {
-                    "Star up to three MVPs: the cards that define this deck. Zwipe will lean your suggestions toward them."
                 }
             }
 

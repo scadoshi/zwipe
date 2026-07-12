@@ -3,6 +3,8 @@ use crate::{
         components::{
             accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
             hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, open_and_record_hint},
+            hint_host::HintTopic,
+            info_button::InfoButton,
         },
         screens::deck::card::filter::{
             artist::Artist, category::Category, combat::Combat, config::Config,
@@ -421,6 +423,7 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             "Oracle tags"
+                            InfoButton { topic: HintTopic::OracleTags }
                             if oracle_tags_active {
                                 button {
                                     class: "clear-btn",
@@ -628,7 +631,9 @@ pub(crate) fn CardFilterSheet(
                     ", or which of your deck's cards show."
                 }
                 HintBullet {
-                    "Open any section to set an attribute like name, mana, type, or color. Stack as many as you like."
+                    "Open any section to set an attribute like name, mana, type, color, or "
+                    HintColored { color: "--accent-tertiary", "Oracle tags" }
+                    ". Stack as many as you like."
                 }
                 HintBullet {
                     "Tap "

@@ -5,7 +5,10 @@ use zwipe_core::domain::{logo, user::models::theme::ThemeConfig};
 use zwiper::{
     config::Config,
     inbound::{
-        components::{auth::session_upkeep::spawn_upkeeper, update_required::UpdateRequired},
+        components::{
+            auth::session_upkeep::spawn_upkeeper, hint_host::HintHost,
+            update_required::UpdateRequired,
+        },
         router::Router,
     },
 };
@@ -115,6 +118,10 @@ fn App() -> Element {
                     max_toasts: 3_usize,
                     class: "toast-container",
                     Router::<Router> {}
+                    // App-root receiver for on-demand "?" hints — rendered beside
+                    // the router so its dialog escapes every screen's containing
+                    // block (see hint_host.rs).
+                    HintHost {}
                 }
             }
         }

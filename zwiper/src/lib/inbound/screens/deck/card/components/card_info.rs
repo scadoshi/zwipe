@@ -1,6 +1,10 @@
-use crate::inbound::components::alert_dialog::{
-    AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
-    AlertDialogRoot, AlertDialogTitle,
+use crate::inbound::components::{
+    alert_dialog::{
+        AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
+        AlertDialogRoot, AlertDialogTitle,
+    },
+    hint_host::HintTopic,
+    info_button::InfoButton,
 };
 use dioxus::prelude::*;
 use zwipe_components::{Button, ButtonVariant, CardRoleChips, KeywordChips, OracleText};
@@ -159,7 +163,7 @@ pub(crate) fn CardRulesDialog(
     let keywords = sd.keywords.clone().unwrap_or_default();
     // Card classification beside the keywords: roles that drill down to their
     // grouped oracle tags, plus an "Other tags" bucket.
-    let roles = card.card_profile.mechanical_categories.clone();
+    let roles = card.card_profile.card_roles.clone();
     let tags_by_role = card.card_profile.oracle_tags_by_role.clone();
     let other_tags = card.card_profile.other_oracle_tags.clone();
     let faces = build_rules(&card);
@@ -216,6 +220,9 @@ pub(crate) fn CardRulesDialog(
                                             roles: roles.clone(),
                                             tags_by_role: tags_by_role.clone(),
                                             other_tags: other_tags.clone(),
+                                            help: rsx! {
+                                                InfoButton { topic: HintTopic::CardRoles }
+                                            },
                                         }
                                     }
                                     if !face.oracle.is_empty() {

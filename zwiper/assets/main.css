@@ -655,6 +655,26 @@ button {
     right: 1rem;
 }
 
+/* Inline "?" help button beside a field/section label, opened on demand
+   (InfoButton). Faded like the header corner triggers but sized for a label
+   row rather than the page header. */
+.info-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+    margin-left: 0.35rem;
+    padding: 0;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    background: var(--bg-primary);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
 /* Eye icon for the card-rules util-bar button. Inherits the button's color via
    currentColor; sits in a util-btn stretched to match its text siblings. */
 .eye-icon {
@@ -2554,7 +2574,10 @@ button {
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        /* `none`, not translateY(0): `both` retains this, and any non-none
+           transform makes .content-enter a containing block that traps
+           position:fixed dialogs (InfoButton hints) inside the content column. */
+        transform: none;
     }
 }
 

@@ -8,7 +8,8 @@
 //! filters the grid by name for quick jumps.
 
 use crate::inbound::components::{
-    hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog},
+    concept_explainers::DeckTagsExplainer,
+    hint_dialog::{HintBullet, HintBullets, HintDialog},
     screen_header::ScreenHeader,
 };
 use dioxus::prelude::*;
@@ -150,19 +151,10 @@ pub(crate) fn TagSelect(
                 HintDialog {
                     open: hint_open,
                     title: "Deck tags",
+                    DeckTagsExplainer {}
                     HintBullets {
                         HintBullet {
-                            "Tap a tag to "
-                            HintColored { color: "--accent-secondary", "add" }
-                            " it; tap a selected tag to remove it."
-                        }
-                        HintBullet {
-                            "Tapping a tag shows its definition in the bar up top, so you can see what it does."
-                        }
-                        HintBullet {
-                            "Add up to "
-                            HintColored { color: "--accent-tertiary", "{MAX_DECK_TAGS} tags" }
-                            ". Search by name to jump to one."
+                            "Tap a tag to add or remove it; tapping shows its definition in the bar up top. Search by name to jump to one."
                         }
                     }
                 }

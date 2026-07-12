@@ -2,6 +2,8 @@ use crate::{
     inbound::components::{
         fields::text_input::TextInput,
         hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog},
+        hint_host::HintTopic,
+        info_button::InfoButton,
         telemetry::usage_buffer::UsageBuffer,
     },
     outbound::client::{ZwipeClient, card::search_cards::ClientSearchCards},
@@ -1000,6 +1002,7 @@ pub(crate) fn DeckFields(
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
                 label { class: "label", "Deck tags" }
+                InfoButton { topic: HintTopic::DeckTags }
                 span { class: "field-count", "{selected_tags().len()}/{MAX_DECK_TAGS}" }
                 if !selected_tags().is_empty() {
                     button {
@@ -1039,6 +1042,7 @@ pub(crate) fn DeckFields(
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
                 label { class: "label", "Oracle tags" }
+                InfoButton { topic: HintTopic::OracleTags }
                 span { class: "field-count", "{oracle_tags().len()}/{MAX_DECK_ORACLE_TAGS}" }
                 if !oracle_tags().is_empty() {
                     button {
@@ -1120,11 +1124,13 @@ pub(crate) fn DeckFieldsHint(open: Signal<bool>) -> Element {
             open,
             title: "Building a deck",
             HintBullets {
-                HintBullet { "Name your deck and choose a format." }
                 HintBullet {
-                    "Add up to "
-                    HintColored { color: "--accent-tertiary", "5 tags" }
-                    " to label your deck's strategy."
+                    "Profile covers your deck's name, format, and commander. Budget covers price and land targets."
+                }
+                HintBullet {
+                    "In "
+                    HintColored { color: "--accent-tertiary", "Tags" }
+                    ", tell us what your deck does. Deck tags seed matching oracle tags, and both shape which cards we suggest."
                 }
                 HintBullet {
                     "Command-zone fields are dynamic: "

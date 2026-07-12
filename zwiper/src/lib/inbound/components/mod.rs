@@ -12,10 +12,16 @@ pub mod auth;
 pub mod bottom_sheet;
 /// Selectable chip button (shared `.chip` styling).
 pub mod chip;
+/// Canonical concept explainers (Deck tags, Oracle tags, Card roles).
+pub mod concept_explainers;
 /// Form field components (text input, password input, etc.).
 pub mod fields;
 /// One-time hint dialogs (per-account, tracked via `hints_shown`).
 pub mod hint_dialog;
+/// App-root receiver that renders on-demand "?" hint dialogs (sender/receiver).
+pub mod hint_host;
+/// Persistent, on-demand "?" help button (not one-time, no session dependency).
+pub mod info_button;
 /// Interactive components (buttons, links, etc.).
 pub mod interactions;
 /// Logout confirmation dialog.
