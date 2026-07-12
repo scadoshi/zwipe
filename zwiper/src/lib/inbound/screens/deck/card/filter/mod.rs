@@ -26,6 +26,8 @@ pub mod mana;
 pub mod match_mode;
 /// Card name filter.
 pub mod name;
+/// Oracle tags filter (Scryfall community functional tags).
+pub mod oracle_tags;
 /// Oracle text, oracle words, and keywords filter.
 pub mod oracle_text;
 /// Price range filter (min/max in a selected currency).

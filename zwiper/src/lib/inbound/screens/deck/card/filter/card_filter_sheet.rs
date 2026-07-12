@@ -7,8 +7,8 @@ use crate::{
         screens::deck::card::filter::{
             artist::Artist, category::Category, combat::Combat, config::Config,
             flavor_text::FlavorText, format::FormatFilter, mana::Mana, name::Name,
-            oracle_text::OracleText, price::PriceFilter, rarity::Rarity, set::Set, sort::Sort,
-            types::Types,
+            oracle_tags::OracleTags, oracle_text::OracleText, price::PriceFilter, rarity::Rarity,
+            set::Set, sort::Sort, types::Types,
         },
     },
     outbound::client::ZwipeClient,
@@ -78,6 +78,7 @@ pub(crate) fn CardFilterSheet(
         artist_active,
         rarity_active,
         category_active,
+        oracle_tags_active,
         set_active,
         sort_active,
         config_active,
@@ -123,6 +124,9 @@ pub(crate) fn CardFilterSheet(
             fb.mechanical_categories_contains_any().is_some()
                 || fb.mechanical_categories_contains_all().is_some()
                 || fb.mechanical_categories_excludes().is_some(),
+            fb.oracle_tags_contains_any().is_some()
+                || fb.oracle_tags_contains_all().is_some()
+                || fb.oracle_tags_excludes().is_some(),
             fb.set_equals_any().is_some() || fb.set_excludes_any().is_some(),
             fb.sort().is_some(),
             fb.is_playable() != def.is_playable()
@@ -140,7 +144,7 @@ pub(crate) fn CardFilterSheet(
     } else {
         (
             false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false,
+            false, false, false,
         )
     };
 
@@ -409,6 +413,30 @@ pub(crate) fn CardFilterSheet(
                             }
                         }
                         AccordionContent { Category {} }
+                    }
+
+                    AccordionItem { index: next_idx(),
+                        on_change: move |is_open| {
+                            if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                        },
+                        AccordionTrigger {
+                            "Oracle tags"
+                            if oracle_tags_active {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        let fb = &mut *filter_builder.write();
+                                        fb.unset_oracle_tags_contains_any();
+                                        fb.unset_oracle_tags_contains_all();
+                                        fb.unset_oracle_tags_excludes();
+                                        bump_filter();
+                                    },
+                                    "\u{00d7}"
+                                }
+                            }
+                        }
+                        AccordionContent { OracleTags {} }
                     }
 
                     AccordionItem { index: next_idx(),
