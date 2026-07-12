@@ -4,6 +4,8 @@
 pub mod get_artists;
 /// Single card lookup handler.
 pub mod get_card;
+/// Card-role catalog handler (`GET /api/card/roles`).
+pub mod get_card_roles;
 /// Distinct card type names handler.
 pub mod get_card_types;
 /// Distinct keyword ability names handler.

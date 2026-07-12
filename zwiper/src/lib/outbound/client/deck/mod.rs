@@ -17,6 +17,8 @@ pub mod get_deck;
 pub mod get_deck_profile;
 /// Fetch all deck profiles for the current user.
 pub mod get_deck_profiles;
+/// Fetch the deck-tag catalog (slug, label, description, seed otags).
+pub mod get_deck_tags;
 /// Fetch tokens produced by a deck's cards.
 pub mod get_deck_tokens;
 /// Import a deck from an Archidekt URL.

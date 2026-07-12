@@ -28,7 +28,7 @@ pub use deck_name::{DeckName, InvalidDeckname};
 pub use deck_oracle_tags::{MAX_DECK_ORACLE_TAGS, dedupe_oracle_tags, seed_oracle_tags};
 pub use deck_other_tag::{DeckOtherTag, InvalidDeckOtherTag, MAX_DECK_OTHER_TAGS};
 pub use deck_profile::DeckProfile;
-pub use deck_tag::{DeckTag, InvalidDeckTag, MAX_DECK_TAGS};
+pub use deck_tag::{DeckTag, DeckTagView, InvalidDeckTag, MAX_DECK_TAGS};
 pub use deck_warning::{DeckWarning, WarningAction};
 pub use format::{Format, InvalidFormat};
 pub use import_mode::ImportMode;
