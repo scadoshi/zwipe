@@ -147,19 +147,30 @@ a prod zervice run, then deleted (cleanup below).
 
 1. ✅ **DONE** — `GET /api/card/oracle-tags` endpoint (`f11cc1e3`).
 2. ✅ **DONE** — otag filter picker (`41512c59`).
-3. **Surface `oracle_tags` on the swipe card face** — OPEN DESIGN DECISION, not a clean mirror.
-   `CardRulesDialog(card: Card)` already has `card.card_profile.oracle_tags` (no plumbing), but the
-   raw direct-tag set is **noisy** (a card carries structural/trivia tags like `alliteration`,
-   `french-vanilla`, `activated-ability` alongside functional ones). So we can't dump all of them.
-   Options: (a) render only tags in a functional allowlist (e.g. reuse `CURATED_ORACLE_TAGS`),
-   (b) prettify+show all (noisy), (c) skip the card face and rely on the filter picker. Awaiting
-   owner call before building. Chip render precedent: `KeywordChips` in `card_info.rs`.
+3. ✅ **DONE** — card roles → oracle-tags drill-down (server-grouped) + naming alignment
+   (`b404180d` backend, `6fc32c40` frontend). Owner chose server-side grouping over a client
+   static map so the role↔tag mapping + noise filter update on **deploy**, not on mobile releases.
+   **Backend:** `card_profiles.oracle_tags_by_role` (role → its tags) + `other_oracle_tags`
+   (role-less functional tags, noise stripped), computed by `helpers/oracle_tag_groups.rs`
+   (one recursive-CTE `UPDATE` over the hierarchy + `CATEGORY_ROOTS`; explicit noise list bound
+   from core `NOISE_ORACLE_TAG_SLUGS`, the four patterns inlined). Refreshed in `zervice` step 2.
+   Migration `20260712030000`; two `#[serde(default)]` `CardProfile` fields; `.sqlx` regen.
+   ⚠ **Populates on the next zervice run after deploy** (like the retirement).
+   **Frontend:** `zwipe-components/CardRoleChips` = roles as chips (accent-1 "Card roles" label),
+   each easing open to its grouped tags (keyword-reveal animation, accent-3 chips); empty roles
+   are plain chips; trailing "Other tags" bucket. Shown in the expanded card row + swipe eyeball
+   (`CardRulesDialog`), opt-in via `show_classification` (portfolio unaffected). Flat
+   `OracleTagChips` removed (superseded). **Naming:** Deck Tags (deck) / Card roles (chart
+   "Role distribution" + filter) / Oracle tags (full name). Known: a few flavor tags (e.g.
+   `bible-reference`) leak into "other" — tune server-side via the noise list.
 4. **Cleanup (only after retirement proven in a prod zervice run):** delete `classify.rs`
    (24-branch) + `classify_untagged_cards` from `ports.rs`/`services.rs`/`ErasedCardService`.
 5. **`CardRole` rename** (65 refs, all crates) + **Phase M** (`mechanical_categories → card_roles`
    version-gated wire migration) — see `open-questions.md` §1 and Phase M below. Owner confirmed
    (2026-07-11) the coarse axis stays `card_roles` (NOT folded into the granular `oracle_tags`
-   name); the "Category distribution" chart in `deck/view.rs` relabels under Phase M.
+   name). NB the frontend **display labels** already say "Card roles" / "Role distribution"
+   (done in `6fc32c40`); Phase M is the remaining **wire/DB** rename (`oracle_tags_by_role` keys +
+   `mechanical_categories` field/column → `card_roles`), version-gated.
 
 ### The authored map (in `derive_categories.rs` `CATEGORY_ROOTS` + `oracle_tag_gaps.rs`)
 
