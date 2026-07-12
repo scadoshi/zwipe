@@ -22,7 +22,7 @@ pub struct DatabaseCardProfile {
 
 impl From<DatabaseCardProfile> for CardProfile {
     fn from(value: DatabaseCardProfile) -> Self {
-        let mechanical_categories = value
+        let mechanical_categories: Vec<CardRole> = value
             .mechanical_categories
             .and_then(|v| serde_json::from_value::<Vec<String>>(v).ok())
             .map(|strings| {
@@ -51,6 +51,8 @@ impl From<DatabaseCardProfile> for CardProfile {
         Self {
             scryfall_data_id: value.scryfall_data_id,
             is_token: value.is_token,
+            // Phase M dual-emit: card_roles mirrors mechanical_categories exactly.
+            card_roles: mechanical_categories.clone(),
             mechanical_categories,
             oracle_tags,
             oracle_tags_by_role,
