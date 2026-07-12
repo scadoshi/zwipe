@@ -3,7 +3,7 @@ use crate::inbound::components::alert_dialog::{
     AlertDialogRoot, AlertDialogTitle,
 };
 use dioxus::prelude::*;
-use zwipe_components::{Button, ButtonVariant, KeywordChips, OracleText};
+use zwipe_components::{Button, ButtonVariant, CardRoleChips, KeywordChips, OracleText};
 use zwipe_core::domain::card::Card;
 
 /// One card face's rules text, extracted for display. Single-faced cards yield
@@ -157,6 +157,11 @@ pub(crate) fn CardRulesDialog(
     let name = sd.name.clone();
     let rarity_name = sd.rarity.to_long_name();
     let keywords = sd.keywords.clone().unwrap_or_default();
+    // Card classification beside the keywords: roles that drill down to their
+    // grouped oracle tags, plus an "Other tags" bucket.
+    let roles = card.card_profile.mechanical_categories.clone();
+    let tags_by_role = card.card_profile.oracle_tags_by_role.clone();
+    let other_tags = card.card_profile.other_oracle_tags.clone();
     let faces = build_rules(&card);
     // Show the primary (first face) mana cost up on the title row, right-aligned
     // next to the name. Extra faces keep their own cost in the body below.
@@ -205,6 +210,13 @@ pub(crate) fn CardRulesDialog(
                                     }
                                     if i == 0 && !keywords.is_empty() {
                                         KeywordChips { keywords: keywords.clone() }
+                                    }
+                                    if i == 0 {
+                                        CardRoleChips {
+                                            roles: roles.clone(),
+                                            tags_by_role: tags_by_role.clone(),
+                                            other_tags: other_tags.clone(),
+                                        }
                                     }
                                     if !face.oracle.is_empty() {
                                         OracleText {

@@ -396,7 +396,7 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "Category"
+                            "Card roles"
                             if category_active {
                                 button {
                                     class: "clear-btn",
