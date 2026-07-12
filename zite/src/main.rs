@@ -97,18 +97,36 @@ async fn static_routes() -> ServerFnResult<Vec<String>> {
 
 #[component]
 fn App() -> Element {
-    // Seed from the last-used theme in localStorage (client), falling back to
-    // the default on the server build where localStorage doesn't exist.
-    let theme = use_signal(|| theme_store::load().unwrap_or_default());
+    // Start at the default so the client's first render matches the server's
+    // (localStorage is client-only). Seeding the signal from storage here would
+    // desync SSR and hydration: hydration keeps the server DOM (e.g. the theme
+    // picker's "Gruvbox" label) and won't reconcile the mismatch, leaving the
+    // label stuck on the default while the body themed correctly. Instead we
+    // adopt the stored theme just after mount (below).
+    let mut theme = use_signal(ThemeConfig::default);
     use_context_provider(|| theme);
+    let mut loaded = use_signal(|| false);
 
-    // Apply theme class to <body> so all CSS variable lookups, including
-    // body { background-color: var(--bg-primary) }, resolve from the theme, and
-    // persist the choice so the next visit opens in it. Seeding the signal from
-    // storage above means this saves the same value back (no clobber).
+    // After hydration, adopt the last-used theme from localStorage. Being a
+    // post-hydration state change (not the initial render), this re-renders the
+    // picker label too, not just the body class. A brief flash of the default
+    // first is expected until the WASM loads.
+    use_effect(move || {
+        if let Some(stored) = theme_store::load() {
+            theme.set(stored);
+        }
+        loaded.set(true);
+    });
+
+    // Apply the theme class to <body> so CSS variable lookups (e.g.
+    // body { background-color: var(--bg-primary) }) resolve, and persist the
+    // choice for next visit. The `loaded` guard keeps the pre-load default
+    // render from clobbering the stored theme before we've read it.
     use_effect(move || {
         let cfg = theme.read().clone();
-        theme_store::save(&cfg);
+        if loaded() {
+            theme_store::save(&cfg);
+        }
         let class = cfg.css_class();
         spawn(async move {
             let _ = eval(&format!("document.body.className = '{class}';")).await;
