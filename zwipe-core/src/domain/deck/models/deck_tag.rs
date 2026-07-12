@@ -525,6 +525,124 @@ impl DeckTag {
             Self::Zoo => "Flood the board with efficient, aggressive multicolor creatures",
         }
     }
+
+    /// The oracle-tag slugs this archetype seeds when selected (Phase 3 seed map).
+    ///
+    /// Free catalog slugs (from the live `oracle_tags` catalog, picked by usage;
+    /// the coarse card-role vocabulary guided the choices). Selecting a deck tag
+    /// pre-selects these on the deck; the user then adds/removes/searches. Curated
+    /// to be tuned over time as usage data and player feedback arrive. Archetypes
+    /// too vague or niche to seed usefully return `&[]` (the user picks manually).
+    pub fn oracle_tag_slugs(&self) -> &'static [&'static str] {
+        match self {
+            Self::Aristocrats => &[
+                "sacrifice-outlet-creature",
+                "death-trigger",
+                "drain-life",
+                "blood-artist-ability",
+            ],
+            Self::Sacrifice => &[
+                "sacrifice-outlet-creature",
+                "repeatable-sacrifice-outlet",
+                "death-trigger",
+            ],
+            Self::Artifacts => &[
+                "repeatable-artifact-tokens",
+                "sacrifice-outlet-artifact",
+                "copy-artifact",
+            ],
+            Self::Auras => &["synergy-aura", "french-vanilla-aura", "auraify"],
+            Self::Equipment => &["synergy-equipment", "french-vanilla-equipment"],
+            Self::Voltron => &[
+                "protects-creature",
+                "gives-hexproof",
+                "gives-indestructible",
+                "synergy-equipment",
+                "evasion",
+            ],
+            Self::BigMana => &["mana-sink", "bottomless-mana-sink", "ramp", "land-ramp"],
+            Self::Ramp => &["ramp", "land-ramp", "mana-dork", "multi-land-ramp"],
+            Self::Blink => &["flicker-creature", "flicker-slow", "enters-in-company"],
+            Self::Etb => &["enters-in-company", "flicker-creature"],
+            Self::Burn => &["burn-any", "burn-planeswalker"],
+            Self::Counters => &[
+                "gives-pp-counters",
+                "gains-pp-counters",
+                "repeatable-pp-counters",
+                "pp-counters-matter",
+            ],
+            Self::Clone => &["copy-creature", "clone", "copy-self"],
+            Self::Control => &["counterspell", "spot-removal", "sweeper", "draw-engine"],
+            Self::Counterspells => &[
+                "counterspell",
+                "counterspell-soft",
+                "counterspell-reusable",
+                "hate-counterspell",
+            ],
+            Self::Removal => &["spot-removal", "sweeper", "removal-fight"],
+            Self::Wipe => &["sweeper", "sweeper-one-sided"],
+            Self::Cycling => &["synergy-cycling"],
+            Self::Discard => &["discard", "hate-discard", "discard-outlet"],
+            Self::Draw => &[
+                "draw-engine",
+                "pure-draw",
+                "cantrip",
+                "repeatable-pure-draw",
+            ],
+            Self::Energy => &["energy-generator"],
+            Self::ExtraCombats => &["extra-combat-phase", "combat-ramp"],
+            Self::ExtraTurns => &["extra-turn"],
+            Self::Fight => &["one-sided-fight", "removal-fight"],
+            Self::TurboFog => &["fog", "pseudo-fog", "fog-selective"],
+            Self::Food => &["synergy-food", "repeatable-food"],
+            Self::GoWide => &["repeatable-creature-tokens", "anthem", "keyword-anthem"],
+            Self::Tokens => &["repeatable-creature-tokens", "out-of-color-token", "anthem"],
+            Self::Graveyard => &[
+                "graveyard-fuel",
+                "reanimate-creature",
+                "regrowth-creature",
+                "mill-self",
+            ],
+            Self::Reanimator => &[
+                "reanimate-creature",
+                "reanimate-cast",
+                "discard-outlet",
+                "mill-self",
+            ],
+            Self::SelfMill => &["mill-self", "graveyard-fuel", "reanimate-creature"],
+            Self::Mill => &["mill-opponent", "mill-any", "mill-each"],
+            Self::GroupHug => &["group-hug", "selective-group-hug"],
+            Self::GroupSlug => &["group-slug"],
+            Self::Hatebears => &["hatebear", "tax-attack"],
+            Self::Landfall => &["landfall", "land-ramp"],
+            Self::Lands => &["landfall", "land-ramp", "ramp"],
+            Self::Lifegain => &["lifegain", "repeatable-lifegain", "lifegain-matters"],
+            Self::Lifedrain => &["drain-life", "opponent-lifegain", "death-trigger"],
+            Self::Monarch => &["monarch-matters"],
+            Self::Ping => &["pinger"],
+            Self::Spellslinger => &[
+                "single-target-instant-sorcery",
+                "second-spell-matters",
+                "copy-spell",
+            ],
+            Self::Superfriends => &[
+                "synergy-planeswalker",
+                "protects-planeswalker",
+                "removal-planeswalker",
+            ],
+            Self::Theft => &["theft-creature", "theft-cast", "theft-artifact"],
+            Self::Treasure => &["repeatable-treasures", "synergy-treasure"],
+            Self::Vehicles => &["crew", "synergy-vehicle"],
+            Self::Untap => &["untapper-creature", "untapper-permanent"],
+            Self::Wheels => &["wheel-one-sided", "wheel-symmetrical", "miniwheel"],
+            Self::Poison | Self::Toxic | Self::Infect => &["poisonous"],
+            Self::Toolbox => &["tutor-to-hand", "tutor-creature"],
+            Self::Flying => &["evasion", "gives-trample"],
+            // Everything else seeds nothing by default (too vague/niche); the
+            // user picks oracle tags manually. Expand as feedback arrives.
+            _ => &[],
+        }
+    }
 }
 
 /// Display as snake_case (matches serde serialization).
