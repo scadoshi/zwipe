@@ -528,7 +528,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                         span { key: "{tag}", class: "stat-chip stat-chip-other", "{tag.display_name()}" }
                     }
                     if price > 0.0 {
-                        span { class: "stat-chip stat-chip-price", "~${price:.0}" }
+                        span { class: "stat-chip stat-chip-price", "${price:.2}" }
                     }
                 }
             }
