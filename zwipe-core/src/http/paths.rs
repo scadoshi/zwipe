@@ -107,6 +107,10 @@ pub fn get_oracle_words_route() -> String {
     "api/card/oracle-words".to_string()
 }
 
+pub fn get_oracle_tags_route() -> String {
+    "api/card/oracle-tags".to_string()
+}
+
 pub fn get_sets_route() -> String {
     "api/card/sets".to_string()
 }

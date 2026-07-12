@@ -10,6 +10,7 @@ use crate::{
             get_card_types::GetCardTypesError,
             get_keywords::GetKeywordsError,
             get_languages::GetLanguagesError,
+            get_oracle_tags::GetOracleTagsError,
             get_oracle_words::GetOracleWordsError,
             get_scryfall_data::{GetScryfallData, ScryfallDataIds},
             get_sets::GetSetsError,
@@ -23,6 +24,7 @@ use zwipe_core::domain::card::{
     Card,
     card_profile::CardProfile,
     mechanical_category::{classify_by_heuristics, classify_oracle_tag_gaps},
+    oracle_tag::OracleTag,
     scryfall_data::ScryfallData,
     search_card::card_filter::CardQuery,
 };
@@ -229,6 +231,10 @@ impl<R: CardRepository> CardService for Service<R> {
 
     async fn get_keywords(&self) -> Result<Vec<String>, GetKeywordsError> {
         self.repo.get_keywords().await
+    }
+
+    async fn get_oracle_tags(&self) -> Result<Vec<OracleTag>, GetOracleTagsError> {
+        self.repo.get_oracle_tags().await
     }
 
     async fn get_oracle_words(&self) -> Result<Vec<String>, GetOracleWordsError> {

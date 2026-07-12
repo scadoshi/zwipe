@@ -13,6 +13,8 @@ pub mod get_card_types;
 pub mod get_keywords;
 /// Fetch all available languages.
 pub mod get_languages;
+/// Fetch the oracle tag catalog.
+pub mod get_oracle_tags;
 /// Fetch all normalized oracle text words.
 pub mod get_oracle_words;
 /// Fetch all printings of a card by oracle ID.
