@@ -27,15 +27,17 @@ at `context/archive/complete_2026_q1.md`.
 
 - [x] **Printing shifting bug — FIXED 2026-07-11** (`900001bd`). The printing carousel drifted right as you swiped (worse on many-printing cards, reload cleared it): it translated the strip by `-index * page_width_px` off a one-time `window.innerWidth` read, so `index * (measured - actual)` error accumulated. Now positions by `-index * 100%` (percentage of the one-viewport-wide flex strip), which needs no measurement and can't drift. Device-verified on the 6.5" sim.
 - [x] **Flip-card down-shift — FIXED 2026-07-11** (`02aab440`). Wasn't the button padding; the DFC-only `aspect-ratio: 5/7` wrapper rule made double-faced cards render a few px smaller/lower than single-faced ones. Now the button pins to an image-sized `.flip-face` (absolute, top-right) and DFC/single-face size identically. Sim-verified.
+- [ ] **Clone toast — drop the apostrophes, color the name** (`clone_deck_dialog.rs:96`, `format!("Cloned as '{name}'")`). Owner wants no quotes/apostrophes: show the deck name as accent-1 colored text instead. Caveat: `dioxus_primitives` toast takes a plain `String`, so coloring a substring needs rich/Element toast content — verify the toast supports it, else settle for plain unquoted text or a custom toast body.
 
 ---
 
 ## Features — queued (owner 2026-07-11)
 
-- [ ] **Maybeboard for commander select** — let users "maybe" a commander during Zwipe-select and revisit a list of maybed commanders (mirror of the deck maybeboard; would tie into the commander-select signal already collected).
+- [ ] **Commander shortlist / dedicated commander-swiping area** — "save for later" while swiping commanders. **Feature request** ([`../plans/commander_shortlist.md`](../plans/commander_shortlist.md)): recommend a dedicated Commanders browse space with a per-user shortlist + "start a deck with this," decoupled from the deck-creation picker (kills the "where did it go?" of an in-flow up-swipe). Open decisions: storage (server vs local), placement, commander scope. Not specced.
 - [ ] **Metric capture for non-commander decks** — the suggestion/usage signal is commander-keyed today (`commander_card_signal` keyed by `commander_oracle_id`); non-commander formats (Standard/Modern/etc.) have no commander to key on, so their building generates no signal. Design a capture path for them.
 - [ ] **Deck folders** — let users organize the deck list into folders/groups. **Spec'd** ([`../plans/deck_folders.md`](../plans/deck_folders.md)): custom user-named folders, one per deck, collapsible grouped list; `FolderName` reuses `DeckName` validation; ~1–1.5 days (client UI is the bulk, backend is mechanical). Not started.
 - [ ] **Oracle tags (otags) — HORIZON, big.** Ingest Scryfall's community-maintained functional tags (hundreds; daily `zervice` sync → `card_otags`), let players select strategy otags per deck (reconciled with deck tags), show the distribution, and use them as a new algorithmic serving axis (commander + otags, MVP otags, non-EDH formats via color-identity + otags + swipe data). Community-accurate replacement/complement for our heuristic `mechanical_categories`. Full vision + open research questions in [`../plans/otags.md`](../plans/otags.md).
+- [ ] **View printings while swiping** — surface printings from the eyeball/details overlay on the add / remove / commander swipe screens. **Spec'd** ([`../plans/swipe_printings.md`](../plans/swipe_printings.md)): reuse the existing `PrintingSheet`; add + commander re-skin the current swipe card then commit on swipe-right (settled); remove is view-only (read-only sheet, avoids the `scryfall_id`-mismatch delete). Client-only, no server change.
 
 ---
 
