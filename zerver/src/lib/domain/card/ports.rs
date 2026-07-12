@@ -309,7 +309,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         &self,
         updates: &[(
             uuid::Uuid,
-            Vec<zwipe_core::domain::card::mechanical_category::CardRole>,
+            Vec<zwipe_core::domain::card::card_role::CardRole>,
         )],
     ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
 

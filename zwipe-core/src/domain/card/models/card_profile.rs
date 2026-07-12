@@ -4,7 +4,7 @@
 //! - Token status (whether this is a token vs. real card)
 //! - Timestamps (when card was added/updated in database)
 
-use super::mechanical_category::CardRole;
+use super::card_role::CardRole;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

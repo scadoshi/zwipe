@@ -10,7 +10,7 @@
 
 use dioxus::prelude::*;
 use std::collections::BTreeMap;
-use zwipe_core::domain::card::mechanical_category::CardRole;
+use zwipe_core::domain::card::card_role::CardRole;
 
 /// Card roles as chips; expandable to their grouped oracle tags, plus an "Other
 /// tags" bucket. `tags_by_role` is keyed by role slug (`CardRole`'s

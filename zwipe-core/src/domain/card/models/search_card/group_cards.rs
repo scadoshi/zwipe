@@ -15,7 +15,7 @@
 //! }
 //! ```
 
-use crate::domain::card::{Card, mechanical_category::CardRole, scryfall_data::colors::Color};
+use crate::domain::card::{Card, card_role::CardRole, scryfall_data::colors::Color};
 
 /// Grouping strategies for partitioning cards.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
