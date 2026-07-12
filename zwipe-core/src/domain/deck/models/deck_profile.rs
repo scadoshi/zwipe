@@ -34,6 +34,11 @@ pub struct DeckProfile {
     /// older payloads without the field parse to an empty vec.
     #[serde(default)]
     pub other_tags: Vec<DeckOtherTag>,
+    /// Granular Oracle-tag slugs the deck declares as its strategy (from the
+    /// `oracle_tags` catalog, e.g. `spot-removal`). Free strings, not a curated
+    /// enum. `#[serde(default)]` so older payloads without the field parse empty.
+    #[serde(default)]
+    pub oracle_tags: Vec<String>,
     /// User-set land target. `None` falls back to the format-derived heuristic
     /// ([`Format::default_land_target`]).
     pub land_target: Option<i32>,

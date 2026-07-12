@@ -62,6 +62,9 @@ impl From<InvalidCreateDeckProfile> for ApiError {
             InvalidCreateDeckProfile::TooManyOtherTags => {
                 Self::UnprocessableEntity("a deck may have at most 5 other-tags".to_string())
             }
+            InvalidCreateDeckProfile::TooManyOracleTags => {
+                Self::UnprocessableEntity("a deck may have at most 30 oracle tags".to_string())
+            }
         }
     }
 }
@@ -84,6 +87,7 @@ pub async fn create_deck_profile(
         .tags(body.tags.unwrap_or_default())
         .power_level(body.power_level.as_deref())
         .other_tags(body.other_tags.unwrap_or_default())
+        .oracle_tags(body.oracle_tags.unwrap_or_default())
         .land_target(body.land_target)
         .price_target(body.price_target)
         .price_target_currency(body.price_target_currency)

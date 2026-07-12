@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, land_target, price_target, price_target_currency, user_id)\n               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)\n               RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags as \"tags?\", power_level, other_tags as \"other_tags?\", land_target, price_target, price_target_currency, share_token, user_id,\n                         0::bigint as \"card_count\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as \"commander_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = partner_commander_id) as \"partner_commander_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = background_id) as \"background_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = signature_spell_id) as \"signature_spell_name?\",\n                         (SELECT array_agg(DISTINCT ci)\n                            FROM scryfall_data sci, unnest(sci.color_identity) AS ci\n                           WHERE sci.id IN (commander_id, partner_commander_id, background_id, signature_spell_id)\n                              OR sci.id IN (SELECT dc2.scryfall_data_id FROM deck_cards dc2 WHERE dc2.deck_id = id AND dc2.board = 'deck')) as \"color_identity?: Vec<String>\"",
+  "query": "SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                      d.format, d.tags as \"tags?\", d.power_level, d.other_tags as \"other_tags?\", d.oracle_tags as \"oracle_tags?\", d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id,\n                      COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as \"card_count\",\n                      sd.name as \"commander_name?\",\n                      (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as \"partner_commander_name?\",\n                      (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as \"background_name?\",\n                      (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as \"signature_spell_name?\",\n                      (SELECT array_agg(DISTINCT ci)\n                         FROM scryfall_data sci, unnest(sci.color_identity) AS ci\n                        WHERE sci.id IN (d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id)\n                           OR sci.id IN (SELECT dc2.scryfall_data_id FROM deck_cards dc2 WHERE dc2.deck_id = d.id AND dc2.board = 'deck')) as \"color_identity?: Vec<String>\"\n               FROM decks d\n               LEFT JOIN deck_cards dc ON d.id = dc.deck_id\n               LEFT JOIN scryfall_data sd ON d.commander_id = sd.id\n               WHERE d.id = $1\n               GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                        d.format, d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id, sd.name",
   "describe": {
     "columns": [
       {
@@ -55,74 +55,67 @@
       },
       {
         "ordinal": 10,
+        "name": "oracle_tags?",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 11,
         "name": "land_target",
         "type_info": "Int4"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "price_target",
         "type_info": "Float8"
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "price_target_currency",
         "type_info": "Text"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "share_token",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "user_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "card_count",
         "type_info": "Int8"
       },
       {
-        "ordinal": 16,
+        "ordinal": 17,
         "name": "commander_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "partner_commander_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "background_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 19,
+        "ordinal": 20,
         "name": "signature_spell_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 20,
+        "ordinal": 21,
         "name": "color_identity?: Vec<String>",
         "type_info": "TextArray"
       }
     ],
     "parameters": {
       "Left": [
-        "Varchar",
-        "Uuid",
-        "Uuid",
-        "Uuid",
-        "Uuid",
-        "Text",
-        "Jsonb",
-        "Text",
-        "Jsonb",
-        "Int4",
-        "Float8",
-        "Text",
         "Uuid"
       ]
     },
@@ -137,18 +130,19 @@
       false,
       true,
       false,
+      false,
       true,
       true,
       true,
       true,
       false,
       null,
-      null,
+      false,
       null,
       null,
       null,
       null
     ]
   },
-  "hash": "c6839e0e6eab9cd9b1b7048e874c5c2f8068d8d8a77d0002c068310f6d82e757"
+  "hash": "3536fb64d6b56744fdfd60bae07b735c2af470afa54ed7f59cc8f9bef844e0c7"
 }

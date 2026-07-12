@@ -58,6 +58,9 @@ pub struct HttpCreateDeckProfile {
     /// Secondary, non-gameplay labels (snake_case strings). Absent or empty = none.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub other_tags: Option<Vec<String>>,
+    /// Granular oracle-tag slugs the deck declares. Absent or empty = none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub oracle_tags: Option<Vec<String>>,
     /// User-set land target. Absent = use the format-derived heuristic.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub land_target: Option<i32>,
@@ -82,6 +85,7 @@ impl HttpCreateDeckProfile {
             tags: None,
             power_level: None,
             other_tags: None,
+            oracle_tags: None,
             land_target: None,
             price_target: None,
             price_target_currency: None,
@@ -100,6 +104,7 @@ pub struct HttpCreateDeckProfileBuilder {
     tags: Option<Vec<String>>,
     power_level: Option<String>,
     other_tags: Option<Vec<String>>,
+    oracle_tags: Option<Vec<String>>,
     land_target: Option<i32>,
     price_target: Option<f64>,
     price_target_currency: Option<PriceCurrency>,
@@ -154,6 +159,12 @@ impl HttpCreateDeckProfileBuilder {
         self
     }
 
+    /// Sets the oracle-tags.
+    pub fn oracle_tags(mut self, oracle_tags: Option<Vec<String>>) -> Self {
+        self.oracle_tags = oracle_tags;
+        self
+    }
+
     /// Sets the land target.
     pub fn land_target(mut self, land_target: Option<i32>) -> Self {
         self.land_target = land_target;
@@ -184,6 +195,7 @@ impl HttpCreateDeckProfileBuilder {
             tags: self.tags,
             power_level: self.power_level,
             other_tags: self.other_tags,
+            oracle_tags: self.oracle_tags,
             land_target: self.land_target,
             price_target: self.price_target,
             price_target_currency: self.price_target_currency,
@@ -224,6 +236,10 @@ pub struct HttpUpdateDeckProfile {
     /// (empty/`null` clears all); absent leaves them unchanged. `#[serde(default)]`.
     #[serde(default)]
     pub other_tags: Opdate<Vec<String>>,
+    /// Oracle-tags with partial update semantics. `Set` replaces the full set
+    /// (empty/`null` clears all); absent leaves them unchanged. `#[serde(default)]`.
+    #[serde(default)]
+    pub oracle_tags: Opdate<Vec<String>>,
     /// Land target with partial update semantics. `Set(None)` clears the
     /// override (back to the format heuristic); absent leaves it unchanged.
     /// `#[serde(default)]` keeps older clients backward-compatible.
@@ -251,6 +267,7 @@ impl HttpUpdateDeckProfile {
             tags: Opdate::Unchanged,
             power_level: Opdate::Unchanged,
             other_tags: Opdate::Unchanged,
+            oracle_tags: Opdate::Unchanged,
             land_target: Opdate::Unchanged,
             price_target: Opdate::Unchanged,
             price_target_currency: Opdate::Unchanged,
@@ -269,6 +286,7 @@ pub struct HttpUpdateDeckProfileBuilder {
     tags: Opdate<Vec<String>>,
     power_level: Opdate<String>,
     other_tags: Opdate<Vec<String>>,
+    oracle_tags: Opdate<Vec<String>>,
     land_target: Opdate<i32>,
     price_target: Opdate<f64>,
     price_target_currency: Opdate<PriceCurrency>,
@@ -329,6 +347,12 @@ impl HttpUpdateDeckProfileBuilder {
         self
     }
 
+    /// Sets the oracle-tags update.
+    pub fn oracle_tags(mut self, oracle_tags: Opdate<Vec<String>>) -> Self {
+        self.oracle_tags = oracle_tags;
+        self
+    }
+
     /// Sets the land target update.
     pub fn land_target(mut self, land_target: Opdate<i32>) -> Self {
         self.land_target = land_target;
@@ -359,6 +383,7 @@ impl HttpUpdateDeckProfileBuilder {
             tags: self.tags,
             power_level: self.power_level,
             other_tags: self.other_tags,
+            oracle_tags: self.oracle_tags,
             land_target: self.land_target,
             price_target: self.price_target,
             price_target_currency: self.price_target_currency,
@@ -429,6 +454,9 @@ pub struct HttpSharedDeck {
     /// Secondary, non-gameplay labels (Budget, Jank, …).
     #[serde(default)]
     pub other_tags: Vec<DeckOtherTag>,
+    /// Granular oracle-tag slugs the deck declares.
+    #[serde(default)]
+    pub oracle_tags: Vec<String>,
     /// Commander card, if set.
     pub commander: Option<Card>,
     /// Partner commander card, if set.

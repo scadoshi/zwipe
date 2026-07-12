@@ -4,7 +4,8 @@ use crate::domain::{
     card::search_card::card_filter::price_currency::PriceCurrency,
     deck::{
         DeckName, DeckOtherTag, DeckTag, InvalidDeckOtherTag, InvalidDeckTag, InvalidDeckname,
-        InvalidPowerLevel, MAX_DECK_OTHER_TAGS, MAX_DECK_TAGS, PowerLevel,
+        InvalidPowerLevel, MAX_DECK_ORACLE_TAGS, MAX_DECK_OTHER_TAGS, MAX_DECK_TAGS, PowerLevel,
+        deck_oracle_tags::dedupe_oracle_tags,
         deck_other_tag::parse_other_tags,
         deck_tag::parse_tags,
         format::{Format, InvalidFormat},
@@ -37,6 +38,9 @@ pub enum InvalidCreateDeckProfile {
     /// More than [`MAX_DECK_OTHER_TAGS`] other-tags were supplied.
     #[error("a deck may have at most {MAX_DECK_OTHER_TAGS} other-tags")]
     TooManyOtherTags,
+    /// More than [`MAX_DECK_ORACLE_TAGS`] oracle tags were supplied.
+    #[error("a deck may have at most {MAX_DECK_ORACLE_TAGS} oracle tags")]
+    TooManyOracleTags,
 }
 
 /// Request to create a new deck profile.
@@ -60,6 +64,8 @@ pub struct CreateDeckProfile {
     pub power_level: Option<PowerLevel>,
     /// Secondary, non-gameplay labels (validated, deduped, at most [`MAX_DECK_OTHER_TAGS`]).
     pub other_tags: Vec<DeckOtherTag>,
+    /// Granular oracle-tag slugs (deduped, at most [`MAX_DECK_ORACLE_TAGS`]).
+    pub oracle_tags: Vec<String>,
     /// User-set land target. `None` falls back to the format heuristic.
     pub land_target: Option<i32>,
     /// User-set price target (budget). `None` = no budget.
@@ -91,6 +97,7 @@ impl CreateDeckProfile {
             tags: Vec::new(),
             power_level: None,
             other_tags: Vec::new(),
+            oracle_tags: Vec::new(),
             land_target: None,
             price_target: None,
             price_target_currency: None,
@@ -111,6 +118,7 @@ pub struct CreateDeckProfileBuilder {
     tags: Vec<String>,
     power_level: Option<String>,
     other_tags: Vec<String>,
+    oracle_tags: Vec<String>,
     land_target: Option<i32>,
     price_target: Option<f64>,
     price_target_currency: Option<PriceCurrency>,
@@ -165,6 +173,12 @@ impl CreateDeckProfileBuilder {
         self
     }
 
+    /// Sets the oracle-tag slugs (deduped and capped on build).
+    pub fn oracle_tags(mut self, oracle_tags: Vec<String>) -> Self {
+        self.oracle_tags = oracle_tags;
+        self
+    }
+
     /// Sets the land target.
     pub fn land_target(mut self, land_target: Option<i32>) -> Self {
         self.land_target = land_target;
@@ -200,6 +214,10 @@ impl CreateDeckProfileBuilder {
         if other_tags.len() > MAX_DECK_OTHER_TAGS {
             return Err(InvalidCreateDeckProfile::TooManyOtherTags);
         }
+        let oracle_tags = dedupe_oracle_tags(&self.oracle_tags);
+        if oracle_tags.len() > MAX_DECK_ORACLE_TAGS {
+            return Err(InvalidCreateDeckProfile::TooManyOracleTags);
+        }
         Ok(CreateDeckProfile {
             name,
             commander_id: self.commander_id,
@@ -210,6 +228,7 @@ impl CreateDeckProfileBuilder {
             tags,
             power_level,
             other_tags,
+            oracle_tags,
             land_target: self.land_target,
             price_target: self.price_target,
             price_target_currency: self.price_target_currency,

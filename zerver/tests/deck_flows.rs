@@ -13,6 +13,7 @@ mod common;
 use axum::http::StatusCode;
 use common::TestApp;
 use serde_json::json;
+use zwipe_core::http::{contracts::deck::HttpUpdateDeckProfile, helpers::Opdate};
 
 #[sqlx::test]
 async fn deck_profile_lifecycle(pool: sqlx::PgPool) {
@@ -186,4 +187,58 @@ async fn clone_creates_a_new_deck(pool: sqlx::PgPool) {
         .get(&format!("/api/deck/profile/{clone_id}"), Some(&token))
         .await;
     assert_eq!(clone_prof["name"], "Original Copy");
+}
+
+/// Deck-level oracle tags round-trip the wire: create dedupes + persists them,
+/// get reads them back, update replaces the set, and `[]` clears them.
+#[sqlx::test]
+async fn deck_oracle_tags_round_trip(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _uid) = app.register("otagger").await;
+
+    // create with a duplicate slug -> deduped on the way in
+    let (status, deck) = app
+        .post(
+            "/api/deck",
+            json!({ "name": "Otag Deck", "oracle_tags": ["spot-removal", "ramp", "spot-removal"] }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "create: {deck}");
+    assert_eq!(deck["oracle_tags"], json!(["spot-removal", "ramp"]));
+    let id = deck["id"].as_str().unwrap().to_string();
+
+    // get profile reads them back
+    let (status, prof) = app
+        .get(&format!("/api/deck/profile/{id}"), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::OK, "get: {prof}");
+    assert_eq!(prof["oracle_tags"], json!(["spot-removal", "ramp"]));
+
+    // update replaces the full set (body built via the contract builder, so all
+    // the update's required fields are present, like the real client sends)
+    let update_body = serde_json::to_value(
+        HttpUpdateDeckProfile::builder()
+            .oracle_tags(Opdate::Set(Some(vec!["lifegain".to_string()])))
+            .build(),
+    )
+    .unwrap();
+    let (status, upd) = app
+        .put(&format!("/api/deck/{id}"), update_body, Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::OK, "update: {upd}");
+    assert_eq!(upd["oracle_tags"], json!(["lifegain"]));
+
+    // Set to an empty vec clears them
+    let clear_body = serde_json::to_value(
+        HttpUpdateDeckProfile::builder()
+            .oracle_tags(Opdate::Set(Some(vec![])))
+            .build(),
+    )
+    .unwrap();
+    let (status, cleared) = app
+        .put(&format!("/api/deck/{id}"), clear_body, Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::OK, "clear: {cleared}");
+    assert_eq!(cleared["oracle_tags"], json!([]));
 }

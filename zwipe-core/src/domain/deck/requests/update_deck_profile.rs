@@ -4,7 +4,8 @@ use crate::domain::{
     card::search_card::card_filter::price_currency::PriceCurrency,
     deck::{
         DeckName, DeckOtherTag, DeckTag, InvalidDeckOtherTag, InvalidDeckTag, InvalidDeckname,
-        InvalidPowerLevel, MAX_DECK_OTHER_TAGS, MAX_DECK_TAGS, PowerLevel,
+        InvalidPowerLevel, MAX_DECK_ORACLE_TAGS, MAX_DECK_OTHER_TAGS, MAX_DECK_TAGS, PowerLevel,
+        deck_oracle_tags::dedupe_oracle_tags,
         deck_other_tag::parse_other_tags,
         deck_tag::parse_tags,
         format::{Format, InvalidFormat},
@@ -37,6 +38,9 @@ pub enum InvalidUpdateDeckProfile {
     /// More than [`MAX_DECK_OTHER_TAGS`] other-tags were supplied.
     #[error("a deck may have at most {MAX_DECK_OTHER_TAGS} other-tags")]
     TooManyOtherTags,
+    /// More than [`MAX_DECK_ORACLE_TAGS`] oracle tags were supplied.
+    #[error("a deck may have at most {MAX_DECK_ORACLE_TAGS} oracle tags")]
+    TooManyOracleTags,
     /// No fields specified for update.
     #[error("must update at least one field")]
     NoUpdates,
@@ -98,6 +102,9 @@ pub struct UpdateDeckProfile {
     /// Optional other-tags update. `Some` replaces the full set (empty clears
     /// all); `None` leaves them untouched.
     pub other_tags: Option<Vec<DeckOtherTag>>,
+    /// Optional oracle-tags update. `Some` replaces the full set (empty clears
+    /// all); `None` leaves them untouched.
+    pub oracle_tags: Option<Vec<String>>,
     /// Optional land target update. `Some(None)` clears the override (back to
     /// the format heuristic); `None` leaves it untouched.
     pub land_target: Option<Option<i32>>,
@@ -125,6 +132,7 @@ impl UpdateDeckProfile {
             tags: None,
             power_level: None,
             other_tags: None,
+            oracle_tags: None,
             land_target: None,
             price_target: None,
             price_target_currency: None,
@@ -145,6 +153,7 @@ pub struct UpdateDeckProfileBuilder {
     tags: Option<Option<Vec<String>>>,
     power_level: Option<Option<String>>,
     other_tags: Option<Option<Vec<String>>>,
+    oracle_tags: Option<Option<Vec<String>>>,
     land_target: Option<Option<i32>>,
     price_target: Option<Option<f64>>,
     price_target_currency: Option<Option<PriceCurrency>>,
@@ -209,6 +218,13 @@ impl UpdateDeckProfileBuilder {
         self
     }
 
+    /// Sets the oracle-tags update. Outer `Some` means "update"; the inner value
+    /// is the new full set (`None`/empty clears all). `None` leaves them untouched.
+    pub fn oracle_tags(mut self, oracle_tags: Option<Option<Vec<String>>>) -> Self {
+        self.oracle_tags = oracle_tags;
+        self
+    }
+
     /// Sets the land target update. Outer `Some` means "update"; inner `None`
     /// clears the override. `None` leaves it untouched.
     pub fn land_target(mut self, land_target: Option<Option<i32>>) -> Self {
@@ -243,6 +259,7 @@ impl UpdateDeckProfileBuilder {
             && self.tags.is_none()
             && self.power_level.is_none()
             && self.other_tags.is_none()
+            && self.oracle_tags.is_none()
             && self.land_target.is_none()
             && self.price_target.is_none()
             && self.price_target_currency.is_none()
@@ -278,6 +295,16 @@ impl UpdateDeckProfileBuilder {
                 Some(parsed)
             }
         };
+        let oracle_tags = match self.oracle_tags {
+            None => None,
+            Some(raw) => {
+                let deduped = dedupe_oracle_tags(&raw.unwrap_or_default());
+                if deduped.len() > MAX_DECK_ORACLE_TAGS {
+                    return Err(InvalidUpdateDeckProfile::TooManyOracleTags);
+                }
+                Some(deduped)
+            }
+        };
 
         Ok(UpdateDeckProfile {
             deck_id: self.deck_id,
@@ -290,6 +317,7 @@ impl UpdateDeckProfileBuilder {
             tags,
             power_level,
             other_tags,
+            oracle_tags,
             land_target: self.land_target,
             price_target: self.price_target,
             price_target_currency: self.price_target_currency,
