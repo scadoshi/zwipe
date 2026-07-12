@@ -2154,6 +2154,11 @@ footer {
     }
 }
 
+.sd-retry-row {
+    display: flex;
+    justify-content: center;
+}
+
 .sd-retry {
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
@@ -2164,7 +2169,6 @@ footer {
     padding: 0.45rem 1.3rem;
     box-shadow: var(--shadow-sm);
     cursor: pointer;
-    margin-top: 1rem;
     transition:
         color 0.15s,
         border-color 0.15s;
@@ -2173,6 +2177,11 @@ footer {
 .sd-retry:hover {
     border-color: var(--accent-primary);
     color: var(--accent-primary);
+}
+
+.sd-retry:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 @media (max-width: 640px) {
