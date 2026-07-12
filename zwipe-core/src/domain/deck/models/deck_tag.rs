@@ -535,6 +535,17 @@ impl DeckTag {
     /// too vague or niche to seed usefully return `&[]` (the user picks manually).
     pub fn oracle_tag_slugs(&self) -> &'static [&'static str] {
         match self {
+            Self::Aggro => &[
+                "attack-trigger",
+                "attacking-matters",
+                "attacking-matters-self",
+                "gives-haste",
+            ],
+            Self::AttackTriggers => &[
+                "attack-trigger",
+                "attacking-matters",
+                "attacking-matters-self",
+            ],
             Self::Aristocrats => &[
                 "sacrifice-outlet-creature",
                 "death-trigger",
