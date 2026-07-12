@@ -102,70 +102,63 @@ guesswork) is retired and `mechanical_categories` is repopulated from otags. Q1 
   `step N/5 …: starting/ok/FAILED (continuing)` and tallies failures, so one broken step
   can't skip the rest; the job exits non-zero if any step failed (for monitoring).
 
-**Retire the heuristic (Q1) — DISCOVERY + PARITY DONE 2026-07-11; implementation pending.**
+### STATUS (2026-07-11) — backend DONE + committed; frontend + rename remaining
 
-The `MechanicalCategory → oracle_tag-root(s)` map (each root expands through
-`oracle_tags.parent_ids`). Derived per-category vs the old heuristic measured live (`derived`
-= otag subtree, or `all_parts` for tokens):
+**BUILT + committed** (unpushed at time of writing; every commit additive → no client break;
+tests + clippy + nightly-fmt green; `.sqlx` regenerated where needed):
+- **Projection** `card_profiles.oracle_tags` + `refresh_card_oracle_tags` in zervice — `ac92b6a6`.
+- **Derivation** `outbound/sqlx/card/helpers/derive_categories.rs` — `CATEGORY_ROOTS` (18 otag
+  categories) recursive-CTE subtree expansion through `oracle_tags.parent_ids` + `Tokens` via
+  `all_parts`; writes `card_profiles.mechanical_categories` — `3798090a`.
+- **oracle_tag_gaps** `zwipe-core/.../mechanical_category/oracle_tag_gaps.rs` —
+  `classify_oracle_tag_gaps` for the 4 stragglers (Pump/Stax/Protection/GraveyardHate), documented
+  self-explaining header. Additive (`classify.rs` still present) — `8bdad628`.
+- **Wiring** `CardService::derive_card_categories` (SQL derive 18+Tokens, then a Rust merge pass
+  adding the 4 gaps) **replaces** `classify_untagged_cards` in `zervice` step 3 — `b7dbd9d0`.
+  ⚠ **Retirement goes live on the next zervice run after this deploys** (nightly 4am / manual
+  `./zervice`) — same wire shape, better values, reversible.
+- **Display field** `CardProfile.oracle_tags: Vec<String>` (`#[serde(default)]`) on served cards;
+  `.sqlx` regenerated + `prepare --check` passes — `ff57c776`.
+- **Filter** `oracle_tags_contains_any/all/excludes` end-to-end (criteria → getters → in-memory
+  `matches` → builder fields/default/clash/getters/setters/construction → SQL `?|`/`@>`/`NOT ?|`
+  on `card_profiles.oracle_tags`) + card_filter_parity case — `4411204e`.
+- **Deploy hardening (earlier):** whole `zervice` pipeline is **non-fatal per step** with
+  `step N/5 …: starting/ok/FAILED` logging + non-zero exit on any failure.
 
-*Clean (19, ship):* removal→`removal`, tutor→`tutor`, draw→`card-advantage`,
-counterspell→`counterspell`, evasion→`evasion`, lifegain→`lifegain`, mill→`mill`, burn→`burn`,
-wipe→`sweeper`, blink→`flicker`, drain→`drain-life`, sacrifice→`sacrifice-outlet`,
-untap→`untapper`, recursion→`recursion`+`reanimate`, ramp→`ramp`+`mana-producer`,
-counters→`gains/gives/repeatable-pp-counters`+`counters-matter`, copy→`copy`+`clone`,
-graveyard_hate→`hate-graveyard` (thin but likely correct — other `*-graveyard` are recursion).
-- **Tokens → `all_parts` component=token** (structured Scryfall token metadata, 4,614 cards) —
-  beats otags (1,282) and the old regex. One SQL condition, not an otag subtree.
-- **Finisher → DROPPED** (owner-approved). Old rule was `power≥6 creature OR "you win the game"
-  OR "extra turn"` — an incoherent grab-bag. No coherent otag equivalent.
+**Deliberately DEFERRED (NOT done):** the `MechanicalCategory → CardRole` rename and the
+`mechanical_categories → card_roles` wire migration (Phase M). The retirement shipped **without**
+the rename, so `MechanicalCategory` / the `mechanical_category/` module / `classify.rs` (24-branch)
+all still exist. `classify.rs` is KEPT as the revert safety net until the retirement is proven by
+a prod zervice run, then deleted (cleanup below).
 
-*Resolved — Option A, FINAL (`open-questions.md` §1):* anthem fixed by the mass-buff swap
-(89% agree). **Pump / Stax / Protection / GraveyardHate have no clean otag concept → keep
-their heuristic** (their rules are simple + stable, not the brittle guesswork).
+### ▶ RESUME HERE (next session) — remaining Phase 2
 
-**Implementation (Option A):**
-- **Rename first (free, no wire impact):** `MechanicalCategory → CardRole`, module
-  `card/models/mechanical_category/ → card_role/`. Renaming the *type* doesn't touch the
-  `mechanical_categories` JSON key/column (those move in the migration phase below).
-- **20 categories → otags:** author the `CardRole → otag-root(s)` map (pure static roots on
-  the enum in `zwipe-core`); derive via a recursive-CTE subtree expansion of the map.
-- **Tokens → `all_parts`** component=token (SQL condition).
-- **Pump / Stax / Protection / GraveyardHate → keep heuristic:** trim `classify.rs` to those
-  4 branches; **rename** it `card_role/oracle_tag_gaps.rs`, fn
-  `classify_by_heuristics → classify_oracle_tag_gaps`, with a header documenting it now only
-  fills the gaps otags can't express. Delete the other 20 branches + Finisher.
-- **Combine + write:** a derivation step produces `card_profiles.mechanical_categories` from
-  (otag-subtree 20) ∪ (`all_parts` Tokens) ∪ (`oracle_tag_gaps` 4), replacing
-  `classify_untagged_cards` in `zervice.rs`. `card_profiles.oracle_tags` (raw otags) stays.
-- `classify.rs` is **not deleted — demoted** to the 4 stragglers; break-glass history preserved.
+1. **`GET /api/oracle-tags` endpoint** — owner-decided (option 1): serve ALL **4,494** catalog
+   tags (slug, label, description, parent_ids) read-only; the frontend decides display. New
+   handler + route in `zwipe-core/http/paths.rs` + `zerver/.../handlers/` + a zwiper client
+   module + an `oracle_tags` repo read. Additive.
+2. **Frontend otag filter UI** — searchable picker (generalize
+   `zwiper/.../deck/components/tag_select.rs`) fed by the endpoint, beside
+   `deck/card/filter/category.rs` / hosted in `card_filter_sheet.rs`, wiring the already-built
+   `set_oracle_tags_contains_any/all/excludes` builder setters. Owner wants: show ~40-80 curated
+   + a "show all" button (frontend-side; the endpoint serves everything). Also surface
+   `oracle_tags` on the swipe card (`card/components/card_info.rs`).
+3. **Cleanup (only after retirement proven in a prod zervice run):** delete `classify.rs`
+   (24-branch) + `classify_untagged_cards` from `ports.rs`/`services.rs`/`ErasedCardService`.
+4. **`CardRole` rename** (65 refs, all crates) + **Phase M** (`mechanical_categories → card_roles`
+   version-gated wire migration) — see `open-questions.md` §1 and Phase M below.
 
-**Shared (`zwipe-core`):**
-- `.../search_card/card_filter/criteria/mod.rs` — add `oracle_tags_contains_any` /
-  `_contains_all` / `_excludes` (`Option<Vec<String>>`), plus getters/setters/builder/
-  `matches.rs`/`query.rs`. All **`#[serde(default)]`**. Keep the legacy
-  `mechanical_categories_*` criteria accepted (deprecated).
-- `.../card/models/card_profile.rs` — add `oracle_tags: Vec<OracleTag>` to `CardProfile`,
-  **`#[serde(default)]`** (additive, granular). The existing `mechanical_categories` field is
-  unchanged in Phase 2 (its type is now `Vec<CardRole>`); its wire rename to `card_roles` is
-  the dedicated migration phase below, **not** Phase 2.
+### The authored map (in `derive_categories.rs` `CATEGORY_ROOTS` + `oracle_tag_gaps.rs`)
 
-**Backend:**
-- `zerver/src/lib/outbound/sqlx/card/mod.rs` (~912-926) — add oracle_tag jsonb predicates
-  (`oracle_tags ?|`, `@>`, `NOT ?|`) beside the `mechanical_categories` ones, over
-  `card_profiles.oracle_tags`.
-
-**Frontend (`zwiper`):**
-- New oracle_tag include/exclude filter beside `.../deck/card/filter/category.rs`, hosted in
-  `card_filter_sheet.rs`. The existing category filter UI is untouched (now oracle_tag-accurate).
-  Surface oracle_tags on the swipe card in `.../card/components/card_info.rs`.
-
-**Wire & compat:** Phase 2 is additive — the new `oracle_tags` field + `oracle_tags_*` criteria
-are `#[serde(default)]`, and the internal `MechanicalCategory → CardRole` rename doesn't touch
-the `mechanical_categories` JSON key. **No bump.** (The `mechanical_categories → card_roles`
-wire rename is its own version-gated phase — see below.)
-
-**Exit:** oracle_tag filters work end-to-end; oracle_tags visible on served cards;
-`classify.rs` gone; categories oracle_tag-derived and parity-validated.
+*18 otag-mapped* (root(s) expand through `oracle_tags.parent_ids`): removal→`removal`,
+tutor→`tutor`, draw→`card-advantage`, counterspell→`counterspell`, evasion→`evasion`,
+lifegain→`lifegain`, mill→`mill`, burn→`burn`, wipe→`sweeper`, blink→`flicker`, drain→`drain-life`,
+sacrifice→`sacrifice-outlet`, untap→`untapper`, recursion→`recursion`+`reanimate`,
+ramp→`ramp`+`mana-producer`, counters→`gains/gives/repeatable-pp-counters`+`counters-matter`,
+copy→`copy`+`clone`, anthem→`anthem`+`keyword-anthem`+`power-boost-to-all`+`toughness-boost-to-all`.
+*Tokens* → `all_parts` component=token (4,614 cards). *Finisher* → DROPPED (owner-approved).
+*Pump/Stax/Protection/GraveyardHate* → heuristic (`oracle_tag_gaps.rs`) — no clean otag concept;
+parity confirmed keeping their simple regex beats a lossy otag mapping.
 
 ---
 

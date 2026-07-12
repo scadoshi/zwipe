@@ -1,10 +1,13 @@
 # Oracle tags (otags) — plan index
 
-**Status: BUILDING (updated 2026-07-11).** Phase 1 (ingest) is **shipped + committed**; all
-7 open questions are resolved (`open-questions.md`). Note Q1 was **revised after Phase 1**:
-measured coverage showed otags supersede our heuristic, so the plan now **retires
-`classify.rs`** (was "complement + seed") and the old heuristic-backfill phase is cut. Scope
-is grounded in a codebase map.
+**Status: BUILDING (updated 2026-07-11).** Phase 1 (ingest) shipped; **Phase 2 backend is
+DONE + committed** — projection, derivation, `oracle_tag_gaps`, zervice wiring (retirement),
+`CardProfile.oracle_tags` display field, and the `oracle_tags` filter (all additive, tested,
+committed; see `sequencing.md` Phase 2 §STATUS for commit hashes). **▶ Resume at:** the
+`GET /api/oracle-tags` endpoint (owner-decided: serves all 4,494 tags) + the frontend otag
+filter UI — then cleanup (`classify.rs` delete), `CardRole` rename, and Phase M wire migration.
+All 7 open questions resolved; Q1 was revised after Phase 1 (otags supersede the heuristic →
+`classify.rs` retired, kept only for the 4 stragglers + as a revert safety net).
 
 ## One sentence
 
@@ -51,10 +54,12 @@ Full phase-by-phase build (files touched + per-phase additive-wire guarantee) li
 
 0. **Spike** — confirm the bulk file shape (keying, descriptions). ✅ done
 1. **Ingest** — `oracle_tags` catalog + `card_oracle_tags` + daily `zervice` sync. ✅ **shipped**
-2. **Filtering + retire heuristic** — `card_profiles.oracle_tags` projection, otag filter fields,
-   otags on served cards; rename `MechanicalCategory→CardRole`, trim `classify.rs→oracle_tag_gaps.rs`
-   (keep 4 stragglers), derive the other 20 categories + Tokens from otags/`all_parts`.
-   (Wire rename `mechanical_categories→card_roles` is version-gated Phase M.)
+2. **Filtering + retire heuristic** — backend ✅ **DONE + committed** (projection, derivation of
+   18 categories + Tokens, `oracle_tag_gaps` for the 4, zervice wiring, `CardProfile.oracle_tags`
+   display field, `oracle_tags` filter). **▶ Remaining:** `GET /api/oracle-tags` endpoint (serves
+   all 4,494) + frontend otag filter UI, then `classify.rs` delete, `CardRole` rename, Phase M.
+   Full status + commits in `sequencing.md` Phase 2 §STATUS. (`CardRole` rename was **deferred**,
+   not done — retirement shipped keeping `MechanicalCategory`/`classify.rs`.)
 3. **Deck otags** — `decks.oracle_tags` + archetype→otag seeding + searchable picker.
 4. **Serving** — one small `W_ORACLE_TAG` correlation term in the ranking query.
 5. **Signal collection** — generalized-context per-otag signal, shipped dark.
