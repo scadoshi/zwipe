@@ -10,14 +10,14 @@
 
 use dioxus::prelude::*;
 use std::collections::BTreeMap;
-use zwipe_core::domain::card::card_role::CardRole;
+use zwipe_core::domain::card::card_role::role_label;
 
 /// Card roles as chips; expandable to their grouped oracle tags, plus an "Other
 /// tags" bucket. `tags_by_role` is keyed by role slug (`CardRole`'s
 /// snake_case form); `other_tags` are the uncategorized functional tags.
 #[component]
 pub fn CardRoleChips(
-    roles: Vec<CardRole>,
+    roles: Vec<String>,
     tags_by_role: BTreeMap<String, Vec<String>>,
     other_tags: Vec<String>,
     /// Optional help affordance rendered beside the "Card roles" label (e.g.
@@ -34,12 +34,9 @@ pub fn CardRoleChips(
     // is expandable iff it has tags; empty roles render as plain chips.
     let mut items: Vec<(String, Vec<String>)> = roles
         .iter()
-        .map(|r| {
-            let tags = tags_by_role
-                .get(&r.to_string())
-                .cloned()
-                .unwrap_or_default();
-            (r.display_name().to_string(), tags)
+        .map(|slug| {
+            let tags = tags_by_role.get(slug).cloned().unwrap_or_default();
+            (role_label(slug), tags)
         })
         .collect();
     if !other_tags.is_empty() {

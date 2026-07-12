@@ -15,7 +15,8 @@
 //! }
 //! ```
 
-use crate::domain::card::{Card, card_role::CardRole, scryfall_data::colors::Color};
+use crate::domain::card::{Card, card_role::role_label, scryfall_data::colors::Color};
+use std::collections::BTreeMap;
 
 /// Grouping strategies for partitioning cards.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -119,46 +120,39 @@ impl GroupCards for Vec<Card> {
     }
 }
 
-/// Groups cards by mechanical category. Cards with multiple categories
-/// appear in each matching group (cloned). Cards with no categories
-/// go into "uncategorized".
+/// Groups cards by card role. Cards with multiple roles appear in each matching
+/// group (cloned); cards with no roles go into "uncategorized". Buckets are keyed
+/// by the card's role **slugs** (`card_profile.card_roles`), so a server-added
+/// role groups without a client release; labels come from [`role_label`].
 fn group_by_category(cards: Vec<Card>) -> Vec<CardGroup> {
-    let all_cats = CardRole::all();
-    let mut buckets: Vec<Vec<Card>> = vec![Vec::new(); all_cats.len() + 1]; // +1 for uncategorized
+    // slug -> its cards, ordered by slug (BTreeMap) for a stable display order.
+    let mut buckets: BTreeMap<String, Vec<Card>> = BTreeMap::new();
+    let mut uncategorized: Vec<Card> = Vec::new();
 
-    let uncategorized_idx = all_cats.len();
     for card in cards {
         if card.card_profile.card_roles.is_empty() {
-            if let Some(bucket) = buckets.get_mut(uncategorized_idx) {
-                bucket.push(card);
-            }
+            uncategorized.push(card);
         } else {
-            let mut placed = false;
-            for cat in &card.card_profile.card_roles {
-                if let Some(idx) = all_cats.iter().position(|c| c == cat)
-                    && let Some(bucket) = buckets.get_mut(idx)
-                {
-                    bucket.push(card.clone());
-                    placed = true;
-                }
-            }
-            if !placed && let Some(bucket) = buckets.get_mut(uncategorized_idx) {
-                bucket.push(card);
+            for slug in &card.card_profile.card_roles {
+                buckets.entry(slug.clone()).or_default().push(card.clone());
             }
         }
     }
 
-    all_cats
-        .iter()
-        .map(|c| c.display_name())
-        .chain(["uncategorized"])
-        .zip(buckets)
-        .filter(|(_, cards)| !cards.is_empty())
-        .map(|(label, cards)| CardGroup {
-            label: label.to_string(),
+    let mut groups: Vec<CardGroup> = buckets
+        .into_iter()
+        .map(|(slug, cards)| CardGroup {
+            label: role_label(&slug),
             cards,
         })
-        .collect()
+        .collect();
+    if !uncategorized.is_empty() {
+        groups.push(CardGroup {
+            label: "uncategorized".to_string(),
+            cards: uncategorized,
+        });
+    }
+    groups
 }
 
 /// Returns the bucket index for a card under the given grouping option.
