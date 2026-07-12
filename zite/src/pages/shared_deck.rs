@@ -106,6 +106,7 @@ fn CardRow(
             card,
             qty,
             expanded_card,
+            show_classification: true,
             // Star indicator on starred rows only; no Star button (read-only).
             mvp: mvp.then_some(true),
             on_image: move |()| {
