@@ -112,8 +112,14 @@ impl MetricsRepository for Postgres {
 
         // First-party suggestion signal: aggregate per-(commander, card) tallies.
         // Pure aggregate — no user_id. Clamped above, so the list is bounded and
-        // each tally fits the BIGINT accumulation.
+        // each tally fits the BIGINT accumulation. Keyed on the commander, so a
+        // signal with no commander (a non-Commander deck) is skipped here — it has
+        // no lead key for this table and instead feeds the otag-context signal
+        // below via its deck's (format, CI).
         for sig in &batch.signals {
+            let Some(commander) = sig.commander_oracle_id else {
+                continue;
+            };
             query!(
                 r#"INSERT INTO commander_card_signal
                        (commander_oracle_id, card_oracle_id, shown, added, skipped, maybed, removed, updated_at)
@@ -125,7 +131,7 @@ impl MetricsRepository for Postgres {
                        maybed     = commander_card_signal.maybed   + EXCLUDED.maybed,
                        removed    = commander_card_signal.removed  + EXCLUDED.removed,
                        updated_at = NOW()"#,
-                sig.commander_oracle_id,
+                commander,
                 sig.card_oracle_id,
                 sig.shown as i64,
                 sig.added as i64,
@@ -139,8 +145,12 @@ impl MetricsRepository for Postgres {
         }
 
         // Per-user mirror of the aggregate signal: same deltas, user-keyed.
-        // Feeds future personalization; nothing consumes it yet.
+        // Feeds future personalization; nothing consumes it yet. Same
+        // commander-keyed skip as above for commander-less decks.
         for sig in &batch.signals {
+            let Some(commander) = sig.commander_oracle_id else {
+                continue;
+            };
             query!(
                 r#"INSERT INTO user_card_signal
                        (user_id, commander_oracle_id, card_oracle_id, shown, added, skipped, maybed, removed, updated_at)
@@ -153,7 +163,7 @@ impl MetricsRepository for Postgres {
                        removed    = user_card_signal.removed  + EXCLUDED.removed,
                        updated_at = NOW()"#,
                 user_id,
-                sig.commander_oracle_id,
+                commander,
                 sig.card_oracle_id,
                 sig.shown as i64,
                 sig.added as i64,
@@ -215,7 +225,7 @@ impl MetricsRepository for Postgres {
             let deck_ids: Vec<Uuid> = batch
                 .signals
                 .iter()
-                .filter(|s| s.commander_oracle_id.is_nil())
+                .filter(|s| s.commander_oracle_id.is_none())
                 .filter_map(|s| s.deck_id)
                 .collect();
             let mut deck_context: HashMap<Uuid, String> = HashMap::new();
@@ -248,8 +258,8 @@ impl MetricsRepository for Postgres {
             // Aggregate gesture counts per (context_key, otag), then upsert once each.
             let mut otag_tallies: HashMap<(String, String), OtagTally> = HashMap::new();
             for sig in &batch.signals {
-                let context_key = if !sig.commander_oracle_id.is_nil() {
-                    format!("commander:{}", sig.commander_oracle_id)
+                let context_key = if let Some(commander) = sig.commander_oracle_id {
+                    format!("commander:{commander}")
                 } else if let Some(key) = sig.deck_id.and_then(|id| deck_context.get(&id)) {
                     key.clone()
                 } else {

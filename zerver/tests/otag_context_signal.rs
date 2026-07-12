@@ -95,15 +95,15 @@ async fn non_commander_deck_credits_format_and_color_identity(pool: sqlx::PgPool
     .await
     .unwrap();
 
-    // No commander; deck_id carries the context. A future non-EDH client sends
-    // this shape — older clients never do, so this branch is dark until they ship.
+    // No commander: the delta OMITS commander_oracle_id (→ None), and deck_id
+    // carries the context. A future non-EDH client sends this shape — older
+    // clients always send a commander, so this branch is dark until they ship.
     let (status, _) = app
         .post(
             "/api/metrics/usage",
             json!({
                 "swipes_right": 1, "swipes_left": 0, "swipes_up": 0, "swipes_down": 0, "searches": 0,
                 "signals": [{
-                    "commander_oracle_id": Uuid::nil().to_string(),
                     "card_oracle_id": blaze_oracle.to_string(),
                     "deck_id": deck_id.to_string(),
                     "shown": 1, "added": 1, "skipped": 0, "maybed": 0, "removed": 0
@@ -125,6 +125,16 @@ async fn non_commander_deck_credits_format_and_color_identity(pool: sqlx::PgPool
         (added, shown),
         (1, 1),
         "credited under the (format, CI) context derived from the deck",
+    );
+
+    // A commander-less signal must NOT pollute the commander-keyed tables.
+    let commander_rows: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM commander_card_signal")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        commander_rows, 0,
+        "no commander → nothing written to commander_card_signal",
     );
 }
 
@@ -157,7 +167,6 @@ async fn deck_id_ownership_is_enforced(pool: sqlx::PgPool) {
             json!({
                 "swipes_right": 1, "swipes_left": 0, "swipes_up": 0, "swipes_down": 0, "searches": 0,
                 "signals": [{
-                    "commander_oracle_id": Uuid::nil().to_string(),
                     "card_oracle_id": blaze_oracle.to_string(),
                     "deck_id": deck_id.to_string(),
                     "shown": 1, "added": 1, "skipped": 0, "maybed": 0, "removed": 0
@@ -193,7 +202,6 @@ async fn signal_without_commander_or_deck_credits_no_otag_rows(pool: sqlx::PgPoo
             json!({
                 "swipes_right": 1, "swipes_left": 0, "swipes_up": 0, "swipes_down": 0, "searches": 0,
                 "signals": [{
-                    "commander_oracle_id": Uuid::nil().to_string(),
                     "card_oracle_id": shock_oracle.to_string(),
                     "shown": 1, "added": 1, "skipped": 0, "maybed": 0, "removed": 0
                 }]
