@@ -3,10 +3,8 @@
 //! Cards can have multiple categories (e.g. Sol Ring = Ramp,
 //! Lightning Bolt = Burn + Removal).
 
-mod classify;
 mod oracle_tag_gaps;
 
-pub use classify::classify_by_heuristics;
 pub use oracle_tag_gaps::classify_oracle_tag_gaps;
 
 use serde::{Deserialize, Serialize};

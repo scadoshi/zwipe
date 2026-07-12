@@ -21,12 +21,8 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use zwipe_core::domain::card::{
-    Card,
-    card_profile::CardProfile,
-    mechanical_category::{classify_by_heuristics, classify_oracle_tag_gaps},
-    oracle_tag::OracleTag,
-    scryfall_data::ScryfallData,
-    search_card::card_filter::CardQuery,
+    Card, card_profile::CardProfile, mechanical_category::classify_oracle_tag_gaps,
+    oracle_tag::OracleTag, scryfall_data::ScryfallData, search_card::card_filter::CardQuery,
 };
 
 /// PostgreSQL parameter limit per query (~65k parameters).
@@ -100,36 +96,6 @@ impl<R: CardRepository> CardService for Service<R> {
         let zervice_metrics = self.repo.record_zervice_metrics(&zervice_metrics).await?;
         tracing::info!("sync complete: {}", zervice_metrics);
         Ok(zervice_metrics)
-    }
-
-    async fn classify_untagged_cards(&self, batch_size: usize) -> anyhow::Result<(u32, u32)> {
-        let all_ids = self.repo.get_unclassified_card_ids().await?;
-        let total = all_ids.len() as u32;
-        if total == 0 {
-            return Ok((0, 0));
-        }
-
-        let mut classified = 0u32;
-
-        for chunk in all_ids.chunks(batch_size) {
-            let cards = self.repo.get_cards_batch(chunk).await?;
-
-            let updates: Vec<_> = cards
-                .iter()
-                .map(|card| {
-                    let cats = classify_by_heuristics(card);
-                    (card.scryfall_data.id, cats)
-                })
-                .filter(|(_, cats)| !cats.is_empty())
-                .collect();
-
-            classified += updates.len() as u32;
-            if !updates.is_empty() {
-                self.repo.update_mechanical_categories(&updates).await?;
-            }
-        }
-
-        Ok((classified, total))
     }
 
     async fn derive_card_categories(&self, batch_size: usize) -> anyhow::Result<(u32, u32)> {
