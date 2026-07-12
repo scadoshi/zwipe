@@ -22,6 +22,11 @@ pub fn CardRoleChips(
     roles: Vec<CardRole>,
     tags_by_role: BTreeMap<String, Vec<String>>,
     other_tags: Vec<String>,
+    /// Optional help affordance rendered beside the "Card roles" label (e.g.
+    /// an `InfoButton`). Left to the consumer since this crate can't depend
+    /// on zwiper's session-aware hint plumbing.
+    #[props(default)]
+    help: Option<Element>,
 ) -> Element {
     if roles.is_empty() && other_tags.is_empty() {
         return rsx! {};
@@ -44,13 +49,17 @@ pub fn CardRoleChips(
     }
 
     let mut open = use_signal(|| None::<usize>);
+    // `shown` holds the last-opened index and is NOT cleared on close, so the
+    // revealed tags stay mounted while the container animates collapsing. Clearing
+    // it (like `open`) would yank the DOM node instantly and snap the close shut.
+    let mut shown = use_signal(|| None::<usize>);
     let open_idx = open();
-    let reveal_tags: Option<Vec<String>> = open_idx.and_then(|i| items.get(i)).map(|(_, tags)| {
+    let reveal_tags: Option<Vec<String>> = shown().and_then(|i| items.get(i)).map(|(_, tags)| {
         tags.iter()
             .map(|t| prettify_oracle_tag_slug(t))
             .collect::<Vec<_>>()
     });
-    let reveal_class = if reveal_tags.is_some() {
+    let reveal_class = if open_idx.is_some() {
         "keyword-reveal open"
     } else {
         "keyword-reveal"
@@ -59,6 +68,9 @@ pub fn CardRoleChips(
     rsx! {
         div { class: "card-roles",
             span { class: "chips-label", "Card roles" }
+            if let Some(help) = help {
+                {help}
+            }
             div { class: "keyword-chips",
                 for (i , (label , tags)) in items.iter().enumerate() {
                     if tags.is_empty() {
@@ -73,6 +85,7 @@ pub fn CardRoleChips(
                                     open.set(None);
                                 } else {
                                     open.set(Some(i));
+                                    shown.set(Some(i));
                                 }
                             },
                             "{label}"
