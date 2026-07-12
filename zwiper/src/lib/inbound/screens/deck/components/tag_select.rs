@@ -16,19 +16,22 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
-use zwipe_core::domain::deck::{DeckTag, MAX_DECK_TAGS};
+use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
 
-/// In-place tag picker. Toggled by `open`; mutates `selected_tags` directly.
-/// `on_close` returns to the form.
+/// In-place tag picker. Toggled by `open`; mutates `selected_tags` (slugs) directly.
+/// `on_close` returns to the form. Options come from the server-delivered
+/// `catalog` (`GET /api/deck/tags`), so a new deck tag is selectable without a
+/// client release.
 #[component]
 pub(crate) fn TagSelect(
     open: Signal<bool>,
     mut selected_tags: Signal<Vec<String>>,
+    catalog: Vec<DeckTagView>,
     on_close: EventHandler<()>,
 ) -> Element {
     let toast = use_toast();
     let mut query = use_signal(String::new);
-    let mut focused = use_signal(|| Option::<DeckTag>::None);
+    let mut focused = use_signal(|| Option::<DeckTagView>::None);
     let hint_open = use_signal(|| false);
     // Snapshot the selection (tag slugs) when the picker opens, so Cancel reverts.
     let mut snapshot = use_signal(Vec::<String>::new);
@@ -44,12 +47,12 @@ pub(crate) fn TagSelect(
         "screen swipe-select-screen"
     };
 
-    let results: Vec<DeckTag> = if open() {
+    let results: Vec<DeckTagView> = if open() {
         let q = query().to_lowercase();
-        DeckTag::all()
+        catalog
             .iter()
-            .copied()
-            .filter(|t| q.is_empty() || t.display_name().to_lowercase().contains(&q))
+            .filter(|t| q.is_empty() || t.display_name.to_lowercase().contains(&q))
+            .cloned()
             .collect()
     } else {
         Vec::new()
@@ -90,8 +93,8 @@ pub(crate) fn TagSelect(
 
                         div { class: "tag-def-bar",
                             if let Some(tag) = focused() {
-                                div { class: "tag-def-name", "{tag.display_name()}" }
-                                div { class: "tag-def-text", "{tag.description()}" }
+                                div { class: "tag-def-name", "{tag.display_name}" }
+                                div { class: "tag-def-text", "{tag.description}" }
                             } else {
                                 div { class: "tag-def-name", "Hint" }
                                 div { class: "tag-def-text", "Tap a tag to see its definition here." }
@@ -104,29 +107,36 @@ pub(crate) fn TagSelect(
                             div { class: "chip-unselected", "No results" }
                         } else {
                             for tag in results {
-                                div {
-                                    key: "{tag}",
-                                    class: if selected_tags().contains(&tag.to_string()) { "chip selected" } else { "chip" },
-                                    onclick: move |_| {
-                                        focused.set(Some(tag));
-                                        // Clear the search so the full grid returns after picking.
-                                        query.set(String::new());
-                                        let slug = tag.to_string();
-                                        let mut current = selected_tags();
-                                        if let Some(pos) = current.iter().position(|t| *t == slug) {
-                                            current.remove(pos);
-                                            selected_tags.set(current);
-                                        } else if current.len() < MAX_DECK_TAGS {
-                                            current.push(slug);
-                                            selected_tags.set(current);
-                                        } else {
-                                            toast.warning(
-                                                format!("You may only choose up to {MAX_DECK_TAGS} tags"),
-                                                ToastOptions::default().duration(Duration::from_millis(2000)),
-                                            );
+                                {
+                                    let slug = tag.slug.clone();
+                                    let label = tag.display_name.clone();
+                                    let view = tag;
+                                    let is_selected = selected_tags().contains(&slug);
+                                    rsx! {
+                                        div {
+                                            key: "{slug}",
+                                            class: if is_selected { "chip selected" } else { "chip" },
+                                            onclick: move |_| {
+                                                focused.set(Some(view.clone()));
+                                                // Clear the search so the full grid returns after picking.
+                                                query.set(String::new());
+                                                let mut current = selected_tags();
+                                                if let Some(pos) = current.iter().position(|t| *t == slug) {
+                                                    current.remove(pos);
+                                                    selected_tags.set(current);
+                                                } else if current.len() < MAX_DECK_TAGS {
+                                                    current.push(slug.clone());
+                                                    selected_tags.set(current);
+                                                } else {
+                                                    toast.warning(
+                                                        format!("You may only choose up to {MAX_DECK_TAGS} tags"),
+                                                        ToastOptions::default().duration(Duration::from_millis(2000)),
+                                                    );
+                                                }
+                                            },
+                                            "{label}"
                                         }
-                                    },
-                                    "{tag.display_name()}"
+                                    }
                                 }
                             }
                         }

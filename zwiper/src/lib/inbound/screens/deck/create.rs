@@ -16,7 +16,10 @@ use crate::{
         },
         router::Router,
     },
-    outbound::client::{ZwipeClient, deck::create_deck::ClientCreateDeck},
+    outbound::client::{
+        ZwipeClient,
+        deck::{create_deck::ClientCreateDeck, get_deck_tags::ClientGetDeckTags},
+    },
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -27,7 +30,7 @@ use zwipe_core::{
         auth::models::session::Session,
         card::{Card, search_card::card_filter::price_currency::PriceCurrency},
         deck::{
-            DeckName, DeckOtherTag, MAX_DECK_ORACLE_TAGS, PowerLevel, format::Format,
+            DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel, format::Format,
             seed_oracle_tags,
         },
         user::models::hints::HINT_CREATE_DECK,
@@ -53,6 +56,13 @@ pub fn CreateDeck() -> Element {
     let mut deck_name_error: Signal<Option<String>> = use_signal(|| None);
     let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
     let selected_tags: Signal<Vec<String>> = use_signal(Vec::new);
+    // Server-driven deck-tag catalog for the picker (no fallback; empty until loaded).
+    let deck_tags_catalog: Resource<Vec<DeckTagView>> = use_resource(move || async move {
+        match session() {
+            Some(s) => auth_client().get_deck_tags(&s).await.unwrap_or_default(),
+            None => Vec::new(),
+        }
+    });
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
     let mut partner_commander: Signal<Option<Card>> = use_signal(|| None);
@@ -279,6 +289,7 @@ pub fn CreateDeck() -> Element {
             TagSelect {
                 open: show_tags_select,
                 selected_tags,
+                catalog: deck_tags_catalog().unwrap_or_default(),
                 on_close: move |_| {
                     show_tags_select.set(false);
                     // Reconcile seeded oracle tags with the final deck-tag set:
