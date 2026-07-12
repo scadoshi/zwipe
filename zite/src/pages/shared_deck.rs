@@ -18,7 +18,7 @@ use zwipe_core::{
                 group_cards::{GroupByOption, GroupCards},
             },
         },
-        deck::{Board, DeckEntry, deck_metrics::mainboard_total_price},
+        deck::{Board, DeckEntry, deck_metrics::mainboard_total_price, deck_tag_label},
     },
     http::contracts::deck::HttpSharedDeck,
 };
@@ -522,7 +522,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                         span { key: "{name}", class: "stat-chip stat-chip-zone", "{name}" }
                     }
                     for tag in deck.tags.iter() {
-                        span { key: "{tag}", class: "stat-chip stat-chip-tag", "{tag.display_name()}" }
+                        span { key: "{tag}", class: "stat-chip stat-chip-tag", "{deck_tag_label(tag)}" }
                     }
                     for tag in deck.other_tags.iter() {
                         span { key: "{tag}", class: "stat-chip stat-chip-other", "{tag.display_name()}" }

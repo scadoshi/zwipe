@@ -710,6 +710,31 @@ impl DeckTag {
     }
 }
 
+/// Display label for a deck-tag **slug**: the curated `display_name` if the slug is
+/// a known `DeckTag`, otherwise the prettified slug. Lets deck-tag display/selection
+/// work off server slugs (`DeckProfile.tags`) — a server-added tag shows a readable
+/// label without a client release, while known tags keep their curated labels.
+pub fn deck_tag_label(slug: &str) -> String {
+    DeckTag::try_from(slug)
+        .map(|t| t.display_name().to_string())
+        .unwrap_or_else(|_| prettify_deck_tag_slug(slug))
+}
+
+/// Title-cases a `snake_case`/`kebab-case` slug (`extra_turns` → "Extra Turns").
+fn prettify_deck_tag_slug(slug: &str) -> String {
+    slug.split(['_', '-'])
+        .filter(|w| !w.is_empty())
+        .map(|w| {
+            let mut chars = w.chars();
+            match chars.next() {
+                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 /// Parses raw tag strings into validated tags, dropping duplicates while
 /// preserving order. Returns an error on the first unrecognized string. Callers
 /// enforce [`MAX_DECK_TAGS`] separately so they can surface their own error.

@@ -2,7 +2,7 @@
 
 use crate::domain::{
     card::search_card::card_filter::price_currency::PriceCurrency,
-    deck::{DeckName, DeckOtherTag, DeckTag, PowerLevel, format::Format},
+    deck::{DeckName, DeckOtherTag, PowerLevel, format::Format},
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -24,11 +24,11 @@ pub struct DeckProfile {
     pub signature_spell_id: Option<Uuid>,
     /// Optional deck format.
     pub format: Option<Format>,
-    /// Deck archetype/strategy tags. Lossy-deserialized (unknown tag slugs dropped)
-    /// so a newer server's deck tags never crash an older client — see
-    /// `serde_helpers::lossy_vec`.
-    #[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]
-    pub tags: Vec<DeckTag>,
+    /// Deck archetype/strategy tags, as server-delivered **slugs** (e.g. `aggro`).
+    /// A plain `Vec<String>` (not the `DeckTag` enum) so a server-added deck tag can
+    /// be selected + stored without a client release; labels via `deck_tag_label`.
+    #[serde(default)]
+    pub tags: Vec<String>,
     /// Power level (WotC Commander Bracket). `None` = unset. `#[serde(default)]`
     /// so an older client reading a payload without it parses to `None`.
     #[serde(default)]

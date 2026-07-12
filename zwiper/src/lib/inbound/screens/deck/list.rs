@@ -20,8 +20,9 @@ use std::time::Duration;
 use zwipe::inbound::http::ApiError;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
-    auth::models::session::Session, card::scryfall_data::colors::Color,
-    deck::deck_profile::DeckProfile,
+    auth::models::session::Session,
+    card::scryfall_data::colors::Color,
+    deck::{deck_profile::DeckProfile, deck_tag_label},
 };
 
 /// Screen displaying all user's decks with navigation to view/edit.
@@ -180,7 +181,7 @@ pub fn DeckList() -> Element {
                                                             span { class: "stat-chip stat-chip-zone", "{name}" }
                                                         }
                                                         for tag in profile.tags.iter() {
-                                                            span { key: "{tag}", class: "stat-chip stat-chip-tag", "{tag.display_name()}" }
+                                                            span { key: "{tag}", class: "stat-chip stat-chip-tag", "{deck_tag_label(tag)}" }
                                                         }
                                                         for tag in profile.other_tags.iter() {
                                                             span { key: "{tag}", class: "stat-chip stat-chip-other", "{tag.display_name()}" }

@@ -23,15 +23,15 @@ use zwipe_core::domain::deck::{DeckTag, MAX_DECK_TAGS};
 #[component]
 pub(crate) fn TagSelect(
     open: Signal<bool>,
-    mut selected_tags: Signal<Vec<DeckTag>>,
+    mut selected_tags: Signal<Vec<String>>,
     on_close: EventHandler<()>,
 ) -> Element {
     let toast = use_toast();
     let mut query = use_signal(String::new);
     let mut focused = use_signal(|| Option::<DeckTag>::None);
     let hint_open = use_signal(|| false);
-    // Snapshot the selection when the picker opens, so Cancel can revert to it.
-    let mut snapshot = use_signal(Vec::<DeckTag>::new);
+    // Snapshot the selection (tag slugs) when the picker opens, so Cancel reverts.
+    let mut snapshot = use_signal(Vec::<String>::new);
     use_effect(move || {
         if open() {
             snapshot.set(selected_tags.peek().clone());
@@ -106,17 +106,18 @@ pub(crate) fn TagSelect(
                             for tag in results {
                                 div {
                                     key: "{tag}",
-                                    class: if selected_tags().contains(&tag) { "chip selected" } else { "chip" },
+                                    class: if selected_tags().contains(&tag.to_string()) { "chip selected" } else { "chip" },
                                     onclick: move |_| {
                                         focused.set(Some(tag));
                                         // Clear the search so the full grid returns after picking.
                                         query.set(String::new());
+                                        let slug = tag.to_string();
                                         let mut current = selected_tags();
-                                        if let Some(pos) = current.iter().position(|t| *t == tag) {
+                                        if let Some(pos) = current.iter().position(|t| *t == slug) {
                                             current.remove(pos);
                                             selected_tags.set(current);
                                         } else if current.len() < MAX_DECK_TAGS {
-                                            current.push(tag);
+                                            current.push(slug);
                                             selected_tags.set(current);
                                         } else {
                                             toast.warning(
