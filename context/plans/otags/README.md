@@ -10,17 +10,27 @@ Two additive migrations run on this deploy (`20260712040000_add_deck_oracle_tags
 `20260712060000_create_otag_context_signal`); the Phase 5 rollup + retirement/grouping repopulate
 on the next prod `zervice` run.
 
-**▶ What's left after this push:**
-- **Phase 5 Slice B (client):** `zwiper` must populate `CardSignalDelta.deck_id` and emit signals
-  for commander-less decks (`usage_buffer.rs` + `screens/deck/card/{add,remove}.rs`). Until it
-  ships, Commander otag signal accrues but **non-EDH accrues nothing**. Additive, no bump. Ships a
-  client build (server-first is already satisfied).
-- **Phase 5 test gap:** no test yet refreshes `otag_context_signal_rollup` and asserts `net`/`shown`
-  (base-table crediting is covered). Low risk (mirrors proven `card_signal_rollup`); add when tightening.
-- **Phase 5S (gated):** sunset the legacy `commander_oracle_id` wire once `deck_id` is guaranteed —
-  the first `MIN_CLIENT_VERSION` bump. **Phase 6:** non-EDH serving on the accrued dataset (deferred).
-- **Phase 2 tail:** `classify.rs` delete (retirement proven by prod zervice) + `CardRole` wire/DB
-  rename / **Phase M** (display labels already say "Card roles").
+**▶ Landed since the push (committed, UNPUSHED — ~14 commits ahead of `origin/main`):**
+- **Phase 5 Slice B (client) — DONE** (`1a857e67`): `zwiper` populates `CardSignalDelta.deck_id`
+  and emits for commander-less decks. Non-EDH signal now flows once shipped.
+- **Phase 5 wire made lenient — DONE** (`77801be6`): `CardSignalDelta.commander_oracle_id` is now
+  `Option<Uuid>` (`#[serde(default)]`) — non-EDH decks omit it, EDH sends `Some`; the per-card
+  commander tables skip commander-less signals (no nil pollution). Additive, no bump.
+- **Phase 2 tail — `classify.rs` DELETED** (`f8ed0e36`): retirement proven on prod (88,304 profiles
+  categorized from otags; Cultivate=ramp+tutor, Swords=lifegain+removal). Server-internal only,
+  client-compatible.
+- **Phase M — type rename `MechanicalCategory → CardRole` + Step 1 dual-emit DONE** (`4455fd20`,
+  `a20d56ca`): responses emit `card_roles` beside `mechanical_categories`; criteria accept
+  `card_roles_*` via serde alias. Additive, no bump. See `sequencing.md` Phase M for **Step 2**
+  (client migration) the next agent starts on.
+- **Cleanup:** `DeckServeContext` struct replaced the 8-arg serve signature (`9f783745`).
+
+**▶ Still open:**
+- **Phase M Step 2** (clients read/send `card_roles`) then **Step 3** (gated sunset + DB column
+  rename + `MIN_CLIENT_VERSION` bump). Precise file-level plan in `sequencing.md` §Phase M.
+- **Phase 5 test gap:** no test refreshes `otag_context_signal_rollup` asserting `net`/`shown` yet.
+- **Phase 5S (gated):** sunset the legacy `commander_oracle_id` wire once `deck_id` is guaranteed.
+- **Phase 6:** non-EDH serving on the accrued dataset (deferred, data-hungry).
 
 All 7 open questions resolved; Q1 revised after Phase 1 (otags supersede the heuristic).
 

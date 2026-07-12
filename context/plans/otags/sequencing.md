@@ -447,23 +447,61 @@ its own client-upgrade timeline, same shape as Phase M.
 
 **Goal:** finish the rename off the wire — the coarse-category field becomes `card_roles`
 everywhere, and the legacy `mechanical_categories` word disappears. Committed by owner
-(2026-07-11). **Independent track:** can run any time after Phase 2 (once `CardRole` exists);
-spans client upgrades, so it takes real calendar time. Full rationale: `compatibility.md`
-§Naming.
+(2026-07-11). **Independent track:** spans client upgrades, so it takes real calendar time. Full
+rationale: `compatibility.md` §Naming.
 
-**Steps (dual-emit → migrate clients → sunset):**
-1. **Add `card_roles`** beside `mechanical_categories` — server **dual-emits** both (same
-   `Vec<CardRole>` values) on `Card`/`CardProfile`; requests **accept both** `card_roles_*`
-   and legacy `mechanical_categories_*` criteria (`#[serde(default)]`). Additive, no bump.
-2. **Migrate clients** (`zwiper`, `zite`) to read `card_roles` + send `card_roles_*`; ship and
-   let installs upgrade.
-3. **Sunset** once a `MIN_CLIENT_VERSION` floor guarantees every install uses `card_roles`:
-   drop the `mechanical_categories` response field + legacy criteria, and rename the DB column
-   `card_profiles.mechanical_categories → card_roles`. This is the **one gated removal** in the
-   whole feature; bump `MIN_CLIENT_VERSION`.
+### DONE 2026-07-12 (committed, UNPUSHED) — type rename + Step 1
 
-**Wire & compat:** additive through step 2 (no bump); step 3 is the single gated removal —
-long after ship, when old installs have aged out.
+- **Type rename `MechanicalCategory → CardRole`** (commit `4455fd20`). Pure, wire-invisible: the
+  enum + its error `InvalidCardRole` renamed across all crates (incl. `zwipe-components`); serde
+  variant values (`"ramp"`, `"graveyard_hate"`, …) **unchanged**. The **module dir**
+  `zwipe-core/.../models/mechanical_category/` and the **wire/DB field** `mechanical_categories`
+  were deliberately left as-is (they move in the sunset). Verified a pure rename + fmt reflow.
+- **Step 1 — dual-emit + dual-accept (additive, no bump)** (commit `a20d56ca`):
+  - **Emit both:** `CardProfile` (`zwipe-core/.../card_profile.rs`) gained
+    `#[serde(default)] pub card_roles: Vec<CardRole>` beside `mechanical_categories`; the sqlx
+    conversion (`zerver/.../outbound/sqlx/card/card_profile.rs`) sets
+    `card_roles: mechanical_categories.clone()`. Both serialize with identical values → a client
+    reads either. (Three test `CardProfile { … }` constructors + `test_utils.rs` set
+    `card_roles: vec![]`.)
+  - **Take either:** the 3 filter criteria in
+    `zwipe-core/.../search_card/card_filter/criteria/mod.rs` carry
+    `#[serde(alias = "card_roles_contains_any|all|excludes")]` on the existing
+    `mechanical_categories_*` fields — the server **accepts** either wire key, applied identically
+    downstream (matches.rs / SQL untouched). **Scoping note:** this is server-*accept* only. The
+    shared `CardQueryBuilder` still *emits* `mechanical_categories_*`, so clients don't yet *send*
+    `card_roles_*` — that's Step 2 (builder work below).
+  - Tests: `card_roles_dual_emits_alongside_mechanical_categories` (card_profile.rs),
+    `accepts_card_roles_alias_and_legacy_keys` (criteria/mod.rs). All gates green.
+
+### ▶ Step 2 — migrate clients (additive, no bump) — NOT STARTED
+
+The next agent starts here. Two independent pieces:
+- **Read side (display):** point `zwiper` + `zite` at `CardProfile.card_roles` instead of
+  `.mechanical_categories` wherever they render the coarse axis (chips/role chart). The
+  `CardRoleChips` component in `zwipe-components/src/card_role_chips.rs` and its consumers.
+  Grep the clients for `mechanical_categories` reads. Pure client, no wire change.
+- **Send side (filter):** so clients *emit* `card_roles_*`, flip the criteria field's primary
+  serde name — `#[serde(rename = "card_roles_contains_any", alias =
+  "mechanical_categories_contains_any")]` (and the two siblings) in `criteria/mod.rs`. Because the
+  server already accepts both (Step 1), this is additive: rebuilt clients send `card_roles_*`,
+  the deployed server takes it; un-upgraded clients still send `mechanical_categories_*`. The
+  `CardQueryBuilder` (`builder/{mod,getters,setters}.rs`) Rust field/method names can stay
+  `mechanical_categories_*` or be renamed for clarity — only the **serde name** on `CardCriteria`
+  affects the wire. Update the filter picker `zwiper/.../deck/card/filter/category.rs` labels if
+  desired.
+
+### Step 3 — sunset (the one gated removal) — after adoption
+
+Once a `MIN_CLIENT_VERSION` floor guarantees every install uses `card_roles`:
+- drop `CardProfile.mechanical_categories` (keep only `card_roles`) + the `mechanical_categories_*`
+  criteria alias;
+- rename the DB column `card_profiles.mechanical_categories → card_roles` (migration) + the
+  module dir `mechanical_category/ → card_role/`;
+- **bump `MIN_CLIENT_VERSION`.**
+
+**Wire & compat:** rename + Step 1 + Step 2 are all additive (no bump); Step 3 is the single gated
+removal — long after ship, when old installs have aged out.
 
 ---
 
