@@ -2,12 +2,12 @@ use crate::{API_BASE, Footer, Nav, components::PageMeta};
 use dioxus::prelude::*;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
-use zwipe_components::{CardRow as SharedCardRow, Chip};
+use zwipe_components::{CardRow as SharedCardRow, Chip, FlippableCardImage};
 use zwipe_core::{
     domain::{
         card::{
             Card,
-            scryfall_data::{ImageSize, colors::Color},
+            scryfall_data::{ImageSize, ScryfallData, colors::Color},
             search_card::{
                 card_filter::{
                     builder::CardQueryBuilder, card_sort_key::CardSortKey,
@@ -58,11 +58,19 @@ async fn sleep_ms(ms: u32) {
 #[component]
 fn CommandZoneCard(card: Card, role: String) -> Element {
     let name = card.scryfall_data.name.clone();
-    let image = card.scryfall_data.primary_image_url(ImageSize::Normal);
+    let sd = card.scryfall_data;
+    let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
     rsx! {
         div { class: "sd-cz-card",
-            if let Some(url) = image {
-                img { class: "sd-cz-image", src: "{url}", alt: "{name}", loading: "lazy" }
+            if has_image {
+                // Flippable so DFC commanders (e.g. Valki // Tibalt) show both
+                // faces; opens on the front.
+                FlippableCardImage {
+                    sd,
+                    size: ImageSize::Normal,
+                    class: "sd-cz-image".to_string(),
+                    draggable: false,
+                }
             }
             div { class: "sd-cz-name", "{name}" }
             if !role.is_empty() {
@@ -86,20 +94,21 @@ fn CardRow(
     expanded_card: Signal<Option<Uuid>>,
     mut preview_stack: Signal<Vec<PreviewCard>>,
     mut preview_next_id: Signal<u64>,
-    /// Tap-to-open full-art overlay target (mobile only). Set to this card's art
-    /// when the in-detail "Image" button is tapped.
-    mut overlay_image: Signal<Option<String>>,
+    /// Tap-to-open full-art overlay target. Set to this card's data + the face
+    /// currently shown when the in-detail "Image" button is tapped.
+    mut overlay_card: Signal<Option<(ScryfallData, usize)>>,
 ) -> Element {
     // This row's live stack entry id (while the cursor is on it); the leave
     // handler times it out. `None` when the row isn't hovered.
     let mut my_preview_id = use_signal(|| None::<u64>);
-    let sd = &card.scryfall_data;
-    // Full-size art shown in the pinned hover preview (desktop). Front face for
-    // double-faced layouts.
-    let hover_image = sd.primary_image_url(ImageSize::Normal).map(str::to_string);
-    // Larger art for the tap-to-open overlay (mobile, where hover is
-    // unavailable). Mirrors the app's fullscreen ImagePreview (ImageSize::Large).
-    let overlay_url = sd.primary_image_url(ImageSize::Large).map(str::to_string);
+    // Which face the expanded detail is flipped to (0 = front). Drives which
+    // side lands in the hover preview and opens in the overlay. Kept in sync via
+    // the detail's `on_face_change`.
+    let mut current_face = use_signal(|| 0usize);
+    // Owned copies for the move closures below (each may fire many times).
+    let sd_hover = card.scryfall_data.clone();
+    let sd_flip = card.scryfall_data.clone();
+    let sd_overlay = card.scryfall_data.clone();
 
     rsx! {
         SharedCardRow {
@@ -110,12 +119,39 @@ fn CardRow(
             // Star indicator on starred rows only; no Star button (read-only).
             mvp: mvp.then_some(true),
             on_image: move |()| {
-                if let Some(url) = overlay_url.clone() {
-                    overlay_image.set(Some(url));
-                }
+                overlay_card.set(Some((sd_overlay.clone(), current_face())));
+            },
+            on_face_change: move |face: usize| {
+                current_face.set(face);
+                // Throw the now-showing side onto the hover stack, on its own
+                // 2s timer (there's no hover-leave to retire it).
+                let Some(url) = sd_flip.face_image_url(face, ImageSize::Normal).map(str::to_string)
+                else {
+                    return;
+                };
+                let id = preview_next_id();
+                preview_next_id.set(id + 1);
+                preview_stack.with_mut(|s| {
+                    s.insert(0, PreviewCard { id, url, leaving: false });
+                    s.truncate(5);
+                });
+                spawn(async move {
+                    sleep_ms(2000).await;
+                    preview_stack.with_mut(|s| {
+                        if let Some(c) = s.iter_mut().find(|c| c.id == id) {
+                            c.leaving = true;
+                        }
+                    });
+                    sleep_ms(400).await;
+                    preview_stack.with_mut(|s| s.retain(|c| c.id != id));
+                });
             },
             on_hover_enter: move |()| {
-                let Some(url) = hover_image.clone() else {
+                // The currently-shown side's art (front unless flipped).
+                let Some(url) = sd_hover
+                    .face_image_url(current_face(), ImageSize::Normal)
+                    .map(str::to_string)
+                else {
                     return;
                 };
                 // Push onto the top of the stack (newest first), cap at 5.
@@ -302,9 +338,11 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     // on touch devices (no mouseenter), so it simply stays empty there.
     let preview_stack: Signal<Vec<PreviewCard>> = use_signal(Vec::new);
     let preview_next_id: Signal<u64> = use_signal(|| 0);
-    // Tap-to-open full-art overlay for touch/hamburger-width screens (no hover).
-    // Holds the art URL; a short dismiss fade mirrors the app's ImagePreview.
-    let mut overlay_image: Signal<Option<String>> = use_signal(|| None);
+    // Tap-to-open full-art overlay. Holds the card's data + the face to open on
+    // (so it lands on whichever side the row was flipped to) and flips from
+    // there via the shared FlippableCardImage. A short dismiss fade mirrors the
+    // app's ImagePreview.
+    let mut overlay_card: Signal<Option<(ScryfallData, usize)>> = use_signal(|| None);
     let mut overlay_dismissing = use_signal(|| false);
 
     // Mainboard only: the maybeboard is scratch space, not the deck statement.
@@ -488,9 +526,11 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 }
             }
         }
-        // Tap-to-open full-art overlay (mobile). Mirrors the app's ImagePreview:
-        // a dimmed backdrop with the card art, tap anywhere to dismiss.
-        if overlay_image().is_some() || overlay_dismissing() {
+        // Tap-to-open full-art overlay. Mirrors the app's ImagePreview: a dimmed
+        // backdrop with the card art (its own flip button for DFCs), tap anywhere
+        // to dismiss. The flip button stops propagation, so flipping never
+        // dismisses.
+        if overlay_card().is_some() || overlay_dismissing() {
             div { class: "sd-image-overlay-backdrop" }
             div {
                 class: if overlay_dismissing() { "sd-image-overlay dismissing" } else { "sd-image-overlay" },
@@ -498,12 +538,18 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                     overlay_dismissing.set(true);
                     spawn(async move {
                         sleep_ms(200).await;
-                        overlay_image.set(None);
+                        overlay_card.set(None);
                         overlay_dismissing.set(false);
                     });
                 },
-                if let Some(url) = overlay_image() {
-                    img { class: "sd-image-overlay-img", src: "{url}", alt: "Card image" }
+                if let Some((sd, face)) = overlay_card() {
+                    FlippableCardImage {
+                        sd,
+                        size: ImageSize::Large,
+                        class: "sd-image-overlay-img".to_string(),
+                        draggable: false,
+                        initial_face: face,
+                    }
                 }
             }
         }
@@ -653,7 +699,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                                         expanded_card,
                                         preview_stack,
                                         preview_next_id,
-                                        overlay_image,
+                                        overlay_card,
                                     }
                                 }
                             }
