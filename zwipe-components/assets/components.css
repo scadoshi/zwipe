@@ -519,6 +519,46 @@ i.ms.ms-cost.ms-g {
     font-size: 0.82em;
 }
 
+/* Hybrid/twobrid/Phyrexian pips ({W/U}->ms-wu, {2/W}->ms-2w, {W/P}->ms-wp) are drawn
+   by mana-font as TWO absolutely-positioned halves (::before + ::after) whose hardcoded
+   top/left are tuned for its native ~1.3em inline-block box. Our squircle override
+   (1.5em, inline-flex) shifts those halves toward the top-left, off-center. So for
+   hybrids only, restore mana-font's box geometry (inline-block, its dimensions +
+   line-height) so the halves land centered again; the border / radius / shadow / color
+   from `i.ms.ms-cost` above still apply, keeping the squircle look. TUNE HERE: if the
+   pip reads too small next to single-color pips, scale width/height/line-height up
+   together (keep the ratio so the halves stay centered). */
+i.ms.ms-cost.ms-wu,
+i.ms.ms-cost.ms-wb,
+i.ms.ms-cost.ms-ub,
+i.ms.ms-cost.ms-ur,
+i.ms.ms-cost.ms-br,
+i.ms.ms-cost.ms-bg,
+i.ms.ms-cost.ms-rg,
+i.ms.ms-cost.ms-rw,
+i.ms.ms-cost.ms-gw,
+i.ms.ms-cost.ms-gu,
+i.ms.ms-cost.ms-2w,
+i.ms.ms-cost.ms-2u,
+i.ms.ms-cost.ms-2b,
+i.ms.ms-cost.ms-2r,
+i.ms.ms-cost.ms-2g,
+i.ms.ms-cost.ms-wp,
+i.ms.ms-cost.ms-up,
+i.ms.ms-cost.ms-bp,
+i.ms.ms-cost.ms-rp,
+i.ms.ms-cost.ms-gp {
+    display: inline-block;
+    /* content-box so the 1.3em is the padding box the half-offsets target — our 1px
+       border sits outside it, matching mana-font's native (border-less) box. Under
+       the app's global border-box the border would eat 2px and re-offset the halves. */
+    box-sizing: content-box;
+    width: 1.3em;
+    height: 1.3em;
+    line-height: 1.35em;
+    padding: 0;
+}
+
 .card-detail-oracle {
     margin: 0 0 0.5rem;
     white-space: pre-wrap;
