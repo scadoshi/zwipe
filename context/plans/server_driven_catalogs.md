@@ -23,10 +23,12 @@ type changes are internal to `zwipe-core` and only affect the next client build)
   tag is selectable — create/edit fetch it and pass it as a `catalog` prop.
 
 ### Remaining follow-ups (small, non-gating)
-- **Catalog-based seeding:** `seed_oracle_tags` still uses the compiled `DeckTag::oracle_tag_slugs`,
-  so a *new* tag's otag seeds don't apply until a release. Finish: seed from the catalog's
-  `seed_otags` (a `seed_oracle_tags_from_catalog(slugs, &[DeckTagView])` helper, used in the
-  create/edit reconcile which already has the catalog loaded).
+- **Catalog-based seeding — DONE:** `seed_oracle_tags_from_catalog(&[String], &[DeckTagView])`
+  (`deck_oracle_tags.rs`) unions each selected tag's catalog `seed_otags` (deduped, first-seen;
+  slugs absent from the catalog seed nothing). The create/edit picker-close reconcile now seeds
+  from the fetched `deck_tags_catalog`, so a *new* tag's otag seeds pre-select without a release.
+  (Edit's on-*load* `applied_seed` still uses the compiled `seed_oracle_tags` as a transient
+  default — the catalog resource may not be ready on first render; the next reconcile corrects it.)
 - **Deck role-distribution chart** (`deck_metrics.rs`) stays keyed on the known `CardRole` set
   (fixed compact-label axes) — a new role isn't charted there (it still shows in grouped lists +
   on cards). Making it dynamic would change its output type + the chart consumer; deferred.

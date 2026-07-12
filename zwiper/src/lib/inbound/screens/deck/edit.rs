@@ -40,6 +40,7 @@ use zwipe_core::{
             Deck, DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel,
             deck_profile::DeckProfile, format::Format,
             requests::update_deck_profile::InvalidUpdateDeckProfile, seed_oracle_tags,
+            seed_oracle_tags_from_catalog,
         },
         user::models::hints::HINT_EDIT_DECK,
     },
@@ -646,7 +647,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     // Reconcile seeded oracle tags with the final deck-tag set:
                     // drop the previous seed contribution, add the new one, keep
                     // manual picks. Cap at MAX; toast if anything was auto-added.
-                    let new_seed = seed_oracle_tags(&selected_tags());
+                    // Seed from the server catalog so a newly-served tag's otags
+                    // apply without a client release; empty catalog seeds nothing.
+                    let new_seed = seed_oracle_tags_from_catalog(
+                        &selected_tags(),
+                        &deck_tags_catalog().unwrap_or_default(),
+                    );
                     let old_seed = applied_seed();
                     let mut ot: Vec<String> = oracle_tags()
                         .into_iter()
