@@ -295,6 +295,12 @@ back-compat-safe (tests in `contracts/deck.rs`). **No bump.**
 
 ## Phase 4 — Serving term (backend-only, ordering change)
 
+**Status: BUILT + PUSHED 2026-07-12.** `W_ORACLE_TAG = 0.20` otag-correlation term
+(`card_profiles.oracle_tags ?|` deck otags) in `search_scryfall_data_deck_aware`;
+`search_deck_cards` loads `decks.oracle_tags`. Ordering-only, additive, revert lever = zero the
+const. Tests in `tests/card_serving.rs` + `tests/repo_card.rs`. (The 8th positional arg keeps the
+documented `#[allow(too_many_arguments)]`; a `DeckServeContext` struct is the eventual cleanup.)
+
 **Goal:** fold otags into the serve (Q4 decision: one small `W_ORACLE_TAG` term first).
 
 **Backend:**
@@ -334,7 +340,7 @@ non-EDH point is therefore impossible without adding context to the wire. Two de
    rankable in Phase 6 (mirrors `card_signal_rollup`'s role); the deck-selected reading measures
    strategy engagement but can't rank individual cards.
 
-### BUILT 2026-07-12 (server + shared contract; unpushed, dark) — Slice A
+### BUILT + PUSHED 2026-07-12 (server + shared contract; dark) — Slice A
 
 - **Migration `20260712060000_create_otag_context_signal.sql`:** table
   `otag_context_signal(context_key TEXT, oracle_tag TEXT, shown/added/skipped/maybed/removed
