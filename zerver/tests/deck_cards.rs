@@ -227,3 +227,78 @@ async fn import_resolves_known_cards_and_reports_the_rest(pool: sqlx::PgPool) {
         .collect();
     assert_eq!(names, vec!["Lightning Bolt"]);
 }
+
+/// `GET /api/deck/{id}` carries the command-zone cards (commander, partner, …)
+/// so clients can fold them into price and card-count calcs. Regression guard
+/// for the `Deck.command_zone_cards` field + its server population.
+#[sqlx::test]
+async fn get_deck_carries_command_zone_cards(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "czbuilder").await;
+
+    // A priced commander (command zone) and a priced mainboard card.
+    let commander = card("Atraxa, Praetors' Voice")
+        .colors("WUBG")
+        .cmc(4.0)
+        .type_line("Legendary Creature — Phyrexian Angel Horror")
+        .commander_legal()
+        .usd("10.00");
+    let cmd_sid = commander.id();
+    let bolt = card("Lightning Bolt")
+        .mono("R")
+        .cmc(1.0)
+        .type_line("Instant")
+        .usd("2.00");
+    let bolt_sid = bolt.id();
+    let bolt_oid = bolt.oracle_id().unwrap();
+    seed_cards(&pool, &[commander, bolt]).await;
+
+    // Set the commander on the deck (Opdate::Set wire form).
+    let (status, updated) = app
+        .put(
+            &format!("/api/deck/{did}"),
+            json!({
+                "commander_id": { "Set": cmd_sid.to_string() },
+                "partner_commander_id": "Unchanged",
+                "background_id": "Unchanged",
+                "signature_spell_id": "Unchanged",
+                "format": "Unchanged"
+            }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "set commander: {updated}");
+
+    // Add the mainboard card.
+    let (status, dc) = app
+        .post(
+            &format!("/api/deck/{did}/card"),
+            json!({ "scryfall_data_id": bolt_sid.to_string(), "oracle_id": bolt_oid.to_string(), "quantity": 1 }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "add bolt: {dc}");
+
+    let (status, full) = app.get(&format!("/api/deck/{did}"), Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "get deck: {full}");
+
+    // Command zone carries the commander (with its price), separate from entries.
+    let cz = full["command_zone_cards"]
+        .as_array()
+        .expect("command_zone_cards present");
+    assert_eq!(cz.len(), 1, "one command-zone card: {full}");
+    assert_eq!(cz[0]["scryfall_data"]["name"], "Atraxa, Praetors' Voice");
+    assert_eq!(cz[0]["scryfall_data"]["prices"]["usd"], "10.00");
+
+    // The commander is NOT duplicated into the mainboard entries.
+    let entries = full["entries"].as_array().unwrap();
+    assert_eq!(
+        entries.len(),
+        1,
+        "only the mainboard card in entries: {full}"
+    );
+    assert_eq!(
+        entries[0]["card"]["scryfall_data"]["name"],
+        "Lightning Bolt"
+    );
+}

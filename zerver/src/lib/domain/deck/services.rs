@@ -267,7 +267,11 @@ where
             &entries,
             &command_zone,
         );
-        let deck = Deck::new(deck_profile, entries, warnings);
+        // Carry the command-zone cards to the client so it can fold them into
+        // price and card-count calcs (they live on the profile, not in entries).
+        let command_zone_cards = command_zone.cards();
+        let deck =
+            Deck::new(deck_profile, entries, warnings).with_command_zone_cards(command_zone_cards);
         Ok(deck)
     }
 

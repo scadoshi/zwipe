@@ -57,7 +57,7 @@ use zwipe_core::{
         },
         deck::{
             Board, DeckEntry,
-            deck_metrics::{budget_tier, mainboard_total_price},
+            deck_metrics::{budget_tier, deck_price},
             quantity::Quantity,
         },
         user::models::hints::{HINT_DECK_CARDS, HINT_DECK_MVPS},
@@ -109,6 +109,8 @@ pub fn View(deck_id: Uuid) -> Element {
 
     // Source of truth — all non-commander entries (active + maybeboard)
     let mut deck_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
+    // Command-zone cards (commander, partner, etc.), folded into the budget total.
+    let mut command_zone_cards: Signal<Vec<Card>> = use_signal(Vec::new);
 
     // Provide Card list context for filter sheet (derives from all entries)
     let mut deck_cards_for_filter: Signal<Vec<Card>> = use_signal(Vec::new);
@@ -222,7 +224,10 @@ pub fn View(deck_id: Uuid) -> Element {
             };
 
             let mut entries = match client().get_deck(deck_id, &session).await {
-                Ok(deck) => deck.entries,
+                Ok(deck) => {
+                    command_zone_cards.set(deck.command_zone_cards);
+                    deck.entries
+                }
                 Err(e) => {
                     toast.error(
                         e.to_user_message(),
@@ -426,8 +431,13 @@ pub fn View(deck_id: Uuid) -> Element {
     };
 
     // Mainboard total in the budget currency from the source of truth.
-    let total_price =
-        move || -> f64 { mainboard_total_price(&deck_entries.peek(), price_budget_currency()) };
+    let total_price = move || -> f64 {
+        deck_price(
+            &deck_entries.peek(),
+            &command_zone_cards.peek(),
+            price_budget_currency(),
+        )
+    };
 
     // Toast once when a qty change raises the deck into a new budget tier
     // (50/75/100%). Higher-tier only, so it never re-fires.

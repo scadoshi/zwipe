@@ -14,8 +14,7 @@ use crate::domain::{
         },
     },
     deck::{
-        DeckProfile, DeckWarning, Format, WarningAction, deck::DeckEntry,
-        deck_metrics::mainboard_total_price,
+        DeckProfile, DeckWarning, Format, WarningAction, deck::DeckEntry, deck_metrics::deck_price,
     },
 };
 
@@ -29,6 +28,23 @@ pub struct DeckCommandZone<'a> {
     pub background: Option<&'a Card>,
     /// Signature spell (Oathbreaker instant/sorcery).
     pub signature_spell: Option<&'a Card>,
+}
+
+impl DeckCommandZone<'_> {
+    /// The present command-zone cards as owned clones, in zone order. Used by
+    /// price calcs that fold the command zone into the deck total.
+    pub fn cards(&self) -> Vec<Card> {
+        [
+            self.commander,
+            self.partner_commander,
+            self.background,
+            self.signature_spell,
+        ]
+        .into_iter()
+        .flatten()
+        .cloned()
+        .collect()
+    }
 }
 
 /// Validates a deck against its format rules and returns warnings.
@@ -51,7 +67,7 @@ pub fn validate_deck(
     let mut warnings = Vec::new();
 
     // Budget warning is format-independent — a price target applies to any deck.
-    check_price_target(deck_profile, &active_entries, &mut warnings);
+    check_price_target(deck_profile, &active_entries, command_zone, &mut warnings);
 
     let Some(format) = &deck_profile.format else {
         return warnings;
@@ -148,13 +164,15 @@ fn check_land_target(
 fn check_price_target(
     profile: &DeckProfile,
     active_entries: &[DeckEntry],
+    command_zone: &DeckCommandZone,
     warnings: &mut Vec<DeckWarning>,
 ) {
     let Some(target) = profile.price_target.filter(|t| *t > 0.0) else {
         return;
     };
     let currency = profile.price_target_currency.unwrap_or_default();
-    let total = mainboard_total_price(active_entries, currency);
+    let command_zone_cards = command_zone.cards();
+    let total = deck_price(active_entries, &command_zone_cards, currency);
     if total > target {
         warnings.push(DeckWarning::new(format!(
             "deck totals {}, over your {} budget",
