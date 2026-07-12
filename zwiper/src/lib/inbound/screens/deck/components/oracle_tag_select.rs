@@ -20,7 +20,7 @@ use std::time::Duration;
 use zwipe::inbound::http::ApiError;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
-    card::oracle_tag::{CURATED_ORACLE_TAGS, OracleTag, prettify_oracle_tag_slug},
+    card::oracle_tag::{CURATED_ORACLE_TAGS, OracleTag},
     deck::MAX_DECK_ORACLE_TAGS,
 };
 
@@ -85,7 +85,7 @@ pub(crate) fn OracleTagSelect(
                     .cloned()
                     .unwrap_or_else(|| OracleTag {
                         slug: s.clone(),
-                        label: prettify_oracle_tag_slug(s),
+                        label: s.clone(),
                         description: None,
                         parent_slugs: Vec::new(),
                     })
@@ -134,7 +134,7 @@ pub(crate) fn OracleTagSelect(
 
                         div { class: "tag-def-bar",
                             if let Some(t) = focused() {
-                                div { class: "tag-def-name", "{t.label}" }
+                                div { class: "tag-def-name", "{t.slug}" }
                                 div { class: "tag-def-text",
                                     { t.description.unwrap_or_else(|| "No description for this tag.".to_string()) }
                                 }
@@ -180,7 +180,7 @@ pub(crate) fn OracleTagSelect(
                                                     );
                                                 }
                                             },
-                                            "{t.label}"
+                                            "{t.slug}"
                                         }
                                     }
                                 }

@@ -17,7 +17,6 @@ use zwipe_core::domain::{
     auth::models::session::Session,
     card::{
         Card,
-        oracle_tag::prettify_oracle_tag_slug,
         search_card::{
             card_filter::{
                 builder::CardQueryBuilder, error::InvalidCardCriteria,
@@ -1001,8 +1000,8 @@ pub(crate) fn DeckFields(
         // Deck tags (open the full-screen picker to choose)
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
-                label { class: "label", "Deck tags" }
                 InfoButton { topic: HintTopic::DeckTags }
+                label { class: "label", "Deck tags" }
                 span { class: "field-count", "{selected_tags().len()}/{MAX_DECK_TAGS}" }
                 if !selected_tags().is_empty() {
                     button {
@@ -1041,8 +1040,8 @@ pub(crate) fn DeckFields(
         // Oracle tags (granular strategy; deck tags seed these)
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
-                label { class: "label", "Oracle tags" }
                 InfoButton { topic: HintTopic::OracleTags }
+                label { class: "label", "Oracle tags" }
                 span { class: "field-count", "{oracle_tags().len()}/{MAX_DECK_ORACLE_TAGS}" }
                 if !oracle_tags().is_empty() {
                     button {
@@ -1065,7 +1064,7 @@ pub(crate) fn DeckFields(
                         div {
                             key: "{slug}",
                             class: "chip selected flex items-center gap-05",
-                            { prettify_oracle_tag_slug(&slug) }
+                            "{slug}"
                             button {
                                 class: "chip-remove",
                                 onclick: move |evt| {

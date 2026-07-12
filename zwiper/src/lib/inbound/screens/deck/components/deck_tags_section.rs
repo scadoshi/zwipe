@@ -5,9 +5,7 @@
 
 use crate::inbound::components::{hint_host::HintTopic, info_button::InfoButton};
 use dioxus::prelude::*;
-use zwipe_core::domain::{
-    card::oracle_tag::prettify_oracle_tag_slug, deck::deck_profile::DeckProfile,
-};
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
 
 /// Whether the deck has any tag worth showing the Tags section for.
 pub(crate) fn has_any_tags(p: &DeckProfile) -> bool {
@@ -27,8 +25,10 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
         div { style: "display:flex;flex-direction:column;",
             if !deck_profile.tags.is_empty() {
                 div { class: "info-row",
-                    span { class: "info-row-label", "Deck tags" }
-                    InfoButton { topic: HintTopic::DeckTags }
+                    span { style: "display:flex;align-items:center;gap:0.35rem;",
+                        InfoButton { topic: HintTopic::DeckTags }
+                        span { class: "info-row-label", "Deck tags" }
+                    }
                     span { class: "info-row-value info-row-tags",
                         for tag in deck_profile.tags.iter() {
                             span { key: "{tag}", class: "stat-chip stat-chip-tag", "{tag.display_name()}" }
@@ -38,14 +38,16 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
             }
             if !deck_profile.oracle_tags.is_empty() {
                 div { class: "info-row",
-                    span { class: "info-row-label", "Oracle tags" }
-                    InfoButton { topic: HintTopic::OracleTags }
+                    span { style: "display:flex;align-items:center;gap:0.35rem;",
+                        InfoButton { topic: HintTopic::OracleTags }
+                        span { class: "info-row-label", "Oracle tags" }
+                    }
                     span { class: "info-row-value info-row-tags",
                         for slug in deck_profile.oracle_tags.iter() {
                             span {
                                 key: "{slug}",
                                 class: "stat-chip stat-chip-tag",
-                                { prettify_oracle_tag_slug(slug) }
+                                "{slug}"
                             }
                         }
                     }

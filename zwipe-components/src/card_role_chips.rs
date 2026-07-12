@@ -10,9 +10,7 @@
 
 use dioxus::prelude::*;
 use std::collections::BTreeMap;
-use zwipe_core::domain::card::{
-    mechanical_category::CardRole, oracle_tag::prettify_oracle_tag_slug,
-};
+use zwipe_core::domain::card::mechanical_category::CardRole;
 
 /// Card roles as chips; expandable to their grouped oracle tags, plus an "Other
 /// tags" bucket. `tags_by_role` is keyed by role slug (`CardRole`'s
@@ -54,11 +52,9 @@ pub fn CardRoleChips(
     // it (like `open`) would yank the DOM node instantly and snap the close shut.
     let mut shown = use_signal(|| None::<usize>);
     let open_idx = open();
-    let reveal_tags: Option<Vec<String>> = shown().and_then(|i| items.get(i)).map(|(_, tags)| {
-        tags.iter()
-            .map(|t| prettify_oracle_tag_slug(t))
-            .collect::<Vec<_>>()
-    });
+    let reveal_tags: Option<Vec<String>> = shown()
+        .and_then(|i| items.get(i))
+        .map(|(_, tags)| tags.to_vec());
     let reveal_class = if open_idx.is_some() {
         "keyword-reveal open"
     } else {

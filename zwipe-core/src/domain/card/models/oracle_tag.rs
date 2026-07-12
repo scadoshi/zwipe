@@ -127,18 +127,6 @@ pub fn is_noise_oracle_tag(slug: &str) -> bool {
         || NOISE_ORACLE_TAG_SLUGS.contains(&slug)
 }
 
-/// Turns a tag slug into a display label: `spot-removal` -> `Spot removal`.
-/// Used where the catalog's own `label` isn't on hand (a served card carries
-/// only slugs).
-pub fn prettify_oracle_tag_slug(slug: &str) -> String {
-    let spaced = slug.replace('-', " ");
-    let mut chars = spaced.chars();
-    match chars.next() {
-        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
-        None => String::new(),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -172,12 +160,5 @@ mod tests {
         ] {
             assert!(!is_noise_oracle_tag(s), "{s} should be kept");
         }
-    }
-
-    #[test]
-    fn prettify() {
-        assert_eq!(prettify_oracle_tag_slug("spot-removal"), "Spot removal");
-        assert_eq!(prettify_oracle_tag_slug("ramp"), "Ramp");
-        assert_eq!(prettify_oracle_tag_slug(""), "");
     }
 }

@@ -2503,6 +2503,15 @@ button {
     margin-bottom: 0.4rem;
 }
 
+.label-row .label {
+    margin-bottom: 0;
+}
+
+.label-row .info-button {
+    margin-left: 0;
+    margin-right: 0.35rem;
+}
+
 .clear-btn {
     all: unset;
     cursor: pointer;
