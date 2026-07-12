@@ -15,6 +15,11 @@ pub fn KeywordChips(keywords: Vec<String>) -> Element {
         return rsx! {};
     }
     let mut open = use_signal(|| None::<usize>);
+    // The revealed content follows `shown`, which holds the last-opened index and
+    // is NOT cleared on close, so the content stays mounted while the container
+    // animates collapsing. Clearing it (like `open`) would yank the DOM node
+    // instantly and the close would snap shut instead of easing out.
+    let mut shown = use_signal(|| None::<usize>);
 
     let items: Vec<(String, &'static str)> = keywords
         .iter()
@@ -22,8 +27,8 @@ pub fn KeywordChips(keywords: Vec<String>) -> Element {
         .collect();
 
     let open_idx = open();
-    let reveal_text = open_idx.and_then(|i| items.get(i)).map(|(_, r)| *r);
-    let reveal_class = if reveal_text.is_some() {
+    let reveal_text = shown().and_then(|i| items.get(i)).map(|(_, r)| *r);
+    let reveal_class = if open_idx.is_some() {
         "keyword-reveal open"
     } else {
         "keyword-reveal"
@@ -43,6 +48,7 @@ pub fn KeywordChips(keywords: Vec<String>) -> Element {
                                 open.set(None);
                             } else {
                                 open.set(Some(i));
+                                shown.set(Some(i));
                             }
                         },
                         "{name}"
