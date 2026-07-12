@@ -140,7 +140,7 @@ pub fn Home() -> Element {
                 category: "Release",
                 status: BannerStatus::Done,
                 status_label: "New",
-                "Version 1.5.0 just shipped. "
+                "Version 1.6.0 just shipped. "
                 Link { to: Route::Changelog {}, "See what's new" }
             }
         }

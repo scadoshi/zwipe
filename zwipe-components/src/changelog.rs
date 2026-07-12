@@ -21,31 +21,38 @@ struct Release {
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 const UPCOMING: &[Release] = &[Release {
-    version: "1.6.0",
+    version: "1.6.1",
     date: "Coming soon",
     entries: &[
-        "In-app changelog. Browse every release without leaving the app, right from your Profile.",
-        "A cleaner deck card screen with squircle mana pips, an inline price tag, and power/toughness on each row.",
-        "Theme and dark-mode controls now live in your Profile.",
-        "Seventeen new themes, thirty-one in all: editor classics like VS Code, GitHub, One Dark, Kanagawa, Ayu, and Night Owl, a warm-grey docs.rs look for the Rustaceans, plus bolder picks like Synthwave '84, Vantablack, PowerShell, and a green-on-black Hackerman mode.",
-        "A new Achromatopsia theme for total color blindness joins the colorblind set, and every theme got a contrast pass so dimmed text stays easy to read.",
-        "Your theme now sticks: the app and website open in your last-used theme, so the sign-in screens are already themed before you log in, and the website remembers your pick between visits.",
-        "Buy a card straight from the home screen, tap its price for TCGplayer or Card Kingdom.",
-        "Fixed importing double-faced cards like Boggart Trawler // Boggart Bog.",
-        "A light-mode polish pass across every theme, cleaner panels and softer mana-pip shadows.",
-        "Oracle tags, find and build with community-maintained tags for what cards actually do (removal, ramp, card advantage, tutors, and more).",
-        "Card roles on every card: expand a card to see what it does, like removal, ramp, card advantage, or aggression, and tap a role to open the community oracle tags underneath.",
-        "Give your deck a game plan: choose the oracle tags that describe your strategy, and picking an archetype like Aggro or Aristocrats seeds the matching ones for you.",
-        "New in-app guides explain deck tags, card roles, and oracle tags, so it's clear what each one means and how they shape your suggestions.",
-        "Deck color identity shows as mana pips right after each deck's name.",
-        "Every mana pip now tints its outline and glyph to its own mana color, so the colors stay instantly recognizable in any theme.",
-        "A reorganized deck view: Profile, Budget, and Tags are now tidy sections, your land and price targets read as clear goal-versus-actual rows, and the Budget section collapses to stay out of the way.",
-        "Shared deck pages now show each card's roles and the deck's full price to the cent, command zone included.",
-        "More polish: two-color hybrid mana symbols now sit centered in their pips, keyword and card-role sections are clearly labeled, and the card-detail reveals ease open and closed instead of snapping.",
+        "Your deck's Lands count and target now sit in the Mana section next to average mana value, instead of under Budget.",
     ],
 }];
 
 const RELEASES: &[Release] = &[
+    Release {
+        version: "1.6.0",
+        date: "Jul 12, 2026",
+        entries: &[
+            "In-app changelog. Browse every release without leaving the app, right from your Profile.",
+            "A cleaner deck card screen with squircle mana pips, an inline price tag, and power/toughness on each row.",
+            "Theme and dark-mode controls now live in your Profile.",
+            "Seventeen new themes, thirty-one in all: editor classics like VS Code, GitHub, One Dark, Kanagawa, Ayu, and Night Owl, a warm-grey docs.rs look for the Rustaceans, plus bolder picks like Synthwave '84, Vantablack, PowerShell, and a green-on-black Hackerman mode.",
+            "A new Achromatopsia theme for total color blindness joins the colorblind set, and every theme got a contrast pass so dimmed text stays easy to read.",
+            "Your theme now sticks: the app and website open in your last-used theme, so the sign-in screens are already themed before you log in, and the website remembers your pick between visits.",
+            "Buy a card straight from the home screen, tap its price for TCGplayer or Card Kingdom.",
+            "Fixed importing double-faced cards like Boggart Trawler // Boggart Bog.",
+            "A light-mode polish pass across every theme, cleaner panels and softer mana-pip shadows.",
+            "Oracle tags, find and build with community-maintained tags for what cards actually do (removal, ramp, card advantage, tutors, and more).",
+            "Card roles on every card: expand a card to see what it does, like removal, ramp, card advantage, or aggression, and tap a role to open the community oracle tags underneath.",
+            "Give your deck a game plan: choose the oracle tags that describe your strategy, and picking an archetype like Aggro or Aristocrats seeds the matching ones for you.",
+            "New in-app guides explain deck tags, card roles, and oracle tags, so it's clear what each one means and how they shape your suggestions.",
+            "Deck color identity shows as mana pips right after each deck's name.",
+            "Every mana pip now tints its outline and glyph to its own mana color, so the colors stay instantly recognizable in any theme.",
+            "A reorganized deck view: Profile, Budget, and Tags are now tidy sections, your land and price targets read as clear goal-versus-actual rows, and the Budget section collapses to stay out of the way.",
+            "Shared deck pages now show each card's roles and the deck's full price to the cent, command zone included.",
+            "More polish: two-color hybrid mana symbols now sit centered in their pips, keyword and card-role sections are clearly labeled, and the card-detail reveals ease open and closed instead of snapping.",
+        ],
+    },
     Release {
         version: "1.5.0",
         date: "Jul 10, 2026",
