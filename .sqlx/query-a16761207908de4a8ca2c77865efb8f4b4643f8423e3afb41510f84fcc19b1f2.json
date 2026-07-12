@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                      d.format, d.tags as \"tags?\", d.power_level, d.other_tags as \"other_tags?\", d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id,\n                      COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as \"card_count\",\n                      sd.name as \"commander_name?\",\n                      (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as \"partner_commander_name?\",\n                      (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as \"background_name?\",\n                      (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as \"signature_spell_name?\"\n               FROM decks d\n               LEFT JOIN deck_cards dc ON d.id = dc.deck_id\n               LEFT JOIN scryfall_data sd ON d.commander_id = sd.id\n               WHERE d.id = $1\n               GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                        d.format, d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id, sd.name",
+  "query": "SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                      d.format, d.tags as \"tags?\", d.power_level, d.other_tags as \"other_tags?\", d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id,\n                      COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as \"card_count\",\n                      sd.name as \"commander_name?\",\n                      (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as \"partner_commander_name?\",\n                      (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as \"background_name?\",\n                      (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as \"signature_spell_name?\",\n                      (SELECT array_agg(DISTINCT ci)\n                         FROM scryfall_data sci, unnest(sci.color_identity) AS ci\n                        WHERE sci.id IN (d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id)\n                           OR sci.id IN (SELECT dc2.scryfall_data_id FROM deck_cards dc2 WHERE dc2.deck_id = d.id AND dc2.board = 'deck')) as \"color_identity?: Vec<String>\"\n               FROM decks d\n               LEFT JOIN deck_cards dc ON d.id = dc.deck_id\n               LEFT JOIN scryfall_data sd ON d.commander_id = sd.id\n               WHERE d.user_id = $1\n               GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                        d.format, d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id, sd.name",
   "describe": {
     "columns": [
       {
@@ -102,6 +102,11 @@
         "ordinal": 19,
         "name": "signature_spell_name?",
         "type_info": "Text"
+      },
+      {
+        "ordinal": 20,
+        "name": "color_identity?: Vec<String>",
+        "type_info": "TextArray"
       }
     ],
     "parameters": {
@@ -129,8 +134,9 @@
       false,
       null,
       null,
+      null,
       null
     ]
   },
-  "hash": "0368473e5ffa17fa294773172cbaad85ecbe1010e187d67ed9f9beed245a260c"
+  "hash": "a16761207908de4a8ca2c77865efb8f4b4643f8423e3afb41510f84fcc19b1f2"
 }

@@ -58,4 +58,13 @@ pub struct DeckProfile {
     pub background_name: Option<String>,
     /// Signature spell card name (if set).
     pub signature_spell_name: Option<String>,
+    /// Deck color identity (WUBRG short codes), derived at read time from the
+    /// union of the command-zone cards' identities and every mainboard card's
+    /// identity. For a Commander deck this equals the commander's legal identity
+    /// (cards are always within it, and the command zone covers it even at zero
+    /// cards); for other formats it reflects the colors the deck actually plays.
+    /// Empty = colorless or an empty deck. `#[serde(default)]` so older payloads
+    /// without the field parse to an empty vec.
+    #[serde(default)]
+    pub color_identity: Vec<String>,
 }
