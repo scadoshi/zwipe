@@ -1,10 +1,6 @@
-use crate::inbound::components::{
-    alert_dialog::{
-        AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
-        AlertDialogRoot, AlertDialogTitle,
-    },
-    hint_host::HintTopic,
-    info_button::InfoButton,
+use crate::inbound::components::alert_dialog::{
+    AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
+    AlertDialogRoot, AlertDialogTitle,
 };
 use dioxus::prelude::*;
 use zwipe_components::{Button, ButtonVariant, CardRoleChips, KeywordChips, OracleText};
@@ -220,9 +216,6 @@ pub(crate) fn CardRulesDialog(
                                             roles: roles.clone(),
                                             tags_by_role: tags_by_role.clone(),
                                             other_tags: other_tags.clone(),
-                                            help: rsx! {
-                                                InfoButton { topic: HintTopic::CardRoles }
-                                            },
                                         }
                                     }
                                     if !face.oracle.is_empty() {

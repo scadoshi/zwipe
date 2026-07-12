@@ -1,4 +1,4 @@
-//! Canonical concept explainers: Deck tags, Oracle tags, Card roles.
+//! Canonical concept explainers: Deck tags, Oracle tags.
 //!
 //! One source of truth per concept, reused by the on-demand `InfoButton`
 //! explainers and the one-time hint dialogs that touch the same ground. Each
@@ -52,26 +52,6 @@ pub fn OracleTagsExplainer() -> Element {
                 "Your "
                 HintColored { color: "--accent-secondary", "deck tags" }
                 " pre-pick a starter set from the ~4,500 available. Leave them if you're not sure."
-            }
-        }
-    }
-}
-
-/// Card roles: the read-side chips derived from a card's oracle tags.
-#[component]
-pub fn CardRolesExplainer() -> Element {
-    rsx! {
-        HintBullets {
-            HintBullet {
-                "The chips on a card are its "
-                HintColored { color: "--accent-secondary", "roles" }
-                ", like Removal, Ramp, or Card advantage."
-            }
-            HintBullet { "Tap a role to see the specific oracle tags underneath it." }
-            HintBullet {
-                "You never "
-                HintColored { color: "--accent-tertiary", "pick" }
-                " roles. They're derived from the card's oracle tags."
             }
         }
     }
