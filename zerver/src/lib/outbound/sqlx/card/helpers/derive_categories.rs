@@ -44,7 +44,7 @@ pub const CATEGORY_ROOTS: &[(&str, &[&str])] = &[
     ("burn", &["burn"]),
     // Broad umbrella: everything that nets cards. Draw (below) is the literal-draw
     // subset of this, so the two intentionally overlap.
-    ("card_advantage", &["card-advantage"]),
+    ("card_advantage", &["card-advantage", "hand-positive"]),
     ("copy", &["copy", "clone"]),
     ("counterspell", &["counterspell"]),
     (
