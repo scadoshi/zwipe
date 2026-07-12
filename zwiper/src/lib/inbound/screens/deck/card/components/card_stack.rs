@@ -168,6 +168,15 @@ impl<A: 'static> CardStack<A> {
         self.cards.write().insert(idx, card);
     }
 
+    /// Replaces the card at the cursor in place (e.g. swapping in a chosen
+    /// printing before the swipe commits). No-op when the cursor is past the end.
+    pub fn replace_current(&mut self, card: Card) {
+        let idx = (self.index)();
+        if let Some(slot) = self.cards.write().get_mut(idx) {
+            *slot = card;
+        }
+    }
+
     // ── cursor ───────────────────────────────────────────────────────────
 
     /// Moves the cursor forward one card (linear stacks). The cursor may land

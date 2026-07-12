@@ -1,4 +1,7 @@
-use super::components::card_info::{CardInfoDisplay, CardRulesDialog, CardSkeleton, RulesButton};
+use super::components::{
+    card_info::{CardInfoDisplay, CardRulesDialog, CardSkeleton, RulesButton},
+    printing_sheet::PrintingSheet,
+};
 use crate::{
     inbound::{
         components::{
@@ -144,6 +147,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     // grayed "?" in the util bar reopens it on demand.
     let swipe_hint_open = use_one_time_hint(HINT_ADD_DECK_CARDS);
     let show_rules = use_signal(|| false);
+    let mut printing_open = use_signal(|| false);
 
     let mut deck_cards_ids = use_signal(HashSet::<Uuid>::new);
     let mut deck_format: Signal<Option<Format>> = use_signal(|| None);
@@ -1224,7 +1228,11 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                             if let Some(card) = current_card() {
                                 CardInfoDisplay { card: card.clone() }
-                                CardRulesDialog { open: show_rules, card }
+                                CardRulesDialog {
+                                    open: show_rules,
+                                    card,
+                                    on_printings: move |_| printing_open.set(true),
+                                }
                             }
                         } else if !stack.is_empty() {
                             // Cursor sits one past the last card. A prefetch
@@ -1441,6 +1449,17 @@ pub fn Add(deck_id: Uuid) -> Element {
                             RulesButton { open: show_rules }
                         }
                     }
+                }
+            }
+
+            // Root-mounted (sibling of the ActionBar), so the bottom sheet's
+            // z-index covers the footer instead of stacking under it. Pick a
+            // printing → re-skin the focused card; swipe-right adds that printing.
+            if let Some(card) = current_card() {
+                PrintingSheet {
+                    card,
+                    open: printing_open,
+                    on_save: move |new_card: Card| stack.replace_current(new_card),
                 }
             }
 

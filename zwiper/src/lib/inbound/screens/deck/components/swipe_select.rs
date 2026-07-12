@@ -21,7 +21,10 @@ use crate::{
             telemetry::usage_buffer::UsageBuffer,
         },
         screens::deck::card::{
-            components::card_info::{CardInfoDisplay, CardRulesDialog, CardSkeleton, RulesButton},
+            components::{
+                card_info::{CardInfoDisplay, CardRulesDialog, CardSkeleton, RulesButton},
+                printing_sheet::PrintingSheet,
+            },
             filter::card_filter_sheet::CardFilterSheet,
         },
     },
@@ -153,6 +156,7 @@ pub(crate) fn SwipeSelect(
     // mounted while closed — a plain mount-time one-time hint would misfire).
     let hint_open = use_signal(|| false);
     let show_rules = use_signal(|| false);
+    let mut printing_open = use_signal(|| false);
     let mut hint_fired = use_signal(|| false);
     use_effect(move || {
         if open() && !*hint_fired.peek() {
@@ -367,7 +371,11 @@ pub(crate) fn SwipeSelect(
                         }
                         if let Some(card) = current_card {
                             CardInfoDisplay { card: card.clone() }
-                            CardRulesDialog { open: show_rules, card }
+                            CardRulesDialog {
+                                open: show_rules,
+                                card,
+                                on_printings: move |_| printing_open.set(true),
+                            }
                         }
                     } else if is_loading_cards() || is_loading_more() {
                         CardSkeleton { is_loading: true }
@@ -399,6 +407,22 @@ pub(crate) fn SwipeSelect(
                     }
                     if has_cards {
                         RulesButton { open: show_rules }
+                    }
+                }
+
+                // Root-mounted (sibling of the ActionBar) so the bottom sheet
+                // covers the footer. Pick a printing → swap the focused card;
+                // swipe-right selects that printing (persisted as commander_id).
+                if let Some(card) = cards().get(current_index()).cloned() {
+                    PrintingSheet {
+                        card,
+                        open: printing_open,
+                        on_save: move |new_card: Card| {
+                            let idx = current_index();
+                            if let Some(slot) = cards.write().get_mut(idx) {
+                                *slot = new_card;
+                            }
+                        },
                     }
                 }
 

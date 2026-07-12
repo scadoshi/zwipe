@@ -145,7 +145,14 @@ pub(crate) fn RulesButton(open: Signal<bool>) -> Element {
 /// text-light (Secret Lair, full-art, foreign-language). Opened from the
 /// util-bar [`RulesButton`] via the shared `open` signal. Handles multi-faced cards.
 #[component]
-pub(crate) fn CardRulesDialog(open: Signal<bool>, card: Card) -> Element {
+pub(crate) fn CardRulesDialog(
+    open: Signal<bool>,
+    card: Card,
+    /// Opens the printings sheet. When set, a "Printings" action shows in the
+    /// dialog footer (mirrors the deck-view expand-row → Printing button).
+    #[props(default)]
+    on_printings: Option<EventHandler<()>>,
+) -> Element {
     let sd = &card.scryfall_data;
     let name = sd.name.clone();
     let rarity_name = sd.rarity.to_long_name();
@@ -222,6 +229,15 @@ pub(crate) fn CardRulesDialog(open: Signal<bool>, card: Card) -> Element {
                     AlertDialogAction {
                         on_click: move |_| open.set(false),
                         "Close"
+                    }
+                    if let Some(handler) = on_printings {
+                        AlertDialogAction {
+                            on_click: move |_| {
+                                open.set(false);
+                                handler.call(());
+                            },
+                            "Printings"
+                        }
                     }
                 }
             }
