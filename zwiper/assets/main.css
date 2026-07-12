@@ -541,8 +541,12 @@ button {
 }
 
 /* Min-version gate blocking screen — the headline pulses red. */
-.update-required-title {
-    color: var(--color-error);
+/* Compound selector so it outranks .card-title's color (defined later). */
+.card-title.update-required-title {
+    display: block;
+    color: #ff3030;
+    font-weight: bold;
+    text-transform: uppercase;
     animation: update-required-pulse 1.6s ease-in-out infinite;
 }
 

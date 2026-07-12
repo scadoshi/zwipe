@@ -33,7 +33,6 @@ pub fn UpdateRequired() -> Element {
                     div { class: "card", style: "cursor: default;",
                         span {
                             class: "card-title update-required-title",
-                            style: "display: block; color: #ff3030; font-weight: bold; text-transform: uppercase;",
                             "Update required"
                         }
                         hr { class: "box-rule", style: "margin-left: -1rem; margin-right: -1rem;" }
