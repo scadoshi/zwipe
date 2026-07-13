@@ -3,7 +3,7 @@ use crate::inbound::components::alert_dialog::{
     AlertDialogRoot, AlertDialogTitle,
 };
 use dioxus::prelude::*;
-use zwipe_components::{Button, ButtonVariant, CardDetails};
+use zwipe_components::{Button, ButtonVariant, CardDetails, card_face_count};
 use zwipe_core::domain::card::Card;
 
 /// Displays card metadata: prices, set, release date, artist. The card's oracle
@@ -80,9 +80,10 @@ pub(crate) fn RulesButton(open: Signal<bool>) -> Element {
 /// Dialog showing a card's full details (type, oracle text, stats, keywords,
 /// card roles), for printings whose image is text-light (Secret Lair, full-art,
 /// foreign-language). Opened from the util-bar [`RulesButton`] via the shared
-/// `open` signal. Wraps the shared [`CardDetails`], which handles multi-faced
-/// cards and owns the Flip control; the dialog adds only its Close (and an
-/// optional view-only Printings) action.
+/// `open` signal. Wraps the shared [`CardDetails`] for the body, but drives the
+/// Flip control from the dialog's own footer bar (alongside Close and an optional
+/// view-only Printings) rather than letting the body render it inline — so the
+/// dialog scrolls in one place and its controls stay pinned.
 #[component]
 pub(crate) fn CardDetailsDialog(
     open: Signal<bool>,
@@ -93,6 +94,10 @@ pub(crate) fn CardDetailsDialog(
     on_printings: Option<EventHandler<()>>,
 ) -> Element {
     let name = card.scryfall_data.name.clone();
+    // Face state lives here so Flip can sit in the footer bar; the body reads it
+    // via the controlled `face` prop.
+    let face_count = card_face_count(&card);
+    let mut face = use_signal(|| 0usize);
     rsx! {
         AlertDialogRoot {
             open: open(),
@@ -106,18 +111,33 @@ pub(crate) fn CardDetailsDialog(
                 hr { class: "dialog-rule" }
                 AlertDialogDescription {
                     // The name lives in the title; the shared body shows the
-                    // per-face cost, so `show_name` is off here. `card-rules`
-                    // scrolls a long single face.
+                    // per-face cost, so `show_name` is off. The description is the
+                    // sole scroll container (`card-rules` no longer scrolls), and
+                    // Flip is hoisted to the footer, so `show_flip` is off.
                     div { class: "card-rules",
                         CardDetails {
                             card,
                             show_name: false,
                             show_classification: true,
+                            show_flip: false,
+                            face: Some(face),
                         }
                     }
                 }
                 hr { class: "dialog-rule" }
                 AlertDialogActions {
+                    // Plain button, not AlertDialogAction: the primitive's action
+                    // buttons always close the dialog on click, but Flip must swap
+                    // faces and leave the dialog open. The class matches the footer
+                    // buttons' styling.
+                    if face_count > 1 {
+                        button {
+                            r#type: "button",
+                            class: "alert-dialog-action",
+                            onclick: move |_| face.set((face() + 1) % face_count),
+                            "Flip"
+                        }
+                    }
                     AlertDialogAction {
                         on_click: move |_| open.set(false),
                         "Close"

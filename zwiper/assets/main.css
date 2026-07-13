@@ -1933,10 +1933,9 @@ button {
 
 /* Card-rules dialog body: reuses the expanded card-row detail markup
    (card-detail-* classes) so mana/oracle symbols and chips render identically.
-   This just scrolls long cards and separates multi-face cards. */
+   Scrolling is owned by the enclosing .alert-dialog-description (a single scroll
+   container); this stays a plain text-styling wrapper so the two don't nest. */
 .card-rules {
-    max-height: 55vh;
-    overflow-y: auto;
     text-align: left;
     font-size: 0.75rem;
 }

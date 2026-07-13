@@ -38,7 +38,7 @@ mod theme_picker;
 pub use action_bar::ActionBar;
 pub use banner::{Banner, BannerStatus};
 pub use button::{Button, ButtonVariant};
-pub use card_details::CardDetails;
+pub use card_details::{CardDetails, card_face_count};
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
 pub use changelog::Changelog;
