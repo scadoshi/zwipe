@@ -1330,6 +1330,30 @@ a.nav-dropdown-item.active:visited {
     }
 }
 
+/* Below the nav breakpoint the hamburger panel expands into the header region,
+   over the fixed banner stack (both sit at z-index 100). Slide the banners out
+   of the opening menu's way. Both selectors are crate-owned (.nav-panel-open
+   from NavBar, .banner-stack from Banner) and the offsets track the shared
+   .banner-stack geometry above, so this interaction belongs here rather than in
+   any one consumer's stylesheet. */
+@media (max-width: 60rem) {
+    body:has(.nav-panel-open) .banner-stack {
+        /* down to the bottom edge (top/bottom auto-flips can't transition,
+           transform can); 7.5rem = the 6rem top offset + a 1.5rem bottom margin */
+        transform: translateY(calc(100vh - 100% - 7.5rem));
+        transform: translateY(calc(100dvh - 100% - 7.5rem));
+    }
+}
+
+/* Short viewports (landscape phones): the open menu spans the full height, so
+   there's no clear bottom edge to retreat to; slide the banners off-screen. */
+@media (max-width: 60rem) and (max-height: 500px) {
+    body:has(.nav-panel-open) .banner-stack {
+        transform: translateY(100vh);
+        transform: translateY(100dvh);
+    }
+}
+
 /* Status pills, shared with the banner header. Filled to match the app's stat
    chips: the status color as text over a 12% tint, with a 35% border. */
 .status-tag {
