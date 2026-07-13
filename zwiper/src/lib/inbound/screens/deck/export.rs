@@ -212,7 +212,12 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                 if deck_resource().is_some_and(|r| r.is_err()) {
                                     rsx! { p { class: "text-muted", "Could not load deck" } }
                                 } else {
-                                    rsx! { div { class: "spinner" } }
+                                    rsx! {
+                                        div { class: "skeleton-export",
+                                            div { class: "skeleton-bar skeleton-export-label" }
+                                            div { class: "skeleton-export-textarea" }
+                                        }
+                                    }
                                 }
                             }
                         }
