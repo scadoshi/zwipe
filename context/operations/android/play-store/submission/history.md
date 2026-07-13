@@ -2,6 +2,14 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-07-12 — `1.6.0`, versionCode `26`** (folds the Lands row Budget->Mana
+  deck-view move into 1.6.0; no other client changes). Built per the recipe:
+  `dx bundle` → `launcher_icons.sh` → `back_handler.sh` → gradle patch (compileSdk 36 /
+  targetSdk 35 / versionCode 26) → `gradlew :app:bundleRelease` → jarsigner. Artifact
+  `zwipe-1.6.0-vc26.aab`, signed + `jar verified`, targetSdk 35 confirmed. Smoke test
+  skipped (UI-only row move). iOS counterpart build 64. Supersedes vc25 (submitted to
+  Production review earlier the same day).
+
 - **2026-07-12 — `1.6.0`, versionCode `25`** (card roles + oracle tags, deck-view reorg
   into Profile/Budget/Tags, shared CardDetails + flippable card images across app and
   site, 31 themes (17 new) + theme persistence, in-app changelog). Built per the recipe:
