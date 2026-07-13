@@ -80,6 +80,15 @@ fn build_rules(card: &Card) -> Option<Vec<FaceRules>> {
     }])
 }
 
+/// Number of rules faces a card renders as in [`CardDetails`]: 1 for a normal
+/// card, >1 for DFC/split cards (shown one at a time behind Flip), 0 when there's
+/// nothing to show. Hosts that place their own Flip control outside the component
+/// (e.g. an eyeball dialog putting it in a footer bar) use this to decide whether
+/// to render it.
+pub fn card_face_count(card: &Card) -> usize {
+    build_rules(card).map(|f| f.len()).unwrap_or(0)
+}
+
 /// The shared card-detail body + action bar.
 ///
 /// Renders the current face's type line, oracle text, and stats (reordered so the
@@ -105,6 +114,15 @@ pub fn CardDetails(
     /// Fires with the new face index whenever the card is flipped, so a host can
     /// mirror the shown side elsewhere (e.g. zite's image preview + hover stack).
     on_face_change: Option<EventHandler<usize>>,
+    /// Controlled shown-face index. When `Some`, the host owns the face state so
+    /// it can drive Flip from its own chrome (e.g. a dialog footer); when `None`,
+    /// this component owns it internally. Pair with `show_flip: false`.
+    #[props(default)]
+    face: Option<Signal<usize>>,
+    /// Render the built-in Flip control in the action bar for multi-faced cards.
+    /// Off for hosts that place Flip elsewhere (and pass `face` to drive it).
+    #[props(default = true)]
+    show_flip: bool,
     /// Whether `actions` carries any buttons, so the bar renders to hold them.
     /// (The slot itself can't be introspected.)
     #[props(default)]
@@ -137,7 +155,10 @@ pub fn CardDetails(
     // Multi-faced cards (DFCs) show one face at a time with a Flip control, so a
     // long two-face card can't overflow a non-scrolling host.
     let face_count = faces.as_ref().map(|f| f.len()).unwrap_or(0);
-    let mut face_idx = use_signal(|| 0usize);
+    // Host-controlled face state when `face` is passed, else an internal signal
+    // (the hook always runs so the call order stays stable across renders).
+    let internal_face = use_signal(|| 0usize);
+    let mut face_idx = face.unwrap_or(internal_face);
     let cur = face_idx().min(face_count.saturating_sub(1));
     let current_face = faces.as_ref().and_then(|f| f.get(cur)).cloned();
     // Head cost tracks the shown face.
@@ -146,8 +167,9 @@ pub fn CardDetails(
         .map(|f| f.mana_cost.clone())
         .unwrap_or_default();
 
+    let show_flip_btn = face_count > 1 && show_flip;
     let show_image = has_image && on_image.is_some();
-    let has_defaults = face_count > 1 || show_image;
+    let has_defaults = show_flip_btn || show_image;
     let show_bar = has_defaults || has_actions;
 
     rsx! {
@@ -192,7 +214,7 @@ pub fn CardDetails(
             div { class: "card-row-actions",
                 if has_defaults {
                     div { class: "card-action-row",
-                        if face_count > 1 {
+                        if show_flip_btn {
                             button {
                                 class: "card-action-btn",
                                 onclick: move |evt| {
