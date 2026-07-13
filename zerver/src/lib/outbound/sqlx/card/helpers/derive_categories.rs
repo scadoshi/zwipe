@@ -54,6 +54,9 @@ pub const CATEGORY_ROOTS: &[(&str, &[&str])] = &[
             "gives-pp-counters",
             "repeatable-pp-counters",
             "counters-matter",
+            "gives-mm-counters",
+            "counter-increaser",
+            "gains-mm-counters",
         ],
     ),
     ("drain", &["drain-life"]),
@@ -80,23 +83,31 @@ pub const CATEGORY_ROOTS: &[(&str, &[&str])] = &[
             "synergy-energy",
         ],
     ),
-    ("evasion", &["evasion"]),
+    ("evasion", &["evasion", "gives-evasion"]),
     ("graveyard_hate", &["hate-graveyard"]),
-    ("lifegain", &["lifegain"]),
+    ("lifegain", &["lifegain", "lifegain-matters"]),
     ("mill", &["mill"]),
     ("protection", &["protection"]),
     ("pump", &["combat-trick"]),
     ("ramp", &["ramp", "mana-producer"]),
     ("recursion", &["recursion", "reanimate"]),
-    ("removal", &["removal"]),
+    ("removal", &["removal", "lockdown"]),
     ("sacrifice", &["sacrifice-outlet"]),
-    ("stax", &["tax"]),
+    ("stax", &["tax", "lockdown", "pillowfort"]),
     // Supplements the all_parts-based Tokens membership: nests the token-generation
     // otag family under the Tokens role instead of dumping it in "Other".
-    ("tokens", &["repeatable-token-generator", "synergy-token"]),
+    (
+        "tokens",
+        &[
+            "repeatable-token-generator",
+            "synergy-token",
+            "token-versions-of-cards",
+            "token-increaser",
+        ],
+    ),
     ("tutor", &["tutor"]),
     ("untap", &["untapper"]),
-    ("wipe", &["sweeper"]),
+    ("wipe", &["sweeper", "mass-land-denial"]),
 ];
 
 /// Manual one-off patches: exact oracle-tag slugs whose wording dodges Scryfall's
@@ -109,18 +120,121 @@ pub const CATEGORY_ROOTS: &[(&str, &[&str])] = &[
 pub const ROLE_TAG_OVERRIDES: &[(&str, &[&str])] = &[
     (
         "protection",
-        &["fog-selective", "damage-prevention", "phasing"],
+        &[
+            "fog-selective",
+            "damage-prevention",
+            "phasing",
+            "gains-indestructible",
+            "regenerates-self",
+            "damage-prevention-you",
+            "damage-prevention-self",
+            "regenerates-other",
+            "pseudo-fog",
+        ],
     ),
-    // Mana acceleration the `ramp`/`mana-producer` subtree misses (treasure nests
-    // under Tokens too; the overlap is intended).
-    ("ramp", &["gives-mana-ability", "repeatable-treasures"]),
+    (
+        "ramp",
+        &[
+            "gives-mana-ability",
+            "repeatable-treasures",
+            "adds-multiple-mana",
+        ],
+    ),
+    ("aggression", &["gains-haste", "extra-combat-phase"]),
+    ("burn", &["pinger"]),
+    ("copy", &["conjure-duplicate"]),
+    ("counters", &["move-counters", "pseudo-proliferate"]),
+    ("drain", &["drain-creature"]),
+    ("graveyard_hate", &["hate-graveyard-cast"]),
+    ("lifegain", &["lifegain-increaser"]),
+    ("mill", &["synergy-mill"]),
+    ("pump", &["shade-pump", "firebreathing"]),
+    (
+        "recursion",
+        &[
+            "castable-from-graveyard",
+            "temporary-reanimation",
+            "mass-reanimation",
+        ],
+    ),
+    ("removal", &["swap-removal", "mass-land-denial"]),
+    (
+        "sacrifice",
+        &[
+            "synergy-sacrifice",
+            "sacrifice-self",
+            "synergy-sacrifice-self",
+        ],
+    ),
+    (
+        "stax",
+        &[
+            "mass-land-denial",
+            "prevent-activation",
+            "prevent-cast",
+            "hatebear",
+        ],
+    ),
+    (
+        "tokens",
+        &[
+            "out-of-color-token",
+            "unique-token",
+            "temporary-token",
+            "donate-token",
+            "unprinted-token",
+            "named-token",
+        ],
+    ),
+    ("tutor", &["booster-tutor", "synergy-tutor"]),
+    (
+        "untap",
+        &[
+            "extra-untap",
+            "untapper-planeswalker",
+            "untapper-equipment",
+            "ritual-untap",
+        ],
+    ),
 ];
 
 /// Flatten [`ROLE_TAG_OVERRIDES`] into parallel `(role, slug)` arrays for `unnest`.
 pub fn override_pairs() -> (Vec<String>, Vec<String>) {
+    pairs(ROLE_TAG_OVERRIDES)
+}
+
+/// Exact `(role, oracle-tag slug)` pairs to **subtract** from a role after subtree
+/// expansion: tags whose Scryfall parent chain drags them under a role's root but
+/// which don't belong there. The subtree mechanism only adds, and a tag can sit
+/// under several roots at once (multi-parent), so narrowing a root can't remove
+/// these cleanly — an explicit exclusion is the only sync-proof lever. Matched
+/// **exactly** (no subtree expansion), keyed by a real `CardRole` (unit-test
+/// checked); slug side is warn-checked against the live catalog. Applied in both
+/// derivation and grouping. Grow as you audit; applies on the next `zervice` run.
+pub const ROLE_TAG_EXCLUSIONS: &[(&str, &[&str])] = &[
+    // burn-self hangs off burn-creature deep under the removal subtree; it is a
+    // self-burn creature, not removal.
+    ("removal", &["burn-self"]),
+    // twiddle is a direct child of the `untapper` root but also means *tap*
+    // (opponent's permanents), so it over-selects for the untap role.
+    ("untap", &["twiddle"]),
+    // counter-fuel-aesthetic is flavor/counter-fuel, not a +1/+1-counters payoff.
+    ("counters", &["counter-fuel-aesthetic"]),
+    // repeatable-maps (Maps) is a multi-parent artifact-token/surveil tag; it
+    // lands under mill via `surveil` but isn't a mill payoff.
+    ("mill", &["repeatable-maps"]),
+];
+
+/// Flatten [`ROLE_TAG_EXCLUSIONS`] into parallel `(role, slug)` arrays for `unnest`.
+pub fn exclusion_pairs() -> (Vec<String>, Vec<String>) {
+    pairs(ROLE_TAG_EXCLUSIONS)
+}
+
+/// Flatten a `(role, &[slug])` table into parallel `(role, slug)` arrays.
+fn pairs(table: &[(&str, &[&str])]) -> (Vec<String>, Vec<String>) {
     let mut roles = Vec::new();
     let mut slugs = Vec::new();
-    for (role, tags) in ROLE_TAG_OVERRIDES {
+    for (role, tags) in table {
         for tag in *tags {
             roles.push((*role).to_string());
             slugs.push((*tag).to_string());
@@ -129,10 +243,10 @@ pub fn override_pairs() -> (Vec<String>, Vec<String>) {
     (roles, slugs)
 }
 
-/// Non-fatal typo guard: log any override slug the `oracle_tags` catalog doesn't
-/// carry, so a bad `ROLE_TAG_OVERRIDES` entry surfaces in the zervice log instead
-/// of silently matching nothing.
-async fn warn_unknown_override_slugs(pool: &PgPool, slugs: &[String]) {
+/// Non-fatal typo guard: log any slug the `oracle_tags` catalog doesn't carry, so
+/// a bad `ROLE_TAG_OVERRIDES` / `ROLE_TAG_EXCLUSIONS` entry surfaces in the zervice
+/// log instead of silently matching nothing. `source` names the const for the log.
+async fn warn_unknown_slugs(pool: &PgPool, slugs: &[String], source: &str) {
     if slugs.is_empty() {
         return;
     }
@@ -145,7 +259,7 @@ async fn warn_unknown_override_slugs(pool: &PgPool, slugs: &[String]) {
     .await
     .unwrap_or_default();
     if !unknown.is_empty() {
-        tracing::warn!("ROLE_TAG_OVERRIDES references unknown oracle-tag slugs: {unknown:?}");
+        tracing::warn!("{source} references unknown oracle-tag slugs: {unknown:?}");
     }
 }
 
@@ -168,11 +282,16 @@ pub async fn derive_categories(pool: &PgPool) -> anyhow::Result<u64> {
         }
     }
     let (ov_categories, ov_slugs) = override_pairs();
-    warn_unknown_override_slugs(pool, &ov_slugs).await;
+    let (ex_categories, ex_slugs) = exclusion_pairs();
+    warn_unknown_slugs(pool, &ov_slugs, "ROLE_TAG_OVERRIDES").await;
+    warn_unknown_slugs(pool, &ex_slugs, "ROLE_TAG_EXCLUSIONS").await;
 
     let result = sqlx::query(
         "WITH RECURSIVE roots(category, root_slug) AS (
              SELECT c, r FROM unnest($1::text[], $2::text[]) AS t(c, r)
+         ),
+         excl(category, slug) AS (
+             SELECT c, s FROM unnest($5::text[], $6::text[]) AS e(c, s)
          ),
          seeded(category, id, slug) AS (
              SELECT r.category, ot.id, ot.slug FROM roots r JOIN oracle_tags ot ON ot.slug = r.root_slug
@@ -184,10 +303,12 @@ pub async fn derive_categories(pool: &PgPool) -> anyhow::Result<u64> {
          ),
          derived(oracle_id, category) AS (
              SELECT DISTINCT co.oracle_id, s.category FROM card_oracle_tags co JOIN subtree s ON s.slug = co.oracle_tag
+               WHERE NOT EXISTS (SELECT 1 FROM excl e WHERE e.category = s.category AND e.slug = co.oracle_tag)
              UNION
              -- exact leaf overrides: matched as-is, no subtree expansion
              SELECT DISTINCT co.oracle_id, o.category
                FROM card_oracle_tags co JOIN unnest($3::text[], $4::text[]) AS o(category, slug) ON o.slug = co.oracle_tag
+               WHERE NOT EXISTS (SELECT 1 FROM excl e WHERE e.category = o.category AND e.slug = co.oracle_tag)
              UNION
              SELECT DISTINCT sd.oracle_id, 'tokens' FROM scryfall_data sd
                WHERE sd.all_parts @> '[{\"component\":\"token\"}]'::jsonb AND sd.oracle_id IS NOT NULL
@@ -205,6 +326,8 @@ pub async fn derive_categories(pool: &PgPool) -> anyhow::Result<u64> {
     .bind(&root_slugs)
     .bind(&ov_categories)
     .bind(&ov_slugs)
+    .bind(&ex_categories)
+    .bind(&ex_slugs)
     .execute(pool)
     .await
     .context("failed to derive mechanical_categories from oracle tags")?;
@@ -229,10 +352,22 @@ mod tests {
     }
 
     /// Every override key must be a real card role too (the slug side is checked
-    /// at runtime against the live catalog by `warn_unknown_override_slugs`).
+    /// at runtime against the live catalog by `warn_unknown_slugs`).
     #[test]
     fn override_roles_are_valid_variants() {
         for (role, _) in ROLE_TAG_OVERRIDES {
+            assert!(
+                CardRole::try_from(*role).is_ok(),
+                "'{role}' is not a CardRole variant",
+            );
+        }
+    }
+
+    /// Every exclusion key must be a real card role too (slug side warn-checked at
+    /// runtime by `warn_unknown_slugs`).
+    #[test]
+    fn exclusion_roles_are_valid_variants() {
+        for (role, _) in ROLE_TAG_EXCLUSIONS {
             assert!(
                 CardRole::try_from(*role).is_ok(),
                 "'{role}' is not a CardRole variant",

@@ -15,7 +15,7 @@ use anyhow::Context;
 use sqlx::PgPool;
 use zwipe_core::domain::card::oracle_tag::NOISE_ORACLE_TAG_SLUGS;
 
-use super::derive_categories::{CATEGORY_ROOTS, override_pairs};
+use super::derive_categories::{CATEGORY_ROOTS, exclusion_pairs, override_pairs};
 
 /// Rebuilds `card_profiles.oracle_tags_by_role` and `.other_oracle_tags` from the
 /// tag hierarchy + [`CATEGORY_ROOTS`]. Returns rows affected.
@@ -34,6 +34,7 @@ pub async fn refresh_oracle_tag_groups(pool: &PgPool) -> anyhow::Result<u64> {
         .map(|s| (*s).to_string())
         .collect();
     let (ov_roles, ov_slugs) = override_pairs();
+    let (ex_roles, ex_slugs) = exclusion_pairs();
 
     // The `other` bucket's noise predicate mirrors `is_noise_oracle_tag`: the
     // explicit list is bound as $3; the four slug patterns are inlined below.
@@ -41,16 +42,23 @@ pub async fn refresh_oracle_tag_groups(pool: &PgPool) -> anyhow::Result<u64> {
         "WITH RECURSIVE roots(role, root_slug) AS (
              SELECT r, s FROM unnest($1::text[], $2::text[]) AS t(r, s)
          ),
+         excl(role, slug) AS (
+             SELECT r, s FROM unnest($6::text[], $7::text[]) AS e(r, s)
+         ),
          subtree(role, id, slug) AS (
              SELECT r.role, ot.id, ot.slug FROM roots r JOIN oracle_tags ot ON ot.slug = r.root_slug
              UNION
              SELECT st.role, c.id, c.slug FROM subtree st JOIN oracle_tags c ON st.id = ANY(c.parent_ids)
          ),
          membership(role, slug) AS (
-             SELECT DISTINCT role, slug FROM subtree
-             UNION
-             -- exact leaf overrides: matched as-is, no subtree expansion
-             SELECT r, s FROM unnest($4::text[], $5::text[]) AS o(r, s)
+             SELECT role, slug FROM (
+                 SELECT DISTINCT role, slug FROM subtree
+                 UNION
+                 -- exact leaf overrides: matched as-is, no subtree expansion
+                 SELECT r, s FROM unnest($4::text[], $5::text[]) AS o(r, s)
+             ) m
+             -- subtract exact (role, slug) exclusions dragged in by the hierarchy
+             WHERE NOT EXISTS (SELECT 1 FROM excl e WHERE e.role = m.role AND e.slug = m.slug)
          ),
          grouped(oracle_id, role, tags) AS (
              SELECT co.oracle_id, m.role, jsonb_agg(DISTINCT co.oracle_tag ORDER BY co.oracle_tag)
@@ -84,6 +92,8 @@ pub async fn refresh_oracle_tag_groups(pool: &PgPool) -> anyhow::Result<u64> {
     .bind(&noise)
     .bind(&ov_roles)
     .bind(&ov_slugs)
+    .bind(&ex_roles)
+    .bind(&ex_slugs)
     .execute(pool)
     .await
     .context("failed to refresh oracle_tags_by_role / other_oracle_tags")?;
