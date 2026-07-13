@@ -1,40 +1,46 @@
-# zwipe
+# Zwipe
 
-mobile-first magic: the gathering deck builder with swipe-based navigation.
+Mobile-first Magic: The Gathering deck builder with swipe-based navigation.
 
-**status:** feature complete — ready for app store submission
+**Status:** v1.6.0 live on the iOS App Store; Android in closed testing (production launch in review); web client at [zwipe.net](https://zwipe.net).
 
-## tech stack
+## Tech stack
 
-full-stack rust application:
-- **zwipe-core**: shared domain types, validation, HTTP contracts — the single source of truth
-- **zerver**: axum rest api, postgresql, sqlx, jwt auth, scryfall sync
-- **zwiper**: dioxus mobile/ios app, swipe gestures, 9 themes, dark mode
-- **zite**: dioxus web client at [zwipe.net](https://zwipe.net)
-- **zervice**: background jobs (scryfall sync, session cleanup)
+Full-stack Rust:
+- **zwipe-core**: shared domain types, validation, business rules, HTTP contracts; the single source of truth
+- **zwipe-components**: shared Dioxus UI components and CSS (themes, changelog, card details) consumed by the app, the site, and the owner's portfolio
+- **zerver**: Axum REST API, PostgreSQL, SQLx, JWT auth, Scryfall sync
+- **zwiper**: Dioxus iOS and Android app, swipe gestures, 31 themes, dark mode
+- **zite**: Dioxus web client at [zwipe.net](https://zwipe.net)
+- **zervice**: background jobs (Scryfall sync, session cleanup)
 
 ```
 zwiper ──→ zwipe-core ←── zerver
-zite   ──→ zwipe-core
+  │           ↑            (zervice binary)
+  └──→ zwipe-components ←── zite ──→ zwipe-core
 ```
 
-## quick start
+## Quick start
 
 ```bash
 # prerequisites: rust (https://rustup.rs), macos: xcode-select --install
 
-./zcripts/dev-env/macos/setup.sh      # macos setup (postgres, dx, sqlx-cli, database)
+./zcripts/dev-env/macos/setup.sh    # macos setup (postgres, dx, sqlx-cli, database)
 ./zcripts/dev-env/fedora/setup.sh   # linux setup
 
-cargo run --bin zerver            # backend api
-cd zwiper && dx serve             # mobile app (web preview)
-cargo run --bin zervice           # scryfall card sync (run once to seed)
+cargo run --bin zerver              # backend api
+cd zwiper && dx serve               # mobile app (web preview)
+cargo run --bin zervice             # scryfall card sync (run once to seed)
 ```
 
-## architecture
+## Architecture
 
-hexagonal architecture with domain-driven design. `zwipe-core` owns all shared domain types — zerver re-exports them and adds server-specific layers (database adapters, HTTP handlers, service orchestration). See `context/architecture/decisions.md` for key decisions.
+Hexagonal architecture with domain-driven design. `zwipe-core` owns all shared
+domain types; zerver re-exports them and adds server-specific layers (database
+adapters, HTTP handlers, service orchestration). See
+`context/architecture/decisions.md` for key decisions and `context/README.md`
+for the full documentation tree.
 
-## license
+## License
 
-cc by-nc 4.0 - see [license](LICENSE)
+CC BY-NC 4.0. See [LICENSE](LICENSE).
