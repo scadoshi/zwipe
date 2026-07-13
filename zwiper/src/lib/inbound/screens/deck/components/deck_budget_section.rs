@@ -1,6 +1,6 @@
 //! Budget rows for the deck view's collapsible "Budget" section: the price
 //! target and the deck's running total / average card price. (The Lands
-//! count/target moved to the Mana section in 1.6.1.) Split out of the profile
+//! count/target moved to the Mana section in 1.6.0.) Split out of the profile
 //! card (mirrors the Tags section) so the profile stays compact. The USD/EUR/TIX
 //! chips live in the section header and drive the running-price rows; the price
 //! *target* keeps its own stored currency (Scryfall gives each card a native

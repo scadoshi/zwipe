@@ -20,13 +20,7 @@ struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-const UPCOMING: &[Release] = &[Release {
-    version: "1.6.1",
-    date: "Coming soon",
-    entries: &[
-        "Your deck's Lands count and target now sit in the Mana section next to average mana value, instead of under Budget.",
-    ],
-}];
+const UPCOMING: &[Release] = &[];
 
 const RELEASES: &[Release] = &[
     Release {
@@ -48,7 +42,8 @@ const RELEASES: &[Release] = &[
             "New in-app guides explain deck tags, card roles, and oracle tags, so it's clear what each one means and how they shape your suggestions.",
             "Deck color identity shows as mana pips right after each deck's name.",
             "Every mana pip now tints its outline and glyph to its own mana color, so the colors stay instantly recognizable in any theme.",
-            "A reorganized deck view: Profile, Budget, and Tags are now tidy sections, your land and price targets read as clear goal-versus-actual rows, and the Budget section collapses to stay out of the way.",
+            "A reorganized deck view: Profile, Budget, and Tags are now tidy sections, your price target reads as a clear goal-versus-actual row, and the Budget section collapses to stay out of the way.",
+            "Your deck's lands now live in the Mana section next to average mana value, shown as a goal-versus-actual row against your land target.",
             "Shared deck pages now show each card's roles and the deck's full price to the cent, command zone included.",
             "More polish: two-color hybrid mana symbols now sit centered in their pips, keyword and card-role sections are clearly labeled, and the card-detail reveals ease open and closed instead of snapping.",
         ],

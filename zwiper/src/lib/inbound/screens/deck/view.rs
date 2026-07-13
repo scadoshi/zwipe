@@ -444,7 +444,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 open_section: open_section,
                                                 // Lands: actual count, shown as `actual / target`
                                                 // when a land target is set. Moved here from the
-                                                // Budget section in 1.6.1.
+                                                // Budget section in 1.6.0.
                                                 {
                                                     let value = match land_target {
                                                         Some(target) => format!("{land_count} / {target}"),
