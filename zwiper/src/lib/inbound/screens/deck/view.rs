@@ -365,6 +365,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                 || deck_profile.partner_commander_id.is_some()
                                 || deck_profile.background_id.is_some()
                                 || deck_profile.signature_spell_id.is_some();
+                            // Copied out before the rsx! moves deck_profile into
+                            // the Tags section; the Lands row (below, in Mana) needs it.
+                            let land_target = deck_profile.land_target;
                             rsx! {
                             div { class: "content-enter",
                                   style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;",
@@ -413,28 +416,58 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                 }
 
                                 {
+                                    // Lands presence is its own reason to show the Mana
+                                    // section: a curve (mainboard cards) OR just a land
+                                    // target set, so the Lands goal-vs-actual stays
+                                    // visible even on an otherwise-empty deck.
+                                    let land_count = metrics.as_ref().map(|m| m.land_count).unwrap_or(0);
                                     rsx! {
-                                        if let (Some(m), Some(mana_curve_bars)) = (metrics.as_ref(), mana_curve_bars.as_ref()) {
+                                        if mana_curve_bars.is_some() || land_target.is_some() {
                                           div { class: "content-enter",
                                                 style: "display: flex; flex-direction: column; gap: 0.75rem;",
-                                            CollapsibleSection {
-                                                title: "Distributions",
-                                                open_section: open_section,
-                                                DeckCharts {
-                                                    type_bars: type_bars.clone(),
-                                                    category_bars: category_bars.clone(),
-                                                    color_bars: color_bars.clone(),
+                                            // Distributions stays mainboard-only (its bars
+                                            // are None without mainboard cards).
+                                            if mana_curve_bars.is_some() {
+                                                CollapsibleSection {
+                                                    title: "Distributions",
+                                                    open_section: open_section,
+                                                    DeckCharts {
+                                                        type_bars: type_bars.clone(),
+                                                        category_bars: category_bars.clone(),
+                                                        color_bars: color_bars.clone(),
+                                                    }
                                                 }
                                             }
 
                                             CollapsibleSection {
                                                 title: "Mana",
                                                 open_section: open_section,
-                                                div { class: "info-row",
-                                                    span { class: "info-row-label", "Average mana value" }
-                                                    span { class: "info-row-value", "{m.avg_cmc:.1}" }
+                                                // Lands: actual count, shown as `actual / target`
+                                                // when a land target is set. Moved here from the
+                                                // Budget section in 1.6.1.
+                                                {
+                                                    let value = match land_target {
+                                                        Some(target) => format!("{land_count} / {target}"),
+                                                        None => land_count.to_string(),
+                                                    };
+                                                    rsx! {
+                                                        div { class: "info-row",
+                                                            span { class: "info-row-label", "Lands" }
+                                                            span { class: "info-row-value", "{value}" }
+                                                        }
+                                                    }
                                                 }
-                                                ManaCurve { mana_curve_bars: *mana_curve_bars }
+                                                if let Some(m) = metrics.as_ref() {
+                                                    if mana_curve_bars.is_some() {
+                                                        div { class: "info-row",
+                                                            span { class: "info-row-label", "Average mana value" }
+                                                            span { class: "info-row-value", "{m.avg_cmc:.1}" }
+                                                        }
+                                                    }
+                                                }
+                                                if let Some(mana_curve_bars) = mana_curve_bars.as_ref() {
+                                                    ManaCurve { mana_curve_bars: *mana_curve_bars }
+                                                }
                                                 if let Some(rows) = mana_balance_rows {
                                                     ManaFulfillment { rows: rows }
                                                 }

@@ -1,10 +1,11 @@
-//! Budget rows for the deck view's collapsible "Budget" section: land target,
-//! actual land count, price target, and the deck's running total / average card
-//! price. Split out of the profile card (mirrors the Tags section) so the
-//! profile stays compact. The USD/EUR/TIX chips live in the section header and
-//! drive the running-price rows; the price *target* keeps its own stored
-//! currency (Scryfall gives each card a native price per currency, so switching
-//! reads a different pre-summed field, never a conversion). Rendered inside a
+//! Budget rows for the deck view's collapsible "Budget" section: the price
+//! target and the deck's running total / average card price. (The Lands
+//! count/target moved to the Mana section in 1.6.1.) Split out of the profile
+//! card (mirrors the Tags section) so the profile stays compact. The USD/EUR/TIX
+//! chips live in the section header and drive the running-price rows; the price
+//! *target* keeps its own stored currency (Scryfall gives each card a native
+//! price per currency, so switching reads a different pre-summed field, never a
+//! conversion). Rendered inside a
 //! [`CollapsibleSection`](super::collapsible_section::CollapsibleSection).
 
 use dioxus::prelude::*;
@@ -13,14 +14,13 @@ use zwipe_core::domain::{
     deck::{deck_metrics::DeckMetrics, deck_profile::DeckProfile},
 };
 
-/// Whether the deck has any budget-relevant field to show: a target set, or
-/// live metrics (which carry the land count + running prices).
+/// Whether the deck has any budget-relevant field to show: a price target set,
+/// or live metrics (which carry the running prices).
 pub(crate) fn has_budget(p: &DeckProfile, has_metrics: bool) -> bool {
-    p.land_target.is_some() || p.price_target.is_some() || has_metrics
+    p.price_target.is_some() || has_metrics
 }
 
-/// Budget rows: land target, land count, price target, running total + average
-/// price. Land target and Lands sit adjacent (goal vs. actual).
+/// Budget rows: price target, running total, and average card price.
 #[component]
 pub(crate) fn DeckBudgetSection(
     deck_profile: DeckProfile,
@@ -42,22 +42,6 @@ pub(crate) fn DeckBudgetSection(
 
     rsx! {
         div { style: "display:flex;flex-direction:column;",
-            // Lands: actual count, shown as `actual / target` when a land target is set.
-            if metrics.is_some() || deck_profile.land_target.is_some() {
-                {
-                    let count = metrics.as_ref().map(|m| m.land_count).unwrap_or(0);
-                    let value = match deck_profile.land_target {
-                        Some(target) => format!("{count} / {target}"),
-                        None => count.to_string(),
-                    };
-                    rsx! {
-                        div { class: "info-row",
-                            span { class: "info-row-label", "Lands" }
-                            span { class: "info-row-value", "{value}" }
-                        }
-                    }
-                }
-            }
             // Total price: running total, shown as `total / target` when a price
             // target is set. The target keeps its own stored currency.
             if metrics.is_some() || deck_profile.price_target.is_some() {
