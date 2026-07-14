@@ -21,7 +21,10 @@ use crate::{
         },
     },
     outbound::{
-        client::{ZwipeClient, version::get_min_client_version::ClientGetMinClientVersion},
+        client::{
+            ZwipeClient, changelog::get_changelog::ClientGetChangelog,
+            version::get_min_client_version::ClientGetMinClientVersion,
+        },
         session::Persist,
         theme_store::PersistTheme,
     },
@@ -36,7 +39,7 @@ use zwipe_core::{
         card::{Card, search_card::card_filter::builder::CardQueryBuilder},
         user::models::theme::ThemeConfig,
     },
-    http::contracts::metrics::AnonymousEventKind,
+    http::contracts::{changelog::HttpChangelog, metrics::AnonymousEventKind},
     version::version_at_least,
 };
 
@@ -74,6 +77,22 @@ impl FlavorCard {
     pub fn is_expired(&self) -> bool {
         Utc::now() >= self.expires_at
     }
+}
+
+/// App-wide changelog cache, populated by a background fetch at startup.
+///
+/// Fetched once per launch and held for the session (see [`spawn_upkeeper`]) so
+/// opening the Changelog screen is instant after the first launch. The screen
+/// reads this: `Loading` shows a skeleton, `Loaded` renders the fetched copy,
+/// and `Failed` falls back to the copy compiled into the binary.
+#[derive(Clone, PartialEq)]
+pub enum ChangelogCache {
+    /// Startup fetch still in flight.
+    Loading,
+    /// Fetched successfully from the server.
+    Loaded(HttpChangelog),
+    /// Fetch finished but failed; consumers use the compiled-in copy.
+    Failed,
 }
 
 /// Min-version gate state — true when this build is below the server minimum.
@@ -136,6 +155,26 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // Home flavor card — cached above the router with a TTL (see FlavorCard).
     let flavor_card: Signal<Option<FlavorCard>> = use_signal(|| None);
     use_context_provider(|| flavor_card);
+
+    // Changelog — fetched once in the background at startup and cached above the
+    // router for the session, so opening the Changelog screen is instant. The
+    // screen shows a skeleton while this is Loading and falls back to the
+    // compiled-in copy if it Fails. Public, so it runs even logged out.
+    let mut changelog_cache = use_signal(|| ChangelogCache::Loading);
+    use_context_provider(|| changelog_cache);
+    // use_future (not bare spawn) so the fetch runs exactly once, not on every
+    // re-render of this root component (e.g. when the min-version gate flips).
+    use_future(move || async move {
+        // Bind before awaiting so the peek guard is dropped, not held across it.
+        let http = client.peek().clone();
+        match http.get_changelog().await {
+            Ok(changelog) => changelog_cache.set(ChangelogCache::Loaded(changelog)),
+            Err(error) => {
+                tracing::debug!(?error, "changelog fetch failed; using compiled-in copy");
+                changelog_cache.set(ChangelogCache::Failed);
+            }
+        }
+    });
 
     // Theme — a live session's preferences win (freshest for this account),
     // else the last-used theme cached locally (so pre-auth screens render in it

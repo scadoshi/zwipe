@@ -21,6 +21,7 @@ use crate::inbound::http::handlers::{
         get_printings::get_printings, get_sets::get_sets, search_card::search_cards,
         search_commanders::search_commanders,
     },
+    changelog::get_changelog,
     client::get_min_client_version,
     deck::{
         clear_deck_suppressions::clear_deck_suppressions,
@@ -179,6 +180,17 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
+    // 30 req / 2s per IP — public changelog. Fetched once per app launch and
+    // Cloudflare edge-caches it, so origin traffic is tiny; this guards the
+    // origin if someone bypasses CF or warms many POPs.
+    let public_changelog_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(2))
+            .burst_size(30)
+            .key_extractor(CfConnectingIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
     // 10 req / min per IP — pre-auth funnel events. A legitimate session
     // fires a handful ever (app opened, register viewed/submitted); this is
     // an unauthenticated write, so keep the row-spam ceiling low.
@@ -281,6 +293,10 @@ pub fn public_routes() -> Router<AppState> {
                     Router::new()
                         .route("/min-version", get(get_min_client_version))
                         .layer(GovernorLayer::new(public_client_config)),
+                )
+                .route(
+                    "/changelog",
+                    get(get_changelog).layer(GovernorLayer::new(public_changelog_config)),
                 )
                 .nest(
                     "/metrics",

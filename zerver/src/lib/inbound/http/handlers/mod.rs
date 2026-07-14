@@ -5,6 +5,9 @@ pub mod auth;
 /// Card data handlers.
 pub mod card;
 #[cfg(feature = "zerver")]
+/// Public changelog handler (release-history feed).
+pub mod changelog;
+#[cfg(feature = "zerver")]
 /// Public client-metadata handlers (app version gating).
 pub mod client;
 /// Deck management handlers.
