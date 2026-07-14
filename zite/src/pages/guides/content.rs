@@ -390,12 +390,45 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "The Oracle tags field shows a curated set of the most useful tags up front, and search reaches the rest, about 4,500 in all. A deck can hold up to 30.",
             ),
+            Block::Note(
+                "Not sure what a tag does? Tap Dictionary in the picker to look it up. See Browse the oracle-tag dictionary.",
+            ),
             Block::H2("What they do"),
             Block::P(
                 "Selected oracle tags sharpen which cards Zwipe suggests while you swipe, and on a commander deck they contribute to the synergy order alongside your commander. See Synergy-ranked cards.",
             ),
             Block::Note(
                 "Deck tags are the easy on-ramp; oracle tags are the specific dial. See Deck tags, card roles & oracle tags: how they fit for how all three connect.",
+            ),
+        ],
+    },
+    Guide {
+        slug: "oracle-tag-dictionary",
+        title: "Browse the oracle-tag dictionary",
+        summary: "A read-only reference for every oracle tag: browse A to Z or search by name and description to learn what any tag means.",
+        category: "Decks",
+        blocks: &[
+            Block::Lead(
+                "The oracle-tag dictionary is a read-only reference for every oracle tag, about 4,500 in all, each with a plain-language description of what it means.",
+            ),
+            Block::H2("Opening it"),
+            Block::P(
+                "Open the Oracle tags picker from Tags on the deck's edit form, then tap Dictionary next to Search. The picker's help also has a Browse the full dictionary button. It's read-only, so looking around here never changes your deck.",
+            ),
+            Block::H2("Browse by letter"),
+            Block::P(
+                "An A to Z rail runs across the top, plus a # group for tags that start with a number. Tap a letter to list every tag that starts with it, in alphabetical order.",
+            ),
+            Block::H2("Search"),
+            Block::P(
+                "Type in the search box to match across the whole catalog by tag name or description, not just the letter you're on. A broad search shows the first matches.",
+            ),
+            Block::H2("What each entry shows"),
+            Block::P(
+                "Every row lists the tag's name, its description, and any parent tags it sits under. Descriptions are written by hand over time, so some tags still read \"No description yet.\"",
+            ),
+            Block::Note(
+                "This is the reference view. To use oracle tags on a deck, see Sharpen suggestions with oracle tags.",
             ),
         ],
     },
