@@ -269,6 +269,10 @@ pub struct RegisterUser {
     /// Client platform, recorded on the auto-login session. `None` for older
     /// clients; set by the HTTP handler from the request body.
     pub platform: Option<ClientPlatform>,
+
+    /// Client app version (e.g. `"1.6.1"`), recorded on the auto-login session.
+    /// `None` for older clients; set by the HTTP handler from the request body.
+    pub client_version: Option<String>,
 }
 
 #[cfg(feature = "zerver")]
@@ -317,6 +321,7 @@ impl RegisterUser {
             email,
             password_hash,
             platform: None,
+            client_version: None,
         })
     }
 }

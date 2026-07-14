@@ -94,6 +94,7 @@ impl FromStr for CreateSession {
         Ok(Self {
             user_id: Uuid::try_parse(s)?,
             platform: None,
+            client_version: None,
         })
     }
 }
@@ -136,6 +137,10 @@ pub struct CreateSession {
     /// Client platform of the session (recorded on the token). `None` for
     /// admin/impersonation paths and older clients.
     pub platform: Option<ClientPlatform>,
+
+    /// Client app version of the session (e.g. `"1.6.1"`, recorded on the token).
+    /// `None` for admin/impersonation paths and older clients.
+    pub client_version: Option<String>,
 }
 
 #[cfg(feature = "zerver")]
@@ -151,6 +156,7 @@ impl From<Uuid> for CreateSession {
         Self {
             user_id: value,
             platform: None,
+            client_version: None,
         }
     }
 }

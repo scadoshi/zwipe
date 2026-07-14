@@ -63,7 +63,9 @@ impl From<InvalidRefreshSession> for ApiError {
 impl TryFrom<HttpRefreshSession> for RefreshSession {
     type Error = InvalidRefreshSession;
     fn try_from(value: HttpRefreshSession) -> Result<Self, Self::Error> {
-        Self::new(&value.user_id, &value.refresh_token)
+        let mut request = Self::new(&value.user_id, &value.refresh_token)?;
+        request.client_version = value.client_version;
+        Ok(request)
     }
 }
 
@@ -73,7 +75,8 @@ pub async fn refresh_session(
     State(state): State<AppState>,
     Json(body): Json<HttpRefreshSession>,
 ) -> Result<(StatusCode, Json<Session>), ApiError> {
-    let request = RefreshSession::new(&body.user_id, &body.refresh_token)?;
+    let mut request = RefreshSession::new(&body.user_id, &body.refresh_token)?;
+    request.client_version = body.client_version;
 
     let session = state
         .auth_service

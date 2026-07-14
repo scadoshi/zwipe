@@ -65,7 +65,9 @@ impl AuthRepository for Postgres {
         ).fetch_one(&mut *tx).await?;
 
         let user: User = database_user.try_into()?;
-        let refresh_token = tx.create_refresh_token(user.id, request.platform).await?;
+        let refresh_token = tx
+            .create_refresh_token(user.id, request.platform, request.client_version.clone())
+            .await?;
         tx.commit().await?;
 
         Ok((user, refresh_token))
@@ -75,9 +77,12 @@ impl AuthRepository for Postgres {
         &self,
         user_id: Uuid,
         platform: Option<ClientPlatform>,
+        client_version: Option<String>,
     ) -> Result<RefreshToken, CreateSessionError> {
         let mut tx = self.pool.begin().await?;
-        let refresh_token = tx.create_refresh_token(user_id, platform).await?;
+        let refresh_token = tx
+            .create_refresh_token(user_id, platform, client_version)
+            .await?;
         tx.commit().await?;
 
         Ok(refresh_token)
@@ -238,7 +243,7 @@ impl AuthRepository for Postgres {
         // and get 401. Makes the token strictly single-use under concurrency.
         let existing = query_as!(
             DatabaseRefreshToken,
-            "SELECT id, user_id, expires_at, revoked, platform FROM refresh_tokens WHERE value_hash = $1 FOR UPDATE",
+            "SELECT id, user_id, expires_at, revoked, platform, client_version FROM refresh_tokens WHERE value_hash = $1 FOR UPDATE",
             request.refresh_token.sha256_hash()
         )
         .fetch_one(&mut *tx)
@@ -276,7 +281,12 @@ impl AuthRepository for Postgres {
             .platform
             .as_deref()
             .and_then(|p| p.parse::<ClientPlatform>().ok());
-        let new = tx.create_refresh_token(request.user_id, carried).await?;
+        // Version can change on app update, so prefer what the client just sent;
+        // fall back to the old row's value for clients that don't send it yet.
+        let client_version = request.client_version.clone().or(existing.client_version);
+        let new = tx
+            .create_refresh_token(request.user_id, carried, client_version)
+            .await?;
 
         tx.commit().await?;
 
