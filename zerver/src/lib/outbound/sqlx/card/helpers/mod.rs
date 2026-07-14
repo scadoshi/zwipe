@@ -2,6 +2,8 @@
 
 /// Derive `mechanical_categories` from oracle-tag subtrees + `all_parts` (Phase 2).
 pub mod derive_categories;
+/// Our authored oracle-tag descriptions, overlaid onto the catalog each sync.
+pub mod oracle_tag_descriptions;
 /// Group each card's oracle tags under their role + an "other" bucket (Phase 2).
 pub mod oracle_tag_groups;
 /// Oracle Tags ingest: replace the oracle_tag catalog + card correlation.
