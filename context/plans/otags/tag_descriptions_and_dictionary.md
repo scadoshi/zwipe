@@ -1,10 +1,13 @@
 # Oracle tag descriptions + dictionary
 
-**Status: PLAN (2026-07-12).** Two linked pieces the owner asked for:
-1. **Our own descriptions layer** — Scryfall describes only ~29% of tags; author
-   our own descriptions over time so tags are obvious to users.
+**Status: Part 1 mechanism SHIPPED (2026-07-13, `0114cb38`); authoring + Part 2 open.**
+Two linked pieces the owner asked for:
+1. **Our own descriptions layer** — Scryfall describes only ~29% of tags (1,302 of
+   4,494; the biggest tags are often blank); author our own over time until we
+   describe **all** of them (fully replacing Scryfall's). **Mechanism done; bulk
+   authoring is the ongoing work.**
 2. **Oracle tag dictionary** — a browsable page of all ~4,500 tags + descriptions
-   to surf.
+   to surf. **Not started.**
 
 They're one arc: the dictionary renders the descriptions. Raw slugs (shipped
 `ffd52c5e`) make this more valuable: the slug is the stable key, the "?" and the
@@ -12,9 +15,16 @@ dictionary carry the meaning.
 
 ## One sentence
 
-Give oracle tags human-written descriptions we author gradually, stored *outside*
-the Scryfall-synced catalog so the daily resync can't wipe them, merged at serve
-time, and surfaced in a searchable dictionary of all ~4,500 tags.
+Give oracle tags human-written descriptions we author gradually, kept durable
+against the daily Scryfall resync by **writing them into the `description` column
+at sync time** (ours always wins), and surfaced in a searchable dictionary of all
+~4,500 tags.
+
+> **Note (2026-07-13):** the shipped design **differs from the original plan below**.
+> We did *not* do a serve-time merge; instead `zervice` **overlays** our authored
+> descriptions into `oracle_tags.description` inside the sync transaction, right
+> after the `DELETE` + reinsert. See the updated Part 1. The rest of the doc
+> (authoring priority, Part 2 dictionary) still stands.
 
 ---
 
@@ -24,53 +34,61 @@ time, and surfaced in a searchable dictionary of all ~4,500 tags.
 
 `oracle_tags.description` is populated by Scryfall, and the daily sync
 (`zerver/.../card/helpers/oracle_tags.rs::sync_oracle_tags`) does
-**`DELETE FROM oracle_tags` then re-INSERT** — a full replace. Any description we
-write into that column is **wiped on the next `zervice` run**. So our descriptions
-must live in a store the Scryfall sync never touches, and be merged at read time.
+**`DELETE FROM oracle_tags` then re-INSERT** — a full replace. Any description
+written into that column out of band is **wiped on the next `zervice` run**. So our
+descriptions must live in a store the Scryfall sync never touches, and be
+re-applied every sync.
 
-### Design (decided 2026-07-12): repo file, compiled in, deployed by push
+### Design (SHIPPED 2026-07-13): repo const, overlaid into the column at sync time
 
 Our descriptions are keyed by `slug`, **authored in a repo file, compiled into the
-server binary, and shipped by a normal GitHub push -> deploy** (no DB table, no
-admin/live-edit path — deliberately). Concretely: a zerver-owned
-`slug -> &'static str` source (a Rust module, or a `.json` asset pulled in with
-`include_str!` and parsed once at startup), merged over Scryfall's at serve time.
+binary, and shipped by a normal GitHub push -> deploy** (no DB table, no
+admin/live-edit path — deliberately). Concretely: `ORACLE_TAG_DESCRIPTIONS`, a
+`&[(&str, &str)]` const in
+`zerver/src/lib/outbound/sqlx/card/helpers/oracle_tag_descriptions.rs`.
 
-Why this shape: version-controlled and diff-reviewed in PRs, no admin surface to
-secure, and "gradually add descriptions" = add entries to the file, push, deploy.
-The owner explicitly does **not** want app-side/admin editing.
+**How it's applied (this is the change from the original plan):** rather than
+merging at serve time, `sync_oracle_tags` runs an **overlay `UPDATE` inside the sync
+transaction**, right after the catalog reinsert:
 
-(If live editing without a deploy is ever wanted later, this migrates cleanly to a
-DB table + `LEFT JOIN` — but that's out of scope and not planned.)
+```sql
+UPDATE oracle_tags SET description = d.description
+FROM unnest($slugs, $descriptions) AS d(slug, description)
+WHERE oracle_tags.slug = d.slug
+```
 
-### Serving (both options)
+Ours always wins: it **replaces** Scryfall's where we have one and **fills** the
+blanks otherwise. Because the merged text now lives in the column post-sync, every
+reader (`get_oracle_tags`, the picker definition bar, the Part 2 dictionary) picks
+it up with **no serve-time merge and no client change**. A non-fatal log warn flags
+any authored slug the fresh catalog lacks (a typo would otherwise match nothing).
 
-`get_oracle_tags` (`zerver/src/lib/outbound/sqlx/card/mod.rs`, the catalog query)
-merges: **`description = our_description ?? scryfall_description`** (ours wins;
-falls back to Scryfall, then `None`). The `OracleTag` DTO already has
-`description: Option<String>` — so **no wire change and no client change**. This
-immediately enriches:
-- the deck picker's definition bar (`oracle_tag_select.rs` already renders
-  `t.description`),
-- anywhere else that reads the catalog (and the dictionary in Part 2).
+Why an overlay (not serve-merge): simpler readers (the column is the single source
+post-sync), and it matches the owner's ask ("zervice writes it in when done"). It
+migrates cleanly to a DB table later if live editing is ever wanted — out of scope.
 
-### Files
+### Files (shipped)
 
-- **New** `zerver/src/lib/.../oracle_tag_descriptions.rs` (or a `.json` asset +
-  `include_str!` loader) — the authored `slug -> &'static str` map. Server-only
-  (keep `zwipe-core` pure; only the server serves descriptions).
-- `zerver/.../card/mod.rs get_oracle_tags` — apply the merge.
-- Tests: our description wins over Scryfall's; our description fills a Scryfall
-  `NULL`; a slug with neither stays `None`.
+- **`zerver/.../card/helpers/oracle_tag_descriptions.rs`** — the authored
+  `ORACLE_TAG_DESCRIPTIONS` const + `description_pairs()` flattener + tests
+  (unique slugs, non-blank). Server-only; `zwipe-core` stays pure.
+- **`zerver/.../card/helpers/oracle_tags.rs`** — the overlay `UPDATE` + typo warn
+  inside `sync_oracle_tags`'s transaction.
+- No `get_oracle_tags` change, no wire change, no client change, no migration,
+  no `MIN_CLIENT_VERSION` bump — additive.
 
-### Authoring workflow
+### Authoring workflow (the open work)
 
-Add entries over time, priority order: the **curated ~48** (`CURATED_ORACLE_TAGS`)
-first, then the most-populated tags, then the long tail. Each batch is a small
-commit + deploy. The dictionary (Part 2) doubles as a progress view: tags with no
-description render "No description yet."
-
-**No `MIN_CLIENT_VERSION` bump, no migration (Option A), additive.**
+Add entries to `ORACLE_TAG_DESCRIPTIONS`, push, deploy; the next `zervice` run
+writes them in. Priority order: **highest card-population blanks first** (e.g.
+`triggered-ability` @ 7,885, `attack-trigger`, `removal-creature`), then the
+curated ~48, then the long tail — until coverage is satisfactory, then all of them.
+The starter batch (7 tags) shipped with the mechanism. Descriptions are user-facing:
+short, plain, em-dash-free; do **not** carry Scryfall's `[label](slug)` cross-link
+syntax (we overwrite with our own plain text everywhere). A catalog dump with
+per-tag populations to prioritize from lives in the sweep scratchpad
+(`otag-sweep/catalog.tsv`) — regenerate with the query in Part 1's authoring notes
+if gone.
 
 ---
 
