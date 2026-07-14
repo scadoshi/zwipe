@@ -116,6 +116,12 @@ Part 1) — one endpoint, no new backend. It returns all ~4,500 as
 **`ClientGetOracleTags` already exists** (`zwiper/.../client/card/get_oracle_tags.rs`),
 so the screen reuses it — no new client wiring.
 
+**Backend/serving/caching slice is spec'd separately** in
+[`dictionary_backend.md`](dictionary_backend.md): the endpoint is already
+CF-edge-cached (Rule 1, `/api/card/*`, 24h), the client already sends no auth (so it
+caches), and the only real backend work is test coverage + a description-freshness
+policy (24h TTL vs purge-on-deploy).
+
 ### Where (decided 2026-07-12): in-app (zwiper), read-only
 
 A new **zwiper screen** — a searchable, browsable reference. Read-only: authoring
