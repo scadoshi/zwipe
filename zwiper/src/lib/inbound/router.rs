@@ -21,6 +21,7 @@ use crate::inbound::{
         },
         home::Home,
         legal::privacy_policy::PrivacyPolicy,
+        oracle_tag_dictionary::OracleTagDictionary,
         profile::Profile,
     },
 };
@@ -60,6 +61,10 @@ pub enum Router {
     /// Release history — shared changelog, reached from Profile.
     #[route("/changelog")]
     Changelog {},
+
+    /// Oracle-tag dictionary — read-only searchable reference, reached from the picker.
+    #[route("/oracle-tags")]
+    OracleTagDictionary {},
 
     /// List all user's decks with name, format, and card count.
     #[route("/deck")]

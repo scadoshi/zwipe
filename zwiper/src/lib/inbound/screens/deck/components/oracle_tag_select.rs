@@ -8,16 +8,18 @@
 //! these (handled by the host screen); here the user tunes the set.
 
 use crate::{
-    inbound::components::{
-        concept_explainers::OracleTagsExplainer, hint_dialog::HintDialog,
-        screen_header::ScreenHeader,
+    inbound::{
+        components::{
+            catalog_cache::CatalogCache, concept_explainers::OracleTagsExplainer,
+            hint_dialog::HintDialog, screen_header::ScreenHeader,
+        },
+        router::Router,
     },
-    outbound::client::{ZwipeClient, card::get_oracle_tags::ClientGetOracleTags},
+    outbound::client::ZwipeClient,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe::inbound::http::ApiError;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
     card::oracle_tag::{CURATED_ORACLE_TAGS, OracleTag},
@@ -33,6 +35,8 @@ pub(crate) fn OracleTagSelect(
     on_close: EventHandler<()>,
 ) -> Element {
     let client: Signal<ZwipeClient> = use_context();
+    let cache: CatalogCache = use_context();
+    let navigator = use_navigator();
     let toast = use_toast();
     let mut query = use_signal(String::new);
     let mut focused = use_signal(|| Option::<OracleTag>::None);
@@ -45,8 +49,12 @@ pub(crate) fn OracleTagSelect(
         }
     });
 
-    let catalog: Resource<Result<Vec<OracleTag>, ApiError>> =
-        use_resource(move || async move { client().get_oracle_tags().await });
+    // Read the shared app-wide oracle-tag catalog (prefetched at startup), warming
+    // / revalidating it on open. One copy is shared with the dictionary + filter.
+    use_effect(move || {
+        cache.ensure_oracle_tags(client);
+    });
+    let cell = cache.oracle_tags.cell();
 
     let screen_class = if open() {
         "screen swipe-select-screen show"
@@ -54,11 +62,8 @@ pub(crate) fn OracleTagSelect(
         "screen swipe-select-screen"
     };
 
-    let catalog_read = catalog.read();
-    let tags: &[OracleTag] = match catalog_read.as_ref() {
-        Some(Ok(t)) => t,
-        _ => &[],
-    };
+    let cell_read = cell.read();
+    let tags: &[OracleTag] = cell_read.loaded().map(Vec::as_slice).unwrap_or(&[]);
     let sel = selected();
 
     // Empty search → the curated default grid (entries the backend still serves)
@@ -113,6 +118,14 @@ pub(crate) fn OracleTagSelect(
                     div { class: "tag-controls",
                         div { class: "tag-controls-head",
                             label { class: "tag-search-label", "Search" }
+                            Button {
+                                variant: ButtonVariant::Small,
+                                class: "dict-btn-fill",
+                                onclick: move |_| {
+                                    navigator.push(Router::OracleTagDictionary {});
+                                },
+                                "Dictionary"
+                            }
                             span { class: "tag-count", "{sel.len()}/{MAX_DECK_ORACLE_TAGS}" }
                             if !sel.is_empty() {
                                 button {
@@ -214,6 +227,13 @@ pub(crate) fn OracleTagSelect(
                     open: hint_open,
                     title: "Oracle tags",
                     OracleTagsExplainer {}
+                    Button {
+                        variant: ButtonVariant::Util,
+                        onclick: move |_| {
+                            navigator.push(Router::OracleTagDictionary {});
+                        },
+                        "Browse the full dictionary"
+                    }
                 }
             }
         }

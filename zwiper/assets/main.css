@@ -3111,6 +3111,152 @@ button {
 }
 
 /* ==================
+  oracle-tag dictionary
+ ==================== */
+
+/* Search + letter rail, pinned above the scrolling list. */
+.dict-controls {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 24rem;
+    padding: 0.75rem 1rem 0.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+/* The letter rail is the horizontal scroll container itself: the ancestor
+   .screen-content sets overflow-x: hidden, so scrolling must live here. */
+.dict-letter-rail {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.35rem;
+    padding-bottom: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.dict-letter-rail::-webkit-scrollbar {
+    display: none;
+}
+
+.dict-letter-rail .chip {
+    flex: 0 0 auto;
+    min-width: 2rem;
+    justify-content: center;
+    text-align: center;
+}
+
+.dict-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 24rem;
+    padding: 0.75rem 1rem 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+}
+
+.dict-row {
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.6rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    animation: dict-row-in 0.18s ease-out both;
+}
+
+@keyframes dict-row-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.25rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dict-slug {
+    color: var(--accent-tertiary);
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.dict-desc {
+    color: var(--text-primary);
+    opacity: 0.9;
+    font-size: 0.85rem;
+    margin-top: 0.15rem;
+}
+
+.dict-desc-missing {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.dict-parents {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.4rem;
+}
+
+.dict-parent {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    padding: 0.05rem 0.4rem;
+    border: 1px solid var(--border-muted);
+    border-radius: 0.4rem;
+}
+
+.dict-empty {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 1.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+/* Solid fill for the picker's "Dictionary" button so the grid background does not
+   show through the otherwise-transparent .btn-xs. Compound selector to override. */
+.btn-xs.dict-btn-fill {
+    background-color: var(--bg-primary);
+}
+
+/* Skeletons reuse .skeleton-bar's pulse. */
+.dict-skeleton-search {
+    height: 2.5rem;
+    width: 100%;
+    border-radius: 0.5rem;
+}
+
+.dict-skeleton-letter {
+    flex: 0 0 auto;
+    height: 1.75rem;
+    width: 2rem;
+    border-radius: 0.5rem;
+}
+
+.dict-skeleton-slug {
+    height: 1rem;
+    width: 40%;
+}
+
+.dict-skeleton-desc {
+    height: 0.85rem;
+    width: 85%;
+    margin-top: 0.4rem;
+}
+
+/* ==================
   privacy policy
  ==================== */
 
