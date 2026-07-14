@@ -41,8 +41,11 @@ server-driven via slugs), 17 new themes (31 total), persisted theme across app +
 site, home-screen buy links, and a reorganized deck view. Android production launch
 was submitted for review 2026-07-11 (all countries), awaiting Google.
 
-**After this:** finish the oracle-tag description bulk authoring, then the in-app
-**dictionary page**, then **serve the changelog from the server** so pipeline/
+**After this:** **1,100 oracle-tag descriptions** are now authored (oracle-text-verified;
+high-traffic head fully covered) — next is the in-app **dictionary page** that renders
+them ([`plans/otags/tag_descriptions_and_dictionary.md`](plans/otags/tag_descriptions_and_dictionary.md),
+authoring runbook at [`development/runbooks/`](development/runbooks/)), tail authoring
+continues in the background, then **serve the changelog from the server** so pipeline/
 release notes no longer need an app resubmit ([`plans/changelog_server.md`](plans/changelog_server.md)).
 Ongoing: short-form marketing videos, review tracking (then bump
 `MIN_CLIENT_VERSION`), watch the funnel numbers (they gate the sign-in-with-Google

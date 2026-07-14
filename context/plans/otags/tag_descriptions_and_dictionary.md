@@ -1,11 +1,13 @@
 # Oracle tag descriptions + dictionary
 
-**Status: Part 1 mechanism SHIPPED (2026-07-13, `0114cb38`); authoring + Part 2 open.**
+**Status: Part 1 mechanism SHIPPED (2026-07-13, `0114cb38`); 1,100 descriptions
+authored (oracle-text-verified) — high-traffic head fully covered, tail ongoing;
+Part 2 is the next build (~2026-07-14).**
 Two linked pieces the owner asked for:
 1. **Our own descriptions layer** — Scryfall describes only ~29% of tags (1,302 of
    4,494; the biggest tags are often blank); author our own over time until we
-   describe **all** of them (fully replacing Scryfall's). **Mechanism done; bulk
-   authoring is the ongoing work.**
+   describe **all** of them (fully replacing Scryfall's). **Mechanism done; 1,100
+   authored (oracle-text-verified); tail authoring ongoing.**
 2. **Oracle tag dictionary** — a browsable page of all ~4,500 tags + descriptions
    to surf. **Not started.**
 
@@ -88,7 +90,7 @@ Add entries to `ORACLE_TAG_DESCRIPTIONS`, push, deploy; the next `zervice` run
 writes them in. Priority order: **highest card-population blanks first** (e.g.
 `triggered-ability` @ 7,885, `attack-trigger`, `removal-creature`), then the
 curated ~48, then the long tail — until coverage is satisfactory, then all of them.
-Coverage so far: 7 (starter) → 82 → 257 → 500 → 700. Descriptions are user-facing:
+Coverage so far: 7 (starter) → 82 → 257 → 500 → 700 → **1,100** (2026-07-13). Descriptions are user-facing:
 short, plain, em-dash-free; do **not** carry Scryfall's `[label](slug)` cross-link
 syntax (we overwrite with our own plain text everywhere). A catalog dump with
 per-tag populations to prioritize from lives in the sweep scratchpad
@@ -142,14 +144,12 @@ picker (a link/button) and/or the Oracle tags "?" hint. Not on zite.
 
 ## Sequencing
 
-1. **Part 1** (descriptions store + serve-merge + tests) — small, additive;
-   immediately enriches the picker def-bar.
-2. **Author batch 1** (curated ~48 + top tags).
-3. **Part 2** (dictionary page) — consumes the merged endpoint.
-
-Part 1 gates Part 2's usefulness (empty descriptions aren't worth surfing), but
-Part 2 can be built in parallel against the endpoint and light up as descriptions
-land.
+1. **Part 1 mechanism** (overlay + tests) — SHIPPED.
+2. **Bulk authoring** — 1,100 done (high-traffic head covered); tail is ongoing
+   background work via the runbook.
+3. **Part 2 (dictionary page) — the active next build (~2026-07-14).** There is now
+   plenty to show, so it no longer waits on more authoring; the undone tail renders
+   "No description yet" and fills in as authoring continues.
 
 ## Decisions (resolved 2026-07-12)
 
