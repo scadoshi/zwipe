@@ -243,7 +243,6 @@ mod tests {
             card_profile: CardProfile {
                 scryfall_data_id: Uuid::new_v4(),
                 is_token: false,
-                mechanical_categories: vec![],
                 card_roles: vec![],
                 oracle_tags: vec![],
                 oracle_tags_by_role: Default::default(),

@@ -304,8 +304,8 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         ids: &[uuid::Uuid],
     ) -> impl Future<Output = Result<Vec<Card>, anyhow::Error>> + Send;
 
-    /// Updates mechanical_categories for a batch of cards.
-    fn update_mechanical_categories(
+    /// Updates card_roles for a batch of cards.
+    fn update_card_roles(
         &self,
         updates: &[(
             uuid::Uuid,
@@ -313,10 +313,10 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         )],
     ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
 
-    /// Clears all mechanical_categories (resets to empty array).
+    /// Clears all card_roles (resets to empty array).
     fn clear_all_categories(&self) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
 
-    /// Rebuilds `card_profiles.mechanical_categories` from Oracle Tags (18 category
+    /// Rebuilds `card_profiles.card_roles` from Oracle Tags (18 category
     /// subtrees) + `Tokens` via `all_parts`. Returns rows affected. The 4 heuristic
     /// stragglers are merged separately (see `CardService::derive_card_categories`).
     fn derive_oracle_tag_categories(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
@@ -367,7 +367,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
         bulk_endpoint: BulkEndpoint,
     ) -> impl Future<Output = anyhow::Result<ZerviceMetrics>> + Send;
 
-    /// Derives `mechanical_categories` from Oracle Tags (18 subtrees + Tokens via
+    /// Derives `card_roles` from Oracle Tags (18 subtrees + Tokens via
     /// `all_parts`), then merges the 4 heuristic stragglers (Pump/Stax/Protection/
     /// GraveyardHate) via `oracle_tag_gaps`. Returns `(otag_rows_written, gap_merges)`.
     fn derive_card_categories(
@@ -375,7 +375,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
         batch_size: usize,
     ) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
 
-    /// Clears all mechanical_categories (for --reclassify).
+    /// Clears all card_roles (for --reclassify).
     fn clear_all_categories(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
     /// Refreshes the latest_cards materialized view after data changes.

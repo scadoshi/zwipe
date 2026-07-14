@@ -166,10 +166,12 @@ impl UsageBuffer {
             .map(|mut map| std::mem::take(&mut *map))
             .unwrap_or_default()
             .into_iter()
-            .map(|((commander, card, deck_id), t)| CardSignalDelta {
-                // `None` for a non-Commander deck; the server then derives the
-                // generalized `(format, color-identity)` context from `deck_id`.
-                commander_oracle_id: commander,
+            .map(|((_commander, card, deck_id), t)| CardSignalDelta {
+                // Push `deck_id` only: the server derives the commander (EDH) or the
+                // generalized `(format, color-identity)` context (non-EDH) from it.
+                // The legacy `commander_oracle_id` wire field is left `None` and is
+                // sunset once 1.6.1 is the min-version floor.
+                commander_oracle_id: None,
                 card_oracle_id: card,
                 // The deck the swipes belong to. Lets the server derive the
                 // richer generalized-context per-otag signal, and (for
@@ -246,7 +248,8 @@ mod tests {
         assert_eq!(batch.swipes_left, 1);
         assert_eq!(batch.signals.len(), 1);
         let delta = batch.signals.first().unwrap();
-        assert_eq!(delta.commander_oracle_id, Some(commander));
+        // The client pushes deck_id only now; commander is derived server-side.
+        assert_eq!(delta.commander_oracle_id, None);
         assert_eq!(delta.deck_id, Some(deck));
         assert!(batch.deck_skips.is_empty());
 

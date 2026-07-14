@@ -296,7 +296,7 @@ pub struct CardFixture {
     oversized: bool,
     promo: bool,
     content_warning: Option<bool>,
-    mechanical_categories: Vec<String>,
+    card_roles: Vec<String>,
     oracle_tags: Vec<String>,
 }
 
@@ -335,7 +335,7 @@ pub fn card(name: &str) -> CardFixture {
         oversized: false,
         promo: false,
         content_warning: None,
-        mechanical_categories: Vec::new(),
+        card_roles: Vec::new(),
         oracle_tags: Vec::new(),
     }
 }
@@ -488,9 +488,9 @@ impl CardFixture {
         self
     }
     /// Mechanical categories (snake_case, e.g. `"ramp"`, `"graveyard_hate"`) —
-    /// written to `card_profiles.mechanical_categories`.
+    /// written to `card_profiles.card_roles`.
     pub fn categories(mut self, cats: &[&str]) -> Self {
-        self.mechanical_categories = cats.iter().map(|c| c.to_string()).collect();
+        self.card_roles = cats.iter().map(|c| c.to_string()).collect();
         self
     }
     /// Oracle tags (e.g. `"spot-removal"`) — written to `card_profiles.oracle_tags`.
@@ -584,12 +584,12 @@ pub async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
         qb.build().execute(pool).await.unwrap();
 
         let mut pb = QueryBuilder::new(
-            "INSERT INTO card_profiles (scryfall_data_id, is_token, mechanical_categories, oracle_tags) ",
+            "INSERT INTO card_profiles (scryfall_data_id, is_token, card_roles, oracle_tags) ",
         );
         pb.push_values(cards.iter(), |mut b, c| {
             b.push_bind(c.id)
                 .push_bind(c.layout == "token")
-                .push_bind(Json(c.mechanical_categories.clone()))
+                .push_bind(Json(c.card_roles.clone()))
                 .push_bind(Json(c.oracle_tags.clone()));
         });
         pb.build().execute(pool).await.unwrap();

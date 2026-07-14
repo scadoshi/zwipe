@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT scryfall_data_id, is_token, mechanical_categories, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at\n            FROM card_profiles WHERE scryfall_data_id = $1",
+  "query": "SELECT scryfall_data_id, is_token, card_roles, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at\n            FROM card_profiles WHERE scryfall_data_id = $1",
   "describe": {
     "columns": [
       {
@@ -15,7 +15,7 @@
       },
       {
         "ordinal": 2,
-        "name": "mechanical_categories",
+        "name": "card_roles",
         "type_info": "Jsonb"
       },
       {
@@ -60,5 +60,5 @@
       false
     ]
   },
-  "hash": "f05e7b9c8d28d660654244456e1ea019c2092542e799a22448299f14aec35341"
+  "hash": "74f72855d6cf2b27a8bbf89d60b7aad70e861cf6240275ffb3b7470875f58a99"
 }

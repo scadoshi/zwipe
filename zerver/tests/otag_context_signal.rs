@@ -139,6 +139,84 @@ async fn non_commander_deck_credits_format_and_color_identity(pool: sqlx::PgPool
 }
 
 #[sqlx::test]
+async fn commander_deck_derives_commander_from_deck_id(pool: sqlx::PgPool) {
+    // The 1.6.1 client pushes `deck_id` only (no commander_oracle_id). For a
+    // Commander deck the server derives the commander from the deck and lands both
+    // the commander-keyed signal and the `commander:<oracle_id>` otag context.
+    let app = TestApp::new(pool.clone());
+    let (token, _) = app.register("cmdr").await;
+
+    let atraxa = card("Atraxa, Praetors' Voice").color_identity("WUBG");
+    let atraxa_id = atraxa.id();
+    let atraxa_oracle = atraxa.oracle_id().unwrap();
+    let bolt = card("Lightning Bolt").oracle_tags(&["burn", "spot-removal"]);
+    let bolt_oracle = bolt.oracle_id().unwrap();
+    seed_cards(&pool, &[atraxa, bolt]).await;
+
+    let (status, deck) = app
+        .post(
+            "/api/deck",
+            json!({ "name": "Superfriends", "format": "commander" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "create: {deck}");
+    let deck_id = Uuid::parse_str(deck["id"].as_str().unwrap()).unwrap();
+    sqlx::query("UPDATE decks SET commander_id = $1 WHERE id = $2")
+        .bind(atraxa_id)
+        .bind(deck_id)
+        .execute(&pool)
+        .await
+        .unwrap();
+
+    // deck_id only — commander_oracle_id is omitted (→ None).
+    let (status, _) = app
+        .post(
+            "/api/metrics/usage",
+            json!({
+                "swipes_right": 2, "swipes_left": 1, "swipes_up": 0, "swipes_down": 0, "searches": 0,
+                "signals": [{
+                    "card_oracle_id": bolt_oracle.to_string(),
+                    "deck_id": deck_id.to_string(),
+                    "shown": 3, "added": 2, "skipped": 1, "maybed": 0, "removed": 0
+                }]
+            }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // commander_card_signal keyed on the DECK-DERIVED commander.
+    let (added, skipped): (i64, i64) = sqlx::query_as(
+        "SELECT added, skipped FROM commander_card_signal \
+         WHERE commander_oracle_id = $1 AND card_oracle_id = $2",
+    )
+    .bind(atraxa_oracle)
+    .bind(bolt_oracle)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        (added, skipped),
+        (2, 1),
+        "commander derived from deck_id feeds commander_card_signal",
+    );
+
+    // Both otags credited under the derived commander context.
+    let ctx = format!("commander:{atraxa_oracle}");
+    let otag_rows: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM otag_context_signal WHERE context_key = $1")
+            .bind(&ctx)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        otag_rows, 2,
+        "both otags credited under commander:<derived>"
+    );
+}
+
+#[sqlx::test]
 async fn deck_id_ownership_is_enforced(pool: sqlx::PgPool) {
     // A client can't attribute signal to a deck it doesn't own: the (format, CI)
     // lookup is scoped to the caller's decks, so a foreign deck_id yields no

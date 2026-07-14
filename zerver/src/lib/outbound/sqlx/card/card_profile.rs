@@ -12,7 +12,7 @@ use zwipe_core::domain::card::{card_profile::CardProfile, card_role::CardRole};
 pub struct DatabaseCardProfile {
     pub scryfall_data_id: Uuid,
     pub is_token: bool,
-    pub mechanical_categories: Option<serde_json::Value>,
+    pub card_roles: Option<serde_json::Value>,
     pub oracle_tags: Option<serde_json::Value>,
     pub oracle_tags_by_role: Option<serde_json::Value>,
     pub other_oracle_tags: Option<serde_json::Value>,
@@ -22,8 +22,8 @@ pub struct DatabaseCardProfile {
 
 impl From<DatabaseCardProfile> for CardProfile {
     fn from(value: DatabaseCardProfile) -> Self {
-        let mechanical_categories: Vec<CardRole> = value
-            .mechanical_categories
+        let card_roles: Vec<CardRole> = value
+            .card_roles
             .and_then(|v| serde_json::from_value::<Vec<String>>(v).ok())
             .map(|strings| {
                 strings
@@ -51,12 +51,9 @@ impl From<DatabaseCardProfile> for CardProfile {
         Self {
             scryfall_data_id: value.scryfall_data_id,
             is_token: value.is_token,
-            // Phase M dual-emit: card_roles carries the same roles as slugs.
-            card_roles: mechanical_categories
-                .iter()
-                .map(|r| r.to_string())
-                .collect(),
-            mechanical_categories,
+            // The `card_profiles.card_roles` column holds role slugs;
+            // serve them as `card_roles` (validated against the known role set).
+            card_roles: card_roles.iter().map(|r| r.to_string()).collect(),
             oracle_tags,
             oracle_tags_by_role,
             other_oracle_tags,

@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE card_profiles SET card_roles = '[]'::jsonb\n                 WHERE scryfall_data_id IN (\n                     SELECT scryfall_data_id FROM card_profiles\n                     WHERE card_roles != '[]'::jsonb\n                     LIMIT 5000\n                 )",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "c9df6be7f8059eb732b9c7ec6fe31c1ae17fbbd109de39a17581995992640d4f"
+}

@@ -269,18 +269,18 @@ impl CardQueryBuilder {
     // =================================
 
     /// Returns the mechanical category ANY filter.
-    pub fn mechanical_categories_contains_any(&self) -> Option<&[String]> {
-        self.mechanical_categories_contains_any.as_deref()
+    pub fn card_roles_contains_any(&self) -> Option<&[String]> {
+        self.card_roles_contains_any.as_deref()
     }
 
     /// Returns the mechanical category ALL filter.
-    pub fn mechanical_categories_contains_all(&self) -> Option<&[String]> {
-        self.mechanical_categories_contains_all.as_deref()
+    pub fn card_roles_contains_all(&self) -> Option<&[String]> {
+        self.card_roles_contains_all.as_deref()
     }
 
     /// Returns the mechanical category excludes filter.
-    pub fn mechanical_categories_excludes(&self) -> Option<&[String]> {
-        self.mechanical_categories_excludes.as_deref()
+    pub fn card_roles_excludes(&self) -> Option<&[String]> {
+        self.card_roles_excludes.as_deref()
     }
 
     /// Returns the oracle tags ANY filter.

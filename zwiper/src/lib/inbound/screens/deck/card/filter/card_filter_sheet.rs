@@ -123,9 +123,9 @@ pub(crate) fn CardFilterSheet(
                 || fb.flavor_text_not_contains().is_some(),
             fb.artist_equals_any().is_some() || fb.artist_excludes_any().is_some(),
             fb.rarity_equals_any().is_some() || fb.rarity_excludes_any().is_some(),
-            fb.mechanical_categories_contains_any().is_some()
-                || fb.mechanical_categories_contains_all().is_some()
-                || fb.mechanical_categories_excludes().is_some(),
+            fb.card_roles_contains_any().is_some()
+                || fb.card_roles_contains_all().is_some()
+                || fb.card_roles_excludes().is_some(),
             fb.oracle_tags_contains_any().is_some()
                 || fb.oracle_tags_contains_all().is_some()
                 || fb.oracle_tags_excludes().is_some(),
@@ -405,9 +405,9 @@ pub(crate) fn CardFilterSheet(
                                     onclick: move |evt| {
                                         evt.stop_propagation();
                                         let fb = &mut *filter_builder.write();
-                                        fb.unset_mechanical_categories_contains_any();
-                                        fb.unset_mechanical_categories_contains_all();
-                                        fb.unset_mechanical_categories_excludes();
+                                        fb.unset_card_roles_contains_any();
+                                        fb.unset_card_roles_contains_all();
+                                        fb.unset_card_roles_excludes();
                                         bump_filter();
                                     },
                                     "\u{00d7}"
