@@ -175,8 +175,10 @@ impl DeckRepository for Postgres {
     }
 
     async fn count_cards_in_deck(&self, deck_id: uuid::Uuid) -> Result<i64, anyhow::Error> {
+        // Counts ALL boards (mainboard + maybeboard + sideboard) — this feeds the
+        // per-deck card cap, which applies across every board.
         let count = sqlx::query_scalar!(
-            "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1 AND board = 'deck'",
+            "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1",
             deck_id
         )
         .fetch_one(&self.pool)

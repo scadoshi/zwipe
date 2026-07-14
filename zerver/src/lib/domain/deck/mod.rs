@@ -7,13 +7,16 @@
 /// Maximum number of decks a user can own (verified accounts).
 pub const MAX_DECKS_PER_USER: i64 = 20;
 
-/// Maximum total card quantity across all cards in a single deck (verified accounts).
-pub const MAX_CARDS_PER_DECK: i64 = 250;
+/// Maximum total card quantity in a single deck, **counting all boards**
+/// (mainboard + maybeboard + sideboard), for verified accounts. Counting every
+/// board keeps an unbounded maybeboard/sideboard from evading the cap.
+pub const MAX_CARDS_PER_DECK: i64 = 500;
 
 /// Maximum decks for accounts with an unverified email address.
 pub const UNVERIFIED_MAX_DECKS_PER_USER: i64 = 1;
 
-/// Maximum total card quantity per deck for accounts with an unverified email address.
+/// Same per-deck card cap (all boards counted) for accounts with an unverified
+/// email address.
 pub const UNVERIFIED_MAX_CARDS_PER_DECK: i64 = 100;
 
 /// Deck models and value objects (DeckProfile, Deck, DeckCard, operations).
