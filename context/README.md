@@ -20,37 +20,32 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**Latest — oracle-tag mapping sweep + description pipeline (2026-07-13):** a
-machine-assisted audit of the two hand-authored otag mapping tables shipped —
-**Track A** retuned 40 archetype seed sets (dropping over-broad seeds, adding
-high-signal ones), **Track B** expanded the card-role roots/overrides, and a new
-**`ROLE_TAG_EXCLUSIONS`** mechanism subtracts mis-parented tags per-role (what
-subtree-root narrowing can't do, since a tag can sit under several roots at once);
-all validated against a local `zervice` recompute. Same day, the **oracle-tag
-description pipeline** (F Part 1) shipped: `zervice` overlays our authored
-descriptions into `oracle_tags.description` each sync (ours always wins, survives
-the daily nuke). Plus small polish — the swipe eyeball dialog's Flip moved to its
-footer with a single scroll, an Export-screen skeleton, and a zite banner/hamburger
-overlap fix hoisted into shared `zwipe-components`. Details in the
-[`progress/overview.md`](progress/overview.md) top entry and
-[`plans/otags/`](plans/otags/).
+**Latest — server 1.7.0 pushed (2026-07-14); client build pending.** Shipped this
+batch: the in-app **oracle-tag dictionary** (letter-first browse + search over all
+~4,500 tags with our descriptions), a **unified catalog cache** (filters/pickers
+prefetched at startup → instant, no reload flicker), **1,100 authored descriptions**
+(oracle-text-verified; high-traffic head fully covered), the **Phase M sunset**
+(`mechanical_categories → card_roles` everywhere incl. a DB-column rename migration),
+and **Phase 5S dual-accept** (the swipe signal is now `deck_id`-driven server-side —
+non-EDH collects the same as EDH — with a legacy fallback so 1.6.0 clients still land
+signal). Verified push-safe for live 1.6.0 clients (no `MIN_CLIENT_VERSION` bump).
+Details: [`progress/overview.md`](progress/overview.md) top entry, [`plans/otags/`](plans/otags/).
 
 **1.6.0 LIVE (2026-07-12; iOS build 64 / Android vc26):** the big feature batch —
 in-app changelog, the three-axis tag system (oracle tags / card roles / deck tags,
 server-driven via slugs), 17 new themes (31 total), persisted theme across app +
-site, home-screen buy links, and a reorganized deck view. Android production launch
-was submitted for review 2026-07-11 (all countries), awaiting Google.
+site, home-screen buy links, and a reorganized deck view.
 
-**After this:** **1,100 oracle-tag descriptions** are now authored (oracle-text-verified;
-high-traffic head fully covered) — next is the in-app **dictionary page** that renders
-them ([`plans/otags/tag_descriptions_and_dictionary.md`](plans/otags/tag_descriptions_and_dictionary.md),
-authoring runbook at [`development/runbooks/`](development/runbooks/)), tail authoring
-continues in the background, then **serve the changelog from the server** so pipeline/
-release notes no longer need an app resubmit ([`plans/changelog_server.md`](plans/changelog_server.md)).
-Ongoing: short-form marketing videos, review tracking (then bump
-`MIN_CLIENT_VERSION`), watch the funnel numbers (they gate the sign-in-with-Google
-decision), privacy follow-ups (store data-safety labels + notification email), and
-draw-odds **Phase 4 (premium gating)**.
+**After this:** **build + submit the 1.7.0 client** to the App Store / Play (the
+dictionary, faster filters, and `deck_id`-only signal ride the client build), then
+floor `MIN_CLIENT_VERSION` to 1.7.0 → unlocks the Phase 5S step-3 cleanup (drop the
+legacy commander wire + fallback). Then **Phase 6** — serve on the matured otag
+signal (data-gated, months out). Ongoing: description authoring into the tail
+(runbook at [`development/runbooks/`](development/runbooks/)), short-form marketing
+videos, review tracking, funnel numbers (gate the sign-in-with-Google decision),
+privacy follow-ups (store data-safety labels + notification email), and draw-odds
+**Phase 4 (premium gating)**. Small queued polish: otag-selector search over
+descriptions + a Dictionary link on the card filter; optional dialog backdrop-dismiss.
 
 See [`progress/overview.md`](progress/overview.md) for the high-level state,
 [`progress/feature_requests.md`](progress/feature_requests.md) for the weighted

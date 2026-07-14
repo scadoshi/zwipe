@@ -186,7 +186,7 @@ Not on Profile for MVP (picker + hint is enough); Profile entry is a later nicet
 4. Point picker/filter at the cache (drop per-open `use_resource` for otags).
 5. Later: unify other filter catalogs under the same cache plan.
 
-Ship on the next client build (e.g. 1.6.1); additive, no `MIN_CLIENT_VERSION`
+Ship on the next client build (e.g. 1.7.0); additive, no `MIN_CLIENT_VERSION`
 bump, no server deploy required for the UI (endpoint already live).
 
 ---

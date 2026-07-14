@@ -415,15 +415,15 @@ leads `commander_card_signal` / `user_card_signal`).
    (`.or(sig.commander_oracle_id)`), so existing 1.6.0 clients that still send it are unaffected.
    Additive, no bump. Also spoof-proofs the commander tables (a client can only credit signal via a
    deck it owns). Test: `otag_context_signal::commander_deck_derives_commander_from_deck_id`.
-2. **Client sends `deck_id` only** — ✅ **DONE (2026-07-14, for 1.6.1, unpushed).**
+2. **Client sends `deck_id` only** — ✅ **DONE (2026-07-14, for 1.7.0).**
    `usage_buffer.rs` flushes `commander_oracle_id: None`; the client no longer populates the wire
    commander (still tracked internally — that vestige is removed with step 3). Existing 1.6.0
    clients keep sending it; the server's fallback handles them.
-3. **Sunset (gated) — PENDING, after 1.6.1 is the floor.** Once `MIN_CLIENT_VERSION >= 1.6.1`
+3. **Sunset (gated) — PENDING, after 1.7.0 is the floor.** Once `MIN_CLIENT_VERSION >= 1.7.0`
    guarantees every install sends `deck_id`-only: drop `CardSignalDelta.commander_oracle_id` (wire),
    the server's `.or(sig.commander_oracle_id)` fallback, and the client's internal commander
    resolution (`add.rs`/`remove.rs` `commander_oracle_id` signal + `get_card` lookup). Leaves the
-   wire `{ deck_id, card_oracle_id, gestures }`. **Bump `MIN_CLIENT_VERSION` to 1.6.1.** Same shape
+   wire `{ deck_id, card_oracle_id, gestures }`. **Bump `MIN_CLIENT_VERSION` to 1.7.0.** Same shape
    as the Phase M sunset (done 2026-07-14).
 
 **Wire & compat:** steps 1+2 additive (no bump); step 3 is the single gated removal.

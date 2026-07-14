@@ -4,7 +4,52 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## Latest — 2026-07-13
+## Latest — 2026-07-14 (server 1.7.0 pushed; client build pending)
+
+- **Version 1.7.0** (workspace bump from 1.6.0). The pushed batch was verified
+  push-safe for live 1.6.0 clients before shipping (no `MIN_CLIENT_VERSION` bump).
+  Changelog rebadged: all the "1.6.1" notes are now the **1.7.0** entry (dictionary,
+  faster filters, sharper otags, footer Flip, Export skeleton, server changelog).
+- **Oracle-tag dictionary (Part 2) built** (zwiper, rides the 1.7.0 build). Read-only,
+  letter-first browse (A–Z rail, only the active letter mounts) + optional search over
+  slug/label/description, "No description yet" for the tail, reached from the otag
+  picker + its hint. Reads the shared catalog cache. Backend needed nothing new
+  (existing `GET /api/card/oracle-tags`, already CF-edge-cached). Plans:
+  [`../plans/otags/dictionary_client.md`](../plans/otags/dictionary_client.md) +
+  [`dictionary_backend.md`](../plans/otags/dictionary_backend.md).
+- **Unified catalog cache** (zwiper). One app-wide `CatalogCache` prefetches the
+  slow-changing filter/picker catalogs (artists, sets, keywords, oracle words, types,
+  roles, oracle tags, deck tags) once at startup (1-day TTL, stale-while-revalidate);
+  filters/pickers/dictionary read it instead of refetching on open → instant, no
+  reload flicker. [`../plans/catalog_session_cache.md`](../plans/catalog_session_cache.md).
+- **Phase M fully sunset.** `mechanical_categories → card_roles` end to end: dropped the
+  legacy wire field + the `mechanical_categories_*` criteria alias, renamed the DB
+  column + GIN index (migration `20260714130000`) and every live Rust/SQL reference,
+  regenerated `.sqlx`. One source of truth for the role axis; the module dir was already
+  `card_role/`. The 1.6.0 floor pre-satisfied the gate.
+- **Phase 5S dual-accept (steps 1+2).** The swipe signal is now **`deck_id`-driven**:
+  the server resolves each deck's commander (EDH) or `(format, color-identity)` (non-EDH)
+  from `deck_id`, keying `commander_card_signal` / `user_card_signal` / `otag_context_signal`
+  off the deck-derived commander — with a legacy `commander_oracle_id` fallback so live
+  1.6.0 clients still land signal (also spoof-proofs the commander tables, ownership-scoped).
+  The 1.7.0 client pushes `deck_id` only. **Slice B was already live in 1.6.0**, so non-EDH
+  has been collecting since then. Step 3 (drop the legacy wire + fallback) waits on a 1.7.0
+  floor. Details: [`../plans/otags/sequencing.md`](../plans/otags/sequencing.md) Phase 5S.
+- **Per-session client version** recorded on the refresh-token row (additive,
+  `Option`+`#[serde(default)]`) — lets the server see each client's app version.
+- **Pre-1.6.0 wire-break resolved (2026-07-13 eve).** Old clients strict-parsed the new
+  role slugs and showed "connection error" on card/deck screens; fixed by flooring
+  `MIN_CLIENT_VERSION=1.6.0` (env-only) so they get "Update required" instead. All live
+  installs are iOS 16+ (1.6.0's target), so nobody is stranded.
+
+**Next:** build + submit the **1.7.0 client** to the App Store / Play, then floor
+`MIN_CLIENT_VERSION` to 1.7.0 → unlocks Phase 5S step-3 cleanup (drop the legacy commander
+wire + fallback). Then **Phase 6** (serving on the matured otag signal) — data-gated,
+months out. Description authoring continues into the low-population tail (runbook).
+
+---
+
+## 2026-07-13
 
 - **Oracle-tag mapping sweep (both tables), applied + live-validated.** A
   machine-assisted audit (30 sub-agents, adversarially verified against the live
