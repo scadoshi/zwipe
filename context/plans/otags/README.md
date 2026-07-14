@@ -10,7 +10,11 @@ Two additive migrations run on this deploy (`20260712040000_add_deck_oracle_tags
 `20260712060000_create_otag_context_signal`); the Phase 5 rollup + retirement/grouping repopulate
 on the next prod `zervice` run.
 
-**▶ Landed since the push (committed, UNPUSHED — ~14 commits ahead of `origin/main`):**
+**▶ Update 2026-07-14: everything below is now PUSHED (server 1.7.0).** Also shipped this
+batch: **Phase M fully sunset** (`mechanical_categories → card_roles`, incl. DB-column rename),
+**Phase 5S dual-accept** (signal fully `deck_id`-driven server-side + legacy fallback; 1.7.0
+client pushes `deck_id` only), the **oracle-tag dictionary**, and the **unified catalog cache**.
+See [`../../progress/overview.md`](../../progress/overview.md) top entry. History below:
 - **Phase 5 Slice B (client) — DONE** (`1a857e67`): `zwiper` populates `CardSignalDelta.deck_id`
   and emits for commander-less decks. Non-EDH signal now flows once shipped.
 - **Phase 5 wire made lenient — DONE** (`77801be6`): `CardSignalDelta.commander_oracle_id` is now
@@ -42,8 +46,8 @@ on the next prod `zervice` run.
 2. **Adoption-gated sunsets:** **Phase M Step 3** — ✅ **DONE 2026-07-14** (dropped
    `mechanical_categories` field/criteria, renamed the DB column to `card_roles`; the 1.6.0 floor
    pre-satisfied the gate, no extra bump). **Phase 5S** — steps 1+2 ✅ DONE (server derives commander
-   from `deck_id` with a legacy fallback; 1.6.1 client pushes `deck_id` only); **step 3 pending** the
-   1.6.1 floor (drop the legacy `commander_oracle_id` wire + fallback, bump to 1.6.1).
+   from `deck_id` with a legacy fallback; 1.7.0 client pushes `deck_id` only); **step 3 pending** the
+   1.7.0 floor (drop the legacy `commander_oracle_id` wire + fallback, bump to 1.7.0).
 3. **Data-gated payoff** — **Phase 6:** fold the otag-signal term into ranking + non-EDH serving on
    `(format, CI, otags)`. Needs months of accrued swipe volume ("REALLY drive serving").
 4. **Tiny non-gated leftover:** a test that refreshes `otag_context_signal_rollup` and asserts
@@ -85,7 +89,7 @@ informal prose shorthand in these docs; concrete identifiers are all spelled out
 | `sequencing.md` | The phased build — per-phase files touched + additive-wire guarantee |
 | `tag_descriptions_and_dictionary.md` | Part 1 descriptions (shipped) + Part 2 dictionary index |
 | `dictionary_backend.md` | Serving/CF/tests for `GET /api/card/oracle-tags` |
-| `dictionary_client.md` | **Part 2 UI** — letter-first dictionary (planned 2026-07-13) |
+| `dictionary_client.md` | **Part 2 UI** — letter-first dictionary (DONE 2026-07-14, ships in 1.7.0) |
 | `../catalog_session_cache.md` | App-load prefetch of filter catalogs + 1-day TTL (planned) |
 
 ## What changed on 2026-07-11

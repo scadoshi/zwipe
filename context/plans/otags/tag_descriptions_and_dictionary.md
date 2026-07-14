@@ -1,15 +1,16 @@
 # Oracle tag descriptions + dictionary
 
 **Status: Part 1 mechanism SHIPPED (2026-07-13, `0114cb38`); 1,100 descriptions
-authored (oracle-text-verified) — high-traffic head fully covered, tail ongoing;
-Part 2 is the next build (~2026-07-14).**
+authored (oracle-text-verified) — high-traffic head fully covered, tail ongoing.
+Part 2 (dictionary) BUILT 2026-07-14, ships in the 1.7.0 client — see
+[`dictionary_client.md`](dictionary_client.md).**
 Two linked pieces the owner asked for:
 1. **Our own descriptions layer** — Scryfall describes only ~29% of tags (1,302 of
    4,494; the biggest tags are often blank); author our own over time until we
    describe **all** of them (fully replacing Scryfall's). **Mechanism done; 1,100
    authored (oracle-text-verified); tail authoring ongoing.**
 2. **Oracle tag dictionary** — a browsable page of all ~4,500 tags + descriptions
-   to surf. **Not started.**
+   to surf. **BUILT 2026-07-14** (letter-first browse + search; ships in 1.7.0).
 
 They're one arc: the dictionary renders the descriptions. Raw slugs (shipped
 `ffd52c5e`) make this more valuable: the slug is the stable key, the "?" and the
