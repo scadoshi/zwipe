@@ -18,10 +18,10 @@ pub enum CreateDeckCardError {
     #[error("card is this deck's commander")]
     IsCommander,
     /// Deck has reached the maximum number of cards (verified user, true cap).
-    #[error("card limit reached")]
+    #[error("card limit reached (mainboard, maybeboard, and sideboard all count toward it)")]
     LimitReached,
     /// Deck has reached the unverified card limit.
-    #[error("card limit reached, verify your email to unlock more")]
+    #[error("card limit reached across all boards, verify your email to unlock more")]
     UnverifiedLimitReached,
     /// Database returned invalid data after creation.
     #[error("deck card created but database returned invalid object {0}")]

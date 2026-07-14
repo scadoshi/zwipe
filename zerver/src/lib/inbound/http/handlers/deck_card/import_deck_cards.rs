@@ -32,11 +32,13 @@ impl From<ImportDeckCardsError> for ApiError {
                 Self::Forbidden(ImportDeckCardsError::Forbidden.to_string())
             }
             ImportDeckCardsError::DeckNotFound(e) => ApiError::from(e),
-            ImportDeckCardsError::LimitReached => {
-                Self::UnprocessableEntity("card limit reached".to_string())
-            }
+            ImportDeckCardsError::LimitReached => Self::UnprocessableEntity(
+                "card limit reached (mainboard, maybeboard, and sideboard all count toward it)"
+                    .to_string(),
+            ),
             ImportDeckCardsError::UnverifiedLimitReached => Self::UnprocessableEntity(
-                "card limit reached, verify your email to unlock more".to_string(),
+                "card limit reached across all boards, verify your email to unlock more"
+                    .to_string(),
             ),
             ImportDeckCardsError::Database(e) => e.log_500(),
         }

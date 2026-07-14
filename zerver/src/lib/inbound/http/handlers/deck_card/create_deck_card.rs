@@ -33,11 +33,13 @@ impl From<CreateDeckCardError> for ApiError {
             CreateDeckCardError::IsCommander => {
                 Self::UnprocessableEntity(CreateDeckCardError::IsCommander.to_string())
             }
-            CreateDeckCardError::LimitReached => {
-                Self::UnprocessableEntity("card limit reached".to_string())
-            }
+            CreateDeckCardError::LimitReached => Self::UnprocessableEntity(
+                "card limit reached (mainboard, maybeboard, and sideboard all count toward it)"
+                    .to_string(),
+            ),
             CreateDeckCardError::UnverifiedLimitReached => Self::UnprocessableEntity(
-                "card limit reached, verify your email to unlock more".to_string(),
+                "card limit reached across all boards, verify your email to unlock more"
+                    .to_string(),
             ),
             CreateDeckCardError::Database(e) => e.log_500(),
             CreateDeckCardError::DeckCardFromDb(e) => e.log_500(),

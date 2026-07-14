@@ -274,7 +274,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         let current_card_count = stack.len();
         if current_card_count >= MAX_CARDS_IN_STACK {
             toast.warning(
-                "Card limit reached, please refresh to continue".to_string(),
+                "Card stack limit reached, please refresh your search to continue".to_string(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
             );
             return;
@@ -381,7 +381,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             && total.is_multiple_of(100)
         {
             toast.info(
-                "Approaching card limit, consider refreshing".to_string(),
+                "Approaching the card stack limit, refresh your search to continue".to_string(),
                 ToastOptions::default().duration(Duration::from_millis(2000)),
             );
         }
