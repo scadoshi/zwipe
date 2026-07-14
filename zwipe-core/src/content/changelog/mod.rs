@@ -25,21 +25,22 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.7.0",
-    date: "Coming soon",
-    entries: &[
-        "New oracle-tag dictionary: browse every tag by letter or search names and descriptions, opened from the oracle-tag picker.",
-        "Sharper oracle tags: better tags under each card role, closer archetype matches, and over a thousand plain-language descriptions.",
-        "Filters and pickers now open instantly, loaded once in the background instead of refetching each time.",
-        "Flip double-faced cards from the card details, with the Flip button now in the footer and everything in one scroll.",
-        "The Export screen now shows a loading placeholder instead of a spinner.",
-        "The changelog now updates on its own, without waiting for an app update.",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.7.0",
+        date: "Jul 14, 2026",
+        entries: &[
+            "New oracle-tag dictionary: browse every tag by letter or search names and descriptions, opened from the oracle-tag picker.",
+            "Sharper oracle tags: better tags under each card role, closer archetype matches, and over a thousand plain-language descriptions.",
+            "Filters and pickers now open instantly, loaded once in the background instead of refetching each time.",
+            "Flip double-faced cards from the card details, with the Flip button now in the footer and everything in one scroll.",
+            "The Export screen now shows a loading placeholder instead of a spinner.",
+            "The changelog now updates on its own, without waiting for an app update.",
+        ],
+    },
     Release {
         version: "1.6.0",
         date: "Jul 12, 2026",
