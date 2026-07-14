@@ -18,7 +18,12 @@ use zwipe::{
         services::Service,
     },
     inbound::external::scryfall::oracle_tag::{OracleTag, Tagging},
-    outbound::sqlx::{card::helpers::derive_categories::derive_categories, postgres::Postgres},
+    outbound::sqlx::{
+        card::helpers::{
+            derive_categories::derive_categories, oracle_tag_descriptions::ORACLE_TAG_DESCRIPTIONS,
+        },
+        postgres::Postgres,
+    },
 };
 
 fn tag(id: u128, slug: &str, description: Option<&str>, cards: &[Uuid]) -> OracleTag {
@@ -451,4 +456,51 @@ async fn projection_untagged_card_is_empty(pool: sqlx::PgPool) {
     .await
     .unwrap();
     assert_eq!(tags, serde_json::json!([]));
+}
+
+/// The sync-time overlay writes our authored `ORACLE_TAG_DESCRIPTIONS` over
+/// whatever Scryfall shipped: an authored slug is served with OUR text, and a
+/// slug we don't author keeps Scryfall's. Exercises overlay (in `sync_oracle_tags`)
+/// + serve (in `get_oracle_tags`) end to end — the pipeline the dictionary reads.
+#[sqlx::test]
+async fn sync_overlays_authored_descriptions(pool: sqlx::PgPool) {
+    let repo = Postgres { pool: pool.clone() };
+    // A real authored entry — the overlay must REPLACE Scryfall's text with ours.
+    let (authored_slug, our_desc) = ORACLE_TAG_DESCRIPTIONS[0];
+    // A slug absent from the const — Scryfall's text must pass through untouched.
+    let passthrough_slug = "zzz-unauthored-test-tag";
+    let passthrough_desc = "Scryfall's own words";
+
+    repo.sync_oracle_tags(&[
+        tag(
+            0x1,
+            authored_slug,
+            Some("scryfall placeholder, should be overwritten"),
+            &[],
+        ),
+        tag(0x2, passthrough_slug, Some(passthrough_desc), &[]),
+    ])
+    .await
+    .unwrap();
+
+    let served = repo.get_oracle_tags().await.unwrap();
+    let desc_of = |slug: &str| {
+        served
+            .iter()
+            .find(|t| t.slug == slug)
+            .unwrap()
+            .description
+            .clone()
+    };
+
+    assert_eq!(
+        desc_of(authored_slug).as_deref(),
+        Some(our_desc),
+        "overlay replaces Scryfall's description with our authored text"
+    );
+    assert_eq!(
+        desc_of(passthrough_slug).as_deref(),
+        Some(passthrough_desc),
+        "a slug we don't author keeps Scryfall's description"
+    );
 }
