@@ -7,6 +7,8 @@
 pub mod auth;
 /// Card data endpoints (search, get, types, artists, sets, languages).
 pub mod card;
+/// Changelog endpoint (release history).
+pub mod changelog;
 /// Deck CRUD operations.
 pub mod deck;
 /// Deck-card relationship operations (add/remove cards from decks).

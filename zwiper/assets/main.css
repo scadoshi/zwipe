@@ -1127,6 +1127,54 @@ button {
     border-bottom: none;
 }
 
+/* Changelog skeleton (changelog screen, while the startup fetch loads) */
+.changelog-skeleton-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.changelog-skeleton-chip {
+    width: 2.75rem;
+    height: 1.5rem;
+    border-radius: 0.5rem;
+}
+
+.changelog-skeleton-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.changelog-skeleton-version {
+    width: 3rem;
+    height: 1rem;
+}
+
+.changelog-skeleton-date {
+    width: 5rem;
+}
+
+.changelog-skeleton-bullets {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.changelog-skeleton-bullet {
+    width: 100%;
+}
+
+.changelog-skeleton-bullet:nth-child(3n + 2) {
+    width: 82%;
+}
+
+.changelog-skeleton-bullet:nth-child(3n) {
+    width: 90%;
+}
+
 .skeleton-card-bar-header {
     width: 35%;
 }
