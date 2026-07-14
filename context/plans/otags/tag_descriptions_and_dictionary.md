@@ -79,11 +79,16 @@ migrates cleanly to a DB table later if live editing is ever wanted — out of s
 
 ### Authoring workflow (the open work)
 
+**Runbook:** [`../../development/runbooks/otag_description_authoring.md`](../../development/runbooks/otag_description_authoring.md)
+— the repeatable AI-orchestrated loop (fan out subagents to draft + verify each
+description against real card oracle text, then splice into the const). Ships a
+reusable `Workflow` script alongside it. Follow that to run a batch.
+
 Add entries to `ORACLE_TAG_DESCRIPTIONS`, push, deploy; the next `zervice` run
 writes them in. Priority order: **highest card-population blanks first** (e.g.
 `triggered-ability` @ 7,885, `attack-trigger`, `removal-creature`), then the
 curated ~48, then the long tail — until coverage is satisfactory, then all of them.
-The starter batch (7 tags) shipped with the mechanism. Descriptions are user-facing:
+Coverage so far: 7 (starter) → 82 → 257 → 500 → 700. Descriptions are user-facing:
 short, plain, em-dash-free; do **not** carry Scryfall's `[label](slug)` cross-link
 syntax (we overwrite with our own plain text everywhere). A catalog dump with
 per-tag populations to prioritize from lives in the sweep scratchpad
