@@ -29,9 +29,11 @@ pub const UPCOMING: &[Release] = &[Release {
     version: "1.6.1",
     date: "Coming soon",
     entries: &[
+        "New oracle-tag dictionary: browse every tag by letter or search names and descriptions, opened from the oracle-tag picker.",
+        "Sharper oracle tags: better tags under each card role, closer archetype matches, and over a thousand plain-language descriptions.",
+        "Filters and pickers now open instantly, loaded once in the background instead of refetching each time.",
         "Flip double-faced cards from the card details, with the Flip button now in the footer and everything in one scroll.",
         "The Export screen now shows a loading placeholder instead of a spinner.",
-        "Sharper oracle tags: better tags under each card role, closer archetype matches, and more plain-language descriptions.",
         "The changelog now updates on its own, without waiting for an app update.",
     ],
 }];
