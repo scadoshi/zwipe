@@ -34,6 +34,8 @@ pub const HINT_FILTER: &str = "filter";
 pub const HINT_IMPORT: &str = "import";
 /// Explainer for the export deck screen (board selection, copy decklist).
 pub const HINT_EXPORT: &str = "export";
+/// Explainer for the oracle-tag dictionary screen (letter browse, search).
+pub const HINT_ORACLE_TAG_DICTIONARY: &str = "oracle_tag_dictionary";
 
 /// Maximum length of a hint key.
 pub const HINT_KEY_MAX_LEN: usize = 64;
@@ -107,6 +109,7 @@ mod tests {
             HINT_FILTER,
             HINT_IMPORT,
             HINT_EXPORT,
+            HINT_ORACLE_TAG_DICTIONARY,
         ] {
             assert!(MarkHintShown::new(Uuid::new_v4(), key).is_ok());
         }

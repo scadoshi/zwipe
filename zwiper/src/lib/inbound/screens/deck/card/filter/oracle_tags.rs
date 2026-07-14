@@ -8,9 +8,8 @@
 //! the mechanical-category filter's include/any-all/exclude structure.
 
 use super::match_mode::MatchMode;
-use crate::outbound::client::{ZwipeClient, card::get_oracle_tags::ClientGetOracleTags};
+use crate::{inbound::components::catalog_cache::CatalogCache, outbound::client::ZwipeClient};
 use dioxus::prelude::*;
-use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::card::{
     oracle_tag::{CURATED_ORACLE_TAGS, OracleTag},
     search_card::card_filter::builder::CardQueryBuilder,
@@ -75,9 +74,14 @@ pub(crate) fn OracleTags() -> Element {
     let mut filter_builder: Signal<CardQueryBuilder> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let filter_reset: Signal<u32> = use_context();
+    let cache: CatalogCache = use_context();
 
-    let catalog: Resource<Result<Vec<OracleTag>, ApiError>> =
-        use_resource(move || async move { client().get_oracle_tags().await });
+    // Read the shared app-wide oracle-tag catalog (prefetched at startup), warming
+    // / revalidating it on open. Same copy the picker + dictionary read.
+    use_effect(move || {
+        cache.ensure_oracle_tags(client);
+    });
+    let cell = cache.oracle_tags.cell();
 
     let mut includes_search = use_signal(String::new);
     let mut excludes_search = use_signal(String::new);
@@ -99,11 +103,8 @@ pub(crate) fn OracleTags() -> Element {
     let selected = read_selected(&filter_builder(), mode());
     let excluded = read_excluded(&filter_builder());
 
-    let catalog_read = catalog.read();
-    let tags: &[OracleTag] = match catalog_read.as_ref() {
-        Some(Ok(t)) => t.as_slice(),
-        _ => &[],
-    };
+    let cell_read = cell.read();
+    let tags: &[OracleTag] = cell_read.loaded().map(Vec::as_slice).unwrap_or(&[]);
 
     // The default grid: curated slugs the backend still serves, plus any selected
     // slug not in the curated set (so an active selection is always visible).

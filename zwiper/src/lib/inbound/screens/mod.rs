@@ -12,5 +12,7 @@ pub mod deck;
 pub mod home;
 /// Legal screens (privacy policy).
 pub mod legal;
+/// Oracle-tag dictionary (read-only, searchable reference of all oracle tags).
+pub mod oracle_tag_dictionary;
 /// User profile management screens (change email, password, username).
 pub mod profile;
