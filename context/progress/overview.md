@@ -4,6 +4,43 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
+## Latest — 2026-07-13
+
+- **Oracle-tag mapping sweep (both tables), applied + live-validated.** A
+  machine-assisted audit (30 sub-agents, adversarially verified against the live
+  4,492-tag catalog) of the two hand-authored otag mapping tables. Shipped:
+  **Track A** retuned 40 archetype seed sets in `deck_tag.rs` (14 removals of
+  over-broad seeds like Voltron/Flying `evasion` @ 4,568 cards, Spellslinger
+  `single-target-instant-sorcery` @ 4,631; 98 additions); **Track B** expanded the
+  card-role roots/overrides in `derive_categories.rs`; and a new
+  **`ROLE_TAG_EXCLUSIONS`** mechanism subtracts mis-parented tags per-role
+  (wired into both the role-derivation and grouping queries), which subtree-root
+  narrowing can't do because a tag can sit under several roots at once. Validated
+  against a local `zervice` recompute: exclusions drop from the wrong role while
+  multi-parent tags stay in their legit ones. Findings doc:
+  [`../plans/otags/mapping_sweep_review.md`](../plans/otags/mapping_sweep_review.md).
+- **Oracle-tag description pipeline (F Part 1) shipped.** `zervice` now overlays
+  our authored `ORACLE_TAG_DESCRIPTIONS` const into `oracle_tags.description`
+  **inside the sync transaction** (ours always wins over Scryfall's, survives the
+  daily nuke+reinsert) — differs from the original serve-merge plan; details in
+  [`../plans/otags/tag_descriptions_and_dictionary.md`](../plans/otags/tag_descriptions_and_dictionary.md).
+  Coverage was ~29% Scryfall (1,302/4,494); starter batch of 7 high-population
+  blanks authored. Next: bulk-author the rest, then the in-app dictionary page.
+- **zwiper polish for the next build:** the swipe-screen eyeball dialog now drives
+  Flip from its footer bar with a single scroll container (was a double-scrollbar
+  fight), and the Export screen shows a skeleton instead of a spinner while the
+  deck loads.
+- **zite:** fixed the announcement banners overlapping the open hamburger menu on
+  mobile — the slide-out-of-the-way behavior moved into shared `zwipe-components`
+  (both `NavBar` and `Banner` are crate-owned), and the portfolio site's duplicate
+  copy was dropped.
+- Planned next: oracle-tag description bulk authoring → in-app dictionary page →
+  **changelog served from the server** (stop hard-coding it in the app binary; new
+  [`../plans/changelog_server.md`](../plans/changelog_server.md)). All three on
+  `todo.md`.
+
+---
+
 ## Latest — 2026-07-11
 
 - **Android production launch submitted for review** (Play Console Submission 21,
