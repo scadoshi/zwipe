@@ -284,7 +284,7 @@ where
 
         let refresh_token = self
             .auth_repo
-            .create_refresh_token(user.id, request.platform)
+            .create_refresh_token(user.id, request.platform, request.client_version.clone())
             .await?;
 
         Ok(Session {
@@ -305,7 +305,11 @@ where
 
         let refresh_token = self
             .auth_repo
-            .create_refresh_token(request.user_id, request.platform)
+            .create_refresh_token(
+                request.user_id,
+                request.platform,
+                request.client_version.clone(),
+            )
             .await?;
 
         let access_token = AccessToken::generate(&user, self.jwt_secret())?;

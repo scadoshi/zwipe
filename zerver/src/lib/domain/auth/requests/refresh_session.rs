@@ -149,6 +149,13 @@ pub struct RefreshSession {
     /// This is the unhashed token value that the client received in the
     /// previous session response.
     pub refresh_token: String,
+
+    /// The app version currently running on the client (e.g. `"1.6.1"`).
+    ///
+    /// Re-sent on every refresh so the rotated session records the live version.
+    /// `None` for older clients; the rotation then carries the consumed token's
+    /// stored value forward.
+    pub client_version: Option<String>,
 }
 
 impl RefreshSession {
@@ -177,6 +184,7 @@ impl RefreshSession {
         Ok(Self {
             user_id,
             refresh_token,
+            client_version: None,
         })
     }
 }
@@ -199,6 +207,7 @@ impl From<&Session> for RefreshSession {
         Self {
             user_id: value.user.id,
             refresh_token: value.refresh_token.value.clone(),
+            client_version: None,
         }
     }
 }

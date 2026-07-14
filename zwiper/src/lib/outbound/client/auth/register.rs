@@ -23,6 +23,7 @@ impl ClientRegister for ZwipeClient {
     async fn register(&self, request: HttpRegisterUser) -> Result<Session, ApiError> {
         let mut request = request;
         request.platform = Some(ClientPlatform::CURRENT);
+        request.client_version = Some(env!("CARGO_PKG_VERSION").to_string());
 
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&register_route());

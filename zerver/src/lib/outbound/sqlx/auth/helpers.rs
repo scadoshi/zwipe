@@ -32,6 +32,7 @@ pub trait TxHelper {
         &mut self,
         user_id: Uuid,
         platform: Option<ClientPlatform>,
+        client_version: Option<String>,
     ) -> impl Future<Output = Result<RefreshToken, CreateSessionError>> + Send;
 
     /// Enforces the maximum number of concurrent sessions per user.
@@ -49,16 +50,18 @@ impl<'a> TxHelper for PgTransaction<'a> {
         &mut self,
         user_id: Uuid,
         platform: Option<ClientPlatform>,
+        client_version: Option<String>,
     ) -> Result<RefreshToken, CreateSessionError> {
         let refresh_token = RefreshToken::generate();
         let platform = platform.map(|p| p.to_string());
         let _result = query_as!(
             DatabaseRefreshToken,
-            "INSERT INTO refresh_tokens (user_id, value_hash, expires_at, platform) VALUES ($1, $2, $3, $4) RETURNING id, user_id, expires_at, revoked, platform",
+            "INSERT INTO refresh_tokens (user_id, value_hash, expires_at, platform, client_version) VALUES ($1, $2, $3, $4, $5) RETURNING id, user_id, expires_at, revoked, platform, client_version",
             user_id,
             refresh_token.sha256_hash(),
             refresh_token.expires_at,
-            platform
+            platform,
+            client_version
         )
         .fetch_one(&mut **self)
         .await?;

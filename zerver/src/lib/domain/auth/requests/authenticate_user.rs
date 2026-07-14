@@ -175,6 +175,10 @@ pub struct AuthenticateUser {
     /// Client platform of the session being created (recorded on the token).
     /// `None` for re-authentication and older clients.
     pub platform: Option<ClientPlatform>,
+
+    /// Client app version (e.g. `"1.6.1"`) of the session being created (recorded
+    /// on the token). `None` for re-authentication and older clients.
+    pub client_version: Option<String>,
 }
 
 impl AuthenticateUser {
@@ -216,6 +220,7 @@ impl AuthenticateUser {
             identifier: identifier.to_string(),
             password: password.to_string(),
             platform: None,
+            client_version: None,
         })
     }
 }
@@ -238,6 +243,7 @@ impl From<&ChangePassword> for AuthenticateUser {
             identifier: value.user_id.to_string(),
             password: value.current_password.to_owned(),
             platform: None,
+            client_version: None,
         }
     }
 }
@@ -252,6 +258,7 @@ impl From<&ChangeUsername> for AuthenticateUser {
             identifier: value.user_id.to_string(),
             password: value.password.to_string(),
             platform: None,
+            client_version: None,
         }
     }
 }
@@ -266,6 +273,7 @@ impl From<&ChangeEmail> for AuthenticateUser {
             identifier: value.user_id.to_string(),
             password: value.password.to_string(),
             platform: None,
+            client_version: None,
         }
     }
 }
@@ -280,6 +288,7 @@ impl From<&DeleteUser> for AuthenticateUser {
             identifier: value.user_id.to_string(),
             password: value.password.to_string(),
             platform: None,
+            client_version: None,
         }
     }
 }

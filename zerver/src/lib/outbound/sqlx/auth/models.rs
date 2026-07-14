@@ -53,4 +53,6 @@ pub struct DatabaseRefreshToken {
     pub revoked: bool,
     /// Client platform string (`ios`/`android`/`desktop`/`web`), NULL if unknown.
     pub platform: Option<String>,
+    /// Client app version string (e.g. `"1.6.1"`), NULL if unknown.
+    pub client_version: Option<String>,
 }

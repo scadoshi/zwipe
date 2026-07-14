@@ -20,6 +20,11 @@ pub trait ClientRefresh {
 
 impl ClientRefresh for ZwipeClient {
     async fn refresh(&self, request: &HttpRefreshSession) -> Result<Session, ApiError> {
+        // Re-send the running app version each refresh so the rotated session
+        // records the live version, not the one it was first created with.
+        let mut request = HttpRefreshSession::new(&request.user_id, &request.refresh_token);
+        request.client_version = Some(env!("CARGO_PKG_VERSION").to_string());
+
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&refresh_session_route());
         info!("POST {}", url);

@@ -23,6 +23,7 @@ impl ClientLogin for ZwipeClient {
     async fn authenticate_user(&self, request: HttpAuthenticateUser) -> Result<Session, ApiError> {
         let mut request = request;
         request.platform = Some(ClientPlatform::CURRENT);
+        request.client_version = Some(env!("CARGO_PKG_VERSION").to_string());
 
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&login_route());

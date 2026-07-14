@@ -57,11 +57,13 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
     /// Creates a new refresh token for an existing user (new session).
     ///
     /// Generates and stores a new refresh token for the specified user ID,
-    /// tagged with the client `platform` (`None` if unknown/not reported).
+    /// tagged with the client `platform` and `client_version` (`None` if
+    /// unknown/not reported).
     fn create_refresh_token(
         &self,
         request: Uuid,
         platform: Option<ClientPlatform>,
+        client_version: Option<String>,
     ) -> impl Future<Output = Result<RefreshToken, CreateSessionError>> + Send;
 
     /// Exchanges a refresh token for a new one (token rotation).
