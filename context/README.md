@@ -20,39 +20,34 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**Latest — shared-components arc + portfolio adoption (2026-07-08):**
-`zwipe-components` grew from 3 to 10 components in a day (`CardRow`,
-`ThemePicker`, `NavDropdown`, `NavBar`, `PageMeta`, `OracleText`,
-`KeywordChips` joined Button/Chip/ActionBar), now owns `themes.css`, and
-exports `COMPONENTS_CSS`/`THEMES_CSS` for external consumers — because the
-owner's **portfolio site became the crate's first external consumer** via a
-GitHub git dependency (~760 duplicated lines deleted there; crates.io
-declined). Same day: `zwipe_core::domain::site` centralized all base
-URL/contact constants across app/site/server, zite shipped a polish batch
-(ghost skeletons, featured-row role tags, dead-end not-shared screen,
-guides sitemap + Article JSON-LD), and zwiper banked polish for the next
-build (skeleton realignment, land-target filter-leak fix, DFC mana-cost
-fallback). Details:
-[`plans/components_portfolio_adoption.md`](plans/components_portfolio_adoption.md)
-and the [`progress/overview.md`](progress/overview.md) top entries.
+**Latest — oracle-tag mapping sweep + description pipeline (2026-07-13):** a
+machine-assisted audit of the two hand-authored otag mapping tables shipped —
+**Track A** retuned 40 archetype seed sets (dropping over-broad seeds, adding
+high-signal ones), **Track B** expanded the card-role roots/overrides, and a new
+**`ROLE_TAG_EXCLUSIONS`** mechanism subtracts mis-parented tags per-role (what
+subtree-root narrowing can't do, since a tag can sit under several roots at once);
+all validated against a local `zervice` recompute. Same day, the **oracle-tag
+description pipeline** (F Part 1) shipped: `zervice` overlays our authored
+descriptions into `oracle_tags.description` each sync (ours always wins, survives
+the daily nuke). Plus small polish — the swipe eyeball dialog's Flip moved to its
+footer with a single scroll, an Export-screen skeleton, and a zite banner/hamburger
+overlap fix hoisted into shared `zwipe-components`. Details in the
+[`progress/overview.md`](progress/overview.md) top entry and
+[`plans/otags/`](plans/otags/).
 
-**1.4.0 LIVE on the App Store (2026-07-08; iOS build 61 / Android vc22):** the feature batch
-— Zwipe-select popularity ordering, commander-select signal ingest, partner
-autofill, Deck MVPs phase 1, deck share links. Server halves (three additive
-migrations) deployed to prod first and verified against live clients. 1.3.0
-(build 59 / vc20) and 1.3.1 (build 60 / vc21) superseded; the next build
-carries the 2026-07-08 zwiper polish as **1.4.1** (or **1.5.0** if new
-functionality lands first). Serve-path follow-ons
-remain data-gated: [`plans/suggestion_signal.md`](plans/suggestion_signal.md)
-(Phase 3c) and [`archive/commander_select_signal.md`](archive/commander_select_signal.md)
-(§4 Consumer B).
+**1.6.0 LIVE (2026-07-12; iOS build 64 / Android vc26):** the big feature batch —
+in-app changelog, the three-axis tag system (oracle tags / card roles / deck tags,
+server-driven via slugs), 17 new themes (31 total), persisted theme across app +
+site, home-screen buy links, and a reorganized deck view. Android production launch
+was submitted for review 2026-07-11 (all countries), awaiting Google.
 
-**After this:** short-form videos (`marketing/plans/` — the share/MVP/
-commander videos are filmable now against 1.4.0), review tracking (then bump
-`MIN_CLIENT_VERSION`), keep the closed-testing 14-day clock running, watch
-the funnel numbers (they gate the sign-in-with-Google decision), privacy
-follow-ups (store data-safety labels + notification email), and draw-odds
-**Phase 4 (premium gating)**.
+**After this:** finish the oracle-tag description bulk authoring, then the in-app
+**dictionary page**, then **serve the changelog from the server** so pipeline/
+release notes no longer need an app resubmit ([`plans/changelog_server.md`](plans/changelog_server.md)).
+Ongoing: short-form marketing videos, review tracking (then bump
+`MIN_CLIENT_VERSION`), watch the funnel numbers (they gate the sign-in-with-Google
+decision), privacy follow-ups (store data-safety labels + notification email), and
+draw-odds **Phase 4 (premium gating)**.
 
 See [`progress/overview.md`](progress/overview.md) for the high-level state,
 [`progress/feature_requests.md`](progress/feature_requests.md) for the weighted
