@@ -24,8 +24,15 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   **inside the sync transaction** (ours always wins over Scryfall's, survives the
   daily nuke+reinsert) — differs from the original serve-merge plan; details in
   [`../plans/otags/tag_descriptions_and_dictionary.md`](../plans/otags/tag_descriptions_and_dictionary.md).
-  Coverage was ~29% Scryfall (1,302/4,494); starter batch of 7 high-population
-  blanks authored. Next: bulk-author the rest, then the in-app dictionary page.
+- **Oracle-tag descriptions: 1,100 authored (was ~29% Scryfall, 1,302/4,494).**
+  Bulk-authored highest-card-population first via a repeatable draft → oracle-text-verify
+  subagent pipeline (each description drafted, then adversarially checked against the
+  real oracle text of cards carrying the tag, then human-spot-checked and spliced).
+  7 → 82 → 257 → 500 → 700 → 1,100; the whole high-traffic head is covered, the
+  remaining tail is low-population. Committed the reusable
+  **runbook + workflow** so any session can continue cold:
+  [`../development/runbooks/otag_description_authoring.md`](../development/runbooks/otag_description_authoring.md).
+  **Next: the in-app oracle-tag dictionary page** (Part 2) that renders all this.
 - **zwiper polish for the next build:** the swipe-screen eyeball dialog now drives
   Flip from its footer bar with a single scroll container (was a double-scrollbar
   fight), and the Export screen shows a skeleton instead of a spinner while the
@@ -34,10 +41,10 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   mobile — the slide-out-of-the-way behavior moved into shared `zwipe-components`
   (both `NavBar` and `Banner` are crate-owned), and the portfolio site's duplicate
   copy was dropped.
-- Planned next: oracle-tag description bulk authoring → in-app dictionary page →
+- Planned next: **in-app oracle-tag dictionary page** (renders the 1,100+ authored
+  descriptions; starting ~2026-07-14) → continue description authoring into the tail →
   **changelog served from the server** (stop hard-coding it in the app binary; new
-  [`../plans/changelog_server.md`](../plans/changelog_server.md)). All three on
-  `todo.md`.
+  [`../plans/changelog_server.md`](../plans/changelog_server.md)). All on `todo.md`.
 
 ---
 
