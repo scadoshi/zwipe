@@ -26,7 +26,7 @@ pub fn Category() -> Element {
 
     let mode = use_memo(move || {
         let fb = filter_builder();
-        if fb.mechanical_categories_contains_all().is_some() {
+        if fb.card_roles_contains_all().is_some() {
             MatchMode::All
         } else {
             MatchMode::Any
@@ -37,11 +37,11 @@ pub fn Category() -> Element {
         let fb = filter_builder();
         match mode() {
             MatchMode::Any => fb
-                .mechanical_categories_contains_any()
+                .card_roles_contains_any()
                 .map(|v| v.to_vec())
                 .unwrap_or_default(),
             MatchMode::All => fb
-                .mechanical_categories_contains_all()
+                .card_roles_contains_all()
                 .map(|v| v.to_vec())
                 .unwrap_or_default(),
         }
@@ -49,22 +49,22 @@ pub fn Category() -> Element {
 
     let read_excluded = move || -> Vec<String> {
         filter_builder()
-            .mechanical_categories_excludes()
+            .card_roles_excludes()
             .map(|v| v.to_vec())
             .unwrap_or_default()
     };
 
     let mut write_categories = move |cats: Vec<String>, m: MatchMode| {
         let fb = &mut *filter_builder.write();
-        fb.unset_mechanical_categories_contains_any();
-        fb.unset_mechanical_categories_contains_all();
+        fb.unset_card_roles_contains_any();
+        fb.unset_card_roles_contains_all();
         if !cats.is_empty() {
             match m {
                 MatchMode::Any => {
-                    fb.set_mechanical_categories_contains_any(cats);
+                    fb.set_card_roles_contains_any(cats);
                 }
                 MatchMode::All => {
-                    fb.set_mechanical_categories_contains_all(cats);
+                    fb.set_card_roles_contains_all(cats);
                 }
             }
         }
@@ -73,9 +73,9 @@ pub fn Category() -> Element {
     let mut write_excluded_cats = move |cats: Vec<String>| {
         let fb = &mut *filter_builder.write();
         if cats.is_empty() {
-            fb.unset_mechanical_categories_excludes();
+            fb.unset_card_roles_excludes();
         } else {
-            fb.set_mechanical_categories_excludes(cats);
+            fb.set_card_roles_excludes(cats);
         }
     };
 

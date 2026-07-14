@@ -198,9 +198,9 @@ pub struct CardQueryBuilder {
     is_background: Option<bool>,
     is_signature_spell: Option<bool>,
     // mechanical category
-    mechanical_categories_contains_any: Option<Vec<String>>,
-    mechanical_categories_contains_all: Option<Vec<String>>,
-    mechanical_categories_excludes: Option<Vec<String>>,
+    card_roles_contains_any: Option<Vec<String>>,
+    card_roles_contains_all: Option<Vec<String>>,
+    card_roles_excludes: Option<Vec<String>>,
     // oracle tags
     oracle_tags_contains_any: Option<Vec<String>>,
     oracle_tags_contains_all: Option<Vec<String>>,
@@ -269,9 +269,9 @@ impl Default for CardQueryBuilder {
             is_partner: None,
             is_background: None,
             is_signature_spell: None,
-            mechanical_categories_contains_any: None,
-            mechanical_categories_contains_all: None,
-            mechanical_categories_excludes: None,
+            card_roles_contains_any: None,
+            card_roles_contains_all: None,
+            card_roles_excludes: None,
             oracle_tags_contains_any: None,
             oracle_tags_contains_all: None,
             oracle_tags_excludes: None,
@@ -804,10 +804,10 @@ impl CardQueryBuilder {
         check_include_exclude_clash(
             "mechanical categories",
             &[
-                self.mechanical_categories_contains_any.as_deref(),
-                self.mechanical_categories_contains_all.as_deref(),
+                self.card_roles_contains_any.as_deref(),
+                self.card_roles_contains_all.as_deref(),
             ],
-            self.mechanical_categories_excludes.as_deref(),
+            self.card_roles_excludes.as_deref(),
         )?;
         check_include_exclude_clash(
             "oracle tags",
@@ -940,9 +940,9 @@ impl CardQueryBuilder {
             is_partner: self.is_partner,
             is_background: self.is_background,
             is_signature_spell: self.is_signature_spell,
-            mechanical_categories_contains_any: self.mechanical_categories_contains_any.clone(),
-            mechanical_categories_contains_all: self.mechanical_categories_contains_all.clone(),
-            mechanical_categories_excludes: self.mechanical_categories_excludes.clone(),
+            card_roles_contains_any: self.card_roles_contains_any.clone(),
+            card_roles_contains_all: self.card_roles_contains_all.clone(),
+            card_roles_excludes: self.card_roles_excludes.clone(),
             oracle_tags_contains_any: self.oracle_tags_contains_any.clone(),
             oracle_tags_contains_all: self.oracle_tags_contains_all.clone(),
             oracle_tags_excludes: self.oracle_tags_excludes.clone(),

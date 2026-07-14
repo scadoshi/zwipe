@@ -21,8 +21,12 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use zwipe_core::domain::card::{
-    Card, card_profile::CardProfile, card_role::classify_oracle_tag_gaps, oracle_tag::OracleTag,
-    scryfall_data::ScryfallData, search_card::card_filter::CardQuery,
+    Card,
+    card_profile::CardProfile,
+    card_role::{CardRole, classify_oracle_tag_gaps},
+    oracle_tag::OracleTag,
+    scryfall_data::ScryfallData,
+    search_card::card_filter::CardQuery,
 };
 
 /// PostgreSQL parameter limit per query (~65k parameters).
@@ -114,7 +118,12 @@ impl<R: CardRepository> CardService for Service<R> {
                     if gaps.is_empty() {
                         return None;
                     }
-                    let mut union = card.card_profile.mechanical_categories.clone();
+                    let mut union: Vec<CardRole> = card
+                        .card_profile
+                        .card_roles
+                        .iter()
+                        .filter_map(|s| CardRole::try_from(s.as_str()).ok())
+                        .collect();
                     let before = union.len();
                     for g in gaps {
                         if !union.contains(&g) {
@@ -130,7 +139,7 @@ impl<R: CardRepository> CardService for Service<R> {
                 .collect();
             merged += updates.len() as u32;
             if !updates.is_empty() {
-                self.repo.update_mechanical_categories(&updates).await?;
+                self.repo.update_card_roles(&updates).await?;
             }
         }
         Ok((otag_rows as u32, merged))

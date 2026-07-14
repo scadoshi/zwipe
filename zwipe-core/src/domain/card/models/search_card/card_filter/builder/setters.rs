@@ -670,36 +670,36 @@ impl CardQueryBuilder {
     // =================================
 
     /// Sets the mechanical category ANY filter (cards matching at least one).
-    pub fn set_mechanical_categories_contains_any<I, S>(&mut self, categories: I) -> &mut Self
+    pub fn set_card_roles_contains_any<I, S>(&mut self, categories: I) -> &mut Self
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
         let v: Vec<String> = categories.into_iter().map(|s| s.into()).collect();
-        self.mechanical_categories_contains_any = if v.is_empty() { None } else { Some(v) };
+        self.card_roles_contains_any = if v.is_empty() { None } else { Some(v) };
         self
     }
 
     /// Clears the mechanical category ANY filter.
-    pub fn unset_mechanical_categories_contains_any(&mut self) -> &mut Self {
-        self.mechanical_categories_contains_any = None;
+    pub fn unset_card_roles_contains_any(&mut self) -> &mut Self {
+        self.card_roles_contains_any = None;
         self
     }
 
     /// Sets the mechanical category ALL filter (cards matching every category).
-    pub fn set_mechanical_categories_contains_all<I, S>(&mut self, categories: I) -> &mut Self
+    pub fn set_card_roles_contains_all<I, S>(&mut self, categories: I) -> &mut Self
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
         let v: Vec<String> = categories.into_iter().map(|s| s.into()).collect();
-        self.mechanical_categories_contains_all = if v.is_empty() { None } else { Some(v) };
+        self.card_roles_contains_all = if v.is_empty() { None } else { Some(v) };
         self
     }
 
     /// Clears the mechanical category ALL filter.
-    pub fn unset_mechanical_categories_contains_all(&mut self) -> &mut Self {
-        self.mechanical_categories_contains_all = None;
+    pub fn unset_card_roles_contains_all(&mut self) -> &mut Self {
+        self.card_roles_contains_all = None;
         self
     }
 
@@ -943,26 +943,23 @@ impl CardQueryBuilder {
     }
 
     /// Sets mechanical categories excludes filter ("has none of these categories").
-    pub fn set_mechanical_categories_excludes<I, S>(
-        &mut self,
-        mechanical_categories_excludes: I,
-    ) -> &mut Self
+    pub fn set_card_roles_excludes<I, S>(&mut self, card_roles_excludes: I) -> &mut Self
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = mechanical_categories_excludes
+        let v: Vec<String> = card_roles_excludes
             .into_iter()
             .map(|s| s.into().trim().to_string())
             .filter(|s| !s.is_empty())
             .collect();
-        self.mechanical_categories_excludes = if v.is_empty() { None } else { Some(v) };
+        self.card_roles_excludes = if v.is_empty() { None } else { Some(v) };
         self
     }
 
     /// Clears the mechanical categories excludes filter.
-    pub fn unset_mechanical_categories_excludes(&mut self) -> &mut Self {
-        self.mechanical_categories_excludes = None;
+    pub fn unset_card_roles_excludes(&mut self) -> &mut Self {
+        self.card_roles_excludes = None;
         self
     }
 

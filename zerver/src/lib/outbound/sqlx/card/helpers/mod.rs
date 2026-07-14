@@ -1,6 +1,6 @@
 //! SQL generation helpers for card data operations.
 
-/// Derive `mechanical_categories` from oracle-tag subtrees + `all_parts` (Phase 2).
+/// Derive `card_roles` from oracle-tag subtrees + `all_parts` (Phase 2).
 pub mod derive_categories;
 /// Our authored oracle-tag descriptions, overlaid onto the catalog each sync.
 pub mod oracle_tag_descriptions;

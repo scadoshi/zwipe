@@ -45,8 +45,7 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
     fn try_from(value: DatabaseDeckProfile) -> Result<Self, Self::Error> {
         let name = DeckName::new(value.name)?;
         let format = value.format.map(Format::try_from).transpose()?;
-        // Unrecognized tag strings are dropped (forward-compatible), like card
-        // mechanical_categories.
+        // Unrecognized tag strings are dropped (forward-compatible), like card roles.
         // Deck tags are stored + carried as slugs (Vec<String>); no enum parse.
         let tags = value
             .tags

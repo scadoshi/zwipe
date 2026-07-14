@@ -261,16 +261,16 @@ async fn sql_and_predicate_agree_on_every_criterion(pool: sqlx::PgPool) {
         ),
         // mechanical categories
         (
-            "mechanical_categories_contains_any",
-            json!({ "mechanical_categories_contains_any": ["ramp"] }),
+            "card_roles_contains_any",
+            json!({ "card_roles_contains_any": ["ramp"] }),
         ),
         (
-            "mechanical_categories_contains_all",
-            json!({ "mechanical_categories_contains_all": ["removal"] }),
+            "card_roles_contains_all",
+            json!({ "card_roles_contains_all": ["removal"] }),
         ),
         (
-            "mechanical_categories_excludes",
-            json!({ "mechanical_categories_excludes": ["burn"] }),
+            "card_roles_excludes",
+            json!({ "card_roles_excludes": ["burn"] }),
         ),
         // oracle tags
         (

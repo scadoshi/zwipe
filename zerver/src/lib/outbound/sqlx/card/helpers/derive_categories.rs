@@ -2,7 +2,7 @@
 //!
 //! For the ~18 `CardRole` variants that map cleanly to an Oracle-tag
 //! subtree, plus `Tokens` from Scryfall's `all_parts` token metadata, this computes
-//! `card_profiles.mechanical_categories` directly from the community gold standard.
+//! `card_profiles.card_roles` directly from the community gold standard.
 //! See `context/plans/otags/` (Phase 2, Option A).
 //!
 //! `Pump`, `Stax`, `Protection`, `GraveyardHate` also map to an otag root here, but
@@ -263,7 +263,7 @@ async fn warn_unknown_slugs(pool: &PgPool, slugs: &[String], source: &str) {
     }
 }
 
-/// Rebuilds `card_profiles.mechanical_categories` from Oracle Tags: expands each
+/// Rebuilds `card_profiles.card_roles` from Oracle Tags: expands each
 /// category's roots through the tag hierarchy, unions the matching cards, adds
 /// `Tokens` for any card whose `all_parts` contains a token component, and writes
 /// the sorted category array per printing. Returns rows affected.
@@ -317,7 +317,7 @@ pub async fn derive_categories(pool: &PgPool) -> anyhow::Result<u64> {
              SELECT oracle_id, jsonb_agg(DISTINCT category ORDER BY category) AS cats FROM derived GROUP BY oracle_id
          )
          UPDATE card_profiles cp
-         SET mechanical_categories = COALESCE(a.cats, '[]'::jsonb)
+         SET card_roles = COALESCE(a.cats, '[]'::jsonb)
          FROM scryfall_data sd
          LEFT JOIN agg a ON a.oracle_id = sd.oracle_id
          WHERE cp.scryfall_data_id = sd.id",
@@ -330,7 +330,7 @@ pub async fn derive_categories(pool: &PgPool) -> anyhow::Result<u64> {
     .bind(&ex_slugs)
     .execute(pool)
     .await
-    .context("failed to derive mechanical_categories from oracle tags")?;
+    .context("failed to derive card_roles from oracle tags")?;
     Ok(result.rows_affected())
 }
 

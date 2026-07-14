@@ -164,36 +164,36 @@ impl CardCriteria {
             }
         }
 
-        // ── mechanical categories ───────────────────────────────────
-        if let Some(values) = self.mechanical_categories_contains_any() {
-            let matches = card.card_profile.mechanical_categories.iter().any(|cat| {
-                values
-                    .iter()
-                    .any(|v| cat.to_string().eq_ignore_ascii_case(v))
-            });
+        // ── card roles ──────────────────────────────────────────────
+        if let Some(values) = self.card_roles_contains_any() {
+            let matches = card
+                .card_profile
+                .card_roles
+                .iter()
+                .any(|role| values.iter().any(|v| role.eq_ignore_ascii_case(v)));
             if !matches {
                 return false;
             }
         }
 
-        if let Some(values) = self.mechanical_categories_contains_all() {
+        if let Some(values) = self.card_roles_contains_all() {
             let matches = values.iter().all(|v| {
                 card.card_profile
-                    .mechanical_categories
+                    .card_roles
                     .iter()
-                    .any(|cat| cat.to_string().eq_ignore_ascii_case(v))
+                    .any(|role| role.eq_ignore_ascii_case(v))
             });
             if !matches {
                 return false;
             }
         }
 
-        if let Some(values) = self.mechanical_categories_excludes() {
-            let excluded = card.card_profile.mechanical_categories.iter().any(|cat| {
-                values
-                    .iter()
-                    .any(|v| cat.to_string().eq_ignore_ascii_case(v))
-            });
+        if let Some(values) = self.card_roles_excludes() {
+            let excluded = card
+                .card_profile
+                .card_roles
+                .iter()
+                .any(|role| values.iter().any(|v| role.eq_ignore_ascii_case(v)));
             if excluded {
                 return false;
             }

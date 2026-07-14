@@ -314,7 +314,7 @@ impl CardRepository for MyPostgres {
     }
 
     /// Searches the `latest_cards` materialized view (pre-deduplicated to one row per
-    /// oracle_id). Joins `card_profiles` for is_token / mechanical_categories filters.
+    /// oracle_id). Joins `card_profiles` for is_token / card_roles filters.
     /// Filter clauses are composed with `AND` via `QueryBuilder::separated`.
     async fn search_scryfall_data(
         &self,
@@ -975,21 +975,21 @@ impl CardRepository for MyPostgres {
         }
 
         // mechanical category filters
-        if let Some(categories) = criteria.mechanical_categories_contains_any() {
-            sep.push("(card_profiles.mechanical_categories ?| ");
+        if let Some(categories) = criteria.card_roles_contains_any() {
+            sep.push("(card_profiles.card_roles ?| ");
             sep.push_bind_unseparated(categories.to_vec());
             sep.push_unseparated(")");
         }
 
-        if let Some(categories) = criteria.mechanical_categories_contains_all() {
+        if let Some(categories) = criteria.card_roles_contains_all() {
             let json = serde_json::to_value(categories).unwrap_or_default();
-            sep.push("(card_profiles.mechanical_categories @> ");
+            sep.push("(card_profiles.card_roles @> ");
             sep.push_bind_unseparated(json);
             sep.push_unseparated(")");
         }
 
-        if let Some(categories) = criteria.mechanical_categories_excludes() {
-            sep.push("NOT (card_profiles.mechanical_categories ?| ");
+        if let Some(categories) = criteria.card_roles_excludes() {
+            sep.push("NOT (card_profiles.card_roles ?| ");
             sep.push_bind_unseparated(categories.to_vec());
             sep.push_unseparated(")");
         }
@@ -1401,7 +1401,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<CardProfile, GetCardProfileError> {
         let card_profile: CardProfile = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, mechanical_categories, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at FROM card_profiles WHERE scryfall_data_id = $1",
+            "SELECT scryfall_data_id, is_token, card_roles, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at FROM card_profiles WHERE scryfall_data_id = $1",
             **request
         )
         .fetch_one(&self.pool)
@@ -1416,7 +1416,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<CardProfile, GetCardProfileError> {
         let card_profile: CardProfile = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, mechanical_categories, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at
+            "SELECT scryfall_data_id, is_token, card_roles, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = $1",
             **request
         )
@@ -1432,7 +1432,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, mechanical_categories, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at
+            "SELECT scryfall_data_id, is_token, card_roles, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = ANY($1)",
             &**request
         )
@@ -1450,7 +1450,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, mechanical_categories, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at
+            "SELECT scryfall_data_id, is_token, card_roles, oracle_tags, oracle_tags_by_role, other_oracle_tags, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = ANY($1)",
             &**request
         )
@@ -1605,7 +1605,7 @@ impl CardRepository for MyPostgres {
             .map_err(|e| anyhow::anyhow!("failed to fetch card batch: {e}"))
     }
 
-    async fn update_mechanical_categories(
+    async fn update_card_roles(
         &self,
         updates: &[(
             uuid::Uuid,
@@ -1622,7 +1622,7 @@ impl CardRepository for MyPostgres {
             let cat_strings: Vec<String> = categories.iter().map(|c| c.to_string()).collect();
             let json = serde_json::to_value(&cat_strings)?;
             sqlx::query!(
-                "UPDATE card_profiles SET mechanical_categories = $1, updated_at = NOW() WHERE scryfall_data_id = $2",
+                "UPDATE card_profiles SET card_roles = $1, updated_at = NOW() WHERE scryfall_data_id = $2",
                 json,
                 id
             )
@@ -1638,10 +1638,10 @@ impl CardRepository for MyPostgres {
         // Batch clear to avoid a single slow UPDATE on 100k+ rows
         loop {
             let result = sqlx::query!(
-                "UPDATE card_profiles SET mechanical_categories = '[]'::jsonb
+                "UPDATE card_profiles SET card_roles = '[]'::jsonb
                  WHERE scryfall_data_id IN (
                      SELECT scryfall_data_id FROM card_profiles
-                     WHERE mechanical_categories != '[]'::jsonb
+                     WHERE card_roles != '[]'::jsonb
                      LIMIT 5000
                  )"
             )

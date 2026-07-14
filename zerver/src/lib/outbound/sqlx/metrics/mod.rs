@@ -110,14 +110,61 @@ impl MetricsRepository for Postgres {
         let d32 = batch.swipes_down as i32;
         let s32 = batch.searches as i32;
 
-        // First-party suggestion signal: aggregate per-(commander, card) tallies.
-        // Pure aggregate — no user_id. Clamped above, so the list is bounded and
-        // each tally fits the BIGINT accumulation. Keyed on the commander, so a
-        // signal with no commander (a non-Commander deck) is skipped here — it has
-        // no lead key for this table and instead feeds the otag-context signal
-        // below via its deck's (format, CI).
+        // Resolve every deck's context from `deck_id` — the client sends only the
+        // deck now, the backend derives the rest. Ownership-scoped (`user_id`), so a
+        // client can only attribute signal to decks it owns. Per owned deck we resolve
+        // its commander's oracle id (EDH) and its `format_ci` key (non-EDH), used by
+        // the three signal sinks below.
+        let deck_ids: Vec<Uuid> = {
+            let mut ids: Vec<Uuid> = batch.signals.iter().filter_map(|s| s.deck_id).collect();
+            ids.sort_unstable();
+            ids.dedup();
+            ids
+        };
+        // deck_id -> (commander_oracle_id, format_ci key).
+        let mut deck_ctx: HashMap<Uuid, (Option<Uuid>, Option<String>)> = HashMap::new();
+        if !deck_ids.is_empty() {
+            let rows = query!(
+                r#"SELECT d.id, d.format,
+                          (SELECT sd.oracle_id FROM scryfall_data sd WHERE sd.id = d.commander_id)
+                              AS commander_oracle_id,
+                          (SELECT array_agg(DISTINCT ci)
+                             FROM scryfall_data sci, unnest(sci.color_identity) AS ci
+                            WHERE sci.id = ANY(ARRAY[d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id]
+                                               || ARRAY(SELECT dc.scryfall_data_id FROM deck_cards dc
+                                                        WHERE dc.deck_id = d.id AND dc.board = 'deck'))) AS color_identity
+                   FROM decks d
+                   WHERE d.id = ANY($1) AND d.user_id = $2"#,
+                &deck_ids[..],
+                user_id,
+            )
+            .fetch_all(&mut *tx)
+            .await
+            .map_err(db)?;
+            for row in rows {
+                let format_ci = row.format.map(|format| {
+                    let ci = canonical_color_identity(row.color_identity.as_deref().unwrap_or(&[]));
+                    format!("format_ci:{format}:{ci}")
+                });
+                deck_ctx.insert(row.id, (row.commander_oracle_id, format_ci));
+            }
+        }
+
+        // First-party suggestion signal: aggregate per-(commander, card) tallies,
+        // commander resolved from the deck. Pure aggregate — no user_id. A deck with
+        // no commander (a non-Commander deck) is skipped here — it has no lead key
+        // for this table and feeds the otag-context signal below via (format, CI).
+        //
+        // Dual-accept: prefer the deck-derived commander, fall back to the legacy
+        // client-sent `commander_oracle_id`, so existing (pre-1.6.1) clients that
+        // send it still land signal. The legacy field is sunset once 1.6.1 is floored.
         for sig in &batch.signals {
-            let Some(commander) = sig.commander_oracle_id else {
+            let Some(commander) = sig
+                .deck_id
+                .and_then(|id| deck_ctx.get(&id))
+                .and_then(|c| c.0)
+                .or(sig.commander_oracle_id)
+            else {
                 continue;
             };
             query!(
@@ -145,10 +192,15 @@ impl MetricsRepository for Postgres {
         }
 
         // Per-user mirror of the aggregate signal: same deltas, user-keyed.
-        // Feeds future personalization; nothing consumes it yet. Same
-        // commander-keyed skip as above for commander-less decks.
+        // Feeds future personalization; nothing consumes it yet. Same deck-derived
+        // commander (legacy client-sent fallback), skipped for commander-less decks.
         for sig in &batch.signals {
-            let Some(commander) = sig.commander_oracle_id else {
+            let Some(commander) = sig
+                .deck_id
+                .and_then(|id| deck_ctx.get(&id))
+                .and_then(|c| c.0)
+                .or(sig.commander_oracle_id)
+            else {
                 continue;
             };
             query!(
@@ -218,49 +270,17 @@ impl MetricsRepository for Postgres {
                 }
             }
 
-            // Non-Commander context: derive (format, CI) from the deck. Only signals
-            // with no commander but a deck_id need it; scoped to the caller's decks
-            // so a client can't attribute signal to a deck it doesn't own. CI mirrors
-            // the deck read: union of command-zone + mainboard card identities.
-            let deck_ids: Vec<Uuid> = batch
-                .signals
-                .iter()
-                .filter(|s| s.commander_oracle_id.is_none())
-                .filter_map(|s| s.deck_id)
-                .collect();
-            let mut deck_context: HashMap<Uuid, String> = HashMap::new();
-            if !deck_ids.is_empty() {
-                let deck_rows = query!(
-                    r#"SELECT d.id, d.format,
-                              (SELECT array_agg(DISTINCT ci)
-                                 FROM scryfall_data sci, unnest(sci.color_identity) AS ci
-                                WHERE sci.id = ANY(ARRAY[d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id]
-                                                   || ARRAY(SELECT dc.scryfall_data_id FROM deck_cards dc
-                                                            WHERE dc.deck_id = d.id AND dc.board = 'deck'))) AS color_identity
-                       FROM decks d
-                       WHERE d.id = ANY($1) AND d.user_id = $2"#,
-                    &deck_ids[..],
-                    user_id,
-                )
-                .fetch_all(&mut *tx)
-                .await
-                .map_err(db)?;
-                for row in deck_rows {
-                    // No format → no meaningful (format, CI) context; skip.
-                    let Some(format) = row.format else {
-                        continue;
-                    };
-                    let ci = canonical_color_identity(row.color_identity.as_deref().unwrap_or(&[]));
-                    deck_context.insert(row.id, format!("format_ci:{format}:{ci}"));
-                }
-            }
-
             // Aggregate gesture counts per (context_key, otag), then upsert once each.
+            // Context comes from the deck resolved above: a Commander deck keys on
+            // `commander:<oracle_id>`, a non-Commander deck on `format_ci:<format>:<CI>`.
+            // Dual-accept: deck-derived commander first, then the legacy client-sent one.
             let mut otag_tallies: HashMap<(String, String), OtagTally> = HashMap::new();
             for sig in &batch.signals {
-                let context_key = if let Some(commander) = sig.commander_oracle_id {
+                let deck_c = sig.deck_id.and_then(|id| deck_ctx.get(&id));
+                let commander = deck_c.and_then(|c| c.0).or(sig.commander_oracle_id);
+                let context_key = if let Some(commander) = commander {
                     format!("commander:{commander}")
-                } else if let Some(key) = sig.deck_id.and_then(|id| deck_context.get(&id)) {
+                } else if let Some(key) = deck_c.and_then(|c| c.1.as_ref()) {
                     key.clone()
                 } else {
                     continue;
@@ -374,7 +394,7 @@ impl MetricsRepository for Postgres {
             .collect();
         if !added_oracle_ids.is_empty() {
             let rows = query!(
-                r#"SELECT lc.oracle_id, lc.color_identity, cp.mechanical_categories
+                r#"SELECT lc.oracle_id, lc.color_identity, cp.card_roles
                    FROM latest_cards lc
                    JOIN card_profiles cp ON cp.scryfall_data_id = lc.id
                    WHERE lc.oracle_id = ANY($1)"#,
@@ -391,7 +411,7 @@ impl MetricsRepository for Postgres {
                 };
                 let colors = row.color_identity.unwrap_or_default();
                 let categories = row
-                    .mechanical_categories
+                    .card_roles
                     .as_ref()
                     .and_then(|v| v.as_array())
                     .map(|a| {

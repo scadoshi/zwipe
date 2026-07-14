@@ -190,16 +190,16 @@ impl CardCriteria {
     }
 
     // mechanical category
-    pub fn mechanical_categories_contains_any(&self) -> Option<&[String]> {
-        self.mechanical_categories_contains_any.as_deref()
+    pub fn card_roles_contains_any(&self) -> Option<&[String]> {
+        self.card_roles_contains_any.as_deref()
     }
 
-    pub fn mechanical_categories_contains_all(&self) -> Option<&[String]> {
-        self.mechanical_categories_contains_all.as_deref()
+    pub fn card_roles_contains_all(&self) -> Option<&[String]> {
+        self.card_roles_contains_all.as_deref()
     }
 
-    pub fn mechanical_categories_excludes(&self) -> Option<&[String]> {
-        self.mechanical_categories_excludes.as_deref()
+    pub fn card_roles_excludes(&self) -> Option<&[String]> {
+        self.card_roles_excludes.as_deref()
     }
 
     // oracle tags

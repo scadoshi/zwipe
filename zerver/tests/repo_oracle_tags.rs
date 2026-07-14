@@ -247,7 +247,7 @@ async fn derive_maps_otag_subtree_to_category(pool: sqlx::PgPool) {
     derive_categories(&pool).await.unwrap();
 
     let cats: serde_json::Value = sqlx::query_scalar(
-        "SELECT cp.mechanical_categories FROM card_profiles cp \
+        "SELECT cp.card_roles FROM card_profiles cp \
          JOIN scryfall_data sd ON sd.id = cp.scryfall_data_id WHERE sd.oracle_id = $1",
     )
     .bind(oracle_id)
@@ -275,7 +275,7 @@ async fn derive_tokens_from_all_parts(pool: sqlx::PgPool) {
     derive_categories(&pool).await.unwrap();
 
     let cats: serde_json::Value = sqlx::query_scalar(
-        "SELECT cp.mechanical_categories FROM card_profiles cp \
+        "SELECT cp.card_roles FROM card_profiles cp \
          JOIN scryfall_data sd ON sd.id = cp.scryfall_data_id WHERE sd.oracle_id = $1",
     )
     .bind(oracle_id)
@@ -333,7 +333,7 @@ async fn derive_card_categories_combines_otags_and_gaps(pool: sqlx::PgPool) {
     assert_eq!(merges, 1, "the one card should get a straggler merge");
 
     let value: serde_json::Value = sqlx::query_scalar(
-        "SELECT cp.mechanical_categories FROM card_profiles cp \
+        "SELECT cp.card_roles FROM card_profiles cp \
          JOIN scryfall_data sd ON sd.id = cp.scryfall_data_id WHERE sd.oracle_id = $1",
     )
     .bind(oracle_id)

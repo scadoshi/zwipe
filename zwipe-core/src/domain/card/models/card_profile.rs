@@ -4,7 +4,6 @@
 //! - Token status (whether this is a token vs. real card)
 //! - Timestamps (when card was added/updated in database)
 
-use super::card_role::CardRole;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -20,19 +19,10 @@ pub struct CardProfile {
     pub scryfall_data_id: Uuid,
     /// Whether this is a token (not a real card).
     pub is_token: bool,
-    /// Mechanical categories assigned by heuristics or AI classification.
-    ///
-    /// Legacy name for the coarse role axis; dual-emitted alongside `card_roles`
-    /// (identical values) during the Phase M rename, and dropped at the sunset.
-    /// Deserialized lossily (unknown role slugs dropped) so a newer server's roles
-    /// never crash an older client — see `serde_helpers::lossy_vec`.
-    #[serde(default, deserialize_with = "crate::serde_helpers::lossy_vec")]
-    pub mechanical_categories: Vec<CardRole>,
-    /// Canonical `card_roles` — the coarse role axis as server-delivered **slugs**
-    /// (e.g. `graveyard_hate`), carrying the same roles as `mechanical_categories`.
+    /// The coarse role axis, as server-delivered **slugs** (e.g. `graveyard_hate`).
     /// A plain `Vec<String>` (not the `CardRole` enum) on purpose: a newer server's
-    /// role slug renders on the card without a client release (no lossy drop),
-    /// labels resolved by prettifying the slug / the role catalog. `#[serde(default)]`.
+    /// role slug renders on the card without a client release, labels resolved by
+    /// prettifying the slug / the role catalog. `#[serde(default)]`.
     #[serde(default)]
     pub card_roles: Vec<String>,
     /// Community Oracle Tags (granular functional tags) carried by this card.
@@ -59,14 +49,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn card_roles_dual_emits_alongside_mechanical_categories() {
-        // Phase M: the response carries both keys with identical values, so a
-        // client may read either. Sunset later drops `mechanical_categories`.
+    fn serializes_card_roles_without_legacy_mechanical_categories() {
+        // Phase M sunset: the wire carries `card_roles` only; the legacy
+        // `mechanical_categories` field is gone.
         let ts = DateTime::<Utc>::from_timestamp(0, 0).unwrap();
         let profile = CardProfile {
             scryfall_data_id: Uuid::nil(),
             is_token: false,
-            mechanical_categories: vec![CardRole::Ramp, CardRole::Removal],
             card_roles: vec!["ramp".to_string(), "removal".to_string()],
             oracle_tags: vec![],
             oracle_tags_by_role: BTreeMap::new(),
@@ -75,37 +64,25 @@ mod tests {
             updated_at: ts,
         };
         let json = serde_json::to_value(&profile).unwrap();
-        let expected = serde_json::json!(["ramp", "removal"]);
-        assert_eq!(json.get("mechanical_categories"), Some(&expected));
-        assert_eq!(json.get("card_roles"), Some(&expected));
-
-        // A payload omitting card_roles still deserializes (defaults empty).
-        let legacy = r#"{"scryfall_data_id":"00000000-0000-0000-0000-000000000000",
-            "is_token":false,"mechanical_categories":["ramp"],
-            "created_at":"1970-01-01T00:00:00Z","updated_at":"1970-01-01T00:00:00Z"}"#;
-        let old: CardProfile = serde_json::from_str(legacy).unwrap();
+        assert_eq!(
+            json.get("card_roles"),
+            Some(&serde_json::json!(["ramp", "removal"]))
+        );
         assert!(
-            old.card_roles.is_empty(),
-            "card_roles defaults when omitted"
+            json.get("mechanical_categories").is_none(),
+            "the legacy mechanical_categories field is no longer serialized"
         );
     }
 
     #[test]
-    fn unknown_role_slug_dropped_from_enum_but_kept_in_card_roles() {
-        // A newer server sends a role slug this binary's CardRole enum doesn't know.
-        // mechanical_categories (strict enum, lossy) drops it; card_roles (slugs)
-        // KEEPS it — so new roles still render on the card. That's the server-driven
-        // display win: card display is not gated on the compiled enum.
+    fn card_roles_keep_slugs_this_binary_does_not_know() {
+        // card_roles is Vec<String>, so a newer server's role slug survives
+        // deserialization and renders without a client release.
         let json = r#"{"scryfall_data_id":"00000000-0000-0000-0000-000000000000",
             "is_token":false,
-            "mechanical_categories":["ramp","future_role_2099","removal"],
             "card_roles":["ramp","future_role_2099","removal"],
             "created_at":"1970-01-01T00:00:00Z","updated_at":"1970-01-01T00:00:00Z"}"#;
         let p: CardProfile = serde_json::from_str(json).unwrap();
-        assert_eq!(
-            p.mechanical_categories,
-            vec![CardRole::Ramp, CardRole::Removal]
-        );
         assert_eq!(
             p.card_roles,
             vec![
