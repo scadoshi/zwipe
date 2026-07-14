@@ -4,7 +4,7 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## Latest — 2026-07-14 (server 1.7.0 pushed; client build pending)
+## Latest — 2026-07-14 (server 1.7.0 pushed; iOS build 65 + Android vc27 submitted for review)
 
 - **Version 1.7.0** (workspace bump from 1.6.0). The pushed batch was verified
   push-safe for live 1.6.0 clients before shipping (no `MIN_CLIENT_VERSION` bump).
@@ -35,6 +35,11 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   The 1.7.0 client pushes `deck_id` only. **Slice B was already live in 1.6.0**, so non-EDH
   has been collecting since then. Step 3 (drop the legacy wire + fallback) waits on a 1.7.0
   floor. Details: [`../plans/otags/sequencing.md`](../plans/otags/sequencing.md) Phase 5S.
+- **Per-deck card cap raised to 500, counting all boards** (`f1dc36a5`). Was 250
+  mainboard-only (leaving maybe/side uncapped — an abuse gap); now `count_cards_in_deck`
+  sums every board against a 500 cap (unverified still 100), with clearer "all boards
+  count" error copy. Ships with the server push (looser cap + clearer message reach all
+  live clients immediately); answers a Discord request. Existing-client-safe, no wire change.
 - **Per-session client version** recorded on the refresh-token row (additive,
   `Option`+`#[serde(default)]`) — lets the server see each client's app version.
 - **Pre-1.6.0 wire-break resolved (2026-07-13 eve).** Old clients strict-parsed the new
@@ -42,10 +47,12 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   `MIN_CLIENT_VERSION=1.6.0` (env-only) so they get "Update required" instead. All live
   installs are iOS 16+ (1.6.0's target), so nobody is stranded.
 
-**Next:** build + submit the **1.7.0 client** to the App Store / Play, then floor
-`MIN_CLIENT_VERSION` to 1.7.0 → unlocks Phase 5S step-3 cleanup (drop the legacy commander
-wire + fallback). Then **Phase 6** (serving on the matured otag signal) — data-gated,
-months out. Description authoring continues into the low-population tail (runbook).
+**1.7.0 clients submitted for review 2026-07-14** (iOS build 65, Android vc27; both
+built + signed per the runbooks, live in ~1 day). Discord announcement posted. **Next:**
+once live + adopted, floor `MIN_CLIENT_VERSION` to 1.7.0 → unlocks Phase 5S step-3 cleanup
+(drop the legacy commander wire + fallback). Then **Phase 6** (serving on the matured otag
+signal) — data-gated, months out. Description authoring continues into the low-population
+tail (runbook).
 
 ---
 

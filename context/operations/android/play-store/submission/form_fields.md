@@ -153,13 +153,21 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.6.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.7.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.7.0:**
+
+- New tag dictionary: browse every tag by letter or search it, right from the tag picker.
+- Sharper tags: better card roles, closer archetype matches, and over 1,000 plain-language descriptions.
+- Filters and pickers open instantly now, loaded once instead of every time.
+- Flip a double-faced card right from its details, with the Flip button in the footer and one clean scroll.
+- The changelog updates on its own, no app update needed.
 
 **1.6.0:**
 

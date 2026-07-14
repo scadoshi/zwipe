@@ -66,12 +66,16 @@ APP=~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app
   -c "Add :UIDeviceFamily:0 integer 1" \
   $APP/Info.plist
 
-# Fix version to match App Store Connect (Dioxus uses Cargo.toml version)
+# Set the marketing version (must match the release + the App Store Connect version
+# you create) and the build number. Dioxus writes 1.0 from a stale template.
 /usr/libexec/PlistBuddy \
-  -c "Set :CFBundleShortVersionString 1.0" \
+  -c "Set :CFBundleShortVersionString <MARKETING_VERSION>" \
   -c "Set :CFBundleVersion <BUILD_NUMBER>" \
   $APP/Info.plist
-# Increment BUILD_NUMBER each upload (1, 2, 3...). Version can stay 1.0 for patches.
+# <MARKETING_VERSION> = the release version, e.g. 1.7.0 (matches Cargo.toml + the
+# App Store Connect version). Do NOT leave it at 1.0 — Transporter/App Store Connect
+# then show "1.0 (build)" which reads as the wrong release.
+# <BUILD_NUMBER> increments every upload (65, 66, ...) and must be unique.
 
 # Patch DT/SDK keys to match the active Xcode (Dioxus hard-codes these from a
 # stale template). Required by Apple's submission allowlist. Pull live values:

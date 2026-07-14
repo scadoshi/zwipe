@@ -8,6 +8,7 @@ iOS-side build-number log.
 
 | Version | iOS build | Notes |
 |---------|-----------|-------|
+| 1.7.0 | 65 | Oracle-tag dictionary (letter browse + search), unified catalog cache (instant filters/pickers), 1,100 authored tag descriptions, Phase M sunset (`mechanical_categories` → `card_roles`) + Phase 5S `deck_id`-driven signal, per-deck cap raised to 500 (all boards). Built 2026-07-14 (Xcode 26.5 / iphoneos26.5). `CFBundleShortVersionString` set to **1.7.0** (the stale `1.0` template default was fixed in `build.md` after it briefly shipped as "1.0 (65)" in Transporter). Submitted for review 2026-07-14. Android counterpart vc27. Server 1.7.0 pushed first. |
 | 1.6.0 | 63, 64 | Card roles + oracle tags, deck-view reorg (Profile/Budget/Tags), shared CardDetails + flippable card images across app/site, 31 themes (17 new) + theme persistence, in-app changelog. Built 2026-07-12. Build 64 folds the Lands row Budget->Mana move into 1.6.0, superseding 63 before it cleared review. |
 | 1.5.0 | 62 | Edge back-swipe nav, per-screen filter persistence, session-platform tracking, CardRow/skeleton polish. Submitted to review 2026-07-09. Android counterpart vc23. |
 | 1.4.0 | 61 | Feature batch: commander popularity ordering, partner autofill, Deck MVPs phase 1, deck share links. Android counterpart vc22. |
