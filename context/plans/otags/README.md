@@ -39,9 +39,11 @@ on the next prod `zervice` run.
    emitter, card_roles reader) are the highest-leverage next move: pushing/deploying + shipping the
    clients is what starts (a) the adoption clock for the sunsets and (b) the moat-data accrual for
    serving. Until then, non-EDH signal isn't accruing and no version can be gated.
-2. **Adoption-gated sunsets** (need a `MIN_CLIENT_VERSION` floor first): **Phase M Step 3** (drop
-   `mechanical_categories` field/criteria, rename the DB column, bump) and **Phase 5S** (drop the
-   legacy `commander_oracle_id` wire, derive commander from `deck_id`, bump). Calendar-time.
+2. **Adoption-gated sunsets:** **Phase M Step 3** — ✅ **DONE 2026-07-14** (dropped
+   `mechanical_categories` field/criteria, renamed the DB column to `card_roles`; the 1.6.0 floor
+   pre-satisfied the gate, no extra bump). **Phase 5S** — steps 1+2 ✅ DONE (server derives commander
+   from `deck_id` with a legacy fallback; 1.6.1 client pushes `deck_id` only); **step 3 pending** the
+   1.6.1 floor (drop the legacy `commander_oracle_id` wire + fallback, bump to 1.6.1).
 3. **Data-gated payoff** — **Phase 6:** fold the otag-signal term into ranking + non-EDH serving on
    `(format, CI, otags)`. Needs months of accrued swipe volume ("REALLY drive serving").
 4. **Tiny non-gated leftover:** a test that refreshes `otag_context_signal_rollup` and asserts

@@ -35,8 +35,9 @@ type changes are internal to `zwipe-core` and only affect the next client build)
 - **Ship it:** deploy + the next client build (the payoff only reaches users on the client that
   carries these changes; deployed clients are untouched).
 
-> **NOTE:** `MechanicalCategory` is now `CardRole` and its module dir is `card_role/` (both renames
-> shipped). The wire/DB field `mechanical_categories` still exists (moves at the Phase M sunset).
+> **NOTE:** `MechanicalCategory` is now `CardRole`. The Phase M sunset is **DONE (2026-07-14)**: the
+> wire field + criteria alias were dropped and the DB column `mechanical_categories → card_roles` was
+> renamed (migration `20260714130000`). `mechanical_categories` no longer exists in live code.
 > Read `MechanicalCategory` below as `CardRole`. The original plan text is kept for rationale.
 
 ## The problem
