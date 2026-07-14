@@ -59,6 +59,40 @@ pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Resu
             .context("failed to insert oracle_tags catalog batch")?;
     }
 
+    // Overlay our authored descriptions onto the fresh catalog, in the same
+    // transaction so they're never briefly missing. Ours wins: replaces
+    // Scryfall's where we have one, fills the blanks otherwise. See
+    // `oracle_tag_descriptions`.
+    let (desc_slugs, descriptions) = super::oracle_tag_descriptions::description_pairs();
+    if !desc_slugs.is_empty() {
+        sqlx::query(
+            "UPDATE oracle_tags AS ot SET description = d.description \
+             FROM unnest($1::text[], $2::text[]) AS d(slug, description) \
+             WHERE ot.slug = d.slug",
+        )
+        .bind(&desc_slugs)
+        .bind(&descriptions)
+        .execute(&mut *tx)
+        .await
+        .context("failed to overlay authored oracle-tag descriptions")?;
+
+        // Non-fatal typo guard: an authored slug the fresh catalog lacks would
+        // silently match nothing, so surface it in the sync log.
+        let unknown: Vec<String> = sqlx::query_scalar(
+            "SELECT s FROM unnest($1::text[]) AS s \
+             WHERE NOT EXISTS (SELECT 1 FROM oracle_tags WHERE slug = s)",
+        )
+        .bind(&desc_slugs)
+        .fetch_all(&mut *tx)
+        .await
+        .unwrap_or_default();
+        if !unknown.is_empty() {
+            tracing::warn!(
+                "ORACLE_TAG_DESCRIPTIONS references unknown oracle-tag slugs: {unknown:?}"
+            );
+        }
+    }
+
     // Correlations: replace only the scryfall-sourced rows, preserving other sources.
     sqlx::query("DELETE FROM card_oracle_tags WHERE source = 'scryfall'")
         .execute(&mut *tx)
