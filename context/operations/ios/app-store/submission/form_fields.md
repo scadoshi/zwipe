@@ -39,6 +39,18 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
+## What's New in This Version (1.7.0)
+
+(Kept within Android's 500-char release-note limit so both stores read the same length.)
+
+- New oracle-tag dictionary: browse every tag by letter or search it, right from the tag picker.
+- Sharper oracle tags: better card roles, closer archetype matches, and over 1,000 plain-language descriptions.
+- Filters and pickers open instantly now, loaded once instead of every time.
+- Flip a double-faced card right from its details, with the Flip button in the footer and one clean scroll.
+- The changelog updates on its own, no app update needed.
+
+---
+
 ## What's New in This Version (1.6.0)
 
 (Kept within Android's 500-char release-note limit so both stores read the same length.)

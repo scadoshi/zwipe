@@ -36,11 +36,11 @@ in-app changelog, the three-axis tag system (oracle tags / card roles / deck tag
 server-driven via slugs), 17 new themes (31 total), persisted theme across app +
 site, home-screen buy links, and a reorganized deck view.
 
-**After this:** **build + submit the 1.7.0 client** to the App Store / Play (the
-dictionary, faster filters, and `deck_id`-only signal ride the client build), then
-floor `MIN_CLIENT_VERSION` to 1.7.0 → unlocks the Phase 5S step-3 cleanup (drop the
-legacy commander wire + fallback). Then **Phase 6** — serve on the matured otag
-signal (data-gated, months out). Ongoing: description authoring into the tail
+**After this:** the **1.7.0 clients are submitted for review** (iOS build 65, Android
+vc27; live in ~1 day) carrying the dictionary, faster filters, and the `deck_id`-only
+signal. Once live + adopted, floor `MIN_CLIENT_VERSION` to 1.7.0 → unlocks the Phase 5S
+step-3 cleanup (drop the legacy commander wire + fallback). Then **Phase 6** — serve on
+the matured otag signal (data-gated, months out). Ongoing: description authoring into the tail
 (runbook at [`development/runbooks/`](development/runbooks/)), short-form marketing
 videos, review tracking, funnel numbers (gate the sign-in-with-Google decision),
 privacy follow-ups (store data-safety labels + notification email), and draw-odds

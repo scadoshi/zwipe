@@ -2,6 +2,16 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-07-14 — `1.7.0`, versionCode `27`** (oracle-tag dictionary, unified catalog
+  cache, 1,100 authored tag descriptions, Phase M sunset `mechanical_categories` →
+  `card_roles` + Phase 5S `deck_id`-driven signal, per-deck cap raised to 500 across all
+  boards). Built per the recipe: `dx bundle` → `launcher_icons.sh` → `back_handler.sh` →
+  gradle patch (compileSdk 36 / targetSdk 35 / versionCode 27, versionName 1.7.0) →
+  `gradlew :app:bundleRelease` → jarsigner. Artifact `zwipe-1.7.0-vc27.aab`, signed +
+  `jar verified`, targetSdk 35 + versionCode 27 confirmed. Submitted for review
+  2026-07-14. iOS counterpart build 65. Server 1.7.0 pushed first (card_roles column
+  migration + deck_id signal + deck-cap change).
+
 - **2026-07-12 — `1.6.0`, versionCode `26`** (folds the Lands row Budget->Mana
   deck-view move into 1.6.0; no other client changes). Built per the recipe:
   `dx bundle` → `launcher_icons.sh` → `back_handler.sh` → gradle patch (compileSdk 36 /
