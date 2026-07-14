@@ -8,6 +8,7 @@ use crate::{
     inbound::{
         components::{
             auth::ensure_session::EnsureFresh,
+            catalog_cache::use_catalog_cache,
             hint_host::HintTopic,
             telemetry::{
                 anonymous::record_anonymous_event,
@@ -173,6 +174,27 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
                 tracing::debug!(?error, "changelog fetch failed; using compiled-in copy");
                 changelog_cache.set(ChangelogCache::Failed);
             }
+        }
+    });
+
+    // Catalog cache — slow-changing filter metadata (artists, sets, keywords,
+    // oracle words, card types, card roles, oracle tags) prefetched in the
+    // background at startup and held above the router with a 1-day TTL, so filter
+    // sheets / pickers / the dictionary read the cache instead of each firing a
+    // fetch on open. Public catalogs send no auth (Cloudflare HITs stay warm);
+    // deck tags are authed and warm once a session exists. See catalog_cache.rs.
+    let catalog_cache = use_catalog_cache();
+    use_context_provider(|| catalog_cache);
+    // use_future (not bare spawn) so the prefetch runs exactly once, not on every
+    // re-render of this root (e.g. when the min-version gate flips).
+    use_future(move || async move {
+        catalog_cache.prefetch_public(client);
+    });
+    // Deck tags need a session; (re)warm when one appears (login / cold-start
+    // restore). Single-flight in the cache dedupes repeat runs.
+    use_effect(move || {
+        if let Some(session) = session() {
+            catalog_cache.ensure_deck_tags(client, session);
         }
     });
 

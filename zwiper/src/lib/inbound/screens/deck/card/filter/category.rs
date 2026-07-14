@@ -2,9 +2,8 @@
 //! card-role catalog (`GET /api/card/roles`), not a compiled enum — so new roles
 //! appear without a client release. No fallback (same as artists/oracle-tags).
 
-use crate::outbound::client::{ZwipeClient, card::get_card_roles::ClientGetCardRoles};
+use crate::{inbound::components::catalog_cache::CatalogCache, outbound::client::ZwipeClient};
 use dioxus::prelude::*;
-use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::card::{
     card_role::CardRoleView, search_card::card_filter::builder::CardQueryBuilder,
 };
@@ -16,10 +15,14 @@ use super::match_mode::MatchMode;
 pub fn Category() -> Element {
     let mut filter_builder: Signal<CardQueryBuilder> = use_context();
     let client: Signal<ZwipeClient> = use_context();
+    let cache: CatalogCache = use_context();
 
-    // Server-driven role catalog; no compiled fallback.
-    let all_roles: Resource<Result<Vec<CardRoleView>, ApiError>> =
-        use_resource(move || async move { client().get_card_roles().await });
+    // Server-driven role catalog; no compiled fallback. Read from the app-wide
+    // catalog cache (prefetched at startup) instead of fetching on open.
+    use_effect(move || cache.ensure_card_roles(client));
+    let all_roles = use_memo(move || -> Option<Vec<CardRoleView>> {
+        cache.card_roles.cell().read().loaded().cloned()
+    });
 
     let mode = use_memo(move || {
         let fb = filter_builder();
@@ -107,7 +110,7 @@ pub fn Category() -> Element {
             }
 
             div { class: "flex flex-wrap gap-1 flex-center",
-                if let Some(Ok(roles)) = all_roles.read().as_ref() {
+                if let Some(roles) = all_roles.read().as_ref() {
                     for role in roles {
                         {
                             let slug = role.slug.clone();
@@ -148,7 +151,7 @@ pub fn Category() -> Element {
             }
 
             div { class: "flex flex-wrap gap-1 flex-center",
-                if let Some(Ok(roles)) = all_roles.read().as_ref() {
+                if let Some(roles) = all_roles.read().as_ref() {
                     for role in roles {
                         {
                             let slug = role.slug.clone();

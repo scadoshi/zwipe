@@ -4,9 +4,8 @@ use super::super::{
     deck_cards::{DeckCards, extract_keywords},
     match_mode::MatchMode,
 };
-use crate::outbound::client::{ZwipeClient, card::get_keywords::ClientGetKeywords};
+use crate::{inbound::components::catalog_cache::CatalogCache, outbound::client::ZwipeClient};
 use dioxus::prelude::*;
-use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 fn read_keywords(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
@@ -59,12 +58,21 @@ pub(crate) fn Keywords() -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let filter_reset: Signal<u32> = use_context();
     let deck_ctx: Option<DeckCards> = try_use_context();
+    let cache: CatalogCache = use_context();
 
-    let all_keywords: Resource<Result<Vec<String>, ApiError>> = use_resource(move || async move {
-        if let Some(dc) = deck_ctx {
-            return Ok(extract_keywords(&dc.0()));
+    // Deck-scoped filter extracts from the loaded deck; the add path reads the
+    // app-wide catalog cache (prefetched at startup) instead of fetching on open.
+    use_effect(move || {
+        if deck_ctx.is_none() {
+            cache.ensure_keywords(client);
         }
-        client().get_keywords().await
+    });
+    let all_keywords = use_memo(move || -> Option<Vec<String>> {
+        if let Some(dc) = deck_ctx {
+            Some(extract_keywords(&dc.0()))
+        } else {
+            cache.keywords.cell().read().loaded().cloned()
+        }
     });
 
     let mut keywords_search = use_signal(String::new);
@@ -135,7 +143,7 @@ pub(crate) fn Keywords() -> Element {
         }
 
         if !keywords_search().is_empty() {
-            if let Some(Ok(keywords)) = all_keywords.read().as_ref() {
+            if let Some(keywords) = all_keywords.read().as_ref() {
                 {
                     let query = keywords_search().to_lowercase();
                     let results: Vec<String> = keywords
@@ -221,7 +229,7 @@ pub(crate) fn Keywords() -> Element {
         }
 
         if !excludes_search().is_empty() {
-            if let Some(Ok(keywords)) = all_keywords.read().as_ref() {
+            if let Some(keywords) = all_keywords.read().as_ref() {
                 {
                     let query = excludes_search().to_lowercase();
                     let results: Vec<String> = keywords

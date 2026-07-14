@@ -12,6 +12,7 @@ use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            catalog_cache::CatalogCache,
             hint_dialog::use_one_time_hint,
             screen_header::ScreenHeader,
         },
@@ -20,10 +21,7 @@ use crate::{
     outbound::client::{
         ZwipeClient,
         card::get_card::ClientGetCard,
-        deck::{
-            get_deck::ClientGetDeck, get_deck_tags::ClientGetDeckTags,
-            update_deck_profile::ClientUpdateDeckProfile,
-        },
+        deck::{get_deck::ClientGetDeck, update_deck_profile::ClientUpdateDeckProfile},
     },
 };
 use dioxus::prelude::*;
@@ -69,12 +67,16 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let edit_hint = use_one_time_hint(HINT_EDIT_DECK);
     let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
     let mut selected_tags: Signal<Vec<String>> = use_signal(Vec::new);
-    // Server-driven deck-tag catalog for the picker (no fallback; empty until loaded).
-    let deck_tags_catalog: Resource<Vec<DeckTagView>> = use_resource(move || async move {
-        match session() {
-            Some(s) => client().get_deck_tags(&s).await.unwrap_or_default(),
-            None => Vec::new(),
+    // Server-driven deck-tag catalog for the picker: read from the app-wide
+    // catalog cache (warmed after session), empty until loaded.
+    let cache: CatalogCache = use_context();
+    use_effect(move || {
+        if let Some(s) = session() {
+            cache.ensure_deck_tags(client, s);
         }
+    });
+    let deck_tags_catalog = use_memo(move || -> Option<Vec<DeckTagView>> {
+        cache.deck_tags.cell().read().loaded().cloned()
     });
     let mut partner_commander: Signal<Option<Card>> = use_signal(|| None);
     let mut partner_commander_display = use_signal(String::new);
