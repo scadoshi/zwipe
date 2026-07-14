@@ -101,64 +101,51 @@ if gone.
 
 ## Part 2 — Oracle tag dictionary (browsable page)
 
-### What
+**Full client UX plan (letter-first, components, routing):**  
+[`dictionary_client.md`](dictionary_client.md) — **source of truth for implementers.**
 
-A searchable, browsable reference of all ~4,500 tags: **slug** (mono) +
-**description** + **hierarchy** (parent/child from `parent_slugs`). Live search
-(filter by slug/description), optional grouping by role or alphabetical. Tags with
-no description show "No description yet" (honest, and shows authoring progress).
+**Backend/serving:** [`dictionary_backend.md`](dictionary_backend.md) (endpoint +
+CF already ready). **Catalog prefetch:**  
+[`../catalog_session_cache.md`](../catalog_session_cache.md) (session cache + 1-day
+TTL; dictionary can ship on Phase 0 otag-only cache).
+
+### What (summary)
+
+In-app read-only reference of all ~4,500 tags: **slug** (mono) + **description**
+(+ optional label / parent_slugs). Tags with no description show **"No description
+yet"**.
+
+**Primary browse:** top-row **letter chips** (horizontal scroll, not wrap). Only
+the **selected letter's tags render** — other letters never mount.  
+**Secondary:** optional search over **slug + label + description** (no auto-focus /
+forced keyboard).  
+**Chrome:** `ScreenHeader` (`!` / `?`), skeleton while loading, toast on fetch fail,
+`ActionBar` Back.
 
 ### Data source
 
-The existing **`GET /api/card/oracle-tags`** (now serving merged descriptions from
-Part 1) — one endpoint, no new backend. It returns all ~4,500 as
-`OracleTag { slug, label, description, parent_slugs }`. The client trait
-**`ClientGetOracleTags` already exists** (`zwiper/.../client/card/get_oracle_tags.rs`),
-so the screen reuses it — no new client wiring.
-
-**Backend/serving/caching slice is spec'd separately** in
-[`dictionary_backend.md`](dictionary_backend.md): the endpoint is already
-CF-edge-cached (Rule 1, `/api/card/*`, 24h), the client already sends no auth (so it
-caches), and the only real backend work is test coverage + a description-freshness
-policy (24h TTL vs purge-on-deploy).
+Existing **`GET /api/card/oracle-tags`** + **`ClientGetOracleTags`** — no new
+backend. Prefer session cache over per-open `use_resource` (see catalog plan).
 
 ### Where (decided 2026-07-12): in-app (zwiper), read-only
 
-A new **zwiper screen** — a searchable, browsable reference. Read-only: authoring
-happens in the repo file (Part 1), not in the app. Reachable from the Oracle tags
-picker (a link/button) and/or the Oracle tags "?" hint. Not on zite.
-
-### Files
-
-- **New** `zwiper/src/lib/inbound/screens/.../oracle_tag_dictionary.rs` — the
-  screen: `use_resource` over `client.get_oracle_tags()`, a search box, the list,
-  and parent/child hierarchy chips.
-- Router entry (`zwiper/.../router.rs`) + an entry point: a button in
-  `oracle_tag_select.rs` (the picker) and/or a line in the Oracle tags hint copy.
-- Model the fetch/loading/skeleton on the picker (`oracle_tag_select.rs` already
-  `use_resource`s the same catalog); model list styling on existing list screens.
-
-### UX notes
-
-- Search is client-side over the fetched list (~4,500 rows is fine in memory).
-- Render **slugs in mono** (matches the raw-slug direction), descriptions in body
-  text; tags with no description show "No description yet."
-- Parent/child: tapping a parent chip filters to that subtree (reuse the hierarchy
-  already in `parent_slugs`).
+Not on zite. Reachable from the Oracle tags picker + `?` hint.
 
 ---
 
 ## Sequencing
 
 1. **Part 1 mechanism** (overlay + tests) — SHIPPED.
-2. **Bulk authoring** — 1,100 done (high-traffic head covered); tail is ongoing
-   background work via the runbook.
-3. **Part 2 (dictionary page) — the active next build (~2026-07-14).** There is now
-   plenty to show, so it no longer waits on more authoring; the undone tail renders
-   "No description yet" and fills in as authoring continues.
+2. **Bulk authoring** — 1,100 done (high-traffic head covered); tail ongoing via
+   runbook.
+3. **Part 2 dictionary** — next client build; UX locked in
+   [`dictionary_client.md`](dictionary_client.md). Can pair with catalog-cache
+   Phase 0 (oracle tags only).
 
-## Decisions (resolved 2026-07-12)
+## Decisions
 
-- **Descriptions store:** a **repo file compiled into the server**, deployed by a
-  normal GitHub push. No DB table, no admin/live-edit path (owner declined it).
-- **Dictionary home:** **in-app (zwiper)**, read-only. Not zite.
+- **Descriptions store (2026-07-12):** repo file compiled into the server; overlay
+  at sync; no admin UI.
+- **Dictionary home (2026-07-12):** in-app (zwiper), read-only. Not zite.
+- **Browse model (2026-07-13):** letter rail primary, search optional; only active
+  letter mounts. Details in `dictionary_client.md`.

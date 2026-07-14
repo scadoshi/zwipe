@@ -81,6 +81,10 @@ informal prose shorthand in these docs; concrete identifiers are all spelled out
 | `compatibility.md` | How to NOT break installed clients + the `oracle_tag` naming / wire translation |
 | `open-questions.md` | The 7 decisions, all resolved (2026-07-11) with rationale |
 | `sequencing.md` | The phased build — per-phase files touched + additive-wire guarantee |
+| `tag_descriptions_and_dictionary.md` | Part 1 descriptions (shipped) + Part 2 dictionary index |
+| `dictionary_backend.md` | Serving/CF/tests for `GET /api/card/oracle-tags` |
+| `dictionary_client.md` | **Part 2 UI** — letter-first dictionary (planned 2026-07-13) |
+| `../catalog_session_cache.md` | App-load prefetch of filter catalogs + 1-day TTL (planned) |
 
 ## What changed on 2026-07-11
 
