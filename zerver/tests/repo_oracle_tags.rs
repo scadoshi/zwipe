@@ -45,18 +45,22 @@ async fn sync_populates_catalog_and_correlations(pool: sqlx::PgPool) {
     let repo = Postgres { pool: pool.clone() };
     let card_a = Uuid::from_u128(0xA);
     let card_b = Uuid::from_u128(0xB);
+    // NOTE: `test-null-desc` is a synthetic slug, not a real Scryfall tag. It must
+    // stay absent from `ORACLE_TAG_DESCRIPTIONS` so the sync-time description overlay
+    // leaves it NULL — the point of the round-trip assertion below. (A real slug like
+    // `ramp` is now authored, so the overlay would fill it and break this.)
     let tags = vec![
         tag(0x1, "removal", Some("Removes stuff"), &[card_a, card_b]),
-        tag(0x2, "ramp", None, &[card_a]),
+        tag(0x2, "test-null-desc", None, &[card_a]),
     ];
 
     let (catalog, correlations) = repo.sync_oracle_tags(&tags).await.unwrap();
     assert_eq!(catalog, 2);
     assert_eq!(correlations, 3);
 
-    // null description round-trips as NULL
+    // null description round-trips as NULL (overlay does not touch an unauthored slug)
     let desc: Option<String> =
-        sqlx::query_scalar("SELECT description FROM oracle_tags WHERE slug = 'ramp'")
+        sqlx::query_scalar("SELECT description FROM oracle_tags WHERE slug = 'test-null-desc'")
             .fetch_one(&pool)
             .await
             .unwrap();
@@ -70,11 +74,14 @@ async fn sync_populates_catalog_and_correlations(pool: sqlx::PgPool) {
     .fetch_all(&pool)
     .await
     .unwrap();
-    assert_eq!(a_tags, vec!["ramp".to_string(), "removal".to_string()]);
+    assert_eq!(
+        a_tags,
+        vec!["removal".to_string(), "test-null-desc".to_string()]
+    );
 
     // source defaults to 'scryfall'
     let source: String = sqlx::query_scalar(
-        "SELECT source FROM card_oracle_tags WHERE oracle_id = $1 AND oracle_tag = 'ramp'",
+        "SELECT source FROM card_oracle_tags WHERE oracle_id = $1 AND oracle_tag = 'test-null-desc'",
     )
     .bind(card_a)
     .fetch_one(&pool)
