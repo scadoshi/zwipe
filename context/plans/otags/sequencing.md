@@ -381,23 +381,16 @@ non-EDH point is therefore impossible without adding context to the wire. Two de
 on every add-stack signal, so **Commander otag signal accrues the moment the server ships** — no
 client build required. Only the **non-EDH** half waits on the client update below.
 
-### Slice B — client update (populates `deck_id`, unlocks non-EDH) — TODO, separate build
+### Slice B — client update (populates `deck_id`, unlocks non-EDH) — ✅ DONE, SHIPPED in 1.6.0
 
-`UsageBuffer::record_signal` currently early-returns when the deck has **no commander**, so
-non-Commander swipes produce *no* signal at all — non-EDH collection needs a client change, not
-just the server. Additive, still **no bump**:
-- `zwiper/.../telemetry/usage_buffer.rs` — key the signal tally by `(deck_id, commander, card)`
-  (or carry `deck_id` alongside) and set `CardSignalDelta.deck_id` on flush (today it sends
-  `None`). Relax `record_signal`/`record_removal` to emit for commander-less decks (deck_id is
-  now enough to attribute).
-- `zwiper/.../screens/deck/card/{add,remove}.rs` — pass the deck id into the record calls.
-  *(Left untouched by Slice A: these are mid-flight in the deck-screen session — coordinate.)*
-- Deploy order: **server (Slice A) ships first**, then this client build (project rule).
+**Shipped `1a857e67` ("send deck_id in swipe signal, emit for non-Commander decks"), in the 1.6.0
+build (build 64, 2026-07-12).** `usage_buffer.rs::record_signal`/`record_removal` now key by
+`(commander, card, deck_id)`, no longer early-return on a missing commander (only on a missing
+card oracle id), and flush `deck_id: Some(deck_id)`. `add.rs`/`remove.rs` pass `deck_id`. So
+**non-Commander decks contribute signal too** — the doc comment says as much.
 
-**Wire & compat:** additive throughout (`#[serde(default)]` `deck_id`); ship dark. **No bump.**
-
-**Exit:** per-otag `(context)` signal accumulating for **Commander (from existing clients now)
-and non-EDH decks (once Slice B ships)**.
+**Exit met:** per-otag `(context)` signal accumulating for **Commander and non-EDH decks** since
+1.6.0. Non-EDH lands under `format_ci:<format>:<CI>` in `otag_context_signal` (`metrics/mod.rs`).
 
 ---
 
@@ -414,19 +407,33 @@ guaranteed to send it, the client-sent `commander_oracle_id` is redundant everyw
 leads `commander_card_signal` / `user_card_signal`).
 
 **Steps (dual-accept → migrate clients → gated removal):**
-1. **Server derives commander from `deck_id`** wherever the wire commander is used
-   (`commander_card_signal`, `user_card_signal`, the otag context), **accepting both** the legacy
-   `commander_oracle_id` and a `deck_id`-only delta. Additive, no bump.
-2. **Client sends `deck_id` only** (drops `commander_oracle_id` from the delta it builds); ship
-   and let installs upgrade. (This is Slice B's client already sending `deck_id`, now made the
-   sole key.)
-3. **Sunset** once a `MIN_CLIENT_VERSION` floor guarantees every install sends `deck_id`: drop
-   `CardSignalDelta.commander_oracle_id` (and the server's commander-first branch / legacy
-   derivation), leaving the wire `{ deck_id, card_oracle_id, gestures }`. **Bump
-   `MIN_CLIENT_VERSION`.**
+1. **Server derives commander from `deck_id`** — ✅ **DONE (2026-07-14, unpushed).**
+   `metrics/mod.rs` builds a per-batch `deck_id → (commander_oracle_id, format_ci)` map
+   (ownership-scoped `WHERE user_id = $2`, one query) and `commander_card_signal` /
+   `user_card_signal` / the otag context all key off the **deck-derived** commander. **Dual-accept:**
+   prefers the deck-derived commander, falls back to the legacy client-sent `commander_oracle_id`
+   (`.or(sig.commander_oracle_id)`), so existing 1.6.0 clients that still send it are unaffected.
+   Additive, no bump. Also spoof-proofs the commander tables (a client can only credit signal via a
+   deck it owns). Test: `otag_context_signal::commander_deck_derives_commander_from_deck_id`.
+2. **Client sends `deck_id` only** — ✅ **DONE (2026-07-14, for 1.6.1, unpushed).**
+   `usage_buffer.rs` flushes `commander_oracle_id: None`; the client no longer populates the wire
+   commander (still tracked internally — that vestige is removed with step 3). Existing 1.6.0
+   clients keep sending it; the server's fallback handles them.
+3. **Sunset (gated) — PENDING, after 1.6.1 is the floor.** Once `MIN_CLIENT_VERSION >= 1.6.1`
+   guarantees every install sends `deck_id`-only: drop `CardSignalDelta.commander_oracle_id` (wire),
+   the server's `.or(sig.commander_oracle_id)` fallback, and the client's internal commander
+   resolution (`add.rs`/`remove.rs` `commander_oracle_id` signal + `get_card` lookup). Leaves the
+   wire `{ deck_id, card_oracle_id, gestures }`. **Bump `MIN_CLIENT_VERSION` to 1.6.1.** Same shape
+   as the Phase M sunset (done 2026-07-14).
 
-**Wire & compat:** additive through step 2 (no bump); step 3 is the single gated removal. Runs on
-its own client-upgrade timeline, same shape as Phase M.
+**Wire & compat:** steps 1+2 additive (no bump); step 3 is the single gated removal.
+
+**No table merge needed** (owner Q, 2026-07-14): non-EDH does *not* get a card-level table.
+Generalization lives at the **otag** level — `otag_context_signal` already unifies EDH
+(`commander:<oid>`) and non-EDH (`format_ci:<fmt>:<CI>`) via `context_key`. `commander_card_signal`
+stays EDH-only card-level by design (per-card data in a 20k-pool, 60-card format is too sparse; the
+moat is otag-based — `moat.md`). A generalized `context_card_signal` is a possible Phase-6 option,
+not required now.
 
 ---
 
@@ -492,17 +499,21 @@ fix, education hints) — the owner commits as-is. What landed:
   (`builder/{mod,getters,setters}.rs`) Rust field/method names stay `mechanical_categories_*` —
   only the serde name on `CardCriteria` is wire-visible.
 
-### Step 3 — sunset (the one gated removal) — after adoption
+### Step 3 — sunset — ✅ DONE (2026-07-14, unpushed)
 
-Once a `MIN_CLIENT_VERSION` floor guarantees every install uses `card_roles`:
-- drop `CardProfile.mechanical_categories` (keep only `card_roles`) + the `mechanical_categories_*`
-  criteria alias;
-- rename the DB column `card_profiles.mechanical_categories → card_roles` (migration) + the
-  module dir `mechanical_category/ → card_role/`;
-- **bump `MIN_CLIENT_VERSION`.**
+Done once the `MIN_CLIENT_VERSION = 1.6.0` floor (set for the pre-1.6.0 wire-break) guaranteed every
+install reads `card_roles`:
+- ✅ dropped `CardProfile.mechanical_categories` (wire field) + the `mechanical_categories_*` criteria
+  alias; repointed the server's in-memory filter (`matches.rs`) + derive gap-union to `card_roles`.
+- ✅ renamed the DB column `card_profiles.mechanical_categories → card_roles` + its GIN index
+  (migration `20260714130000`), and **every** live Rust/SQL reference (`DatabaseCardProfile`,
+  `update_card_roles`, criteria fields/getters/setters/builder, zwiper filter callers); `.sqlx`
+  regenerated. The module dir `card_role/` was already renamed. Only historical migrations + one
+  test guard (asserting the old wire key is absent) still name `mechanical_categories`.
+- **No `MIN_CLIENT_VERSION` bump needed** — the 1.6.0 floor already satisfied the gate.
 
-**Wire & compat:** rename + Step 1 + Step 2 are all additive (no bump); Step 3 is the single gated
-removal — long after ship, when old installs have aged out.
+**Wire & compat:** clients read `card_roles` (since 1.6.0) and were unaffected; no `deny_unknown`,
+so any lingering old field is ignored.
 
 ---
 
