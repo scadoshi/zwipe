@@ -26,7 +26,7 @@ pub struct Release {
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[Release {
-    version: "1.6.1",
+    version: "1.7.0",
     date: "Coming soon",
     entries: &[
         "New oracle-tag dictionary: browse every tag by letter or search names and descriptions, opened from the oracle-tag picker.",
