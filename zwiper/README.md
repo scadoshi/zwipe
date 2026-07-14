@@ -1,7 +1,7 @@
 # zwiper
 
-Dioxus cross-platform app for Zwipe. Swipe-based MTG deck builder: live on the
-iOS App Store, in closed testing on Android (production launch in review).
+Dioxus cross-platform app for Zwipe. Swipe-based MTG deck builder, live on the
+iOS App Store and Google Play.
 
 ## Targets
 
