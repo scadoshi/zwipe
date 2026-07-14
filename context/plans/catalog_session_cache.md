@@ -1,6 +1,12 @@
 # Session catalog cache — prefetch filter metadata at app load
 
-**Status: PLANNED 2026-07-13. Client-only (zwiper). No new backend endpoints.**  
+**Status: Phase 1 BUILT 2026-07-14 (pending formal test). Client-only (zwiper). No
+new backend endpoints.** Unified `CatalogCache` in
+`zwiper/.../inbound/components/catalog_cache.rs`, provided in `spawn_upkeeper`; the
+public catalogs prefetch at startup, deck tags warm on session. Consumers migrated:
+`artist`, `set`, `category`, `keywords`, `oracle_words`, `other_types`, deck
+`create`/`edit`. The otag filter/picker (`oracle_tags.rs`, `oracle_tag_select.rs`)
+read the `oracle_tags` member but were left for the dictionary work to migrate.  
 **Related:** [`server_driven_catalogs.md`](server_driven_catalogs.md) (what catalogs
 exist), [`otags/dictionary_client.md`](otags/dictionary_client.md) (first consumer
 of oracle-tags cache), [`otags/dictionary_backend.md`](otags/dictionary_backend.md)
@@ -206,11 +212,14 @@ Failed), fetch once at startup. Unblocks
 ocean. **No multi-kind TTL machinery yet** if we want the smallest dictionary
 PR — but prefer designing types so Phase 1 extends rather than replaces.
 
-### Phase 1 — All public card catalogs + 1-day TTL
+### Phase 1 — All public card catalogs + 1-day TTL — **BUILT 2026-07-14**
 
-- Unified store, parallel prefetch, consumers migrated.
-- Deck tags when session present.
-- Drop per-open `use_resource` for global catalogs.
+- Unified store, parallel prefetch, consumers migrated. ✅
+- Deck tags when session present. ✅
+- Drop per-open `use_resource` for global catalogs. ✅ (except the two otag files,
+  left for the dictionary work — they consume the `oracle_tags` member).
+- Single-flight per kind via a `fetching` flag; stale-while-revalidate keeps good
+  data on a failed refresh. Pending formal on-device test.
 
 ### Phase 2 — Optional durability (later)
 

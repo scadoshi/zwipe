@@ -4,9 +4,8 @@ use super::super::{
     deck_cards::{DeckCards, extract_oracle_words},
     match_mode::MatchMode,
 };
-use crate::outbound::client::{ZwipeClient, card::get_oracle_words::ClientGetOracleWords};
+use crate::{inbound::components::catalog_cache::CatalogCache, outbound::client::ZwipeClient};
 use dioxus::prelude::*;
-use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 fn read_oracle_words(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
@@ -58,14 +57,22 @@ pub(crate) fn OracleWords() -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let filter_reset: Signal<u32> = use_context();
     let deck_ctx: Option<DeckCards> = try_use_context();
+    let cache: CatalogCache = use_context();
 
-    let all_oracle_words: Resource<Result<Vec<String>, ApiError>> =
-        use_resource(move || async move {
-            if let Some(dc) = deck_ctx {
-                return Ok(extract_oracle_words(&dc.0()));
-            }
-            client().get_oracle_words().await
-        });
+    // Deck-scoped filter extracts from the loaded deck; the add path reads the
+    // app-wide catalog cache (prefetched at startup) instead of fetching on open.
+    use_effect(move || {
+        if deck_ctx.is_none() {
+            cache.ensure_oracle_words(client);
+        }
+    });
+    let all_oracle_words = use_memo(move || -> Option<Vec<String>> {
+        if let Some(dc) = deck_ctx {
+            Some(extract_oracle_words(&dc.0()))
+        } else {
+            cache.oracle_words.cell().read().loaded().cloned()
+        }
+    });
 
     let mut oracle_words_search = use_signal(String::new);
     let mut excludes_search = use_signal(String::new);
@@ -135,7 +142,7 @@ pub(crate) fn OracleWords() -> Element {
         }
 
         if !oracle_words_search().is_empty() {
-            if let Some(Ok(words)) = all_oracle_words.read().as_ref() {
+            if let Some(words) = all_oracle_words.read().as_ref() {
                 {
                     let query = oracle_words_search().to_lowercase();
                     let results: Vec<String> = words
@@ -221,7 +228,7 @@ pub(crate) fn OracleWords() -> Element {
         }
 
         if !excludes_search().is_empty() {
-            if let Some(Ok(words)) = all_oracle_words.read().as_ref() {
+            if let Some(words) = all_oracle_words.read().as_ref() {
                 {
                     let query = excludes_search().to_lowercase();
                     let results: Vec<String> = words

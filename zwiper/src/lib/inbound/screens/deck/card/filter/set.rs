@@ -1,9 +1,8 @@
 //! Card set filter component.
 
 use super::deck_cards::{DeckCards, extract_sets};
-use crate::outbound::client::{ZwipeClient, card::get_sets::ClientGetSets};
+use crate::{inbound::components::catalog_cache::CatalogCache, outbound::client::ZwipeClient};
 use dioxus::prelude::*;
-use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 /// Whether the set filter is in include or exclude mode.
@@ -61,12 +60,21 @@ pub fn Set() -> Element {
 
     let mut filter_builder: Signal<CardQueryBuilder> = use_context();
     let deck_ctx: Option<DeckCards> = try_use_context();
+    let cache: CatalogCache = use_context();
 
-    let all_sets: Resource<Result<Vec<String>, ApiError>> = use_resource(move || async move {
-        if let Some(dc) = deck_ctx {
-            return Ok(extract_sets(&dc.0()));
+    // Deck-scoped filter extracts from the loaded deck; the add path reads the
+    // app-wide catalog cache (prefetched at startup) instead of fetching on open.
+    use_effect(move || {
+        if deck_ctx.is_none() {
+            cache.ensure_sets(client);
         }
-        client().get_sets().await
+    });
+    let all_sets = use_memo(move || -> Option<Vec<String>> {
+        if let Some(dc) = deck_ctx {
+            Some(extract_sets(&dc.0()))
+        } else {
+            cache.sets.cell().read().loaded().cloned()
+        }
     });
 
     let mut search_query = use_signal(String::new);
@@ -146,7 +154,7 @@ pub fn Set() -> Element {
 
             // Search result bubbles (above input, click to add)
             if !search_query().is_empty() {
-                if let Some(Ok(sets)) = all_sets.read().as_ref() {
+                if let Some(sets) = all_sets.read().as_ref() {
                     {
                         let query = search_query().to_lowercase();
                         let already_selected = selected_sets.as_slice();

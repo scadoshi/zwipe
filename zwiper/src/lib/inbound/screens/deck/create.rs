@@ -11,15 +11,13 @@ use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            catalog_cache::CatalogCache,
             hint_dialog::use_one_time_hint,
             screen_header::ScreenHeader,
         },
         router::Router,
     },
-    outbound::client::{
-        ZwipeClient,
-        deck::{create_deck::ClientCreateDeck, get_deck_tags::ClientGetDeckTags},
-    },
+    outbound::client::{ZwipeClient, deck::create_deck::ClientCreateDeck},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -56,12 +54,16 @@ pub fn CreateDeck() -> Element {
     let mut deck_name_error: Signal<Option<String>> = use_signal(|| None);
     let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
     let selected_tags: Signal<Vec<String>> = use_signal(Vec::new);
-    // Server-driven deck-tag catalog for the picker (no fallback; empty until loaded).
-    let deck_tags_catalog: Resource<Vec<DeckTagView>> = use_resource(move || async move {
-        match session() {
-            Some(s) => auth_client().get_deck_tags(&s).await.unwrap_or_default(),
-            None => Vec::new(),
+    // Server-driven deck-tag catalog for the picker: read from the app-wide
+    // catalog cache (warmed after session), empty until loaded.
+    let cache: CatalogCache = use_context();
+    use_effect(move || {
+        if let Some(s) = session() {
+            cache.ensure_deck_tags(auth_client, s);
         }
+    });
+    let deck_tags_catalog = use_memo(move || -> Option<Vec<DeckTagView>> {
+        cache.deck_tags.cell().read().loaded().cloned()
     });
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);

@@ -10,6 +10,8 @@ pub mod alert_dialog;
 pub mod auth;
 /// Slide-up bottom sheet overlay component.
 pub mod bottom_sheet;
+/// App-wide cache of slow-changing filter catalogs (artists, sets, oracle tags…).
+pub mod catalog_cache;
 /// Selectable chip button (shared `.chip` styling).
 pub mod chip;
 /// Canonical concept explainers (Deck tags, Oracle tags, Card roles).

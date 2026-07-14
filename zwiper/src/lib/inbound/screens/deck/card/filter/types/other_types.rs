@@ -4,9 +4,8 @@ use super::super::{
     deck_cards::{DeckCards, extract_type_words},
     match_mode::MatchMode,
 };
-use crate::outbound::client::{ZwipeClient, card::get_card_types::ClientGetCardTypes};
+use crate::{inbound::components::catalog_cache::CatalogCache, outbound::client::ZwipeClient};
 use dioxus::prelude::*;
-use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 fn read_other_types(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
@@ -57,14 +56,22 @@ pub(crate) fn OtherTypes() -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let mut filter_builder: Signal<CardQueryBuilder> = use_context();
     let deck_ctx: Option<DeckCards> = try_use_context();
+    let cache: CatalogCache = use_context();
 
-    let all_card_types: Resource<Result<Vec<String>, ApiError>> =
-        use_resource(move || async move {
-            if let Some(dc) = deck_ctx {
-                return Ok(extract_type_words(&dc.0()));
-            }
-            client().get_card_types().await
-        });
+    // Deck-scoped filter extracts from the loaded deck; the add path reads the
+    // app-wide catalog cache (prefetched at startup) instead of fetching on open.
+    use_effect(move || {
+        if deck_ctx.is_none() {
+            cache.ensure_card_types(client);
+        }
+    });
+    let all_card_types = use_memo(move || -> Option<Vec<String>> {
+        if let Some(dc) = deck_ctx {
+            Some(extract_type_words(&dc.0()))
+        } else {
+            cache.card_types.cell().read().loaded().cloned()
+        }
+    });
 
     let mut search_query = use_signal(String::new);
     let mut is_typing = use_signal(|| false);
@@ -140,7 +147,7 @@ pub(crate) fn OtherTypes() -> Element {
         }
 
         if !search_query().is_empty() {
-            if let Some(Ok(all_types)) = all_card_types.read().as_ref() {
+            if let Some(all_types) = all_card_types.read().as_ref() {
                 {
                     let results: Vec<String> = all_types
                         .iter()
@@ -231,7 +238,7 @@ pub(crate) fn OtherTypes() -> Element {
         }
 
         if !excludes_search().is_empty() {
-            if let Some(Ok(all_types)) = all_card_types.read().as_ref() {
+            if let Some(all_types) = all_card_types.read().as_ref() {
                 {
                     let results: Vec<String> = all_types
                         .iter()
