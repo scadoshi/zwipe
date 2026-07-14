@@ -25,7 +25,10 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Bugs
 
-_No open bugs._ Completed fixes are archived to
+- [ ] **Pre-1.6.0 clients get "connection error" on card/deck screens (wire break).** Root cause: pre-1.6.0 clients strict-deserialize `CardProfile.mechanical_categories` as `Vec<CardRole>` (no `lossy_vec` — that bridge only shipped in 1.6.0, `d036b86b`). The 1.6.0 server + the 2026-07-13 otag sweep added 3 new role slugs (`card_advantage`, `energy`, `aggression`; enum grew 24→27) that the server dual-emits into the legacy `mechanical_categories` wire field. One unknown slug fails the whole card/deck decode → `reqwest` decode err → `ApiError::Network` → "connection error, check your network and try again." Broke the entire pre-1.6.0 installed base on card/deck views (reported 2026-07-13 by `hopeful_boy` in Discord). **Resolution (chosen 2026-07-13): version-gate.** Since 1.6.0 (which has the `lossy_vec` bridge) is live on the App Store, set `MIN_CLIENT_VERSION=1.6.0` on the prod server env (`zerver/.env` on the VPS) + restart zerver — 1.5.x clients flip to the blocking `UpdateRequired` screen instead of the confusing "connection error." Env-only, no commit/deploy. **Escape hatch (only if a real device can't reach 1.6.0's iOS deployment target):** the server-side compat shim — freeze the *serialized* `mechanical_categories` to the legacy 24-slug allowlist (`Ramp`…`GraveyardHate`), keep the full set in `card_roles`.
+- [ ] **Put app version in session data.** So the server knows each client's version (surface it in logs / gate wire behavior / diagnose breaks like the one above without asking the user to read it off the Profile screen). Owner ask 2026-07-13.
+
+Completed fixes are archived to
 [`archive/complete_2026_q3.md`](../archive/complete_2026_q3.md) (hashes stay searchable there).
 
 ---
