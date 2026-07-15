@@ -229,10 +229,6 @@
         box-shadow 0.12s ease;
     overflow: hidden;
     min-width: 0;
-    /* Skip layout/paint for off-screen rows so long deck lists stay cheap; the
-       intrinsic-size estimate keeps the scrollbar honest before a row renders. */
-    content-visibility: auto;
-    contain-intrinsic-size: auto 2.1rem;
 }
 
 .card-row:last-child {
@@ -244,9 +240,6 @@
 .card-row.expanded {
     position: relative;
     z-index: 2;
-    /* Expanded rows are on-screen by definition; opt out so paint containment
-       never clips the scale/shadow emphasis below. */
-    content-visibility: visible;
     border-bottom: none;
     transform: scale(1.02);
     border-radius: 0.4rem;
