@@ -37,7 +37,7 @@ use crate::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
+use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
 use zwipe::inbound::http::ApiError;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
@@ -67,6 +67,17 @@ use zwipe_core::{
         helpers::Opdate,
     },
 };
+
+/// Per-card render metadata (quantity, board, MVP flag) indexed by printing id
+/// (`scryfall_data.id`). Built once per `deck_entries` change so the card-row
+/// render does O(1) lookups instead of scanning the whole entry list per card
+/// (the list can hold up to `MAX_CARDS_PER_DECK` entries).
+#[derive(Clone, Copy, PartialEq)]
+struct DeckRowMeta {
+    qty: i32,
+    board: Board,
+    mvp: bool,
+}
 
 /// Identifies which command zone slot a card occupies for printing updates.
 #[derive(Clone, Copy)]
@@ -200,6 +211,25 @@ pub fn View(deck_id: Uuid) -> Element {
             .map(|e| *e.deck_card.quantity)
             .unwrap_or(1)
     };
+
+    // Index deck entries by printing id so the card-row render resolves
+    // qty/board/mvp in O(1) instead of scanning `deck_entries` per card
+    // (previously ~3 linear scans per row → O(n^2) across the list). First
+    // occurrence wins, matching the prior `.find()` semantics. Recomputes only
+    // when `deck_entries` changes.
+    let row_meta: Memo<HashMap<Uuid, DeckRowMeta>> = use_memo(move || {
+        let entries = deck_entries.read();
+        let mut map = HashMap::with_capacity(entries.len());
+        for e in entries.iter() {
+            map.entry(e.card.scryfall_data.id)
+                .or_insert_with(|| DeckRowMeta {
+                    qty: *e.deck_card.quantity,
+                    board: e.deck_card.board,
+                    mvp: e.deck_card.mvp_at.is_some(),
+                });
+        }
+        map
+    });
 
     // Effect 1 — mount load (reads `session` reactively)
     // Fetches deck entries, separates the commander into its own pinned slot.
@@ -966,7 +996,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     if show_deck() { for group in displayed_groups() {
                         {
                             let qty_count: i32 = group.cards.iter()
-                                .map(|c| qty_for(c.scryfall_data.id))
+                                .map(|c| row_meta.read().get(&c.scryfall_data.id).map_or(1, |m| m.qty))
                                 .sum();
                             rsx! {
                         div { class: "card-group row-enter",
@@ -977,13 +1007,10 @@ pub fn View(deck_id: Uuid) -> Element {
                                 {
                                     let card_id = card.scryfall_data.id;
                                     let is_basic_land = card.scryfall_data.is_basic_land();
-                                    let qty = qty_for(card_id);
-                                    let card_board = deck_entries.peek().iter()
-                                        .find(|e| e.card.scryfall_data.id == card_id)
-                                        .map(|e| e.deck_card.board);
-                                    let is_mvp = deck_entries.peek().iter()
-                                        .find(|e| e.card.scryfall_data.id == card_id)
-                                        .is_some_and(|e| e.deck_card.mvp_at.is_some());
+                                    let meta = row_meta.read().get(&card_id).copied();
+                                    let qty = meta.map_or(1, |m| m.qty);
+                                    let card_board = meta.map(|m| m.board);
+                                    let is_mvp = meta.is_some_and(|m| m.mvp);
                                     rsx! {
                                         CardRow {
                                             card: card.clone(),
