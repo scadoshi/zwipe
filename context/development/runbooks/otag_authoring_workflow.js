@@ -9,8 +9,8 @@
 //   { total, items: [{ slug, description, verdict: accurate|minor|wrong, note }] }
 // where `description` is the final, verifier-corrected text.
 //
-// EDIT THIS: absolute path to <repo>/zerver/.env on the machine you run on.
-const ENV = '/Users/scottyrayfermo/Developer/zwipe/zerver/.env'
+// NOTE: `export const meta` must be the FIRST statement in the script (Workflow
+// validator requirement), so the ENV constant is declared just below it.
 
 export const meta = {
   name: 'author-verify-otags',
@@ -20,6 +20,9 @@ export const meta = {
     { title: 'Verify', detail: 'opus verifier checks each vs oracle text, corrects' },
   ],
 }
+
+// EDIT THIS: absolute path to <repo>/zerver/.env on the machine you run on.
+const ENV = '/Users/scottyrayfermo/Developer/zwipe/zerver/.env'
 
 const DRAFT_SCHEMA = {
   type: 'object',
