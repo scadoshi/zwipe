@@ -1,103 +1,104 @@
 # Deck-cards screen — cheap render-perf wins
 
-**Status: PLANNED (not started). Client-only (zwiper), scoped to
-`zwiper/.../inbound/screens/deck/card/view.rs`. No backend, no schema, no cap
-change.** Two low-risk phases that flatten the deck-cards render cost so the
-screen stays snappy as decks grow. True virtualization is explicitly **out of
-scope** (see Non-goals).
+**Status: Phase 0 SHIPPED 2026-07-15. Phase 1 tried and REVERTED same day (it
+blanked on fast scroll). Client-only (zwiper), scoped to
+`zwiper/.../inbound/screens/deck/card/view.rs` + `zwipe-components` CSS. No
+backend, no schema, no cap change.** Phase 0 alone made a 500-card deck snappy on
+the iOS simulator; the only residual is a ~1s one-time layout on first open,
+judged acceptable for the niche large-deck case. True virtualization stays out of
+scope (see Parked).
 
-**One sentence:** kill the O(n²) per-render lookups (Phase 0) and let the WebView
-skip painting off-screen rows (Phase 1), so a fat deck renders cheaply without
-rewriting the list into a windowed/virtualized component.
+**One sentence:** killing the O(n²) per-render lookups (Phase 0) was the real
+win; the WebView's own compositing handles scroll fine once the quadratic is
+gone, so the extra `content-visibility` layer (Phase 1) was removed for causing
+blank rows on fling.
 
 **Related:** cap decision lives in `zerver` `MAX_CARDS_PER_DECK = 500`
-(`zerver/src/lib/domain/deck/mod.rs`); staying at 500 for now. This plan is what
-makes a *possible* future raise safe, but the raise is not part of it.
+(`zerver/src/lib/domain/deck/mod.rs`); staying at 500. This work makes a
+*possible* future raise safe, but the raise is not part of it.
+
+**Commits:** Phase 0 + Phase 1 landed together (`perf(deck): index deck entries
+for O(1) row lookups; skip off-screen rows`), then Phase 1 reverted (`perf(deck):
+drop content-visibility from card rows (blanked on fast scroll)`).
 
 ---
 
 ## Why
 
-The deck-cards screen renders every active card as its own `CardRow` component
-in a plain `for` loop (`view.rs:976`), with no windowing. Two costs compound as
-the card count `N` grows:
+The deck-cards screen renders every active card as its own `CardRow` component in
+a plain `for` loop, with no windowing. Two costs compound as the card count `N`
+grows:
 
-**Layer A — Rust/Dioxus side.** Per card, the render does 3–4 linear scans of
+**Layer A — Rust/Dioxus side.** Per card, the render did 3–4 linear scans of
 `deck_entries`:
 
-- `qty_for(card_id)` → `.find()` (`view.rs:195`)
-- board lookup → `.find()` (`view.rs:981`)
-- mvp lookup → `.find()` (`view.rs:984`)
-- per-group `qty_count` sum calls `qty_for` again per card (`view.rs:968`)
+- `qty_for(card_id)` → `.find()`
+- board lookup → `.find()`
+- mvp lookup → `.find()`
+- per-group `qty_count` sum called `qty_for` again per card
 
-That is O(N²). At N=500 it is already ~1M scans per render; at N=1,000 it is
-~4M. It re-runs on every re-render (qty change, filter toggle, group-by switch),
-not just first paint.
+That is O(N²). At N=500 it is already ~1M scans per render; at N=1,000 it is ~4M.
+It re-ran on every re-render (qty change, filter toggle, group-by switch), not
+just first paint. **This was the actual bottleneck.**
 
-**Layer B — WebView side.** Dioxus mobile renders into a WebView, so every row
-is a live DOM subtree the browser must lay out and paint, on-screen or not.
-`CardRow` is text-only (mana cost, type, keywords); card images load lazily on
-tap via `ImagePreview`, so the cost is DOM node count, not image bandwidth.
-
-Neither cost is a problem at real deck sizes today, but both scale badly and
-both are cheap to fix. This is good-practice cleanup, done now while the code is
-fresh, not a response to a reported complaint.
+**Layer B — WebView side.** Dioxus mobile renders into a WebView, so every row is
+a live DOM subtree the browser must lay out and paint. `CardRow` is text-only
+(mana cost, type, keywords); card images load lazily on tap via `ImagePreview`,
+so the cost is DOM node count, not image bandwidth. In practice, once Layer A was
+fixed, normal compositing (paint only the visible tiles) handled scroll without
+help — see Phase 1.
 
 ---
 
-## Phase 0 — index `deck_entries` once (kills the O(n²))
+## Phase 0 — index `deck_entries` once (SHIPPED)
 
-Build an `id → DeckEntry` (or `id → &DeckEntry`) map with a `use_memo` keyed on
-`deck_entries`, and read qty / board / mvp from it instead of scanning:
+Added a `Copy` `DeckRowMeta { qty, board, mvp }` and a `row_meta` `use_memo`
+keyed on `deck_entries` that indexes entries by printing id (`scryfall_data.id`),
+first-occurrence-wins to match the old `.find()` semantics. The row render now
+does O(1) map lookups for qty / board / mvp, and the per-group qty sum reads the
+same map. O(N²) → O(N) build + O(1) per row. Behavior-preserving, no visual
+change. The memo recomputes only when `deck_entries` changes, and since
+qty/board/mvp edits already go through `deck_entries.write()`, rows refresh on the
+same trigger as before.
 
-- Replace `qty_for` (`view.rs:195`) with a map lookup.
-- Replace the two per-card `.find()` calls (`view.rs:981`, `view.rs:984`) with
-  map lookups.
-- Precompute per-group qty totals in the same memo (or a sibling memo) so the
-  render stops re-summing via `qty_for` at `view.rs:968`.
+**Result:** 500-card deck (`Render Stress 500` on the local test account) scrolls
+smoothly; qty/board/mvp edits stay cheap. This was the whole win.
 
-Turns O(N²) into O(N) build + O(1) per-row reads. Contained to `view.rs`,
-behavior-preserving, no visual change.
+## Phase 1 — WebView skip off-screen rows (TRIED, REVERTED)
 
-**Done when:** all per-row deck-entry access goes through the memoized map; no
-`.find()` over `deck_entries` remains inside the row loop.
+Added `content-visibility: auto` + `contain-intrinsic-size: auto 2.1rem` to
+`.card-row` (excluding `.expanded` so paint containment couldn't clip its
+scale/shadow). It worked, but on a **fast fling the rows scrolled into view
+before the compositor painted them**, showing blank reserved-height rows. The
+render-ahead margin of `content-visibility: auto` is not author-controllable from
+CSS, so there is no knob to widen the buffer while keeping it.
 
-## Phase 1 — let the WebView skip off-screen rows
-
-Add `content-visibility: auto` plus a `contain-intrinsic-size` estimate to the
-card-row (and/or card-group) CSS. The WebView then skips layout and paint for
-rows outside the viewport while keeping them in the DOM, so scrolling reveals
-them with no Rust-side bookkeeping. Handles our variable-height rows (they expand
-on tap) gracefully via the intrinsic-size estimate.
-
-Supported in both iOS WKWebView and Android WebView at our min versions.
-
-**Done when:** off-screen rows are skipped by the compositor (verify via a fat
-test deck feeling flat to scroll), with no regression to expand-on-tap,
-jump-to-card, or group headers.
-
-**Note:** Phase 1 only addresses Layer B. Layer A (VNode build) still touches
-all rows; Phase 0 is what keeps that cheap. Do both.
+Reverted because: Phase 0 removed the real (quadratic) cost, and without
+`content-visibility` the WebView lays out all 500 rows once and normal
+compositing paints only the visible screenful per frame — smooth scroll, **no
+blanking**. The only tradeoff is a ~1s one-time layout when the 500-card deck
+first opens, which is acceptable. `content-visibility` earns its keep at
+thousands of heavy rows, not 500 cheap text rows.
 
 ---
 
-## Non-goals (parked / archive for now)
+## Parked (not doing unless a real deck size forces it)
 
-- **True virtualization / windowing** — rendering only near-viewport rows on the
-  Rust side via scroll detection. It would fix both layers and scale to
-  thousands, but the correctness surface (grouped sections, expand-in-place
-  rows, scroll anchoring, filter/group-by resetting the window) is not worth it
-  for a single niche large-deck user. Phase 0+1 should make 500 snappy and 1,000
-  tolerable at a fraction of the cost. Revisit only if a real deck size makes
-  the screen janky after 0+1.
-- **Raising `MAX_CARDS_PER_DECK`** — cap stays at 500. This plan makes a future
+- **Progressive chunked mount (preferred follow-up).** If the ~1s first-open ever
+  bugs users, this is the lightest fix: a `render_budget: Signal<usize>` starting
+  small, grown in chunks each tick by a `use_future`/coroutine (yielding so the
+  browser paints between chunks) until it reaches the full row count; the render
+  slices the flattened rows to the budget. First paint is near-instant, the rest
+  streams in. Unlike `content-visibility` it keeps every mounted row in the DOM
+  (no blanking); unlike windowing it never unmounts (no scroll tracking). One
+  wrinkle: reset the budget only on **structural** changes (filter / group-by /
+  board), not qty bumps, or a `+1` re-streams and flickers — reuse the existing
+  `should_collapse_expanded` structural-vs-qty signal to gate the reset.
+- **True virtualization / windowing.** Render only near-viewport rows via scroll
+  detection (IntersectionObserver sentinels, not scroll-distance-to-index math).
+  Fixes both layers and scales to thousands, but the correctness surface (grouped
+  sections, expand-in-place rows, scroll anchoring, filter/group-by resetting the
+  window) is not worth it for one niche large-deck user. Prefer chunked mount
+  above first.
+- **Raising `MAX_CARDS_PER_DECK`.** Cap stays at 500. This work makes a future
   raise cheaper to justify, but does not perform one.
-
----
-
-## Sequencing
-
-Phase 0 and Phase 1 are independent and can land in either order or the same
-change. Phase 0 is the higher-value one (fixes the quadratic cliff); Phase 1 is
-near-free polish on top. Measure on a deliberately fat deck (~500 cards) before
-and after.
