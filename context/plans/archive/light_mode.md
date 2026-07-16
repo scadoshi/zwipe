@@ -1,6 +1,6 @@
 # Light-mode polish pass
 
-**Status: IN PROGRESS (2026-07-11).** Dark mode is the clean baseline; light
+**Status: DONE 2026-07-15 (all logged items shipped, archived).** Dark mode is the clean baseline; light
 mode has accumulated rough edges (contrast, muddy fills, effects tuned for dark
 backgrounds). This is the running list for a cross-cutting light-mode cleanup,
 opened alongside the deck-cards-screen revamp (squircle pips, price/stat tags,

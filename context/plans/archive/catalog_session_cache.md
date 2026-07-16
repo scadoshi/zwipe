@@ -1,6 +1,6 @@
 # Session catalog cache — prefetch filter metadata at app load
 
-**Status: Phase 1 BUILT 2026-07-14 (pending formal test). Client-only (zwiper). No
+**Status: DONE 2026-07-14 (built + tested in prod, archived). Client-only (zwiper). No
 new backend endpoints.** Unified `CatalogCache` in
 `zwiper/.../inbound/components/catalog_cache.rs`, provided in `spawn_upkeeper`; the
 public catalogs prefetch at startup, deck tags warm on session. Consumers migrated:

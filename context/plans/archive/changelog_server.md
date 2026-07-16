@@ -1,6 +1,6 @@
 # Changelog: serve from the server (rough plan)
 
-**Status: PLAN (2026-07-13).** The changelog is currently **hard-coded in the app
+**Status: DONE 2026-07-15 (shipped, archived).** The changelog was **hard-coded in the app
 binary** (`zwipe-components/src/changelog.rs`, `RELEASES`/`UPCOMING` consts). That
 means showing new entries — including "what's in the pipeline" (`UPCOMING`) —
 requires an App Store / Play resubmission. Silly. Fix: let the **mobile client
