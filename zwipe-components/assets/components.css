@@ -434,6 +434,7 @@
 
 .card-detail-cost {
     margin: 0;
+    margin-left: auto;
     flex-shrink: 0;
     white-space: nowrap;
 }
@@ -601,6 +602,33 @@ i.ms.ms-cost.ms-gp {
     font-size: 0.75rem;
     color: var(--text-muted);
     background-color: var(--bg-primary);
+}
+
+/* Color-coded meta chips, consistent with the no-image card: type = accent-1,
+   rarity = accent-3, set = success-green, P/T-or-loyalty = warning-yellow. */
+.detail-chip-type {
+    color: var(--accent-primary);
+    background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+    border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
+}
+
+.detail-chip-rarity {
+    color: var(--accent-tertiary);
+    background-color: color-mix(in srgb, var(--accent-tertiary) 12%, transparent);
+    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, transparent);
+}
+
+.detail-chip-set {
+    color: var(--color-success);
+    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+
+.detail-chip-pt {
+    color: var(--color-warning);
+    background-color: color-mix(in srgb, var(--color-warning) 15%, transparent);
+    border-color: color-mix(in srgb, var(--color-warning) 40%, transparent);
+    font-weight: 700;
 }
 
 .card-action-row {

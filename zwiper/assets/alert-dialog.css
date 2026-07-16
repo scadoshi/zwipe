@@ -85,6 +85,28 @@
   opacity: 0.8;
 }
 
+/* Long-text dialogs only (card details + hints/explainers, scoped via :has so
+   short confirm dialogs aren't dimmed): fade the scrolling text at the top/bottom
+   edges, matching the masked-scroll treatment used elsewhere (no-image card,
+   carousel dots). Degrades to no fade where :has() is unsupported. */
+.alert-dialog-description:has(.card-rules),
+.alert-dialog-description:has(.hint-body) {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 0.8rem,
+    black calc(100% - 0.9rem),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 0.8rem,
+    black calc(100% - 0.9rem),
+    transparent 100%
+  );
+}
+
 /* Buttons inside a dialog: the dialog's own flex gap provides the spacing, so
    drop .btn's form-screen margin (it stacked to ~3rem of dead space and forced
    short dialogs to scroll). */

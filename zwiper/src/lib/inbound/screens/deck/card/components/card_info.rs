@@ -3,7 +3,7 @@ use crate::inbound::components::alert_dialog::{
     AlertDialogRoot, AlertDialogTitle,
 };
 use dioxus::prelude::*;
-use zwipe_components::{Button, ButtonVariant, CardDetails, card_face_count};
+use zwipe_components::{Button, ButtonVariant, CardDetails, OracleText, card_face_count};
 use zwipe_core::domain::card::Card;
 
 /// Displays card metadata: prices, set, release date, artist. The card's oracle
@@ -98,6 +98,18 @@ pub(crate) fn CardDetailsDialog(
     // via the controlled `face` prop.
     let face_count = card_face_count(&card);
     let mut face = use_signal(|| 0usize);
+    // Mana cost for the shown face, pinned in the title so it tracks Flip.
+    let cost = {
+        let cur = face().min(face_count.saturating_sub(1));
+        card.scryfall_data
+            .card_faces
+            .as_ref()
+            .and_then(|faces| faces.get(cur))
+            .map(|f| f.mana_cost.clone())
+            .filter(|m| !m.is_empty())
+            .or_else(|| card.scryfall_data.mana_cost.clone())
+            .unwrap_or_default()
+    };
     rsx! {
         AlertDialogRoot {
             open: open(),
@@ -106,6 +118,9 @@ pub(crate) fn CardDetailsDialog(
                 AlertDialogTitle {
                     div { class: "card-rules-title",
                         span { class: "card-rules-title-name", "{name}" }
+                        if !cost.is_empty() {
+                            OracleText { text: cost, class: "card-detail-cost".to_string() }
+                        }
                     }
                 }
                 hr { class: "dialog-rule" }
@@ -118,6 +133,7 @@ pub(crate) fn CardDetailsDialog(
                         CardDetails {
                             card,
                             show_name: false,
+                            show_cost: false,
                             show_classification: true,
                             show_flip: false,
                             face: Some(face),

@@ -1988,7 +1988,7 @@ button {
 /* Card-rules dialog title row: name left, primary mana cost right. */
 .card-rules-title {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 0.5rem;
     text-align: left;
@@ -3160,8 +3160,20 @@ button {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
-    mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 1rem,
+        #000 calc(100% - 1rem),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 1rem,
+        #000 calc(100% - 1rem),
+        transparent 100%
+    );
 }
 
 .dict-row {
