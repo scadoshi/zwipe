@@ -3,7 +3,7 @@
 use crate::{
     inbound::{
         components::{
-            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            auth::ensure_session::EnsureFresh,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey},
             screen_header::ScreenHeader,
         },
@@ -77,7 +77,6 @@ pub fn DeckList() -> Element {
     });
 
     rsx! {
-        Bouncer {
             div { class: "screen",
                 ScreenHeader { title: "Decks", hint: decks_hint_open }
 
@@ -241,6 +240,5 @@ pub fn DeckList() -> Element {
                 }
             }
             }
-        }
     }
 }

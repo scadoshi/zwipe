@@ -3174,6 +3174,15 @@ button {
     animation: dict-row-in 0.18s ease-out both;
 }
 
+.dict-row-tappable {
+    cursor: pointer;
+}
+
+.dict-row-tappable:active {
+    border-color: var(--accent-tertiary);
+    transform: scale(0.995);
+}
+
 @keyframes dict-row-in {
     from {
         opacity: 0;

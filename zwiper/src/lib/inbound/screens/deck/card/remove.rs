@@ -6,7 +6,7 @@ use super::components::{
 use crate::{
     inbound::{
         components::{
-            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            auth::ensure_session::EnsureFresh,
             chip::Chip,
             hint_dialog::{
                 HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint,
@@ -98,7 +98,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
     // Swipe vocabulary hint: auto-opens on this user's first visit, the
     // grayed "?" in the util bar reopens it on demand.
     let swipe_hint_open = use_one_time_hint(HINT_REMOVE_DECK_CARDS);
-    let show_rules = use_signal(|| false);
+    let show_details = use_signal(|| false);
     let mut printing_open = use_signal(|| false);
 
     // Incrementing this re-runs the filter effect
@@ -479,7 +479,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
     };
 
     rsx! {
-        Bouncer {
             div { class: "screen",
                 ScreenHeader { title: "Remove Deck Cards", hint: swipe_hint_open }
 
@@ -565,7 +564,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         if let Some(card) = current_card() {
                             CardInfoDisplay { card: card.clone() }
                             CardDetailsDialog {
-                                open: show_rules,
+                                open: show_details,
                                 card,
                                 on_printings: move |_| printing_open.set(true),
                             }
@@ -607,7 +606,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     "Refresh"
                 }
                 if current_card().is_some() {
-                    RulesButton { open: show_rules }
+                    RulesButton { open: show_details }
                 }
             }
 
@@ -657,6 +656,5 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 show_active_indicators: true,
             }
             }
-        }
     }
 }

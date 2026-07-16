@@ -1,4 +1,4 @@
-//! Full-screen "Zwipe select" screen — swipe to pick a command-zone card.
+//! Full-screen "Swipe select" screen — swipe to pick a command-zone card.
 //!
 //! Rendered as a sibling overlay above the create/edit form and toggled by
 //! `open` — it stays mounted while closed so its filter and swipe position
@@ -155,7 +155,7 @@ pub(crate) fn SwipeSelect(
     // per account the first time the screen is opened (gated, since this stays
     // mounted while closed — a plain mount-time one-time hint would misfire).
     let hint_open = use_signal(|| false);
-    let show_rules = use_signal(|| false);
+    let show_details = use_signal(|| false);
     let mut printing_open = use_signal(|| false);
     let mut hint_fired = use_signal(|| false);
     use_effect(move || {
@@ -331,7 +331,7 @@ pub(crate) fn SwipeSelect(
     rsx! {
         div { class: "{screen_class}",
             if open() {
-                ScreenHeader { title: "Zwipe select", hint: hint_open }
+                ScreenHeader { title: "Swipe select", hint: hint_open }
 
                 div { class: "screen-content card-swipe content-enter",
                     if has_cards {
@@ -372,7 +372,7 @@ pub(crate) fn SwipeSelect(
                         if let Some(card) = current_card {
                             CardInfoDisplay { card: card.clone() }
                             CardDetailsDialog {
-                                open: show_rules,
+                                open: show_details,
                                 card,
                                 on_printings: move |_| printing_open.set(true),
                             }
@@ -406,7 +406,7 @@ pub(crate) fn SwipeSelect(
                         "Refresh"
                     }
                     if has_cards {
-                        RulesButton { open: show_rules }
+                        RulesButton { open: show_details }
                     }
                 }
 
@@ -435,7 +435,7 @@ pub(crate) fn SwipeSelect(
 
                 HintDialog {
                     open: hint_open,
-                    title: "Zwipe select",
+                    title: "Swipe select",
                     HintBullets {
                         HintBullet {
                             "Swipe "

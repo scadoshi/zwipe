@@ -3,7 +3,7 @@
 //! Defines all client-side routes and maps them to their corresponding screen components.
 
 use crate::inbound::{
-    components::navigation::back_handler::BackHandlerLayout,
+    components::{auth::auth_gate::AuthGate, navigation::back_handler::BackHandlerLayout},
     screens::{
         auth::{forgot_password::ForgotPassword, login::Login, register::Register},
         changelog::Changelog,
@@ -22,6 +22,7 @@ use crate::inbound::{
         home::Home,
         legal::privacy_policy::PrivacyPolicy,
         oracle_tag_dictionary::OracleTagDictionary,
+        oracle_tag_examples::OracleTagExamples,
         profile::Profile,
     },
 };
@@ -36,10 +37,8 @@ pub enum Router {
     // Wrap every route so the OS back-intent bridge (edge swipe / hardware
     // back) mounts once inside the router context and persists across routes.
     #[layout(BackHandlerLayout)]
-    /// Landing screen — greeting, navigation to login/register/decks.
-    #[route("/")]
-    Home {},
 
+    // ── public (pre-auth) ── the only screens reachable without a session.
     /// Email + password login form.
     #[route("/login")]
     Login {},
@@ -49,6 +48,13 @@ pub enum Router {
     /// Request a password reset email.
     #[route("/forgot-password")]
     ForgotPassword {},
+
+    // ── authed ── everything below requires a valid session (AuthGate
+    // redirects to /login otherwise), so screens no longer self-gate.
+    #[layout(AuthGate)]
+    /// Landing screen — greeting, navigation to decks/profile.
+    #[route("/")]
+    Home {},
 
     /// User profile overview — username/email/password edits, preferences, delete account.
     #[route("/user")]
@@ -65,6 +71,10 @@ pub enum Router {
     /// Oracle-tag dictionary — read-only searchable reference, reached from the picker.
     #[route("/oracle-tags")]
     OracleTagDictionary {},
+
+    /// Oracle-tag example cards — deck-free swipe browse, reached from a dictionary row.
+    #[route("/oracle-tags/examples/:slug")]
+    OracleTagExamples { slug: String },
 
     /// List all user's decks with name, format, and card count.
     #[route("/deck")]

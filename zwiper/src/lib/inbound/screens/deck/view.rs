@@ -16,7 +16,7 @@ use crate::{
                 AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
                 AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
             },
-            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            auth::ensure_session::EnsureFresh,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
             screen_header::ScreenHeader,
         },
@@ -353,7 +353,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     });
 
     rsx! {
-        Bouncer {
             div { class: "screen",
                 ScreenHeader { title: "Deck", hint: first_deck_hint_open }
 
@@ -691,6 +690,5 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             }
 
             }
-        }
     }
 }

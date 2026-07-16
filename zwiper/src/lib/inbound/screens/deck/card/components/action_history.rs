@@ -93,6 +93,24 @@ impl StackAction for RemoveAction {
     }
 }
 
+/// Oracle-tag examples browse (linear, read-only). Field-less like `AddAction`:
+/// the browsed card stays in the stack at the position "back" rewinds to. The
+/// only committing gesture is a left swipe (advance), so undo always re-enters
+/// from the left.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum BrowseAction {
+    /// Left swipe — advanced to the next example card.
+    Next,
+}
+
+impl StackAction for BrowseAction {
+    fn exited(&self) -> Direction {
+        match self {
+            Self::Next => Direction::Left,
+        }
+    }
+}
+
 /// Maximum cards to keep in memory before requiring refresh.
 pub const MAX_CARDS_IN_STACK: usize = 500;
 

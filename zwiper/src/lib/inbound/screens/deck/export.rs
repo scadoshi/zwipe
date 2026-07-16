@@ -3,7 +3,7 @@
 use crate::{
     inbound::{
         components::{
-            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            auth::ensure_session::EnsureFresh,
             chip::Chip,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
             screen_header::ScreenHeader,
@@ -133,7 +133,6 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     });
 
     rsx! {
-        Bouncer {
             div { class: "screen",
                 ScreenHeader { title: "Export", hint: export_hint }
 
@@ -251,6 +250,5 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     }
                 }
             }
-        }
     }
 }

@@ -32,7 +32,7 @@ fn refresh_lock() -> Arc<Mutex<()>> {
 pub trait EnsureFresh {
     /// Returns a session with a valid access token, refreshing (single-flight)
     /// and persisting if necessary. `Err` means "do not make the authed call":
-    /// auth rejections clear the session (the bouncer redirects to login);
+    /// auth rejections clear the session (the auth gate redirects to login);
     /// transient network/server errors leave the session untouched so the
     /// next attempt can retry.
     fn ensure_fresh(

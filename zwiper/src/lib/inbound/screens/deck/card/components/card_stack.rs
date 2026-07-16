@@ -69,6 +69,11 @@ impl<A: 'static> CardStack<A> {
         self.cards.peek().is_empty()
     }
 
+    /// `len` without subscribing the caller.
+    pub fn peek_len(&self) -> usize {
+        self.cards.peek().len()
+    }
+
     /// Cursor position (reactive read).
     pub fn index(&self) -> usize {
         (self.index)()
