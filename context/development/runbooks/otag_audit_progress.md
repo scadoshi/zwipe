@@ -13,141 +13,211 @@ are NOT auto-applied.**
 ## Findings so far
 Across 2000 audited: **1632 clean, 345 suspect, 23 wrong.**
 
+**Second-pass on the 23 wrong (separate session, Scryfall-checked, 2026-07-15):** not all
+suggested fixes are shippable. ~16–17 apply-worthy; 3 audit flags were themselves wrong
+(`x-doesn-t-matter`, `cycle-war-hybrid-planeswalker`, `cycle-fdn-draft-signpost` — keep current);
+2 need a different rewrite (`unique-token`, `substance`). Details under
+[Wrong (fix recommended)](#wrong-fix-recommended). **No changes applied to
+`ORACLE_TAG_DESCRIPTIONS`.**
+
 ## Wrong (fix recommended)
+
+> **Second-pass verification (separate session, 2026-07-15):** Scryfall oracle + `otag:` membership
+> re-check of every entry below. **Do not treat all 23 suggested fixes as ready to ship.**
+> Const (`ORACLE_TAG_DESCRIPTIONS`) was **not** changed by that session or this note update.
+>
+> | Bucket | Slugs |
+> | --- | --- |
+> | **Suggested fix OK** (apply-worthy) | `minigame`, `warlord`, `creature-ability-noncreature`, `hate-wide` (nit), `keyword-soup`, `predefined-token`, `impulse-planeswalker`, `references-keyword`, `sunder`, `counterspell-enchantment`, `gives-wither`, `synergy-protection`, `cycle-mid-r-flashback`, `cycle-mh3-c-draft-signpost`, `cycle-block-rtr-off-color`, `cycle-unf-single-sticker`, `cycle-block-rav-mnn` (example partially wrong), `cycle-mh3-r-m-two-color` (Devoid nit) |
+> | **Do not apply suggested; audit flag wrong — keep current** | `x-doesn-t-matter`, `cycle-war-hybrid-planeswalker`, `cycle-fdn-draft-signpost` |
+> | **Do not apply suggested; needs different rewrite** | `unique-token` (collides with `predefined-token`), `substance` (keyword vs flash package) |
+>
+> Per-entry **second-pass** notes are under each slug. Original audit lines kept for history.
 
 ### `unique-token` — WRONG
 - **current:** A specific token variant that only one card creates.
 - **issue:** claims 'only one card creates' it, but the tagged tokens are the most generic ones made by hundreds of cards
 - **example:** Soldier (Token Creature, Vigilance) and Wolf/Sheep/Insect tokens are produced by many different cards, not one
 - **suggested fix:** A predefined, named token creature that cards put onto the battlefield.
+- **second-pass (separate session, Scryfall-checked):** DO NOT APPLY suggested fix
+  - Separate session (Scryfall `otag:unique-token include:extras`, ~381 token objects): original's 'only one card creates' is too strong, but the suggested fix conflates this with `predefined-token` (Blood/Clue/Food/Gold…). Needs a different rewrite — e.g. nonstandard/unique token types vs CR predefined ones — not the suggested text.
 
 ### `minigame` — WRONG
 - **current:** Engages other players in a bet, vote, or guessing game.
 - **issue:** Overspecifies 'other players'; many are solo minigames or involve a person outside the game
 - **example:** Push Your Luck: 'Reveal cards from the top of your library until you decide to stop' is a solo press-your-luck game; Scavenger Hunt: 'You have ten seconds to search your library' is a solo timed search, neither engages other players
 - **suggested fix:** Creates a real-world minigame such as a timed search, press-your-luck, vote, or guessing challenge to determine its effect.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK
+  - Confirmed: Push Your Luck / Scavenger Hunt are solo Unfinity attractions; 'other players' overspecifies. Suggested fix is good.
 
 ### `warlord` — WRONG
 - **current:** A creature whose power, and sometimes toughness, equals how many creatures you control.
 - **issue:** Overspecifies to 'creatures you control'; over half the cards scale off other things (lands, color-based permanents, Clerics)
 - **example:** Ashaya, Soul of the Wild: 'power and toughness are each equal to the number of lands you control'; Kithkin Rabble: 'equal to the number of white permanents you control'
 - **suggested fix:** A creature whose power, and often toughness, equals the number of creatures or other permanents you control.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK
+  - Confirmed via `otag:warlord` (includes Ashaya / lands, Kithkin Rabble / white permanents). Suggested fix matches the tagged set better than creature-count-only.
 
 ### `creature-ability-noncreature` — WRONG
 - **current:** A noncreature permanent with abilities that matter once it becomes a creature.
 - **issue:** Slug-name trap: most cards never become creatures; the theme is a noncreature carrying a creature-style ability/keyword
 - **example:** Weapon Rack (Artifact): 'enters with three +1/+1 counters... Move a +1/+1 counter from this artifact onto target creature' and Darkmoss Bridge (Artifact Land): 'Indestructible' — neither becomes a creature
 - **suggested fix:** A noncreature permanent that has an ability or keyword normally found on creatures, such as indestructible or +1/+1 counters.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK
+  - Confirmed: Darkmoss Bridge (indestructible), Weapon Rack (+1/+1 counters) never become creatures. Suggested fix is good.
 
 ### `hate-wide` — WRONG
 - **current:** Scales up to punish opponents based on how many creatures they control.
 - **issue:** Says punishes opponents by THEIR creature count; most cards scale with all creatures on the battlefield and some benefit you rather than punish
 - **example:** Chain Reaction: 'deals X damage to each creature, where X is the number of creatures on the battlefield'; War Report gains you life per creature
 - **suggested fix:** Scales with the number of creatures on the battlefield, often to answer go-wide boards.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK (minor nit)
+  - Confirmed: tag mixes board-scale answers (Chain Reaction) with non-hate scale effects (War Report). Suggested fix is better; still leans 'answer go-wide' while some cards only scale with creatures.
 
 ### `keyword-soup` — WRONG
 - **current:** A card that gains or lists most of its set's keyword abilities.
 - **issue:** 'its set's keyword abilities' is misleading; cards reference a fixed list of evergreen keywords, not any expansion's keywords
 - **example:** Odric, Blood-Cursed: counts 'flying, first strike, double strike, deathtouch, haste, hexproof, indestructible, lifelink, menace, reach, trample, and vigilance'
 - **suggested fix:** Grants, counts, or keys off a long list of evergreen keyword abilities such as flying, first strike, and trample all at once.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK
+  - Confirmed: Odric, Blood-Cursed lists evergreen keywords, not 'this set's' keywords. Suggested fix is good.
 
 ### `predefined-token` — WRONG
 - **current:** Creates a specific named token with a fixed, preset set of abilities.
 - **issue:** tag marks the token cards themselves, which do not 'create' anything; description describes a creator instead of the token
 - **example:** Treasure — 'Token Artifact — Treasure: {T}, Sacrifice this token: Add one mana of any color' (the card IS the token, it creates nothing)
 - **suggested fix:** Is a predefined token with a standard, preset set of abilities, such as Treasure, Blood, Clue, or a Role.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK
+  - Confirmed via `otag:predefined-token include:extras` (Blood, Clue, Food, Gold, …): tags the token objects themselves, not creators. Suggested fix is good.
 
 ### `impulse-planeswalker` — WRONG
 - **current:** Reveals cards from the top of your library and lets you take a noncreature, nonland card.
 - **issue:** overspecifies to "noncreature, nonland" but most cards grab creatures, planeswalkers, Auras, or lands
 - **example:** Oath of Nissa: "You may reveal a creature, land, or planeswalker card from among them and put it into your hand"; Ajani, Mentor of Heroes: "reveal an Aura, creature, or planeswalker card"
 - **suggested fix:** Looks at cards from the top of your library and lets you put a revealed card of certain types, often a planeswalker or other permanent, into your hand.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK
+  - Confirmed: Oath of Nissa (creature/land/PW), Ajani, Mentor of Heroes (Aura/creature/PW). Original 'noncreature, nonland' is wrong. Suggested fix is good.
 
 ### `references-keyword` — WRONG
 - **current:** Mentions a keyword or mechanic by name without actually having that ability itself.
 - **issue:** Most examples reproduce/allude to a keyword's effect without naming it, and the 'behold' cards actually perform the action; both halves of the description misfire
 - **example:** Persist (sorcery): 'Return target nonlegendary creature card from your graveyard to the battlefield with a -1/-1 counter on it.' — reproduces the persist keyword but never names it
 - **suggested fix:** Reproduces or alludes to a named keyword ability without actually having that keyword.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK
+  - Confirmed: Persist (sorcery) reproduces persist without naming it. Suggested fix is good ('named keyword' means a keyword that has a name, not that the card must print the name).
 
 ### `substance` — WRONG
 - **current:** An obsolete ability from old Mirage-era cards that does nothing at all.
 - **issue:** Claims it "does nothing at all"; the ability is the old Mirage-era flash rule that lets you cast at instant speed with a cleanup sacrifice, so it functions as a combat trick
 - **example:** Lightning Reflexes: "You may cast this spell as though it had flash. If you cast it any time a sorcery couldn't have been cast, the controller of the permanent it becomes sacrifices it at the beginning of the next cleanup step."
 - **suggested fix:** Uses the old Mirage-era flash rules, letting you cast it at instant speed but sacrificing it at the next cleanup if cast when a sorcery couldn't be.
+- **second-pass (separate session, Scryfall-checked):** REWRITE — do not apply suggested as-is
+  - Separate session: Substance is an obsolete keyword with no rules meaning; the Mirage flash/cleanup package is separate oracle text (Lightning Reflexes, Armor of Thorns, Necromancy). Current is pedantically correct for the keyword; suggested is better UX but misattributes the flash rules as 'substance'. Prefer something like: obsolete Mirage-era keyword (no effect); these cards use the old flash-at-instant-speed, sacrifice-at-cleanup package.
 
 ### `x-doesn-t-matter` — WRONG
 - **current:** Has an {X} in its cost that the card's own text never directly references.
 - **issue:** most tagged cards have no {X} in their cost; they care about the amount or colors of mana spent to cast them
 - **example:** Prismatic Ending (cost {W}, no X): 'Exile target nonland permanent if its mana value is less than or equal to the number of colors of mana spent'; Gyrus enters with counters 'equal to the amount of mana spent to cast it'
 - **suggested fix:** Cares about how much mana or how many colors of mana were spent to cast it.
+- **second-pass (separate session, Scryfall-checked):** DO NOT APPLY — audit flag itself is wrong; keep current
+  - Separate session checked all 12 `otag:x-doesnt-matter` cards: every one has {X} in the cost and never references X in oracle text (Prismatic Ending is {X}{W}, not {W}). Original description matches the tag. Suggested fix renames the concept to 'cares about mana/colors spent' — a common effect pattern, not this tag's definition. Issue/example are factually wrong.
 
 ### `sunder` — WRONG
 - **current:** Destroys all Auras or Equipment attached to a permanent, leaving the permanent itself behind.
 - **issue:** 'leaving the permanent itself behind' is false for many carriers that also destroy/exile the permanent
 - **example:** Silence the Believers: 'Exile any number of target creatures and all Auras attached to them'; End Hostilities: 'Destroy all creatures and all permanents attached to creatures'
 - **suggested fix:** Destroys or exiles the Auras and Equipment attached to a permanent, sometimes removing the permanent as well.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK
+  - Confirmed: mix of leave-the-permanent (Strip Bare) and also remove the permanent (End Hostilities, Silence the Believers). Suggested fix is good.
 
 ### `counterspell-enchantment` — WRONG
 - **current:** Counter magic that specifically stops enchantment spells from resolving.
 - **issue:** 'specifically' wrongly implies enchantment-only; most examples counter enchantment among other spell types
 - **example:** Swan Song: 'Counter target enchantment, instant, or sorcery spell.' (also Deny the Divine: creature or enchantment)
 - **suggested fix:** Counters a target enchantment spell, often alongside other spell types.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK
+  - Confirmed: Swan Song / Deny the Divine / Annul counter enchantment among other types; only some are enchantment-only. Suggested fix is good.
 
 ### `cycle-block-rav-mnn` — WRONG
 - **current:** One of a cycle of two-color guild creatures from the Ravnica block, one for each guild.
 - **issue:** Says 'two-color guild creatures' but the cycle includes non-creatures and mono-color cards
 - **example:** Voidslime is 'Instant — Counter target spell, activated ability, or triggered ability'; Anthem of Rakdos is an Enchantment; Phytohydra is mono-white
 - **suggested fix:** One of a cycle of Ravnica block cards of various types, one associated with each guild.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK (example partially wrong)
+  - Noncreatures in cycle confirmed (Anthem of Rakdos enchantment). Audit example 'Phytohydra is mono-white' is false — Phytohydra is {2}{G}{W}{W}. Suggested fix (drop 'creatures' / allow various types) is still directionally fine.
 
 ### `cycle-block-rtr-off-color` — WRONG
 - **current:** One of a cycle of Ravnica cards with a mana ability in a color outside their guild's pair.
 - **issue:** not a "mana ability" and not "outside their guild's pair"; it's an activated ability costing the guild's OTHER color
 - **example:** Frilled Oculus (mono-blue Simic): "{1}{G}: This creature gets +2/+2" — green is inside the Simic pair, and this produces no mana
 - **suggested fix:** A monocolored Ravnica guild card whose activated ability costs mana of its guild's other color.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK
+  - Confirmed: Frilled Oculus mono-U with {1}{G} activated ability — not a mana ability; other color is in-guild. Suggested fix is good.
 
 ### `cycle-fdn-draft-signpost` — WRONG
 - **current:** A gold card from Foundations designed to point drafters toward its two-color archetype.
 - **issue:** not all are gold cards; several signposts are mono-colored
 - **example:** Good-Fortune Unicorn is a mono-white Unicorn ({2}{W}), not a gold card
 - **suggested fix:** An uncommon Foundations card built to point drafters toward its two-color archetype.
+- **second-pass (separate session, Scryfall-checked):** DO NOT APPLY — audit flag itself is wrong; keep current
+  - Separate session: all 10 `otag:cycle-fdn-draft-signpost` cards are gold uncommons (Good-Fortune Unicorn is {1}{G}{W}, not mono-white {2}{W}). Original 'gold card…' is correct. Suggested 'uncommon…' is true but not a needed fix; issue/example are factually wrong.
 
 ### `cycle-mh3-c-draft-signpost` — WRONG
 - **current:** One of a cycle of common creatures that signal a two-color draft archetype.
 - **issue:** Not all creatures nor all two-color; cycle includes an Equipment and colorless Eldrazi
 - **example:** Cranial Ram is 'Artifact — Equipment' (Living weapon), not a creature; Snapping Voidcraw / Writhing Chrysalis are colorless devoid Eldrazi
 - **suggested fix:** One of a cycle of common cards from Modern Horizons 3 that signals a draft archetype.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK
+  - Confirmed: Cranial Ram is Artifact — Equipment (Living weapon), not only creatures. Suggested fix is good.
 
 ### `cycle-mh3-r-m-two-color` — WRONG
 - **current:** One of Modern Horizons 3's rare or mythic two-color creatures.
 - **issue:** Overspecified as 'creatures'; cycle includes noncreature instants (one is colorless devoid, not two-color)
 - **example:** Abstruse Appropriation is an 'Instant' with Devoid (colorless); Invert Polarity is also an Instant, not a creature
 - **suggested fix:** One of Modern Horizons 3's rare or mythic two-color cards.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK with nit
+  - Right to drop 'creatures' (Invert Polarity, Abstruse Appropriation are instants). Nit: suggested still says 'two-color' but Abstruse Appropriation has Devoid (colorless). Better tweak if applying: rare/mythic MH3 cards that use two colors of mana in their cost.
 
 ### `cycle-mid-r-flashback` — WRONG
 - **current:** A rare sorcery you can cast once from your graveyard for its flashback cost, then exile.
 - **issue:** Says 'sorcery' but the cycle includes instants
 - **example:** Siphon Insight is type Instant with 'Flashback {1}{U}{B}'; Rite of Harmony is also an Instant with flashback
 - **suggested fix:** A rare instant or sorcery you can cast once from your graveyard for its flashback cost, then exile.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK
+  - Confirmed: cycle includes instants (Rite of Harmony, Galvanic Iteration). Suggested fix is good.
 
 ### `cycle-war-hybrid-planeswalker` — WRONG
 - **current:** One of War of the Spark's hybrid-mana planeswalkers, castable with either of two colors.
 - **issue:** Not hybrid mana; these require both colors, not 'either'
 - **example:** Kiora, Behemoth Beckoner costs {2}{G}{U} (both green and blue required, no hybrid symbols)
 - **suggested fix:** One of War of the Spark's two-color planeswalkers, requiring mana of both its colors to cast.
+- **second-pass (separate session, Scryfall-checked):** DO NOT APPLY — audit flag itself is wrong; keep current
+  - Separate session: Kiora, Behemoth Beckoner is {2}{G/U} hybrid (not {2}{G}{U}). Entire `otag:cycle-war-hybrid-planeswalker` cycle uses hybrid mana (Ashiok {1}{U/B}{U/B}, Dovin {2}{W/U}, etc.). Original is correct; suggested 'requires both colors' is false for hybrid.
 
 ### `gives-wither` — WRONG
 - **current:** Grants wither to a creature, so its combat damage lands as -1/-1 counters instead.
 - **issue:** says 'combat damage' but wither affects all damage the creature deals to creatures, not just combat, and only damage to creatures becomes counters
 - **example:** Fists of the Demigod: 'it gets +1/+1 and has wither. (It deals damage to creatures in the form of -1/-1 counters.)' — no 'combat' restriction; Fang Skulkin grants it to enable ping/fight damage too
 - **suggested fix:** Grants wither, so the creature's damage to other creatures is dealt as -1/-1 counters instead of normal damage.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK
+  - Confirmed: Fists of the Demigod reminder text — wither is all damage to creatures, not combat-only. Suggested fix is good.
 
 ### `synergy-protection` — WRONG
 - **current:** Rewards you for having creatures with the protection keyword.
 - **issue:** Most tagged cards grant or copy the protection keyword rather than reward you for already having protection creatures
 - **example:** Cairn Wanderer: 'As long as a creature card with protection is in a graveyard, this creature has protection.' (also Death-Mask Duplicant, Eater of Virtue, Priest of Possibility copy protection among a keyword list)
 - **suggested fix:** Cares about the protection keyword, often granting protection or copying it from other creatures.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK
+  - Confirmed: Cairn Wanderer copies protection from graveyard; not mainly 'reward for having protection'. Suggested fix is good.
 
 ### `cycle-unf-single-sticker` — WRONG
+- **current:** A creature that gives you ten tickets on entering and lets you put a sticker on a nonland permanent you own.
+- **issue:** says 'ten tickets' but the card gives one ticket ({TK})
+- **example:** Aerialephant: 'When Aerialephant enters, you get {TK}, then you may put a sticker on a nonland permanent you own.'
+- **suggested fix:** A creature that gives you a ticket when it enters and lets you put a sticker on a nonland permanent you own.
+- **second-pass (separate session, Scryfall-checked):** SUGGESTED FIX OK
+  - Confirmed: Aerialephant gives {TK} (one ticket), not ten. Suggested fix is good.
+
 - **current:** A creature that gives you ten tickets on entering and lets you put a sticker on a nonland permanent you own.
 - **issue:** says 'ten tickets' but the card gives one ticket ({TK})
 - **example:** Aerialephant: 'When Aerialephant enters, you get {TK}, then you may put a sticker on a nonland permanent you own.'
