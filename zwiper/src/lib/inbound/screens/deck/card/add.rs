@@ -5,7 +5,7 @@ use super::components::{
 use crate::{
     inbound::{
         components::{
-            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            auth::ensure_session::EnsureFresh,
             chip::Chip,
             hint_dialog::{
                 HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint,
@@ -146,7 +146,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Swipe vocabulary hint: auto-opens on this user's first visit, the
     // grayed "?" in the util bar reopens it on demand.
     let swipe_hint_open = use_one_time_hint(HINT_ADD_DECK_CARDS);
-    let show_rules = use_signal(|| false);
+    let show_details = use_signal(|| false);
     let mut printing_open = use_signal(|| false);
 
     let mut deck_cards_ids = use_signal(HashSet::<Uuid>::new);
@@ -861,7 +861,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         };
 
         // Peek session to avoid subscribing this effect to session changes.
-        // The interval-based upkeep in Bouncer handles session refresh.
+        // The interval-based upkeep loop (spawn_upkeeper) handles session refresh.
         let session_signal = session;
         let Some(session) = session.peek().clone() else {
             toast.error("Session expired".to_string(), ToastOptions::default());
@@ -1047,7 +1047,6 @@ pub fn Add(deck_id: Uuid) -> Element {
     };
 
     rsx! {
-        Bouncer {
             div { class: "screen",
                 ScreenHeader { title: "Add Deck Cards", hint: swipe_hint_open }
 
@@ -1233,7 +1232,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             if let Some(card) = current_card() {
                                 CardInfoDisplay { card: card.clone() }
                                 CardDetailsDialog {
-                                    open: show_rules,
+                                    open: show_details,
                                     card,
                                     on_printings: move |_| printing_open.set(true),
                                 }
@@ -1319,7 +1318,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                             if let Some(card) = mb_current_card() {
                                 CardInfoDisplay { card: card.clone() }
-                                CardDetailsDialog { open: show_rules, card }
+                                CardDetailsDialog { open: show_details, card }
                             }
                         } else {
                             CardSkeleton {}
@@ -1450,7 +1449,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     };
                     rsx! {
                         if has_card {
-                            RulesButton { open: show_rules }
+                            RulesButton { open: show_details }
                         }
                     }
                 }
@@ -1507,6 +1506,5 @@ pub fn Add(deck_id: Uuid) -> Element {
                 on_clear: move |_| clear_filters(),
             }
             }
-        }
     }
 }

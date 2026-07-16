@@ -11,10 +11,8 @@ use super::components::{
 use crate::{
     inbound::{
         components::{
-            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-            catalog_cache::CatalogCache,
-            hint_dialog::use_one_time_hint,
-            screen_header::ScreenHeader,
+            auth::ensure_session::EnsureFresh, catalog_cache::CatalogCache,
+            hint_dialog::use_one_time_hint, screen_header::ScreenHeader,
         },
         router::Router,
     },
@@ -524,7 +522,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     };
 
     rsx! {
-        Bouncer {
             div { class: "screen",
                 ScreenHeader { title: "Edit Deck", hint: edit_hint }
 
@@ -716,6 +713,5 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             }
 
             DeckFieldsHint { open: edit_hint }
-        }
     }
 }

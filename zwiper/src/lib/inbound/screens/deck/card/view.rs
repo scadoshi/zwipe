@@ -7,7 +7,7 @@ use super::components::{
 use crate::{
     inbound::{
         components::{
-            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            auth::ensure_session::EnsureFresh,
             chip::Chip,
             hint_dialog::{
                 HintBullet, HintBullets, HintDialog, HintKey, HintLine, open_and_record_hint,
@@ -695,7 +695,6 @@ pub fn View(deck_id: Uuid) -> Element {
     };
 
     rsx! {
-        Bouncer {
             div { class: "screen",
                 ScreenHeader { title: "Deck Cards", hint: deck_cards_hint_open }
 
@@ -1199,6 +1198,5 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
             }
             }
-        }
     }
 }

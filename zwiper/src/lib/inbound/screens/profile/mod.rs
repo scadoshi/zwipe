@@ -16,7 +16,7 @@ pub mod preferences;
 use crate::{
     inbound::{
         components::{
-            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            auth::ensure_session::EnsureFresh,
             bottom_sheet::BottomSheet,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
             logout_dialog::LogoutDialog,
@@ -140,7 +140,6 @@ pub fn Profile() -> Element {
     };
 
     rsx! {
-        Bouncer {
             div { class: "screen",
                 ScreenHeader { title: "Profile", hint: profile_hint_open }
 
@@ -344,6 +343,5 @@ pub fn Profile() -> Element {
                 ChangeEmailSheet { open: change_email_open }
                 ChangePasswordSheet { open: change_password_open }
             }
-        }
     }
 }

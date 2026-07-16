@@ -566,7 +566,7 @@ pub(crate) fn DeckFields(
                     div {
                         class: "chip-xs chip-primary",
                         onclick: move |_| show_commander_swipe.set(true),
-                        "Zwipe"
+                        "Swipe"
                     }
                 }
 
@@ -654,7 +654,7 @@ pub(crate) fn DeckFields(
                     div {
                         class: "chip-xs chip-primary",
                         onclick: move |_| show_partner_swipe.set(true),
-                        "Zwipe"
+                        "Swipe"
                     }
                 }
 
@@ -733,7 +733,7 @@ pub(crate) fn DeckFields(
                     div {
                         class: "chip-xs chip-primary",
                         onclick: move |_| show_background_swipe.set(true),
-                        "Zwipe"
+                        "Swipe"
                     }
                 }
 
@@ -812,7 +812,7 @@ pub(crate) fn DeckFields(
                     div {
                         class: "chip-xs chip-primary",
                         onclick: move |_| show_signature_spell_swipe.set(true),
-                        "Zwipe"
+                        "Swipe"
                     }
                 }
 
@@ -1148,7 +1148,7 @@ pub(crate) fn DeckFieldsHint(open: Signal<bool>) -> Element {
                 }
                 HintBullet {
                     "Tap "
-                    HintColored { color: "--accent-primary", "Zwipe" }
+                    HintColored { color: "--accent-primary", "Swipe" }
                     " on a field to swipe-pick."
                 }
             }

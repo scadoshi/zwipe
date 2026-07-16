@@ -1,18 +1,17 @@
 //! Oracle tags filter component.
 //!
 //! Oracle tags are Scryfall's community-maintained functional card tags. The
-//! full catalog (~4,500 tags) is fetched from `GET /api/card/oracle-tags`; this
-//! picker shows a curated default set up front (the functional gameplay tags,
-//! only those the backend still serves) and exposes the rest through search.
-//! Selections write slugs into the `oracle_tags_*` filter criteria, mirroring
-//! the mechanical-category filter's include/any-all/exclude structure.
+//! full catalog (~4,500 tags) is fetched from `GET /api/card/oracle-tags`; with
+//! that many tags there's no useful default set, so this picker is search-only:
+//! type to find tags, click to add. Selections write slugs into the
+//! `oracle_tags_*` filter criteria, mirroring the include/any-all/exclude
+//! structure of the other multi-select filters.
 
 use super::match_mode::MatchMode;
 use crate::{inbound::components::catalog_cache::CatalogCache, outbound::client::ZwipeClient};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::{
-    oracle_tag::{CURATED_ORACLE_TAGS, OracleTag},
-    search_card::card_filter::builder::CardQueryBuilder,
+    oracle_tag::OracleTag, search_card::card_filter::builder::CardQueryBuilder,
 };
 
 fn read_selected(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
@@ -57,18 +56,8 @@ fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<String>) {
     }
 }
 
-/// Human label for a slug from the fetched catalog, falling back to the slug
-/// itself (e.g. for a selected tag the backend no longer serves).
-fn label_for<'a>(catalog: &'a [OracleTag], slug: &'a str) -> &'a str {
-    catalog
-        .iter()
-        .find(|t| t.slug == slug)
-        .map(|t| t.label.as_str())
-        .unwrap_or(slug)
-}
-
-/// Oracle tag multi-select: curated default grid + full-catalog search, with an
-/// any/all match toggle and a separate exclude section.
+/// Oracle tag multi-select: search-only chips show raw slugs (same as the deck
+/// strategy picker), with an any/all match toggle and a separate exclude section.
 #[component]
 pub(crate) fn OracleTags() -> Element {
     let mut filter_builder: Signal<CardQueryBuilder> = use_context();
@@ -106,19 +95,6 @@ pub(crate) fn OracleTags() -> Element {
     let cell_read = cell.read();
     let tags: &[OracleTag] = cell_read.loaded().map(Vec::as_slice).unwrap_or(&[]);
 
-    // The default grid: curated slugs the backend still serves, plus any selected
-    // slug not in the curated set (so an active selection is always visible).
-    let mut grid_slugs: Vec<String> = CURATED_ORACLE_TAGS
-        .iter()
-        .filter(|s| tags.iter().any(|t| t.slug == **s))
-        .map(|s| (*s).to_string())
-        .collect();
-    for s in &selected {
-        if !grid_slugs.contains(s) {
-            grid_slugs.push(s.clone());
-        }
-    }
-
     rsx! {
         div { class: "flex-col gap-half",
             // ── includes ──────────────────────────────────────────
@@ -146,25 +122,21 @@ pub(crate) fn OracleTags() -> Element {
                 }
             }
 
-            div { class: "flex flex-wrap gap-1 flex-center",
-                for slug in grid_slugs.iter().cloned() {
-                    {
-                        let is_selected = selected.contains(&slug);
-                        let display = label_for(tags, &slug).to_string();
-                        rsx! {
-                            div {
-                                class: if is_selected { "chip selected" } else { "chip" },
+            if !selected.is_empty() {
+                div { class: "flex flex-wrap gap-1 mb-1",
+                    for slug in selected.iter().cloned() {
+                        div { class: "chip selected flex items-center gap-05",
+                            "{slug}"
+                            button { class: "chip-remove",
                                 onclick: move |_| {
                                     let m = mode();
-                                    let mut current = read_selected(&filter_builder(), m);
-                                    if current.contains(&slug) {
-                                        current.retain(|s| s != &slug);
-                                    } else {
-                                        current.push(slug.clone());
-                                    }
-                                    write_selected(&mut filter_builder.write(), m, current);
+                                    let new_selected: Vec<String> = read_selected(&filter_builder(), m)
+                                        .into_iter()
+                                        .filter(|s| *s != slug)
+                                        .collect();
+                                    write_selected(&mut filter_builder.write(), m, new_selected);
                                 },
-                                { display }
+                                "\u{00d7}"
                             }
                         }
                     }
@@ -181,7 +153,6 @@ pub(crate) fn OracleTags() -> Element {
                             (t.label.to_lowercase().contains(&query)
                                 || t.slug.contains(&query))
                                 && !selected.contains(&t.slug)
-                                && !grid_slugs.contains(&t.slug)
                         })
                         .take(8)
                         .cloned()
@@ -198,7 +169,7 @@ pub(crate) fn OracleTags() -> Element {
                                             current.push(tag.slug.clone());
                                             write_selected(&mut filter_builder.write(), m, current);
                                         },
-                                        "{tag.label}"
+                                        "{tag.slug}"
                                     }
                                 }
                             }
@@ -238,22 +209,17 @@ pub(crate) fn OracleTags() -> Element {
             if !excluded.is_empty() {
                 div { class: "flex flex-wrap gap-1 mb-1",
                     for slug in excluded.iter().cloned() {
-                        {
-                            let display = label_for(tags, &slug).to_string();
-                            rsx! {
-                                div { class: "chip selected flex items-center gap-05",
-                                    { display }
-                                    button { class: "chip-remove",
-                                        onclick: move |_| {
-                                            let new_excluded: Vec<String> = read_excluded(&filter_builder())
-                                                .into_iter()
-                                                .filter(|s| *s != slug)
-                                                .collect();
-                                            write_excluded(&mut filter_builder.write(), new_excluded);
-                                        },
-                                        "\u{00d7}"
-                                    }
-                                }
+                        div { class: "chip selected flex items-center gap-05",
+                            "{slug}"
+                            button { class: "chip-remove",
+                                onclick: move |_| {
+                                    let new_excluded: Vec<String> = read_excluded(&filter_builder())
+                                        .into_iter()
+                                        .filter(|s| *s != slug)
+                                        .collect();
+                                    write_excluded(&mut filter_builder.write(), new_excluded);
+                                },
+                                "\u{00d7}"
                             }
                         }
                     }
@@ -285,7 +251,7 @@ pub(crate) fn OracleTags() -> Element {
                                             current.push(tag.slug.clone());
                                             write_excluded(&mut filter_builder.write(), current);
                                         },
-                                        "{tag.label}"
+                                        "{tag.slug}"
                                     }
                                 }
                             }

@@ -3,18 +3,21 @@
 //! In-app, read-only reference of the full ~4,500-tag oracle-tag catalog with our
 //! authored descriptions. **Letter-first browse**: a horizontally scrolling A–Z
 //! rail where only the selected letter's tags mount, with optional search over
-//! slug + label + description. Public (no `Bouncer`, like the changelog), reached
-//! from the oracle-tag picker and its hint.
+//! slug + label + description. Reached from the oracle-tag picker and its hint;
+//! authed like every app screen (behind the router `AuthGate`).
 //!
 //! The catalog is read from the shared app-wide [`CatalogCache`] (prefetched at
 //! startup, 1-day TTL, stale-while-revalidate), the same copy the oracle-tag
 //! picker and card filter read — one fetch of the ~4,500-row list per session.
 
 use crate::{
-    inbound::components::{
-        catalog_cache::{CatalogCache, CatalogCell},
-        hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, use_one_time_hint},
-        screen_header::ScreenHeader,
+    inbound::{
+        components::{
+            catalog_cache::{CatalogCache, CatalogCell},
+            hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, use_one_time_hint},
+            screen_header::ScreenHeader,
+        },
+        router::Router,
     },
     outbound::client::ZwipeClient,
 };
@@ -158,19 +161,29 @@ pub fn OracleTagDictionary() -> Element {
                                     }
                                 } else {
                                     for t in rows {
-                                        div { key: "{t.slug}", class: "dict-row",
-                                            div { class: "dict-slug", "{t.slug}" }
-                                            div { class: "dict-desc",
-                                                if let Some(desc) = t.description.clone() {
-                                                    "{desc}"
-                                                } else {
-                                                    span { class: "dict-desc-missing", "No description yet" }
-                                                }
-                                            }
-                                            if !t.parent_slugs.is_empty() {
-                                                div { class: "dict-parents",
-                                                    for parent in t.parent_slugs.iter() {
-                                                        span { key: "{parent}", class: "dict-parent", "{parent}" }
+                                        {
+                                            let slug = t.slug.clone();
+                                            rsx! {
+                                                div {
+                                                    key: "{t.slug}",
+                                                    class: "dict-row dict-row-tappable",
+                                                    onclick: move |_| {
+                                                        navigator.push(Router::OracleTagExamples { slug: slug.clone() });
+                                                    },
+                                                    div { class: "dict-slug", "{t.slug}" }
+                                                    div { class: "dict-desc",
+                                                        if let Some(desc) = t.description.clone() {
+                                                            "{desc}"
+                                                        } else {
+                                                            span { class: "dict-desc-missing", "No description yet" }
+                                                        }
+                                                    }
+                                                    if !t.parent_slugs.is_empty() {
+                                                        div { class: "dict-parents",
+                                                            for parent in t.parent_slugs.iter() {
+                                                                span { key: "{parent}", class: "dict-parent", "{parent}" }
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }

@@ -7,7 +7,7 @@ use crate::{
                 AlertDialogActions, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
                 AlertDialogRoot, AlertDialogTitle,
             },
-            auth::{bouncer::Bouncer, session_upkeep::FlavorCard},
+            auth::session_upkeep::FlavorCard,
             hint_dialog::{
                 HintBullet, HintBullets, HintColored, HintDialog, HintKey, use_one_time_hint,
             },
@@ -183,7 +183,6 @@ pub fn Home() -> Element {
     };
 
     rsx! {
-        Bouncer {
             div { class: "screen",
                 ScreenHeader { title: "Home" }
                 div { class: "screen-content centered",
@@ -322,6 +321,5 @@ pub fn Home() -> Element {
                 }
             }
             }
-        }
     }
 }

@@ -14,5 +14,7 @@ pub mod home;
 pub mod legal;
 /// Oracle-tag dictionary (read-only, searchable reference of all oracle tags).
 pub mod oracle_tag_dictionary;
+/// Oracle-tag example cards (deck-free swipe browse of a tag's cards).
+pub mod oracle_tag_examples;
 /// User profile management screens (change email, password, username).
 pub mod profile;
