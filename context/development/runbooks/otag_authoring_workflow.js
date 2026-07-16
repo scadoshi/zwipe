@@ -45,7 +45,7 @@ for (let i = 0; i < SLUGS.length; i += CHUNK) chunks.push(SLUGS.slice(i, i + CHU
 function groundingCmd(slugs) {
   const arr = slugs.map(s => `'${s}'`).join(',')
   return `export DATABASE_URL="$(grep '^DATABASE_URL=' ${ENV} | cut -d= -f2-)"
-psql "$DATABASE_URL" -t -A -c "SELECT json_agg(row_to_json(r)) FROM (SELECT t.slug, cnt.n AS pop, COALESCE(NULLIF(ot.description,''),'') AS scryfall, x.name, x.type_line AS type, LEFT(x.oracle_text,300) AS text FROM (SELECT unnest(ARRAY[${arr}]::text[]) AS slug) t JOIN oracle_tags ot ON ot.slug=t.slug JOIN (SELECT oracle_tag, COUNT(DISTINCT oracle_id) n FROM card_oracle_tags GROUP BY oracle_tag) cnt ON cnt.oracle_tag=t.slug JOIN LATERAL (SELECT DISTINCT ON (sd.oracle_id) sd.name, sd.type_line, sd.oracle_text FROM card_oracle_tags c JOIN scryfall_data sd ON sd.oracle_id=c.oracle_id WHERE c.oracle_tag=t.slug ORDER BY sd.oracle_id LIMIT 6) x ON true) r;"`
+psql "$DATABASE_URL" -t -A -c "SELECT json_agg(row_to_json(r)) FROM (SELECT t.slug, cnt.n AS pop, COALESCE(NULLIF(ot.description,''),'') AS scryfall, x.name, x.mana_cost AS cost, x.colors, x.rarity, x.cmc AS mv, x.type_line AS type, LEFT(x.oracle_text,300) AS text FROM (SELECT unnest(ARRAY[${arr}]::text[]) AS slug) t JOIN oracle_tags ot ON ot.slug=t.slug JOIN (SELECT oracle_tag, COUNT(DISTINCT oracle_id) n FROM card_oracle_tags GROUP BY oracle_tag) cnt ON cnt.oracle_tag=t.slug JOIN LATERAL (SELECT DISTINCT ON (sd.oracle_id) sd.name, sd.mana_cost, sd.colors, sd.rarity, sd.cmc, sd.type_line, sd.oracle_text FROM card_oracle_tags c JOIN scryfall_data sd ON sd.oracle_id=c.oracle_id WHERE c.oracle_tag=t.slug ORDER BY sd.oracle_id LIMIT 12) x ON true) r;"`
 }
 
 const STYLE = `You are writing user-facing descriptions of Magic: The Gathering "oracle tags" (Scryfall's community functional tags). Each appears in a mobile app next to a card and in a tag dictionary.
@@ -78,13 +78,13 @@ function draftPrompt(chunk) {
 Write a description for each of these ${chunk.length} oracle-tag slugs:
 ${chunk.join(', ')}
 
-STEP 1 - Run this bash command; read the JSON (array of {slug, pop, scryfall, name, type, text}; "text" is real card oracle text, up to 6 cards per tag; "scryfall" is Scryfall's own note, do NOT copy it):
+STEP 1 - Run this bash command; read the JSON (array of {slug, pop, scryfall, name, cost, colors, rarity, mv, type, text}; up to 12 cards per tag; "cost" is mana cost e.g. {2}{G/U}, "colors" is an array ([] = colorless), "mv" is mana value; "scryfall" is Scryfall's own note, do NOT copy it):
 \`\`\`
 ${groundingCmd(chunk)}
 \`\`\`
 Retry once if it fails.
 
-STEP 2 - For each slug, read the example cards' oracle text and write one accurate description in our voice per the STYLE RULES.
+STEP 2 - For each slug, read the card data and write one accurate description in our voice per the STYLE RULES. Never state a card's cost, color, hybrid-ness, rarity, or mana value unless the pulled data shows it (a {X/Y} cost is HYBRID). Don't claim a whole cycle is uniform unless every pulled card agrees and "pop" isn't much larger than what you see.
 
 Return the structured object: one item per slug (slug + description), no extras.`
 }
@@ -95,12 +95,12 @@ function verifyPrompt(chunk, draftItems) {
 You are the ADVERSARIAL VERIFIER (a meticulous MTG rules expert). A drafter wrote these:
 ${JSON.stringify(draftItems, null, 2)}
 
-STEP 1 - Pull real cards with rules text. Run this and read the JSON ({slug, pop, scryfall, name, type, text}):
+STEP 1 - Pull real cards with rules text. Run this and read the JSON ({slug, pop, name, cost, colors, rarity, mv, type, text}; "cost" is mana cost, "colors" is an array, "mv" is mana value):
 \`\`\`
 ${groundingCmd(chunk)}
 \`\`\`
 
-STEP 2 - For EACH tag, read the example oracle text and judge whether the drafted description is accurate and clear. Fix it if it is wrong, misleading, overspecified/underspecified (e.g. says "opponent" when it's "any player", "creatures" when it's "permanents", "your creatures" when it's "creatures"), copies Scryfall, or breaks a STYLE RULE. Watch for slug-name traps.
+STEP 2 - For EACH tag, read the card data and judge whether the drafted description is accurate and clear. Fix it if it is wrong, misleading, overspecified/underspecified (e.g. says "opponent" when it's "any player", "creatures" when it's "permanents", "your creatures" when it's "creatures"), copies Scryfall, or breaks a STYLE RULE. Watch for slug-name traps. Never assert a card's cost, color, hybrid-ness, rarity, or mana value unless the data shows it (a {X/Y} cost is HYBRID); don't over-generalize a cycle from a partial sample.
 
 Return the structured object: one item per tag with:
 - slug
