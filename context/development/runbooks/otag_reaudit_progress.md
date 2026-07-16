@@ -9,16 +9,16 @@ progress in [`otag_audit_progress.md`](otag_audit_progress.md).
 
 > **This is the ACTIVE audit task.** Ignore the paused forward sweep in
 > [`otag_audit_progress.md`](otag_audit_progress.md) (do not resume that at 2201). Continue
-> the re-audit here from **rank ~501+**.
+> the re-audit here from **rank ~1001+**.
 
-> **Findings only, human-in-the-loop. Do NOT apply to the const yet.** Nothing here is
-> applied to `ORACLE_TAG_DESCRIPTIONS`. `wrong`/`suspect` are the *verified-surviving* flags.
-> The plan is to **finish the full 0-all re-audit first, THEN review all corrections and apply
-> them to the const in one deliberate pass** (see [Applying corrections](#applying-corrections)).
-> Ships [`otag_audit_workflow.js`](otag_audit_workflow.js).
+> **APPLIED: ranks 1-1000 (all 181 wrong+suspect fixes) were applied to
+> `ORACLE_TAG_DESCRIPTIONS` on 2026-07-16.** The batches below are kept as the record of what
+> changed. **Do not re-apply them.** New batches (rank ~1001+) remain findings-only until applied.
+> `wrong`/`suspect` are the *verified-surviving* flags. Ships
+> [`otag_audit_workflow.js`](otag_audit_workflow.js).
 
 ## Coverage / resume
-- **Re-audited: 500 / 4,357** (ranks 1-500 by card population). **Next: rank ~501+.**
+- **Re-audited: 1000 / 4,357** (ranks 1-1000 by card population). **Next: rank ~1001+.**
 - **Resume (do this to continue):** pull the top-N `(slug, description)` pairs by card
   population from the DB, **excluding** every slug already in
   [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt) (this is the re-audit's own tracker,
@@ -30,7 +30,11 @@ progress in [`otag_audit_progress.md`](otag_audit_progress.md).
   re-queues whatever didn't finish, no gaps or dupes.
 
 ## Findings so far
-Across 500 re-audited: **416 clean, 81 suspect, 3 wrong**; the Verify stage overturned 6 auditor flags.
+Cumulative across 1000 re-audited: **815 clean, 171 suspect, 10 wrong**; Verify overturned 16.
+Per-batch detail below.
+
+## Batch: ranks 1-500
+500 re-audited: **416 clean, 81 suspect, 3 wrong**; the Verify stage overturned 6 auditor flags.
 
 **What the old pass missed.** The improved auditor flagged a high rate of
 **over/under-specification** on these terse, high-visibility head tags: singular
@@ -160,15 +164,204 @@ permanents" is a fine superset).
 
 ---
 
+## Batch: ranks 501-700
+
+200 re-audited: **156 clean, 39 suspect, 5 wrong**; Verify overturned 4. Same pattern as 1-500: over/under-specification on terse head tags ("creatures you control" where cards count any permanent, "opponent's" where it's any player, singular "target" where effects are mass, wrong set/color/rarity assertions).
+
+> **Findings only, not applied.** `ORACLE_TAG_DESCRIPTIONS` unchanged.
+
+### Wrong (5) — fix recommended
+
+#### `warlord`
+- **current:** 
+- **issue:** Overspecified to 'creatures you control'; most cards count lands, permanents, or creatures across the whole battlefield
+- **example:** Ashaya, Soul of the Wild: "Ashaya's power and toughness are each equal to the number of lands you control." Also Kithkin Rabble: "power and toughness are each equal to the number of white permanents you control."
+- **suggested fix:** A creature whose power, and often toughness, equals the number of permanents of a certain kind, most often creatures you control.
+- **verify note:** Ashaya counts 'lands you control', Kithkin Rabble 'white permanents', Yavimaya Kavu 'red creatures on the battlefield' — not just creatures you control
+
+#### `creature-ability-noncreature`
+- **current:** 
+- **issue:** Most tagged cards never become creatures; the tag is about noncreature permanents bearing keywords usually found on creatures, not 'abilities that matter once it becomes a creature'
+- **example:** Darksteel Relic {0} Artifact: "Indestructible" (never becomes a creature); Weapon Rack: "enters with three +1/+1 counters"; Tanglepool Bridge: Indestructible artifact land
+- **suggested fix:** A noncreature permanent that carries a keyword or ability usually found on creatures, like indestructible, flying, or +1/+1 counters.
+- **verify note:** Darksteel Relic (Indestructible), Tanglepool Bridge (Indestructible land), and Weapon Rack (+1/+1 counters) never become creatures; the ability matters while they stay noncreatures
+
+#### `type-errata-viashino`
+- **current:** 
+- **issue:** Wrong set attribution: the Viashino-to-Lizard errata predates Modern Horizons 3
+- **example:** Kylox, Visionary Inventor is "Legendary Creature — Lizard Artificer" and was printed in The Lost Caverns of Ixalan (Nov 2023), before MH3 (June 2024), showing the Lizard convention already applied
+- **suggested fix:** A Lizard creature that once carried the retired Viashino creature type, since folded into Lizard.
+- **verify note:** Kylox is 'Legendary Creature — Lizard Artificer' (LCI, Nov 2023), already Lizard before MH3 (June 2024); the Viashino type retired in 2023, so the MH3 attribution is wrong
+
+#### `remove-counters-other`
+- **current:** 
+- **issue:** Restricts to 'opponents' permanents' but most cards remove counters from ANY permanent (yours or theirs)
+- **example:** Heartless Act: "Remove up to three counters from target creature." Clockspinning: "Remove that counter from that permanent or card." Shivan Sand-Mage: "Remove two time counters from target permanent." None are opponent-only.
+- **suggested fix:** Removes counters from a permanent other than itself, or removes a player's counters.
+- **verify note:** Most target ANY permanent: Heartless Act 'Remove up to three counters from target creature', Shivan Sand-Mage 'Remove two time counters from target permanent', Clockspinning 'Remove that counter from that permanent'; not opponent-restricted
+
+#### `deal-with-the-devil`
+- **current:** 
+- **issue:** Asserts 'black' but pulled members include a white and a red enchantment
+- **example:** Nine Lives: {1}{W}{W}, colors ['W']. Experimental Frenzy: {3}{R}, colors ['R']. Both are non-black.
+- **suggested fix:** An enchantment, usually black, with a powerful effect and a serious, potentially game-losing drawback.
+- **verify note:** Nine Lives is colors ['W'] ({1}{W}{W}) and Experimental Frenzy is colors ['R'] ({3}{R}), so the blanket 'black' is inaccurate
+
+### Suspect (39) — minor imprecision, review before applying
+
+| slug | issue | suggested fix |
+| --- | --- | --- |
+| `tap-fuel-artifact` | 'to power an ability' misses that most carriers tap artifacts as an additional cost to CAST a spell (waterbend), and they tap creatures/lands too, not just artifacts | Lets you tap untapped artifacts you control, and often creatures or lands too, to help pay a cost. |
+| `free-discard-outlet` | 'no per-turn limit' is false for at least one carrier, and the discard is often restricted to a specific card type rather than 'a card' | Lets you discard a card as a cost, with no mana required, to fuel an ability. |
+| `gives-ward` | Grants ward to permanents broadly (artifacts, multicolored creatures, tribes), not just "a creature" | Grants ward to one or more of your permanents, usually creatures, so an opponent must pay a cost to target them or the spell is countered. |
+| `tapper-artifact` | Overspecifies "target" and "tap abilities"; most also tap creatures and lands, and some tap all or force enter-tapped | Taps down a target artifact, and often creatures and lands too, keeping it from untapping or acting. |
+| `synergy-basic` | Overspecified to 'controlling and scaling'; many cards search for, sacrifice, or spend basic lands rather than reward controlling them | Cares about basic lands, whether by controlling, searching for, sacrificing, or spending them. |
+| `impulse` | 'put one into your hand' is too narrow; some cards put multiple cards into hand | Lets you look at the top cards of your library and put one or more of them into your hand. |
+| `haven` | 'your own permanents to keep them safe' overspecifies; several exile any nonland permanent, including opponents' as removal | Exiles a nonland permanent and can later return it or let its owner replay it, whether protecting your own or removing an opponent's. |
+| `naturalize-with-set-mechanic` | Says 'destroys' but several members exile or sacrifice the artifact/enchantment instead | Destroys or otherwise removes an artifact or enchantment while also using a mechanic tied to its set. |
+| `power-doubler` | Many double power AND toughness, and one is perpetual not until end of turn | Doubles a creature's power, sometimes its toughness too, usually until end of turn. |
+| `auraify` | Phrasing implies transforming another object; really the card itself becomes an Aura, usually via bestow | Can become an Aura enchantment attached to another permanent, usually via bestow. |
+| `splits-on-death` | Overspecified: says 'two or more' but some make exactly one token | Creates one or more creature tokens when a creature dies. |
+| `reanimate-permanent` | "straight to the battlefield" excludes the cast/play-from-graveyard cards the tag also covers | Puts a permanent card from a graveyard onto the battlefield, or lets you cast permanents from there. |
+| `wish` | 'put it into your hand' overspecifies; several members let you play the card from outside the game instead of drawing it to hand | Lets you bring in a card you own from outside the game, putting it into your hand or letting you play it. |
+| `keyword-errata-flash` | 'Has flash' misses the members that don't literally have flash but grant it or are cast 'as though it had flash' | Has flash, is cast as though it had flash, or grants spells that ability, from before flash was an official keyword. |
+| `hate-target` | Overspecifies as 'your permanents' and only 'punishes'; several trigger on any creature being targeted by anyone, and some reward you rather than punish | Triggers a punishing or rewarding effect whenever it or a permanent becomes the target of a spell or ability. |
+| `unheroic` | Only describes the 'crime' subset; misses the large 'Repartee' subset that rewards casting spells targeting ANY creature (including your own), not an opponent | Rewards you for casting spells that target a creature, or for targeting an opponent, their permanents, or their graveyard. |
+| `hate-planeswalker` | 'specifically at planeswalkers' overstates it (many hit creatures/players too) and 'removal or restrictions' misses defensive protection-from and attack-reward effects | Answers, hinders, or defends against planeswalkers, or rewards attacking them. |
+| `mana-storage` | 'as counters or tokens' overspecifies; a whole subset instead keeps mana from emptying between phases | Lets you keep mana for later, whether as Treasure tokens, counters, or mana that doesn't empty between phases. |
+| `parasitic-aura` | Overspecifies to damage/life loss; some members instead force a sacrifice or destroy the enchanted permanent | A harmful Aura that penalizes the enchanted permanent's controller, usually by dealing them damage or making them lose life. |
+| `roll-d20` | 'different effect based on result' misses cards where the roll sets a QUANTITY, not a branching effect | Rolls a twenty sided die, with the result determining the outcome. |
+| `theft-artifact` | says 'opponent's artifact' but many target any artifact, not just an opponent's | Lets you take control of an artifact, sometimes only temporarily. |
+| `graveyard-seal` | 'shut down reanimation' narrows a broad graveyard-hate/denial tag to one use case | Shuts down graveyards, exiling cards, denying graveyard use, or stopping cards from reaching a graveyard at all. |
+| `staple-with-set-s-mechanic` | 'common' reads as the rarity but many carriers are uncommon/rare/mythic | A card that showcases one of its set's featured mechanics. |
+| `repeatable-mulch` | 'reveals' is imprecise; most carriers look privately or mill rather than reveal | Repeatedly digs cards off the top of your library, putting some into your hand and the rest into your graveyard. |
+| `counterspell-ability` | "a target" overspecifies; several members counter ALL abilities untargeted, and some are activated-only or also hit spells | Counters an activated or triggered ability on the stack. |
+| `cost-reducer-creature` | Overspecifies to 'creature spells'; several members reduce other spell types | Makes spells you cast, usually creature spells, cost less mana. |
+| `hate-enchantment` | underspecified: many cards tax or punish enchantments rather than destroy/counter/protect | Destroys, counters, taxes, or otherwise punishes enchantments. |
+| `gives-shroud` | 'another permanent' understates cases that grant shroud to many permanents of various types (creatures, lands, artifacts, enchantments) | Grants shroud to other permanents, so they can't be targeted by spells or abilities. |
+| `scry-like` | Says singular 'top card' but many tagged cards look at the top TWO or THREE cards | Lets you look at one or more cards on top of a library and choose whether they stay on top or go elsewhere, similar to scry. |
+| `typal-pirate` | Overspecified with 'you control'; several cards care about Pirate cards in graveyard, hand, or library, not just ones you control | Cares about Pirates, rewarding or interacting with Pirate cards you control or own. |
+| `copy-legendary` | 'token' and 'you get to keep it' miss the cards that turn existing creatures into copies | Makes a nonlegendary copy of a permanent, usually as a token but sometimes by turning creatures you control into copies, sidestepping the legend rule. |
+| `synergy-cycling` | 'or discarded' and 'triggers' overreach; several care only about cycling and some reward cycling cards statically | Cares about cycling and often discarding, usually triggering a bonus when you cycle or discard a card. |
+| `legendary-team-up` | not every member is a creature; the pairing motif also covers noncreature legends | A legendary card, usually a creature, that pairs two named characters on one card. |
+| `sliver-stackable` | 'benefits all Slivers' overstates scope; many members only affect Slivers you control | A Sliver whose ability benefits Slivers you control and stacks with each additional copy. |
+| `creature-type-name` | Overspecifies to "a creature"; some tagged cards aren't creatures at all | A card whose name is made up entirely of Magic creature types. |
+| `leaves-graveyard-trigger` | Overspecified to 'your' graveyard; a variant triggers off an opponent's graveyard | Triggers an effect whenever one or more cards leave a graveyard, usually your own. |
+| `vanilla-aura` | Not every tagged Aura is purely a P/T modifier; some carry extra abilities | An Aura whose main effect is changing the enchanted creature's power and toughness. |
+| `bushido` | Overspecified as +X/+X; the tag also includes block/blocked triggers that shift stats differently | Whenever this creature blocks or becomes blocked, its power and toughness change until end of turn, usually a Bushido +X/+X boost. |
+| `impulse-artifact` | Says "into your hand" but several members put the artifacts onto the battlefield | Digs through the top cards of your library for artifacts, putting them into your hand or onto the battlefield. |
+
+### Overturned by Verify (4) — flag rejected, keep current
+- `tuck-self` — auditor: "instead of another zone" is vague filler; the defining trait is simply that the card returns itself to its library (top or shuffled in) | verifier: All members (Sensei's Divining Top on top, Elixir of Immortality/Black Sun's Zenith shuffled in) put themselves back to library; 'instead of another zone' is filler but not inaccurate
+- `synergy-tapped` — auditor: "you control" overspecifies; some members care about tapped creatures generally, not just yours | verifier: ~10 of 12 (Lydia Frye, Oak Street Innkeeper, all web-slinging, etc.) specify 'tapped creatures you control'; Split Up is a minority exception
+- `untapper-artifact` — auditor: 'a target artifact' excludes cards that untap all your artifacts | verifier: Common case is a single target: Voltaic Key '{1}, {T}: Untap target artifact', Manifold Key 'Untap another target artifact'; Unwinding Clock's untap-all is a lone outlier among 48
+- `impact-effect` — auditor: 'a creature you control enters' is overspecified; the marquee card triggers on ANY creature entering | verifier: 11 of 12 read 'a creature/Zombie/Dragon you control enters' (Witty Roastmaster, Ayara, Corpse Knight, etc.); Pandemonium's any-creature trigger is a single outlier, so the 'you control' common case stands
+
+---
+
+## Batch: ranks 701-1000
+
+300 re-audited (2x150 shards): **247 clean, 51 suspect, 2 wrong**; Verify overturned 6. Deeper into the tail the tags get more niche and the descriptions hold up better (only 2 wrong), but the same over/under-specification pattern persists: "itself"/"your"/"this creature" where the tag also covers other permanents or any player, and missing a defining detail (free recast, sacrifice-as-extra-cost).
+
+> **Findings only, not applied.** `ORACLE_TAG_DESCRIPTIONS` unchanged.
+
+### Wrong (2) — fix recommended
+
+#### `keyword-soup`
+- **current:** 
+- **issue:** "its set's keyword abilities" is invented; it's a fixed evergreen keyword list, and cards often count/move/reference rather than gain them
+- **example:** Odric, Blood-Cursed: "create X Blood tokens, where X is the number of abilities from among flying, first strike, double strike, deathtouch, haste, hexproof, indestructible, lifelink, menace, reach, trample, and vigilance found among creatures you control"
+- **suggested fix:** References a long list of common keyword abilities like flying, first strike, deathtouch, and trample, often granting or counting them.
+- **verify note:** Odric counts and Kathril moves counters over a fixed evergreen list (flying/first strike/deathtouch/trample), not 'its set's keyword abilities'
+
+#### `harmonic`
+- **current:** 
+- **issue:** Says 'control both,' but most tagged cards care about artifacts and enchantments separately or via OR, not a joint condition
+- **example:** Starnheim Courser: 'Artifact and enchantment spells you cast cost {1} less to cast.' and Flutterfox: 'As long as you control an artifact or enchantment, this creature has flying.'
+- **suggested fix:** Cares about both artifacts and enchantments, often rewarding you for controlling or casting them.
+- **verify note:** Flutterfox 'artifact or enchantment', Nezumi Bladeblesser and Shinechaser treat them separately, not a joint both-condition
+
+### Suspect (51) — minor imprecision, review before applying
+
+| slug | issue | suggested fix |
+| --- | --- | --- |
+| `references-keyword` | The restriction 'without actually having that ability itself' is false for several cards that reference a keyword they also possess/grant | Names a specific keyword or mechanic in its rules text, for example to grant it or care about it. |
+| `pridemate` | Overspecified to 'itself'; many carriers put counters on other creatures, not just themselves | Puts a +1/+1 counter on a creature, often itself, whenever you gain life. |
+| `counter-preservation-self` | "you control" restriction isn't universal; modular and several others target any creature | When it dies, moves its own +1/+1 counters onto another creature. |
+| `modal-inverse-choices` | not all are spells; many are triggered/ETB abilities on permanents | A modal effect whose options are mirror opposites, like hitting fliers or hitting non-fliers. |
+| `tutor-land-any` | "with a restriction or cost" isn't universal; several fetch freely, and some search onto the battlefield vs hand | Searches your library for any land card, often putting it onto the battlefield. |
+| `ball-lightning` | underspecified: many are spells/abilities that MAKE such a token, not creatures themselves | A hasty, hard-hitting creature, or a token it creates, that gets sacrificed or exiled at end of turn. |
+| `unique-protection` | "Grants" implies conferring on others, but most cards HAVE the unusual protection themselves (and a couple grant it to your team) | Has or grants protection from something unusual, like a chosen player or die rolls, rather than from a color. |
+| `remove-from-stack` | Omits the tuck-to-library method: several cards put the spell on top/bottom of its owner's library, which is neither exile, bounce-to-hand, nor ending the turn | Removes a spell from the stack by exiling it, returning it to its owner's hand, or tucking it into their library, or by ending the turn. |
+| `restock-self` | "hand" is unsupported; every card returns itself to the LIBRARY (via shuffle or tucking), typically from the graveyard or the stack, not to hand | Puts itself back into your library so you can draw and cast it again instead of losing it. |
+| `combat-timing-restriction` | Overspecified: says 'a specific step of combat' but several cards only restrict to combat generally, not a named step | A spell you can cast only during combat, often only during a specific combat step. |
+| `mm-counter-cost` | Says the -1/-1 counter is always a cost or requirement, but many carriers place it as an enters-the-battlefield drawback, not a cost | Puts a -1/-1 counter on a creature you control, either as a cost or as an enters-the-battlefield drawback. |
+| `restock-creature` | Overspecified: says 'on top' but many taggers shuffle the creature into the library (or return it elsewhere) | Returns a creature card from your graveyard to your library, either on top or shuffled in. |
+| `pwdeck-sidekick` | Underspecified: not all get stronger or gain an ability; some instead feed loyalty to the matching planeswalker | Synergizes with a specific named planeswalker you control, either gaining a bonus itself or supporting that planeswalker. |
+| `painland` | Underspecified: about half the tagged lands cost life via a 'Pay N life' activation cost rather than dealing damage to you; description only mentions damage | A land that costs you life or deals damage to you when you tap it for mana. |
+| `variable-effect-same-ability` | Overspecified to 'nth time resolved'; several tagged cards vary by a game-state condition instead, not resolution count | An ability whose effect changes based on a condition, often how many times it has resolved this turn. |
+| `lobotomy` | "every copy" overstates; some cap the number | Exiles cards with a chosen name, usually every copy, from a player's hand, library, and graveyard. |
+| `cycle-ust-functional-variant` | Variants share the same cost (only text differs), so "different cost" is contradicted; collector-number claim is dubious | An Unstable card printed in multiple versions that share a name and mana cost but have different rules text. |
+| `ransom` | Not always "sacrifice a permanent"; several destroy or exile instead of sacrifice | Makes a player sacrifice, destroy, or exile a permanent unless they pay a cost. |
+| `potentially-free` | Most carriers reduce their cost toward zero (affinity, cost-less) rather than skipping the mana cost entirely; description only fits the alternative-cost minority | Can potentially cost nothing to cast through cost reduction or an alternative cost. |
+| `protects-land` | "your lands" overspecifies; some carriers protect lands any player controls | Shields lands, or all your permanents, from being destroyed or targeted. |
+| `young-pyromancer-ability` | Underspecified: many tagged cards trigger on any noncreature spell, not just instants/sorceries | Creates a creature token whenever you cast an instant, sorcery, or other noncreature spell. |
+| `whirlpool` | Frames it as self-only ('your hand', 'draws you'), but the signature and majority effect is symmetric (each player) | Shuffles hands and graveyards into libraries, then draws each player a fresh hand. |
+| `landhome` | "needing it to attack" is misleading: the attack condition requires the DEFENDING player to control the land type, not the creature's controller | A creature that can't attack unless the defending player controls a certain land type, and often must be sacrificed if you control none of that type. |
+| `hate-wide` | Overstates: many cards scale on ALL creatures on the battlefield (including yours), not just opponents', and several reward you rather than punish | Scales with the number of creatures on the battlefield, usually to punish go-wide boards. |
+| `theft-permanent` | Overspecified: many target any permanent (not just opponents') and several swap control or take it only temporarily | Takes or swaps control of a permanent, usually an opponent's. |
+| `5c-set-mechanic-commander` | Calls them five-color creatures, but many are mono-colored or colorless by card color (only their color identity is WUBRG) | A legendary creature with a five-color identity built as a commander to support a set's mechanics or themes. |
+| `typal-cleric` | Elaboration ('growing stronger or gaining abilities') fits only a couple cards; most tap Clerics as a resource or count them, which isn't captured | Cares about Clerics, counting them or tapping them as a resource to power its effects. |
+| `demilich-effect` | Omits the defining detail that the copy is cast WITHOUT paying its mana cost (a free recast), which undersells the whole payoff | Exiles a card from a graveyard and lets you cast a copy of it without paying its mana cost, usually just once. |
+| `alternate-loss-condition` | Says only 'you' lose, but the tag also covers making opponents lose and cards that remove/replace the normal 0-life loss | Changes the game's loss rules, adding a new way a player can lose or removing the normal loss from having no life. |
+| `alternate-cost-sacrifice` | Says sacrifice is paid 'instead of' mana, but several tagged cards make sacrifice an ADDITIONAL cost on top of full mana, or a cost reduction | Lets you sacrifice one or more permanents to help cast a spell, either instead of its mana cost or as an extra cost. |
+| `lure` | says 'this creature' but most members apply the effect to a chosen/enchanted/equipped creature, not the source itself | Forces all creatures able to block a given creature, whether itself or one it targets, to do so. |
+| `secretly-choose` | Overspecifies 'reveal simultaneously'; many cards make a lone hidden choice revealed later, not a synchronized reveal | Has players make a hidden choice or vote that they reveal later, sometimes all at once. |
+| `damage-increaser` | 'your damage sources' overspecifies; some are symmetric and boost any player's sources | Makes damage sources deal extra damage on top of what they'd normally deal. |
+| `hungry-demon` | 'unless you meet some condition' implies an out, but most are flat forced sacrifices each upkeep with no escape | Forces you to sacrifice a creature, usually at the beginning of each of your upkeeps. |
+| `three-letter-name` | Split/multi-part cards carry the tag on a three-letter face, but their full name is longer, so 'whose name is exactly three letters long' is technically false for them | A card with a face whose name is exactly three letters long. |
+| `graveyard-fuel-artifact` | Says 'your graveyard' but many cards target any graveyard | Spends or cares about artifact cards in a graveyard. |
+| `copy-equipment` | Over-narrows to token creation; several members copy by entering as or becoming a copy, not by creating a token | Copies a permanent, usually by creating a token copy of it. |
+| `synergy-face-down` | Underspecified: rewards face-down permanents entering AND turning them face up, not only creatures you put down face-down | Rewards you for having permanents enter face down or turning them face up, as with manifest and morph. |
+| `hate-typal-wall` | "your opponents' Walls" overspecifies: the single-target destroy cards hit ANY Wall, not just opponents' | Lets a creature attack past Walls, or destroys or disables Walls. |
+| `hate-island` | omits destruction, a prominent mode of the tag (lists only locking, damaging, bouncing) | Punishes or answers Islands and their controllers by destroying, locking, damaging, or bouncing them. |
+| `recycle` | Says returns 'to the battlefield' but several members return to hand instead | Lets you sacrifice a permanent to return a card from your graveyard to the battlefield or your hand. |
+| `sleeping-enchantment` | 'permanently' is wrong (one member reverts to enchantment) and 'trigger condition' misses members that flip via a paid cost | A dormant enchantment that becomes a creature when a condition is met or a cost is paid. |
+| `provoke-lite` | Cards say "this turn" not "this combat," and several force a creature to block a DIFFERENT creature, not necessarily this one | Forces a target creature to block this turn if able, without untapping it first. |
+| `synergy-first-strike` | Muddled; most cards grant or count first strike itself, not "grant abilities to creatures that already have first strike" | Rewards or grants first strike among your creatures. |
+| `cranial-plating` | 'Gets stronger' implies the card boosts ITSELF, but the namesake and several members GRANT the artifact-scaled bonus to another creature (gives vs gains) | Makes a creature stronger based on how many artifacts you control. |
+| `counts-as-a-type` | Claims the cards use visible 'deprecated wording', but the pulled cards show no such text; they simply carry an Oracle-granted creature type in their type line | An older creature that Oracle updates treat as having a creature type such as Wall or Sliver, letting it count for that type's effects. |
+| `sneaky-self-trigger` | 'untaps or benefits itself' over-narrows the pattern; most cards trigger their OWN granted/static ability off their own event and the payoff may not be a self-benefit | Has an easy-to-miss ability that quietly triggers off a common event such as a permanent entering or dying. |
+| `o-ring-with-set-mechanic` | "using another set's mechanic to power the effect" is misleading; the set mechanic is bundled onto the card, it doesn't power the exile | Exiles a permanent until this leaves the battlefield, bundled with a set specific mechanic. |
+| `wheel` | "Has you discard" overspecifies; many wheels make another player discard and redraw, not you | Makes a player discard their hand, then draw that many cards or more. |
+| `bounceable-aura` | Not always to hand; some return themselves to the library instead | An Aura with a way to return itself to its owner's hand or library. |
+| `absorb` | "set amount" is misleading; several prevent a variable amount (X) or all-but-1, and some reduce rather than prevent | Prevents or reduces some of the damage that would be dealt to a permanent or player. |
+
+### Overturned by Verify (6) — flag rejected, keep current
+- `extract` — auditor: 'removing them from the game' is imprecise (exile is a real zone, not out of the game), and the discard contrast is odd; otherwise the exile-from-library idea is right | verifier: Cards do exile from a library (Extract, Mana Severance); 'removing from the game' is a rules-technicality quibble, not a proven factual error
+- `blood-artist-ability` — auditor: Says 'an opponent' but the namesake and many carriers say 'target player' (any player) or 'each opponent', not a single opponent | verifier: 10 of 12 read 'each opponent'/'target opponent' loses life; only Blood Artist and Falkenrath Noble say 'target player', so 'an opponent' fairly describes the dominant case
+- `ingest` — auditor: the damaged player exiles from their own library, and ingest exiles just the top card, not "cards" | verifier: Tag includes multi-card exilers (Raven Guild Master top ten, Kotis top X, Bismuth until nonland), so 'cards' plural is correct; damaged player is functionally the opponent attacked
+- `sth-storyline-in-cards` — auditor: Overspecifies the mechanism as flavor text; it is a meta tag for cards tied to the Stronghold set's story, and the narrative link is not necessarily flavor text | verifier: Pulled data has only oracle text, no flavor text, so it cannot disprove the current 'flavor text is part of a storyline'; the auditor's objection is speculative and unproven
+- `wind-drake-with-set-s-mechanic` — auditor: overspecifies exact 2/2 P/T (unverifiable in data) and 'flyer'; several members aren't 2/2 flying creatures at all | verifier: no P/T in data so '2/2' cannot be disproven (auditor admits it's unverifiable), and most pulled cards are 3-mana flyers matching the archetype; Cloudform is one outlier
+- `devour` — auditor: "for each one" understates devour 2 and 3, which give twice or three times that many counters per sacrifice | verifier: Current 'gain +1/+1 counters for each one' fixes no ratio; devour 2/3 (Preyseizer, Gigantotherium) still gain counters for each creature sacrificed, so it is not clearly inaccurate.
+
+---
+
 ## Applying corrections
 
-**Deferred until the full 0-all re-audit is done.** Do not apply flags piecemeal per batch.
-Once the sweep covers the whole set, review all `wrong`/`suspect` corrections together and apply
-the agreed ones to `ORACLE_TAG_DESCRIPTIONS` in one deliberate `fix(otags):` commit. Reasons to
-batch it: some slugs are flagged in both the forward audit and this re-audit (e.g. `unique-token`)
-and need reconciling once; and a single edit pass over the const is easier to review than many.
+**Status: ranks 1-1000 APPLIED 2026-07-16** (181 fixes: all 10 wrong + 171 suspect). Applied
+programmatically slug-by-slug: each fix was gated for style (quote-free, no em dash, no link,
+terminal period, <=200 chars) and only written when the const's current text still matched the
+audited description (0 mismatches). `nightly fmt` clean. **The change is to the compiled const
+only; the live `oracle_tags.description` column updates on the next `zervice` sync/deploy.** Future
+batches (rank ~1001+) stay findings-only until a similar apply pass.
 
-When applying:
+> Watch item: `unique-token` was flagged in both the forward audit and this re-audit with
+> different suggested rewrites. The re-audit's ("A named token creature with its own defined
+> characteristics.") was applied; if the forward audit's `predefined-token` reconciliation
+> matters, eyeball it.
+
+When applying (future batches):
 - Treat every flag as a *suggestion*, not a mandate. Skip any suggested rewrite you disagree with.
 - Re-verify a flag against Scryfall before applying if anything looks off (the auditor is an LLM).
 - Keep the const's style: one plain sentence, no em dashes, no links, quote-free (the splice style

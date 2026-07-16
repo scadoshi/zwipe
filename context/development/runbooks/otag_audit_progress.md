@@ -7,10 +7,10 @@ are NOT auto-applied.**
 
 ## Coverage / resume
 
-> **➡️ ACTIVE TASK IS THE RE-AUDIT. Next AI: resume at rank ~501, NOT 2201.**
+> **➡️ ACTIVE TASK IS THE RE-AUDIT. Next AI: resume at rank ~1001, NOT 2201.**
 > The full 0-all **re-audit** (improved two-stage workflow) supersedes this forward sweep.
 > Pick up in [`otag_reaudit_progress.md`](otag_reaudit_progress.md) and continue from rank
-> ~501+ (using [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt)). Do **not** continue the
+> ~1001+ (using [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt)). Do **not** continue the
 > forward sweep below unless the re-audit is abandoned.
 
 - **This forward sweep is PAUSED at 2200 / 4,357.** It used a mix of old and improved workflow
@@ -22,8 +22,8 @@ are NOT auto-applied.**
   proved was blind to cost/color/hybrid/rarity facts. Re-running those ranks through the improved
   two-stage workflow from the top, tracked separately in
   [`otag_reaudit_progress.md`](otag_reaudit_progress.md) /
-  [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt). **Done: ranks 1-500** (84 flags the old pass
-  missed). **Next: rank ~501+.**
+  [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt). **Done: ranks 1-1000** (178 flags the old
+  pass missed). **Next: rank ~1001+.**
 
 ## Findings so far
 Across 2200 audited: **1807 clean, 365 suspect, 27 wrong** (rank 2001-2200 added by
