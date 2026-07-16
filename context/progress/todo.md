@@ -178,6 +178,7 @@ Phases 1+2 shipped (see archive). ~73% classification rate today; refinement tar
 
 ## Maintenance
 
+- [ ] **Scroll-fade sweep across scrollable dialogs/boxes.** The no-image card placeholder (`zwipe-components` `FlippableCardImage` / `.nic-textbox`) fades its scrolling text at the edges via a `mask-image` gradient (matching the carousel-dots + a couple other masked scrolls). Sweep the other scrollable dialog boxes (card-detail dialogs, hint dialogs, any overflow-y content) and give them the same edge fade so scrolling reads consistently everywhere. Low-risk CSS pass.
 - [ ] **Turn on Dependabot alerts** (repo Settings → Code security → Dependabot alerts) — the passive GitHub-Advisory backstop to the active weekly `cargo audit` workflow (`audit.yml`). Zero code, zero noise; optionally enable "Dependabot security updates" for auto-fix PRs, but skip *version* updates (the noisy weekly-bump firehose). Owner-only (a settings toggle, not a file).
 - **sqlx 0.8 → 0.9** — major bump. 0.9 has breaking changes around type mappings and connection options. Needs a dedicated branch where the integration tests run against a real Postgres before merge (the suite now exists to gate it — `zerver/tests/`).
 - **keyring 3 → 4** (zwiper) — major bump. Used for iOS Keychain on `apple-native`. Needs on-device test before merging; don't ship blind.

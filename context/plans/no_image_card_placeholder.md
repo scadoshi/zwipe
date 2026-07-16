@@ -1,19 +1,32 @@
 # No-image cards — render a text "identity frame" instead of hiding them
 
-**Status: IMPLEMENTED 2026-07-16 (local, uncommitted, not yet runtime-tested).
-Client-only; shared component + serve screens.**
+**Status: IMPLEMENTED + design-iterated 2026-07-16. Core feature committed
+(`FlippableCardImage` + serve-filter drop); runtime-verified on the iOS sim via a
+throwaway spoof (see Test scaffolding).**
 
-**As-built:** `FlippableCardImage` no-image branch renders a `.no-image-card`
-identity frame (name + mana, type line, oracle text box, P/T or loyalty footer);
-CSS in `zwipe-components/assets/components.css` (themed, no glow). Dropped the image
-clause from every serve filter: examples (`oracle_tag_examples.rs`, now no client
-filter at all), add (`add.rs` ×3 serve paths, in-deck/dedup kept), swipe_select
-(`swipe_select.rs` ×2, `!seen` kept). Removed the now-unused `ImageSize` imports.
-fmt + clippy clean. The swipe-stack *exit* animation overlay
-(`interactions/swipe/stack.rs`) was also switched from a raw `img` to
-`FlippableCardImage { flippable: false }`, so the fly-off matches the resting card
-and image-less cards keep their frame throughout (no blank flash). Every swipe
-surface now renders cards through the one component.
+**As-built (final look):** `FlippableCardImage` no-image branch renders a
+`.no-image-card` laid out like a real MTG card and iterated on-device against the
+business-card front face:
+- **Title row** — card name (accent-3), an inline **Flip** button (`card-action-btn`,
+  multi-faced only) + **our real mana pips** (`OracleText` / `card-detail-cost`).
+- **Full-bleed `<hr>`** dividers between sections.
+- **Boxed "No image"** marker where the art window sits.
+- **Chips** for type / rarity / set: type = accent-1, rarity = accent-3, set =
+  success-green (own `.nic-chip`, not `detail-chip`).
+- **Oracle + flavor** text box that fills the rest and **scrolls with an edge
+  fade** (`mask-image`, both edges — matches the app's masked scrolls).
+- **P/T / loyalty** as an opaque **warning-yellow** corner tab (bottom-right).
+- **Per-face aware** — name/mana/type/oracle/flavor/PT resolve for the *shown*
+  face, so flipping an MDFC (e.g. Valki // Tibalt) shows the back's real data.
+
+CSS in `zwipe-components/assets/components.css` (themed via `color-mix`, no glow).
+Dropped the image clause from every serve filter: examples
+(`oracle_tag_examples.rs`, no client filter left), add (`add.rs` ×3, in-deck/dedup
+kept), swipe_select (`swipe_select.rs` ×2, `!seen` kept); removed the unused
+`ImageSize` imports. The swipe-stack **exit** overlay (`interactions/swipe/stack.rs`)
+now also renders via `FlippableCardImage { flippable: false }`, so image-less cards
+keep their frame through the fly-off. Every swipe surface renders through the one
+component. fmt + clippy clean.
 
 ---
 
@@ -133,6 +146,32 @@ Image presence is no longer part of whether a card is shown, on any swipe screen
 - Examples: a tag whose tail has image-less cards keeps serving them instead of
   ending early; a truly zero-hit tag still shows the empty copy.
 - `cargo +nightly fmt` + clippy clean (both `zwipe-components` and `zwiper`).
+
+## Per-face flip — DONE (2026-07-16), one edge still parked
+
+**Done:** the placeholder now reads the **current face's** fields (name / mana /
+type / oracle / flavor / PT) plus a face-aware `alt`, resolved inline in
+`FlippableCardImage` (`card_faces.get(cur)` → top-level fallback). Flipping an MDFC
+whose back has an image (e.g. Valki // Tibalt) shows the back's real data.
+
+**Still parked:** `ScryfallData::face_count()` uses
+`faces.iter().all(|f| f.image_uris.is_some())`, so a genuinely two-sided card whose
+**back image is missing** is treated single-faced (no Flip button). Changing `all`
+→ `any` would enable flipping to a spoofed back on those (split/adventure stay
+single — they have zero per-face `image_uris`). Rare; do only if a real card hits it.
+
+## Test scaffolding (kept local, NOT committed)
+
+The core feature was committed clean. Three throwaway hacks stay in the working
+tree for on-device preview and are deliberately **not** committed:
+- `SPOOF_NO_IMAGE_FOR_TEST` const + its `image_url.filter(...)` use in
+  `flippable_card_image.rs` — forces the placeholder for every card.
+- home flavor query pinned to Valki (`set_name_contains("Valki")` +
+  `set_type_line_contains("Creature")`) in `home.rs`.
+- home always-renders the flavor card + clickable name (per-face flavor fallback)
+  in `home.rs`, so a no-top-level-flavor MDFC stays clickable.
+
+Delete all three before they ever reach a commit.
 
 ## Not doing
 
