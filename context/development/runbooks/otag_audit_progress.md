@@ -6,12 +6,19 @@ and flags inaccuracies with a card example and a suggested fix. **Findings are f
 are NOT auto-applied.**
 
 ## Coverage / resume
-- **Audited: 2000 / 4,357** (top tags by card population, highest-impact first).
+- **Audited: 2200 / 4,357** (top tags by card population, highest-impact first).
 - **Resume: re-run the top-N population pull.** It excludes every slug already in
-  [`otag_audited_slugs.txt`](otag_audited_slugs.txt), so it self-heals gaps and dupes. Next: rank ~2001+.
+  [`otag_audited_slugs.txt`](otag_audited_slugs.txt), so it self-heals gaps and dupes. Next: rank ~2201+.
+- **Planned full re-audit (0-all).** Ranks 1-2000 were audited by the *old* single-stage
+  workflow (no card-data grounding, no Verify stage), which [Batch 6](#batch-6-rank-20012200-improved-two-stage-workflow)
+  proved was blind to cost/color/hybrid/rarity facts. Those ranks should be re-run through the
+  improved two-stage workflow to catch what it missed. This is a separate, larger effort: clear
+  (or ignore) [`otag_audited_slugs.txt`](otag_audited_slugs.txt) and sweep from rank 1. Not started.
 
 ## Findings so far
-Across 2000 audited: **1632 clean, 345 suspect, 23 wrong.**
+Across 2200 audited: **1807 clean, 365 suspect, 27 wrong** (rank 2001-2200 added by
+[Batch 6](#batch-6-rank-20012200-improved-two-stage-workflow); the first 2000 were
+1632 clean / 345 suspect / 23 wrong).
 
 **Second-pass on the 23 wrong (separate session, Scryfall-checked, 2026-07-15):** not all
 suggested fixes are shippable. ~16–17 apply-worthy; 3 audit flags were themselves wrong
@@ -19,6 +26,70 @@ suggested fixes are shippable. ~16–17 apply-worthy; 3 audit flags were themsel
 2 need a different rewrite (`unique-token`, `substance`). Details under
 [Wrong (fix recommended)](#wrong-fix-recommended). **No changes applied to
 `ORACLE_TAG_DESCRIPTIONS`.**
+
+## Batch 6 (rank 2001-2200, improved two-stage workflow)
+
+First batch run with the **card-data grounding + Verify stage** (commit `99dc2091`). 200 audited: **175 clean, 20 suspect, 4 wrong**; the Verify stage **overturned 1** auditor flag.
+
+**Regression signal (the fix worked).** This batch was deliberately dense with `cycle-*` tags and cost/color/rarity claims, the exact category that produced the 3 false flags in the first 2000. It produced **zero** false cost/color/hybrid flags. The opposite happened: the auditor now *uses* the pulled cost/colors to make correct calls it previously guessed wrong, e.g. flagging `cycle-clb-back-enemy-legend` as mono-colored via `colors [G]/[W]/[B]`, and `cycle-arb-u-hybrid-gold` as three-color via `{2}{G/U}{W}` `colors [G,U,W]`. Overturn rate 1/25 (~4%) with all survivors genuine, table below.
+
+> **Findings only, not applied.** `ORACLE_TAG_DESCRIPTIONS` unchanged.
+
+### Wrong (4) — fix recommended
+
+#### `cycle-clb-back-enemy-legend`
+- **issue:** Says 'enemy-colored' but every card is mono-colored
+- **example:** Erinis, Gloom Stalker, cost {2}{G}, colors [G]; Rasaad yn Bashir {2}{W} [W]; Sarevok, Deathbringer {3}{B} [B]
+- **suggested fix:** A mono-colored legendary creature that can take a Background as a second commander.
+- **verify note:** All five are mono-colored: Rasaad [W], Livaan [R], Renari [U], Sarevok [B], Erinis [G]
+
+#### `cycle-c13-face-commander`
+- **issue:** Claims the deck is 'named after' the commander, but the Commander 2013 decks have theme names, not the commander's name
+- **example:** Prossh, Skyraider of Kher is the face of the deck named 'Power Hungry'; Oloro, Ageless Ascetic fronts 'Eternal Bargain' (deck is not named after the commander)
+- **suggested fix:** The headline legendary creature that a Commander 2013 precon deck is built around.
+- **verify note:** C2013 decks carry theme names (Prossh=Power Hungry, Oloro=Eternal Bargain), not the commander's name
+
+#### `cycle-c14-historical-legend`
+- **issue:** Slug-name trap: these are new mono-color legends debuting in Commander 2014, not older cards reprinted
+- **example:** Feldon of the Third Path | {1}{R}{R} | Legendary Creature — Human Artificer (first printed in Commander 2014, not a reprint)
+- **suggested fix:** A mono-colored legendary creature first printed as a face card in the Commander 2014 decks.
+- **verify note:** Feldon {1}{R}{R}, Titania, Gisa, Geralf, Jazal all debuted in Commander 2014 and are mono-colored, not reprinted older cards
+
+#### `cycle-arb-u-hybrid-gold`
+- **issue:** Says 'two-color combination' but every card is actually three colors (a hybrid pip plus another colored pip spanning a shard)
+- **example:** Messenger Falcons, cost {2}{G/U}{W}, colors [G,U,W]; Slave of Bolas, cost {3}{U/R}{B}, colors [B,R,U]
+- **suggested fix:** An uncommon three-color card whose cost mixes a hybrid mana symbol with a colored pip, spanning a shard's colors.
+- **verify note:** Messenger Falcons {2}{G/U}{W} colors [G,U,W] is three colors, contradicting 'two-color combination'
+
+### Suspect (20) — minor imprecision, review before applying
+
+| slug | issue | suggested fix |
+| --- | --- | --- |
+| `typal-assembly-worker` | "creating them" is unsupported; members pump, search for, or animate lands into Assembly-Workers, none create tokens | Cares about Assembly-Worker creatures, pumping them, searching them out, or animating lands into them. |
+| `type-removal-cat-rakshasa` | there is no "Rakshasa" creature type; these are Demons (one is a Devil) that lost the Cat type they historically carried | A rakshasa-flavored Demon or Devil printed without the Cat creature type it historically carried. |
+| `typal-sneaky` | 'together' wrongly implies you need both types; cards reward Ninjas or Rogues individually | Cares about Ninja and Rogue creatures, rewarding you for controlling and attacking with them. |
+| `you-matter` | 'physical traits' overspecifies; several cards care about real-world facts that aren't physical (convention attendance, a guessing game) | Cares about you the real player, such as your height, your name, or what you know or have done. |
+| `synergy-nonbasic-land` | 'rewarding you for controlling or finding them' over-narrows; some cards punish/destroy nonbasic lands or care about their types | Cares about nonbasic lands, such as by counting them, searching them out, or destroying them. |
+| `cycle-bro-m-color-artifact` | Overspecifies 'with prototype'; not every member has prototype (one has unearth instead) | An artifact creature themed to a single color, usually with prototype so you can cast it smaller and cheaper in that color. |
+| `cycle-c20-monster-partner` | 'grows through counters' is overspecified; 2 of 5 don't put counters on themselves | The larger, two-color half of a Commander 2020 Partner With legendary pair. |
+| `bottom-deck-manipulation` | Says 'your library' and frames it as pure draw-filtering, but some members bottom an opponent's library or bottom cards from hand | Puts cards on the bottom of a library, often to filter your draws by tucking away the cards you don't keep. |
+| `creature-type-phantasm` | "easily destroyed" isn't broadly true; several members have no fragility | An Illusion creature, usually with flying and sometimes carrying a self-sacrifice drawback. |
+| `cycle-a25-u-legend` | Rarity claim unverified: pulled data shows two members as rare, not uncommon; 'anthology' also mislabels Masters 25 | A mono-colored legendary creature reprinted in the Masters 25 set. |
+| `cycle-chk-myojin` | It only enters indestructible when cast from hand (gets the divinity counter only then), so 'enters indestructible' overstates the general case | A Spirit that enters indestructible when cast from hand and removes its divinity counter for a huge one-time effect. |
+| `cycle-c21-technique` | Demonstrate copying is optional ('you may copy'), but the description states it as automatic | A sorcery with demonstrate: when you cast it you may copy it, and if you do an opponent also copies it. |
+| `cycle-c16-r-partner` | Calls it the "rare cycle" but the pulled members are mixed rare and mythic | A two-color legendary creature with partner, letting it share the command zone with another partner commander. |
+| `becomes-changeling` | "Turn into a creature" misses the member that is already a creature and merely gains all creature types | A permanent that becomes, or can become, a creature with all creature types. |
+| `cycle-ala-r-tricolor` | Says 'rare' but the cycle includes an uncommon card, so the rarity claim is inaccurate | A signature three-color card from Alara Reborn representing a single shard's color combination. |
+| `cycle-all-enemy-hate` | Overspecified to "controlling lands or permanents"; some members answer spells or trigger on casting/entering, not on control | A mono-colored card that punishes or answers its two enemy colors' lands, permanents, or spells. |
+| `cycle-apc-sanctuary` | checks two OTHER colors, not 'its own colors'; each is a single-color enchantment keyed to two different colors | An enchantment that triggers a small effect each upkeep, larger if you control permanents of both of two other colors. |
+| `cycle-arb-c-hybrid-gold` | Says 'color pair' but these are three-color cards (one hybrid symbol plus a colored pip), and it omits the defining hybrid mana symbol | A common multicolor card whose cost includes one hybrid mana symbol, each with its own effect. |
+| `cycle-bbd-c-two-color` | Overspecified: not all common (one is uncommon) and not all have an ability (one is vanilla) | A two-color creature or spell from a Battlebond reprint cycle. |
+| `cycle-blb-c-gift` | 'for an added effect' overspecifies: on one member the gift instead removes a drawback rather than adding a bonus | Lets you promise an opponent a token as you cast this spell to unlock a bonus or avoid a drawback. |
+
+### Overturned by Verify (1) — flag rejected, keep current
+- `cycle-chk-legendary-land` — auditor: says 'aid a legendary creature' but one member targets any legendary permanent, and the effects only sometimes aid | verifier: All five abilities aid (fear, damage prevention, +1/+1, first strike, untap); auditor's 'only sometimes aid' is false and 4/5 target a legendary creature, so the common-case description holds
+
+---
 
 ## Wrong (fix recommended)
 
