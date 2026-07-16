@@ -718,16 +718,19 @@ i.ms.ms-cost.ms-gp {
     opacity: 1;
 }
 
-/* No-art fallback: a card-shaped text proxy rendered in place of the image when
-   a card has no picture, so it still reads as a card and stays swipeable. */
+/* No-art fallback: a flat card shown in place of the image when a card has no
+   picture, laid out like a real card - title + mana pips, rule, boxed "No image"
+   marker, type/rarity/set line, rule, then oracle + flavor text. Continuous: only
+   the art marker is boxed; dividers are hairline rules, not filled panels. */
 .no-image-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
     width: min(calc(100vw - 2rem), 20rem);
     aspect-ratio: 5 / 7;
-    padding: 0.75rem;
-    gap: 0.4rem;
+    padding: 0.8rem;
+    gap: 0.45rem;
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
     background-color: var(--bg-primary);
@@ -736,50 +739,147 @@ i.ms.ms-cost.ms-gp {
     overflow: hidden;
 }
 
-.nic-titlebar {
+/* Title row: name (left) + mana pips (right, via card-detail-cost). */
+.nic-head {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 0.5rem;
 }
 
+/* Right side of the title row: inline flip button (multi-faced) + mana pips. */
+.nic-head-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
 .nic-name {
-    font-weight: 600;
-    font-size: 0.95rem;
+    font-weight: 700;
+    font-size: 1.05rem;
+    line-height: 1.25;
+    letter-spacing: 0.3px;
     word-break: break-word;
+    color: var(--accent-tertiary);
 }
 
-.nic-mana {
+/* Hairline divider between card sections, full-bleed to the card edges (negative
+   margins cancel the card's padding). */
+.nic-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    height: 0;
+    align-self: stretch;
+    margin: 0 -0.8rem;
+}
+
+/* Boxed marker where the art window would be. */
+.nic-art {
+    flex: 0 0 34%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+}
+
+.nic-noart {
     color: var(--text-muted);
-    white-space: nowrap;
-    font-size: 0.85rem;
-}
-
-.nic-type {
     font-size: 0.8rem;
-    color: var(--text-muted);
-    border-bottom: 1px solid var(--border-secondary);
-    padding-bottom: 0.35rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
 }
 
-.nic-text {
-    flex: 1;
+/* Type / rarity / set as chips. */
+.nic-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.nic-chip {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.35rem;
+    background-color: var(--bg-primary);
+    font-size: 0.7rem;
+    line-height: 1.25;
+    color: var(--text-muted);
+}
+
+/* Type / rarity / set chips, each tinted with its own accent. */
+.nic-chip-type {
+    color: var(--accent-primary);
+    background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+    border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
+}
+
+.nic-chip-rarity {
+    color: var(--accent-tertiary);
+    background-color: color-mix(in srgb, var(--accent-tertiary) 12%, transparent);
+    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, transparent);
+}
+
+.nic-chip-set {
+    color: var(--color-success);
+    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+
+/* Power/toughness (or loyalty) tab pinned to the card's bottom-right corner. Warm
+   warning-yellow, and opaque (mixed into the card bg, not transparent) so the
+   oracle text behind it is cleanly covered instead of showing through. */
+.nic-pt {
+    position: absolute;
+    right: 0.6rem;
+    bottom: 0.6rem;
+    font-weight: 700;
+    color: var(--color-warning);
+    background-color: color-mix(in srgb, var(--color-warning) 18%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--color-warning) 40%, var(--border-primary));
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+
+/* Oracle + flavor fill the remaining space and scroll if long, fading out at the
+   top and bottom edges instead of hard-cutting (matches the app's masked scrolls). */
+.nic-textbox {
+    flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        black 0.8rem,
+        black calc(100% - 0.9rem),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        black 0.8rem,
+        black calc(100% - 0.9rem),
+        transparent 100%
+    );
+}
+
+.nic-oracle {
+    font-size: 0.82rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    color: var(--text-primary);
+}
+
+.nic-flavor {
     font-size: 0.8rem;
     line-height: 1.35;
-    white-space: pre-wrap;
-}
-
-.nic-empty {
-    color: var(--text-muted);
     font-style: italic;
-}
-
-.nic-pt {
-    align-self: flex-end;
-    font-weight: 600;
-    font-size: 0.9rem;
+    color: var(--text-muted);
+    white-space: pre-wrap;
 }
 
 .card-flip-button {

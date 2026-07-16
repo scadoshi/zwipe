@@ -12,6 +12,8 @@ use std::{
 };
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
+use crate::OracleText;
+
 /// Image URLs whose bytes have already arrived once this session. These
 /// render instantly; only first-time loads play the ease-in. Keyed by URL
 /// (not component) because stack shifts recreate component instances, which
@@ -61,28 +63,53 @@ pub fn FlippableCardImage(
     let total = sd.read().face_count();
     // Clamp so a stale/over-large `initial_face` still resolves to a real face.
     let cur = face_idx().min(total.saturating_sub(1));
-    let alt = sd.read().name.clone();
-    let image_url: Option<String> = sd.read().face_image_url(cur, size).map(str::to_owned);
-
-    // Text-proxy fields for the no-image placeholder: a card that carries no art
-    // still shows its identity + rules so the user can read it and swipe past.
-    // Read only when there's no image, so an art card never pays to clone its
-    // oracle text.
-    let (mana_cost, type_line, oracle_text, pt) = if image_url.is_none() {
+    let alt = {
         let sd_read = sd.read();
-        let pt = match (&sd_read.power, &sd_read.toughness, &sd_read.loyalty) {
-            (Some(p), Some(t), _) => Some(format!("{p}/{t}")),
-            (_, _, Some(l)) => Some(l.clone()),
-            _ => None,
+        sd_read
+            .card_faces
+            .as_ref()
+            .and_then(|f| f.get(cur))
+            .map(|f| f.name.clone())
+            .unwrap_or_else(|| sd_read.name.clone())
+    };
+    let image_url: Option<String> = sd.read().face_image_url(cur, size).map(str::to_owned);
+    let is_no_image = image_url.is_none();
+
+    // Identity fields for the no-image placeholder, resolved for the shown face
+    // (so a flipped DFC shows the back's text, not the front's). Rarity/set are
+    // card-level. Read only when there's no image, so an art card pays nothing.
+    let (mana_cost, type_line, rarity, set_name, oracle_text, flavor_text, pt) = if is_no_image {
+        let sd_read = sd.read();
+        let face = sd_read.card_faces.as_ref().and_then(|f| f.get(cur));
+        let mana = face
+            .map(|f| f.mana_cost.clone())
+            .unwrap_or_else(|| sd_read.mana_cost.clone().unwrap_or_default());
+        let (power, toughness, loyalty) = match face {
+            Some(f) => (f.power.clone(), f.toughness.clone(), f.loyalty.clone()),
+            None => (
+                sd_read.power.clone(),
+                sd_read.toughness.clone(),
+                sd_read.loyalty.clone(),
+            ),
+        };
+        let pt = match (power, toughness) {
+            (Some(p), Some(t)) => Some(format!("{p}/{t}")),
+            _ => loyalty,
         };
         (
-            sd_read.mana_cost.clone(),
-            sd_read.type_line.clone(),
-            sd_read.oracle_text.clone(),
+            Some(mana).filter(|m| !m.is_empty()),
+            face.and_then(|f| f.type_line.clone())
+                .or_else(|| sd_read.type_line.clone()),
+            Some(sd_read.rarity.to_long_name()),
+            Some(sd_read.set_name.clone()),
+            face.and_then(|f| f.oracle_text.clone())
+                .or_else(|| sd_read.oracle_text.clone()),
+            face.and_then(|f| f.flavor_text.clone())
+                .or_else(|| sd_read.flavor_text.clone()),
             pt,
         )
     } else {
-        (None, None, None, None)
+        (None, None, None, None, None, None, None)
     };
 
     let already_loaded = image_url.as_ref().is_some_and(|u| {
@@ -121,28 +148,60 @@ pub fn FlippableCardImage(
                     // No art: draw a card-shaped text proxy (name, mana, type,
                     // rules) in the image's footprint instead of an empty box.
                     div { class: "no-image-card",
-                        div { class: "nic-titlebar",
+                        div { class: "nic-head",
                             span { class: "nic-name", "{alt}" }
-                            if let Some(mc) = mana_cost {
-                                span { class: "nic-mana", "{mc}" }
+                            div { class: "nic-head-right",
+                                if flippable && total > 1 {
+                                    button {
+                                        class: "card-action-btn",
+                                        "aria-label": "Flip card",
+                                        onclick: move |e| {
+                                            e.stop_propagation();
+                                            face_idx.set((cur + 1) % total);
+                                        },
+                                        onpointerdown: move |e| { e.stop_propagation(); },
+                                        onmousedown: move |e| { e.stop_propagation(); },
+                                        ontouchstart: move |e| { e.stop_propagation(); },
+                                        "Flip"
+                                    }
+                                }
+                                if let Some(mc) = mana_cost {
+                                    OracleText { text: mc, class: "card-detail-cost".to_string() }
+                                }
                             }
                         }
-                        if let Some(tl) = type_line {
-                            div { class: "nic-type", "{tl}" }
+                        hr { class: "nic-rule" }
+                        // Boxed marker where the art would be, so it's clear why
+                        // this card is text-only.
+                        div { class: "nic-art",
+                            span { class: "nic-noart", "No image" }
                         }
-                        div { class: "nic-text",
+                        div { class: "nic-meta",
+                            if let Some(tl) = type_line {
+                                span { class: "nic-chip nic-chip-type", "{tl}" }
+                            }
+                            if let Some(r) = rarity {
+                                span { class: "nic-chip nic-chip-rarity", "{r}" }
+                            }
+                            if let Some(s) = set_name {
+                                span { class: "nic-chip nic-chip-set", "{s}" }
+                            }
+                        }
+                        hr { class: "nic-rule" }
+                        div { class: "nic-textbox",
                             if let Some(ot) = oracle_text {
-                                "{ot}"
-                            } else {
-                                span { class: "nic-empty", "No card text." }
+                                OracleText { text: ot, class: "nic-oracle".to_string() }
+                            }
+                            if let Some(fl) = flavor_text {
+                                div { class: "nic-flavor", "{fl}" }
                             }
                         }
                         if let Some(p) = pt {
-                            div { class: "nic-pt", "{p}" }
+                            span { class: "nic-chip nic-pt", "{p}" }
                         }
                     }
                 }
-                if flippable && total > 1 {
+                if flippable && total > 1 && !is_no_image {
                     button {
                         class: "card-flip-button",
                         "aria-label": "Flip card",
