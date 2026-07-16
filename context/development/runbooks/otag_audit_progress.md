@@ -6,12 +6,12 @@ and flags inaccuracies with a card example and a suggested fix. **Findings are f
 are NOT auto-applied.**
 
 ## Coverage / resume
-- **Audited: 1000 / 4,357** (top tags by card population, highest-impact first).
+- **Audited: 2000 / 4,357** (top tags by card population, highest-impact first).
 - **Resume: re-run the top-N population pull.** It excludes every slug already in
-  [`otag_audited_slugs.txt`](otag_audited_slugs.txt), so it self-heals gaps and dupes. Next up: rank ~1001+.
+  [`otag_audited_slugs.txt`](otag_audited_slugs.txt), so it self-heals gaps and dupes. Next: rank ~2001+.
 
 ## Findings so far
-Across 1000 audited: **820 clean, 174 suspect, 6 wrong.**
+Across 2000 audited: **1632 clean, 345 suspect, 23 wrong.**
 
 ## Wrong (fix recommended)
 
@@ -50,6 +50,108 @@ Across 1000 audited: **820 clean, 174 suspect, 6 wrong.**
 - **issue:** 'its set's keyword abilities' is misleading; cards reference a fixed list of evergreen keywords, not any expansion's keywords
 - **example:** Odric, Blood-Cursed: counts 'flying, first strike, double strike, deathtouch, haste, hexproof, indestructible, lifelink, menace, reach, trample, and vigilance'
 - **suggested fix:** Grants, counts, or keys off a long list of evergreen keyword abilities such as flying, first strike, and trample all at once.
+
+### `predefined-token` — WRONG
+- **current:** Creates a specific named token with a fixed, preset set of abilities.
+- **issue:** tag marks the token cards themselves, which do not 'create' anything; description describes a creator instead of the token
+- **example:** Treasure — 'Token Artifact — Treasure: {T}, Sacrifice this token: Add one mana of any color' (the card IS the token, it creates nothing)
+- **suggested fix:** Is a predefined token with a standard, preset set of abilities, such as Treasure, Blood, Clue, or a Role.
+
+### `impulse-planeswalker` — WRONG
+- **current:** Reveals cards from the top of your library and lets you take a noncreature, nonland card.
+- **issue:** overspecifies to "noncreature, nonland" but most cards grab creatures, planeswalkers, Auras, or lands
+- **example:** Oath of Nissa: "You may reveal a creature, land, or planeswalker card from among them and put it into your hand"; Ajani, Mentor of Heroes: "reveal an Aura, creature, or planeswalker card"
+- **suggested fix:** Looks at cards from the top of your library and lets you put a revealed card of certain types, often a planeswalker or other permanent, into your hand.
+
+### `references-keyword` — WRONG
+- **current:** Mentions a keyword or mechanic by name without actually having that ability itself.
+- **issue:** Most examples reproduce/allude to a keyword's effect without naming it, and the 'behold' cards actually perform the action; both halves of the description misfire
+- **example:** Persist (sorcery): 'Return target nonlegendary creature card from your graveyard to the battlefield with a -1/-1 counter on it.' — reproduces the persist keyword but never names it
+- **suggested fix:** Reproduces or alludes to a named keyword ability without actually having that keyword.
+
+### `substance` — WRONG
+- **current:** An obsolete ability from old Mirage-era cards that does nothing at all.
+- **issue:** Claims it "does nothing at all"; the ability is the old Mirage-era flash rule that lets you cast at instant speed with a cleanup sacrifice, so it functions as a combat trick
+- **example:** Lightning Reflexes: "You may cast this spell as though it had flash. If you cast it any time a sorcery couldn't have been cast, the controller of the permanent it becomes sacrifices it at the beginning of the next cleanup step."
+- **suggested fix:** Uses the old Mirage-era flash rules, letting you cast it at instant speed but sacrificing it at the next cleanup if cast when a sorcery couldn't be.
+
+### `x-doesn-t-matter` — WRONG
+- **current:** Has an {X} in its cost that the card's own text never directly references.
+- **issue:** most tagged cards have no {X} in their cost; they care about the amount or colors of mana spent to cast them
+- **example:** Prismatic Ending (cost {W}, no X): 'Exile target nonland permanent if its mana value is less than or equal to the number of colors of mana spent'; Gyrus enters with counters 'equal to the amount of mana spent to cast it'
+- **suggested fix:** Cares about how much mana or how many colors of mana were spent to cast it.
+
+### `sunder` — WRONG
+- **current:** Destroys all Auras or Equipment attached to a permanent, leaving the permanent itself behind.
+- **issue:** 'leaving the permanent itself behind' is false for many carriers that also destroy/exile the permanent
+- **example:** Silence the Believers: 'Exile any number of target creatures and all Auras attached to them'; End Hostilities: 'Destroy all creatures and all permanents attached to creatures'
+- **suggested fix:** Destroys or exiles the Auras and Equipment attached to a permanent, sometimes removing the permanent as well.
+
+### `counterspell-enchantment` — WRONG
+- **current:** Counter magic that specifically stops enchantment spells from resolving.
+- **issue:** 'specifically' wrongly implies enchantment-only; most examples counter enchantment among other spell types
+- **example:** Swan Song: 'Counter target enchantment, instant, or sorcery spell.' (also Deny the Divine: creature or enchantment)
+- **suggested fix:** Counters a target enchantment spell, often alongside other spell types.
+
+### `cycle-block-rav-mnn` — WRONG
+- **current:** One of a cycle of two-color guild creatures from the Ravnica block, one for each guild.
+- **issue:** Says 'two-color guild creatures' but the cycle includes non-creatures and mono-color cards
+- **example:** Voidslime is 'Instant — Counter target spell, activated ability, or triggered ability'; Anthem of Rakdos is an Enchantment; Phytohydra is mono-white
+- **suggested fix:** One of a cycle of Ravnica block cards of various types, one associated with each guild.
+
+### `cycle-block-rtr-off-color` — WRONG
+- **current:** One of a cycle of Ravnica cards with a mana ability in a color outside their guild's pair.
+- **issue:** not a "mana ability" and not "outside their guild's pair"; it's an activated ability costing the guild's OTHER color
+- **example:** Frilled Oculus (mono-blue Simic): "{1}{G}: This creature gets +2/+2" — green is inside the Simic pair, and this produces no mana
+- **suggested fix:** A monocolored Ravnica guild card whose activated ability costs mana of its guild's other color.
+
+### `cycle-fdn-draft-signpost` — WRONG
+- **current:** A gold card from Foundations designed to point drafters toward its two-color archetype.
+- **issue:** not all are gold cards; several signposts are mono-colored
+- **example:** Good-Fortune Unicorn is a mono-white Unicorn ({2}{W}), not a gold card
+- **suggested fix:** An uncommon Foundations card built to point drafters toward its two-color archetype.
+
+### `cycle-mh3-c-draft-signpost` — WRONG
+- **current:** One of a cycle of common creatures that signal a two-color draft archetype.
+- **issue:** Not all creatures nor all two-color; cycle includes an Equipment and colorless Eldrazi
+- **example:** Cranial Ram is 'Artifact — Equipment' (Living weapon), not a creature; Snapping Voidcraw / Writhing Chrysalis are colorless devoid Eldrazi
+- **suggested fix:** One of a cycle of common cards from Modern Horizons 3 that signals a draft archetype.
+
+### `cycle-mh3-r-m-two-color` — WRONG
+- **current:** One of Modern Horizons 3's rare or mythic two-color creatures.
+- **issue:** Overspecified as 'creatures'; cycle includes noncreature instants (one is colorless devoid, not two-color)
+- **example:** Abstruse Appropriation is an 'Instant' with Devoid (colorless); Invert Polarity is also an Instant, not a creature
+- **suggested fix:** One of Modern Horizons 3's rare or mythic two-color cards.
+
+### `cycle-mid-r-flashback` — WRONG
+- **current:** A rare sorcery you can cast once from your graveyard for its flashback cost, then exile.
+- **issue:** Says 'sorcery' but the cycle includes instants
+- **example:** Siphon Insight is type Instant with 'Flashback {1}{U}{B}'; Rite of Harmony is also an Instant with flashback
+- **suggested fix:** A rare instant or sorcery you can cast once from your graveyard for its flashback cost, then exile.
+
+### `cycle-war-hybrid-planeswalker` — WRONG
+- **current:** One of War of the Spark's hybrid-mana planeswalkers, castable with either of two colors.
+- **issue:** Not hybrid mana; these require both colors, not 'either'
+- **example:** Kiora, Behemoth Beckoner costs {2}{G}{U} (both green and blue required, no hybrid symbols)
+- **suggested fix:** One of War of the Spark's two-color planeswalkers, requiring mana of both its colors to cast.
+
+### `gives-wither` — WRONG
+- **current:** Grants wither to a creature, so its combat damage lands as -1/-1 counters instead.
+- **issue:** says 'combat damage' but wither affects all damage the creature deals to creatures, not just combat, and only damage to creatures becomes counters
+- **example:** Fists of the Demigod: 'it gets +1/+1 and has wither. (It deals damage to creatures in the form of -1/-1 counters.)' — no 'combat' restriction; Fang Skulkin grants it to enable ping/fight damage too
+- **suggested fix:** Grants wither, so the creature's damage to other creatures is dealt as -1/-1 counters instead of normal damage.
+
+### `synergy-protection` — WRONG
+- **current:** Rewards you for having creatures with the protection keyword.
+- **issue:** Most tagged cards grant or copy the protection keyword rather than reward you for already having protection creatures
+- **example:** Cairn Wanderer: 'As long as a creature card with protection is in a graveyard, this creature has protection.' (also Death-Mask Duplicant, Eater of Virtue, Priest of Possibility copy protection among a keyword list)
+- **suggested fix:** Cares about the protection keyword, often granting protection or copying it from other creatures.
+
+### `cycle-unf-single-sticker` — WRONG
+- **current:** A creature that gives you ten tickets on entering and lets you put a sticker on a nonland permanent you own.
+- **issue:** says 'ten tickets' but the card gives one ticket ({TK})
+- **example:** Aerialephant: 'When Aerialephant enters, you get {TK}, then you may put a sticker on a nonland permanent you own.'
+- **suggested fix:** A creature that gives you a ticket when it enters and lets you put a sticker on a nonland permanent you own.
 
 ## Suspect (imprecise — review)
 
@@ -1096,4 +1198,1030 @@ Across 1000 audited: **820 clean, 174 suspect, 6 wrong.**
 - **issue:** underspecified: many carriers also let defenders attack or tutor them, not just reward controlling them
 - **example:** Wakestone Gargoyle: "{1}{W}: Creatures you control with defender can attack this turn as though they didn't have defender."; Shield-Wall Sentinel searches for a defender
 - **suggested fix:** Rewards or supports controlling creatures with defender, such as scaling with them, tutoring them, or letting them attack.
+
+### `type-addition-noble` — suspect
+- **current:** A creature type tag for cards that gained the Noble creature subtype by errata.
+- **issue:** 'by errata' is an unverifiable overclaim; several carry Noble as a natural printed subtype, and the sibling tag (sorcerer) is worded without the errata claim
+- **example:** Falkenrath Noble (Creature - Vampire Noble), printed with the Noble subtype natively, not gained by errata
+- **suggested fix:** A creature that also has the Noble creature type.
+
+### `buttstrike` — suspect
+- **current:** Makes a creature assign combat damage equal to its toughness instead of its power.
+- **issue:** underspecified: nearly all these cards affect every creature you control (or all creatures), not just 'a creature'
+- **example:** High Alert: 'Each creature you control assigns combat damage equal to its toughness rather than its power.'
+- **suggested fix:** Makes creatures you control assign combat damage equal to their toughness instead of their power.
+
+### `old-damage-deathtouch` — suspect
+- **current:** Destroys any creature it deals combat damage to, an older way of writing deathtouch.
+- **issue:** 'it deals combat damage' overspecifies; many cards grant the destroy-on-combat-damage effect to other creatures, not the tagged card itself
+- **example:** Toxin Sliver: 'Whenever a Sliver deals combat damage to a creature, destroy that creature' (Sosuke triggers on Warriors you control, not itself)
+- **suggested fix:** Destroys a creature that's dealt combat damage by the relevant creature, an older basilisk-style forerunner of deathtouch.
+
+### `tutor-instant` — suspect
+- **current:** Searches your library for an instant card and puts it into your hand or exile.
+- **issue:** Says 'your library' but some tutors search an opponent's library
+- **example:** Knowledge Exploitation: 'Search target opponent's library for an instant or sorcery card. You may cast that card without paying its mana cost.'
+- **suggested fix:** Searches a library for an instant card, then puts it into your hand or exile.
+
+### `life-divider-you` — suspect
+- **current:** Makes a player lose, draw, discard, or sacrifice roughly half of something, rounded up.
+- **issue:** Not always half; some cards divide by a third, so "roughly half" is imprecise
+- **example:** Pox: "Each player loses a third of their life, then discards a third of the cards in their hand, then sacrifices a third..."
+- **suggested fix:** Makes a player lose, draw, discard, or sacrifice a fraction (usually half) of something, rounded up.
+
+### `pariah` — suspect
+- **current:** Redirects damage that would be dealt to you onto a creature instead.
+- **issue:** Underspecified: several cards redirect damage away from a creature (not from you) onto another creature
+- **example:** Hazduhr the Abbot: "The next X damage that would be dealt this turn to target white creature you control is dealt to Hazduhr instead."
+- **suggested fix:** Redirects damage that would be dealt to you or a creature onto another creature instead.
+
+### `removal-equipment` — suspect
+- **current:** Removal aimed specifically at destroying or exiling Equipment.
+- **issue:** "specifically" overstates; several are creature removal or board wipes that only destroy attached Equipment as a rider
+- **example:** End Hostilities: "Destroy all creatures and all permanents attached to creatures." (also Turn to Slag, Soul Nova, Thief of Existence)
+- **suggested fix:** Destroys or exiles Equipment, sometimes along with the creature it's attached to.
+
+### `seek-creature` — suspect
+- **current:** Puts a random creature card from your library into your hand.
+- **issue:** overspecifies "into your hand"; many of these seek a creature card straight onto the battlefield
+- **example:** Naktamun Shines Again: "Seek a creature card with mana value 2 or less and put it onto the battlefield." (also Vhal, Inquisitor Captain)
+- **suggested fix:** Finds a creature card at random from your library, putting it into your hand or onto the battlefield.
+
+### `synergy-enchantment-creature` — suspect
+- **current:** Cares about or boosts enchantment creatures you control.
+- **issue:** "you control" overspecifies; some care about any enchantment creature or ones in the graveyard, not just yours
+- **example:** Bearer of Memory: "Put a +1/+1 counter on target enchantment creature." (any); Odunos River Trawler returns an enchantment creature card from your graveyard
+- **suggested fix:** Cares about or boosts enchantment creatures.
+
+### `typal-phyrexian` — suspect
+- **current:** Cares about or boosts Phyrexian creatures you control.
+- **issue:** Overspecified 'you control'; tag also covers cards caring about Phyrexians regardless of controller
+- **example:** That's No Moonmist: 'Transform all artifacts and Phyrexian creatures... Prevent all combat damage... by creatures other than Phyrexians' (affects all players' Phyrexians)
+- **suggested fix:** Cares about or rewards Phyrexian creatures.
+
+### `conjure-artifact` — suspect
+- **current:** Creates a specific artifact card from outside the game in your hand or on the battlefield.
+- **issue:** Misses graveyard as a destination and the conjured card is not always an artifact
+- **example:** Fallaji Antiquarian: 'conjure a duplicate of another target nontoken creature or artifact you control into your graveyard'
+- **suggested fix:** Conjures a specific named artifact from outside the game onto the battlefield, into your hand, or into your graveyard.
+
+### `synergy-reach` — suspect
+- **current:** Grants or counts reach along with other keyword abilities found among your creatures.
+- **issue:** Says keywords are found 'among your creatures', but sources are often graveyard, library, hand, or draft
+- **example:** Bleeding Effect: 'creatures you control gain flying ... if a creature card in your graveyard has flying'; Priest of Possibility checks the top seven cards of your library
+- **suggested fix:** Grants or counts reach along with a batch of other keyword abilities shared across your creatures, graveyard, or library.
+
+### `un-forecast` — suspect
+- **current:** An Un-set card whose mechanic later paved the way for a black-bordered one.
+- **issue:** Overreaching, unverifiable historical claim; several of these silver-bordered joke cards never foreshadowed any black-bordered mechanic
+- **example:** Volrath's Motion Sensor: 'balances this Aura on the back of that hand' (a dexterity gag that never went black-bordered)
+- **suggested fix:** An Un-set (silver-bordered) card, often with an offbeat mechanic that later helped inspire a black-bordered design.
+
+### `artist-matters` — suspect
+- **current:** Cares about the artist who illustrated a card, rewarding or punishing shared artwork.
+- **issue:** 'shared artwork' undersells it; most cards care about a single chosen/named artist, not two cards sharing one
+- **example:** Persecute Artist: 'Choose an artist... discards all nonland cards with art by the chosen artist' (chosen artist, not shared)
+- **suggested fix:** Cares about which artist illustrated a card, rewarding or punishing cards drawn by a chosen or shared artist.
+
+### `fateseal` — suspect
+- **current:** Lets you look at an opponent's top library card and choose to leave it or put it on the bottom.
+- **issue:** Says 'opponent' and only 'bottom', but many tagged cards target any player and mill/exile instead
+- **example:** Draugr Thought-Thief: 'look at the top card of target player's library. You may put that card into their graveyard.'; Sealed Fate exiles one of the top X cards
+- **suggested fix:** Lets you look at cards on top of a player's library and decide their fate, such as putting them on the bottom or into the graveyard.
+
+### `legends-retold` — suspect
+- **current:** Part of a special set-booster cycle reimagining classic legendary creatures from the original Legends set.
+- **issue:** 'set-booster cycle' overspecifies/likely wrong product framing; these appear across Commander/bonus products, not set boosters
+- **example:** Tetsuo, Imperial Champion / Jedit Ojanen, Mercenary / Ayesha Tanaka, Armorer are all updated versions of original Legends (1994) characters, but not a 'set-booster cycle'
+- **suggested fix:** Reimagines a classic legendary creature from the original Legends set as a new card.
+
+### `radiate` — suspect
+- **current:** Copies a single-target spell and points the copy at something else it could hit.
+- **issue:** underspecifies the signature mass-copy: most copy for EACH other legal target, not just one redirected copy
+- **example:** Radiate: 'Copy that spell for each other permanent or player the spell could target. Each copy targets a different one of those'
+- **suggested fix:** Copies a spell that targets a single permanent or player, making a copy aimed at each other legal target.
+
+### `zoo` — suspect
+- **current:** Creates multiple creature tokens of different types.
+- **issue:** "different types" is overspecified; some make same-type tokens
+- **example:** Triplicate Titan: creates three Golem tokens (same type) differing only in flying/vigilance/trample
+- **suggested fix:** Creates several creature tokens at once, usually of varying kinds.
+
+### `burn-bright-with-set-mechanic` — suspect
+- **current:** Gives your team +2/+0 for the turn while also plugging into the set's mechanic.
+- **issue:** Overspecifies buff and target: not always +2/+0, and not always 'your team'
+- **example:** Weapon Surge grants only '+1/+0 and gains first strike'; Dinosaur Stampede pumps 'Attacking creatures get +2/+0' (any player's attackers), not just yours
+- **suggested fix:** Pumps creatures' power (typically +2/+0) for the turn while also feeding the set's mechanic.
+
+### `hate-flash` — suspect
+- **current:** Stops or taxes opponents from casting spells or acting outside their own turn.
+- **issue:** Says 'opponents' but several cards tax/restrict ALL players symmetrically, not just opponents
+- **example:** City of Solitude: 'Players can cast spells and activate abilities only during their own turns'; Defense Grid: 'Each spell costs {3} more to cast except during its controller's turn'
+- **suggested fix:** Stops or taxes players from casting spells or activating abilities outside their own turn.
+
+### `recursion-from-exile` — suspect
+- **current:** Returns a card you own from exile to your hand, library, battlefield, or graveyard.
+- **issue:** 'a card you own' is overspecified; several cards move any face-up exiled card regardless of owner
+- **example:** Pull from Eternity — 'Put target face-up exiled card into its owner's graveyard' (any player's exiled card, not just yours); Riftsweeper likewise targets any face-up exiled card
+- **suggested fix:** Returns a card from exile to another zone such as a hand, library, battlefield, or graveyard.
+
+### `hate-swamp` — suspect
+- **current:** Punishes opponents for controlling Swamps or black permanents, or rewards you for it.
+- **issue:** Overspecifies 'opponents'; several cards affect any player controlling Swamps/black
+- **example:** Nature's Wrath: 'Whenever a player puts a Swamp or black permanent onto the battlefield, that player sacrifices...' and Spreading Algae enchants any Swamp
+- **suggested fix:** Punishes controlling Swamps or black permanents, or rewards you for opponents' Swamps.
+
+### `sports-name` — suspect
+- **current:** A card whose name is a sports term or phrase, with no shared mechanical theme.
+- **issue:** Claims 'no shared mechanical theme' but a majority of the tagged cards share the Assist mechanic
+- **example:** Play of the Game / Out of Bounds / Huddle Up / Game Plan / The Crowd Goes Wild all have 'Assist (Another player can pay up to {N} of this spell's cost.)'
+- **suggested fix:** A card whose name is a sports term or phrase, grouped by name rather than by a single mechanic.
+
+### `synergy-blood` — suspect
+- **current:** Creates or cares about Blood tokens, which you can sacrifice to loot for a card.
+- **issue:** Calls the Blood ability 'loot', but it discards then draws (rummaging), and it omits the mana and tap cost
+- **example:** Bloodtithe Harvester's Blood token: '{1}, {T}, Discard a card, Sacrifice this token: Draw a card.'
+- **suggested fix:** Creates or cares about Blood tokens, which you can sacrifice, discarding a card to draw one, to filter your hand.
+
+### `synergy-hexproof` — suspect
+- **current:** Rewards you when a creature you control has hexproof, among other keyword abilities.
+- **issue:** Frames hexproof as a reward trigger, but these cards detect, grant, copy, or count a whole standard keyword list of which hexproof is just one member
+- **example:** Odric, Blood-Cursed: 'create X Blood tokens, where X is the number of abilities from among flying, first strike, double strike, deathtouch, haste, hexproof, indestructible, lifelink, menace, reach, trample, and vigilance found among creatures you control.'
+- **suggested fix:** Cares about the standard keyword suite, including hexproof, often granting, copying, or counting those keywords across your creatures.
+
+### `copy-enchantment` — suspect
+- **current:** Creates a token that is a copy of an enchantment.
+- **issue:** Overspecified: says it always makes a token copy, but several cards enter/become a copy directly (no token created).
+- **example:** Mirrormade: "You may have this enchantment enter as a copy of any artifact or enchantment on the battlefield." (also Estrid's Invocation, Mirage Mirror)
+- **suggested fix:** Copies an enchantment, often as a token.
+
+### `dehydration-with-set-mechanic` — suspect
+- **current:** An aura that taps the enchanted creature and keeps it from untapping.
+- **issue:** Says it taps on entry, but some cards only prevent untapping (no ETB tap) or tap conditionally.
+- **example:** Watery Grasp: "Enchanted creature doesn't untap during its controller's untap step." (no tap on enter; also Plumes of Peace)
+- **suggested fix:** An aura that keeps the enchanted creature from untapping, often tapping it as it enters.
+
+### `gives-castable-from-library` — suspect
+- **current:** Lets you cast a spell straight from your library without paying its mana cost.
+- **issue:** Says 'your library' but several cards cast/play from an opponent's library, and not all are free-cast
+- **example:** Knowledge Exploitation: 'Search target opponent's library for an instant or sorcery card. You may cast that card without paying its mana cost.' (Xanathar lets you play from an opponent's library while paying costs.)
+- **suggested fix:** Lets you cast a spell straight from a library, usually your own and usually without paying its mana cost.
+
+### `hate-tutor` — suspect
+- **current:** Rewards you or hinders an opponent whenever they search their library.
+- **issue:** Says 'hinders an opponent' but several cards restrict or punish ALL players' searching, not just opponents'
+- **example:** Mindlock Orb: 'Players can't search libraries.' (The Pleasant Taxer makes searching libraries cost {1} more for every player.)
+- **suggested fix:** Punishes or restricts searching a library, or rewards you when a player searches theirs.
+
+### `hatebird` — suspect
+- **current:** A flying creature around 3 mana that disrupts opponents like a hatebear.
+- **issue:** 'around 3 mana' is shaky and several effects are symmetric, not opponent-only
+- **example:** Hushbringer: 'Creatures entering or dying don't cause abilities to trigger' (hits all players, and it costs less than 3); Linvala is a 4-drop
+- **suggested fix:** A small flying creature that disrupts the game like a hatebear, taxing or shutting down plays.
+
+### `land-or-hand` — suspect
+- **current:** Reveals your top card, putting it onto the battlefield if it is a land or into your hand otherwise.
+- **issue:** overspecified: several put any permanent (not just land) and some draw instead of going to hand
+- **example:** Matter Reshaper: 'put that card onto the battlefield if it's a permanent card with mana value 3 or less. Otherwise, put that card into your hand'; Thrasios: 'if it's a land card... Otherwise, draw a card'
+- **suggested fix:** Reveals your top card, putting it onto the battlefield if it's a land or permanent and otherwise into your hand.
+
+### `repeatable-powerstones` — suspect
+- **current:** Creates Powerstone tokens again and again for mana that can only pay for artifacts.
+- **issue:** Powerstone mana restriction is 'can't cast a nonartifact spell', not 'can only pay for artifacts' (it can pay for any ability)
+- **example:** Karn, Living Legacy: Powerstone token 'Add {C}. This mana can't be spent to cast a nonartifact spell'
+- **suggested fix:** Repeatedly creates Powerstone tokens, artifacts that tap for mana that can't be spent to cast nonartifact spells.
+
+### `set-matters` — suspect
+- **current:** Cares about which real-world Magic set or sets a card was printed in.
+- **issue:** Underspecified: several cards care about release year, number of printings, or Universe, not just 'which set'
+- **example:** Gen, Confider of Ages: 'gets +1/+1 for each different year of release among other nontoken permanents you control'; Lona cares about cards 'printed in at least five different English language Magic releases'; Byode cares about 'Universe'
+- **suggested fix:** Cares about a card's real-world printing provenance, like which set or Universe it came from, its release year, or how many times it's been printed.
+
+### `tutor-copy` — suspect
+- **current:** Searches your library for a card with the same name as another creature or permanent.
+- **issue:** says 'your library' but some search an opponent's library, and the named source isn't always a creature/permanent
+- **example:** Dichotomancy: 'search that player's library for a card with the same name as that permanent'; Infernal Tutor matches a card revealed from hand
+- **suggested fix:** Searches a library for a card with the same name as a chosen permanent or card.
+
+### `catch-22` — suspect
+- **current:** Punishes each player at their end step unless they meet a condition, like tapping out their lands.
+- **issue:** Only describes the end-step-damage subset; misses the large day/night bidirectional-trigger group
+- **example:** Firmament Sage: 'Whenever day becomes night or night becomes day, draw a card' (no end-step punishment at all)
+- **suggested fix:** Creates a no-win situation where each player is affected no matter which choice they make, like taking damage for leaving lands untapped or a payoff that triggers whichever way day and night shifts.
+
+### `copy-planeswalker` — suspect
+- **current:** Creates a token that's a copy of a permanent, which can include a planeswalker.
+- **issue:** Says 'creates a token,' but several tagged cards copy without making a token
+- **example:** Spark Double: 'You may have this creature enter as a copy of a creature or planeswalker you control' (it becomes the copy itself, no token); Oko becomes a copy too
+- **suggested fix:** Copies a permanent, often as a token, and the copy can be a planeswalker.
+
+### `flicker-artifact` — suspect
+- **current:** Exiles an artifact or creature and returns it to the battlefield later.
+- **issue:** 'later' is imprecise; many return in the same resolution rather than at a delayed time
+- **example:** Spaceshift: 'Exile target artifact or creature, then return that card to the battlefield... with a +1/+1 counter' (immediate); Mighty Thor and Scrollshift return immediately too
+- **suggested fix:** Exiles an artifact or creature and returns it to the battlefield, either right away or at a set later time.
+
+### `gifts-ungiven` — suspect
+- **current:** Searches your library for several cards and lets an opponent choose which ones you keep.
+- **issue:** "Searches your library" isn't universal; several cards reveal the top of your library instead
+- **example:** Memories Returning: "Reveal the top five cards of your library... choose an opponent. They put one on the bottom..." and Manifold Insights reveals the top ten (no search)
+- **suggested fix:** Offers an opponent several of your cards and lets them split the pile, deciding which ones you keep.
+
+### `hate-landwalk` — suspect
+- **current:** Lets creatures with a landwalk ability be blocked as though they didn't have it.
+- **issue:** Underspecified: some cards remove landwalk outright rather than only allowing it to be blocked through
+- **example:** Mystic Decree: "All creatures lose flying and islandwalk"; Scarwood Hag: "{T}: Target creature loses forestwalk until end of turn."
+- **suggested fix:** Answers landwalk evasion, letting such creatures be blocked as though they had no landwalk or stripping the ability entirely.
+
+### `opaline-effect` — suspect
+- **current:** Lets you draw a card when an opponent's spell or ability targets your creature.
+- **issue:** too narrow: many trigger off you or any permanent, not just your creature
+- **example:** Reparations: "Whenever an opponent casts a spell that targets you or a creature you control, you may draw a card."; Rayne, Academy Chancellor: "Whenever you or a permanent you control becomes the target..."
+- **suggested fix:** Lets you draw a card when a spell or ability an opponent controls targets you or a permanent you control.
+
+### `tutor-land-basic-island` — suspect
+- **current:** Searches your library for a basic Island card and puts it onto the battlefield or into your hand.
+- **issue:** Overspecified: nearly all these cards fetch one of several basic land types by choice, Island is just one option, not a dedicated Island tutor
+- **example:** Bant Panorama: 'Search your library for a basic Forest, Plains, or Island card, put it onto the battlefield tapped'
+- **suggested fix:** Searches your library for a basic land card, an Island being one valid choice, and puts it onto the battlefield or into your hand.
+
+### `tutor-land-basic-swamp` — suspect
+- **current:** Searches your library for a basic Swamp card and puts it onto the battlefield or into your hand.
+- **issue:** Overspecified: most of these fetch a choice of basic land types, Swamp being one option, not a dedicated Swamp tutor
+- **example:** Deceptive Landscape: 'Search your library for a basic Plains, Swamp, or Forest card, put it onto the battlefield tapped'
+- **suggested fix:** Searches your library for a basic land card, a Swamp being one valid choice, and puts it onto the battlefield or into your hand.
+
+### `regrowth-planeswalker` — suspect
+- **current:** Returns a creature or planeswalker card from your graveyard to your hand.
+- **issue:** 'creature or planeswalker' is wrong for several cards that return only noncreature cards; the tag's unifying trait is planeswalker, not creature
+- **example:** Warden of the Eye: 'return target noncreature, nonland card from your graveyard to your hand' (cannot return a creature); Monastery Loremaster is the same
+- **suggested fix:** Returns a planeswalker or other nonland permanent card from your graveyard to your hand.
+
+### `removal-noncreature` — suspect
+- **current:** Destroys or exiles a noncreature permanent.
+- **issue:** 'destroys or exiles' misses bounce/tuck removal that the tag also covers
+- **example:** Primal Command: 'Put target noncreature permanent on top of its owner's library' (neither destroy nor exile)
+- **suggested fix:** Destroys, exiles, or otherwise removes a noncreature permanent.
+
+### `token-without-a-card` — suspect
+- **current:** A token type with no card that actually creates it, likely due to errata.
+- **issue:** 'likely due to errata' is a speculative and mostly-wrong reason; these are usually just tokens no printed card happens to make
+- **example:** Soldier / Goblin / Myr token creatures exist as printed token cards but no card in the tag set generates that exact token; none of this stems from errata
+- **suggested fix:** A token that exists as a printed card but that no other card actually creates.
+
+### `tutor-enchantment` — suspect
+- **current:** Searches your library for an enchantment card and puts it into your hand or on top.
+- **issue:** omits the onto-the-battlefield outcome; several cards put the enchantment directly onto the battlefield, not just hand or top
+- **example:** Lost Auramancers: 'search your library for an enchantment card, put it onto the battlefield'; Incoming! also puts them onto the battlefield
+- **suggested fix:** Searches your library for an enchantment card and puts it into your hand, on top, or onto the battlefield.
+
+### `command` — suspect
+- **current:** A modal spell where you choose two of several listed effects to apply.
+- **issue:** Says 'modal spell' but many carriers are creatures/permanents with a choose-two ability, not spells; also some read 'choose up to two'
+- **example:** Titan of Industry (Creature): 'When this creature enters, choose two —'; Call Damage Control: 'Choose up to two.'
+- **suggested fix:** Chooses two effects from a listed set of options to apply.
+
+### `explore-like` — suspect
+- **current:** Lets you look at the top card of a library and keep it or bin it, similar to explore.
+- **issue:** "bin it" implies graveyard, but several cards dispose to bottom/top of library instead
+- **example:** Ajani, Sleeper Agent: "Otherwise, you may put it on the bottom of your library"; S.N.E.A.K. Dispatcher puts it "on your choice of the top or bottom of its owner's library"
+- **suggested fix:** Lets you look at the top card of a library and, if it meets a condition, put it into your hand, otherwise stash it away, similar to explore.
+
+### `grim-return` — suspect
+- **current:** Returns permanents from your graveyard to the battlefield if they died or left play that turn.
+- **issue:** says "your graveyard" but some hit all graveyards / each player's, and several only return creatures
+- **example:** Thrilling Encore: "Put onto the battlefield under your control all creature cards in all graveyards that were put there from the battlefield this turn."
+- **suggested fix:** Returns cards that were put into a graveyard from the battlefield this turn back onto the battlefield.
+
+### `hate-empty-hand` — suspect
+- **current:** Rewards you when an opponent has few or no cards in hand.
+- **issue:** narrows to "opponent" but many cards care about any player's empty hand, and effect isn't always a reward
+- **example:** Asylum Visitor: "at the beginning of each player's upkeep, if that player has no cards in hand, you draw a card"; Lupine Prototype: "can't attack or block unless a player has no cards in hand"
+- **suggested fix:** Rewards you or grows stronger when a player has few or no cards in hand.
+
+### `mana-gorger` — suspect
+- **current:** Grows with +1/+1 counters whenever a player casts a spell.
+- **issue:** Overgeneralizes the trigger: most cards restrict it to an opponent's spell or a specific color/type, not 'a player casts a spell'
+- **example:** Mold Adder: 'Whenever an opponent casts a blue or black spell, you may put a +1/+1 counter on this creature.' (also Titania's Chosen: green spell; Medusa: noncreature spell)
+- **suggested fix:** Puts +1/+1 counters on itself whenever a qualifying spell is cast, the trigger varying by player, color, or type.
+
+### `typal-minotaur` — suspect
+- **current:** Rewards or boosts your Minotaurs together as a shared tribe.
+- **issue:** "together as a shared tribe" is meaningless for a single tribe (copied from the goblin-orc dual-tribe wording)
+- **example:** Rageblood Shaman: "Other Minotaur creatures you control get +1/+1 and have trample."
+- **suggested fix:** Rewards, boosts, or tutors for your Minotaurs.
+
+### `typal-rebel` — suspect
+- **current:** A creature that searches your library for a Rebel and puts it onto the battlefield.
+- **issue:** overspecified: claims every card is a creature that tutors a Rebel to the battlefield, but some members are non-tutoring reward cards
+- **example:** Barret, Avalanche Leader: "Whenever an Equipment you control enters, create a 2/2 red Rebel creature token." (no library search)
+- **suggested fix:** Rewards or searches your library for creatures of the Rebel type.
+
+### `vigor-effect` — suspect
+- **current:** Converts damage dealt to a creature into +1/+1 counters.
+- **issue:** overspecifies +1/+1 counters, but several members grant +0/+1 counters instead
+- **example:** Sacred Boon: "put a +0/+1 counter on that creature for each 1 damage prevented this way."
+- **suggested fix:** Prevents or replaces damage dealt to a creature, putting that many +1/+1 or +0/+1 counters on it instead.
+
+### `burn-battle` — suspect
+- **current:** Deals damage to a battle, alongside or instead of creatures and planeswalkers.
+- **issue:** Lists only creatures and planeswalkers as companion targets, but many of these cards hit players/opponents instead
+- **example:** Joyful Stormsculptor: 'deals 1 damage to each opponent and each battle they protect'; Jeska and Kamahl: '2 damage to target opponent, battle, or planeswalker'
+- **suggested fix:** Deals damage to a battle, often as one of several targets it can hit such as creatures, planeswalkers, or players.
+
+### `hate-monocolor` — suspect
+- **current:** Punishes, resists, or destroys monocolored creatures and spells.
+- **issue:** Says 'creatures and spells' but effects also hit any monocolored permanent
+- **example:** Vanishing Verse: 'Exile target monocolored permanent.'
+- **suggested fix:** Punishes, resists, destroys, or exiles monocolored permanents and spells.
+
+### `pseudo-equipment` — suspect
+- **current:** A creature or artifact that stays tapped to give another permanent a lasting bonus.
+- **issue:** "another permanent" is singular and "bonus" isn't always a bonus; some hit all creatures or shrink the target
+- **example:** Thran Weaponry: "{2}, {T}: All creatures get +2/+2 for as long as this artifact remains tapped"; Ashnod's Battle Gear gives +2/-2
+- **suggested fix:** A creature or artifact that stays tapped to give one or more creatures a stat change for as long as it remains tapped.
+
+### `relentless` — suspect
+- **current:** Lets you run more than the normal four copies of this card in your deck.
+- **issue:** hardcodes "four copies", but the limit varies (up to seven/nine) and one card allows only two, so the number is wrong
+- **example:** Mothers Yamazaki: "A Commander deck can include two of this card" (two, not more than four); Nazgul: "up to nine"
+- **suggested fix:** Can be included in your deck in more copies than the normal deckbuilding limit allows.
+
+### `bottom-of-library-matters` — suspect
+- **current:** Cares about the bottom of a library, such as drawing from it or exiling cards there.
+- **issue:** 'exiling cards there' reads as exiling cards TO the bottom, but the cards exile FROM the bottom
+- **example:** Memory Test: 'exiles cards from the bottom of their library until they exile five nonland cards'; Lantern of Undersight: 'You draw cards from the bottom of your library'
+- **suggested fix:** Cares about the bottom of a library, such as drawing or exiling cards from it.
+
+### `coin-flips-matter` — suspect
+- **current:** Cares about coin flips and rewards you for winning them.
+- **issue:** Says 'rewards you for winning'; several trigger off ANY player winning, not just you
+- **example:** Zndrsplt, Eye of Wisdom: 'Whenever a player wins a coin flip, draw a card.'
+- **suggested fix:** Cares about coin flips and rewards winning them.
+
+### `counter-preservation` — suspect
+- **current:** Moves a creature's counters onto another permanent when it dies or leaves the battlefield.
+- **issue:** Says 'a creature's counters'; source can be any permanent, not only creatures
+- **example:** Resourceful Defense: 'Whenever a permanent you control leaves the battlefield, if it had counters on it, put those counters on target permanent you control.'
+- **suggested fix:** Moves a permanent's counters onto another permanent when it dies or leaves the battlefield.
+
+### `cycle-zodiac-creature` — suspect
+- **current:** One of a cycle of animal creatures, each with landwalk tied to its type.
+- **issue:** 'landwalk tied to its type' is misleading; landwalk isn't derived from the creature type (e.g. Goat and Dog differ in type but both Mountainwalk)
+- **example:** Zodiac Goat (Goat): 'Mountainwalk' and Zodiac Dog (Dog): 'Mountainwalk'
+- **suggested fix:** One of a cycle of animal creatures, each with a landwalk ability.
+
+### `fulfilled-futureshift` — suspect
+- **current:** A card first previewed as futureshifted that later got a proper printing in its own set.
+- **issue:** 'in its own set' is imprecise/misleading; fulfilled futureshifts got normal printings in later real sets, not their own set
+- **example:** Steamflogger Boss (Future Sight futureshifted card, later given a normal printing in Unstable); Thornweald Archer (reprinted normally after its Future Sight debut)
+- **suggested fix:** A Future Sight futureshifted preview card that later received a normal printing in a real set.
+
+### `hate-free-spell` — suspect
+- **current:** Punishes spells cast without spending any mana, usually by countering or damaging their caster.
+- **issue:** Underspecified: scope is narrower than the cards, which also punish reduced-mana casts, no-colored-mana casts, and creatures cheated into play without being cast
+- **example:** Void Mirror: 'if no colored mana was spent to cast it, counter that spell'; Tokka & Rahzar: 'if the amount of mana spent was less than its mana value...deal 3 damage'; Containment Priest: 'If a nontoken creature would enter and it wasn't cast, exile it instead'
+- **suggested fix:** Punishes spells cast for free or below full cost, or creatures cheated onto the battlefield without being cast, by countering, exiling, or dealing damage.
+
+### `removes-indestructible` — suspect
+- **current:** Strips indestructible from a permanent, usually so damage can finish it off.
+- **issue:** "usually so damage can finish it off" overspecifies; half the examples strip indestructible to enable destroy/wrath effects, not damage
+- **example:** Exterminatus: "Nonland permanents your opponents control lose indestructible until end of turn. Destroy all nonland permanents."
+- **suggested fix:** Strips indestructible from one or more permanents, usually so damage or a destroy effect can then finish them off.
+
+### `un-color` — suspect
+- **current:** A joke card that uses fake colors like pink, gold, or orange that don't exist in normal Magic.
+- **issue:** Not all are joke cards; tournament-legal cards carry this tag too, so 'joke card' is misleading
+- **example:** Sword of Dungeons & Dragons (a normal black-border card): 'create a 4/4 gold Dragon creature token' and Chicago Loop: 'a 2/2 orange Bear token' are not Un-cards
+- **suggested fix:** Uses or creates objects in made-up colors like pink, orange, or gold that aren't among Magic's five real colors.
+
+### `untapper-nonland` — suspect
+- **current:** Untaps a nonland permanent, letting you use it again this turn.
+- **issue:** 'you use it again' assumes the permanent is yours and benefits you, but many untap opponents' permanents or don't grant reuse
+- **example:** Curse of Bounty: 'Each opponent attacking that player untaps all nonland permanents they control'; The Pandorica untaps a permanent then phases it out
+- **suggested fix:** Untaps a nonland permanent.
+
+### `conjure-card` — suspect
+- **current:** Conjures a duplicate of a card into your hand or onto the battlefield.
+- **issue:** says 'your hand' but the conjure often goes into another player's hand
+- **example:** Gutmorn, Pactbound Servant: 'they choose another player. That player conjures a duplicate of that card into their hand'; Juggle the Performance: 'each player... conjures a duplicate'
+- **suggested fix:** Conjures a duplicate of a card into a hand or onto the battlefield.
+
+### `counter-fuel-mm` — suspect
+- **current:** A creature that gets a benefit, like mana or removal, from removing -1/-1 counters off itself.
+- **issue:** 'off itself' is too narrow; some remove a -1/-1 counter from another creature
+- **example:** Woeleecher: 'Remove a -1/-1 counter from target creature. If you do, you gain 2 life'; Quillspike: 'Remove a -1/-1 counter from a creature you control'
+- **suggested fix:** A creature that removes a -1/-1 counter for a benefit like mana or removal.
+
+### `hate-typal-elf` — suspect
+- **current:** A creature or effect that scales with the number of Elves on the battlefield.
+- **issue:** 'scales with the number of Elves' misses the payoffs that trigger per Elf entering rather than counting Elves on the battlefield
+- **example:** Wirewood Hivemaster: 'Whenever another nontoken Elf enters, you may create a 1/1 green Insect creature token' (rewards each entry, does not scale with the total count); Elvish Vanguard similarly gets a counter per Elf entering
+- **suggested fix:** Rewards you for playing Elves, often scaling with the number of Elves on the battlefield or triggering as each Elf enters.
+
+### `phyrexian-token` — suspect
+- **current:** A creature token that also has a Phyrexian, oil-slick art variant.
+- **issue:** Overspecified/unverifiable art claim; the cards are generic Phyrexian-flavored tokens, not an 'oil-slick art variant' function
+- **example:** Insect token: 'Infect (This creature deals damage to creatures in the form of -1/-1 counters and to players in the form of poison counters.)'; also Myr / Wurm Token Artifact Creatures
+- **suggested fix:** A creature token that is Phyrexian, usually created by a Phyrexian-themed card.
+
+### `removes-hexproof` — suspect
+- **current:** Strips hexproof from opposing creatures or players so you can target them.
+- **issue:** Says 'creatures or players' but the effect hits any permanents your opponents control (planeswalkers, artifacts, etc.)
+- **example:** Shadowspear: 'Permanents your opponents control lose hexproof and indestructible until end of turn.'
+- **suggested fix:** Strips hexproof from permanents (and sometimes players) your opponents control so you can target them.
+
+### `restock-instant` — suspect
+- **current:** Puts an instant card from your graveyard back on top of your library.
+- **issue:** Says 'on top' but several cards put the card on the bottom of the library
+- **example:** Ardent Dustspeaker: 'you may put an instant or sorcery card from your graveyard on the bottom of your library.'
+- **suggested fix:** Puts an instant card from your graveyard back into your library, usually on top.
+
+### `restock-sorcery` — suspect
+- **current:** Puts a sorcery card from your graveyard back on top of your library.
+- **issue:** Says 'on top' but several cards put the card on the bottom of the library
+- **example:** Keeper of the Cadence: 'Put target artifact, instant, or sorcery card from a graveyard on the bottom of its owner's library.'
+- **suggested fix:** Puts a sorcery card from your graveyard back into your library, usually on top.
+
+### `skip-untap-step` — suspect
+- **current:** Makes a player skip their next untap step, so their permanents stay tapped.
+- **issue:** Says 'a player' and 'next,' but many are ongoing skips that can hit you or every player, not just one player's next step
+- **example:** Stasis: 'Players skip their untap steps.'
+- **suggested fix:** Makes a player (sometimes you or everyone) skip an untap step, so their permanents stay tapped.
+
+### `theft-planeswalker` — suspect
+- **current:** Takes control of an opponent's planeswalker.
+- **issue:** overspecified 'opponent's'; most cards target any planeswalker, not just an opponent's
+- **example:** Mass Manipulation: 'Gain control of X target creatures and/or planeswalkers'; Dragonlord Silumgar: 'gain control of target creature or planeswalker'
+- **suggested fix:** Takes control of a target planeswalker, often alongside creatures.
+
+### `turn-control` — suspect
+- **current:** Lets you control an opponent's turn, seeing their cards and making their decisions for them.
+- **issue:** overspecified 'opponent's'; several carriers control any target player, not only an opponent
+- **example:** Mindslaver: 'You control target player during that player's next turn'; Cruel Entertainment has two players control each other
+- **suggested fix:** Lets you control a player's turn, seeing their cards and making their decisions for them.
+
+### `clothing-matters` — suspect
+- **current:** A joke card whose effect depends on clothing or accessories you're actually wearing.
+- **issue:** Says 'you're actually wearing', but several cards key off any player's real-world clothing (often the opponent's), and some care about non-clothing physical traits
+- **example:** Hurloon Wrangler: 'Denimwalk (This creature can't be blocked as long as defending player is wearing denim.)'; Blurry Beeble keys off the defending player wearing glasses; Avatar of Me uses your height, shoe size, and eye color
+- **suggested fix:** A joke card whose effect depends on clothing, accessories, or physical traits a player really has in real life.
+
+### `cycle-2xm-draft-signpost` — suspect
+- **current:** A two-color draft signpost card that showcases an archetype's mechanics.
+- **issue:** cards themselves aren't all two-color/gold; they're signposts for two-color archetypes
+- **example:** Weapons Trainer (mono-white Equipment payoff) and Sphinx Summoner (artifact) are not two-color cards
+- **suggested fix:** A Double Masters draft signpost card that points toward a two-color archetype.
+
+### `cycle-a25-draft-signpost` — suspect
+- **current:** An uncommon gold card meant to point drafters toward a two-color archetype.
+- **issue:** 'gold' is inaccurate; some signposts are mono-color, not multicolored
+- **example:** Quicksilver Dagger: mono-blue 'Enchantment - Aura', not a gold card
+- **suggested fix:** An uncommon draft signpost card pointing drafters toward a two-color archetype.
+
+### `cycle-akh-draft-signpost` — suspect
+- **current:** An uncommon multicolor creature built to showcase a two-color archetype in this set's draft format.
+- **issue:** Says 'multicolor creature' but several cards in the cycle are mono-colored
+- **example:** Weaver of Currents ('{T}: Add {C}{C}') is a mono-green creature; Ahn-Crop Champion is mono-white, so the 'multicolor' qualifier is wrong for part of the cycle
+- **suggested fix:** An uncommon creature that showcases one of Amonkhet's two-color draft archetypes.
+
+### `cycle-ala-u-two-color` — suspect
+- **current:** A two-color uncommon from the Shards of Alara block.
+- **issue:** Says 'block' but this cycle is the Shards of Alara set specifically, not the three-set block
+- **example:** Tidehollow Sculler and Bull Cerodon are Shards of Alara set cards; the tag is set-scoped, so 'block' overstates the scope
+- **suggested fix:** A two-color uncommon from the Shards of Alara set.
+
+### `cycle-bbd-legendary-partner` — suspect
+- **current:** A legendary creature with partner with that fetches its named partner to a player's hand when it enters.
+- **issue:** Clumsy 'with partner with' phrasing and drops the optional 'may put' choice
+- **example:** Regna, the Redeemer: 'Partner with Krav... target player may put Krav into their hand from their library, then shuffle.'
+- **suggested fix:** A legendary creature with partner: when it enters, a player may tutor its named partner into their hand.
+
+### `cycle-bfz-draft-signpost` — suspect
+- **current:** A creature built to point drafters toward one of Battle for Zendikar's color-pair archetypes.
+- **issue:** Says 'creature' but the cycle includes a noncreature spell
+- **example:** Roil Spout is type 'Sorcery' (Put target creature on top of its owner's library. Awaken 4...), not a creature.
+- **suggested fix:** A card built to point drafters toward one of Battle for Zendikar's two-color draft archetypes.
+
+### `cycle-block-rtr-m-multicolor` — suspect
+- **current:** A multicolor mythic card from the Return to Ravnica block's guild cycle.
+- **issue:** "guild cycle" is misleading; these are the block's multicolor mythics, not a 10-guild cycle
+- **example:** Domri Rade (Gruul planeswalker) and Sphinx's Revelation (Azorius instant) are unrelated mythics, not one-per-guild cycle members
+- **suggested fix:** A multicolored mythic rare from the Return to Ravnica block.
+
+### `cycle-block-rtr-u-hybrid` — suspect
+- **current:** An uncommon that signals a two-color archetype in the Return to Ravnica block.
+- **issue:** Not all uncommon, and these are hybrid guild cards, not archetype signposts
+- **example:** Burning-Tree Emissary (rarity C, {R/G}{R/G}) and Merfolk of the Depths (rarity C) are common, not uncommon; cards are castable with either color rather than 'signaling an archetype'
+- **suggested fix:** A two-color hybrid card from the Return to Ravnica block, one per guild, castable with either of its two colors.
+
+### `cycle-clb-draft-signpost` — suspect
+- **current:** One of Baldur's Gate's two-color legendary creatures built to support its guild's draft archetype.
+- **issue:** 'guild' is Ravnica-specific jargon; Baldur's Gate has no guilds
+- **example:** Mahadi, Emporium Master ({1}{B}{R}, uncommon) is a color-pair signpost, not a guild card
+- **suggested fix:** An uncommon two-color legendary creature from Baldur's Gate that points drafters toward a color-pair archetype.
+
+### `cycle-cmr-backward-partner` — suspect
+- **current:** The backward half of a Commander Legends partner-legend pair, meant to team up with its forward twin.
+- **issue:** 'forward twin' implies a fixed pairing, but plain Partner pairs with any Partner card
+- **example:** Brinelin, the Moon Kraken: 'Partner (You can have two commanders if both have partner.)'
+- **suggested fix:** A Commander Legends legendary creature with Partner, letting you pair it with any other Partner card as a second commander.
+
+### `cycle-cn2-draft-signpost` — suspect
+- **current:** A two-color creature that signals its color-pair draft archetype in Conspiracy.
+- **issue:** says 'creature' but the cycle includes non-creature signposts
+- **example:** Gruul War Chant is type Enchantment ('Attacking creatures you control get +1/+0 and have menace.'), not a creature
+- **suggested fix:** A signpost card that points drafters toward a two-color archetype in Conspiracy: Take the Crown.
+
+### `cycle-cns-r-two-color` — suspect
+- **current:** A rare creature costed in two colors.
+- **issue:** says 'creature' but at least one member is a spell
+- **example:** Decimate is type Sorcery ('Destroy target artifact, target creature, target enchantment, and target land.'), not a creature
+- **suggested fix:** A rare, two-color card from Conspiracy.
+
+### `cycle-dgm-m-two-color` — suspect
+- **current:** A mythic two-color gold card representing one of the set's ten guilds.
+- **issue:** Claims 'mythic' but the cycle includes rares, not just mythics
+- **example:** Blood Baron of Vizkopa is rarity R (rare), as is Legion's Initiative; both carry the tag
+- **suggested fix:** A two-color gold card representing one of Dragon's Maze's ten guilds.
+
+### `cycle-dual-investigate-tapland` — suspect
+- **current:** A tapped dual land that can pay mana and tap to investigate for a Clue.
+- **issue:** 'can pay mana and tap to investigate' reads as one combined action; the two abilities each require the single tap and can't both be used at once
+- **example:** Dining Room: 'This land enters tapped. {T}: Add {R} or {G}. {4}, {T}: Investigate.'
+- **suggested fix:** A dual land that enters tapped and can either tap for one of two colors or pay to investigate for a Clue.
+
+### `cycle-ema-r-two-color` — suspect
+- **current:** A two-color gold rare from Eternal Masters.
+- **issue:** Calls the cycle 'gold' but several members are hybrid, not true gold multicolor
+- **example:** Giant Solifuge: '({R/G} can be paid with either {R} or {G})'; Deathrite Shaman is {B/G} hybrid
+- **suggested fix:** A two-color rare from Eternal Masters.
+
+### `cycle-eoe-u-spacecraft` — suspect
+- **current:** An uncommon Spacecraft artifact with an enters effect that becomes a creature once stationed.
+- **issue:** 'with an enters effect' is not universal, and 'once stationed' understates the power threshold
+- **example:** Galvanizing Sawship has no enters trigger, only 'Station ... It's an artifact creature at 3+. / 3+ | Flying, haste'
+- **suggested fix:** An uncommon Spacecraft artifact that becomes a flying creature once enough power is stationed onto it.
+
+### `cycle-gtc-m-two-color` — suspect
+- **current:** A Gatecrash two-color mythic rare, one themed to each of the set's guilds.
+- **issue:** 'one themed to each of the set's guilds' implies a five-card one-per-guild cycle, but the tag holds 10 mythics (multiple per guild)
+- **example:** Both Aurelia, the Warleader and Master Biomancer are Boros/Simic-adjacent GTC mythics, so guilds get more than one each
+- **suggested fix:** A Gatecrash two-color mythic rare tied to one of the set's guilds.
+
+### `cycle-inr-draft-signpost` — suspect
+- **current:** A two-color draft signpost card that showcases an archetype's mechanics.
+- **issue:** Calls the card itself two-color, but many signposts are monocolored
+- **example:** Markov Waltzer is mono-red ('Flying, haste ... target creatures you control each get +1/+0'); Wandering Mind and Spectral Shepherd are mono-blue
+- **suggested fix:** A draft signpost card that points drafters toward a two-color archetype's mechanics.
+
+### `cycle-ktk-draft-signpost` — suspect
+- **current:** A card that signals which two-color archetype to draft in this set.
+- **issue:** KTK archetypes are three-color clan wedges, not two-color; the card is two-color but points to a clan
+- **example:** Ride Down (RW) points to the Mardu clan (RWB); Death Frenzy (BG) toward Sultai/Abzan; these signal three-color wedge clans
+- **suggested fix:** A gold card that signals which three-color clan archetype to draft in this set.
+
+### `cycle-lci-r-two-color` — suspect
+- **current:** A rare two-color card from the Lost Caverns of Ixalan gold cycle.
+- **issue:** Says every card is two-color/gold, but a mono-color member carries the tag
+- **example:** Kellan, Daring Traveler // Journey On is mono-white (colors ["W"]), not a gold two-color card
+- **suggested fix:** A rare from Lost Caverns of Ixalan, usually a two-color gold card, tied to a draft archetype.
+
+### `cycle-ogw-draft-signpost` — suspect
+- **current:** A two-color uncommon built to point drafters toward its color pair's archetype.
+- **issue:** Overspecifies rarity and color: one member is rare, and two devoid Eldrazi are colorless, not two-color
+- **example:** Reflector Mage is rarity R (not uncommon); Void Grafter and Flayer Drone have Devoid, so colors=[] (colorless) despite two-colored pips
+- **suggested fix:** A signpost card that points drafters toward its two-color draft archetype.
+
+### `cycle-one-draft-signpost` — suspect
+- **current:** A two-color signpost creature marking a draft archetype in Phyrexia: All Will Be One.
+- **issue:** Says 'creature' but one member is an Equipment, not a creature
+- **example:** Bladehold War-Whip is an 'Artifact — Equipment' (For Mirrodin!), not a creature
+- **suggested fix:** A two-color signpost card marking a draft archetype in Phyrexia: All Will Be One.
+
+### `cycle-rav-backward-boost` — suspect
+- **current:** Grants a bonus effect only if a specific colored mana was spent to cast it.
+- **issue:** Frames the mana-spent condition as only a bonus; several cards impose a sacrifice PENALTY unless the mana was spent, not a bonus
+- **example:** Court Hussar: 'sacrifice it unless {W} was spent to cast it'; Plaxmanta and Squealing Devil are the same (sac unless mana spent), which is a drawback, not a granted bonus
+- **suggested fix:** Has an extra effect keyed to whether a specific color of mana was spent to cast it, granting a bonus or forcing a sacrifice if it wasn't.
+
+### `cycle-rav-forward-boost` — suspect
+- **current:** Gains a bonus effect if a specific color of mana was spent to cast it.
+- **issue:** Says 'gains a bonus effect,' but half the cycle instead sacrifices itself unless a color was spent (a requirement, not a bonus)
+- **example:** Azorius Herald: 'When this creature enters, sacrifice it unless {U} was spent to cast it.'
+- **suggested fix:** Has an extra effect or avoids sacrificing itself depending on whether a specific color of mana was spent to cast it.
+
+### `cycle-rtr-m-two-color` — suspect
+- **current:** One of a cycle of mythic two-color cards, one for each of the set's guilds.
+- **issue:** cycle has 10 cards (~2 mythic gold per guild), so "one for each of the set's guilds" undercounts and misdescribes the structure
+- **example:** Epic Experiment and Niv-Mizzet, Dracogenius are both Izzet; Vraska the Unseen and Jarad, Golgari Lich Lord are both Golgari
+- **suggested fix:** One of a cycle of mythic two-color cards from Return to Ravnica, spanning the set's five guilds.
+
+### `cycle-spm-r-two-color` — suspect
+- **current:** A rare two-color legendary creature built around its set's draft archetypes.
+- **issue:** Overspecifies as 'legendary creature'; the cycle includes a non-creature Equipment
+- **example:** Biorganic Carapace is 'Artifact — Equipment' (When this Equipment enters, attach it to target creature you control), not a legendary creature.
+- **suggested fix:** A rare two-color card built around its set's draft archetypes.
+
+### `cycle-vow-draft-signpost` — suspect
+- **current:** An uncommon multicolor creature built to showcase a two-color archetype in this set's draft format.
+- **issue:** Not all members are strictly multicolor creatures; the cycle includes mono-color-faced double-faced cards, one whose back is an Aura
+- **example:** Brine Comber // Brinebound Gift is a Spirit front face with an Enchantment - Aura back face (not a creature), and its faces are mono-colored rather than gold
+- **suggested fix:** An uncommon card that signposts one of this set's two-color draft archetypes.
+
+### `hate-graveyard-cast` — suspect
+- **current:** Stops players from casting spells out of graveyards.
+- **issue:** Only says 'stops'; the hate- tag also includes cards that counter or punish graveyard casting, not just prevent it
+- **example:** Ash Zealot: 'Whenever a player casts a spell from a graveyard, this creature deals 3 damage to that player.' Laquatus's Disdain: 'Counter target spell cast from a graveyard.'
+- **suggested fix:** Stops, counters, or punishes players who cast spells from graveyards.
+
+### `impulse-artifact-equipment` — suspect
+- **current:** Digs through the top cards of your library for an Equipment or Vehicle card and puts it into your hand.
+- **issue:** Says it goes 'into your hand,' but several cards put the Equipment or Vehicle onto the battlefield instead
+- **example:** Nick Fury, Agent of S.H.I.E.L.D.: 'look at the top seven cards... You may put a Hero, Equipment, or Vehicle card from among them onto the battlefield.' Armored Skyhunter puts an Equipment onto the battlefield too.
+- **suggested fix:** Digs through the top cards of your library for an Equipment or Vehicle card and puts it into your hand or onto the battlefield.
+
+### `morphling` — suspect
+- **current:** A shapeshifter with mana abilities that let it change its stats or gain keywords at instant speed.
+- **issue:** Not all are shapeshifters and not all pay mana; some are other creature types and one pays energy, and 'mana abilities' has a misleading rules meaning
+- **example:** Multiform Wonder (Artifact Creature - Construct): 'Pay {E}: This creature gains your choice of flying, vigilance, or lifelink until end of turn.' Shorecrasher Elemental is an Elemental, not a Shapeshifter.
+- **suggested fix:** A creature with repeatable activated abilities that pump its stats or grant it keywords at instant speed.
+
+### `moxen` — suspect
+- **current:** A zero-cost artifact named Mox that taps for mana.
+- **issue:** "named Mox" over-specifies; several tagged cards aren't named Mox
+- **example:** Gleemox: "{T}: Add one mana of any color. This card is banned." (not named Mox; Jack-in-the-Mox also isn't a plain "Mox")
+- **suggested fix:** A free or near-free artifact that taps to add mana, in the style of the classic Moxen.
+
+### `synergy-colored` — suspect
+- **current:** Cares about the colors or colored mana symbols on cards you cast, reveal, or mill.
+- **issue:** Sources overspecified; also cares about colors of permanents you control or creatures you sacrifice, not just cast/reveal/mill
+- **example:** Meteor Crater: "Choose a color of a permanent you control. Add one mana of that color."
+- **suggested fix:** Cares about the colors or colored mana symbols of cards and permanents.
+
+### `synergy-flash` — suspect
+- **current:** Rewards you for casting spells or creatures with flash.
+- **issue:** Too narrow: many cards reward creatures/permanents that already have flash, not just casting them
+- **example:** Sonic the Hedgehog: "put a +1/+1 counter on each creature you control with flash or haste"
+- **suggested fix:** Cares about the flash keyword, rewarding spells and creatures you control that have flash.
+
+### `synergy-untapped` — suspect
+- **current:** Rewards you for having untapped permanents, often boosting their stats or granting protection.
+- **issue:** Says "permanents" but every card references untapped creatures you control, not lands/artifacts
+- **example:** Builder's Blessing: "Untapped creatures you control get +0/+2."
+- **suggested fix:** Rewards untapped creatures you control, often boosting their toughness or granting protection.
+
+### `unique-mana-symbol` — suspect
+- **current:** Uses a mana symbol that appears on no other card, like infinity or one hundred.
+- **issue:** 'appears on no other card' overstates it; several tagged cards use symbols shared by many cards (Phyrexian hybrid, colorless {C})
+- **example:** Ulalek, Fused Atrocity: 'you may pay {C}{C}' ({C} is common), and Tamiyo, Compleated Sage uses Phyrexian {G/U/P} found on many cards
+- **suggested fix:** Uses an unusual or nonstandard mana symbol, such as infinity, one hundred, or Phyrexian mana.
+
+### `buff-pact` — suspect
+- **current:** Taps to boost a creature, but sacrifices itself if that creature leaves the battlefield that turn.
+- **issue:** Overspecifies 'taps' and 'boost'; some grant an ability not a stat buff, and one card's pact runs the other way
+- **example:** War Barge: '{3}: Target creature gains islandwalk... When this artifact leaves the battlefield this turn, destroy that creature' (no tap, no stat boost, and it destroys the creature rather than sacrificing itself)
+- **suggested fix:** Pumps or empowers a target creature, then is sacrificed if that creature leaves the battlefield that turn.
+
+### `chain-spell` — suspect
+- **current:** An instant or sorcery that its target's controller may copy and retarget by paying a cost.
+- **issue:** 'by paying a cost' is overspecified; the copy can be free or gated by a discard or sacrifice, not just a paid cost
+- **example:** Chain of Acid: 'Destroy target noncreature permanent. Then that permanent's controller may copy this spell and may choose a new target for that copy' (no cost to copy)
+- **suggested fix:** An instant or sorcery whose target's controller may copy it and pick a new target, sometimes by paying a cost or discarding or sacrificing.
+
+### `dolmen-ability` — suspect
+- **current:** Prevents all combat damage that would be dealt to your attacking creatures.
+- **issue:** Overspecified to 'your attacking creatures'; several cards protect all your creatures, all combat damage, or even all damage
+- **example:** Winds of Qal Sisma: 'Prevent all combat damage that would be dealt this turn' (general fog, not just your attackers); Loyal Unicorn: 'prevent all combat damage that would be dealt to creatures you control' (all your creatures, not only attackers); Iroas: 'Prevent all damage that would be dealt to attacking creatures you control' (all damage, not just combat)
+- **suggested fix:** Prevents combat damage that would be dealt to attacking creatures, usually the ones you control, and sometimes to all your creatures or all combat damage.
+
+### `end-turn` — suspect
+- **current:** Ends the current turn early, exiling spells on the stack and skipping remaining phases.
+- **issue:** Exiles all spells AND abilities from the stack, not just spells
+- **example:** Time Stop: 'End the turn. (Exile all spells and abilities, including this spell...)' and Obeka: 'Exile all spells and abilities from the stack'
+- **suggested fix:** Ends the current turn immediately, exiling all spells and abilities on the stack and skipping the rest of the turn.
+
+### `form` — suspect
+- **current:** An enchantment or planeswalker that transforms you, with big upsides and a real drawback.
+- **issue:** 'transforms you' is loose flavor (Form cards change rules/your life, not your creature type) and not every card carries a real drawback
+- **example:** Form of the Dragon: 'At the beginning of each end step, your life total becomes 5. Creatures without flying can't attack you.' (changes rules, doesn't turn you into a Dragon); Garruk the Slayer is a plain planeswalker with no personal drawback
+- **suggested fix:** A 'Form of' enchantment or 'you become' planeswalker that changes what you are, usually pairing a big upside with a steep drawback.
+
+### `loot-to-library` — suspect
+- **current:** Draws you cards, then puts a card from your hand on the bottom of or shuffles it into your library.
+- **issue:** Omits the 'top of library' option some cards offer, and 'draws' misses seek-based versions
+- **example:** Dream Cache: 'Draw three cards, then put two cards from your hand both on top of your library or both on the bottom'; Seek New Knowledge seeks rather than draws
+- **suggested fix:** Draws or seeks you cards, then returns one or more cards from your hand to the top or bottom of, or shuffled into, your library.
+
+### `mutiny` — suspect
+- **current:** Makes two creatures the same player controls fight or deal damage to each other.
+- **issue:** Overspecifies 'same player controls' (some cards fight ANY two creatures) and 'each other' implies mutual, but damage versions are one-directional
+- **example:** Clash of Titans: 'Target creature fights another target creature' (no same-controller restriction); Mutiny: one creature 'deals damage equal to its power to another' (only one deals)
+- **suggested fix:** Makes one creature deal damage to another creature, or makes two creatures fight.
+
+### `peek-face-down` — suspect
+- **current:** Lets you look at face-down creatures you don't control.
+- **issue:** Overspecified: 'you don't control' isn't universal; several cards look at ANY face-down creature
+- **example:** Smoke Teller: '{1}{U}: Look at target face-down creature.' (no you-don't-control limit; also Revealing Wind looks at each attacking/blocking face-down creature)
+- **suggested fix:** Lets you look at face-down creatures, often ones you don't control.
+
+### `prevent-etb` — suspect
+- **current:** Stops permanents from entering the battlefield, exiling or redirecting them instead.
+- **issue:** 'exiling or redirecting them instead' isn't universal; many just stop entering with no replacement
+- **example:** Grafdigger's Cage: 'Creature cards in graveyards and libraries can't enter the battlefield.' (no exile/redirect); Worms of the Earth: 'Lands can't enter the battlefield.'
+- **suggested fix:** Stops certain permanents from entering the battlefield, sometimes exiling or bouncing them instead.
+
+### `reanimate-face-down` — suspect
+- **current:** Returns a creature card from a graveyard to the battlefield face down.
+- **issue:** not always a creature card, and source isn't always the graveyard (some exile/mill)
+- **example:** Magar of the Magic Strings: 'Note the name of target instant or sorcery card in your graveyard and put it onto the battlefield face down. It's a 3/3 creature'
+- **suggested fix:** Puts a card onto the battlefield face down, usually a creature from a graveyard.
+
+### `remove-counters-player` — suspect
+- **current:** Strips all counters, often poison, from a player instead of a permanent.
+- **issue:** 'all counters' overstates (some remove a few), and it's usually 'permanent or player' not 'instead of a permanent'
+- **example:** Price of Betrayal: 'Remove up to five counters from target artifact, creature, planeswalker, or opponent.'
+- **suggested fix:** Removes counters, often poison, from a player rather than only from a permanent.
+
+### `synergy-color-every` — suspect
+- **current:** Rewards you for having all five colors among your permanents at once.
+- **issue:** underspecified: also rewards a single permanent, creature, or spell that is all colors, not just five colors among your permanents
+- **example:** Iridian Maelstrom: 'Destroy each creature that isn't all colors.'
+- **suggested fix:** Rewards you for having all five colors present, whether among your permanents or on a single all-colors permanent, creature, or spell.
+
+### `tutor-cast` — suspect
+- **current:** Searches your library for a card and lets you cast it without paying its mana cost.
+- **issue:** Overspecified: some tagged cards let you cast the found card at full cost, not free
+- **example:** Evolving Door: 'search your library for a creature card... Exile that card, then shuffle. You may cast the exiled card.' (no 'without paying its mana cost')
+- **suggested fix:** Searches your library for a card and lets you cast or play it, often without paying its mana cost.
+
+### `ante-matters` — suspect
+- **current:** Uses the old ante mechanic, wagering cards from your library as part of its effect.
+- **issue:** Overspecified: not all cards wager from your library; several exchange ownership of cards already in the ante or of permanents
+- **example:** Darkpact: 'You own target card in the ante. Exchange that card with the top card of your library.' Bronze Tablet exchanges ownership of a nontoken permanent, not a library card.
+- **suggested fix:** Uses the old ante mechanic, in which cards are wagered and can change ownership between players.
+
+### `counterspell-sweeper` — suspect
+- **current:** Counters all of your opponents' spells or abilities at once instead of just one.
+- **issue:** 'your opponents'' is too narrow; several counter ALL other spells (any player's), not just opponents'
+- **example:** Swift Silence: 'Counter all other spells. Draw a card for each spell countered this way.' (also Summary Dismissal 'Exile all other spells and counter all abilities')
+- **suggested fix:** Counters multiple spells or abilities at once instead of a single target.
+
+### `fake-flying` — suspect
+- **current:** A creature without flying that can't be blocked except by creatures with flying or reach.
+- **issue:** Overspecifies 'or reach'; many carriers are blockable only by flying (and some by Walls too), not reach
+- **example:** Silhana Ledgewalker: 'This creature can't be blocked except by creatures with flying' (no reach); Elven Riders adds 'Walls and/or creatures with flying'
+- **suggested fix:** A creature without flying that can only be blocked by creatures with flying, and sometimes reach.
+
+### `hate-etb` — suspect
+- **current:** Stops permanents that enter the battlefield from triggering abilities.
+- **issue:** Says 'permanents' but most cards hit creatures only, and several tax/copy rather than stop the trigger
+- **example:** Torpor Orb: 'Creatures entering don't cause abilities to trigger'; Strict Proctor counters the ability unless its controller pays {2} (does not stop it outright)
+- **suggested fix:** Stops abilities from triggering when creatures enter the battlefield.
+
+### `krarks-other-thumb-effect` — suspect
+- **current:** Makes you roll extra dice and ignore the worst results whenever you roll.
+- **issue:** 'ignore the worst results' overstates: cards ignore only ONE roll, often a chosen one, and some target another player
+- **example:** Krark's Other Thumb: 'instead roll two of those dice and ignore one of those results'; Bamboozling Beeble makes a target player roll extra and 'you choose one of those rolls to ignore'
+- **suggested fix:** Makes you roll one extra die and ignore one of the results whenever you roll dice.
+
+### `perpetual-aura` — suspect
+- **current:** An aura that returns to your hand when it falls off the creature it enchanted.
+- **issue:** Not always a creature (some enchant lands), and it returns to owner's hand on going to graveyard, not strictly 'your hand'
+- **example:** Spreading Algae: 'Enchant Swamp ... When this Aura is put into a graveyard from the battlefield, return it to its owner's hand.'
+- **suggested fix:** An Aura that returns to its owner's hand when it's put into a graveyard from the battlefield instead of staying there.
+
+### `restock-artifact` — suspect
+- **current:** Puts an artifact card from a graveyard back on top of its owner's library to be drawn again.
+- **issue:** says "on top" but several put the artifact on bottom or second from top
+- **example:** Keeper of the Cadence: "Put target artifact, instant, or sorcery card from a graveyard on the bottom of its owner's library." (Richlau puts it second from the top)
+- **suggested fix:** Returns an artifact card from a graveyard to its owner's library, usually on top, so it can be reused.
+
+### `synergy-goad` — suspect
+- **current:** Goads enemy creatures, forcing them to attack each combat and to attack a player other than you.
+- **issue:** only describes the goad mechanic; misses that this synergy tag rewards you for goaded creatures, and includes cards that never goad
+- **example:** Serene Sleuth: "At the beginning of combat on your turn, investigate for each goaded creature you control." (it pays off goad rather than goading anything)
+- **suggested fix:** Cares about goaded creatures, both goading enemy creatures to attack a player other than you and rewarding you for the goaded creatures in play.
+
+### `typal-non-share` — suspect
+- **current:** Rewards you for casting creatures with a creature type you don't already have.
+- **issue:** Says 'casting', but several members reward finding or counting new/diverse types, not only casting, and the zones checked vary (library, graveyard, battlefield).
+- **example:** Radagast the Brown: 'reveal a creature card that doesn't share a creature type with a creature you control ... put it into your hand' (card selection, not casting); Menagerie Curator checks 'a creature card in your library.'
+- **suggested fix:** Rewards you for creatures whose creature type isn't already shared by your other creatures or cards.
+
+### `cycle-tr-mage` — suspect
+- **current:** One of a cycle of wizards, each tutoring an artifact of a specific mana value to your hand.
+- **issue:** 'specific mana value' overspecifies: several fetch ranges and one ignores mana value entirely
+- **example:** Trove Mage: 'seek an artifact card from among the top ten cards of your library, then shuffle' (no mana-value restriction); Treasure Mage searches for 'mana value 6 or greater' (a range, not a specific value)
+- **suggested fix:** One of a cycle of wizards, each fetching an artifact card into your hand when it enters.
+
+### `delayed-payment` — suspect
+- **current:** Play it now, then pay its mana cost at your next upkeep or lose the game.
+- **issue:** Payment isn't the card's mana cost and isn't always at upkeep (super haste pays at end step)
+- **example:** Slaughter Pact: cast for {0}, then 'At the beginning of your next upkeep, pay {2}{B}'; Rocket-Powered Turbo Slug (super haste) pays 'at the beginning of your next turn's end step'
+- **suggested fix:** Lets the effect happen now, then requires you to pay a deferred cost on a later turn or you lose the game.
+
+### `eternalize` — suspect
+- **current:** Lets you exile a creature card from your graveyard to make a 4/4 black Zombie copy of it.
+- **issue:** Overspecified: not always your graveyard, and some don't exile from a graveyard at all
+- **example:** The Scarab God: 'Exile target creature card from a graveyard' (any); Hashaton: creates the 4/4 Zombie copy when you discard a creature card, no graveyard exile
+- **suggested fix:** Creates a 4/4 black Zombie token that's a copy of a creature card, usually one exiled from a graveyard.
+
+### `extra-upkeep` — suspect
+- **current:** Gives you one or more additional upkeep steps.
+- **issue:** Says 'you' but several give the steps to the enchanted player, who can be any player
+- **example:** Paradox Haze: 'Enchant player ... that player gets an additional upkeep step'; Shadow of the Second Sun enchants a player too
+- **suggested fix:** Adds one or more additional upkeep steps to a player's turn.
+
+### `forestfall` — suspect
+- **current:** Triggers a bonus effect whenever a Forest enters the battlefield under your control.
+- **issue:** 'under your control' is overspecified; some trigger on any Forest entering
+- **example:** Baru, Fist of Krosa: 'Whenever a Forest enters, green creatures you control get +1/+1 and gain trample'
+- **suggested fix:** Triggers a bonus effect whenever a Forest enters the battlefield, usually one you control.
+
+### `grafted-skullcap` — suspect
+- **current:** Draws you an extra card each turn but forces you to discard your hand at end of turn.
+- **issue:** Says 'draws you' but the discard can hit an enchanted opponent, and draw amount varies
+- **example:** Curse of Obsession: 'enchanted player draws two additional cards ... that player discards their hand.'
+- **suggested fix:** Draws extra cards each turn but forces the affected player to discard their hand at end of turn.
+
+### `hate-commander` — suspect
+- **current:** Destroys or bounces an opponent's commander.
+- **issue:** Too narrow and 'opponent's' overspecified: several cards steal, restrict, or trigger off commanders and can hit any player
+- **example:** Leadership Vacuum: 'Target player returns each commander they control ... to the command zone'; Spice Rack limits max Commander size.
+- **suggested fix:** Answers or disrupts commanders, for example by destroying, bouncing, stealing, or restricting them.
+
+### `hate-typal-dragon` — suspect
+- **current:** Punishes, destroys, or blanks Dragon creatures, or seizes control of them.
+- **issue:** "blanks" is unsupported by any card, and the description omits the dominant mode: granting protection from Dragons
+- **example:** Dragonstalker: "Flying, protection from Dragons"; Dragon Hunter: "Protection from Dragons. This creature can block Dragons as though it had reach."
+- **suggested fix:** Destroys Dragon creatures, seizes control of them, or gives protection from Dragons.
+
+### `old-ward` — suspect
+- **current:** Counters a spell or ability that targets it unless its controller pays a cost, an early form of ward.
+- **issue:** Overspecified 'targets it' and omits the opponent-controlled qualifier; many protect you or any permanent you control, not just themselves
+- **example:** Amulet of Safekeeping: 'Whenever you become the target of a spell or ability an opponent controls, counter that spell or ability unless its controller pays {1}.'
+- **suggested fix:** Counters an opponent's spell or ability that targets you or something you control unless its controller pays a cost, an early form of ward.
+
+### `opponent-sacrifices` — suspect
+- **current:** Forces an opponent to sacrifice a permanent of their choice.
+- **issue:** Says 'an opponent' and 'a permanent' when several hit each player (including you) and the sacrifice is usually a creature specifically
+- **example:** Plaguecrafter: 'each player sacrifices a creature or planeswalker of their choice'; Woebringer Demon: 'that player sacrifices a creature of their choice'
+- **suggested fix:** Forces one or more opponents (sometimes every player) to sacrifice a creature of their choice.
+
+### `prevent-trigger` — suspect
+- **current:** Stops permanents entering the battlefield from causing abilities to trigger.
+- **issue:** Overbroad 'permanents entering' when most cards only stop creatures entering from triggering abilities
+- **example:** Torpor Orb / Hushwing Gryff / Tocatli Honor Guard: 'Creatures entering don't cause abilities to trigger.'
+- **suggested fix:** Stops creatures (and sometimes other permanents) entering the battlefield from causing abilities to trigger.
+
+### `promotes-to-commander` — suspect
+- **current:** Lets a creature that normally isn't a commander become one.
+- **issue:** 'a creature' is overspecified; several cards promote noncreature permanents too
+- **example:** Ormacar, Relic Wraith: 'Precious (You can have two commanders if the other one is a legendary noncreature artifact.)'; Barce lets any legend with one color identity be a commander
+- **suggested fix:** Lets a card that normally can't be a commander become one.
+
+### `specific-toughness-matters` — suspect
+- **current:** Rewards you for having a creature or spell with a chosen power or toughness value.
+- **issue:** "chosen" overspecifies: many cards use a fixed value, not a player-chosen one
+- **example:** Duskana, the Rage Mother: "draw a card for each creature you control with base power and toughness 2/2" (fixed, not chosen); Sword of the Squeak: "+1/+1 for each creature you control with base power or toughness 1"
+- **suggested fix:** Rewards you for having a creature or spell with a specific power or toughness value.
+
+### `synergy-locus` — suspect
+- **current:** Rewards you for controlling Locus lands like Cloudpost.
+- **issue:** Locus is not only lands (Swarm of Locus is a creature), and several count Locus on the battlefield generally, not just ones you control
+- **example:** Swarm of Locus (Creature — Insect Locus): "gets +1/+0 ... for each Locus you control"; Cloudpost: "Add {C} for each Locus on the battlefield"
+- **suggested fix:** Rewards you for having Locus permanents like Cloudpost.
+
+### `synergy-pw-chandra` — suspect
+- **current:** Rewards you for controlling a Chandra planeswalker.
+- **issue:** Says only 'controlling' but many reward activating a Chandra's loyalty ability or casting Chandra, not mere control
+- **example:** Keral Keep Disciples: 'Whenever you activate a loyalty ability of a Chandra planeswalker, this creature deals 1 damage to each opponent.'
+- **suggested fix:** Rewards you for controlling, casting, or activating a Chandra planeswalker.
+
+### `transform-mirror` — suspect
+- **current:** A double-faced card whose back face mirrors its front face mechanically.
+- **issue:** 'mirrors its front face mechanically' is unsupported; the two faces do different or opposite things, they don't mechanically mirror
+- **example:** Chalice of Life // Chalice of Death: front gains you life, back drains opponents; faces are thematic opposites, not mechanical mirrors
+- **suggested fix:** A double-faced card that transforms between its front and back face.
+
+### `tutor-legendary` — suspect
+- **current:** Searches your library for a legendary card and puts it into your hand.
+- **issue:** 'puts it into your hand' is overspecified; some cards put it onto the battlefield
+- **example:** Sisay, Weatherlight Captain: 'Search your library for a legendary permanent card with mana value less than Sisay's power, put that card onto the battlefield'
+- **suggested fix:** Searches your library for a legendary card.
+
+### `bounce` — suspect
+- **current:** Returns a permanent to its owner's hand.
+- **issue:** Underspecified: bounce also returns spells on the stack, not just permanents, and often creatures already in hand/battlefield temporarily
+- **example:** Brutal Expulsion: 'Return target spell or creature to its owner's hand.'
+- **suggested fix:** Returns a permanent or spell to its owner's hand.
+
+### `cycle-hbg-alora` — suspect
+- **current:** One version of Alora in a cycle of legendary creatures, each with a different ability.
+- **issue:** Generic 'different ability' misses the shared core all versions have
+- **example:** Alora, Cheerful Swashbuckler: 'Whenever you attack, up to one target attacking creature can't be blocked this turn... return that creature to its owner's hand. If you do, create a Treasure token.'
+- **suggested fix:** A legend whose attack trigger makes an attacking creature unblockable then bounces it to hand, with a bonus effect that varies by version.
+
+### `cycle-hbg-gut` — suspect
+- **current:** One version of Gut in a cycle of legendary creatures, each with a different ability.
+- **issue:** Generic 'different ability' misses the shared specialize token-copy core
+- **example:** Gut, Devious Fanatic: 'When this creature specializes, create a token that's a copy of a creature card exiled with this creature... has flying and haste. Sacrifice it at the beginning of your next end step.'
+- **suggested fix:** A legend whose specialize trigger creates a hasty token copy of a creature exiled with it that's sacrificed next end step, with stats and keywords varying by version.
+
+### `cycle-hbg-imoen` — suspect
+- **current:** One version of Imoen in a cycle of legendary creatures, each with a different ability.
+- **issue:** Generic 'different ability' misses the shared unblockable combat-damage exile core
+- **example:** Imoen, Occult Trickster: 'can't be blocked. Whenever Imoen deals combat damage to a player, you may exile an instant or sorcery card from your graveyard. If you do, create a 2/2 black Zombie creature token.'
+- **suggested fix:** An unblockable legend that, on dealing combat damage to a player, may exile an instant or sorcery from your graveyard for a bonus effect that varies by version.
+
+### `cycle-hbg-rasaad` — suspect
+- **current:** One version of Rasaad in a cycle of legendary creatures, each with a different ability.
+- **issue:** Vague/underspecified: 'a different ability' says nothing; most forms make tokens on death
+- **example:** Rasaad, Warrior Monk: 'When Rasaad, Warrior Monk dies, create three 1/1 white Soldier creature tokens.'
+- **suggested fix:** A monk legend that specializes and, in most forms, creates creature tokens when it dies.
+
+### `cycle-hbg-sarevok` — suspect
+- **current:** A legendary knight that pumps a creature by your graveyard's creature count and can specialize.
+- **issue:** One form counts more than creatures in the graveyard
+- **example:** Sarevok, Deceitful Usurper: '+X/+0 ... where X is the number of creature, instant, and sorcery cards in your graveyard.'
+- **suggested fix:** A knight legend that specializes and each combat gives a creature you control +X/+0, where X is the number of creature cards in your graveyard.
+
+### `cycle-hbg-skanos` — suspect
+- **current:** A Dragon Vassal that grants another attacker a keyword and +X/+0 equal to its power.
+- **issue:** Overspecified: base and green forms grant no keyword, just +X/+0 (green untaps)
+- **example:** Skanos, Dragon Vassal: 'another target attacking creature gets +X/+0 until end of turn, where X is Skanos's power.' (no keyword)
+- **suggested fix:** A Dragon Vassal that specializes and, when it attacks, gives another attacking creature +X/+0 equal to its power, often also granting a keyword.
+
+### `cycle-jud-wormfang-vertical` — suspect
+- **current:** When it enters, exiles one of your permanents, returning it when it leaves the battlefield.
+- **issue:** Overspecified: not all members exile a permanent; one exiles your hand and one just skips a turn
+- **example:** Wormfang Behemoth: 'When this creature enters, exile all cards from your hand... return the exiled cards to their owner's hand'; Wormfang Manta: 'When this creature enters, you skip your next turn... take an extra turn after this one'
+- **suggested fix:** A Nightmare creature whose enter effect (exiling a land, creature, or your hand, or skipping a turn) is undone when it leaves the battlefield.
+
+### `cycle-m19-mare` — suspect
+- **current:** A Horse creature that can't be blocked by one color and has a bonus ability.
+- **issue:** one tagged member (Diamond Mare) has no color-based unblockable clause
+- **example:** Diamond Mare: 'As this creature enters, choose a color. Whenever you cast a spell of the chosen color, you gain 1 life.' (no 'can't be blocked by' text)
+- **suggested fix:** A Horse creature that usually can't be blocked by creatures of one color and has a color-matters bonus ability.
+
+### `cycle-neo-shrine` — suspect
+- **current:** A Shrine enchantment creature that lets you pay 1 each end step for an effect that scales with the number of Shrines you control.
+- **issue:** one tagged member (Go-Shintai of Life's Origin) has no pay-1 end-step scaling ability
+- **example:** Go-Shintai of Life's Origin: '{W}{U}{B}{R}{G}, {T}: Return target enchantment card from your graveyard to the battlefield.' plus a Shrine-ETB token trigger, not a pay-{1} end-step effect
+- **suggested fix:** A Shrine enchantment creature, most of which let you pay 1 at your end step for an effect that scales with the number of Shrines you control.
+
+### `cycle-spellshaped-from-fut` — suspect
+- **current:** One of a Future Sight cycle of simple creatures shaped like classic Magic spells.
+- **issue:** 'shaped like classic Magic spells' isn't supported; several are plain vanilla or utility creatures
+- **example:** Metallic Sliver is a blank 1/1 and Llanowar Elves is a mana dork ('{T}: Add {G}'), neither spell-shaped
+- **suggested fix:** One of a Future Sight cycle of small, simple low-cost creatures.
+
+### `cycle-usg-2-cycling-land` — suspect
+- **current:** A land that enters tapped for one color but can be discarded for {2} to draw a card instead.
+- **issue:** 'enters tapped for one color' fails for the colorless outlier that enters untapped
+- **example:** Blasted Landscape enters untapped and taps for colorless: '{T}: Add {C}. Cycling {2}'
+- **suggested fix:** A land that taps for mana (most enter tapped) and can be cycled by discarding it for {2} to draw a card.
+
+### `fallout-perk-name` — suspect
+- **current:** A card in the Fallout set's cycle named after a perk from the game.
+- **issue:** 'cycle' is imprecise; these are a large themed group of cards (many Auras) named after Fallout perks, not a formal one-per-color cycle
+- **example:** Strong Back, Nerd Rage, Almost Perfect and others are all Auras named after Fallout perks, far more than a standard cycle
+- **suggested fix:** A card from the Fallout set named after a perk from the game.
+
+### `gains-forestwalk` — suspect
+- **current:** Grants a creature forestwalk, making it unblockable while the defending player controls a Forest.
+- **issue:** 'gains-' means the creature grants forestwalk to ITSELF, but wording ('Grants a creature forestwalk') reads like a gives- tag; inconsistent with the parallel gains-shadow entry
+- **example:** Wormwood Dryad: '{G}: This creature gains forestwalk until end of turn'
+- **suggested fix:** Gains forestwalk itself, so it can't be blocked while the defending player controls a Forest.
+
+### `greatest-power-matters` — suspect
+- **current:** Rewards you for controlling the creature with the greatest power on the battlefield.
+- **issue:** Narrow: many cards use the greatest power as a scaling VALUE, not reward you for controlling that creature
+- **example:** Selvala, Heart of the Wilds: '{G}, {T}: Add X mana ... where X is the greatest power among creatures you control'; Cosmic Cube casts a spell with mana value up to the greatest power among your attackers
+- **suggested fix:** Cares about the greatest power among creatures, rewarding you for controlling that creature or scaling an effect off it.
+
+### `hate-typal-werewolf` — suspect
+- **current:** Punishes or removes Werewolf creatures specifically, such as with protection, destruction, or bounce.
+- **issue:** 'specifically' overstates it: several cards answer Werewolves as part of broader tribal hate, not Werewolves alone
+- **example:** Slayer of the Wicked: 'you may destroy target Vampire, Werewolf, or Zombie'; Elite Inquisitor: 'Protection from Vampires, from Werewolves, and from Zombies'
+- **suggested fix:** Punishes or answers Werewolf creatures, such as with protection from, destruction of, or bounce of Werewolves.
+
+### `impulse-artifact-vehicle` — suspect
+- **current:** Digs into your library for Vehicle or artifact creature cards, to your hand or the battlefield.
+- **issue:** Narrows to 'artifact creature' when the cards mostly fetch Equipment/Vehicle (any artifact plus Vehicle)
+- **example:** Astor, Bearer of Blades: 'reveal an Equipment or Vehicle card ... put it into your hand'; Nick Fury grabs 'Hero, Equipment, or Vehicle'
+- **suggested fix:** Digs through your library for artifact or Vehicle cards and puts them into your hand or onto the battlefield.
+
+### `protects-nonland` — suspect
+- **current:** Temporarily exiles a nonland permanent, then returns it to the battlefield.
+- **issue:** Not all cards return the permanent to the battlefield; many exile it to be recast (airbend/play from exile)
+- **example:** Airbending Lesson: "Airbend target nonland permanent. (Exile it. While it's exiled, its owner may cast it for {2}...)" and Soul Partition: "Exile target nonland permanent. For as long as that card remains exiled, its owner may play it."
+- **suggested fix:** Temporarily exiles a nonland permanent so it can later return to the battlefield or be recast.
+
+### `pseudo-exert` — suspect
+- **current:** Uses an ability that skips its next untap step as the cost for a bonus effect.
+- **issue:** "as the cost for a bonus effect" misfits cards where skipping untap is a pure drawback, not a cost paid for a benefit
+- **example:** Apes of Rath: "Whenever this creature attacks, it doesn't untap during its controller's next untap step." (no bonus granted)
+- **suggested fix:** Skips its next untap step, mimicking exert, often in exchange for an activated ability's effect.
 
