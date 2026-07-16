@@ -6,14 +6,24 @@ and flags inaccuracies with a card example and a suggested fix. **Findings are f
 are NOT auto-applied.**
 
 ## Coverage / resume
-- **Audited: 2200 / 4,357** (top tags by card population, highest-impact first).
-- **Resume: re-run the top-N population pull.** It excludes every slug already in
-  [`otag_audited_slugs.txt`](otag_audited_slugs.txt), so it self-heals gaps and dupes. Next: rank ~2201+.
-- **Planned full re-audit (0-all).** Ranks 1-2000 were audited by the *old* single-stage
+
+> **➡️ ACTIVE TASK IS THE RE-AUDIT. Next AI: resume at rank ~501, NOT 2201.**
+> The full 0-all **re-audit** (improved two-stage workflow) supersedes this forward sweep.
+> Pick up in [`otag_reaudit_progress.md`](otag_reaudit_progress.md) and continue from rank
+> ~501+ (using [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt)). Do **not** continue the
+> forward sweep below unless the re-audit is abandoned.
+
+- **This forward sweep is PAUSED at 2200 / 4,357.** It used a mix of old and improved workflow
+  passes (ranks 1-2000 old, 2001-2200 improved). Superseded by the re-audit, which re-checks
+  everything with the improved workflow from the top. Its old resume point was rank ~2201; ignore
+  that in favor of the re-audit.
+- **Full re-audit (0-all) IN PROGRESS.** Ranks 1-2000 were audited by the *old* single-stage
   workflow (no card-data grounding, no Verify stage), which [Batch 6](#batch-6-rank-20012200-improved-two-stage-workflow)
-  proved was blind to cost/color/hybrid/rarity facts. Those ranks should be re-run through the
-  improved two-stage workflow to catch what it missed. This is a separate, larger effort: clear
-  (or ignore) [`otag_audited_slugs.txt`](otag_audited_slugs.txt) and sweep from rank 1. Not started.
+  proved was blind to cost/color/hybrid/rarity facts. Re-running those ranks through the improved
+  two-stage workflow from the top, tracked separately in
+  [`otag_reaudit_progress.md`](otag_reaudit_progress.md) /
+  [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt). **Done: ranks 1-500** (84 flags the old pass
+  missed). **Next: rank ~501+.**
 
 ## Findings so far
 Across 2200 audited: **1807 clean, 365 suspect, 27 wrong** (rank 2001-2200 added by
