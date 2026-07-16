@@ -1,6 +1,6 @@
 # Per-session client version tracking
 
-**Status: PLANNED 2026-07-13. Additive, server-first; fits the standard
+**Status: DONE 2026-07-15 (shipped, archived). Additive, server-first; fits the standard
 `api_evolution.md` new-field pattern. Deploy server before shipping the client.
 Login, register, and refresh all covered. On refresh the client **re-sends** the
 current version (it overwrites, unlike platform's pure carry-forward) so the row
