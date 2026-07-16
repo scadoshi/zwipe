@@ -51,10 +51,7 @@ use zwipe_core::{
         auth::models::session::Session,
         card::{
             Card,
-            scryfall_data::{
-                ImageSize,
-                colors::{Color, Colors},
-            },
+            scryfall_data::colors::{Color, Colors},
             search_card::{
                 card_filter::{builder::CardQueryBuilder, price_currency::PriceCurrency},
                 card_type::CardType,
@@ -327,10 +324,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     .scryfall_data
                                     .oracle_id
                                     .is_some_and(|oid| deck_ids.contains(&oid))
-                                && card
-                                    .scryfall_data
-                                    .primary_image_url(ImageSize::Large)
-                                    .is_some()
                         })
                         .collect();
 
@@ -886,13 +879,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                         cards_from_search
                             .into_iter()
                             .filter(|card| {
-                                card.scryfall_data
-                                    .primary_image_url(ImageSize::Large)
-                                    .is_some()
-                                    && !card
-                                        .scryfall_data
-                                        .oracle_id
-                                        .is_some_and(|oid| deck_ids.contains(&oid))
+                                !card
+                                    .scryfall_data
+                                    .oracle_id
+                                    .is_some_and(|oid| deck_ids.contains(&oid))
                             })
                             .collect(),
                     );
@@ -1416,8 +1406,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                             cards_from_search
                                                 .into_iter()
                                                 .filter(|card| {
-                                                    card.scryfall_data.primary_image_url(ImageSize::Large).is_some()
-                                                        && !card.scryfall_data.oracle_id.is_some_and(|oid| deck_ids.contains(&oid))
+                                                    !card.scryfall_data.oracle_id.is_some_and(|oid| deck_ids.contains(&oid))
                                                 })
                                                 .collect(),
                                         );

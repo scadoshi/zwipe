@@ -64,6 +64,27 @@ pub fn FlippableCardImage(
     let alt = sd.read().name.clone();
     let image_url: Option<String> = sd.read().face_image_url(cur, size).map(str::to_owned);
 
+    // Text-proxy fields for the no-image placeholder: a card that carries no art
+    // still shows its identity + rules so the user can read it and swipe past.
+    // Read only when there's no image, so an art card never pays to clone its
+    // oracle text.
+    let (mana_cost, type_line, oracle_text, pt) = if image_url.is_none() {
+        let sd_read = sd.read();
+        let pt = match (&sd_read.power, &sd_read.toughness, &sd_read.loyalty) {
+            (Some(p), Some(t), _) => Some(format!("{p}/{t}")),
+            (_, _, Some(l)) => Some(l.clone()),
+            _ => None,
+        };
+        (
+            sd_read.mana_cost.clone(),
+            sd_read.type_line.clone(),
+            sd_read.oracle_text.clone(),
+            pt,
+        )
+    } else {
+        (None, None, None, None)
+    };
+
     let already_loaded = image_url.as_ref().is_some_and(|u| {
         seen_urls()
             .lock()
@@ -95,6 +116,30 @@ pub fn FlippableCardImage(
                             }
                             load_nudge += 1;
                         },
+                    }
+                } else {
+                    // No art: draw a card-shaped text proxy (name, mana, type,
+                    // rules) in the image's footprint instead of an empty box.
+                    div { class: "no-image-card",
+                        div { class: "nic-titlebar",
+                            span { class: "nic-name", "{alt}" }
+                            if let Some(mc) = mana_cost {
+                                span { class: "nic-mana", "{mc}" }
+                            }
+                        }
+                        if let Some(tl) = type_line {
+                            div { class: "nic-type", "{tl}" }
+                        }
+                        div { class: "nic-text",
+                            if let Some(ot) = oracle_text {
+                                "{ot}"
+                            } else {
+                                span { class: "nic-empty", "No card text." }
+                            }
+                        }
+                        if let Some(p) = pt {
+                            div { class: "nic-pt", "{p}" }
+                        }
                     }
                 }
                 if flippable && total > 1 {
