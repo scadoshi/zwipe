@@ -90,12 +90,19 @@ were caught in review rather than shipped, and why they shouldn't recur.
 
 ## How to run
 
+> **➡️ ACTIVE TASK: the full 0-all RE-AUDIT.** Resume at rank ~501+, tracked by
+> [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt) with findings in
+> [`otag_reaudit_progress.md`](otag_reaudit_progress.md). Use that tracker below (not the
+> forward `otag_audited_slugs.txt`, which is paused at 2200). The mechanics are identical;
+> only the tracker file differs.
+
 ```
 Workflow({ scriptPath: "context/development/runbooks/otag_audit_workflow.js",
            args: { pairs: [{ slug, description }, ...] } })
 ```
 
-Pick the next batch by population, excluding already-audited slugs:
+Pick the next batch by population, excluding already-audited slugs (for the active re-audit,
+exclude those in `otag_reaudit_slugs.txt`):
 
 ```bash
 export DATABASE_URL="$(grep '^DATABASE_URL=' zerver/.env | cut -d= -f2-)"
