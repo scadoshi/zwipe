@@ -90,7 +90,7 @@ pub fn HintDialog(open: Signal<bool>, title: String, children: Element) -> Eleme
                 AlertDialogTitle { "{title}" }
                 hr { class: "dialog-rule" }
                 AlertDialogDescription {
-                    {children}
+                    div { class: "hint-body", {children} }
                 }
                 hr { class: "dialog-rule" }
                 AlertDialogActions {

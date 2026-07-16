@@ -104,6 +104,10 @@ pub fn CardDetails(
     /// elsewhere (the eyeball dialog's title).
     #[props(default = true)]
     show_name: bool,
+    /// Show the mana cost in the detail head. Off for hosts that show it elsewhere
+    /// (the eyeball dialog pins it in the title).
+    #[props(default = true)]
+    show_cost: bool,
     /// Render the card-role classification (roles + grouped oracle tags) below the
     /// keywords. Off by default so read-only embeds (e.g. the portfolio) opt in.
     #[props(default)]
@@ -136,6 +140,7 @@ pub fn CardDetails(
     let sd = &card.scryfall_data;
     let name = sd.name.clone();
     let rarity_name = sd.rarity.to_long_name();
+    let set_name = sd.set_name.clone();
     let keywords = sd.keywords.clone().unwrap_or_default();
     let has_image = sd.primary_image_url(ImageSize::Large).is_some();
 
@@ -174,12 +179,12 @@ pub fn CardDetails(
 
     rsx! {
         div { class: "card-row-detail",
-            if show_name || !cost.is_empty() {
+            if show_name || (show_cost && !cost.is_empty()) {
                 div { class: "card-detail-head",
                     if show_name {
                         p { class: "card-detail-name", "{name}" }
                     }
-                    if !cost.is_empty() {
+                    if show_cost && !cost.is_empty() {
                         OracleText { text: cost, class: "card-detail-cost".to_string() }
                     }
                 }
@@ -187,16 +192,17 @@ pub fn CardDetails(
             if let Some(face) = current_face {
                 div { class: "card-detail-meta",
                     if !face.type_line.is_empty() {
-                        span { class: "detail-chip", "{face.type_line}" }
+                        span { class: "detail-chip detail-chip-type", "{face.type_line}" }
                     }
-                    span { class: "detail-chip", "{rarity_name}" }
+                    span { class: "detail-chip detail-chip-rarity", "{rarity_name}" }
+                    span { class: "detail-chip detail-chip-set", "{set_name}" }
                 }
                 if !face.oracle.is_empty() {
                     OracleText { text: face.oracle, class: "card-detail-oracle".to_string() }
                 }
                 if let Some(stats) = face.stats {
                     div { class: "card-detail-stats",
-                        span { class: "detail-chip", "{stats}" }
+                        span { class: "detail-chip detail-chip-pt", "{stats}" }
                     }
                 }
             }
