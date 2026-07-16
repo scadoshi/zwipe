@@ -38,9 +38,7 @@ use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{
-        Card,
-        scryfall_data::{ImageSize, colors::Colors},
-        search_card::card_filter::builder::CardQueryBuilder,
+        Card, scryfall_data::colors::Colors, search_card::card_filter::builder::CardQueryBuilder,
     },
     deck::format::Format,
     user::models::hints::HINT_SWIPE_SELECT,
@@ -194,14 +192,7 @@ pub(crate) fn SwipeSelect(
         spawn(async move {
             match client().search_commanders(&filter, &session).await {
                 Ok(found) => {
-                    let page: Vec<Card> = found
-                        .into_iter()
-                        .filter(|c| {
-                            c.scryfall_data
-                                .primary_image_url(ImageSize::Large)
-                                .is_some()
-                        })
-                        .collect();
+                    let page: Vec<Card> = found;
                     if page.is_empty() {
                         exhausted.set(true);
                     }
@@ -239,12 +230,7 @@ pub(crate) fn SwipeSelect(
                         cards.peek().iter().map(|c| c.scryfall_data.id).collect();
                     let mut page: Vec<Card> = found
                         .into_iter()
-                        .filter(|c| {
-                            c.scryfall_data
-                                .primary_image_url(ImageSize::Large)
-                                .is_some()
-                                && !seen.contains(&c.scryfall_data.id)
-                        })
+                        .filter(|c| !seen.contains(&c.scryfall_data.id))
                         .collect();
                     if page.is_empty() {
                         exhausted.set(true);

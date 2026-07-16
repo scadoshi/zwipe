@@ -279,8 +279,6 @@ pub fn SwipeStack(
                         Direction::Up => "card-stack-exit-up",
                         Direction::Down => "",
                     };
-                    let card_name = card.scryfall_data.name.clone();
-                    let image_url: Option<String> = card.scryfall_data.primary_image_url(ImageSize::Large).map(str::to_owned);
                     rsx! {
                         div {
                             key: "exit-{id}",
@@ -290,13 +288,15 @@ pub fn SwipeStack(
                                 exiting_overlay.write().retain(|(eid, _, _)| *eid != id);
                             },
 
-                            if let Some(ref image_url) = image_url {
-                                img {
-                                    src: "{image_url}",
-                                    alt: "{card_name}",
-                                    class: "card-image",
-                                    draggable: false,
-                                }
+                            // Same element as the resting/peek cards (non-flippable
+                            // here) so the fly-off matches — and image-less cards
+                            // show their text frame instead of going blank.
+                            FlippableCardImage {
+                                sd: card.scryfall_data,
+                                size: ImageSize::Large,
+                                class: "card-image".to_string(),
+                                draggable: false,
+                                flippable: false,
                             }
                         }
                     }

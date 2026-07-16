@@ -1,6 +1,24 @@
 # No-image cards — render a text "identity frame" instead of hiding them
 
-**Status: PLANNED (2026-07-15). Client-only; shared component + examples screen.**
+**Status: IMPLEMENTED 2026-07-16 (local, uncommitted, not yet runtime-tested).
+Client-only; shared component + serve screens.**
+
+**As-built:** `FlippableCardImage` no-image branch renders a `.no-image-card`
+identity frame (name + mana, type line, oracle text box, P/T or loyalty footer);
+CSS in `zwipe-components/assets/components.css` (themed, no glow). Dropped the image
+clause from every serve filter: examples (`oracle_tag_examples.rs`, now no client
+filter at all), add (`add.rs` ×3 serve paths, in-deck/dedup kept), swipe_select
+(`swipe_select.rs` ×2, `!seen` kept). Removed the now-unused `ImageSize` imports.
+fmt + clippy clean. The swipe-stack *exit* animation overlay
+(`interactions/swipe/stack.rs`) was also switched from a raw `img` to
+`FlippableCardImage { flippable: false }`, so the fly-off matches the resting card
+and image-less cards keep their frame throughout (no blank flash). Every swipe
+surface now renders cards through the one component.
+
+---
+
+**Original plan below (PLANNED 2026-07-15). Client-only; shared component + examples
+screen.**
 Stop discarding cards that lack art. Render them as a card-shaped **identity
 frame** (name, mana, type, oracle text) so the user can still read the card and
 swipe past it. Lives in the shared `FlippableCardImage`, so every swipe/preview

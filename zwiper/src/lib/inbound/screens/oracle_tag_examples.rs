@@ -36,7 +36,6 @@ use zwipe_core::domain::{
     auth::models::session::Session,
     card::{
         Card,
-        scryfall_data::ImageSize,
         search_card::card_filter::{builder::CardQueryBuilder, card_sort_key::CardSortKey},
     },
 };
@@ -131,20 +130,11 @@ pub fn OracleTagExamples(slug: String) -> Element {
                     if new_cards.is_empty() {
                         pagination_exhausted.set(true);
                     } else {
-                        // Advance the page cursor even if this page is all
-                        // image-less — the near-end trigger will fetch the next.
+                        // Image-less cards render as a text identity frame
+                        // (FlippableCardImage), so we keep them — no client
+                        // filter means no barren pages either.
                         current_offset.set(offset + PAGE_LIMIT);
-                        let with_images: Vec<Card> = new_cards
-                            .into_iter()
-                            .filter(|c| {
-                                c.scryfall_data
-                                    .primary_image_url(ImageSize::Large)
-                                    .is_some()
-                            })
-                            .collect();
-                        if !with_images.is_empty() {
-                            stack.append(with_images);
-                        }
+                        stack.append(new_cards);
                     }
                     is_loading_more.set(false);
                     is_loading_cards.set(false);
