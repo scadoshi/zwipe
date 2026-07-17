@@ -3860,7 +3860,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "old-damage-deathtouch",
-        "Destroys any creature it deals combat damage to, an older way of writing deathtouch.",
+        "Destroys any creature dealt damage by an affected creature, an older way of writing deathtouch.",
     ),
     (
         "hate-named",
@@ -3868,7 +3868,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "quick-enchant",
-        "Attaches an Aura to a permanent through an ability instead of casting it normally.",
+        "Attaches or moves an Aura or Equipment onto a permanent through an ability rather than by casting it.",
     ),
     (
         "typal-phyrexian",
@@ -3884,11 +3884,11 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "pariah",
-        "Redirects damage that would be dealt to you onto a creature instead.",
+        "Redirects damage that would be dealt to you, or sometimes to your creatures, onto a single creature instead.",
     ),
     (
         "seek-creature",
-        "Puts a random creature card from your library into your hand.",
+        "Finds a random creature card from your library and puts it into your hand, onto the battlefield, or into your graveyard.",
     ),
     (
         "synergy-warp",
@@ -3912,11 +3912,11 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "removal-equipment",
-        "Removal aimed specifically at destroying or exiling Equipment.",
+        "Destroys, exiles, or bounces Equipment, sometimes alongside other permanents.",
     ),
     (
         "synergy-color-choose",
-        "Choose a color as it enters, then reward cards or mana of that color.",
+        "Chooses a color as it enters, then rewards creatures, spells, or mana of that chosen color.",
     ),
     (
         "x-cost-matters",
@@ -3924,15 +3924,15 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "synergy-scry",
-        "Triggers an additional effect whenever you scry.",
+        "Rewards scrying, granting an extra benefit or changing what happens whenever you scry.",
     ),
     (
         "life-divider-you",
-        "Makes a player lose, draw, discard, or sacrifice roughly half of something, rounded up.",
+        "Makes a player lose, draw, discard, or sacrifice a fraction (usually half) of something, rounded up.",
     ),
     (
         "reanimate-matters",
-        "Triggers when a creature card enters or leaves a graveyard, including reanimation.",
+        "Triggers when a creature enters the battlefield from a graveyard or a creature card leaves your graveyard, rewarding reanimation and casting from the graveyard.",
     ),
     (
         "hate-multicolor",
@@ -3960,7 +3960,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "conjure-artifact",
-        "Creates a specific artifact card from outside the game in your hand or on the battlefield.",
+        "Conjures a specific artifact card from outside the game into your hand, onto the battlefield, or into your graveyard.",
     ),
     (
         "typal-angel",
@@ -3972,7 +3972,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "poison-opponents",
-        "Gives poison counters to opponents directly, not through infect or toxic combat damage.",
+        "Gives poison counters directly to a player, not through infect or toxic combat damage.",
     ),
     (
         "reanimate-aura",
@@ -4000,7 +4000,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "crewless-vehicle",
-        "A Vehicle that can become a creature without needing to be crewed.",
+        "A Vehicle that becomes a creature without a standard Crew keyword ability.",
     ),
     (
         "deathtouch-counter",
@@ -4020,7 +4020,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "synergy-reach",
-        "Grants or counts reach along with other keyword abilities found among your creatures.",
+        "Grants or counts reach along with other keyword abilities found among your creatures or cards in other zones such as your hand, graveyard, or library.",
     ),
     (
         "cost-reducer-colored-mana",
@@ -4084,11 +4084,11 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "legends-retold",
-        "Part of a special set-booster cycle reimagining classic legendary creatures from the original Legends set.",
+        "A modern reimagining of a classic legendary character from the original Legends set.",
     ),
     (
         "cycle-2xm-r-two-color",
-        "Belongs to a two-color rare cycle reprinted in Double Masters.",
+        "A two-color multicolored card reprinted in the Double Masters (2XM) set.",
     ),
     (
         "sneak-artifact",
@@ -4100,7 +4100,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "impulse-instant",
-        "Exiles cards from your library and lets you cast an instant from among them.",
+        "Digs through your library for instant and sorcery cards, letting you cast them or put them into your hand.",
     ),
     (
         "renown",
@@ -4108,7 +4108,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "impulse-sorcery",
-        "Exiles cards from your library and lets you cast a sorcery from among them.",
+        "Digs through your library for an instant or sorcery card to cast or put into your hand.",
     ),
     (
         "offcolor-mana-generation",
@@ -4116,15 +4116,15 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "cycle-2x2-draft-signpost",
-        "A two-color gold card that steers drafters toward its color pair's archetype.",
+        "A two-color signpost card that steers drafters toward its color pair's archetype.",
     ),
     (
         "cycle-war-r-two-color",
-        "A two-color rare from War of the Spark, one per guild pair in the cycle.",
+        "A two-color rare from War of the Spark, part of the set's cycle of gold rares.",
     ),
     (
         "fateseal",
-        "Lets you look at an opponent's top library card and choose to leave it or put it on the bottom.",
+        "Looks at cards on top of a player's library and may move them to the bottom or into the graveyard.",
     ),
     (
         "offspring-token",
@@ -4196,7 +4196,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "zoo",
-        "Creates multiple creature tokens of different types.",
+        "Creates several creature tokens at once, often of different types.",
     ),
     (
         "doctor-who-episode-saga",
@@ -4220,7 +4220,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "recursion-from-exile",
-        "Returns a card you own from exile to your hand, library, battlefield, or graveyard.",
+        "Returns an exiled card to a hand, library, battlefield, or graveyard, or lets a card be cast or played from exile.",
     ),
     (
         "berserk",
@@ -4249,11 +4249,11 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ("hate-snow", "Punishes or cares about snow permanents."),
     (
         "hate-flash",
-        "Stops or taxes opponents from casting spells or acting outside their own turn.",
+        "Stops or taxes players from casting spells or activating abilities outside their own turn.",
     ),
     (
         "predefined-token",
-        "Creates a specific named token with a fixed, preset set of abilities.",
+        "A specific named token that comes with a fixed, preset set of abilities.",
     ),
     (
         "lifegain-to-damage",
@@ -4269,11 +4269,11 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "hate-legendary",
-        "Targets or punishes legendary permanents specifically.",
+        "Answers or punishes legendary permanents and spells specifically.",
     ),
     (
         "conjure-instant",
-        "Conjures an instant card from outside your deck into your hand, library, or exile.",
+        "Conjures an instant card from outside the game into your hand, library, graveyard, or exile.",
     ),
     (
         "cost-reducer-equip-ability",
@@ -4329,7 +4329,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "impulsive-recursion",
-        "Exiles a card from your graveyard that you can play for a limited time.",
+        "Exiles a card, usually from a graveyard, that you can play for a limited time.",
     ),
     (
         "copy-permanent",
@@ -4381,7 +4381,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "hate-swamp",
-        "Punishes opponents for controlling Swamps or black permanents, or rewards you for it.",
+        "Cares about Swamps or black permanents, punishing any player who controls them or rewarding you for exploiting them.",
     ),
     (
         "noncreature-french-vanilla",
@@ -4425,7 +4425,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "addendum",
-        "An instant that gets a bonus effect if you cast it during your main phase.",
+        "Gets a bonus effect if you cast it during your main phase.",
     ),
     (
         "gives-affinity",
@@ -4433,7 +4433,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "hate-tutor",
-        "Rewards you or hinders an opponent whenever they search their library.",
+        "Shuts off or punishes library searching, sometimes for all players and sometimes rewarding you when an opponent searches, shuffles, or scries.",
     ),
     (
         "afflict",
@@ -4449,7 +4449,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "gives-castable-from-library",
-        "Lets you cast a spell straight from your library without paying its mana cost.",
+        "Lets you cast a spell straight from a library without paying its mana cost.",
     ),
     (
         "cast-tax",
@@ -4473,7 +4473,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "tutor-copy",
-        "Searches your library for a card with the same name as another creature or permanent.",
+        "Searches a library, usually yours, for a card with the same name as a permanent or a card you reveal from hand.",
     ),
     (
         "oil-counters-matter",
@@ -4506,7 +4506,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "repeatable-powerstones",
-        "Creates Powerstone tokens again and again for mana that can only pay for artifacts.",
+        "Repeatedly creates Powerstone tokens that make colorless mana which can't be spent to cast nonartifact spells.",
     ),
     (
         "set-matters",
@@ -4518,7 +4518,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "exile-with-tax",
-        "Exiles a permanent, but its owner may play it later for an added cost.",
+        "Exiles a permanent or card, letting its owner play it later, often for an added cost.",
     ),
     (
         "the-doctor",
@@ -4546,12 +4546,15 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "copy-enchantment",
-        "Creates a token that is a copy of an enchantment.",
+        "Copies an enchantment, either as a token copy or by entering the battlefield or becoming a copy of one.",
     ),
-    ("copy-land", "Copies a land, often as a token."),
+    (
+        "copy-land",
+        "Copies a land, either by becoming a copy of one itself or by creating a token copy.",
+    ),
     (
         "tutor-land-basic-mountain",
-        "Searches your library for a basic Mountain card.",
+        "Searches your library for a basic land that can be a Mountain, usually one of a few basic types and often put onto the battlefield.",
     ),
     (
         "hatebird",
@@ -4571,11 +4574,11 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "synergy-transform",
-        "Rewards you for transforming permanents or controlling transformed permanents.",
+        "Cares about transforming double-faced permanents, whether enabling transformation, rewarding you for it, or controlling transformed permanents.",
     ),
     (
         "flicker-artifact",
-        "Exiles an artifact or creature and returns it to the battlefield later.",
+        "Exiles an artifact or creature and returns it to the battlefield.",
     ),
     (
         "conjure-land",
@@ -4599,7 +4602,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "commander-tax-matters",
-        "Cares about how much extra mana you've paid in commander tax to recast your commander.",
+        "Cares about your commander tax or the total mana spent to cast your commander.",
     ),
     (
         "tutor-land-basic-island",
@@ -4611,11 +4614,11 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "gifts-ungiven",
-        "Searches your library for several cards and lets an opponent choose which ones you keep.",
+        "Presents several cards, often by searching or revealing, and lets an opponent choose which ones you get and which are denied you.",
     ),
     (
         "catch-22",
-        "Punishes each player at their end step unless they meet a condition, like tapping out their lands.",
+        "Either punishes each player at their end step unless they meet a condition like casting a spell or tapping out their lands, or triggers whenever day and night flip.",
     ),
     (
         "attacking-opponents-matters",
@@ -4643,7 +4646,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "old-banish-templating",
-        "Exiles a card with one ability, then a linked ability returns it when this leaves play.",
+        "Uses one ability to exile a card, then a linked ability returns it when this leaves the battlefield.",
     ),
     (
         "prevent-sacrifice",
@@ -4679,11 +4682,11 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "copy-planeswalker",
-        "Creates a token that's a copy of a permanent, which can include a planeswalker.",
+        "Copies a permanent, and the copy can be a planeswalker.",
     ),
     (
         "opaline-effect",
-        "Lets you draw a card when an opponent's spell or ability targets your creature.",
+        "Lets you draw a card when a spell or ability an opponent controls targets you or a permanent you control.",
     ),
     (
         "typal-snake",
@@ -4699,7 +4702,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "hate-landwalk",
-        "Lets creatures with a landwalk ability be blocked as though they didn't have it.",
+        "Answers creatures with landwalk, usually letting them be blocked as though they lacked it.",
     ),
     (
         "embalm-token",
@@ -4727,7 +4730,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "hate-typal-choose",
-        "Names a creature type, then punishes or weakens creatures of that type.",
+        "Names a creature type, then answers creatures of that type by weakening, removing, or seizing them.",
     ),
     (
         "awaken",
@@ -4751,7 +4754,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "hate-typal-goblin",
-        "Punishes or preys on Goblin creatures.",
+        "Cares about Goblins, usually preying on them but sometimes rewarding you for having them.",
     ),
     (
         "brainstorm",
@@ -4763,7 +4766,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "tutor-enchantment",
-        "Searches your library for an enchantment card and puts it into your hand or on top.",
+        "Searches your library for an enchantment card and puts it into your hand, onto the battlefield, or on top of your library.",
     ),
     (
         "reveal-hand",
@@ -4771,7 +4774,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "token-without-a-card",
-        "A token type with no card that actually creates it, likely due to errata.",
+        "A token that no card currently in the game actually creates.",
     ),
     (
         "impulse-to-top",
@@ -4787,7 +4790,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "synergy-spacecraft",
-        "Cares about, boosts, or interacts with Spacecraft you control.",
+        "Cares about, boosts, or interacts with Spacecraft.",
     ),
     ("counterspell-artifact", "Counters an artifact spell."),
     (
@@ -4804,7 +4807,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "frost-armor",
-        "Makes opponents pay extra mana to target you or a permanent you control.",
+        "Makes your opponents pay extra mana to cast spells that target this creature.",
     ),
     (
         "removal-noncreature",
@@ -4824,7 +4827,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "play-from-top",
-        "Lets you cast the top card of your library, often for free, without exiling it first.",
+        "Lets you play or cast the top card of your library, often without paying its mana cost.",
     ),
     (
         "prevents-win-loss",
@@ -4864,7 +4867,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "grim-return",
-        "Returns permanents from your graveyard to the battlefield if they died or left play that turn.",
+        "Returns cards that were put into a graveyard from the battlefield this turn back onto the battlefield.",
     ),
     (
         "conditional-aura",
@@ -4888,7 +4891,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "typal-minotaur",
-        "Rewards or boosts your Minotaurs together as a shared tribe.",
+        "Rewards, boosts, or tutors for your Minotaurs.",
     ),
     (
         "attacking-matters-any",
@@ -4904,11 +4907,11 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "mana-gorger",
-        "Grows with +1/+1 counters whenever a player casts a spell.",
+        "Grows with +1/+1 counters when spells are cast, often any player's but sometimes only an opponent's or only a specific color or type of spell.",
     ),
     (
         "typal-rebel",
-        "A creature that searches your library for a Rebel and puts it onto the battlefield.",
+        "A card that tutors for, creates, or rewards Rebels you control.",
     ),
     (
         "typal-doctor",
@@ -4949,7 +4952,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ("burn-self", "Makes a creature deal damage to itself."),
     (
         "impulse-planeswalker",
-        "Reveals cards from the top of your library and lets you take a noncreature, nonland card.",
+        "Digs through the top cards of your library and lets you take a card of a certain type into your hand, bottoming or binning the rest.",
     ),
     (
         "flavor-text-matters",
@@ -4957,7 +4960,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "explore-like",
-        "Lets you look at the top card of a library and keep it or bin it, similar to explore.",
+        "Looks at the top card of a library and lets you take it into hand if it matches a type, otherwise binning it or leaving it on the top or bottom.",
     ),
     (
         "exo-storyline-in-cards",
@@ -4965,7 +4968,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "ethereal-armor",
-        "Grants a bonus that scales with how many enchantments or Auras are in play.",
+        "Grants a creature a +X/+X boost that scales with how many enchantments (and sometimes artifacts or Auras) you have in play.",
     ),
     (
         "references-keyword",
@@ -4997,7 +5000,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "hate-empty-hand",
-        "Rewards you when an opponent has few or no cards in hand.",
+        "Cares about or rewards you when a player has few or no cards in hand.",
     ),
     (
         "phoenix-with-set-s-mechanic",
@@ -5017,7 +5020,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "typal-shaman",
-        "A creature or spell that cares about Shamans or works better when you control them.",
+        "A card that cares about Shamans or rewards you for controlling them.",
     ),
     (
         "conjure-to-graveyard",
@@ -5104,7 +5107,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "theft-spell",
-        "Takes control of a spell on the stack, letting you redirect or resolve it yourself.",
+        "Steals an opponent's spell, either by gaining control of it on the stack or by countering and exiling it so you can cast it yourself.",
     ),
     (
         "synergy-surveil",
@@ -5120,7 +5123,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "super-menace",
-        "Can't be blocked except by three or more creatures.",
+        "Can't be blocked except by several creatures, usually three or more, or grants that to your creatures.",
     ),
     (
         "burn-battle",
@@ -5160,7 +5163,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "removal-vehicle",
-        "Removal that can destroy or exile a Vehicle, not just creatures.",
+        "Removal that can hit Vehicles, not just creatures.",
     ),
     (
         "discard-matters",
@@ -5168,7 +5171,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "cycle-zodiac-creature",
-        "One of a cycle of animal creatures, each with landwalk tied to its type.",
+        "One of a cycle of animal creatures, most of which have a landwalk ability.",
     ),
     (
         "greed-ability",
@@ -5196,7 +5199,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "un-color",
-        "A joke card that uses fake colors like pink, gold, or orange that don't exist in normal Magic.",
+        "A card that references or creates tokens in colors outside the normal Magic color pie, like pink, orange, or gold.",
     ),
     (
         "untapper-nonland",
@@ -5236,7 +5239,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "hate-free-spell",
-        "Punishes spells cast without spending any mana, usually by countering or damaging their caster.",
+        "Punishes free or reduced-cost spells and creatures that enter without being cast, usually by countering, exiling, or damaging the caster.",
     ),
     (
         "synergy-land-graveyard",
@@ -5256,11 +5259,11 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "substance",
-        "An obsolete ability from old Mirage-era cards that does nothing at all.",
+        "A card with a temporary effect tied to the next cleanup step, often an aura castable at instant speed that is then sacrificed.",
     ),
     (
         "counter-preservation",
-        "Moves a creature's counters onto another permanent when it dies or leaves the battlefield.",
+        "Moves a permanent's counters onto another permanent when it dies or leaves the battlefield.",
     ),
     (
         "hate-shadow",
@@ -5324,7 +5327,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "fractional-power-toughness",
-        "Has a power or toughness of one half, or grants it.",
+        "Has a fractional (½) power or toughness, grants one, or cares about cards with them.",
     ),
     (
         "hate-colored",
@@ -5384,7 +5387,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "typal-otter",
-        "A creature or spell that cares about Otters, often alongside Birds, Frogs, and Rats.",
+        "A card that cares about Otters, often grouping them with Birds, Frogs, and Rats.",
     ),
     (
         "hate-sacrifice",
@@ -5424,7 +5427,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "sunder",
-        "Destroys all Auras or Equipment attached to a permanent, leaving the permanent itself behind.",
+        "Destroys or removes all Auras and Equipment attached to a permanent, sometimes destroying or exiling that permanent too.",
     ),
     (
         "speed-matters",
@@ -5440,7 +5443,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "counter-fuel-mm",
-        "A creature that gets a benefit, like mana or removal, from removing -1/-1 counters off itself.",
+        "A creature that gets a benefit like mana, life, or removal by removing a -1/-1 counter from itself or another creature.",
     ),
     (
         "invitational-card",
@@ -5448,7 +5451,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "restock-sorcery",
-        "Puts a sorcery card from your graveyard back on top of your library.",
+        "Puts an instant or sorcery card from a graveyard onto the top or bottom of a library.",
     ),
     (
         "removes-hexproof",
@@ -5460,7 +5463,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "restock-instant",
-        "Puts an instant card from your graveyard back on top of your library.",
+        "Puts an instant or sorcery card from a graveyard onto the top or bottom of a library.",
     ),
     (
         "recursion-sorcery",
@@ -5472,7 +5475,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "quietus-effect",
-        "Makes a player lose half their life when they take damage from the source.",
+        "Makes a player lose half their life, usually rounded up, when the source deals them combat damage.",
     ),
     (
         "gives-forestwalk",
@@ -5580,7 +5583,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "cycle-woe-draft-signpost",
-        "An uncommon multicolor creature built to showcase a two-color archetype in this set's draft format.",
+        "A two-color legendary creature built to showcase a two-color archetype in this set's draft format.",
     ),
     (
         "cycle-znr-draft-signpost",
@@ -5596,7 +5599,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "cycle-vma-r-two-color",
-        "One of Vintage Masters' rare two-color gold cards.",
+        "One of Vintage Masters' two-color gold creatures.",
     ),
     (
         "cycle-vma-draft-signpost",
@@ -5612,7 +5615,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "cycle-tsp-c-sliver",
-        "A common Sliver that gives every Sliver in play a shared ability or stat boost.",
+        "A Sliver that gives every Sliver in play a shared ability or stat boost.",
     ),
     (
         "cycle-tmt-team-up",
@@ -5700,15 +5703,15 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "cycle-a25-r-two-color",
-        "A rare two-color gold card from a reprint cycle of classic multicolor cards.",
+        "A two-color gold card from a Masters 25 cycle that reprints classic multicolor cards.",
     ),
     (
         "cycle-a25-draft-signpost",
-        "An uncommon gold card meant to point drafters toward a two-color archetype.",
+        "A two-color gold signpost card that steers drafters toward its color pair's archetype in Masters 25.",
     ),
     (
         "clothing-matters",
-        "A joke card whose effect depends on clothing or accessories you're actually wearing.",
+        "A joke card whose effect depends on real-world clothing, accessories, or physical traits of the players.",
     ),
     (
         "cycle-soi-draft-signpost",
@@ -5772,7 +5775,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "morphling",
-        "A shapeshifter with mana abilities that let it change its stats or gain keywords at instant speed.",
+        "Has a suite of cheap repeatable activated abilities that adjust a creature's power and toughness and grant it keywords at instant speed.",
     ),
     (
         "cycle-cmr-r-two-color",
@@ -5932,11 +5935,11 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "moxen",
-        "A zero-cost artifact named Mox that taps for mana.",
+        "An artifact in the Mox family that taps to produce mana, usually for zero cost.",
     ),
     (
         "cycle-dsk-r-two-color",
-        "One of a cycle of two-color rares, each anchoring a different draft archetype.",
+        "One of a cycle of two-color rares from Duskmourn, one card for each color pair.",
     ),
     (
         "cycle-eoe-draft-signpost",
@@ -5984,7 +5987,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "hate-first-strike",
-        "Strips first strike from a creature or stops it from having or gaining first strike.",
+        "Removes first strike from a creature or blunts first strikers, such as by preventing their combat damage.",
     ),
     (
         "cycle-block-rtr-guild-charm",
@@ -6505,7 +6508,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "fungusaur-effect",
-        "Puts a +1/+1 counter on a creature whenever it's dealt damage and survives.",
+        "Puts one or more +1/+1 counters on a creature whenever it's dealt damage and survives.",
     ),
     (
         "synergy-suspect",
@@ -6515,7 +6518,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "synergy-untapped",
         "Rewards you for having untapped permanents, often boosting their stats or granting protection.",
     ),
-    ("copy-nonland", "Creates a copy of a nonland permanent."),
+    ("copy-nonland", "Copies a nonland permanent or card."),
     (
         "prevent-etb",
         "Stops permanents from entering the battlefield, exiling or redirecting them instead.",
