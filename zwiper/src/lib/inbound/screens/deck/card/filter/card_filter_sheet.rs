@@ -5,12 +5,30 @@ use crate::{
             hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, open_and_record_hint},
             hint_host::HintTopic,
             info_button::InfoButton,
+            navigation::overlay_stack::use_overlay_back,
         },
-        screens::deck::card::filter::{
-            artist::Artist, category::Category, combat::Combat, config::Config,
-            flavor_text::FlavorText, format::FormatFilter, mana::Mana, name::Name,
-            oracle_tags::OracleTags, oracle_text::OracleText, price::PriceFilter, rarity::Rarity,
-            set::Set, sort::Sort, types::Types,
+        screens::{
+            deck::card::filter::{
+                artist::Artist,
+                category::Category,
+                combat::Combat,
+                config::Config,
+                flavor_text::FlavorText,
+                format::FormatFilter,
+                mana::Mana,
+                match_mode::MatchMode,
+                name::Name,
+                oracle_tags::{
+                    OracleTags, read_excluded, read_selected, write_excluded, write_selected,
+                },
+                oracle_text::OracleText,
+                price::PriceFilter,
+                rarity::Rarity,
+                set::Set,
+                sort::Sort,
+                types::Types,
+            },
+            oracle_tag_dictionary::OracleTagDictionary,
         },
     },
     outbound::client::ZwipeClient,
@@ -42,6 +60,8 @@ pub(crate) fn CardFilterSheet(
     #[props(default = false)] validate_before_apply: bool,
     on_clear: Option<EventHandler>,
 ) -> Element {
+    // OS back gesture closes this overlay before touching the router.
+    use_overlay_back(open);
     let mut filter_builder: Signal<CardQueryBuilder> = use_context();
     let mut filter_reset_counter: Signal<u32> = use_context();
     let should_collapse: Option<CollapseExpanded> = try_use_context::<CollapseExpanded>();
@@ -67,6 +87,49 @@ pub(crate) fn CardFilterSheet(
             collapse.set(true);
         }
         filter_reset_counter.set(filter_reset_counter() + 1);
+    };
+
+    // Oracle-tag dictionary overlay. Owned here (not in the `OracleTags` section)
+    // so it renders as a sibling of the bottom sheet, outside the sheet's
+    // `transform` — a `position: fixed` overlay nested inside that transform would
+    // be trapped to the sheet's box instead of the viewport. The include/exclude
+    // "Dictionary" buttons flip `otag_dict_open`, recording via `otag_dict_exclude`
+    // which list the Use button feeds.
+    let otag_dict_open = use_signal(|| false);
+    let otag_dict_exclude = use_signal(|| false);
+    let adopt_otag = move |slug: String| {
+        // The current include bucket mirrors what the builder holds (Any unless
+        // it's explicitly the All list), matching the section's own derivation.
+        let mode = if filter_builder().oracle_tags_contains_all().is_some() {
+            MatchMode::All
+        } else {
+            MatchMode::Any
+        };
+        let already = if otag_dict_exclude() {
+            read_excluded(&filter_builder()).contains(&slug)
+        } else {
+            read_selected(&filter_builder(), mode).contains(&slug)
+        };
+        if already {
+            toast.info(
+                "Already in filter".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(2000)),
+            );
+            return;
+        }
+        if otag_dict_exclude() {
+            let mut current = read_excluded(&filter_builder());
+            current.push(slug);
+            write_excluded(&mut filter_builder.write(), current);
+        } else {
+            let mut current = read_selected(&filter_builder(), mode);
+            current.push(slug);
+            write_selected(&mut filter_builder.write(), mode, current);
+        }
+        toast.success(
+            "Added to filter".to_string(),
+            ToastOptions::default().duration(Duration::from_millis(2000)),
+        );
     };
 
     // Active indicator booleans (only computed when needed)
@@ -439,7 +502,9 @@ pub(crate) fn CardFilterSheet(
                                 }
                             }
                         }
-                        AccordionContent { OracleTags {} }
+                        AccordionContent {
+                            OracleTags { dict_open: otag_dict_open, dict_exclude: otag_dict_exclude }
+                        }
                     }
 
                     AccordionItem { index: next_idx(),
@@ -643,6 +708,12 @@ pub(crate) fn CardFilterSheet(
                     " to return to this screen's default view. Your filter sticks as you move between screens."
                 }
             }
+        }
+
+        // Rendered outside the bottom sheet (see `otag_dict_open` note) so its
+        // full-screen fixed overlay isn't trapped by the sheet's transform.
+        if otag_dict_open() {
+            OracleTagDictionary { open: otag_dict_open, on_use: adopt_otag }
         }
     }
 }

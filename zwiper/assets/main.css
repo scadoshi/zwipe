@@ -2976,7 +2976,31 @@ button {
   Zwipe select
 ================================== */
 
-/* Full-screen Zwipe-select picker rendered as a sibling overlay above the form
+/* ── Overlay z-index registry ──────────────────────────────────────────────
+   Back-aware overlays stack in a documented band so depths never collide. Leave
+   gaps (10s) for future insertion. Each is a full-screen fixed layer that
+   `use_overlay_back(open)` wires into the OS back gesture (see
+   navigation::overlay_stack).
+     base screen                              (default)
+     modal backdrop / bottom sheet / filter   200–202
+     swipe-select / oracle-tag-select         210
+     dictionary overlay                       220
+     examples overlay                         230
+     toasts                                   (top, unchanged)
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Dictionary + examples are opaque `.screen` overlays stacked above the picker
+   (220) and above the dictionary (230). Fixed layers, no cross-fade — they mount
+   on open and unmount on close, so a static stacking order is enough. */
+.dict-overlay {
+    z-index: 220;
+}
+
+.examples-overlay {
+    z-index: 230;
+}
+
+/* Full-screen swipe-select picker rendered as a sibling overlay above the form
    (both are fixed .screen) — lift it above with an explicit stacking order. It
    stays mounted and cross-fades on `.show` so the form eases back into view
    rather than the overlay popping away; it's click-through while hidden. */
@@ -3186,13 +3210,16 @@ button {
     animation: dict-row-in 0.18s ease-out both;
 }
 
-.dict-row-tappable {
-    cursor: pointer;
+.dict-row-divider {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 0.6rem -0.75rem 0;
 }
 
-.dict-row-tappable:active {
-    border-color: var(--accent-tertiary);
-    transform: scale(0.995);
+.dict-row-actions {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
 }
 
 @keyframes dict-row-in {

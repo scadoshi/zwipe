@@ -34,13 +34,15 @@ pub fn BackHandlerLayout() -> Element {
     #[cfg(all(target_os = "ios", feature = "mobile"))]
     {
         let nav = use_navigator();
+        let mut overlays: super::overlay_stack::OverlayBackStack = use_context();
         use_effect(move || {
-            // Drain edge-gesture signals into router back-navigation. At a root
-            // screen `can_go_back()` is false and we intentionally no-op.
+            // Drain edge-gesture signals: close the top open overlay first, then
+            // fall through to router back-navigation. At a root screen with no
+            // overlay open, `can_go_back()` is false and we intentionally no-op.
             let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<()>();
             spawn(async move {
                 while rx.recv().await.is_some() {
-                    if nav.can_go_back() {
+                    if !overlays.close_top() && nav.can_go_back() {
                         nav.go_back();
                     }
                 }
@@ -56,14 +58,18 @@ pub fn BackHandlerLayout() -> Element {
     #[cfg(all(target_os = "android", feature = "mobile"))]
     {
         let nav = use_navigator();
+        let mut overlays: super::overlay_stack::OverlayBackStack = use_context();
         use_future(move || async move {
             let mut eval =
                 document::eval("window.addEventListener('zwipe:back', () => dioxus.send(1));");
             while eval.recv::<i32>().await.is_ok() {
-                if nav.can_go_back() {
-                    nav.go_back();
-                } else {
-                    android::finish_activity();
+                // Close the top open overlay first; only then the router / exit.
+                if !overlays.close_top() {
+                    if nav.can_go_back() {
+                        nav.go_back();
+                    } else {
+                        android::finish_activity();
+                    }
                 }
             }
         });

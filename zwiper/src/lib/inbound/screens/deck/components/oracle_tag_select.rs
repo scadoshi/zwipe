@@ -11,9 +11,10 @@ use crate::{
     inbound::{
         components::{
             catalog_cache::CatalogCache, concept_explainers::OracleTagsExplainer,
-            hint_dialog::HintDialog, screen_header::ScreenHeader,
+            hint_dialog::HintDialog, navigation::overlay_stack::use_overlay_back,
+            screen_header::ScreenHeader,
         },
-        router::Router,
+        screens::oracle_tag_dictionary::OracleTagDictionary,
     },
     outbound::client::ZwipeClient,
 };
@@ -34,13 +35,40 @@ pub(crate) fn OracleTagSelect(
     mut selected: Signal<Vec<String>>,
     on_close: EventHandler<()>,
 ) -> Element {
+    // OS back gesture closes this overlay before touching the router.
+    use_overlay_back(open);
     let client: Signal<ZwipeClient> = use_context();
     let cache: CatalogCache = use_context();
-    let navigator = use_navigator();
     let toast = use_toast();
     let mut query = use_signal(String::new);
     let mut focused = use_signal(|| Option::<OracleTag>::None);
-    let hint_open = use_signal(|| false);
+    let mut hint_open = use_signal(|| false);
+    // Dictionary overlay, stacked above this picker; its Use button adopts a tag.
+    let mut dict_open = use_signal(|| false);
+
+    // Adopt a tag chosen via the dictionary's Use button, respecting the deck cap.
+    // Stays in place (no return to the form), toasting the outcome.
+    let adopt_tag = move |slug: String| {
+        let mut current = selected();
+        if current.contains(&slug) {
+            toast.info(
+                "Tag already added".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(2000)),
+            );
+        } else if current.len() < MAX_DECK_ORACLE_TAGS {
+            current.push(slug);
+            selected.set(current);
+            toast.success(
+                "Tag added to deck".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(2000)),
+            );
+        } else {
+            toast.warning(
+                format!("You may only choose up to {MAX_DECK_ORACLE_TAGS} oracle tags"),
+                ToastOptions::default().duration(Duration::from_millis(2000)),
+            );
+        }
+    };
     // Snapshot the selection when the picker opens, so Cancel can revert to it.
     let mut snapshot = use_signal(Vec::<String>::new);
     use_effect(move || {
@@ -121,9 +149,7 @@ pub(crate) fn OracleTagSelect(
                             Button {
                                 variant: ButtonVariant::Small,
                                 class: "dict-btn-fill",
-                                onclick: move |_| {
-                                    navigator.push(Router::OracleTagDictionary {});
-                                },
+                                onclick: move |_| dict_open.set(true),
                                 "Dictionary"
                             }
                             span { class: "tag-count", "{sel.len()}/{MAX_DECK_ORACLE_TAGS}" }
@@ -226,14 +252,21 @@ pub(crate) fn OracleTagSelect(
                 HintDialog {
                     open: hint_open,
                     title: "Oracle tags",
+                    actions: rsx! {
+                        Button {
+                            variant: ButtonVariant::Util,
+                            onclick: move |_| {
+                                hint_open.set(false);
+                                dict_open.set(true);
+                            },
+                            "Dictionary"
+                        }
+                    },
                     OracleTagsExplainer {}
-                    Button {
-                        variant: ButtonVariant::Util,
-                        onclick: move |_| {
-                            navigator.push(Router::OracleTagDictionary {});
-                        },
-                        "Browse the full dictionary"
-                    }
+                }
+
+                if dict_open() {
+                    OracleTagDictionary { open: dict_open, on_use: adopt_tag }
                 }
             }
         }

@@ -80,8 +80,16 @@ pub fn open_and_record_hint(
 /// Hint dialog shell: title, body content, and a single "Got it" button, with a
 /// rule under the title and above the button.
 /// Compose the body from [`HintLine`]s, with [`HintKey`]s for button names.
+///
+/// `actions` adds extra buttons alongside "Got it" in the footer action bar (e.g.
+/// a "Browse the full dictionary" link), keeping call-to-actions out of the body.
 #[component]
-pub fn HintDialog(open: Signal<bool>, title: String, children: Element) -> Element {
+pub fn HintDialog(
+    open: Signal<bool>,
+    title: String,
+    children: Element,
+    actions: Option<Element>,
+) -> Element {
     rsx! {
         AlertDialogRoot {
             open: open(),
@@ -94,6 +102,9 @@ pub fn HintDialog(open: Signal<bool>, title: String, children: Element) -> Eleme
                 }
                 hr { class: "dialog-rule" }
                 AlertDialogActions {
+                    if let Some(actions) = actions {
+                        {actions}
+                    }
                     AlertDialogAction {
                         on_click: move |_| open.set(false),
                         "Got it"
