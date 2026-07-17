@@ -104,6 +104,20 @@ button {
     background-size: var(--grid-size) var(--grid-size);
 }
 
+/* Scrollbars hidden everywhere. On the iOS WebView the bar is a non-interactive
+   overlay indicator (you scroll by dragging content, not the bar), and the app
+   already signals scrollability with edge fades, so hiding it is purely cosmetic. */
+*::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+* {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
 .screen-content.centered {
     justify-content: center;
 }
@@ -3161,6 +3175,20 @@ button {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        black 0.85rem,
+        black calc(100% - 0.85rem),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to right,
+        transparent 0,
+        black 0.85rem,
+        black calc(100% - 0.85rem),
+        transparent 100%
+    );
 }
 
 .dict-letter-rail::-webkit-scrollbar {
@@ -3178,6 +3206,9 @@ button {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+    /* `overflow-y: auto` alone makes `overflow-x` compute to `auto`; pin it so a
+       row that's a hair too wide can't scroll the list sideways. */
+    overflow-x: hidden;
     width: 100%;
     max-width: 24rem;
     padding: 0.75rem 1rem 1rem 1rem;
