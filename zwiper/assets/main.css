@@ -509,19 +509,15 @@ button {
     padding-bottom: 1rem;
 }
 
-.page-header h2 {
+/* Direct child only: the support dialog mounts inside the header, and a
+   descendant selector would restyle its `.alert-dialog-title` h2 (wrong color,
+   and it clipped the title). */
+.page-header > h2 {
     font-size: 1rem;
     font-weight: 400;
     letter-spacing: 0.1em;
     margin: 0;
     color: var(--accent-primary);
-    /* Clear the absolutely-positioned side buttons (support left, hint right) so a
-       long title (e.g. "Examples: <long-slug>") truncates instead of sliding
-       under them. */
-    max-width: calc(100% - 6rem);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 /* Pinned controls strip below the page header (e.g. import source/mode
