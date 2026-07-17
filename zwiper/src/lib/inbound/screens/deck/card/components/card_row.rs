@@ -8,6 +8,17 @@ use zwipe_core::domain::{
     deck::Board,
 };
 
+/// Context: resolve an oracle tag's description for the expandable otag reveal.
+/// Provided by the deck-cards view (which holds the catalog cache); absent
+/// elsewhere, so those rows keep plain, non-expandable otag chips.
+#[derive(Clone, Copy)]
+pub(crate) struct OtagDescribe(pub(crate) Callback<String, Option<String>>);
+
+/// Context: open the example-cards browse for a tag slug, from the otag reveal's
+/// "Examples" button. Provided by the deck-cards view, which owns the overlay.
+#[derive(Clone, Copy)]
+pub(crate) struct OtagExamplesOpen(pub(crate) Callback<String>);
+
 /// Thin wrapper over the shared [`SharedCardRow`]: wires the app's fullscreen
 /// [`ImagePreview`] signals into the shared row's `on_image` action so call
 /// sites keep passing `preview_card`/`preview_dismissing` unchanged.
@@ -40,6 +51,10 @@ pub(crate) fn CardRow(
     let price_currency = try_use_context::<Signal<PriceCurrency>>()
         .map(|c| c())
         .unwrap_or_default();
+    // Otag reveal plumbing (deck-cards view provides it): a description lookup and
+    // an examples opener. Absent elsewhere, so those rows keep plain otag chips.
+    let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     rsx! {
         SharedCardRow {
             card,
@@ -58,6 +73,8 @@ pub(crate) fn CardRow(
             on_toggle_mvp,
             price_currency,
             show_classification: true,
+            describe_tag,
+            on_examples,
         }
     }
 }

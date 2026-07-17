@@ -52,6 +52,14 @@ pub fn CardRow(
     /// portfolio) are unaffected.
     #[props(default)]
     show_classification: bool,
+    /// Resolve an oracle tag's description, making exposed tags tappable-to-reveal
+    /// their definition. Forwarded to `CardDetails` → `CardRoleChips`.
+    #[props(default)]
+    describe_tag: Option<Callback<String, Option<String>>>,
+    /// Open the example-cards browse for a tag slug. Forwarded to `CardDetails` →
+    /// `CardRoleChips`; shows an "Examples" button on an expanded tag.
+    #[props(default)]
+    on_examples: Option<Callback<String>>,
 ) -> Element {
     let card_id = card.scryfall_data.id;
     let is_expanded = expanded_card() == Some(card_id);
@@ -146,6 +154,8 @@ pub fn CardRow(
                 CardDetails {
                     card: card.clone(),
                     show_classification,
+                    describe_tag,
+                    on_examples,
                     on_image,
                     on_face_change,
                     has_actions: has_slot_actions,

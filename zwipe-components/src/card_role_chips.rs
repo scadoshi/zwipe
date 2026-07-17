@@ -7,6 +7,12 @@
 //! tags" chip holds the card's functional tags that fall under no role. This is
 //! the card's whole tag story: role = the high-level thing, oracle tags = the
 //! specific things underneath, distinct from deck-level Deck Tags.
+//!
+//! When the host supplies `describe_tag` / `on_examples`, each exposed oracle tag
+//! becomes tappable too: it eases its dictionary definition open beneath the tag
+//! row (with an optional "Examples" button), telescoping under the role. The tag
+//! reveal is nested inside the role reveal, so collapsing the role hides it and
+//! reopening the role restores it (its open state persists, like the keywords).
 
 use dioxus::prelude::*;
 use std::collections::BTreeMap;
@@ -25,6 +31,16 @@ pub fn CardRoleChips(
     /// on zwiper's session-aware hint plumbing.
     #[props(default)]
     help: Option<Element>,
+    /// Resolve an oracle tag's plain-language description (from the host's catalog
+    /// cache). When set, exposed tags become tappable and reveal their definition
+    /// inline. `None` from the callback renders as "No description yet".
+    #[props(default)]
+    describe_tag: Option<Callback<String, Option<String>>>,
+    /// Open the example-cards browse for a tag slug. When set, an expanded tag's
+    /// reveal shows an "Examples" button. Left to the host since the browse is a
+    /// zwiper overlay.
+    #[props(default)]
+    on_examples: Option<Callback<String>>,
 ) -> Element {
     if roles.is_empty() && other_tags.is_empty() {
         return rsx! {};
@@ -49,14 +65,23 @@ pub fn CardRoleChips(
     // it (like `open`) would yank the DOM node instantly and snap the close shut.
     let mut shown = use_signal(|| None::<usize>);
     let open_idx = open();
-    let reveal_tags: Option<Vec<String>> = shown()
+    let reveal_tags: Vec<String> = shown()
         .and_then(|i| items.get(i))
-        .map(|(_, tags)| tags.to_vec());
+        .map(|(_, tags)| tags.to_vec())
+        .unwrap_or_default();
     let reveal_class = if open_idx.is_some() {
         "keyword-reveal open"
     } else {
         "keyword-reveal"
     };
+
+    // Second telescope level: which exposed tag's definition is open. Persists
+    // across role collapse/reopen (never cleared on role toggle), mirroring how the
+    // role reveal itself keeps state. `shown_tag` keeps the last one mounted through
+    // the collapse animation, same reason as `shown`.
+    let mut open_tag = use_signal(|| None::<String>);
+    let mut shown_tag = use_signal(|| None::<String>);
+    let tags_expandable = describe_tag.is_some() || on_examples.is_some();
 
     rsx! {
         div { class: "card-roles",
@@ -88,13 +113,75 @@ pub fn CardRoleChips(
             }
             div { class: "{reveal_class}",
                 div { class: "keyword-reveal-inner",
-                    if let Some(tags) = reveal_tags {
+                    if !reveal_tags.is_empty() {
                         // Block-quote frame (matches the keyword reminder) so it
                         // reads as the tapped role's exposed oracle tags.
                         div { class: "otag-reveal-block",
                             div { class: "card-detail-meta card-detail-otags",
-                                for tag in tags {
-                                    span { key: "{tag}", class: "detail-chip", "{tag}" }
+                                for tag in reveal_tags.iter().cloned() {
+                                    if tags_expandable {
+                                        {
+                                            // One clone owned by the toggle closure; `tag` itself
+                                            // stays for the key/class/label.
+                                            let slug = tag.clone();
+                                            rsx! {
+                                                button {
+                                                    key: "{tag}",
+                                                    class: if open_tag().as_deref() == Some(tag.as_str()) { "keyword-chip active" } else { "keyword-chip" },
+                                                    onclick: move |evt| {
+                                                        evt.stop_propagation();
+                                                        if open_tag().as_deref() == Some(slug.as_str()) {
+                                                            open_tag.set(None);
+                                                        } else {
+                                                            open_tag.set(Some(slug.clone()));
+                                                            shown_tag.set(Some(slug.clone()));
+                                                        }
+                                                    },
+                                                    "{tag}"
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        span { key: "{tag}", class: "detail-chip", "{tag}" }
+                                    }
+                                }
+                            }
+                            if tags_expandable {
+                                {
+                                    // Only reveal for a tag that belongs to the
+                                    // currently-shown role, so switching roles hides
+                                    // a stale definition (and coming back restores it).
+                                    let shown = shown_tag();
+                                    let in_role = shown.as_ref().is_some_and(|s| reveal_tags.contains(s));
+                                    let is_open = open_tag().as_ref().is_some_and(|s| reveal_tags.contains(s));
+                                    let slug = shown.filter(|_| in_role);
+                                    let def = slug.as_ref().map(|s| {
+                                        describe_tag
+                                            .and_then(|cb| cb.call(s.clone()))
+                                            .unwrap_or_else(|| "No description yet".to_string())
+                                    });
+                                    let tag_reveal_class = if is_open { "keyword-reveal open" } else { "keyword-reveal" };
+                                    rsx! {
+                                        div { class: "{tag_reveal_class}",
+                                            div { class: "keyword-reveal-inner",
+                                                if let Some(def) = def {
+                                                    div { class: "otag-def",
+                                                        p { class: "otag-def-text", "{def}" }
+                                                        if let (Some(handler), Some(slug)) = (on_examples, slug) {
+                                                            button {
+                                                                class: "otag-examples-btn",
+                                                                onclick: move |evt| {
+                                                                    evt.stop_propagation();
+                                                                    handler.call(slug.clone());
+                                                                },
+                                                                "Examples"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

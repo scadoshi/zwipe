@@ -24,6 +24,7 @@ use crate::{
             action_history::{BrowseAction, MAX_CARDS_IN_STACK},
             card_info::{CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton},
             card_stack::use_card_stack,
+            printing_sheet::PrintingSheet,
         },
     },
     outbound::client::{ZwipeClient, card::search_cards::ClientSearchCards},
@@ -70,6 +71,9 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
     let mut end_swipe_start: Signal<Option<(f64, f64)>> = use_signal(|| None);
     // Eyeball → card details dialog (same util as Add/Remove swipe screens).
     let show_details = use_signal(|| false);
+    // Printings browse from the details dialog. View-only: this browse is
+    // deck-free, so switching printings changes nothing.
+    let mut printing_open = use_signal(|| false);
 
     // Only left (next) and down (back) commit; right/up return to center.
     let swipe_config = SwipeConfig::new(vec![Direction::Left, Direction::Down], 60.0, 1.5);
@@ -205,7 +209,11 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
 
                         if let Some(card) = current_card() {
                             CardInfoDisplay { card: card.clone() }
-                            CardDetailsDialog { open: show_details, card }
+                            CardDetailsDialog {
+                                open: show_details,
+                                card,
+                                on_printings: move |_| printing_open.set(true),
+                            }
                         }
                     } else if !stack.is_empty() {
                         // Cursor past the last card. Still keep it down-swipeable
@@ -267,6 +275,16 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                 }
                 if current_card().is_some() {
                     RulesButton { open: show_details }
+                }
+            }
+
+            // View-only printings browse (deck-free, so it never mutates anything).
+            if let Some(card) = current_card() {
+                PrintingSheet {
+                    card,
+                    open: printing_open,
+                    on_save: move |_: Card| {},
+                    read_only: true,
                 }
             }
         }
