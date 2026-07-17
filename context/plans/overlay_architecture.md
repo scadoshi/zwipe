@@ -1,11 +1,14 @@
 # Overlay architecture — back-aware overlays + route audit
 
-**Status: PLANNED (2026-07-15). Umbrella / infrastructure plan.** Client-only
-(zwiper). Establishes a reusable **overlay** primitive that participates in the OS
-back gesture, the **route-vs-overlay principle**, and an **audit** of every current
-route against it. The oracle-tag dictionary/examples conversion
-([`dictionary_adopt_flow.md`](dictionary_adopt_flow.md)) is the first consumer and
-proving ground.
+**Status: Parts 1 + 2 + the dictionary/examples conversion SHIPPED 2026-07-16
+(commit `dc44ce3f`), device-tested working. The remaining route conversions from the
+Part 3 audit (Export, Import, ViewDeckCard, EditDeck, Privacy, Changelog) are optional
+future work — none is required for the primitive to be complete.** Umbrella /
+infrastructure plan. Client-only (zwiper). Establishes a reusable **overlay** primitive
+that participates in the OS back gesture, the **route-vs-overlay principle**, and an
+**audit** of every current route against it. The oracle-tag dictionary/examples
+conversion ([`dictionary_adopt_flow.md`](dictionary_adopt_flow.md)) was the first
+consumer and proving ground, and is done.
 
 **One sentence:** the OS back handler is *our* code, so we make it overlay-aware —
 `back` closes the top overlay before touching the router — which frees us to build
@@ -31,7 +34,51 @@ to pop routes. Once back can also close an overlay, that constraint is gone. Rou
 still exist for real destinations; overlays cover everything that should sit *on
 top* without destroying what's underneath.
 
-## Part 1 — Infrastructure (build first, reusable forever)
+## As-built (2026-07-16, commit `dc44ce3f`) — source of truth
+
+The shipped API diverges from the Part 1 sketch below in one deliberate way: the
+stack stores a **close `Callback`**, not the overlay's `open` signal. That lets both
+signal-toggled overlays *and* callback-closed ones (the shared `AlertDialogRoot`
+wrapper, which closes through `on_open_change`) live on one stack. The Part 1 code
+blocks are the original design sketch; this section is authoritative.
+
+- **`overlay_stack.rs`** (`zwiper/.../components/navigation/`) exports:
+  - `OverlayBackStack { entries: Signal<Vec<(u64, Callback<()>)>> }` — a `Copy`
+    handle. Entries pair a stable per-instance id with a close callback.
+  - `use_overlay_back_stack()` — creates it; provided in `spawn_upkeeper`
+    (`session_upkeep.rs`) above the router via `use_context_provider`.
+  - `use_overlay_back(open: Signal<bool>)` — for signal-toggled overlays; builds a
+    close callback that sets `open = false`.
+  - `use_overlay_back_action(is_open: ReadSignal<bool>, on_close: Callback<()>)` —
+    for overlays that close through a callback (the `AlertDialogRoot` wrapper).
+  - `close_top() -> bool` — pops the top entry and invokes its close callback;
+    returns whether one was closed.
+- **Instance id** comes from a process-wide `AtomicU64` counter grabbed once via
+  `use_hook` (Dioxus `current_scope_id` isn't exposed in this version). Registration
+  is a `use_effect` (push while open, remove while closed) plus a `use_drop` guard
+  for unmount-while-open.
+- **Back handler** (`back_handler.rs`, iOS + Android arms):
+  `if !overlays.close_top() && nav.can_go_back() { nav.go_back(); }` (Android falls
+  through to `finish_activity()` at a root screen).
+- **Retrofitted** `SwipeSelect`, `OracleTagSelect`, `CardFilterSheet`, **and the
+  shared `AlertDialogRoot` wrapper** — so every dialog built on it (hints, card
+  details, confirms) closes on back with no per-call wiring.
+- **Dictionary + Examples converted to overlays** (Part 3, done): the dictionary
+  embeds the examples browse as a nested overlay; the dictionary itself is embedded
+  in the deck oracle-tag picker (opened from the hint's action bar) and in the card
+  filter (a "Dictionary" button beside each include/exclude label). The filter's copy
+  is rendered as a **sibling of the bottom sheet**, outside its `transform`, because a
+  `position: fixed` overlay nested inside a transformed ancestor is clipped to that
+  ancestor's box. Adopt flow (Examples / Use, "Added to filter" / "Tag added to
+  deck"): [`dictionary_adopt_flow.md`](dictionary_adopt_flow.md).
+- **Z-index registry** documented in `main.css` (sheets 200–202, swipe-select 210,
+  dictionary 220, examples 230).
+- fmt + clippy clean. **Device-tested working**: edge-swipe closes the top overlay
+  (not the whole screen), nested overlays close top-first, a screen with no overlay
+  still navigates back, and the hint / dictionary / examples stack pops one layer per
+  back step.
+
+## Part 1 — Infrastructure (original design sketch; see As-built for shipped API)
 
 ### 1a. `OverlayBackStack` (app-level)
 Provided in `spawn_upkeeper` (`session_upkeep.rs`), above the router:
@@ -153,8 +200,8 @@ convert; **?OWNER** = judgment call, needs a decision.
 | `DeckList` | Home | **KEEP** | Hub. |
 | `ViewDeck` | list, and returned-to from edit/import/export/create | **KEEP** | The per-deck hub; everything returns here. |
 | `Profile` | Home | **KEEP** | Settled destination. |
-| `OracleTagDictionary` | deck oracle-tag selector | **→OVERLAY** | Reference layer over a picker; Use must write the host's live signal. First conversion — see [`dictionary_adopt_flow.md`](dictionary_adopt_flow.md). |
-| `OracleTagExamples` | dictionary | **→OVERLAY** | Peek layer over the dictionary; `SwipeSelect` proves a swipe screen works as an overlay. |
+| `OracleTagDictionary` | deck oracle-tag selector + card filter | **DONE (→OVERLAY)** | Converted `dc44ce3f`. Reference layer over a picker; Use writes the host's live signal ("Tag added to deck" / "Added to filter"). Route dropped. See [`dictionary_adopt_flow.md`](dictionary_adopt_flow.md). |
+| `OracleTagExamples` | dictionary | **DONE (→OVERLAY)** | Converted `dc44ce3f`. Nested swipe-screen overlay over the dictionary; route dropped. Proves a swipe screen works as an overlay. |
 | `ExportDeck` | deck view (more/warnings) | **→OVERLAY** (strong) | It's "show me this deck's decklist text" — a modal over the deck. No reason to leave ViewDeck. |
 | `ImportDeck` | deck view (more/warnings) | **→OVERLAY** (likely) | Paste-a-decklist modal action on this deck; returning should land back on the same deck view untouched. |
 | `ViewDeckCard` | deck view | **?OWNER** | "Browse this deck's cards" — a layer over ViewDeck. Overlay would preserve ViewDeck scroll/state; but it's a substantial screen. Lean overlay. |
@@ -169,19 +216,20 @@ the route model actively hurts.
 
 ## Part 4 — Sequencing
 
-1. **Infra (Part 1):** `OverlayBackStack` + `use_overlay_back` + back-handler change
-   + z-index registry. Nothing else can land without this.
-2. **Retrofit (Part 2):** wire the three existing overlays. Immediately fixes
-   edge-swipe behavior; validates the primitive on known-good components.
-3. **Dictionary + Examples (→OVERLAY):** the first real conversion — full spec in
-   [`dictionary_adopt_flow.md`](dictionary_adopt_flow.md). Proves swipe-screen-as-
-   overlay end to end.
+1. ~~**Infra (Part 1):** `OverlayBackStack` + `use_overlay_back` + back-handler
+   change + z-index registry.~~ **DONE `dc44ce3f`.**
+2. ~~**Retrofit (Part 2):** wire the existing overlays.~~ **DONE `dc44ce3f`** — plus
+   the shared `AlertDialogRoot` wrapper, so all dialogs close on back too.
+3. ~~**Dictionary + Examples (→OVERLAY):** the first real conversion.~~ **DONE
+   `dc44ce3f`** — spec in [`dictionary_adopt_flow.md`](dictionary_adopt_flow.md);
+   swipe-screen-as-overlay proven end to end.
 4. **Export, then Import (→OVERLAY):** clear wins, self-contained modals over deck
-   view.
+   view. *Not started — optional.*
 5. **?OWNER batch:** decide ViewDeckCard / EditDeck / CreateDeck / Add / Remove /
-   Privacy / Changelog per the audit; convert the approved ones.
+   Privacy / Changelog per the audit; convert the approved ones. *Not started —
+   optional.*
 
-Each step is independently shippable and testable.
+Steps 1–3 are shipped. Steps 4–5 are independently shippable if/when wanted.
 
 ## Part 5 — Risks / correctness
 
@@ -200,21 +248,25 @@ Each step is independently shippable and testable.
 - **Scroll/focus restoration.** Overlays preserve host state by construction (host
   never unmounts) — a win over routes, but verify input focus/scroll aren't stolen.
 
-## Verify (infra-level)
+## Verify (infra-level) — all confirmed 2026-07-16
 
-- [ ] `OverlayBackStack` provided app-wide; `use_overlay_back` pushes on open, pops
-      on close and on unmount.
-- [ ] iOS edge-swipe: with an overlay open, closes the top overlay; with none open,
+- [x] `OverlayBackStack` provided app-wide; registration pushes on open, pops on
+      close and on unmount.
+- [x] iOS edge-swipe: with an overlay open, closes the top overlay; with none open,
       navigates the route back; at a root screen, no-ops.
-- [ ] Retrofitted `SwipeSelect`/`OracleTagSelect`/filter sheet close on edge-swipe.
-- [ ] Left-edge back vs mid-screen card swipe don't interfere.
-- [ ] Z-order correct at every depth; no click/scroll-through.
-- [ ] fmt + clippy clean.
+- [x] Retrofitted `SwipeSelect`/`OracleTagSelect`/filter sheet (and all
+      `AlertDialog` dialogs) close on edge-swipe.
+- [x] Left-edge back vs mid-screen card swipe don't interfere.
+- [x] Z-order correct at every depth; no click/scroll-through (incl. the filter
+      dictionary rendered outside the sheet transform).
+- [x] fmt + clippy clean.
 
 ## Open decisions (owner)
 
-1. **?OWNER audit rows:** which of ViewDeckCard / EditDeck / CreateDeck / Add /
-   Remove / Privacy / Changelog to convert (and priority)?
-2. Retrofit existing overlays now (recommended) or with their next touch?
-3. Where do converted overlay components live — keep under `screens/`, or a
-   `components/overlays/` home? (Cosmetic.)
+1. **?OWNER audit rows (still open):** which of ViewDeckCard / EditDeck / CreateDeck
+   / Add / Remove / Privacy / Changelog to convert (and priority)? None are urgent —
+   nothing "breaks" today.
+2. ~~Retrofit existing overlays now or with their next touch?~~ **Resolved — did it
+   now (`dc44ce3f`).**
+3. ~~Where do converted overlay components live?~~ **Resolved — kept under
+   `screens/`** (dictionary/examples stayed put; no `components/overlays/` home).
