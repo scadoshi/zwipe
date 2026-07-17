@@ -153,13 +153,21 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.7.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.7.1 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.7.1:**
+
+- Image-less cards now show as a clean text card, so nothing's hidden while you swipe.
+- Tap a tag on a card to read what it does and see example cards that use it.
+- Add a tag straight from the dictionary into your deck or filter, now right from the card filter too.
+- Every tag now has a plain-language description, the whole catalog covered.
+- Card details restyled to open at the top, plus back-gesture and scrolling polish.
 
 **1.7.0:**
 
