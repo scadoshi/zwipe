@@ -17,6 +17,7 @@ use crate::{
             interactions::swipe::{
                 STACK_DEPTH, SwipeStack, config::SwipeConfig, direction::Direction,
             },
+            navigation::overlay_stack::use_overlay_back,
             screen_header::ScreenHeader,
             telemetry::usage_buffer::UsageBuffer,
         },
@@ -121,6 +122,8 @@ pub(crate) fn SwipeSelect(
     on_select: EventHandler<Card>,
     on_close: EventHandler<()>,
 ) -> Element {
+    // OS back gesture closes this overlay before touching the router.
+    use_overlay_back(open);
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();

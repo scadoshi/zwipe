@@ -16,8 +16,8 @@ use crate::{
     inbound::{
         components::{
             auth::ensure_session::EnsureFresh,
-            catalog_cache::CatalogCache,
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
+            navigation::overlay_stack::use_overlay_back,
             screen_header::ScreenHeader,
         },
         screens::deck::card::components::{
@@ -45,25 +45,20 @@ const PAGE_LIMIT: u32 = 25;
 /// Prefetch the next page once the cursor is within this many cards of the end.
 const LOAD_MORE_THRESHOLD: usize = 5;
 
-/// Deck-free swipe browse of the cards carrying a single oracle tag.
+/// Deck-free swipe browse of the cards carrying a single oracle tag. An in-place
+/// overlay (host renders it when `open`, mounting fresh per tag); back-swipe or the
+/// Back button closes it.
 #[component]
-pub fn OracleTagExamples(slug: String) -> Element {
-    let navigator = use_navigator();
+pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
+    use_overlay_back(open);
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
-    let cache: CatalogCache = use_context();
     let toast = use_toast();
 
     // The tag we're serving, held in a signal so the fetch closures stay `Copy`.
     // Re-navigating to a different tag always remounts (the dictionary sits
     // between them), so seeding once on mount is enough.
     let tag_slug = use_signal(|| slug.clone());
-
-    // Warm the catalog for the human label (usually already loaded from the
-    // dictionary we came from); falls back to the raw slug until it lands.
-    use_effect(move || {
-        cache.ensure_oracle_tags(client);
-    });
 
     let mut stack = use_card_stack::<BrowseAction>();
     let mut current_offset = use_signal(|| 0_u32);
@@ -184,22 +179,9 @@ pub fn OracleTagExamples(slug: String) -> Element {
         }
     };
 
-    // Human label for the tag from the shared catalog, else the raw slug.
-    let label = {
-        let cell = cache.oracle_tags.cell();
-        let read = cell.read();
-        read.loaded()
-            .and_then(|tags| {
-                tags.iter()
-                    .find(|t| t.slug == slug)
-                    .map(|t| t.label.clone())
-            })
-            .unwrap_or_else(|| slug.clone())
-    };
-
     rsx! {
-        div { class: "screen",
-            ScreenHeader { title: "Examples: {label}" }
+        div { class: "screen examples-overlay",
+            ScreenHeader { title: "Examples: {slug}" }
 
             div { class: "screen-content card-swipe content-enter",
                 div { class: "form-container",
@@ -280,7 +262,7 @@ pub fn OracleTagExamples(slug: String) -> Element {
             ActionBar {
                 Button {
                     variant: ButtonVariant::Util,
-                    onclick: move |_| navigator.go_back(),
+                    onclick: move |_| open.set(false),
                     "Back"
                 }
                 if current_card().is_some() {

@@ -15,9 +15,10 @@ use crate::{
         components::{
             catalog_cache::{CatalogCache, CatalogCell},
             hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, use_one_time_hint},
+            navigation::overlay_stack::use_overlay_back,
             screen_header::ScreenHeader,
         },
-        router::Router,
+        screens::oracle_tag_examples::OracleTagExamples,
     },
     outbound::client::ZwipeClient,
 };
@@ -42,10 +43,13 @@ fn bucket_of(slug: &str) -> char {
     }
 }
 
-/// Read-only, searchable dictionary of every oracle tag and its description.
+/// Read-only, searchable dictionary of every oracle tag and its description. An
+/// in-place overlay (the host renders it while `open`); each row offers **Examples**
+/// (opens the example-cards browse, stacked on top) and **Use** (`on_use`, which the
+/// host wires to adopt the tag into the deck or filter without leaving the picker).
 #[component]
-pub fn OracleTagDictionary() -> Element {
-    let navigator = use_navigator();
+pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>) -> Element {
+    use_overlay_back(open);
     let client: Signal<ZwipeClient> = use_context();
     let cache: CatalogCache = use_context();
     let toast = use_toast();
@@ -53,6 +57,11 @@ pub fn OracleTagDictionary() -> Element {
     let hint = use_one_time_hint(HINT_ORACLE_TAG_DICTIONARY);
     let mut selected_letter = use_signal(|| 'a');
     let mut query = use_signal(String::new);
+
+    // Nested example-cards browse, stacked above the dictionary. Owned here so the
+    // dictionary stays mounted underneath while examples are open.
+    let mut examples_open = use_signal(|| false);
+    let mut examples_slug = use_signal(String::new);
 
     // Warm / revalidate the shared oracle-tag catalog. Single-flight and usually
     // already Loaded from the startup prefetch, so this is a cheap no-op on open.
@@ -74,7 +83,7 @@ pub fn OracleTagDictionary() -> Element {
     let cell_read = cell.read();
 
     rsx! {
-        div { class: "screen",
+        div { class: "screen dict-overlay",
             ScreenHeader { title: "Oracle tags", hint }
 
             div { class: "screen-content content-enter",
@@ -162,14 +171,12 @@ pub fn OracleTagDictionary() -> Element {
                                 } else {
                                     for t in rows {
                                         {
-                                            let slug = t.slug.clone();
+                                            let slug_ex = t.slug.clone();
+                                            let slug_use = t.slug.clone();
                                             rsx! {
                                                 div {
                                                     key: "{t.slug}",
-                                                    class: "dict-row dict-row-tappable",
-                                                    onclick: move |_| {
-                                                        navigator.push(Router::OracleTagExamples { slug: slug.clone() });
-                                                    },
+                                                    class: "dict-row",
                                                     div { class: "dict-slug", "{t.slug}" }
                                                     div { class: "dict-desc",
                                                         if let Some(desc) = t.description.clone() {
@@ -183,6 +190,22 @@ pub fn OracleTagDictionary() -> Element {
                                                             for parent in t.parent_slugs.iter() {
                                                                 span { key: "{parent}", class: "dict-parent", "{parent}" }
                                                             }
+                                                        }
+                                                    }
+                                                    hr { class: "dict-row-divider" }
+                                                    div { class: "dict-row-actions",
+                                                        button {
+                                                            class: "chip",
+                                                            onclick: move |_| {
+                                                                examples_slug.set(slug_ex.clone());
+                                                                examples_open.set(true);
+                                                            },
+                                                            "Examples"
+                                                        }
+                                                        button {
+                                                            class: "chip",
+                                                            onclick: move |_| on_use.call(slug_use.clone()),
+                                                            "Use"
                                                         }
                                                     }
                                                 }
@@ -199,7 +222,7 @@ pub fn OracleTagDictionary() -> Element {
             ActionBar {
                 Button {
                     variant: ButtonVariant::Util,
-                    onclick: move |_| navigator.go_back(),
+                    onclick: move |_| open.set(false),
                     "Back"
                 }
             }
@@ -209,12 +232,19 @@ pub fn OracleTagDictionary() -> Element {
                     HintBullet {
                         "Tap a "
                         HintColored { color: "--accent-tertiary", "letter" }
-                        " to browse every oracle tag that starts with it."
+                        " to browse tags, or "
+                        HintColored { color: "--accent-secondary", "search" }
+                        " by name or description."
                     }
                     HintBullet {
-                        "Or "
-                        HintColored { color: "--accent-secondary", "search" }
-                        " by name or description to jump across the whole catalog."
+                        "Tap "
+                        HintColored { color: "--accent-primary", "Examples" }
+                        " to see real cards that carry a tag."
+                    }
+                    HintBullet {
+                        "Tap "
+                        HintColored { color: "--accent-primary", "Use" }
+                        " to add a tag where you came from."
                     }
                     HintBullet {
                         "Descriptions are written by hand over time, so some tags still show "
@@ -222,6 +252,10 @@ pub fn OracleTagDictionary() -> Element {
                         "."
                     }
                 }
+            }
+
+            if examples_open() {
+                OracleTagExamples { open: examples_open, slug: examples_slug() }
             }
         }
     }

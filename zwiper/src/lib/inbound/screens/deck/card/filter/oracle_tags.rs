@@ -14,7 +14,7 @@ use zwipe_core::domain::card::{
     oracle_tag::OracleTag, search_card::card_filter::builder::CardQueryBuilder,
 };
 
-fn read_selected(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
+pub(super) fn read_selected(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
         MatchMode::Any => fb
             .oracle_tags_contains_any()
@@ -27,7 +27,7 @@ fn read_selected(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     }
 }
 
-fn write_selected(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<String>) {
+pub(super) fn write_selected(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<String>) {
     fb.unset_oracle_tags_contains_any();
     fb.unset_oracle_tags_contains_all();
     if !values.is_empty() {
@@ -42,13 +42,13 @@ fn write_selected(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<String
     }
 }
 
-fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
+pub(super) fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
     fb.oracle_tags_excludes()
         .map(|v| v.to_vec())
         .unwrap_or_default()
 }
 
-fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<String>) {
+pub(super) fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<String>) {
     if values.is_empty() {
         fb.unset_oracle_tags_excludes();
     } else {
@@ -58,8 +58,13 @@ fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<String>) {
 
 /// Oracle tag multi-select: search-only chips show raw slugs (same as the deck
 /// strategy picker), with an any/all match toggle and a separate exclude section.
+///
+/// The dictionary overlay is owned by the parent filter sheet (rendered outside the
+/// sheet's `transform`, which would otherwise trap its `position: fixed`). The
+/// include/exclude "Dictionary" buttons here just open it, recording via
+/// `dict_exclude` which list its Use button should feed.
 #[component]
-pub(crate) fn OracleTags() -> Element {
+pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<bool>) -> Element {
     let mut filter_builder: Signal<CardQueryBuilder> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let filter_reset: Signal<u32> = use_context();
@@ -100,6 +105,14 @@ pub(crate) fn OracleTags() -> Element {
             // ── includes ──────────────────────────────────────────
             div { class: "label-row mt-2",
                 label { class: "label-xs", r#for: "oracle-tags-search", "Oracle tags include" }
+                button {
+                    class: "chip-xs",
+                    onclick: move |_| {
+                        dict_exclude.set(false);
+                        dict_open.set(true);
+                    },
+                    "Dictionary"
+                }
                 if !selected.is_empty() {
                     button {
                         class: "chip-xs",
@@ -194,6 +207,14 @@ pub(crate) fn OracleTags() -> Element {
             // ── excludes ──────────────────────────────────────────
             div { class: "label-row mt-2",
                 label { class: "label-xs", r#for: "oracle-tags-excludes-search", "Oracle tags exclude" }
+                button {
+                    class: "chip-xs",
+                    onclick: move |_| {
+                        dict_exclude.set(true);
+                        dict_open.set(true);
+                    },
+                    "Dictionary"
+                }
                 if !excluded.is_empty() {
                     button {
                         class: "clear-btn",

@@ -10,6 +10,7 @@ use crate::{
             auth::ensure_session::EnsureFresh,
             catalog_cache::use_catalog_cache,
             hint_host::HintTopic,
+            navigation::overlay_stack::use_overlay_back_stack,
             telemetry::{
                 anonymous::record_anonymous_event,
                 flush_loop::{spawn_usage_flusher, spawn_visibility_flusher},
@@ -126,6 +127,11 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
 
     let client = use_signal(ZwipeClient::new);
     use_context_provider(|| client);
+
+    // Back-aware overlay stack: the OS back gesture closes the top open overlay
+    // before falling through to the router (see navigation::overlay_stack).
+    let overlay_back_stack = use_overlay_back_stack();
+    use_context_provider(|| overlay_back_stack);
 
     // Remembered filters, one per (screen, deck) — each deck-card screen
     // provides its own filter signal seeded from here and parks it back on
