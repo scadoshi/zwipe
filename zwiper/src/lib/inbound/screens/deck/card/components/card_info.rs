@@ -98,6 +98,18 @@ pub(crate) fn CardDetailsDialog(
     // via the controlled `face` prop.
     let face_count = card_face_count(&card);
     let mut face = use_signal(|| 0usize);
+
+    // Open at the top: the primitive can land the scroll container partway (focus
+    // moves into the dialog on mount). Reset the description's scroll on each open,
+    // after the content paints. `card-rules` is the direct child of the
+    // `.alert-dialog-description` scroll container.
+    use_effect(move || {
+        if open() {
+            let _ = document::eval(
+                "requestAnimationFrame(() => { const el = document.getElementById('card-details-rules'); if (el && el.parentElement) el.parentElement.scrollTop = 0; });",
+            );
+        }
+    });
     // Mana cost for the shown face, pinned in the title so it tracks Flip.
     let cost = {
         let cur = face().min(face_count.saturating_sub(1));
@@ -129,7 +141,7 @@ pub(crate) fn CardDetailsDialog(
                     // per-face cost, so `show_name` is off. The description is the
                     // sole scroll container (`card-rules` no longer scrolls), and
                     // Flip is hoisted to the footer, so `show_flip` is off.
-                    div { class: "card-rules",
+                    div { id: "card-details-rules", class: "card-rules",
                         CardDetails {
                             card,
                             show_name: false,
