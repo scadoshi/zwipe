@@ -9,16 +9,20 @@ progress in [`otag_audit_progress.md`](otag_audit_progress.md).
 
 > **This is the ACTIVE audit task.** Ignore the paused forward sweep in
 > [`otag_audit_progress.md`](otag_audit_progress.md) (do not resume that at 2201). Continue
-> the re-audit here from **rank ~1001+**.
+> the re-audit here from **rank ~1501+** (ranks 1-1500 done; note 160 slugs in the 1001-1500 batch are audit-only/unverified).
 
-> **APPLIED: ranks 1-1000 (all 181 wrong+suspect fixes) were applied to
-> `ORACLE_TAG_DESCRIPTIONS` on 2026-07-16.** The batches below are kept as the record of what
-> changed. **Do not re-apply them.** New batches (rank ~1001+) remain findings-only until applied.
-> `wrong`/`suspect` are the *verified-surviving* flags. Ships
+> **APPLIED + fully verified: ranks 1-1500 were applied to `ORACLE_TAG_DESCRIPTIONS` on 2026-07-16.**
+> Ranks 1-1000: 181 fixes. Ranks 1001-1500: 99 fixes. The 28 originally-unverified fixes were later
+> put through the two-stage verify (2026-07-16): **18 upheld** (updated to the verified suggestion),
+> **10 reverted to their original text** (re-audit found them accurate; the first flag was a false
+> positive). **The whole 1-1500 apply is now two-stage verified.** The batches below are the record.
+> **Do not re-apply them.** New batches (rank ~1501+) remain findings-only. Ships
 > [`otag_audit_workflow.js`](otag_audit_workflow.js).
 
 ## Coverage / resume
-- **Re-audited: 1000 / 4,357** (ranks 1-1000 by card population). **Next: rank ~1001+.**
+- **Re-audited: 1500 / 4,357** (ranks 1-1000 done; ranks 1001-1500 batch **complete, 500/500**,
+  all findings two-stage verified — the 28 flags from the originally audit-only shard were verified
+  2026-07-16: 18 upheld, 10 reverted). **Next: rank ~1501+.**
 - **Resume (do this to continue):** pull the top-N `(slug, description)` pairs by card
   population from the DB, **excluding** every slug already in
   [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt) (this is the re-audit's own tracker,
@@ -30,7 +34,8 @@ progress in [`otag_audit_progress.md`](otag_audit_progress.md).
   re-queues whatever didn't finish, no gaps or dupes.
 
 ## Findings so far
-Cumulative across 1000 re-audited: **815 clean, 171 suspect, 10 wrong**; Verify overturned 16.
+Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verify overturned 19.
+(Of the 1001-1500 batch, 160 slugs = 4 wrong + 24 suspect are UNVERIFIED — verify stage cut by limits.)
 Per-batch detail below.
 
 ## Batch: ranks 1-500
@@ -347,9 +352,176 @@ permanents" is a fine superset).
 
 ---
 
+## Batch: ranks 1001-1500  (APPLIED 2026-07-16)
+
+**499/500 audited** (1 slug unreached; session limits hit repeatedly 2026-07-16). Of these, **339 are fully two-stage verified**; **160 are audit-only / UNVERIFIED** (their verify stage was killed by the limit). Combined: 401 clean, 88 suspect, 10 wrong, 3 overturned. **Const untouched (findings-only).** The UNVERIFIED flags below should get a skeptic pass before being applied.
+
+### Wrong — verified (6)
+
+#### `cycle-2xm-r-two-color`
+- **current:** Belongs to a two-color rare cycle reprinted in Double Masters.
+- **issue:** claims 'rare' cycle but tagged cards include mythics and an uncommon
+- **suggested fix:** A two-color multicolored card reprinted in the Double Masters (2XM) set.
+
+#### `impulse-instant`
+- **current:** Exiles cards from your library and lets you cast an instant from among them.
+- **issue:** many members neither exile nor cast; they put instant/sorcery cards into hand, and it covers sorceries too, not just instants
+- **suggested fix:** Digs through your library for instant and sorcery cards, letting you cast them or put them into your hand.
+
+#### `impulse-planeswalker`
+- **current:** Reveals cards from the top of your library and lets you take a noncreature, nonland card.
+- **issue:** Overspecifies the grabbable card type: many members take creatures, lands, or planeswalkers, directly contradicting 'noncreature, nonland'
+- **suggested fix:** Digs through the top cards of your library and lets you take a card of a certain type into your hand, bottoming or binning the rest.
+
+#### `impulse-sorcery`
+- **current:** Exiles cards from your library and lets you cast a sorcery from among them.
+- **issue:** Narrows to 'cast a sorcery' and 'exile', but cards care about instants AND sorceries and most just dig them into hand rather than exile-and-cast
+- **suggested fix:** Digs through your library for an instant or sorcery card to cast or put into your hand.
+
+#### `predefined-token`
+- **current:** Creates a specific named token with a fixed, preset set of abilities.
+- **issue:** Says the card 'creates' a token, but the tagged cards ARE the predefined tokens and have their own abilities; they don't create anything
+- **suggested fix:** A specific named token that comes with a fixed, preset set of abilities.
+
+#### `copy-enchantment`
+- **current:** Creates a token that is a copy of an enchantment.
+- **issue:** Not all members create a token; many (including the namesake) enter or become a copy of an enchantment instead
+- **suggested fix:** Copies an enchantment, either as a token copy or by entering the battlefield or becoming a copy of one.
+
+### Suspect — verified (65)
+
+| slug | issue | suggested fix |
+| --- | --- | --- |
+| `old-damage-deathtouch` | Over-narrows to 'combat damage' and to the card itself ('it'); several members trigger on ANY damage and on other creatures | Destroys any creature dealt damage by an affected creature, an older way of writing deathtouch. |
+| `life-divider-you` | Says 'roughly half' but at least one card divides by a third, not half | Makes a player lose, draw, discard, or sacrifice a fraction (usually half) of something, rounded up. |
+| `synergy-scry` | Says 'triggers an additional effect' but several members are replacement effects that modify the scry itself, not added triggers | Rewards scrying, granting an extra benefit or changing what happens whenever you scry. |
+| `reanimate-matters` | 'Enters or leaves a graveyard' overstates the 'enters a graveyard' case; the real theme is creatures leaving the graveyard (reanimated or cast from it) | Triggers when a creature enters the battlefield from a graveyard or a creature card leaves your graveyard, rewarding reanimation and casting from the graveyard. |
+| `quick-enchant` | Omits Equipment; many of these attach Equipment as well as Auras | Attaches or moves an Aura or Equipment onto a permanent through an ability rather than by casting it. |
+| `seek-creature` | Not always to hand; many seek creatures onto the battlefield or into the graveyard | Finds a random creature card from your library and puts it into your hand, onto the battlefield, or into your graveyard. |
+| `pariah` | Overspecified to "dealt to you"; several redirect damage aimed at a creature, not at you | Redirects damage that would be dealt to you, or sometimes to your creatures, onto a single creature instead. |
+| `synergy-color-choose` | "reward cards" is vague/wrong; payoffs are creatures, spells, or mana of the chosen color, not "cards" | Chooses a color as it enters, then rewards creatures, spells, or mana of that chosen color. |
+| `removal-equipment` | "specifically" overstates it; several members are broad removal that merely catches Equipment, and it omits bounce | Destroys, exiles, or bounces Equipment, sometimes alongside other permanents. |
+| `synergy-reach` | over-narrows to 'your creatures'; most cards count reach across other zones (hand, graveyard, library, any graveyard) | Grants or counts reach along with other keyword abilities found among your creatures or cards in other zones such as your hand, graveyard, or library. |
+| `conjure-artifact` | Omits the graveyard as a destination, and the conjured card isn't always an artifact | Conjures a specific artifact card from outside the game into your hand, onto the battlefield, or into your graveyard. |
+| `crewless-vehicle` | Several members still require tapping creatures, tokens, or Food to animate, which is a crew-style cost | A Vehicle that becomes a creature without a standard Crew keyword ability. |
+| `poison-opponents` | Overspecifies "opponents"; several cards give poison to "a player" or "its controller," not strictly opponents | Gives poison counters directly to a player, not through infect or toxic combat damage. |
+| `fateseal` | Overspecified: many tagged cards target any player (not just opponents) and mill to the graveyard rather than only bottom-of-library | Looks at cards on top of a player's library and may move them to the bottom or into the graveyard. |
+| `zoo` | "of different types" is overspecified: several tagged cards make multiple tokens of the SAME type | Creates several creature tokens at once, often of different types. |
+| `cycle-2x2-draft-signpost` | Says 'gold' but the cycle includes a hybrid member, which is not gold | A two-color signpost card that steers drafters toward its color pair's archetype. |
+| `cycle-war-r-two-color` | 'one per guild pair' is wrong; pop is 20 and guild pairs repeat, so it is two per guild pair | A two-color rare from War of the Spark, part of the set's cycle of gold rares. |
+| `legends-retold` | not all members are creatures (one is a planeswalker), so 'legendary creatures' overspecifies | A modern reimagining of a classic legendary character from the original Legends set. |
+| `token-without-a-card` | "likely due to errata" is speculative; the real cause varies (orphaned tokens, removed/digital/Un cards), not specifically errata | A token that no card currently in the game actually creates. |
+| `synergy-spacecraft` | "you control" is over-specific; many members care about Spacecraft cards in library or graveyard, not just ones you control | Cares about, boosts, or interacts with Spacecraft. |
+| `hate-typal-choose` | 'punishes or weakens' misses steal/answer effects on the chosen type | Names a creature type, then answers creatures of that type by weakening, removing, or seizing them. |
+| `hate-typal-goblin` | several tagged cards reward Goblins rather than prey on them | Cares about Goblins, usually preying on them but sometimes rewarding you for having them. |
+| `explore-like` | 'Keep it or bin it' understates it: the keep is conditional on card type, and the discard is often bottom-of-library, not the graveyard | Looks at the top card of a library and lets you take it into hand if it matches a type, otherwise binning it or leaving it on the top or bottom. |
+| `ethereal-armor` | Omits that many members scale with artifacts too, not just enchantments or Auras | Grants a creature a +X/+X boost that scales with how many enchantments (and sometimes artifacts or Auras) you have in play. |
+| `mana-gorger` | Overgeneralizes: many members only grow on an opponent's spell or on specific colors/types, not on any player casting any spell | Grows with +1/+1 counters when spells are cast, often any player's but sometimes only an opponent's or only a specific color or type of spell. |
+| `hate-empty-hand` | says 'opponent' but several cards care about ANY player's empty hand, including yours | Cares about or rewards you when a player has few or no cards in hand. |
+| `typal-rebel` | overspecified as a library-searcher; several tagged cards make/reward Rebels without searching | A card that tutors for, creates, or rewards Rebels you control. |
+| `typal-shaman` | 'creature or spell' misses Equipment and other permanents that reward Shamans | A card that cares about Shamans or rewards you for controlling them. |
+| `typal-minotaur` | 'together as a shared tribe' is awkward filler; also misses tutor effects and single-target boosts | Rewards, boosts, or tutors for your Minotaurs. |
+| `clothing-matters` | 'you're actually wearing' is too narrow; several cards key off what OTHER players wear, and one keys off your body not clothing | A joke card whose effect depends on real-world clothing, accessories, or physical traits of the players. |
+| `cycle-dsk-r-two-color` | 'each anchoring a different draft archetype' overreaches; these are the two-color RARES (legendaries and Rooms), not the uncommon archetype signposts | One of a cycle of two-color rares from Duskmourn, one card for each color pair. |
+| `cycle-a25-r-two-color` | not all are rare; the cycle includes mythics, so 'rare' is inaccurate | A two-color gold card from a Masters 25 cycle that reprints classic multicolor cards. |
+| `cycle-a25-draft-signpost` | not all uncommon; the pulled cards include a common and rares, so 'uncommon' is wrong | A two-color gold signpost card that steers drafters toward its color pair's archetype in Masters 25. |
+| `hate-first-strike` | Underspecified: some members answer first strikers by preventing their damage rather than stripping the ability | Removes first strike from a creature or blunts first strikers, such as by preventing their combat damage. |
+| `cycle-woe-draft-signpost` | Claims all are uncommon, but a shown member is rare | A two-color legendary creature built to showcase a two-color archetype in this set's draft format. |
+| `cycle-vma-r-two-color` | Overspecifies rarity as 'rare'; at least one member is uncommon | One of Vintage Masters' two-color gold creatures. |
+| `cycle-tsp-c-sliver` | Not all members are common; at least one is rare, so 'A common Sliver' overspecifies | A Sliver that gives every Sliver in play a shared ability or stat boost. |
+| `hate-legendary` | Says 'legendary permanents specifically' but several answer legendary SPELLS on the stack, not permanents | Answers or punishes legendary permanents and spells specifically. |
+| `hate-flash` | Says 'opponents' but many cards restrict/tax ALL players symmetrically, not just opponents | Stops or taxes players from casting spells or activating abilities outside their own turn. |
+| `conjure-instant` | destination list omits graveyard, which some cards use | Conjures an instant card from outside the game into your hand, library, graveyard, or exile. |
+| `recursion-from-exile` | Overspecifies "you own" (some hit any player's exiled card) and omits casting/playing from exile, which many cards do | Returns an exiled card to a hand, library, battlefield, or graveyard, or lets a card be cast or played from exile. |
+| `impulsive-recursion` | Not always from your graveyard; some pull from an opponent's graveyard or your library | Exiles a card, usually from a graveyard, that you can play for a limited time. |
+| `hate-swamp` | Says 'opponents' but several cards hit any player (including you), and swampwalk cards reward the attacker rather than punish; also 'black permanents' barely supported | Cares about Swamps or black permanents, punishing any player who controls them or rewarding you for exploiting them. |
+| `gives-castable-from-library` | says "your library" but several cast from an opponent's library | Lets you cast a spell straight from a library without paying its mana cost. |
+| `exile-with-tax` | "added cost" misses airbend's flat {2} (often cheaper) and cards with no cost; some exile from hand not a permanent | Exiles a permanent or card, letting its owner play it later, often for an added cost. |
+| `copy-land` | "often as a token" is misleading; the core copy-land cards make the land itself BECOME a copy, not a token | Copies a land, either by becoming a copy of one itself or by creating a token copy. |
+| `tutor-copy` | the reference is not always "another creature or permanent" (can be a card in hand), and some search an opponent's library rather than yours | Searches a library, usually yours, for a card with the same name as a permanent or a card you reveal from hand. |
+| `tutor-land-basic-mountain` | most cards offer a CHOICE among several basic types (Mountain is one option) and often put it onto the battlefield, not just fetch a Mountain to hand | Searches your library for a basic land that can be a Mountain, usually one of a few basic types and often put onto the battlefield. |
+| `addendum` | overspecified as "an instant": at least one carrier is an Aura, not an instant | Gets a bonus effect if you cast it during your main phase. |
+| `repeatable-powerstones` | 'can only pay for artifacts' is imprecise; the restriction is only on casting nonartifact spells, so the mana can still pay any activated ability | Repeatedly creates Powerstone tokens that make colorless mana which can't be spent to cast nonartifact spells. |
+| `hate-tutor` | Says 'hinders an opponent' but several members shut off searching for ALL players (symmetric), and some trigger on shuffle/scry, not just search | Shuts off or punishes library searching, sometimes for all players and sometimes rewarding you when an opponent searches, shuffles, or scries. |
+| `flicker-artifact` | "later" implies a delay, but many members return the card immediately | Exiles an artifact or creature and returns it to the battlefield. |
+| `commander-tax-matters` | Narrows to the tax portion, but many cards care about the TOTAL mana spent to cast the card, not just commander tax | Cares about your commander tax or the total mana spent to cast your commander. |
+| `hate-landwalk` | Only describes the "can be blocked" mode; some members instead destroy or strip landwalk creatures | Answers creatures with landwalk, usually letting them be blocked as though they lacked it. |
+| `catch-22` | Describes only the end-step-punisher subset; a majority of tagged cards are day/night-transition payoffs that never punish at end step | Either punishes each player at their end step unless they meet a condition like casting a spell or tapping out their lands, or triggers whenever day and night flip. |
+| `gifts-ungiven` | Not all search the library (several reveal top cards or use the graveyard), and the opponent usually chooses which cards are denied you, not which you keep | Presents several cards, often by searching or revealing, and lets an opponent choose which ones you get and which are denied you. |
+| `synergy-transform` | Frames the tag purely as a payoff/reward, but it also collects transform enablers and even anti-transform cards | Cares about transforming double-faced permanents, whether enabling transformation, rewarding you for it, or controlling transformed permanents. |
+| `old-banish-templating` | 'a card with one ability' is ambiguous; reads as exiling a card that has one ability rather than 'via one ability' | Uses one ability to exile a card, then a linked ability returns it when this leaves the battlefield. |
+| `copy-planeswalker` | 'Creates a token' is too narrow; many members don't make tokens | Copies a permanent, and the copy can be a planeswalker. |
+| `opaline-effect` | too narrow: says 'your creature' but most cards trigger off any permanent you control (or you) | Lets you draw a card when a spell or ability an opponent controls targets you or a permanent you control. |
+| `frost-armor` | Overstates scope: most cards protect only themselves (this creature), not 'you or a permanent you control' | Makes your opponents pay extra mana to cast spells that target this creature. |
+| `play-from-top` | Says 'cast', but several members let you PLAY a land from the top, not just cast spells; 'without exiling it first' is odd, unnecessary phrasing | Lets you play or cast the top card of your library, often without paying its mana cost. |
+| `tutor-enchantment` | omits the common 'put onto the battlefield' mode; says only hand or top | Searches your library for an enchantment card and puts it into your hand, onto the battlefield, or on top of your library. |
+| `grim-return` | Says 'your graveyard' but many members return cards from any/all graveyards, not just yours | Returns cards that were put into a graveyard from the battlefield this turn back onto the battlefield. |
+
+| `copy-nonland` | too narrow: many copy a nonland card/spell (cast the copy) or become a copy, not just create a token | Copies a nonland permanent or card. |
+
+### Wrong — UNVERIFIED, re-verify before applying (4)
+
+#### `cycle-zodiac-creature`
+- **current:** One of a cycle of animal creatures, each with landwalk tied to its type.
+- **issue:** 'each with landwalk' is false and 'tied to its type' is wrong; one member has no landwalk and the walk type is not linked to creature type
+- **suggested fix:** One of a cycle of animal creatures, most having a landwalk ability.
+
+#### `un-color`
+- **current:** A joke card that uses fake colors like pink, gold, or orange that don't exist in normal Magic.
+- **issue:** Mislabels the cards as joke cards; many carriers are real black-border, constructed-legal cards that merely reference a non-Magic color for a token
+- **suggested fix:** Uses a color that isn't one of Magic's real colors, such as pink, orange, or gold, usually when creating a token.
+
+#### `substance`
+- **current:** An obsolete ability from old Mirage-era cards that does nothing at all.
+- **issue:** 'does nothing at all' is false; these cards grant real bonuses/effects and share the Mirage cast-at-instant-speed-then-sacrifice-at-cleanup mechanic
+- **suggested fix:** Mostly Mirage-era enchantments you may cast at instant speed that get sacrificed at the next cleanup step if cast when a sorcery couldn't be, plus other effects that end at that cleanup step.
+
+#### `moxen`
+- **current:** A zero-cost artifact named Mox that taps for mana.
+- **issue:** Not all are zero-cost, and not all are named 'Mox' (over/under-specified)
+- **suggested fix:** A Mox artifact that taps for mana, usually costing nothing to cast.
+
+### Suspect — UNVERIFIED, re-verify before applying (24)
+
+| slug | issue | suggested fix |
+| --- | --- | --- |
+| `lich-effect` | Names only sacrifice/discard, but the biggest alternative cost is exiling cards or milling; 'instead' is also loose since some cards still lose the life and then pay | Lets you survive with 0 or less life, but each time you lose life or take damage you must pay a cost such as sacrificing permanents, discarding, or exiling cards. |
+| `pseudo-equipment` | Says 'permanent' but the bonus recipient is always a creature; and one member buffs all creatures, not just 'another' | A creature or artifact that stays tapped to give a creature a stat or keyword bonus for as long as it remains tapped. |
+| `hate-monocolor` | says 'creatures' but several cards answer any monocolored permanent, not just creatures | Punishes, resists, or answers monocolored permanents and spells. |
+| `theft-spell` | Only about half the cards take control of a live spell; the rest counter/exile it and let you recast it later, which the description omits | Steals an opponent's spell, either gaining control of it or countering it so you can cast it yourself. |
+| `super-menace` | Overspecified to 'three or more'; some carriers require more blockers or all of them | Can't be blocked except by three or more creatures (sometimes even more). |
+| `removal-vehicle` | "destroy or exile" is too narrow; the tag also covers bounce and sacrifice | Removal that can destroy, exile, bounce, or otherwise answer a Vehicle, not only creatures. |
+| `fulfilled-futureshift` | Likely misreads "fulfilled": the tag is about a futureshifted card whose teased mechanic or theme was later made real, not the card getting a reprint; "in its own set" is also confusing | A Future Sight futureshifted card whose previewed mechanic or theme was later realized in a real set. |
+| `fractional-power-toughness` | Overspecified to 'one half'; cards use various half values (3.5, 1.5), not just 1/2 | Has a fractional power or toughness with a half point value, or grants one. |
+| `hate-free-spell` | Only covers the counter/damage-a-free-spell subset; ignores the large subset that exiles creatures put onto the battlefield without being cast | Answers spells cast for no mana and creatures that enter without being cast, by countering, exiling, or dealing damage. |
+| `counter-preservation` | overspecifies the source as a creature; several cards move counters off any permanent, not just creatures | Moves a permanent's counters onto another permanent you control when it dies or leaves the battlefield. |
+| `quietus-effect` | Says generic 'damage' but nearly all cards trigger on COMBAT damage specifically; also omits the 'rounded up' detail that most share | Makes a player lose half their life, rounded up, when a creature deals combat damage to them. |
+| `poison-mechanics` | Trailing clause is garbled and missing its noun ('changing how many cost you the game'), reads unclearly | Interacts with poison counters directly, adding them, removing them, or raising how many it takes to lose the game to poison. |
+| `typal-otter` | 'creature or spell' excludes the lands that carry this tag | A card that cares about Otters, often alongside Birds, Frogs, and Rats. |
+| `tuck` | 'spell' is unsupported; all 11 tagged cards move a permanent, none tuck a spell from the stack | Puts a permanent into its owner's library, often on top or bottom. |
+| `theft-planeswalker` | Says 'opponent's planeswalker' but many members reanimate a planeswalker from a graveyard, and most target 'creature or planeswalker' not opponent-restricted | Gains control of a target planeswalker, taking it from an opponent or returning one from a graveyard to the battlefield under your control. |
+| `counter-fuel-mm` | Says counters are removed 'off itself,' but several members remove -1/-1 counters from other creatures you control (or any creature) | A creature that gets a benefit, like mana or removal, by removing -1/-1 counters from itself or another creature. |
+| `sunder` | 'leaving the permanent itself behind' is false for members that also destroy, exile, or damage the creature | Destroys all Auras and Equipment attached to a permanent, sometimes destroying that permanent as well. |
+| `restock-sorcery` | Says 'on top' but several members put the card on the bottom of the library, and some pull from any graveyard | Returns a sorcery card from a graveyard to your library, usually on top but sometimes on the bottom. |
+| `restock-instant` | Says 'on top' but several members put the card on the bottom of the library, and some pull from any graveyard | Returns an instant card from a graveyard to your library, usually on top but sometimes on the bottom. |
+| `removes-hexproof` | Many members strip hexproof from any permanent type your opponents control, not just creatures or players | Strips hexproof from permanents or players your opponents control so you can target them. |
+| `just-shuffle` | Explicit 'not as cleanup after a search' clause is contradicted by a tagged card whose shuffle IS post-search cleanup | Shuffles a library as an effect in its own right, often to reset or disrupt what's on top. |
+| `cycle-clu-r-hybrid` | "revives a classic guild mechanic" is false for several members that carry no returning guild keyword | A rare creature with a two-color hybrid mana cost matching a Ravnica guild's colors. |
+| `fungusaur-effect` | says "a +1/+1 counter" (one) but many members add multiple or "that many" counters | Puts one or more +1/+1 counters on a creature that's dealt damage and survives. |
+| `morphling` | 'mana abilities' is a rules misnomer (these are activated pump abilities that cost mana, not mana abilities); and not every carrier is a Shapeshifter creature (Pemmin's Aura is an Aura enchantment) | A creature or aura with repeatable abilities that pay mana to shift its power and toughness or grant it keywords at instant speed. |
+
+### Overturned by Verify (3)
+- `un-keyword` — All shown carriers have joke keywords (Denimwalk, Last strike, Super haste, sticker kicker); the pulled data has no set field, so the provenance claim cannot be proven false
+- `typal-mercenary` — Tutors fetch 'Mercenary permanent card' / 'Mercenary card', but every Mercenary in the pool (and historically) is a creature, so 'creatures of the Mercenary type' remains accurate.
+- `titan-immortality` — 10 of 12 (Dread, Alabaster Dragon, Progenitus, etc.) shuffle themselves; only Kozilek/Emrakul reshuffle whole graveyard
+
+---
+
 ## Applying corrections
 
-**Status: ranks 1-1000 APPLIED 2026-07-16** (181 fixes: all 10 wrong + 171 suspect). Applied
+**Status: ranks 1-1500 APPLIED 2026-07-16** (1-1000: 181 fixes; 1001-1500: 99 fixes, incl. 28 from the unverified set at owner's request).
+
+_Original note:_ **ranks 1-1000 APPLIED 2026-07-16** (181 fixes: all 10 wrong + 171 suspect). Applied
 programmatically slug-by-slug: each fix was gated for style (quote-free, no em dash, no link,
 terminal period, <=200 chars) and only written when the const's current text still matched the
 audited description (0 mismatches). `nightly fmt` clean. **The change is to the compiled const
