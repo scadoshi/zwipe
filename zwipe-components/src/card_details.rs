@@ -136,6 +136,13 @@ pub fn CardDetails(
     /// styling so they match the defaults.
     #[props(default)]
     actions: Option<Element>,
+    /// Resolve an oracle tag's description, making exposed tags tappable-to-reveal
+    /// in the card-role cluster. Forwarded to [`CardRoleChips`]; see there.
+    #[props(default)]
+    describe_tag: Option<Callback<String, Option<String>>>,
+    /// Open the example-cards browse for a tag slug. Forwarded to [`CardRoleChips`].
+    #[props(default)]
+    on_examples: Option<Callback<String>>,
 ) -> Element {
     let sd = &card.scryfall_data;
     let name = sd.name.clone();
@@ -212,7 +219,7 @@ pub fn CardDetails(
                 KeywordChips { keywords }
             }
             if show_classification {
-                CardRoleChips { roles, tags_by_role, other_tags }
+                CardRoleChips { roles, tags_by_role, other_tags, describe_tag, on_examples }
             }
         }
         if show_bar {

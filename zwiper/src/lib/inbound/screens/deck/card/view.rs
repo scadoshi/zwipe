@@ -1,5 +1,5 @@
 use super::components::{
-    card_row::CardRow,
+    card_row::{CardRow, OtagDescribe, OtagExamplesOpen},
     filter_store::{FilterScope, FilterStore},
     image_preview::ImagePreview,
     printing_sheet::PrintingSheet,
@@ -8,6 +8,7 @@ use crate::{
     inbound::{
         components::{
             auth::ensure_session::EnsureFresh,
+            catalog_cache::CatalogCache,
             chip::Chip,
             hint_dialog::{
                 HintBullet, HintBullets, HintDialog, HintKey, HintLine, open_and_record_hint,
@@ -15,12 +16,15 @@ use crate::{
             screen_header::ScreenHeader,
             telemetry::usage_buffer::UsageBuffer,
         },
-        screens::deck::{
-            card::filter::{
-                card_filter_sheet::{CardFilterSheet, CollapseExpanded},
-                deck_cards::DeckCards,
+        screens::{
+            deck::{
+                card::filter::{
+                    card_filter_sheet::{CardFilterSheet, CollapseExpanded},
+                    deck_cards::DeckCards,
+                },
+                components::skeletons::DeckCardListSkeleton,
             },
-            components::skeletons::DeckCardListSkeleton,
+            oracle_tag_examples::OracleTagExamples,
         },
     },
     outbound::client::{
@@ -139,6 +143,30 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut price_budget_currency: Signal<PriceCurrency> = use_signal(|| PriceCurrency::Usd);
     // Shared with every CardRow so compact-row prices use the deck's currency.
     use_context_provider(|| price_budget_currency);
+
+    // Oracle-tag reveal inside expanded rows: a description lookup (from the shared
+    // catalog cache) and an examples-browse opener, handed to every CardRow via
+    // context. The examples overlay is owned here (this screen has no transform, so
+    // its fixed overlay resolves to the viewport, unlike the filter sheet).
+    let cache: CatalogCache = use_context();
+    use_effect(move || {
+        cache.ensure_oracle_tags(client);
+    });
+    let describe_tag = use_callback(move |slug: String| {
+        cache.oracle_tags.cell().read().loaded().and_then(|tags| {
+            tags.iter()
+                .find(|t| t.slug == slug)
+                .and_then(|t| t.description.clone())
+        })
+    });
+    let mut otag_examples_open = use_signal(|| false);
+    let mut otag_examples_slug = use_signal(String::new);
+    let open_examples = use_callback(move |slug: String| {
+        otag_examples_slug.set(slug);
+        otag_examples_open.set(true);
+    });
+    use_context_provider(|| OtagDescribe(describe_tag));
+    use_context_provider(|| OtagExamplesOpen(open_examples));
     // What the UI renders — grouped card lists (active cards only)
     let mut displayed_groups: Signal<Vec<CardGroup>> = use_signal(Vec::new);
     // Current grouping mode
@@ -1196,6 +1224,10 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
                     },
                 }
+            }
+
+            if otag_examples_open() {
+                OracleTagExamples { open: otag_examples_open, slug: otag_examples_slug() }
             }
             }
     }

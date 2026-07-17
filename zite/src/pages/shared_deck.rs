@@ -7,6 +7,7 @@ use zwipe_core::{
     domain::{
         card::{
             Card,
+            oracle_tag::OracleTag,
             scryfall_data::{ImageSize, ScryfallData, colors::Color},
             search_card::{
                 card_filter::{
@@ -97,6 +98,9 @@ fn CardRow(
     /// Tap-to-open full-art overlay target. Set to this card's data + the face
     /// currently shown when the in-detail "Image" button is tapped.
     mut overlay_card: Signal<Option<(ScryfallData, usize)>>,
+    /// Resolve an oracle tag's description, so the card-role tags reveal their
+    /// definition inline. No `on_examples` on the web (no swipe browse).
+    describe_tag: Callback<String, Option<String>>,
 ) -> Element {
     // This row's live stack entry id (while the cursor is on it); the leave
     // handler times it out. `None` when the row isn't hovered.
@@ -116,6 +120,7 @@ fn CardRow(
             qty,
             expanded_card,
             show_classification: true,
+            describe_tag: Some(describe_tag),
             // Star indicator on starred rows only; no Star button (read-only).
             mvp: mvp.then_some(true),
             on_image: move |()| {
@@ -324,6 +329,31 @@ pub fn SharedDeck(token: String) -> Element {
 
 #[component]
 fn SharedDeckView(deck: HttpSharedDeck) -> Element {
+    // Oracle-tag catalog for the card-role tag definitions, fetched once and held
+    // in browser memory (the endpoint is public, no auth). On failure it stays
+    // empty and exposed tags read "No description yet". No examples browse on the
+    // web, so tags reveal their definition only (no "Examples" button).
+    let otags: Resource<Vec<OracleTag>> = use_resource(|| async move {
+        let client = reqwest::Client::new();
+        match client
+            .get(format!("{API_BASE}/api/card/oracle-tags"))
+            .send()
+            .await
+        {
+            Ok(res) if res.status().is_success() => {
+                res.json::<Vec<OracleTag>>().await.unwrap_or_default()
+            }
+            _ => Vec::new(),
+        }
+    });
+    let describe_tag = use_callback(move |slug: String| {
+        otags.read().as_ref().and_then(|tags| {
+            tags.iter()
+                .find(|t| t.slug == slug)
+                .and_then(|t| t.description.clone())
+        })
+    });
+
     let mut group_option = use_signal(|| GroupByOption::CardType);
     let mut name_filter = use_signal(String::new);
     let mut selected_types = use_signal(Vec::<CardType>::new);
@@ -700,6 +730,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                                         preview_stack,
                                         preview_next_id,
                                         overlay_card,
+                                        describe_tag,
                                     }
                                 }
                             }

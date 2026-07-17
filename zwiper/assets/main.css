@@ -515,6 +515,13 @@ button {
     letter-spacing: 0.1em;
     margin: 0;
     color: var(--accent-primary);
+    /* Clear the absolutely-positioned side buttons (support left, hint right) so a
+       long title (e.g. "Examples: <long-slug>") truncates instead of sliding
+       under them. */
+    max-width: calc(100% - 6rem);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Pinned controls strip below the page header (e.g. import source/mode

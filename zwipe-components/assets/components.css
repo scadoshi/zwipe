@@ -693,6 +693,39 @@ i.ms.ms-cost.ms-gp {
     margin-bottom: 0;
 }
 
+/* One exposed tag's definition, telescoped under it. Uses a secondary accent (the
+   outer role frame is tertiary) so the two nested block-quote rules read as
+   distinct levels rather than one doubled line. */
+.otag-def {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+    padding: 0.35rem 0.5rem;
+    border-left: 2px solid var(--accent-secondary);
+    border-radius: 0.25rem;
+    background-color: var(--bg-sink);
+}
+
+.otag-def-text {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--text-primary);
+    opacity: 0.9;
+}
+
+.otag-examples-btn {
+    padding: 0.1rem 0.55rem;
+    border: 1px solid var(--accent-secondary);
+    border-radius: 0.4rem;
+    font-size: 0.72rem;
+    color: var(--accent-secondary);
+    background-color: var(--bg-primary);
+    cursor: pointer;
+}
+
 .card-roles {
     margin-bottom: 0.5rem;
 }
