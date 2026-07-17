@@ -2,6 +2,17 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-07-17 — `1.7.1`, versionCode `28`** (oracle-tag definitions revealed inline in
+  the expanded card row, with Examples/Use straight from the dictionary and a dictionary
+  link in the card filter; image-less cards rendered as a text card instead of hidden;
+  card-details restyle that opens at the top; back-aware overlays so the OS back closes
+  the top overlay first; hidden scrollbars; zite shared-deck pulls tag descriptions too).
+  Built per the recipe: `dx bundle` → `launcher_icons.sh` → `back_handler.sh` → gradle
+  patch (compileSdk 36 / targetSdk 35 / versionCode 28, versionName 1.7.1) → `gradlew
+  :app:bundleRelease` → jarsigner. Artifact `zwipe-1.7.1.aab`, signed + `jar verified`,
+  targetSdk 35 + versionCode 28 confirmed. iOS counterpart build 66. Client-only release
+  (no server/migration changes).
+
 - **2026-07-14 — `1.7.0`, versionCode `27`** (oracle-tag dictionary, unified catalog
   cache, 1,100 authored tag descriptions, Phase M sunset `mechanical_categories` →
   `card_roles` + Phase 5S `deck_id`-driven signal, per-deck cap raised to 500 across all

@@ -14,7 +14,7 @@ Swipe to Build MTG Decks
 
 (170 character limit. Can be updated without a new submission — refresh this between releases to spotlight whatever's freshest.)
 
-Just shipped: pick your commander from the community's most-built, star your deck's MVPs, and auto-pair partners. Plus share any deck with a link. Free, no ads.
+Just shipped: tap any oracle tag to see what it does and browse example cards, add tags straight from the dictionary, and read image-less cards. Free, no ads.
 
 ---
 
@@ -36,6 +36,18 @@ Other tools:
 - Your decks sync across sessions and devices
 
 Built for players who want a fast, focused mobile experience — not another cluttered desktop tool squeezed onto a small screen.
+
+---
+
+## What's New in This Version (1.7.1)
+
+(Kept within Android's 500-char release-note limit so both stores read the same length.)
+
+- Image-less cards now show as a clean text card, so nothing's hidden while you swipe.
+- Tap an oracle tag on a card to read what it does and see example cards that use it.
+- Add a tag straight from the dictionary into your deck or filter, now right from the card filter too.
+- Every oracle tag now has a plain-language description, the whole catalog covered.
+- Card details restyled to open at the top, plus back-gesture and scrolling polish.
 
 ---
 
@@ -237,7 +249,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.6.0 |
+| Version | 1.7.1 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
