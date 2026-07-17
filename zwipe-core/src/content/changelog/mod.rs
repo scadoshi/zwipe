@@ -25,7 +25,19 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.7.1",
+    date: "Coming soon",
+    entries: &[
+        "Cards without a printed image now show as a clean text card with type, mana cost, rules, and power or toughness, so nothing is hidden while you swipe.",
+        "See real example cards for any oracle tag: open the dictionary and tap Examples to swipe through cards that use it, most iconic first.",
+        "Use a tag straight from the dictionary: it drops into your deck's strategy or your card filter without losing your place, and the dictionary now opens from the filter too.",
+        "Every oracle tag now has a plain-language description, covering the full catalog, with an accuracy pass across thousands of them.",
+        "Card details restyled to match the rest of the app, with the mana cost by the title and color-coded type, rarity, and set, and it now opens scrolled to the top.",
+        "The back gesture now closes an open dictionary, picker, or filter one layer at a time, instead of leaving the whole screen.",
+        "Cleaner scrolling throughout, with hidden scrollbars and soft fade edges on lists and dialogs.",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
