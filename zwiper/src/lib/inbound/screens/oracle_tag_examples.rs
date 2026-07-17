@@ -185,7 +185,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
 
     rsx! {
         div { class: "screen examples-overlay",
-            ScreenHeader { title: "Examples: {slug}" }
+            ScreenHeader { title: "Examples" }
 
             div { class: "screen-content card-swipe content-enter",
                 div { class: "form-container",
