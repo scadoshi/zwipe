@@ -4,6 +4,33 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
+## 2026-07-16 — todo flush (completed items pulled off the worklist)
+
+Outcomes trimmed out of `todo.md` (detail lives in git). Shipped/closed:
+
+- **Android production launch — LIVE on Play Store.** `com.scadoshi.zwipe` public
+  (Submission 21, Production, all countries), after the closed-testing cycle completed
+  2026-07-09. Store announcement posted across the marketing waves and a Play Store
+  download link added to zwipe.net alongside the existing `/download/ios`.
+- **Tester-feedback intake done** — suggestions triaged into `feature_requests.md`.
+- **VPS stabilized.** zervice + backup crons confirmed firing (dated R2 dumps present);
+  the home box was rebuilt (old prod secrets wiped), R2 keys rotated, and the rollback
+  window closed (old home tunnel + Tailscale device removed).
+- **View printings while swiping** — add/remove swipe screens open the shared
+  `PrintingSheet` from the details overlay; add re-skins the focused card and commits
+  the chosen printing on swipe-right, remove is view-only. Plan archived.
+- **Lands row moved Budget → Mana** section (`d6a48f13`); Mana section now renders
+  whenever lands exist.
+- **Business cards for LGSs** — designed, printed, distributing (bulletin boards + LGSs);
+  ongoing distribution continues as regular marketing legwork.
+- **Mobile testing pass on zwipe.net** — landing/about/privacy/token pages verified on
+  iOS Safari + Android Chrome (sticky nav + entrance animations under narrow viewports).
+
+(Also flushed, already narrated below in the 2026-07-14 entry: oracle-tag dictionary,
+server-served changelog, non-commander metric capture / Phase 5.)
+
+---
+
 ## Latest — 2026-07-14 (server 1.7.0 pushed; iOS build 65 + Android vc27 submitted for review)
 
 - **Version 1.7.0** (workspace bump from 1.6.0). The pushed batch was verified
