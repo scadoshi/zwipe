@@ -1001,13 +1001,13 @@ button {
 /* Tag rows stack: a wide, wrapping chip list can't share a line with the label
    (the chips shrink the value box and overflow back over the label). Label on
    top, chips left-aligned below, spanning the full row width. */
-.info-row-stacked {
+.info-row.info-row-stacked {
     flex-direction: column;
     align-items: stretch;
     gap: 0.5rem;
 }
 
-.info-row-stacked .info-row-tags {
+.info-row.info-row-stacked .info-row-tags {
     justify-content: flex-start;
 }
 
