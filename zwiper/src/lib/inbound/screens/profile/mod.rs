@@ -162,7 +162,7 @@ pub fn Profile() -> Element {
                         HintBullet {
                             "Tap "
                             HintKey { "More" }
-                            " for account actions like deleting your account"
+                            " to delete your account"
                         }
                     }
                 }
