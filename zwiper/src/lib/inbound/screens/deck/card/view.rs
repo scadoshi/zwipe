@@ -169,6 +169,9 @@ pub fn View(deck_id: Uuid) -> Element {
     use_context_provider(|| OtagExamplesOpen(open_examples));
     // What the UI renders — grouped card lists (active cards only)
     let mut displayed_groups: Signal<Vec<CardGroup>> = use_signal(Vec::new);
+    // Active lands, pulled out of the group-by pipeline and pinned to the bottom
+    // in their own section (filtered + sorted like the groups above).
+    let mut displayed_lands: Signal<Vec<Card>> = use_signal(Vec::new);
     // Current grouping mode
     let mut group_by_option: Signal<GroupByOption> = use_signal(|| GroupByOption::CardType);
     // Which card row is expanded (None = all collapsed)
@@ -189,8 +192,6 @@ pub fn View(deck_id: Uuid) -> Element {
     // Background enchantment pinned in its own group
     let mut background_card: Signal<Option<Card>> = use_signal(|| None);
     let mut displayed_background: Signal<Option<Card>> = use_signal(|| None);
-    // Toggle to show/hide land cards (default: hidden)
-    let mut show_lands: Signal<bool> = use_signal(|| false);
     // Toggle to show/hide tokens at the top of the list
     let mut show_tokens: Signal<bool> = use_signal(|| false);
     // Toggle to show/hide command zone pinned sections (default: shown)
@@ -371,11 +372,10 @@ pub fn View(deck_id: Uuid) -> Element {
         client().get_deck_tokens(deck_id, &session).await
     });
 
-    // Effect 2 — filter + group (reads `filter_reset_counter`, `group_by_option`, `show_lands`, `board_filter` reactively)
+    // Effect 2 — filter + group (reads `filter_reset_counter`, `group_by_option`, `board_filter` reactively)
     use_effect(move || {
         let _ = filter_reset_counter();
         let _ = group_by_option();
-        let _ = show_lands();
 
         if !*deck_loaded.peek() {
             return;
@@ -392,7 +392,6 @@ pub fn View(deck_id: Uuid) -> Element {
 
         let builder = filter_builder.peek().clone();
         let group_option = *group_by_option.peek();
-        let lands_visible = *show_lands.peek();
         let cmd = commander_card.peek().clone();
         let spell = signature_spell_card.peek().clone();
         let partner = partner_card.peek().clone();
@@ -424,19 +423,21 @@ pub fn View(deck_id: Uuid) -> Element {
 
         // No sort chosen -> alphabetical, so the deck list always has a stable,
         // scannable order (applies to tokens/maybeboard/sideboard below too).
-        let mut filtered: Vec<Card> = Cards::from(filtered)
+        let filtered: Vec<Card> = Cards::from(filtered)
             .sorted(
                 builder.sort().unwrap_or(CardSortKey::Name),
                 builder.ascending(),
             )
             .into();
 
-        if !lands_visible {
-            filtered.retain(|c| !c.scryfall_data.is_land());
-        }
-
-        let groups = filtered.group_by(group_option);
+        // Lands render in their own pinned section (below), out of the group-by
+        // pipeline; only the nonland cards are grouped. Both stay filtered + sorted.
+        let (lands, nonlands): (Vec<Card>, Vec<Card>) = filtered
+            .into_iter()
+            .partition(|c| c.scryfall_data.is_land());
+        let groups = nonlands.group_by(group_option);
         displayed_groups.set(groups);
+        displayed_lands.set(lands);
         displayed_commander.set(new_cmd);
         displayed_signature_spell.set(new_spell);
         displayed_partner.set(new_partner);
@@ -797,14 +798,6 @@ pub fn View(deck_id: Uuid) -> Element {
                     div { class: "chip-row",
                         span { class: "chip-row-label", "Show:" }
                         Chip {
-                            selected: show_lands(),
-                            onclick: move |_| {
-                                should_collapse_expanded.set(true);
-                                show_lands.set(!show_lands());
-                            },
-                            "Lands"
-                        }
-                        Chip {
                             selected: show_tokens(),
                             onclick: move |_| show_tokens.set(!show_tokens()),
                             "Tokens"
@@ -856,6 +849,13 @@ pub fn View(deck_id: Uuid) -> Element {
                             .collect();
                         {
                             let b = filter_builder.peek();
+                            // Honor the active card filter here too, matching the
+                            // mainboard pipeline (Effect 2) — not just sort.
+                            if !b.is_empty() {
+                                if let Ok(criteria) = b.build_criteria() {
+                                    mb_entries.retain(|e| criteria.matches(&e.card));
+                                }
+                            }
                             sort_deck_entries(&mut mb_entries, b.sort().unwrap_or(CardSortKey::Name), b.ascending());
                         }
                         let mb_count = mb_entries.len();
@@ -900,6 +900,13 @@ pub fn View(deck_id: Uuid) -> Element {
                             .collect();
                         {
                             let b = filter_builder.peek();
+                            // Honor the active card filter here too, matching the
+                            // mainboard pipeline (Effect 2) — not just sort.
+                            if !b.is_empty() {
+                                if let Ok(criteria) = b.build_criteria() {
+                                    sb_entries.retain(|e| criteria.matches(&e.card));
+                                }
+                            }
                             sort_deck_entries(&mut sb_entries, b.sort().unwrap_or(CardSortKey::Name), b.ascending());
                         }
                         let sb_count = sb_entries.len();
@@ -1065,7 +1072,53 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
                     }
 
-                    if show_deck() && displayed_groups().is_empty() && *deck_loaded.peek() {
+                    // Lands section — pinned at the bottom of the mainboard, out of
+                    // the group-by pipeline so it reads the same in every grouping
+                    // mode. Hide lands via the card filter's Land type exclusion.
+                    if show_deck() && !displayed_lands().is_empty() {
+                        {
+                            let lands = displayed_lands();
+                            let qty_count: i32 = lands.iter()
+                                .map(|c| row_meta.read().get(&c.scryfall_data.id).map_or(1, |m| m.qty))
+                                .sum();
+                            rsx! {
+                                div { class: "card-group row-enter",
+                                    div { class: "card-group-header", "Lands ({qty_count})" }
+                                    for card in lands.iter() {
+                                        {
+                                            let card_id = card.scryfall_data.id;
+                                            let is_basic_land = card.scryfall_data.is_basic_land();
+                                            let meta = row_meta.read().get(&card_id).copied();
+                                            let qty = meta.map_or(1, |m| m.qty);
+                                            let card_board = meta.map(|m| m.board);
+                                            let is_mvp = meta.is_some_and(|m| m.mvp);
+                                            rsx! {
+                                                CardRow {
+                                                    card: card.clone(),
+                                                    qty,
+                                                    expanded_card,
+                                                    preview_card,
+                                                    preview_dismissing,
+                                                    on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land),
+                                                    on_move_to: move |target: Board| move_to_board(card_id, target),
+                                                    current_board: card_board,
+                                                    on_printing: move |card: Card| {
+                                                        command_zone_slot.set(None);
+                                                        printing_sheet_card.set(Some(card));
+                                                        printing_sheet_open.set(true);
+                                                    },
+                                                    mvp: Some(is_mvp),
+                                                    on_toggle_mvp: move |_| toggle_mvp(card_id, is_mvp),
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if show_deck() && displayed_groups().is_empty() && displayed_lands().is_empty() && *deck_loaded.peek() {
                         p { class: "text-muted", "No cards" }
                     }
 
