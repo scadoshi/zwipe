@@ -12,7 +12,7 @@ use super::match_mode::MatchMode;
 
 /// Filter component for card roles with separate include and exclude grids.
 #[component]
-pub fn Category() -> Element {
+pub fn CardRole() -> Element {
     let mut filter_builder: Signal<CardQueryBuilder> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let cache: CatalogCache = use_context();
@@ -54,7 +54,7 @@ pub fn Category() -> Element {
             .unwrap_or_default()
     };
 
-    let mut write_categories = move |cats: Vec<String>, m: MatchMode| {
+    let mut write_card_roles = move |cats: Vec<String>, m: MatchMode| {
         let fb = &mut *filter_builder.write();
         fb.unset_card_roles_contains_any();
         fb.unset_card_roles_contains_all();
@@ -70,7 +70,7 @@ pub fn Category() -> Element {
         }
     };
 
-    let mut write_excluded_cats = move |cats: Vec<String>| {
+    let mut write_excluded_roles = move |cats: Vec<String>| {
         let fb = &mut *filter_builder.write();
         if cats.is_empty() {
             fb.unset_card_roles_excludes();
@@ -93,7 +93,7 @@ pub fn Category() -> Element {
                         onclick: move |_| {
                             let current = read_selected();
                             let new_mode = mode().toggle();
-                            write_categories(current, new_mode);
+                            write_card_roles(current, new_mode);
                         },
                         { mode().label() }
                     }
@@ -102,7 +102,7 @@ pub fn Category() -> Element {
                     button {
                         class: "clear-btn",
                         onclick: move |_| {
-                            write_categories(vec![], mode());
+                            write_card_roles(vec![], mode());
                         },
                         "\u{00d7}"
                     }
@@ -126,7 +126,7 @@ pub fn Category() -> Element {
                                         } else {
                                             current.push(slug.clone());
                                         }
-                                        write_categories(current, mode());
+                                        write_card_roles(current, mode());
                                     },
                                     { display }
                                 }
@@ -143,7 +143,7 @@ pub fn Category() -> Element {
                     button {
                         class: "clear-btn",
                         onclick: move |_| {
-                            write_excluded_cats(vec![]);
+                            write_excluded_roles(vec![]);
                         },
                         "\u{00d7}"
                     }
@@ -167,7 +167,7 @@ pub fn Category() -> Element {
                                         } else {
                                             current.push(slug.clone());
                                         }
-                                        write_excluded_cats(current);
+                                        write_excluded_roles(current);
                                     },
                                     { display }
                                 }

@@ -27,15 +27,15 @@ pub enum GroupByOption {
     Cmc,
     /// Group by color identity (WUBRG, multicolor, colorless).
     Color,
-    /// Group by mechanical category (ramp, draw, removal, etc.).
+    /// Group by card role (ramp, draw, removal, etc.).
     /// Cards can appear in multiple groups.
-    Category,
+    CardRole,
 }
 
 impl GroupByOption {
     /// Returns all grouping options.
     pub fn all() -> Vec<Self> {
-        vec![Self::CardType, Self::Cmc, Self::Color, Self::Category]
+        vec![Self::CardType, Self::Cmc, Self::Color, Self::CardRole]
     }
 }
 
@@ -45,7 +45,7 @@ impl std::fmt::Display for GroupByOption {
             Self::CardType => write!(f, "Type"),
             Self::Cmc => write!(f, "Mana value"),
             Self::Color => write!(f, "Color"),
-            Self::Category => write!(f, "Category"),
+            Self::CardRole => write!(f, "Card role"),
         }
     }
 }
@@ -70,9 +70,9 @@ pub trait GroupCards {
 
 impl GroupCards for Vec<Card> {
     fn group_by(self, option: GroupByOption) -> Vec<CardGroup> {
-        // Category grouping is multi-bucket — a card can appear in multiple groups
-        if option == GroupByOption::Category {
-            return group_by_category(self);
+        // Card-role grouping is multi-bucket — a card can appear in multiple groups
+        if option == GroupByOption::CardRole {
+            return group_by_card_role(self);
         }
 
         let labels: Vec<&str> = match option {
@@ -96,7 +96,7 @@ impl GroupCards for Vec<Card> {
                 "Multicolor",
                 "Colorless",
             ],
-            GroupByOption::Category => unreachable!(),
+            GroupByOption::CardRole => unreachable!(),
         };
         let mut buckets: Vec<Vec<Card>> = vec![Vec::new(); labels.len()];
         self.into_iter().for_each(|card| {
@@ -124,7 +124,7 @@ impl GroupCards for Vec<Card> {
 /// group (cloned); cards with no roles go into "uncategorized". Buckets are keyed
 /// by the card's role **slugs** (`card_profile.card_roles`), so a server-added
 /// role groups without a client release; labels come from [`role_label`].
-fn group_by_category(cards: Vec<Card>) -> Vec<CardGroup> {
+fn group_by_card_role(cards: Vec<Card>) -> Vec<CardGroup> {
     // slug -> its cards, ordered by slug (BTreeMap) for a stable display order.
     let mut buckets: BTreeMap<String, Vec<Card>> = BTreeMap::new();
     let mut uncategorized: Vec<Card> = Vec::new();
@@ -161,7 +161,7 @@ fn classify(card: &Card, option: GroupByOption) -> usize {
         GroupByOption::CardType => classify_card_type(card),
         GroupByOption::Cmc => classify_cmc(card),
         GroupByOption::Color => classify_color(card),
-        GroupByOption::Category => unreachable!("category uses group_by_category"),
+        GroupByOption::CardRole => unreachable!("card role uses group_by_card_role"),
     }
 }
 

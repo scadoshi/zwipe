@@ -24,7 +24,7 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
     rsx! {
         div { style: "display:flex;flex-direction:column;",
             if !deck_profile.tags.is_empty() {
-                div { class: "info-row",
+                div { class: "info-row info-row-stacked",
                     span { style: "display:flex;align-items:center;gap:0.35rem;",
                         InfoButton { topic: HintTopic::DeckTags }
                         span { class: "info-row-label", "Deck tags" }
@@ -37,7 +37,7 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
                 }
             }
             if !deck_profile.oracle_tags.is_empty() {
-                div { class: "info-row",
+                div { class: "info-row info-row-stacked",
                     span { style: "display:flex;align-items:center;gap:0.35rem;",
                         InfoButton { topic: HintTopic::OracleTags }
                         span { class: "info-row-label", "Oracle tags" }
@@ -54,7 +54,7 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
                 }
             }
             if !deck_profile.other_tags.is_empty() {
-                div { class: "info-row",
+                div { class: "info-row info-row-stacked",
                     span { class: "info-row-label", "Other tags" }
                     span { class: "info-row-value info-row-tags",
                         for tag in deck_profile.other_tags.iter() {
