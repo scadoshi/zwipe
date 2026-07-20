@@ -643,6 +643,13 @@ pub(crate) fn CardFilterSheet(
             ActionBar {
                 Button {
                     variant: ButtonVariant::Util,
+                    // Close without applying — the same no-refresh escape as the
+                    // backdrop, but discoverable. Draft edits stay until Apply.
+                    onclick: move |_| open.set(false),
+                    "Cancel"
+                }
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| {
                         // Block contradictory filters (a value/term both included
                         // and excluded matches zero cards). Keep the sheet open so
@@ -702,8 +709,10 @@ pub(crate) fn CardFilterSheet(
                 }
                 HintBullet {
                     "Tap "
+                    HintColored { color: "--accent-secondary", "Cancel" }
+                    " to close without applying, "
                     HintColored { color: "--accent-secondary", "Apply" }
-                    " to use it or "
+                    " to use it, or "
                     HintColored { color: "--accent-secondary", "Reset" }
                     " to return to this screen's default view. Your filter sticks as you move between screens."
                 }
