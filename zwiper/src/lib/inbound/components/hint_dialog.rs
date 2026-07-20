@@ -90,6 +90,16 @@ pub fn HintDialog(
     children: Element,
     actions: Option<Element>,
 ) -> Element {
+    // Open scrolled to the top so the init view shows the top buffer (the
+    // primitive can otherwise land focus-scroll partway into a tall body).
+    use_effect(move || {
+        if open() {
+            let _ = document::eval(
+                "requestAnimationFrame(() => { const el = document.getElementById('hint-scroll-body'); if (el && el.parentElement) el.parentElement.scrollTop = 0; });",
+            );
+        }
+    });
+
     rsx! {
         AlertDialogRoot {
             open: open(),
@@ -98,7 +108,7 @@ pub fn HintDialog(
                 AlertDialogTitle { "{title}" }
                 hr { class: "dialog-rule" }
                 AlertDialogDescription {
-                    div { class: "hint-body", {children} }
+                    div { id: "hint-scroll-body", class: "hint-body", style: "padding: 1rem 0;", {children} }
                 }
                 hr { class: "dialog-rule" }
                 AlertDialogActions {
@@ -152,12 +162,16 @@ pub fn HintColored(color: String, children: Element) -> Element {
 
 /// An inert reference to an on-screen button: styled like one (util-btn look,
 /// accent color) so users recognize what to press, deliberately not tappable
-/// since the hint is pointing at the real button, not replacing it.
+/// since the hint is pointing at the real button, not replacing it. `color` is a
+/// CSS variable name (defaults to `--accent-tertiary`) for per-key variation.
 #[component]
-pub fn HintKey(children: Element) -> Element {
+pub fn HintKey(
+    #[props(default = "--accent-tertiary".to_string())] color: String,
+    children: Element,
+) -> Element {
     rsx! {
         span {
-            style: "border: 1px solid var(--accent-tertiary); color: var(--accent-tertiary); border-radius: 0.5rem; padding: 0.05rem 0.45rem; font-size: 0.8rem; white-space: nowrap; pointer-events: none;",
+            style: "border: 1px solid var({color}); color: var({color}); border-radius: 0.5rem; padding: 0.05rem 0.45rem; font-size: 0.8rem; white-space: nowrap; pointer-events: none;",
             {children}
         }
     }
