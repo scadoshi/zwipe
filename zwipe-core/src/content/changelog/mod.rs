@@ -31,6 +31,9 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "Fixed the deck's Tags section so long oracle and deck tags no longer overlap their labels.",
         "The deck cards grouping once labeled Category now reads Card role, matching the filter and the rest of the app.",
+        "Your card filter now applies to the Maybeboard and Sideboard, not just the main deck.",
+        "Lands now sit in their own section at the bottom of the deck list, in every grouping. Hide them with the card filter.",
+        "Shared deck pages can now show the tokens your cards make.",
     ],
 }];
 

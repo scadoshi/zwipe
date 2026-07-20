@@ -55,4 +55,7 @@ pub struct SharedDeck {
     pub background: Option<Card>,
     /// Signature spell card, if set.
     pub signature_spell: Option<Card>,
+    /// Token cards the deck's cards produce (same derivation as the app's token
+    /// list), so the shared page can show them without an authed call.
+    pub tokens: Vec<Card>,
 }

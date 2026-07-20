@@ -358,10 +358,8 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let mut name_filter = use_signal(String::new);
     let mut selected_types = use_signal(Vec::<CardType>::new);
     let mut selected_colors = use_signal(Vec::<Color>::new);
-    // Lands hidden by default (they dominate the list and add little to a
-    // read-through); the Lands toggle brings them in.
-    let mut show_lands = use_signal(|| false);
     let mut show_command_zone = use_signal(|| true);
+    let mut show_tokens = use_signal(|| false);
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
     // Full-art hover-preview stack pinned top-left (desktop). Each hovered row
     // pushes a card on top; each card fades out on its own 2s timer. Never set
@@ -441,18 +439,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
 
     // The same in-memory path the app's deck view runs: criteria match, name
     // sort, then group. Filter parse failures degrade to the unfiltered list.
-    let cards: Vec<Card> = mainboard
-        .iter()
-        .map(|e| e.card.clone())
-        .filter(|c| {
-            show_lands()
-                || !c
-                    .scryfall_data
-                    .type_line
-                    .as_deref()
-                    .is_some_and(|t| t.contains("Land"))
-        })
-        .collect();
+    let cards: Vec<Card> = mainboard.iter().map(|e| e.card.clone()).collect();
     let mut builder = CardQueryBuilder::new();
     let name_query = name_filter();
     if !name_query.trim().is_empty() {
@@ -473,14 +460,31 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         }
     };
     let filtered: Vec<Card> = Cards::from(filtered).sorted(CardSortKey::Name, true).into();
-    let groups = filtered.group_by(group_option());
-    let no_matching = groups.is_empty();
+    // Lands render in their own section, pinned below the grouped columns, out of
+    // the group-by pipeline (consistent across grouping modes). Both stay filtered.
+    let (lands, nonlands): (Vec<Card>, Vec<Card>) = filtered
+        .into_iter()
+        .partition(|c| c.scryfall_data.is_land());
+    let land_qty: i64 = lands
+        .iter()
+        .map(|c| i64::from(*qty_by_id.get(&c.scryfall_data.id).unwrap_or(&1)))
+        .sum();
+    let groups = nonlands.group_by(group_option());
+    let no_matching = groups.is_empty() && lands.is_empty();
 
     // Flatten command zone + type groups into one ordered section list, then
     // greedily balance them into independent columns. CSS multi-column would
     // reflow the whole layout when a card expands (shifting groups between
     // columns); independent flex columns let a column just grow taller.
     let mut sections: Vec<(String, Vec<Card>)> = Vec::new();
+    // Tokens the deck's cards produce (server-derived), shown like the app's
+    // token list. Name-sorted, not run through the card filter.
+    if show_tokens() && !deck.tokens.is_empty() {
+        let tokens: Vec<Card> = Cards::from(deck.tokens.clone())
+            .sorted(CardSortKey::Name, true)
+            .into();
+        sections.push((format!("Tokens ({})", tokens.len()), tokens));
+    }
     if show_command_zone() {
         let mut cz: Vec<Card> = Vec::new();
         if let Some(c) = &deck.commander {
@@ -513,6 +517,12 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             .map(|c| i64::from(*qty_by_id.get(&c.scryfall_data.id).unwrap_or(&1)))
             .sum();
         sections.push((format!("{} ({})", group.label, qty), group.cards));
+    }
+    // Lands as a dedicated section (pulled out of the group-by so it's consistent
+    // across grouping modes), appended last so the balancer places it in the
+    // shortest column — keeps it connected to the grid instead of an orphan band.
+    if !lands.is_empty() {
+        sections.push((format!("Lands ({land_qty})"), lands));
     }
 
     const COLS: usize = 3;
@@ -653,9 +663,9 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 div { class: "sd-control-row",
                     span { class: "sd-control-label", "Show:" }
                     Chip {
-                        selected: show_lands(),
-                        onclick: move |_| show_lands.set(!show_lands()),
-                        "Lands"
+                        selected: show_tokens(),
+                        onclick: move |_| show_tokens.set(!show_tokens()),
+                        "Tokens"
                     }
                     Chip {
                         selected: show_command_zone(),
