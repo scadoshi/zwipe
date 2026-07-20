@@ -10,7 +10,7 @@ use crate::{
         screens::{
             deck::card::filter::{
                 artist::Artist,
-                category::Category,
+                card_role::CardRole,
                 combat::Combat,
                 config::Config,
                 flavor_text::FlavorText,
@@ -142,7 +142,7 @@ pub(crate) fn CardFilterSheet(
         flavor_active,
         artist_active,
         rarity_active,
-        category_active,
+        card_role_active,
         oracle_tags_active,
         set_active,
         sort_active,
@@ -462,7 +462,7 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             "Card roles"
-                            if category_active {
+                            if card_role_active {
                                 button {
                                     class: "clear-btn",
                                     onclick: move |evt| {
@@ -477,7 +477,7 @@ pub(crate) fn CardFilterSheet(
                                 }
                             }
                         }
-                        AccordionContent { Category {} }
+                        AccordionContent { CardRole {} }
                     }
 
                     AccordionItem { index: next_idx(),

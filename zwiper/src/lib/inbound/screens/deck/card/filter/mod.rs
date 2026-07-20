@@ -6,8 +6,8 @@
 pub mod artist;
 /// Shared bottom-sheet filter accordion.
 pub(crate) mod card_filter_sheet;
-/// Mechanical category filter.
-pub mod category;
+/// Card role filter.
+pub mod card_role;
 /// Combat stats filter (power/toughness).
 pub mod combat;
 /// Filter configuration accordion.

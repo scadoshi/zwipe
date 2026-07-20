@@ -175,7 +175,7 @@ pub static GUIDES: &[Guide] = &[
     Guide {
         slug: "filtering",
         title: "Filter the card pool",
-        summary: "Stack filters to control which cards you see: name, color, mana, type, text, keyword, rarity, set, artist, price, category, and format.",
+        summary: "Stack filters to control which cards you see: name, color, mana, type, text, keyword, rarity, set, artist, price, card role, and format.",
         category: "Cards",
         blocks: &[
             Block::Lead(
@@ -190,7 +190,7 @@ pub static GUIDES: &[Guide] = &[
                 "`Combat`: power and toughness, `exact` or a `range`.",
                 "`Rarity`, `Set`, `Artist`: include or exclude values.",
                 "`Flavor text`: contains, or doesn't contain.",
-                "`Category`: 24 strategic roles (`Ramp`, `Removal`, `Draw`, `Board Wipe`, and so on).",
+                "`Card role`: 24 strategic roles (`Ramp`, `Removal`, `Draw`, `Board Wipe`, and so on).",
                 "`Oracle tags`: the granular, community-maintained functional tags (spot removal, ramp, reanimation, and thousands more); include or exclude, with a curated set up front and search for the rest.",
                 "`Format`: `Is commander in` and `Is legal in`.",
                 "`Price`: a currency (`USD`, `EUR`, or `TIX`) with optional min and max.",
@@ -222,9 +222,9 @@ pub static GUIDES: &[Guide] = &[
             Block::Note(
                 "These built-in defaults never light the dot, since you didn't set them: your commander's colors, format legality, the popularity or synergy order, and lands leaving once you're at target.",
             ),
-            Block::H2("Categories"),
+            Block::H2("Card roles"),
             Block::P(
-                "A category is a card's role, and cards can hold several (`Lightning Bolt` is `Burn` and `Removal`). Zwipe assigns them automatically, so you just pick the roles you want.",
+                "A card role is what a card does, and cards can hold several (`Lightning Bolt` is `Burn` and `Removal`). Zwipe assigns them automatically, so you just pick the roles you want.",
             ),
             Block::Note(
                 "A card's roles are drawn from its oracle tags. See Read a card at a glance for the card-level view of the same idea.",
