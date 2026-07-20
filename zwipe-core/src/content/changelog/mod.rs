@@ -36,7 +36,6 @@ pub const UPCOMING: &[Release] = &[Release {
         "Shared deck pages can now show the tokens your cards make.",
         "The keyword reminders for the Avatar bending abilities now describe what each actually does.",
         "Tap outside any dialog to dismiss it.",
-        "The card filter now has a Cancel button to close it without applying.",
     ],
 }];
 

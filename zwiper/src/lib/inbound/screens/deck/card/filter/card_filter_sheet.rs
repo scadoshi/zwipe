@@ -709,10 +709,8 @@ pub(crate) fn CardFilterSheet(
                 }
                 HintBullet {
                     "Tap "
-                    HintColored { color: "--accent-secondary", "Cancel" }
-                    " to close without applying, "
                     HintColored { color: "--accent-secondary", "Apply" }
-                    " to use it, or "
+                    " to use it or "
                     HintColored { color: "--accent-secondary", "Reset" }
                     " to return to this screen's default view. Your filter sticks as you move between screens."
                 }
