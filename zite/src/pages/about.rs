@@ -29,7 +29,7 @@ pub fn About() -> Element {
         div { class: "page content-enter",
             div { class: "about-header section panel",
                 h1 { "Scotty Fermo" }
-                p { class: "tagline", "Software developer · scadoshi" }
+                p { class: "tagline", "Software developer | scadoshi" }
                 div { class: "profile-links",
                     a { class: "profile-link", href: "https://scottyfermo.com", target: "_blank", rel: "noopener noreferrer", "scottyfermo.com ↗" }
                     a { class: "profile-link", href: "https://github.com/scadoshi", target: "_blank", rel: "noopener noreferrer", "GitHub ↗" }
@@ -64,7 +64,7 @@ pub fn About() -> Element {
                                     a { href: URL_ZWIPER, target: "_blank", rel: "noopener noreferrer", "zwiper" }
                                 }
                                 span { class: "arch-box-sub",
-                                    "iOS · "
+                                    "iOS | "
                                     a { href: URL_DIOXUS, target: "_blank", rel: "noopener noreferrer", "Dioxus" }
                                     " + "
                                     a { href: URL_WASM, target: "_blank", rel: "noopener noreferrer", "WASM" }
@@ -72,13 +72,13 @@ pub fn About() -> Element {
                             }
                             ul { class: "arch-box-list",
                                 li { "swipe-to-build deckbuilder" }
-                                li { "card search · deck profiles" }
+                                li { "card search and deck profiles" }
                                 li { "authenticated user UI" }
                             }
                             div { class: "arch-imports",
                                 "imports "
                                 a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
-                                " · "
+                                " and "
                                 a { href: URL_ZWIPE_COMPONENTS, target: "_blank", rel: "noopener noreferrer", "zwipe-components" }
                             }
                         }
@@ -88,7 +88,7 @@ pub fn About() -> Element {
                                     a { href: URL_ZITE, target: "_blank", rel: "noopener noreferrer", "zite" }
                                 }
                                 span { class: "arch-box-sub",
-                                    "web · "
+                                    "web | "
                                     a { href: URL_DIOXUS, target: "_blank", rel: "noopener noreferrer", "Dioxus" }
                                     " + "
                                     a { href: URL_WASM, target: "_blank", rel: "noopener noreferrer", "WASM" }
@@ -102,7 +102,7 @@ pub fn About() -> Element {
                             div { class: "arch-imports",
                                 "imports "
                                 a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
-                                " · "
+                                " and "
                                 a { href: URL_ZWIPE_COMPONENTS, target: "_blank", rel: "noopener noreferrer", "zwipe-components" }
                             }
                         }
@@ -118,17 +118,17 @@ pub fn About() -> Element {
                                     a { href: URL_ZERVER, target: "_blank", rel: "noopener noreferrer", "zerver" }
                                 }
                                 span { class: "arch-box-sub",
-                                    "REST API · "
+                                    "REST API | "
                                     a { href: URL_AXUM, target: "_blank", rel: "noopener noreferrer", "Axum" }
-                                    " · "
+                                    " | "
                                     a { href: URL_TOKIO, target: "_blank", rel: "noopener noreferrer", "Tokio" }
-                                    " · "
+                                    " | "
                                     a { href: URL_SQLX, target: "_blank", rel: "noopener noreferrer", "SQLx" }
                                 }
                             }
                             ul { class: "arch-box-list",
-                                li { "auth · sessions · JWT" }
-                                li { "decks · cards · users" }
+                                li { "auth, sessions, and JWT" }
+                                li { "decks, cards, and users" }
                             }
                             div { class: "arch-nested",
                                 div { class: "arch-box-head",
@@ -185,10 +185,12 @@ pub fn About() -> Element {
                             span { class: "arch-box-sub", "shared UI components" }
                         }
                         p { class: "arch-foundation-body",
-                            "buttons, action bar, card row, changelog: the Dioxus UI shared across the clients. Imported by "
+                            "buttons, action bar, card row, changelog: the Dioxus UI shared across the clients, and reused beyond Zwipe. Imported by "
                             a { href: URL_ZWIPER, target: "_blank", rel: "noopener noreferrer", "zwiper" }
-                            " · "
+                            ", "
                             a { href: URL_ZITE, target: "_blank", rel: "noopener noreferrer", "zite" }
+                            ", and "
+                            a { href: "https://scottyfermo.com", target: "_blank", rel: "noopener noreferrer", "scottyfermo.com" }
                             "; imports "
                             a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
                             "."
@@ -205,9 +207,9 @@ pub fn About() -> Element {
                             "models, filter logic, traits. No server- or client-only deps. "
                             "Imported by "
                             a { href: URL_ZWIPER, target: "_blank", rel: "noopener noreferrer", "zwiper" }
-                            " · "
+                            ", "
                             a { href: URL_ZERVER, target: "_blank", rel: "noopener noreferrer", "zerver" }
-                            " · "
+                            ", and "
                             a { href: URL_ZITE, target: "_blank", rel: "noopener noreferrer", "zite" }
                             "."
                         }
@@ -351,18 +353,19 @@ pub fn About() -> Element {
 
                     div { class: "card",
                         span { class: "card-category", "Enrichment" }
-                        h3 { class: "card-title", "Card Roles" }
+                        h3 { class: "card-title", "Oracle Tags & Card Roles" }
                         p { class: "card-summary",
                             a { href: URL_SCRYFALL, target: "_blank", rel: "noopener noreferrer", "Scryfall" }
-                            " ships raw oracle text. Players think in roles: "
+                            " ships raw oracle text; the community tags what each card does. Zwipe builds on that gold standard, folding thousands of functional tags into the roles players think in: "
                             em { "ramp, removal, anthem, counterspell" }
-                            ". So zwipe classifies every card into one or more of 24 strategic roles."
+                            "."
                         }
                         ul { class: "card-bullets",
+                            li { "Oracle tags: Scryfall's community-maintained functional tags (thousands of them), synced nightly" }
                             li {
-                                "24 roles (ramp, removal, anthem, tokens, blink, mill, tutor, "
+                                "~24 card roles (ramp, removal, anthem, tokens, blink, mill, tutor, "
                                 em { "…" }
-                                "). See "
+                                ") derived from oracle-tag subtrees, retiring the old regex heuristic. See "
                                 a { href: URL_CARD_ROLE, target: "_blank", rel: "noopener noreferrer", "card_role" }
                             }
                             li {
@@ -372,8 +375,8 @@ pub fn About() -> Element {
                                 em { "Sol Ring" }
                                 " = ramp"
                             }
-                            li { "Deterministic heuristic classifier: oracle text + type line, no AI, runs at sync time" }
-                            li { "Stored on the card row; filtering hits one Postgres column, not a runtime classifier" }
+                            li { "Plain-language descriptions authored over the tag catalog, so every tag reads clearly in-app" }
+                            li { "Derived at sync time and stored on the card row; filtering hits one Postgres column, not a runtime classifier" }
                         }
                     }
                 }

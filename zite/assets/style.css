@@ -307,7 +307,8 @@ a:hover {
 }
 
 .arch-imports::before {
-    content: "\2193 ";
+    content: "\2193";
+    margin-right: 0.4rem;
     color: var(--accent-primary);
 }
 
