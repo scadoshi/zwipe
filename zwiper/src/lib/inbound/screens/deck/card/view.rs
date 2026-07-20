@@ -1207,9 +1207,6 @@ pub fn View(deck_id: Uuid) -> Element {
                         " reveals tokens and the command zone."
                     }
                     HintBullet {
-                        "Lands sit in their own section at the bottom of the list. To hide them, exclude the Land type in the filter."
-                    }
-                    HintBullet {
                         HintKey { "★" }
                         " stars a deck MVP: up to three cards that define this deck. Zwipe leans your suggestions toward them."
                     }
