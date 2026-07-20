@@ -2647,6 +2647,7 @@ button {
     align-items: center;
     gap: 0.4rem;
     margin-top: calc(0.8rem + 2px);
+    padding: 0 1rem;
 }
 
 /* Tag fills, but sized like the util buttons so they read as buttons. */
