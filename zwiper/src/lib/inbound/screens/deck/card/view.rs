@@ -1204,7 +1204,10 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
                     HintBullet {
                         HintKey { "Show" }
-                        " reveals lands, tokens, and the command zone."
+                        " reveals tokens and the command zone."
+                    }
+                    HintBullet {
+                        "Lands sit in their own section at the bottom of the list. To hide them, exclude the Land type in the filter."
                     }
                     HintBullet {
                         HintKey { "★" }

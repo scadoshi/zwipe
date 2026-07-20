@@ -1125,7 +1125,7 @@ pub(crate) fn DeckFieldsHint(open: Signal<bool>) -> Element {
             title: "Building a deck",
             HintBullets {
                 HintBullet {
-                    "Profile covers your deck's name, format, and commander. Budget covers price and land targets."
+                    "Profile covers your deck's name, format, commander, and power level. Budget covers price and land targets."
                 }
                 HintBullet {
                     "In "
