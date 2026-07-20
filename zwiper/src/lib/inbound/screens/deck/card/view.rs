@@ -11,7 +11,8 @@ use crate::{
             catalog_cache::CatalogCache,
             chip::Chip,
             hint_dialog::{
-                HintBullet, HintBullets, HintDialog, HintKey, HintLine, open_and_record_hint,
+                HintBullet, HintBullets, HintColored, HintDialog, HintKey, HintLine,
+                open_and_record_hint,
             },
             screen_header::ScreenHeader,
             telemetry::usage_buffer::UsageBuffer,
@@ -1184,31 +1185,32 @@ pub fn View(deck_id: Uuid) -> Element {
                 open: deck_cards_hint_open,
                 title: "Browsing your deck",
                 HintLine {
-                    "Tap a card's row to expand it. You'll see its mana cost, type, keywords, rules text, and rarity, plus controls to view its image, switch printings, or change its quantity."
+                    "Tap a card's row to expand it for its details, quantity, printings, and more."
                 }
                 HintBullets {
                     HintBullet {
-                        HintKey { "Keywords" }
-                        " appear as chips. Tap one for a short reminder of what it does."
+                        HintColored { color: "--accent-primary", "Keywords" }
+                        " are chips. Tap one for a reminder of what it does."
                     }
                     HintBullet {
-                        "Card roles show what a card does at a glance; tap one to see the oracle tags underneath."
+                        HintColored { color: "--accent-secondary", "Card roles" }
+                        " show what a card does; tap one for its oracle tags."
                     }
                     HintBullet {
-                        HintKey { "Printing" }
-                        " swaps the art and set for that card."
+                        HintKey { color: "--color-success", "Group by" }
+                        " arranges your cards by type, mana value, color, or card role."
                     }
                     HintBullet {
-                        HintKey { "Boards" }
-                        " chooses which boards are listed."
+                        HintKey { color: "--accent-primary", "Boards" }
+                        " chooses which boards are listed: main, maybe, or side."
                     }
                     HintBullet {
-                        HintKey { "Show" }
+                        HintKey { color: "--accent-tertiary", "Show" }
                         " reveals tokens and the command zone."
                     }
                     HintBullet {
-                        HintKey { "★" }
-                        " stars a deck MVP: up to three cards that define this deck. Zwipe leans your suggestions toward them."
+                        HintKey { color: "--color-warning", "Star" }
+                        " marks a deck MVP: up to three cards that define this deck. Zwipe leans your suggestions toward them."
                     }
                 }
             }

@@ -244,18 +244,18 @@ pub fn Home() -> Element {
                 HintBullets {
                     HintBullet {
                         "Tap "
-                        HintKey { "Decks" }
+                        HintKey { color: "--accent-primary", "Decks" }
                         " to create and build your decks"
                     }
                     HintBullet {
                         "Tap "
-                        HintKey { "Profile" }
+                        HintKey { color: "--accent-secondary", "Profile" }
                         " to manage your account or change your theme"
                     }
                     HintBullet {
                         HintColored { color: "--color-warning", "Verify your email" }
                         " in "
-                        HintKey { "Profile" }
+                        HintKey { color: "--accent-secondary", "Profile" }
                         " to unlock full deck and card limits"
                     }
                 }

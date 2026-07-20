@@ -2,7 +2,9 @@ use crate::{
     inbound::{
         components::{
             accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
-            hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, open_and_record_hint},
+            hint_dialog::{
+                HintBullet, HintBullets, HintColored, HintDialog, HintKey, open_and_record_hint,
+            },
             hint_host::HintTopic,
             info_button::InfoButton,
             navigation::overlay_stack::use_overlay_back,
@@ -709,9 +711,9 @@ pub(crate) fn CardFilterSheet(
                 }
                 HintBullet {
                     "Tap "
-                    HintColored { color: "--accent-secondary", "Apply" }
+                    HintKey { color: "--color-success", "Apply" }
                     " to use it or "
-                    HintColored { color: "--accent-secondary", "Reset" }
+                    HintKey { color: "--color-warning", "Reset" }
                     " to return to this screen's default view. Your filter sticks as you move between screens."
                 }
             }

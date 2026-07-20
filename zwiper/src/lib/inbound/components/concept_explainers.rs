@@ -26,7 +26,7 @@ pub fn DeckTagsExplainer() -> Element {
             }
             HintBullet {
                 "Add up to "
-                HintColored { color: "--accent-tertiary", "{MAX_DECK_TAGS} tags" }
+                HintColored { color: "--accent-primary", "{MAX_DECK_TAGS} tags" }
                 "."
             }
         }
@@ -50,7 +50,7 @@ pub fn OracleTagsExplainer() -> Element {
             }
             HintBullet {
                 "Your "
-                HintColored { color: "--accent-secondary", "deck tags" }
+                HintColored { color: "--accent-primary", "deck tags" }
                 " pre-pick a starter set from the ~4,500 available. Leave them if you're not sure."
             }
         }

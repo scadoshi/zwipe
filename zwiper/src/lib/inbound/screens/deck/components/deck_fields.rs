@@ -1,7 +1,7 @@
 use crate::{
     inbound::components::{
         fields::text_input::TextInput,
-        hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog},
+        hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, HintKey},
         hint_host::HintTopic,
         info_button::InfoButton,
         telemetry::usage_buffer::UsageBuffer,
@@ -1125,7 +1125,10 @@ pub(crate) fn DeckFieldsHint(open: Signal<bool>) -> Element {
             title: "Building a deck",
             HintBullets {
                 HintBullet {
-                    "Profile covers your deck's name, format, commander, and power level. Budget covers price and land targets."
+                    HintColored { color: "--accent-primary", "Profile" }
+                    " covers your deck's name, format, commander, and power level. "
+                    HintColored { color: "--accent-secondary", "Budget" }
+                    " covers price and land targets."
                 }
                 HintBullet {
                     "In "
@@ -1134,21 +1137,21 @@ pub(crate) fn DeckFieldsHint(open: Signal<bool>) -> Element {
                 }
                 HintBullet {
                     "Command-zone fields are dynamic: "
-                    HintColored { color: "--accent-tertiary", "Partner" }
+                    HintColored { color: "--accent-primary", "Partner" }
                     ", "
-                    HintColored { color: "--accent-tertiary", "Background" }
+                    HintColored { color: "--accent-secondary", "Background" }
                     ", and "
                     HintColored { color: "--accent-tertiary", "Signature spell" }
                     " appear only when your commander or format needs them."
                 }
                 HintBullet {
                     "Commander search auto-limits to legal commanders. Tap "
-                    HintColored { color: "--accent-secondary", "Filter" }
+                    HintKey { color: "--color-warning", "Filter" }
                     " to search any card instead."
                 }
                 HintBullet {
                     "Tap "
-                    HintColored { color: "--accent-primary", "Swipe" }
+                    HintKey { color: "--accent-primary", "Swipe" }
                     " on a field to swipe-pick."
                 }
             }
