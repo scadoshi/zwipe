@@ -153,13 +153,21 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.7.1 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.7.2 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.7.2:**
+
+- Lands now sit in their own section at the bottom of your deck, in every grouping.
+- Your card filter now covers every board, not just the main deck.
+- Tap outside any dialog to dismiss it.
+- Clearer in-app guides, with a new one for the tag example cards.
+- Shared decks can now show the tokens your cards make.
 
 **1.7.1:**
 

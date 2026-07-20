@@ -25,23 +25,24 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.7.2",
-    date: "Coming soon",
-    entries: &[
-        "Fixed the deck's Tags section so long oracle and deck tags no longer overlap their labels.",
-        "The deck cards grouping once labeled Category now reads Card role, matching the filter and the rest of the app.",
-        "Your card filter now applies to the Maybeboard and Sideboard, not just the main deck.",
-        "Lands now sit in their own section at the bottom of the deck list, in every grouping. Hide them with the card filter.",
-        "Shared deck pages can now show the tokens your cards make.",
-        "The keyword reminders for the Avatar bending abilities now describe what each actually does.",
-        "Tap outside any dialog to dismiss it.",
-        "The in-app guides are clearer and color-code the buttons they mention, and the oracle-tag example cards now have their own guide.",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.7.2",
+        date: "Jul 20, 2026",
+        entries: &[
+            "Fixed the deck's Tags section so long oracle and deck tags no longer overlap their labels.",
+            "The deck cards grouping once labeled Category now reads Card role, matching the filter and the rest of the app.",
+            "Your card filter now applies to the Maybeboard and Sideboard, not just the main deck.",
+            "Lands now sit in their own section at the bottom of the deck list, in every grouping. Hide them with the card filter.",
+            "Shared deck pages can now show the tokens your cards make.",
+            "The keyword reminders for the Avatar bending abilities now describe what each actually does.",
+            "Tap outside any dialog to dismiss it.",
+            "The in-app guides are clearer and color-code the buttons they mention, and the oracle-tag example cards now have their own guide.",
+        ],
+    },
     Release {
         version: "1.7.1",
         date: "Jul 17, 2026",
