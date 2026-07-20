@@ -4,6 +4,47 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
+## Latest — 2026-07-20 (1.7.2 submitted for review; server + zite pushed)
+
+- **Version 1.7.2** (workspace bump from 1.7.1). iOS build 67 + Android vc29 both
+  **submitted for review 2026-07-20**; the release commit (`099f2e19`) was **pushed**,
+  so server + zite are live. Audited push-safe for old clients (no `MIN_CLIENT_VERSION`
+  bump): the only wire change is an **additive `HttpSharedDeck.tokens`** field,
+  deserialized only by zite (ships coupled), no migration, no removed/changed fields.
+- **Deck-cards view.** The card filter now applies to the **Maybeboard and Sideboard**
+  too (was mainboard-only). **Lands** moved out of the group-by pipeline into their own
+  pinned bottom section in every grouping mode (the Show-Lands toggle removed; hide via
+  the filter's Land exclude). The **"Category" grouping renamed "Card role"** end to end
+  (client `GroupByOption` + the filter module/component renamed to match the surface,
+  which already read "Card roles"; not on the wire).
+- **Shared-deck tokens** (server + zite). `get_shared_deck` now derives + returns the
+  tokens a deck's cards make (`HttpSharedDeck.tokens`); zite's shared-deck page shows
+  them behind a Tokens toggle, and its lands moved into a dedicated section too.
+- **Dialogs.** Tap outside any dialog to dismiss it (backdrop-tap, cancel-only, safe even
+  for destructive confirms — one handler on the shared `AlertDialogRoot`). The filter
+  sheet gained a **Cancel** button (close without applying). Hint-dialog box-model
+  overhaul: body flush to the rule, symmetric edge fade, top/bottom scroll buffer,
+  open-at-top.
+- **In-app hints overhaul.** Swept every hint to color-code its button pills and render
+  any on-screen-button reference as a pill; added an oracle-tag **Examples-browse hint**
+  (swipe left = next, down = back, up/right no-op). Deck-cards hint retrimmed, with
+  Group-by and Boards documented. Principle saved: hints stay timeless, never explain
+  obvious UI.
+- **Content + fixes.** The **Avatar bending keyword reminders** (Firebending / Waterbend
+  / Airbend / Earthbend) were rewritten to describe the real mechanics (verified against
+  WOTC + the live Scryfall keyword catalogs) — they were circular *and* wrong. Deck
+  Tags-section chip/label **clipping** fixed (`.info-row-stacked`; the first attempt was
+  silently overridden by source order, fixed with a specificity bump). Home flavor
+  buy-row inset so the card-name pill doesn't touch the card border.
+
+## 2026-07-17 — 1.7.1 (iOS build 66 / Android vc28, submitted for review; client-only)
+
+Image-less cards rendered as a clean text card instead of hidden; oracle-tag definitions
+revealed inline in the expanded card row, with Examples/Use straight from the dictionary
+and a dictionary link in the card filter; card-details restyle that opens at the top;
+back-aware overlays (OS back closes the top overlay first); hidden scrollbars + soft fade
+edges. No server or migration changes.
+
 ## 2026-07-16 — todo flush (completed items pulled off the worklist)
 
 Outcomes trimmed out of `todo.md` (detail lives in git). Shipped/closed:
@@ -31,7 +72,7 @@ server-served changelog, non-commander metric capture / Phase 5.)
 
 ---
 
-## Latest — 2026-07-14 (server 1.7.0 pushed; iOS build 65 + Android vc27 submitted for review)
+## 2026-07-14 — 1.7.0 (server pushed; iOS build 65 + Android vc27 submitted for review)
 
 - **Version 1.7.0** (workspace bump from 1.6.0). The pushed batch was verified
   push-safe for live 1.6.0 clients before shipping (no `MIN_CLIENT_VERSION` bump).
