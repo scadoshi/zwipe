@@ -20,7 +20,6 @@ at `context/archive/complete_2026_q1.md`.
 ## Bugs
 
 - [ ] **NEEDS TESTING — Tags section chip/label clipping (1.7.2).** On the deck view's Tags section, wide oracle/deck tag chips (e.g. `repeatable-creature-tokens`, `synergy-token-creature`) overflowed leftward out of their shrunken value box and clipped over the "Deck tags" / "Oracle tags" labels. Fixed by stacking tag rows (label on top, chips left-aligned full-width below): new `.info-row-stacked` modifier in `zwiper/assets/main.css` + applied to the three tag rows in `deck_tags_section.rs`. Pure layout change. **Confirm on-device (dx serve / build), then move outcome to `overview.md`.**
-- [ ] **NEEDS TESTING — Category → Card role rename (1.7.2).** The deck-cards "Group by: Category" button now reads "Card role" (the filter section already read "Card roles"). Also renamed the internals to match the surface: `GroupByOption::Category → CardRole` + `group_by_category → group_by_card_role` (zwipe-core), the `category.rs` filter module + `Category` component → `card_role.rs`/`CardRole`, and the zite guide prose. **Confirm the grouping button + guide read "Card role" on-device, then move outcome to `overview.md`.**
 
 _No open bugs._ Recently resolved (outcomes in [`overview.md`](overview.md)):
 the **pre-1.6.0 "connection error" wire break** (fixed by flooring `MIN_CLIENT_VERSION=1.6.0`,

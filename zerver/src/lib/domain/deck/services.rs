@@ -964,12 +964,34 @@ where
             .signature_spell_id
             .and_then(|id| cz_cards.get(&id).cloned());
 
+        // Tokens the deck's cards produce — same derivation as `get_deck_tokens`,
+        // so the public shared page matches the app without an authed call.
+        let token_ids: ScryfallDataIds = deck
+            .entries
+            .iter()
+            .filter_map(|e| e.card.scryfall_data.all_parts.as_ref())
+            .flat_map(|parts| parts.iter())
+            .filter(|rc| rc.component == "token")
+            .map(|rc| rc.id)
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .collect();
+        let tokens: Vec<Card> = if token_ids.is_empty() {
+            Vec::new()
+        } else {
+            self.card_repo
+                .get_cards(&token_ids)
+                .await
+                .map_err(|e| GetSharedDeckError::Database(e.into()))?
+        };
+
         Ok(SharedDeck {
             deck,
             commander,
             partner_commander,
             background,
             signature_spell,
+            tokens,
         })
     }
 }

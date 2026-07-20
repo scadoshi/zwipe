@@ -469,6 +469,10 @@ pub struct HttpSharedDeck {
     pub signature_spell: Option<Card>,
     /// Card entries, same payload shape as the private deck GET.
     pub entries: Vec<DeckEntry>,
+    /// Token cards the deck's cards produce, derived server-side (same as the
+    /// app's token list). `#[serde(default)]` so payloads predating it parse.
+    #[serde(default)]
+    pub tokens: Vec<Card>,
 }
 
 #[cfg(test)]

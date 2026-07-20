@@ -61,6 +61,7 @@ pub async fn get_shared_deck(
         background: shared.background,
         signature_spell: shared.signature_spell,
         entries: shared.deck.entries,
+        tokens: shared.tokens,
     };
 
     Ok((StatusCode::OK, Json(body)))
