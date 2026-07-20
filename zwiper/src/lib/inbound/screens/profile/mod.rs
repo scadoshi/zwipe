@@ -149,19 +149,19 @@ pub fn Profile() -> Element {
                     HintBullets {
                         HintBullet {
                             "Tap "
-                            HintKey { "Change" }
+                            HintKey { color: "--accent-primary", "Change" }
                             " to update your username, email or password"
                         }
                         HintBullet {
                             "Toggle "
-                            HintKey { "Dark mode" }
+                            HintKey { color: "--accent-secondary", "Dark mode" }
                             " right here, or tap "
-                            HintKey { "Change" }
+                            HintKey { color: "--accent-primary", "Change" }
                             " on Theme to pick a palette"
                         }
                         HintBullet {
                             "Tap "
-                            HintKey { "More" }
+                            HintKey { color: "--accent-tertiary", "More" }
                             " to delete your account"
                         }
                     }

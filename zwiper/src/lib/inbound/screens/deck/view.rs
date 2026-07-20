@@ -658,12 +658,12 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 HintBullets {
                     HintBullet {
                         "Tap "
-                        HintKey { "Cards" }
+                        HintKey { color: "--accent-primary", "Cards" }
                         " to browse your deck's cards, and to add or remove cards"
                     }
                     HintBullet {
                         "Tap "
-                        HintKey { "Edit" }
+                        HintKey { color: "--accent-secondary", "Edit" }
                         " to change name, format, command zone, tags, land target, or price target"
                     }
                     HintBullet {
@@ -678,9 +678,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     }
                     HintBullet {
                         "Stats appear as the deck grows, tap a section like "
-                        HintKey { "Stats" }
+                        HintKey { color: "--color-success", "Stats" }
                         " or "
-                        HintKey { "Mana" }
+                        HintKey { color: "--color-warning", "Mana" }
                         " to expand it"
                     }
                     HintBullet {

@@ -14,7 +14,9 @@ use crate::{
     inbound::{
         components::{
             catalog_cache::{CatalogCache, CatalogCell},
-            hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, use_one_time_hint},
+            hint_dialog::{
+                HintBullet, HintBullets, HintColored, HintDialog, HintKey, use_one_time_hint,
+            },
             navigation::overlay_stack::use_overlay_back,
             screen_header::ScreenHeader,
         },
@@ -231,19 +233,19 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                 HintBullets {
                     HintBullet {
                         "Tap a "
-                        HintColored { color: "--accent-tertiary", "letter" }
+                        HintKey { color: "--accent-tertiary", "letter" }
                         " to browse tags, or "
                         HintColored { color: "--accent-secondary", "search" }
                         " by name or description."
                     }
                     HintBullet {
                         "Tap "
-                        HintColored { color: "--accent-primary", "Examples" }
+                        HintKey { color: "--accent-primary", "Examples" }
                         " to see real cards that carry a tag."
                     }
                     HintBullet {
                         "Tap "
-                        HintColored { color: "--accent-primary", "Use" }
+                        HintKey { color: "--color-success", "Use" }
                         " to add a tag where you came from."
                     }
                     HintBullet {

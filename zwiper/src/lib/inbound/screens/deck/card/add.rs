@@ -8,7 +8,8 @@ use crate::{
             auth::ensure_session::EnsureFresh,
             chip::Chip,
             hint_dialog::{
-                HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint,
+                HintBullet, HintBullets, HintColored, HintDialog, HintKey, HintLine,
+                use_one_time_hint,
             },
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             screen_header::ScreenHeader,
@@ -1480,11 +1481,15 @@ pub fn Add(deck_id: Uuid) -> Element {
                         " to undo your last swipe."
                     }
                     HintBullet {
-                        HintColored { color: "--accent-primary", "Synergy" }
+                        HintKey { color: "--accent-primary", "Synergy" }
                         " on keeps the stack to cards that work with your commander; turn it off to browse every legal card."
                     }
                 }
-                HintLine { "Sorting reorders whichever set you're viewing. It never changes which cards show. Filter or sort anytime." }
+                HintLine {
+                    "Sorting reorders whichever set you're viewing. It never changes which cards show. "
+                    HintKey { color: "--accent-secondary", "Filter" }
+                    " or sort anytime."
+                }
             }
 
             CardFilterSheet {

@@ -12,7 +12,8 @@ use crate::{
     inbound::{
         components::{
             hint_dialog::{
-                HintBullet, HintBullets, HintColored, HintDialog, HintLine, open_and_record_hint,
+                HintBullet, HintBullets, HintColored, HintDialog, HintKey, HintLine,
+                open_and_record_hint,
             },
             interactions::swipe::{
                 STACK_DEPTH, SwipeStack, config::SwipeConfig, direction::Direction,
@@ -442,7 +443,11 @@ pub(crate) fn SwipeSelect(
                             " to undo your last skip."
                         }
                     }
-                    HintLine { "Most-played cards come first. Tap Filter to narrow by color or anything else." }
+                    HintLine {
+                        "Most-played cards come first. Tap "
+                        HintKey { color: "--accent-secondary", "Filter" }
+                        " to narrow by color or anything else."
+                    }
                 }
             }
         }
