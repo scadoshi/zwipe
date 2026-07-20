@@ -6,6 +6,7 @@ const URL_ZWIPER: &str = "https://github.com/scadoshi/zwipe/tree/main/zwiper";
 const URL_ZITE: &str = "https://github.com/scadoshi/zwipe/tree/main/zite";
 const URL_ZERVER: &str = "https://github.com/scadoshi/zwipe/tree/main/zerver";
 const URL_ZWIPE_CORE: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-core";
+const URL_ZWIPE_COMPONENTS: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-components";
 const URL_DIOXUS: &str = "https://dioxuslabs.com";
 const URL_WASM: &str = "https://webassembly.org";
 const URL_AXUM: &str = "https://github.com/tokio-rs/axum";
@@ -54,7 +55,7 @@ pub fn About() -> Element {
 
             div { class: "section",
                 h2 { "System Architecture" }
-                p { class: "arch-subtitle", "Four-crate Rust workspace. Every box links to its source." }
+                p { class: "arch-subtitle", "Five-crate Rust workspace. Every box links to its source." }
                 div { class: "arch",
                     div { class: "arch-tier arch-tier-clients",
                         div { class: "arch-box",
@@ -77,6 +78,8 @@ pub fn About() -> Element {
                             div { class: "arch-imports",
                                 "imports "
                                 a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
+                                " · "
+                                a { href: URL_ZWIPE_COMPONENTS, target: "_blank", rel: "noopener noreferrer", "zwipe-components" }
                             }
                         }
                         div { class: "arch-box",
@@ -99,6 +102,8 @@ pub fn About() -> Element {
                             div { class: "arch-imports",
                                 "imports "
                                 a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
+                                " · "
+                                a { href: URL_ZWIPE_COMPONENTS, target: "_blank", rel: "noopener noreferrer", "zwipe-components" }
                             }
                         }
                     }
@@ -175,6 +180,23 @@ pub fn About() -> Element {
                     div { class: "arch-foundation",
                         div { class: "arch-box-head",
                             span { class: "arch-box-title",
+                                a { href: URL_ZWIPE_COMPONENTS, target: "_blank", rel: "noopener noreferrer", "zwipe-components" }
+                            }
+                            span { class: "arch-box-sub", "shared UI components" }
+                        }
+                        p { class: "arch-foundation-body",
+                            "buttons, action bar, card row, changelog: the Dioxus UI shared across the clients. Imported by "
+                            a { href: URL_ZWIPER, target: "_blank", rel: "noopener noreferrer", "zwiper" }
+                            " · "
+                            a { href: URL_ZITE, target: "_blank", rel: "noopener noreferrer", "zite" }
+                            "; imports "
+                            a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
+                            "."
+                        }
+                    }
+                    div { class: "arch-foundation",
+                        div { class: "arch-box-head",
+                            span { class: "arch-box-title",
                                 a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
                             }
                             span { class: "arch-box-sub", "shared domain crate" }
@@ -228,7 +250,7 @@ pub fn About() -> Element {
                         span { class: "card-category", "Quality" }
                         h3 { class: "card-title", "Testing & Lint Discipline" }
                         p { class: "card-summary",
-                            "505 unit tests; 346 in "
+                            "627 tests; 377 in "
                             a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
                             " alone. Production posture enforced by the compiler."
                         }
@@ -329,7 +351,7 @@ pub fn About() -> Element {
 
                     div { class: "card",
                         span { class: "card-category", "Enrichment" }
-                        h3 { class: "card-title", "Mechanical Categories" }
+                        h3 { class: "card-title", "Card Roles" }
                         p { class: "card-summary",
                             a { href: URL_SCRYFALL, target: "_blank", rel: "noopener noreferrer", "Scryfall" }
                             " ships raw oracle text. Players think in roles: "
