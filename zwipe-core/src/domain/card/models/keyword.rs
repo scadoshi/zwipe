@@ -659,14 +659,16 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "Cast it for its web-slinging cost by returning or tapping a creature (a Spider-Man mechanic)."
         }
         "firebending" => {
-            "Channel Fire creatures to power its firebending ability (an Avatar mechanic)."
+            "Whenever it attacks, add N red mana; any you don't spend is lost when combat ends."
         }
         "waterbend" => {
-            "Channel Water creatures to power its waterbending ability (an Avatar mechanic)."
+            "A cost that includes mana; for each generic mana in it, you may tap an untapped artifact or creature you control instead of paying it."
         }
-        "airbend" => "Channel Air creatures to power its airbending ability (an Avatar mechanic).",
+        "airbend" => {
+            "Exile target creature; its owner may cast it later for {2} instead of its mana cost."
+        }
         "earthbend" => {
-            "Channel Earth creatures to power its earthbending ability (an Avatar mechanic)."
+            "Turn target land you control into a 0/0 creature with haste that's still a land, then put N +1/+1 counters on it; if it dies, it returns tapped."
         }
 
         // Any other keyword still gets a friendly, honest catch-all so every chip
