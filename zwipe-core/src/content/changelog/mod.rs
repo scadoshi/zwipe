@@ -35,6 +35,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Lands now sit in their own section at the bottom of the deck list, in every grouping. Hide them with the card filter.",
         "Shared deck pages can now show the tokens your cards make.",
         "The keyword reminders for the Avatar bending abilities now describe what each actually does.",
+        "Tap outside any dialog to dismiss it.",
     ],
 }];
 
