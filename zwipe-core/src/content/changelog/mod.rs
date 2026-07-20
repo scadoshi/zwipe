@@ -36,6 +36,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Shared deck pages can now show the tokens your cards make.",
         "The keyword reminders for the Avatar bending abilities now describe what each actually does.",
         "Tap outside any dialog to dismiss it.",
+        "The in-app guides are clearer and color-code the buttons they mention, and the oracle-tag example cards now have their own guide.",
     ],
 }];
 
