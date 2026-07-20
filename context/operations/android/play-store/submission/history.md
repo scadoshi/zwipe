@@ -2,6 +2,19 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-07-20 — `1.7.2`, versionCode `29`** (deck-view polish: lands moved to their own
+  pinned bottom section with the Show-Lands toggle removed and hiding via the card filter;
+  the card filter now covers the Maybeboard and Sideboard, not just the main deck; the
+  Category grouping renamed Card role; tag-row stacking + flavor-pill fixes; tap-outside-
+  to-dismiss on dialogs; a filter Cancel button; the Avatar bending keyword reminders
+  rewritten to the real mechanics; and an in-app guide overhaul with a new oracle-tag
+  examples guide). Built per the recipe: `dx bundle` → `launcher_icons.sh` →
+  `back_handler.sh` → gradle patch (compileSdk 36 / targetSdk 35 / versionCode 29,
+  versionName 1.7.2) → `gradlew :app:bundleRelease` → jarsigner. Artifact `zwipe-1.7.2.aab`,
+  signed + `jar verified`, targetSdk 35 + versionCode 29 confirmed. iOS counterpart build
+  67. Server: shared-deck endpoint now returns tokens (additive `HttpSharedDeck.tokens`, no
+  migration; deserialized only by zite, safe for old clients).
+
 - **2026-07-17 — `1.7.1`, versionCode `28`** (oracle-tag definitions revealed inline in
   the expanded card row, with Examples/Use straight from the dictionary and a dictionary
   link in the card filter; image-less cards rendered as a text card instead of hidden;

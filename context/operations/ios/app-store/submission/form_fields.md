@@ -14,7 +14,7 @@ Swipe to Build MTG Decks
 
 (170 character limit. Can be updated without a new submission — refresh this between releases to spotlight whatever's freshest.)
 
-Just shipped: tap any oracle tag to see what it does and browse example cards, add tags straight from the dictionary, and read image-less cards. Free, no ads.
+Just shipped: lands get their own section, filters now cover every board, clearer in-app guides, and shared decks show your tokens. Free, no ads.
 
 ---
 
@@ -36,6 +36,18 @@ Other tools:
 - Your decks sync across sessions and devices
 
 Built for players who want a fast, focused mobile experience — not another cluttered desktop tool squeezed onto a small screen.
+
+---
+
+## What's New in This Version (1.7.2)
+
+(Kept within Android's 500-char release-note limit so both stores read the same length.)
+
+- Lands now sit in their own section at the bottom of the deck list, in every grouping.
+- Your card filter now covers the Maybeboard and Sideboard, not just the main deck.
+- Tap outside any dialog to dismiss it.
+- Clearer in-app guides, with a new one for the oracle-tag example cards.
+- Shared deck pages can now show the tokens your cards make.
 
 ---
 
@@ -249,7 +261,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.7.1 |
+| Version | 1.7.2 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
