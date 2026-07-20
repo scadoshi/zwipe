@@ -14,6 +14,11 @@ use crate::inbound::components::navigation::overlay_stack::use_overlay_back_acti
 /// `dioxus-primitives::AlertDialogRoot` deliberately does not emit a backdrop
 /// (the docs note it's the caller's responsibility), so we render one here so
 /// every consumer of this wrapper picks it up automatically.
+///
+/// Tapping the backdrop closes the dialog through `on_open_change(false)` — the
+/// same cancel path as the Cancel button and the back gesture. A dialog's action
+/// only ever fires from its own `AlertDialogAction`, so a backdrop tap can never
+/// confirm; it just cancels, which is safe even for destructive confirms.
 #[component]
 pub fn AlertDialogRoot(props: AlertDialogRootProps) -> Element {
     let open_prop = props.open;
@@ -29,7 +34,11 @@ pub fn AlertDialogRoot(props: AlertDialogRootProps) -> Element {
 
     rsx! {
         if is_open() {
-            div { class: "alert-dialog-overlay", "data-state": "open" }
+            div {
+                class: "alert-dialog-overlay",
+                "data-state": "open",
+                onclick: move |_| close(()),
+            }
         }
         alert_dialog::AlertDialogRoot {
             id: props.id,
