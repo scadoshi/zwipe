@@ -16,6 +16,7 @@ use crate::{
     inbound::{
         components::{
             auth::ensure_session::EnsureFresh,
+            hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, use_one_time_hint},
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             navigation::overlay_stack::use_overlay_back,
             screen_header::ScreenHeader,
@@ -39,6 +40,7 @@ use zwipe_core::domain::{
         Card,
         search_card::card_filter::{builder::CardQueryBuilder, card_sort_key::CardSortKey},
     },
+    user::models::hints::HINT_OTAG_EXAMPLES,
 };
 
 /// One page of example cards per fetch (matches the backend default).
@@ -60,6 +62,9 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
     // Re-navigating to a different tag always remounts (the dictionary sits
     // between them), so seeding once on mount is enough.
     let tag_slug = use_signal(|| slug.clone());
+
+    // Swipe-navigation hint: auto-opens once per account, reopenable via the "?".
+    let examples_hint_open = use_one_time_hint(HINT_OTAG_EXAMPLES);
 
     let mut stack = use_card_stack::<BrowseAction>();
     let mut current_offset = use_signal(|| 0_u32);
@@ -185,7 +190,31 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
 
     rsx! {
         div { class: "screen examples-overlay",
-            ScreenHeader { title: "Examples" }
+            ScreenHeader { title: "Examples", hint: examples_hint_open }
+
+            HintDialog {
+                open: examples_hint_open,
+                title: "Example cards",
+                HintBullets {
+                    HintBullet {
+                        "Swipe "
+                        HintColored { color: "--color-success", "left" }
+                        " for the next card."
+                    }
+                    HintBullet {
+                        "Swipe "
+                        HintColored { color: "--accent-secondary", "down" }
+                        " to go back a card."
+                    }
+                    HintBullet {
+                        "Swipe "
+                        HintColored { color: "--text-muted", "up" }
+                        " or "
+                        HintColored { color: "--text-muted", "right" }
+                        " do nothing here."
+                    }
+                }
+            }
 
             div { class: "screen-content card-swipe content-enter",
                 div { class: "form-container",

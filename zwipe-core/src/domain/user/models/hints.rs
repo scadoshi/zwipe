@@ -36,6 +36,8 @@ pub const HINT_IMPORT: &str = "import";
 pub const HINT_EXPORT: &str = "export";
 /// Explainer for the oracle-tag dictionary screen (letter browse, search).
 pub const HINT_ORACLE_TAG_DICTIONARY: &str = "oracle_tag_dictionary";
+/// Explainer for the oracle-tag example-cards browse (swipe navigation).
+pub const HINT_OTAG_EXAMPLES: &str = "otag_examples";
 
 /// Maximum length of a hint key.
 pub const HINT_KEY_MAX_LEN: usize = 64;
