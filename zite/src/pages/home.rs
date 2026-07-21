@@ -3,7 +3,7 @@ use crate::{
     components::{PageMeta, StatsStrip},
 };
 use dioxus::prelude::*;
-use zwipe_components::{Banner, BannerStatus};
+use zwipe_components::{Banner, BannerStatus, Panel};
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
 
@@ -223,9 +223,7 @@ pub fn Home() -> Element {
                 }
             }
             div { class: "features-grid",
-                div { class: "feature-card",
-                    span { class: "card-category", "Build" }
-                    h3 { class: "card-title", "Swipe to Build" }
+                Panel { eyebrow: "Build", title: "Swipe to Build",
                     ul { class: "card-bullets",
                         li { "Right to add card to deck (or remove in remove flow)" }
                         li { "Left to skip card" }
@@ -233,9 +231,7 @@ pub fn Home() -> Element {
                         li { "Down to undo last swipe" }
                     }
                 }
-                div { class: "feature-card",
-                    span { class: "card-category", "Format" }
-                    h3 { class: "card-title", "Commander Ready" }
+                Panel { eyebrow: "Format", title: "Commander Ready",
                     ul { class: "card-bullets",
                         li { "Most synergistic cards show first based on your selected commander" }
                         li { "Swipe-pick your commander, partner, background, or signature spell" }
@@ -244,9 +240,15 @@ pub fn Home() -> Element {
                         li { "Per-format eligibility" }
                     }
                 }
-                div { class: "feature-card",
-                    span { class: "card-category", "Cards" }
-                    h3 { class: "card-title", "Filter & Inspect" }
+                Panel { eyebrow: "Tags", title: "Know What Every Card Does",
+                    ul { class: "card-bullets",
+                        li { "Every card labeled by role: ramp, removal, counterspell, tokens, and more" }
+                        li { "Filter your feed by what a card does, not just its text" }
+                        li { "Tap any tag for a plain-language definition" }
+                        li { "Community-maintained, so the labels stay current" }
+                    }
+                }
+                Panel { eyebrow: "Cards", title: "Filter & Inspect",
                     ul { class: "card-bullets",
                         li { "Filter on any attribute you'd want" }
                         li { "Stack and clear filters freely" }
@@ -254,9 +256,7 @@ pub fn Home() -> Element {
                         li { "Tap a keyword to see what it does" }
                     }
                 }
-                div { class: "feature-card",
-                    span { class: "card-category", "Decks" }
-                    h3 { class: "card-title", "Your Decks, Synced" }
+                Panel { eyebrow: "Decks", title: "Your Decks, Synced",
                     ul { class: "card-bullets",
                         li { "Import from an Archidekt URL or paste any decklist" }
                         li { "Tag decks by archetype (Aggro, Tokens, Reanimator, and more)" }

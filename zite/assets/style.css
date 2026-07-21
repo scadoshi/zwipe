@@ -246,127 +246,24 @@ a:hover {
     line-height: 1.55;
 }
 
+.panel-body .card-summary {
+    color: var(--text-subtle);
+    line-height: 1.55;
+    margin-bottom: 0.75rem;
+}
+
 .arch-subtitle {
     color: var(--text-subtle);
     font-size: 0.85rem;
     margin: -0.25rem 0 1rem;
 }
 
-.arch {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    padding: 1.25rem;
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    background-color: var(--bg-primary);
-    box-shadow: var(--shadow-md);
-}
-
-.arch-tier {
-    display: grid;
-    gap: 0.75rem;
-}
-
-.arch-tier-clients,
-.arch-tier-api {
-    grid-template-columns: 1fr 1fr;
-}
-
-.arch-tier-db {
-    grid-template-columns: 1fr;
-}
-
-.arch-box {
-    background: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
-    padding: 0.9rem 1rem;
-    transition: border-color 0.2s;
-}
-
-.arch-box:hover {
-    border-color: var(--accent-primary);
-}
-
-.arch-box-emphasis {
-    border-color: var(--accent-primary);
-}
-
-.arch-box-wide {
-    text-align: left;
-}
-
-.arch-imports {
-    margin-top: 0.6rem;
-    padding-top: 0.5rem;
-    border-top: 1px dashed var(--accent-primary);
-    color: var(--text-subtle);
-    font-size: 0.72rem;
-    letter-spacing: 0.03em;
-}
-
-.arch-imports::before {
-    content: "\2193";
-    margin-right: 0.4rem;
-    color: var(--accent-primary);
-}
-
-/* In-diagram links: titles keep the title color at rest, shift to a secondary accent on hover.
-   Subtitle/body links get a quiet underline so they're scannable but don't shout. */
-.arch-box-title a,
-.arch-imports a {
-    color: var(--accent-primary);
-    text-decoration: none;
-    transition: color 0.15s;
-}
-
-.arch-box-title a:hover,
-.arch-imports a:hover {
-    text-decoration: underline;
-}
-
-.arch-box-sub a,
-.arch-foundation-body a {
-    color: inherit;
-    text-decoration: underline;
-    text-decoration-color: var(--border-muted);
-    text-underline-offset: 0.15em;
-    transition:
-        text-decoration-color 0.15s,
-        color 0.15s;
-}
-
-.arch-box-sub a:hover,
-.arch-foundation-body a:hover {
-    color: var(--accent-primary);
-    text-decoration-color: var(--accent-primary);
-}
-
-.arch-box-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-}
-
-.arch-box-title {
-    color: var(--accent-primary);
-    font-weight: 700;
-    font-size: 1.05rem;
-}
-
-.arch-box-sub {
-    color: var(--text-subtle);
-    font-size: 0.78rem;
-}
-
+/* Tech chips inside an architecture panel, above the prose. */
 .arch-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
-    margin: -0.1rem 0 0.7rem;
+    margin: 0 0 0.75rem;
 }
 
 a.tag {
@@ -375,121 +272,6 @@ a.tag {
 
 a.tag:hover {
     filter: brightness(1.2);
-}
-
-.arch-box-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    color: var(--text-subtle);
-    font-size: 0.85rem;
-    line-height: 1.55;
-}
-
-.arch-box-list li {
-    padding: 0;
-}
-
-.arch-box-list-inline {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 1.25rem;
-}
-
-.arch-nested {
-    margin-top: 0.75rem;
-    padding: 0.75rem 0.85rem;
-    border: 1px solid var(--accent-secondary);
-    border-radius: 0.35rem;
-    background: var(--bg-primary);
-}
-
-.arch-nested-title {
-    color: var(--accent-secondary);
-}
-
-.arch-flow {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.15rem;
-    color: var(--accent-primary);
-    font-size: 0.78rem;
-}
-
-.arch-flow-label {
-    color: var(--text-subtle);
-    letter-spacing: 0.04em;
-}
-
-.arch-flow-arrow {
-    font-size: 1.1rem;
-    line-height: 1;
-}
-
-.arch-foundation {
-    margin-top: 0.4rem;
-    padding: 0.9rem 1rem;
-    border: 1px dashed var(--accent-primary);
-    border-radius: 0.4rem;
-    background: var(--bg-primary);
-}
-
-.arch-foundation-body {
-    margin: 0;
-    color: var(--text-subtle);
-    font-size: 0.85rem;
-    line-height: 1.55;
-}
-
-.arch-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.25rem;
-    margin-top: 0.25rem;
-    padding: 0.5rem 0.25rem 0;
-    color: var(--text-subtle);
-    font-size: 0.78rem;
-}
-
-.arch-legend-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.arch-legend-swatch {
-    width: 1.5rem;
-    height: 0;
-    border-top: 1px solid var(--accent-primary);
-}
-
-.arch-legend-dashed {
-    border-top-style: dashed;
-}
-
-@media (max-width: 48rem) {
-    .arch-tier-clients,
-    .arch-tier-api {
-        grid-template-columns: 1fr;
-    }
-    .arch {
-        padding: 0.85rem;
-        gap: 0.5rem;
-    }
-    .arch-box {
-        padding: 0.75rem 0.85rem;
-    }
-    .arch-box-title {
-        font-size: 0.98rem;
-    }
-    .arch-box-list,
-    .arch-foundation-body {
-        font-size: 0.8rem;
-    }
-    .arch-box-list-inline {
-        gap: 0 0.85rem;
-    }
 }
 
 h1 {
@@ -763,7 +545,7 @@ code {
 }
 
 .features-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     margin-top: 2.5rem;
 }
 
@@ -793,40 +575,6 @@ code {
     .form-page .subtitle {
         margin-bottom: 1.25rem;
     }
-}
-
-.feature-card {
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
-    transition: border-color 0.2s;
-}
-
-.feature-card:hover {
-    border-color: var(--accent-primary);
-}
-
-.feature-card .card-title,
-.feature-card h3 {
-    font-size: 1.1rem;
-    color: var(--accent-primary);
-    margin-bottom: 0.75rem;
-    font-weight: 700;
-}
-
-.feature-card .card-summary,
-.feature-card p {
-    font-size: 0.85rem;
-    color: var(--text-subtle);
-    margin-bottom: 0.75rem;
-    line-height: 1.5;
-}
-
-.feature-card .card-summary:last-child,
-.feature-card p:last-child {
-    margin-bottom: 0;
 }
 
 .card-bullets {
@@ -1062,23 +810,35 @@ code {
    zwipe_components::Changelog; its styles live in components.css. Only the
    page header above is zite-specific. */
 
+/* Match the nav-bar pill buttons exactly (.nav-links > li > a in components.css). */
 .profile-link {
-    color: var(--accent-primary);
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 1.85rem;
+    color: var(--text-primary);
     background-color: var(--bg-primary);
     text-decoration: none;
-    font-size: 0.85rem;
-    padding: 0.4rem 1rem;
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
+    padding: 0 0.8rem;
+    font-family: inherit;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
     box-shadow: var(--shadow-sm);
     transition:
-        border-color 0.2s,
-        color 0.2s;
+        color 0.15s,
+        border-color 0.15s;
 }
 
-.profile-link:hover {
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
+@media (hover: hover) {
+    .profile-link:hover {
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
 }
 
 .tag-row {
@@ -1341,16 +1101,22 @@ code {
     margin-bottom: 1.25rem;
 }
 
+/* The Link is the click target; the Panel inside is the visual card. Flex so the
+   panel-card fills the grid-stretched wrapper and cards stay equal height. */
 .guide-card {
-    display: block;
+    display: flex;
+    flex-direction: column;
     text-decoration: none;
+}
+
+.guide-card > .panel-card {
+    flex: 1;
 }
 
 .guide-card .card-summary {
     color: var(--text-subtle);
     font-size: 0.85rem;
     line-height: 1.55;
-    margin-top: 0.35rem;
 }
 
 .guide-breadcrumb {

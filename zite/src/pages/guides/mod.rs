@@ -11,6 +11,7 @@ mod content;
 use crate::{Footer, Nav, Route, WEB_BASE, components::PageMeta};
 use content::{Block, GUIDES};
 use dioxus::prelude::*;
+use zwipe_components::Panel;
 
 /// Maps a swipe direction to the app's gesture color class (shared with the
 /// home hero), so guide swipe legends match the in-app hint coloring.
@@ -102,9 +103,10 @@ pub fn Guides() -> Element {
                         for g in GUIDES.iter().filter(|g| g.category == *cat) {
                             Link {
                                 to: Route::GuidePage { slug: g.slug.to_string() },
-                                class: "card guide-card",
-                                h3 { class: "card-title", "{g.title}" }
-                                p { class: "card-summary", "{g.summary}" }
+                                class: "guide-card",
+                                Panel { title: "{g.title}",
+                                    p { class: "card-summary", "{g.summary}" }
+                                }
                             }
                         }
                     }
