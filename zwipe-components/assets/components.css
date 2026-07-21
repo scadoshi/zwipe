@@ -1699,6 +1699,8 @@ a.nav-dropdown-item.active:visited {
    renders identically on the site, in the app, and on the portfolio. */
 
 .panel-card {
+    display: flex;
+    flex-direction: column;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
@@ -1737,6 +1739,13 @@ a.nav-dropdown-item.active:visited {
     border: none;
     border-top: 1px solid var(--border-secondary);
     margin: 1rem -1.5rem;
+}
+
+/* Grow the body so the footer rule + actions pin to the bottom. In a normal
+   block context this is a no-op; when the card is stretched (e.g. equal-height
+   grid rows) it lines the action rows up across the row. */
+.panel-body {
+    flex-grow: 1;
 }
 
 .panel-body > :first-child {
