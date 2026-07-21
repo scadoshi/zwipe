@@ -28,21 +28,22 @@ pub fn About() -> Element {
         Nav {}
         div { class: "page content-enter",
             div { class: "about-header section panel",
-                h1 { "Scotty Fermo" }
-                p { class: "tagline", "Software developer | scadoshi" }
-                div { class: "profile-links",
-                    a { class: "profile-link", href: "https://scottyfermo.com", target: "_blank", rel: "noopener noreferrer", "scottyfermo.com ↗" }
-                    a { class: "profile-link", href: "https://github.com/scadoshi", target: "_blank", rel: "noopener noreferrer", "GitHub ↗" }
-                    a { class: "profile-link", href: "https://x.com/scadoshi", target: "_blank", rel: "noopener noreferrer", "X ↗" }
-                    a { class: "profile-link", href: "https://www.linkedin.com/in/scotty-fermo-41a35b141/", target: "_blank", rel: "noopener noreferrer", "LinkedIn ↗" }
-                    a { class: "profile-link", href: "https://github.com/scadoshi/zwipe", target: "_blank", rel: "noopener noreferrer", "Zwipe ↗" }
-                }
-                div { class: "tag-row",
-                    span { class: "tag", "rust" }
-                    span { class: "tag", "full-stack" }
-                    span { class: "tag", "ios" }
-                    span { class: "tag", "postgresql" }
-                    span { class: "tag", "systems" }
+                div { class: "about-headline",
+                    h1 { "Scotty Fermo" }
+                    div { class: "profile-links",
+                        a { class: "profile-link", href: "https://scottyfermo.com", target: "_blank", rel: "noopener noreferrer", "scottyfermo.com ↗" }
+                        a { class: "profile-link", href: "https://github.com/scadoshi", target: "_blank", rel: "noopener noreferrer", "GitHub ↗" }
+                        a { class: "profile-link", href: "https://x.com/scadoshi", target: "_blank", rel: "noopener noreferrer", "X ↗" }
+                        a { class: "profile-link", href: "https://www.linkedin.com/in/scotty-fermo-41a35b141/", target: "_blank", rel: "noopener noreferrer", "LinkedIn ↗" }
+                        a { class: "profile-link", href: "https://github.com/scadoshi/zwipe", target: "_blank", rel: "noopener noreferrer", "Zwipe ↗" }
+                    }
+                    div { class: "tag-row",
+                        span { class: "tag", "Rust" }
+                        span { class: "tag", "Full-stack" }
+                        span { class: "tag", "iOS" }
+                        span { class: "tag", "PostgreSQL" }
+                        span { class: "tag", "Systems" }
+                    }
                 }
                 p {
                     "Zwipe is a solo project: designed, built, and shipped by one person.
@@ -63,12 +64,11 @@ pub fn About() -> Element {
                                 span { class: "arch-box-title",
                                     a { href: URL_ZWIPER, target: "_blank", rel: "noopener noreferrer", "zwiper" }
                                 }
-                                span { class: "arch-box-sub",
-                                    "iOS | "
-                                    a { href: URL_DIOXUS, target: "_blank", rel: "noopener noreferrer", "Dioxus" }
-                                    " + "
-                                    a { href: URL_WASM, target: "_blank", rel: "noopener noreferrer", "WASM" }
-                                }
+                            }
+                            div { class: "arch-tags",
+                                span { class: "tag", "iOS" }
+                                a { class: "tag", href: URL_DIOXUS, target: "_blank", rel: "noopener noreferrer", "Dioxus" }
+                                a { class: "tag", href: URL_WASM, target: "_blank", rel: "noopener noreferrer", "WASM" }
                             }
                             ul { class: "arch-box-list",
                                 li { "swipe-to-build deckbuilder" }
@@ -87,12 +87,11 @@ pub fn About() -> Element {
                                 span { class: "arch-box-title",
                                     a { href: URL_ZITE, target: "_blank", rel: "noopener noreferrer", "zite" }
                                 }
-                                span { class: "arch-box-sub",
-                                    "web | "
-                                    a { href: URL_DIOXUS, target: "_blank", rel: "noopener noreferrer", "Dioxus" }
-                                    " + "
-                                    a { href: URL_WASM, target: "_blank", rel: "noopener noreferrer", "WASM" }
-                                }
+                            }
+                            div { class: "arch-tags",
+                                span { class: "tag", "web" }
+                                a { class: "tag", href: URL_DIOXUS, target: "_blank", rel: "noopener noreferrer", "Dioxus" }
+                                a { class: "tag", href: URL_WASM, target: "_blank", rel: "noopener noreferrer", "WASM" }
                             }
                             ul { class: "arch-box-list",
                                 li { "marketing & landing" }
@@ -117,14 +116,12 @@ pub fn About() -> Element {
                                 span { class: "arch-box-title",
                                     a { href: URL_ZERVER, target: "_blank", rel: "noopener noreferrer", "zerver" }
                                 }
-                                span { class: "arch-box-sub",
-                                    "REST API | "
-                                    a { href: URL_AXUM, target: "_blank", rel: "noopener noreferrer", "Axum" }
-                                    " | "
-                                    a { href: URL_TOKIO, target: "_blank", rel: "noopener noreferrer", "Tokio" }
-                                    " | "
-                                    a { href: URL_SQLX, target: "_blank", rel: "noopener noreferrer", "SQLx" }
-                                }
+                            }
+                            div { class: "arch-tags",
+                                span { class: "tag", "REST API" }
+                                a { class: "tag", href: URL_AXUM, target: "_blank", rel: "noopener noreferrer", "Axum" }
+                                a { class: "tag", href: URL_TOKIO, target: "_blank", rel: "noopener noreferrer", "Tokio" }
+                                a { class: "tag", href: URL_SQLX, target: "_blank", rel: "noopener noreferrer", "SQLx" }
                             }
                             ul { class: "arch-box-list",
                                 li { "auth, sessions, and JWT" }
