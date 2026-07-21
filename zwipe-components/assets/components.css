@@ -1343,6 +1343,13 @@ i.ms.ms-cost.ms-gp {
     max-height: 70vh;
     overflow-y: auto;
     box-shadow: var(--shadow-md);
+    /* Scrollable but no visible scrollbar, keeping the menu clean. */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.nav-dropdown-content::-webkit-scrollbar {
+    display: none;
 }
 
 .nav-dropdown-open .nav-dropdown-content {
