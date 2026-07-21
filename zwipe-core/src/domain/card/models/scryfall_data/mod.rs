@@ -316,11 +316,15 @@ pub struct ScryfallData {
 }
 
 impl ScryfallData {
-    /// Returns `true` if this card is a basic land (e.g. Forest, Island, Mountain).
+    /// Returns `true` if this card is a basic land (e.g. Forest, Island, Mountain,
+    /// or a snow basic like Snow-Covered Plains, whose type line is "Basic Snow Land — Plains").
     pub fn is_basic_land(&self) -> bool {
-        self.type_line
-            .as_deref()
-            .is_some_and(|tl| tl.to_lowercase().contains("basic land"))
+        self.type_line.as_deref().is_some_and(|tl| {
+            // Match on the supertype/type portion (before the subtype em dash) so an
+            // intervening supertype like "Snow" doesn't break a contiguous "basic land" check.
+            let types = tl.split('—').next().unwrap_or(tl).to_lowercase();
+            types.contains("basic") && types.contains("land")
+        })
     }
 
     /// Returns `true` if this card is any kind of land (basic, nonbasic, fetch, etc.).
@@ -388,5 +392,45 @@ where
     match value {
         Some(Value::Array(arr)) => Ok(Some(arr.into_iter().map(|v| v.to_string()).collect())),
         _ => Ok(None),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::test_utils::make_card;
+
+    fn is_basic_land(type_line: Option<&str>) -> bool {
+        let mut card = make_card("test");
+        card.scryfall_data.type_line = type_line.map(String::from);
+        card.scryfall_data.is_basic_land()
+    }
+
+    #[test]
+    fn plain_basic_lands_are_basic() {
+        assert!(is_basic_land(Some("Basic Land — Forest")));
+        assert!(is_basic_land(Some("Basic Land — Island")));
+    }
+
+    #[test]
+    fn snow_basic_lands_are_basic() {
+        // Snow basics slot a "Snow" supertype between "Basic" and "Land",
+        // which broke the old contiguous "basic land" substring check.
+        assert!(is_basic_land(Some("Basic Snow Land — Plains")));
+        assert!(is_basic_land(Some("Basic Snow Land — Mountain")));
+    }
+
+    #[test]
+    fn nonbasic_lands_are_not_basic() {
+        assert!(!is_basic_land(Some("Land — Forest"))); // e.g. dual land subtypes without the Basic supertype
+        assert!(!is_basic_land(Some("Artifact Land")));
+        assert!(!is_basic_land(Some("Legendary Land — Urza's Tower")));
+        assert!(!is_basic_land(Some("Snow Land — Forest"))); // nonbasic snow land: has Snow + Land but no Basic
+    }
+
+    #[test]
+    fn non_lands_are_not_basic() {
+        assert!(!is_basic_land(Some("Creature — Human Wizard")));
+        assert!(!is_basic_land(Some("Legendary Creature — God")));
+        assert!(!is_basic_land(None));
     }
 }
