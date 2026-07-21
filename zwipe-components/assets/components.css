@@ -1005,7 +1005,9 @@ i.ms.ms-cost.ms-gp {
 .nav-panel-inner {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
 }
 
 .nav-toggle {
@@ -1061,11 +1063,13 @@ i.ms.ms-cost.ms-gp {
 .nav-links {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
     list-style: none;
     margin: 0;
     padding: 0;
-    height: 1.85rem;
+    min-height: 1.85rem;
     line-height: 1;
 }
 
@@ -1120,9 +1124,10 @@ i.ms.ms-cost.ms-gp {
     border-color: var(--accent-primary);
 }
 
-/* Below 70rem the panel collapses behind the hamburger. Keep this in sync with
-   the banner-slide breakpoints below (media queries can't share a variable). */
-@media (max-width: 70rem) {
+/* Below 60rem the panel collapses behind the hamburger. Above it the bar wraps
+   (flex-wrap) rather than clipping, so this is a mobile threshold, not a fit one.
+   Keep in sync with the banner-slide breakpoints below. */
+@media (max-width: 60rem) {
     .nav-wrapper nav {
         flex-wrap: wrap;
         padding: 1rem 0.75rem;
@@ -1569,7 +1574,7 @@ a.nav-dropdown-item.active:visited {
    from NavBar, .banner-stack from Banner) and the offsets track the shared
    .banner-stack geometry above, so this interaction belongs here rather than in
    any one consumer's stylesheet. */
-@media (max-width: 70rem) {
+@media (max-width: 60rem) {
     body:has(.nav-panel-open) .banner-stack {
         /* down to the bottom edge (top/bottom auto-flips can't transition,
            transform can); 7.5rem = the 6rem top offset + a 1.5rem bottom margin */
@@ -1580,7 +1585,7 @@ a.nav-dropdown-item.active:visited {
 
 /* Short viewports (landscape phones): the open menu spans the full height, so
    there's no clear bottom edge to retreat to; slide the banners off-screen. */
-@media (max-width: 70rem) and (max-height: 500px) {
+@media (max-width: 60rem) and (max-height: 500px) {
     body:has(.nav-panel-open) .banner-stack {
         transform: translateY(100vh);
         transform: translateY(100dvh);

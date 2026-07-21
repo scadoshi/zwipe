@@ -131,6 +131,14 @@ a:hover {
    remain here: the ASCII logo, the persistent store CTAs, and store-link
    styling. */
 
+/* zite's nav is denser than the shared 60rem default (store CTAs + theme
+   picker), so let it use the full viewport width. Combined with the bar's
+   flex-wrap, it stays one row while there's room and wraps instead of clipping
+   when there isn't, so no fixed breakpoint has to guess the fit. */
+.nav-wrapper {
+    --nav-max-width: none;
+}
+
 .nav-stores-persistent {
     display: none;
     align-items: center;
@@ -196,7 +204,7 @@ a:hover {
     }
 }
 
-@media (max-width: 70rem) {
+@media (max-width: 60rem) {
     .nav-stores-persistent {
         display: flex;
         gap: 0.35rem;
