@@ -316,14 +316,14 @@ a:hover {
    Subtitle/body links get a quiet underline so they're scannable but don't shout. */
 .arch-box-title a,
 .arch-imports a {
-    color: inherit;
+    color: var(--accent-primary);
     text-decoration: none;
     transition: color 0.15s;
 }
 
 .arch-box-title a:hover,
 .arch-imports a:hover {
-    color: var(--accent-primary);
+    text-decoration: underline;
 }
 
 .arch-box-sub a,
@@ -360,6 +360,21 @@ a:hover {
 .arch-box-sub {
     color: var(--text-subtle);
     font-size: 0.78rem;
+}
+
+.arch-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: -0.1rem 0 0.7rem;
+}
+
+a.tag {
+    text-decoration: none;
+}
+
+a.tag:hover {
+    filter: brightness(1.2);
 }
 
 .arch-box-list {
@@ -1005,10 +1020,21 @@ code {
     margin-bottom: 0.25rem;
 }
 
-.about-header .tagline {
-    color: var(--text-muted);
-    font-size: 0.9rem;
+.about-headline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 0.75rem;
     margin-bottom: 1.25rem;
+}
+
+.about-headline h1 {
+    margin: 0;
+}
+
+.about-headline .profile-links,
+.about-headline .tag-row {
+    display: contents;
 }
 
 .profile-links {
@@ -1064,27 +1090,51 @@ code {
 }
 
 .tag {
-    background: transparent;
-    border: 1px solid var(--border-primary);
+    border: 1px solid;
     border-radius: 0.4rem;
     padding: 0.2rem 0.7rem;
     font-size: 0.78rem;
-    color: var(--text-subtle);
     letter-spacing: 0.02em;
     transition:
         border-color 0.15s,
-        color 0.15s;
+        color 0.15s,
+        filter 0.15s;
 }
 
-.tag::before {
-    content: "#";
+.tag:nth-child(6n + 1) {
     color: var(--accent-primary);
-    margin-right: 0.15rem;
+    border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
+    background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
 }
 
-.tag:hover {
-    border-color: var(--accent-primary);
-    color: var(--text-primary);
+.tag:nth-child(6n + 2) {
+    color: var(--accent-secondary);
+    border-color: color-mix(in srgb, var(--accent-secondary) 35%, transparent);
+    background: color-mix(in srgb, var(--accent-secondary) 12%, transparent);
+}
+
+.tag:nth-child(6n + 3) {
+    color: var(--accent-tertiary);
+    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, transparent);
+    background: color-mix(in srgb, var(--accent-tertiary) 12%, transparent);
+}
+
+.tag:nth-child(6n + 4) {
+    color: var(--color-success);
+    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+    background: color-mix(in srgb, var(--color-success) 12%, transparent);
+}
+
+.tag:nth-child(6n + 5) {
+    color: var(--color-warning);
+    border-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
+    background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+}
+
+.tag:nth-child(6n + 6) {
+    color: var(--color-error);
+    border-color: color-mix(in srgb, var(--color-error) 35%, transparent);
+    background: color-mix(in srgb, var(--color-error) 12%, transparent);
 }
 
 /* ==================
