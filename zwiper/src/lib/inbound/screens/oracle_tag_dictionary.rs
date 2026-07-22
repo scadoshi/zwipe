@@ -29,11 +29,13 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
-    card::oracle_tag::OracleTag, user::models::hints::HINT_ORACLE_TAG_DICTIONARY,
+    card::oracle_tag::{OracleTag, search_oracle_tags},
+    user::models::hints::HINT_ORACLE_TAG_DICTIONARY,
 };
 
 /// Cap on how many rows a search renders, so a broad query can't mount thousands
-/// of DOM nodes. Matches are sorted by slug, so the shown set is deterministic.
+/// of DOM nodes. Matches are ranked (exact, then slug/label, then description)
+/// and alphabetical within tiers, so the shown set is deterministic.
 const SEARCH_RESULT_CAP: usize = 100;
 
 /// The letter bucket a slug falls under: its first character lowercased, or `#`
@@ -99,31 +101,22 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                         let searching = !q.is_empty();
                         let has_hash = tags.iter().any(|t| bucket_of(&t.slug) == '#');
 
-                        // Empty query -> the selected letter's tags. Non-empty -> whole
-                        // catalog matched on slug + label + description, capped.
+                        // Empty query -> the selected letter's tags, alphabetical.
+                        // Non-empty -> the shared ranked catalog search, capped.
                         let letter = selected_letter();
-                        let mut rows: Vec<OracleTag> = if searching {
-                            tags.iter()
-                                .filter(|t| {
-                                    t.slug.to_lowercase().contains(&q)
-                                        || t.label.to_lowercase().contains(&q)
-                                        || t
-                                            .description
-                                            .as_deref()
-                                            .is_some_and(|d| d.to_lowercase().contains(&q))
-                                })
-                                .cloned()
-                                .collect()
+                        let rows: Vec<OracleTag> = if searching {
+                            let mut matches = search_oracle_tags(tags, &q);
+                            matches.truncate(SEARCH_RESULT_CAP);
+                            matches
                         } else {
-                            tags.iter()
+                            let mut in_letter: Vec<OracleTag> = tags
+                                .iter()
                                 .filter(|t| bucket_of(&t.slug) == letter)
                                 .cloned()
-                                .collect()
+                                .collect();
+                            in_letter.sort_by(|a, b| a.slug.cmp(&b.slug));
+                            in_letter
                         };
-                        rows.sort_by(|a, b| a.slug.cmp(&b.slug));
-                        if searching {
-                            rows.truncate(SEARCH_RESULT_CAP);
-                        }
 
                         // Switching letters / searching changes every row's key, so
                         // Dioxus remounts the rows and their entrance animation replays

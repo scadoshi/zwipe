@@ -127,9 +127,114 @@ pub fn is_noise_oracle_tag(slug: &str) -> bool {
         || NOISE_ORACLE_TAG_SLUGS.contains(&slug)
 }
 
+/// Ranked, case-insensitive substring search over the tag catalog, shared by
+/// every otag search surface (deck selector, card filter, dictionary): exact
+/// slug/label matches first, then slug/label substring matches, then
+/// description-only matches, each tier alphabetical by slug. A blank query
+/// returns nothing — pickers show their curated/browse views instead. Callers
+/// apply their own result cap.
+pub fn search_oracle_tags(tags: &[OracleTag], query: &str) -> Vec<OracleTag> {
+    let q = query.trim().to_lowercase();
+    if q.is_empty() {
+        return Vec::new();
+    }
+    let rank = |t: &OracleTag| -> Option<u8> {
+        let label = t.label.to_lowercase();
+        if t.slug == q || label == q {
+            Some(0)
+        } else if t.slug.contains(&q) || label.contains(&q) {
+            Some(1)
+        } else if t
+            .description
+            .as_deref()
+            .is_some_and(|d| d.to_lowercase().contains(&q))
+        {
+            Some(2)
+        } else {
+            None
+        }
+    };
+    let mut ranked: Vec<(u8, OracleTag)> = tags
+        .iter()
+        .filter_map(|t| rank(t).map(|r| (r, t.clone())))
+        .collect();
+    ranked.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.slug.cmp(&b.1.slug)));
+    ranked.into_iter().map(|(_, t)| t).collect()
+}
+
 #[cfg(test)]
+#[allow(clippy::indexing_slicing)]
 mod tests {
     use super::*;
+
+    fn tag(slug: &str, label: &str, description: Option<&str>) -> OracleTag {
+        OracleTag {
+            slug: slug.to_string(),
+            label: label.to_string(),
+            description: description.map(str::to_string),
+            parent_slugs: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn search_ranks_exact_then_substring_then_description() {
+        let tags = vec![
+            tag(
+                "board-wipe",
+                "Board Wipe",
+                Some("Mass removal of permanents."),
+            ),
+            tag("removal", "Removal", Some("Gets rid of a permanent.")),
+            tag(
+                "spot-removal",
+                "Spot Removal",
+                Some("Removes a single target."),
+            ),
+            tag(
+                "counterspell",
+                "Counterspell",
+                Some("A form of removal on the stack."),
+            ),
+        ];
+        let results = search_oracle_tags(&tags, "removal");
+        let slugs: Vec<&str> = results.iter().map(|t| t.slug.as_str()).collect();
+        // Exact first, substring matches alphabetical next, description-only last.
+        assert_eq!(
+            slugs,
+            vec!["removal", "spot-removal", "board-wipe", "counterspell"]
+        );
+    }
+
+    #[test]
+    fn search_is_case_insensitive_and_trims() {
+        let tags = vec![tag("lifegain", "Lifegain", None)];
+        let results = search_oracle_tags(&tags, "  LifeGain ");
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].slug, "lifegain");
+    }
+
+    #[test]
+    fn search_matches_label_exactly() {
+        let tags = vec![
+            tag("mana-dork", "Mana Dork", None),
+            tag("mana-dorks-matter", "Mana Dorks Matter", None),
+        ];
+        let results = search_oracle_tags(&tags, "mana dork");
+        assert_eq!(results[0].slug, "mana-dork");
+    }
+
+    #[test]
+    fn search_blank_query_returns_nothing() {
+        let tags = vec![tag("ramp", "Ramp", None)];
+        assert!(search_oracle_tags(&tags, "").is_empty());
+        assert!(search_oracle_tags(&tags, "   ").is_empty());
+    }
+
+    #[test]
+    fn search_skips_nonmatches() {
+        let tags = vec![tag("ramp", "Ramp", Some("Accelerates your mana."))];
+        assert!(search_oracle_tags(&tags, "graveyard").is_empty());
+    }
 
     #[test]
     fn noise_is_filtered() {

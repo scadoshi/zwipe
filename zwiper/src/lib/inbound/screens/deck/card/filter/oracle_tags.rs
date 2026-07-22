@@ -11,7 +11,8 @@ use super::match_mode::MatchMode;
 use crate::{inbound::components::catalog_cache::CatalogCache, outbound::client::ZwipeClient};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::{
-    oracle_tag::OracleTag, search_card::card_filter::builder::CardQueryBuilder,
+    oracle_tag::{OracleTag, search_oracle_tags},
+    search_card::card_filter::builder::CardQueryBuilder,
 };
 
 pub(super) fn read_selected(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
@@ -159,16 +160,10 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
             // search-to-add over the full catalog
             if !includes_search().is_empty() {
                 {
-                    let query = includes_search().to_lowercase();
-                    let results: Vec<OracleTag> = tags
-                        .iter()
-                        .filter(|t| {
-                            (t.label.to_lowercase().contains(&query)
-                                || t.slug.contains(&query))
-                                && !selected.contains(&t.slug)
-                        })
+                    let results: Vec<OracleTag> = search_oracle_tags(tags, &includes_search())
+                        .into_iter()
+                        .filter(|t| !selected.contains(&t.slug))
                         .take(8)
-                        .cloned()
                         .collect();
 
                     rsx! {
@@ -249,17 +244,10 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
 
             if !excludes_search().is_empty() {
                 {
-                    let query = excludes_search().to_lowercase();
-                    let results: Vec<OracleTag> = tags
-                        .iter()
-                        .filter(|t| {
-                            (t.label.to_lowercase().contains(&query)
-                                || t.slug.contains(&query))
-                                && !selected.contains(&t.slug)
-                                && !excluded.contains(&t.slug)
-                        })
+                    let results: Vec<OracleTag> = search_oracle_tags(tags, &excludes_search())
+                        .into_iter()
+                        .filter(|t| !selected.contains(&t.slug) && !excluded.contains(&t.slug))
                         .take(8)
-                        .cloned()
                         .collect();
 
                     rsx! {

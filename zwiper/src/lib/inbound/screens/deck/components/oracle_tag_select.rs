@@ -23,7 +23,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
-    card::oracle_tag::{CURATED_ORACLE_TAGS, OracleTag},
+    card::oracle_tag::{CURATED_ORACLE_TAGS, OracleTag, search_oracle_tags},
     deck::MAX_DECK_ORACLE_TAGS,
 };
 
@@ -95,11 +95,12 @@ pub(crate) fn OracleTagSelect(
     let sel = selected();
 
     // Empty search → the curated default grid (entries the backend still serves)
-    // plus any selected slug not already in it. Non-empty search → catalog matches.
-    let q = query().to_lowercase();
-    let mut results: Vec<OracleTag> = if !open() || tags.is_empty() {
+    // plus any selected slug not already in it, alphabetical. Non-empty search →
+    // the shared ranked catalog search, capped to the 40 best matches.
+    let q = query();
+    let results: Vec<OracleTag> = if !open() || tags.is_empty() {
         Vec::new()
-    } else if q.is_empty() {
+    } else if q.trim().is_empty() {
         let mut slugs: Vec<String> = CURATED_ORACLE_TAGS
             .iter()
             .filter(|s| tags.iter().any(|t| &t.slug == *s))
@@ -110,7 +111,7 @@ pub(crate) fn OracleTagSelect(
                 slugs.push(s.clone());
             }
         }
-        slugs
+        let mut curated: Vec<OracleTag> = slugs
             .iter()
             .map(|s| {
                 tags.iter()
@@ -123,19 +124,14 @@ pub(crate) fn OracleTagSelect(
                         parent_slugs: Vec::new(),
                     })
             })
-            .collect()
+            .collect();
+        curated.sort_by(|a, b| a.slug.cmp(&b.slug));
+        curated
     } else {
-        tags.iter()
-            .filter(|t| t.label.to_lowercase().contains(&q) || t.slug.contains(&q))
-            .cloned()
-            .collect()
+        let mut matches = search_oracle_tags(tags, &q);
+        matches.truncate(40);
+        matches
     };
-    // Chips render the slug, so sort by slug for an alphabetical grid. Sort
-    // before the search cap so the shown 40 are the alphabetically-first matches.
-    results.sort_by(|a, b| a.slug.cmp(&b.slug));
-    if !q.is_empty() {
-        results.truncate(40);
-    }
 
     rsx! {
         div { class: "{screen_class}",
