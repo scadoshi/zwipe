@@ -905,6 +905,7 @@ code {
     background: color-mix(in srgb, var(--color-error) 12%, transparent);
 }
 
+
 /* ==================
         contribute
  ==================== */
@@ -1101,12 +1102,25 @@ code {
         guides
  ==================== */
 
-.guide-cat {
-    margin-bottom: 2rem;
+/* Tag filter row above the guide grid — the shared .chip / .chip.selected look
+   from the mobile app (buttons need the font restated, like .changelog-filter). */
+.guide-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
 }
 
-.guide-cat-heading {
-    margin-bottom: 1.25rem;
+.guide-filter .chip {
+    font-family: inherit;
+}
+
+/* Tag chips shown on each guide card, under the summary. */
+.guide-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
 }
 
 /* The Link is the click target; the Panel inside is the visual card. Flex so the
@@ -1145,6 +1159,38 @@ code {
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--accent-tertiary);
+}
+
+/* "Related guides" block at the foot of a guide: pill links to sibling guides. */
+.guide-related-heading {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+.guide-related-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.guide-related-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    color: var(--accent-primary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition:
+        border-color 0.15s,
+        color 0.15s;
+}
+
+.guide-related-link:hover {
+    border-color: var(--accent-primary);
 }
 
 .guide-title {
