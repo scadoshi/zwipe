@@ -13,6 +13,9 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   open; Cancel, backdrop, and the OS back gesture restore it ("Filter changes
   discarded" toast, only when a draft existed). Fixes Reset committing instantly with
   Cancel unable to undo it.
+- **Average P/T deck stat** (`991d8731`). `DeckMetrics` gains `avg_power`/`avg_toughness`
+  (quantity-weighted, any card with a numeric stat incl. Vehicles, front face for DFCs,
+  `*`/`X` sides skipped per side); shown as an "Average P/T" info-row atop Distributions.
 - **Shared-deck page: section order preserved** (`bfc10309`, zite). The column
   balancer now partitions the ordered sections into contiguous runs (min-max-height
   cuts) instead of greedy shortest-column, so phone stacking keeps 0→6+→Lands order.
