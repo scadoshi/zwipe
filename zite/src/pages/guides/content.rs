@@ -27,7 +27,11 @@ pub struct Guide {
     pub slug: &'static str,
     pub title: &'static str,
     pub summary: &'static str,
-    pub category: &'static str,
+    /// Subjects this guide covers (1-3), used for the index chip filter and the
+    /// card chips. The first tag is the primary one (breadcrumb + JSON-LD).
+    pub tags: &'static [&'static str],
+    /// Slugs of related guides, linked from the detail page's "Related" block.
+    pub related: &'static [&'static str],
     pub blocks: &'static [Block],
 }
 
@@ -37,7 +41,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "getting-started",
         title: "Getting started with Zwipe",
         summary: "Zwipe builds Magic: The Gathering decks with swipes instead of forms. Here's the whole model.",
-        category: "Start",
+        tags: &["Getting started"],
+        related: &[],
         blocks: &[
             Block::Lead(
                 "Zwipe builds Magic: The Gathering decks by swiping through cards one at a time, instead of typing names into a form.",
@@ -72,7 +77,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "swipe-to-build",
         title: "Build a deck by swiping",
         summary: "The add-cards flow: right to add, left to skip, up to maybeboard, down to undo, with synergy and filters to shape the stack.",
-        category: "Build",
+        tags: &["Swiping", "Deck building"],
+        related: &["remove-cards", "swipe-memory", "filtering"],
         blocks: &[
             Block::Lead(
                 "The Add Deck Cards screen deals cards as a stack, and you decide each with a flick.",
@@ -118,7 +124,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "remove-cards",
         title: "Remove cards from a deck",
         summary: "The remove flow mirrors building: swipe through the cards already in your deck and trim.",
-        category: "Build",
+        tags: &["Swiping", "Deck building"],
+        related: &["swipe-to-build", "swipe-memory"],
         blocks: &[
             Block::Lead(
                 "The remove flow is the mirror of building: instead of the whole card pool, it deals only the cards already in your deck.",
@@ -147,7 +154,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "swipe-memory",
         title: "Swipe memory: skips that stick",
         summary: "Skips and removals are remembered per deck, survive closing the app, and every deck keeps your place. Clear skips to start over.",
-        category: "Build",
+        tags: &["Swiping"],
+        related: &["swipe-to-build", "remove-cards"],
         blocks: &[
             Block::Lead(
                 "Zwipe remembers the cards you pass on. Skip a card and it stays out of that deck's suggestions, so you never have to swipe past the same card twice.",
@@ -176,7 +184,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "filtering",
         title: "Filter the card pool",
         summary: "Stack filters to control which cards you see: name, color, mana, type, text, keyword, rarity, set, artist, price, card role, and format.",
-        category: "Cards",
+        tags: &["Filtering", "Cards"],
+        related: &["card-roles", "oracle-tags"],
         blocks: &[
             Block::Lead(
                 "Filters decide which cards you see, whether you're adding, browsing, or trimming. The sheet is an accordion, one section per attribute.",
@@ -235,7 +244,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "synergy",
         title: "Synergy-ranked cards",
         summary: "On a commander deck, Synergy keeps the stack to cards that work with your commander and shows the best fits first.",
-        category: "Cards",
+        tags: &["Commander", "Cards"],
+        related: &["commander-and-formats", "oracle-tags"],
         blocks: &[
             Block::Lead(
                 "On a commander deck, Synergy leads with the cards that actually work with your commander instead of every legal card.",
@@ -262,7 +272,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "commander-and-formats",
         title: "Choose a commander & format",
         summary: "Pick a format, then a commander. Zwipe enforces each format's rules and your commander's color identity.",
-        category: "Decks",
+        tags: &["Commander", "Deck building"],
+        related: &["synergy"],
         blocks: &[
             Block::Lead(
                 "Your format sets the rules, your commander sets the colors, and Zwipe keeps the build inside both.",
@@ -302,7 +313,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "budgeting",
         title: "Set a budget with price targets",
         summary: "Give a deck a price target and Zwipe tracks the running total, warns as you approach it, and offers buy links.",
-        category: "Decks",
+        tags: &["Deck building"],
+        related: &["land-targets", "deck-stats"],
         blocks: &[
             Block::Lead(
                 "Give a deck a price target and Zwipe tracks the running total as you build.",
@@ -328,7 +340,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "land-targets",
         title: "Set a land target",
         summary: "Tell Zwipe how many lands you want and it warns you as the deck fills, so you don't finish short on mana.",
-        category: "Decks",
+        tags: &["Deck building"],
+        related: &["budgeting", "deck-stats"],
         blocks: &[
             Block::Lead(
                 "Set the number of lands you want and Zwipe warns you as the deck fills, so you don't finish short on mana.",
@@ -354,7 +367,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "deck-tags",
         title: "Tag decks by archetype",
         summary: "Label a deck's game plan with up to five strategy tags: Aggro, Tokens, Reanimator, and over a hundred more.",
-        category: "Decks",
+        tags: &["Deck building", "Oracle tags"],
+        related: &["tags-roles-and-oracle-tags", "oracle-tags"],
         blocks: &[
             Block::Lead(
                 "Tags label a deck's game plan: Aggro, Tokens, Reanimator, Stax, and over a hundred more.",
@@ -377,7 +391,12 @@ pub static GUIDES: &[Guide] = &[
         slug: "oracle-tags",
         title: "Sharpen suggestions with oracle tags",
         summary: "Pick the specific things your deck does, spot removal, ramp, reanimation, and Zwipe suggests cards that fit them better.",
-        category: "Decks",
+        tags: &["Oracle tags", "Cards"],
+        related: &[
+            "oracle-tag-dictionary",
+            "card-roles",
+            "tags-roles-and-oracle-tags",
+        ],
         blocks: &[
             Block::Lead(
                 "Oracle tags are the granular, community-maintained tags for what a card actually does: `spot-removal`, `ramp`, `sacrifice-outlet`, and thousands more. Select them on a deck and Zwipe suggests cards that fit them better.",
@@ -406,7 +425,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "oracle-tag-dictionary",
         title: "Browse the oracle-tag dictionary",
         summary: "A read-only reference for every oracle tag: browse A to Z or search by name and description to learn what any tag means.",
-        category: "Decks",
+        tags: &["Oracle tags"],
+        related: &["oracle-tags", "card-roles"],
         blocks: &[
             Block::Lead(
                 "The oracle-tag dictionary is a read-only reference for every oracle tag, about 4,500 in all, each with a plain-language description of what it means.",
@@ -436,7 +456,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "card-roles",
         title: "Read a card at a glance",
         summary: "Every card shows chips for the roles it fills, Removal, Ramp, Card advantage, and so on, drawn straight from its oracle tags.",
-        category: "Decks",
+        tags: &["Cards", "Oracle tags"],
+        related: &["oracle-tags", "filtering"],
         blocks: &[
             Block::Lead(
                 "Card roles are the read-side view of a card's oracle tags: coarse chips like Removal, Ramp, or Card advantage that tell you what a card does at a glance.",
@@ -459,7 +480,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "tags-roles-and-oracle-tags",
         title: "Deck tags, card roles & oracle tags: how they fit",
         summary: "One mental model for the three tagging concepts in Zwipe: deck tags seed oracle tags, oracle tags sharpen suggestions, and card roles are the read-side view.",
-        category: "Decks",
+        tags: &["Oracle tags", "Cards"],
+        related: &["deck-tags", "card-roles", "oracle-tags"],
         blocks: &[
             Block::Lead(
                 "Zwipe has three related tagging concepts, and they're easy to mix up. Here's how they fit together: deck tags seed oracle tags, oracle tags sharpen suggestions, and card roles are the read-side view of a card's oracle tags.",
@@ -496,7 +518,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "deck-mvps",
         title: "Star your deck's MVPs",
         summary: "Star up to three cards that define a deck. Stars show at a glance, steer that deck's suggestions, and travel when you clone.",
-        category: "Decks",
+        tags: &["Deck building", "Cards"],
+        related: &["deck-tags", "deck-stats"],
         blocks: &[
             Block::Lead(
                 "Every deck has a few cards that define it. Star up to three of them as MVPs, and Zwipe leans that deck's suggestions toward what you starred.",
@@ -526,7 +549,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "deck-stats",
         title: "Read your deck stats & charts",
         summary: "The deck view fills with live numbers and charts: counts, prices, mana curve, color and type breakdowns, fulfillment, and draw odds.",
-        category: "Decks",
+        tags: &["Deck stats"],
+        related: &["budgeting", "land-targets", "import-export"],
         blocks: &[
             Block::Lead(
                 "Open a deck and its stats build themselves. Everything reflects your mainboard; sideboard and maybeboard cards are excluded.",
@@ -557,7 +581,8 @@ pub static GUIDES: &[Guide] = &[
         slug: "import-export",
         title: "Import & export decklists",
         summary: "Bring a deck in from an Archidekt link or pasted text, and copy any deck back out as a plain decklist.",
-        category: "Decks",
+        tags: &["Importing", "Deck building"],
+        related: &["deck-stats"],
         blocks: &[
             Block::Lead(
                 "Zwipe reads and writes plain decklists, so you can move decks in and out.",
