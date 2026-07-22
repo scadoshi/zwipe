@@ -19,11 +19,13 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Bugs
 
-- [ ] **Deck share screen: mana value groups order weirdly (investigate).** (owner, 2026-07-22) On the zwipe.net deck share screen, the mana-value groupings render out of order (e.g. 1 → 4 → 5 → 3 instead of ascending). Sort the groups numerically by mana value.
-- [ ] **Filter bottom-sheet Cancel doesn't revert (investigate).** (owner, 2026-07-21) The filter sheet's **Cancel** should discard any changes made while the sheet was open and restore the filter to its state on open — but it commits instead. Repro: open the filter, tap **Reset filter**, then tap **Cancel** → the filter stays reset rather than reverting. Cancel needs to snapshot the filter state on open and restore it on cancel; the backdrop-tap-to-close path should behave the same. Filter sheet is in zwiper (the Cancel button was added 2026-07 this session).
+(none open)
 
 Recently resolved (outcomes in [`overview.md`](overview.md)):
-the **pre-1.6.0 "connection error" wire break** (fixed by flooring `MIN_CLIENT_VERSION=1.6.0`,
+the **filter-sheet Reset/Cancel commit bug** (fixed 2026-07-22 `db5562b4` with a
+current/staged filter split; Apply is the only commit), the **share-page mana-value
+group ordering** (fixed 2026-07-22 `bfc10309`, contiguous column partition), the
+**pre-1.6.0 "connection error" wire break** (fixed by flooring `MIN_CLIENT_VERSION=1.6.0`,
 2026-07-13; root cause fully removed 2026-07-14 when the Phase M sunset dropped the
 `mechanical_categories` dual-emit), and **app version in session data** (shipped `ce8abcad`,
 recorded per-session on the refresh-token row).
