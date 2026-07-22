@@ -13,6 +13,12 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   open; Cancel, backdrop, and the OS back gesture restore it ("Filter changes
   discarded" toast, only when a draft existed). Fixes Reset committing instantly with
   Cancel unable to undo it.
+- **Shared ranked otag search** (`89b7f4a1`). New `search_oracle_tags` in core (exact
+  slug/label > slug/label substring > description-only, alphabetical within tiers,
+  blank query empty) now powers all four otag searches: deck selector (gains
+  description matching, the Discord ask), dictionary (exact hits can no longer be
+  truncated out by the cap), and the card filter's include/exclude boxes (gain
+  descriptions + ranking over raw catalog order).
 - **Average P/T deck stat** (`991d8731`). `DeckMetrics` gains `avg_power`/`avg_toughness`
   (quantity-weighted, any card with a numeric stat incl. Vehicles, front face for DFCs,
   `*`/`X` sides skipped per side); shown as an "Average P/T" info-row atop Distributions.
