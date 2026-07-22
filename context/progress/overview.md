@@ -4,7 +4,22 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## Latest — 2026-07-20 (1.7.2 submitted for review; server + zite pushed)
+## Latest — 2026-07-22 (filter staging + share-page ordering, unreleased)
+
+- **Filter sheet: current/staged split** (`db5562b4`). The context builder is now a
+  staged draft: section edits, the per-section × clears, Reset (incl. the add-screen
+  and Swipe select custom handlers), and dictionary Use all stage only; **Apply is the
+  sole commit** ("Filter applied" toast). The sheet snapshots the applied filter on
+  open; Cancel, backdrop, and the OS back gesture restore it ("Filter changes
+  discarded" toast, only when a draft existed). Fixes Reset committing instantly with
+  Cancel unable to undo it.
+- **Shared-deck page: section order preserved** (`bfc10309`, zite). The column
+  balancer now partitions the ordered sections into contiguous runs (min-max-height
+  cuts) instead of greedy shortest-column, so phone stacking keeps 0→6+→Lands order.
+- Two `collapsible_if` / `unnecessary_map_or` lint fixes from a newer local clippy
+  (`b487a5b6`, `0f010fe1`) — CI's toolchain hadn't flagged them yet.
+
+## 2026-07-20 (1.7.2 submitted for review; server + zite pushed)
 
 - **Version 1.7.2** (workspace bump from 1.7.1). iOS build 67 + Android vc29 both
   **submitted for review 2026-07-20**; the release commit (`099f2e19`) was **pushed**,
