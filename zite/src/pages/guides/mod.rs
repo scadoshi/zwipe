@@ -128,7 +128,7 @@ pub fn Guides() -> Element {
                 }
             }
             div { class: "card-grid",
-                for g in GUIDES.iter().filter(|g| selected().map_or(true, |t| g.tags.contains(&t))) {
+                for g in GUIDES.iter().filter(|g| selected().is_none_or(|t| g.tags.contains(&t))) {
                     Link {
                         to: Route::GuidePage { slug: g.slug.to_string() },
                         class: "guide-card",
