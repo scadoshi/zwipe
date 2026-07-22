@@ -581,10 +581,10 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let mut clear_filters = move || {
         let opts = ToastOptions::default().duration(Duration::from_millis(1500));
-        // Reset returns to the screen's default view. Synergy is a separate
-        // mode, not a filter, so it survives the reset (a commander deck lands
-        // back in synergy order). A lone sort counts as non-default, so Reset
-        // fires (and clears the sort) even when no card filter is set.
+        // Reset stages the screen's default view; Apply commits it. Synergy is
+        // a separate mode, not a filter, so it survives the reset (a commander
+        // deck lands back in synergy order). A lone sort counts as non-default,
+        // so Reset fires (and clears the sort) even when no card filter is set.
         let synergy = filter_builder.peek().synergy();
         let has_sort = filter_builder.peek().sort().is_some();
         if add_source() == AddSource::Maybeboard {
@@ -594,8 +594,6 @@ pub fn Add(deck_id: Uuid) -> Element {
             } else {
                 filter_builder.write().clear();
                 filter_builder.write().set_synergy(synergy);
-                let current = *filter_reset_counter.peek();
-                filter_reset_counter.set(current + 1);
                 toast.info("Filter reset".to_string(), opts);
             }
         } else {
@@ -623,7 +621,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                 if lands_at_target() {
                     ensure_lands_excluded(filter_builder);
                 }
-                stack.replace(Vec::new());
                 toast.info("Filter reset".to_string(), opts);
             }
         }

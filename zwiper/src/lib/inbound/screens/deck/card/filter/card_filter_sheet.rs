@@ -83,6 +83,27 @@ pub(crate) fn CardFilterSheet(
         }
     });
 
+    // Current/staged split: the builder in context is the staged draft the
+    // sections edit; Apply commits it via the counter bump. Snapshot the
+    // applied state when the sheet opens so Cancel, the backdrop, or the OS
+    // back gesture restores it on close — Apply drops the snapshot first so a
+    // commit sticks.
+    let mut applied_snapshot: Signal<Option<CardQueryBuilder>> = use_signal(|| None);
+    use_effect(move || {
+        if open() {
+            applied_snapshot.set(Some(filter_builder.peek().clone()));
+        } else if let Some(previous) = applied_snapshot.take() {
+            // Only toast when there was actually a draft to throw away.
+            if *filter_builder.peek() != previous {
+                filter_builder.set(previous);
+                toast.info(
+                    "Filter changes discarded".to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
+            }
+        }
+    });
+
     // Bump the filter counter and signal that the expanded card should collapse.
     let mut bump_filter = move || {
         if let Some(CollapseExpanded(mut collapse)) = should_collapse {
@@ -268,7 +289,6 @@ pub(crate) fn CardFilterSheet(
                                         let fb = &mut *filter_builder.write();
                                         fb.unset_name_contains();
                                         fb.unset_name_not_contains();
-                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -297,7 +317,6 @@ pub(crate) fn CardFilterSheet(
                                         fb.unset_oracle_text_not_contains();
                                         fb.unset_oracle_text_excludes_any();
                                         fb.unset_keywords_excludes();
-                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -326,7 +345,6 @@ pub(crate) fn CardFilterSheet(
                                         fb.unset_type_line_not_contains();
                                         fb.unset_type_line_excludes_any();
                                         fb.unset_card_type_excludes_any();
-                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -354,7 +372,6 @@ pub(crate) fn CardFilterSheet(
                                         fb.unset_produced_mana_contains_any();
                                         fb.unset_produced_mana_contains_all();
                                         fb.unset_produced_mana_excludes();
-                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -379,7 +396,6 @@ pub(crate) fn CardFilterSheet(
                                         fb.unset_power_range();
                                         fb.unset_toughness_equals();
                                         fb.unset_toughness_range();
-                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -403,7 +419,6 @@ pub(crate) fn CardFilterSheet(
                                         fb.unset_flavor_text_contains();
                                         fb.unset_flavor_text_not_contains();
                                         fb.unset_has_flavor_text();
-                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -426,7 +441,6 @@ pub(crate) fn CardFilterSheet(
                                         let fb = &mut *filter_builder.write();
                                         fb.unset_artist_equals_any();
                                         fb.unset_artist_excludes_any();
-                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -449,7 +463,6 @@ pub(crate) fn CardFilterSheet(
                                         let fb = &mut *filter_builder.write();
                                         fb.unset_rarity_equals_any();
                                         fb.unset_rarity_excludes_any();
-                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -473,7 +486,6 @@ pub(crate) fn CardFilterSheet(
                                         fb.unset_card_roles_contains_any();
                                         fb.unset_card_roles_contains_all();
                                         fb.unset_card_roles_excludes();
-                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -498,7 +510,6 @@ pub(crate) fn CardFilterSheet(
                                         fb.unset_oracle_tags_contains_any();
                                         fb.unset_oracle_tags_contains_all();
                                         fb.unset_oracle_tags_excludes();
-                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -523,7 +534,6 @@ pub(crate) fn CardFilterSheet(
                                         let fb = &mut *filter_builder.write();
                                         fb.unset_set_equals_any();
                                         fb.unset_set_excludes_any();
-                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -550,7 +560,6 @@ pub(crate) fn CardFilterSheet(
                                             fb.unset_is_partner();
                                             fb.unset_is_background();
                                             fb.unset_is_signature_spell();
-                                            bump_filter();
                                         },
                                         "\u{00d7}"
                                     }
@@ -577,7 +586,6 @@ pub(crate) fn CardFilterSheet(
                                         let fb = &mut *filter_builder.write();
                                         fb.unset_price_min();
                                         fb.unset_price_max();
-                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -601,7 +609,6 @@ pub(crate) fn CardFilterSheet(
                                     onclick: move |evt| {
                                         evt.stop_propagation();
                                         filter_builder.write().unset_sort();
-                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -630,7 +637,6 @@ pub(crate) fn CardFilterSheet(
                                         fb.set_oversized(false);
                                         fb.set_promo(false);
                                         fb.set_content_warning(false);
-                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -645,8 +651,8 @@ pub(crate) fn CardFilterSheet(
             ActionBar {
                 Button {
                     variant: ButtonVariant::Util,
-                    // Close without applying — the same no-refresh escape as the
-                    // backdrop, but discoverable. Draft edits stay until Apply.
+                    // Close without applying — the same escape as the backdrop.
+                    // Closing restores the open-snapshot, discarding draft edits.
                     onclick: move |_| open.set(false),
                     "Cancel"
                 }
@@ -669,6 +675,13 @@ pub(crate) fn CardFilterSheet(
                             toast.warning("Filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                         } else {
                             bump_filter();
+                            // Drop the snapshot so closing keeps the committed
+                            // draft; a rejected apply restores like Cancel.
+                            applied_snapshot.set(None);
+                            toast.success(
+                                "Filter applied".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                            );
                         }
                         // The sheet closing collapses the accordion (see the
                         // open/close effect above), so it reopens tidy.
@@ -679,11 +692,11 @@ pub(crate) fn CardFilterSheet(
                 Button {
                     variant: ButtonVariant::Util,
                     onclick: move |_| {
+                        // Stages the default; Apply commits it, Cancel undoes it.
                         if let Some(handler) = &on_clear {
                             handler.call(());
                         } else {
                             filter_builder.write().clear();
-                            bump_filter();
                             toast.info(
                                 "Filter reset".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -714,6 +727,8 @@ pub(crate) fn CardFilterSheet(
                     HintKey { color: "--color-success", "Apply" }
                     " to use it or "
                     HintKey { color: "--color-warning", "Reset" }
+                    " then "
+                    HintKey { color: "--color-success", "Apply" }
                     " to return to this screen's default view. Your filter sticks as you move between screens."
                 }
             }
