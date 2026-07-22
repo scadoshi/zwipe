@@ -76,6 +76,12 @@ impl Deref for CardFaces {
     }
 }
 
+impl From<Vec<CardFace>> for CardFaces {
+    fn from(faces: Vec<CardFace>) -> Self {
+        Self(faces)
+    }
+}
+
 impl Serialize for CardFaces {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

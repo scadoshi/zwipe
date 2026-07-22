@@ -430,6 +430,20 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 CollapsibleSection {
                                                     title: "Distributions",
                                                     open_section: open_section,
+                                                    if let Some(m) = metrics.as_ref() {
+                                                        if m.avg_power.is_some() || m.avg_toughness.is_some() {
+                                                            {
+                                                                let fmt = |v: Option<f64>| v.map_or_else(|| "-".to_string(), |v| format!("{v:.1}"));
+                                                                let value = format!("{} / {}", fmt(m.avg_power), fmt(m.avg_toughness));
+                                                                rsx! {
+                                                                    div { class: "info-row",
+                                                                        span { class: "info-row-label", "Average P/T" }
+                                                                        span { class: "info-row-value", style: "white-space:nowrap;", "{value}" }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
                                                     DeckCharts {
                                                         type_bars: type_bars.clone(),
                                                         category_bars: category_bars.clone(),
