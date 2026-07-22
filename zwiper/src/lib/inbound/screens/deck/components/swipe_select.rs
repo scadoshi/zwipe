@@ -276,12 +276,11 @@ pub(crate) fn SwipeSelect(
         }
     };
 
-    // Reset every user-set filter back to the default (all colors, the
-    // backend's popularity order) and re-search. The mode constraint is
-    // re-applied on the next fetch.
+    // Stage every user-set filter back to the default (all colors, the
+    // backend's popularity order); the sheet's Apply commits and re-searches.
+    // The mode constraint is re-applied on the next fetch.
     let mut clear_filter = move || {
         filter_builder.write().clear();
-        filter_reset_counter.set(filter_reset_counter() + 1);
     };
 
     // Re-run the search with the current filter, back to the top of the stack.
