@@ -1180,9 +1180,14 @@ i.ms.ms-cost.ms-gp {
             border-top-color 0.2s ease,
             visibility 0s;
     }
+    /* nowrap + flex-start undo the desktop bar's flex-wrap/justify-end so the
+       collapsing column can't wrap into narrow columns while the open animation
+       grows the panel height. */
     .nav-panel .nav-panel-inner {
         flex-direction: column;
+        flex-wrap: nowrap;
         align-items: stretch;
+        justify-content: flex-start;
         gap: 1rem;
         overflow: hidden;
         min-height: 0;
@@ -1191,7 +1196,9 @@ i.ms.ms-cost.ms-gp {
     }
     .nav-panel .nav-links {
         flex-direction: column;
+        flex-wrap: nowrap;
         align-items: stretch;
+        justify-content: flex-start;
         gap: 0.75rem;
         height: auto;
     }
