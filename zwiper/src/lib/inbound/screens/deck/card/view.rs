@@ -852,10 +852,10 @@ pub fn View(deck_id: Uuid) -> Element {
                             let b = filter_builder.peek();
                             // Honor the active card filter here too, matching the
                             // mainboard pipeline (Effect 2) — not just sort.
-                            if !b.is_empty() {
-                                if let Ok(criteria) = b.build_criteria() {
-                                    mb_entries.retain(|e| criteria.matches(&e.card));
-                                }
+                            if !b.is_empty()
+                                && let Ok(criteria) = b.build_criteria()
+                            {
+                                mb_entries.retain(|e| criteria.matches(&e.card));
                             }
                             sort_deck_entries(&mut mb_entries, b.sort().unwrap_or(CardSortKey::Name), b.ascending());
                         }
@@ -903,10 +903,10 @@ pub fn View(deck_id: Uuid) -> Element {
                             let b = filter_builder.peek();
                             // Honor the active card filter here too, matching the
                             // mainboard pipeline (Effect 2) — not just sort.
-                            if !b.is_empty() {
-                                if let Ok(criteria) = b.build_criteria() {
-                                    sb_entries.retain(|e| criteria.matches(&e.card));
-                                }
+                            if !b.is_empty()
+                                && let Ok(criteria) = b.build_criteria()
+                            {
+                                sb_entries.retain(|e| criteria.matches(&e.card));
                             }
                             sort_deck_entries(&mut sb_entries, b.sort().unwrap_or(CardSortKey::Name), b.ascending());
                         }
