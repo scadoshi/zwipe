@@ -161,6 +161,13 @@ TODO — complete the Data safety form. Starter facts to declare:
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
 
+**1.7.3 (in progress, not yet submitted — running log for the next build):**
+
+- Filter edits now wait for Apply: Reset stages the default, and Cancel puts your filter back.
+- See your deck's average power and toughness in its stats.
+- Smarter tag search everywhere: exact matches come first, and descriptions are searched too.
+- Shared decks keep card groups in order on phones.
+
 **1.7.2:**
 
 - Lands now sit in their own section at the bottom of your deck, in every grouping.

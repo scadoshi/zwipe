@@ -39,6 +39,17 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
+## What's New in This Version (1.7.3 — in progress, not yet submitted)
+
+(Running log of what's landed on main for the next build; trim to Android's 500-char limit at submission time.)
+
+- Filter edits now wait for Apply: Reset stages the default, and Cancel puts your filter back.
+- See your deck's average power and toughness in the Distributions section.
+- Smarter oracle-tag search everywhere: exact matches come first, and descriptions are searched too.
+- Shared deck pages keep card groups in order on phones.
+
+---
+
 ## What's New in This Version (1.7.2)
 
 (Kept within Android's 500-char release-note limit so both stores read the same length.)
