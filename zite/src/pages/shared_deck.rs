@@ -473,7 +473,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let no_matching = groups.is_empty() && lands.is_empty();
 
     // Flatten command zone + type groups into one ordered section list, then
-    // greedily balance them into independent columns. CSS multi-column would
+    // balance them into independent columns. CSS multi-column would
     // reflow the whole layout when a card expands (shifting groups between
     // columns); independent flex columns let a column just grow taller.
     let mut sections: Vec<(String, Vec<Card>)> = Vec::new();
@@ -519,29 +519,44 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         sections.push((format!("{} ({})", group.label, qty), group.cards));
     }
     // Lands as a dedicated section (pulled out of the group-by so it's consistent
-    // across grouping modes), appended last so the balancer places it in the
-    // shortest column — keeps it connected to the grid instead of an orphan band.
+    // across grouping modes), appended last so it closes out the final column —
+    // keeps it connected to the grid instead of an orphan band.
     if !lands.is_empty() {
         sections.push((format!("Lands ({land_qty})"), lands));
     }
 
     const COLS: usize = 3;
-    let mut columns: Vec<Vec<(String, Vec<Card>)>> = vec![Vec::new(); COLS];
-    let mut heights = [0usize; COLS];
-    for (header, cards) in sections {
-        let h = cards.len() + 2;
-        // Assign to the currently shortest column.
-        let ci = heights
-            .iter()
-            .enumerate()
-            .min_by_key(|(_, x)| **x)
-            .map(|(i, _)| i)
-            .unwrap_or(0);
-        if let Some(height) = heights.get_mut(ci) {
-            *height += h;
+    // Partition the ordered sections into contiguous runs, one per column,
+    // picking the two cut points that minimize the tallest column. Contiguous
+    // (not shortest-column greedy) so section order survives both layouts:
+    // desktop columns read left-to-right in order, and the phone single-column
+    // stack keeps the same order instead of scrambling it.
+    let section_heights: Vec<usize> = sections.iter().map(|(_, cards)| cards.len() + 2).collect();
+    let run_height =
+        |from: usize, to: usize| -> usize { section_heights.iter().take(to).skip(from).sum() };
+    let n = sections.len();
+    let mut cuts = (n, n);
+    let mut best_max = usize::MAX;
+    for i in 0..=n {
+        for j in i..=n {
+            let tallest = run_height(0, i).max(run_height(i, j)).max(run_height(j, n));
+            if tallest < best_max {
+                best_max = tallest;
+                cuts = (i, j);
+            }
         }
+    }
+    let mut columns: Vec<Vec<(String, Vec<Card>)>> = vec![Vec::new(); COLS];
+    for (idx, section) in sections.into_iter().enumerate() {
+        let ci = if idx < cuts.0 {
+            0
+        } else if idx < cuts.1 {
+            1
+        } else {
+            2
+        };
         if let Some(col) = columns.get_mut(ci) {
-            col.push((header, cards));
+            col.push(section);
         }
     }
 
