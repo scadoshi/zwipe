@@ -48,6 +48,11 @@ pub struct DeckMetrics {
     pub avg_price_tix: Option<f64>,
     /// Non-empty mechanical category counts, sorted by count descending.
     pub card_role_counts: Vec<(&'static str, usize)>,
+    /// Average numeric power over cards that have one (front face for
+    /// multi-face cards; `*`/`X` sides skipped). `None` if no card qualified.
+    pub avg_power: Option<f64>,
+    /// Average numeric toughness, same rules as `avg_power`.
+    pub avg_toughness: Option<f64>,
 }
 
 impl DeckMetrics {
@@ -116,6 +121,10 @@ impl DeckMetrics {
         let mut eur_count = 0usize;
         let mut tix_sum = 0.0f64;
         let mut tix_count = 0usize;
+        let mut power_sum = 0.0f64;
+        let mut power_count = 0usize;
+        let mut toughness_sum = 0.0f64;
+        let mut toughness_count = 0usize;
 
         for entry in entries {
             let qty = (*entry.deck_card.quantity).max(1) as usize;
@@ -174,6 +183,29 @@ impl DeckMetrics {
                         *slot += qty;
                     }
                 }
+            }
+
+            // Power/toughness: any card with a numeric stat counts (creatures,
+            // Vehicles, ...). Each side accumulates independently so `*/4`
+            // still contributes toughness.
+            let front_face = card
+                .scryfall_data
+                .card_faces
+                .as_ref()
+                .and_then(|f| f.first());
+            if let Some(p) = numeric_stat(
+                card.scryfall_data.power.as_deref(),
+                front_face.and_then(|f| f.power.as_deref()),
+            ) {
+                power_sum += p * qty as f64;
+                power_count += qty;
+            }
+            if let Some(t) = numeric_stat(
+                card.scryfall_data.toughness.as_deref(),
+                front_face.and_then(|f| f.toughness.as_deref()),
+            ) {
+                toughness_sum += t * qty as f64;
+                toughness_count += qty;
             }
 
             // Price: prefer nonfoil → foil → etched
@@ -297,6 +329,16 @@ impl DeckMetrics {
         } else {
             None
         };
+        let avg_power = if power_count > 0 {
+            Some(power_sum / power_count as f64)
+        } else {
+            None
+        };
+        let avg_toughness = if toughness_count > 0 {
+            Some(toughness_sum / toughness_count as f64)
+        } else {
+            None
+        };
 
         DeckMetrics {
             total_cards,
@@ -314,8 +356,17 @@ impl DeckMetrics {
             total_price_tix,
             avg_price_tix,
             card_role_counts,
+            avg_power,
+            avg_toughness,
         }
     }
+}
+
+/// Numeric stat for averaging: the top-level value, falling back to the front
+/// face when the top level has none (transform DFCs). Non-numeric values
+/// (`*`, `1+*`, `X`) return `None`; f64 parse keeps Un-set half stats.
+fn numeric_stat(top: Option<&str>, front_face: Option<&str>) -> Option<f64> {
+    top.or(front_face).and_then(|v| v.parse::<f64>().ok())
 }
 
 /// Card type classification — first match wins (matches group_cards.rs logic).
@@ -501,7 +552,10 @@ fn classify_color(card: &Card) -> usize {
 mod tests {
     use super::*;
     use crate::{
-        domain::card::scryfall_data::colors::{Color, Colors},
+        domain::card::scryfall_data::{
+            card_faces::CardFace,
+            colors::{Color, Colors},
+        },
         test_utils::make_entry,
     };
 
@@ -521,6 +575,8 @@ mod tests {
         assert_eq!(metrics.avg_price_eur, None);
         assert_eq!(metrics.total_price_tix, None);
         assert_eq!(metrics.avg_price_tix, None);
+        assert_eq!(metrics.avg_power, None);
+        assert_eq!(metrics.avg_toughness, None);
     }
 
     #[test]
@@ -811,5 +867,86 @@ mod tests {
         let metrics = DeckMetrics::from_entries(&[entry]);
         assert!((metrics.total_price_usd.unwrap() - 4.00).abs() < f64::EPSILON);
         assert!((metrics.avg_price_usd.unwrap() - 1.00).abs() < f64::EPSILON);
+    }
+
+    fn make_face(power: Option<&str>, toughness: Option<&str>) -> CardFace {
+        CardFace {
+            artist: None,
+            artist_id: None,
+            cmc: None,
+            color_indicator: None,
+            colors: None,
+            defense: None,
+            flavor_text: None,
+            illustration_id: None,
+            image_uris: None,
+            layout: None,
+            loyalty: None,
+            mana_cost: String::new(),
+            name: "Face".to_string(),
+            object: "card_face".to_string(),
+            oracle_id: None,
+            oracle_text: None,
+            power: power.map(str::to_string),
+            printed_name: None,
+            printed_text: None,
+            printed_type_line: None,
+            toughness: toughness.map(str::to_string),
+            type_line: None,
+            watermark: None,
+        }
+    }
+
+    #[test]
+    fn avg_power_toughness_quantity_weighted() {
+        let mut bear = make_entry("Grizzly Bears", 2);
+        bear.card.scryfall_data.power = Some("2".to_string());
+        bear.card.scryfall_data.toughness = Some("2".to_string());
+
+        let mut angel = make_entry("Serra Angel", 1);
+        angel.card.scryfall_data.power = Some("4".to_string());
+        angel.card.scryfall_data.toughness = Some("5".to_string());
+
+        let metrics = DeckMetrics::from_entries(&[bear, angel]);
+        assert!((metrics.avg_power.unwrap() - 8.0 / 3.0).abs() < f64::EPSILON);
+        assert!((metrics.avg_toughness.unwrap() - 3.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn avg_power_star_sides_independent() {
+        // `*`/4: power side skipped, toughness side still counts.
+        let mut goyf = make_entry("Tarmogoyf-ish", 1);
+        goyf.card.scryfall_data.power = Some("*".to_string());
+        goyf.card.scryfall_data.toughness = Some("4".to_string());
+
+        let metrics = DeckMetrics::from_entries(&[goyf]);
+        assert_eq!(metrics.avg_power, None);
+        assert!((metrics.avg_toughness.unwrap() - 4.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn avg_power_dfc_uses_front_face() {
+        let mut delver = make_entry("Delver of Secrets", 1);
+        delver.card.scryfall_data.card_faces = Some(
+            vec![
+                make_face(Some("1"), Some("1")),
+                make_face(Some("3"), Some("2")),
+            ]
+            .into(),
+        );
+
+        let metrics = DeckMetrics::from_entries(&[delver]);
+        assert!((metrics.avg_power.unwrap() - 1.0).abs() < f64::EPSILON);
+        assert!((metrics.avg_toughness.unwrap() - 1.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn avg_power_none_without_stats() {
+        let mut instant = make_entry("Counterspell", 1);
+        instant.card.scryfall_data.type_line = Some("Instant".to_string());
+
+        let metrics = DeckMetrics::from_entries(&[instant]);
+        assert_eq!(metrics.avg_power, None);
+        assert_eq!(metrics.avg_toughness, None);
     }
 }
