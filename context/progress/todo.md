@@ -19,7 +19,9 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Bugs
 
-_No open bugs._ Recently resolved (outcomes in [`overview.md`](overview.md)):
+- [ ] **Filter bottom-sheet Cancel doesn't revert (investigate).** (owner, 2026-07-21) The filter sheet's **Cancel** should discard any changes made while the sheet was open and restore the filter to its state on open — but it commits instead. Repro: open the filter, tap **Reset filter**, then tap **Cancel** → the filter stays reset rather than reverting. Cancel needs to snapshot the filter state on open and restore it on cancel; the backdrop-tap-to-close path should behave the same. Filter sheet is in zwiper (the Cancel button was added 2026-07 this session).
+
+Recently resolved (outcomes in [`overview.md`](overview.md)):
 the **pre-1.6.0 "connection error" wire break** (fixed by flooring `MIN_CLIENT_VERSION=1.6.0`,
 2026-07-13; root cause fully removed 2026-07-14 when the Phase M sunset dropped the
 `mechanical_categories` dual-emit), and **app version in session data** (shipped `ce8abcad`,
@@ -36,6 +38,7 @@ Completed fixes are archived to
 - [ ] **Deck folders** — let users organize the deck list into folders/groups. **Spec'd** ([`../plans/deck_folders.md`](../plans/deck_folders.md)): custom user-named folders, one per deck, collapsible grouped list; `FolderName` reuses `DeckName` validation; ~1–1.5 days (client UI is the bulk, backend is mechanical). Not started.
 - [ ] **Oracle tags (otags) — HORIZON, big.** Ingest Scryfall's community-maintained functional tags (hundreds; daily `zervice` sync → `card_otags`), let players select strategy otags per deck (reconciled with deck tags), show the distribution, and use them as a new algorithmic serving axis (commander + otags, MVP otags, non-EDH formats via color-identity + otags + swipe data). Community-accurate replacement/complement for our heuristic `mechanical_categories`. Full vision + open research questions in [`../plans/otags.md`](../plans/otags.md).
 - [ ] **Otag-selector search over descriptions (queued, small).** From Discord feedback: make the deck otag **selector** search over *descriptions* too (today slug + label). (The companion "Dictionary link on the card-filter otag section" shipped in 1.7.1.)
+- [ ] **Mana pip-count filter (investigate).** (owner idea, Discord, 2026-07-21) Let players filter the card pool by the exact count of colored pips of a given color in the mana cost — e.g. "has 2 blue pips and 1 red pip." Per-color pip counts are derivable from `mana_cost`. Open: UI (per-color count steppers? which colors shown?), match semantics (exact vs min/max), and whether it stacks with the existing color/mana filters. Not specced.
 - [ ] **Oracle-tag descriptions — bulk authoring (ongoing, ~1,100 / 4,500 done).** Mechanism SHIPPED 2026-07-13 (`0114cb38`): `zervice` overlays our `ORACLE_TAG_DESCRIPTIONS` const (`zerver/.../helpers/oracle_tag_descriptions.rs`) into `oracle_tags.description` each sync (ours always wins). **1,100 authored as of 2026-07-13**, every one drafted + adversarially verified against real card oracle text, highest card-population first — the whole high-traffic head is covered; the remaining ~3,400 are the low-population long tail. Goal = describe all, fully replacing Scryfall. Repeatable loop (fan out subagents to draft + verify, then splice): **runbook** [`../development/runbooks/otag_description_authoring.md`](../development/runbooks/otag_description_authoring.md). Add lines, push, next `zervice` writes them in.
 
 ---
