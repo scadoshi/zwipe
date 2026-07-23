@@ -167,6 +167,7 @@ Keep generic per the copycat note at the top (no "Commander", "Planeswalker", et
 - See your deck's average power and toughness in its stats.
 - Smarter tag search everywhere: exact matches come first, and descriptions are searched too.
 - Shared decks keep card groups in order on phones.
+- Tap a tag in a card's details to read its definition while you swipe.
 
 **1.7.2:**
 
