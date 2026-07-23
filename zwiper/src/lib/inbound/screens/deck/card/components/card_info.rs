@@ -1,6 +1,12 @@
-use crate::inbound::components::alert_dialog::{
-    AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
-    AlertDialogRoot, AlertDialogTitle,
+use crate::{
+    inbound::components::{
+        alert_dialog::{
+            AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
+            AlertDialogRoot, AlertDialogTitle,
+        },
+        catalog_cache::CatalogCache,
+    },
+    outbound::client::ZwipeClient,
 };
 use dioxus::prelude::*;
 use zwipe_components::{Button, ButtonVariant, CardDetails, OracleText, card_face_count};
@@ -99,6 +105,23 @@ pub(crate) fn CardDetailsDialog(
     let face_count = card_face_count(&card);
     let mut face = use_signal(|| 0usize);
 
+    // Tag definitions for the card-role cluster: tapping a tag reveals its
+    // description inline (same reveal as the deck view's expanded rows).
+    // Resolved from the app-wide catalog cache; warmed on mount so a cold cache
+    // still fills while the dialog is open.
+    let cache: CatalogCache = use_context();
+    let client: Signal<ZwipeClient> = use_context();
+    use_effect(move || {
+        cache.ensure_oracle_tags(client);
+    });
+    let describe_tag = use_callback(move |slug: String| {
+        cache.oracle_tags.cell().read().loaded().and_then(|tags| {
+            tags.iter()
+                .find(|t| t.slug == slug)
+                .and_then(|t| t.description.clone())
+        })
+    });
+
     // Open at the top: the primitive can land the scroll container partway (focus
     // moves into the dialog on mount). Reset the description's scroll on each open,
     // after the content paints. `card-rules` is the direct child of the
@@ -149,6 +172,7 @@ pub(crate) fn CardDetailsDialog(
                             show_classification: true,
                             show_flip: false,
                             face: Some(face),
+                            describe_tag: Some(describe_tag),
                         }
                     }
                 }
