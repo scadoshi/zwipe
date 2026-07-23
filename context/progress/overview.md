@@ -4,20 +4,22 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## Latest — 2026-07-23 (sqlx 0.9, deps refresh, 1.7.3 staged)
+## Latest — 2026-07-23 (sqlx 0.9 DEPLOYED, deps refresh, 1.7.3 staged)
 
-- **sqlx 0.8 → 0.9** (`9ffcfc15`), gated by the integration suite against live Postgres
-  (all 26 suites green). Fallout was mechanical: `runtime-tokio-rustls` split into
+- **sqlx 0.8 → 0.9** (`9ffcfc15`) — **deployed to prod 2026-07-23** (Deploy zerver
+  green, 7m28s; CI's `sqlx prepare --check` gate passed on the regenerated data).
+  Gated beforehand by the integration suite against live Postgres (all 26 suites
+  green). Fallout was mechanical: `runtime-tokio-rustls` split into
   `runtime-tokio` + `tls-rustls`, `QueryBuilder`/`ArgumentBuffer` lifetime params
   removed, two `SqlSafeStr` fixes (both became true static strings, no `AssertSqlSafe`),
-  `.sqlx/` regenerated (45 files, new 0.9 format) and `--check` passes. No `query!`
-  nullability shifts.
+  `.sqlx/` regenerated (45 files, new 0.9 format). No `query!` nullability shifts.
 - **Deps refreshed** (`46bd5600`): 115 semver-compatible lockfile bumps, full suite green.
   Remaining majors: keyring 4 (needs on-device test); `block` future-incompat is
   Dioxus-transitive, not actionable.
-- **1.7.3 staged** (`83ca6962`, `f2c337ed`): workspace bumped to 1.7.3, changelog
-  `UPCOMING` teaser live on next server push, store what's-new logs started (iOS +
-  Android). No client build cut yet; everything on main is push-safe for 1.7.x clients.
+- **1.7.3 staged** (`83ca6962`, `f2c337ed`): workspace bumped to 1.7.3, store
+  what's-new logs started (iOS + Android). Server pushes 2026-07-22 + -23 shipped it
+  all: the changelog `UPCOMING` teaser and share-page ordering fix are **live** (server
+  reports 1.7.3). No client build cut yet; live 1.7.x clients unaffected.
 
 ## 2026-07-22 (filter staging + share-page ordering, unreleased)
 
