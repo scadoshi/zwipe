@@ -47,6 +47,7 @@ Built for players who want a fast, focused mobile experience — not another clu
 - See your deck's average power and toughness in the Distributions section.
 - Smarter oracle-tag search everywhere: exact matches come first, and descriptions are searched too.
 - Shared deck pages keep card groups in order on phones.
+- Tap an oracle tag in a card's details to read its definition while you swipe.
 
 ---
 

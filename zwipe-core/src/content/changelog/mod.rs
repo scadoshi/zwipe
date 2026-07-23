@@ -33,6 +33,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "See your deck's average power and toughness in the Distributions section.",
         "Oracle tag search is smarter everywhere: exact matches come first and descriptions are searched too, in the deck picker, the card filter, and the dictionary.",
         "Shared deck pages keep card groups in order on phones.",
+        "Tap an oracle tag in a card's details to read its definition while you swipe.",
     ],
 }];
 
