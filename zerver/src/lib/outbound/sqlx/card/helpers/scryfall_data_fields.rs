@@ -151,7 +151,7 @@ pub trait BindScryfallDataFields {
     fn bind_scryfall_fields(&mut self, card: &ScryfallData) -> &mut Self;
 }
 
-impl BindScryfallDataFields for QueryBuilder<'_, Postgres> {
+impl BindScryfallDataFields for QueryBuilder<Postgres> {
     fn bind_scryfall_fields(&mut self, card: &ScryfallData) -> &mut Self {
         self.push("(");
         // core card fields
@@ -348,7 +348,7 @@ pub trait BindCards {
     fn bind_cards(&mut self, scryfall_data: &[ScryfallData]) -> &mut Self;
 }
 
-impl BindCards for QueryBuilder<'_, Postgres> {
+impl BindCards for QueryBuilder<Postgres> {
     fn bind_cards(&mut self, scryfall_data: &[ScryfallData]) -> &mut Self {
         for (i, card) in scryfall_data.iter().enumerate() {
             if i > 0 {

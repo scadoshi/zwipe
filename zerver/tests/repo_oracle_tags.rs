@@ -41,7 +41,7 @@ fn tag(id: u128, slug: &str, description: Option<&str>, cards: &[Uuid]) -> Oracl
     }
 }
 
-async fn count(pool: &sqlx::PgPool, sql: &str) -> i64 {
+async fn count(pool: &sqlx::PgPool, sql: &'static str) -> i64 {
     sqlx::query_scalar(sql).fetch_one(pool).await.unwrap()
 }
 

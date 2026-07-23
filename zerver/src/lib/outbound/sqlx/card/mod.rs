@@ -207,10 +207,10 @@ impl CardRepository for MyPostgres {
         zervice_metrics: &ZerviceMetrics,
     ) -> Result<ZerviceMetrics, anyhow::Error> {
         let mut tx = self.pool.begin().await?;
-        let query_sql = "INSERT INTO zervice_metrics".to_string()
-            + " (started_at, ended_at, duration_in_seconds, status, received_count, upserted_count, skipped_count, error_count, errors)"
-            + " VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *";
-        let database_zervice_metrics: DatabaseZerviceMetrics = query_as(&query_sql)
+        let query_sql = "INSERT INTO zervice_metrics \
+             (started_at, ended_at, duration_in_seconds, status, received_count, upserted_count, skipped_count, error_count, errors) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *";
+        let database_zervice_metrics: DatabaseZerviceMetrics = query_as(query_sql)
             .bind(zervice_metrics.started_at())
             .bind(zervice_metrics.ended_at())
             .bind(zervice_metrics.duration_in_seconds())
@@ -375,7 +375,7 @@ impl CardRepository for MyPostgres {
         //         the scored floor, see UNSCORED_ANCHOR)
         //   signal: the pooled net-rate, shrunk toward and centered on the
         //         global rate — a card with no impressions adds zero.
-        let push_score = |qb: &mut QueryBuilder<'_, Postgres>, scores: &serde_json::Value| {
+        let push_score = |qb: &mut QueryBuilder<Postgres>, scores: &serde_json::Value| {
             qb.push("COALESCE((");
             qb.push_bind(scores.clone());
             qb.push(format!(" ->> LOWER(name))::float8, {UNSCORED_ANCHOR})"));
@@ -404,7 +404,7 @@ impl CardRepository for MyPostgres {
         } else {
             None
         };
-        let mut qb: QueryBuilder<'_, Postgres> = if wildcard_serving
+        let mut qb: QueryBuilder<Postgres> = if wildcard_serving
             && signal_ordering
             && let (Some(scores), Some(seed)) = (synergy_scores, band_seed.clone())
         {
@@ -412,7 +412,7 @@ impl CardRepository for MyPostgres {
             // two slices at the end page it two ways. The predicate pushes below
             // land inside the CTE, so filters, legality, and suppressions bound
             // both slices.
-            let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(
+            let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
                 "WITH pool AS (SELECT latest_cards.*, row_number() OVER (ORDER BY ",
             );
             push_score(&mut qb, scores);
@@ -444,7 +444,7 @@ impl CardRepository for MyPostgres {
             // behavior (context/archive/commander_select_signal.md §3). Both
             // joins are 1:1 (PK on oracle_id) and aliased so no bare
             // `name`/`oracle_id` collides with the shared WHERE filters.
-            let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(
+            let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
                 "WITH pool AS (SELECT latest_cards.*, row_number() OVER (ORDER BY ",
             );
             qb.push(POPULARITY_RANK);

@@ -6,47 +6,101 @@
       {
         "ordinal": 0,
         "name": "user_id",
-        "type_info": "Uuid"
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "user_lifetime_counters",
+            "name": "user_id"
+          }
+        }
       },
       {
         "ordinal": 1,
         "name": "swipes_right",
-        "type_info": "Int8"
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "user_lifetime_counters",
+            "name": "swipes_right"
+          }
+        }
       },
       {
         "ordinal": 2,
         "name": "swipes_left",
-        "type_info": "Int8"
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "user_lifetime_counters",
+            "name": "swipes_left"
+          }
+        }
       },
       {
         "ordinal": 3,
         "name": "swipes_up",
-        "type_info": "Int8"
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "user_lifetime_counters",
+            "name": "swipes_up"
+          }
+        }
       },
       {
         "ordinal": 4,
         "name": "swipes_down",
-        "type_info": "Int8"
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "user_lifetime_counters",
+            "name": "swipes_down"
+          }
+        }
       },
       {
         "ordinal": 5,
         "name": "searches",
-        "type_info": "Int8"
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "user_lifetime_counters",
+            "name": "searches"
+          }
+        }
       },
       {
         "ordinal": 6,
         "name": "decks_created",
-        "type_info": "Int4"
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "user_lifetime_counters",
+            "name": "decks_created"
+          }
+        }
       },
       {
         "ordinal": 7,
         "name": "decks_completed",
-        "type_info": "Int4"
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "user_lifetime_counters",
+            "name": "decks_completed"
+          }
+        }
       },
       {
         "ordinal": 8,
         "name": "updated_at",
-        "type_info": "Timestamptz"
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "user_lifetime_counters",
+            "name": "updated_at"
+          }
+        }
       }
     ],
     "parameters": {

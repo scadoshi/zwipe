@@ -42,7 +42,7 @@ impl Type<Postgres> for ErrorMetrics {
 impl Encode<'_, Postgres> for ErrorMetrics {
     fn encode(
         self,
-        buf: &mut <Postgres as sqlx::Database>::ArgumentBuffer<'_>,
+        buf: &mut <Postgres as sqlx::Database>::ArgumentBuffer,
     ) -> Result<sqlx::encode::IsNull, sqlx::error::BoxDynError>
     where
         Self: Sized,
@@ -53,7 +53,7 @@ impl Encode<'_, Postgres> for ErrorMetrics {
 
     fn encode_by_ref(
         &self,
-        buf: &mut <Postgres as sqlx::Database>::ArgumentBuffer<'_>,
+        buf: &mut <Postgres as sqlx::Database>::ArgumentBuffer,
     ) -> Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
         let json_value: JsonValue = serde_json::to_value(self)?;
         json_value.encode(buf)
@@ -102,7 +102,7 @@ impl Type<Postgres> for VecErrorMetrics {
 impl Encode<'_, Postgres> for VecErrorMetrics {
     fn encode(
         self,
-        buf: &mut <Postgres as sqlx::Database>::ArgumentBuffer<'_>,
+        buf: &mut <Postgres as sqlx::Database>::ArgumentBuffer,
     ) -> Result<IsNull, sqlx::error::BoxDynError>
     where
         Self: Sized,
@@ -113,7 +113,7 @@ impl Encode<'_, Postgres> for VecErrorMetrics {
 
     fn encode_by_ref(
         &self,
-        buf: &mut <Postgres as sqlx::Database>::ArgumentBuffer<'_>,
+        buf: &mut <Postgres as sqlx::Database>::ArgumentBuffer,
     ) -> Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
         let json_value: JsonValue = serde_json::to_value(self)?;
         json_value.encode(buf)
