@@ -467,7 +467,7 @@ impl DeckRepository for Postgres {
                 return Err(UpdateDeckCardError::MvpCapReached);
             }
         }
-        let mut qb: QueryBuilder<'_, sqlx::Postgres> = QueryBuilder::new("UPDATE deck_cards SET ");
+        let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new("UPDATE deck_cards SET ");
         let mut sep = qb.separated(", ");
         if let Some(update_quantity) = &request.update_quantity {
             sep.push("quantity = quantity + ")
@@ -675,7 +675,7 @@ impl DeckRepository for Postgres {
             .begin()
             .await
             .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
-        let mut qb: QueryBuilder<'_, sqlx::Postgres> = QueryBuilder::new(
+        let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new(
             "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) ",
         );
         qb.push_values(

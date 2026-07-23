@@ -6,17 +6,35 @@
       {
         "ordinal": 0,
         "name": "oracle_id",
-        "type_info": "Uuid"
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "latest_cards",
+            "name": "oracle_id"
+          }
+        }
       },
       {
         "ordinal": 1,
         "name": "color_identity",
-        "type_info": "TextArray"
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "latest_cards",
+            "name": "color_identity"
+          }
+        }
       },
       {
         "ordinal": 2,
         "name": "card_roles",
-        "type_info": "Jsonb"
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "card_profiles",
+            "name": "card_roles"
+          }
+        }
       }
     ],
     "parameters": {

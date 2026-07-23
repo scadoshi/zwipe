@@ -6,22 +6,41 @@
       {
         "ordinal": 0,
         "name": "slug!",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "oracle_tags",
+            "name": "slug"
+          }
+        }
       },
       {
         "ordinal": 1,
         "name": "label!",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "oracle_tags",
+            "name": "label"
+          }
+        }
       },
       {
         "ordinal": 2,
         "name": "description",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "oracle_tags",
+            "name": "description"
+          }
+        }
       },
       {
         "ordinal": 3,
         "name": "parent_slugs!",
-        "type_info": "TextArray"
+        "type_info": "TextArray",
+        "origin": "Expression"
       }
     ],
     "parameters": {

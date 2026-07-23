@@ -6,112 +6,214 @@
       {
         "ordinal": 0,
         "name": "id",
-        "type_info": "Uuid"
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "id"
+          }
+        }
       },
       {
         "ordinal": 1,
         "name": "name",
-        "type_info": "Varchar"
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "name"
+          }
+        }
       },
       {
         "ordinal": 2,
         "name": "commander_id",
-        "type_info": "Uuid"
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "commander_id"
+          }
+        }
       },
       {
         "ordinal": 3,
         "name": "partner_commander_id",
-        "type_info": "Uuid"
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "partner_commander_id"
+          }
+        }
       },
       {
         "ordinal": 4,
         "name": "background_id",
-        "type_info": "Uuid"
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "background_id"
+          }
+        }
       },
       {
         "ordinal": 5,
         "name": "signature_spell_id",
-        "type_info": "Uuid"
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "signature_spell_id"
+          }
+        }
       },
       {
         "ordinal": 6,
         "name": "format",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "format"
+          }
+        }
       },
       {
         "ordinal": 7,
         "name": "tags?",
-        "type_info": "Jsonb"
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "tags"
+          }
+        }
       },
       {
         "ordinal": 8,
         "name": "power_level",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "power_level"
+          }
+        }
       },
       {
         "ordinal": 9,
         "name": "other_tags?",
-        "type_info": "Jsonb"
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "other_tags"
+          }
+        }
       },
       {
         "ordinal": 10,
         "name": "oracle_tags?",
-        "type_info": "Jsonb"
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "oracle_tags"
+          }
+        }
       },
       {
         "ordinal": 11,
         "name": "land_target",
-        "type_info": "Int4"
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "land_target"
+          }
+        }
       },
       {
         "ordinal": 12,
         "name": "price_target",
-        "type_info": "Float8"
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "price_target"
+          }
+        }
       },
       {
         "ordinal": 13,
         "name": "price_target_currency",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "price_target_currency"
+          }
+        }
       },
       {
         "ordinal": 14,
         "name": "share_token",
-        "type_info": "Uuid"
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "share_token"
+          }
+        }
       },
       {
         "ordinal": 15,
         "name": "user_id",
-        "type_info": "Uuid"
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "user_id"
+          }
+        }
       },
       {
         "ordinal": 16,
         "name": "card_count",
-        "type_info": "Int8"
+        "type_info": "Int8",
+        "origin": "Expression"
       },
       {
         "ordinal": 17,
         "name": "commander_name?",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": "Expression"
       },
       {
         "ordinal": 18,
         "name": "partner_commander_name?",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": "Expression"
       },
       {
         "ordinal": 19,
         "name": "background_name?",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": "Expression"
       },
       {
         "ordinal": 20,
         "name": "signature_spell_name?",
-        "type_info": "Text"
+        "type_info": "Text",
+        "origin": "Expression"
       },
       {
         "ordinal": 21,
         "name": "color_identity?: Vec<String>",
-        "type_info": "TextArray"
+        "type_info": "TextArray",
+        "origin": "Expression"
       }
     ],
     "parameters": {
