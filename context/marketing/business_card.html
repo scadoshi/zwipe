@@ -888,21 +888,26 @@
                 const clone = cardEl.cloneNode(true);
                 clone.style.boxShadow = "none";
                 clone.style.borderRadius = "0";
-                // html2canvas draws flex-centered, tight-line-height text ~0.5px
-                // low vs. the browser (its JetBrains Mono ascent estimate runs tall,
-                // and line-height:1 leaves no leading to absorb it). The P/T "*/*" is
-                // the only place this shows. Nudge just that text up via asymmetric
-                // padding — total vertical padding stays 4px so the box itself is
-                // unmoved; only the flex-centered glyphs shift. Widen the gap to lift
-                // further (e.g. "1px 10px 3px" for ~1px).
-                const ptClone = clone.querySelector(".pt");
-                if (ptClone) ptClone.style.padding = "1.5px 10px 2.5px";
-                // Same low-glyph quirk hits the flex-centered mana glyphs: they
-                // sag inside their squircles on export. The pip box is a fixed
-                // 1.3em (border-box), so asymmetric bottom padding lifts only
-                // the glyph, not the box.
-                for (const pip of clone.querySelectorAll("i.ms.ms-cost")) {
-                    pip.style.padding = "0 1px 2px";
+                // macOS only: html2canvas there draws flex-centered,
+                // tight-line-height text ~0.5px low vs. the browser (its JetBrains
+                // Mono ascent estimate runs tall, and line-height:1 leaves no
+                // leading to absorb it). On Linux the same font metrics come out
+                // right, so these lifts overshoot and shove the glyphs into the
+                // top of their boxes — hence the platform gate.
+                if (/Mac/.test(navigator.platform)) {
+                    // The P/T "*/*": nudge just that text up via asymmetric
+                    // padding — total vertical padding stays 4px so the box itself
+                    // is unmoved; only the flex-centered glyphs shift. Widen the
+                    // gap to lift further (e.g. "1px 10px 3px" for ~1px).
+                    const ptClone = clone.querySelector(".pt");
+                    if (ptClone) ptClone.style.padding = "1.5px 10px 2.5px";
+                    // Same low-glyph quirk hits the flex-centered mana glyphs:
+                    // they sag inside their squircles on export. The pip box is a
+                    // fixed 1.3em (border-box), so asymmetric bottom padding lifts
+                    // only the glyph, not the box.
+                    for (const pip of clone.querySelectorAll("i.ms.ms-cost")) {
+                        pip.style.padding = "0 1px 2px";
+                    }
                 }
                 wrap.appendChild(clone);
                 document.body.appendChild(wrap);
