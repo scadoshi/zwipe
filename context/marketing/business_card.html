@@ -208,13 +208,34 @@
                 gap: 6px;
             }
 
-            /* ---------- title bar ---------- */
-            .titlebar {
+            /* ---------- connected panel ----------
+               one continuous box holding titlebar → art → typeline → textbox,
+               sections separated by the app's classic <hr> rule instead of
+               floating as separate bubbles */
+            .panel {
+                flex: 1 1 auto;
+                min-height: 0;
                 display: flex;
                 flex-direction: column;
                 background: var(--border-secondary);
                 border: 1px solid var(--border-primary);
                 border-radius: 4px;
+                overflow: hidden;
+            }
+            /* sections lose their own chrome inside the panel */
+            .panel .titlebar,
+            .panel .art,
+            .panel .typeline,
+            .panel .textbox {
+                background: transparent;
+                border: none;
+                border-radius: 0;
+            }
+
+            /* ---------- title bar ---------- */
+            .titlebar {
+                display: flex;
+                flex-direction: column;
                 padding: 5px 9px;
             }
             /* name + mana cost share the top row; the sub-line spans the full
@@ -412,6 +433,16 @@
                 line-height: 1.3;
                 color: var(--text-primary);
             }
+            /* modal-ability modes: MTG-style bullet with hanging indent */
+            .oracle .mode {
+                position: relative;
+                padding-left: 1.2em;
+            }
+            .oracle .mode::before {
+                content: "\2022";
+                position: absolute;
+                left: 0.25em;
+            }
             .oracle .kw {
                 font-weight: 700;
             }
@@ -433,6 +464,10 @@
                 color: var(--accent-tertiary);
                 font-weight: 600;
             } /* swipe-up = maybeboard */
+            .c-warning {
+                color: var(--color-warning);
+                font-weight: 600;
+            } /* swipe-down = undo */
             /* the {T} symbol in the tap ability, sized to sit with the text */
             .oracle i.ms.ms-cost {
                 font-size: 0.9em;
@@ -442,13 +477,19 @@
                 font-style: italic;
                 color: var(--text-muted);
             }
-            /* divider between rules text and flavor, like a real card */
-            .textbox .rule {
+            /* the app's classic divider — between panel sections and between
+               rules text and flavor, like a real card */
+            .rule {
                 border: none;
                 border-top: 1px solid var(--border-primary);
                 height: 0;
                 margin: 0;
                 opacity: 0.85;
+            }
+            /* full-bleed: cancel the textbox's side padding so the divider
+               touches the panel edges like the section rules */
+            .textbox .rule {
+                margin: 0 -8px;
             }
             .flavor {
                 font-size: var(--oracle-fs, 7px);
@@ -598,6 +639,7 @@
         <div class="sheet">
             <div class="card" id="cardFront">
                 <div class="face">
+                    <div class="panel">
                     <div class="titlebar">
                         <div class="titlebar-row">
                             <div class="title">Zwipe</div>
@@ -615,10 +657,12 @@
                             >MAGIC: THE GATHERING DECK BUILDER</span
                         >
                     </div>
+                    <hr class="rule" />
 
                     <div class="art">
                         <div class="qr-tile"><div class="qr"></div></div>
                     </div>
+                    <hr class="rule" />
 
                     <div class="typeline">
                         <span>Artifact Creature — Mobile App</span>
@@ -632,19 +676,28 @@
     ▎▎▉▉▉▉▉▉▉▉</pre
                         >
                     </div>
+                    <hr class="rule" />
 
                     <div class="textbox">
                         <div class="oracle">
                             <div class="line">
-                                When Zwipe enters, swipe
-                                <span class="c-error">left</span> to skip, swipe
-                                <span class="c-success">right</span> to add, or
-                                swipe <span class="c-accent-3">up</span> to
-                                maybeboard.
+                                When Zwipe serves you a card, choose one:
                             </div>
-                            <div class="line">
-                                <i class="ms ms-tap ms-cost"></i>: Reveal a
-                                card's rules, printings, and prices.
+                            <div class="line mode">
+                                Swipe <span class="c-error">left</span> to skip
+                                it.
+                            </div>
+                            <div class="line mode">
+                                Swipe <span class="c-success">right</span> to
+                                add it to your deck.
+                            </div>
+                            <div class="line mode">
+                                Swipe <span class="c-accent-3">up</span> to add
+                                it to your maybeboard.
+                            </div>
+                            <div class="line mode">
+                                Swipe <span class="c-warning">down</span> to
+                                undo.
                             </div>
                             <div class="line">
                                 <span class="kw kw-accent-2">Synergy</span>
@@ -665,6 +718,7 @@
                             &ldquo;Every great deck begins with a single
                             swipe.&rdquo;
                         </div>
+                    </div>
                     </div>
                     <div class="pt">*/*</div>
 
