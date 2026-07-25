@@ -4,7 +4,19 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## Latest — 2026-07-24 (1.7.3 clients SUBMITTED: iOS build 68 / Android vc30)
+## Latest — 2026-07-25 (Phase 5S step-3 cleanup)
+
+- **Phase 5S step-3 cleanup** (behind the 1.7.0 `MIN_CLIENT_VERSION` floor):
+  `CardSignalDelta.commander_oracle_id` dropped from the wire (deck_id is the sole
+  context key), zerver's three dual-accept fallbacks removed (deck-derived context
+  only), and zwiper's internal commander resolution deleted (buffer keys on
+  `(card, deck)`; remove-screen even loses a per-load `get_card` fetch). Verified
+  safe for live 1.7.x clients: they already send `deck_id` + `commander_oracle_id:
+  null`, which serde ignores as an unknown field — regression-tested by new unit +
+  integration tests (legacy payload → 204, lands nothing). Server half deploys on
+  push; client half rides the next build. Not changelogged (internal cleanup).
+
+## 2026-07-24 (1.7.3 clients SUBMITTED: iOS build 68 / Android vc30)
 
 - **1.7.3 submitted to both stores 2026-07-24.** iOS build 68 (first build on
   **Xcode 26.6**/17F113, updated per the allowlist rule) via Transporter; Android

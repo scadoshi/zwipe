@@ -34,9 +34,9 @@ Details: [`progress/overview.md`](progress/overview.md) top entry.
 **1.7.2 LIVE on both stores** (submitted 2026-07-20): board-wide filters, pinned
 lands section, dialog backdrop-dismiss, guides polish, shared-deck tokens.
 
-**After this:** `MIN_CLIENT_VERSION` floored to 1.7.0 (2026-07-24) → the **Phase 5S
-step-3 cleanup** is next up (drop the legacy commander wire + fallback; the client
-half rides the next build). Then **Phase 6** — serve on the
+**After this:** the **Phase 5S step-3 cleanup shipped 2026-07-25** (legacy commander
+wire + fallback + client resolution dropped behind the 1.7.0 floor; client half
+rides the next build). Then **Phase 6** — serve on the
 matured otag signal (data-gated, months out). Ongoing: description authoring into the
 tail (runbook at [`development/runbooks/`](development/runbooks/)), short-form
 marketing videos, review tracking, funnel numbers (gate the sign-in-with-Google
