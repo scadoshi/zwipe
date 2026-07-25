@@ -1493,7 +1493,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                 open: filters_overlay_open,
                 show_format_filter: true,
                 show_active_indicators: true,
-                validate_before_apply: true,
+                // Only the server search needs intent — Maybeboard filters
+                // client-side and its default is a blank filter, so an empty
+                // Apply there (e.g. right after Reset) must commit, not warn.
+                validate_before_apply: add_source() == AddSource::Search,
                 on_clear: move |_| clear_filters(),
             }
             }
