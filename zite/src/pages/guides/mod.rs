@@ -92,6 +92,15 @@ const GUIDE_TAGS: &[&str] = &[
     "Importing",
 ];
 
+/// Color class for a guide tag, keyed by its position in [`GUIDE_TAGS`] so the
+/// same tag reads the same color on every card (the bare `.tag` cycle is
+/// positional and would recolor a tag per card).
+fn tag_color_class(tag: &str) -> &'static str {
+    const CLASSES: [&str; 6] = ["tag-c1", "tag-c2", "tag-c3", "tag-c4", "tag-c5", "tag-c6"];
+    let idx = GUIDE_TAGS.iter().position(|t| *t == tag).unwrap_or(0);
+    CLASSES.get(idx % CLASSES.len()).unwrap_or(&"tag-c1")
+}
+
 #[component]
 pub fn Guides() -> Element {
     let mut selected = use_signal(|| Option::<&'static str>::None);
@@ -136,7 +145,7 @@ pub fn Guides() -> Element {
                             p { class: "card-summary", "{g.summary}" }
                             div { class: "guide-tags",
                                 for t in g.tags.iter().copied() {
-                                    span { class: "chip", "{t}" }
+                                    span { class: "tag {tag_color_class(t)}", "{t}" }
                                 }
                             }
                         }

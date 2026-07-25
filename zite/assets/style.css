@@ -1115,12 +1115,51 @@ code {
     font-family: inherit;
 }
 
-/* Tag chips shown on each guide card, under the summary. */
+/* Tag labels shown on each guide card, under the summary. Static .tag geometry
+   with class-keyed colors (tag-c1..c6, assigned per tag in GUIDE_TAGS order) so
+   the same tag reads the same color on every card. Declared after the
+   positional .tag:nth-child cycle so the keyed color wins. */
 .guide-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
     margin-top: 0.75rem;
+}
+
+.tag.tag-c1 {
+    color: var(--accent-primary);
+    border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
+    background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+}
+
+.tag.tag-c2 {
+    color: var(--accent-secondary);
+    border-color: color-mix(in srgb, var(--accent-secondary) 35%, transparent);
+    background: color-mix(in srgb, var(--accent-secondary) 12%, transparent);
+}
+
+.tag.tag-c3 {
+    color: var(--accent-tertiary);
+    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, transparent);
+    background: color-mix(in srgb, var(--accent-tertiary) 12%, transparent);
+}
+
+.tag.tag-c4 {
+    color: var(--color-success);
+    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+    background: color-mix(in srgb, var(--color-success) 12%, transparent);
+}
+
+.tag.tag-c5 {
+    color: var(--color-warning);
+    border-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
+    background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+}
+
+.tag.tag-c6 {
+    color: var(--color-error);
+    border-color: color-mix(in srgb, var(--color-error) 35%, transparent);
+    background: color-mix(in srgb, var(--color-error) 12%, transparent);
 }
 
 /* The Link is the click target; the Panel inside is the visual card. Flex so the
