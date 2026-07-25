@@ -13,11 +13,10 @@ use zwipe_core::http::contracts::metrics::{CardSignalDelta, CommanderSelectDelta
 
 use crate::inbound::components::interactions::swipe::direction::Direction;
 
-/// Signal buffer key: `(commander oracle id or None, card oracle id, deck id)`.
-/// Commander is `None` for non-Commander decks; the deck id both distinguishes
-/// otherwise-identical non-Commander keys and rides the wire so the server can
-/// derive the generalized `(format, color-identity)` per-otag context.
-type SignalKey = (Option<Uuid>, Uuid, Uuid);
+/// Signal buffer key: `(card oracle id, deck id)`. The deck id rides the wire
+/// as the sole context key — the server derives the commander (EDH) or the
+/// generalized `(format, color-identity)` per-otag context from it.
+type SignalKey = (Uuid, Uuid);
 
 /// Atomic buffer of pending usage counters. Cheap clone (Arc inner).
 #[derive(Debug, Clone, Default)]
@@ -32,17 +31,17 @@ struct UsageBufferInner {
     swipes_up: AtomicU32,
     swipes_down: AtomicU32,
     searches: AtomicU32,
-    /// Per-`(commander, card, deck)` keep/skip/maybe tallies from the add-card
-    /// stack. Commander is `None` for non-Commander decks; the deck id lets the
-    /// server derive the generalized `(format, color-identity)` per-otag context.
+    /// Per-`(card, deck)` keep/skip/maybe tallies from the add-card stack. The
+    /// deck id lets the server derive the commander or the generalized
+    /// `(format, color-identity)` per-otag context.
     signals: Mutex<HashMap<SignalKey, CardTally>>,
     /// Per-candidate select/skip tallies from the Zwipe-select screen, keyed
     /// by the shown card's oracle id.
     select_signals: Mutex<HashMap<Uuid, SelectTally>>,
 }
 
-/// Add/skip/maybe/remove tally for one `(commander, card, deck)` key within a
-/// flush window.
+/// Add/skip/maybe/remove tally for one `(card, deck)` key within a flush
+/// window.
 #[derive(Debug, Default, Clone, Copy)]
 struct CardTally {
     added: u32,
@@ -81,26 +80,19 @@ impl UsageBuffer {
     }
 
     /// Records one add-stack swipe as a suggestion signal, keyed by
-    /// `(commander, card, deck)`. Commander may be `None` (a non-Commander deck);
-    /// the deck id still lets the server derive a generalized per-otag context, so
-    /// non-Commander decks now contribute signal too.
+    /// `(card, deck)`. The server derives the deck's commander or generalized
+    /// per-otag context, so non-Commander decks contribute signal too.
     ///
     /// `Down` (undo) is ignored — only added/skipped/maybed express intent. No-op
     /// if the card has no oracle id.
-    pub fn record_signal(
-        &self,
-        deck_id: Uuid,
-        commander_oracle_id: Option<Uuid>,
-        card_oracle_id: Option<Uuid>,
-        direction: Direction,
-    ) {
+    pub fn record_signal(&self, deck_id: Uuid, card_oracle_id: Option<Uuid>, direction: Direction) {
         let Some(card) = card_oracle_id else {
             return;
         };
         let Ok(mut map) = self.inner.signals.lock() else {
             return;
         };
-        let tally = map.entry((commander_oracle_id, card, deck_id)).or_default();
+        let tally = map.entry((card, deck_id)).or_default();
         match direction {
             Direction::Right => tally.added += 1,
             Direction::Left => tally.skipped += 1,
@@ -131,21 +123,14 @@ impl UsageBuffer {
     }
 
     /// Records one deliberate removal of a card from a deck — a delayed negative
-    /// signal, distinct from an add-stack skip. Keyed by `(commander, card, deck)`;
-    /// commander may be `None`. No-op if the card has no oracle id.
-    pub fn record_removal(
-        &self,
-        deck_id: Uuid,
-        commander_oracle_id: Option<Uuid>,
-        card_oracle_id: Option<Uuid>,
-    ) {
+    /// signal, distinct from an add-stack skip. Keyed by `(card, deck)`. No-op
+    /// if the card has no oracle id.
+    pub fn record_removal(&self, deck_id: Uuid, card_oracle_id: Option<Uuid>) {
         let Some(card) = card_oracle_id else {
             return;
         };
         if let Ok(mut map) = self.inner.signals.lock() {
-            map.entry((commander_oracle_id, card, deck_id))
-                .or_default()
-                .removed += 1;
+            map.entry((card, deck_id)).or_default().removed += 1;
         }
     }
 
@@ -166,12 +151,7 @@ impl UsageBuffer {
             .map(|mut map| std::mem::take(&mut *map))
             .unwrap_or_default()
             .into_iter()
-            .map(|((_commander, card, deck_id), t)| CardSignalDelta {
-                // Push `deck_id` only: the server derives the commander (EDH) or the
-                // generalized `(format, color-identity)` context (non-EDH) from it.
-                // The legacy `commander_oracle_id` wire field is left `None` and is
-                // sunset once 1.6.1 is the min-version floor.
-                commander_oracle_id: None,
+            .map(|((card, deck_id), t)| CardSignalDelta {
                 card_oracle_id: card,
                 // The deck the swipes belong to. Lets the server derive the
                 // richer generalized-context per-otag signal, and (for
@@ -239,17 +219,15 @@ mod tests {
     fn snapshot_drains_once_and_resets() {
         let buffer = UsageBuffer::new();
         let deck = Uuid::new_v4();
-        let commander = Uuid::new_v4();
         let card = Uuid::new_v4();
 
         buffer.record_swipe(Direction::Left);
-        buffer.record_signal(deck, Some(commander), Some(card), Direction::Left);
+        buffer.record_signal(deck, Some(card), Direction::Left);
         let batch = buffer.snapshot_and_zero().unwrap();
         assert_eq!(batch.swipes_left, 1);
         assert_eq!(batch.signals.len(), 1);
         let delta = batch.signals.first().unwrap();
-        // The client pushes deck_id only now; commander is derived server-side.
-        assert_eq!(delta.commander_oracle_id, None);
+        // The client pushes deck_id only; all context is derived server-side.
         assert_eq!(delta.deck_id, Some(deck));
         assert!(batch.deck_skips.is_empty());
 
@@ -257,18 +235,15 @@ mod tests {
     }
 
     #[test]
-    fn non_commander_deck_still_signals_with_deck_context() {
+    fn signal_carries_deck_context() {
         let buffer = UsageBuffer::new();
         let deck = Uuid::new_v4();
         let card = Uuid::new_v4();
 
-        // No commander (non-Commander deck): the signal must still be recorded,
-        // carrying the deck id so the server can derive its (format, CI) context.
-        buffer.record_signal(deck, None, Some(card), Direction::Right);
+        buffer.record_signal(deck, Some(card), Direction::Right);
         let batch = buffer.snapshot_and_zero().unwrap();
         assert_eq!(batch.signals.len(), 1);
         let delta = batch.signals.first().unwrap();
-        assert_eq!(delta.commander_oracle_id, None);
         assert_eq!(delta.deck_id, Some(deck));
         assert_eq!(delta.card_oracle_id, card);
         assert_eq!(delta.added, 1);
@@ -278,7 +253,7 @@ mod tests {
     fn signal_with_no_card_oracle_id_is_dropped() {
         let buffer = UsageBuffer::new();
         let deck = Uuid::new_v4();
-        buffer.record_signal(deck, None, None, Direction::Right);
+        buffer.record_signal(deck, None, Direction::Right);
         assert!(buffer.snapshot_and_zero().is_none());
     }
 

@@ -526,11 +526,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 .iter()
                 .find(|e| e.card.scryfall_data.id == card_id)
                 .and_then(|e| e.card.scryfall_data.oracle_id);
-            let commander_oracle_id = commander_card
-                .peek()
-                .as_ref()
-                .and_then(|c| c.scryfall_data.oracle_id);
-            usage_buffer().record_removal(deck_id, commander_oracle_id, card_oracle_id);
+            usage_buffer().record_removal(deck_id, card_oracle_id);
 
             // Optimistic: remove from entries
             deck_entries

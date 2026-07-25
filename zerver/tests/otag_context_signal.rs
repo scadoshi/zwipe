@@ -1,9 +1,9 @@
 //! Phase 5 (otags): the generalized-context per-otag signal — the cross-format
 //! moat dataset, shipped dark. An add-stack usage batch must credit
 //! `otag_context_signal`, one row per OTAG OF THE SWIPED CARD, keyed by the
-//! deck's generalized context: the commander (every existing client) or, for a
-//! non-Commander deck, its `(format, color identity)` derived server-side from
-//! `deck_id`. Nothing about otags or format/CI is on the wire.
+//! deck's generalized context, derived server-side from `deck_id`: the deck's
+//! commander, or its `(format, color identity)` for a non-Commander deck.
+//! Nothing about otags, commander, or format/CI is on the wire (Phase 5S step 3).
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
@@ -17,12 +17,13 @@ use serde_json::json;
 use uuid::Uuid;
 
 #[sqlx::test]
-async fn commander_context_credits_each_swiped_card_otag(pool: sqlx::PgPool) {
+async fn legacy_commander_field_credits_no_otag_rows(pool: sqlx::PgPool) {
+    // Phase 5S step 3: the legacy client-sent commander no longer keys the otag
+    // context — only the deck-derived commander does. A straggler payload
+    // carrying the old field (and no deck_id) is accepted but credits nothing.
     let app = TestApp::new(pool.clone());
     let (token, _) = app.register("edh").await;
 
-    // A card carrying two otags; every existing client already sends the
-    // commander, so this path works with no client change.
     let bolt = card("Lightning Bolt").oracle_tags(&["burn", "spot-removal"]);
     let bolt_oracle = bolt.oracle_id().unwrap();
     seed_cards(&pool, &[bolt]).await;
@@ -42,24 +43,19 @@ async fn commander_context_credits_each_swiped_card_otag(pool: sqlx::PgPool) {
             Some(&token),
         )
         .await;
-    assert_eq!(status, StatusCode::NO_CONTENT);
-
-    let context = format!("commander:{commander}");
-    let rows: Vec<(String, i64, i64, i64)> = sqlx::query_as(
-        "SELECT oracle_tag, shown, added, skipped FROM otag_context_signal \
-         WHERE context_key = $1 ORDER BY oracle_tag",
-    )
-    .bind(&context)
-    .fetch_all(&pool)
-    .await
-    .unwrap();
     assert_eq!(
-        rows,
-        vec![
-            ("burn".to_string(), 3, 2, 1),
-            ("spot-removal".to_string(), 3, 2, 1),
-        ],
-        "each of the swiped card's otags is credited under the commander context",
+        status,
+        StatusCode::NO_CONTENT,
+        "legacy payload still accepted"
+    );
+
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM otag_context_signal")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        count, 0,
+        "client-sent commander no longer keys the otag context",
     );
 }
 
@@ -95,9 +91,8 @@ async fn non_commander_deck_credits_format_and_color_identity(pool: sqlx::PgPool
     .await
     .unwrap();
 
-    // No commander: the delta OMITS commander_oracle_id (→ None), and deck_id
-    // carries the context. A future non-EDH client sends this shape — older
-    // clients always send a commander, so this branch is dark until they ship.
+    // No commander on the deck: deck_id carries the context and the server
+    // derives the (format, CI) key. Every serving client sends this shape.
     let (status, _) = app
         .post(
             "/api/metrics/usage",
@@ -140,9 +135,9 @@ async fn non_commander_deck_credits_format_and_color_identity(pool: sqlx::PgPool
 
 #[sqlx::test]
 async fn commander_deck_derives_commander_from_deck_id(pool: sqlx::PgPool) {
-    // The 1.6.1 client pushes `deck_id` only (no commander_oracle_id). For a
-    // Commander deck the server derives the commander from the deck and lands both
-    // the commander-keyed signal and the `commander:<oracle_id>` otag context.
+    // The client pushes `deck_id` only. For a Commander deck the server derives
+    // the commander from the deck and lands both the commander-keyed signal and
+    // the `commander:<oracle_id>` otag context.
     let app = TestApp::new(pool.clone());
     let (token, _) = app.register("cmdr").await;
 
