@@ -25,20 +25,21 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.7.3",
-    date: "In progress",
-    entries: &[
-        "Filter edits now wait for Apply: Reset stages the default, Cancel or tapping outside restores your filter, and a toast confirms what happened either way.",
-        "See your deck's average power and toughness in the Distributions section.",
-        "Oracle tag search is smarter everywhere: exact matches come first and descriptions are searched too, in the deck picker, the card filter, and the dictionary.",
-        "Shared deck pages keep card groups in order on phones.",
-        "Tap an oracle tag in a card's details to read its definition while you swipe.",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.7.3",
+        date: "Jul 24, 2026",
+        entries: &[
+            "Filter edits now wait for Apply: Reset stages the default, Cancel or tapping outside restores your filter, and a toast confirms what happened either way.",
+            "See your deck's average power and toughness in the Distributions section.",
+            "Oracle tag search is smarter everywhere: exact matches come first and descriptions are searched too, in the deck picker, the card filter, and the dictionary.",
+            "Shared deck pages keep card groups in order on phones.",
+            "Tap an oracle tag in a card's details to read its definition while you swipe.",
+        ],
+    },
     Release {
         version: "1.7.2",
         date: "Jul 20, 2026",
