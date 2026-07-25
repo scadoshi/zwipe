@@ -14,6 +14,9 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   search, dialog otag definitions. Store listing refreshed: new iOS Description
   (oracle tags/dictionary/draw odds/31 themes; "mechanical role" retired), new
   promotional text, 1.7.3 what's-new on both stores.
+- **`MIN_CLIENT_VERSION` floored to 1.7.0** (owner, 2026-07-24, server env var) —
+  the Phase 5S step-3 cleanup (drop the legacy `commander_oracle_id` wire +
+  fallback) is now unblocked.
 - **Changelog flipped to shipped**: 1.7.3 moved `UPCOMING` → `RELEASES` (Jul 24,
   2026), zite home banner now announces 1.7.3. Discord intake fixes also landed
   2026-07-24: guide-card tags recolored per tag (stable across cards, `a9468209`),
