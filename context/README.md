@@ -20,22 +20,21 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**Latest — server 1.7.3 deployed (2026-07-23); client build not yet cut.** This batch
-(server + zite live; client bits ride the next build): **sqlx 0.9** in prod (feature
-split + regenerated `.sqlx/`, gated by the integration suite), a **deps refresh**
-(115 semver bumps), the **filter sheet current/staged split** (Apply is the only
+**Latest — 1.7.3 clients submitted (2026-07-24; iOS build 68 / Android vc30, live in
+~1 day).** The batch: the **filter sheet current/staged split** (Apply is the only
 commit; Reset/Cancel stage + restore, with toasts), **average P/T** in the deck's
 Distributions, the **shared ranked otag search** in core (exact > slug/label >
-description) powering the selector, card filter, and dictionary, and the
-**share-page group-ordering fix** (live). The changelog's 1.7.3 **Upcoming teaser**
-is live in-app; store what's-new logs are started for both stores.
+description), and **otag definitions in the swipe-screen details dialog**. Android
+vc30 is the first **targetSdk 36** build, clearing the Play deadline (2026-08-31).
+Server side went ahead 2026-07-23: **sqlx 0.9** in prod, a **deps refresh** (115
+semver bumps), and the share-page ordering fix. Changelog shows 1.7.3 as shipped;
+the zite banner announces it; the iOS Description got a full refresh.
 Details: [`progress/overview.md`](progress/overview.md) top entry.
 
 **1.7.2 LIVE on both stores** (submitted 2026-07-20): board-wide filters, pinned
 lands section, dialog backdrop-dismiss, guides polish, shared-deck tokens.
 
-**After this:** cut **1.7.3 clients** when the batch feels full (Android must bump
-`targetSdk` by **2026-08-31** — fold it into this or the next release). Once `<1.7.0`
+**After this:** once `<1.7.0`
 clients drain, floor `MIN_CLIENT_VERSION` to 1.7.0 → unlocks the Phase 5S step-3
 cleanup (drop the legacy commander wire + fallback). Then **Phase 6** — serve on the
 matured otag signal (data-gated, months out). Ongoing: description authoring into the

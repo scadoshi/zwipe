@@ -95,11 +95,13 @@ R8 keeps the handler (it's used), but the step-5 smoke test is the confirmation.
 
 ```bash
 cd ~/Developer/zwipe/target/dx/zwipe/release/android/app
-# targetSdk -> 35 (min for Play). compileSdk -> 36 (the installed platform here;
-# any compileSdk >= targetSdk works as long as that platform is installed).
+# targetSdk -> 36 (Play requires targetSdk within a year of the latest Android
+# release; 36 since the 2026-08-31 deadline — bumped for the 1.7.3 build).
+# compileSdk -> 36 (the installed platform here; any compileSdk >= targetSdk
+# works as long as that platform is installed).
 # Also bump versionCode for EVERY upload after the first (1 -> 2 -> 3 ...).
 perl -i -pe 's/compileSdk = 34/compileSdk = 36/;
-             s/targetSdk = 34/targetSdk = 35/;
+             s/targetSdk = 34/targetSdk = 36/;
              s/versionCode = 1/versionCode = <NEXT_CODE>/' app/build.gradle.kts
 grep -nE 'compileSdk|targetSdk|versionCode|versionName' app/build.gradle.kts
 ```

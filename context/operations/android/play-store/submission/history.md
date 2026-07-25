@@ -2,6 +2,20 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-07-24 — `1.7.3`, versionCode `30`** (filter sheet current/staged split with Apply
+  as the sole commit and Reset/Cancel staging + restoring with toasts, plus the maybeboard
+  empty-Apply fix; average power/toughness in the deck's Distributions; shared ranked
+  otag search in core, exact > slug/label > description, across the deck selector, card
+  filter, and dictionary; tag definitions tap-to-reveal in the swipe-screen card details
+  dialog; guide-card tags recolored per tag on zite). Built per the recipe: `dx bundle` →
+  `launcher_icons.sh` → `back_handler.sh` → gradle patch (compileSdk 36 / **targetSdk 36**
+  / versionCode 30, versionName 1.7.3) → `gradlew :app:bundleRelease` → jarsigner.
+  Artifact `zwipe-1.7.3.aab`, signed + `jar verified`, targetSdk 36 + versionCode 30
+  confirmed via bundletool. **First targetSdk 36 build — clears the Play "update your
+  target API level" deadline (2026-08-31).** iOS counterpart build 68 (Xcode 26.6).
+  Server side (sqlx 0.9, share-page ordering fix) deployed 2026-07-23 ahead of the
+  clients.
+
 - **2026-07-20 — `1.7.2`, versionCode `29`** (deck-view polish: lands moved to their own
   pinned bottom section with the Show-Lands toggle removed and hiding via the card filter;
   the card filter now covers the Maybeboard and Sideboard, not just the main deck; the
