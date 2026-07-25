@@ -15,7 +15,7 @@ accrual honestly.
 - **Richer filtering.** New otag filter predicates sit beside the (now otag-derived)
   category filter — far more granular deck-building filters at low cost.
 - **Better Commander serving.** The otag-level swipe rollup surfaces **deeper cuts** and
-  fixes **cold-start for new cards** (see `purpose.md` §real payoff). This is the headline
+  fixes **cold-start for new cards** (see `../archive/otags/purpose.md` §real payoff). This is the headline
   near-term win.
 
 ## Long-term (accrues over months, cross-format)

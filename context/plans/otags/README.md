@@ -1,6 +1,10 @@
 # Oracle tags (otags) — plan index
 
-**Status: Phases 2–5A PUSHED 2026-07-12 (deploying to prod).** Phase 1 (ingest) + Phase 2
+**Status (2026-07-25): BUILD PHASE COMPLETE.** Every buildable phase (0 through 5S, incl. both
+adoption-gated sunsets) is shipped and live; only the data-gated **Phase 6** (serve on the
+matured signal) and ongoing description authoring remain. Historical build log below.
+
+**Original status (2026-07-12): Phases 2–5A PUSHED (deploying to prod).** Phase 1 (ingest) + Phase 2
 (retirement, `oracle_tags` filter, `GET /api/card/oracle-tags`, server-grouped card roles →
 oracle-tags drill-down) live since v1.6.0. **Phase 3 (deck-level otag selection), Phase 4
 (serving term), and Phase 5 Slice A (generalized-context signal, dark) all shipped in the
@@ -37,24 +41,22 @@ See [`../../progress/overview.md`](../../progress/overview.md) top entry. Histor
 
 ## Where we stand (2026-07-12) — the build phase is essentially DONE
 
-**Everything buildable-now is built.** What remains is **gated**, not effort:
+**Everything buildable-now is built and shipped.** What remains is **data-gated**, not effort:
 
-1. **Ship, to start both clocks.** The ~15 unpushed commits + the two client builds (deck_id
-   emitter, card_roles reader) are the highest-leverage next move: pushing/deploying + shipping the
-   clients is what starts (a) the adoption clock for the sunsets and (b) the moat-data accrual for
-   serving. Until then, non-EDH signal isn't accruing and no version can be gated.
-2. **Adoption-gated sunsets:** **Phase M Step 3** — ✅ **DONE 2026-07-14** (dropped
-   `mechanical_categories` field/criteria, renamed the DB column to `card_roles`; the 1.6.0 floor
-   pre-satisfied the gate, no extra bump). **Phase 5S** — steps 1+2 ✅ DONE (server derives commander
-   from `deck_id` with a legacy fallback; 1.7.0 client pushes `deck_id` only); **step 3 pending** the
-   1.7.0 floor (drop the legacy `commander_oracle_id` wire + fallback, bump to 1.7.0).
+1. **Shipped.** Server + clients live since 1.7.0 (2026-07-14/15); the deck_id-only signal is
+   accruing from every install.
+2. **Adoption-gated sunsets — ALL DONE.** **Phase M Step 3** — ✅ **DONE 2026-07-14** (dropped
+   `mechanical_categories` field/criteria, renamed the DB column to `card_roles`). **Phase 5S** —
+   ✅ **fully DONE 2026-07-25**: steps 1+2 (2026-07-14), then step 3 behind the owner-set 1.7.0
+   `MIN_CLIENT_VERSION` floor (2026-07-24) — legacy `commander_oracle_id` wire + server fallback +
+   client commander resolution all removed; `deck_id` is the sole signal key.
 3. **Data-gated payoff** — **Phase 6:** fold the otag-signal term into ranking + non-EDH serving on
    `(format, CI, otags)`. Needs months of accrued swipe volume ("REALLY drive serving").
 4. **Tiny non-gated leftover:** a test that refreshes `otag_context_signal_rollup` and asserts
    `net`/`shown` (base-table crediting is covered; ~15 lines).
 
-So after shipping, otags goes quiet and *waits*: revisit for the sunsets once client versions age
-out, and for the serving payoff once the dataset has weight.
+So otags is now quiet and *waiting*: the only future work is the Phase 6 serving payoff once the
+dataset has weight (plus ongoing description authoring — `tag_descriptions_and_dictionary.md`).
 
 All 7 open questions resolved; Q1 revised after Phase 1 (otags supersede the heuristic).
 
@@ -73,24 +75,24 @@ and cross-format swipe-signal collection.
 `oracle_tags_*` criteria). Separately, the **coarse ~24 functional categories** survive as a
 distinct concept but are renamed off our old word: **`MechanicalCategory → CardRole`**, and
 the legacy wire field `mechanical_categories` is migrated to **`card_roles`** in a version-gated
-phase (`compatibility.md` §Naming, `sequencing.md` Phase M). `otag`/`otags` appears only as
+phase (`../archive/otags/compatibility.md` §Naming, `sequencing.md` Phase M). `otag`/`otags` appears only as
 informal prose shorthand in these docs; concrete identifiers are all spelled out.
 
 ## The files
 
+Active (everything else is shipped and archived — see below):
+
 | File | Owns |
 |------|------|
-| `purpose.md` | What otags are, why they beat our heuristics, the swipe-at-otag insight, the data pipeline |
-| `moat.md` | The non-EDH cross-format dataset moat (the long game) |
+| `sequencing.md` | The phased build + per-phase status — Phases 0-5S all ✅ DONE; Phase 6 is the open item |
+| `moat.md` | The non-EDH cross-format dataset moat (the Phase 6 long game) |
 | `payoff.md` | Immediate vs long-term payoff, honestly separated |
-| `scope.md` | Every backend + frontend file/table touched, grounded in the current code |
-| `compatibility.md` | How to NOT break installed clients + the `oracle_tag` naming / wire translation |
-| `open-questions.md` | The 7 decisions, all resolved (2026-07-11) with rationale |
-| `sequencing.md` | The phased build — per-phase files touched + additive-wire guarantee |
-| `tag_descriptions_and_dictionary.md` | Part 1 descriptions (shipped) + Part 2 dictionary index |
-| `dictionary_backend.md` | Serving/CF/tests for `GET /api/card/oracle-tags` |
-| `dictionary_client.md` | **Part 2 UI** — letter-first dictionary (DONE 2026-07-14, ships in 1.7.0) |
-| `../catalog_session_cache.md` | App-load prefetch of filter catalogs + 1-day TTL (planned) |
+| `tag_descriptions_and_dictionary.md` | Description authoring — mechanism shipped; bulk authoring ongoing (~3,400 tail) |
+
+Archived to [`../archive/otags/`](../archive/otags/) (fully shipped, 2026-07-25 sweep):
+`purpose.md`, `scope.md`, `compatibility.md`, `open-questions.md`, `dictionary_backend.md`,
+`dictionary_client.md`, `hint_host.md`, `mapping_sweep_review.md`, `user_education.md`.
+The related `../archive/catalog_session_cache.md` (catalog prefetch) also shipped.
 
 ## What changed on 2026-07-11
 
@@ -98,7 +100,7 @@ The original `otags.md` treated **data access as the critical open question** �
 were assumed to live only behind Scryfall's undocumented Tagger GraphQL API. They now
 ship as a standard bulk file (`Oracle Tags`, 17.2 MB, updated daily ~09:00 UTC, at
 `data.scryfall.io/oracle-tags/...`). That collapses the highest-risk unknown into a
-routine bulk ingest that mirrors our existing Scryfall sync. See `purpose.md` §pipeline.
+routine bulk ingest that mirrors our existing Scryfall sync. See `../archive/otags/purpose.md` §pipeline.
 
 ## Sequencing
 
