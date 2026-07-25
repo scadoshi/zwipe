@@ -82,12 +82,15 @@ ORDER BY ord;
 \echo ── 4. ENGAGEMENT — DAU / WAU / MAU + stickiness ──
 -- Active = had any swipe/search telemetry that day (user_daily_activity).
 -- DAU today is partial (the day isn't over). Stickiness = DAU/MAU.
+-- count(DISTINCT user_id): a user active on N days is one user, not N
+-- (count(*) over deduped (user_id, day) rows counted user-days and inflated
+-- WAU/MAU past the total user count).
 SELECT
-    count(*) FILTER (WHERE day = CURRENT_DATE)                       AS dau_today,
-    count(*) FILTER (WHERE day = CURRENT_DATE - 1)                   AS dau_yesterday,
-    count(*) FILTER (WHERE day >= CURRENT_DATE - 6)                  AS wau_7d,
-    count(*) FILTER (WHERE day >= CURRENT_DATE - 29)                 AS mau_30d
-FROM (SELECT DISTINCT user_id, day FROM user_daily_activity) a;
+    count(DISTINCT user_id) FILTER (WHERE day = CURRENT_DATE)       AS dau_today,
+    count(DISTINCT user_id) FILTER (WHERE day = CURRENT_DATE - 1)   AS dau_yesterday,
+    count(DISTINCT user_id) FILTER (WHERE day >= CURRENT_DATE - 6)  AS wau_7d,
+    count(DISTINCT user_id) FILTER (WHERE day >= CURRENT_DATE - 29) AS mau_30d
+FROM user_daily_activity;
 
 
 -- ───────────────────────────────────────────────────────────────────
