@@ -9,17 +9,49 @@
 mod common;
 
 use axum::http::StatusCode;
-use common::TestApp;
+use common::{TestApp, card, seed_cards};
 use serde_json::json;
 use uuid::Uuid;
+
+/// Creates a Commander deck with the given commander card set, returning the
+/// deck id. Signals key on `deck_id` only; the server derives the commander.
+async fn commander_deck(
+    app: &TestApp,
+    pool: &sqlx::PgPool,
+    token: &str,
+    commander_id: Uuid,
+) -> Uuid {
+    let (status, deck) = app
+        .post(
+            "/api/deck",
+            json!({ "name": "Signal Deck", "format": "commander" }),
+            Some(token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "create: {deck}");
+    let deck_id = Uuid::parse_str(deck["id"].as_str().unwrap()).unwrap();
+    sqlx::query("UPDATE decks SET commander_id = $1 WHERE id = $2")
+        .bind(commander_id)
+        .bind(deck_id)
+        .execute(pool)
+        .await
+        .unwrap();
+    deck_id
+}
 
 #[sqlx::test]
 async fn usage_batch_folds_into_commander_card_signal(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, _) = app.register("swiper").await;
 
-    let commander = Uuid::from_u128(0xC0);
-    let card = Uuid::from_u128(0xCA);
+    let atraxa = card("Atraxa, Praetors' Voice");
+    let atraxa_id = atraxa.id();
+    let atraxa_oracle = atraxa.oracle_id().unwrap();
+    let bolt = card("Lightning Bolt");
+    let bolt_oracle = bolt.oracle_id().unwrap();
+    seed_cards(&pool, &[atraxa, bolt]).await;
+    let deck_id = commander_deck(&app, &pool, &token, atraxa_id).await;
+
     let (status, _) = app
         .post(
             "/api/metrics/usage",
@@ -30,8 +62,8 @@ async fn usage_batch_folds_into_commander_card_signal(pool: sqlx::PgPool) {
                 "swipes_down": 0,
                 "searches": 2,
                 "signals": [{
-                    "commander_oracle_id": commander.to_string(),
-                    "card_oracle_id": card.to_string(),
+                    "card_oracle_id": bolt_oracle.to_string(),
+                    "deck_id": deck_id.to_string(),
                     "shown": 4, "added": 3, "skipped": 1, "maybed": 0, "removed": 0
                 }]
             }),
@@ -44,8 +76,8 @@ async fn usage_batch_folds_into_commander_card_signal(pool: sqlx::PgPool) {
         "SELECT shown, added, skipped FROM commander_card_signal \
          WHERE commander_oracle_id = $1 AND card_oracle_id = $2",
     )
-    .bind(commander)
-    .bind(card)
+    .bind(atraxa_oracle)
+    .bind(bolt_oracle)
     .fetch_one(&pool)
     .await
     .unwrap();
@@ -57,13 +89,19 @@ async fn usage_batch_signal_deltas_accumulate(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, _) = app.register("repeatswiper").await;
 
-    let commander = Uuid::from_u128(0xB0);
-    let card = Uuid::from_u128(0xBA);
+    let atraxa = card("Atraxa, Praetors' Voice");
+    let atraxa_id = atraxa.id();
+    let atraxa_oracle = atraxa.oracle_id().unwrap();
+    let bolt = card("Lightning Bolt");
+    let bolt_oracle = bolt.oracle_id().unwrap();
+    seed_cards(&pool, &[atraxa, bolt]).await;
+    let deck_id = commander_deck(&app, &pool, &token, atraxa_id).await;
+
     let batch = json!({
         "swipes_right": 1, "swipes_left": 0, "swipes_up": 0, "swipes_down": 0, "searches": 0,
         "signals": [{
-            "commander_oracle_id": commander.to_string(),
-            "card_oracle_id": card.to_string(),
+            "card_oracle_id": bolt_oracle.to_string(),
+            "deck_id": deck_id.to_string(),
             "shown": 2, "added": 1, "skipped": 1, "maybed": 0, "removed": 0
         }]
     });
@@ -78,8 +116,8 @@ async fn usage_batch_signal_deltas_accumulate(pool: sqlx::PgPool) {
         "SELECT shown, added FROM commander_card_signal \
          WHERE commander_oracle_id = $1 AND card_oracle_id = $2",
     )
-    .bind(commander)
-    .bind(card)
+    .bind(atraxa_oracle)
+    .bind(bolt_oracle)
     .fetch_one(&pool)
     .await
     .unwrap();
@@ -88,6 +126,43 @@ async fn usage_batch_signal_deltas_accumulate(pool: sqlx::PgPool) {
         (4, 2),
         "two flushes accumulate (upsert adds)"
     );
+}
+
+#[sqlx::test]
+async fn legacy_commander_field_is_ignored(pool: sqlx::PgPool) {
+    // Phase 5S step 3: the legacy client-sent `commander_oracle_id` no longer
+    // exists on the wire type and the server fallback is gone. A straggler
+    // payload carrying it (and no deck_id) must be accepted — serde ignores
+    // unknown fields — but land no commander-keyed signal.
+    let app = TestApp::new(pool.clone());
+    let (token, _) = app.register("straggler").await;
+
+    let commander = Uuid::from_u128(0xC0);
+    let (status, _) = app
+        .post(
+            "/api/metrics/usage",
+            json!({
+                "swipes_right": 1, "swipes_left": 0, "swipes_up": 0, "swipes_down": 0, "searches": 0,
+                "signals": [{
+                    "commander_oracle_id": commander.to_string(),
+                    "card_oracle_id": Uuid::from_u128(0xCA).to_string(),
+                    "shown": 1, "added": 1, "skipped": 0, "maybed": 0, "removed": 0
+                }]
+            }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::NO_CONTENT,
+        "legacy payload still accepted"
+    );
+
+    let rows: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM commander_card_signal")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(rows, 0, "client-sent commander no longer lands signal");
 }
 
 #[sqlx::test]

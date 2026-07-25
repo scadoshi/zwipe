@@ -80,28 +80,23 @@ pub struct HttpUsageBatch {
 
 /// One card signal delta accumulated over a flush window.
 ///
-/// Keyed by the swiped card plus its context: the deck's **primary** commander
-/// when there is one, otherwise the deck itself (`deck_id`). `shown` is the
-/// impression denominator — currently the client sends `added + skipped + maybed`,
-/// leaving room for true impressions later.
+/// Keyed by the swiped card plus its deck (`deck_id`); the server derives the
+/// deck's commander (EDH) or generalized `(format, color-identity)` context
+/// from it. `shown` is the impression denominator — currently the client sends
+/// `added + skipped + maybed`, leaving room for true impressions later.
+///
+/// The legacy `commander_oracle_id` wire field was dropped 2026-07-24 (Phase 5S
+/// step 3), after `MIN_CLIENT_VERSION` was floored to 1.7.0 — every serving
+/// client sends `deck_id`. A straggler payload still carrying the old field
+/// deserializes fine (serde ignores unknown fields).
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct CardSignalDelta {
-    /// Primary commander oracle id, when the deck has one. `Option` +
-    /// `#[serde(default)]` so a non-Commander deck **omits** it (no nil sentinel):
-    /// the server then derives the deck's `(format, color-identity)` context from
-    /// `deck_id`. `Some` ⇒ commander context; older clients that always send a
-    /// commander deserialize to `Some`, unchanged. Additive, no version bump.
-    #[serde(default)]
-    pub commander_oracle_id: Option<Uuid>,
     /// Card oracle id.
     pub card_oracle_id: Uuid,
-    /// Deck the swipe belongs to, when the client knows it. Additive
-    /// (`#[serde(default)]`) so existing clients that omit it keep flushing
-    /// commander-keyed signal unchanged. Long term this is the *richer* key: the
-    /// server derives the deck's commander, format, color identity, and tags from
-    /// it (context/plans/otags/ Phase 5), so a non-Commander deck (no commander
-    /// oracle id) can still contribute a generalized `(format, color-identity)`
-    /// per-otag signal. `None` → the server falls back to the commander context.
+    /// Deck the swipe belongs to — the sole context key: the server derives the
+    /// deck's commander, format, color identity, and tags from it
+    /// (context/plans/otags/ Phase 5). Kept `Option` for wire leniency; the
+    /// server drops signals it can't resolve to an owned deck.
     #[serde(default)]
     pub deck_id: Option<Uuid>,
     /// Times the card was shown for a decision (add-stack impressions).
@@ -227,7 +222,6 @@ impl CardSignalDelta {
     #[must_use]
     pub fn clamped(&self) -> Self {
         Self {
-            commander_oracle_id: self.commander_oracle_id,
             card_oracle_id: self.card_oracle_id,
             deck_id: self.deck_id,
             shown: self.shown.min(HttpUsageBatch::MAX_PER_FLUSH),
@@ -322,7 +316,6 @@ mod tests {
     #[test]
     fn clamped_truncates_signal_list_and_caps_tallies() {
         let delta = CardSignalDelta {
-            commander_oracle_id: Some(Uuid::nil()),
             card_oracle_id: Uuid::nil(),
             deck_id: None,
             shown: u32::MAX,
@@ -358,11 +351,10 @@ mod tests {
 
     #[test]
     fn signal_deck_id_defaults_to_none_when_omitted() {
-        // An existing client sends a signal with no deck_id; it must still parse
-        // (→ None) so the server keeps crediting commander-keyed signal.
+        // Wire leniency: a signal with no deck_id still parses (→ None); the
+        // server drops it at ingest rather than failing the whole batch.
         let json = r#"{"swipes_right":0,"swipes_left":0,"swipes_up":0,"swipes_down":0,"searches":0,
-            "signals":[{"commander_oracle_id":"00000000-0000-0000-0000-000000000000",
-                        "card_oracle_id":"00000000-0000-0000-0000-000000000000",
+            "signals":[{"card_oracle_id":"00000000-0000-0000-0000-000000000000",
                         "shown":1,"added":1,"skipped":0,"maybed":0,"removed":0}]}"#;
         let batch: HttpUsageBatch = serde_json::from_str(json).unwrap();
         assert_eq!(batch.signals.len(), 1);
@@ -372,38 +364,20 @@ mod tests {
     }
 
     #[test]
-    fn signal_commander_present_is_some_and_omitted_is_none() {
-        // Wire leniency: a Commander deck sends `commander_oracle_id` (→ Some),
-        // an existing client's bare-uuid signal still parses to Some, and a
-        // non-Commander deck OMITS the field entirely (→ None) so the server keys
-        // the signal on the deck's (format, CI) instead. Additive, no bump.
-        let commander = "11111111-1111-1111-1111-111111111111";
-        let with_commander = format!(
-            r#"{{"swipes_right":0,"swipes_left":0,"swipes_up":0,"swipes_down":0,"searches":0,
-                "signals":[{{"commander_oracle_id":"{commander}",
-                            "card_oracle_id":"00000000-0000-0000-0000-000000000000",
-                            "shown":1,"added":1,"skipped":0,"maybed":0,"removed":0}}]}}"#
-        );
-        let batch: HttpUsageBatch = serde_json::from_str(&with_commander).unwrap();
-        assert_eq!(
-            batch.signals.first().unwrap().commander_oracle_id,
-            Some(Uuid::parse_str(commander).unwrap()),
-            "a present commander parses to Some",
-        );
-
-        let no_commander = r#"{"swipes_right":0,"swipes_left":0,"swipes_up":0,"swipes_down":0,"searches":0,
-            "signals":[{"card_oracle_id":"00000000-0000-0000-0000-000000000000",
+    fn signal_with_legacy_commander_field_still_parses() {
+        // The legacy `commander_oracle_id` wire field was dropped (Phase 5S
+        // step 3). A straggler payload still carrying it must deserialize —
+        // serde ignores unknown fields — with deck_id carrying the context.
+        let json = r#"{"swipes_right":0,"swipes_left":0,"swipes_up":0,"swipes_down":0,"searches":0,
+            "signals":[{"commander_oracle_id":"11111111-1111-1111-1111-111111111111",
+                        "card_oracle_id":"00000000-0000-0000-0000-000000000000",
                         "deck_id":"22222222-2222-2222-2222-222222222222",
                         "shown":1,"added":1,"skipped":0,"maybed":0,"removed":0}]}"#;
-        let batch: HttpUsageBatch = serde_json::from_str(no_commander).unwrap();
+        let batch: HttpUsageBatch = serde_json::from_str(json).unwrap();
         let signal = batch.signals.first().unwrap();
-        assert_eq!(
-            signal.commander_oracle_id, None,
-            "an omitted commander parses to None (non-Commander deck)",
-        );
         assert!(
             signal.deck_id.is_some(),
-            "deck_id carries the context instead"
+            "deck_id carries the context; the legacy field is ignored"
         );
     }
 

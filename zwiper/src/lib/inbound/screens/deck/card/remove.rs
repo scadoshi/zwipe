@@ -25,7 +25,6 @@ use crate::{
     },
     outbound::client::{
         ZwipeClient,
-        card::get_card::ClientGetCard,
         deck::get_deck::ClientGetDeck,
         deck_card::{
             create_deck_card::ClientCreateDeckCard, delete_deck_card::ClientDeleteDeckCard,
@@ -130,8 +129,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
     // Effective land target (deck override, else format heuristic) for the
     // below-target warning when lands leave the mainboard.
     let mut land_target: Signal<Option<i32>> = use_signal(|| None);
-    // Primary commander oracle id, for keying the removal suggestion signal.
-    let mut commander_oracle_id: Signal<Option<Uuid>> = use_signal(|| None);
     // Deck price budget + currency for the 50/75/100% crossing toasts. A budget
     // crossing only fires upward, so removals are silent; moving a card back to
     // the mainboard can raise the total enough to cross.
@@ -233,12 +230,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         .unwrap_or(PriceCurrency::Usd);
                     price_budget.set(deck.deck_profile.price_target);
                     price_budget_currency.set(budget_currency);
-                    // Resolve the primary commander's oracle id for the removal signal.
-                    if let Some(commander_id) = deck.deck_profile.commander_id
-                        && let Ok(card) = client().get_card(commander_id).await
-                    {
-                        commander_oracle_id.set(card.scryfall_data.oracle_id);
-                    }
                     command_zone_cards.set(deck.command_zone_cards);
                     deck_entries.set(deck.entries);
                     deck_loaded.set(true);
@@ -521,7 +512,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             on_swipe_right: move |card: Card| {
                                 usage_buffer().record_swipe(Direction::Right);
                                 // Removal signal (delayed negative) keyed by commander + card.
-                                usage_buffer().record_removal(deck_id, commander_oracle_id(), card.scryfall_data.oracle_id);
+                                usage_buffer().record_removal(deck_id, card.scryfall_data.oracle_id);
                                 stack.record(RemoveAction::Remove { card: Box::new(card) });
                                 delete_card_from_deck();
                                 toast.success(

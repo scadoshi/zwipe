@@ -151,19 +151,16 @@ impl MetricsRepository for Postgres {
         }
 
         // First-party suggestion signal: aggregate per-(commander, card) tallies,
-        // commander resolved from the deck. Pure aggregate — no user_id. A deck with
-        // no commander (a non-Commander deck) is skipped here — it has no lead key
-        // for this table and feeds the otag-context signal below via (format, CI).
-        //
-        // Dual-accept: prefer the deck-derived commander, fall back to the legacy
-        // client-sent `commander_oracle_id`, so existing (pre-1.6.1) clients that
-        // send it still land signal. The legacy field is sunset once 1.6.1 is floored.
+        // commander resolved from the deck — the sole source since Phase 5S step 3
+        // (the legacy client-sent commander fallback was dropped 2026-07-24 behind
+        // the 1.7.0 `MIN_CLIENT_VERSION` floor). Pure aggregate — no user_id. A deck
+        // with no commander (a non-Commander deck) is skipped here — it has no lead
+        // key for this table and feeds the otag-context signal below via (format, CI).
         for sig in &batch.signals {
             let Some(commander) = sig
                 .deck_id
                 .and_then(|id| deck_ctx.get(&id))
                 .and_then(|c| c.0)
-                .or(sig.commander_oracle_id)
             else {
                 continue;
             };
@@ -193,13 +190,12 @@ impl MetricsRepository for Postgres {
 
         // Per-user mirror of the aggregate signal: same deltas, user-keyed.
         // Feeds future personalization; nothing consumes it yet. Same deck-derived
-        // commander (legacy client-sent fallback), skipped for commander-less decks.
+        // commander, skipped for commander-less decks.
         for sig in &batch.signals {
             let Some(commander) = sig
                 .deck_id
                 .and_then(|id| deck_ctx.get(&id))
                 .and_then(|c| c.0)
-                .or(sig.commander_oracle_id)
             else {
                 continue;
             };
@@ -273,11 +269,10 @@ impl MetricsRepository for Postgres {
             // Aggregate gesture counts per (context_key, otag), then upsert once each.
             // Context comes from the deck resolved above: a Commander deck keys on
             // `commander:<oracle_id>`, a non-Commander deck on `format_ci:<format>:<CI>`.
-            // Dual-accept: deck-derived commander first, then the legacy client-sent one.
             let mut otag_tallies: HashMap<(String, String), OtagTally> = HashMap::new();
             for sig in &batch.signals {
                 let deck_c = sig.deck_id.and_then(|id| deck_ctx.get(&id));
-                let commander = deck_c.and_then(|c| c.0).or(sig.commander_oracle_id);
+                let commander = deck_c.and_then(|c| c.0);
                 let context_key = if let Some(commander) = commander {
                     format!("commander:{commander}")
                 } else if let Some(key) = deck_c.and_then(|c| c.1.as_ref()) {
