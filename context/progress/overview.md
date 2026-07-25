@@ -4,7 +4,22 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## Latest — 2026-07-23 (sqlx 0.9 DEPLOYED, deps refresh, 1.7.3 staged)
+## Latest — 2026-07-24 (1.7.3 clients SUBMITTED: iOS build 68 / Android vc30)
+
+- **1.7.3 submitted to both stores 2026-07-24.** iOS build 68 (first build on
+  **Xcode 26.6**/17F113, updated per the allowlist rule) via Transporter; Android
+  vc30, the **first targetSdk 36 build** — clears the Play target-API deadline
+  (2026-08-31) a month early (runbook updated to 36). Client payload: filter
+  current/staged split (+ maybeboard empty-Apply fix), average P/T, ranked otag
+  search, dialog otag definitions. Store listing refreshed: new iOS Description
+  (oracle tags/dictionary/draw odds/31 themes; "mechanical role" retired), new
+  promotional text, 1.7.3 what's-new on both stores.
+- **Changelog flipped to shipped**: 1.7.3 moved `UPCOMING` → `RELEASES` (Jul 24,
+  2026), zite home banner now announces 1.7.3. Discord intake fixes also landed
+  2026-07-24: guide-card tags recolored per tag (stable across cards, `a9468209`),
+  maybeboard filter fix (`f8b139ee`).
+
+## 2026-07-23 (sqlx 0.9 DEPLOYED, deps refresh, 1.7.3 staged)
 
 - **sqlx 0.8 → 0.9** (`9ffcfc15`) — **deployed to prod 2026-07-23** (Deploy zerver
   green, 7m28s; CI's `sqlx prepare --check` gate passed on the regenerated data).

@@ -153,7 +153,7 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.7.2 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.7.3 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
@@ -161,7 +161,7 @@ TODO — complete the Data safety form. Starter facts to declare:
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
 
-**1.7.3 (in progress, not yet submitted — running log for the next build):**
+**1.7.3:**
 
 - Filter edits now wait for Apply: Reset stages the default, and Cancel puts your filter back.
 - See your deck's average power and toughness in its stats.
