@@ -16,7 +16,7 @@ swipe.
 
 | Plan | Status |
 |------|--------|
-| [`otag_example_cards.md`](otag_example_cards.md) | IMPLEMENTED (uncommitted, not runtime-tested); **row UX superseded** by § Dictionary follow-through below |
+| [`otag_example_cards.md`](archive/otag_example_cards.md) | SHIPPED 1.7.1 (archived); **row UX superseded** by § Dictionary follow-through below |
 | [`otag_filter_search_only.md`](otag_filter_search_only.md) | IMPLEMENTED (uncommitted) |
 | [`auth_route_gate.md`](auth_route_gate.md) | IMPLEMENTED (uncommitted) |
 

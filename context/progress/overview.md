@@ -154,8 +154,8 @@ server-served changelog, non-commander metric capture / Phase 5.)
   slug/label/description, "No description yet" for the tail, reached from the otag
   picker + its hint. Reads the shared catalog cache. Backend needed nothing new
   (existing `GET /api/card/oracle-tags`, already CF-edge-cached). Plans:
-  [`../plans/otags/dictionary_client.md`](../plans/otags/dictionary_client.md) +
-  [`dictionary_backend.md`](../plans/otags/dictionary_backend.md).
+  [`../plans/archive/otags/dictionary_client.md`](../plans/archive/otags/dictionary_client.md) +
+  [`dictionary_backend.md`](../plans/archive/otags/dictionary_backend.md).
 - **Unified catalog cache** (zwiper). One app-wide `CatalogCache` prefetches the
   slow-changing filter/picker catalogs (artists, sets, keywords, oracle words, types,
   roles, oracle tags, deck tags) once at startup (1-day TTL, stale-while-revalidate);
@@ -209,7 +209,7 @@ tail (runbook).
   narrowing can't do because a tag can sit under several roots at once. Validated
   against a local `zervice` recompute: exclusions drop from the wrong role while
   multi-parent tags stay in their legit ones. Findings doc:
-  [`../plans/otags/mapping_sweep_review.md`](../plans/otags/mapping_sweep_review.md).
+  [`../plans/archive/otags/mapping_sweep_review.md`](../plans/archive/otags/mapping_sweep_review.md).
 - **Oracle-tag description pipeline (F Part 1) shipped.** `zervice` now overlays
   our authored `ORACLE_TAG_DESCRIPTIONS` const into `oracle_tags.description`
   **inside the sync transaction** (ours always wins over Scryfall's, survives the
@@ -428,7 +428,7 @@ A full shared-components arc in one day, driven by the portfolio site
 - **Portfolio consumes via GitHub git dependency** (~760 duplicated lines
   deleted on their side; crates.io considered and declined — rulings +
   round-2 selector fixes in
-  [`../plans/components_portfolio_adoption.md`](../plans/components_portfolio_adoption.md)).
+  [`../plans/archive/components_portfolio_adoption.md`](../plans/archive/components_portfolio_adoption.md)).
 - **Shared site constants**: `zwipe_core::domain::site` (`WEB_BASE`/`API_BASE`
   debug-gated to local dev servers, `SUPPORT_EMAIL`, `DISCORD_URL`) replaced
   seven scattered consts across app/site/server; zerver env defaults now

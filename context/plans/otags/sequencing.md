@@ -2,7 +2,7 @@
 
 Seven phases (0-6), each independently shippable, ordered so backend data lands before any
 client sees it. **Every phase is additive** — see the per-phase "Wire & compat" line and
-`compatibility.md`. No phase here requires a `MIN_CLIENT_VERSION` bump. (The old "Phase 2 —
+`../archive/otags/compatibility.md`. No phase here requires a `MIN_CLIENT_VERSION` bump. (The old "Phase 2 —
 heuristic backfill" was cut when Q1 flipped to retiring the heuristic; filtering absorbed the
 retirement and the phases renumbered.)
 
@@ -36,7 +36,7 @@ Output: a one-page note pinning the parse contract. Nothing else starts until th
 
 **BUILT 2026-07-11.** Migrations `20260712000000_create_oracle_tags.sql` +
 `20260712010000_rename_otag_tables_to_oracle_tags.sql` (the rename landed the canonical
-`oracle_tag` naming — see `compatibility.md` §Naming).
+`oracle_tag` naming — see `../archive/otags/compatibility.md` §Naming).
 
 **Tables (canonical names):**
 - `oracle_tags(id UUID PK, slug UNIQUE, label, description, parent_ids UUID[], aliases
@@ -419,12 +419,15 @@ leads `commander_card_signal` / `user_card_signal`).
    `usage_buffer.rs` flushes `commander_oracle_id: None`; the client no longer populates the wire
    commander (still tracked internally — that vestige is removed with step 3). Existing 1.6.0
    clients keep sending it; the server's fallback handles them.
-3. **Sunset (gated) — PENDING, after 1.7.0 is the floor.** Once `MIN_CLIENT_VERSION >= 1.7.0`
-   guarantees every install sends `deck_id`-only: drop `CardSignalDelta.commander_oracle_id` (wire),
-   the server's `.or(sig.commander_oracle_id)` fallback, and the client's internal commander
-   resolution (`add.rs`/`remove.rs` `commander_oracle_id` signal + `get_card` lookup). Leaves the
-   wire `{ deck_id, card_oracle_id, gestures }`. **Bump `MIN_CLIENT_VERSION` to 1.7.0.** Same shape
-   as the Phase M sunset (done 2026-07-14).
+3. **Sunset (gated) — ✅ DONE (2026-07-25).** `MIN_CLIENT_VERSION` floored to 1.7.0 by the owner
+   (2026-07-24, server env var), then the removal shipped: `CardSignalDelta.commander_oracle_id`
+   dropped from the wire, the server's `.or(sig.commander_oracle_id)` fallback removed, and the
+   client's internal commander resolution deleted (`add.rs`/`remove.rs`/`view.rs`; remove.rs also
+   lost its per-load `get_card` lookup). The wire is `{ deck_id, card_oracle_id, gestures }`.
+   Straggler payloads carrying the old field are ignored by serde (regression-tested:
+   `metrics_flows::legacy_commander_field_is_ignored`,
+   `otag_context_signal::legacy_commander_field_credits_no_otag_rows`). Same shape as the Phase M
+   sunset (done 2026-07-14).
 
 **Wire & compat:** steps 1+2 additive (no bump); step 3 is the single gated removal.
 
@@ -455,7 +458,7 @@ not required now.
 **Goal:** finish the rename off the wire — the coarse-category field becomes `card_roles`
 everywhere, and the legacy `mechanical_categories` word disappears. Committed by owner
 (2026-07-11). **Independent track:** spans client upgrades, so it takes real calendar time. Full
-rationale: `compatibility.md` §Naming.
+rationale: `../archive/otags/compatibility.md` §Naming.
 
 ### DONE 2026-07-12 (committed, UNPUSHED) — type rename + Step 1
 

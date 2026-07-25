@@ -1,5 +1,11 @@
 # Compatibility — do not break installed clients
 
+**ARCHIVED 2026-07-25 — every migration this doc governs is closed.** The Phase M dual-emit
+(`mechanical_categories → card_roles`) sunset 2026-07-14, and the Phase 5S legacy commander
+wire sunset 2026-07-25 behind the 1.7.0 `MIN_CLIENT_VERSION` floor. The two guardrails
+described below (additive wire, min-version gate) remain the house rules for any future
+migration.
+
 Mobile clients are **deployed binaries in the wild** — we cannot assume everyone is on the
 latest build. Compile-time safety (the `zwiper` build depends on the `zerver`/`zwipe-core`
 crates, so a breaking symbol change fails the frontend build) protects the *next* release,
