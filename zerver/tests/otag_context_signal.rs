@@ -293,3 +293,81 @@ async fn signal_without_commander_or_deck_credits_no_otag_rows(pool: sqlx::PgPoo
         "no context (no commander, no deck_id) → no otag credit",
     );
 }
+
+#[sqlx::test]
+async fn rollup_refresh_computes_net_and_shown(pool: sqlx::PgPool) {
+    // The nightly zervice refresh condenses the raw tallies into the
+    // serving-ready rollup: net = added + 0.5*maybed - removed, shown = SUM.
+    // Base-table crediting is covered above; this guards the condensing step
+    // itself — the numbers Phase 6 will trust.
+    use zwipe::{domain::card::ports::CardRepository, outbound::sqlx::postgres::Postgres};
+
+    let app = TestApp::new(pool.clone());
+    let (token, _) = app.register("rollup").await;
+
+    let bolt = card("Lightning Bolt").oracle_tags(&["burn"]);
+    let bolt_oracle = bolt.oracle_id().unwrap();
+    seed_cards(&pool, &[bolt]).await;
+
+    let (status, deck) = app
+        .post(
+            "/api/deck",
+            json!({ "name": "Rollup", "format": "modern" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "create: {deck}");
+    let deck_id = Uuid::parse_str(deck["id"].as_str().unwrap()).unwrap();
+
+    // Context needs a color identity: put the card on the deck board.
+    let blaze_id: uuid::Uuid = sqlx::query_scalar("SELECT id FROM scryfall_data LIMIT 1")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    sqlx::query(
+        "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) \
+         VALUES ($1, $2, $3, 1, 'deck')",
+    )
+    .bind(deck_id)
+    .bind(blaze_id)
+    .bind(bolt_oracle)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    // added 2, skipped 1, maybed 1, removed 1 → net = 2 + 0.5 - 1 = 1.5, shown = 4.
+    let (status, _) = app
+        .post(
+            "/api/metrics/usage",
+            json!({
+                "swipes_right": 2, "swipes_left": 1, "swipes_up": 1, "swipes_down": 0, "searches": 0,
+                "signals": [{
+                    "card_oracle_id": bolt_oracle.to_string(),
+                    "deck_id": deck_id.to_string(),
+                    "shown": 4, "added": 2, "skipped": 1, "maybed": 1, "removed": 1
+                }]
+            }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // The same refresh zervice runs nightly.
+    let repo = Postgres { pool: pool.clone() };
+    repo.refresh_otag_context_signal_rollup().await.unwrap();
+
+    let (net, shown): (f64, f64) = sqlx::query_as(
+        "SELECT net, shown FROM otag_context_signal_rollup WHERE oracle_tag = 'burn'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(
+        (net - 1.5).abs() < f64::EPSILON,
+        "net = added + 0.5*maybed - removed, got {net}"
+    );
+    assert!(
+        (shown - 4.0).abs() < f64::EPSILON,
+        "shown sums impressions, got {shown}"
+    );
+}
