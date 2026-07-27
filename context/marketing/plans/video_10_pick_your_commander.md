@@ -39,3 +39,20 @@ new deck makes; the partner auto-pair is a specific, screenshot-worthy delight.
   subtle on camera, so imply it with a caption rather than trying to prove it in
   one take. If it doesn't land, cut it and end on the partner pair.
 - Copy for reference: toast "Partner found and selected: {name}".
+
+## Script (VO + final captions)
+
+First-person dev voice, ~150 wpm.
+
+| Time | VO | Caption |
+|------|----|---------|
+| 0:00–0:02 | New deck, and no idea who leads it. So I swipe. | Swipe for your commander. |
+| 0:02–0:06 | These are ranked by what people actually build. Not by what I think is good. | Ranked by what players actually build. |
+| 0:06–0:10 | Swiped right on Brallin. It grabbed Shabraz for me. | Pick a partner? It pairs the other half. |
+| 0:10–0:14 | Command zone, done. Back to swiping cards. | Command zone, sorted. |
+| 0:14–0:16 | Different hand tomorrow, by the way. | A fresh hand every day. |
+| 0:16–0:20 | (end card, no VO) | |
+
+Delivery notes: the partner pair in the VO must match the on-screen pair; if
+Brallin doesn't come up while filming, swap both audio and caption to whichever
+"Partner with" commander does. The toast is the money shot, keep it full frame.

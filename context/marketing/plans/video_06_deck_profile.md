@@ -32,3 +32,22 @@
 - Fast montage of pickers; this is a "personalization" vibe piece, keep it snappy.
 - The format beat was cut for time (format shows in the profile panel anyway);
   restore it over the theme beat if themes get their own video later.
+
+## Script (VO + final captions)
+
+First-person dev voice, ~150 wpm.
+
+| Time | VO | Caption |
+|------|----|---------|
+| 0:00–0:02 | A hundred and seventeen archetype tags. Mine's aristocrats. | 117 archetype tags. |
+| 0:02–0:06 | (typing, chip lands) | Tag your archetype. |
+| 0:06–0:10 | Bracket three. Upgraded precon territory, that's honest. | Set your bracket. |
+| 0:10–0:12 | Budget, jank, meme, precon. Say what it is. | Budget, jank, precon, and more. |
+| 0:12–0:14 | Picking aristocrats tagged my strategy for me. Sacrifice outlets, death triggers. | Your archetype seeds its tags. |
+| 0:14–0:16 | Thirty one themes. This one's Gruvbox. This one hurts. | 31 themes. Yours everywhere. |
+| 0:16–0:20 | (end card, no VO) | |
+
+Delivery notes: "this one hurts" lands over the brightest light theme in the
+swap montage; pick the theme for the joke. The seeded otag chips in beat 5
+should visibly appear on selection, so film archetype-pick and chips in one
+take (same take covers video #11 beat 5).

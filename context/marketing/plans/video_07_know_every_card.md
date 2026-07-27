@@ -34,3 +34,21 @@
   and carousel beats.
 - The tag-definition beat overlaps video #11 beat 2 deliberately: there it's the
   story, here it's one flex among five. Don't cut it from both.
+
+## Script (VO + final captions)
+
+First-person dev voice, ~150 wpm.
+
+| Time | VO | Caption |
+|------|----|---------|
+| 0:00–0:02 | Gorgeous card. No idea what it does. | The name's always there. |
+| 0:02–0:06 | Eyeball button. Full rules text, real mana symbols. | Tap to read the rules. |
+| 0:06–0:09 | Stats, rarity, the works. | Full oracle text and stats. |
+| 0:09–0:11 | It's double-faced? Flip it. | Flip double-faced cards. |
+| 0:11–0:13 | Don't know a tag? Tap it. It explains itself. | Tap a tag. It explains itself. |
+| 0:13–0:15 | And every printing, if you'd rather the cheap one. | Every printing, every art. |
+| 0:16–0:20 | (end card, no VO) | |
+
+Delivery notes: open on a textless or foreign printing so "no idea what it
+does" is visibly true. The printings line works because the carousel shows
+prices; make sure a visibly cheaper printing is on screen when it lands.

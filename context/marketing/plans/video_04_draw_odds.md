@@ -29,3 +29,20 @@
 - For beat 3 (add lands via swipe), use a deck that is under its land target or
   has none set. Land auto-stop excludes lands from the swipe pool once the
   target is met, so a maxed-out deck won't deal you lands to add on camera.
+
+## Script (VO + final captions)
+
+First-person dev voice, ~150 wpm.
+
+| Time | VO | Caption |
+|------|----|---------|
+| 0:00–0:02 | Will I hit my land drops? The deck already knows. | Will you hit your land drops? |
+| 0:02–0:06 | That's my chance of an opening-hand land. Ramp and removal get the same math. | Your odds, opening hand. |
+| 0:06–0:11 | Step a turn. Step another. The numbers move with the draw. | Turn by turn. |
+| 0:11–0:14 | I added two lands. Better. | It updates as you build. |
+| 0:14–0:16 | Hypergeometric distribution, if you want the word for it. | Real deck math. |
+| 0:16–0:20 | (end card, no VO) | |
+
+Delivery notes: deadpan the last line; it's the flex and the joke at once. The
+odds on screen must be the real ones the VO reacts to, so film beat 4's
+before/after in one continuous session.
