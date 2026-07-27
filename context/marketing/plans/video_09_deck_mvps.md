@@ -42,3 +42,21 @@ the MVPs, which is what's shipped.)
   phases 2–3). Once it's live, a follow-up video can add the "and it tunes your
   suggestions" beat.
 - Copy for reference: cap message "This deck already has 3 MVPs".
+
+## Script (VO + final captions)
+
+First-person dev voice, ~150 wpm.
+
+| Time | VO | Caption |
+|------|----|---------|
+| 0:00–0:02 | Every deck has about three cards that are the whole point. | Every deck has a heart. |
+| 0:02–0:05 | Star them. | Star the ones that matter. |
+| 0:05–0:09 | (two more stars land, no VO) | Up to three per deck. |
+| 0:09–0:12 | I tried a fourth. Denied. | Three slots. Choose wisely. |
+| 0:12–0:15 | And when you share the deck, those three headline it in full art. | And they headline your shared deck. |
+| 0:15–0:16 | (hold the featured row) | The cards that define it. |
+| 0:16–0:20 | (end card, no VO) | |
+
+Delivery notes: "Denied." over the cap message is the personality beat; keep
+the cap toast readable behind it. Do not claim the stars change suggestions
+(that phase isn't live).

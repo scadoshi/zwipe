@@ -37,3 +37,23 @@ no competitor surfaces Scryfall's oracle tags as a first-class build axis.
   enough to read in ~2s (`lifegain`, `mana-dork`).
 - Combine candidate: the filter beat can fold into a future filters video; the
   dictionary beat can carry a video of its own if this one runs hot.
+
+## Script (VO + final captions)
+
+First-person dev voice, ~150 wpm. This one runs dense; keep the reads clipped
+or it won't fit twenty seconds.
+
+| Time | VO | Caption |
+|------|----|---------|
+| 0:00–0:02 | Every card in here knows its own job. | Every card knows its job. |
+| 0:02–0:05 | Removal. Tap it. Spot removal, in plain English. | Tap any tag. Plain language. |
+| 0:05–0:08 | Examples shows me real cards that do the thing. | See real cards that do it. |
+| 0:08–0:11 | I can filter the whole pool by a tag. Board wipes only. | Filter by what cards do. |
+| 0:11–0:14 | Pick an archetype and it tags your deck's strategy for you. | Pick a strategy. Tags follow. |
+| 0:14–0:16 | There's a whole dictionary. Four and a half thousand of these. | The whole dictionary is in-app. |
+| 0:16–0:20 | (end card, no VO) | |
+
+Delivery notes: end on the number, nothing after it. The definition on screen
+during beat 2 has to be short enough to read while the VO says it (lifegain or
+mana-dork; spot-removal works if the reveal is fast). "The thing" in beat 3 is
+deliberate; don't formalize it.

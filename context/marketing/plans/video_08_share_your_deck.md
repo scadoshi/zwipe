@@ -43,3 +43,22 @@ a clear, enviable hook.
   chrome — the deck itself is the pitch.
 - Growth v2 (not filmable yet, note for later): an "Open in Zwipe" / import CTA
   on the shared page turns viewers into installs.
+
+## Script (VO + final captions)
+
+First-person dev voice, ~150 wpm.
+
+| Time | VO | Caption |
+|------|----|---------|
+| 0:00–0:02 | Deck's done. Watch this. | Your deck, done. |
+| 0:02–0:05 | Share. Copied. That's the whole flow. | One tap to share. |
+| 0:05–0:08 | It opens as a web page. No account, no app install. | Anyone can open it. |
+| 0:08–0:11 | Commander up top, my MVPs in full art. | No account needed. |
+| 0:11–0:15 | The whole list, grouped, with prices. | Every card, grouped. |
+| 0:15–0:16 | Send it to the pod chat and argue there. | Built to be shared. |
+| 0:16–0:20 | (end card, no VO) | |
+
+Delivery notes: the URL bar beat (zwipe.net/deck/...) carries the credibility,
+hold it a half second longer than feels natural. "Argue there" is the human
+ending; don't replace it with anything about how sharing brings players
+together.

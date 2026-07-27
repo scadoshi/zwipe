@@ -30,3 +30,22 @@ price filter, and land auto-stop together.
 ## Notes
 - All shipped in 1.2.0 / earlier. Safe to film against the current store build.
 - The toast is the emotional beat: catch it firing on camera, don't fake it.
+
+## Script (VO + final captions)
+
+First-person dev voice, ~150 wpm. Read aloud before filming; it should sound
+like showing a friend your phone, not narration.
+
+| Time | VO | Caption |
+|------|----|---------|
+| 0:00–0:02 | I gave this deck forty bucks. | Set your budget. |
+| 0:02–0:05 | Capped the price per card too. Two dollars, nothing over. | Cap the price per card. |
+| 0:05–0:09 | So everything it deals me now, I can actually afford. | Only what you can afford. |
+| 0:09–0:12 | Watch. Seventy five percent. It's keeping score. | It warns you as you climb. |
+| 0:12–0:15 | And once I hit my land count it stops dealing me lands. | Hit your land count, done. |
+| 0:15–0:16 | (silence, let the profile panel read) | |
+| 0:16–0:20 | (end card, no VO) | |
+
+Delivery notes: the "watch" before the toast is the whole performance, leave a
+breath there. Use a real deck with a real $40 target so the numbers on screen
+match the VO.

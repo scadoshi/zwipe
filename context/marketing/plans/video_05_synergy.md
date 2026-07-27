@@ -31,3 +31,22 @@
   if a caption wants it.
 - If the cold-cache "warming up" toast appears, either wait it out or cut around
   it; the clean synergy pool is the point.
+
+## Script (VO + final captions)
+
+First-person dev voice, ~150 wpm.
+
+| Time | VO | Caption |
+|------|----|---------|
+| 0:00–0:02 | I picked Krenko. | Pick your commander. |
+| 0:02–0:05 | The app already knows what Krenko decks actually run. | It suggests what fits. |
+| 0:05–0:08 | Synergy on. | Synergy on. |
+| 0:08–0:12 | Now the whole stack is goblins and things goblins like. | Only cards that work together. |
+| 0:12–0:15 | Sort by price and it's the cheapest cards that still fit. | Cheapest cards that work. |
+| 0:15–0:16 | Three swipes, three keepers. | |
+| 0:16–0:20 | (end card, no VO) | |
+
+Delivery notes: film with Krenko specifically so the VO's card claims are
+checkable on screen (goblin after goblin sells the beat better than any
+caption). If a different commander films better, rewrite the VO around that
+name; never let the audio name a commander the footage doesn't show.
