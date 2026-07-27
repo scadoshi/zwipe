@@ -41,9 +41,8 @@ use zwipe_core::domain::deck::{
         clear_deck_suppressions::ClearDeckSuppressions, create_deck_card::CreateDeckCard,
         create_deck_profile::CreateDeckProfile, delete_deck::DeleteDeck,
         delete_deck_card::DeleteDeckCard, get_deck_profile::GetDeckProfile,
-        get_deck_profiles::GetDeckProfiles, import_deck_cards::ImportDeckCards,
-        skip_deck_card::SkipDeckCard, update_deck_card::UpdateDeckCard,
-        update_deck_profile::UpdateDeckProfile,
+        get_deck_profiles::GetDeckProfiles, skip_deck_card::SkipDeckCard,
+        update_deck_card::UpdateDeckCard, update_deck_profile::UpdateDeckProfile,
     },
 };
 
@@ -129,15 +128,36 @@ impl DeckRepository for Postgres {
     async fn create_deck_card(
         &self,
         request: &CreateDeckCard,
+        card_limit: i64,
     ) -> Result<DeckCard, CreateDeckCardError> {
-        if !request
-            .user_id
-            .owns_deck(request.deck_id, &self.pool)
-            .await?
-        {
+        let mut tx = self.pool.begin().await?;
+        // Ownership + row lock in one shot; FOR UPDATE serializes concurrent
+        // adds (and imports) on this deck, closing the count-then-insert TOCTOU.
+        let owned = sqlx::query_scalar!(
+            "SELECT id FROM decks WHERE id = $1 AND user_id = $2 FOR UPDATE",
+            request.deck_id,
+            request.user_id
+        )
+        .fetch_optional(&mut *tx)
+        .await?;
+        if owned.is_none() {
             return Err(CreateDeckCardError::Forbidden);
         }
-        let mut tx = self.pool.begin().await?;
+        // Card-limit check under the lock (all boards count toward the cap).
+        let card_count = sqlx::query_scalar!(
+            "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1",
+            request.deck_id
+        )
+        .fetch_one(&mut *tx)
+        .await?
+        .unwrap_or(0);
+        if card_count + i64::from(*request.quantity) > card_limit {
+            return Err(if request.email_verified {
+                CreateDeckCardError::LimitReached
+            } else {
+                CreateDeckCardError::UnverifiedLimitReached
+            });
+        }
         let database_deck_card = query_as!(
             DatabaseDeckCard,
             "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) VALUES ($1, $2, $3, $4, $5) RETURNING deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at",
@@ -185,39 +205,6 @@ impl DeckRepository for Postgres {
         .await?
         .unwrap_or(0);
         Ok(count)
-    }
-
-    async fn delete_deck_cards_not_in(
-        &self,
-        deck_id: uuid::Uuid,
-        board: &str,
-        keep_oracle_ids: &[uuid::Uuid],
-    ) -> Result<(), anyhow::Error> {
-        sqlx::query(
-            "DELETE FROM deck_cards WHERE deck_id = $1 AND board = $2 AND NOT (oracle_id = ANY($3))",
-        )
-        .bind(deck_id)
-        .bind(board)
-        .bind(keep_oracle_ids)
-        .execute(&self.pool)
-        .await?;
-        Ok(())
-    }
-
-    async fn sum_quantities_for_oracle_ids(
-        &self,
-        deck_id: uuid::Uuid,
-        oracle_ids: &[uuid::Uuid],
-    ) -> Result<i64, anyhow::Error> {
-        let sum = sqlx::query_scalar!(
-            "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1 AND oracle_id = ANY($2) AND board = 'deck'",
-            deck_id,
-            oracle_ids
-        )
-        .fetch_one(&self.pool)
-        .await?
-        .unwrap_or(0);
-        Ok(sum)
     }
 
     // =====
@@ -654,34 +641,92 @@ impl DeckRepository for Postgres {
         Ok(())
     }
 
-    async fn bulk_create_deck_cards(
+    async fn apply_import_batch(
         &self,
-        request: &ImportDeckCards,
-        cards: &[(uuid::Uuid, uuid::Uuid, i32, String)],
+        user_id: uuid::Uuid,
+        deck_id: uuid::Uuid,
+        mode: zwipe_core::domain::deck::ImportMode,
+        batch: &[(uuid::Uuid, uuid::Uuid, i32, String)],
+        card_limit: i64,
+        email_verified: bool,
     ) -> Result<Vec<DeckCard>, ImportDeckCardsError> {
-        if !request
-            .user_id
-            .owns_deck(request.deck_id, &self.pool)
-            .await
-            .map_err(|e| ImportDeckCardsError::Database(e.into()))?
-        {
+        let db = |e: sqlx::Error| ImportDeckCardsError::Database(e.into());
+        let mut tx = self.pool.begin().await.map_err(db)?;
+
+        // Ownership + row lock in one shot. FOR UPDATE serializes concurrent
+        // imports (and card adds) on this deck, closing the limit TOCTOU.
+        // Runs before the empty-batch return so a foreign deck is Forbidden
+        // regardless of what resolved.
+        let owned = sqlx::query_scalar!(
+            "SELECT id FROM decks WHERE id = $1 AND user_id = $2 FOR UPDATE",
+            deck_id,
+            user_id
+        )
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(db)?;
+        if owned.is_none() {
             return Err(ImportDeckCardsError::Forbidden);
         }
-        if cards.is_empty() {
+
+        // An import where nothing resolved never wipes a board.
+        if batch.is_empty() {
             return Ok(vec![]);
         }
-        let mut tx = self
-            .pool
-            .begin()
+
+        // Current all-boards quantity, read under the lock.
+        let card_count = sqlx::query_scalar!(
+            "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1",
+            deck_id
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(db)?
+        .unwrap_or(0);
+
+        // Post-import total: in replace mode a deck board present in the import
+        // becomes exactly the imported list; in add mode the upsert replaces
+        // quantities for re-imported oracle_ids, so subtract that overlap.
+        let import_total: i64 = batch.iter().map(|(_, _, qty, _)| i64::from(*qty)).sum();
+        let post_import_total = if mode.is_replace() {
+            if batch.iter().any(|(_, _, _, board)| board == "deck") {
+                batch
+                    .iter()
+                    .filter(|(_, _, _, board)| board == "deck")
+                    .map(|(_, _, qty, _)| i64::from(*qty))
+                    .sum()
+            } else {
+                card_count
+            }
+        } else {
+            let import_oracle_ids: Vec<uuid::Uuid> =
+                batch.iter().map(|(_, oid, _, _)| *oid).collect();
+            let overlap_qty = sqlx::query_scalar!(
+                "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1 AND oracle_id = ANY($2) AND board = 'deck'",
+                deck_id,
+                &import_oracle_ids
+            )
+            .fetch_one(&mut *tx)
             .await
-            .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
+            .map_err(db)?
+            .unwrap_or(0);
+            (card_count - overlap_qty) + import_total
+        };
+        if post_import_total > card_limit {
+            return Err(if email_verified {
+                ImportDeckCardsError::LimitReached
+            } else {
+                ImportDeckCardsError::UnverifiedLimitReached
+            });
+        }
+
         let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new(
             "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) ",
         );
         qb.push_values(
-            cards,
+            batch,
             |mut b, (scryfall_data_id, oracle_id, quantity, board)| {
-                b.push_bind(request.deck_id)
+                b.push_bind(deck_id)
                     .push_bind(scryfall_data_id)
                     .push_bind(oracle_id)
                     .push_bind(quantity)
@@ -691,11 +736,8 @@ impl DeckRepository for Postgres {
         qb.push(
             " ON CONFLICT (deck_id, oracle_id) DO UPDATE SET quantity = EXCLUDED.quantity, board = EXCLUDED.board RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board, mvp_at",
         );
-        let rows: Vec<DatabaseDeckCard> = qb
-            .build_query_as()
-            .fetch_all(&mut *tx)
-            .await
-            .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
+        let rows: Vec<DatabaseDeckCard> =
+            qb.build_query_as().fetch_all(&mut *tx).await.map_err(db)?;
         let deck_cards: Vec<DeckCard> = rows
             .into_iter()
             .map(|r| {
@@ -703,9 +745,34 @@ impl DeckRepository for Postgres {
                     .map_err(|e: IntoDeckCardError| ImportDeckCardsError::Database(e.into()))
             })
             .collect::<Result<Vec<_>, _>>()?;
-        tx.commit()
-            .await
-            .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
+
+        // Replace mode: each board present in the import becomes exactly the
+        // imported list. Boards absent from the import are untouched. Bulk
+        // deletes intentionally don't suppress.
+        if mode.is_replace() {
+            let boards: std::collections::HashSet<&str> = batch
+                .iter()
+                .map(|(_, _, _, board)| board.as_str())
+                .collect();
+            for board in boards {
+                let keep: Vec<uuid::Uuid> = batch
+                    .iter()
+                    .filter(|(_, _, _, b)| b == board)
+                    .map(|(_, oid, _, _)| *oid)
+                    .collect();
+                sqlx::query(
+                    "DELETE FROM deck_cards WHERE deck_id = $1 AND board = $2 AND NOT (oracle_id = ANY($3))",
+                )
+                .bind(deck_id)
+                .bind(board)
+                .bind(&keep)
+                .execute(&mut *tx)
+                .await
+                .map_err(db)?;
+            }
+        }
+
+        tx.commit().await.map_err(db)?;
         Ok(deck_cards)
     }
 
