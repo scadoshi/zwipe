@@ -52,8 +52,10 @@ See [`../../progress/overview.md`](../../progress/overview.md) top entry. Histor
    client commander resolution all removed; `deck_id` is the sole signal key.
 3. **Data-gated payoff** — **Phase 6:** fold the otag-signal term into ranking + non-EDH serving on
    `(format, CI, otags)`. Needs months of accrued swipe volume ("REALLY drive serving").
-4. **Tiny non-gated leftover:** a test that refreshes `otag_context_signal_rollup` and asserts
-   `net`/`shown` (base-table crediting is covered; ~15 lines).
+4. **Tiny non-gated leftover — ✅ DONE 2026-07-27:**
+   `otag_context_signal::rollup_refresh_computes_net_and_shown` posts a known
+   batch, runs the zervice refresh, and asserts `net`/`shown`. Nothing
+   non-gated remains.
 
 So otags is now quiet and *waiting*: the only future work is the Phase 6 serving payoff once the
 dataset has weight (plus ongoing description authoring — `tag_descriptions_and_dictionary.md`).
