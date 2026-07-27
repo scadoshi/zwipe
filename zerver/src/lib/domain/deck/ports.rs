@@ -61,10 +61,14 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         request: &CreateDeckProfile,
     ) -> impl Future<Output = Result<DeckProfile, CreateDeckProfileError>> + Send;
 
-    /// Adds a card to a deck.
+    /// Adds a card to a deck. Ownership + row lock, the card-limit check, and
+    /// the insert run in one transaction (`FOR UPDATE` serializes concurrent
+    /// adds, closing the count-then-insert TOCTOU). `card_limit` is resolved by
+    /// the domain; the request's `email_verified` picks the error variant.
     fn create_deck_card(
         &self,
         request: &CreateDeckCard,
+        card_limit: i64,
     ) -> impl Future<Output = Result<DeckCard, CreateDeckCardError>> + Send;
 
     // =======
@@ -81,13 +85,6 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
     fn count_cards_in_deck(
         &self,
         deck_id: uuid::Uuid,
-    ) -> impl Future<Output = Result<i64, anyhow::Error>> + Send;
-
-    /// Returns the sum of quantities for specific oracle_ids in a deck (deck board only).
-    fn sum_quantities_for_oracle_ids(
-        &self,
-        deck_id: uuid::Uuid,
-        oracle_ids: &[uuid::Uuid],
     ) -> impl Future<Output = Result<i64, anyhow::Error>> + Send;
 
     // =====
@@ -144,23 +141,23 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         request: &DeleteDeckCard,
     ) -> impl Future<Output = Result<(), DeleteDeckCardError>> + Send;
 
-    /// Bulk upserts cards into a deck (insert or overwrite quantity).
-    fn bulk_create_deck_cards(
+    /// Applies one import batch atomically: ownership + row lock, card-limit
+    /// enforcement, bulk upsert, and (replace mode) per-board reconcile all run
+    /// in a single transaction, so a failure anywhere leaves the deck exactly
+    /// as it was. The `FOR UPDATE` deck lock serializes concurrent imports of
+    /// the same deck, closing the limit-check TOCTOU. `card_limit` is resolved
+    /// by the domain (policy stays there); `email_verified` picks
+    /// `LimitReached` vs `UnverifiedLimitReached`. Bulk deletes do NOT
+    /// suppress — importing a new list isn't a per-card rejection.
+    fn apply_import_batch(
         &self,
-        request: &ImportDeckCards,
-        cards: &[(uuid::Uuid, uuid::Uuid, i32, String)],
-    ) -> impl Future<Output = Result<Vec<DeckCard>, ImportDeckCardsError>> + Send;
-
-    /// Deletes every card on `board` whose oracle_id is not in `keep_oracle_ids`.
-    /// Used by replace-mode imports to make a board exactly match the imported
-    /// list. Callers must have verified deck ownership first. Bulk deletes do
-    /// NOT suppress — importing a new list isn't a per-card rejection.
-    fn delete_deck_cards_not_in(
-        &self,
+        user_id: uuid::Uuid,
         deck_id: uuid::Uuid,
-        board: &str,
-        keep_oracle_ids: &[uuid::Uuid],
-    ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+        mode: zwipe_core::domain::deck::ImportMode,
+        batch: &[(uuid::Uuid, uuid::Uuid, i32, String)],
+        card_limit: i64,
+        email_verified: bool,
+    ) -> impl Future<Output = Result<Vec<DeckCard>, ImportDeckCardsError>> + Send;
 
     /// Deletes a deck's entire suppression set (skips + removals), returning
     /// the number of rows removed. Ownership-checked.

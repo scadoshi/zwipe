@@ -159,24 +159,15 @@ where
                 return Err(CreateDeckCardError::IsCommander);
             }
         }
-        let card_count = self
-            .deck_repo
-            .count_cards_in_deck(request.deck_id)
-            .await
-            .map_err(CreateDeckCardError::Database)?;
+        // The limit VALUE is policy and stays here; the count + check runs
+        // inside the repo's transaction (under the deck row lock) so two
+        // concurrent adds can't both pass the check.
         let card_limit = if request.email_verified {
             MAX_CARDS_PER_DECK
         } else {
             UNVERIFIED_MAX_CARDS_PER_DECK
         };
-        if card_count + i64::from(*request.quantity) > card_limit {
-            return Err(if request.email_verified {
-                CreateDeckCardError::LimitReached
-            } else {
-                CreateDeckCardError::UnverifiedLimitReached
-            });
-        }
-        self.deck_repo.create_deck_card(request).await
+        self.deck_repo.create_deck_card(request, card_limit).await
     }
 
     // =====
@@ -570,76 +561,25 @@ where
             .map(|(sid, oid, qty, _, _, board)| (*sid, *oid, *qty, board.clone()))
             .collect();
 
-        // Check card limit before inserting. The limit counts the deck board
-        // only. In replace mode a board present in the import becomes exactly
-        // the imported list, so the post-import deck-board total is just the
-        // imported deck-board quantity. In add mode the upsert replaces
-        // quantities for existing oracle_ids, so subtract the overlap (existing
-        // quantities of cards being reimported) to get the true total.
-        let card_count = self
-            .deck_repo
-            .count_cards_in_deck(request.deck_id)
-            .await
-            .map_err(ImportDeckCardsError::Database)?;
-        let import_total: i64 = batch.iter().map(|(_, _, qty, _)| i64::from(*qty)).sum();
-        let post_import_total = if request.mode.is_replace() {
-            if batch.iter().any(|(_, _, _, board)| board == "deck") {
-                batch
-                    .iter()
-                    .filter(|(_, _, _, board)| board == "deck")
-                    .map(|(_, _, qty, _)| i64::from(*qty))
-                    .sum()
-            } else {
-                card_count
-            }
-        } else {
-            let import_oracle_ids: Vec<Uuid> = batch.iter().map(|(_, oid, _, _)| *oid).collect();
-            let overlap_qty = self
-                .deck_repo
-                .sum_quantities_for_oracle_ids(request.deck_id, &import_oracle_ids)
-                .await
-                .map_err(ImportDeckCardsError::Database)?;
-            (card_count - overlap_qty) + import_total
-        };
+        // Ownership, the card-limit check, the upsert, and the replace-mode
+        // reconcile all run atomically in the repo (one tx under a deck row
+        // lock). The limit VALUE is policy and stays here.
         let card_limit = if request.email_verified {
             MAX_CARDS_PER_DECK
         } else {
             UNVERIFIED_MAX_CARDS_PER_DECK
         };
-        if post_import_total > card_limit {
-            return Err(if request.email_verified {
-                ImportDeckCardsError::LimitReached
-            } else {
-                ImportDeckCardsError::UnverifiedLimitReached
-            });
-        }
-
-        // Bulk insert
         let _deck_cards = self
             .deck_repo
-            .bulk_create_deck_cards(request, &batch)
+            .apply_import_batch(
+                request.user_id,
+                request.deck_id,
+                request.mode,
+                &batch,
+                card_limit,
+                request.email_verified,
+            )
             .await?;
-
-        // Replace mode: make each board present in the import exactly match
-        // the imported list by removing its other cards. Boards absent from
-        // the import are left alone, so an empty paste never wipes anything.
-        if request.mode.is_replace() {
-            let boards: std::collections::HashSet<&str> = batch
-                .iter()
-                .map(|(_, _, _, board)| board.as_str())
-                .collect();
-            for board in boards {
-                let keep: Vec<Uuid> = batch
-                    .iter()
-                    .filter(|(_, _, _, b)| b == board)
-                    .map(|(_, oid, _, _)| *oid)
-                    .collect();
-                self.deck_repo
-                    .delete_deck_cards_not_in(request.deck_id, board, &keep)
-                    .await
-                    .map_err(ImportDeckCardsError::Database)?;
-            }
-        }
 
         // Build imported list from insert_map
         let imported: Vec<ImportedCard> = insert_map
@@ -777,65 +717,19 @@ where
             .map(|(oracle_id, (sid, qty, _))| (*sid, *oracle_id, *qty, board_name.clone()))
             .collect();
 
-        // Check card limit before inserting — same math as import_deck_cards.
-        // The limit counts the deck board only.
-        let card_count = self
-            .deck_repo
-            .count_cards_in_deck(deck_id)
-            .await
-            .map_err(ImportDeckCardsError::Database)?;
-        let import_total: i64 = batch.iter().map(|(_, _, qty, _)| i64::from(*qty)).sum();
-        let post_import_total = if mode.is_replace() {
-            if board == Board::Deck {
-                import_total
-            } else {
-                card_count
-            }
-        } else {
-            let import_oracle_ids: Vec<Uuid> = insert_map.keys().copied().collect();
-            let overlap_qty = self
-                .deck_repo
-                .sum_quantities_for_oracle_ids(deck_id, &import_oracle_ids)
-                .await
-                .map_err(ImportDeckCardsError::Database)?;
-            (card_count - overlap_qty) + import_total
-        };
+        // Ownership, the card-limit check, the upsert, and the replace-mode
+        // reconcile all run atomically in the repo (one tx under a deck row
+        // lock). An empty batch (bad URL, nothing resolved) never wipes a
+        // board — the repo returns before any write. The limit VALUE is policy
+        // and stays here.
         let card_limit = if email_verified {
             MAX_CARDS_PER_DECK
         } else {
             UNVERIFIED_MAX_CARDS_PER_DECK
         };
-        if post_import_total > card_limit {
-            return Err(if email_verified {
-                ImportDeckCardsError::LimitReached
-            } else {
-                ImportDeckCardsError::UnverifiedLimitReached
-            });
-        }
-
-        // Bulk upsert
-        if !batch.is_empty() {
-            let carrier = ImportDeckCards {
-                user_id,
-                deck_id,
-                lines: Vec::new(),
-                email_verified,
-                mode,
-            };
-            self.deck_repo
-                .bulk_create_deck_cards(&carrier, &batch)
-                .await?;
-        }
-
-        // Replace mode: the board becomes exactly the imported list. Skipped
-        // when nothing resolved, so a bad URL never wipes a board.
-        if mode.is_replace() && !batch.is_empty() {
-            let keep: Vec<Uuid> = insert_map.keys().copied().collect();
-            self.deck_repo
-                .delete_deck_cards_not_in(deck_id, &board_name, &keep)
-                .await
-                .map_err(ImportDeckCardsError::Database)?;
-        }
+        self.deck_repo
+            .apply_import_batch(user_id, deck_id, mode, &batch, card_limit, email_verified)
+            .await?;
 
         let imported: Vec<ImportedCard> = insert_map
             .into_values()
