@@ -129,25 +129,9 @@ The cache-first synergy layer shipped (see `overview.md`); these are the consume
 
 ---
 
-## Mechanical Category — Heuristic Refinement
-
-Phases 1+2 shipped (see archive). ~73% classification rate today; refinement targets are below. Layers 2+3 (AI classifier + fine-tuned model) tracked in `backlog.md`.
-
-**Testing approach (owner idea 2026-07-09):** assemble a set of known special-case / edge cards, run each through the heuristic classifier, and have a **cheap model (Haiku)** grade whether the classification is right. Where Haiku flags a miss, **escalate that card to a stronger model** to propose the heuristic/regex fix. Turns "audit a sample by hand" into a semi-automated find-and-fix loop; do this before hand-tuning the individual patterns below.
-
-- [ ] Add more test cases for edge cases and false positives/negatives
-- [ ] Audit a sample of classified cards per category to find misclassifications
-- [ ] Lands should NOT be classified as ramp (fixed: removed `type_line.contains("land")` from ramp fallback) — verify still holds
-- [ ] Tune regex proximity windows (e.g. blink regex was too narrow, widened to 80 chars)
-- [ ] Consider additional ramp patterns (e.g. treasure token creators, rituals like Dark Ritual)
-- [ ] Consider additional removal patterns (e.g. "exile target" with qualifiers, fight mechanics)
-- [ ] Burn heuristic excludes creatures — should it include creatures with ETB damage?
-- [ ] Stax heuristic may false-positive on cards that say "can't" in reminder text
-
----
-
 ## Maintenance
 
+- [ ] **`oracle_tag_gaps` stax "can't" false-positive check (tiny).** The only survivor of the retired heuristic-refinement list (section closed 2026-07-27; `classify.rs` is deleted, card roles derive from otags): the 4-category `oracle_tag_gaps` fallback still pattern-matches oracle text, and its Stax rule may false-positive on cards whose "can't" appears only in reminder text. Verify with a few known reminder-text cards; fix the pattern if real.
 - [x] **Android target API level — DONE 2026-07-24.** vc30 (1.7.3) built and submitted with **targetSdk 36** (runbook `build.md` updated to match), clearing the 2026-08-31 Play deadline. Verify the Play Console warning disappears once vc30 is live, then delete this line.
 - [ ] **Turn on Dependabot alerts** (repo Settings → Code security → Dependabot alerts) — the passive GitHub-Advisory backstop to the active weekly `cargo audit` workflow (`audit.yml`). Zero code, zero noise; optionally enable "Dependabot security updates" for auto-fix PRs, but skip *version* updates (the noisy weekly-bump firehose). Owner-only (a settings toggle, not a file).
 - **keyring 3 → 4** (zwiper) — major bump. Used for iOS Keychain on `apple-native`. Needs on-device test before merging; don't ship blind.

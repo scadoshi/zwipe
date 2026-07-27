@@ -59,25 +59,15 @@ Both are low-risk now, fine to leave; revisit with a bigger user base. Context: 
 
 ---
 
-## AI Card Categorization — Layer 2 & 3
+## AI Card Categorization — Layer 2 & 3 (CLOSED 2026-07-27: superseded by oracle tags)
 
-**Deferred until there's a user base and a premium tier to fund it.**
-
-Layer 1 (oracle text heuristics, ~70-80%) ships with the mechanical category feature. Layers 2 and 3 are post-launch improvements.
-
-**Layer 2: AI Classification Client**
-- Standalone Rust binary (`zort`) in its own workspace crate, connecting directly to Postgres
-- Reads cards in batches, sends (name, type_line, oracle_text) to LLM API (Claude Haiku)
-- Writes category tags back via UPDATE on card_profiles.mechanical_categories
-- Subcommands: `zort classify` (untagged), `zort reclassify` (all), `zort delta` (changed), `zort audit` (compare vs heuristics)
-- Cost: ~$5-15 for full 35k card run
-- Target accuracy: 90-95%
-- High-level thought (2026-06-09): https://pioneer.ai/ might be a good AI platform for this — evaluate when Layer 2 work starts
-
-**Layer 3: Fine-Tuned Lightweight Model** (future, when Layer 2 data is mature)
-- Train a small model on Layer 2's corrected tags as training data
-- Input: oracle_text + type_line → Output: category tags
-- Runs locally, no API costs, embeddable in zervice sync pipeline
+Layers 2 (LLM classification client) and 3 (fine-tuned model) were the
+improvement path for the Layer-1 oracle-text heuristic. The whole ladder is
+obsolete: Scryfall's community-maintained oracle tags now provide the
+human-accurate tagging these layers were meant to approximate, card roles
+derive from otag subtrees (`classify.rs` deleted 2026-07-13), and the only
+surviving text heuristic is the 4-category `oracle_tag_gaps` fallback. No AI
+categorization is planned; owner call 2026-07-27.
 - Target accuracy: 95-99%
 - Build when: Layer 2 has run multiple cycles and tags have been spot-checked
 
