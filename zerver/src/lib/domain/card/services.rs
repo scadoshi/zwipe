@@ -145,10 +145,6 @@ impl<R: CardRepository> CardService for Service<R> {
         Ok((otag_rows as u32, merged))
     }
 
-    async fn clear_all_categories(&self) -> anyhow::Result<()> {
-        self.repo.clear_all_categories().await
-    }
-
     async fn refresh_latest_cards(&self) -> anyhow::Result<()> {
         self.repo.refresh_latest_cards().await
     }

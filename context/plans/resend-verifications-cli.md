@@ -13,8 +13,9 @@ to the app's per-user resend — no drift.
 
 Earlier draft added a standalone `resend-verifications` bin. Decided against it: it's a rare,
 run-by-hand backfill, and a second binary means another deploy artifact plus ~40 duplicated
-lines of Config/DB/Resend/AuthService wiring. `zervice` already builds exactly that wiring and
-already parses args (`--recategorize`). Folding it in adds **zero** new deploy surface and
+lines of Config/DB/Resend/AuthService wiring. `zervice` already builds exactly that wiring
+(and used to parse a `--recategorize` flag, since removed, so arg parsing is a known
+pattern there). Folding it in adds **zero** new deploy surface and
 reuses the service construction verbatim. Trade-off accepted: the tool lives inside the sync
 binary rather than reading as its own thing.
 
@@ -43,7 +44,8 @@ subcommand just orchestrates it. Bonus: builds/deploys with the existing pipelin
 
 In `zerver/src/bin/zervice.rs`:
 
-- **Parse a new flag** alongside `--recategorize`:
+- **Parse the flags** (re-add `let args: Vec<String> = std::env::args().collect();`, removed
+  with `--recategorize`):
   `let resend_verifications = args.iter().any(|a| a == "--resend-verifications");`
   and `let send = args.iter().any(|a| a == "--send");`
 - **Short-circuit before the sync pipeline.** After `auth_service` is constructed (and before
@@ -115,8 +117,8 @@ async fn resend_verifications_flow(
 Notes:
 - Confirm `Postgres`'s `pool` field is accessible from the bin (it is, `db.clone()` is used in
   zervice today; if `pool` is private, add a small accessor or use an existing repo method).
-- Reflect the mode in the startup log line, mirroring how `--recategorize` is surfaced, e.g.
-  add a `[--resend-verifications]` / `[--send]` marker.
+- Reflect the mode in the startup log line, e.g. add a `[--resend-verifications]` /
+  `[--send]` marker after the version.
 
 ## Implementation steps
 
