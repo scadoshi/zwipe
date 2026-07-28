@@ -1634,27 +1634,6 @@ impl CardRepository for MyPostgres {
         Ok(())
     }
 
-    async fn clear_all_categories(&self) -> Result<(), anyhow::Error> {
-        // Batch clear to avoid a single slow UPDATE on 100k+ rows
-        loop {
-            let result = sqlx::query!(
-                "UPDATE card_profiles SET card_roles = '[]'::jsonb
-                 WHERE scryfall_data_id IN (
-                     SELECT scryfall_data_id FROM card_profiles
-                     WHERE card_roles != '[]'::jsonb
-                     LIMIT 5000
-                 )"
-            )
-            .execute(&self.pool)
-            .await?;
-
-            if result.rows_affected() == 0 {
-                break;
-            }
-        }
-        Ok(())
-    }
-
     async fn derive_oracle_tag_categories(&self) -> anyhow::Result<u64> {
         crate::outbound::sqlx::card::helpers::derive_categories::derive_categories(&self.pool).await
     }

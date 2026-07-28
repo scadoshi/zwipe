@@ -313,9 +313,6 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         )],
     ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
 
-    /// Clears all card_roles (resets to empty array).
-    fn clear_all_categories(&self) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
-
     /// Rebuilds `card_profiles.card_roles` from Oracle Tags (18 category
     /// subtrees) + `Tokens` via `all_parts`. Returns rows affected. The 4 heuristic
     /// stragglers are merged separately (see `CardService::derive_card_categories`).
@@ -374,9 +371,6 @@ pub trait CardService: Clone + Send + Sync + 'static {
         &self,
         batch_size: usize,
     ) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
-
-    /// Clears all card_roles (for --reclassify).
-    fn clear_all_categories(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
     /// Refreshes the latest_cards materialized view after data changes.
     fn refresh_latest_cards(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
@@ -527,9 +521,6 @@ pub trait ErasedCardService: Send + Sync + 'static {
         bulk_endpoint: BulkEndpoint,
     ) -> BoxFuture<'a, anyhow::Result<ZerviceMetrics>>;
 
-    /// See [`CardService::clear_all_categories`].
-    fn clear_all_categories<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
-
     /// See [`CardService::refresh_latest_cards`].
     fn refresh_latest_cards<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
 
@@ -641,10 +632,6 @@ where
         bulk_endpoint: BulkEndpoint,
     ) -> BoxFuture<'a, anyhow::Result<ZerviceMetrics>> {
         Box::pin(CardService::scryfall_sync(self, bulk_endpoint))
-    }
-
-    fn clear_all_categories<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {
-        Box::pin(CardService::clear_all_categories(self))
     }
 
     fn refresh_card_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {

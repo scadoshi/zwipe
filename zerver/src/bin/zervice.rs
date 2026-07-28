@@ -15,7 +15,6 @@ use zwipe_core::domain::logo;
 async fn main() -> anyhow::Result<()> {
     logo::Zervice::print();
     let config = Config::from_env()?;
-    let args: Vec<String> = std::env::args().collect();
 
     // See zerver.rs for the rationale — RUST_LOG from the process env wins; otherwise
     // we use the directive string from Config. Per-layer because EnvFilter isn't Clone.
@@ -46,18 +45,7 @@ async fn main() -> anyhow::Result<()> {
                 .with_filter(env_filter()),
         )
         .init();
-    let recategorize = args
-        .iter()
-        .any(|a| a == "--recategorize" || a == "-rc" || a == "--rc");
-    tracing::info!(
-        "zervice running v{}{}",
-        env!("CARGO_PKG_VERSION"),
-        if recategorize {
-            " [--recategorize]"
-        } else {
-            ""
-        }
-    );
+    tracing::info!("zervice running v{}", env!("CARGO_PKG_VERSION"));
 
     let db = Postgres::new(&config.database_url).await?;
     let card_service = CardService_::new(db.clone());
@@ -82,14 +70,6 @@ async fn main() -> anyhow::Result<()> {
         Err(e) => {
             failures += 1;
             tracing::error!("step 1/5 card sync FAILED (continuing): {e:#}");
-        }
-    }
-
-    if recategorize {
-        tracing::info!("clearing all categories (--recategorize)");
-        if let Err(e) = card_service.clear_all_categories().await {
-            failures += 1;
-            tracing::error!("clear categories FAILED (continuing): {e:#}");
         }
     }
 
