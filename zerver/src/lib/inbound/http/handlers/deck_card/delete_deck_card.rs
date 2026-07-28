@@ -8,7 +8,7 @@ use axum::{
 use crate::{
     domain::deck::models::deck_card::delete_deck_card::DeleteDeckCardError,
     inbound::http::{
-        ApiError, AppState, Log500, handlers::metrics::check_completion::check_deck_completion,
+        ApiError, AppState, To500, handlers::metrics::check_completion::check_deck_completion,
         middleware::AuthenticatedUser,
     },
 };
@@ -22,7 +22,7 @@ impl From<DeleteDeckCardError> for ApiError {
             DeleteDeckCardError::NotFound => {
                 Self::UnprocessableEntity("deck card not found".to_string())
             }
-            DeleteDeckCardError::Database(e) => e.log_500(),
+            DeleteDeckCardError::Database(e) => e.to_500(),
             DeleteDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
             DeleteDeckCardError::Forbidden => {
                 Self::Forbidden(DeleteDeckCardError::Forbidden.to_string())

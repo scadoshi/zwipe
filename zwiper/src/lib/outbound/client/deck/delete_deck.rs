@@ -1,11 +1,11 @@
 //! Delete existing deck.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{ApiError, routes::delete_deck_route};
+use zwipe::inbound::http::routes::delete_deck_route;
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for deleting decks by ID.
@@ -15,11 +15,11 @@ pub trait ClientDeleteDeck {
         &self,
         deck_id: Uuid,
         session: &Session,
-    ) -> impl Future<Output = Result<(), ApiError>> + Send;
+    ) -> impl Future<Output = Result<(), ClientError>> + Send;
 }
 
 impl ClientDeleteDeck for ZwipeClient {
-    async fn delete_deck(&self, deck_id: Uuid, session: &Session) -> Result<(), ApiError> {
+    async fn delete_deck(&self, deck_id: Uuid, session: &Session) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&delete_deck_route(deck_id));
         info!("DELETE {}", url);

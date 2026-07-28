@@ -1,19 +1,19 @@
 //! Fetch all card sets.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{ApiError, routes::get_sets_route};
+use zwipe::inbound::http::routes::get_sets_route;
 
 /// Trait for fetching the list of all card sets.
 #[allow(missing_docs)]
 pub trait ClientGetSets {
-    fn get_sets(&self) -> impl Future<Output = Result<Vec<String>, ApiError>> + Send;
+    fn get_sets(&self) -> impl Future<Output = Result<Vec<String>, ClientError>> + Send;
 }
 
 impl ClientGetSets for ZwipeClient {
-    async fn get_sets(&self) -> Result<Vec<String>, ApiError> {
+    async fn get_sets(&self) -> Result<Vec<String>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_sets_route());
         info!("GET {}", url);

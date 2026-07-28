@@ -26,7 +26,7 @@ use zwipe_core::http::contracts::deck::HttpImportArchidektDeck;
 #[cfg(feature = "zerver")]
 use crate::{
     inbound::http::{
-        ApiError, AppState, Log500, handlers::metrics::check_completion::check_deck_completion,
+        ApiError, AppState, To500, handlers::metrics::check_completion::check_deck_completion,
         middleware::AuthenticatedUser,
     },
     outbound::archidekt::{ArchidektClient, ArchidektError},
@@ -44,7 +44,7 @@ impl From<ArchidektError> for ApiError {
                 tracing::warn!(status = code, "archidekt upstream error");
                 Self::InternalServerError("failed to fetch deck from archidekt".to_string())
             }
-            ArchidektError::Network(e) => e.log_500(),
+            ArchidektError::Network(e) => e.to_500(),
         }
     }
 }

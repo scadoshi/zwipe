@@ -7,7 +7,7 @@ use axum::{
 #[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck::delete_deck::DeleteDeckError,
-    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
+    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::requests::delete_deck::{DeleteDeck, InvalidDeleteDeck};
@@ -17,7 +17,7 @@ impl From<DeleteDeckError> for ApiError {
     fn from(value: DeleteDeckError) -> Self {
         match value {
             DeleteDeckError::NotFound => Self::NotFound("deck not found".to_string()),
-            DeleteDeckError::Database(e) => e.log_500(),
+            DeleteDeckError::Database(e) => e.to_500(),
             DeleteDeckError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
     }

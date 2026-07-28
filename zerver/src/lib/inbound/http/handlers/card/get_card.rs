@@ -5,7 +5,7 @@ use crate::{
         get_card_profile::GetCardProfileError,
         get_scryfall_data::{GetScryfallData, GetScryfallDataError},
     },
-    inbound::http::{ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, To500},
 };
 #[cfg(feature = "zerver")]
 use axum::{
@@ -21,8 +21,8 @@ impl From<GetCardProfileError> for ApiError {
     fn from(value: GetCardProfileError) -> Self {
         match value {
             GetCardProfileError::NotFound => Self::NotFound("card profile not found".to_string()),
-            GetCardProfileError::CardProfileFromDb(e) => e.log_500(),
-            GetCardProfileError::Database(e) => e.log_500(),
+            GetCardProfileError::CardProfileFromDb(e) => e.to_500(),
+            GetCardProfileError::Database(e) => e.to_500(),
         }
     }
 }
@@ -32,7 +32,7 @@ impl From<GetScryfallDataError> for ApiError {
     fn from(value: GetScryfallDataError) -> Self {
         match value {
             GetScryfallDataError::NotFound => Self::NotFound("scryfall data not found".to_string()),
-            GetScryfallDataError::Database(e) => e.log_500(),
+            GetScryfallDataError::Database(e) => e.to_500(),
         }
     }
 }

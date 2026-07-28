@@ -6,7 +6,7 @@ use zwipe_core::http::contracts::auth::HttpVerifyEmail;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::auth::requests::verify_email::{VerifyEmail, VerifyEmailError},
-    inbound::http::{ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, To500},
 };
 
 #[cfg(feature = "zerver")]
@@ -16,7 +16,7 @@ impl From<VerifyEmailError> for ApiError {
             VerifyEmailError::InvalidToken => {
                 Self::UnprocessableEntity("token not found or expired".to_string())
             }
-            VerifyEmailError::Database(e) => e.log_500(),
+            VerifyEmailError::Database(e) => e.to_500(),
         }
     }
 }

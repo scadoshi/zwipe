@@ -6,7 +6,7 @@ use crate::{
         },
         metrics::models::kinds::AuditAction,
     },
-    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
+    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
@@ -24,8 +24,8 @@ impl From<ChangeUsernameError> for ApiError {
             ChangeUsernameError::Duplicate => {
                 Self::UnprocessableEntity("username already in use".to_string())
             }
-            ChangeUsernameError::Database(e) => e.log_500(),
-            ChangeUsernameError::UserFromDb(e) => e.log_500(),
+            ChangeUsernameError::Database(e) => e.to_500(),
+            ChangeUsernameError::UserFromDb(e) => e.to_500(),
             ChangeUsernameError::AuthenticateUserError(e) => ApiError::from(e),
         }
     }

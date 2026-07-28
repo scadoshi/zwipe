@@ -1,5 +1,5 @@
 #[cfg(feature = "zerver")]
-use crate::inbound::http::Log500;
+use crate::inbound::http::To500;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
@@ -27,7 +27,7 @@ use zwipe_core::http::contracts::auth::HttpRegisterUser;
 impl From<EnforceSessionMaximumError> for ApiError {
     fn from(value: EnforceSessionMaximumError) -> Self {
         match value {
-            EnforceSessionMaximumError::Database(e) => e.log_500(),
+            EnforceSessionMaximumError::Database(e) => e.to_500(),
         }
     }
 }
@@ -38,7 +38,7 @@ impl From<InvalidJwt> for ApiError {
         match value {
             InvalidJwt::Format => Self::UnprocessableEntity("invalid token format".to_string()),
             InvalidJwt::MissingToken => Self::UnprocessableEntity("missing token".to_string()),
-            InvalidJwt::EncodingError(e) => e.log_500(),
+            InvalidJwt::EncodingError(e) => e.to_500(),
         }
     }
 }
@@ -47,13 +47,13 @@ impl From<InvalidJwt> for ApiError {
 impl From<CreateSessionError> for ApiError {
     fn from(value: CreateSessionError) -> Self {
         match value {
-            CreateSessionError::Database(e) => e.log_500(),
+            CreateSessionError::Database(e) => e.to_500(),
             CreateSessionError::GetUserError(GetUserError::NotFound) => {
                 Self::Unauthorized("invalid credentials".to_string())
             }
             CreateSessionError::GetUserError(e) => ApiError::from(e),
             CreateSessionError::EnforceSessionMaximumError(e) => ApiError::from(e),
-            CreateSessionError::InvalidJwt(e) => e.log_500(),
+            CreateSessionError::InvalidJwt(e) => e.to_500(),
         }
     }
 }
@@ -65,9 +65,9 @@ impl From<RegisterUserError> for ApiError {
             RegisterUserError::Duplicate => Self::UnprocessableEntity(
                 "user with that username or email already exists".to_string(),
             ),
-            RegisterUserError::Database(e) => e.log_500(),
-            RegisterUserError::FailedAccessToken(e) => e.log_500(),
-            RegisterUserError::UserFromDb(e) => e.log_500(),
+            RegisterUserError::Database(e) => e.to_500(),
+            RegisterUserError::FailedAccessToken(e) => e.to_500(),
+            RegisterUserError::UserFromDb(e) => e.to_500(),
             RegisterUserError::CreateSessionError(e) => ApiError::from(e),
         }
     }
@@ -86,7 +86,7 @@ impl From<InvalidRegisterUser> for ApiError {
             InvalidRegisterUser::Password(e) => {
                 Self::UnprocessableEntity(format!("invalid password: {}", e))
             }
-            InvalidRegisterUser::FailedPasswordHash(e) => e.log_500(),
+            InvalidRegisterUser::FailedPasswordHash(e) => e.to_500(),
         }
     }
 }

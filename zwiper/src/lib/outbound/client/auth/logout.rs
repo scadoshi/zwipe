@@ -1,20 +1,20 @@
 //! User logout API client.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{ApiError, routes::logout_route};
+use zwipe::inbound::http::routes::logout_route;
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for logging out users and invalidating sessions.
 #[allow(missing_docs)]
 pub trait ClientLogout {
-    fn logout(&self, session: &Session) -> impl Future<Output = Result<(), ApiError>> + Send;
+    fn logout(&self, session: &Session) -> impl Future<Output = Result<(), ClientError>> + Send;
 }
 
 impl ClientLogout for ZwipeClient {
-    async fn logout(&self, session: &Session) -> Result<(), ApiError> {
+    async fn logout(&self, session: &Session) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&logout_route());
         info!("POST {}", url);

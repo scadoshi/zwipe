@@ -10,13 +10,12 @@ use crate::{
         },
         router::Router,
     },
-    outbound::client::{ZwipeClient, deck::get_deck::ClientGetDeck},
+    outbound::client::{ClientError, ZwipeClient, deck::get_deck::ClientGetDeck},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe::inbound::http::ApiError;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
     auth::models::session::Session, deck::Deck, user::models::hints::HINT_EXPORT,
@@ -36,7 +35,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     // Export hint: auto-opens on first visit; the header "?" reopens it.
     let export_hint = use_one_time_hint(HINT_EXPORT);
 
-    let deck_resource: Resource<Result<Deck, ApiError>> = use_resource(move || async move {
+    let deck_resource: Resource<Result<Deck, ClientError>> = use_resource(move || async move {
         let session = session.ensure_fresh(client).await?;
         client().get_deck(deck_id, &session).await
     });

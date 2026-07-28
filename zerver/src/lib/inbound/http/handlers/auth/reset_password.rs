@@ -9,7 +9,7 @@ use crate::{
         auth::requests::reset_password::{ResetPassword, ResetPasswordError},
         metrics::models::kinds::AuditAction,
     },
-    inbound::http::{ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, To500},
 };
 
 #[cfg(feature = "zerver")]
@@ -20,7 +20,7 @@ impl From<ResetPasswordError> for ApiError {
                 Self::Unauthorized("token not found or expired".to_string())
             }
             ResetPasswordError::InvalidPassword(msg) => Self::UnprocessableEntity(msg),
-            ResetPasswordError::Database(e) => e.log_500(),
+            ResetPasswordError::Database(e) => e.to_500(),
         }
     }
 }

@@ -3,7 +3,7 @@
 #[cfg(feature = "zerver")]
 use crate::{
     domain::user::models::preferences::GetPreferencesError,
-    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
+    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
@@ -14,7 +14,7 @@ use zwipe_core::domain::user::preferences::UserPreferences;
 impl From<GetPreferencesError> for ApiError {
     fn from(value: GetPreferencesError) -> Self {
         match value {
-            GetPreferencesError::Database(e) => e.log_500(),
+            GetPreferencesError::Database(e) => e.to_500(),
         }
     }
 }

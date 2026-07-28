@@ -7,14 +7,14 @@ use crate::{
         auth::requests::revoke_sessions::{RevokeSessions, RevokeSessionsError},
         metrics::models::kinds::{AuditAction, EventKind},
     },
-    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
+    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 
 #[cfg(feature = "zerver")]
 impl From<RevokeSessionsError> for ApiError {
     fn from(value: RevokeSessionsError) -> Self {
         match value {
-            RevokeSessionsError::Database(e) => e.log_500(),
+            RevokeSessionsError::Database(e) => e.to_500(),
         }
     }
 }

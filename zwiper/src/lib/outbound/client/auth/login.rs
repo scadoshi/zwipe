@@ -1,10 +1,10 @@
 //! User login API client.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{ApiError, routes::login_route};
+use zwipe::inbound::http::routes::login_route;
 use zwipe_core::{
     domain::auth::models::{platform::ClientPlatform, session::Session},
     http::contracts::auth::HttpAuthenticateUser,
@@ -16,11 +16,14 @@ pub trait ClientLogin {
     fn authenticate_user(
         &self,
         request: HttpAuthenticateUser,
-    ) -> impl Future<Output = Result<Session, ApiError>> + Send;
+    ) -> impl Future<Output = Result<Session, ClientError>> + Send;
 }
 
 impl ClientLogin for ZwipeClient {
-    async fn authenticate_user(&self, request: HttpAuthenticateUser) -> Result<Session, ApiError> {
+    async fn authenticate_user(
+        &self,
+        request: HttpAuthenticateUser,
+    ) -> Result<Session, ClientError> {
         let mut request = request;
         request.platform = Some(ClientPlatform::CURRENT);
         request.client_version = Some(env!("CARGO_PKG_VERSION").to_string());

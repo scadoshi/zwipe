@@ -5,11 +5,11 @@
 //! token/emblem printings excluded. An explicit sort in the filter still
 //! wins. (context/archive/commander_select_ordering.md)
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{ApiError, routes::search_commanders_route};
+use zwipe::inbound::http::routes::search_commanders_route;
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{Card, search_card::card_filter::CardQuery},
@@ -22,7 +22,7 @@ pub trait ClientSearchCommanders {
         &self,
         card_filter: &CardQuery,
         session: &Session,
-    ) -> impl Future<Output = Result<Vec<Card>, ApiError>> + Send;
+    ) -> impl Future<Output = Result<Vec<Card>, ClientError>> + Send;
 }
 
 impl ClientSearchCommanders for ZwipeClient {
@@ -30,7 +30,7 @@ impl ClientSearchCommanders for ZwipeClient {
         &self,
         card_filter: &CardQuery,
         session: &Session,
-    ) -> Result<Vec<Card>, ApiError> {
+    ) -> Result<Vec<Card>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&search_commanders_route());
 

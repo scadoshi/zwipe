@@ -1,11 +1,11 @@
 //! Remove a card from a deck.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{ApiError, routes::delete_deck_card_route};
+use zwipe::inbound::http::routes::delete_deck_card_route;
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for removing cards from a deck.
@@ -16,7 +16,7 @@ pub trait ClientDeleteDeckCard {
         deck_id: Uuid,
         scryfall_data_id: Uuid,
         session: &Session,
-    ) -> impl Future<Output = Result<(), ApiError>> + Send;
+    ) -> impl Future<Output = Result<(), ClientError>> + Send;
 }
 
 impl ClientDeleteDeckCard for ZwipeClient {
@@ -25,7 +25,7 @@ impl ClientDeleteDeckCard for ZwipeClient {
         deck_id: Uuid,
         scryfall_data_id: Uuid,
         session: &Session,
-    ) -> Result<(), ApiError> {
+    ) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&delete_deck_card_route(deck_id, scryfall_data_id));
         info!("DELETE {}", url);

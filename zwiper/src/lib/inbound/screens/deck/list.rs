@@ -11,13 +11,13 @@ use crate::{
         screens::deck::components::skeletons::DeckListSkeleton,
     },
     outbound::client::{
-        ZwipeClient, deck::get_deck_profiles::ClientGetDeckList, user::get_user::ClientGetUser,
+        ClientError, ZwipeClient, deck::get_deck_profiles::ClientGetDeckList,
+        user::get_user::ClientGetUser,
     },
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe::inbound::http::ApiError;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
     auth::models::session::Session,
@@ -55,7 +55,7 @@ pub fn DeckList() -> Element {
         });
     });
 
-    let mut deck_profiles_resource: Resource<Result<Vec<DeckProfile>, ApiError>> =
+    let mut deck_profiles_resource: Resource<Result<Vec<DeckProfile>, ClientError>> =
         use_resource(move || async move {
             let session = session.ensure_fresh(auth_client).await?;
 

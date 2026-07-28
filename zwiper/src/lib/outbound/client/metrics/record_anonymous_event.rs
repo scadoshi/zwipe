@@ -1,9 +1,8 @@
 //! Pre-auth funnel event POST (no auth — there is no user yet).
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
-use zwipe::inbound::http::ApiError;
 use zwipe_core::http::{
     contracts::metrics::HttpAnonymousEvent, paths::record_anonymous_event_route,
 };
@@ -14,11 +13,11 @@ pub trait ClientRecordAnonymousEvent {
     fn record_anonymous_event(
         &self,
         event: &HttpAnonymousEvent,
-    ) -> impl Future<Output = Result<(), ApiError>> + Send;
+    ) -> impl Future<Output = Result<(), ClientError>> + Send;
 }
 
 impl ClientRecordAnonymousEvent for ZwipeClient {
-    async fn record_anonymous_event(&self, event: &HttpAnonymousEvent) -> Result<(), ApiError> {
+    async fn record_anonymous_event(&self, event: &HttpAnonymousEvent) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&record_anonymous_event_route());
 

@@ -15,7 +15,7 @@ use zwipe_core::http::contracts::deck_card::HttpImportDeckCards;
 use crate::{
     domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsError,
     inbound::http::{
-        ApiError, AppState, Log500, handlers::metrics::check_completion::check_deck_completion,
+        ApiError, AppState, To500, handlers::metrics::check_completion::check_deck_completion,
         middleware::AuthenticatedUser,
     },
 };
@@ -40,7 +40,7 @@ impl From<ImportDeckCardsError> for ApiError {
                 "card limit reached across all boards, verify your email to unlock more"
                     .to_string(),
             ),
-            ImportDeckCardsError::Database(e) => e.log_500(),
+            ImportDeckCardsError::Database(e) => e.to_500(),
         }
     }
 }

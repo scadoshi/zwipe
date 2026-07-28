@@ -1,7 +1,7 @@
 #[cfg(feature = "zerver")]
 use crate::{
     domain::user::models::get_user::GetUserError,
-    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
+    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
@@ -13,8 +13,8 @@ impl From<GetUserError> for ApiError {
     fn from(value: GetUserError) -> Self {
         match value {
             GetUserError::NotFound => Self::NotFound("user not found".to_string()),
-            GetUserError::Database(e) => e.log_500(),
-            GetUserError::UserFromDb(e) => e.log_500(),
+            GetUserError::Database(e) => e.to_500(),
+            GetUserError::UserFromDb(e) => e.to_500(),
         }
     }
 }

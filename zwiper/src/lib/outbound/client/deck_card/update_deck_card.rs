@@ -1,11 +1,11 @@
 //! Update card quantity in a deck.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{ApiError, routes::update_deck_card_route};
+use zwipe::inbound::http::routes::update_deck_card_route;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::deck_card::DeckCard},
     http::contracts::deck_card::HttpUpdateDeckCard,
@@ -20,7 +20,7 @@ pub trait ClientUpdateDeckCard {
         scryfall_data_id: Uuid,
         request: &HttpUpdateDeckCard,
         session: &Session,
-    ) -> impl Future<Output = Result<DeckCard, ApiError>> + Send;
+    ) -> impl Future<Output = Result<DeckCard, ClientError>> + Send;
 }
 
 impl ClientUpdateDeckCard for ZwipeClient {
@@ -30,7 +30,7 @@ impl ClientUpdateDeckCard for ZwipeClient {
         scryfall_data_id: Uuid,
         request: &HttpUpdateDeckCard,
         session: &Session,
-    ) -> Result<DeckCard, ApiError> {
+    ) -> Result<DeckCard, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&update_deck_card_route(deck_id, scryfall_data_id));
         info!("PUT {} body: {:?}", url, request);

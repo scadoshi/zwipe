@@ -11,7 +11,7 @@ use crate::{
         },
         metrics::models::kinds::AuditAction,
     },
-    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
+    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 
 #[cfg(feature = "zerver")]
@@ -21,7 +21,7 @@ impl From<ChangePasswordError> for ApiError {
             ChangePasswordError::UserNotFound => {
                 Self::UnprocessableEntity("user not found".to_string())
             }
-            ChangePasswordError::Database(e) => e.log_500(),
+            ChangePasswordError::Database(e) => e.to_500(),
             ChangePasswordError::AuthenticateUserError(e) => ApiError::from(e),
         }
     }
@@ -37,7 +37,7 @@ impl From<InvalidChangePassword> for ApiError {
             InvalidChangePassword::SameAsCurrent => Self::UnprocessableEntity(
                 "new password must be different from your current password".to_string(),
             ),
-            InvalidChangePassword::FailedPasswordHash(e) => e.log_500(),
+            InvalidChangePassword::FailedPasswordHash(e) => e.to_500(),
         }
     }
 }

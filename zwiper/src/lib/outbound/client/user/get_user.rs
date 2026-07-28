@@ -1,20 +1,21 @@
 //! Fetch user profile endpoint.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{ApiError, routes::get_user_route};
+use zwipe::inbound::http::routes::get_user_route;
 use zwipe_core::domain::{auth::models::session::Session, user::User};
 
 /// Trait for fetching user profile data.
 #[allow(missing_docs)]
 pub trait ClientGetUser {
-    fn get_user(&self, session: &Session) -> impl Future<Output = Result<User, ApiError>> + Send;
+    fn get_user(&self, session: &Session)
+    -> impl Future<Output = Result<User, ClientError>> + Send;
 }
 
 impl ClientGetUser for ZwipeClient {
-    async fn get_user(&self, session: &Session) -> Result<User, ApiError> {
+    async fn get_user(&self, session: &Session) -> Result<User, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_user_route());
         info!("GET {}", url);

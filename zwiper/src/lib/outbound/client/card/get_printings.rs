@@ -1,11 +1,11 @@
 //! Fetch all printings of a card by oracle ID.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{ApiError, routes::get_printings_route};
+use zwipe::inbound::http::routes::get_printings_route;
 use zwipe_core::domain::card::Card;
 
 /// Trait for fetching all printings of a card by oracle ID.
@@ -14,11 +14,11 @@ pub trait ClientGetPrintings {
     fn get_printings(
         &self,
         oracle_id: Uuid,
-    ) -> impl Future<Output = Result<Vec<Card>, ApiError>> + Send;
+    ) -> impl Future<Output = Result<Vec<Card>, ClientError>> + Send;
 }
 
 impl ClientGetPrintings for ZwipeClient {
-    async fn get_printings(&self, oracle_id: Uuid) -> Result<Vec<Card>, ApiError> {
+    async fn get_printings(&self, oracle_id: Uuid) -> Result<Vec<Card>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_printings_route(oracle_id));
         info!("GET {}", url);

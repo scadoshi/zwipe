@@ -1,11 +1,11 @@
 //! Clear a deck's suppression set (skipped/removed cards).
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{ApiError, routes::clear_deck_suppressions_route};
+use zwipe::inbound::http::routes::clear_deck_suppressions_route;
 use zwipe_core::{
     domain::auth::models::session::Session, http::contracts::deck::HttpClearedSuppressions,
 };
@@ -17,7 +17,7 @@ pub trait ClientClearDeckSuppressions {
         &self,
         deck_id: Uuid,
         session: &Session,
-    ) -> impl Future<Output = Result<HttpClearedSuppressions, ApiError>> + Send;
+    ) -> impl Future<Output = Result<HttpClearedSuppressions, ClientError>> + Send;
 }
 
 impl ClientClearDeckSuppressions for ZwipeClient {
@@ -25,7 +25,7 @@ impl ClientClearDeckSuppressions for ZwipeClient {
         &self,
         deck_id: Uuid,
         session: &Session,
-    ) -> Result<HttpClearedSuppressions, ApiError> {
+    ) -> Result<HttpClearedSuppressions, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&clear_deck_suppressions_route(deck_id));
         info!("DELETE {}", url);

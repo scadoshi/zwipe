@@ -1,7 +1,7 @@
 #[cfg(feature = "zerver")]
 use crate::{
     domain::card::requests::get_artists::GetArtistsError,
-    inbound::http::{ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, To500},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State};
@@ -12,7 +12,7 @@ use reqwest::StatusCode;
 impl From<GetArtistsError> for ApiError {
     fn from(value: GetArtistsError) -> Self {
         match value {
-            GetArtistsError::Database(e) => e.log_500(),
+            GetArtistsError::Database(e) => e.to_500(),
         }
     }
 }

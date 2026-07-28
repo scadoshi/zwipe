@@ -1,9 +1,8 @@
 //! Batched usage POST.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
-use zwipe::inbound::http::ApiError;
 use zwipe_core::{
     domain::auth::models::session::Session,
     http::{contracts::metrics::HttpUsageBatch, paths::record_usage_route},
@@ -16,7 +15,7 @@ pub trait ClientRecordUsage {
         &self,
         batch: &HttpUsageBatch,
         session: &Session,
-    ) -> impl Future<Output = Result<(), ApiError>> + Send;
+    ) -> impl Future<Output = Result<(), ClientError>> + Send;
 }
 
 impl ClientRecordUsage for ZwipeClient {
@@ -24,7 +23,7 @@ impl ClientRecordUsage for ZwipeClient {
         &self,
         batch: &HttpUsageBatch,
         session: &Session,
-    ) -> Result<(), ApiError> {
+    ) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&record_usage_route());
 

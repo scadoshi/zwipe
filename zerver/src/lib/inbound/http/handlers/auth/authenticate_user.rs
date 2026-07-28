@@ -13,7 +13,7 @@ use crate::{
         auth::requests::authenticate_user::{AuthenticateUserError, InvalidAuthenticateUser},
         metrics::models::kinds::{AuditAction, EventKind},
     },
-    inbound::http::{ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, To500},
 };
 
 #[cfg(feature = "zerver")]
@@ -23,10 +23,10 @@ impl From<AuthenticateUserError> for ApiError {
             AuthenticateUserError::UserNotFound | AuthenticateUserError::InvalidPassword => {
                 Self::Unauthorized("invalid credentials".to_string())
             }
-            AuthenticateUserError::Database(e) => e.log_500(),
-            AuthenticateUserError::UserFromDb(e) => e.log_500(),
-            AuthenticateUserError::FailedToVerify(e) => e.log_500(),
-            AuthenticateUserError::FailedAccessToken(e) => e.log_500(),
+            AuthenticateUserError::Database(e) => e.to_500(),
+            AuthenticateUserError::UserFromDb(e) => e.to_500(),
+            AuthenticateUserError::FailedToVerify(e) => e.to_500(),
+            AuthenticateUserError::FailedAccessToken(e) => e.to_500(),
             AuthenticateUserError::CreateSessionError(e) => ApiError::from(e),
             AuthenticateUserError::AccountLocked => {
                 Self::TooManyRequests("account temporarily locked".to_string())

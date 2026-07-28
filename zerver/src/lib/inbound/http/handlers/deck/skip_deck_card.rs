@@ -8,7 +8,7 @@ use axum::{
 #[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck::skip_deck_card::SkipDeckCardError,
-    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
+    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::requests::skip_deck_card::{InvalidSkipDeckCard, SkipDeckCard};
@@ -19,7 +19,7 @@ use zwipe_core::http::contracts::deck::HttpSkipDeckCard;
 impl From<SkipDeckCardError> for ApiError {
     fn from(value: SkipDeckCardError) -> Self {
         match value {
-            SkipDeckCardError::Database(e) => e.log_500(),
+            SkipDeckCardError::Database(e) => e.to_500(),
             SkipDeckCardError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
     }

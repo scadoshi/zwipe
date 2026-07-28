@@ -7,7 +7,7 @@ use crate::{domain::auth::requests::delete_user::InvalidDeleteUser, inbound::htt
 #[cfg(feature = "zerver")]
 use crate::{
     domain::auth::requests::delete_user::{DeleteUser, DeleteUserError},
-    inbound::http::{AppState, Log500, middleware::AuthenticatedUser},
+    inbound::http::{AppState, To500, middleware::AuthenticatedUser},
 };
 
 #[cfg(feature = "zerver")]
@@ -15,7 +15,7 @@ impl From<DeleteUserError> for ApiError {
     fn from(value: DeleteUserError) -> Self {
         match value {
             DeleteUserError::NotFound => Self::NotFound("user not found".to_string()),
-            DeleteUserError::Database(e) => e.log_500(),
+            DeleteUserError::Database(e) => e.to_500(),
             DeleteUserError::AuthenticateUserError(e) => ApiError::from(e),
         }
     }

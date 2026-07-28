@@ -7,7 +7,7 @@ use axum::{
 #[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError,
-    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
+    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::requests::clear_deck_suppressions::{
@@ -20,7 +20,7 @@ use zwipe_core::http::contracts::deck::HttpClearedSuppressions;
 impl From<ClearDeckSuppressionsError> for ApiError {
     fn from(value: ClearDeckSuppressionsError) -> Self {
         match value {
-            ClearDeckSuppressionsError::Database(e) => e.log_500(),
+            ClearDeckSuppressionsError::Database(e) => e.to_500(),
             ClearDeckSuppressionsError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
     }

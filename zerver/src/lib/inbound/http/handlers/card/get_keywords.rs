@@ -1,7 +1,7 @@
 #[cfg(feature = "zerver")]
 use crate::{
     domain::card::requests::get_keywords::GetKeywordsError,
-    inbound::http::{ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, To500},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State};
@@ -12,7 +12,7 @@ use reqwest::StatusCode;
 impl From<GetKeywordsError> for ApiError {
     fn from(value: GetKeywordsError) -> Self {
         match value {
-            GetKeywordsError::Database(e) => e.log_500(),
+            GetKeywordsError::Database(e) => e.to_500(),
         }
     }
 }

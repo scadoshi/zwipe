@@ -1,19 +1,19 @@
 //! Fetch all unique artist names.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{ApiError, routes::get_artists_route};
+use zwipe::inbound::http::routes::get_artists_route;
 
 /// Trait for fetching the list of all unique card artists.
 #[allow(missing_docs)]
 pub trait ClientGetArtists {
-    fn get_artists(&self) -> impl Future<Output = Result<Vec<String>, ApiError>> + Send;
+    fn get_artists(&self) -> impl Future<Output = Result<Vec<String>, ClientError>> + Send;
 }
 
 impl ClientGetArtists for ZwipeClient {
-    async fn get_artists(&self) -> Result<Vec<String>, ApiError> {
+    async fn get_artists(&self) -> Result<Vec<String>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_artists_route());
         info!("GET {}", url);

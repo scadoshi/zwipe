@@ -3,7 +3,7 @@
 #[cfg(feature = "zerver")]
 use crate::{
     domain::user::models::hints::MarkHintShownError,
-    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
+    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
@@ -27,7 +27,7 @@ impl From<MarkHintShownError> for ApiError {
     fn from(value: MarkHintShownError) -> Self {
         match value {
             MarkHintShownError::NotFound => Self::NotFound("user not found".to_string()),
-            MarkHintShownError::Database(e) | MarkHintShownError::UserFromDb(e) => e.log_500(),
+            MarkHintShownError::Database(e) | MarkHintShownError::UserFromDb(e) => e.to_500(),
         }
     }
 }
