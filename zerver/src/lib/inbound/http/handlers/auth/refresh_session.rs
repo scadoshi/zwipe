@@ -7,7 +7,7 @@ use crate::{
         metrics::models::kinds::{AuditAction, EventKind},
         user::models::get_user::GetUserError,
     },
-    inbound::http::{ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, To500},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
@@ -21,12 +21,12 @@ impl From<RefreshSessionError> for ApiError {
     fn from(value: RefreshSessionError) -> Self {
         match value {
             RefreshSessionError::CreateSessionError(e) => ApiError::from(e),
-            RefreshSessionError::Database(e) => e.log_500(),
+            RefreshSessionError::Database(e) => e.to_500(),
             RefreshSessionError::GetUserError(GetUserError::NotFound) => {
                 Self::Unauthorized("invalid refresh token".to_string())
             }
-            RefreshSessionError::GetUserError(e) => e.log_500(),
-            RefreshSessionError::InvalidJwt(e) => e.log_500(),
+            RefreshSessionError::GetUserError(e) => e.to_500(),
+            RefreshSessionError::InvalidJwt(e) => e.to_500(),
             RefreshSessionError::EnforceSessionMaximumError(e) => ApiError::from(e),
             RefreshSessionError::NotFound(u) => {
                 tracing::warn!(event = "token_refresh_failure", reason = "not_found", user_id = %u);

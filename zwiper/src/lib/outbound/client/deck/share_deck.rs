@@ -1,11 +1,11 @@
 //! Share / unshare a deck (public link token management).
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{ApiError, routes::share_deck_route};
+use zwipe::inbound::http::routes::share_deck_route;
 use zwipe_core::{
     domain::auth::models::session::Session, http::contracts::deck::HttpDeckShareToken,
 };
@@ -19,14 +19,14 @@ pub trait ClientShareDeck {
         &self,
         deck_id: Uuid,
         session: &Session,
-    ) -> impl Future<Output = Result<HttpDeckShareToken, ApiError>> + Send;
+    ) -> impl Future<Output = Result<HttpDeckShareToken, ClientError>> + Send;
 
     /// Revokes the deck's share token (stops sharing).
     fn unshare_deck(
         &self,
         deck_id: Uuid,
         session: &Session,
-    ) -> impl Future<Output = Result<(), ApiError>> + Send;
+    ) -> impl Future<Output = Result<(), ClientError>> + Send;
 }
 
 impl ClientShareDeck for ZwipeClient {
@@ -34,7 +34,7 @@ impl ClientShareDeck for ZwipeClient {
         &self,
         deck_id: Uuid,
         session: &Session,
-    ) -> Result<HttpDeckShareToken, ApiError> {
+    ) -> Result<HttpDeckShareToken, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&share_deck_route(deck_id));
         info!("POST {}", url);
@@ -55,7 +55,7 @@ impl ClientShareDeck for ZwipeClient {
         }
     }
 
-    async fn unshare_deck(&self, deck_id: Uuid, session: &Session) -> Result<(), ApiError> {
+    async fn unshare_deck(&self, deck_id: Uuid, session: &Session) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&share_deck_route(deck_id));
         info!("DELETE {}", url);

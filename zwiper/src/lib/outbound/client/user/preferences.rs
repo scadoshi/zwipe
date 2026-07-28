@@ -1,10 +1,10 @@
 //! User preferences API client operations.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{ApiError, routes::preferences_route};
+use zwipe::inbound::http::routes::preferences_route;
 use zwipe_core::{
     domain::{auth::models::session::Session, user::preferences::UserPreferences},
     http::contracts::user::HttpUpdatePreferences,
@@ -16,7 +16,7 @@ pub trait ClientGetPreferences {
     fn get_preferences(
         &self,
         session: &Session,
-    ) -> impl Future<Output = Result<UserPreferences, ApiError>> + Send;
+    ) -> impl Future<Output = Result<UserPreferences, ClientError>> + Send;
 }
 
 /// Trait for updating user display preferences.
@@ -26,11 +26,11 @@ pub trait ClientUpdatePreferences {
         &self,
         request: HttpUpdatePreferences,
         session: &Session,
-    ) -> impl Future<Output = Result<UserPreferences, ApiError>> + Send;
+    ) -> impl Future<Output = Result<UserPreferences, ClientError>> + Send;
 }
 
 impl ClientGetPreferences for ZwipeClient {
-    async fn get_preferences(&self, session: &Session) -> Result<UserPreferences, ApiError> {
+    async fn get_preferences(&self, session: &Session) -> Result<UserPreferences, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&preferences_route());
         info!("GET {}", url);
@@ -61,7 +61,7 @@ impl ClientUpdatePreferences for ZwipeClient {
         &self,
         request: HttpUpdatePreferences,
         session: &Session,
-    ) -> Result<UserPreferences, ApiError> {
+    ) -> Result<UserPreferences, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&preferences_route());
         info!("PUT {} body: {:?}", url, request);

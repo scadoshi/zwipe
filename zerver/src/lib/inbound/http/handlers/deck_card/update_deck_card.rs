@@ -11,7 +11,7 @@ use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
 use crate::{
     domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError,
     inbound::http::{
-        ApiError, AppState, Log500, handlers::metrics::check_completion::check_deck_completion,
+        ApiError, AppState, To500, handlers::metrics::check_completion::check_deck_completion,
         middleware::AuthenticatedUser,
     },
 };
@@ -38,8 +38,8 @@ impl From<UpdateDeckCardError> for ApiError {
             UpdateDeckCardError::MvpNotMainboard => {
                 Self::UnprocessableEntity("Only cards in the deck can be MVPs".to_string())
             }
-            UpdateDeckCardError::Database(e) => e.log_500(),
-            UpdateDeckCardError::DeckCardFromDb(e) => e.log_500(),
+            UpdateDeckCardError::Database(e) => e.to_500(),
+            UpdateDeckCardError::DeckCardFromDb(e) => e.to_500(),
             UpdateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
             UpdateDeckCardError::Forbidden => {
                 Self::Forbidden(UpdateDeckCardError::Forbidden.to_string())

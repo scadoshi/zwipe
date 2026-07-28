@@ -1,10 +1,10 @@
 //! Delete user account endpoint.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{ApiError, routes::delete_user_route};
+use zwipe::inbound::http::routes::delete_user_route;
 use zwipe_core::{domain::auth::models::session::Session, http::contracts::auth::HttpDeleteUser};
 
 /// Trait for deleting user accounts.
@@ -14,7 +14,7 @@ pub trait ClientDeleteUser {
         &self,
         request: HttpDeleteUser,
         session: &Session,
-    ) -> impl Future<Output = Result<(), ApiError>> + Send;
+    ) -> impl Future<Output = Result<(), ClientError>> + Send;
 }
 
 impl ClientDeleteUser for ZwipeClient {
@@ -22,7 +22,7 @@ impl ClientDeleteUser for ZwipeClient {
         &self,
         request: HttpDeleteUser,
         session: &Session,
-    ) -> Result<(), ApiError> {
+    ) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&delete_user_route());
         info!("DELETE {}", url);

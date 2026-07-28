@@ -25,7 +25,7 @@ use crate::{
     outbound::{
         buy_links,
         client::{
-            ZwipeClient,
+            ClientError, ZwipeClient,
             card::get_card::ClientGetCard,
             deck::{
                 delete_deck::ClientDeleteDeck, get_deck::ClientGetDeck,
@@ -40,7 +40,6 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe::inbound::http::ApiError;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
     domain::{
@@ -58,7 +57,7 @@ use zwipe_core::{
     },
 };
 
-type DeckResult = Result<(Vec<DeckEntry>, Vec<DeckWarning>, Vec<Card>), ApiError>;
+type DeckResult = Result<(Vec<DeckEntry>, Vec<DeckWarning>, Vec<Card>), ClientError>;
 
 #[component]
 pub fn ViewDeck(deck_id: Uuid) -> Element {
@@ -74,12 +73,12 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     // `use_reactive!` ties these resources to `deck_id` so they re-fetch when the
     // route param changes without a remount — e.g. cloning navigates ViewDeck →
     // ViewDeck, and a plain `move ||` closure would keep serving the old deck.
-    let mut deck_profile_resource: Resource<Result<DeckProfile, ApiError>> =
+    let mut deck_profile_resource: Resource<Result<DeckProfile, ClientError>> =
         use_resource(use_reactive!(|deck_id| async move {
             let session = session.ensure_fresh(client).await?;
             client().get_deck_profile(deck_id, &session).await
         }));
-    let commander_resource: Resource<Result<Option<Card>, ApiError>> =
+    let commander_resource: Resource<Result<Option<Card>, ClientError>> =
         use_resource(move || async move {
             let Some(Ok(DeckProfile {
                 commander_id: Some(original_commander_id),

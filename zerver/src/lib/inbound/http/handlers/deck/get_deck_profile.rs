@@ -19,11 +19,11 @@ use zwipe_core::domain::deck::{
 #[cfg(feature = "zerver")]
 impl From<GetDeckProfileError> for ApiError {
     fn from(value: GetDeckProfileError) -> Self {
-        use crate::inbound::http::Log500;
+        use crate::inbound::http::To500;
 
         match value {
-            GetDeckProfileError::Database(e) => e.log_500(),
-            GetDeckProfileError::DeckProfileFromDb(e) => e.log_500(),
+            GetDeckProfileError::Database(e) => e.to_500(),
+            GetDeckProfileError::DeckProfileFromDb(e) => e.to_500(),
             GetDeckProfileError::Forbidden => Self::NotFound("deck not found".to_string()),
             GetDeckProfileError::NotFound => Self::NotFound("deck not found".to_string()),
         }

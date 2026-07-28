@@ -1,7 +1,7 @@
 #[cfg(feature = "zerver")]
 use crate::{
     domain::card::requests::get_oracle_tags::GetOracleTagsError,
-    inbound::http::{ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, To500},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State};
@@ -14,7 +14,7 @@ use zwipe_core::domain::card::oracle_tag::OracleTag;
 impl From<GetOracleTagsError> for ApiError {
     fn from(value: GetOracleTagsError) -> Self {
         match value {
-            GetOracleTagsError::Database(e) => e.log_500(),
+            GetOracleTagsError::Database(e) => e.to_500(),
         }
     }
 }

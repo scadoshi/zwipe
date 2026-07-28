@@ -1,10 +1,10 @@
 //! Card search with filters.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{ApiError, routes::search_cards_route};
+use zwipe::inbound::http::routes::search_cards_route;
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{Card, search_card::card_filter::CardQuery},
@@ -17,7 +17,7 @@ pub trait ClientSearchCards {
         &self,
         card_filter: &CardQuery,
         session: &Session,
-    ) -> impl Future<Output = Result<Vec<Card>, ApiError>> + Send;
+    ) -> impl Future<Output = Result<Vec<Card>, ClientError>> + Send;
 }
 
 impl ClientSearchCards for ZwipeClient {
@@ -25,7 +25,7 @@ impl ClientSearchCards for ZwipeClient {
         &self,
         card_filter: &CardQuery,
         session: &Session,
-    ) -> Result<Vec<Card>, ApiError> {
+    ) -> Result<Vec<Card>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&search_cards_route());
 

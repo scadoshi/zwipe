@@ -13,7 +13,7 @@ use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 use crate::{
     domain::deck::models::deck_card::create_deck_card::CreateDeckCardError,
     inbound::http::{
-        ApiError, AppState, Log500, handlers::metrics::check_completion::check_deck_completion,
+        ApiError, AppState, To500, handlers::metrics::check_completion::check_deck_completion,
         middleware::AuthenticatedUser,
     },
 };
@@ -41,8 +41,8 @@ impl From<CreateDeckCardError> for ApiError {
                 "card limit reached across all boards, verify your email to unlock more"
                     .to_string(),
             ),
-            CreateDeckCardError::Database(e) => e.log_500(),
-            CreateDeckCardError::DeckCardFromDb(e) => e.log_500(),
+            CreateDeckCardError::Database(e) => e.to_500(),
+            CreateDeckCardError::DeckCardFromDb(e) => e.to_500(),
             CreateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
             CreateDeckCardError::Forbidden => {
                 Self::Forbidden(CreateDeckCardError::Forbidden.to_string())

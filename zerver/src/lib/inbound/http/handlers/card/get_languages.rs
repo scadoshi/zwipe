@@ -1,7 +1,7 @@
 #[cfg(feature = "zerver")]
 use crate::{
     domain::card::requests::get_languages::GetLanguagesError,
-    inbound::http::{ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, To500},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State};
@@ -12,7 +12,7 @@ use reqwest::StatusCode;
 impl From<GetLanguagesError> for ApiError {
     fn from(value: GetLanguagesError) -> Self {
         match value {
-            GetLanguagesError::Database(e) => e.log_500(),
+            GetLanguagesError::Database(e) => e.to_500(),
         }
     }
 }

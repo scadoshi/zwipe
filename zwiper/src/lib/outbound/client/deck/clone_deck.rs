@@ -1,11 +1,11 @@
 //! Clone an existing deck.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{ApiError, routes::clone_deck_route};
+use zwipe::inbound::http::routes::clone_deck_route;
 use zwipe_core::{
     domain::auth::models::session::Session,
     http::contracts::deck::{HttpCloneDeck, HttpClonedDeck},
@@ -19,7 +19,7 @@ pub trait ClientCloneDeck {
         source_deck_id: Uuid,
         body: &HttpCloneDeck,
         session: &Session,
-    ) -> impl Future<Output = Result<HttpClonedDeck, ApiError>> + Send;
+    ) -> impl Future<Output = Result<HttpClonedDeck, ClientError>> + Send;
 }
 
 impl ClientCloneDeck for ZwipeClient {
@@ -28,7 +28,7 @@ impl ClientCloneDeck for ZwipeClient {
         source_deck_id: Uuid,
         body: &HttpCloneDeck,
         session: &Session,
-    ) -> Result<HttpClonedDeck, ApiError> {
+    ) -> Result<HttpClonedDeck, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&clone_deck_route(source_deck_id));
         info!("POST {} body: {:?}", url, body);

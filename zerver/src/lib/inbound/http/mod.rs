@@ -57,11 +57,15 @@ use uuid::Uuid;
 //  error
 // =======
 
-/// Maps domain errors to HTTP status codes.
+/// Shared error vocabulary between the server and its clients.
 ///
-/// `InternalServerError` **strips the original message** in its `IntoResponse` impl,
-/// returning a generic `"internal server error"` to prevent leaking internals.
-/// Other variants forward the message to the client.
+/// The server produces these from domain errors and renders them in `IntoResponse`
+/// — the **single exit path**: `InternalServerError` logs its carried detail there
+/// and sends a generic body, so an unlogged 500 is structurally impossible. Other
+/// variants forward their message to the client verbatim (4xx messages are
+/// user-safe copy by contract). Clients rebuild the vocabulary from
+/// `(status, body)` in their own error layer (zwiper's `ClientError`); transport
+/// failures never enter this type.
 #[derive(Debug, Error, Clone)]
 #[allow(missing_docs)]
 pub enum ApiError {
@@ -75,42 +79,13 @@ pub enum ApiError {
     NotFound(String),
     #[error("{0}")]
     Forbidden(String),
-    #[error("network error: {0}")]
-    Network(String),
     #[error("{0}")]
     TooManyRequests(String),
 }
 
-impl ApiError {
-    /// Returns a safe, user-facing message — never leaks internal details like URLs or stack traces.
-    pub fn to_user_message(&self) -> String {
-        match self {
-            ApiError::Network(_) => {
-                "connection error, check your network and try again".to_string()
-            }
-            ApiError::InternalServerError(_) => {
-                "something went wrong, please try again".to_string()
-            }
-            other => other.to_string(),
-        }
-    }
-}
-
-impl From<reqwest::Error> for ApiError {
-    fn from(value: reqwest::Error) -> Self {
-        Self::Network(value.to_string())
-    }
-}
-
-impl From<serde_json::Error> for ApiError {
-    fn from(value: serde_json::Error) -> Self {
-        Self::Network(format!("json error: {}", value))
-    }
-}
-
 impl From<anyhow::Error> for ApiError {
     fn from(value: anyhow::Error) -> Self {
-        Self::InternalServerError(value.to_string())
+        Self::InternalServerError(format!("{value:#}"))
     }
 }
 
@@ -120,66 +95,50 @@ impl From<uuid::Error> for ApiError {
     }
 }
 
-impl From<(reqwest::StatusCode, String)> for ApiError {
-    fn from(value: (reqwest::StatusCode, String)) -> Self {
-        let (status, message) = value;
-        let message = message.to_lowercase();
-        match status {
-            reqwest::StatusCode::INTERNAL_SERVER_ERROR => Self::InternalServerError(message),
-            reqwest::StatusCode::UNAUTHORIZED => Self::Unauthorized(message),
-            reqwest::StatusCode::FORBIDDEN => Self::Forbidden(message),
-            reqwest::StatusCode::NOT_FOUND => Self::NotFound(message),
-            reqwest::StatusCode::UNPROCESSABLE_ENTITY => Self::UnprocessableEntity(message),
-            reqwest::StatusCode::TOO_MANY_REQUESTS => Self::TooManyRequests(message),
-            _ => Self::InternalServerError(message),
-        }
-    }
-}
-
 #[cfg(feature = "zerver")]
 impl IntoResponse for ApiError {
     fn into_response(self) -> axum::response::Response {
-        match self {
-            ApiError::InternalServerError(_) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "internal server error".to_string(),
-            )
-                .into_response(),
-            ApiError::Network(_) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "internal server error".to_string(),
-            )
-                .into_response(),
-            ApiError::UnprocessableEntity(message) => {
-                (StatusCode::UNPROCESSABLE_ENTITY, message).into_response()
+        // Single exit path: every error response is logged here, tiered by fault.
+        // 500s are our fault (error, full detail, generic body); 4xx are client
+        // behavior (warn, message is user-safe so it logs and ships verbatim).
+        let (status, message) = match self {
+            ApiError::InternalServerError(detail) => {
+                tracing::error!("{detail}");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal server error".to_string(),
+                )
             }
-            ApiError::Unauthorized(message) => (StatusCode::UNAUTHORIZED, message).into_response(),
-            ApiError::NotFound(message) => (StatusCode::NOT_FOUND, message).into_response(),
-            ApiError::Forbidden(message) => (StatusCode::FORBIDDEN, message).into_response(),
-            ApiError::TooManyRequests(message) => {
-                (StatusCode::TOO_MANY_REQUESTS, message).into_response()
-            }
+            ApiError::UnprocessableEntity(message) => (StatusCode::UNPROCESSABLE_ENTITY, message),
+            ApiError::Unauthorized(message) => (StatusCode::UNAUTHORIZED, message),
+            ApiError::NotFound(message) => (StatusCode::NOT_FOUND, message),
+            ApiError::Forbidden(message) => (StatusCode::FORBIDDEN, message),
+            ApiError::TooManyRequests(message) => (StatusCode::TOO_MANY_REQUESTS, message),
+        };
+        if status != StatusCode::INTERNAL_SERVER_ERROR {
+            tracing::warn!("{} {}", status.as_u16(), message);
         }
+        (status, message).into_response()
     }
 }
 
-/// Logs the full error with backtrace, then returns a generic 500 to the client.
-///
-/// Prevents leaking internal details while preserving diagnostics in server logs.
+/// Converts an error to [`ApiError::InternalServerError`], capturing the full
+/// debug repr and a backtrace into the variant while the concrete type still
+/// exists. No logging happens here — `IntoResponse` is the single exit path
+/// that logs the carried detail before stripping it from the response.
 #[cfg(feature = "zerver")]
-trait Log500 {
-    /// Log the error and convert to [`ApiError::InternalServerError`].
-    fn log_500(self) -> ApiError;
+trait To500 {
+    /// Capture diagnostics and convert to [`ApiError::InternalServerError`].
+    fn to_500(self) -> ApiError;
 }
 
 #[cfg(feature = "zerver")]
-impl<E> Log500 for E
+impl<E> To500 for E
 where
     E: std::error::Error,
 {
-    fn log_500(self) -> ApiError {
-        tracing::error!("{:?}\n{}", self, anyhow!("{self}").backtrace());
-        ApiError::InternalServerError("internal server error".to_string())
+    fn to_500(self) -> ApiError {
+        ApiError::InternalServerError(format!("{:?}\n{}", self, anyhow!("{self}").backtrace()))
     }
 }
 
@@ -394,5 +353,73 @@ async fn shutdown_signal() {
     tokio::select! {
         _ = ctrl_c => tracing::info!("shutdown signal received (SIGINT)"),
         _ = terminate => tracing::info!("shutdown signal received (SIGTERM)"),
+    }
+}
+
+#[cfg(all(test, feature = "zerver"))]
+mod tests {
+    #![allow(clippy::unwrap_used, clippy::panic)]
+    use super::*;
+    use http_body_util::BodyExt;
+
+    async fn body_of(error: ApiError) -> (StatusCode, String) {
+        let response = error.into_response();
+        let status = response.status();
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        (status, String::from_utf8(bytes.to_vec()).unwrap())
+    }
+
+    /// `InternalServerError` carries its diagnostic detail (debug repr,
+    /// backtrace) inside the variant so the exit can log it. The exit MUST
+    /// strip it: forwarding the message like the 4xx arms do would leak
+    /// internals to clients.
+    #[tokio::test]
+    async fn internal_server_error_body_never_leaks_carried_detail() {
+        let detail = "connection refused (os error 111)\nstack backtrace: ...";
+        let (status, body) = body_of(ApiError::InternalServerError(detail.to_string())).await;
+        assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(body, "internal server error");
+    }
+
+    #[tokio::test]
+    async fn to_500_captures_detail_into_the_variant() {
+        let error = std::io::Error::other("db exploded");
+        match error.to_500() {
+            ApiError::InternalServerError(detail) => assert!(detail.contains("db exploded")),
+            other => panic!("expected InternalServerError, got {other:?}"),
+        }
+    }
+
+    /// 4xx messages are user-safe copy by contract and ship verbatim.
+    #[tokio::test]
+    async fn four_xx_messages_pass_through_verbatim() {
+        let cases = [
+            (
+                ApiError::UnprocessableEntity("deck name cannot be empty".into()),
+                StatusCode::UNPROCESSABLE_ENTITY,
+            ),
+            (
+                ApiError::Unauthorized("session expired".into()),
+                StatusCode::UNAUTHORIZED,
+            ),
+            (
+                ApiError::NotFound("deck not found".into()),
+                StatusCode::NOT_FOUND,
+            ),
+            (
+                ApiError::Forbidden("not your deck".into()),
+                StatusCode::FORBIDDEN,
+            ),
+            (
+                ApiError::TooManyRequests("slow down".into()),
+                StatusCode::TOO_MANY_REQUESTS,
+            ),
+        ];
+        for (error, expected_status) in cases {
+            let message = error.to_string();
+            let (status, body) = body_of(error).await;
+            assert_eq!(status, expected_status);
+            assert_eq!(body, message);
+        }
     }
 }

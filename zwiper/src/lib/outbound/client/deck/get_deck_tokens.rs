@@ -1,11 +1,11 @@
 //! Fetch tokens produced by a deck's cards.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{ApiError, routes::get_deck_tokens_route};
+use zwipe::inbound::http::routes::get_deck_tokens_route;
 use zwipe_core::domain::{auth::models::session::Session, card::Card};
 
 /// Trait for fetching all token cards produced by a deck.
@@ -15,7 +15,7 @@ pub trait ClientGetDeckTokens {
         &self,
         deck_id: Uuid,
         session: &Session,
-    ) -> impl Future<Output = Result<Vec<Card>, ApiError>> + Send;
+    ) -> impl Future<Output = Result<Vec<Card>, ClientError>> + Send;
 }
 
 impl ClientGetDeckTokens for ZwipeClient {
@@ -23,7 +23,7 @@ impl ClientGetDeckTokens for ZwipeClient {
         &self,
         deck_id: Uuid,
         session: &Session,
-    ) -> Result<Vec<Card>, ApiError> {
+    ) -> Result<Vec<Card>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_deck_tokens_route(deck_id));
         info!("GET {}", url);

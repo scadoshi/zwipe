@@ -29,7 +29,7 @@ use crate::{
         },
     },
     outbound::client::{
-        ZwipeClient,
+        ClientError, ZwipeClient,
         card::get_card::ClientGetCard,
         deck::{
             get_deck::ClientGetDeck, get_deck_profile::ClientGetDeckProfile,
@@ -44,7 +44,6 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::{collections::HashMap, time::Duration};
 use uuid::Uuid;
-use zwipe::inbound::http::ApiError;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
     domain::{
@@ -363,15 +362,16 @@ pub fn View(deck_id: Uuid) -> Element {
         });
     });
 
-    let tokens_resource: Resource<Result<Vec<Card>, ApiError>> = use_resource(move || async move {
-        let session = match session.ensure_fresh(client).await {
-            Ok(session) => session,
-            Err(_) => {
-                return Ok(Vec::new());
-            }
-        };
-        client().get_deck_tokens(deck_id, &session).await
-    });
+    let tokens_resource: Resource<Result<Vec<Card>, ClientError>> =
+        use_resource(move || async move {
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(_) => {
+                    return Ok(Vec::new());
+                }
+            };
+            client().get_deck_tokens(deck_id, &session).await
+        });
 
     // Effect 2 — filter + group (reads `filter_reset_counter`, `group_by_option`, `board_filter` reactively)
     use_effect(move || {

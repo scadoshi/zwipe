@@ -1,7 +1,7 @@
 use crate::{
     inbound::components::auth::ensure_session::EnsureFresh,
     outbound::client::{
-        ZwipeClient, auth::resend_verification::ClientResendEmailVerification,
+        ClientError, ZwipeClient, auth::resend_verification::ClientResendEmailVerification,
         user::get_user::ClientGetUser,
     },
 };
@@ -86,7 +86,7 @@ pub(crate) fn VerificationActions() -> Element {
                         ),
                         // Raced the server window — an email already went
                         // out recently, so keep the countdown running.
-                        Err(ApiError::TooManyRequests(_)) => toast.info(
+                        Err(ClientError::Api(ApiError::TooManyRequests(_))) => toast.info(
                             "Please wait a moment".to_string(),
                             ToastOptions::default().duration(Duration::from_millis(3000)),
                         ),

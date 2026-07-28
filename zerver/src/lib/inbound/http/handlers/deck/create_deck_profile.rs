@@ -4,7 +4,7 @@ use crate::{
         deck::models::deck::create_deck_profile::CreateDeckProfileError,
         metrics::models::kinds::EventKind,
     },
-    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
+    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
@@ -31,8 +31,8 @@ impl From<CreateDeckProfileError> for ApiError {
             CreateDeckProfileError::UnverifiedLimitReached => Self::UnprocessableEntity(
                 "deck limit reached, verify your email to unlock more".to_string(),
             ),
-            CreateDeckProfileError::Database(e) => e.log_500(),
-            CreateDeckProfileError::DeckFromDb(e) => e.log_500(),
+            CreateDeckProfileError::Database(e) => e.to_500(),
+            CreateDeckProfileError::DeckFromDb(e) => e.to_500(),
         }
     }
 }

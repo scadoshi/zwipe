@@ -1,11 +1,11 @@
 //! Import an Archidekt deck's cards into an existing deck.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{ApiError, routes::import_archidekt_deck_route};
+use zwipe::inbound::http::routes::import_archidekt_deck_route;
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
@@ -28,7 +28,7 @@ pub trait ClientImportArchidektDeck {
         board: Option<&str>,
         mode: ImportMode,
         session: &Session,
-    ) -> impl Future<Output = Result<ImportDeckCardsResult, ApiError>> + Send;
+    ) -> impl Future<Output = Result<ImportDeckCardsResult, ClientError>> + Send;
 }
 
 impl ClientImportArchidektDeck for ZwipeClient {
@@ -39,7 +39,7 @@ impl ClientImportArchidektDeck for ZwipeClient {
         board: Option<&str>,
         mode: ImportMode,
         session: &Session,
-    ) -> Result<ImportDeckCardsResult, ApiError> {
+    ) -> Result<ImportDeckCardsResult, ClientError> {
         let mut request_url = self.app_config.backend_url.clone();
         request_url.set_path(&import_archidekt_deck_route(deck_id));
 

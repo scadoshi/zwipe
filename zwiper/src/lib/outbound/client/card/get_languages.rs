@@ -1,19 +1,19 @@
 //! Fetch all available languages.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{ApiError, routes::get_languages_route};
+use zwipe::inbound::http::routes::get_languages_route;
 
 /// Trait for fetching the list of all available card languages.
 #[allow(missing_docs)]
 pub trait ClientGetLanguages {
-    fn get_languages(&self) -> impl Future<Output = Result<Vec<String>, ApiError>> + Send;
+    fn get_languages(&self) -> impl Future<Output = Result<Vec<String>, ClientError>> + Send;
 }
 
 impl ClientGetLanguages for ZwipeClient {
-    async fn get_languages(&self) -> Result<Vec<String>, ApiError> {
+    async fn get_languages(&self) -> Result<Vec<String>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_languages_route());
         info!("GET {}", url);

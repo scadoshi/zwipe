@@ -20,12 +20,12 @@ use zwipe_core::domain::{
 #[cfg(feature = "zerver")]
 impl From<SearchDeckCardsError> for ApiError {
     fn from(value: SearchDeckCardsError) -> Self {
-        use crate::inbound::http::Log500;
+        use crate::inbound::http::To500;
 
         match value {
             SearchDeckCardsError::GetDeckProfile(e) => e.into(),
             SearchDeckCardsError::SearchCards(e) => e.into(),
-            SearchDeckCardsError::Database(e) => e.log_500(),
+            SearchDeckCardsError::Database(e) => e.to_500(),
         }
     }
 }

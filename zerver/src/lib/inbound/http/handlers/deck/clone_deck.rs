@@ -5,7 +5,7 @@ use crate::{
         metrics::models::kinds::EventKind,
     },
     inbound::http::{
-        ApiError, AppState, Log500, handlers::metrics::check_completion::check_deck_completion,
+        ApiError, AppState, To500, handlers::metrics::check_completion::check_deck_completion,
         middleware::AuthenticatedUser,
     },
 };
@@ -48,10 +48,10 @@ impl From<CloneDeckError> for ApiError {
                     Self::NotFound("source deck not found".to_string())
                 }
                 GetDeckProfileError::Forbidden => Self::NotFound("deck not found".to_string()),
-                GetDeckProfileError::Database(e) => e.log_500(),
-                GetDeckProfileError::DeckProfileFromDb(e) => e.log_500(),
+                GetDeckProfileError::Database(e) => e.to_500(),
+                GetDeckProfileError::DeckProfileFromDb(e) => e.to_500(),
             },
-            CloneDeckError::Database(e) => e.log_500(),
+            CloneDeckError::Database(e) => e.to_500(),
         }
     }
 }

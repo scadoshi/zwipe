@@ -1,11 +1,11 @@
 //! Update deck profile metadata.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{ApiError, routes::update_deck_route};
+use zwipe::inbound::http::routes::update_deck_route;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::deck_profile::DeckProfile},
     http::contracts::deck::HttpUpdateDeckProfile,
@@ -19,7 +19,7 @@ pub trait ClientUpdateDeckProfile {
         deck_id: Uuid,
         body: &HttpUpdateDeckProfile,
         session: &Session,
-    ) -> impl Future<Output = Result<DeckProfile, ApiError>> + Send;
+    ) -> impl Future<Output = Result<DeckProfile, ClientError>> + Send;
 }
 
 impl ClientUpdateDeckProfile for ZwipeClient {
@@ -28,7 +28,7 @@ impl ClientUpdateDeckProfile for ZwipeClient {
         deck_id: Uuid,
         body: &HttpUpdateDeckProfile,
         session: &Session,
-    ) -> Result<DeckProfile, ApiError> {
+    ) -> Result<DeckProfile, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&update_deck_route(deck_id));
         info!("PUT {} body: {:?}", url, body);

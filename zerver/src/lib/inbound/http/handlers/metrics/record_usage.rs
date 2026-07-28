@@ -2,7 +2,7 @@ use axum::{Json, extract::State, http::StatusCode};
 
 use crate::{
     domain::metrics::models::{errors::MetricsError, kinds::EventKind},
-    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
+    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 use zwipe_core::http::contracts::metrics::HttpUsageBatch;
 
@@ -10,7 +10,7 @@ impl From<MetricsError> for ApiError {
     fn from(value: MetricsError) -> Self {
         match value {
             MetricsError::NotFound => Self::NotFound("metrics row not found".to_string()),
-            MetricsError::Database(e) => e.log_500(),
+            MetricsError::Database(e) => e.to_500(),
         }
     }
 }

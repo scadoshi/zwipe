@@ -1,11 +1,11 @@
 //! Fetch a single card by ID.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{ApiError, routes::get_card_route};
+use zwipe::inbound::http::routes::get_card_route;
 use zwipe_core::domain::card::Card;
 
 /// Trait for fetching a single card by its Scryfall data ID.
@@ -14,11 +14,11 @@ pub trait ClientGetCard {
     fn get_card(
         &self,
         scryfall_data_id: Uuid,
-    ) -> impl Future<Output = Result<Card, ApiError>> + Send;
+    ) -> impl Future<Output = Result<Card, ClientError>> + Send;
 }
 
 impl ClientGetCard for ZwipeClient {
-    async fn get_card(&self, scryfall_data_id: Uuid) -> Result<Card, ApiError> {
+    async fn get_card(&self, scryfall_data_id: Uuid) -> Result<Card, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_card_route(scryfall_data_id));
         info!("GET {}", url);

@@ -10,7 +10,7 @@
 use std::sync::{Arc, OnceLock};
 
 use crate::outbound::{
-    client::{ZwipeClient, auth::refresh::ClientRefresh},
+    client::{ClientError, ZwipeClient, auth::refresh::ClientRefresh},
     session::Persist,
 };
 use dioxus::prelude::*;
@@ -38,23 +38,27 @@ pub trait EnsureFresh {
     fn ensure_fresh(
         self,
         client: Signal<ZwipeClient>,
-    ) -> impl std::future::Future<Output = Result<Session, ApiError>>;
+    ) -> impl std::future::Future<Output = Result<Session, ClientError>>;
 }
 
 impl EnsureFresh for Signal<Option<Session>> {
-    async fn ensure_fresh(self, client: Signal<ZwipeClient>) -> Result<Session, ApiError> {
+    async fn ensure_fresh(self, client: Signal<ZwipeClient>) -> Result<Session, ClientError> {
         let mut session = self;
 
         // Fast path — no lock. peek() rather than session() so resources
         // calling this aren't subscribed to re-run on every refresh.
         let Some(current) = session.peek().clone() else {
-            return Err(ApiError::Unauthorized("not logged in".to_string()));
+            return Err(ClientError::Api(ApiError::Unauthorized(
+                "not logged in".to_string(),
+            )));
         };
         if current.is_expired() {
             tracing::info!("session expired (refresh token dead)");
             current.infallible_delete();
             session.set(None);
-            return Err(ApiError::Unauthorized("session expired".to_string()));
+            return Err(ClientError::Api(ApiError::Unauthorized(
+                "session expired".to_string(),
+            )));
         }
         if !current.access_token.is_expired() {
             return Ok(current);
@@ -65,7 +69,9 @@ impl EnsureFresh for Signal<Option<Session>> {
         let guard = refresh_lock().lock_owned().await;
 
         let Some(current) = session.peek().clone() else {
-            return Err(ApiError::Unauthorized("not logged in".to_string()));
+            return Err(ClientError::Api(ApiError::Unauthorized(
+                "not logged in".to_string(),
+            )));
         };
         if !current.access_token.is_expired() {
             return Ok(current); // a concurrent caller already refreshed
@@ -95,9 +101,11 @@ impl EnsureFresh for Signal<Option<Session>> {
                 }
                 Err(e) => {
                     match &e {
-                        ApiError::Unauthorized(_)
-                        | ApiError::Forbidden(_)
-                        | ApiError::NotFound(_) => {
+                        ClientError::Api(
+                            ApiError::Unauthorized(_)
+                            | ApiError::Forbidden(_)
+                            | ApiError::NotFound(_),
+                        ) => {
                             tracing::warn!("refresh rejected; clearing session: {e}");
                             current.infallible_delete();
                             session.set(None);
@@ -113,6 +121,6 @@ impl EnsureFresh for Signal<Option<Session>> {
         });
 
         rx.await
-            .unwrap_or_else(|_| Err(ApiError::Network("refresh task dropped".to_string())))
+            .unwrap_or_else(|_| Err(ClientError::Network("refresh task dropped".to_string())))
     }
 }

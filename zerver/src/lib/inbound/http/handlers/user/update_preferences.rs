@@ -3,7 +3,7 @@
 #[cfg(feature = "zerver")]
 use crate::{
     domain::user::models::preferences::{InvalidUpdatePreferences, UpdatePreferencesError},
-    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
+    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
@@ -24,7 +24,7 @@ impl From<UpdatePreferencesError> for ApiError {
     fn from(value: UpdatePreferencesError) -> Self {
         match value {
             UpdatePreferencesError::Invalid(e) => Self::UnprocessableEntity(e.to_string()),
-            UpdatePreferencesError::Database(e) => e.log_500(),
+            UpdatePreferencesError::Database(e) => e.to_500(),
         }
     }
 }

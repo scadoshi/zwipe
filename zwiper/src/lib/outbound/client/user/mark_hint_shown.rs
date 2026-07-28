@@ -1,10 +1,10 @@
 //! Mark one-time UI hint shown endpoint.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{ApiError, routes::mark_hint_shown_route};
+use zwipe::inbound::http::routes::mark_hint_shown_route;
 use zwipe_core::{
     domain::{auth::models::session::Session, user::User},
     http::contracts::user::HttpMarkHintShown,
@@ -17,11 +17,11 @@ pub trait ClientMarkHintShown {
         &self,
         hint: &str,
         session: &Session,
-    ) -> impl Future<Output = Result<User, ApiError>> + Send;
+    ) -> impl Future<Output = Result<User, ClientError>> + Send;
 }
 
 impl ClientMarkHintShown for ZwipeClient {
-    async fn mark_hint_shown(&self, hint: &str, session: &Session) -> Result<User, ApiError> {
+    async fn mark_hint_shown(&self, hint: &str, session: &Session) -> Result<User, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&mark_hint_shown_route());
         info!("PUT {}", url);

@@ -19,9 +19,9 @@
 //! even logged out and keep Cloudflare cache HITs working — do not add bearer auth
 //! to them. Deck tags are the one authed catalog; they warm once a session exists.
 
+use crate::outbound::client::ClientError;
 use chrono::{DateTime, Utc};
 use dioxus::prelude::*;
-use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{card_role::CardRoleView, oracle_tag::OracleTag},
@@ -114,7 +114,7 @@ impl<T: Clone + PartialEq + 'static> CatalogSlot<T> {
     fn refresh<F, Fut>(self, fetch: F)
     where
         F: FnOnce() -> Fut + 'static,
-        Fut: std::future::Future<Output = Result<T, ApiError>> + 'static,
+        Fut: std::future::Future<Output = Result<T, ClientError>> + 'static,
     {
         let mut fetching = self.fetching;
         let mut cell = self.cell;

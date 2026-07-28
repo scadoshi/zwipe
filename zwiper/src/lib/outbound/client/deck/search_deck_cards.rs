@@ -4,12 +4,12 @@
 //! server excludes cards already in the deck (any board, plus profile slots)
 //! and defaults to synergy ordering when no explicit sort is set.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{ApiError, routes::search_deck_cards_route};
+use zwipe::inbound::http::routes::search_deck_cards_route;
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{Card, search_card::card_filter::CardQuery},
@@ -23,7 +23,7 @@ pub trait ClientSearchDeckCards {
         deck_id: Uuid,
         card_filter: &CardQuery,
         session: &Session,
-    ) -> impl Future<Output = Result<(Vec<Card>, bool), ApiError>> + Send;
+    ) -> impl Future<Output = Result<(Vec<Card>, bool), ClientError>> + Send;
 }
 
 impl ClientSearchDeckCards for ZwipeClient {
@@ -35,7 +35,7 @@ impl ClientSearchDeckCards for ZwipeClient {
         deck_id: Uuid,
         card_filter: &CardQuery,
         session: &Session,
-    ) -> Result<(Vec<Card>, bool), ApiError> {
+    ) -> Result<(Vec<Card>, bool), ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&search_deck_cards_route(deck_id));
 

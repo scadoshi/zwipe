@@ -2,7 +2,9 @@
 
 use crate::{
     inbound::router::Router,
-    outbound::client::{ZwipeClient, deck_card::delete_deck_card::ClientDeleteDeckCard},
+    outbound::client::{
+        ClientError, ZwipeClient, deck_card::delete_deck_card::ClientDeleteDeckCard,
+    },
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -102,9 +104,9 @@ pub(crate) fn DeckWarnings(
                                             onclick: move |_| {
                                                 let on_remove = on_remove;
                                                 spawn(async move {
-                                                    let result: Result<(), ApiError> = async {
+                                                    let result: Result<(), ClientError> = async {
                                                         let session = session()
-                                                            .ok_or_else(|| ApiError::Unauthorized("Session expired".to_string()))?;
+                                                            .ok_or_else(|| ClientError::Api(ApiError::Unauthorized("Session expired".to_string())))?;
                                                         client().delete_deck_card(deck_id, card_id, &session).await
                                                     }.await;
                                                     match result {

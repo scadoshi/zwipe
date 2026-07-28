@@ -17,7 +17,7 @@ use crate::{
         router::Router,
     },
     outbound::client::{
-        ZwipeClient,
+        ClientError, ZwipeClient,
         card::get_card::ClientGetCard,
         deck::{get_deck::ClientGetDeck, update_deck_profile::ClientUpdateDeckProfile},
     },
@@ -26,7 +26,6 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe::inbound::http::ApiError;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
     domain::{
@@ -144,7 +143,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     // ========================================
     // Fetch deck profile
     // ========================================
-    let original_deck_resource: Resource<Result<Deck, ApiError>> =
+    let original_deck_resource: Resource<Result<Deck, ClientError>> =
         use_resource(move || async move {
             let session = session.ensure_fresh(client).await?;
             client().get_deck(deck_id, &session).await
@@ -194,7 +193,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     // ========================================
     // Fetch commander card
     // ========================================
-    let original_commander_resource: Resource<Result<Option<Card>, ApiError>> =
+    let original_commander_resource: Resource<Result<Option<Card>, ClientError>> =
         use_resource(move || async move {
             let Some(Ok(Deck {
                 deck_profile:
@@ -227,7 +226,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     // ========================================
     // Fetch partner commander card
     // ========================================
-    let original_partner_resource: Resource<Result<Option<Card>, ApiError>> =
+    let original_partner_resource: Resource<Result<Option<Card>, ClientError>> =
         use_resource(move || async move {
             let Some(Ok(Deck {
                 deck_profile:
@@ -260,7 +259,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     // ========================================
     // Fetch background card
     // ========================================
-    let original_background_resource: Resource<Result<Option<Card>, ApiError>> =
+    let original_background_resource: Resource<Result<Option<Card>, ClientError>> =
         use_resource(move || async move {
             let Some(Ok(Deck {
                 deck_profile:
@@ -293,7 +292,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     // ========================================
     // Fetch signature spell card
     // ========================================
-    let original_spell_resource: Resource<Result<Option<Card>, ApiError>> =
+    let original_spell_resource: Resource<Result<Option<Card>, ClientError>> =
         use_resource(move || async move {
             let Some(Ok(Deck {
                 deck_profile:

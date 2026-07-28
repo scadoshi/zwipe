@@ -13,6 +13,8 @@ pub mod changelog;
 pub mod deck;
 /// Deck-card relationship operations (add/remove cards from decks).
 pub mod deck_card;
+/// Client-side error type (transport failures + wire-error decoding).
+pub mod error;
 /// User metrics operations.
 pub mod metrics;
 /// User profile operations.
@@ -21,6 +23,7 @@ pub mod user;
 pub mod version;
 
 use crate::config::Config;
+pub use error::ClientError;
 use reqwest::Client;
 use std::sync::OnceLock;
 

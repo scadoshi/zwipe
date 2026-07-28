@@ -2,7 +2,7 @@
 use crate::{
     domain::deck::models::deck::update_deck_profile::UpdateDeckProfileError,
     inbound::http::{
-        ApiError, AppState, Log500, handlers::metrics::check_completion::check_deck_completion,
+        ApiError, AppState, To500, handlers::metrics::check_completion::check_deck_completion,
         middleware::AuthenticatedUser,
     },
 };
@@ -33,8 +33,8 @@ impl From<UpdateDeckProfileError> for ApiError {
                 "deck with name and user combination already exists".to_string(),
             ),
             UpdateDeckProfileError::GetDeckProfileError(e) => ApiError::from(e),
-            UpdateDeckProfileError::DeckFromDb(e) => e.log_500(),
-            UpdateDeckProfileError::Database(e) => e.log_500(),
+            UpdateDeckProfileError::DeckFromDb(e) => e.to_500(),
+            UpdateDeckProfileError::Database(e) => e.to_500(),
             UpdateDeckProfileError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
     }

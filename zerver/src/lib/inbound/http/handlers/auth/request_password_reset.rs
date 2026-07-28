@@ -8,14 +8,14 @@ use crate::{
     domain::auth::requests::request_password_reset::{
         RequestPasswordReset, RequestPasswordResetError,
     },
-    inbound::http::{ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, To500},
 };
 
 #[cfg(feature = "zerver")]
 impl From<RequestPasswordResetError> for ApiError {
     fn from(value: RequestPasswordResetError) -> Self {
         match value {
-            RequestPasswordResetError::Database(e) => e.log_500(),
+            RequestPasswordResetError::Database(e) => e.to_500(),
         }
     }
 }

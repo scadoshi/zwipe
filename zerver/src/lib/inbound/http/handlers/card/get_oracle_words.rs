@@ -1,7 +1,7 @@
 #[cfg(feature = "zerver")]
 use crate::{
     domain::card::requests::get_oracle_words::GetOracleWordsError,
-    inbound::http::{ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, To500},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State};
@@ -12,7 +12,7 @@ use reqwest::StatusCode;
 impl From<GetOracleWordsError> for ApiError {
     fn from(value: GetOracleWordsError) -> Self {
         match value {
-            GetOracleWordsError::Database(e) => e.log_500(),
+            GetOracleWordsError::Database(e) => e.to_500(),
         }
     }
 }

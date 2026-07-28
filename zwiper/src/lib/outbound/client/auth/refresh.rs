@@ -1,10 +1,10 @@
 //! Access token refresh API client.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{ApiError, routes::refresh_session_route};
+use zwipe::inbound::http::routes::refresh_session_route;
 use zwipe_core::{
     domain::auth::models::session::Session, http::contracts::auth::HttpRefreshSession,
 };
@@ -15,11 +15,11 @@ pub trait ClientRefresh {
     fn refresh(
         &self,
         request: &HttpRefreshSession,
-    ) -> impl Future<Output = Result<Session, ApiError>> + Send;
+    ) -> impl Future<Output = Result<Session, ClientError>> + Send;
 }
 
 impl ClientRefresh for ZwipeClient {
-    async fn refresh(&self, request: &HttpRefreshSession) -> Result<Session, ApiError> {
+    async fn refresh(&self, request: &HttpRefreshSession) -> Result<Session, ClientError> {
         // Re-send the running app version each refresh so the rotated session
         // records the live version, not the one it was first created with.
         let mut request = HttpRefreshSession::new(&request.user_id, &request.refresh_token);

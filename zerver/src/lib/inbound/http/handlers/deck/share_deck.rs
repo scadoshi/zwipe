@@ -10,7 +10,7 @@ use uuid::Uuid;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck::share_deck::ShareDeckError,
-    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
+    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
@@ -21,7 +21,7 @@ use zwipe_core::http::contracts::deck::HttpDeckShareToken;
 impl From<ShareDeckError> for ApiError {
     fn from(value: ShareDeckError) -> Self {
         match value {
-            ShareDeckError::Database(e) => e.log_500(),
+            ShareDeckError::Database(e) => e.to_500(),
             ShareDeckError::Forbidden => Self::NotFound("deck not found".to_string()),
             ShareDeckError::NotFound => Self::NotFound(ShareDeckError::NotFound.to_string()),
         }

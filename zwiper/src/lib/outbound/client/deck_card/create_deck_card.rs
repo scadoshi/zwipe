@@ -1,11 +1,11 @@
 //! Add a card to a deck.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{ApiError, routes::create_deck_card_route};
+use zwipe::inbound::http::routes::create_deck_card_route;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::deck_card::DeckCard},
     http::contracts::deck_card::HttpCreateDeckCard,
@@ -19,7 +19,7 @@ pub trait ClientCreateDeckCard {
         deck_id: Uuid,
         request: &HttpCreateDeckCard,
         session: &Session,
-    ) -> impl Future<Output = Result<DeckCard, ApiError>> + Send;
+    ) -> impl Future<Output = Result<DeckCard, ClientError>> + Send;
 }
 
 impl ClientCreateDeckCard for ZwipeClient {
@@ -28,7 +28,7 @@ impl ClientCreateDeckCard for ZwipeClient {
         deck_id: Uuid,
         request: &HttpCreateDeckCard,
         session: &Session,
-    ) -> Result<DeckCard, ApiError> {
+    ) -> Result<DeckCard, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&create_deck_card_route(deck_id));
         info!("POST {} body: {:?}", url, request);

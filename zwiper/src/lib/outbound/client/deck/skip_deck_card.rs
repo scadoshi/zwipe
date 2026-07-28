@@ -1,14 +1,11 @@
 //! Post a single durable skip (and its undo) for a deck.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{
-    ApiError,
-    routes::{skip_deck_card_route, unskip_deck_card_route},
-};
+use zwipe::inbound::http::routes::{skip_deck_card_route, unskip_deck_card_route};
 use zwipe_core::{domain::auth::models::session::Session, http::contracts::deck::HttpSkipDeckCard};
 
 /// Trait for posting and undoing a single deck-card skip.
@@ -19,14 +16,14 @@ pub trait ClientSkipDeckCard {
         deck_id: Uuid,
         oracle_id: Uuid,
         session: &Session,
-    ) -> impl Future<Output = Result<(), ApiError>> + Send;
+    ) -> impl Future<Output = Result<(), ClientError>> + Send;
 
     fn unskip_deck_card(
         &self,
         deck_id: Uuid,
         oracle_id: Uuid,
         session: &Session,
-    ) -> impl Future<Output = Result<(), ApiError>> + Send;
+    ) -> impl Future<Output = Result<(), ClientError>> + Send;
 }
 
 impl ClientSkipDeckCard for ZwipeClient {
@@ -35,7 +32,7 @@ impl ClientSkipDeckCard for ZwipeClient {
         deck_id: Uuid,
         oracle_id: Uuid,
         session: &Session,
-    ) -> Result<(), ApiError> {
+    ) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&skip_deck_card_route(deck_id));
         info!("POST {}", url);
@@ -62,7 +59,7 @@ impl ClientSkipDeckCard for ZwipeClient {
         deck_id: Uuid,
         oracle_id: Uuid,
         session: &Session,
-    ) -> Result<(), ApiError> {
+    ) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&unskip_deck_card_route(deck_id, oracle_id));
         info!("DELETE {}", url);

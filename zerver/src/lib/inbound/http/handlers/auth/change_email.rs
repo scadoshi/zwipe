@@ -9,7 +9,7 @@ use crate::{
         auth::requests::change_email::{ChangeEmail, ChangeEmailError, InvalidChangeEmail},
         metrics::models::kinds::AuditAction,
     },
-    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
+    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::user::User;
@@ -19,8 +19,8 @@ impl From<ChangeEmailError> for ApiError {
     fn from(value: ChangeEmailError) -> Self {
         match value {
             ChangeEmailError::UserNotFound => Self::NotFound("user not found".to_string()),
-            ChangeEmailError::Database(e) => e.log_500(),
-            ChangeEmailError::UserFromDb(e) => e.log_500(),
+            ChangeEmailError::Database(e) => e.to_500(),
+            ChangeEmailError::UserFromDb(e) => e.to_500(),
             ChangeEmailError::AuthenticateUserError(e) => ApiError::from(e),
             ChangeEmailError::Duplicate => {
                 Self::UnprocessableEntity("email already in use".to_string())

@@ -1,7 +1,7 @@
 #[cfg(feature = "zerver")]
 use crate::{
     domain::card::requests::get_card_types::GetCardTypesError,
-    inbound::http::{ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, To500},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State};
@@ -12,7 +12,7 @@ use reqwest::StatusCode;
 impl From<GetCardTypesError> for ApiError {
     fn from(value: GetCardTypesError) -> Self {
         match value {
-            GetCardTypesError::Database(e) => e.log_500(),
+            GetCardTypesError::Database(e) => e.to_500(),
         }
     }
 }

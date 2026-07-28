@@ -1,10 +1,10 @@
 //! Change user password endpoint.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{ApiError, routes::change_password_route};
+use zwipe::inbound::http::routes::change_password_route;
 use zwipe_core::{
     domain::auth::models::session::Session, http::contracts::auth::HttpChangePassword,
 };
@@ -16,7 +16,7 @@ pub trait ClientChangePassword {
         &self,
         request: HttpChangePassword,
         session: &Session,
-    ) -> impl Future<Output = Result<(), ApiError>> + Send;
+    ) -> impl Future<Output = Result<(), ClientError>> + Send;
 }
 
 impl ClientChangePassword for ZwipeClient {
@@ -24,7 +24,7 @@ impl ClientChangePassword for ZwipeClient {
         &self,
         request: HttpChangePassword,
         session: &Session,
-    ) -> Result<(), ApiError> {
+    ) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&change_password_route());
         info!("PUT {}", url);

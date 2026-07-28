@@ -1,11 +1,11 @@
 //! Fetch a single deck profile (metadata only).
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{ApiError, routes::get_deck_profile_route};
+use zwipe::inbound::http::routes::get_deck_profile_route;
 use zwipe_core::domain::{auth::models::session::Session, deck::deck_profile::DeckProfile};
 
 /// Trait for fetching deck metadata without cards.
@@ -15,7 +15,7 @@ pub trait ClientGetDeckProfile {
         &self,
         deck_id: Uuid,
         session: &Session,
-    ) -> impl Future<Output = Result<DeckProfile, ApiError>> + Send;
+    ) -> impl Future<Output = Result<DeckProfile, ClientError>> + Send;
 }
 
 impl ClientGetDeckProfile for ZwipeClient {
@@ -23,7 +23,7 @@ impl ClientGetDeckProfile for ZwipeClient {
         &self,
         deck_id: Uuid,
         session: &Session,
-    ) -> Result<DeckProfile, ApiError> {
+    ) -> Result<DeckProfile, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_deck_profile_route(deck_id));
         info!("GET {}", url);

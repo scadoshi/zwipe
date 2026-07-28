@@ -1,10 +1,10 @@
 //! New user registration API client.
 
-use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{ApiError, routes::register_route};
+use zwipe::inbound::http::routes::register_route;
 use zwipe_core::{
     domain::auth::models::{platform::ClientPlatform, session::Session},
     http::contracts::auth::HttpRegisterUser,
@@ -16,11 +16,11 @@ pub trait ClientRegister {
     fn register(
         &self,
         request: HttpRegisterUser,
-    ) -> impl Future<Output = Result<Session, ApiError>> + Send;
+    ) -> impl Future<Output = Result<Session, ClientError>> + Send;
 }
 
 impl ClientRegister for ZwipeClient {
-    async fn register(&self, request: HttpRegisterUser) -> Result<Session, ApiError> {
+    async fn register(&self, request: HttpRegisterUser) -> Result<Session, ClientError> {
         let mut request = request;
         request.platform = Some(ClientPlatform::CURRENT);
         request.client_version = Some(env!("CARGO_PKG_VERSION").to_string());
