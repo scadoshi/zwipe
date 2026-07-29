@@ -1,7 +1,9 @@
 # Plan: session-prune drive-by + zervice least privilege
 
-**Status: Phase 1 code COMPLETE (2026-07-29), pending server steps
-(`.env.zervice` + unit reinstall) and push. Phase 2 not started.**
+**Status: Phase 1 SHIPPED + verified in prod (2026-07-29): timer-path run
+4/4 ok in 47s off `.env.zervice`, alert chain live-tested twice. Phase 2
+staged: `zcripts/server/sql/zervice_role.sql` written + shipped to the box;
+owner runs it + sets the password + repoints `.env.zervice`'s DATABASE_URL.**
 Two intertwined decisions from the systemd migration night (owner + assistant):
 
 1. Session cleanup moves fully into zerver as a drive-by; zervice loses its
