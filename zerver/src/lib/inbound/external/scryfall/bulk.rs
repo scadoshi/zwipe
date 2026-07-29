@@ -3,15 +3,21 @@ use crate::inbound::external::scryfall::{
     planeswalker::{Planeswalker, SCRYFALL_API_BASE},
 };
 use anyhow::Context;
+use flate2::read::GzDecoder;
 use reqwest::Client;
-use serde::Deserialize;
-use serde_json::Value;
+use serde::{Deserialize, de::DeserializeOwned};
+use std::io::{BufRead, BufReader};
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
 /// Scryfall bulk data metadata response (contains the download URI).
+///
+/// Scryfall retired the plain-JSON `download_uri` in late July 2026; bulk
+/// files are now served exclusively as gzipped JSON Lines via
+/// `jsonl_download_uri` (one object per line). Line-by-line parsing also
+/// avoids the old whole-array-in-memory spike.
 #[derive(Deserialize, Debug)]
 pub(super) struct BulkDataObject {
-    pub(super) download_uri: String,
+    pub(super) jsonl_download_uri: String,
 }
 
 /// Scryfall's bulk data download categories.
@@ -49,85 +55,102 @@ impl BulkEndpoint {
             Self::OracleTags => "oracle_tags".to_string(),
         }
     }
-}
 
-impl BulkEndpoint {
-    /// Fetches bulk card data in two steps: metadata endpoint → download URI → card data.
-    pub async fn amass(&self) -> anyhow::Result<Vec<ScryfallData>> {
-        // first get the bulk data object with our main url
+    /// Two-step bulk fetch: metadata endpoint → `jsonl_download_uri` →
+    /// gunzip → one parsed `T` per line. Blank lines are skipped; a malformed
+    /// line fails the whole fetch (better a loud sync failure than silent
+    /// partial data).
+    async fn amass_jsonl<T: DeserializeOwned>(&self, what: &str) -> anyhow::Result<Vec<T>> {
         let url = format!("{}{}", SCRYFALL_API_BASE, self.resolve());
         let urza = Planeswalker::untap(Client::new(), &url);
 
-        let bulk_response = urza
+        let bulk_data_object: BulkDataObject = urza
             .cast()
             .await
-            .context("failed to get bulk response with planeswalker")?;
-
-        let bulk_json: Value = bulk_response
+            .with_context(|| format!("failed to get {what} bulk response with planeswalker"))?
             .json()
             .await
-            .context("failed to parse json from main uri result")?;
+            .with_context(|| format!("failed to parse BulkDataObject for {what}"))?;
 
-        let bulk_data_object = serde_json::from_value::<BulkDataObject>(bulk_json)
-            .context("failed to parse BulkDataObject")?;
-
-        // then use the download_uri to fetch the actual card data
-        let karn = Planeswalker::untap(Client::new(), &bulk_data_object.download_uri);
-
-        let cards_response = karn
+        let karn = Planeswalker::untap(Client::new(), &bulk_data_object.jsonl_download_uri);
+        let bytes = karn
             .cast()
             .await
-            .context("failed to get download response with planeswalker")?;
-
-        let cards_json: Value = cards_response
-            .json()
+            .with_context(|| format!("failed to get {what} download response with planeswalker"))?
+            .bytes()
             .await
-            .context("failed to parse json from download uri result")?;
+            .with_context(|| format!("failed to read {what} download body"))?;
 
-        let cards: Vec<ScryfallData> =
-            serde_json::from_value(cards_json).context("failed to parse `Vec<ScryfallData>`")?;
-
-        Ok(cards)
+        parse_jsonl_gz(&bytes).with_context(|| format!("failed to parse {what} jsonl"))
     }
 
-    /// Fetches the Oracle Tags bulk file in the same two steps as [`amass`], but
-    /// parses the tag payload (`Vec<OracleTag>`) instead of card data.
-    ///
-    /// [`amass`]: BulkEndpoint::amass
+    /// Fetches bulk card data (`Vec<ScryfallData>`).
+    pub async fn amass(&self) -> anyhow::Result<Vec<ScryfallData>> {
+        self.amass_jsonl(&self.to_snake_case()).await
+    }
+
+    /// Fetches the Oracle Tags bulk file (`Vec<OracleTag>`).
     pub async fn amass_oracle_tags(&self) -> anyhow::Result<Vec<OracleTag>> {
-        // first get the bulk data object with our main url
-        let url = format!("{}{}", SCRYFALL_API_BASE, self.resolve());
-        let urza = Planeswalker::untap(Client::new(), &url);
+        self.amass_jsonl("oracle-tags").await
+    }
+}
 
-        let bulk_response = urza
-            .cast()
-            .await
-            .context("failed to get oracle-tags bulk response with planeswalker")?;
+/// Decompresses a gzipped JSON Lines payload and parses each non-blank line.
+fn parse_jsonl_gz<T: DeserializeOwned>(bytes: &[u8]) -> anyhow::Result<Vec<T>> {
+    let reader = BufReader::new(GzDecoder::new(bytes));
+    let mut items = Vec::new();
+    for (i, line) in reader.lines().enumerate() {
+        let line = line.with_context(|| format!("failed to read jsonl line {}", i + 1))?;
+        if line.trim().is_empty() {
+            continue;
+        }
+        items.push(
+            serde_json::from_str(&line)
+                .with_context(|| format!("failed to parse jsonl line {}", i + 1))?,
+        );
+    }
+    Ok(items)
+}
 
-        let bulk_json: Value = bulk_response
-            .json()
-            .await
-            .context("failed to parse json from oracle-tags main uri result")?;
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use super::parse_jsonl_gz;
+    use flate2::{Compression, write::GzEncoder};
+    use std::io::Write;
 
-        let bulk_data_object = serde_json::from_value::<BulkDataObject>(bulk_json)
-            .context("failed to parse BulkDataObject for oracle-tags")?;
+    fn gz(lines: &str) -> Vec<u8> {
+        let mut enc = GzEncoder::new(Vec::new(), Compression::default());
+        enc.write_all(lines.as_bytes()).unwrap();
+        enc.finish().unwrap()
+    }
 
-        // then use the download_uri to fetch the actual tag data
-        let karn = Planeswalker::untap(Client::new(), &bulk_data_object.download_uri);
+    #[derive(serde::Deserialize, Debug, PartialEq)]
+    struct Row {
+        name: String,
+    }
 
-        let tags_response = karn
-            .cast()
-            .await
-            .context("failed to get oracle-tags download response with planeswalker")?;
+    #[test]
+    fn parses_one_object_per_line_skipping_blanks() {
+        let bytes = gz("{\"name\":\"a\"}\n\n{\"name\":\"b\"}\n");
+        let rows: Vec<Row> = parse_jsonl_gz(&bytes).unwrap();
+        assert_eq!(
+            rows,
+            vec![
+                Row {
+                    name: "a".to_string()
+                },
+                Row {
+                    name: "b".to_string()
+                }
+            ]
+        );
+    }
 
-        let tags_json: Value = tags_response
-            .json()
-            .await
-            .context("failed to parse json from oracle-tags download uri result")?;
-
-        let tags: Vec<OracleTag> =
-            serde_json::from_value(tags_json).context("failed to parse `Vec<OracleTag>`")?;
-
-        Ok(tags)
+    #[test]
+    fn malformed_line_fails_loudly_with_line_number() {
+        let bytes = gz("{\"name\":\"a\"}\nnot json\n");
+        let err = parse_jsonl_gz::<Row>(&bytes).unwrap_err();
+        assert!(format!("{err:#}").contains("line 2"), "{err:#}");
     }
 }

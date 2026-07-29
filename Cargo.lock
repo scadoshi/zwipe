@@ -8458,6 +8458,7 @@ dependencies = [
  "derive_more 2.1.1",
  "dotenvy",
  "email_address",
+ "flate2",
  "hex",
  "http-body-util",
  "itertools",
