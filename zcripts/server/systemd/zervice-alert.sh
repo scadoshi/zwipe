@@ -10,7 +10,7 @@ for var in RESEND_API_KEY RESEND_EMAIL_FROM SUPPORT_EMAIL_ADDRESS; do
         exit 0
     fi
 done
-ZLOGS=$(journalctl -u zervice.service -n 15 --no-pager -o cat | tail -c 1500)
+ZLOGS=$(journalctl -u zervice.service -n 15 --no-pager -o cat | sed -e 's/\x1b\[[0-9;]*m//g' | tail -c 1500)
 export ZLOGS
 python3 << 'PYEOF'
 import json, os, urllib.request
