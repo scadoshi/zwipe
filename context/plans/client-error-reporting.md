@@ -43,11 +43,13 @@ store data-safety labels unchanged).
 /// One handled-error report. Aggregate-only: no user identity beyond the
 /// authed usage batch it rides in.
 pub struct ClientErrorReport {
-    pub screen: String,        // e.g. "deck_edit" — closed vocabulary, client-side consts
-    pub action: String,        // e.g. "save_profile" — what the user was doing
-    pub kind: String,          // ClientError variant + ApiError variant, e.g. "api_unauthorized", "decode", "network"
-    pub message: String,       // truncated ~300 chars; 4xx messages are user-safe by contract
-    pub count: u32,            // dedupe within a flush window
+    pub screen: String,         // e.g. "deck_edit" — closed vocabulary, client-side consts
+    pub action: String,         // e.g. "save_profile" — what the user was doing
+    pub kind: String,           // ClientError variant + ApiError variant, e.g. "api_unauthorized", "decode", "network"
+    pub message: String,        // truncated ~300 chars; 4xx messages are user-safe by contract
+    pub count: u32,             // dedupe within a flush window
+    pub client_version: String, // CARGO_PKG_VERSION — self-reported, untrusted metadata
+    pub platform: String,       // "ios" / "android" / "web" — self-reported
 }
 
 /// One crash report, posted on the launch after the crash.
@@ -61,10 +63,20 @@ pub struct HttpCrashReport {
 ```
 
 - `HttpUsageBatch` gains `#[serde(default)] pub client_errors: Vec<ClientErrorReport>`.
-- Handled errors ride the **authed** usage batch (version/platform derivable
-  server-side like the rest of the batch). Crashes get their **own unauthed
-  endpoint** (`record_crash_route`) because the next launch may have no
-  session, and a crash report must not depend on auth working.
+- **Version/platform ride ON the report** (decided 2026-07-28): the batch
+  itself carries neither, and the only server-side source is the per-session
+  app version on the refresh-token row (`ce8abcad`) — reachable but a join the
+  ingest doesn't need. Self-reported like `HttpCrashReport` already does;
+  it's untrusted debugging metadata, not authorization data.
+- **`clamped()` must cover the new field** — it's the batch's untrusted-input
+  defense and every other field has it. Server-side, regardless of client
+  behavior: truncate the vec to `MAX_CLIENT_ERRORS_PER_FLUSH` (20, matching
+  the client cap), re-truncate `message` to ~300 chars and `screen`/`action`/
+  `kind`/`client_version`/`platform` to sane lengths (client-side truncation
+  is untrusted), clamp `count` to `MAX_PER_FLUSH`.
+- Handled errors ride the **authed** usage batch. Crashes get their **own
+  unauthed endpoint** (`record_crash_route`) because the next launch may have
+  no session, and a crash report must not depend on auth working.
 
 ### Client: handled errors
 
@@ -80,6 +92,10 @@ pub struct HttpCrashReport {
 - Skip `ClientError::Network` by default: it's mostly the user's connectivity,
   and it can't be reported over the same dead connection anyway. `Decode` and
   `Api` variants are the signal.
+- **Soft copy rule**: the dedupe key includes `message`, so 4xx copy should
+  stay static (no interpolated names/numbers) or one dynamic fragment
+  fragments the dedupe. Current server copy already follows this; keep it
+  in mind when authoring new validation messages.
 
 ### Client: crashes (exactly-once via disk)
 
@@ -87,6 +103,11 @@ pub struct HttpCrashReport {
   writes a JSON `HttpCrashReport` — crash_id stamped now — to a fixed path in
   the app data dir (same dir family `theme_store.rs` uses). Write is the only
   thing the hook does: no network, no allocation-heavy work beyond the string.
+- **Platform gate**: the hook + crash store are native-only
+  (`#[cfg(not(target_arch = "wasm32"))]`), same platform-conditional shape as
+  the session store (keyring on iOS, files on Android). The web preview and a
+  future wasm build get a no-op store — a disk write isn't a thing there, and
+  browser crashes are a different animal anyway.
 - On startup, after the client is constructed: if the crash file exists, read
   it, POST to `record_crash_route`, and **delete the file only on 2xx**. Not
   sent → file stays for the next launch. Sent-but-response-lost can retry next
@@ -104,9 +125,13 @@ pub struct HttpCrashReport {
 - `record_usage` handler/service/repo extended to insert `client_errors` rows
   in the same transaction as the counters.
 - New `record_crash` handler (unauthed, mirroring `record_anonymous_event`),
-  body-size-limited and rate-limited like its sibling.
+  body-size-limited and rate-limited like its sibling — it's an unauthed write
+  path; also re-truncate `message` server-side before insert (client-side
+  truncation is untrusted).
 - Retention: add a prune step to zervice (delete rows older than ~90 days)
-  alongside `delete_expired_sessions`.
+  alongside `delete_expired_sessions`. Note this makes zervice 6 steps — the
+  `step N/5` log labels (and the "all 5 steps ok" summary) renumber to `N/6`;
+  cosmetic but the labels are read by eye in prod logs, keep them consistent.
 
 ### Reading it
 
@@ -116,14 +141,16 @@ pub struct HttpCrashReport {
 
 ## Implementation steps
 
-1. zwipe-core: `ClientErrorReport`, `HttpCrashReport`, extend `HttpUsageBatch`,
-   add `record_crash` path/route.
+1. zwipe-core: `ClientErrorReport`, `HttpCrashReport`, extend `HttpUsageBatch`
+   **and its `clamped()`** (+ `MAX_CLIENT_ERRORS_PER_FLUSH`), add
+   `record_crash` path/route.
 2. Migration + sqlx repo methods (`cargo sqlx prepare --workspace` after).
 3. zerver: extend record_usage ingest; new record_crash handler + service port
    wiring; zervice prune step.
 4. zwiper: buffer extension + `report_error`; panic hook + startup send/clear;
    first wave of toast-site call-ins.
 5. Tests: contract round-trip with the `#[serde(default)]` back-compat case;
+   `clamped()` truncates the vec / message / count (the untrusted-input lock);
    repo insert/dedupe (`ON CONFLICT` on crash_id); buffer cap behavior;
    handler test for the unauthed crash route.
 
