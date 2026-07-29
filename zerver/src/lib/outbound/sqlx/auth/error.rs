@@ -4,9 +4,9 @@ use crate::{
     domain::auth::requests::{
         authenticate_user::AuthenticateUserError, change_email::ChangeEmailError,
         change_username::ChangeUsernameError, create_session::CreateSessionError,
-        delete_expired_sessions::DeleteExpiredSessionsError, delete_user::DeleteUserError,
-        enforce_session_maximum::EnforceSessionMaximumError, refresh_session::RefreshSessionError,
-        register_user::RegisterUserError, revoke_sessions::RevokeSessionsError,
+        delete_user::DeleteUserError, enforce_session_maximum::EnforceSessionMaximumError,
+        refresh_session::RefreshSessionError, register_user::RegisterUserError,
+        revoke_sessions::RevokeSessionsError,
     },
     outbound::sqlx::{postgres::IsConstraintViolation, user::error::IntoUserError},
 };
@@ -112,12 +112,6 @@ impl From<sqlx::Error> for CreateSessionError {
 }
 
 impl From<sqlx::Error> for EnforceSessionMaximumError {
-    fn from(value: sqlx::Error) -> Self {
-        Self::Database(value.into())
-    }
-}
-
-impl From<sqlx::Error> for DeleteExpiredSessionsError {
     fn from(value: sqlx::Error) -> Self {
         Self::Database(value.into())
     }

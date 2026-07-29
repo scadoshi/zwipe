@@ -12,7 +12,6 @@ use crate::domain::{
             change_password::{ChangePassword, ChangePasswordError},
             change_username::{ChangeUsername, ChangeUsernameError},
             create_session::{CreateSession, CreateSessionError},
-            delete_expired_sessions::DeleteExpiredSessionsError,
             delete_user::{DeleteUser, DeleteUserError},
             refresh_session::{RefreshSession, RefreshSessionError},
             register_user::{RegisterUser, RegisterUserError},
@@ -423,10 +422,6 @@ where
     async fn delete_user(&self, request: &DeleteUser) -> Result<(), DeleteUserError> {
         self.verify_password(&request.into()).await?;
         self.auth_repo.delete_user(request).await
-    }
-
-    async fn delete_expired_sessions(&self) -> Result<(), DeleteExpiredSessionsError> {
-        self.auth_repo.delete_expired_refresh_tokens().await
     }
 
     // ========================

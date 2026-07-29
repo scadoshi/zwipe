@@ -10,7 +10,6 @@
 //! - [`change_password`]: Password change requests with current password verification
 //! - [`change_username`]: Username change requests with password verification
 //! - [`create_session`]: Create new session for a user
-//! - [`delete_expired_sessions`]: Cleanup expired sessions
 //! - [`delete_user`]: Account deletion requests with password verification
 //! - [`enforce_session_maximum`]: Enforce max session limit per user
 //! - [`refresh_session`]: Exchange refresh token for new access token
@@ -25,7 +24,6 @@ pub mod change_email;
 pub mod change_password;
 pub mod change_username;
 pub mod create_session;
-pub mod delete_expired_sessions;
 pub mod delete_user;
 pub mod enforce_session_maximum;
 pub mod refresh_session;

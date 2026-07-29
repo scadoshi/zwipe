@@ -1,7 +1,8 @@
 //! Auth edge cases that unit tests can't reach: the email-token round-trips
 //! (verify-email, password-reset) driven through the captured `FakeEmailSender`
 //! exactly as a user would from their inbox, refresh-token single-use rotation,
-//! and the login rate-limit lockout (5 / 6s per IP).
+//! the login rate-limit lockout (5 / 6s per IP), and the insert-time refresh-token
+//! prune (expired rows purged + session cap enforced, no global sweeper).
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
@@ -199,4 +200,83 @@ async fn login_rate_limit_locks_out(pool: sqlx::PgPool) {
         StatusCode::TOO_MANY_REQUESTS,
         "correct creds stay locked out while limited"
     );
+}
+
+#[sqlx::test]
+async fn session_insert_prunes_expired_and_caps(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (_, uid) = app.register("hoarder").await;
+    let user_id = uuid::Uuid::parse_str(&uid).unwrap();
+
+    // Plant 3 expired tokens (a dormant user's leftovers) and 6 live ones,
+    // staggered so the prune's newest-first ordering is deterministic.
+    for i in 0..3i32 {
+        sqlx::query(
+            "INSERT INTO refresh_tokens (user_id, value_hash, expires_at, created_at)
+             VALUES ($1, $2, NOW() - INTERVAL '1 day', NOW() - make_interval(days => 15, mins => $3))",
+        )
+        .bind(user_id)
+        .bind(format!("expired-{i}"))
+        .bind(i)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    for i in 0..6i32 {
+        sqlx::query(
+            "INSERT INTO refresh_tokens (user_id, value_hash, expires_at, created_at)
+             VALUES ($1, $2, NOW() + INTERVAL '14 days', NOW() - make_interval(mins => $3))",
+        )
+        .bind(user_id)
+        .bind(format!("live-{i}"))
+        .bind(i + 1)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+
+    // One login triggers the insert-time prune (no global sweeper involved).
+    let (status, _) = app
+        .post(
+            "/api/auth/login",
+            json!({ "identifier": "hoarder", "password": "TestPass123!" }),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "login");
+
+    let expired: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM refresh_tokens WHERE user_id = $1 AND expires_at < NOW()",
+    )
+    .bind(user_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(expired, 0, "expired tokens purged at insert");
+
+    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM refresh_tokens WHERE user_id = $1")
+        .bind(user_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(total, 5, "live tokens capped at the session maximum");
+
+    // Newest-first survivors: the login + register rows and live-0..2; the
+    // three oldest planted live tokens are the cap's casualties.
+    let casualties: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM refresh_tokens WHERE user_id = $1 AND value_hash IN ('live-3', 'live-4', 'live-5')",
+    )
+    .bind(user_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(casualties, 0, "oldest live tokens were pruned first");
+    let newest: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM refresh_tokens WHERE user_id = $1 AND value_hash = 'live-0'",
+    )
+    .bind(user_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(newest, 1, "most recent live token survives");
 }
