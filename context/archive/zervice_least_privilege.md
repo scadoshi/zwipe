@@ -1,9 +1,13 @@
 # Plan: session-prune drive-by + zervice least privilege
 
-**Status: Phase 1 SHIPPED + verified in prod (2026-07-29): timer-path run
-4/4 ok in 47s off `.env.zervice`, alert chain live-tested twice. Phase 2
-staged: `zcripts/server/sql/zervice_role.sql` written + shipped to the box;
-owner runs it + sets the password + repoints `.env.zervice`'s DATABASE_URL.**
+**Status: COMPLETE — both phases SHIPPED + verified in prod (2026-07-29),
+plan archived.** Phase 1: systemd-path run 4/4 ok in 47s off `.env.zervice`,
+alert chain live-tested twice. Phase 2: `zervice_role.sql` applied — boundary
+verified as the role (catalog readable, all 3 matviews owned, `users`/
+`refresh_tokens`/`decks` DENIED), then a full sync green as the scoped role.
+Decided: zerver stays fully permissive as the `zwipe` owner role — the app-role
+split is a deliberate non-goal for now (see "Zerver app-role split" in
+`progress/backlog.md` for the rationale and what it would take).
 Two intertwined decisions from the systemd migration night (owner + assistant):
 
 1. Session cleanup moves fully into zerver as a drive-by; zervice loses its

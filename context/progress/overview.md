@@ -4,8 +4,22 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## Latest — 2026-07-29 (Scryfall JSONL break fixed, systemd timers + alerting)
+## Latest — 2026-07-29 (Scryfall JSONL break fixed, systemd timers + alerting, least privilege SHIPPED)
 
+- **Zervice least privilege SHIPPED in full, same day** (`f0bfa647`,
+  `1d1ecbcc` + server steps; plan archived to
+  `archive/zervice_least_privilege.md`): session prune moved into zerver's
+  insert path (`prune_users_refresh_tokens`: expired + cap in one statement,
+  new integration test), zervice is CardService-only on a minimal
+  `ZerviceConfig` (no dotenvy — it must not slurp the secret `.env`) fed by
+  `.env.zervice`, and a scoped `zervice` Postgres role owns the 3 matviews +
+  writes only the card catalog (`zcripts/server/sql/zervice_role.sql`).
+  Verified live: boundary checks (user tables DENIED) + full sync green as
+  the role. Zerver deliberately stays on the `zwipe` owner role (split idea
+  → backlog). **Bonus fix** (`b4d9f381`): bulk card upsert's RETURNING was
+  missing the 2026-07-12 otag columns — every nightly sync since had silently
+  degraded to 116k card-by-card inserts; batching restored (card sync now
+  ~9s, full run ~47s). Alert emails also de-ANSI'd (`1d1ecbcc`).
 - **Scryfall bulk API break FIXED** (`5b93255a`): Scryfall retired `download_uri`
   (plain JSON array) for `jsonl_download_uri` (gzipped JSONL) ~2026-07-27; both
   sync steps had failed **silently for 2 days** under cron. New line-parsed
