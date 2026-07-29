@@ -1,0 +1,12 @@
+[Unit]
+Description=Zwipe nightly sync (Scryfall, otags, rollups, session prune)
+Wants=network-online.target
+After=network-online.target postgresql.service
+OnFailure=zervice-alert.service
+
+[Service]
+Type=oneshot
+User=scadoshi
+WorkingDirectory=/home/scadoshi/zwipe
+EnvironmentFile=/home/scadoshi/zwipe/.env
+ExecStart=/home/scadoshi/zwipe/zervice

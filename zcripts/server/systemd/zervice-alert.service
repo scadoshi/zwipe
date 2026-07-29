@@ -1,0 +1,7 @@
+[Unit]
+Description=Discord alert for a failed zervice run
+
+[Service]
+Type=oneshot
+EnvironmentFile=/home/scadoshi/zwipe/.env
+ExecStart=/home/scadoshi/zwipe/zervice-alert.sh
