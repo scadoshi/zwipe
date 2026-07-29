@@ -1,6 +1,11 @@
 # Plan: bulk "resend verification emails" as a `zervice` subcommand
 
-**Status: SPEC / ready to implement (updated 2026-07-11). Hand-off doc — another AI implements this.**
+**Status: PARKED (2026-07-29) — likely never implemented.** The prod backfill need has
+not recurred, and `plans/zervice_least_privilege.md` strips the AuthService/Resend wiring
+this plan leaned on, so the "zero new wiring" premise is gone. Expect the untracked
+`~/resend_verifications.py` on prod to remain the tool. If the need returns, re-expand
+this plan; the implementation would then have to add its own AuthService/Resend wiring
+(reading the MAIN `.env`, not `.env.zervice`) or live as a standalone bin.
 
 ## Goal
 
@@ -15,11 +20,7 @@ Earlier draft added a standalone `resend-verifications` bin. Decided against it:
 run-by-hand backfill, and a second binary means another deploy artifact plus ~40 duplicated
 lines of Config/DB/Resend/AuthService wiring. `zervice` already builds exactly that wiring
 (and used to parse a `--recategorize` flag, since removed, so arg parsing is a known
-pattern there). ⚠ **2026-07-29:** `plans/zervice_least_privilege.md` will REMOVE the
-AuthService/Resend wiring from zervice (and move it to a secrets-free `.env.zervice`) —
-if that ships first, this tool must re-add the wiring deliberately, read the MAIN `.env`,
-and the "zero new wiring" claim above no longer holds; reassess whether a standalone bin
-is then cleaner. Folding it in adds **zero** new deploy surface and
+pattern there). Folding it in adds **zero** new deploy surface and
 reuses the service construction verbatim. Trade-off accepted: the tool lives inside the sync
 binary rather than reading as its own thing.
 

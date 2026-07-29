@@ -128,10 +128,13 @@ pub struct HttpCrashReport {
   body-size-limited and rate-limited like its sibling — it's an unauthed write
   path; also re-truncate `message` server-side before insert (client-side
   truncation is untrusted).
-- Retention: add a prune step to zervice (delete rows older than ~90 days)
-  alongside `delete_expired_sessions`. Note this makes zervice 6 steps — the
-  `step N/5` log labels (and the "all 5 steps ok" summary) renumber to `N/6`;
-  cosmetic but the labels are read by eye in prod logs, keep them consistent.
+- Retention: add a prune step to zervice (delete rows older than ~90 days).
+  Zervice is 4 steps since the least-privilege change dropped the session
+  prune (2026-07-29) — this makes it 5; renumber the `step N/4` log labels
+  (and the "all 4 steps ok" summary) to `N/5`. Cosmetic but the labels are
+  read by eye in prod logs, keep them consistent. Note zervice's scoped
+  Postgres role (if phase 2 of `zervice_least_privilege.md` has landed) needs
+  DELETE on `client_errors` for this step.
 
 ### Reading it
 

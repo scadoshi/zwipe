@@ -448,6 +448,12 @@ Unit files are versioned at `zcripts/server/systemd/` (`zervice.service`,
 (+ up to 10 min jitter), `Persistent=true` so a missed window (reboot at 4am)
 fires on next boot.
 
+**Least privilege (2026-07-29):** `zervice.service` reads
+`/home/scadoshi/zwipe/.env.zervice` — exactly `DATABASE_URL`, `RUST_LOG`,
+`LOG_DIR` (the bin's `ZerviceConfig` accepts nothing more; it holds no
+JWT/Resend secrets). The alert unit keeps reading the MAIN `.env` because it
+legitimately needs the Resend creds.
+
 Why systemd over cron: `EnvironmentFile=` replaces the fragile
 `SHELL=/bin/bash` + `source .env` dance (a dash-vs-bash `source` failure
 silently ate weeks of runs in mid-2026), early-startup failures land in the
