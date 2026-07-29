@@ -20,7 +20,13 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**Latest — 1.7.3 clients submitted (2026-07-24; iOS build 68 / Android vc30, live in
+**Latest — 2026-07-29: Scryfall bulk API break fixed** (they moved to gzipped JSONL;
+cron had failed silently 2 days), **zervice on systemd timers with Resend failure
+alerting**, the **error-layer refactor** (single logged exit, zwiper `ClientError`),
+and two ready-to-build plans: client error/crash reporting + zervice least privilege.
+See [`progress/overview.md`](progress/overview.md) top entry.
+
+**1.7.3 clients submitted (2026-07-24; iOS build 68 / Android vc30, live in
 ~1 day).** The batch: the **filter sheet current/staged split** (Apply is the only
 commit; Reset/Cancel stage + restore, with toasts), **average P/T** in the deck's
 Distributions, the **shared ranked otag search** in core (exact > slug/label >

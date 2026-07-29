@@ -440,31 +440,42 @@ What each command does:
 
 ---
 
-## zervice Cron (Nightly Scryfall Sync + Session Cleanup)
+## zervice Scheduling (systemd timer — replaced cron 2026-07-29)
+
+Unit files are versioned at `zcripts/server/systemd/` (`zervice.service`,
+`zervice.timer`, `zervice-alert.service`, `zervice-alert.sh`) and installed to
+`/etc/systemd/system/` (the script to `~/zwipe/`). Nightly at 04:00 UTC
+(+ up to 10 min jitter), `Persistent=true` so a missed window (reboot at 4am)
+fires on next boot.
+
+Why systemd over cron: `EnvironmentFile=` replaces the fragile
+`SHELL=/bin/bash` + `source .env` dance (a dash-vs-bash `source` failure
+silently ate weeks of runs in mid-2026), early-startup failures land in the
+journal (`journalctl -u zervice`) instead of a side-channel log, a non-zero
+exit marks the unit **failed** visibly in `systemctl status zervice`, and
+`systemctl list-timers zervice*` answers last-ran/next-run at a glance.
+
+**Failure alerting:** `zervice.service` carries `OnFailure=zervice-alert.service`
+— on any failed scheduled run, systemd fires the alert unit, which emails the
+last 15 journal lines to `SUPPORT_EMAIL_ADDRESS` via Resend (reuses the
+existing `.env` creds; no new secrets; the script sets a User-Agent because
+Cloudflare 403s python-urllib's default). Tested live 2026-07-29. Note it only
+fires for systemd-launched runs; a bare `./zervice` failing alerts nobody.
+Manual alert test: `sudo systemctl start zervice-alert.service`.
+
+Operate it:
 
 ```bash
-crontab -e
+sudo systemctl start zervice          # run now, journaled
+systemctl status zervice              # last result at a glance
+journalctl -u zervice --since today   # full output
+systemctl list-timers zervice*        # last / next scheduled run
 ```
 
-Add **two lines** — `SHELL=/bin/bash` plus the scheduled invocation:
-
-```cron
-SHELL=/bin/bash
-0 4 * * * set -a && source /home/scadoshi/zwipe/.env && set +a && /home/scadoshi/zwipe/zervice >> /var/log/zwipe/zervice-cron.log 2>&1
-```
-
-**Why `SHELL=/bin/bash` is required:** cron defaults to `/bin/sh` (dash on Ubuntu), and
-`source` is not a builtin in dash — it's a bash-ism. Without `SHELL=/bin/bash` the whole
-line silently fails at `source`, config never loads, tracing never inits, and **no log
-file is produced** (the rolling appender hasn't been built yet). That's how weeks of
-zervice runs went missing in mid-2026 before the 2026-05-26 fix.
-
-**Why the stderr redirect (`>> /var/log/zwipe/zervice-cron.log 2>&1`):** captures any
-early-startup failure (bad `.env`, missing binary, dash-vs-bash issue) that happens
-before tracing's file appender takes over. Without it cron sends failure output to a
-mail spool nobody reads. Belt-and-suspenders: zervice's own logs go to
-`$LOG_DIR/zervice.YYYY-MM-DD.log` once it boots; the cron log captures everything from
-schedule-fire to that point.
+The old crontab entry is removed. `/var/log/zwipe/zervice-cron.log` is
+obsolete (the journal covers early startup); zervice's own rolling files at
+`$LOG_DIR/zervice.YYYY-MM-DD.log` are unchanged. Planned follow-ups:
+dead-man's switch + least-privilege split (`context/plans/zervice_least_privilege.md`).
 
 zervice is a run-once binary — it syncs cards from Scryfall, cleans expired sessions,
 and exits. Logs are written to `$LOG_DIR/zervice.YYYY-MM-DD.log` (default: `/var/log/zwipe/`).
