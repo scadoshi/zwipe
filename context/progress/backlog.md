@@ -78,6 +78,7 @@ See `context/plans/mechanical-category.md` for full implementation plan includin
 ---
 
 ## Production Hardening
+- **Zerver app-role split ("Phase 3" of zervice least privilege, idea 2026-07-29)**: give zerver its own scoped Postgres role — write on user/deck/auth/signal tables, read-only on the card catalog (which zervice + owner alone write after `zcripts/server/sql/zervice_role.sql`). Sound hardening, deliberately deferred: all tables are owned by `zwipe` (an owner can't be restricted by grants), CI sources the same `.env` `DATABASE_URL` for migrations so the split forces two URLs + deploy-pipeline changes, and every future migration needs grant discipline (`ALTER DEFAULT PRIVILEGES` automates most of it) or the serve path 500s — a worse failure mode than a failed nightly sync. Take up deliberately, not as a drive-by.
 - **Caching Layer**: Redis for card data and query results
 - **Monitoring**: Structured logging (done), health monitoring dashboard
 - **Database Optimization**: Query performance, indexing strategy

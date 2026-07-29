@@ -360,6 +360,16 @@ cd ~/zwipe-src/zerver
 DATABASE_URL=postgres://zwipe:YOUR_DB_PASSWORD@127.0.0.1/zwipe sqlx migrate run
 ```
 
+**Matview ownership footgun (zervice least privilege, 2026-07-29):** the three
+materialized views (`latest_cards`, `card_signal_rollup`,
+`otag_context_signal_rollup`) are OWNED by the scoped `zervice` role because
+`REFRESH` requires ownership (`zcripts/server/sql/zervice_role.sql`). A
+migration that drops/recreates one of them resets ownership to the migration
+user (`zwipe`) — that migration must re-run
+`ALTER MATERIALIZED VIEW ... OWNER TO zervice` and
+`GRANT SELECT ... TO zwipe`, or the next nightly run fails (loudly, via the
+alert email).
+
 ---
 
 ## Build
