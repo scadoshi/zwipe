@@ -1,7 +1,8 @@
 # Plan: session-prune drive-by + zervice least privilege
 
-**Status: planned (2026-07-29).** Two intertwined decisions from the systemd
-migration night (owner + assistant):
+**Status: Phase 1 code COMPLETE (2026-07-29), pending server steps
+(`.env.zervice` + unit reinstall) and push. Phase 2 not started.**
+Two intertwined decisions from the systemd migration night (owner + assistant):
 
 1. Session cleanup moves fully into zerver as a drive-by; zervice loses its
    only AuthService use and with it every auth/email capability.
@@ -36,9 +37,8 @@ scanned by auth). Redundant once the drive-by also purges expired.
   unit's `EnvironmentFile=` stays as-is.
 - **Tests**: extend the auth integration suite — insert a session while the
   user holds expired tokens → expired ones are gone; cap behavior unchanged.
-- Note in `resend-verifications-cli.md`: it assumed zervice already wires
-  Resend/AuthService; after this it must ADD that wiring back deliberately
-  (which is fine — that tool's whole point is sending email).
+- `resend-verifications-cli.md` is parked (caveat recorded in that plan);
+  no coordination needed here.
 
 ## Phase 2 — scoped Postgres role (server-side, after phase 1 settles)
 
