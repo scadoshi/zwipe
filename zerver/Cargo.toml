@@ -63,3 +63,4 @@ sha2 = { workspace = true }
 rand = { workspace = true }
 hex = { workspace = true }
 reqwest = { workspace = true }
+flate2 = "1"
