@@ -4,7 +4,34 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## Latest — 2026-07-25 (Phase 5S step-3 cleanup)
+## Latest — 2026-07-29 (Scryfall JSONL break fixed, systemd timers + alerting)
+
+- **Scryfall bulk API break FIXED** (`5b93255a`): Scryfall retired `download_uri`
+  (plain JSON array) for `jsonl_download_uri` (gzipped JSONL) ~2026-07-27; both
+  sync steps had failed **silently for 2 days** under cron. New line-parsed
+  ingest (flate2, shared `amass_jsonl` helper, unit-tested) also kills the old
+  whole-array memory spike. E2E-proven locally: full run "all 5 steps ok",
+  116k cards. Unpushed at entry time — deploy heals prod's stale card data.
+- **zervice moved cron → systemd timer** (`0e4628bf`, units versioned in
+  `zcripts/server/systemd/`, installed on prod): 04:00 UTC + jitter,
+  `Persistent=true`, plus **`OnFailure=` Resend email alerting** to support@
+  (`f475a13b`, live-tested). This visibility is what surfaced the Scryfall
+  break. Follow-ups planned: dead-man's switch; **zervice least privilege**
+  (drive-by session prune making the nightly prune redundant, AuthService
+  dropped from zervice, `.env.zervice`, scoped Postgres role —
+  `plans/zervice_least_privilege.md`).
+- **Error-layer refactor landed 2026-07-28** (other machine: `fb32b39b`,
+  `d4bebf84`): `--recategorize`/`clear_all_categories` dead code pruned;
+  `ApiError` became pure shared vocabulary (Network variant + client Froms +
+  `to_user_message` moved out), zwiper gained `ClientError` as its error
+  currency, and `IntoResponse` is the **single logged exit** (500 → error!
+  with detail, 4xx → warn!) with a leak-lock regression test.
+- **Client error + crash reporting planned** (`f5843d4e`, hardened
+  `f0ac034f`): handled errors ride the usage batch (clamped), crashes go
+  exactly-once via panic-hook disk file → unauthed endpoint →
+  `ON CONFLICT (crash_id)`. Ready to build (`plans/client-error-reporting.md`).
+
+## 2026-07-25 (Phase 5S step-3 cleanup)
 
 - **Phase 5S step-3 cleanup** (behind the 1.7.0 `MIN_CLIENT_VERSION` floor):
   `CardSignalDelta.commander_oracle_id` dropped from the wire (deck_id is the sole

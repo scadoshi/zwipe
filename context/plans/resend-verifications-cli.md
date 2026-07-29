@@ -15,7 +15,11 @@ Earlier draft added a standalone `resend-verifications` bin. Decided against it:
 run-by-hand backfill, and a second binary means another deploy artifact plus ~40 duplicated
 lines of Config/DB/Resend/AuthService wiring. `zervice` already builds exactly that wiring
 (and used to parse a `--recategorize` flag, since removed, so arg parsing is a known
-pattern there). Folding it in adds **zero** new deploy surface and
+pattern there). ⚠ **2026-07-29:** `plans/zervice_least_privilege.md` will REMOVE the
+AuthService/Resend wiring from zervice (and move it to a secrets-free `.env.zervice`) —
+if that ships first, this tool must re-add the wiring deliberately, read the MAIN `.env`,
+and the "zero new wiring" claim above no longer holds; reassess whether a standalone bin
+is then cleaner. Folding it in adds **zero** new deploy surface and
 reuses the service construction verbatim. Trade-off accepted: the tool lives inside the sync
 binary rather than reading as its own thing.
 
