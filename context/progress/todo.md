@@ -10,6 +10,8 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Next Up
 
+- [ ] **Client error + crash reporting (planned 2026-07-28, ready to build).** First-party pipe, no vendor SDK: handled `ClientError`s ride the existing usage batch (`#[serde(default)]` field + `clamped()` defense), crashes go exactly-once via a panic-hook disk file → unauthed endpoint → `ON CONFLICT (crash_id) DO NOTHING`. Builds on the error-layer split (`d4bebf84`). Plan: [`../plans/client-error-reporting.md`](../plans/client-error-reporting.md). Server half deployable anytime; client half rides the next build. Check store data-safety labels' diagnostics disclosure before ship.
+
 - [ ] **Phase 6 — serve on the matured otag signal (data-gated, months out).** The prerequisite **Phase 5S step-3 cleanup shipped 2026-07-25** (legacy `commander_oracle_id` wire + server fallback + client commander resolution all dropped; deck_id is the sole signal key). Server half deploys on next push; the client half rides the next client build. Re-run the pair-depth readiness queries as the user base grows.
 - [ ] **Read the anonymous funnel once data accrues.** Anonymous funnel metrics (app-open / register-viewed / register-submitted) have shipped in prod since 1.3.1. When enough sessions accrue, read the funnel with `zcripts` (distinct sessions per kind vs. `user_events.register`) — these numbers gate the sign-in-with-Google decision.
 - [ ] **Privacy follow-ups for per-user collection.** The policy text shipped 2026-07-02 (`b1ee1b11`, discloses per-account activity + deck skip memory). Remaining owner passes: update the App Store privacy "nutrition label" + Play data-safety form to reflect per-account analytics, and send the policy-change notification email to users.
@@ -131,6 +133,7 @@ The cache-first synergy layer shipped (see `overview.md`); these are the consume
 
 ## Maintenance
 
+- [ ] **Zervice dead-man's switch (small, optional).** `OnFailure=` Discord alerting shipped 2026-07-29 covers "ran and failed"; the uncovered case is "never ran at all" (timer masked, box wedged). Standard fix: success path pings healthchecks.io (free tier) and silence >25h alerts. `Persistent=true` already covers plain reboots, so this is belt-and-suspenders.
 - [ ] **`oracle_tag_gaps` stax "can't" false-positive check (tiny).** The only survivor of the retired heuristic-refinement list (section closed 2026-07-27; `classify.rs` is deleted, card roles derive from otags): the 4-category `oracle_tag_gaps` fallback still pattern-matches oracle text, and its Stax rule may false-positive on cards whose "can't" appears only in reminder text. Verify with a few known reminder-text cards; fix the pattern if real.
 - [x] **Android target API level — DONE 2026-07-24.** vc30 (1.7.3) built and submitted with **targetSdk 36** (runbook `build.md` updated to match), clearing the 2026-08-31 Play deadline. Verify the Play Console warning disappears once vc30 is live, then delete this line.
 - [ ] **Turn on Dependabot alerts** (repo Settings → Code security → Dependabot alerts) — the passive GitHub-Advisory backstop to the active weekly `cargo audit` workflow (`audit.yml`). Zero code, zero noise; optionally enable "Dependabot security updates" for auto-fix PRs, but skip *version* updates (the noisy weekly-bump firehose). Owner-only (a settings toggle, not a file).
