@@ -17,7 +17,6 @@ use crate::{
             change_password::{ChangePassword, ChangePasswordError},
             change_username::{ChangeUsername, ChangeUsernameError},
             create_session::CreateSessionError,
-            delete_expired_sessions::DeleteExpiredSessionsError,
             delete_user::{DeleteUser, DeleteUserError},
             refresh_session::{RefreshSession, RefreshSessionError},
             register_user::{RegisterUser, RegisterUserError},
@@ -317,22 +316,6 @@ impl AuthRepository for Postgres {
         query!("DELETE FROM refresh_tokens WHERE user_id = $1", user_id)
             .execute(&mut *tx)
             .await?;
-
-        tx.commit().await?;
-
-        Ok(())
-    }
-
-    async fn delete_expired_refresh_tokens(&self) -> Result<(), DeleteExpiredSessionsError> {
-        let mut tx = self.pool.begin().await?;
-
-        let result = query!("DELETE FROM refresh_tokens WHERE expires_at < NOW()")
-            .execute(&mut *tx)
-            .await?;
-        tracing::info!(
-            event = "token_cleanup",
-            rows_deleted = result.rows_affected()
-        );
 
         tx.commit().await?;
 

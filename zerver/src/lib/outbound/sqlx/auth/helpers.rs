@@ -27,7 +27,7 @@ pub trait TxHelper {
     /// Creates a new refresh token for the specified user.
     ///
     /// Generates a cryptographically secure token, stores its hash in the database,
-    /// and enforces the maximum session count by removing oldest tokens if needed.
+    /// and prunes the user's tokens (expired + beyond the session cap).
     fn create_refresh_token(
         &mut self,
         user_id: Uuid,
@@ -35,11 +35,11 @@ pub trait TxHelper {
         client_version: Option<String>,
     ) -> impl Future<Output = Result<RefreshToken, CreateSessionError>> + Send;
 
-    /// Enforces the maximum number of concurrent sessions per user.
+    /// Prunes the user's refresh tokens: deletes expired ones and, of the rest,
+    /// keeps only the [`MAXIMUM_SESSION_COUNT`] most recently created.
     ///
-    /// Deletes the oldest refresh tokens when the count exceeds [`MAXIMUM_SESSION_COUNT`],
-    /// keeping only the most recently created tokens.
-    fn enforce_refresh_token_max(
+    /// Runs at every insert, so the table stays bounded without a global sweeper.
+    fn prune_users_refresh_tokens(
         &mut self,
         user_id: Uuid,
     ) -> impl Future<Output = Result<(), EnforceSessionMaximumError>> + Send;
@@ -65,11 +65,11 @@ impl<'a> TxHelper for PgTransaction<'a> {
         )
         .fetch_one(&mut **self)
         .await?;
-        self.enforce_refresh_token_max(user_id).await?;
+        self.prune_users_refresh_tokens(user_id).await?;
         Ok(refresh_token)
     }
 
-    async fn enforce_refresh_token_max(
+    async fn prune_users_refresh_tokens(
         &mut self,
         user_id: Uuid,
     ) -> Result<(), EnforceSessionMaximumError> {
@@ -78,11 +78,12 @@ impl<'a> TxHelper for PgTransaction<'a> {
                         SELECT id FROM (
                             SELECT
                                 id,
+                                expires_at,
                                 ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY created_at DESC) token_number
                             FROM refresh_tokens
                             WHERE user_id = $1
                         ) users_refresh_tokens
-                        WHERE token_number > $2
+                        WHERE token_number > $2 OR expires_at < NOW()
                 )"#,
             user_id,
             MAXIMUM_SESSION_COUNT as i64

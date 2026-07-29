@@ -160,6 +160,45 @@ impl Config {
     }
 }
 
+/// Minimal configuration for the `zervice` sync binary.
+///
+/// Zervice only talks to Postgres and writes logs — it must not require (or
+/// even be offered) JWT/Resend/email secrets. Keep this to exactly what the
+/// sync pipeline needs; the systemd unit feeds it a matching `.env.zervice`.
+pub struct ZerviceConfig {
+    /// PostgreSQL connection URL (e.g., "postgres://user:pass@host/db").
+    pub database_url: String,
+
+    /// Tracing filter directive(s), fed to `tracing_subscriber::EnvFilter`.
+    pub rust_log: String,
+
+    /// Directory for rolling log files. Defaults to `/var/log/zwipe` if not set.
+    pub log_dir: String,
+}
+
+impl ZerviceConfig {
+    /// Loads zervice configuration from environment variables.
+    ///
+    /// Deliberately no `dotenvy` auto-load: on the server the working directory
+    /// holds the full-secret `.env`, and slurping it would hand zervice every
+    /// secret anyway. Systemd supplies the env via `EnvironmentFile=`; local
+    /// runs source `.env.zervice` (or export the three vars) explicitly.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `DATABASE_URL` or `RUST_LOG` is missing.
+    pub fn from_env() -> anyhow::Result<Self> {
+        let database_url = env_var_by_key(DATABASE_URL_KEY)?;
+        let rust_log = env_var_by_key(RUST_LOG_KEY)?;
+        let log_dir = std::env::var(LOG_DIR_KEY).unwrap_or_else(|_| LOG_DIR_DEFAULT.to_string());
+        Ok(Self {
+            database_url,
+            rust_log,
+            log_dir,
+        })
+    }
+}
+
 /// Retrieves an environment variable by key with a descriptive error on failure.
 fn env_var_by_key(key: &str) -> anyhow::Result<String> {
     std::env::var(key).context(format!("failed to get variable from env: {}", key))

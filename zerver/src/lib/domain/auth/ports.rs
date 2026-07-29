@@ -13,7 +13,6 @@ use crate::domain::{
             change_password::{ChangePassword, ChangePasswordError},
             change_username::{ChangeUsername, ChangeUsernameError},
             create_session::{CreateSession, CreateSessionError},
-            delete_expired_sessions::DeleteExpiredSessionsError,
             delete_user::{DeleteUser, DeleteUserError},
             refresh_session::{RefreshSession, RefreshSessionError},
             register_user::{RegisterUser, RegisterUserError},
@@ -147,13 +146,6 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         &self,
         request: &DeleteUser,
     ) -> impl Future<Output = Result<(), DeleteUserError>> + Send;
-
-    /// Deletes all expired refresh tokens (cleanup operation).
-    ///
-    /// Removes refresh tokens past their 14-day expiration.
-    fn delete_expired_refresh_tokens(
-        &self,
-    ) -> impl Future<Output = Result<(), DeleteExpiredSessionsError>> + Send;
 
     /// Deletes all refresh tokens for a specific user (logout all devices).
     ///
@@ -345,13 +337,6 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         request: &DeleteUser,
     ) -> impl Future<Output = Result<(), DeleteUserError>> + Send;
 
-    /// Deletes all expired sessions (cleanup operation).
-    ///
-    /// Typically called by background job to clean up old refresh tokens.
-    fn delete_expired_sessions(
-        &self,
-    ) -> impl Future<Output = Result<(), DeleteExpiredSessionsError>> + Send;
-
     /// Revokes all sessions for a user (logout everywhere).
     ///
     /// Deletes all refresh tokens for the user, logging them out from all devices.
@@ -457,11 +442,6 @@ pub trait ErasedAuthService: Send + Sync + 'static {
         request: &'a DeleteUser,
     ) -> BoxFuture<'a, Result<(), DeleteUserError>>;
 
-    /// See [`AuthService::delete_expired_sessions`].
-    fn delete_expired_sessions<'a>(
-        &'a self,
-    ) -> BoxFuture<'a, Result<(), DeleteExpiredSessionsError>>;
-
     /// See [`AuthService::revoke_sessions`].
     fn revoke_sessions<'a>(
         &'a self,
@@ -558,12 +538,6 @@ where
         request: &'a DeleteUser,
     ) -> BoxFuture<'a, Result<(), DeleteUserError>> {
         Box::pin(AuthService::delete_user(self, request))
-    }
-
-    fn delete_expired_sessions<'a>(
-        &'a self,
-    ) -> BoxFuture<'a, Result<(), DeleteExpiredSessionsError>> {
-        Box::pin(AuthService::delete_expired_sessions(self))
     }
 
     fn revoke_sessions<'a>(
