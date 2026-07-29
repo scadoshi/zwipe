@@ -22,8 +22,10 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 **Latest — 2026-07-29: Scryfall bulk API break fixed** (they moved to gzipped JSONL;
 cron had failed silently 2 days), **zervice on systemd timers with Resend failure
-alerting**, the **error-layer refactor** (single logged exit, zwiper `ClientError`),
-and two ready-to-build plans: client error/crash reporting + zervice least privilege.
+alerting**, **zervice least privilege shipped in full** (insert-time session prune,
+secrets-free `.env.zervice`, scoped Postgres role — plan archived), the bulk-upsert
+batching restored, and the **error-layer refactor** (single logged exit, zwiper
+`ClientError`). Next build: client error/crash reporting (plan ready).
 See [`progress/overview.md`](progress/overview.md) top entry.
 
 **1.7.3 clients submitted (2026-07-24; iOS build 68 / Android vc30, live in
