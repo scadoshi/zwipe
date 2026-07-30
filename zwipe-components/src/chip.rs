@@ -10,11 +10,29 @@ use dioxus::prelude::*;
 /// A selectable chip. `selected` drives the highlighted state, `onclick` fires
 /// on tap, and `children` is the label (text or nodes).
 #[component]
-pub fn Chip(selected: bool, onclick: EventHandler<MouseEvent>, children: Element) -> Element {
+pub fn Chip(
+    selected: bool,
+    onclick: EventHandler<MouseEvent>,
+    /// Grayed out and inert — for a toggle whose target is currently empty
+    /// or otherwise inapplicable. Off by default.
+    #[props(default)]
+    disabled: bool,
+    children: Element,
+) -> Element {
+    let class = match (selected, disabled) {
+        (_, true) => "chip disabled",
+        (true, false) => "chip selected",
+        (false, false) => "chip",
+    };
     rsx! {
         button {
-            class: if selected { "chip selected" } else { "chip" },
-            onclick: move |evt| onclick.call(evt),
+            class: "{class}",
+            disabled,
+            onclick: move |evt| {
+                if !disabled {
+                    onclick.call(evt);
+                }
+            },
             {children}
         }
     }
