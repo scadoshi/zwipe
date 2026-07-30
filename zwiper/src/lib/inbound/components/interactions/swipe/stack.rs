@@ -45,6 +45,22 @@ const PEEK_SCALE_STEP: f64 = 0.0;
 /// Degrees of rotation applied per pixel of horizontal drag (the "tilt").
 const TILT_PER_PX: f64 = 0.06;
 
+/// One committed card mid-exit. The seed fields carry the transform the card
+/// had at the moment the finger released it — the exit keyframe starts from
+/// there (via CSS custom properties) instead of snapping back to rest first.
+#[derive(Clone, PartialEq)]
+struct ExitingCard {
+    id: Uuid,
+    direction: Direction,
+    card: Card,
+    /// Horizontal offset at release, px.
+    from_x: f64,
+    /// Vertical offset at release, px.
+    from_y: f64,
+    /// Tilt at release, degrees.
+    from_rot: f64,
+}
+
 /// A peeking card stack with gesture-driven commit-or-return behavior.
 #[component]
 pub fn SwipeStack(
@@ -69,7 +85,7 @@ pub fn SwipeStack(
     // In-flight exiting cards. Each entry is rendered as an overlay layer
     // playing a one-shot CSS keyframe and removes itself on animationend.
     // Multiple cards may be exiting concurrently during rapid swiping.
-    let mut exiting_overlay: Signal<Vec<(Uuid, Direction, Card)>> = use_signal(Vec::new);
+    let mut exiting_overlay: Signal<Vec<ExitingCard>> = use_signal(Vec::new);
 
     let visible = cards.into_iter().take(STACK_DEPTH).collect::<Vec<_>>();
     let n = visible.len();
@@ -128,10 +144,14 @@ pub fn SwipeStack(
                             0.0
                         };
                         let rot = tx * TILT_PER_PX;
+                        // Dragging: no transition, follow the finger 1:1.
+                        // Released below threshold: return to center with an
+                        // overshoot curve (easeOutBack) so the card bobbles
+                        // just past rest and settles, instead of a flat glide.
                         let transition_override = if s.is_swiping {
                             "transition: transform 0s;"
                         } else {
-                            ""
+                            "transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);"
                         };
                         format!(
                             "transform: translate({tx}px, {ty}px) rotate({rot}deg); \
@@ -185,11 +205,25 @@ pub fn SwipeStack(
                                     d @ (Direction::Left
                                     | Direction::Right
                                     | Direction::Up) => {
-                                        exiting_overlay.write().push((
-                                            card.scryfall_data.id,
-                                            d.clone(),
-                                            card.clone(),
-                                        ));
+                                        // Seed the exit from the release
+                                        // position, mirroring the drag
+                                        // transform's axis clamping above.
+                                        let delta = state
+                                            .peek()
+                                            .release_delta
+                                            .unwrap_or(DeltaPoint::new(0.0, 0.0));
+                                        let (from_x, from_y) = match d {
+                                            Direction::Up => (0.0, delta.y.min(0.0)),
+                                            _ => (delta.x, 0.0),
+                                        };
+                                        exiting_overlay.write().push(ExitingCard {
+                                            id: card.scryfall_data.id,
+                                            direction: d.clone(),
+                                            card: card.clone(),
+                                            from_x,
+                                            from_y,
+                                            from_rot: from_x * TILT_PER_PX,
+                                        });
                                         match d {
                                             Direction::Left => on_swipe_left.call(card.clone()),
                                             Direction::Right => on_swipe_right.call(card.clone()),
@@ -271,28 +305,36 @@ pub fn SwipeStack(
             // removes itself from the overlay on animationend. Down-swipes
             // never enter the overlay (they trigger undo synchronously), so
             // we filter them defensively.
-            for (id, dir, card) in exiting_overlay().into_iter().filter(|(_, d, _)| !matches!(d, Direction::Down)) {
+            for exiting in exiting_overlay().into_iter().filter(|e| !matches!(e.direction, Direction::Down)) {
                 {
-                    let exit_class = match dir {
+                    let exit_class = match exiting.direction {
                         Direction::Left => "card-stack-exit-left",
                         Direction::Right => "card-stack-exit-right",
                         Direction::Up => "card-stack-exit-up",
                         Direction::Down => "",
                     };
+                    let id = exiting.id;
+                    // The keyframes read these custom properties for their
+                    // `from` frame — the card departs from where it was
+                    // released instead of clipping back to rest.
+                    let style = format!(
+                        "z-index: 100; --exit-from-x: {}px; --exit-from-y: {}px; --exit-from-rot: {}deg;",
+                        exiting.from_x, exiting.from_y, exiting.from_rot
+                    );
                     rsx! {
                         div {
                             key: "exit-{id}",
                             class: "swipe-stack-card swipe-stack-exiting {exit_class}",
-                            style: "z-index: 100;",
+                            style: "{style}",
                             onanimationend: move |_| {
-                                exiting_overlay.write().retain(|(eid, _, _)| *eid != id);
+                                exiting_overlay.write().retain(|e| e.id != id);
                             },
 
                             // Same element as the resting/peek cards (non-flippable
                             // here) so the fly-off matches — and image-less cards
                             // show their text frame instead of going blank.
                             FlippableCardImage {
-                                sd: card.scryfall_data,
+                                sd: exiting.card.scryfall_data,
                                 size: ImageSize::Large,
                                 class: "card-image".to_string(),
                                 draggable: false,

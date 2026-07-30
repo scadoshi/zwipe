@@ -27,6 +27,11 @@ pub struct SwipeState {
     pub is_swiping: bool,
     /// Duration for the return-to-origin animation in seconds.
     pub return_animation_seconds: f64,
+    /// The finger's delta from the start point at the moment the gesture
+    /// ended, captured before [`Self::reset`] clears the tracked points. The
+    /// exit animation seeds its first frame from this so a committed card
+    /// flies out from where it was released instead of snapping to rest.
+    pub release_delta: Option<DeltaPoint>,
 }
 
 impl Default for SwipeState {
@@ -39,6 +44,7 @@ impl Default for SwipeState {
             traversing_axis: None,
             is_swiping: false,
             return_animation_seconds: 0.0,
+            release_delta: None,
         }
     }
 }
@@ -154,7 +160,9 @@ impl SwipeState {
 
     /// Evaluates the current swipe and sets `latest_swipe` if thresholds are met.
     pub fn set_latest_swipe(&mut self, config: &SwipeConfig) {
-        const DISTANCE_THRESHOLD_FOR_SPEED_TO_BE_VALID: f64 = 10.0;
+        // A flick (speed path) only counts after this much travel — low values
+        // let a millimeter twitch commit a swipe the user meant to abort.
+        const DISTANCE_THRESHOLD_FOR_SPEED_TO_BE_VALID: f64 = 32.0;
 
         if self.traversing_axis.is_none() {
             self.set_traversing_axis();
@@ -573,10 +581,19 @@ mod tests {
 
     #[test]
     fn test_swipe_triggers_via_speed() {
-        // dist=15 (> 10 minimum for speed to count), speed=6.0 (> 5.0 threshold)
-        let mut state = swiping_state(15.0, 0.0, 6.0);
+        // dist=40 (> 32 minimum for speed to count), speed=6.0 (> 5.0 threshold)
+        let mut state = swiping_state(40.0, 0.0, 6.0);
         state.set_latest_swipe(&default_config());
         assert_eq!(state.latest_swipe, Some(Direction::Right));
+    }
+
+    #[test]
+    fn test_fast_flick_below_travel_minimum_does_not_commit() {
+        // A twitchy micro-movement can be very fast; without enough travel
+        // (<= 32px) the speed path must not commit a swipe.
+        let mut state = swiping_state(15.0, 0.0, 6.0);
+        state.set_latest_swipe(&default_config());
+        assert!(state.latest_swipe.is_none());
     }
 
     #[test]
@@ -600,6 +617,7 @@ mod tests {
             traversing_axis: Some(Axis::X),
             is_swiping: true,
             return_animation_seconds: 0.5,
+            release_delta: None,
         };
         state.reset();
         assert!(state.start_point.is_none());

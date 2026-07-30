@@ -86,7 +86,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
     let mut printing_open = use_signal(|| false);
 
     // Only left (next) and down (back) commit; right/up return to center.
-    let swipe_config = SwipeConfig::new(vec![Direction::Left, Direction::Down], 60.0, 1.5);
+    let swipe_config = SwipeConfig::new(vec![Direction::Left, Direction::Down], 90.0, 2.5);
 
     let current_card = move || stack.current();
 

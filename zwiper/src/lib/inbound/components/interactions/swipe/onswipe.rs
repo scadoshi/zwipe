@@ -24,6 +24,7 @@ impl OnSwipe for SwipeState {
         self.start_point = Some(time_point.clone());
         self.current_point = Some(time_point.clone());
         self.previous_point = Some(time_point);
+        self.release_delta = None;
 
         self.is_swiping = true;
 
@@ -52,6 +53,10 @@ impl OnSwipe for SwipeState {
         self.is_swiping = false;
 
         self.set_latest_swipe(config);
+
+        // Capture where the finger released BEFORE reset() clears the points —
+        // the exit overlay seeds its first animation frame from this.
+        self.release_delta = self.delta_from_start_point();
 
         tracing::trace!("swipe end={:?}", self.current_point);
         self.reset();

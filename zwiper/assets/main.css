@@ -1647,9 +1647,14 @@ button {
    slightly longer than the 0.12s peek→top transition so the exiting card is
    still mid-flight when the new top has finished growing into place — the two
    animations layer instead of cutting. */
+/* The `from` frames read the release-position custom properties the stack
+   sets on each exiting overlay card, so the fly-off starts where the finger
+   let go instead of snapping back to rest. Defaults keep unseeded cards on
+   the old behavior. */
 @keyframes card-stack-exit-left {
     from {
-        transform: translate(0, 0) rotate(0);
+        transform: translate(var(--exit-from-x, 0px), var(--exit-from-y, 0px))
+            rotate(var(--exit-from-rot, 0deg));
         opacity: 1;
     }
     to {
@@ -1660,7 +1665,8 @@ button {
 
 @keyframes card-stack-exit-right {
     from {
-        transform: translate(0, 0) rotate(0);
+        transform: translate(var(--exit-from-x, 0px), var(--exit-from-y, 0px))
+            rotate(var(--exit-from-rot, 0deg));
         opacity: 1;
     }
     to {
@@ -1671,7 +1677,7 @@ button {
 
 @keyframes card-stack-exit-up {
     from {
-        transform: translate(0, 0);
+        transform: translate(var(--exit-from-x, 0px), var(--exit-from-y, 0px));
         opacity: 1;
     }
     to {

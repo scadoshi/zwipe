@@ -148,8 +148,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
             Direction::Up,
             Direction::Down,
         ],
-        60.0,
-        1.5,
+        90.0,
+        2.5,
     );
 
     let current_card = move || stack.current_wrapping();

@@ -359,8 +359,8 @@ pub fn Add(deck_id: Uuid) -> Element {
             Direction::Up,
             Direction::Down,
         ],
-        60.0, // distance threshold in px
-        1.5,  // speed threshold in px/ms
+        90.0, // distance threshold in px
+        2.5,  // speed threshold in px/ms
     );
 
     // Advance past the just-committed card. The stack fires its on_swipe_*
