@@ -64,6 +64,7 @@ pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Resu
     // Scryfall's where we have one, fills the blanks otherwise. See
     // `oracle_tag_descriptions`.
     let (desc_slugs, descriptions) = super::oracle_tag_descriptions::description_pairs();
+    let mut unknown_count = 0usize;
     if !desc_slugs.is_empty() {
         sqlx::query(
             "UPDATE oracle_tags AS ot SET description = d.description \
@@ -87,11 +88,31 @@ pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Resu
         .await
         .unwrap_or_default();
         if !unknown.is_empty() {
+            unknown_count = unknown.len();
             tracing::warn!(
                 "ORACLE_TAG_DESCRIPTIONS references unknown oracle-tag slugs: {unknown:?}"
             );
         }
     }
+
+    // Coverage line: the opposite gap to the typo guard above. Three numbers,
+    // two goals — `blank` is the user-visible gap (no description from any
+    // source), `authored` tracks the replace-Scryfall bulk-authoring goal
+    // (the rest are Scryfall's own copy). Visible in every nightly log so
+    // coverage drift is impossible to miss.
+    let (covered, blank): (i64, i64) = sqlx::query_as(
+        "SELECT count(*) FILTER (WHERE description IS NOT NULL AND description <> ''), \
+                count(*) FILTER (WHERE description IS NULL OR description = '') \
+         FROM oracle_tags",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .context("failed to count oracle-tag description coverage")?;
+    let authored = desc_slugs.len().saturating_sub(unknown_count);
+    tracing::info!(
+        "oracle tag descriptions: {covered}/{} have one ({authored} authored, {blank} blank)",
+        covered + blank
+    );
 
     // Correlations: replace only the scryfall-sourced rows, preserving other sources.
     sqlx::query("DELETE FROM card_oracle_tags WHERE source = 'scryfall'")
