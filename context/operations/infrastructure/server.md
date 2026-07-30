@@ -464,6 +464,28 @@ fires on next boot.
 JWT/Resend secrets). The alert unit keeps reading the MAIN `.env` because it
 legitimately needs the Resend creds.
 
+**Scoped Postgres role — the lifecycle.** `.env.zervice`'s `DATABASE_URL`
+connects as the `zervice` role; `zcripts/server/sql/zervice_role.sql` is the
+canonical, IDEMPOTENT ledger of everything it may touch (card-sync tables,
+matview ownership, upkeep prunes — incl. the destruction-only session grant:
+`DELETE` + column-scoped `SELECT (expires_at)`, so it can dust expired
+sessions but never read them). Grants deliberately do NOT live in migrations
+(roles are per-cluster infrastructure; dev/test DBs differ). The lifecycle is
+one command for every case:
+
+```bash
+# first time, after adding a table zervice touches, or after a migration
+# recreated a matview (ownership resets — next nightly run alerts loudly):
+sudo -u postgres psql -d zwipe < ~/zwipe-src/zcripts/server/sql/zervice_role.sql
+
+# first time only — set the password (interactive, never in a file):
+sudo -u postgres psql -d zwipe -c "\password zervice"
+```
+
+Dev parity: the dev setup/reset scripts run the same file against the local
+`zerver` DB (throwaway password `zervice`), so a local run as the scoped role
+proves new grants before prod's nightly can fail on them.
+
 Why systemd over cron: `EnvironmentFile=` replaces the fragile
 `SHELL=/bin/bash` + `source .env` dance (a dash-vs-bash `source` failure
 silently ate weeks of runs in mid-2026), early-startup failures land in the
