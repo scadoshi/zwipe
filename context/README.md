@@ -20,12 +20,17 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**Latest — 2026-07-29: Scryfall bulk API break fixed** (they moved to gzipped JSONL;
-cron had failed silently 2 days), **zervice on systemd timers with Resend failure
-alerting**, **zervice least privilege shipped in full** (insert-time session prune,
-secrets-free `.env.zervice`, scoped Postgres role — plan archived), the bulk-upsert
-batching restored, and the **error-layer refactor** (single logged exit, zwiper
-`ClientError`). Next build: client error/crash reporting (plan ready).
+**Latest — 2026-07-30: 1.7.4 SUBMITTED to both stores** (iOS build 69 / Android
+vc31). The release: **client error + crash reporting** (anonymous, first-party,
+field-verified on-device: handled errors ride the usage batch with breadcrumbs,
+crashes exactly-once via panic-hook file → unauthed endpoint) and the iOS
+photo-save crash fix (`NSPhotoLibraryAddUsageDescription`). Privacy policy,
+App Privacy labels, and the Play data-safety form all updated (Play also gained
+the previously-undeclared App interactions). Also 2026-07-29/30: zervice least
+privilege shipped in full (scoped Postgres role, `.env.zervice`, UpkeepService
+prunes), Scryfall JSONL break + bulk-upsert batching fixed, and the
+**EnvFilter logging bug** killed (per-layer copies silently dropped events,
+errors included — global filter now).
 See [`progress/overview.md`](progress/overview.md) top entry.
 
 **1.7.3 clients submitted (2026-07-24; iOS build 68 / Android vc30, live in
