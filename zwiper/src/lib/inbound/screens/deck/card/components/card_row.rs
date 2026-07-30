@@ -61,7 +61,10 @@ pub(crate) fn CardRow(
     // an examples opener. Absent elsewhere, so those rows keep plain otag chips.
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
-    let show_art = try_use_context::<ShowRowArt>().is_some_and(|s| (s.0)());
+    // `None` where the view doesn't provide the toggle (rows outside the
+    // deck-cards screen render art-free); `Some(visible)` keeps the thumb
+    // mounted so the toggle eases it in and out.
+    let show_art = try_use_context::<ShowRowArt>().map(|s| (s.0)());
     rsx! {
         SharedCardRow {
             card,

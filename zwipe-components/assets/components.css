@@ -260,7 +260,10 @@
 
 /* Opt-in art-crop thumbnail at the far left of the row (CardRow `show_art`).
    Art crops vary in aspect card to card, so a fixed box with cover-fit keeps
-   every row's squircle identical. Lazy-loaded by the img attribute. */
+   every row's squircle identical. Lazy-loaded by the img attribute. The
+   host's toggle flips `.art-hidden`, easing size + opacity instead of
+   clipping the DOM in and out; the negative margin swallows the flex gap so
+   a hidden thumb leaves no double-gap. */
 .card-row-art {
     flex: 0 0 auto;
     width: 4rem;
@@ -269,6 +272,20 @@
     border-radius: 0.6rem;
     border: 1px solid var(--border-secondary);
     box-shadow: var(--shadow-sm);
+    transition:
+        width 0.25s ease,
+        height 0.25s ease,
+        opacity 0.25s ease,
+        margin-right 0.25s ease,
+        border-width 0.25s ease;
+}
+
+.card-row-art.art-hidden {
+    width: 0;
+    height: 0;
+    opacity: 0;
+    margin-right: -0.4rem;
+    border-width: 0;
 }
 
 /* Disclosure chevron at the left of each row; rotates to point down when the
