@@ -2,7 +2,13 @@
 
 use crate::{
     inbound::components::{
-        auth::ensure_session::EnsureFresh, bottom_sheet::BottomSheet, fields::text_input::TextInput,
+        auth::ensure_session::EnsureFresh,
+        bottom_sheet::BottomSheet,
+        fields::text_input::TextInput,
+        telemetry::{
+            usage_buffer::UsageBuffer,
+            vocabulary::{component, screen},
+        },
     },
     outbound::client::{ZwipeClient, user::change_username::ClientChangeUsername},
 };
@@ -46,6 +52,7 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
     let mut submit_attempted = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     let mut inputs_are_valid = move || {
         validate_username();
@@ -80,6 +87,12 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
                 let mut session_value = match session.ensure_fresh(auth_client).await {
                     Ok(session_value) => session_value,
                     Err(e) => {
+                        usage_buffer.peek().report_error(
+                            screen::PROFILE_CHANGE_USERNAME,
+                            component::NONE,
+                            "change_username",
+                            &e,
+                        );
                         toast.error(
                             e.to_user_message(),
                             ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -105,6 +118,12 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
                     }
                     Err(e) => {
                         tracing::warn!("change username failed: {e}");
+                        usage_buffer.peek().report_error(
+                            screen::PROFILE_CHANGE_USERNAME,
+                            component::NONE,
+                            "change_username",
+                            &e,
+                        );
                         toast.error(
                             e.to_user_message(),
                             ToastOptions::default().duration(Duration::from_millis(3000)),

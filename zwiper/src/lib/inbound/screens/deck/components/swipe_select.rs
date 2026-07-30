@@ -122,6 +122,9 @@ pub(crate) fn SwipeSelect(
     mode: ReadSignal<Option<SwipeMode>>,
     on_select: EventHandler<Card>,
     on_close: EventHandler<()>,
+    /// Host screen const for error-report breadcrumbs, passed through to the
+    /// printing sheet (this overlay serves deck edit and deck create).
+    host_screen: &'static str,
 ) -> Element {
     // OS back gesture closes this overlay before touching the router.
     use_overlay_back(open);
@@ -406,6 +409,7 @@ pub(crate) fn SwipeSelect(
                     PrintingSheet {
                         card,
                         open: printing_open,
+                        host_screen,
                         on_save: move |new_card: Card| {
                             let idx = current_index();
                             if let Some(slot) = cards.write().get_mut(idx) {

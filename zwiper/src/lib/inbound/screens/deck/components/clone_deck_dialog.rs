@@ -6,6 +6,10 @@ use crate::{
                 AlertDialogRoot, AlertDialogTitle,
             },
             auth::ensure_session::EnsureFresh,
+            telemetry::{
+                usage_buffer::UsageBuffer,
+                vocabulary::{component, screen},
+            },
         },
         router::Router,
     },
@@ -29,6 +33,7 @@ pub(crate) fn CloneDeckDialog(
     let client: Signal<ZwipeClient> = use_context();
     let navigator = use_navigator();
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     let mut new_name = use_signal(String::new);
     let mut is_cloning = use_signal(|| false);
@@ -80,6 +85,7 @@ pub(crate) fn CloneDeckDialog(
                                 let s = match session.ensure_fresh(client).await {
                                     Ok(s) => s,
                                     Err(e) => {
+                                        usage_buffer.peek().report_error(screen::DECK_VIEW, component::CLONE_DECK_DIALOG, "clone_deck", &e);
                                         toast.error(
                                             e.to_user_message(),
                                             ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -99,6 +105,7 @@ pub(crate) fn CloneDeckDialog(
                                         navigator.push(Router::ViewDeck { deck_id: cloned.deck_id });
                                     }
                                     Err(e) => {
+                                        usage_buffer.peek().report_error(screen::DECK_VIEW, component::CLONE_DECK_DIALOG, "clone_deck", &e);
                                         toast.error(
                                             e.to_user_message(),
                                             ToastOptions::default().duration(Duration::from_millis(3000)),

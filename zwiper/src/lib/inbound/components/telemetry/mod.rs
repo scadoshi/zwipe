@@ -9,3 +9,5 @@ pub mod anonymous;
 pub mod flush_loop;
 /// Atomic in-memory counters.
 pub mod usage_buffer;
+/// Closed screen/component vocabulary for error-report breadcrumbs.
+pub mod vocabulary;

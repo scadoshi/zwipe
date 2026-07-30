@@ -11,6 +11,8 @@ pub mod android_fs;
 pub mod buy_links;
 /// HTTP API client for backend communication.
 pub mod client;
+/// Crash capture: panic hook writes to disk, next launch posts + clears.
+pub mod crash_store;
 /// Open a URL with the OS default handler (browser, mail app, etc.).
 pub mod open_url;
 /// User session and authentication state management.

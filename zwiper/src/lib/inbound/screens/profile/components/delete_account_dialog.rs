@@ -6,6 +6,10 @@ use crate::{
         },
         auth::{ensure_session::EnsureFresh, signal_logout::SignalLogout},
         fields::text_input::TextInput,
+        telemetry::{
+            usage_buffer::UsageBuffer,
+            vocabulary::{component, screen},
+        },
     },
     outbound::client::{ZwipeClient, user::delete_user::ClientDeleteUser},
 };
@@ -20,6 +24,7 @@ pub(crate) fn DeleteAccountDialog(mut open: Signal<bool>) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     let mut delete_countdown = use_signal(|| 5u8);
     let mut delete_password = use_signal(String::new);
@@ -72,6 +77,7 @@ pub(crate) fn DeleteAccountDialog(mut open: Signal<bool>) -> Element {
                                 let s = match session.ensure_fresh(client).await {
                                     Ok(s) => s,
                                     Err(e) => {
+                                        usage_buffer.peek().report_error(screen::PROFILE, component::DELETE_ACCOUNT_DIALOG, "delete_account", &e);
                                         toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
                                         is_deleting.set(false);
                                         return;
@@ -83,6 +89,7 @@ pub(crate) fn DeleteAccountDialog(mut open: Signal<bool>) -> Element {
                                         session.logout(client);
                                     }
                                     Err(e) => {
+                                        usage_buffer.peek().report_error(screen::PROFILE, component::DELETE_ACCOUNT_DIALOG, "delete_account", &e);
                                         toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
                                         is_deleting.set(false);
                                     }

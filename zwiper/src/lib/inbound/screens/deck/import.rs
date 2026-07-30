@@ -9,6 +9,10 @@ use crate::{
             chip::Chip,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
             screen_header::ScreenHeader,
+            telemetry::{
+                usage_buffer::UsageBuffer,
+                vocabulary::{component, screen},
+            },
         },
         router::Router,
     },
@@ -54,6 +58,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
     // Import hint: auto-opens on first visit; the header "?" reopens it.
     let import_hint = use_one_time_hint(HINT_IMPORT);
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     let board_word = board_selection.read().unwrap_or("mainboard");
 
@@ -68,6 +73,12 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
             let session = match session.ensure_fresh(client).await {
                 Ok(session) => session,
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_IMPORT,
+                        component::NONE,
+                        "import_cards",
+                        &e,
+                    );
                     toast.error(
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -120,6 +131,12 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     loading.set(false);
                 }
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_IMPORT,
+                        component::NONE,
+                        "import_cards",
+                        &e,
+                    );
                     toast.error(
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),

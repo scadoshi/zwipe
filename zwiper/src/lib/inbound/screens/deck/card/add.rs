@@ -13,7 +13,11 @@ use crate::{
             },
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             screen_header::ScreenHeader,
-            telemetry::{flush_loop::flush_once, usage_buffer::UsageBuffer},
+            telemetry::{
+                flush_loop::flush_once,
+                usage_buffer::UsageBuffer,
+                vocabulary::{component, screen},
+            },
         },
         screens::deck::card::{
             components::{
@@ -394,6 +398,12 @@ pub fn Add(deck_id: Uuid) -> Element {
             let session = match session.ensure_fresh(client).await {
                 Ok(session) => session,
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_ADD,
+                        component::NONE,
+                        "add_card",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                     return;
                 }
@@ -407,6 +417,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
                 Err(e) => {
                     tracing::warn!("add card to deck failed: {e}");
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_ADD,
+                        component::NONE,
+                        "add_card",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                 }
             }
@@ -422,6 +438,12 @@ pub fn Add(deck_id: Uuid) -> Element {
             let session = match session.ensure_fresh(client).await {
                 Ok(session) => session,
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_ADD,
+                        component::NONE,
+                        "add_maybeboard",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                     return;
                 }
@@ -438,6 +460,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
                 Err(e) => {
                     tracing::warn!("add card to maybeboard failed: {e}");
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_ADD,
+                        component::NONE,
+                        "add_maybeboard",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                 }
             }
@@ -475,6 +503,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                         let session = match session.ensure_fresh(client).await {
                             Ok(session) => session,
                             Err(e) => {
+                                usage_buffer.peek().report_error(
+                                    screen::DECK_CARD_ADD,
+                                    component::NONE,
+                                    "undo_skip",
+                                    &e,
+                                );
                                 toast.error(e.to_user_message(), ToastOptions::default());
                                 return;
                             }
@@ -508,6 +542,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                     let session = match session.ensure_fresh(client).await {
                         Ok(session) => session,
                         Err(e) => {
+                            usage_buffer.peek().report_error(
+                                screen::DECK_CARD_ADD,
+                                component::NONE,
+                                "undo_add",
+                                &e,
+                            );
                             toast.error(e.to_user_message(), ToastOptions::default());
                             stack.unwind_undo(action); // Restore history + cursor
                             return;
@@ -545,6 +585,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                     let session = match session.ensure_fresh(client).await {
                         Ok(session) => session,
                         Err(e) => {
+                            usage_buffer.peek().report_error(
+                                screen::DECK_CARD_ADD,
+                                component::NONE,
+                                "undo_maybe",
+                                &e,
+                            );
                             toast.error(e.to_user_message(), ToastOptions::default());
                             stack.unwind_undo(action);
                             return;
@@ -884,6 +930,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
                 Err(e) => {
                     tracing::warn!("card search failed: {e}");
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_ADD,
+                        component::NONE,
+                        "search_cards",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                     is_loading_cards.set(false);
                 }
@@ -939,6 +991,12 @@ pub fn Add(deck_id: Uuid) -> Element {
             let session = match session.ensure_fresh(client).await {
                 Ok(session) => session,
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_ADD,
+                        component::NONE,
+                        "promote_maybeboard",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                     return;
                 }
@@ -949,6 +1007,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                 .await
             {
                 tracing::warn!("promote to deck failed: {e}");
+                usage_buffer.peek().report_error(
+                    screen::DECK_CARD_ADD,
+                    component::NONE,
+                    "promote_maybeboard",
+                    &e,
+                );
                 toast.error(e.to_user_message(), ToastOptions::default());
             }
         });
@@ -985,6 +1049,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                     let session = match session.ensure_fresh(client).await {
                         Ok(session) => session,
                         Err(e) => {
+                            usage_buffer.peek().report_error(
+                                screen::DECK_CARD_ADD,
+                                component::NONE,
+                                "undo_maybeboard",
+                                &e,
+                            );
                             toast.error(e.to_user_message(), ToastOptions::default());
                             mb_stack.cancel_entering();
                             return;
@@ -1331,6 +1401,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 let session = match session.ensure_fresh(client).await {
                                     Ok(session) => session,
                                     Err(e) => {
+                                        usage_buffer.peek().report_error(screen::DECK_CARD_ADD, component::NONE, "search_cards", &e);
                                         toast.error(e.to_user_message(), ToastOptions::default());
                                         return;
                                     }
@@ -1406,6 +1477,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     }
                                     Err(e) => {
                                         tracing::warn!("card search failed: {e}");
+                                        usage_buffer.peek().report_error(screen::DECK_CARD_ADD, component::NONE, "search_cards", &e);
                                         toast.error(e.to_user_message(), ToastOptions::default());
                                         is_loading_cards.set(false);
                                     }
@@ -1439,6 +1511,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             // printing → re-skin the focused card; swipe-right adds that printing.
             if let Some(card) = current_card() {
                 PrintingSheet {
+                    host_screen: screen::DECK_CARD_ADD,
                     card,
                     open: printing_open,
                     on_save: move |new_card: Card| stack.replace_current(new_card),

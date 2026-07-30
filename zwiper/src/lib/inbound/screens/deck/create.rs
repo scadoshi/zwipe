@@ -10,8 +10,14 @@ use super::components::{
 use crate::{
     inbound::{
         components::{
-            auth::ensure_session::EnsureFresh, catalog_cache::CatalogCache,
-            hint_dialog::use_one_time_hint, screen_header::ScreenHeader,
+            auth::ensure_session::EnsureFresh,
+            catalog_cache::CatalogCache,
+            hint_dialog::use_one_time_hint,
+            screen_header::ScreenHeader,
+            telemetry::{
+                usage_buffer::UsageBuffer,
+                vocabulary::{component, screen},
+            },
         },
         router::Router,
     },
@@ -87,6 +93,7 @@ pub fn CreateDeck() -> Element {
     let create_hint = use_one_time_hint(HINT_CREATE_DECK);
 
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
     // Oracle tags currently contributed by deck-tag seeding. Seeding is reconciled
     // once when the deck-tag picker closes (see the TagSelect `on_close`): drop the
     // old seed set, add the new one, keep manual picks. So selecting then
@@ -131,6 +138,12 @@ pub fn CreateDeck() -> Element {
             let session = match session.ensure_fresh(auth_client).await {
                 Ok(session) => session,
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CREATE,
+                        component::NONE,
+                        "create_deck",
+                        &e,
+                    );
                     toast.error(
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -171,6 +184,12 @@ pub fn CreateDeck() -> Element {
                     });
                 }
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CREATE,
+                        component::NONE,
+                        "create_deck",
+                        &e,
+                    );
                     toast.error(
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -236,6 +255,7 @@ pub fn CreateDeck() -> Element {
             }
             }
             SwipeSelect {
+            host_screen: screen::DECK_CREATE,
                 open: show_commander_swipe,
                 mode: commander_mode,
                 on_select: move |card: Card| {
@@ -255,6 +275,7 @@ pub fn CreateDeck() -> Element {
                 on_close: move |_| show_commander_swipe.set(false),
             }
             SwipeSelect {
+            host_screen: screen::DECK_CREATE,
                 open: show_partner_swipe,
                 mode: partner_mode,
                 on_select: move |card: Card| {
@@ -265,6 +286,7 @@ pub fn CreateDeck() -> Element {
                 on_close: move |_| show_partner_swipe.set(false),
             }
             SwipeSelect {
+            host_screen: screen::DECK_CREATE,
                 open: show_background_swipe,
                 mode: background_mode,
                 on_select: move |card: Card| {
@@ -275,6 +297,7 @@ pub fn CreateDeck() -> Element {
                 on_close: move |_| show_background_swipe.set(false),
             }
             SwipeSelect {
+            host_screen: screen::DECK_CREATE,
                 open: show_signature_spell_swipe,
                 mode: spell_mode,
                 on_select: move |card: Card| {

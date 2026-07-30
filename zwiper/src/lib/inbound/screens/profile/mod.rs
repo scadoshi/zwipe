@@ -21,6 +21,10 @@ use crate::{
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
             logout_dialog::LogoutDialog,
             screen_header::ScreenHeader,
+            telemetry::{
+                usage_buffer::UsageBuffer,
+                vocabulary::{component, screen},
+            },
         },
         router::Router,
     },
@@ -64,6 +68,7 @@ pub fn Profile() -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let mut theme_config: Signal<ThemeConfig> = use_context();
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     let mut show_logout_dialog = use_signal(|| false);
     let mut show_delete_dialog = use_signal(|| false);
@@ -118,6 +123,12 @@ pub fn Profile() -> Element {
                 Ok(session_val) => session_val,
                 Err(e) => {
                     theme_config.set(prev);
+                    usage_buffer.peek().report_error(
+                        screen::PROFILE,
+                        component::NONE,
+                        "load_profile",
+                        &e,
+                    );
                     toast.error(
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -130,6 +141,12 @@ pub fn Profile() -> Element {
                 Err(e) => {
                     theme_config.set(prev);
                     tracing::warn!("update dark mode failed: {e}");
+                    usage_buffer.peek().report_error(
+                        screen::PROFILE,
+                        component::NONE,
+                        "update_preferences",
+                        &e,
+                    );
                     toast.error(
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),

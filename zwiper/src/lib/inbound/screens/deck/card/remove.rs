@@ -13,7 +13,10 @@ use crate::{
             },
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             screen_header::ScreenHeader,
-            telemetry::usage_buffer::UsageBuffer,
+            telemetry::{
+                usage_buffer::UsageBuffer,
+                vocabulary::{component, screen},
+            },
         },
         screens::deck::card::{
             components::{
@@ -238,6 +241,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
                 Err(e) => {
                     tracing::warn!("deck load failed: {e}");
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_REMOVE,
+                        component::NONE,
+                        "load_deck",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                 }
             }
@@ -297,6 +306,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
             let session = match session.ensure_fresh(client).await {
                 Ok(session) => session,
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_REMOVE,
+                        component::NONE,
+                        "remove_card",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                     return;
                 }
@@ -307,6 +322,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 .await
             {
                 tracing::warn!("delete deck card failed: {e}");
+                usage_buffer.peek().report_error(
+                    screen::DECK_CARD_REMOVE,
+                    component::NONE,
+                    "remove_card",
+                    &e,
+                );
                 toast.error(e.to_user_message(), ToastOptions::default());
             }
         });
@@ -324,6 +345,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
             let session = match session.ensure_fresh(client).await {
                 Ok(session) => session,
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_REMOVE,
+                        component::NONE,
+                        "move_card",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                     return;
                 }
@@ -334,6 +361,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 .await
             {
                 tracing::warn!("move card to board failed: {e}");
+                usage_buffer.peek().report_error(
+                    screen::DECK_CARD_REMOVE,
+                    component::NONE,
+                    "move_card",
+                    &e,
+                );
                 toast.error(e.to_user_message(), ToastOptions::default());
             }
         });
@@ -401,6 +434,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     let session = match session.ensure_fresh(client).await {
                         Ok(session) => session,
                         Err(e) => {
+                            usage_buffer.peek().report_error(
+                                screen::DECK_CARD_REMOVE,
+                                component::NONE,
+                                "undo_remove",
+                                &e,
+                            );
                             toast.error(e.to_user_message(), ToastOptions::default());
                             stack.cancel_entering();
                             return;
@@ -436,6 +475,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     let session = match session.ensure_fresh(client).await {
                         Ok(session) => session,
                         Err(e) => {
+                            usage_buffer.peek().report_error(
+                                screen::DECK_CARD_REMOVE,
+                                component::NONE,
+                                "undo_remove",
+                                &e,
+                            );
                             toast.error(e.to_user_message(), ToastOptions::default());
                             stack.cancel_entering();
                             return;
@@ -606,6 +651,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
             // exact scryfall_data_id).
             if let Some(card) = current_card() {
                 PrintingSheet {
+                    host_screen: screen::DECK_CARD_REMOVE,
                     card,
                     open: printing_open,
                     on_save: move |_: Card| {},

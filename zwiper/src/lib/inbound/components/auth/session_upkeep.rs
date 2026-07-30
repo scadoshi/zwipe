@@ -238,6 +238,24 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
         if session.peek().is_none() {
             record_anonymous_event(client, AnonymousEventKind::AppOpened);
         }
+
+        // A previous run crashed: post its report (unauthed endpoint) and
+        // clear the file only on success — a failed send retries next launch,
+        // and the server dedupes on crash_id.
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Some(report) = crate::outbound::crash_store::take_pending() {
+            use crate::outbound::client::metrics::record_crash::ClientRecordCrash;
+            let http = client.peek().clone();
+            spawn(async move {
+                match http.record_crash(&report).await {
+                    Ok(()) => {
+                        crate::outbound::crash_store::clear();
+                        tracing::info!("crash report {} delivered", report.crash_id);
+                    }
+                    Err(e) => tracing::warn!("crash report send failed (will retry): {e}"),
+                }
+            });
+        }
     });
 
     // Min-version gate — flipped true when the server says this build is too

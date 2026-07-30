@@ -20,6 +20,10 @@ use crate::{
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             navigation::overlay_stack::use_overlay_back,
             screen_header::ScreenHeader,
+            telemetry::{
+                usage_buffer::UsageBuffer,
+                vocabulary::{component, screen},
+            },
         },
         screens::deck::card::components::{
             action_history::{BrowseAction, MAX_CARDS_IN_STACK},
@@ -57,6 +61,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     // The tag we're serving, held in a signal so the fetch closures stay `Copy`.
     // Re-navigating to a different tag always remounts (the dictionary sits
@@ -122,6 +127,12 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                     // A true auth failure clears the session and the AuthGate
                     // redirects; a transient network/server error leaves it intact,
                     // so surface it instead of a misleading empty state.
+                    usage_buffer.peek().report_error(
+                        screen::ORACLE_TAG_EXAMPLES,
+                        component::NONE,
+                        "load_examples",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                     is_loading_more.set(false);
                     is_loading_cards.set(false);
@@ -145,6 +156,12 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                 }
                 Err(e) => {
                     tracing::warn!("oracle-tag examples fetch failed: {e}");
+                    usage_buffer.peek().report_error(
+                        screen::ORACLE_TAG_EXAMPLES,
+                        component::NONE,
+                        "load_examples",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                     is_loading_more.set(false);
                     is_loading_cards.set(false);
@@ -310,6 +327,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
             // View-only printings browse (deck-free, so it never mutates anything).
             if let Some(card) = current_card() {
                 PrintingSheet {
+                    host_screen: screen::ORACLE_TAG_EXAMPLES,
                     card,
                     open: printing_open,
                     on_save: move |_: Card| {},
