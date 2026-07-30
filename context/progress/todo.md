@@ -10,6 +10,8 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Next Up
 
+- [x] **Zite share page: hover-preview stack dodges the cursor — SHIPPED 2026-07-30.** Cursor on the left half glides the stack to the right gutter (`.pin-right`, `translateX(calc(100vw - 100% - 3rem))`, 0.35s ease); flips only on midline crossings. Wasm-verified.
+
 - [ ] **Client error + crash reporting — BUILT + server half DEPLOYED 2026-07-29 (role grants applied on prod); client half awaits the next app build.** Remaining, in order: (1) confirm the 04:03 UTC nightly ran 5/5 with the upkeep prune lines and no alert email; (2) build/ship the next client (all 73 toast sites report; crash capture via panic hook); (3) store data-safety label review BEFORE submitting; (4) prod black-box checks per the plan's Verification section (force a 422 → `client_errors` row; debug panic → exactly one `crash_reports` row across two relaunches). Plan: [`../plans/client-error-reporting.md`](../plans/client-error-reporting.md).
 
 - [ ] **Phase 6 — serve on the matured otag signal (data-gated, months out).** The prerequisite **Phase 5S step-3 cleanup shipped 2026-07-25** (legacy `commander_oracle_id` wire + server fallback + client commander resolution all dropped; deck_id is the sole signal key). Server half deploys on next push; the client half rides the next client build. Re-run the pair-depth readiness queries as the user base grows.

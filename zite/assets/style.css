@@ -1585,6 +1585,13 @@ footer {
     width: 18rem;
     z-index: 50;
     pointer-events: none;
+    /* Cursor dodge: `.pin-right` glides the whole stack to the right gutter
+       (transform, not left/right, so the move animates). */
+    transition: transform 0.35s ease;
+}
+
+.sd-hover-stack.pin-right {
+    transform: translateX(calc(100vw - 100% - 3rem));
 }
 
 .sd-preview-card {
