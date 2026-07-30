@@ -1,5 +1,5 @@
 use super::components::{
-    card_row::{CardRow, OtagDescribe, OtagExamplesOpen},
+    card_row::{CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt},
     filter_store::{FilterScope, FilterStore},
     image_preview::ImagePreview,
     printing_sheet::PrintingSheet,
@@ -170,6 +170,11 @@ pub fn View(deck_id: Uuid) -> Element {
     });
     use_context_provider(|| OtagDescribe(describe_tag));
     use_context_provider(|| OtagExamplesOpen(open_examples));
+    // Art-crop thumbnails on the card rows, on by default; the "Art" chip in
+    // the controls toggles it. Screen-local for now (a synced preference can
+    // come later if people want it sticky).
+    let mut show_row_art = use_signal(|| true);
+    use_context_provider(|| ShowRowArt(show_row_art));
     // What the UI renders — grouped card lists (active cards only)
     let mut displayed_groups: Signal<Vec<CardGroup>> = use_signal(Vec::new);
     // Active lands, pulled out of the group-by pipeline and pinned to the bottom
@@ -893,6 +898,11 @@ pub fn View(deck_id: Uuid) -> Element {
                             selected: show_command_zone(),
                             onclick: move |_| show_command_zone.set(!show_command_zone()),
                             "Command zone"
+                        }
+                        Chip {
+                            selected: show_row_art(),
+                            onclick: move |_| show_row_art.set(!show_row_art()),
+                            "Art"
                         }
                     }
 

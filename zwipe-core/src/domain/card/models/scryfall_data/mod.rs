@@ -346,6 +346,25 @@ impl ScryfallData {
         self.face_image_url(0, size)
     }
 
+    /// Returns the front face's art-crop URL (the artwork band only) — the
+    /// source for row thumbnails. Same front-face fallback as
+    /// [`Self::face_image_url`]: top-level `image_uris` first, then
+    /// `card_faces[0]` (DFCs carry images per face).
+    pub fn art_crop_url(&self) -> Option<&str> {
+        if let Some(url) = self
+            .image_uris
+            .as_ref()
+            .and_then(|iu| iu.art_crop.as_deref())
+        {
+            return Some(url);
+        }
+        self.card_faces
+            .as_ref()
+            .and_then(|faces| faces.first())
+            .and_then(|face| face.image_uris.as_ref())
+            .and_then(|iu| iu.art_crop.as_deref())
+    }
+
     /// Returns the URL for a specific face at the given size.
     ///
     /// `face_index == 0` returns the front face, falling back from top-level `image_uris`

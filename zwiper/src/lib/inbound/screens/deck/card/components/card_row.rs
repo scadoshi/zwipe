@@ -19,6 +19,12 @@ pub(crate) struct OtagDescribe(pub(crate) Callback<String, Option<String>>);
 #[derive(Clone, Copy)]
 pub(crate) struct OtagExamplesOpen(pub(crate) Callback<String>);
 
+/// Context: whether compact rows show their art-crop thumbnail. Provided by
+/// the deck-cards view (its "Art" toggle chip); absent elsewhere, so other
+/// hosts keep art-free rows.
+#[derive(Clone, Copy)]
+pub(crate) struct ShowRowArt(pub(crate) Signal<bool>);
+
 /// Thin wrapper over the shared [`SharedCardRow`]: wires the app's fullscreen
 /// [`ImagePreview`] signals into the shared row's `on_image` action so call
 /// sites keep passing `preview_card`/`preview_dismissing` unchanged.
@@ -55,11 +61,13 @@ pub(crate) fn CardRow(
     // an examples opener. Absent elsewhere, so those rows keep plain otag chips.
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
+    let show_art = try_use_context::<ShowRowArt>().is_some_and(|s| (s.0)());
     rsx! {
         SharedCardRow {
             card,
             qty,
             expanded_card,
+            show_art,
             on_image: move |()| {
                 preview_card.set(Some((scryfall_data_for_preview.clone(), current_face())));
                 preview_dismissing.set(false);
