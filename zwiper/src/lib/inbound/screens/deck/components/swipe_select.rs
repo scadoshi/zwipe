@@ -316,8 +316,8 @@ pub(crate) fn SwipeSelect(
     let noun = mode().as_ref().map(SwipeMode::noun).unwrap_or("card");
     let swipe_config = SwipeConfig::new(
         vec![Direction::Left, Direction::Right, Direction::Down],
-        60.0,
-        1.5,
+        90.0,
+        2.5,
     );
 
     rsx! {

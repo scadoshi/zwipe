@@ -25,7 +25,15 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.7.5",
+    date: "",
+    entries: &[
+        "Swiped cards now fly out from right where you let go, instead of snapping back to center first.",
+        "Swipes are harder to trigger by accident: a card needs a fuller drag or a real flick to commit, so small nudges stay put.",
+        "A card released before the swipe point now settles back to center with a little bounce.",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
