@@ -30,7 +30,8 @@ pub const UPCOMING: &[Release] = &[Release {
     date: "",
     entries: &[
         "Your deck's card list now opens with its identity on display: the command zone and your starred MVPs as card images across the top, just like the shared deck page. Tap one to see it full size.",
-        "Every card row now shows its artwork. Prefer the compact look? The Art chip next to Group by turns it off.",
+        "Every card row now shows its artwork. Prefer the compact look? The Art chip in the Show row turns it off, on the shared deck page too.",
+        "The Maybe and Side board buttons gray out when those boards are empty.",
         "Swiped cards now fly out from right where you let go, instead of snapping back to center first.",
         "Swipes are harder to trigger by accident: a card needs a fuller drag or a real flick to commit, so small nudges stay put.",
         "A card released before the swipe point now settles back to center with a little bounce.",
