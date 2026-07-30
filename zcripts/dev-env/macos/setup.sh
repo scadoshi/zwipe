@@ -110,6 +110,13 @@ cd zerver
 sqlx migrate run
 cd ..
 
+# scoped zervice role — dev parity with prod (throwaway local password).
+# Lets a local `zervice` run prove the grants in zcripts/server/sql/ before
+# a forgotten one can fail a nightly prod run.
+echo "provisioning zervice role..."
+psql -d zerver -f zcripts/server/sql/zervice_role.sql
+psql -d zerver -c "ALTER ROLE zervice PASSWORD 'zervice'"
+
 echo ""
 echo "setup complete"
 echo ""
