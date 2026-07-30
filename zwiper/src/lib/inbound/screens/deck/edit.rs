@@ -11,8 +11,14 @@ use super::components::{
 use crate::{
     inbound::{
         components::{
-            auth::ensure_session::EnsureFresh, catalog_cache::CatalogCache,
-            hint_dialog::use_one_time_hint, screen_header::ScreenHeader,
+            auth::ensure_session::EnsureFresh,
+            catalog_cache::CatalogCache,
+            hint_dialog::use_one_time_hint,
+            screen_header::ScreenHeader,
+            telemetry::{
+                usage_buffer::UsageBuffer,
+                vocabulary::{component, screen},
+            },
         },
         router::Router,
     },
@@ -139,6 +145,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut original_signature_spell: Signal<Option<Card>> = use_signal(|| None);
 
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     // ========================================
     // Fetch deck profile
@@ -182,6 +189,9 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             applied_seed.set(seed_oracle_tags(&deck.deck_profile.tags));
         }
         Some(Err(e)) => {
+            usage_buffer
+                .peek()
+                .report_error(screen::DECK_EDIT, component::NONE, "load_deck", &e);
             toast.error(
                 e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -216,6 +226,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
+            usage_buffer.peek().report_error(
+                screen::DECK_EDIT,
+                component::NONE,
+                "load_commander",
+                &e,
+            );
             toast.error(
                 e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -249,6 +265,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
+            usage_buffer.peek().report_error(
+                screen::DECK_EDIT,
+                component::NONE,
+                "load_partner",
+                &e,
+            );
             toast.error(
                 e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -282,6 +304,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
+            usage_buffer.peek().report_error(
+                screen::DECK_EDIT,
+                component::NONE,
+                "load_background",
+                &e,
+            );
             toast.error(
                 e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -315,6 +343,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
+            usage_buffer.peek().report_error(
+                screen::DECK_EDIT,
+                component::NONE,
+                "load_signature_spell",
+                &e,
+            );
             toast.error(
                 e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -463,6 +497,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             let session = match session.ensure_fresh(client).await {
                 Ok(session) => session,
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_EDIT,
+                        component::NONE,
+                        "save_profile",
+                        &e,
+                    );
                     toast.error(
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -506,6 +546,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     navigator.push(Router::ViewDeck { deck_id });
                 }
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_EDIT,
+                        component::NONE,
+                        "save_profile",
+                        &e,
+                    );
                     toast.error(
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -587,6 +633,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
             }
             SwipeSelect {
+            host_screen: screen::DECK_EDIT,
                 open: show_commander_swipe,
                 mode: commander_mode,
                 on_select: move |card: Card| {
@@ -606,6 +653,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 on_close: move |_| show_commander_swipe.set(false),
             }
             SwipeSelect {
+            host_screen: screen::DECK_EDIT,
                 open: show_partner_swipe,
                 mode: partner_mode,
                 on_select: move |card: Card| {
@@ -616,6 +664,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 on_close: move |_| show_partner_swipe.set(false),
             }
             SwipeSelect {
+            host_screen: screen::DECK_EDIT,
                 open: show_background_swipe,
                 mode: background_mode,
                 on_select: move |card: Card| {
@@ -626,6 +675,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 on_close: move |_| show_background_swipe.set(false),
             }
             SwipeSelect {
+            host_screen: screen::DECK_EDIT,
                 open: show_signature_spell_swipe,
                 mode: spell_mode,
                 on_select: move |card: Card| {

@@ -7,6 +7,10 @@ use crate::{
             chip::Chip,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
             screen_header::ScreenHeader,
+            telemetry::{
+                usage_buffer::UsageBuffer,
+                vocabulary::{component, screen},
+            },
         },
         router::Router,
     },
@@ -27,6 +31,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     let mut include_deck: Signal<bool> = use_signal(|| true);
     let mut include_sideboard: Signal<bool> = use_signal(|| false);
@@ -42,6 +47,9 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
 
     use_effect(move || {
         if let Some(Err(e)) = &*deck_resource.read() {
+            usage_buffer
+                .peek()
+                .report_error(screen::DECK_EXPORT, component::NONE, "load_deck", &e);
             toast.error(
                 e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),

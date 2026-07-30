@@ -9,6 +9,10 @@ use crate::{
         auth::ensure_session::EnsureFresh,
         bottom_sheet::BottomSheet,
         fields::text_input::TextInput,
+        telemetry::{
+            usage_buffer::UsageBuffer,
+            vocabulary::{component, screen},
+        },
     },
     outbound::client::{ZwipeClient, user::change_password::ClientChangePassword},
 };
@@ -54,6 +58,7 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     let mut show_confirm = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     let mut inputs_are_valid = move || {
         validate_new_password();
@@ -86,6 +91,12 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                 let session = match session.ensure_fresh(auth_client).await {
                     Ok(session) => session,
                     Err(e) => {
+                        usage_buffer.peek().report_error(
+                            screen::PROFILE_CHANGE_PASSWORD,
+                            component::NONE,
+                            "change_password",
+                            &e,
+                        );
                         toast.error(
                             e.to_user_message(),
                             ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -108,6 +119,12 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                     }
                     Err(e) => {
                         tracing::warn!("change password failed: {e}");
+                        usage_buffer.peek().report_error(
+                            screen::PROFILE_CHANGE_PASSWORD,
+                            component::NONE,
+                            "change_password",
+                            &e,
+                        );
                         toast.error(
                             e.to_user_message(),
                             ToastOptions::default().duration(Duration::from_millis(3000)),

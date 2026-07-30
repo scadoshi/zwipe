@@ -15,7 +15,10 @@ use crate::{
                 open_and_record_hint,
             },
             screen_header::ScreenHeader,
-            telemetry::usage_buffer::UsageBuffer,
+            telemetry::{
+                usage_buffer::UsageBuffer,
+                vocabulary::{component, screen},
+            },
         },
         screens::{
             deck::{
@@ -277,6 +280,12 @@ pub fn View(deck_id: Uuid) -> Element {
                     deck.entries
                 }
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_VIEW,
+                        component::NONE,
+                        "load_deck",
+                        &e,
+                    );
                     toast.error(
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -548,12 +557,24 @@ pub fn View(deck_id: Uuid) -> Element {
                 let session = match session.ensure_fresh(client).await {
                     Ok(session) => session,
                     Err(e) => {
+                        usage_buffer.peek().report_error(
+                            screen::DECK_CARD_VIEW,
+                            component::NONE,
+                            "change_quantity",
+                            &e,
+                        );
                         toast.error(e.to_user_message(), ToastOptions::default());
                         return;
                     }
                 };
 
                 if let Err(e) = client().delete_deck_card(deck_id, card_id, &session).await {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_VIEW,
+                        component::NONE,
+                        "change_quantity",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                 }
             });
@@ -579,6 +600,12 @@ pub fn View(deck_id: Uuid) -> Element {
                 let session = match session.ensure_fresh(client).await {
                     Ok(session) => session,
                     Err(e) => {
+                        usage_buffer.peek().report_error(
+                            screen::DECK_CARD_VIEW,
+                            component::NONE,
+                            "remove_card",
+                            &e,
+                        );
                         toast.error(e.to_user_message(), ToastOptions::default());
                         return;
                     }
@@ -588,6 +615,12 @@ pub fn View(deck_id: Uuid) -> Element {
                     .update_deck_card(deck_id, card_id, &request, &session)
                     .await
                 {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_VIEW,
+                        component::NONE,
+                        "remove_card",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                     // Rollback optimistic update
                     if let Some(entry) = deck_entries
@@ -630,6 +663,12 @@ pub fn View(deck_id: Uuid) -> Element {
             let session = match session.ensure_fresh(client).await {
                 Ok(session) => session,
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_VIEW,
+                        component::NONE,
+                        "move_board",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                     return;
                 }
@@ -639,6 +678,12 @@ pub fn View(deck_id: Uuid) -> Element {
                 .update_deck_card(deck_id, card_id, &request, &session)
                 .await
             {
+                usage_buffer.peek().report_error(
+                    screen::DECK_CARD_VIEW,
+                    component::NONE,
+                    "move_board",
+                    &e,
+                );
                 toast.error(e.to_user_message(), ToastOptions::default());
                 // Rollback
                 if let Some(entry) = deck_entries
@@ -684,6 +729,12 @@ pub fn View(deck_id: Uuid) -> Element {
             let session = match session.ensure_fresh(client).await {
                 Ok(session) => session,
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_VIEW,
+                        component::NONE,
+                        "toggle_mvp",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                     return;
                 }
@@ -704,6 +755,12 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
                 }
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_VIEW,
+                        component::NONE,
+                        "toggle_mvp",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                     // Rollback
                     if let Some(entry) = deck_entries
@@ -1213,6 +1270,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
             if let Some(card) = printing_sheet_card() {
                 PrintingSheet {
+                    host_screen: screen::DECK_CARD_VIEW,
                     card: card.clone(),
                     open: printing_sheet_open,
                     on_save: move |new_card: Card| {

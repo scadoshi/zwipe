@@ -1,7 +1,13 @@
 //! Deck warnings section with action buttons for card-specific warnings.
 
 use crate::{
-    inbound::router::Router,
+    inbound::{
+        components::telemetry::{
+            usage_buffer::UsageBuffer,
+            vocabulary::{component, screen},
+        },
+        router::Router,
+    },
     outbound::client::{
         ClientError, ZwipeClient, deck_card::delete_deck_card::ClientDeleteDeckCard,
     },
@@ -28,6 +34,7 @@ pub(crate) fn DeckWarnings(
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
     let navigator = use_navigator();
 
     // The below-minimum card count warning gets navigation remedies (add or
@@ -118,6 +125,7 @@ pub(crate) fn DeckWarnings(
                                                             on_remove(());
                                                         }
                                                         Err(e) => {
+                                                            usage_buffer.peek().report_error(screen::DECK_VIEW, component::DECK_WARNINGS, "remove_flagged_card", &e);
                                                             toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
                                                         }
                                                     }

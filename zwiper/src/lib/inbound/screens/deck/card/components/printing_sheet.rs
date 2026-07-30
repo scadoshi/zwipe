@@ -5,8 +5,9 @@ use super::{
     flippable_card_image::FlippableCardImage,
 };
 use crate::{
-    inbound::components::interactions::carousel::{
-        Carousel, dots::CarouselDots, state::CarouselState,
+    inbound::components::{
+        interactions::carousel::{Carousel, dots::CarouselDots, state::CarouselState},
+        telemetry::{usage_buffer::UsageBuffer, vocabulary::component},
     },
     outbound::client::{ZwipeClient, card::get_printings::ClientGetPrintings},
 };
@@ -23,6 +24,10 @@ pub(crate) fn PrintingSheet(
     card: Card,
     mut open: Signal<bool>,
     on_save: EventHandler<Card>,
+    /// Host screen const (`vocabulary::screen`) for error-report breadcrumbs —
+    /// this sheet serves several screens, and the report's aggregation axis is
+    /// always the host, never the component.
+    host_screen: &'static str,
     /// Browse-only: hide Save and never fire `on_save`. Used on the remove
     /// screen, where changing a card's printing would break the delete (which is
     /// keyed on the exact `scryfall_data_id` already on the deck).
@@ -31,6 +36,7 @@ pub(crate) fn PrintingSheet(
 ) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     let mut printings: Signal<Vec<Card>> = use_signal(Vec::new);
     let mut is_loading = use_signal(|| false);
@@ -85,6 +91,12 @@ pub(crate) fn PrintingSheet(
                     carousel_state.set(CarouselState::new(count, idx, page_width));
                 }
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        host_screen,
+                        component::PRINTING_SHEET,
+                        "load_printings",
+                        &e,
+                    );
                     toast.error(
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),

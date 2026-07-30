@@ -19,6 +19,10 @@ use crate::{
             auth::ensure_session::EnsureFresh,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
             screen_header::ScreenHeader,
+            telemetry::{
+                usage_buffer::UsageBuffer,
+                vocabulary::{component, screen},
+            },
         },
         router::Router,
     },
@@ -69,6 +73,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     // original deck information
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     // `use_reactive!` ties these resources to `deck_id` so they re-fetch when the
     // route param changes without a remount — e.g. cloning navigates ViewDeck →
@@ -99,6 +104,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         }));
     use_effect(move || {
         if let Some(Err(e)) = &*deck_profile_resource.read() {
+            usage_buffer
+                .peek()
+                .report_error(screen::DECK_VIEW, component::NONE, "load_deck", &e);
             toast.error(
                 e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -111,6 +119,12 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             commander.set(Some(original_commander));
         }
         Some(Err(e)) => {
+            usage_buffer.peek().report_error(
+                screen::DECK_VIEW,
+                component::NONE,
+                "load_commander",
+                &e,
+            );
             toast.error(
                 e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -160,6 +174,12 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             let session = match session.ensure_fresh(client).await {
                 Ok(session) => session,
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_VIEW,
+                        component::NONE,
+                        "delete_deck",
+                        &e,
+                    );
                     toast.error(
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -173,6 +193,12 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     navigator.push(Router::DeckList {});
                 }
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_VIEW,
+                        component::NONE,
+                        "delete_deck",
+                        &e,
+                    );
                     toast.error(
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -538,6 +564,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                         deck_resource.restart();
                                                     }
                                                     Err(e) => {
+                                                        usage_buffer.peek().report_error(screen::DECK_VIEW, component::NONE, "update_card_quantity", &e);
                                                         toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
                                                     }
                                                 }
@@ -570,6 +597,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                         deck_resource.restart();
                                                     }
                                                     Err(e) => {
+                                                        usage_buffer.peek().report_error(screen::DECK_VIEW, component::NONE, "remove_commander", &e);
                                                         toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
                                                     }
                                                 }

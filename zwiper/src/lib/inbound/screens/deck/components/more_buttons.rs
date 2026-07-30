@@ -7,7 +7,11 @@ use crate::{
             },
             auth::ensure_session::EnsureFresh,
             bottom_sheet::BottomSheet,
-            telemetry::{flush_loop::flush_once, usage_buffer::UsageBuffer},
+            telemetry::{
+                flush_loop::flush_once,
+                usage_buffer::UsageBuffer,
+                vocabulary::{component, screen},
+            },
         },
         router::Router,
     },
@@ -73,6 +77,12 @@ pub(crate) fn MoreButtons(
                 }
                 Err(e) => {
                     tracing::warn!("share deck failed: {e}");
+                    usage_buffer.peek().report_error(
+                        screen::DECK_VIEW,
+                        component::MORE_BUTTONS,
+                        "share_deck",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                 }
             }
@@ -95,6 +105,12 @@ pub(crate) fn MoreButtons(
                 }
                 Err(e) => {
                     tracing::warn!("unshare deck failed: {e}");
+                    usage_buffer.peek().report_error(
+                        screen::DECK_VIEW,
+                        component::MORE_BUTTONS,
+                        "unshare_deck",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                 }
             }
@@ -119,6 +135,12 @@ pub(crate) fn MoreButtons(
                 }
                 Err(e) => {
                     tracing::warn!("clear suppressions failed: {e}");
+                    usage_buffer.peek().report_error(
+                        screen::DECK_VIEW,
+                        component::MORE_BUTTONS,
+                        "clear_suppressions",
+                        &e,
+                    );
                     toast.error(e.to_user_message(), ToastOptions::default());
                 }
             }

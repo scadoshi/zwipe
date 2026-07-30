@@ -46,6 +46,10 @@ fn main() {
         .with_env_filter(EnvFilter::new(&config.rust_log))
         .init();
     tracing::info!("zwiper v{} starting", env!("CARGO_PKG_VERSION"));
+    // Crash capture: a panic writes its report to disk; the next launch posts
+    // it (session_upkeep) and clears the file on a 2xx. Native-only.
+    #[cfg(not(target_arch = "wasm32"))]
+    zwiper::outbound::crash_store::install_panic_hook();
     launch_app();
 }
 

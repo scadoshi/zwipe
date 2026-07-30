@@ -6,6 +6,10 @@ use crate::{
             auth::ensure_session::EnsureFresh,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey},
             screen_header::ScreenHeader,
+            telemetry::{
+                usage_buffer::UsageBuffer,
+                vocabulary::{component, screen},
+            },
         },
         router::Router,
         screens::deck::components::skeletons::DeckListSkeleton,
@@ -32,6 +36,7 @@ pub fn DeckList() -> Element {
     let auth_client: Signal<ZwipeClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
     let decks_hint_open = use_signal(|| false);
 
     // Refresh user on mount so email_verified_at is current without re-login.
@@ -69,6 +74,9 @@ pub fn DeckList() -> Element {
 
     use_effect(move || {
         if let Some(Err(e)) = &*deck_profiles_resource.read() {
+            usage_buffer
+                .peek()
+                .report_error(screen::DECK_LIST, component::NONE, "load_decks", &e);
             toast.error(
                 e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),

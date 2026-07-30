@@ -1,7 +1,14 @@
 //! User preferences screen for theme and dark mode selection.
 
 use crate::{
-    inbound::components::{auth::ensure_session::EnsureFresh, bottom_sheet::BottomSheet},
+    inbound::components::{
+        auth::ensure_session::EnsureFresh,
+        bottom_sheet::BottomSheet,
+        telemetry::{
+            usage_buffer::UsageBuffer,
+            vocabulary::{component, screen},
+        },
+    },
     outbound::client::{ZwipeClient, user::preferences::ClientUpdatePreferences},
 };
 use dioxus::prelude::*;
@@ -88,6 +95,7 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let mut theme_config: Signal<ThemeConfig> = use_context();
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     let mut original_theme = use_signal(|| theme_config.peek().clone());
     let mut selected_theme = use_signal(|| theme_config.peek().name.clone());
@@ -114,6 +122,12 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
             let session_val = match session.ensure_fresh(client).await {
                 Ok(session_val) => session_val,
                 Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::PROFILE_PREFERENCES,
+                        component::NONE,
+                        "update_preferences",
+                        &e,
+                    );
                     toast.error(
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
@@ -131,6 +145,12 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
                 }
                 Err(e) => {
                     tracing::warn!("update preferences failed: {e}");
+                    usage_buffer.peek().report_error(
+                        screen::PROFILE_PREFERENCES,
+                        component::NONE,
+                        "update_preferences",
+                        &e,
+                    );
                     toast.error(
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),

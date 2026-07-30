@@ -1,5 +1,11 @@
 use crate::{
-    inbound::components::auth::ensure_session::EnsureFresh,
+    inbound::components::{
+        auth::ensure_session::EnsureFresh,
+        telemetry::{
+            usage_buffer::UsageBuffer,
+            vocabulary::{component, screen},
+        },
+    },
     outbound::client::{
         ClientError, ZwipeClient, auth::resend_verification::ClientResendEmailVerification,
         user::get_user::ClientGetUser,
@@ -50,6 +56,7 @@ pub(crate) fn VerificationActions() -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
     let mut is_resending = use_signal(|| false);
     let mut is_checking = use_signal(|| false);
     // Seconds left on the resend cooldown; the button re-enables at zero.
@@ -70,6 +77,7 @@ pub(crate) fn VerificationActions() -> Element {
                     let s = match session.ensure_fresh(client).await {
                         Ok(s) => s,
                         Err(e) => {
+                            usage_buffer.peek().report_error(screen::PROFILE, component::EMAIL_VERIFICATION, "resend_verification", &e);
                             toast.error(
                                 e.to_user_message(),
                                 ToastOptions::default().duration(Duration::from_millis(5000)),
@@ -91,6 +99,7 @@ pub(crate) fn VerificationActions() -> Element {
                             ToastOptions::default().duration(Duration::from_millis(3000)),
                         ),
                         Err(e) => {
+                            usage_buffer.peek().report_error(screen::PROFILE, component::EMAIL_VERIFICATION, "resend_verification", &e);
                             toast.error(
                                 e.to_user_message(),
                                 ToastOptions::default().duration(Duration::from_millis(5000)),
@@ -130,6 +139,7 @@ pub(crate) fn VerificationActions() -> Element {
                     let s = match session.ensure_fresh(client).await {
                         Ok(s) => s,
                         Err(e) => {
+                            usage_buffer.peek().report_error(screen::PROFILE, component::EMAIL_VERIFICATION, "check_verified", &e);
                             toast.error(
                                 e.to_user_message(),
                                 ToastOptions::default().duration(Duration::from_millis(5000)),
@@ -162,10 +172,13 @@ pub(crate) fn VerificationActions() -> Element {
                                 );
                             }
                         }
-                        Err(e) => toast.error(
-                            e.to_user_message(),
-                            ToastOptions::default().duration(Duration::from_millis(5000)),
-                        ),
+                        Err(e) => {
+                            usage_buffer.peek().report_error(screen::PROFILE, component::EMAIL_VERIFICATION, "check_verified", &e);
+                            toast.error(
+                                e.to_user_message(),
+                                ToastOptions::default().duration(Duration::from_millis(5000)),
+                            );
+                        }
                     }
                     is_checking.set(false);
                 });
