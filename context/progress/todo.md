@@ -21,7 +21,7 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Bugs
 
-- [ ] **Android: card swipe animation clips back to start (owner 2026-07-30).** On a swipe the card does not animate out from where the finger released it; it snaps back to the resting position first, then plays the fly-out. iOS is fine. Likely the release handoff between the drag transform and the exit animation losing the current offset.
+- [x] **Android: card swipe animation clips back to start — FIXED 2026-07-30 (`e480fcae`), rides 1.7.5.** Root cause was two-layered: the exit keyframes hardcoded `from { translate(0,0) }`, and the release position was destroyed (`reset()`) before the exit overlay was even created. Now `SwipeState.release_delta` is captured pre-reset and seeds the keyframes via `--exit-from-x/y/rot` custom properties. Same commit: swipe thresholds raised (60→90px, flick 1.5→2.5 px/ms, flick travel minimum 10→32px) and an easeOutBack return-to-center bounce. Pending on-device feel check before the 1.7.5 build.
 
 Recently resolved (outcomes in [`overview.md`](overview.md)):
 the **filter-sheet Reset/Cancel commit bug** (fixed 2026-07-22 `db5562b4` with a
