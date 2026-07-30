@@ -15,6 +15,9 @@ style = ["/main.css"]
 
 [ios.plist]
 CFBundlePackageType = "APPL"
+# Without this, iOS KILLS the app (privacy violation, not a catchable panic)
+# when the user hard-presses a card image and picks "Save to Camera Roll".
+NSPhotoLibraryAddUsageDescription = "Zwipe saves card images you choose to your photo library."
 MinimumOSVersion = "16.0"
 DTPlatformName = "iphoneos"
 DTPlatformVersion = "26.4"

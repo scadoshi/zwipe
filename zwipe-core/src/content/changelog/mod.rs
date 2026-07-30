@@ -25,7 +25,14 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.7.4",
+    date: "",
+    entries: &[
+        "Fixed a crash when saving a card image to your photos from a hard press. Saving now asks for permission and works.",
+        "The app now sends anonymous error and crash reports, so problems get found and fixed faster. No account or personal data rides along.",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
