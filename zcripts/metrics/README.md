@@ -20,6 +20,8 @@ big overview plus small single-topic scripts for quick checks.
 | `user_card_signal` | per-user mirror of the commander signal |
 | `user_week_signal` / `user_week_facet_signal` | per-user weekly counters + adds by category / color (Monday UTC weeks) |
 | `deck_card_suppressions` | durable per-deck skips (`skip` / `removal` provenance, 5,000 cap per deck) |
+| `client_errors` | handled errors shown to users (1.7.4+): screen/component/action breadcrumbs, kind, message, dedupe count — anonymous, 90-day retention |
+| `crash_reports` | panics (1.7.4+): one row per crash_id, panic message with file:line — anonymous, 90-day retention |
 
 ## The scripts
 
@@ -32,6 +34,7 @@ big overview plus small single-topic scripts for quick checks.
 | `funnel.sql` | Where do people drop off before registering? | After a build with funnel events ships |
 | `signal.sql` | Is the suggestion-signal substrate filling in? What does it say? | Before Phase 3 (ranking) work |
 | `swipe-memory.sql` | Are durable skips used? Any deck near the 5k cap? | Occasional |
+| `errors.sql` | What's breaking for users in the field? Any contract drift? | After each release, then weekly |
 
 All of them are **read-only** — no writes, no locks — and print `── header ──`
 sections so the output is self-describing. Run any of them the same way:
@@ -103,6 +106,15 @@ Substrate size (pairs, commanders, impression totals), commanders with the
 most signal, strongest keeps and strongest passes (min 5 impressions), weekly
 signal volume, and facet adds by category / color. Run before starting
 suggestion-signal **Phase 3 (ranking)** to judge whether there's enough data.
+
+### `errors.sql` — field diagnostics
+
+Client errors + crashes from the 1.7.4+ reporting pipeline: snapshot, daily
+shape (version × screen × kind), top signatures by real occurrence count,
+the contract-drift alarm (decode / api_internal by version — a decode spike
+on one build means its wire shape disagrees with the server), crashes grouped
+by panic site (file:line), and a raw tail of the latest of each. Everything is
+anonymous and ages out at 90 days via the zervice upkeep prune.
 
 ### `swipe-memory.sql` — durable skips
 
