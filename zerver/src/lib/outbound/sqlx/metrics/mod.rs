@@ -17,7 +17,7 @@ use crate::{
     },
     outbound::sqlx::postgres::Postgres,
 };
-use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpUsageBatch};
+use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpCrashReport, HttpUsageBatch};
 
 fn db(err: sqlx::Error) -> MetricsError {
     MetricsError::Database(err.into())
@@ -509,6 +509,27 @@ impl MetricsRepository for Postgres {
             .map_err(db)?;
         }
 
+        // Handled-error reports. Already vec-truncated and string/count-clamped
+        // by the batch-level clamped() above; each entry becomes one row.
+        for report in &batch.client_errors {
+            query!(
+                r#"INSERT INTO client_errors
+                       (client_version, platform, screen, component, action, kind, message, count)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"#,
+                report.client_version,
+                report.platform,
+                report.screen,
+                report.component,
+                report.action,
+                report.kind,
+                report.message,
+                report.count as i32,
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(db)?;
+        }
+
         tx.commit().await.map_err(db)?;
 
         Ok(())
@@ -587,6 +608,29 @@ impl MetricsRepository for Postgres {
         .execute(&self.pool)
         .await
         .map_err(db)?;
+        Ok(())
+    }
+
+    async fn record_crash(&self, report: &HttpCrashReport) -> Result<(), MetricsError> {
+        // Client-side truncation is untrusted — clamp before insert. The
+        // crash_id conflict target makes retries (client deletes its crash
+        // file only on 2xx) idempotent: exactly one stored row per crash.
+        let report = report.clamped();
+        query!(
+            r#"INSERT INTO crash_reports
+                   (crash_id, occurred_at, client_version, platform, message)
+               VALUES ($1, $2, $3, $4, $5)
+               ON CONFLICT (crash_id) DO NOTHING"#,
+            report.crash_id,
+            report.occurred_at,
+            report.client_version,
+            report.platform.as_str(),
+            report.message,
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(db)?;
+
         Ok(())
     }
 
