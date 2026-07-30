@@ -21,6 +21,8 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Bugs
 
+- [ ] **App unresponsive after long backgrounding (owner report 2026-07-30, iOS observed).** Leave the app backgrounded for a long time, return: sometimes the ENTIRE screen is unclickable until force-close + relaunch. Investigation leads, none confirmed: (a) a full-screen element left mounted and intercepting taps (modal backdrop, toast container, an overlay whose dismiss never fired); (b) the WebView's JS event bridge dying after OS memory pressure while the rendered page survives (wry/dioxus eval channel); (c) something in the resume path (visibility flusher, session refresh single-flight) wedging the main loop. Repro is intermittent — next occurrence, note which screen it happened on and whether scrolling still works (scroll-works-but-taps-don't points to (b)); the new crash/error reporting won't catch this class (no panic, no error toast).
+
 - [x] **Android: card swipe animation clips back to start — FIXED 2026-07-30 (`e480fcae`), rides 1.7.5.** Root cause was two-layered: the exit keyframes hardcoded `from { translate(0,0) }`, and the release position was destroyed (`reset()`) before the exit overlay was even created. Now `SwipeState.release_delta` is captured pre-reset and seeds the keyframes via `--exit-from-x/y/rot` custom properties. Same commit: swipe thresholds raised (60→90px, flick 1.5→2.5 px/ms, flick travel minimum 10→32px) and an easeOutBack return-to-center bounce. Pending on-device feel check before the 1.7.5 build.
 
 Recently resolved (outcomes in [`overview.md`](overview.md)):
