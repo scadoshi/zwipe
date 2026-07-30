@@ -12,10 +12,11 @@ the shared components — multi-host `PrintingSheet`/`SwipeSelect` carry a
 - Server half deploys first (standing ordering) and sits ~a day before a new
   client build ships. Harmless by design: old clients omit `client_errors`
   (`#[serde(default)]`), and the crash endpoint just idles.
-- ⚠ **Immediately after the deploy, re-run `zervice_role.sql` on the box**
-  (owner): the nightly upkeep step needs the new `client_errors`/
-  `crash_reports` grants + the session-sweep grant — the first 04:03 UTC run
-  after deploy FAILS with an alert email if the grants aren't in yet.
+- ✔ Deployed to prod 2026-07-29 evening AND the role grants are APPLIED
+  (`zervice_role.sql` re-run clean after the deploy's migration; scoped role
+  verified reading both new tables). Do not re-run anything server-side —
+  next checkpoint is the 04:03 UTC nightly (expect 5/5 with three prune log
+  lines, no alert email).
 - **Prod verification still owed** (after the next client build ships): the
   Verification checklist below — force a 422 → `client_errors` row; debug
   panic → exactly one `crash_reports` row across two relaunches; old client
