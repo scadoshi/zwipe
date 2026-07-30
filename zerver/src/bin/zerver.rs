@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
-use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use zwipe::{
     config::Config,
     domain::{auth, card, deck, health, metrics, user},
@@ -24,10 +24,12 @@ async fn run() -> anyhow::Result<()> {
 
     // EnvFilter::try_from_default_env() reads RUST_LOG directly from the process env;
     // when unset/invalid we fall back to the directive string loaded via Config (which
-    // came from .env). Either way directives like "info,sqlx=warn,zwipe=debug" work.
-    // Filters aren't Clone, so we build one per subscriber layer via this closure.
+    // came from .env). ONE filter, attached globally to the registry — a per-layer
+    // EnvFilter copy on each fmt layer silently DROPS events (incl. errors) once the
+    // directive set has per-target entries (found live 2026-07-30; both sinks want
+    // identical filtering anyway).
     let env_filter =
-        || EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.rust_log));
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.rust_log));
 
     std::fs::create_dir_all(&config.log_dir)
         .map_err(|e| anyhow::anyhow!("failed to create log directory: {e}"))?;
@@ -45,12 +47,12 @@ async fn run() -> anyhow::Result<()> {
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
     tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer().with_filter(env_filter()))
+        .with(env_filter)
+        .with(tracing_subscriber::fmt::layer())
         .with(
             tracing_subscriber::fmt::layer()
                 .with_writer(non_blocking)
-                .with_ansi(false)
-                .with_filter(env_filter()),
+                .with_ansi(false),
         )
         .init();
     tracing::info!("zerver running v{}", env!("CARGO_PKG_VERSION"));

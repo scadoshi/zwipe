@@ -1,5 +1,5 @@
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
-use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use zwipe::{
     config::ZerviceConfig,
     domain::{
@@ -17,9 +17,12 @@ async fn main() -> anyhow::Result<()> {
     let config = ZerviceConfig::from_env()?;
 
     // See zerver.rs for the rationale — RUST_LOG from the process env wins; otherwise
-    // we use the directive string from Config. Per-layer because EnvFilter isn't Clone.
+    // we use the directive string from Config. ONE filter, attached globally: a
+    // per-layer EnvFilter copy on each fmt layer silently DROPS events (incl. the
+    // step-result and error lines) once the directive set has per-target entries
+    // (found live 2026-07-30).
     let env_filter =
-        || EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.rust_log));
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.rust_log));
 
     std::fs::create_dir_all(&config.log_dir)
         .map_err(|e| anyhow::anyhow!("failed to create log directory: {e}"))?;
@@ -37,12 +40,12 @@ async fn main() -> anyhow::Result<()> {
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
     tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer().with_filter(env_filter()))
+        .with(env_filter)
+        .with(tracing_subscriber::fmt::layer())
         .with(
             tracing_subscriber::fmt::layer()
                 .with_writer(non_blocking)
-                .with_ansi(false)
-                .with_filter(env_filter()),
+                .with_ansi(false),
         )
         .init();
     tracing::info!("zervice running v{}", env!("CARGO_PKG_VERSION"));
