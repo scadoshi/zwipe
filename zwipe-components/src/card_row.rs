@@ -61,10 +61,12 @@ pub fn CardRow(
     #[props(default)]
     on_examples: Option<Callback<String>>,
     /// Opt-in: an art-crop thumbnail at the far left of the compact row
-    /// (lazy-loaded; rows without an art crop render as before). Off by
-    /// default so existing hosts are unaffected.
+    /// (lazy-loaded; rows without an art crop render as before). `None`
+    /// (default) renders no art DOM at all, so existing hosts are unaffected;
+    /// `Some(visible)` keeps the thumb mounted and eases it in/out — a host
+    /// toggle animates instead of clipping.
     #[props(default)]
-    show_art: bool,
+    show_art: Option<bool>,
 ) -> Element {
     let card_id = card.scryfall_data.id;
     let is_expanded = expanded_card() == Some(card_id);
@@ -72,8 +74,14 @@ pub fn CardRow(
 
     let name = sd.name.clone();
     let art_url = show_art
+        .is_some()
         .then(|| sd.art_crop_url().map(str::to_string))
         .flatten();
+    let art_class = if show_art == Some(true) {
+        "card-row-art"
+    } else {
+        "card-row-art art-hidden"
+    };
     // Compact-row price in the deck's chosen currency (nonfoil→foil fallback);
     // `None` (no price in that currency) omits the tag entirely.
     let price_display = card_price(sd, price_currency).map(|p| price_currency.format_amount(p));
@@ -130,7 +138,7 @@ pub fn CardRow(
                 },
                 if let Some(url) = art_url {
                     img {
-                        class: "card-row-art",
+                        class: "{art_class}",
                         src: "{url}",
                         loading: "lazy",
                         draggable: false,

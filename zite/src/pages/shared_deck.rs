@@ -101,6 +101,9 @@ fn CardRow(
     /// Resolve an oracle tag's description, so the card-role tags reveal their
     /// definition inline. No `on_examples` on the web (no swipe browse).
     describe_tag: Callback<String, Option<String>>,
+    /// Art-crop thumbnail visibility (the "Art" chip in Show). Always
+    /// `Some(..)` here so the toggle eases thumbs in/out instead of clipping.
+    show_art: bool,
 ) -> Element {
     // This row's live stack entry id (while the cursor is on it); the leave
     // handler times it out. `None` when the row isn't hovered.
@@ -118,6 +121,7 @@ fn CardRow(
         SharedCardRow {
             card,
             qty,
+            show_art: Some(show_art),
             expanded_card,
             show_classification: true,
             describe_tag: Some(describe_tag),
@@ -360,6 +364,8 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let mut selected_colors = use_signal(Vec::<Color>::new);
     let mut show_command_zone = use_signal(|| true);
     let mut show_tokens = use_signal(|| false);
+    // Art-crop thumbnails on the card rows, on by default (matches the app).
+    let mut show_row_art = use_signal(|| true);
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
     // Full-art hover-preview stack pinned top-left (desktop). Each hovered row
     // pushes a card on top; each card fades out on its own 2s timer. Never set
@@ -687,6 +693,11 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                         onclick: move |_| show_command_zone.set(!show_command_zone()),
                         "Command zone"
                     }
+                    Chip {
+                        selected: show_row_art(),
+                        onclick: move |_| show_row_art.set(!show_row_art()),
+                        "Art"
+                    }
                 }
                 div { class: "sd-control-row",
                     span { class: "sd-control-label", "Filter by:" }
@@ -756,6 +767,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                                         preview_next_id,
                                         overlay_card,
                                         describe_tag,
+                                        show_art: show_row_art(),
                                     }
                                 }
                             }
