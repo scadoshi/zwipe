@@ -26,7 +26,7 @@ use crate::{
                     card_filter_sheet::{CardFilterSheet, CollapseExpanded},
                     deck_cards::DeckCards,
                 },
-                components::skeletons::DeckCardListSkeleton,
+                components::{featured_cards::FeaturedCards, skeletons::DeckCardListSkeleton},
             },
             oracle_tag_examples::OracleTagExamples,
         },
@@ -777,6 +777,32 @@ pub fn View(deck_id: Uuid) -> Element {
         });
     };
 
+    // Featured strip: the resolved command-zone cards role-labeled, then MVPs
+    // in star order (mainboard only). Reads the live signals, so starring a
+    // card updates the strip in place.
+    let featured_cards: Vec<(Card, String)> = {
+        let commander_role = if is_oathbreaker() {
+            "Oathbreaker"
+        } else {
+            "Commander"
+        };
+        let mut mvps: Vec<DeckEntry> = deck_entries()
+            .into_iter()
+            .filter(|e| e.deck_card.mvp_at.is_some() && matches!(e.deck_card.board, Board::Deck))
+            .collect();
+        mvps.sort_by_key(|e| e.deck_card.mvp_at);
+        [
+            (commander_card(), commander_role),
+            (partner_card(), "Partner"),
+            (background_card(), "Background"),
+            (signature_spell_card(), "Signature spell"),
+        ]
+        .into_iter()
+        .filter_map(|(card, role)| card.map(|c| (c, role.to_string())))
+        .chain(mvps.into_iter().map(|e| (e.card, "MVP".to_string())))
+        .collect()
+    };
+
     rsx! {
             div { class: "screen",
                 ScreenHeader { title: "Deck Cards", hint: deck_cards_hint_open }
@@ -784,6 +810,13 @@ pub fn View(deck_id: Uuid) -> Element {
                 div { class: "screen-content",
 
                 div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
+                    FeaturedCards {
+                        cards: featured_cards.clone(),
+                        on_tap: move |card: Card| {
+                            let mut preview = preview_card;
+                            preview.set(Some((card.scryfall_data, 0)));
+                        },
+                    }
                     // Group-by row
                     div { class: "chip-row",
                         span { class: "chip-row-label", "Group by:" }

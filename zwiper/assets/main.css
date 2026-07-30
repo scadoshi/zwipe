@@ -3428,3 +3428,68 @@ button {
     text-decoration: underline;
     cursor: pointer;
 }
+
+/* ==============================
+  specific - deck featured strip
+ ================================ */
+
+/* Command zone + MVPs on one line at the top of the deck screen, each card
+   labeled underneath — mirrors the zite share page's featured row. nowrap
+   with the cards sharing the width so they shrink together. */
+.deck-featured {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 0.5rem;
+    /* Breathing room before the group-by controls below — without it the
+       role chips sit flush against them. */
+    margin-bottom: 1rem;
+}
+
+.deck-featured-card {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 11rem;
+    text-align: center;
+}
+
+.deck-featured-image {
+    width: 100%;
+}
+
+.deck-featured-card .deck-featured-image img {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    border-radius: 4.75% / 3.5%;
+    border: 1px solid var(--border-secondary);
+    box-shadow: var(--shadow-md);
+}
+
+.deck-featured-name {
+    margin-top: 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.deck-featured-role {
+    display: inline-block;
+    margin-top: 0.3rem;
+    padding: 0.1rem 0.45rem;
+    font-size: 0.62rem;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+}
+
+.deck-featured-role-zone {
+    color: var(--accent-secondary);
+    background-color: color-mix(in srgb, var(--accent-secondary) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--accent-secondary) 35%, var(--bg-primary));
+}
+
+.deck-featured-role-mvp {
+    color: var(--accent-tertiary);
+    background-color: color-mix(in srgb, var(--accent-tertiary) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, var(--bg-primary));
+}
