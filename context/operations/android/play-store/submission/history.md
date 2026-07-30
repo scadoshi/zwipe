@@ -2,6 +2,19 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-07-30 — `1.7.4`, versionCode `31`** (client error + crash reporting — anonymous,
+  first-party: handled errors ride the usage batch with screen/component/action
+  breadcrumbs and client-side dedupe, crashes exactly-once via panic-hook disk file →
+  unauthed `/api/metrics/crash`; field-verified on a real device before submission.
+  Server half deployed 2026-07-29 with the `UpkeepService` 90-day retention prunes.
+  The iOS-only photo-save crash fix is NOT claimed in the Play notes). Built per the
+  recipe: `dx bundle` → `launcher_icons.sh` → `back_handler.sh` → gradle patch
+  (compileSdk 36 / targetSdk 36 / versionCode 31, versionName 1.7.4) →
+  `gradlew :app:bundleRelease` → jarsigner. Artifact `zwipe-1.7.4.aab`, signed +
+  `jar verified`, targetSdk 36 + versionCode 31 confirmed via bundletool. Data safety
+  form updated: Crash logs + Diagnostics + Other app performance data, and App
+  interactions added under App activity (previously undeclared). iOS counterpart
+  build 69.
 - **2026-07-24 — `1.7.3`, versionCode `30`** (filter sheet current/staged split with Apply
   as the sole commit and Reset/Cancel staging + restoring with toasts, plus the maybeboard
   empty-Apply fix; average power/toughness in the deck's Distributions; shared ranked
