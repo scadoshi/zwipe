@@ -1,6 +1,29 @@
 # Plan: client error + crash reporting
 
-**Status: planned (2026-07-28).** Server currently logs every error it produces
+**Status: BUILT (2026-07-29), NOT yet verified in production.** Server +
+client halves implemented and tested locally (668 tests green across the
+three crates); the call-site sweep is COMPLETE: all 73 authed
+`to_user_message` toast sites report (every deck/card/profile/otag screen +
+the shared components — multi-host `PrintingSheet`/`SwipeSelect` carry a
+`host_screen` prop so the aggregation axis stays honest). Pre-auth screens
+(login/register/forgot) deliberately excluded per non-goals.
+
+**Rollout state + remaining work:**
+- Server half deploys first (standing ordering) and sits ~a day before a new
+  client build ships. Harmless by design: old clients omit `client_errors`
+  (`#[serde(default)]`), and the crash endpoint just idles.
+- ⚠ **Immediately after the deploy, re-run `zervice_role.sql` on the box**
+  (owner): the nightly upkeep step needs the new `client_errors`/
+  `crash_reports` grants + the session-sweep grant — the first 04:03 UTC run
+  after deploy FAILS with an alert email if the grants aren't in yet.
+- **Prod verification still owed** (after the next client build ships): the
+  Verification checklist below — force a 422 → `client_errors` row; debug
+  panic → exactly one `crash_reports` row across two relaunches; old client
+  (1.7.3) still posts usage fine; one green nightly with the 5/5 upkeep
+  step's prune log lines.
+- Store data-safety label review before the client build submits.
+
+Server currently logs every error it produces
 (single exit path in `ApiError`'s `IntoResponse`), but errors that never reach
 the server are invisible: transport failures, decode failures (contract drift
 between client versions and the API), and outright crashes. We test against
