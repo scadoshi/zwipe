@@ -5,6 +5,7 @@ pub mod email;
 #[cfg(feature = "zerver")]
 pub mod health;
 pub mod metrics;
+pub mod upkeep;
 pub mod user;
 
 /// Boxed future returned by the `ErasedXService` twins (see each domain's
