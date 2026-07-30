@@ -366,6 +366,26 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let mut show_tokens = use_signal(|| false);
     // Art-crop thumbnails on the card rows, on by default (matches the app).
     let mut show_row_art = use_signal(|| true);
+    // The hover-preview stack dodges the cursor: working the LEFT half of the
+    // screen glides the stack to the right gutter so it never covers the rows
+    // being read. Written only when the side actually changes, so mousemove
+    // spam never re-renders. Viewport width measured once on the client (the
+    // stack is hover-only, so touch/SSR never need it).
+    let mut preview_on_right = use_signal(|| false);
+    let mut viewport_width = use_signal(|| 0.0f64);
+    use_future(move || async move {
+        #[cfg(target_arch = "wasm32")]
+        {
+            let mut eval = document::eval("dioxus.send(window.innerWidth)");
+            if let Ok(w) = eval.recv::<f64>().await {
+                viewport_width.set(w);
+            }
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let _ = &mut viewport_width;
+        }
+    });
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
     // Full-art hover-preview stack pinned top-left (desktop). Each hovered row
     // pushes a card on top; each card fades out on its own 2s timer. Never set
@@ -576,7 +596,8 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         // in the wide-screen left gutter; empty on touch (no mouseenter) and
         // hidden below the gutter width so it never overlaps the content.
         if !preview_stack().is_empty() {
-            div { class: "sd-hover-stack",
+            div {
+                class: if preview_on_right() { "sd-hover-stack pin-right" } else { "sd-hover-stack" },
                 for (i, card) in preview_stack().into_iter().enumerate() {
                     div {
                         key: "{card.id}",
@@ -614,7 +635,18 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 }
             }
         }
-        div { class: "shared-deck content-enter",
+        div {
+            class: "shared-deck content-enter",
+            onmousemove: move |e| {
+                let w = viewport_width();
+                if w <= 0.0 {
+                    return;
+                }
+                let cursor_on_left = e.client_coordinates().x < w / 2.0;
+                if preview_on_right() != cursor_on_left {
+                    preview_on_right.set(cursor_on_left);
+                }
+            },
             header { class: "sd-header",
                 h1 { "{deck.name}" }
                 div { class: "sd-header-meta",
