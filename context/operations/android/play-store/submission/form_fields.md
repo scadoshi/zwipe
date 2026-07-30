@@ -153,13 +153,20 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.7.3 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.7.4 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.7.4:**
+
+(The photo-save crash fix is iOS-only — a missing photo-library permission — so it is not claimed here.)
+
+- The app now sends anonymous error and crash reports, so problems get found and fixed faster. No account or personal data rides along.
+- Small fixes and polish under the hood.
 
 **1.7.3:**
 
