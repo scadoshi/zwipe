@@ -4,7 +4,26 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## Latest — 2026-07-29 (Scryfall JSONL break fixed, systemd timers + alerting, least privilege SHIPPED)
+## Latest — 2026-07-30 (1.7.4 SUBMITTED both stores: error/crash reporting live end to end)
+
+- **1.7.4 submitted 2026-07-30** (iOS build 69, Android vc31 — histories have the
+  detail): client error + crash reporting field-verified on a real device before
+  submission (422s landed with breadcrumbs + dedupe; a temp panic delivered in 7s
+  with file:line, exactly-once across relaunches), the iOS photo-save crash fixed
+  (`NSPhotoLibraryAddUsageDescription` — iOS killed the app as a privacy
+  violation, unreportable by design), privacy policy + both stores' data-safety
+  declarations updated (Play gained the previously-undeclared App interactions).
+- **EnvFilter logging bug found live + fixed (2026-07-30, `85d47749`)**: both
+  bins attached a separate `EnvFilter` per fmt layer; with per-target directives
+  (`info,sqlx=warn,zwipe=debug,...`) tracing silently DROPPED a varying subset of
+  events — ERRORs included — in every sink. One global filter now. The fix
+  immediately surfaced long-swallowed warnings (orphaned otag-description slugs,
+  parked in todo).
+- **Remaining for this arc** (todo has the ordered list): approval-time checks
+  (Play target-API banner clears with vc31), then watch the first real field
+  reports arrive.
+
+## 2026-07-29 (Scryfall JSONL break fixed, systemd timers + alerting, least privilege SHIPPED)
 
 - **Zervice least privilege SHIPPED in full, same day** (`f0bfa647`,
   `1d1ecbcc` + server steps; plan archived to
