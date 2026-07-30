@@ -31,6 +31,16 @@
 }
 
 /* Mana glyphs inside a chip (color-identity filter chips). */
+/* Inert chip: the toggle's target is empty/inapplicable right now. */
+.chip.disabled {
+    color: var(--text-muted);
+    border-color: var(--border-primary);
+    background-color: var(--bg-primary);
+    opacity: 0.45;
+    cursor: default;
+    box-shadow: none;
+}
+
 .chip .ms {
     font-size: 1.1rem;
     vertical-align: middle;

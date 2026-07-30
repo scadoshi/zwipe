@@ -808,6 +808,16 @@ pub fn View(deck_id: Uuid) -> Element {
         .collect()
     };
 
+    // Board-chip availability: an empty maybeboard/sideboard grays its chip
+    // out (still un-toggleable if it was on when its last card left, so the
+    // user is never stuck with a selected ghost).
+    let has_maybe = deck_entries()
+        .iter()
+        .any(|e| matches!(e.deck_card.board, Board::Maybeboard));
+    let has_side = deck_entries()
+        .iter()
+        .any(|e| matches!(e.deck_card.board, Board::Sideboard));
+
     rsx! {
             div { class: "screen",
                 ScreenHeader { title: "Deck Cards", hint: deck_cards_hint_open }
@@ -858,6 +868,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
                         Chip {
                             selected: show_maybe(),
+                            disabled: !has_maybe && !show_maybe(),
                             onclick: move |_| {
                                 let new_val = !show_maybe();
                                 show_maybe.set(new_val);
@@ -872,6 +883,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
                         Chip {
                             selected: show_side(),
+                            disabled: !has_side && !show_side(),
                             onclick: move |_| {
                                 let new_val = !show_side();
                                 show_side.set(new_val);
