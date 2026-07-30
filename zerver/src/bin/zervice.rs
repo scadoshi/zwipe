@@ -2,7 +2,10 @@ use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 use zwipe::{
     config::ZerviceConfig,
-    domain::card::{ports::CardService, services::Service as CardService_},
+    domain::{
+        card::{ports::CardService, services::Service as CardService_},
+        upkeep::{ports::UpkeepService, services::Service as UpkeepService_},
+    },
     inbound::external::scryfall::bulk::BulkEndpoint,
     outbound::sqlx::postgres::Postgres,
 };
@@ -46,83 +49,107 @@ async fn main() -> anyhow::Result<()> {
 
     let db = Postgres::new(&config.database_url).await?;
     let card_service = CardService_::new(db.clone());
+    let upkeep_service = UpkeepService_::new(db.clone());
 
     // Every step runs non-fatally: a failure logs and the pipeline continues, so one
     // broken step can't skip the rest (e.g. the serve-critical matview refreshes).
     // Failures are tallied and surfaced as a non-zero exit at the end.
     let mut failures = 0u32;
 
-    tracing::info!("step 1/4 card sync (default_cards): starting");
+    tracing::info!("step 1/5 card sync (default_cards): starting");
     match card_service.scryfall_sync(BulkEndpoint::DefaultCards).await {
-        Ok(_) => tracing::info!("step 1/4 card sync: ok"),
+        Ok(_) => tracing::info!("step 1/5 card sync: ok"),
         Err(e) => {
             failures += 1;
-            tracing::error!("step 1/4 card sync FAILED (continuing): {e:#}");
+            tracing::error!("step 1/5 card sync FAILED (continuing): {e:#}");
         }
     }
 
-    tracing::info!("step 2/4 oracle tags: starting");
+    tracing::info!("step 2/5 oracle tags: starting");
     match card_service.sync_oracle_tags().await {
         Ok((tags, correlations)) => {
-            tracing::info!("step 2/4 oracle tags: synced {tags} tags, {correlations} correlations");
+            tracing::info!("step 2/5 oracle tags: synced {tags} tags, {correlations} correlations");
             match card_service.refresh_card_oracle_tags().await {
-                Ok(()) => tracing::info!("step 2/4 oracle tags projection: ok"),
+                Ok(()) => tracing::info!("step 2/5 oracle tags projection: ok"),
                 Err(e) => {
                     failures += 1;
-                    tracing::error!("step 2/4 oracle tags projection FAILED (continuing): {e:#}");
+                    tracing::error!("step 2/5 oracle tags projection FAILED (continuing): {e:#}");
                 }
             }
             match card_service.refresh_oracle_tag_groups().await {
-                Ok(rows) => tracing::info!("step 2/4 oracle tags grouping: {rows} rows"),
+                Ok(rows) => tracing::info!("step 2/5 oracle tags grouping: {rows} rows"),
                 Err(e) => {
                     failures += 1;
-                    tracing::error!("step 2/4 oracle tags grouping FAILED (continuing): {e:#}");
+                    tracing::error!("step 2/5 oracle tags grouping FAILED (continuing): {e:#}");
                 }
             }
         }
         Err(e) => {
             failures += 1;
             tracing::error!(
-                "step 2/4 oracle tags sync FAILED (skipping projection, continuing): {e:#}"
+                "step 2/5 oracle tags sync FAILED (skipping projection, continuing): {e:#}"
             );
         }
     }
 
-    tracing::info!("step 3/4 derive categories (otags + gaps): starting");
+    tracing::info!("step 3/5 derive categories (otags + gaps): starting");
     match card_service.derive_card_categories(1000).await {
         Ok((otag_rows, merges)) => {
             tracing::info!(
-                "step 3/4 derive categories: {otag_rows} rows from otags, {merges} straggler merges"
+                "step 3/5 derive categories: {otag_rows} rows from otags, {merges} straggler merges"
             );
         }
         Err(e) => {
             failures += 1;
-            tracing::error!("step 3/4 derive categories FAILED (continuing): {e:#}");
+            tracing::error!("step 3/5 derive categories FAILED (continuing): {e:#}");
         }
     }
 
-    tracing::info!("step 4/4 refresh materialized views: starting");
+    tracing::info!("step 4/5 refresh materialized views: starting");
     if let Err(e) = card_service.refresh_latest_cards().await {
         failures += 1;
-        tracing::error!("step 4/4 latest_cards refresh FAILED (continuing): {e:#}");
+        tracing::error!("step 4/5 latest_cards refresh FAILED (continuing): {e:#}");
     } else {
-        tracing::info!("step 4/4 latest_cards: refreshed");
+        tracing::info!("step 4/5 latest_cards: refreshed");
     }
     if let Err(e) = card_service.refresh_card_signal_rollup().await {
         failures += 1;
-        tracing::error!("step 4/4 card_signal_rollup refresh FAILED (continuing): {e:#}");
+        tracing::error!("step 4/5 card_signal_rollup refresh FAILED (continuing): {e:#}");
     } else {
-        tracing::info!("step 4/4 card_signal_rollup: refreshed");
+        tracing::info!("step 4/5 card_signal_rollup: refreshed");
     }
     if let Err(e) = card_service.refresh_otag_context_signal_rollup().await {
         failures += 1;
-        tracing::error!("step 4/4 otag_context_signal_rollup refresh FAILED (continuing): {e:#}");
+        tracing::error!("step 4/5 otag_context_signal_rollup refresh FAILED (continuing): {e:#}");
     } else {
-        tracing::info!("step 4/4 otag_context_signal_rollup: refreshed");
+        tracing::info!("step 4/5 otag_context_signal_rollup: refreshed");
+    }
+
+    tracing::info!("step 5/5 upkeep (retention prunes): starting");
+    match upkeep_service.prune_client_errors().await {
+        Ok(rows) => tracing::info!("step 5/5 upkeep client_errors: {rows} pruned"),
+        Err(e) => {
+            failures += 1;
+            tracing::error!("step 5/5 upkeep client_errors FAILED (continuing): {e:#}");
+        }
+    }
+    match upkeep_service.prune_crash_reports().await {
+        Ok(rows) => tracing::info!("step 5/5 upkeep crash_reports: {rows} pruned"),
+        Err(e) => {
+            failures += 1;
+            tracing::error!("step 5/5 upkeep crash_reports FAILED (continuing): {e:#}");
+        }
+    }
+    match upkeep_service.prune_expired_sessions().await {
+        Ok(rows) => tracing::info!("step 5/5 upkeep expired sessions: {rows} pruned"),
+        Err(e) => {
+            failures += 1;
+            tracing::error!("step 5/5 upkeep expired sessions FAILED (continuing): {e:#}");
+        }
     }
 
     if failures == 0 {
-        tracing::info!("zervice completed: all 4 steps ok");
+        tracing::info!("zervice completed: all 5 steps ok");
         Ok(())
     } else {
         tracing::error!("zervice completed with {failures} failed step(s) — see errors above");
