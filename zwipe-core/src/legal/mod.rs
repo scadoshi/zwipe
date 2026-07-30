@@ -26,6 +26,7 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>
 <li><strong>Deck data</strong>: the decks and card selections you create within the app, including cards you skip or remove per deck so they stop being suggested for that deck (you can clear this anytime from the deck's More menu).</li>
 <li><strong>Session data</strong>: authentication tokens stored securely on your device.</li>
 <li><strong>Usage activity</strong>: how you interact with the app, including swiping, searches, and card decisions (adds, skips, maybes, removals). This is kept both in aggregate and per account, so the app can improve overall and personalize your experience.</li>
+<li><strong>Diagnostics</strong>: anonymous error and crash reports, covering what went wrong, which screen it happened on, the app version, and the platform. These are not linked to your account.</li>
 </ul>
 <p>We do not collect location data or device identifiers, or any data beyond what is required to operate and improve the app.</p>
 
@@ -36,6 +37,7 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>
 <li>To send transactional emails (email verification, password reset).</li>
 <li>To remember which cards you've skipped or removed for a deck so we stop suggesting them there.</li>
 <li>To analyze swiping and usage patterns, in aggregate and per account, so we can improve the app and personalize card suggestions.</li>
+<li>To find and fix bugs, using anonymous error and crash reports.</li>
 </ul>
 <p>We do not sell, share, or use your data for advertising.</p>
 
@@ -47,7 +49,7 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>
 </ul>
 
 <h2>Data Retention</h2>
-<p>Your data is retained as long as your account exists. You can delete your account at any time from within the app, which permanently removes all associated data.</p>
+<p>Your data is retained as long as your account exists. You can delete your account at any time from within the app, which permanently removes all associated data. Anonymous diagnostic reports are deleted automatically after 90 days.</p>
 
 <h2>Security</h2>
 <p>Passwords are hashed with argon2. Refresh tokens are SHA-256 hashed before storage. All traffic is encrypted in transit via HTTPS. We do not have access to your plaintext password.</p>
