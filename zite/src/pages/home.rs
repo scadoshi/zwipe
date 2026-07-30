@@ -1,6 +1,6 @@
 use crate::{
-    components::{PageMeta, StatsStrip},
     Footer, Nav, Route,
+    components::{PageMeta, StatsStrip},
 };
 use dioxus::prelude::*;
 use zwipe_components::{Banner, BannerStatus, Panel};
