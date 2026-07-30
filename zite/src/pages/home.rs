@@ -1,6 +1,6 @@
 use crate::{
-    Footer, Nav, Route,
     components::{PageMeta, StatsStrip},
+    Footer, Nav, Route,
 };
 use dioxus::prelude::*;
 use zwipe_components::{Banner, BannerStatus, Panel};
@@ -140,7 +140,7 @@ pub fn Home() -> Element {
                 category: "Release",
                 status: BannerStatus::Done,
                 status_label: "New",
-                "Version 1.7.3 just shipped. "
+                "Version 1.7.4 just shipped. "
                 Link { to: Route::Changelog {}, "See what's new" }
             }
         }
