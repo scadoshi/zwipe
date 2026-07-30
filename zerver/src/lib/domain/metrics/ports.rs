@@ -10,7 +10,7 @@ use crate::domain::metrics::models::{
     lifetime_counters::LifetimeCounters,
     public_metrics::PublicMetrics,
 };
-use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpUsageBatch};
+use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpCrashReport, HttpUsageBatch};
 
 /// Database port for metrics writes and reads.
 pub trait MetricsRepository: Clone + Send + Sync + 'static {
@@ -59,6 +59,12 @@ pub trait MetricsRepository: Clone + Send + Sync + 'static {
         &self,
         session_id: Uuid,
         kind: AnonymousEventKind,
+    ) -> impl Future<Output = Result<(), MetricsError>> + Send;
+
+    /// Stores a crash report exactly once (`ON CONFLICT (crash_id) DO NOTHING`).
+    fn record_crash(
+        &self,
+        report: &HttpCrashReport,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
     /// Fetches lifetime counters for a user.
@@ -128,6 +134,13 @@ pub trait MetricsService: Clone + Send + Sync + 'static {
         &self,
         session_id: Uuid,
         kind: AnonymousEventKind,
+    ) -> impl Future<Output = Result<(), MetricsError>> + Send;
+
+    /// Stores a crash report from an unauthenticated client (exactly once
+    /// per `crash_id` — the client retries until it sees a 2xx).
+    fn record_crash(
+        &self,
+        report: &HttpCrashReport,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
     /// Initializes the lifetime row for a new user (idempotent).
@@ -210,6 +223,12 @@ pub trait ErasedMetricsService: Send + Sync + 'static {
         kind: AnonymousEventKind,
     ) -> BoxFuture<'a, Result<(), MetricsError>>;
 
+    /// See [`MetricsService::record_crash`].
+    fn record_crash<'a>(
+        &'a self,
+        report: &'a HttpCrashReport,
+    ) -> BoxFuture<'a, Result<(), MetricsError>>;
+
     /// See [`MetricsService::insert_lifetime_row`].
     fn insert_lifetime_row<'a>(&'a self, user_id: Uuid) -> BoxFuture<'a, Result<(), MetricsError>>;
 
@@ -288,6 +307,13 @@ where
         Box::pin(MetricsService::record_anonymous_event(
             self, session_id, kind,
         ))
+    }
+
+    fn record_crash<'a>(
+        &'a self,
+        report: &'a HttpCrashReport,
+    ) -> BoxFuture<'a, Result<(), MetricsError>> {
+        Box::pin(MetricsService::record_crash(self, report))
     }
 
     fn insert_lifetime_row<'a>(&'a self, user_id: Uuid) -> BoxFuture<'a, Result<(), MetricsError>> {

@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO crash_reports\n                   (crash_id, occurred_at, client_version, platform, message)\n               VALUES ($1, $2, $3, $4, $5)\n               ON CONFLICT (crash_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d43714cd308be4ef4495609b4ea60723434841a2b6634a3c082c151bd77373ef"
+}

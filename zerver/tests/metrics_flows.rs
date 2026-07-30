@@ -210,3 +210,175 @@ async fn anonymous_event_garbage_kind_rejected(pool: sqlx::PgPool) {
         "closed enum rejects unknown kinds"
     );
 }
+
+#[sqlx::test]
+async fn usage_batch_client_errors_land_clamped(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, _) = app.register("errorer").await;
+
+    // 25 distinct reports (server truncates to 20); the first carries an
+    // oversized message and an absurd count — both must come back clamped.
+    let mut reports: Vec<serde_json::Value> = (0..25)
+        .map(|i| {
+            json!({
+                "screen": "deck_edit",
+                "component": "",
+                "action": format!("action_{i}"),
+                "kind": "api_unprocessable",
+                "message": "deck limit reached",
+                "count": 1,
+                "client_version": "1.8.0",
+                "platform": "ios"
+            })
+        })
+        .collect();
+    reports[0]["message"] = json!("m".repeat(2_000));
+    reports[0]["count"] = json!(4_000_000_000u32);
+
+    let (status, body) = app
+        .post(
+            "/api/metrics/usage",
+            json!({
+                "swipes_right": 0, "swipes_left": 0, "swipes_up": 0,
+                "swipes_down": 0, "searches": 0,
+                "client_errors": reports
+            }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT, "usage accepted: {body}");
+
+    let rows: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM client_errors")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(rows, 20, "vec truncated to MAX_CLIENT_ERRORS_PER_FLUSH");
+
+    let (message, count): (String, i32) =
+        sqlx::query_as("SELECT message, count FROM client_errors WHERE action = 'action_0'")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        message.chars().count(),
+        300,
+        "message re-truncated server-side"
+    );
+    assert_eq!(count, 10_000, "count clamped to MAX_PER_FLUSH");
+}
+
+#[sqlx::test]
+async fn usage_batch_without_client_errors_still_accepted(pool: sqlx::PgPool) {
+    // The 1.7.3-and-earlier wire shape: no client_errors field at all.
+    let app = TestApp::new(pool.clone());
+    let (token, _) = app.register("oldtimer").await;
+    let (status, body) = app
+        .post(
+            "/api/metrics/usage",
+            json!({
+                "swipes_right": 1, "swipes_left": 0, "swipes_up": 0,
+                "swipes_down": 0, "searches": 0
+            }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::NO_CONTENT,
+        "old client accepted: {body}"
+    );
+}
+
+#[sqlx::test]
+async fn crash_report_stored_exactly_once_no_auth(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let crash_id = Uuid::from_u128(0xDEAD);
+    let report = json!({
+        "crash_id": crash_id.to_string(),
+        "client_version": "1.8.0",
+        "platform": "android",
+        "message": "p".repeat(3_000),
+        "occurred_at": chrono::Utc::now().to_rfc3339(),
+    });
+
+    // First post stores; the retry (client never saw the 2xx) is a no-op —
+    // both succeed from the client's point of view.
+    for attempt in 1..=2 {
+        let (status, body) = app.post("/api/metrics/crash", report.clone(), None).await;
+        assert_eq!(
+            status,
+            StatusCode::NO_CONTENT,
+            "crash post attempt {attempt}: {body}"
+        );
+    }
+
+    let (rows, message): (i64, String) = sqlx::query_as(
+        "SELECT COUNT(*) OVER (), message FROM crash_reports WHERE crash_id = $1 LIMIT 1",
+    )
+    .bind(crash_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(rows, 1, "exactly one row per crash_id");
+    assert_eq!(
+        message.chars().count(),
+        2_000,
+        "panic message re-truncated server-side"
+    );
+}
+
+#[sqlx::test]
+async fn crash_route_rate_limits_after_burst(pool: sqlx::PgPool) {
+    // Governor: burst 2, then ~1/min per IP. All test requests share one fake
+    // IP, so the third rapid post must bounce.
+    let app = TestApp::new(pool.clone());
+    let report = |n: u128| {
+        json!({
+            "crash_id": Uuid::from_u128(n).to_string(),
+            "client_version": "1.8.0",
+            "platform": "ios",
+            "message": "panicked",
+            "occurred_at": chrono::Utc::now().to_rfc3339(),
+        })
+    };
+    for n in 1..=2 {
+        let (status, body) = app.post("/api/metrics/crash", report(n), None).await;
+        assert_eq!(status, StatusCode::NO_CONTENT, "burst post {n}: {body}");
+    }
+    let (status, _) = app.post("/api/metrics/crash", report(3), None).await;
+    assert_eq!(
+        status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "third rapid crash post is limited"
+    );
+}
+
+#[sqlx::test]
+async fn crash_route_rejects_oversized_bodies(pool: sqlx::PgPool) {
+    // 4KB body cap on the route: a message inflated past it must be refused
+    // before it ever reaches deserialization or the DB.
+    let app = TestApp::new(pool.clone());
+    let (status, _) = app
+        .post(
+            "/api/metrics/crash",
+            json!({
+                "crash_id": Uuid::from_u128(0xB16).to_string(),
+                "client_version": "1.8.0",
+                "platform": "ios",
+                "message": "p".repeat(8_000),
+                "occurred_at": chrono::Utc::now().to_rfc3339(),
+            }),
+            None,
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::PAYLOAD_TOO_LARGE,
+        "5KB+ body bounced by the route's body cap"
+    );
+    let rows: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM crash_reports")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(rows, 0, "nothing stored");
+}

@@ -11,7 +11,7 @@ use crate::domain::metrics::{
     },
     ports::{MetricsRepository, MetricsService},
 };
-use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpUsageBatch};
+use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpCrashReport, HttpUsageBatch};
 
 /// Default metrics service.
 #[derive(Debug, Clone)]
@@ -60,6 +60,10 @@ impl<R: MetricsRepository> MetricsService for Service<R> {
         kind: AnonymousEventKind,
     ) -> Result<(), MetricsError> {
         self.repo.record_anonymous_event(session_id, kind).await
+    }
+
+    async fn record_crash(&self, report: &HttpCrashReport) -> Result<(), MetricsError> {
+        self.repo.record_crash(report).await
     }
 
     async fn insert_lifetime_row(&self, user_id: Uuid) -> Result<(), MetricsError> {

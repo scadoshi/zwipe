@@ -76,6 +76,118 @@ pub struct HttpUsageBatch {
     /// older clients compatible.
     #[serde(default)]
     pub select_signals: Vec<CommanderSelectDelta>,
+    /// Handled-error reports (an error was shown to the user) accumulated over
+    /// the flush window. Aggregate-only, no user identity. `#[serde(default)]`
+    /// keeps older clients compatible.
+    #[serde(default)]
+    pub client_errors: Vec<ClientErrorReport>,
+}
+
+/// One handled-error report: a `ClientError` was surfaced to the user
+/// (toast/dialog) on the client. Deduped client-side within a flush window
+/// (`count`), aggregate-only — no user identity beyond the authed usage batch
+/// it rides in.
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct ClientErrorReport {
+    /// Host screen, flattened module path (`"deck_edit"`, `"auth_login"`) —
+    /// closed vocabulary from client-side consts. The aggregation axis;
+    /// component names never leak into it.
+    pub screen: String,
+    /// `""` for the screen itself; else the component module name
+    /// (`"card_filter_sheet"`) — the drill-down breadcrumb. Dialogs/sheets
+    /// report their host screen plus their own component name.
+    #[serde(default)]
+    pub component: String,
+    /// What the user was doing (`"save_profile"`, `"filter_apply"`).
+    pub action: String,
+    /// Error kind: `ClientError` variant plus `ApiError` variant where
+    /// applicable (`"api_unauthorized"`, `"decode"`).
+    pub kind: String,
+    /// Human-readable detail. 4xx messages are user-safe by contract; decode
+    /// messages must be reduced to the error's shape client-side (serde
+    /// errors quote input fragments — response bodies must never ride a
+    /// report). Truncated on both sides.
+    pub message: String,
+    /// How many times this exact error fired within the flush window.
+    pub count: u32,
+    /// `CARGO_PKG_VERSION` — self-reported, untrusted debugging metadata.
+    pub client_version: String,
+    /// `"ios"` / `"android"` / `"web"` — self-reported.
+    pub platform: String,
+}
+
+impl ClientErrorReport {
+    /// Maximum characters kept in `message`.
+    pub const MAX_MESSAGE_CHARS: usize = 300;
+
+    /// Maximum characters kept in `screen`, `component`, `action`, and `kind`.
+    pub const MAX_LABEL_CHARS: usize = 64;
+
+    /// Maximum characters kept in `client_version` and `platform`.
+    pub const MAX_META_CHARS: usize = 32;
+
+    /// Returns a copy with every string truncated to its cap and `count`
+    /// clamped to [`HttpUsageBatch::MAX_PER_FLUSH`]. Client-side truncation is
+    /// untrusted — the server clamps regardless.
+    #[must_use]
+    pub fn clamped(&self) -> Self {
+        Self {
+            screen: truncated_chars(&self.screen, Self::MAX_LABEL_CHARS),
+            component: truncated_chars(&self.component, Self::MAX_LABEL_CHARS),
+            action: truncated_chars(&self.action, Self::MAX_LABEL_CHARS),
+            kind: truncated_chars(&self.kind, Self::MAX_LABEL_CHARS),
+            message: truncated_chars(&self.message, Self::MAX_MESSAGE_CHARS),
+            count: self.count.min(HttpUsageBatch::MAX_PER_FLUSH),
+            client_version: truncated_chars(&self.client_version, Self::MAX_META_CHARS),
+            platform: truncated_chars(&self.platform, Self::MAX_META_CHARS),
+        }
+    }
+}
+
+/// One crash report, posted unauthenticated on the launch after the crash.
+///
+/// `crash_id` is stamped at panic time by the client's panic hook; the server
+/// upserts on it (`ON CONFLICT DO NOTHING`), so retries across launches store
+/// exactly one row per crash.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct HttpCrashReport {
+    /// Stamped at panic time — the server's dedupe key.
+    pub crash_id: Uuid,
+    /// `CARGO_PKG_VERSION` — self-reported, untrusted debugging metadata.
+    pub client_version: String,
+    /// Platform of the crashed build.
+    pub platform: crate::domain::auth::models::platform::ClientPlatform,
+    /// Panic payload + location. Truncated on both sides.
+    pub message: String,
+    /// When the panic hook ran (client clock — untrusted, indicative only).
+    pub occurred_at: DateTime<Utc>,
+}
+
+impl HttpCrashReport {
+    /// Maximum characters kept in `message`.
+    pub const MAX_MESSAGE_CHARS: usize = 2_000;
+
+    /// Returns a copy with `message` and `client_version` truncated to their
+    /// caps. Client-side truncation is untrusted — the server clamps
+    /// regardless.
+    #[must_use]
+    pub fn clamped(&self) -> Self {
+        Self {
+            crash_id: self.crash_id,
+            client_version: truncated_chars(
+                &self.client_version,
+                ClientErrorReport::MAX_META_CHARS,
+            ),
+            platform: self.platform,
+            message: truncated_chars(&self.message, Self::MAX_MESSAGE_CHARS),
+            occurred_at: self.occurred_at,
+        }
+    }
+}
+
+/// Returns at most the first `max` characters of `s` (char-boundary safe).
+fn truncated_chars(s: &str, max: usize) -> String {
+    s.chars().take(max).collect()
 }
 
 /// One card signal delta accumulated over a flush window.
@@ -169,6 +281,11 @@ impl HttpUsageBatch {
     /// from fanning writes across arbitrary decks.
     pub const MAX_SKIP_DECKS_PER_FLUSH: usize = 50;
 
+    /// Maximum accepted number of distinct handled-error reports per flush.
+    /// Matches the client-side buffer cap — beyond it, an error loop stops
+    /// adding entries (its repeats still tally into existing `count`s).
+    pub const MAX_CLIENT_ERRORS_PER_FLUSH: usize = 20;
+
     /// Returns a copy with every counter clamped to [`Self::MAX_PER_FLUSH`], the
     /// signal list truncated to [`Self::MAX_SIGNALS_PER_FLUSH`], each signal's
     /// tallies clamped per field, and the deck-skip deltas truncated to
@@ -199,6 +316,12 @@ impl HttpUsageBatch {
                 .iter()
                 .take(Self::MAX_SIGNALS_PER_FLUSH)
                 .map(CommanderSelectDelta::clamped)
+                .collect(),
+            client_errors: self
+                .client_errors
+                .iter()
+                .take(Self::MAX_CLIENT_ERRORS_PER_FLUSH)
+                .map(ClientErrorReport::clamped)
                 .collect(),
         }
     }
@@ -259,8 +382,8 @@ impl DeckSkipDelta {
 #[cfg(test)]
 mod tests {
     use super::{
-        AnonymousEventKind, CardSignalDelta, CommanderSelectDelta, DeckSkipDelta,
-        HttpAnonymousEvent, HttpUsageBatch,
+        AnonymousEventKind, CardSignalDelta, ClientErrorReport, CommanderSelectDelta,
+        DeckSkipDelta, HttpAnonymousEvent, HttpCrashReport, HttpUsageBatch,
     };
     use uuid::Uuid;
 
@@ -304,6 +427,7 @@ mod tests {
             signals: Vec::new(),
             deck_skips: Vec::new(),
             select_signals: Vec::new(),
+            client_errors: Vec::new(),
         }
         .clamped();
         assert_eq!(clamped.swipes_right, HttpUsageBatch::MAX_PER_FLUSH);
@@ -338,15 +462,104 @@ mod tests {
 
     #[test]
     fn batch_deserializes_without_signals_field() {
-        // An older client omits `signals`, `deck_skips`, and `select_signals`;
-        // must still parse (→ empty).
+        // An older client omits `signals`, `deck_skips`, `select_signals`,
+        // and `client_errors`; must still parse (→ empty).
         let json =
             r#"{"swipes_right":2,"swipes_left":1,"swipes_up":0,"swipes_down":0,"searches":3}"#;
         let batch: HttpUsageBatch = serde_json::from_str(json).unwrap();
         assert!(batch.signals.is_empty());
         assert!(batch.deck_skips.is_empty());
         assert!(batch.select_signals.is_empty());
+        assert!(batch.client_errors.is_empty());
         assert_eq!(batch.swipes_right, 2);
+    }
+
+    #[test]
+    fn clamped_truncates_client_errors_and_their_strings() {
+        let report = ClientErrorReport {
+            screen: "s".repeat(ClientErrorReport::MAX_LABEL_CHARS + 40),
+            component: "card_filter_sheet".to_string(),
+            action: "save".to_string(),
+            kind: "api_unprocessable".to_string(),
+            message: "m".repeat(ClientErrorReport::MAX_MESSAGE_CHARS + 500),
+            count: u32::MAX,
+            client_version: "v".repeat(ClientErrorReport::MAX_META_CHARS + 8),
+            platform: "ios".to_string(),
+        };
+        let batch = HttpUsageBatch {
+            client_errors: vec![report; HttpUsageBatch::MAX_CLIENT_ERRORS_PER_FLUSH + 5],
+            ..Default::default()
+        }
+        .clamped();
+        assert_eq!(
+            batch.client_errors.len(),
+            HttpUsageBatch::MAX_CLIENT_ERRORS_PER_FLUSH
+        );
+        let first = batch.client_errors.first().unwrap();
+        assert_eq!(
+            first.screen.chars().count(),
+            ClientErrorReport::MAX_LABEL_CHARS
+        );
+        assert_eq!(
+            first.message.chars().count(),
+            ClientErrorReport::MAX_MESSAGE_CHARS
+        );
+        assert_eq!(
+            first.client_version.chars().count(),
+            ClientErrorReport::MAX_META_CHARS
+        );
+        assert_eq!(first.count, HttpUsageBatch::MAX_PER_FLUSH);
+        assert_eq!(first.component, "card_filter_sheet");
+        assert_eq!(first.action, "save");
+    }
+
+    #[test]
+    fn client_error_report_component_defaults_to_empty() {
+        // `component` is `#[serde(default)]` — a report from the screen
+        // itself omits it entirely.
+        let json = r#"{"screen":"deck_edit","action":"save","kind":"api_unprocessable",
+            "message":"deck limit reached","count":2,"client_version":"1.8.0","platform":"ios"}"#;
+        let report: ClientErrorReport = serde_json::from_str(json).unwrap();
+        assert_eq!(report.component, "");
+        assert_eq!(report.screen, "deck_edit");
+    }
+
+    #[test]
+    fn crash_report_round_trips_and_clamps_message() {
+        use crate::domain::auth::models::platform::ClientPlatform;
+
+        let report = HttpCrashReport {
+            crash_id: Uuid::nil(),
+            client_version: "1.8.0".to_string(),
+            platform: ClientPlatform::Android,
+            message: "p".repeat(HttpCrashReport::MAX_MESSAGE_CHARS + 100),
+            occurred_at: chrono::Utc::now(),
+        };
+        let wire = serde_json::to_string(&report).unwrap();
+        let back: HttpCrashReport = serde_json::from_str(&wire).unwrap();
+        assert_eq!(back.crash_id, report.crash_id);
+        assert_eq!(back.platform, ClientPlatform::Android);
+
+        let clamped = back.clamped();
+        assert_eq!(
+            clamped.message.chars().count(),
+            HttpCrashReport::MAX_MESSAGE_CHARS
+        );
+        assert_eq!(clamped.client_version, "1.8.0");
+    }
+
+    #[test]
+    fn truncation_is_char_boundary_safe() {
+        // Multi-byte chars at the cut point must not panic or split bytes.
+        let report = ClientErrorReport {
+            message: "é".repeat(ClientErrorReport::MAX_MESSAGE_CHARS + 10),
+            ..Default::default()
+        };
+        let clamped = report.clamped();
+        assert_eq!(
+            clamped.message.chars().count(),
+            ClientErrorReport::MAX_MESSAGE_CHARS
+        );
     }
 
     #[test]

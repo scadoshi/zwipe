@@ -47,7 +47,8 @@ use crate::inbound::http::handlers::{
     health::{are_server_and_database_running, is_server_running, root},
     metrics::{
         get_my_metrics::get_my_metrics, get_public_metrics::get_public_metrics,
-        record_anonymous_event::record_anonymous_event, record_usage::record_usage,
+        record_anonymous_event::record_anonymous_event, record_crash::record_crash,
+        record_usage::record_usage,
     },
     user::{
         get_preferences::get_preferences, get_user::get_user, mark_hint_shown::mark_hint_shown,
@@ -58,6 +59,8 @@ use crate::inbound::http::handlers::{
 use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtractor};
 #[cfg(feature = "zerver")]
 use axum::Router;
+#[cfg(feature = "zerver")]
+use axum::extract::DefaultBodyLimit;
 #[cfg(feature = "zerver")]
 use axum::routing::{delete, get, post, put};
 #[cfg(feature = "zerver")]
@@ -202,6 +205,18 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
+    // Burst 2, then 1 req / min per IP — crash reports. A legitimate client
+    // posts at most one per launch; this is an unauthenticated write that
+    // inserts a row per call, so it gets the strictest limiter (the crash_id
+    // upsert makes anything past it idempotent).
+    let crash_report_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(60))
+            .burst_size(2)
+            .key_extractor(CfConnectingIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
     // 30 req / 2s per IP — public shared-deck reads. A page load fetches once
     // and CF may cache briefly; this guards origin against token scanning.
     let public_share_config = Arc::new(
@@ -302,7 +317,15 @@ pub fn public_routes() -> Router<AppState> {
                     "/metrics",
                     Router::new()
                         .route("/anonymous", post(record_anonymous_event))
-                        .layer(GovernorLayer::new(anonymous_event_config)),
+                        .layer(GovernorLayer::new(anonymous_event_config))
+                        .merge(
+                            Router::new()
+                                .route("/crash", post(record_crash))
+                                .layer(GovernorLayer::new(crash_report_config))
+                                // A crash report is ~2KB of truncated panic
+                                // text; 4KB bounds this unauthed body hard.
+                                .layer(DefaultBodyLimit::max(4096)),
+                        ),
                 )
                 .nest(
                     "/share",
