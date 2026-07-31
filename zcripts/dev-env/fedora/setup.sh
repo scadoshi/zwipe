@@ -45,10 +45,14 @@ if ! command -v sqlx &> /dev/null; then
     cargo install sqlx-cli --no-default-features --features postgres
 fi
 
-# install dioxus cli
-echo "installing dioxus cli..."
-if ! command -v dx &> /dev/null; then
-    cargo install dioxus-cli
+# install dioxus cli — pinned to match the `dioxus` crate in zwiper/Cargo.toml.
+# an unpinned `cargo install dioxus-cli` grabs the newest published version
+# (including prereleases), which trips dx's "versions are incompatible" warning
+# at serve time. keep DX_VERSION in lockstep with that Cargo.toml dependency.
+DX_VERSION="0.7.10"
+echo "installing dioxus cli ($DX_VERSION)..."
+if ! dx --version 2>/dev/null | grep -q "$DX_VERSION"; then
+    cargo install dioxus-cli --version "$DX_VERSION"
 fi
 
 # setup database

@@ -16,6 +16,44 @@ if ! xcode-select -p &> /dev/null; then
     exit 1
 fi
 
+# command line tools alone are not enough: ios simulator builds
+# (aarch64-apple-ios-sim) need the full xcode app + iphonesimulator sdk.
+# a clt-only machine passes the check above but fails later in cc-rs with
+# 'xcrun: error: SDK "iphonesimulator" cannot be located'.
+if ! xcrun --show-sdk-path --sdk iphonesimulator &> /dev/null; then
+    echo "error: iphonesimulator sdk not found — full xcode is required for ios builds"
+    echo "  the active toolchain is: $(xcode-select -p)"
+    echo "  (command line tools alone cannot build for the ios simulator)"
+    echo ""
+    echo "to fix:"
+    echo "  1. install xcode from the app store"
+    echo "  2. sudo xcode-select -s /Applications/Xcode.app/Contents/Developer"
+    echo "  3. sudo xcodebuild -license accept"
+    echo "  4. xcodebuild -downloadPlatform iOS   # installs the simulator runtime"
+    echo "  5. re-run this script"
+    exit 1
+fi
+
+# ensure an ios simulator runtime + device exist. the sdk check above lets you
+# BUILD for the simulator; BOOTING one needs a runtime (a separate ~7gb download)
+# plus a created device. without these, `dx serve --ios` fails with
+# "No iOS sdks installed" / "No devices are booted".
+if ! xcrun simctl list runtimes 2>/dev/null | grep -q "iOS "; then
+    echo "warning: no ios simulator runtime installed — you can build but not launch a sim"
+    echo "  install it with:  xcodebuild -downloadPlatform iOS"
+    echo "  then re-run this script to provision a simulator device"
+else
+    # 6.5\" reference device. dx serve --ios launches into whatever sim is booted;
+    # runtime is omitted so simctl picks the newest installed one automatically.
+    SIM_NAME="iPhone 11 Pro Max"
+    if xcrun simctl list devices | grep -q "^[[:space:]]*$SIM_NAME ("; then
+        echo "simulator '$SIM_NAME' already present"
+    else
+        echo "creating '$SIM_NAME' simulator..."
+        xcrun simctl create "$SIM_NAME" "$SIM_NAME" > /dev/null
+    fi
+fi
+
 # install/verify homebrew
 if ! command -v brew &> /dev/null; then
     echo "installing homebrew..."
@@ -53,10 +91,14 @@ if ! command -v sqlx &> /dev/null; then
     cargo install sqlx-cli --no-default-features --features postgres
 fi
 
-# install dioxus cli
-echo "installing dioxus cli..."
-if ! command -v dx &> /dev/null; then
-    cargo install dioxus-cli
+# install dioxus cli — pinned to match the `dioxus` crate in zwiper/Cargo.toml.
+# an unpinned `cargo install dioxus-cli` grabs the newest published version
+# (including prereleases), which trips dx's "versions are incompatible" warning
+# at serve time. keep DX_VERSION in lockstep with that Cargo.toml dependency.
+DX_VERSION="0.7.10"
+echo "installing dioxus cli ($DX_VERSION)..."
+if ! dx --version 2>/dev/null | grep -q "$DX_VERSION"; then
+    cargo install dioxus-cli --version "$DX_VERSION"
 fi
 
 # setup database
@@ -125,6 +167,7 @@ echo "user: $CURRENT_USER"
 echo "auth: peer (no password)"
 echo ""
 echo "to start development:"
-echo "  backend:  cd zerver && cargo run --bin zerver"
-echo "  frontend: cd zwiper && dx serve"
-echo "  service:  cargo run --bin zervice"
+echo "  backend:        cd zerver && cargo run --bin zerver"
+echo "  frontend (web): cd zwiper && dx serve"
+echo "  frontend (ios): open -a Simulator && (cd zwiper && dx serve --ios)"
+echo "  service:        cargo run --bin zervice"
