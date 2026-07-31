@@ -58,5 +58,6 @@ prompts before dropping.
 |---|---|
 | `error: this script is for arch linux (omarchy) only` | Wrong distro — use the matching platform script. |
 | Frontend build fails on `webkit2gtk` / `gdk` headers | WebKitGTK deps missing — re-run `setup.sh` or install the packages listed above. |
-| `dx and dioxus versions are incompatible` | Pin `dx`: `cargo install dioxus-cli --version <Cargo.toml dioxus version>`. |
+| `dx and dioxus versions are incompatible` | Pin `dx`: `cargo install dioxus-cli --version <Cargo.toml dioxus version> --locked --force`. |
+| dx install fails on `auth-git2` / `credential_helper` | Missing `--locked` — cargo pulled `git2 0.21`; re-run the install with `--locked`. |
 | `psql: could not connect` | Postgres not running — `sudo systemctl start postgresql`. |
