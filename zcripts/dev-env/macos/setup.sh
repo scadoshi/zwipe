@@ -95,10 +95,15 @@ fi
 # an unpinned `cargo install dioxus-cli` grabs the newest published version
 # (including prereleases), which trips dx's "versions are incompatible" warning
 # at serve time. keep DX_VERSION in lockstep with that Cargo.toml dependency.
+# --locked uses dx's shipped Cargo.lock: without it cargo re-resolves transitive
+# deps to newest-compatible and pulls git2 0.21, which fails to build auth-git2
+# 0.5.8 (uses Cred::credential_helper, removed in git2 0.21).
+# --force overwrites an existing dx of a different version (this guard only runs
+# on a mismatch); without it cargo aborts with "binary `dx` already exists".
 DX_VERSION="0.7.10"
 echo "installing dioxus cli ($DX_VERSION)..."
 if ! dx --version 2>/dev/null | grep -q "$DX_VERSION"; then
-    cargo install dioxus-cli --version "$DX_VERSION"
+    cargo install dioxus-cli --version "$DX_VERSION" --locked --force
 fi
 
 # setup database

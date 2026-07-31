@@ -107,8 +107,15 @@ produces this at serve time:
 It still builds, but to align an already-installed `dx`, match it by hand:
 
 ```bash
-cargo install dioxus-cli --version 0.7.10   # use the version from Cargo.toml
+cargo install dioxus-cli --version 0.7.10 --locked --force   # version from Cargo.toml
 ```
+
+> `--locked` is required. Without it, cargo re-resolves dx's transitive deps to
+> newest-compatible and pulls `git2 0.21`, which fails to compile `auth-git2`
+> (`no associated function ... credential_helper`). The `--locked` flag pins the
+> dep set dx was released with. `--force` overwrites an already-installed `dx`
+> of a different version (otherwise cargo aborts with "binary `dx` already
+> exists").
 
 When you bump `dioxus` in `Cargo.toml`, bump `DX_VERSION` in `setup.sh` to match.
 
