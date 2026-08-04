@@ -158,16 +158,20 @@ pub(crate) fn OracleWords() -> Element {
 
                     if !results.is_empty() {
                         rsx! {
-                            div { class: "flex flex-wrap gap-1 mb-1",
-                                for word in results {
-                                    div { class: "chip-unselected",
-                                        onclick: move |_| {
-                                            let mode = oracle_words_mode();
-                                            let mut current = read_oracle_words(&filter_builder(), mode);
-                                            current.push(word.clone());
-                                            write_oracle_words(&mut filter_builder.write(), mode, current);
-                                        },
-                                        {word.clone()}
+                            div { class: "search-float-anchor",
+                                div { class: "search-float-results",
+                                    for (i, word) in results.into_iter().enumerate() {
+                                        div {
+                                            class: "chip-unselected search-float-chip",
+                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                            onclick: move |_| {
+                                                let mode = oracle_words_mode();
+                                                let mut current = read_oracle_words(&filter_builder(), mode);
+                                                current.push(word.clone());
+                                                write_oracle_words(&mut filter_builder.write(), mode, current);
+                                            },
+                                            {word.clone()}
+                                        }
                                     }
                                 }
                             }
@@ -244,15 +248,19 @@ pub(crate) fn OracleWords() -> Element {
 
                     if !results.is_empty() {
                         rsx! {
-                            div { class: "flex flex-wrap gap-1 mb-1",
-                                for word in results {
-                                    div { class: "chip-unselected",
-                                        onclick: move |_| {
-                                            let mut current = read_excluded(&filter_builder());
-                                            current.push(word.clone());
-                                            write_excluded(&mut filter_builder.write(), current);
-                                        },
-                                        {word.clone()}
+                            div { class: "search-float-anchor",
+                                div { class: "search-float-results",
+                                    for (i, word) in results.into_iter().enumerate() {
+                                        div {
+                                            class: "chip-unselected search-float-chip",
+                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                            onclick: move |_| {
+                                                let mut current = read_excluded(&filter_builder());
+                                                current.push(word.clone());
+                                                write_excluded(&mut filter_builder.write(), current);
+                                            },
+                                            {word.clone()}
+                                        }
                                     }
                                 }
                             }

@@ -171,16 +171,20 @@ pub fn Artist() -> Element {
 
                         if !results.is_empty() {
                             rsx! {
-                                div { class: "flex flex-wrap gap-1 mb-1",
-                                    for artist in results {
-                                        div { class: "chip-unselected",
-                                            onclick: move |_| {
-                                                let mut current = read_artists(&filter_builder(), mode());
-                                                current.push(artist.clone());
-                                                write_artists(&mut filter_builder.write(), mode(), current);
-                                                artist_is_typing.set(false);
-                                            },
-                                            {artist.clone()}
+                                div { class: "search-float-anchor",
+                                    div { class: "search-float-results",
+                                        for (i, artist) in results.into_iter().enumerate() {
+                                            div {
+                                                class: "chip-unselected search-float-chip",
+                                                style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                                onclick: move |_| {
+                                                    let mut current = read_artists(&filter_builder(), mode());
+                                                    current.push(artist.clone());
+                                                    write_artists(&mut filter_builder.write(), mode(), current);
+                                                    artist_is_typing.set(false);
+                                                },
+                                                {artist.clone()}
+                                            }
                                         }
                                     }
                                 }

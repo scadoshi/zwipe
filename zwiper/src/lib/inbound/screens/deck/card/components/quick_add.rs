@@ -179,24 +179,28 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
 
     rsx! {
         div {
-            // Results render above the bar (like the app's other type-to-search
-            // pickers) as tappable chips — tap one to add it to the mainboard.
+            // Results float in a layer hung above the bar from a zero-height
+            // anchor — out of document flow, so nothing shifts while typing.
+            // Tap a chip to add it to the mainboard.
             if show_dropdown() {
-                if is_searching() {
-                    div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                        div { class: "chip-unselected", "Searching..." }
-                    }
-                } else if results().is_empty() {
-                    div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                        div { class: "chip-unselected", "No results" }
-                    }
-                } else {
-                    div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                        for card in results().iter().cloned() {
-                            div {
-                                class: "chip-unselected",
-                                onclick: move |_| add_card(card.clone()),
-                                "{card.scryfall_data.name}"
+                div { class: "search-float-anchor",
+                    if is_searching() {
+                        div { class: "search-float-results",
+                            div { class: "chip-unselected search-float-chip", "Searching..." }
+                        }
+                    } else if results().is_empty() {
+                        div { class: "search-float-results",
+                            div { class: "chip-unselected search-float-chip", "No results" }
+                        }
+                    } else {
+                        div { class: "search-float-results",
+                            for (i, card) in results().iter().cloned().enumerate() {
+                                div {
+                                    class: "chip-unselected search-float-chip",
+                                    style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                    onclick: move |_| add_card(card.clone()),
+                                    "{card.scryfall_data.name}"
+                                }
                             }
                         }
                     }

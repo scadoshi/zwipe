@@ -571,33 +571,37 @@ pub(crate) fn DeckFields(
                 }
 
                 if cmd_show_dropdown() {
-                    if cmd_is_searching() {
-                        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "Searching..." }
-                        }
-                    } else if cmd_search_results().is_empty() {
-                        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "No results" }
-                        }
-                    } else {
-                        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            for card in cmd_search_results().iter().cloned() {
-                                div { class: "chip-unselected",
-                                    onclick: move |_| {
-                                        commander.set(Some(card.clone()));
-                                        commander_display.set(card.scryfall_data.name.clone());
-                                        cmd_show_dropdown.set(false);
-                                        autofill_named_partner(
-                                            &card,
-                                            client,
-                                            session,
-                                            commander,
-                                            partner_commander,
-                                            partner_commander_display,
-                                            toast,
-                                        );
-                                    },
-                                    { card.scryfall_data.name.clone() }
+                    div { class: "search-float-anchor",
+                        if cmd_is_searching() {
+                            div { class: "search-float-results",
+                                div { class: "chip-unselected search-float-chip", "Searching..." }
+                            }
+                        } else if cmd_search_results().is_empty() {
+                            div { class: "search-float-results",
+                                div { class: "chip-unselected search-float-chip", "No results" }
+                            }
+                        } else {
+                            div { class: "search-float-results",
+                                for (i, card) in cmd_search_results().iter().cloned().enumerate() {
+                                    div {
+                                        class: "chip-unselected search-float-chip",
+                                        style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                        onclick: move |_| {
+                                            commander.set(Some(card.clone()));
+                                            commander_display.set(card.scryfall_data.name.clone());
+                                            cmd_show_dropdown.set(false);
+                                            autofill_named_partner(
+                                                &card,
+                                                client,
+                                                session,
+                                                commander,
+                                                partner_commander,
+                                                partner_commander_display,
+                                                toast,
+                                            );
+                                        },
+                                        { card.scryfall_data.name.clone() }
+                                    }
                                 }
                             }
                         }
@@ -659,24 +663,28 @@ pub(crate) fn DeckFields(
                 }
 
                 if partner_show_dropdown() {
-                    if partner_is_searching() {
-                        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "Searching..." }
-                        }
-                    } else if partner_search_results().is_empty() {
-                        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "No results" }
-                        }
-                    } else {
-                        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            for card in partner_search_results().iter().cloned() {
-                                div { class: "chip-unselected",
-                                    onclick: move |_| {
-                                        partner_commander.set(Some(card.clone()));
-                                        partner_commander_display.set(card.scryfall_data.name.clone());
-                                        partner_show_dropdown.set(false);
-                                    },
-                                    { card.scryfall_data.name.clone() }
+                    div { class: "search-float-anchor",
+                        if partner_is_searching() {
+                            div { class: "search-float-results",
+                                div { class: "chip-unselected search-float-chip", "Searching..." }
+                            }
+                        } else if partner_search_results().is_empty() {
+                            div { class: "search-float-results",
+                                div { class: "chip-unselected search-float-chip", "No results" }
+                            }
+                        } else {
+                            div { class: "search-float-results",
+                                for (i, card) in partner_search_results().iter().cloned().enumerate() {
+                                    div {
+                                        class: "chip-unselected search-float-chip",
+                                        style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                        onclick: move |_| {
+                                            partner_commander.set(Some(card.clone()));
+                                            partner_commander_display.set(card.scryfall_data.name.clone());
+                                            partner_show_dropdown.set(false);
+                                        },
+                                        { card.scryfall_data.name.clone() }
+                                    }
                                 }
                             }
                         }
@@ -738,24 +746,28 @@ pub(crate) fn DeckFields(
                 }
 
                 if bg_show_dropdown() {
-                    if bg_is_searching() {
-                        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "Searching..." }
-                        }
-                    } else if bg_search_results().is_empty() {
-                        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "No results" }
-                        }
-                    } else {
-                        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            for card in bg_search_results().iter().cloned() {
-                                div { class: "chip-unselected",
-                                    onclick: move |_| {
-                                        background.set(Some(card.clone()));
-                                        background_display.set(card.scryfall_data.name.clone());
-                                        bg_show_dropdown.set(false);
-                                    },
-                                    { card.scryfall_data.name.clone() }
+                    div { class: "search-float-anchor",
+                        if bg_is_searching() {
+                            div { class: "search-float-results",
+                                div { class: "chip-unselected search-float-chip", "Searching..." }
+                            }
+                        } else if bg_search_results().is_empty() {
+                            div { class: "search-float-results",
+                                div { class: "chip-unselected search-float-chip", "No results" }
+                            }
+                        } else {
+                            div { class: "search-float-results",
+                                for (i, card) in bg_search_results().iter().cloned().enumerate() {
+                                    div {
+                                        class: "chip-unselected search-float-chip",
+                                        style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                        onclick: move |_| {
+                                            background.set(Some(card.clone()));
+                                            background_display.set(card.scryfall_data.name.clone());
+                                            bg_show_dropdown.set(false);
+                                        },
+                                        { card.scryfall_data.name.clone() }
+                                    }
                                 }
                             }
                         }
@@ -817,24 +829,28 @@ pub(crate) fn DeckFields(
                 }
 
                 if spell_show_dropdown() {
-                    if spell_is_searching() {
-                        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "Searching..." }
-                        }
-                    } else if spell_search_results().is_empty() {
-                        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "No results" }
-                        }
-                    } else {
-                        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            for card in spell_search_results().iter().cloned() {
-                                div { class: "chip-unselected",
-                                    onclick: move |_| {
-                                        signature_spell.set(Some(card.clone()));
-                                        signature_spell_display.set(card.scryfall_data.name.clone());
-                                        spell_show_dropdown.set(false);
-                                    },
-                                    { card.scryfall_data.name.clone() }
+                    div { class: "search-float-anchor",
+                        if spell_is_searching() {
+                            div { class: "search-float-results",
+                                div { class: "chip-unselected search-float-chip", "Searching..." }
+                            }
+                        } else if spell_search_results().is_empty() {
+                            div { class: "search-float-results",
+                                div { class: "chip-unselected search-float-chip", "No results" }
+                            }
+                        } else {
+                            div { class: "search-float-results",
+                                for (i, card) in spell_search_results().iter().cloned().enumerate() {
+                                    div {
+                                        class: "chip-unselected search-float-chip",
+                                        style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                        onclick: move |_| {
+                                            signature_spell.set(Some(card.clone()));
+                                            signature_spell_display.set(card.scryfall_data.name.clone());
+                                            spell_show_dropdown.set(false);
+                                        },
+                                        { card.scryfall_data.name.clone() }
+                                    }
                                 }
                             }
                         }
