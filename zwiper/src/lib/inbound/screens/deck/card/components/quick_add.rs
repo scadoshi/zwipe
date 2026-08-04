@@ -42,8 +42,34 @@ use zwipe_core::{
 const MIN_QUERY_LEN: usize = 2;
 /// Debounce so results follow typing without a request per keystroke.
 const DEBOUNCE_MS: u64 = 300;
-/// Result cap — enough to find the card, short enough to stay a dropdown.
-const RESULT_LIMIT: u32 = 8;
+/// Result cap — matches the commander picker's 5, keeping the float to about
+/// two chip rows so the header above comfortably covers it.
+const RESULT_LIMIT: u32 = 5;
+
+/// Grows the float anchor by exactly the height the results overflow past the
+/// scrollport top (back toward 0 when they fit with slack), so results overlay
+/// without reflow in most cases and spend real space only when they'd run
+/// under the screen header. Self-correcting: each run adds the current
+/// signed deficit to the anchor's current height, so it converges as results
+/// change. Runs on the next frame (post-layout) and once more after the
+/// focus smooth-scroll has settled.
+const QUICK_ADD_FIT_JS: &str = r#"
+const fit = () => {
+    const anchor = document.getElementById('quick-add-anchor');
+    const results = document.getElementById('quick-add-results');
+    const content = document.querySelector('.screen-content');
+    if (!anchor || !results || !content) return;
+    // Rendered height (not the inline target) so a mid-transition remeasure
+    // still lands on the right total instead of compounding. The 8px gap
+    // keeps the top chip row from sitting flush against the header's border.
+    const gap = 8;
+    const current = anchor.getBoundingClientRect().height;
+    const deficit = content.getBoundingClientRect().top + gap - results.getBoundingClientRect().top;
+    anchor.style.height = Math.max(0, current + deficit) + 'px';
+};
+requestAnimationFrame(fit);
+setTimeout(fit, 400);
+"#;
 
 /// Live card-name search that adds the picked card straight to the mainboard.
 ///
@@ -177,23 +203,36 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
         });
     };
 
+    // Measured overlay: results float over the content above (no reflow) in
+    // the common case; when they'd run past the scrollport top — under the
+    // screen header — the fit effect below grows the anchor by exactly the
+    // overflow, spending real space only in those edge cases.
+    use_effect(move || {
+        let open = show_dropdown();
+        let _ = is_searching();
+        let _ = results();
+        if open {
+            let _ = document::eval(QUICK_ADD_FIT_JS);
+        }
+    });
+
     rsx! {
         div {
-            // Results float in a layer hung above the bar from a zero-height
-            // anchor — out of document flow, so nothing shifts while typing.
-            // Tap a chip to add it to the mainboard.
+            // Results float in a layer hung above the bar from the (measured,
+            // normally zero-height) anchor. Tap a chip to add it to the
+            // mainboard.
             if show_dropdown() {
-                div { class: "search-float-anchor",
+                div { class: "search-float-anchor", id: "quick-add-anchor",
                     if is_searching() {
-                        div { class: "search-float-results",
+                        div { class: "search-float-results", id: "quick-add-results",
                             div { class: "chip-unselected search-float-chip", "Searching..." }
                         }
                     } else if results().is_empty() {
-                        div { class: "search-float-results",
+                        div { class: "search-float-results", id: "quick-add-results",
                             div { class: "chip-unselected search-float-chip", "No results" }
                         }
                     } else {
-                        div { class: "search-float-results",
+                        div { class: "search-float-results", id: "quick-add-results",
                             for (i, card) in results().iter().cloned().enumerate() {
                                 div {
                                     class: "chip-unselected search-float-chip",
@@ -221,6 +260,14 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
                     autocapitalize: "none",
                     autocorrect: "off",
                     spellcheck: "false",
+                    // Scroll back to the top on focus so the header above the
+                    // bar — the float's canvas — is in view before results
+                    // appear, instead of them tucking under the screen header.
+                    onfocus: move |_| {
+                        let _ = document::eval(
+                            "const el = document.querySelector('.screen-content'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' });",
+                        );
+                    },
                     oninput: move |event| query.set(event.value()),
                 }
                 if !query().is_empty() {

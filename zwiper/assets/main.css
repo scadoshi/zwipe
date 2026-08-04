@@ -2669,10 +2669,16 @@ button {
    in-flow row sat (directly above the input); the results hang upward from
    it. Not a back-aware overlay (see the overlay z-index registry) — just a
    popover: above base content (swipe stack is 100), below the modal band
-   (200). Chips are opaque pills, so they read fine over whatever's behind. */
+   (200). Chips are opaque pills, so they read fine over whatever's behind.
+   The deck-cards quick add additionally measures overflow past the
+   scrollport top and grows its anchor's inline height by the deficit (see
+   QUICK_ADD_FIT_JS), so its results overlay in most cases and take real
+   space only when they'd run under the screen header — hence the height
+   transition below. */
 .search-float-anchor {
     position: relative;
     height: 0;
+    transition: height 0.2s ease;
 }
 
 .search-float-results {
@@ -3548,6 +3554,25 @@ button {
     font-size: 0.7rem;
     font-weight: 700;
     line-height: 1.3;
+}
+
+/* ── Deck cards header ───────────────────────────────────────────────────
+   Deck identity atop the deck cards screen — name + format/power/tag chips
+   in one left-aligned wrapping row, echoing the zite share page's header. */
+.deck-cards-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    margin-bottom: 0.75rem;
+}
+
+.deck-cards-header-name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+    margin-right: 0.2rem;
 }
 
 .deck-featured-role {
