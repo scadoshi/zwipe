@@ -29,14 +29,14 @@ pub const UPCOMING: &[Release] = &[Release {
     version: "1.7.5",
     date: "",
     entries: &[
-        "Quick add: type a card name atop your deck's card list and tap a result to drop it straight in. Cards already in your deck stay out of the results.",
-        "Your deck's name, format, power level, and tags now head the card list, matching the shared deck page.",
+        "Quick add: type a card name at the top of your deck's card list and tap a result to add it. Cards already in your deck stay out of the results.",
+        "Your deck's name, format, power level, and tags now show at the top of the card list, matching the shared deck page.",
         "Search suggestions in the filters and pickers now float over the screen instead of pushing it around while you type.",
-        "Your deck's card list now opens with its identity on display: the command zone and your starred MVPs as card images across the top, just like the shared deck page. Tap one to see it full size.",
-        "Every card row now shows its artwork. Prefer the compact look? The Art chip in the Show row turns it off, on the shared deck page too.",
+        "The command zone and your starred MVPs now show as card images across the top of your deck's card list, like the shared deck page. Tap one to see it full size.",
+        "Every card row now shows its artwork. The Art chip in the Show row turns it off, on the shared deck page too.",
         "The Maybe and Side board buttons gray out when those boards are empty.",
         "Swiped cards now fly out from right where you let go, instead of snapping back to center first.",
-        "Swipes are harder to trigger by accident: a card needs a fuller drag or a real flick to commit, so small nudges stay put.",
+        "Swipes are harder to trigger by accident: a card needs a fuller drag or a real flick to commit.",
         "A card released before the swipe point now settles back to center with a little bounce.",
     ],
 }];
@@ -57,7 +57,7 @@ pub const RELEASES: &[Release] = &[
         entries: &[
             "Filter edits now wait for Apply: Reset stages the default, Cancel or tapping outside restores your filter, and a toast confirms what happened either way.",
             "See your deck's average power and toughness in the Distributions section.",
-            "Oracle tag search is smarter everywhere: exact matches come first and descriptions are searched too, in the deck picker, the card filter, and the dictionary.",
+            "Oracle tag search now puts exact matches first and searches descriptions too, in the deck picker, the card filter, and the dictionary.",
             "Shared deck pages keep card groups in order on phones.",
             "Tap an oracle tag in a card's details to read its definition while you swipe.",
         ],
@@ -80,7 +80,7 @@ pub const RELEASES: &[Release] = &[
         version: "1.7.1",
         date: "Jul 17, 2026",
         entries: &[
-            "Cards without a printed image now show as a clean text card with type, mana cost, rules, and power or toughness, so nothing is hidden while you swipe.",
+            "Cards without a printed image now show as a text card with type, mana cost, rules, and power or toughness.",
             "See real example cards for any oracle tag: open the dictionary and tap Examples to swipe through cards that use it, most iconic first.",
             "Use a tag straight from the dictionary: it drops into your deck's strategy or your card filter without losing your place, and the dictionary now opens from the filter too.",
             "Every oracle tag now has a plain-language description, covering the full catalog, with an accuracy pass across thousands of them.",
@@ -95,7 +95,7 @@ pub const RELEASES: &[Release] = &[
         date: "Jul 14, 2026",
         entries: &[
             "New oracle-tag dictionary: browse every tag by letter or search names and descriptions, opened from the oracle-tag picker.",
-            "Sharper oracle tags: better tags under each card role, closer archetype matches, and over a thousand plain-language descriptions.",
+            "Better tags under each card role, closer archetype matches, and over a thousand plain-language descriptions.",
             "Filters and pickers now open instantly, loaded once in the background instead of refetching each time.",
             "Flip double-faced cards from the card details, with the Flip button now in the footer and everything in one scroll.",
             "The Export screen now shows a loading placeholder instead of a spinner.",
@@ -132,7 +132,7 @@ pub const RELEASES: &[Release] = &[
         date: "Jul 10, 2026",
         entries: &[
             "Swipe back: drag from the left edge to return to the previous page.",
-            "Filters that remember: every screen keeps its own filters per deck.",
+            "Every screen now keeps its own filters per deck.",
             "An expanded card now stays highlighted so you keep your place.",
             "Smoother loading screens and a fix for a filter carrying over between screens.",
         ],
@@ -151,7 +151,7 @@ pub const RELEASES: &[Release] = &[
         version: "1.3.1",
         date: "Jul 3, 2026",
         entries: &[
-            "Anonymous, PII-free health signals to help us find and fix issues. No account or gameplay data involved.",
+            "Anonymous diagnostics to help find and fix issues. No account or gameplay data involved.",
             "Internal cleanups for faster, more stable swiping.",
         ],
     },
@@ -251,8 +251,8 @@ pub const RELEASES: &[Release] = &[
         version: "1.0.9",
         date: "Jun 15, 2026",
         entries: &[
-            "A brand-new app icon.",
-            "Deck list makeover: color-coded detail tags, with the card count turning yellow when a deck is the wrong size for its format.",
+            "A new app icon.",
+            "Deck list redone: color-coded detail tags, with the card count turning yellow when a deck is the wrong size for its format.",
             "Oathbreaker, Brawl, Historic Brawl, and Gladiator now use their correct legal deck sizes.",
             "Reorganized Profile: separate Account and Preferences cards, edited in a slide-up sheet, with account deletion under a More menu.",
             "Deck view panels and charts now carry their titles inside each card.",
@@ -264,7 +264,7 @@ pub const RELEASES: &[Release] = &[
         version: "1.0.7",
         date: "Jun 12, 2026",
         entries: &[
-            "A fresh look: a subtle background grid and layered panels across every screen.",
+            "A new look: a subtle background grid and layered panels across every screen.",
             "Rebuilt theme picker with color swatches, dark mode on top, and colorblind-friendly themes grouped together.",
             "Preferences now opens as a sheet with live preview: Save to keep, back out to revert.",
             "Filters and deck card lists now show colored mana pips instead of letters.",
