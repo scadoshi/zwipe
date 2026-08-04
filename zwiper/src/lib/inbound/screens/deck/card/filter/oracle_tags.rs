@@ -168,16 +168,20 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
 
                     rsx! {
                         if !results.is_empty() {
-                            div { class: "flex flex-wrap gap-1 mb-1",
-                                for tag in results {
-                                    div { class: "chip-unselected",
-                                        onclick: move |_| {
-                                            let m = mode();
-                                            let mut current = read_selected(&filter_builder(), m);
-                                            current.push(tag.slug.clone());
-                                            write_selected(&mut filter_builder.write(), m, current);
-                                        },
-                                        "{tag.slug}"
+                            div { class: "search-float-anchor",
+                                div { class: "search-float-results",
+                                    for (i, tag) in results.into_iter().enumerate() {
+                                        div {
+                                            class: "chip-unselected search-float-chip",
+                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                            onclick: move |_| {
+                                                let m = mode();
+                                                let mut current = read_selected(&filter_builder(), m);
+                                                current.push(tag.slug.clone());
+                                                write_selected(&mut filter_builder.write(), m, current);
+                                            },
+                                            "{tag.slug}"
+                                        }
                                     }
                                 }
                             }
@@ -252,15 +256,19 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
 
                     rsx! {
                         if !results.is_empty() {
-                            div { class: "flex flex-wrap gap-1 mb-1",
-                                for tag in results {
-                                    div { class: "chip-unselected",
-                                        onclick: move |_| {
-                                            let mut current = read_excluded(&filter_builder());
-                                            current.push(tag.slug.clone());
-                                            write_excluded(&mut filter_builder.write(), current);
-                                        },
-                                        "{tag.slug}"
+                            div { class: "search-float-anchor",
+                                div { class: "search-float-results",
+                                    for (i, tag) in results.into_iter().enumerate() {
+                                        div {
+                                            class: "chip-unselected search-float-chip",
+                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                            onclick: move |_| {
+                                                let mut current = read_excluded(&filter_builder());
+                                                current.push(tag.slug.clone());
+                                                write_excluded(&mut filter_builder.write(), current);
+                                            },
+                                            "{tag.slug}"
+                                        }
                                     }
                                 }
                             }

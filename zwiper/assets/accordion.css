@@ -53,7 +53,11 @@
 
 .accordion-content[data-open="true"] {
   grid-template-rows: 1fr;
-  overflow-y: auto;
+  /* Visible at steady state so floating search results (.search-float-results)
+     can escape the panel; the open keyframes pin overflow to hidden for the
+     animation's 300ms (both endpoints hold the same discrete value), and the
+     closed base rule clips the collapse transition. */
+  overflow: visible;
   padding-bottom: 0.5rem;
   animation: accordion-open 300ms ease;
 }
@@ -62,6 +66,23 @@
 .accordion-content > * {
   min-height: 0;
   overflow: hidden;
+}
+
+.accordion-content[data-open="true"] > * {
+  overflow: visible;
+  animation: accordion-open-guard 300ms ease;
+}
+
+/* Keeps the inner wrapper clipped while the open animation runs, then hands
+   over to the steady-state `overflow: visible` above. */
+@keyframes accordion-open-guard {
+  from {
+    overflow: hidden;
+  }
+
+  to {
+    overflow: hidden;
+  }
 }
 
 /* Full width content within flex containers */

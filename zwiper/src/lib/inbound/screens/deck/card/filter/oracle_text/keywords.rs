@@ -159,16 +159,20 @@ pub(crate) fn Keywords() -> Element {
 
                     if !results.is_empty() {
                         rsx! {
-                            div { class: "flex flex-wrap gap-1 mb-1",
-                                for keyword in results {
-                                    div { class: "chip-unselected",
-                                        onclick: move |_| {
-                                            let mode = keywords_mode();
-                                            let mut current = read_keywords(&filter_builder(), mode);
-                                            current.push(keyword.clone());
-                                            write_keywords(&mut filter_builder.write(), mode, current);
-                                        },
-                                        {keyword.clone()}
+                            div { class: "search-float-anchor",
+                                div { class: "search-float-results",
+                                    for (i, keyword) in results.into_iter().enumerate() {
+                                        div {
+                                            class: "chip-unselected search-float-chip",
+                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                            onclick: move |_| {
+                                                let mode = keywords_mode();
+                                                let mut current = read_keywords(&filter_builder(), mode);
+                                                current.push(keyword.clone());
+                                                write_keywords(&mut filter_builder.write(), mode, current);
+                                            },
+                                            {keyword.clone()}
+                                        }
                                     }
                                 }
                             }
@@ -245,15 +249,19 @@ pub(crate) fn Keywords() -> Element {
 
                     if !results.is_empty() {
                         rsx! {
-                            div { class: "flex flex-wrap gap-1 mb-1",
-                                for keyword in results {
-                                    div { class: "chip-unselected",
-                                        onclick: move |_| {
-                                            let mut current = read_excluded(&filter_builder());
-                                            current.push(keyword.clone());
-                                            write_excluded(&mut filter_builder.write(), current);
-                                        },
-                                        {keyword.clone()}
+                            div { class: "search-float-anchor",
+                                div { class: "search-float-results",
+                                    for (i, keyword) in results.into_iter().enumerate() {
+                                        div {
+                                            class: "chip-unselected search-float-chip",
+                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                            onclick: move |_| {
+                                                let mut current = read_excluded(&filter_builder());
+                                                current.push(keyword.clone());
+                                                write_excluded(&mut filter_builder.write(), current);
+                                            },
+                                            {keyword.clone()}
+                                        }
                                     }
                                 }
                             }

@@ -171,16 +171,20 @@ pub fn Set() -> Element {
 
                         if !results.is_empty() {
                             rsx! {
-                                div { class: "flex flex-wrap gap-1 mb-1",
-                                    for set in results {
-                                        div { class: "chip-unselected",
-                                            onclick: move |_| {
-                                                let mut current = read_sets(&filter_builder(), mode());
-                                                current.push(set.clone());
-                                                write_sets(&mut filter_builder.write(), mode(), current);
-                                                is_typing.set(false);
-                                            },
-                                            {set.clone()}
+                                div { class: "search-float-anchor",
+                                    div { class: "search-float-results",
+                                        for (i, set) in results.into_iter().enumerate() {
+                                            div {
+                                                class: "chip-unselected search-float-chip",
+                                                style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                                onclick: move |_| {
+                                                    let mut current = read_sets(&filter_builder(), mode());
+                                                    current.push(set.clone());
+                                                    write_sets(&mut filter_builder.write(), mode(), current);
+                                                    is_typing.set(false);
+                                                },
+                                                {set.clone()}
+                                            }
                                         }
                                     }
                                 }

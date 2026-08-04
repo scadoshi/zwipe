@@ -2514,6 +2514,26 @@ button {
     min-height: 0;
 }
 
+/* Visible at steady open state so floating search results
+   (.search-float-results, e.g. the command-zone pickers) can escape the clip;
+   the guard keyframes pin overflow to hidden for the open transition's 250ms
+   (both endpoints hold the same discrete value), and the base rule above
+   clips the collapse. Same trick as the filter sheet's accordion. */
+.collapsible.open .collapsible-inner {
+    overflow: visible;
+    animation: collapsible-open-guard 0.25s ease;
+}
+
+@keyframes collapsible-open-guard {
+    from {
+        overflow: hidden;
+    }
+
+    to {
+        overflow: hidden;
+    }
+}
+
 /* =========================
   label row with clear button
 =========================== */
@@ -2638,6 +2658,63 @@ button {
 
 .row-enter {
     animation: row-enter 0.25s ease-out both;
+}
+
+/* ── Floating type-to-search results ─────────────────────────────────────
+   Shared by every type-to-search picker (deck-cards quick add, the filter
+   sheet's artist/set/type/keyword/oracle-word/otag fields, the deck form's
+   command-zone pickers). Result chips float in a layer above the input, out
+   of document flow, so the screen never reflows under the user while they
+   type. The anchor is a zero-height in-flow marker placed where the old
+   in-flow row sat (directly above the input); the results hang upward from
+   it. Not a back-aware overlay (see the overlay z-index registry) — just a
+   popover: above base content (swipe stack is 100), below the modal band
+   (200). Chips are opaque pills, so they read fine over whatever's behind. */
+.search-float-anchor {
+    position: relative;
+    height: 0;
+}
+
+.search-float-results {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin-bottom: 0.5rem;
+    z-index: 150;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    justify-content: center;
+}
+
+/* Entrance float-up (staggered per chip via inline animation-delay), then a
+   soft idle drift so the layer reads as hovering rather than parked. */
+.search-float-chip {
+    animation:
+        search-float-in 0.25s ease-out both,
+        search-float-drift 3.2s ease-in-out 0.25s infinite;
+}
+
+@keyframes search-float-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes search-float-drift {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-2px);
+    }
 }
 
 .flavor-source {

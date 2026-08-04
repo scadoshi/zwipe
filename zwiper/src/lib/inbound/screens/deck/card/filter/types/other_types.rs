@@ -163,17 +163,21 @@ pub(crate) fn OtherTypes() -> Element {
 
                     if !results.is_empty() {
                         rsx! {
-                            div { class: "flex flex-wrap gap-1 mb-1",
-                                for t in results {
-                                    div { class: "chip-unselected",
-                                        onclick: move |_| {
-                                            let mode = other_type_mode();
-                                            let mut current = read_other_types(&filter_builder(), mode);
-                                            current.push(t.clone());
-                                            write_other_types(&mut filter_builder.write(), mode, current);
-                                            is_typing.set(false);
-                                        },
-                                        "{t}"
+                            div { class: "search-float-anchor",
+                                div { class: "search-float-results",
+                                    for (i, t) in results.into_iter().enumerate() {
+                                        div {
+                                            class: "chip-unselected search-float-chip",
+                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                            onclick: move |_| {
+                                                let mode = other_type_mode();
+                                                let mut current = read_other_types(&filter_builder(), mode);
+                                                current.push(t.clone());
+                                                write_other_types(&mut filter_builder.write(), mode, current);
+                                                is_typing.set(false);
+                                            },
+                                            "{t}"
+                                        }
                                     }
                                 }
                             }
@@ -254,16 +258,20 @@ pub(crate) fn OtherTypes() -> Element {
 
                     if !results.is_empty() {
                         rsx! {
-                            div { class: "flex flex-wrap gap-1 mb-1",
-                                for t in results {
-                                    div { class: "chip-unselected",
-                                        onclick: move |_| {
-                                            let mut current = read_excluded(&filter_builder());
-                                            current.push(t.clone());
-                                            write_excluded(&mut filter_builder.write(), current);
-                                            excludes_is_typing.set(false);
-                                        },
-                                        "{t}"
+                            div { class: "search-float-anchor",
+                                div { class: "search-float-results",
+                                    for (i, t) in results.into_iter().enumerate() {
+                                        div {
+                                            class: "chip-unselected search-float-chip",
+                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                            onclick: move |_| {
+                                                let mut current = read_excluded(&filter_builder());
+                                                current.push(t.clone());
+                                                write_excluded(&mut filter_builder.write(), current);
+                                                excludes_is_typing.set(false);
+                                            },
+                                            "{t}"
+                                        }
                                     }
                                 }
                             }
