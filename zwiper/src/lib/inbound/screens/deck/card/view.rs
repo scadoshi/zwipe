@@ -3,6 +3,7 @@ use super::components::{
     filter_store::{FilterScope, FilterStore},
     image_preview::ImagePreview,
     printing_sheet::PrintingSheet,
+    quick_add::QuickAdd,
 };
 use crate::{
     inbound::{
@@ -832,6 +833,10 @@ pub fn View(deck_id: Uuid) -> Element {
                             preview.set(Some((card.scryfall_data, 0)));
                         },
                     }
+
+                    // Quick-add: type a name, add straight to the mainboard.
+                    QuickAdd { deck_id, deck_entries }
+
                     // Group-by row
                     div { class: "chip-row",
                         span { class: "chip-row-label", "Group by:" }
