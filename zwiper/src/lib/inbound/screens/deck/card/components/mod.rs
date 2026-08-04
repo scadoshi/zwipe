@@ -20,3 +20,5 @@ pub(crate) mod image_preview;
 pub(crate) mod printing_sheet;
 /// Name-search bar that adds a card straight to the deck.
 pub(crate) mod quick_add;
+/// In-memory undo log for the deck cards screen.
+pub(crate) mod undo_log;

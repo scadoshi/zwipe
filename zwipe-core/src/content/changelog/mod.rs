@@ -29,6 +29,7 @@ pub const UPCOMING: &[Release] = &[Release {
     version: "1.7.5",
     date: "",
     entries: &[
+        "Undo on your deck's card list: steps back adds, removals, quantity changes, board moves, and printing swaps one at a time, naming the card each time.",
         "Quick add: type a card name at the top of your deck's card list and tap a result to add it. Cards already in your deck stay out of the results.",
         "Your deck's name, format, power level, and tags now show at the top of the card list, matching the shared deck page.",
         "Search suggestions in the filters and pickers now float over the screen instead of pushing it around while you type.",
