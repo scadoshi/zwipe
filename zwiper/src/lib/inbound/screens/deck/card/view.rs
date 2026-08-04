@@ -4,6 +4,7 @@ use super::components::{
     image_preview::ImagePreview,
     printing_sheet::PrintingSheet,
     quick_add::QuickAdd,
+    undo_log::{UndoAction, UndoLog},
 };
 use crate::{
     inbound::{
@@ -40,7 +41,8 @@ use crate::{
             get_deck_tokens::ClientGetDeckTokens, update_deck_profile::ClientUpdateDeckProfile,
         },
         deck_card::{
-            delete_deck_card::ClientDeleteDeckCard, update_deck_card::ClientUpdateDeckCard,
+            create_deck_card::ClientCreateDeckCard, delete_deck_card::ClientDeleteDeckCard,
+            update_deck_card::ClientUpdateDeckCard,
         },
     },
 };
@@ -73,7 +75,10 @@ use zwipe_core::{
         user::models::hints::HINT_DECK_CARDS,
     },
     http::{
-        contracts::{deck::HttpUpdateDeckProfile, deck_card::HttpUpdateDeckCard},
+        contracts::{
+            deck::HttpUpdateDeckProfile,
+            deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard},
+        },
         helpers::Opdate,
     },
 };
@@ -158,6 +163,12 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut deck_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
     // Command-zone cards (commander, partner, etc.), folded into the budget total.
     let mut command_zone_cards: Signal<Vec<Card>> = use_signal(Vec::new);
+
+    // Undo log — mutations push their inverses; the ActionBar's conditional
+    // Undo button pops them (apply_undo below). Provided as context so the
+    // quick-add bar can record its adds.
+    let undo_log = UndoLog(use_signal(Vec::new));
+    use_context_provider(|| undo_log);
 
     // Per-card pending quantity bursts (see PendingQty).
     let pending_qty: Signal<HashMap<Uuid, PendingQty>> = use_signal(HashMap::new);
@@ -603,155 +614,201 @@ pub fn View(deck_id: Uuid) -> Element {
         }
     };
 
-    let mut change_quantity = move |card_id: Uuid, delta: i32, _is_basic_land: bool| {
-        let current_qty = qty_for(card_id);
+    // `record: false` marks an undo-driven call — it must not push a fresh
+    // undo entry (no ping-pong) and skips the user-action toasts its inverse
+    // already covers.
+    let mut change_quantity =
+        move |card_id: Uuid, delta: i32, _is_basic_land: bool, record: bool| {
+            let current_qty = qty_for(card_id);
 
-        // - at 1 → delete
-        let should_delete = current_qty + delta < 1;
-        let before_lands = main_land_count();
-        let before_price = total_price();
+            // - at 1 → delete
+            let should_delete = current_qty + delta < 1;
+            let before_lands = main_land_count();
+            let before_price = total_price();
 
-        // Optimistic UI per tap; the server call is debounced below.
-        if should_delete {
-            // Suggestion signal: a deliberate removal (delayed negative), keyed
-            // by the deck's commander + the removed card's oracle id.
-            let card_oracle_id = deck_entries
-                .peek()
-                .iter()
-                .find(|e| e.card.scryfall_data.id == card_id)
-                .and_then(|e| e.card.scryfall_data.oracle_id);
-            usage_buffer().record_removal(deck_id, card_oracle_id);
+            // Optimistic UI per tap; the server call is debounced below.
+            if should_delete {
+                let removed_entry = deck_entries
+                    .peek()
+                    .iter()
+                    .find(|e| e.card.scryfall_data.id == card_id)
+                    .cloned();
 
-            // Optimistic: remove from entries
-            deck_entries
-                .write()
-                .retain(|e| e.card.scryfall_data.id != card_id);
-            // Trigger re-filter
-            let current = *filter_reset_counter.peek();
-            filter_reset_counter.set(current + 1);
+                // Suggestion signal: a deliberate removal (delayed negative), keyed
+                // by the deck's commander + the removed card's oracle id.
+                let card_oracle_id = removed_entry
+                    .as_ref()
+                    .and_then(|e| e.card.scryfall_data.oracle_id);
+                usage_buffer().record_removal(deck_id, card_oracle_id);
 
-            warn_land_crossing(before_lands, main_land_count());
-            warn_budget_crossing(before_price, total_price());
+                // Undoable: re-creating wants the old board + the quantity from
+                // before this whole burst, not the 1 it died at.
+                if record && let Some(entry) = removed_entry {
+                    let baseline = pending_qty
+                        .peek()
+                        .get(&card_id)
+                        .map_or(current_qty, |p| p.baseline);
+                    undo_log.push(UndoAction::Removed { entry, baseline });
+                }
 
-            toast.info(
-                "Card removed".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(1500)),
-            );
-        } else {
-            // Optimistic: update quantity in entries
-            if let Some(entry) = deck_entries
-                .write()
-                .iter_mut()
-                .find(|e| e.card.scryfall_data.id == card_id)
-                && let Ok(new_qty) = Quantity::new(current_qty + delta)
-            {
-                entry.deck_card.quantity = new_qty;
+                // Optimistic: remove from entries
+                deck_entries
+                    .write()
+                    .retain(|e| e.card.scryfall_data.id != card_id);
+                // Trigger re-filter
+                let current = *filter_reset_counter.peek();
+                filter_reset_counter.set(current + 1);
+
+                warn_land_crossing(before_lands, main_land_count());
+                warn_budget_crossing(before_price, total_price());
+
+                toast.info(
+                    "Card removed".to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
+            } else {
+                // Optimistic: update quantity in entries
+                if let Some(entry) = deck_entries
+                    .write()
+                    .iter_mut()
+                    .find(|e| e.card.scryfall_data.id == card_id)
+                    && let Ok(new_qty) = Quantity::new(current_qty + delta)
+                {
+                    entry.deck_card.quantity = new_qty;
+                }
+                // Trigger re-render so qty display updates
+                let current = *filter_reset_counter.peek();
+                filter_reset_counter.set(current + 1);
+
+                warn_land_crossing(before_lands, main_land_count());
+                warn_budget_crossing(before_price, total_price());
             }
-            // Trigger re-render so qty display updates
-            let current = *filter_reset_counter.peek();
-            filter_reset_counter.set(current + 1);
 
-            warn_land_crossing(before_lands, main_land_count());
-            warn_budget_crossing(before_price, total_price());
-        }
-
-        // Fold the tap into the card's pending burst and (re)arm its debounce.
-        let generation = {
-            let mut pending_qty = pending_qty;
-            let mut map = pending_qty.write();
-            let entry = map.entry(card_id).or_insert(PendingQty {
-                baseline: current_qty,
-                delta: 0,
-                generation: 0,
-            });
-            entry.delta += delta;
-            entry.generation = entry.generation.wrapping_add(1);
-            entry.generation
-        };
-
-        spawn(async move {
-            sleep(Duration::from_millis(QTY_FLUSH_MS)).await;
-
-            // Only the burst's latest tap posts; earlier taps wake to a newer
-            // generation and stand down. Navigating away cancels these tasks
-            // instead — the use_drop exit flush posts whatever is still mapped.
-            let flushed = {
+            // Fold the tap into the card's pending burst and (re)arm its debounce.
+            let generation = {
                 let mut pending_qty = pending_qty;
                 let mut map = pending_qty.write();
-                match map.get(&card_id) {
-                    Some(p) if p.generation == generation => map.remove(&card_id),
-                    _ => None,
-                }
+                let entry = map.entry(card_id).or_insert(PendingQty {
+                    baseline: current_qty,
+                    delta: 0,
+                    generation: 0,
+                });
+                entry.delta += delta;
+                entry.generation = entry.generation.wrapping_add(1);
+                entry.generation
             };
-            let Some(pending) = flushed else {
-                return;
-            };
-            if pending.delta == 0 {
-                // A burst that nets out (+1 then -1) needs no server call.
-                return;
-            }
 
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_VIEW,
-                        component::NONE,
-                        "change_quantity",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
+            spawn(async move {
+                sleep(Duration::from_millis(QTY_FLUSH_MS)).await;
+
+                // Only the burst's latest tap posts; earlier taps wake to a newer
+                // generation and stand down. Navigating away cancels these tasks
+                // instead — the use_drop exit flush posts whatever is still mapped.
+                let flushed = {
+                    let mut pending_qty = pending_qty;
+                    let mut map = pending_qty.write();
+                    match map.get(&card_id) {
+                        Some(p) if p.generation == generation => map.remove(&card_id),
+                        _ => None,
+                    }
+                };
+                let Some(pending) = flushed else {
+                    return;
+                };
+                if pending.delta == 0 {
+                    // A burst that nets out (+1 then -1) needs no server call.
                     return;
                 }
-            };
 
-            if pending.baseline + pending.delta < 1 {
-                if let Err(e) = client().delete_deck_card(deck_id, card_id, &session).await {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_VIEW,
-                        component::NONE,
-                        "change_quantity",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                }
-            } else {
-                let request = HttpUpdateDeckCard::new(Some(pending.delta), None);
-                if let Err(e) = client()
-                    .update_deck_card(deck_id, card_id, &request, &session)
-                    .await
-                {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_VIEW,
-                        component::NONE,
-                        "change_quantity",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                    // Roll the whole burst back to its pre-burst quantity.
-                    if let Some(entry) = deck_entries
-                        .write()
-                        .iter_mut()
-                        .find(|e| e.card.scryfall_data.id == card_id)
-                        && let Ok(reverted) = Quantity::new(pending.baseline)
-                    {
-                        entry.deck_card.quantity = reverted;
+                let session = match session.ensure_fresh(client).await {
+                    Ok(session) => session,
+                    Err(e) => {
+                        usage_buffer.peek().report_error(
+                            screen::DECK_CARD_VIEW,
+                            component::NONE,
+                            "change_quantity",
+                            &e,
+                        );
+                        toast.error(e.to_user_message(), ToastOptions::default());
+                        return;
                     }
-                    let current = *filter_reset_counter.peek();
-                    filter_reset_counter.set(current + 1);
-                }
-            }
-        });
-    };
+                };
 
-    let mut move_to_board = move |card_id: Uuid, target: Board| {
-        // Save old board for rollback
-        let old_board = deck_entries
+                if pending.baseline + pending.delta < 1 {
+                    if let Err(e) = client().delete_deck_card(deck_id, card_id, &session).await {
+                        usage_buffer.peek().report_error(
+                            screen::DECK_CARD_VIEW,
+                            component::NONE,
+                            "change_quantity",
+                            &e,
+                        );
+                        toast.error(e.to_user_message(), ToastOptions::default());
+                    }
+                } else {
+                    let request = HttpUpdateDeckCard::new(Some(pending.delta), None);
+                    match client()
+                        .update_deck_card(deck_id, card_id, &request, &session)
+                        .await
+                    {
+                        Ok(_) => {
+                            // One burst, one undo entry — recorded only once the
+                            // server took it, so undo never inverts a rolled-back
+                            // burst.
+                            if record
+                                && let Some(entry) = deck_entries
+                                    .peek()
+                                    .iter()
+                                    .find(|e| e.card.scryfall_data.id == card_id)
+                            {
+                                undo_log.push(UndoAction::QuantityChanged {
+                                    card_id,
+                                    card_name: entry.card.scryfall_data.name.clone(),
+                                    net: pending.delta,
+                                    baseline: pending.baseline,
+                                });
+                            }
+                        }
+                        Err(e) => {
+                            usage_buffer.peek().report_error(
+                                screen::DECK_CARD_VIEW,
+                                component::NONE,
+                                "change_quantity",
+                                &e,
+                            );
+                            toast.error(e.to_user_message(), ToastOptions::default());
+                            // Roll the whole burst back to its pre-burst quantity.
+                            if let Some(entry) = deck_entries
+                                .write()
+                                .iter_mut()
+                                .find(|e| e.card.scryfall_data.id == card_id)
+                                && let Ok(reverted) = Quantity::new(pending.baseline)
+                            {
+                                entry.deck_card.quantity = reverted;
+                            }
+                            let current = *filter_reset_counter.peek();
+                            filter_reset_counter.set(current + 1);
+                        }
+                    }
+                }
+            });
+        };
+
+    let mut move_to_board = move |card_id: Uuid, target: Board, record: bool| {
+        // Save old board for rollback (and the name for the undo entry)
+        let (old_board, card_name) = deck_entries
             .peek()
             .iter()
             .find(|e| e.card.scryfall_data.id == card_id)
-            .map(|e| e.deck_card.board)
-            .unwrap_or(Board::Deck);
+            .map(|e| (e.deck_card.board, e.card.scryfall_data.name.clone()))
+            .unwrap_or((Board::Deck, String::new()));
+
+        if record {
+            undo_log.push(UndoAction::MovedBoard {
+                card_id,
+                card_name,
+                from: old_board,
+            });
+        }
 
         // Optimistic: set the board
         if let Some(entry) = deck_entries
@@ -804,10 +861,13 @@ pub fn View(deck_id: Uuid) -> Element {
             }
         });
 
-        toast.info(
-            format!("Moved to {}", target.display_name()),
-            ToastOptions::default().duration(Duration::from_millis(1500)),
-        );
+        // Undo emits its own named toast instead.
+        if record {
+            toast.info(
+                format!("Moved to {}", target.display_name()),
+                ToastOptions::default().duration(Duration::from_millis(1500)),
+            );
+        }
     };
 
     // Star/unstar a deck MVP (context/plans/deck_mvps/): optimistic flip, the
@@ -881,6 +941,218 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
             }
         });
+    };
+
+    // Pop the newest undo entry and apply its inverse. Consumes the entry
+    // even when the world has moved on (the inverse no longer applies) — a
+    // stale entry gets an "Already changed" toast instead of a doomed
+    // request. Undo-driven mutations pass record: false so they never push
+    // fresh entries (no ping-pong).
+    let mut apply_undo = move || {
+        let mut undo_log = undo_log;
+        let Some(action) = undo_log.0.write().pop() else {
+            return;
+        };
+        let entry_exists = |id: Uuid| {
+            deck_entries
+                .peek()
+                .iter()
+                .any(|e| e.card.scryfall_data.id == id)
+        };
+        let stale = move || {
+            toast.info(
+                "Already changed".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(1500)),
+            );
+        };
+        let short = ToastOptions::default().duration(Duration::from_millis(1500));
+
+        match action {
+            UndoAction::Added { card_id, card_name } => {
+                if !entry_exists(card_id) {
+                    stale();
+                    return;
+                }
+                // Not a deliberate removal — no record_removal signal here.
+                deck_entries
+                    .write()
+                    .retain(|e| e.card.scryfall_data.id != card_id);
+                let current = *filter_reset_counter.peek();
+                filter_reset_counter.set(current + 1);
+                toast.info(format!("Removed {card_name}"), short);
+
+                spawn(async move {
+                    let session = match session.ensure_fresh(client).await {
+                        Ok(session) => session,
+                        Err(e) => {
+                            usage_buffer.peek().report_error(
+                                screen::DECK_CARD_VIEW,
+                                component::NONE,
+                                "undo",
+                                &e,
+                            );
+                            toast.error(e.to_user_message(), ToastOptions::default());
+                            return;
+                        }
+                    };
+                    if let Err(e) = client().delete_deck_card(deck_id, card_id, &session).await {
+                        usage_buffer.peek().report_error(
+                            screen::DECK_CARD_VIEW,
+                            component::NONE,
+                            "undo",
+                            &e,
+                        );
+                        toast.error(e.to_user_message(), ToastOptions::default());
+                    }
+                });
+            }
+            UndoAction::Removed { entry, baseline } => {
+                let card_id = entry.card.scryfall_data.id;
+                if entry_exists(card_id) {
+                    // The card found its way back since (re-added manually).
+                    stale();
+                    return;
+                }
+                let card_name = entry.card.scryfall_data.name.clone();
+                let board = entry.deck_card.board;
+                let request = HttpCreateDeckCard::new(
+                    &entry.card.scryfall_data,
+                    baseline,
+                    match board {
+                        Board::Deck => None,
+                        other => Some(other.display_name().to_string()),
+                    },
+                );
+
+                // Optimistic re-add at the pre-burst quantity.
+                let mut restored = entry;
+                if let Ok(qty) = Quantity::new(baseline) {
+                    restored.deck_card.quantity = qty;
+                }
+                deck_entries.write().push(restored);
+                let current = *filter_reset_counter.peek();
+                filter_reset_counter.set(current + 1);
+                toast.info(format!("Re-added {card_name}"), short);
+
+                spawn(async move {
+                    let session = match session.ensure_fresh(client).await {
+                        Ok(session) => session,
+                        Err(e) => {
+                            usage_buffer.peek().report_error(
+                                screen::DECK_CARD_VIEW,
+                                component::NONE,
+                                "undo",
+                                &e,
+                            );
+                            toast.error(e.to_user_message(), ToastOptions::default());
+                            return;
+                        }
+                    };
+                    match client().create_deck_card(deck_id, &request, &session).await {
+                        Ok(deck_card) => {
+                            // Adopt the server row (fresh ids).
+                            if let Some(entry) = deck_entries
+                                .write()
+                                .iter_mut()
+                                .find(|e| e.card.scryfall_data.id == card_id)
+                            {
+                                entry.deck_card = deck_card;
+                            }
+                        }
+                        Err(e) => {
+                            usage_buffer.peek().report_error(
+                                screen::DECK_CARD_VIEW,
+                                component::NONE,
+                                "undo",
+                                &e,
+                            );
+                            toast.error(e.to_user_message(), ToastOptions::default());
+                            deck_entries
+                                .write()
+                                .retain(|e| e.card.scryfall_data.id != card_id);
+                            let current = *filter_reset_counter.peek();
+                            filter_reset_counter.set(current + 1);
+                        }
+                    }
+                });
+            }
+            UndoAction::QuantityChanged {
+                card_id,
+                card_name,
+                net,
+                baseline,
+            } => {
+                if !entry_exists(card_id) {
+                    stale();
+                    return;
+                }
+                change_quantity(card_id, -net, false, false);
+                toast.info(format!("{card_name} back to \u{00d7}{baseline}"), short);
+            }
+            UndoAction::MovedBoard {
+                card_id,
+                card_name,
+                from,
+            } => {
+                if !entry_exists(card_id) {
+                    stale();
+                    return;
+                }
+                move_to_board(card_id, from, false);
+                toast.info(
+                    format!("{card_name} back to {}", from.display_name()),
+                    short,
+                );
+            }
+            UndoAction::PrintingChanged { old_card, new_id } => {
+                if !entry_exists(new_id) {
+                    stale();
+                    return;
+                }
+                let card_name = old_card.scryfall_data.name.clone();
+                let old_id = old_card.scryfall_data.id;
+                let request = HttpUpdateDeckCard::with_printing(&old_id.to_string());
+                if let Some(entry) = deck_entries
+                    .write()
+                    .iter_mut()
+                    .find(|e| e.card.scryfall_data.id == new_id)
+                {
+                    entry.card = old_card;
+                    entry.deck_card.scryfall_data_id = old_id;
+                }
+                let current = *filter_reset_counter.peek();
+                filter_reset_counter.set(current + 1);
+                toast.info(format!("{card_name} printing restored"), short);
+
+                spawn(async move {
+                    let session = match session.ensure_fresh(client).await {
+                        Ok(session) => session,
+                        Err(e) => {
+                            usage_buffer.peek().report_error(
+                                screen::DECK_CARD_VIEW,
+                                component::NONE,
+                                "undo",
+                                &e,
+                            );
+                            toast.error(e.to_user_message(), ToastOptions::default());
+                            return;
+                        }
+                    };
+                    if let Err(e) = client()
+                        .update_deck_card(deck_id, new_id, &request, &session)
+                        .await
+                    {
+                        usage_buffer.peek().report_error(
+                            screen::DECK_CARD_VIEW,
+                            component::NONE,
+                            "undo",
+                            &e,
+                        );
+                        toast.error(e.to_user_message(), ToastOptions::default());
+                    }
+                });
+            }
+        }
     };
 
     // Featured strip: the resolved command-zone cards role-labeled, then MVPs
@@ -1110,8 +1382,8 @@ pub fn View(deck_id: Uuid) -> Element {
                                                     expanded_card,
                                                     preview_card,
                                                     preview_dismissing,
-                                                    on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land),
-                                                    on_move_to: move |target: Board| move_to_board(card_id, target),
+                                                    on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land, true),
+                                                    on_move_to: move |target: Board| move_to_board(card_id, target, true),
                                                     current_board: Some(Board::Maybeboard),
                                                     on_printing: move |card: Card| {
                                                         command_zone_slot.set(None);
@@ -1161,8 +1433,8 @@ pub fn View(deck_id: Uuid) -> Element {
                                                     expanded_card,
                                                     preview_card,
                                                     preview_dismissing,
-                                                    on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land),
-                                                    on_move_to: move |target: Board| move_to_board(card_id, target),
+                                                    on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land, true),
+                                                    on_move_to: move |target: Board| move_to_board(card_id, target, true),
                                                     current_board: Some(Board::Sideboard),
                                                     on_printing: move |card: Card| {
                                                         command_zone_slot.set(None);
@@ -1287,8 +1559,8 @@ pub fn View(deck_id: Uuid) -> Element {
                                             expanded_card,
                                             preview_card,
                                             preview_dismissing,
-                                            on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land),
-                                            on_move_to: move |target: Board| move_to_board(card_id, target),
+                                            on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land, true),
+                                            on_move_to: move |target: Board| move_to_board(card_id, target, true),
                                             current_board: card_board,
                                             on_printing: move |card: Card| {
                                                 command_zone_slot.set(None);
@@ -1334,8 +1606,8 @@ pub fn View(deck_id: Uuid) -> Element {
                                                     expanded_card,
                                                     preview_card,
                                                     preview_dismissing,
-                                                    on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land),
-                                                    on_move_to: move |target: Board| move_to_board(card_id, target),
+                                                    on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land, true),
+                                                    on_move_to: move |target: Board| move_to_board(card_id, target, true),
                                                     current_board: card_board,
                                                     on_printing: move |card: Card| {
                                                         command_zone_slot.set(None);
@@ -1386,6 +1658,15 @@ pub fn View(deck_id: Uuid) -> Element {
                     "Filter"
                     if !filter_builder.read().is_empty() || filter_builder.read().sort().is_some() {
                         span { class: "filter-dot" }
+                    }
+                }
+                // Walks the undo log newest-first; hidden while there is
+                // nothing to undo (same pattern as Reset filter below).
+                if !undo_log.0.read().is_empty() {
+                    Button {
+                        variant: ButtonVariant::Util,
+                        onclick: move |_| apply_undo(),
+                        "Undo"
                     }
                 }
                 if !filter_builder.read().is_empty() {
@@ -1490,6 +1771,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             None => {
                                 // Regular deck card — update deck card
                                 let request = HttpUpdateDeckCard::with_printing(&new_id.to_string());
+                                let old_card = card.clone();
                                 spawn(async move {
                                     let session_val = match session.ensure_fresh(client).await {
                                         Ok(session_val) => session_val,
@@ -1505,6 +1787,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                             entry.card = new_card.clone();
                                             entry.deck_card.scryfall_data_id = new_id;
                                         }
+                                        undo_log.push(UndoAction::PrintingChanged { old_card, new_id });
                                         printing_sheet_card.set(Some(new_card));
                                         let next = filter_reset_counter() + 1;
                                         filter_reset_counter.set(next);

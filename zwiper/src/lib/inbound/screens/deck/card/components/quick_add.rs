@@ -7,6 +7,7 @@
 //! applying synergy *ordering* (which it does whenever no sort is set). The
 //! result is a plain, alphabetically-ordered name match.
 
+use super::undo_log::{UndoAction, UndoLog};
 use crate::{
     inbound::components::{
         auth::ensure_session::EnsureFresh,
@@ -82,6 +83,7 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
     let client: Signal<ZwipeClient> = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let mut filter_reset_counter: Signal<u32> = use_context();
+    let undo_log: UndoLog = use_context();
     let toast = use_toast();
 
     let mut query = use_signal(String::new);
@@ -185,6 +187,10 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
                     deck_entries.write().push(DeckEntry { card, deck_card });
                     let current = *filter_reset_counter.peek();
                     filter_reset_counter.set(current + 1);
+                    undo_log.push(UndoAction::Added {
+                        card_id,
+                        card_name: card_name.clone(),
+                    });
                     toast.info(
                         format!("Added {card_name}"),
                         ToastOptions::default().duration(Duration::from_millis(1500)),
