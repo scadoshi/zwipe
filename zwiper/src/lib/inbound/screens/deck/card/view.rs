@@ -44,9 +44,10 @@ use crate::{
         },
     },
 };
-use dioxus::prelude::*;
+use dioxus::{core::spawn_forever, prelude::*};
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::{collections::HashMap, time::Duration};
+use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
@@ -87,6 +88,25 @@ struct DeckRowMeta {
     board: Board,
     mvp: bool,
 }
+
+/// A card's accumulated, not-yet-posted quantity delta. Taps update the UI
+/// immediately; the server gets one net call per card once taps stop for
+/// [`QTY_FLUSH_MS`] (or on screen exit). One in-flight call per burst also
+/// gives rollback a single stable baseline, where the previous per-tap calls
+/// could overlap and race their rollbacks.
+#[derive(Clone, Copy)]
+struct PendingQty {
+    /// Quantity before the burst — the delete threshold and rollback target.
+    baseline: i32,
+    /// Net delta across the burst.
+    delta: i32,
+    /// Bumped per tap; a waking flush task only posts if its generation is
+    /// still the latest.
+    generation: u32,
+}
+
+/// Quiet period after the last quantity tap before the net delta posts.
+const QTY_FLUSH_MS: u64 = 300;
 
 /// Identifies which command zone slot a card occupies for printing updates.
 #[derive(Clone, Copy)]
@@ -138,6 +158,51 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut deck_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
     // Command-zone cards (commander, partner, etc.), folded into the budget total.
     let mut command_zone_cards: Signal<Vec<Card>> = use_signal(Vec::new);
+
+    // Per-card pending quantity bursts (see PendingQty).
+    let pending_qty: Signal<HashMap<Uuid, PendingQty>> = use_signal(HashMap::new);
+    // A tap inside the debounce window must still reach the server when the
+    // user leaves the screen: post every mapped burst on unmount. Detached
+    // tasks (the screen's scope is going away), so failures only report and
+    // toast — no local state to roll back.
+    use_drop(move || {
+        let bursts: Vec<(Uuid, PendingQty)> = pending_qty
+            .peek()
+            .iter()
+            .map(|(card_id, p)| (*card_id, *p))
+            .collect();
+        for (card_id, p) in bursts {
+            if p.delta == 0 {
+                continue;
+            }
+            spawn_forever(async move {
+                let Ok(session) = session.ensure_fresh(client).await else {
+                    return;
+                };
+                let result = if p.baseline + p.delta < 1 {
+                    client()
+                        .delete_deck_card(deck_id, card_id, &session)
+                        .await
+                        .map(|_| ())
+                } else {
+                    let request = HttpUpdateDeckCard::new(Some(p.delta), None);
+                    client()
+                        .update_deck_card(deck_id, card_id, &request, &session)
+                        .await
+                        .map(|_| ())
+                };
+                if let Err(e) = result {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_VIEW,
+                        component::NONE,
+                        "flush_quantity",
+                        &e,
+                    );
+                    toast.error(e.to_user_message(), ToastOptions::default());
+                }
+            });
+        }
+    });
 
     // Provide Card list context for filter sheet (derives from all entries)
     let mut deck_cards_for_filter: Signal<Vec<Card>> = use_signal(Vec::new);
@@ -546,6 +611,7 @@ pub fn View(deck_id: Uuid) -> Element {
         let before_lands = main_land_count();
         let before_price = total_price();
 
+        // Optimistic UI per tap; the server call is debounced below.
         if should_delete {
             // Suggestion signal: a deliberate removal (delayed negative), keyed
             // by the deck's commander + the removed card's oracle id.
@@ -571,32 +637,6 @@ pub fn View(deck_id: Uuid) -> Element {
                 "Card removed".to_string(),
                 ToastOptions::default().duration(Duration::from_millis(1500)),
             );
-
-            spawn(async move {
-                let session = match session.ensure_fresh(client).await {
-                    Ok(session) => session,
-                    Err(e) => {
-                        usage_buffer.peek().report_error(
-                            screen::DECK_CARD_VIEW,
-                            component::NONE,
-                            "change_quantity",
-                            &e,
-                        );
-                        toast.error(e.to_user_message(), ToastOptions::default());
-                        return;
-                    }
-                };
-
-                if let Err(e) = client().delete_deck_card(deck_id, card_id, &session).await {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_VIEW,
-                        component::NONE,
-                        "change_quantity",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                }
-            });
         } else {
             // Optimistic: update quantity in entries
             if let Some(entry) = deck_entries
@@ -613,23 +653,70 @@ pub fn View(deck_id: Uuid) -> Element {
 
             warn_land_crossing(before_lands, main_land_count());
             warn_budget_crossing(before_price, total_price());
+        }
 
-            let request = HttpUpdateDeckCard::new(Some(delta), None);
-            spawn(async move {
-                let session = match session.ensure_fresh(client).await {
-                    Ok(session) => session,
-                    Err(e) => {
-                        usage_buffer.peek().report_error(
-                            screen::DECK_CARD_VIEW,
-                            component::NONE,
-                            "remove_card",
-                            &e,
-                        );
-                        toast.error(e.to_user_message(), ToastOptions::default());
-                        return;
-                    }
-                };
+        // Fold the tap into the card's pending burst and (re)arm its debounce.
+        let generation = {
+            let mut pending_qty = pending_qty;
+            let mut map = pending_qty.write();
+            let entry = map.entry(card_id).or_insert(PendingQty {
+                baseline: current_qty,
+                delta: 0,
+                generation: 0,
+            });
+            entry.delta += delta;
+            entry.generation = entry.generation.wrapping_add(1);
+            entry.generation
+        };
 
+        spawn(async move {
+            sleep(Duration::from_millis(QTY_FLUSH_MS)).await;
+
+            // Only the burst's latest tap posts; earlier taps wake to a newer
+            // generation and stand down. Navigating away cancels these tasks
+            // instead — the use_drop exit flush posts whatever is still mapped.
+            let flushed = {
+                let mut pending_qty = pending_qty;
+                let mut map = pending_qty.write();
+                match map.get(&card_id) {
+                    Some(p) if p.generation == generation => map.remove(&card_id),
+                    _ => None,
+                }
+            };
+            let Some(pending) = flushed else {
+                return;
+            };
+            if pending.delta == 0 {
+                // A burst that nets out (+1 then -1) needs no server call.
+                return;
+            }
+
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(e) => {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_VIEW,
+                        component::NONE,
+                        "change_quantity",
+                        &e,
+                    );
+                    toast.error(e.to_user_message(), ToastOptions::default());
+                    return;
+                }
+            };
+
+            if pending.baseline + pending.delta < 1 {
+                if let Err(e) = client().delete_deck_card(deck_id, card_id, &session).await {
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_VIEW,
+                        component::NONE,
+                        "change_quantity",
+                        &e,
+                    );
+                    toast.error(e.to_user_message(), ToastOptions::default());
+                }
+            } else {
+                let request = HttpUpdateDeckCard::new(Some(pending.delta), None);
                 if let Err(e) = client()
                     .update_deck_card(deck_id, card_id, &request, &session)
                     .await
@@ -637,24 +724,24 @@ pub fn View(deck_id: Uuid) -> Element {
                     usage_buffer.peek().report_error(
                         screen::DECK_CARD_VIEW,
                         component::NONE,
-                        "remove_card",
+                        "change_quantity",
                         &e,
                     );
                     toast.error(e.to_user_message(), ToastOptions::default());
-                    // Rollback optimistic update
+                    // Roll the whole burst back to its pre-burst quantity.
                     if let Some(entry) = deck_entries
                         .write()
                         .iter_mut()
                         .find(|e| e.card.scryfall_data.id == card_id)
-                        && let Ok(reverted) = Quantity::new(current_qty)
+                        && let Ok(reverted) = Quantity::new(pending.baseline)
                     {
                         entry.deck_card.quantity = reverted;
                     }
                     let current = *filter_reset_counter.peek();
                     filter_reset_counter.set(current + 1);
                 }
-            });
-        }
+            }
+        });
     };
 
     let mut move_to_board = move |card_id: Uuid, target: Board| {
