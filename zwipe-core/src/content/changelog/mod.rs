@@ -29,6 +29,9 @@ pub const UPCOMING: &[Release] = &[Release {
     version: "1.7.5",
     date: "",
     entries: &[
+        "Quick add: type a card name atop your deck's card list and tap a result to drop it straight in. Cards already in your deck stay out of the results.",
+        "Your deck's name, format, power level, and tags now head the card list, matching the shared deck page.",
+        "Search suggestions in the filters and pickers now float over the screen instead of pushing it around while you type.",
         "Your deck's card list now opens with its identity on display: the command zone and your starred MVPs as card images across the top, just like the shared deck page. Tap one to see it full size.",
         "Every card row now shows its artwork. Prefer the compact look? The Art chip in the Show row turns it off, on the shared deck page too.",
         "The Maybe and Side board buttons gray out when those boards are empty.",
