@@ -64,8 +64,9 @@ use zwipe_core::{
             },
         },
         deck::{
-            Board, DeckEntry,
+            Board, DeckEntry, DeckOtherTag, Format, PowerLevel,
             deck_metrics::{budget_tier, deck_price},
+            deck_tag_label,
             quantity::Quantity,
         },
         user::models::hints::HINT_DECK_CARDS,
@@ -126,6 +127,13 @@ pub fn View(deck_id: Uuid) -> Element {
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let toast = use_toast();
 
+    // Deck identity for the header block (name + format/power/tag chips, like
+    // the zite share page).
+    let mut deck_name: Signal<String> = use_signal(String::new);
+    let mut deck_format: Signal<Option<Format>> = use_signal(|| None);
+    let mut deck_power: Signal<Option<PowerLevel>> = use_signal(|| None);
+    let mut deck_tags: Signal<Vec<String>> = use_signal(Vec::new);
+    let mut deck_other_tags: Signal<Vec<DeckOtherTag>> = use_signal(Vec::new);
     // Source of truth — all non-commander entries (active + maybeboard)
     let mut deck_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
     // Command-zone cards (commander, partner, etc.), folded into the budget total.
@@ -303,6 +311,11 @@ pub fn View(deck_id: Uuid) -> Element {
             // Resolve commander and signature spell from profile.
             // Pull from entries if present, otherwise fetch separately.
             if let Ok(profile) = client().get_deck_profile(deck_id, &session).await {
+                deck_name.set(profile.name.to_string());
+                deck_format.set(profile.format);
+                deck_power.set(profile.power_level);
+                deck_tags.set(profile.tags.clone());
+                deck_other_tags.set(profile.other_tags.clone());
                 is_oathbreaker.set(
                     profile
                         .format
@@ -826,6 +839,27 @@ pub fn View(deck_id: Uuid) -> Element {
                 div { class: "screen-content",
 
                 div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
+                    // Deck identity — name + format/power/tag chips in one
+                    // wrapping row, echoing the zite share page (same stat-chip
+                    // accents).
+                    if !deck_name().is_empty() {
+                        div { class: "deck-cards-header row-enter",
+                            span { class: "deck-cards-header-name", "{deck_name}" }
+                            if let Some(fmt) = deck_format() {
+                                span { class: "stat-chip stat-chip-format", "{fmt.display_name()}" }
+                            }
+                            if let Some(pl) = deck_power() {
+                                span { class: "stat-chip stat-chip-power", "{pl.display_name()}" }
+                            }
+                            for tag in deck_tags() {
+                                span { key: "{tag}", class: "stat-chip stat-chip-tag", "{deck_tag_label(&tag)}" }
+                            }
+                            for tag in deck_other_tags() {
+                                span { key: "{tag}", class: "stat-chip stat-chip-other", "{tag.display_name()}" }
+                            }
+                        }
+                    }
+
                     FeaturedCards {
                         cards: featured_cards.clone(),
                         on_tap: move |card: Card| {
