@@ -7,6 +7,7 @@
 //! is in `context/plans/deck_cards_undo.md`.
 
 use dioxus::prelude::*;
+use std::collections::HashMap;
 use uuid::Uuid;
 use zwipe_core::domain::{
     card::Card,
@@ -18,6 +19,7 @@ const MAX_UNDO_ACTIONS: usize = 100;
 
 /// One undoable mutation, carrying what its inverse needs. Quantity bursts
 /// coalesce through the debounce: one burst, one entry.
+#[derive(Clone)]
 pub(crate) enum UndoAction {
     /// Quick-add added a card; undo deletes it (without the deliberate-removal
     /// telemetry signal — undoing an add is not a removal opinion).
@@ -57,5 +59,42 @@ impl UndoLog {
             let overflow = log.len() - MAX_UNDO_ACTIONS;
             log.drain(..overflow);
         }
+    }
+}
+
+/// App-scoped park/restore for per-deck undo stacks, so the log survives
+/// navigating away and back (mirroring `FilterStore`'s filter parking —
+/// filters surviving while undo evaporated read as a bug). In-memory only:
+/// an app restart forgets. The stale-entry guards in `apply_undo` cover the
+/// deck refetching fresher state between visits.
+#[derive(Clone, Copy)]
+pub(crate) struct UndoStore {
+    entries: Signal<HashMap<Uuid, Vec<UndoAction>>>,
+}
+
+/// Creates the store (provided as context in `spawn_upkeeper`, beside the
+/// filter store).
+pub(crate) fn use_undo_store() -> UndoStore {
+    UndoStore {
+        entries: use_signal(HashMap::new),
+    }
+}
+
+impl UndoStore {
+    /// The stack last parked for this deck (empty if none). Clones rather
+    /// than takes — restore runs inside the screen's mount initializer, and
+    /// writing the store mid-render is the bug FilterStore's clone-on-restore
+    /// shape avoids; the leftover copy is simply overwritten on next park.
+    pub fn restore(&self, deck_id: Uuid) -> Vec<UndoAction> {
+        self.entries
+            .peek()
+            .get(&deck_id)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    /// Remembers this deck's stack, replacing any prior one.
+    pub fn park(&mut self, deck_id: Uuid, log: Vec<UndoAction>) {
+        self.entries.write().insert(deck_id, log);
     }
 }

@@ -23,8 +23,13 @@ The design walked through several shapes before landing. Outcomes:
 - **One Undo button, no list.** A "recent actions" list UI was considered
   and dropped — visuals only, not worth it. Repeated taps walk the stack
   top-down, one action per tap.
-- **Screen-scoped to deck cards** (`screens/deck/card/view.rs`). No
-  deck-profile actions (name/tags edits were considered and dropped).
+- **Recorded on the deck cards screen only** (`screens/deck/card/view.rs`).
+  No deck-profile actions (name/tags edits were considered and dropped).
+  Post-verification amendment (same day): the stack is **parked per deck in
+  an app-level `UndoStore`** (FilterStore's park/restore pattern) — leaving
+  the screen and returning keeps the stack, per deck, for the session.
+  Originally screen-scoped; that read as a bug next to filters surviving
+  navigation.
 - **Toasts carry the card name** — with no list, the toast is the only
   place the user learns what changed: "Re-added Goldspan Dragon".
 - **v1 action set** (the screen's full mutation inventory, triaged):
