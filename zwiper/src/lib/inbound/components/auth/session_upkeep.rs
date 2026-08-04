@@ -19,7 +19,7 @@ use crate::{
         },
         screens::deck::card::components::{
             action_history::AddAction, add_stack_cache::use_add_stack_cache,
-            card_stack::use_card_stack, filter_store::use_filter_store,
+            card_stack::use_card_stack, filter_store::use_filter_store, undo_log::use_undo_store,
         },
     },
     outbound::{
@@ -138,6 +138,10 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // leave (see filter_store.rs).
     let filter_store = use_filter_store();
     use_context_provider(|| filter_store);
+
+    // Per-deck undo stacks, parked/restored by the deck cards screen.
+    let undo_store = use_undo_store();
+    use_context_provider(|| undo_store);
 
     // The add screen's search stack (cards, cursor, undo history, animation)
     // — app-scoped so leaving and re-entering the screen resumes mid-stack

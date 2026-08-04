@@ -4,7 +4,7 @@ use super::components::{
     image_preview::ImagePreview,
     printing_sheet::PrintingSheet,
     quick_add::QuickAdd,
-    undo_log::{UndoAction, UndoLog},
+    undo_log::{UndoAction, UndoLog, UndoStore},
 };
 use crate::{
     inbound::{
@@ -166,9 +166,16 @@ pub fn View(deck_id: Uuid) -> Element {
 
     // Undo log — mutations push their inverses; the ActionBar's conditional
     // Undo button pops them (apply_undo below). Provided as context so the
-    // quick-add bar can record its adds.
-    let undo_log = UndoLog(use_signal(Vec::new));
+    // quick-add bar can record its adds. Seeded from the app-level per-deck
+    // store on mount and parked back on leave, so the stack survives
+    // navigating around the app (like the filter above).
+    let undo_store: UndoStore = use_context();
+    let undo_log = UndoLog(use_signal(|| undo_store.restore(deck_id)));
     use_context_provider(|| undo_log);
+    use_drop(move || {
+        let mut store = undo_store;
+        store.park(deck_id, undo_log.0.peek().clone());
+    });
 
     // Per-card pending quantity bursts (see PendingQty).
     let pending_qty: Signal<HashMap<Uuid, PendingQty>> = use_signal(HashMap::new);
