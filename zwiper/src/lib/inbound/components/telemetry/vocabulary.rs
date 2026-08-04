@@ -51,4 +51,5 @@ pub mod component {
     pub const EMAIL_VERIFICATION: &str = "email_verification";
     pub const MORE_BUTTONS: &str = "more_buttons";
     pub const PRINTING_SHEET: &str = "printing_sheet";
+    pub const QUICK_ADD: &str = "quick_add";
 }

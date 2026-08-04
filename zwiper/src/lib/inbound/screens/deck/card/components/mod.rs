@@ -18,3 +18,5 @@ pub(crate) mod flippable_card_image;
 pub(crate) mod image_preview;
 /// Bottom sheet for selecting card printings.
 pub(crate) mod printing_sheet;
+/// Name-search bar that adds a card straight to the deck.
+pub(crate) mod quick_add;
