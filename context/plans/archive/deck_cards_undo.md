@@ -1,18 +1,16 @@
 # Plan: deck-cards undo (single button, in-memory)
 
-**Status (2026-08-04): phases 1–3 BUILT, phase 4 (verify + changelog)
-remains.**
+**Status (2026-08-04): DONE.** All four phases complete:
 
-- ✔ Phase 1 — quantity debounce shipped as `319747c7` (unpushed at time of
-  writing): taps update the UI instantly, the server gets one net call per
-  card burst after 300ms quiet (delete when the net crosses below 1, nothing
-  on a net-zero burst), exit flush on `use_drop`. Verified live against
-  zerver logs (+9 burst → one PUT, etc.).
-- ✔ Phases 2–3 — undo built per Architecture below (`undo_log.rs`, the five
+- ✔ Phase 1 — quantity debounce, `319747c7`. Verified live against zerver
+  logs (+9 burst → one PUT, net-zero burst → no call, delete on crossing).
+- ✔ Phases 2–3 — undo built per Architecture below (`undo_log.rs`, five
   recording points, `apply_undo`, conditional ActionBar Undo button).
-  Compiles + clippy clean; NOT yet exercised on device.
-- Next step: run the verification script, then commit + 1.7.5 changelog
-  bullet.
+- ✔ Phase 4 — verified on device (owner UI pass, 2026-08-04), committed as
+  `3885049e` with the 1.7.5 changelog bullet.
+
+Remaining ideas live in Parked below (MVP restore, command-zone printing,
+the e2e-harness scenarios). No open work in this plan.
 
 ## Decisions already made (don't relitigate)
 
