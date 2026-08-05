@@ -15,6 +15,7 @@ use crate::{
             },
         },
         router::Router,
+        screens::deck::card::components::undo_log::UndoStore,
     },
     outbound::client::{
         ZwipeClient, deck::import_archidekt_deck::ClientImportArchidektDeck,
@@ -58,6 +59,10 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
     // Import hint: auto-opens on first visit; the header "?" reopens it.
     let import_hint = use_one_time_hint(HINT_IMPORT);
     let toast = use_toast();
+    // An import overwrites the deck, so entries recorded before it are
+    // semantically void — the whole undo stack clears on success (disclosed
+    // in the hint below).
+    let mut undo_store: UndoStore = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();
 
     let board_word = board_selection.read().unwrap_or("mainboard");
@@ -106,6 +111,9 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     result.set(Some(r.clone()));
                     let imported = r.imported.len();
                     let unresolved = r.unresolved.len();
+                    if imported > 0 {
+                        undo_store.clear(deck_id);
+                    }
                     let opts = ToastOptions::default().duration(Duration::from_millis(1500));
                     match (imported, unresolved) {
                         (0, 0) => toast.info("No cards found".to_string(), opts),
@@ -170,6 +178,9 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             "Pick which "
                             HintKey { color: "--accent-secondary", "Board" }
                             " the cards import into"
+                        }
+                        HintBullet {
+                            "Importing replaces the deck, so undo history starts fresh"
                         }
                     }
                 }
