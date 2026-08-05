@@ -22,6 +22,7 @@ use crate::{
             components::{
                 action_history::{RemoveAction, StackAction},
                 card_stack::use_card_stack,
+                undo_log::{UndoAction, UndoStore},
             },
             filter::{card_filter_sheet::CardFilterSheet, deck_cards::DeckCards},
         },
@@ -111,6 +112,10 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let toast = use_toast();
+    // The global per-deck undo stack (walked by the deck cards screen's Undo
+    // button). This screen records its deck mutations into the parked stack
+    // and takes them back when its own gesture undo reverses one.
+    let mut undo_store: UndoStore = use_context();
 
     // Source of truth — all entries in the deck
     let mut deck_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
@@ -301,6 +306,13 @@ pub fn Remove(deck_id: Uuid) -> Element {
         };
 
         let scryfall_data_id = card.scryfall_data.id;
+        // Snapshot the full entry now — the global undo entry wants the old
+        // board and quantity, and the optimistic removal drops it shortly.
+        let removed_entry = deck_entries
+            .peek()
+            .iter()
+            .find(|e| e.card.scryfall_data.id == scryfall_data_id)
+            .cloned();
 
         spawn(async move {
             let session = match session.ensure_fresh(client).await {
@@ -317,18 +329,26 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
             };
 
-            if let Err(e) = client()
+            match client()
                 .delete_deck_card(deck_id, scryfall_data_id, &session)
                 .await
             {
-                tracing::warn!("delete deck card failed: {e}");
-                usage_buffer.peek().report_error(
-                    screen::DECK_CARD_REMOVE,
-                    component::NONE,
-                    "remove_card",
-                    &e,
-                );
-                toast.error(e.to_user_message(), ToastOptions::default());
+                Ok(_) => {
+                    if let Some(entry) = removed_entry {
+                        let baseline = *entry.deck_card.quantity;
+                        undo_store.push(deck_id, UndoAction::Removed { entry, baseline });
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("delete deck card failed: {e}");
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_REMOVE,
+                        component::NONE,
+                        "remove_card",
+                        &e,
+                    );
+                    toast.error(e.to_user_message(), ToastOptions::default());
+                }
             }
         });
     };
@@ -339,6 +359,13 @@ pub fn Remove(deck_id: Uuid) -> Element {
         };
 
         let scryfall_data_id = card.scryfall_data.id;
+        let card_name = card.scryfall_data.name;
+        // The pre-move board, for the global undo entry.
+        let from = deck_entries
+            .peek()
+            .iter()
+            .find(|e| e.card.scryfall_data.id == scryfall_data_id)
+            .map(|e| e.deck_card.board);
         let request = HttpPatchDeckCard::new(None, Some(to.display_name().to_string()));
 
         spawn(async move {
@@ -356,18 +383,32 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
             };
 
-            if let Err(e) = client()
+            match client()
                 .update_deck_card(deck_id, scryfall_data_id, &request, &session)
                 .await
             {
-                tracing::warn!("move card to board failed: {e}");
-                usage_buffer.peek().report_error(
-                    screen::DECK_CARD_REMOVE,
-                    component::NONE,
-                    "move_card",
-                    &e,
-                );
-                toast.error(e.to_user_message(), ToastOptions::default());
+                Ok(_) => {
+                    if let Some(from) = from {
+                        undo_store.push(
+                            deck_id,
+                            UndoAction::MovedBoard {
+                                card_id: scryfall_data_id,
+                                card_name,
+                                from,
+                            },
+                        );
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("move card to board failed: {e}");
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_REMOVE,
+                        component::NONE,
+                        "move_card",
+                        &e,
+                    );
+                    toast.error(e.to_user_message(), ToastOptions::default());
+                }
             }
         });
     };
@@ -424,8 +465,34 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 );
             }
             RemoveAction::Remove { card } => {
-                // Re-insert into displayed cards so the card reappears
                 let card = *card;
+                let card_id = card.scryfall_data.id;
+
+                // Reconcile with the global stack before touching the UI:
+                // entry gone AND the card already back in the deck means the
+                // deck-cards Undo button re-added it — a second create would
+                // duplicate the row. Pure history rewind instead.
+                let taken = undo_store.take_newest(deck_id, |a| {
+                    matches!(
+                        a,
+                        UndoAction::Removed { entry, .. }
+                            if entry.card.scryfall_data.id == card_id
+                    )
+                });
+                let already_back = deck_entries
+                    .peek()
+                    .iter()
+                    .any(|e| e.card.scryfall_data.id == card_id);
+                if taken.is_none() && already_back {
+                    stack.cancel_entering();
+                    toast.info(
+                        "Already changed".to_string(),
+                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                    );
+                    return;
+                }
+
+                // Re-insert into displayed cards so the card reappears
                 stack.insert_current(card.clone());
 
                 // Restore on the backend
@@ -442,6 +509,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             );
                             toast.error(e.to_user_message(), ToastOptions::default());
                             stack.cancel_entering();
+                            if let Some(action) = taken {
+                                undo_store.push(deck_id, action);
+                            }
                             return;
                         }
                     };
@@ -458,17 +528,44 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         Err(e) => {
                             tracing::warn!("undo remove (create deck card) failed: {e}");
                             toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
+                            // The removal still stands server-side.
+                            if let Some(action) = taken {
+                                undo_store.push(deck_id, action);
+                            }
                         }
                     }
                 });
             }
             RemoveAction::MoveBoard { card, from, .. } => {
-                // Re-insert into displayed cards so the card reappears
                 let card = *card;
-                stack.insert_current(card.clone());
+                let scryfall_data_id = card.scryfall_data.id;
+
+                // Reconcile with the global stack: entry gone AND the card
+                // already sitting on its original board means the deck-cards
+                // Undo button moved it back — pure history rewind.
+                let taken = undo_store.take_newest(deck_id, |a| {
+                    matches!(
+                        a,
+                        UndoAction::MovedBoard { card_id, from: entry_from, .. }
+                            if *card_id == scryfall_data_id && *entry_from == from
+                    )
+                });
+                let already_back = deck_entries.peek().iter().any(|e| {
+                    e.card.scryfall_data.id == scryfall_data_id && e.deck_card.board == from
+                });
+                if taken.is_none() && already_back {
+                    stack.cancel_entering();
+                    toast.info(
+                        "Already changed".to_string(),
+                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                    );
+                    return;
+                }
+
+                // Re-insert into displayed cards so the card reappears
+                stack.insert_current(card);
 
                 // Move back to the board it came from, server then local
-                let scryfall_data_id = card.scryfall_data.id;
                 let request = HttpPatchDeckCard::new(None, Some(from.display_name().to_string()));
 
                 spawn(async move {
@@ -483,6 +580,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             );
                             toast.error(e.to_user_message(), ToastOptions::default());
                             stack.cancel_entering();
+                            if let Some(action) = taken {
+                                undo_store.push(deck_id, action);
+                            }
                             return;
                         }
                     };
@@ -507,6 +607,10 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         Err(e) => {
                             tracing::warn!("undo board move (update deck card) failed: {e}");
                             toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
+                            // The board move still stands server-side.
+                            if let Some(action) = taken {
+                                undo_store.push(deck_id, action);
+                            }
                         }
                     }
                 });

@@ -4,7 +4,7 @@ use super::components::{
     image_preview::ImagePreview,
     printing_sheet::PrintingSheet,
     quick_add::QuickAdd,
-    undo_log::{UndoAction, UndoLog, UndoStore},
+    undo_log::{CommandZoneSlot, UndoAction, UndoLog, UndoStore},
 };
 use crate::{
     inbound::{
@@ -112,15 +112,6 @@ struct PendingQty {
 
 /// Quiet period after the last quantity tap before the net delta posts.
 const QTY_FLUSH_MS: u64 = 300;
-
-/// Identifies which command zone slot a card occupies for printing updates.
-#[derive(Clone, Copy)]
-enum CommandZoneSlot {
-    Commander,
-    Partner,
-    Background,
-    SignatureSpell,
-}
 
 #[component]
 pub fn View(deck_id: Uuid) -> Element {
@@ -1163,6 +1154,81 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
                 });
             }
+            UndoAction::CommandZonePrintingChanged {
+                slot,
+                old_card,
+                new_id,
+            } => {
+                // The slot must still hold the printing this entry swapped
+                // in — a commander swapped or cleared since makes the
+                // inverse stale.
+                let mut slot_signal = match slot {
+                    CommandZoneSlot::Commander => commander_card,
+                    CommandZoneSlot::Partner => partner_card,
+                    CommandZoneSlot::Background => background_card,
+                    CommandZoneSlot::SignatureSpell => signature_spell_card,
+                };
+                let holds_new = slot_signal
+                    .peek()
+                    .as_ref()
+                    .is_some_and(|c| c.scryfall_data.id == new_id);
+                if !holds_new {
+                    stale();
+                    return;
+                }
+                let card_name = old_card.scryfall_data.name.clone();
+                let old_id = old_card.scryfall_data.id;
+                let id = Opdate::Set(Some(old_id));
+                let request = match slot {
+                    CommandZoneSlot::Commander => {
+                        HttpUpdateDeckProfile::builder().commander_id(id).build()
+                    }
+                    CommandZoneSlot::Partner => HttpUpdateDeckProfile::builder()
+                        .partner_commander_id(id)
+                        .build(),
+                    CommandZoneSlot::Background => {
+                        HttpUpdateDeckProfile::builder().background_id(id).build()
+                    }
+                    CommandZoneSlot::SignatureSpell => HttpUpdateDeckProfile::builder()
+                        .signature_spell_id(id)
+                        .build(),
+                };
+
+                // Optimistic like the deck-card printing arm: restore the
+                // pinned slot (the featured strip updates in place).
+                slot_signal.set(Some(old_card));
+                let current = *filter_reset_counter.peek();
+                filter_reset_counter.set(current + 1);
+                toast.info(format!("{card_name} printing restored"), short);
+
+                spawn(async move {
+                    let session = match session.ensure_fresh(client).await {
+                        Ok(session) => session,
+                        Err(e) => {
+                            usage_buffer.peek().report_error(
+                                screen::DECK_CARD_VIEW,
+                                component::NONE,
+                                "undo",
+                                &e,
+                            );
+                            toast.error(e.to_user_message(), ToastOptions::default());
+                            return;
+                        }
+                    };
+                    if let Err(e) = client()
+                        .update_deck_profile(deck_id, &request, &session)
+                        .await
+                    {
+                        usage_buffer.peek().report_error(
+                            screen::DECK_CARD_VIEW,
+                            component::NONE,
+                            "undo",
+                            &e,
+                        );
+                        toast.error(e.to_user_message(), ToastOptions::default());
+                    }
+                });
+            }
         }
     };
 
@@ -1760,6 +1826,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                     CommandZoneSlot::Background => HttpUpdateDeckProfile::builder().background_id(id).build(),
                                     CommandZoneSlot::SignatureSpell => HttpUpdateDeckProfile::builder().signature_spell_id(id).build(),
                                 };
+                                let old_card = card.clone();
                                 spawn(async move {
                                     let session_val = match session.ensure_fresh(client).await {
                                         Ok(session_val) => session_val,
@@ -1773,6 +1840,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                             CommandZoneSlot::Background => background_card.set(Some(new_card.clone())),
                                             CommandZoneSlot::SignatureSpell => signature_spell_card.set(Some(new_card.clone())),
                                         }
+                                        undo_log.push(UndoAction::CommandZonePrintingChanged { slot, old_card, new_id });
                                         printing_sheet_card.set(Some(new_card));
                                         let next = filter_reset_counter() + 1;
                                         filter_reset_counter.set(next);

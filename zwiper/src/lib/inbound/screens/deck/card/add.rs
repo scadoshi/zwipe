@@ -29,6 +29,7 @@ use crate::{
                 card_stack::{CardStack, use_card_stack},
                 filter_store::{FilterScope, FilterStore},
                 flippable_card_image::reset_image_ease,
+                undo_log::{UndoAction, UndoStore},
             },
             filter::card_filter_sheet::CardFilterSheet,
         },
@@ -144,6 +145,10 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut stack_cache: AddStackCache = use_context();
     let mut last_search_filter: Signal<Option<CardQueryBuilder>> = use_context();
     let is_first_run = use_hook(|| std::cell::Cell::new(true));
+    // The global per-deck undo stack (walked by the deck cards screen's Undo
+    // button). This screen records its deck mutations into the parked stack
+    // and takes them back when its own gesture undo reverses one.
+    let mut undo_store: UndoStore = use_context();
 
     // Swipe vocabulary hint: auto-opens on this user's first visit, the
     // grayed "?" in the util bar reopens it on demand.
@@ -393,6 +398,8 @@ pub fn Add(deck_id: Uuid) -> Element {
         // For now, always add quantity 1 (will add quantity picker later)
         let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
         let oracle_id = card.scryfall_data.oracle_id;
+        let card_id = card.scryfall_data.id;
+        let card_name = card.scryfall_data.name;
 
         spawn(async move {
             let session = match session.ensure_fresh(client).await {
@@ -414,6 +421,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     if let Some(oid) = oracle_id {
                         deck_cards_ids.write().insert(oid);
                     }
+                    undo_store.push(deck_id, UndoAction::Added { card_id, card_name });
                 }
                 Err(e) => {
                     tracing::warn!("add card to deck failed: {e}");
@@ -433,6 +441,8 @@ pub fn Add(deck_id: Uuid) -> Element {
         let request =
             HttpCreateDeckCard::new(&card.scryfall_data, 1, Some("maybeboard".to_string()));
         let oracle_id = card.scryfall_data.oracle_id;
+        let card_id = card.scryfall_data.id;
+        let card_name = card.scryfall_data.name.clone();
 
         spawn(async move {
             let session = match session.ensure_fresh(client).await {
@@ -454,6 +464,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     if let Some(oid) = oracle_id {
                         deck_cards_ids.write().insert(oid);
                     }
+                    undo_store.push(deck_id, UndoAction::Added { card_id, card_name });
                     // Keep the maybeboard source in sync so switching to it
                     // shows this card without a refetch.
                     mb_entries.write().push(DeckEntry { card, deck_card });
@@ -538,6 +549,26 @@ pub fn Add(deck_id: Uuid) -> Element {
                 let was_price =
                     card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
 
+                // Reconcile with the global stack: take this add's entry
+                // back. Entry gone AND card gone from the deck means the
+                // deck-cards Undo button already reversed it — skip the
+                // server delete (it would double-delete); the stack UI is
+                // already rewound. Entry gone but card still present means
+                // it aged out of the cap — delete anyway.
+                let taken = undo_store.take_newest(
+                    deck_id,
+                    |a| matches!(a, UndoAction::Added { card_id: id, .. } if *id == card_id),
+                );
+                let still_in_deck =
+                    oracle_id.is_some_and(|oid| deck_cards_ids.peek().contains(&oid));
+                if taken.is_none() && !still_in_deck {
+                    toast.success(
+                        "Undid add".to_string(),
+                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                    );
+                    return;
+                }
+
                 spawn(async move {
                     let session = match session.ensure_fresh(client).await {
                         Ok(session) => session,
@@ -550,6 +581,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                             );
                             toast.error(e.to_user_message(), ToastOptions::default());
                             stack.unwind_undo(action); // Restore history + cursor
+                            if let Some(action) = taken {
+                                undo_store.push(deck_id, action);
+                            }
                             return;
                         }
                     };
@@ -573,6 +607,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                             tracing::warn!("undo add (delete deck card) failed: {e}");
                             toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
                             // Don't restore action or index - user can try again by adding the card
+                            // The add still stands server-side, so its global entry does too.
+                            if let Some(action) = taken {
+                                undo_store.push(deck_id, action);
+                            }
                         }
                     }
                 });
@@ -580,6 +618,22 @@ pub fn Add(deck_id: Uuid) -> Element {
             AddAction::Maybe => {
                 let card_id = card.scryfall_data.id;
                 let oracle_id = card.scryfall_data.oracle_id;
+
+                // Same reconciliation as Add: entry gone + card gone means
+                // the button already reversed this; skip the server delete.
+                let taken = undo_store.take_newest(
+                    deck_id,
+                    |a| matches!(a, UndoAction::Added { card_id: id, .. } if *id == card_id),
+                );
+                let still_in_deck =
+                    oracle_id.is_some_and(|oid| deck_cards_ids.peek().contains(&oid));
+                if taken.is_none() && !still_in_deck {
+                    toast.success(
+                        "Undid maybeboard".to_string(),
+                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                    );
+                    return;
+                }
 
                 spawn(async move {
                     let session = match session.ensure_fresh(client).await {
@@ -593,6 +647,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                             );
                             toast.error(e.to_user_message(), ToastOptions::default());
                             stack.unwind_undo(action);
+                            if let Some(action) = taken {
+                                undo_store.push(deck_id, action);
+                            }
                             return;
                         }
                     };
@@ -615,6 +672,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                         Err(e) => {
                             tracing::warn!("undo maybeboard (delete deck card) failed: {e}");
                             toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
+                            // The maybeboard add still stands server-side.
+                            if let Some(action) = taken {
+                                undo_store.push(deck_id, action);
+                            }
                         }
                     }
                 });
@@ -975,6 +1036,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let mut mb_promote_to_deck = move |card: Card| {
         let scryfall_data_id = card.scryfall_data.id;
+        let card_name = card.scryfall_data.name.clone();
         let request = HttpPatchDeckCard::new(None, Some("deck".to_string()));
 
         // Optimistic: remove from maybeboard lists
@@ -1002,18 +1064,30 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
             };
 
-            if let Err(e) = client()
+            match client()
                 .update_deck_card(deck_id, scryfall_data_id, &request, &session)
                 .await
             {
-                tracing::warn!("promote to deck failed: {e}");
-                usage_buffer.peek().report_error(
-                    screen::DECK_CARD_ADD,
-                    component::NONE,
-                    "promote_maybeboard",
-                    &e,
-                );
-                toast.error(e.to_user_message(), ToastOptions::default());
+                Ok(_) => {
+                    undo_store.push(
+                        deck_id,
+                        UndoAction::MovedBoard {
+                            card_id: scryfall_data_id,
+                            card_name,
+                            from: Board::Maybeboard,
+                        },
+                    );
+                }
+                Err(e) => {
+                    tracing::warn!("promote to deck failed: {e}");
+                    usage_buffer.peek().report_error(
+                        screen::DECK_CARD_ADD,
+                        component::NONE,
+                        "promote_maybeboard",
+                        &e,
+                    );
+                    toast.error(e.to_user_message(), ToastOptions::default());
+                }
             }
         });
     };
@@ -1039,10 +1113,36 @@ pub fn Add(deck_id: Uuid) -> Element {
             }
             MaybeboardAction::Promote { card } => {
                 let card = *card;
-                mb_stack.insert_current(card.clone());
-
                 let scryfall_data_id = card.scryfall_data.id;
                 let oracle_id = card.scryfall_data.oracle_id;
+
+                // Reconcile with the global stack before touching the UI:
+                // entry gone AND the card already back on the maybeboard
+                // means the deck-cards Undo button reversed this promote —
+                // re-inserting would duplicate the card in the stack, and
+                // the server move would be a no-op at best. Pure history
+                // rewind instead.
+                let taken = undo_store.take_newest(deck_id, |a| {
+                    matches!(
+                        a,
+                        UndoAction::MovedBoard { card_id, from: Board::Maybeboard, .. }
+                            if *card_id == scryfall_data_id
+                    )
+                });
+                let already_back = mb_entries
+                    .peek()
+                    .iter()
+                    .any(|e| e.card.scryfall_data.id == scryfall_data_id);
+                if taken.is_none() && already_back {
+                    mb_stack.cancel_entering();
+                    toast.info(
+                        "Already changed".to_string(),
+                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                    );
+                    return;
+                }
+
+                mb_stack.insert_current(card.clone());
                 let request = HttpPatchDeckCard::new(None, Some("maybeboard".to_string()));
 
                 spawn(async move {
@@ -1057,6 +1157,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                             );
                             toast.error(e.to_user_message(), ToastOptions::default());
                             mb_stack.cancel_entering();
+                            if let Some(action) = taken {
+                                undo_store.push(deck_id, action);
+                            }
                             return;
                         }
                     };
@@ -1089,6 +1192,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                         Err(e) => {
                             tracing::warn!("undo promote failed: {e}");
                             toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
+                            // The promote still stands server-side.
+                            if let Some(action) = taken {
+                                undo_store.push(deck_id, action);
+                            }
                         }
                     }
                 });
