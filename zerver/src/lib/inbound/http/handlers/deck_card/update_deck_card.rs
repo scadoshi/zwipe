@@ -61,6 +61,9 @@ impl From<InvalidUpdateDeckCard> for ApiError {
             InvalidUpdateDeckCard::UpdateQuantity(e) => {
                 Self::UnprocessableEntity(format!("invalid update quantity: {}", e))
             }
+            InvalidUpdateDeckCard::Quantity(e) => {
+                Self::UnprocessableEntity(format!("invalid quantity: {}", e))
+            }
             InvalidUpdateDeckCard::NewScryfallDataId(e) => {
                 Self::UnprocessableEntity(format!("invalid printing id: {}", e))
             }
