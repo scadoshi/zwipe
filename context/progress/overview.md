@@ -43,6 +43,11 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   todo's Bugs, fix targeted at 1.7.6. Queued plans from the arc:
   `plans/global_undo.md` (owner building next), `plans/flavor_rotation.md`,
   `plans/search_bar_clear_buttons.md`.
+- **Review-window fixes (2026-08-05, server/site-side — live on next push)**:
+  every rate limiter now serves a stable bucketed 429 body with the exact wait
+  in `Retry-After` (the live countdown was minting a `client_errors` row per
+  second — field-confirmed; fixes dedupe for already-shipped clients), and the
+  zite favicons regenerated on solid `#282828` for the Google SERP icon.
 
 ## 2026-07-30 (1.7.4 SUBMITTED both stores: error/crash reporting live end to end)
 
