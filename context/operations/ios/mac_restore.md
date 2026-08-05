@@ -10,7 +10,9 @@ What to back up and restore when wiping this Mac to return to stable macOS.
 
 | What | Where | Why |
 |------|-------|-----|
-| `~/certs/` | Copy to USB/iCloud | Distribution cert private key (`zwipe-dist-key.pem`) — if lost, must revoke and recreate the cert on developer.apple.com |
+| `~/certs/` | Copy to USB/iCloud | Distribution cert private key (`zwipe-dist-key.pem`) — if lost, must revoke and recreate the cert on developer.apple.com. Also holds `zwipe-upload.jks` (see below) |
+| `~/certs/zwipe-upload.jks` | Rides along with `~/certs/` | Android **upload keystore**. Not re-creatable: losing it means a Play Console key-reset request before you can ship another Android update. Called out separately because it lives in a directory whose name reads iOS-only |
+| `~/.private_keys/AuthKey_C2L47TDDPV.p8` | Copy to USB | App Store Connect API key, **one-time download**. Only the deprecated `altool` fallback in [publish.md](app-store/submission/publish.md) uses it, but if lost the key must be revoked and re-issued |
 | `~/.ssh/` | Copy to USB | SSH keys for server access. Can be regenerated with physical server access, but saves time |
 | Git repo | `git push` all branches | Code is on GitHub, just make sure everything is pushed |
 
