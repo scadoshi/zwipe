@@ -510,10 +510,24 @@ journalctl -u zervice --since today   # full output
 systemctl list-timers zervice*        # last / next scheduled run
 ```
 
-The old crontab entry is removed. `/var/log/zwipe/zervice-cron.log` is
-obsolete (the journal covers early startup); zervice's own rolling files at
-`$LOG_DIR/zervice.YYYY-MM-DD.log` are unchanged. Planned follow-ups:
-dead-man's switch + least-privilege split (`context/plans/zervice_least_privilege.md`).
+The old crontab entry is removed — **for real as of 2026-08-05**. Incident
+note: this line originally claimed the removal on 2026-07-29, but the user
+crontab entry survived the migration, so every night ran zervice TWICE
+(cron at 04:00:01 running `~/zwipe/zervice` silently, the timer at 04:00:4x
+per its jitter). Six nights later the two instances' bulk `card_profiles`
+UPDATEs interleaved into a Postgres deadlock (40P01) and the systemd
+instance's step 2 failed, firing the alert. Diagnostics that cracked it:
+`grep -c "zervice running v" $LOG_DIR/zervice.YYYY-MM-DD.log` (two banners =
+two instances; both write the shared daily file) and the Postgres deadlock
+`DETAIL:` block in `/var/log/postgresql/`, which named both queries. The
+cron instance was invisible to alerting (`OnFailure=` only covers
+systemd-launched runs) and to `journalctl -u zervice`. If the nightly ever
+double-runs again, count the banners first.
+
+`/var/log/zwipe/zervice-cron.log` is obsolete (the journal covers early
+startup); zervice's own rolling files at `$LOG_DIR/zervice.YYYY-MM-DD.log`
+are unchanged. Planned follow-ups: dead-man's switch + least-privilege split
+(`context/plans/zervice_least_privilege.md`).
 
 zervice is a run-once binary — it syncs cards from Scryfall, cleans expired sessions,
 and exits. Logs are written to `$LOG_DIR/zervice.YYYY-MM-DD.log` (default: `/var/log/zwipe/`).
