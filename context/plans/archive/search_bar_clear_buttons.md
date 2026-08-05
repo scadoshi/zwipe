@@ -1,6 +1,12 @@
 # Clear (×) button on every floating-results search bar
 
-**Status: QUEUED (2026-08-04, owner). Fast one — pattern already exists.**
+**Status: DONE (2026-08-05).** All 14 inputs across the 7 host files wired
+(each file's includes AND excludes bars, plus all four command-zone pickers):
+input wrapped in a flex row, `clear-btn` shown only while the query is
+non-empty, clearing query + typing/dropdown state (pickers also clear their
+display text). Rides 1.7.6. Note kept from the design discussion: the
+pickers' pre-existing label-row × clears the *selection*; the new inline ×
+clears the *search text* — deliberately separate controls.
 
 **One sentence:** every search bar that floats selectable results above/over the
 screen gets the same × clear button quick add already has (shown only when the

@@ -196,20 +196,33 @@ pub fn Artist() -> Element {
                 }
             }
 
-            input { class: "input input-compact",
-                id: "artist-search",
-                placeholder: "Type to search",
-                value: "{artist_search_query()}",
-                r#type: "text",
-                autocapitalize: "none",
-                autocorrect: "off",
-                spellcheck: "false",
-                oninput: move |event| {
-                    artist_is_typing.set(true);
-                    artist_search_query.set(event.value());
-                },
-                onblur: move |_| {
-                    artist_is_typing.set(false);
+            div { class: "flex items-center gap-05",
+                input { class: "input input-compact",
+                    style: "flex: 1; margin-bottom: 0;",
+                    id: "artist-search",
+                    placeholder: "Type to search",
+                    value: "{artist_search_query()}",
+                    r#type: "text",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |event| {
+                        artist_is_typing.set(true);
+                        artist_search_query.set(event.value());
+                    },
+                    onblur: move |_| {
+                        artist_is_typing.set(false);
+                    }
+                }
+                if !artist_search_query().is_empty() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            artist_search_query.set(String::new());
+                            artist_is_typing.set(false);
+                        },
+                        "\u{00d7}"
+                    }
                 }
             }
         }

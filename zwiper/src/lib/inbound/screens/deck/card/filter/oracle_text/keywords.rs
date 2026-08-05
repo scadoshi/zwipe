@@ -184,16 +184,28 @@ pub(crate) fn Keywords() -> Element {
             }
         }
 
-        input { class: "input input-compact",
-            id: "keyword-search",
-            placeholder: "Type to search",
-            value: "{keywords_search()}",
-            r#type: "text",
-            autocapitalize: "none",
-            autocorrect: "off",
-            spellcheck: "false",
-            oninput: move |event| {
-                keywords_search.set(event.value());
+        div { class: "flex items-center gap-05",
+            input { class: "input input-compact",
+                style: "flex: 1; margin-bottom: 0;",
+                id: "keyword-search",
+                placeholder: "Type to search",
+                value: "{keywords_search()}",
+                r#type: "text",
+                autocapitalize: "none",
+                autocorrect: "off",
+                spellcheck: "false",
+                oninput: move |event| {
+                    keywords_search.set(event.value());
+                }
+            }
+            if !keywords_search().is_empty() {
+                button {
+                    class: "clear-btn",
+                    onclick: move |_| {
+                        keywords_search.set(String::new());
+                    },
+                    "\u{00d7}"
+                }
             }
         }
 
@@ -273,16 +285,28 @@ pub(crate) fn Keywords() -> Element {
             }
         }
 
-        input { class: "input input-compact",
-            id: "keyword-excludes-search",
-            placeholder: "Type to search",
-            value: "{excludes_search()}",
-            r#type: "text",
-            autocapitalize: "none",
-            autocorrect: "off",
-            spellcheck: "false",
-            oninput: move |event| {
-                excludes_search.set(event.value());
+        div { class: "flex items-center gap-05",
+            input { class: "input input-compact",
+                style: "flex: 1; margin-bottom: 0;",
+                id: "keyword-excludes-search",
+                placeholder: "Type to search",
+                value: "{excludes_search()}",
+                r#type: "text",
+                autocapitalize: "none",
+                autocorrect: "off",
+                spellcheck: "false",
+                oninput: move |event| {
+                    excludes_search.set(event.value());
+                }
+            }
+            if !excludes_search().is_empty() {
+                button {
+                    class: "clear-btn",
+                    onclick: move |_| {
+                        excludes_search.set(String::new());
+                    },
+                    "\u{00d7}"
+                }
             }
         }
     }

@@ -190,16 +190,28 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
                 }
             }
 
-            input { class: "input input-compact",
-                id: "oracle-tags-search",
-                placeholder: "Search all oracle tags",
-                value: "{includes_search()}",
-                r#type: "text",
-                autocapitalize: "none",
-                autocorrect: "off",
-                spellcheck: "false",
-                oninput: move |event| {
-                    includes_search.set(event.value());
+            div { class: "flex items-center gap-05",
+                input { class: "input input-compact",
+                    style: "flex: 1; margin-bottom: 0;",
+                    id: "oracle-tags-search",
+                    placeholder: "Search all oracle tags",
+                    value: "{includes_search()}",
+                    r#type: "text",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |event| {
+                        includes_search.set(event.value());
+                    }
+                }
+                if !includes_search().is_empty() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            includes_search.set(String::new());
+                        },
+                        "\u{00d7}"
+                    }
                 }
             }
 
@@ -277,16 +289,28 @@ pub(crate) fn OracleTags(mut dict_open: Signal<bool>, mut dict_exclude: Signal<b
                 }
             }
 
-            input { class: "input input-compact",
-                id: "oracle-tags-excludes-search",
-                placeholder: "Search all oracle tags",
-                value: "{excludes_search()}",
-                r#type: "text",
-                autocapitalize: "none",
-                autocorrect: "off",
-                spellcheck: "false",
-                oninput: move |event| {
-                    excludes_search.set(event.value());
+            div { class: "flex items-center gap-05",
+                input { class: "input input-compact",
+                    style: "flex: 1; margin-bottom: 0;",
+                    id: "oracle-tags-excludes-search",
+                    placeholder: "Search all oracle tags",
+                    value: "{excludes_search()}",
+                    r#type: "text",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |event| {
+                        excludes_search.set(event.value());
+                    }
+                }
+                if !excludes_search().is_empty() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            excludes_search.set(String::new());
+                        },
+                        "\u{00d7}"
+                    }
                 }
             }
         }

@@ -197,20 +197,33 @@ pub fn Set() -> Element {
             }
 
             // Search input (at the bottom)
-            input { class: "input input-compact",
-                id: "set-search",
-                placeholder: "Type to search",
-                value: "{search_query()}",
-                r#type: "text",
-                autocapitalize: "none",
-                autocorrect: "off",
-                spellcheck: "false",
-                oninput: move |event| {
-                    is_typing.set(true);
-                    search_query.set(event.value());
-                },
-                onblur: move |_| {
-                    is_typing.set(false);
+            div { class: "flex items-center gap-05",
+                input { class: "input input-compact",
+                    style: "flex: 1; margin-bottom: 0;",
+                    id: "set-search",
+                    placeholder: "Type to search",
+                    value: "{search_query()}",
+                    r#type: "text",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |event| {
+                        is_typing.set(true);
+                        search_query.set(event.value());
+                    },
+                    onblur: move |_| {
+                        is_typing.set(false);
+                    }
+                }
+                if !search_query().is_empty() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            search_query.set(String::new());
+                            is_typing.set(false);
+                        },
+                        "\u{00d7}"
+                    }
                 }
             }
         }

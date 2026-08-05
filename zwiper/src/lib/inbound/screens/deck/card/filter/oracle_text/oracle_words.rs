@@ -183,16 +183,28 @@ pub(crate) fn OracleWords() -> Element {
             }
         }
 
-        input { class: "input input-compact",
-            id: "oracle-words-search",
-            placeholder: "Type to search",
-            value: "{oracle_words_search()}",
-            r#type: "text",
-            autocapitalize: "none",
-            autocorrect: "off",
-            spellcheck: "false",
-            oninput: move |event| {
-                oracle_words_search.set(event.value());
+        div { class: "flex items-center gap-05",
+            input { class: "input input-compact",
+                style: "flex: 1; margin-bottom: 0;",
+                id: "oracle-words-search",
+                placeholder: "Type to search",
+                value: "{oracle_words_search()}",
+                r#type: "text",
+                autocapitalize: "none",
+                autocorrect: "off",
+                spellcheck: "false",
+                oninput: move |event| {
+                    oracle_words_search.set(event.value());
+                }
+            }
+            if !oracle_words_search().is_empty() {
+                button {
+                    class: "clear-btn",
+                    onclick: move |_| {
+                        oracle_words_search.set(String::new());
+                    },
+                    "\u{00d7}"
+                }
             }
         }
 
@@ -272,16 +284,28 @@ pub(crate) fn OracleWords() -> Element {
             }
         }
 
-        input { class: "input input-compact",
-            id: "oracle-words-excludes-search",
-            placeholder: "Type to search",
-            value: "{excludes_search()}",
-            r#type: "text",
-            autocapitalize: "none",
-            autocorrect: "off",
-            spellcheck: "false",
-            oninput: move |event| {
-                excludes_search.set(event.value());
+        div { class: "flex items-center gap-05",
+            input { class: "input input-compact",
+                style: "flex: 1; margin-bottom: 0;",
+                id: "oracle-words-excludes-search",
+                placeholder: "Type to search",
+                value: "{excludes_search()}",
+                r#type: "text",
+                autocapitalize: "none",
+                autocorrect: "off",
+                spellcheck: "false",
+                oninput: move |event| {
+                    excludes_search.set(event.value());
+                }
+            }
+            if !excludes_search().is_empty() {
+                button {
+                    class: "clear-btn",
+                    onclick: move |_| {
+                        excludes_search.set(String::new());
+                    },
+                    "\u{00d7}"
+                }
             }
         }
     }
