@@ -1,10 +1,14 @@
 use crate::{Footer, Nav, components::PageMeta};
 use dioxus::prelude::*;
+use zwipe_components::Panel;
 
 const STRIPE_URL: &str = "https://buy.stripe.com/5kQdRa5tUeNm9pd8BY9Zm00";
 const BMC_URL: &str = "https://buymeacoffee.com/scadoshi";
 const GITHUB_SPONSORS_URL: &str = "https://github.com/sponsors/scadoshi";
 
+/// Mirrors the portfolio site's contribute page (same shared `Panel` cards,
+/// same three options and copy) adapted to zite's chrome and a Zwipe-specific
+/// intro.
 #[component]
 pub fn Contribute() -> Element {
     rsx! {
@@ -26,41 +30,47 @@ pub fn Contribute() -> Element {
 
             div { class: "section",
                 div { class: "card-grid",
-                    div { class: "card",
-                        span { class: "card-category", "One-Time" }
-                        h3 { class: "card-title", "Stripe" }
+                    Panel {
+                        eyebrow: "One-Time",
+                        title: "Stripe",
+                        actions: rsx! {
+                            a {
+                                class: "panel-action",
+                                href: STRIPE_URL,
+                                target: "_blank",
+                                rel: "noopener noreferrer",
+                                "Contribute \u{2197}"
+                            }
+                        },
                         p { class: "card-summary", "Pay what you want. No account required." }
-                        a {
-                            href: STRIPE_URL,
-                            target: "_blank",
-                            rel: "noopener noreferrer",
-                            class: "card-action",
-                            "Contribute ↗"
-                        }
                     }
-                    div { class: "card",
-                        span { class: "card-category", "One-Time" }
-                        h3 { class: "card-title", "Buy Me a Coffee" }
-                        p { class: "card-summary", "Quick one-off support." }
-                        a {
-                            href: BMC_URL,
-                            target: "_blank",
-                            rel: "noopener noreferrer",
-                            class: "card-action",
-                            "buymeacoffee.com/scadoshi ↗"
-                        }
+                    Panel {
+                        eyebrow: "One-Time",
+                        title: "Buy Me a Coffee",
+                        actions: rsx! {
+                            a {
+                                class: "panel-action",
+                                href: BMC_URL,
+                                target: "_blank",
+                                rel: "noopener noreferrer",
+                                "buymeacoffee.com/scadoshi \u{2197}"
+                            }
+                        },
+                        p { class: "card-summary", "Quick one-off support through Buy Me a Coffee." }
                     }
-                    div { class: "card",
-                        span { class: "card-category", "Recurring" }
-                        h3 { class: "card-title", "GitHub Sponsors" }
-                        p { class: "card-summary", "Monthly support via GitHub." }
-                        a {
-                            href: GITHUB_SPONSORS_URL,
-                            target: "_blank",
-                            rel: "noopener noreferrer",
-                            class: "card-action",
-                            "github.com/sponsors/scadoshi ↗"
-                        }
+                    Panel {
+                        eyebrow: "Recurring",
+                        title: "GitHub Sponsors",
+                        actions: rsx! {
+                            a {
+                                class: "panel-action",
+                                href: GITHUB_SPONSORS_URL,
+                                target: "_blank",
+                                rel: "noopener noreferrer",
+                                "github.com/sponsors/scadoshi \u{2197}"
+                            }
+                        },
+                        p { class: "card-summary", "Recurring monthly support via GitHub Sponsors." }
                     }
                 }
             }
