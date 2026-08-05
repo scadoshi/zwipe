@@ -2165,6 +2165,14 @@ footer {
     transition: all 0.2s ease;
 }
 
+/* Hover-capable pointers only, so touch devices never keep a stuck grown
+   state. Same slight scale-up as the share screen's keyword chips. */
+@media (hover: hover) {
+    .ff-name-link:hover {
+        transform: scale(1.06);
+    }
+}
+
 .ff-name-link:active {
     transform: scale(0.97);
 }
