@@ -54,6 +54,9 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   cold-starts the next open instead of tripping ndk-context's double-init
   assert. Upstream tao fixed the context release in 0.34.4–0.34.8, but dioxus
   lacks a recreation path, so the process-kill is the correct fix regardless.
+- **Search-bar clear buttons DONE (2026-08-05, rides 1.7.6)**: all 14
+  type-to-search inputs (filter bars + command-zone pickers) got quick add's
+  show-when-non-empty ×; plan archived.
 
 ## 2026-07-30 (1.7.4 SUBMITTED both stores: error/crash reporting live end to end)
 

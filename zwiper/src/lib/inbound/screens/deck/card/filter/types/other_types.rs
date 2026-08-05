@@ -189,20 +189,33 @@ pub(crate) fn OtherTypes() -> Element {
             }
         }
 
-        input { class: "input input-compact",
-            id: "other-type-search",
-            placeholder: "Type to search",
-            value: "{search_query()}",
-            r#type: "text",
-            autocapitalize: "none",
-            autocorrect: "off",
-            spellcheck: "false",
-            oninput: move |event| {
-                is_typing.set(true);
-                search_query.set(event.value());
-            },
-            onblur: move |_| {
-                is_typing.set(false);
+        div { class: "flex items-center gap-05",
+            input { class: "input input-compact",
+                style: "flex: 1; margin-bottom: 0;",
+                id: "other-type-search",
+                placeholder: "Type to search",
+                value: "{search_query()}",
+                r#type: "text",
+                autocapitalize: "none",
+                autocorrect: "off",
+                spellcheck: "false",
+                oninput: move |event| {
+                    is_typing.set(true);
+                    search_query.set(event.value());
+                },
+                onblur: move |_| {
+                    is_typing.set(false);
+                }
+            }
+            if !search_query().is_empty() {
+                button {
+                    class: "clear-btn",
+                    onclick: move |_| {
+                        search_query.set(String::new());
+                        is_typing.set(false);
+                    },
+                    "\u{00d7}"
+                }
             }
         }
 
@@ -283,20 +296,33 @@ pub(crate) fn OtherTypes() -> Element {
             }
         }
 
-        input { class: "input input-compact",
-            id: "type-excludes-search",
-            placeholder: "Type to search",
-            value: "{excludes_search()}",
-            r#type: "text",
-            autocapitalize: "none",
-            autocorrect: "off",
-            spellcheck: "false",
-            oninput: move |event| {
-                excludes_is_typing.set(true);
-                excludes_search.set(event.value());
-            },
-            onblur: move |_| {
-                excludes_is_typing.set(false);
+        div { class: "flex items-center gap-05",
+            input { class: "input input-compact",
+                style: "flex: 1; margin-bottom: 0;",
+                id: "type-excludes-search",
+                placeholder: "Type to search",
+                value: "{excludes_search()}",
+                r#type: "text",
+                autocapitalize: "none",
+                autocorrect: "off",
+                spellcheck: "false",
+                oninput: move |event| {
+                    excludes_is_typing.set(true);
+                    excludes_search.set(event.value());
+                },
+                onblur: move |_| {
+                    excludes_is_typing.set(false);
+                }
+            }
+            if !excludes_search().is_empty() {
+                button {
+                    class: "clear-btn",
+                    onclick: move |_| {
+                        excludes_search.set(String::new());
+                        excludes_is_typing.set(false);
+                    },
+                    "\u{00d7}"
+                }
             }
         }
     }

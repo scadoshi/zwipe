@@ -608,22 +608,36 @@ pub(crate) fn DeckFields(
                     }
                 }
 
-                input { class: "input",
-                    id: "commander",
-                    r#type: "text",
-                    placeholder: "Not set",
-                    value: "{commander_display}",
-                    autocapitalize: "none",
-                    autocorrect: "off",
-                    spellcheck: "false",
-                    onclick: move |_| {
-                        cmd_search_query.set(String::new());
-                        commander_display.set(String::new());
-                        commander.set(None);
-                    },
-                    oninput: move |event| {
-                        cmd_search_query.set(event.value());
-                        commander_display.set(event.value());
+                div { class: "flex items-center gap-05",
+                    input { class: "input",
+                        style: "flex: 1;",
+                        id: "commander",
+                        r#type: "text",
+                        placeholder: "Not set",
+                        value: "{commander_display}",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        onclick: move |_| {
+                            cmd_search_query.set(String::new());
+                            commander_display.set(String::new());
+                            commander.set(None);
+                        },
+                        oninput: move |event| {
+                            cmd_search_query.set(event.value());
+                            commander_display.set(event.value());
+                        }
+                    }
+                    if !cmd_search_query().is_empty() {
+                        button {
+                            class: "clear-btn",
+                            onclick: move |_| {
+                                cmd_search_query.set(String::new());
+                                commander_display.set(String::new());
+                                cmd_show_dropdown.set(false);
+                            },
+                            "\u{00d7}"
+                        }
                     }
                 }
             }
@@ -691,22 +705,36 @@ pub(crate) fn DeckFields(
                     }
                 }
 
-                input { class: "input",
-                    id: "partner_commander",
-                    r#type: "text",
-                    placeholder: "Not set",
-                    value: "{partner_commander_display}",
-                    autocapitalize: "none",
-                    autocorrect: "off",
-                    spellcheck: "false",
-                    onclick: move |_| {
-                        partner_search_query.set(String::new());
-                        partner_commander_display.set(String::new());
-                        partner_commander.set(None);
-                    },
-                    oninput: move |event| {
-                        partner_search_query.set(event.value());
-                        partner_commander_display.set(event.value());
+                div { class: "flex items-center gap-05",
+                    input { class: "input",
+                        style: "flex: 1;",
+                        id: "partner_commander",
+                        r#type: "text",
+                        placeholder: "Not set",
+                        value: "{partner_commander_display}",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        onclick: move |_| {
+                            partner_search_query.set(String::new());
+                            partner_commander_display.set(String::new());
+                            partner_commander.set(None);
+                        },
+                        oninput: move |event| {
+                            partner_search_query.set(event.value());
+                            partner_commander_display.set(event.value());
+                        }
+                    }
+                    if !partner_search_query().is_empty() {
+                        button {
+                            class: "clear-btn",
+                            onclick: move |_| {
+                                partner_search_query.set(String::new());
+                                partner_commander_display.set(String::new());
+                                partner_show_dropdown.set(false);
+                            },
+                            "\u{00d7}"
+                        }
                     }
                 }
             }
@@ -774,22 +802,36 @@ pub(crate) fn DeckFields(
                     }
                 }
 
-                input { class: "input",
-                    id: "background",
-                    r#type: "text",
-                    placeholder: "Not set",
-                    value: "{background_display}",
-                    autocapitalize: "none",
-                    autocorrect: "off",
-                    spellcheck: "false",
-                    onclick: move |_| {
-                        bg_search_query.set(String::new());
-                        background_display.set(String::new());
-                        background.set(None);
-                    },
-                    oninput: move |event| {
-                        bg_search_query.set(event.value());
-                        background_display.set(event.value());
+                div { class: "flex items-center gap-05",
+                    input { class: "input",
+                        style: "flex: 1;",
+                        id: "background",
+                        r#type: "text",
+                        placeholder: "Not set",
+                        value: "{background_display}",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        onclick: move |_| {
+                            bg_search_query.set(String::new());
+                            background_display.set(String::new());
+                            background.set(None);
+                        },
+                        oninput: move |event| {
+                            bg_search_query.set(event.value());
+                            background_display.set(event.value());
+                        }
+                    }
+                    if !bg_search_query().is_empty() {
+                        button {
+                            class: "clear-btn",
+                            onclick: move |_| {
+                                bg_search_query.set(String::new());
+                                background_display.set(String::new());
+                                bg_show_dropdown.set(false);
+                            },
+                            "\u{00d7}"
+                        }
                     }
                 }
             }
@@ -857,22 +899,36 @@ pub(crate) fn DeckFields(
                     }
                 }
 
-                input { class: "input",
-                    id: "signature_spell",
-                    r#type: "text",
-                    placeholder: "Not set",
-                    value: "{signature_spell_display}",
-                    autocapitalize: "none",
-                    autocorrect: "off",
-                    spellcheck: "false",
-                    onclick: move |_| {
-                        spell_search_query.set(String::new());
-                        signature_spell_display.set(String::new());
-                        signature_spell.set(None);
-                    },
-                    oninput: move |event| {
-                        spell_search_query.set(event.value());
-                        signature_spell_display.set(event.value());
+                div { class: "flex items-center gap-05",
+                    input { class: "input",
+                        style: "flex: 1;",
+                        id: "signature_spell",
+                        r#type: "text",
+                        placeholder: "Not set",
+                        value: "{signature_spell_display}",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        onclick: move |_| {
+                            spell_search_query.set(String::new());
+                            signature_spell_display.set(String::new());
+                            signature_spell.set(None);
+                        },
+                        oninput: move |event| {
+                            spell_search_query.set(event.value());
+                            signature_spell_display.set(event.value());
+                        }
+                    }
+                    if !spell_search_query().is_empty() {
+                        button {
+                            class: "clear-btn",
+                            onclick: move |_| {
+                                spell_search_query.set(String::new());
+                                signature_spell_display.set(String::new());
+                                spell_show_dropdown.set(false);
+                            },
+                            "\u{00d7}"
+                        }
                     }
                 }
             }
