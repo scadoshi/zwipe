@@ -170,3 +170,31 @@ Ship the full application as a webapp at `zwipe.net` alongside the existing mark
 ## Hosting: Ubuntu Server via Cloudflare Tunnel
 
 See `architecture/hosting.md`.
+
+---
+
+## Serving Caches: TtlSlot — Determinism Over Persistence
+
+**Decision (2026-08-05):** server-side caches for shared, parameterless values
+are `TtlSlot<V>` instances (`zerver/src/lib/inbound/http/cache.rs`) — one
+**typed field per cached value on `AppState`**, not a keyed cache store.
+
+A `TtlSlot` is a cached *variable*, not a store: one slot holding THE current
+value plus a deadline. No keys, no lookups, no eviction policy —
+overwrite-on-expiry is the whole lifecycle. Deadlines are pinned instants
+(the refresher returns `(value, expires_at)`), so each use case aligns expiry
+to a wall-clock boundary instead of drifting per refresh time. Rebuilds are
+single-flight (write-lock double-check), and a failed refresh serves the
+stale value with a WARN rather than a 5xx.
+
+**The pairing rule that makes it safe:** whatever fills a slot must be
+**deterministic for its time bucket** (first consumer: the featured-flavor
+pick, `ORDER BY md5(id || hour_key)`). Then the cache is pure memoization —
+a restart mid-bucket re-derives the identical value on the first request, so
+deploys (which restart zerver) are invisible and nothing ever needs Redis or
+a persisted slot. The database plus the clock is the durable state.
+
+**When NOT to use it:** per-something state ("the X for each user/deck/
+commander") wants a keyed map — see `AppState.last_active_cache`
+(`DashMap<Uuid, Instant>`). If a keyed-with-deadline need ever appears, build
+a `TtlMap` beside `TtlSlot`; don't stretch the slot.

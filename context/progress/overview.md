@@ -57,6 +57,13 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 - **Search-bar clear buttons DONE (2026-08-05, rides 1.7.6)**: all 14
   type-to-search inputs (filter bars + command-zone pickers) got quick add's
   show-when-non-empty ×; plan archived.
+- **Featured flavor BUILT + locally verified (2026-08-05)**: one shared
+  flavor card per UTC hour (12-month pool, deterministic pick), served from
+  the new **`TtlSlot` serving-cache primitive** (one typed deadline-pinned
+  slot per cached value on AppState — pattern + determinism rule recorded in
+  `architecture/decisions.md`). App home renamed "Featured flavor" (rides
+  1.7.6); zwipe.net home surfaces the same card, live on next push. The
+  contribute page also went live on the shared Panel cards same day.
 
 ## 2026-07-30 (1.7.4 SUBMITTED both stores: error/crash reporting live end to end)
 
