@@ -131,12 +131,6 @@ pub fn Home() -> Element {
         Nav {}
         div { class: "banner-stack",
             Banner {
-                category: "Announcement",
-                status: BannerStatus::Done,
-                "Zwipe is now on Android. "
-                Link { to: Route::Android {}, "Download now" }
-            }
-            Banner {
                 category: "Release",
                 status: BannerStatus::Done,
                 status_label: "New",
