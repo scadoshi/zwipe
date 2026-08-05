@@ -37,8 +37,9 @@ safety net for cross-device edits and true races.
 
 ## Mechanics
 
-**Entry identity.** `UndoAction` gains an `id: Uuid` (or a monotonically
-increasing u64). `UndoLog` gains `remove(id)`. Screen-local histories
+**Entry identity (owner 2026-08-05: u64).** `UndoAction` gains a
+monotonically increasing `id: u64` (in-memory only, orderable, no Uuid
+needed). `UndoLog` gains `remove(id)`. Screen-local histories
 (`AddAction`, the remove screen's action history) store the global id of
 any deck mutation they caused.
 
@@ -72,7 +73,11 @@ any deck mutation they caused.
   entries recorded before it are semantically void — and the screen takes
   enough deliberate steps that accidental imports aren't a real risk.
   Same clearing applies to Archidekt import and clone targets if they share
-  the path. `UndoLog.clear()` on import success.
+  the path. `UndoLog.clear()` on import success. **Disclose it (owner
+  2026-08-05): the import screen's hint gets one brief line** — e.g.
+  "Importing replaces the deck, so undo history starts fresh." — so the
+  behavior is stated in-app, not a surprise. Keep it timeless per the hint
+  rules.
 - Deck-profile edits (name, tags, format, land/price targets, picking a
   different commander) — unchanged scope from v1. The ONE profile-backed
   action now included is the command-zone printing change (below).
@@ -83,8 +88,10 @@ PROFILE (the slot id points at the chosen printing), not a deck_card row —
 which is why v1 skipped it — but the inverse is fully in hand at save time:
 
 - New variant: `CommandZonePrintingChanged { slot, old_card: Card,
-  new_id: Uuid }`. `CommandZoneSlot` moves out of `view.rs` (private today)
-  into `undo_log.rs` or gains `pub(crate)`.
+  new_id: Uuid }`. `CommandZoneSlot` MOVES out of `view.rs` (private today)
+  into `undo_log.rs` beside the variant (decided 2026-08-05): the store is
+  shared infrastructure and must not import types from one screen's view
+  module — screens depend on the store, never the reverse.
 - Record in the printing sheet's `on_save` command-zone arm on server
   success (mirror of the regular-card arm).
 - Apply: rebuild the matching `HttpUpdateDeckProfile` builder arm with the
