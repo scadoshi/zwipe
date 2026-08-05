@@ -67,7 +67,7 @@ use axum::routing::{delete, get, post, put};
 #[cfg(feature = "zerver")]
 use axum::{
     body::Body,
-    http::{Response, StatusCode},
+    http::{HeaderMap, HeaderValue, Response, StatusCode, header},
 };
 #[cfg(feature = "zerver")]
 use std::{sync::Arc, time::Duration};
@@ -85,12 +85,12 @@ use tower_governor::{GovernorLayer, errors::GovernorError, governor::GovernorCon
 /// instead of 401, polluting error logs and misleading health probes.
 ///
 /// This remaps that one case to **401 Unauthorized** (the honest status for
-/// "you didn't authenticate"). Every other variant — notably
-/// `TooManyRequests` (429) for genuine rate-limit hits — is delegated to the
-/// library's default response, so real rate limiting is unchanged.
+/// "you didn't authenticate"). `TooManyRequests` gets the stable 429 body
+/// (see [`too_many_requests_response`]); anything else delegates to the
+/// library default.
 ///
 /// Only attached to the user-id-keyed limiters; the public, IP-keyed limiters
-/// can always extract a key and never hit this path.
+/// can always extract a key and use [`stable_rate_limit`] instead.
 #[cfg(feature = "zerver")]
 fn unauthorized_on_missing_key(error: GovernorError) -> Response<Body> {
     match error {
@@ -99,7 +99,58 @@ fn unauthorized_on_missing_key(error: GovernorError) -> Response<Body> {
             *response.status_mut() = StatusCode::UNAUTHORIZED;
             response
         }
+        GovernorError::TooManyRequests { wait_time, headers } => {
+            too_many_requests_response(wait_time, headers)
+        }
         other => other.into_response().map(Body::from),
+    }
+}
+
+/// Rate-limit error handler for the public, IP-keyed limiters: the stable 429
+/// body for `TooManyRequests`, library default for everything else (their key
+/// extraction never legitimately fails, so no 401 remap here).
+#[cfg(feature = "zerver")]
+fn stable_rate_limit(error: GovernorError) -> Response<Body> {
+    match error {
+        GovernorError::TooManyRequests { wait_time, headers } => {
+            too_many_requests_response(wait_time, headers)
+        }
+        other => other.into_response().map(Body::from),
+    }
+}
+
+/// 429 with a STABLE body and the exact wait in the `Retry-After` header.
+///
+/// tower_governor's default body interpolates the live countdown ("Too Many
+/// Requests! Wait for 1784s"); the client shows that text in a toast AND uses
+/// it in the error-report dedupe key, so every second of a lockout minted a
+/// fresh `client_errors` row (field-confirmed 2026-08-05). Bucketed copy keeps
+/// the message stable across an incident; machines that want precision read
+/// the header.
+#[cfg(feature = "zerver")]
+fn too_many_requests_response(wait_time: u64, headers: Option<HeaderMap>) -> Response<Body> {
+    let mut response = Response::new(Body::from(rate_limit_copy(wait_time)));
+    *response.status_mut() = StatusCode::TOO_MANY_REQUESTS;
+    if let Some(limit_headers) = headers {
+        response.headers_mut().extend(limit_headers);
+    }
+    if let Ok(value) = HeaderValue::from_str(&wait_time.to_string()) {
+        response.headers_mut().insert(header::RETRY_AFTER, value);
+    }
+    response
+}
+
+/// Human copy for a 429, bucketed so it stays identical for minutes at a time
+/// (long lockouts round up to 5-minute steps).
+#[cfg(feature = "zerver")]
+fn rate_limit_copy(wait_secs: u64) -> String {
+    match wait_secs {
+        0..=60 => "too many requests, try again in a minute".to_string(),
+        61..=300 => "too many requests, try again in a few minutes".to_string(),
+        _ => format!(
+            "too many requests, try again in about {} minutes",
+            wait_secs.div_ceil(300) * 5
+        ),
     }
 }
 
@@ -248,7 +299,7 @@ pub fn public_routes() -> Router<AppState> {
                 .route("/", get(are_server_and_database_running))
                 .route("/server", get(is_server_running))
                 .route("/database", get(are_server_and_database_running))
-                .layer(GovernorLayer::new(health_config)),
+                .layer(GovernorLayer::new(health_config).error_handler(stable_rate_limit)),
         )
         .nest(
             "/api",
@@ -258,29 +309,43 @@ pub fn public_routes() -> Router<AppState> {
                     Router::new()
                         .route(
                             "/register",
-                            post(register_user).layer(GovernorLayer::new(register_config)),
+                            post(register_user).layer(
+                                GovernorLayer::new(register_config)
+                                    .error_handler(stable_rate_limit),
+                            ),
                         )
                         .route(
                             "/login",
-                            post(authenticate_user).layer(GovernorLayer::new(login_config)),
+                            post(authenticate_user).layer(
+                                GovernorLayer::new(login_config).error_handler(stable_rate_limit),
+                            ),
                         )
                         .route(
                             "/refresh",
-                            post(refresh_session).layer(GovernorLayer::new(refresh_config)),
+                            post(refresh_session).layer(
+                                GovernorLayer::new(refresh_config).error_handler(stable_rate_limit),
+                            ),
                         )
                         .route(
                             "/verify-email",
-                            post(verify_email)
-                                .layer(GovernorLayer::new(Arc::clone(&verify_reset_config))),
+                            post(verify_email).layer(
+                                GovernorLayer::new(Arc::clone(&verify_reset_config))
+                                    .error_handler(stable_rate_limit),
+                            ),
                         )
                         .route(
                             "/forgot-password",
-                            post(request_password_reset)
-                                .layer(GovernorLayer::new(forgot_password_config)),
+                            post(request_password_reset).layer(
+                                GovernorLayer::new(forgot_password_config)
+                                    .error_handler(stable_rate_limit),
+                            ),
                         )
                         .route(
                             "/reset-password",
-                            post(reset_password).layer(GovernorLayer::new(verify_reset_config)),
+                            post(reset_password).layer(
+                                GovernorLayer::new(verify_reset_config)
+                                    .error_handler(stable_rate_limit),
+                            ),
                         ),
                 )
                 .nest(
@@ -296,33 +361,50 @@ pub fn public_routes() -> Router<AppState> {
                         .route("/oracle-words", get(get_oracle_words))
                         .route("/languages", get(get_languages))
                         .route("/sets", get(get_sets))
-                        .layer(GovernorLayer::new(public_card_config)),
+                        .layer(
+                            GovernorLayer::new(public_card_config).error_handler(stable_rate_limit),
+                        ),
                 )
                 .nest(
                     "/marketing",
                     Router::new()
                         .route("/stats", get(get_public_metrics))
-                        .layer(GovernorLayer::new(public_marketing_config)),
+                        .layer(
+                            GovernorLayer::new(public_marketing_config)
+                                .error_handler(stable_rate_limit),
+                        ),
                 )
                 .nest(
                     "/client",
                     Router::new()
                         .route("/min-version", get(get_min_client_version))
-                        .layer(GovernorLayer::new(public_client_config)),
+                        .layer(
+                            GovernorLayer::new(public_client_config)
+                                .error_handler(stable_rate_limit),
+                        ),
                 )
                 .route(
                     "/changelog",
-                    get(get_changelog).layer(GovernorLayer::new(public_changelog_config)),
+                    get(get_changelog).layer(
+                        GovernorLayer::new(public_changelog_config)
+                            .error_handler(stable_rate_limit),
+                    ),
                 )
                 .nest(
                     "/metrics",
                     Router::new()
                         .route("/anonymous", post(record_anonymous_event))
-                        .layer(GovernorLayer::new(anonymous_event_config))
+                        .layer(
+                            GovernorLayer::new(anonymous_event_config)
+                                .error_handler(stable_rate_limit),
+                        )
                         .merge(
                             Router::new()
                                 .route("/crash", post(record_crash))
-                                .layer(GovernorLayer::new(crash_report_config))
+                                .layer(
+                                    GovernorLayer::new(crash_report_config)
+                                        .error_handler(stable_rate_limit),
+                                )
                                 // A crash report is ~2KB of truncated panic
                                 // text; 4KB bounds this unauthed body hard.
                                 .layer(DefaultBodyLimit::max(4096)),
@@ -332,7 +414,10 @@ pub fn public_routes() -> Router<AppState> {
                     "/share",
                     Router::new()
                         .route("/deck/{token}", get(get_shared_deck))
-                        .layer(GovernorLayer::new(public_share_config)),
+                        .layer(
+                            GovernorLayer::new(public_share_config)
+                                .error_handler(stable_rate_limit),
+                        ),
                 ),
         )
 }
@@ -519,4 +604,26 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                 ),
         )
         .layer(GovernorLayer::new(private_config).error_handler(unauthorized_on_missing_key))
+}
+
+#[cfg(all(test, feature = "zerver"))]
+mod tests {
+    use super::rate_limit_copy;
+
+    #[test]
+    fn rate_limit_copy_is_stable_within_buckets() {
+        // Short waits: one message for the whole window.
+        assert_eq!(rate_limit_copy(1), rate_limit_copy(60));
+        assert_eq!(rate_limit_copy(61), rate_limit_copy(300));
+        // Long lockouts round up in 5-minute steps — 1784s and 1500s share
+        // "about 30 minutes"; a fresh lockout in the next step differs.
+        assert_eq!(
+            rate_limit_copy(1784),
+            "too many requests, try again in about 30 minutes"
+        );
+        assert_eq!(rate_limit_copy(1784), rate_limit_copy(1501));
+        assert_ne!(rate_limit_copy(1500), rate_limit_copy(1501));
+        // No raw seconds ever appear in the copy.
+        assert!(!rate_limit_copy(1784).contains("1784"));
+    }
 }
