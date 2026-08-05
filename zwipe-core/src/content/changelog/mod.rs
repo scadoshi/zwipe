@@ -25,7 +25,16 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.7.6",
+    date: "",
+    entries: &[
+        "Featured flavor: the home screen quote is now the same card for everyone, picked fresh every hour from the past year of sets. The same card shows on zwipe.net, where tapping its name reveals the image.",
+        "Every search bar now has a clear button: one tap wipes what you typed and closes the results.",
+        "Android: reopening the app after the system quietly closed it in the background now starts clean instead of crashing.",
+        "Rate limit messages now say how long to wait in plain terms, like \"try again in a minute\".",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
