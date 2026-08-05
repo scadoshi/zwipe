@@ -1,8 +1,14 @@
 # Featured flavor — one shared pick, rotating hourly
 
-**Status: DECIDED (owner 2026-08-05), ready to build.** All product calls
-made; no open bits. Supersedes the bucketed "flavor of the hour" draft
-(this file's git history has it).
+**Status: BUILT (2026-08-05).** Server half smoke-tested locally (pick from
+the 12-month window, cache-hit on repeat calls); app + zite surfaces built
+and compiling. Remaining: server deploys on next push (BEFORE any client
+testing against prod), owner eyeballs both surfaces, app half rides 1.7.6.
+The server introduced the reusable serving-cache primitive
+(`zerver/src/lib/inbound/http/cache.rs`, `TtlSlot` — one typed slot per
+cached value on AppState; deadline-pinned, single-flight, stale-grace).
+Supersedes the bucketed "flavor of the hour" draft (this file's git history
+has it).
 
 **One sentence:** replace the client's per-user random flavor fetch with ONE
 server-picked card per hour — "Featured flavor" — drawn from a single pool

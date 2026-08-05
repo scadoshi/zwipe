@@ -21,7 +21,7 @@ use crate::{
         buy_links,
         client::{
             ZwipeClient,
-            card::search_cards::ClientSearchCards,
+            card::featured_flavor::ClientFeaturedFlavor,
             user::{get_user::ClientGetUser, preferences::ClientGetPreferences},
         },
     },
@@ -32,12 +32,7 @@ use std::time::Duration;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
     auth::models::session::Session,
-    card::{
-        scryfall_data::ScryfallData,
-        search_card::card_filter::{
-            builder::CardQueryBuilder, card_sort_key::CardSortKey, price_currency::PriceCurrency,
-        },
-    },
+    card::{scryfall_data::ScryfallData, search_card::card_filter::price_currency::PriceCurrency},
     deck::deck_metrics::card_price,
     logo,
     user::models::{hints::HINT_FIRST_LOGIN, theme::ThemeConfig},
@@ -130,41 +125,30 @@ pub fn Home() -> Element {
         });
     });
 
-    // Random flavor card, cached app-wide with a TTL (FlavorCard context).
-    // Refetch only when the cache is empty or expired, and overwrite only on
-    // success — so rapid navigation reuses the cached quote and a failed /
-    // rate-limited refetch keeps the last one instead of blanking.
+    // Featured flavor — ONE shared server pick per UTC hour (unauthed
+    // endpoint; everyone sees the same card at the same moment). Cached
+    // app-wide until the top of the next hour (FlavorCard context); refetch
+    // only when empty or expired, and overwrite only on success — rapid
+    // navigation reuses the cache and a failed refetch keeps the last card
+    // instead of blanking.
     let mut flavor: Signal<Option<FlavorCard>> = use_context();
     use_effect(move || {
         // Subscribe to the session so expiry is also re-checked when it
-        // refreshes (~60s), not only on mount.
-        let current_session = session();
+        // refreshes (~60s), not only on mount — the fetch itself no longer
+        // needs the session.
+        let _ = session();
         let needs_refresh = flavor.peek().as_ref().is_none_or(FlavorCard::is_expired);
         if !needs_refresh {
             return;
         }
-        let Some(session_val) = current_session else {
-            return;
-        };
         spawn(async move {
-            let mut builder = CardQueryBuilder::new();
-            builder
-                .unset_is_playable()
-                .set_has_flavor_text(true)
-                .set_sort(CardSortKey::Random)
-                .set_limit(1);
-            let Ok(filter) = builder.build() else {
-                return;
-            };
-            match client().search_cards(&filter, &session_val).await {
-                Ok(cards) => {
-                    if let Some(card) = cards.into_iter().next() {
-                        flavor.set(Some(FlavorCard::new(card)));
-                    }
+            match client().featured_flavor().await {
+                Ok(card) => {
+                    flavor.set(Some(FlavorCard::new(card)));
                 }
                 Err(e) => {
                     // Keep the existing cached card rather than blanking.
-                    tracing::warn!("flavor card fetch failed: {e}");
+                    tracing::warn!("featured flavor fetch failed: {e}");
                 }
             }
         });
@@ -198,7 +182,7 @@ pub fn Home() -> Element {
                                     .map(|p| PriceCurrency::Usd.format_amount(p));
                                 rsx! {
                                     div { class: "card-header", style: "justify-content: center;",
-                                        span { class: "card-title", "Flavor of the hour" }
+                                        span { class: "card-title", "Featured flavor" }
                                     }
                                     div { class: "flavor-quote", style: "padding: 1rem;",
                                         "{flavor_text} "
@@ -223,7 +207,7 @@ pub fn Home() -> Element {
                             }
                         }
                         None => rsx! {
-                            // Mirror the loaded card: a "Flavor of the hour" title
+                            // Mirror the loaded card: a "Featured flavor" title
                             // bar + divider, then the quote lines.
                             div { class: "skeleton-card-header", style: "display: flex; justify-content: center;",
                                 div { class: "skeleton-bar skeleton-section-label", style: "width: 45%; margin-bottom: 0;" }

@@ -1,6 +1,6 @@
 use crate::{
     Footer, Nav, Route,
-    components::{PageMeta, StatsStrip},
+    components::{FeaturedFlavor, PageMeta, StatsStrip},
 };
 use dioxus::prelude::*;
 use zwipe_components::{Banner, BannerStatus, Panel};
@@ -164,6 +164,7 @@ pub fn Home() -> Element {
                     span { class: "hero-chip chip-plat", "Android" }
                 }
                 StatsStrip {}
+                FeaturedFlavor {}
             }
         }
         div { class: "page content-enter",

@@ -2113,3 +2113,48 @@ footer {
         font-size: 0.62rem;
     }
 }
+
+/* ── Featured flavor ──────────────────────────────────────────────────────
+   The hour's shared flavor card on the home hero — same pick the app shows,
+   flipping at the top of every UTC hour. Tap the name to reveal the card. */
+.featured-flavor {
+    max-width: 34rem;
+    margin: 1.25rem auto 0;
+    text-align: center;
+}
+
+.ff-title {
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-tertiary);
+    margin-bottom: 0.35rem;
+}
+
+.ff-quote {
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.ff-name {
+    margin-top: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--accent-primary);
+}
+
+.ff-name-link {
+    cursor: pointer;
+    text-decoration: underline dotted;
+}
+
+.ff-image {
+    margin-top: 0.75rem;
+    display: flex;
+    justify-content: center;
+}
+
+.ff-card-image {
+    width: min(16rem, 80vw);
+    border-radius: 4.75% / 3.5%;
+}

@@ -49,15 +49,13 @@ use zwipe_core::{
 /// CFBundleShortVersionString since 1.0.3).
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// How long the Home screen's cached flavor card stays fresh.
-const FLAVOR_TTL_HOURS: i64 = 1;
-
-/// A flavor card cached for the Home screen, with the time it goes stale.
+/// The featured flavor card cached for the Home screen, with the time it
+/// goes stale.
 ///
 /// Stored above the router (as `Signal<Option<FlavorCard>>`) so it survives
-/// navigation: Home reads it and only refetches when empty or expired, so
-/// rapid back-and-forth no longer hammers the rate-limited search endpoint or
-/// blanks the quote.
+/// navigation: Home reads it and only refetches when empty or expired. The
+/// server serves ONE shared pick per UTC hour, so expiry pins to the top of
+/// the next hour — the app flips exactly when the server does.
 #[derive(Clone)]
 pub struct FlavorCard {
     /// The card whose flavor text is shown.
@@ -67,11 +65,15 @@ pub struct FlavorCard {
 }
 
 impl FlavorCard {
-    /// Wrap a freshly fetched card with an expiry `FLAVOR_TTL_HOURS` from now.
+    /// Wrap a freshly fetched card, expiring at the top of the next UTC hour
+    /// (the server's rotation boundary).
     pub fn new(card: Card) -> Self {
+        use chrono::Timelike;
+        let now = Utc::now();
+        let secs_into_hour = i64::from(now.minute()) * 60 + i64::from(now.second());
         Self {
             card,
-            expires_at: Utc::now() + chrono::Duration::hours(FLAVOR_TTL_HOURS),
+            expires_at: now + chrono::Duration::seconds(3600 - secs_into_hour.min(3599)),
         }
     }
 
