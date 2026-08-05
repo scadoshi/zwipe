@@ -4,12 +4,13 @@
 //! the server flips the pick at the top of every UTC hour, so the site shows
 //! a living element that matches what app users see at the same moment.
 //! Fetch pattern mirrors `StatsStrip`; on any error the section hides itself
-//! rather than breaking the home page. Tap the card-name tag to open the
-//! full-art overlay (same pattern as the shared-deck page's).
+//! rather than breaking the home page. Renders as a wide `Panel` below the
+//! features grid. Tap the card-name tag to open the full-art overlay (same
+//! pattern as the shared-deck page's).
 
 use crate::{API_BASE, components::sleep_ms};
 use dioxus::prelude::*;
-use zwipe_components::FlippableCardImage;
+use zwipe_components::{FlippableCardImage, Panel};
 use zwipe_core::{
     domain::card::{Card, scryfall_data::ImageSize},
     http::paths::featured_flavor_route,
@@ -40,19 +41,19 @@ pub fn FeaturedFlavor() -> Element {
     let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
 
     rsx! {
-        hr { class: "hero-rule" }
         section { class: "featured-flavor",
-            div { class: "ff-title", "Featured flavor" }
-            div { class: "ff-quote", "{flavor_text}" }
-            div { class: "ff-name-row",
-                span {
-                    class: if has_image { "ff-name ff-name-link" } else { "ff-name" },
-                    onclick: move |_| {
-                        if has_image {
-                            show_overlay.set(true);
-                        }
-                    },
-                    "{name}"
+            Panel { title: "Featured flavor",
+                div { class: "ff-quote", "{flavor_text}" }
+                div { class: "ff-name-row",
+                    span {
+                        class: if has_image { "ff-name ff-name-link" } else { "ff-name" },
+                        onclick: move |_| {
+                            if has_image {
+                                show_overlay.set(true);
+                            }
+                        },
+                        "{name}"
+                    }
                 }
             }
         }

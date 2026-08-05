@@ -164,7 +164,6 @@ pub fn Home() -> Element {
                     span { class: "hero-chip chip-plat", "Android" }
                 }
                 StatsStrip {}
-                FeaturedFlavor {}
             }
         }
         div { class: "page content-enter",
@@ -260,6 +259,7 @@ pub fn Home() -> Element {
                     }
                 }
             }
+            FeaturedFlavor {}
             Testimonials {}
         }
         Footer {}

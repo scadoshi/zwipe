@@ -2115,29 +2115,21 @@ footer {
 }
 
 /* ── Featured flavor ──────────────────────────────────────────────────────
-   The hour's shared flavor card on the home hero — same pick the app shows,
-   flipping at the top of every UTC hour. Split from the stats by the same
-   full-width rule StatsStrip emits; tap the card-name tag to open the
-   full-art overlay (shared .sd-image-overlay* styles). */
+   The hour's shared flavor pick, same card the app home shows, flipping at
+   the top of every UTC hour. A wide Panel below the features grid; tap the
+   card-name tag to open the full-art overlay (shared .sd-image-overlay*
+   styles). */
 .featured-flavor {
-    max-width: 34rem;
-    margin: 0 auto;
-    text-align: center;
+    max-width: 44rem;
+    margin: 2.5rem auto 0;
     animation: hero-stats-in 0.4s ease-out both;
-}
-
-.ff-title {
-    font-size: 0.8rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--accent-tertiary);
-    margin-bottom: 0.35rem;
 }
 
 .ff-quote {
     font-style: italic;
     color: var(--text-primary);
     line-height: 1.5;
+    text-align: center;
 }
 
 .ff-name-row {
