@@ -19,10 +19,10 @@ in [../../setup.md](../../setup.md).
    The Gradle output `.aab` is **unsigned** — you sign it yourself with the
    upload key (step 4).
 3. **R8 minification is ON in release** (off in debug). It can strip WebView/JNI
-   classes the app needs. **Always smoke-test the release build** (step 5) before
-   rollout — a debug build passing proves nothing about the release.
+   classes the app needs — a debug build passing proves nothing about the release.
+   The owner's on-device release testing covers this before rollout.
 4. **targetSdk 35 enables edge-to-edge enforcement.** Verify the WebView layout
-   isn't drawing critical content under the status/nav bars (checked in step 5).
+   isn't drawing critical content under the status/nav bars during that testing.
 5. **dx regenerates `MainActivity.kt` too** (bare `class MainActivity :
    WryActivity()`), which closes the app on the OS back gesture. Re-apply the
    back-navigation patch after `dx bundle` (step 1c) or back-swipe ships broken.
@@ -38,7 +38,7 @@ in [../../setup.md](../../setup.md).
   repo and covered by the [mac-restore](../../../ios/mac_restore.md) backup.
   *Losing the upload key is recoverable via Play's upload-key reset; losing the
   password isn't fun — keep it.*
-- **bundletool** (`brew install bundletool`) — for the smoke test.
+- **bundletool** (`brew install bundletool`) — manifest checks + the optional emulator install.
 - Build env exported (see [../../setup.md](../../setup.md)):
   ```bash
   export ANDROID_HOME="$HOME/Library/Android/sdk"
@@ -159,10 +159,11 @@ ls zwipe-*.aab | grep -v "zwipe-<VERSION>.aab" | xargs rm -v   # remove all but 
 > :app:bundleRelease` → jarsigner) — no full rebuild, the patched project is
 > still in place. Always bump; never reuse.
 
-## 5. Smoke-test the RELEASE build on the emulator
+## 5. (Optional) Emulator install of the RELEASE artifact
 
-Build an installable universal APK from the **signed** AAB and run it — this
-exercises the exact minified artifact you're uploading (R8 + edge-to-edge).
+The owner tests the release build on a real device before rollout, so an
+emulator smoke test is not part of the standard flow. If a device isn't
+available, this exercises the exact minified artifact (R8 + edge-to-edge):
 
 ```bash
 ADB="$ANDROID_HOME/platform-tools/adb"
