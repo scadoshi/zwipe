@@ -236,16 +236,24 @@ One commit, after Phase 4 has been quiet:
   `{"Set": x}`) from the custom Deserialize — clean shape only (absent /
   null / bare value). The window ambiguities disappear with them. Update the
   helpers.rs docs to drop the "legacy accepted" caveat.
-- **`name: null` becomes a 422** (owner decision, 2026-08-05). Today an
-  explicit null on `name` silently no-ops (Option decodes null → None →
-  "unchanged"), and legacy clients send `"name": null` on every non-rename
-  update, so it stays accepted through the window. At cleanup, reject it
-  explicitly so the contract is self-describing: null is "clear" on
+- **Explicit `null` on any non-clearable field becomes a 422** (owner
+  decision, 2026-08-05) — but ONLY here, after the gate guarantees every
+  deployed client speaks the clean dialect; through the window nulls stay
+  silently ignored exactly as today. The policy: null is "clear" on
   nullable (Opdate) fields and an error on required ones — the standard
-  JSON-Merge-Patch (RFC 7396) resolution. (Implementation note: `name`
-  will need a null-vs-absent distinction to reject null — e.g.
-  `Opdate<String>` with a "cannot clear" validation arm, or a
-  double-Option — since plain `Option` can't tell them apart.)
+  JSON-Merge-Patch (RFC 7396) resolution, applied uniformly.
+  Inventory of affected fields at time of writing:
+  - `HttpUpdateDeckProfile.name` (a deck always has a name).
+  - `HttpPatchDeckCard.quantity`, `.board`, `.scryfall_data_id`, `.mvp` —
+    a deck card always has all four; null currently no-ops as absent.
+  - The remaining update bodies (password/username/email changes,
+    preferences, hint) use bare `String`/required types where null already
+    fails type decode naturally — verify with a per-endpoint null probe,
+    no code expected.
+  - Implementation note: rejecting null on a plain-`Option` field needs a
+    null-vs-absent distinction (plain `Option` can't tell them apart) —
+    e.g. a double-`Option`, or `Opdate` with a "cannot clear" validation
+    arm per field.
 - Optionally rename `HttpPatchDeckCard` → `HttpUpdateDeckCard` for
   continuity; if renamed, sweep zwiper imports in the same commit (core and
   clients live in one workspace — atomic).
