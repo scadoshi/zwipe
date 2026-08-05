@@ -48,6 +48,12 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   in `Retry-After` (the live countdown was minting a `client_errors` row per
   second — field-confirmed; fixes dedupe for already-shipped clients), and the
   zite favicons regenerated on solid `#282828` for the Google SERP icon.
+- **Android resume-crash fix built (2026-08-05, rides 1.7.6 pending on-device
+  verify)**: `MainActivity.onDestroy` now kills the process (back_handler.sh
+  template), so Activity destruction — OS-driven or root-back `finish()` —
+  cold-starts the next open instead of tripping ndk-context's double-init
+  assert. Upstream tao fixed the context release in 0.34.4–0.34.8, but dioxus
+  lacks a recreation path, so the process-kill is the correct fix regardless.
 
 ## 2026-07-30 (1.7.4 SUBMITTED both stores: error/crash reporting live end to end)
 

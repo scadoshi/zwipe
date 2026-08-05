@@ -59,6 +59,21 @@ class MainActivity : WryActivity() {
             }
         })
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // The OS can destroy the Activity while keeping the process alive (long
+        // backgrounding, memory pressure) — and finish() leaves the process
+        // behind too. Either way the next onCreate re-runs wry's native init,
+        // which panics on ndk-context's already-initialized assert (field
+        // crash: 10 reports, one user, every resume, 2026-08-02/03; tao pins
+        // below 0.34.4 never release the context, and even released, dioxus
+        // has no webview-recreation path). So the Activity always takes the
+        // process with it: every reopen is a clean cold start instead of a
+        // crash. Remove if a future dioxus/wry/tao stack handles Activity
+        // recreation for real.
+        android.os.Process.killProcess(android.os.Process.myPid())
+    }
 }
 EOF
 
