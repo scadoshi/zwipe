@@ -30,6 +30,8 @@ pub const UPCOMING: &[Release] = &[Release {
     date: "",
     entries: &[
         "Featured flavor: the home screen quote is now the same card for everyone, picked fresh every hour from the past year of sets. The same card shows on zwipe.net, where tapping its name reveals the image.",
+        "Undo now reaches every way you change your deck: swipes on the add and remove screens and command zone printing swaps all step back from the Undo button on your deck's card list.",
+        "Importing a decklist starts the deck's undo history fresh.",
         "Every search bar now has a clear button: one tap wipes what you typed and closes the results.",
         "Android: reopening the app after the system quietly closed it in the background now starts clean instead of crashing.",
         "Rate limit messages now say how long to wait in plain terms, like \"try again in a minute\".",
