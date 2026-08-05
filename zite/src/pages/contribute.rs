@@ -53,7 +53,7 @@ pub fn Contribute() -> Element {
                                 href: BMC_URL,
                                 target: "_blank",
                                 rel: "noopener noreferrer",
-                                "buymeacoffee.com/scadoshi \u{2197}"
+                                "Contribute \u{2197}"
                             }
                         },
                         p { class: "card-summary", "Quick one-off support through Buy Me a Coffee." }
@@ -67,7 +67,7 @@ pub fn Contribute() -> Element {
                                 href: GITHUB_SPONSORS_URL,
                                 target: "_blank",
                                 rel: "noopener noreferrer",
-                                "github.com/sponsors/scadoshi \u{2197}"
+                                "Contribute \u{2197}"
                             }
                         },
                         p { class: "card-summary", "Recurring monthly support via GitHub Sponsors." }
