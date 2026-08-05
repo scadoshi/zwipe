@@ -1,16 +1,25 @@
-# Plan: PATCH verb migration + idempotent deck-card quantity
+# Plan: PATCH migration — verb, idempotent quantity, Opdate wire form
 
-**Status (2026-08-04): Phase 1 BUILT, awaiting deploy.** Server-side PATCH
-routes + the absolute-quantity deck-card contract are implemented (all seven
-routes answer PATCH; deck-card PATCH is a new handler/`HttpPatchDeckCard`/
-`UpdateDeckCard::patch` path; repo gains a `quantity = $qty` arm). PUT
-untouched. Gate green locally (clippy -D warnings, nightly fmt, full test
-suite incl. DB integration). Next: push → prod deploy → verify per Phase 1's
-last bullet, then Phase 2 (client) rides the next release train.
+**Status (2026-08-05, one release train, three layers):**
+
+- ✔ **Layer 1 (verb) + Layer 2 (absolute quantity), server side — DEPLOYED
+  to prod** (`6b3d17d9`, Deploy zerver green 2026-08-05). Verified: unauth
+  PATCH probes on all four route families return 401 (registered, auth
+  rejects — 405 would mean missing), and a live dev-client deck rename went
+  out as `PATCH /api/deck/{id}` and stuck.
+- ✔ **Layers 1+2, client side — BUILT** (`aa62a374`, unpushed): all seven
+  endpoints send PATCH; deck-card body is `HttpPatchDeckCard` with absolute
+  quantity. Owner device-testing against prod in progress (`zwiper/.env`
+  temporarily points at `https://api.zwipe.net`; flip back to
+  `http://127.0.0.1:3000` when done).
+- ☐ **Layer 3 (Opdate wire form) — NOT started.** Server dual-accept must
+  deploy BEFORE any client with the new serialization ships (details below).
+- ☐ Release (1.7.5) → store rollout → raise `MIN_CLIENT_VERSION` → quiet
+  days → cleanup commit (all three layers' legacy halves die together).
 
 ## Why
 
-Two layered problems, fixed in one coordinated move:
+Three layered wire problems, fixed on one coordinated release train:
 
 1. **Wrong verb.** Every update endpoint uses PUT for partial updates
    (`None` fields mean "leave alone"). PUT promises "full replacement,
@@ -29,6 +38,19 @@ End state: PATCH-only update routes; the deck-card body carries an
 currently *merge* deltas (+1 and +1 → +2); absolute quantity is
 last-writer-wins. For a single-user deck editor LWW is the saner semantic —
 note it and move on.
+
+3. **Opdate's wire form contradicts its own docs.** `Opdate<T>`
+   (`zwipe-core/src/http/helpers.rs`) is a plain derived serde enum, so the
+   derive's externally-tagged encoding ships: every `Unchanged` field
+   serializes as the literal string `"Unchanged"`, and a change as
+   `{"Set": value}` (clear = `{"Set": null}`). Verified live 2026-08-05: a
+   deck rename posted 13 `"Unchanged"` strings. The doc comments in
+   `helpers.rs` (lines ~27-33) and `contracts/deck.rs` (~line 208) describe
+   the intended shape — **absent = unchanged, `null` = clear, bare value =
+   set** — which was never implemented. Functionally sound (both ends share
+   the Rust type; `#[serde(default)]` keeps absent-field compat), but the
+   wire is chatty, the docs lie, and the dialect is hostile to any non-Rust
+   consumer. Layer 3 makes the documented shape real.
 
 ## Current inventory (verified 2026-08-04)
 
@@ -67,7 +89,11 @@ Key code:
   screen). Precedent: the Phase 5S legacy-commander cleanup behind the
   1.7.0 floor.
 
-## Phase 1 — server: add PATCH routes, change nothing else
+## Phase 1 — server: add PATCH routes, change nothing else ✔ DONE
+
+Shipped `6b3d17d9`, deployed to prod 2026-08-05 (Deploy zerver green).
+Verified: unauth PATCH probes → 401 on all families; authed dev-client
+rename PATCH observed working live. As built:
 
 - `routes.rs`: every table row above gains `.patch(...)` beside its
   `.put(...)` (axum `MethodRouter` chains: `put(h).patch(h)`). Six of the
@@ -89,10 +115,11 @@ Key code:
   zwipe-core+zerver, tests), then push → prod deploys. **Old clients are
   unaffected by design; verify with a 1.7.x client against prod.**
 
-## Phase 2 — client: switch to PATCH + absolute quantity
+## Phase 2 — client: switch to PATCH + absolute quantity ✔ BUILT
 
-Rides the next client release (server must already be live — standing
-"server ships first, sits a day" ordering).
+Shipped `aa62a374` (unpushed at time of writing); owner device-testing
+against prod. Rides the next client release (server must already be live —
+standing "server ships first, sits a day" ordering). As built:
 
 - Sweep `zwiper/src/lib/outbound/client/` for `.put(` → `.patch(` on all
   seven endpoints (reqwest has `.patch`). zite is read-only — verify with
@@ -110,11 +137,76 @@ Rides the next client release (server must already be live — standing
   qty; kill-and-retry a request (airplane mode) and confirm re-sending is
   harmless.
 
+## Phase 2b — Opdate wire form (Layer 3) ☐ NOT STARTED
+
+Makes the documented Opdate JSON shape real: **absent = unchanged, `null` =
+clear, bare value = set** — replacing the derive's accidental
+`"Unchanged"`-string / `{"Set": value}` dialect. Everything lives in
+`zwipe-core/src/http/helpers.rs` plus the contracts that embed `Opdate`.
+
+**Inventory first** (verify at execution): `grep -rn "Opdate<"
+zwipe-core/src/http/contracts/` — as of writing, only
+`HttpUpdateDeckProfile` (contracts/deck.rs, 13 fields: commander/partner/
+background/signature-spell ids, format, tags, power_level, other_tags,
+oracle_tags, land_target, price_target, price_target_currency). The body is
+inbound-only: the server never serializes it, so the Serialize change is
+client-behavior only; the Deserialize change is server-behavior only. zite
+sends no updates (verify: grep zite for Opdate/update calls, expect none).
+
+**Custom `Serialize` for `Opdate<T>`:**
+- `Set(Some(v))` → the bare value; `Set(None)` → `null`.
+- `Unchanged` → **serializer error, on purpose.** Unchanged fields must
+  never reach the serializer: every `Opdate` field carries
+  `#[serde(default, skip_serializing_if = "Opdate::is_unchanged")]`.
+  Erroring loudly turns a forgotten attr into an immediate test failure,
+  instead of silently emitting `null` — which the new decode would read as
+  "clear this field" and quietly wipe user data. That hazard is the sharpest
+  edge in this layer.
+- Attr sweep: the first five profile fields currently have NO serde attrs;
+  add the pair to all 13.
+
+**Custom `Deserialize` for `Opdate<T>` — dual-accept during the window:**
+- Via a `serde_json::Value` intermediate (this API is JSON-only and
+  serde_json is already a core dep):
+  - `"Unchanged"` string → `Unchanged` (legacy)
+  - single-key `{"Set": x}` object → `Set` per x (legacy)
+  - `null` → `Set(None)` (clean)
+  - anything else → `T::deserialize` → `Set(Some(v))` (clean)
+  - absent field → `#[serde(default)]` → `Unchanged` (both eras)
+- Known ambiguities, accepted for the window and gone at cleanup: an
+  `Opdate<String>` whose legitimate value is the literal string
+  `"Unchanged"` would mis-decode — current string fields are controlled
+  vocab (format keys, power-level slugs), so unreachable; and no `T` is an
+  object with a lone `"Set"` key (Ts are Uuid/String/Vec<String>/i32/f64/
+  PriceCurrency).
+
+**Docs + tests:**
+- Rewrite the now-false doc comments (`helpers.rs` ~27-33, `deck.rs` ~208)
+  to describe reality, noting the legacy dialect is accepted until cleanup.
+- Tests: all four inbound shapes decode correctly; clean round-trip;
+  `HttpUpdateDeckProfile::builder().name(...)` serializes to exactly
+  `{"name":"x"}` (nothing else on the wire); legacy fixture strings decode
+  to the same struct as clean fixtures; serializing a bare `Unchanged`
+  errors.
+
+**Sequencing (the ordering hazard):** the new Serialize and Deserialize land
+in one zwipe-core commit, so the next client BUILD automatically emits the
+clean shape. The server with dual-accept MUST deploy before any such client
+ships — same standing order, but here it's load-bearing: a clean-shape
+rename against the old server 422s. After the server deploy, re-test a deck
+rename from the dev client against prod and confirm the request body in the
+client log is the bare-value shape.
+
 ## Phase 3 — release + wait
 
-- Ship clients to both stores (normal build.md / play-store runbooks).
+- Ship clients to both stores (normal build.md / play-store runbooks) —
+  1.7.5 carries Layers 1–3 client-side in one build.
+- Before cutting: flip `zwiper/.env` `BACKEND_URL` back to
+  `http://127.0.0.1:3000` (it points at prod for migration testing); release
+  builds set `BACKEND_URL=https://api.zwipe.net` explicitly per build.md.
 - Wait for approval AND actual rollout (Play staged rollout to 100%).
-- Do nothing server-side during this window. Both verbs keep serving.
+- Do nothing server-side during this window. Both verbs and both Opdate
+  dialects keep serving.
 
 ## Phase 4 — raise the version gate
 
@@ -134,6 +226,10 @@ One commit, after Phase 4 has been quiet:
 - Delete the old deck-card PUT handler + `HttpUpdateDeckCard` + the delta
   request path + `UpdateQuantity` / `InvalidUpdateQuanity` (fixing that
   typo'd name by deletion) + the `quantity = quantity + delta` SQL arm.
+- **Opdate**: drop the legacy decode arms (`"Unchanged"` string and
+  `{"Set": x}`) from the custom Deserialize — clean shape only (absent /
+  null / bare value). The window ambiguities disappear with them. Update the
+  helpers.rs docs to drop the "legacy accepted" caveat.
 - Optionally rename `HttpPatchDeckCard` → `HttpUpdateDeckCard` for
   continuity; if renamed, sweep zwiper imports in the same commit (core and
   clients live in one workspace — atomic).
@@ -148,6 +244,9 @@ One commit, after Phase 4 has been quiet:
 - All seven update endpoints answer PATCH only; PUT returns 405.
 - Deck-card quantity is absolute end to end; no delta types remain in the
   workspace (`grep -r UpdateQuantity` returns nothing).
+- A name-only deck rename serializes to exactly `{"name":"..."}` on the
+  wire; the legacy `"Unchanged"`/`{"Set": x}` dialect is no longer decoded
+  anywhere; the Opdate doc comments are true.
 - Shipped-store clients ≥ the gate version; gate raised; two quiet days.
 - This plan moved to `context/plans/archive/` with status DONE.
 
@@ -161,6 +260,16 @@ One commit, after Phase 4 has been quiet:
   rollout is slow.
 - Do not add client-side auto-retry middleware before Phase 2 lands — the
   whole point is that PUT deltas are not retry-safe.
+- **Layer 3's ordering is load-bearing where Layers 1–2's was not**: a
+  client emitting the clean Opdate shape against a server without the
+  dual-accept Deserialize breaks profile updates outright. The server
+  deploy carrying Phase 2b must be live before the 1.7.5 build is cut, and
+  the dev-client rename re-test is the confirmation step.
+- The silent-wipe hazard: an Opdate field missing its
+  `skip_serializing_if` attr would serialize `Unchanged` — the custom
+  Serialize errors on that instead of emitting `null` (which the new decode
+  reads as "clear"). Keep that guard; it converts a subtle data-loss bug
+  into a loud test failure.
 - `mark_hint_shown` and friends are POST-ish edge cases verb-purists could
   argue about; out of scope — this migration standardizes on PATCH for all
   partial updates and stops there.
