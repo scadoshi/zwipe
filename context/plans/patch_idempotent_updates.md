@@ -236,16 +236,16 @@ One commit, after Phase 4 has been quiet:
   `{"Set": x}`) from the custom Deserialize — clean shape only (absent /
   null / bare value). The window ambiguities disappear with them. Update the
   helpers.rs docs to drop the "legacy accepted" caveat.
-- **OPEN DECISION — `name: null` handling.** Today an explicit null on
-  `name` silently no-ops (Option decodes null → None → "unchanged");
-  legacy clients send `"name": null` on every non-rename update, so it must
-  stay accepted through the window regardless. At cleanup, two options:
-  (a) keep the silent no-op forever (safe, zero work), or (b) reject it
-  with a 422 so the contract is self-describing — null is "clear" on
-  nullable (Opdate) fields and an error on required ones, the standard
-  JSON-Merge-Patch (RFC 7396) resolution. Owner was still weighing this at
-  time of writing; decide when executing Phase 5, no earlier commitment
-  implied.
+- **`name: null` becomes a 422** (owner decision, 2026-08-05). Today an
+  explicit null on `name` silently no-ops (Option decodes null → None →
+  "unchanged"), and legacy clients send `"name": null` on every non-rename
+  update, so it stays accepted through the window. At cleanup, reject it
+  explicitly so the contract is self-describing: null is "clear" on
+  nullable (Opdate) fields and an error on required ones — the standard
+  JSON-Merge-Patch (RFC 7396) resolution. (Implementation note: `name`
+  will need a null-vs-absent distinction to reject null — e.g.
+  `Opdate<String>` with a "cannot clear" validation arm, or a
+  double-Option — since plain `Option` can't tell them apart.)
 - Optionally rename `HttpPatchDeckCard` → `HttpUpdateDeckCard` for
   continuity; if renamed, sweep zwiper imports in the same commit (core and
   clients live in one workspace — atomic).
