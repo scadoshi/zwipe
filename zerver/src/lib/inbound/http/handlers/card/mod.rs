@@ -1,5 +1,7 @@
 //! Card data handlers.
 
+/// Featured flavor card handler (one shared pick per UTC hour).
+pub mod featured_flavor;
 /// Distinct artist names handler.
 pub mod get_artists;
 /// Single card lookup handler.

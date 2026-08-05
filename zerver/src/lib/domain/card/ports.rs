@@ -161,6 +161,16 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         context: DeckServeContext<'_>,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
+    /// Deterministic featured-flavor pick: the id the given hour key selects
+    /// from flavor-text cards released in the last 12 months (all-time
+    /// fallback so the pool is never empty while any flavor text exists).
+    /// Ordering hashes ids with `hour_key`, so the same key always yields the
+    /// same card — the serving cache is an optimization, never state.
+    fn featured_flavor_id(
+        &self,
+        hour_key: &str,
+    ) -> impl Future<Output = anyhow::Result<Option<uuid::Uuid>>> + Send;
+
     /// Retrieves complete card by Scryfall ID.
     fn get_card(
         &self,
@@ -397,6 +407,13 @@ pub trait CardService: Clone + Send + Sync + 'static {
     //  get
     // =====
 
+    /// The featured-flavor card for an hour bucket — the repository's
+    /// deterministic pick assembled like `get_card`.
+    fn featured_flavor(
+        &self,
+        hour_key: &str,
+    ) -> impl Future<Output = Result<Card, GetCardError>> + Send;
+
     /// Retrieves complete card by Scryfall ID.
     fn get_card(
         &self,
@@ -530,6 +547,12 @@ pub trait ErasedCardService: Send + Sync + 'static {
     /// See [`CardService::refresh_otag_context_signal_rollup`].
     fn refresh_otag_context_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
 
+    /// See [`CardService::featured_flavor`].
+    fn featured_flavor<'a>(
+        &'a self,
+        hour_key: &'a str,
+    ) -> BoxFuture<'a, Result<Card, GetCardError>>;
+
     /// See [`CardService::get_card`].
     fn get_card<'a>(
         &'a self,
@@ -644,6 +667,13 @@ where
 
     fn refresh_latest_cards<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {
         Box::pin(CardService::refresh_latest_cards(self))
+    }
+
+    fn featured_flavor<'a>(
+        &'a self,
+        hour_key: &'a str,
+    ) -> BoxFuture<'a, Result<Card, GetCardError>> {
+        Box::pin(CardService::featured_flavor(self, hour_key))
     }
 
     fn get_card<'a>(

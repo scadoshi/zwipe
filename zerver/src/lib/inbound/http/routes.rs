@@ -15,11 +15,11 @@ use crate::inbound::http::handlers::{
         verify_email::verify_email,
     },
     card::{
-        get_artists::get_artists, get_card::get_card, get_card_roles::get_card_roles,
-        get_card_types::get_card_types, get_keywords::get_keywords, get_languages::get_languages,
-        get_oracle_tags::get_oracle_tags, get_oracle_words::get_oracle_words,
-        get_printings::get_printings, get_sets::get_sets, search_card::search_cards,
-        search_commanders::search_commanders,
+        featured_flavor::get_featured_flavor, get_artists::get_artists, get_card::get_card,
+        get_card_roles::get_card_roles, get_card_types::get_card_types, get_keywords::get_keywords,
+        get_languages::get_languages, get_oracle_tags::get_oracle_tags,
+        get_oracle_words::get_oracle_words, get_printings::get_printings, get_sets::get_sets,
+        search_card::search_cards, search_commanders::search_commanders,
     },
     changelog::get_changelog,
     client::get_min_client_version,
@@ -352,6 +352,7 @@ pub fn public_routes() -> Router<AppState> {
                     "/card",
                     Router::new()
                         .route("/{scryfall_data_id}", get(get_card))
+                        .route("/featured-flavor", get(get_featured_flavor))
                         .route("/{oracle_id}/printings", get(get_printings))
                         .route("/artists", get(get_artists))
                         .route("/types", get(get_card_types))

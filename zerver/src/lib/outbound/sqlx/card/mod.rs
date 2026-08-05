@@ -1212,6 +1212,41 @@ impl CardRepository for MyPostgres {
         Ok(scryfall_data)
     }
 
+    async fn featured_flavor_id(&self, hour_key: &str) -> anyhow::Result<Option<uuid::Uuid>> {
+        // Pool = the flavor UI's standing filters (has flavor text, English,
+        // physical, no content warning) + the 12-month recency rule, with an
+        // all-time fallback so the feature never serves nothing. Ordering by
+        // md5(id || hour_key) makes the pick deterministic per hour: the
+        // serving cache is an optimization, never load-bearing state. The
+        // WHERE clause is duplicated across the two literals because sqlx's
+        // injection lint (rightly) refuses assembled SQL strings.
+        let recent: Option<uuid::Uuid> = sqlx::query_scalar(
+            "SELECT id FROM latest_cards \
+             WHERE flavor_text IS NOT NULL AND flavor_text != '' \
+               AND lang = 'en' AND digital = false AND oversized = false \
+               AND (content_warning = false OR content_warning IS NULL) \
+               AND released_at >= (CURRENT_DATE - INTERVAL '12 months') \
+             ORDER BY md5(id::text || $1) LIMIT 1",
+        )
+        .bind(hour_key)
+        .fetch_optional(&self.pool)
+        .await?;
+        if recent.is_some() {
+            return Ok(recent);
+        }
+
+        Ok(sqlx::query_scalar(
+            "SELECT id FROM latest_cards \
+             WHERE flavor_text IS NOT NULL AND flavor_text != '' \
+               AND lang = 'en' AND digital = false AND oversized = false \
+               AND (content_warning = false OR content_warning IS NULL) \
+             ORDER BY md5(id::text || $1) LIMIT 1",
+        )
+        .bind(hour_key)
+        .fetch_optional(&self.pool)
+        .await?)
+    }
+
     async fn get_card(&self, request: &GetScryfallData) -> Result<Card, GetCardError> {
         let scryfall_data = self.get_scryfall_data(request).await?;
         let card_profile = self.get_card_profile_with_scryfall_data_id(request).await?;

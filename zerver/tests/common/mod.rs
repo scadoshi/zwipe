@@ -129,6 +129,7 @@ impl TestApp {
             deck_service: Arc::new(deck_service),
             metrics_service,
             last_active_cache: Arc::new(DashMap::new()),
+            featured_flavor: Arc::new(zwipe::inbound::http::cache::TtlSlot::new()),
             min_client_version: Arc::from("0.0.0"),
             web_base_url: Arc::from("http://localhost"),
         };
