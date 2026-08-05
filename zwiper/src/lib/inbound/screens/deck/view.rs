@@ -56,7 +56,7 @@ use zwipe_core::{
         user::models::hints::HINT_FIRST_DECK,
     },
     http::{
-        contracts::{deck::HttpUpdateDeckProfile, deck_card::HttpUpdateDeckCard},
+        contracts::{deck::HttpUpdateDeckProfile, deck_card::HttpPatchDeckCard},
         helpers::Opdate,
     },
 };
@@ -538,16 +538,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             deck_resource.restart();
                                         },
                                         on_fix_quantity: move |(card_id, target_qty): (Uuid, i32)| {
-                                            let current_qty = deck_resource()
-                                                .and_then(|r| r.ok())
-                                                .and_then(|(entries, _, _)| {
-                                                    entries.iter()
-                                                        .find(|e| e.card.scryfall_data.id == card_id)
-                                                        .map(|e| *e.deck_card.quantity)
-                                                })
-                                                .unwrap_or(1);
-                                            let delta = target_qty - current_qty;
-                                            let request = HttpUpdateDeckCard::new(Some(delta), None);
+                                            // PATCH sets the absolute target directly — no more
+                                            // deriving a delta from a possibly-stale current qty.
+                                            let request = HttpPatchDeckCard::new(Some(target_qty), None);
 
                                             spawn(async move {
                                                 let session = match session.ensure_fresh(client).await {

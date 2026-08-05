@@ -59,7 +59,7 @@ use zwipe_core::{
         },
         user::models::hints::HINT_REMOVE_DECK_CARDS,
     },
-    http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard},
+    http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard},
 };
 
 /// Board filter for the remove screen.
@@ -339,7 +339,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
         };
 
         let scryfall_data_id = card.scryfall_data.id;
-        let request = HttpUpdateDeckCard::new(None, Some(to.display_name().to_string()));
+        let request = HttpPatchDeckCard::new(None, Some(to.display_name().to_string()));
 
         spawn(async move {
             let session = match session.ensure_fresh(client).await {
@@ -469,7 +469,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
                 // Move back to the board it came from, server then local
                 let scryfall_data_id = card.scryfall_data.id;
-                let request = HttpUpdateDeckCard::new(None, Some(from.display_name().to_string()));
+                let request = HttpPatchDeckCard::new(None, Some(from.display_name().to_string()));
 
                 spawn(async move {
                     let session = match session.ensure_fresh(client).await {

@@ -70,7 +70,7 @@ use zwipe_core::{
         },
         user::models::hints::HINT_ADD_DECK_CARDS,
     },
-    http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard},
+    http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -975,7 +975,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let mut mb_promote_to_deck = move |card: Card| {
         let scryfall_data_id = card.scryfall_data.id;
-        let request = HttpUpdateDeckCard::new(None, Some("deck".to_string()));
+        let request = HttpPatchDeckCard::new(None, Some("deck".to_string()));
 
         // Optimistic: remove from maybeboard lists
         mb_entries
@@ -1043,7 +1043,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                 let scryfall_data_id = card.scryfall_data.id;
                 let oracle_id = card.scryfall_data.oracle_id;
-                let request = HttpUpdateDeckCard::new(None, Some("maybeboard".to_string()));
+                let request = HttpPatchDeckCard::new(None, Some("maybeboard".to_string()));
 
                 spawn(async move {
                     let session = match session.ensure_fresh(client).await {

@@ -64,10 +64,10 @@ impl ClientUpdatePreferences for ZwipeClient {
     ) -> Result<UserPreferences, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&preferences_route());
-        info!("PUT {} body: {:?}", url, request);
+        info!("PATCH {} body: {:?}", url, request);
         let response = self
             .client
-            .put(url)
+            .patch(url)
             .json(&request)
             .bearer_auth(&*session.access_token.value)
             .send()

@@ -31,11 +31,11 @@ impl ClientUpdateDeckProfile for ZwipeClient {
     ) -> Result<DeckProfile, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&update_deck_route(deck_id));
-        info!("PUT {} body: {:?}", url, body);
+        info!("PATCH {} body: {:?}", url, body);
 
         let response = self
             .client
-            .put(url)
+            .patch(url)
             .json(&body)
             .bearer_auth(&*session.access_token.value)
             .send()

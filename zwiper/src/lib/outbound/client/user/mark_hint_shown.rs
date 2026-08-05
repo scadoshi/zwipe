@@ -24,7 +24,7 @@ impl ClientMarkHintShown for ZwipeClient {
     async fn mark_hint_shown(&self, hint: &str, session: &Session) -> Result<User, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&mark_hint_shown_route());
-        info!("PUT {}", url);
+        info!("PATCH {}", url);
 
         let body = HttpMarkHintShown {
             hint: hint.to_string(),
@@ -32,7 +32,7 @@ impl ClientMarkHintShown for ZwipeClient {
 
         let response = self
             .client
-            .put(url)
+            .patch(url)
             .bearer_auth(&*session.access_token.value)
             .json(&body)
             .send()
