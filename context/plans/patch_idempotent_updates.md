@@ -137,7 +137,13 @@ standing "server ships first, sits a day" ordering). As built:
   qty; kill-and-retry a request (airplane mode) and confirm re-sending is
   harmless.
 
-## Phase 2b — Opdate wire form (Layer 3) ☐ NOT STARTED
+## Phase 2b — Opdate wire form (Layer 3) ✔ BUILT, awaiting deploy
+
+Built as specced below (custom Serialize/Deserialize in helpers.rs, all 13
+Opdate fields + name normalized, docs fixed, full test set incl. the legacy
+fixture). 406 core + 213 zerver tests green. NEXT: deploy the server, then
+re-test a dev-client rename against prod and confirm the log shows the
+bare-value body. As designed:
 
 Makes the documented Opdate JSON shape real: **absent = unchanged, `null` =
 clear, bare value = set** — replacing the derive's accidental
