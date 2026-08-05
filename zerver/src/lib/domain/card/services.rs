@@ -176,6 +176,20 @@ impl<R: CardRepository> CardService for Service<R> {
     // =====
     //  get
     // =====
+    async fn featured_flavor(&self, hour_key: &str) -> Result<Card, GetCardError> {
+        use crate::domain::card::requests::get_scryfall_data::GetScryfallDataError;
+        let id = self
+            .repo
+            .featured_flavor_id(hour_key)
+            .await
+            .map_err(GetScryfallDataError::Database)?
+            .ok_or(GetScryfallDataError::NotFound)?;
+        // Infallible parse: the id came out of the database as a Uuid.
+        let request =
+            GetScryfallData::new(&id.to_string()).map_err(|_| GetScryfallDataError::NotFound)?;
+        self.repo.get_card(&request).await
+    }
+
     async fn get_card(&self, request: &GetScryfallData) -> Result<Card, GetCardError> {
         self.repo.get_card(request).await
     }

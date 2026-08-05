@@ -79,6 +79,11 @@ pub fn get_card_route(scryfall_data_id: Uuid) -> String {
     format!("/api/card/{}", scryfall_data_id)
 }
 
+/// The hour's featured flavor card (unauthed).
+pub fn featured_flavor_route() -> String {
+    "/api/card/featured-flavor".to_string()
+}
+
 pub fn get_printings_route(oracle_id: Uuid) -> String {
     format!("/api/card/{}/printings", oracle_id)
 }

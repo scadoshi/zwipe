@@ -1,5 +1,8 @@
 //! HTTP layer: Axum server, error mapping, middleware, and route definitions.
 
+#[cfg(feature = "zerver")]
+/// Serving-layer caches (`TtlSlot` — one typed slot per cached value).
+pub mod cache;
 /// HTTP request handlers organized by domain.
 pub mod handlers;
 #[cfg(feature = "zerver")]
@@ -203,6 +206,9 @@ pub struct AppState {
     pub metrics_service: Arc<dyn ErasedMetricsService>,
     /// Per-user debounce cache for `users.last_active_at` bumps.
     pub last_active_cache: Arc<DashMap<Uuid, Instant>>,
+    /// The hour's featured flavor card, deadline-pinned to the top of the
+    /// next UTC hour (see `handlers::card::featured_flavor`).
+    pub featured_flavor: Arc<cache::TtlSlot<zwipe_core::domain::card::Card>>,
     /// Minimum app version allowed (force-update gate); `"0.0.0"` = open.
     pub min_client_version: Arc<str>,
     /// Public web base URL (e.g. `https://zwipe.net`); used for outbound
@@ -303,6 +309,7 @@ impl HttpServer {
             deck_service: Arc::new(deck_service),
             metrics_service,
             last_active_cache: Arc::new(DashMap::new()),
+            featured_flavor: Arc::new(cache::TtlSlot::new()),
             min_client_version: Arc::from(config.min_client_version.as_str()),
             web_base_url: Arc::from(config.web_base_url.as_str()),
         };
