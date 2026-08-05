@@ -4,7 +4,47 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## Latest — 2026-07-30 (1.7.4 SUBMITTED both stores: error/crash reporting live end to end)
+## Latest — 2026-08-05 (1.7.5 SUBMITTED both stores; PATCH migration server-side live; nightly double-run bug excised)
+
+- **1.7.5 submitted 2026-08-05** (iOS build 70, Android vc32, cut from the home
+  Mac — `a4f8e82f`; histories have the detail). The batch, all on the deck
+  cards screen unless noted: **quick add** (debounced deck-aware name search,
+  tap a chip to add — `4ea76073`), **deck identity header** (name +
+  format/power/tag chips, share-page accents — `1623acc9`), **floating
+  type-to-search results** across every picker (zero-height anchor overlay;
+  quick add self-measures header overflow — `cb8cbe51`), **quantity debounce**
+  (one net server call per tap burst; fixed a latent overlapping-rollback race
+  — `319747c7`), and **undo** (adds/removals/coalesced qty bursts/board
+  moves/printing swaps, per-deck in-memory stacks parked FilterStore-style so
+  they survive navigation — `3885049e`, `3f0ac37d`).
+- **PATCH migration: all three server layers DEPLOYED + verified on prod**
+  (plan `plans/patch_idempotent_updates.md`): PATCH beside every PUT
+  (`6b3d17d9`), idempotent absolute-quantity deck-card body, and the clean
+  Opdate wire form (absent/null/bare-value) with dual-accept legacy decode
+  (`39ded717`) — verified live from the dev client (rename, land-target set +
+  clear). Client half (`aa62a374`) rides 1.7.5. After full rollout: raise
+  `MIN_CLIENT_VERSION=1.7.5`, quiet days, then the Phase 5 cleanup (PUT +
+  delta types + legacy dialect all die; explicit null on non-clearable fields
+  → 422, owner-decided).
+- **Nightly double-run excised (2026-08-05, postmortem `29adba69`)**: a
+  crontab entry the 2026-07-29 timer migration claimed to remove was still
+  firing — zervice ran TWICE nightly (cron 04:00:01, timer 04:00:4x) until the
+  two instances' bulk `card_profiles` UPDATEs deadlocked (40P01) on 08-04 and
+  tripped the alert. Postgres's deadlock DETAIL + a banner-count grep on the
+  shared daily log cracked it; cron line deleted, timer confirmed sole owner.
+- **Work Mac is a second build machine (2026-08-05)**: signing identity +
+  profiles + upload keystore installed per the new
+  `operations/ios/second_mac.md` (gotcha: the expired original WWDR
+  intermediate made the identity read invalid until AppleWWDRCAG3 was
+  imported). Both Macs can now cut releases; build-number coordination via the
+  history files.
+- **First real crash-reporter catch**: the Android ndk-context resume crash
+  (10 rows, one panic site, one user's app dying on every resume) — triaged in
+  todo's Bugs, fix targeted at 1.7.6. Queued plans from the arc:
+  `plans/global_undo.md` (owner building next), `plans/flavor_rotation.md`,
+  `plans/search_bar_clear_buttons.md`.
+
+## 2026-07-30 (1.7.4 SUBMITTED both stores: error/crash reporting live end to end)
 
 - **1.7.4 submitted 2026-07-30** (iOS build 69, Android vc31 — histories have the
   detail): client error + crash reporting field-verified on a real device before
