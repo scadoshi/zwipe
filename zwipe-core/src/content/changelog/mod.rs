@@ -39,6 +39,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "Swiped cards now fly out from right where you let go, instead of snapping back to center first.",
         "Swipes are harder to trigger by accident: a card needs a fuller drag or a real flick to commit.",
         "A card released before the swipe point now settles back to center with a little bounce.",
+        "On the site, the hover card preview now hops to the far side of the screen instead of sitting under your cursor.",
+        "Under the hood: rapid quantity taps batch into a single update, sent in a format that is safe to retry.",
     ],
 }];
 
