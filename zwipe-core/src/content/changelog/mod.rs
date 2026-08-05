@@ -25,27 +25,28 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.7.5",
-    date: "",
-    entries: &[
-        "Undo on your deck's card list: steps back adds, removals, quantity changes, board moves, and printing swaps one at a time, naming the card each time.",
-        "Quick add: type a card name at the top of your deck's card list and tap a result to add it. Cards already in your deck stay out of the results.",
-        "Your deck's name, format, power level, and tags now show at the top of the card list, matching the shared deck page.",
-        "Search suggestions in the filters and pickers now float over the screen instead of pushing it around while you type.",
-        "The command zone and your starred MVPs now show as card images across the top of your deck's card list, like the shared deck page. Tap one to see it full size.",
-        "Every card row now shows its artwork. The Art chip in the Show row turns it off, on the shared deck page too.",
-        "The Maybe and Side board buttons gray out when those boards are empty.",
-        "Swiped cards now fly out from right where you let go, instead of snapping back to center first.",
-        "Swipes are harder to trigger by accident: a card needs a fuller drag or a real flick to commit.",
-        "A card released before the swipe point now settles back to center with a little bounce.",
-        "On the site, the hover card preview now hops to the far side of the screen instead of sitting under your cursor.",
-        "Under the hood: rapid quantity taps batch into a single update, sent in a format that is safe to retry.",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.7.5",
+        date: "Aug 4, 2026",
+        entries: &[
+            "Undo on your deck's card list: steps back adds, removals, quantity changes, board moves, and printing swaps one at a time, naming the card each time.",
+            "Quick add: type a card name at the top of your deck's card list and tap a result to add it. Cards already in your deck stay out of the results.",
+            "Your deck's name, format, power level, and tags now show at the top of the card list, matching the shared deck page.",
+            "Search suggestions in the filters and pickers now float over the screen instead of pushing it around while you type.",
+            "The command zone and your starred MVPs now show as card images across the top of your deck's card list, like the shared deck page. Tap one to see it full size.",
+            "Every card row now shows its artwork. The Art chip in the Show row turns it off, on the shared deck page too.",
+            "The Maybe and Side board buttons gray out when those boards are empty.",
+            "Swiped cards now fly out from right where you let go, instead of snapping back to center first.",
+            "Swipes are harder to trigger by accident: a card needs a fuller drag or a real flick to commit.",
+            "A card released before the swipe point now settles back to center with a little bounce.",
+            "On the site, the hover card preview now hops to the far side of the screen instead of sitting under your cursor.",
+            "Under the hood: rapid quantity taps batch into a single update, sent in a format that is safe to retry.",
+        ],
+    },
     Release {
         version: "1.7.4",
         date: "Jul 30, 2026",
