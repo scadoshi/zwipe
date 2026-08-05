@@ -77,7 +77,7 @@ use zwipe_core::{
     http::{
         contracts::{
             deck::HttpUpdateDeckProfile,
-            deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard},
+            deck_card::{HttpCreateDeckCard, HttpPatchDeckCard},
         },
         helpers::Opdate,
     },
@@ -203,7 +203,8 @@ pub fn View(deck_id: Uuid) -> Element {
                         .await
                         .map(|_| ())
                 } else {
-                    let request = HttpUpdateDeckCard::new(Some(p.delta), None);
+                    // PATCH: the burst's absolute target, replay-safe.
+                    let request = HttpPatchDeckCard::new(Some(p.baseline + p.delta), None);
                     client()
                         .update_deck_card(deck_id, card_id, &request, &session)
                         .await
@@ -752,7 +753,10 @@ pub fn View(deck_id: Uuid) -> Element {
                         toast.error(e.to_user_message(), ToastOptions::default());
                     }
                 } else {
-                    let request = HttpUpdateDeckCard::new(Some(pending.delta), None);
+                    // PATCH: the burst's absolute target (baseline + net), so
+                    // a retried or replayed request lands on the same value.
+                    let request =
+                        HttpPatchDeckCard::new(Some(pending.baseline + pending.delta), None);
                     match client()
                         .update_deck_card(deck_id, card_id, &request, &session)
                         .await
@@ -828,7 +832,7 @@ pub fn View(deck_id: Uuid) -> Element {
         let current = *filter_reset_counter.peek();
         filter_reset_counter.set(current + 1);
 
-        let request = HttpUpdateDeckCard::new(None, Some(target.display_name().to_string()));
+        let request = HttpPatchDeckCard::new(None, Some(target.display_name().to_string()));
         spawn(async move {
             let session = match session.ensure_fresh(client).await {
                 Ok(session) => session,
@@ -897,7 +901,7 @@ pub fn View(deck_id: Uuid) -> Element {
         let current = *filter_reset_counter.peek();
         filter_reset_counter.set(current + 1);
 
-        let request = HttpUpdateDeckCard::with_mvp(target);
+        let request = HttpPatchDeckCard::with_mvp(target);
         spawn(async move {
             let session = match session.ensure_fresh(client).await {
                 Ok(session) => session,
@@ -1118,7 +1122,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
                 let card_name = old_card.scryfall_data.name.clone();
                 let old_id = old_card.scryfall_data.id;
-                let request = HttpUpdateDeckCard::with_printing(&old_id.to_string());
+                let request = HttpPatchDeckCard::with_printing(&old_id.to_string());
                 if let Some(entry) = deck_entries
                     .write()
                     .iter_mut()
@@ -1777,7 +1781,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             }
                             None => {
                                 // Regular deck card — update deck card
-                                let request = HttpUpdateDeckCard::with_printing(&new_id.to_string());
+                                let request = HttpPatchDeckCard::with_printing(&new_id.to_string());
                                 let old_card = card.clone();
                                 spawn(async move {
                                     let session_val = match session.ensure_fresh(client).await {

@@ -28,10 +28,10 @@ impl ClientChangeUsername for ZwipeClient {
     ) -> Result<User, ClientError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&change_username_route());
-        info!("PUT {}", url);
+        info!("PATCH {}", url);
         let response = self
             .client
-            .put(url)
+            .patch(url)
             .json(&request)
             .bearer_auth(&*session.access_token.value)
             .send()
