@@ -205,52 +205,58 @@ impl HttpCreateDeckProfileBuilder {
 
 /// Deck metadata update request body with partial update semantics.
 ///
-/// Uses [`Opdate`] for nullable fields: absent means unchanged, `null` means set to `None`.
+/// Uses [`Opdate`] for nullable fields — absent means unchanged, `null`
+/// means clear, a bare value means set (the Opdate custom serde impls make
+/// this real; every field carries `default` + `skip_serializing_if` per the
+/// Opdate contract). The server also still accepts the pre-1.7.5 legacy
+/// dialect until the migration cleanup — see
+/// `context/plans/patch_idempotent_updates.md`, Layer 3.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HttpUpdateDeckProfile {
-    /// New deck name, or `None` to leave unchanged.
+    /// New deck name; absent = leave unchanged (a name can't be cleared).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     /// Commander card ID with partial update semantics.
+    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
     pub commander_id: Opdate<Uuid>,
     /// Partner commander card ID with partial update semantics.
+    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
     pub partner_commander_id: Opdate<Uuid>,
     /// Background enchantment card ID with partial update semantics.
+    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
     pub background_id: Opdate<Uuid>,
     /// Signature spell card ID with partial update semantics.
+    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
     pub signature_spell_id: Opdate<Uuid>,
     /// Format with partial update semantics.
+    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
     pub format: Opdate<String>,
     /// Tags with partial update semantics. `Set` replaces the full tag set
     /// (empty/`null` clears all tags); absent leaves them unchanged.
-    ///
-    /// `#[serde(default)]` so older clients that don't send this field still
-    /// parse (the field becomes `Unchanged`), keeping the endpoint backward-
-    /// compatible when the server deploys ahead of the app.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
     pub tags: Opdate<Vec<String>>,
-    /// Power level with partial update semantics. `Set(None)` clears it; absent
-    /// leaves it unchanged. `#[serde(default)]` keeps older clients compatible.
-    #[serde(default)]
+    /// Power level with partial update semantics. `Set(None)` clears it;
+    /// absent leaves it unchanged.
+    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
     pub power_level: Opdate<String>,
     /// Other-tags with partial update semantics. `Set` replaces the full set
-    /// (empty/`null` clears all); absent leaves them unchanged. `#[serde(default)]`.
-    #[serde(default)]
+    /// (empty/`null` clears all); absent leaves them unchanged.
+    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
     pub other_tags: Opdate<Vec<String>>,
     /// Oracle-tags with partial update semantics. `Set` replaces the full set
-    /// (empty/`null` clears all); absent leaves them unchanged. `#[serde(default)]`.
-    #[serde(default)]
+    /// (empty/`null` clears all); absent leaves them unchanged.
+    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
     pub oracle_tags: Opdate<Vec<String>>,
     /// Land target with partial update semantics. `Set(None)` clears the
     /// override (back to the format heuristic); absent leaves it unchanged.
-    /// `#[serde(default)]` keeps older clients backward-compatible.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
     pub land_target: Opdate<i32>,
     /// Price target with partial update semantics. `Set(None)` clears the
-    /// budget; absent leaves it unchanged. `#[serde(default)]` for back-compat.
-    #[serde(default)]
+    /// budget; absent leaves it unchanged.
+    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
     pub price_target: Opdate<f64>,
-    /// Price target currency with partial update semantics. `#[serde(default)]`.
-    #[serde(default)]
+    /// Price target currency with partial update semantics.
+    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
     pub price_target_currency: Opdate<PriceCurrency>,
 }
 
@@ -507,5 +513,26 @@ mod tests {
         assert!(req.land_target.is_unchanged());
         assert!(req.price_target.is_unchanged());
         assert!(req.price_target_currency.is_unchanged());
+    }
+
+    #[test]
+    fn update_profile_clean_wire() {
+        // Clean dialect (1.7.5+): a name-only rename carries exactly one key
+        // — no "Unchanged" strings, no {"Set": ...} wrappers.
+        let body = HttpUpdateDeckProfile::builder()
+            .name(Some("j08-b1"))
+            .build();
+        assert_eq!(
+            serde_json::to_string(&body).unwrap(),
+            r#"{"name":"j08-b1"}"#
+        );
+
+        // Inbound: null = clear, bare value = set, absent = unchanged.
+        let json = r#"{"commander_id":null,"land_target":33}"#;
+        let req: HttpUpdateDeckProfile = serde_json::from_str(json).unwrap();
+        assert_eq!(req.commander_id, Opdate::Set(None));
+        assert_eq!(req.land_target, Opdate::Set(Some(33)));
+        assert!(req.format.is_unchanged());
+        assert!(req.name.is_none());
     }
 }
