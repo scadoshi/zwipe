@@ -20,42 +20,42 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**Latest — 2026-07-30: 1.7.4 SUBMITTED to both stores** (iOS build 69 / Android
-vc31). The release: **client error + crash reporting** (anonymous, first-party,
-field-verified on-device: handled errors ride the usage batch with breadcrumbs,
-crashes exactly-once via panic-hook file → unauthed endpoint) and the iOS
-photo-save crash fix (`NSPhotoLibraryAddUsageDescription`). Privacy policy,
-App Privacy labels, and the Play data-safety form all updated (Play also gained
-the previously-undeclared App interactions). Also 2026-07-29/30: zervice least
-privilege shipped in full (scoped Postgres role, `.env.zervice`, UpkeepService
-prunes), Scryfall JSONL break + bulk-upsert batching fixed, and the
-**EnvFilter logging bug** killed (per-layer copies silently dropped events,
-errors included — global filter now).
-See [`progress/overview.md`](progress/overview.md) top entry.
+**Latest — 2026-08-05: 1.7.5 SUBMITTED to both stores, in review** (iOS build
+70 / Android vc32, cut from the home Mac; the work Mac became a second build
+machine the same day). The release, mostly on the deck cards screen: **quick
+add** (type-to-search, tap to add), the **deck identity header**, **floating
+type-to-search results** across all pickers, **quantity debounce** (one net
+call per tap burst), and **undo** (adds, removals, qty bursts, board moves,
+printing swaps — per-deck stacks that survive navigation). It also carries the
+client half of the **PATCH migration** (PATCH verb everywhere, absolute
+quantities, clean Opdate wire); all three server layers are already deployed
+and verified on prod. **After rollout:** raise `MIN_CLIENT_VERSION=1.7.5`,
+quiet days, then the Phase 5 cleanup — plan
+[`plans/patch_idempotent_updates.md`](plans/patch_idempotent_updates.md).
+Also 2026-08-05: the nightly-zervice **double-run bug excised** (cron ghost
+survived the July timer migration; deadlock postmortem in
+`operations/infrastructure/server.md`).
 
-**1.7.3 clients submitted (2026-07-24; iOS build 68 / Android vc30, live in
-~1 day).** The batch: the **filter sheet current/staged split** (Apply is the only
-commit; Reset/Cancel stage + restore, with toasts), **average P/T** in the deck's
-Distributions, the **shared ranked otag search** in core (exact > slug/label >
-description), and **otag definitions in the swipe-screen details dialog**. Android
-vc30 is the first **targetSdk 36** build, clearing the Play deadline (2026-08-31).
-Server side went ahead 2026-07-23: **sqlx 0.9** in prod, a **deps refresh** (115
-semver bumps), and the share-page ordering fix. Changelog shows 1.7.3 as shipped;
-the zite banner announces it; the iOS Description got a full refresh.
-Details: [`progress/overview.md`](progress/overview.md) top entry.
+**1.7.4 LIVE on both stores** (submitted 2026-07-30): **client error + crash
+reporting** (anonymous, first-party — its first real catch, the Android
+ndk-context resume crash, is triaged in todo) and the iOS photo-save crash
+fix. Privacy policy + both stores' data-safety declarations updated.
 
-**1.7.2 LIVE on both stores** (submitted 2026-07-20): board-wide filters, pinned
-lands section, dialog backdrop-dismiss, guides polish, shared-deck tokens.
+**1.7.3 LIVE** (2026-07-24): filter sheet current/staged split, average P/T,
+shared ranked otag search, otag definitions in the swipe details dialog;
+first targetSdk 36 Android build.
 
-**After this:** the **Phase 5S step-3 cleanup shipped 2026-07-25** (legacy commander
-wire + fallback + client resolution dropped behind the 1.7.0 floor; client half
-rides the next build). Then **Phase 6** — serve on the
-matured otag signal (data-gated, months out). Ongoing: description authoring into the
-tail (runbook at [`development/runbooks/`](development/runbooks/)), short-form
-marketing videos, review tracking, funnel numbers (gate the sign-in-with-Google
-decision), privacy follow-ups (store data-safety labels + notification email), and
-draw-odds **Phase 4 (premium gating)**. Queued features: share-page charts, mana
-pip-count filter, commander shortlist, deck folders.
+**After this:** owner is building **global undo**
+([`plans/global_undo.md`](plans/global_undo.md)) — one per-deck mutation
+history across screens. Then the review-window quick wins (429 copy rounding,
+solid-background favicon, search-bar clear buttons, contribute page) and the
+**Android resume-crash fix** for 1.7.6. Then **Phase 6** — serve on the
+matured otag signal (data-gated, months out). Ongoing: description authoring
+into the tail (runbook at [`development/runbooks/`](development/runbooks/)),
+short-form marketing videos, review tracking, funnel numbers (gate the
+sign-in-with-Google decision), and draw-odds **Phase 4 (premium gating)**.
+Queued features: flavor rotation, share-page charts, mana pip-count filter,
+commander shortlist, deck folders.
 
 See [`progress/overview.md`](progress/overview.md) for the high-level state,
 [`progress/feature_requests.md`](progress/feature_requests.md) for the weighted
