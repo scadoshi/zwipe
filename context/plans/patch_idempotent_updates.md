@@ -236,6 +236,12 @@ One commit, after Phase 4 has been quiet:
   `{"Set": x}`) from the custom Deserialize — clean shape only (absent /
   null / bare value). The window ambiguities disappear with them. Update the
   helpers.rs docs to drop the "legacy accepted" caveat.
+- **Tighten `name: null` to a 422.** Today an explicit null on `name`
+  silently no-ops (Option decodes null → None → "unchanged") because the
+  legacy client sends `"name": null` on every non-rename update. Once the
+  gate guarantees no client does, reject it explicitly so the contract is
+  self-describing: null is "clear" on nullable (Opdate) fields and an error
+  on required ones — the standard JSON-Merge-Patch (RFC 7396) resolution.
 - Optionally rename `HttpPatchDeckCard` → `HttpUpdateDeckCard` for
   continuity; if renamed, sweep zwiper imports in the same commit (core and
   clients live in one workspace — atomic).
