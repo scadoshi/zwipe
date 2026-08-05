@@ -62,6 +62,7 @@ any deck mutation they caused.
 | add screen | maybeboard source: promote to deck | `MovedBoard` |
 | remove screen | remove card | `Removed` (full entry + qty) |
 | remove screen | move to board | `MovedBoard` |
+| deck cards | command-zone printing change | `CommandZonePrintingChanged` (new) |
 
 **Explicitly NOT recorded:**
 - **Skips** (left-swipes) — their own system with its own clear-skips
@@ -72,7 +73,30 @@ any deck mutation they caused.
   enough deliberate steps that accidental imports aren't a real risk.
   Same clearing applies to Archidekt import and clone targets if they share
   the path. `UndoLog.clear()` on import success.
-- Command-zone changes and deck-profile edits — unchanged scope from v1.
+- Deck-profile edits (name, tags, format, land/price targets, picking a
+  different commander) — unchanged scope from v1. The ONE profile-backed
+  action now included is the command-zone printing change (below).
+
+**Command-zone printing undo (promoted from the v1 exclusion list, owner
+2026-08-05).** The printing sheet's command-zone arm updates the deck
+PROFILE (the slot id points at the chosen printing), not a deck_card row —
+which is why v1 skipped it — but the inverse is fully in hand at save time:
+
+- New variant: `CommandZonePrintingChanged { slot, old_card: Card,
+  new_id: Uuid }`. `CommandZoneSlot` moves out of `view.rs` (private today)
+  into `undo_log.rs` or gains `pub(crate)`.
+- Record in the printing sheet's `on_save` command-zone arm on server
+  success (mirror of the regular-card arm).
+- Apply: rebuild the matching `HttpUpdateDeckProfile` builder arm with the
+  OLD printing id, call `update_deck_profile`, restore the slot's pinned
+  signal (`commander_card` / partner / background / signature spell), bump
+  the filter counter, toast "{name} printing restored".
+- Stale check: the slot must still hold `new_id` (read the slot's signal).
+  If the user since swapped or cleared the commander, skip-consume with
+  "Already changed" — same guard semantics as everything else.
+- Only record point is the deck cards screen (the deck-edit pickers choose
+  a different commander, which stays excluded; only the printing swap of
+  the current occupant is undoable).
 
 **Plumbing.** `UndoStore` is already app-level and per-deck; the add and
 remove screens consume it via the same `use_context` the quick-add bar
@@ -95,6 +119,9 @@ undo keeps whatever feedback it has today (no new toasts mid-swipe).
   same swipe → stack rewinds, no failed server call, card not double-deleted.
 - Promote maybeboard → deck on the add screen → Undo moves it back.
 - Remove + board-move on the remove screen → both undoable from deck cards.
+- Change the commander's printing → Undo restores the old art in the
+  featured strip and the profile slot. Swap to a different commander, then
+  Undo the earlier printing change → "Already changed", slot untouched.
 - Import a list → undo stack is empty; toast history unaffected.
 - Cross-deck isolation and park/restore still hold (deck A's stack
   untouched by deck B's session).
@@ -103,4 +130,5 @@ undo keeps whatever feedback it has today (no new toasts mid-swipe).
 
 - No visible history list (decided against in the v1 plan; unchanged).
 - No persistence beyond app lifetime (unchanged).
-- No undo for skips, imports, profile edits, command-zone printings.
+- No undo for skips, imports, or profile edits (name/tags/format/targets/
+  commander choice). Command-zone printing swaps ARE in scope (above).
