@@ -1,4 +1,7 @@
-use crate::{API_BASE, Footer, Nav, components::PageMeta};
+use crate::{
+    API_BASE, Footer, Nav,
+    components::{PageMeta, sleep_ms},
+};
 use dioxus::prelude::*;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
@@ -42,17 +45,6 @@ struct PreviewCard {
     url: String,
     /// True once the card's timer has fired and it's playing its exit fade.
     leaving: bool,
-}
-
-/// Browser `setTimeout` as a future. No-op off wasm (the server render never
-/// hovers, so this never actually runs there); the `.await` only exists on
-/// wasm, hence the allow.
-#[allow(clippy::unused_async)]
-async fn sleep_ms(ms: u32) {
-    #[cfg(target_arch = "wasm32")]
-    gloo_timers::future::TimeoutFuture::new(ms).await;
-    #[cfg(not(target_arch = "wasm32"))]
-    let _ = ms;
 }
 
 /// One pinned command zone card: image (when available) above name + role.
