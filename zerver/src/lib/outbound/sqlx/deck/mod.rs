@@ -460,6 +460,12 @@ impl DeckRepository for Postgres {
             sep.push("quantity = quantity + ")
                 .push_bind_unseparated(**update_quantity);
         }
+        if let Some(set_quantity) = &request.set_quantity {
+            // PATCH form: absolute set — idempotent, can't underflow (≥ 1 by
+            // construction). Mutually exclusive with the delta above.
+            sep.push("quantity = ")
+                .push_bind_unseparated(**set_quantity);
+        }
         if let Some(board) = &request.board {
             sep.push("board = ")
                 .push_bind_unseparated(board.display_name().to_string());

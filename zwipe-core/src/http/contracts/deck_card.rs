@@ -85,6 +85,62 @@ impl HttpUpdateDeckCard {
     }
 }
 
+/// Card patch request body — the idempotent successor to
+/// [`HttpUpdateDeckCard`].
+///
+/// At least one field must be provided. Unlike the PUT body's delta,
+/// `quantity` is an **absolute** value to set ("3 copies"), so replaying the
+/// request is harmless. Removing a card stays an explicit DELETE; a quantity
+/// below 1 is rejected. Migration: `context/plans/patch_idempotent_updates.md`.
+#[derive(Debug, Deserialize, Serialize)]
+pub struct HttpPatchDeckCard {
+    /// Absolute quantity to set (≥ 1). Absent = untouched.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quantity: Option<i32>,
+    /// Move card to this board ("deck", "maybeboard", "sideboard").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub board: Option<String>,
+    /// Change the selected printing (new Scryfall data ID).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scryfall_data_id: Option<String>,
+    /// Star (true) or unstar (false) this card as a deck MVP. Absent = untouched.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mvp: Option<bool>,
+}
+
+impl HttpPatchDeckCard {
+    /// Creates a new patch request (quantity and/or board).
+    pub fn new(quantity: Option<i32>, board: Option<String>) -> Self {
+        Self {
+            quantity,
+            board,
+            scryfall_data_id: None,
+            mvp: None,
+        }
+    }
+
+    /// Creates a patch request that changes the selected printing.
+    pub fn with_printing(scryfall_data_id: &str) -> Self {
+        Self {
+            quantity: None,
+            board: None,
+            scryfall_data_id: Some(scryfall_data_id.to_string()),
+            mvp: None,
+        }
+    }
+
+    /// Creates a patch request that stars (true) or unstars (false) the card
+    /// as a deck MVP.
+    pub fn with_mvp(mvp: bool) -> Self {
+        Self {
+            quantity: None,
+            board: None,
+            scryfall_data_id: None,
+            mvp: Some(mvp),
+        }
+    }
+}
+
 /// Import deck cards request body.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpImportDeckCards {
@@ -100,4 +156,32 @@ pub struct HttpImportDeckCards {
     /// Values: `"add"`, `"replace"`.
     #[serde(default)]
     pub mode: ImportMode,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn patch_body_round_trips_absolute_quantity() {
+        let body: HttpPatchDeckCard = serde_json::from_str(r#"{"quantity":3}"#).unwrap();
+        assert_eq!(body.quantity, Some(3));
+        assert!(body.board.is_none());
+        assert!(body.scryfall_data_id.is_none());
+        assert!(body.mvp.is_none());
+
+        let wire = serde_json::to_string(&HttpPatchDeckCard::new(Some(3), None)).unwrap();
+        assert_eq!(wire, r#"{"quantity":3}"#);
+    }
+
+    #[test]
+    fn patch_constructors_touch_only_their_field() {
+        let printing = HttpPatchDeckCard::with_printing("abc");
+        assert_eq!(printing.scryfall_data_id.as_deref(), Some("abc"));
+        assert!(printing.quantity.is_none() && printing.board.is_none() && printing.mvp.is_none());
+
+        let mvp = HttpPatchDeckCard::with_mvp(true);
+        assert_eq!(mvp.mvp, Some(true));
+        assert!(mvp.quantity.is_none() && mvp.board.is_none() && mvp.scryfall_data_id.is_none());
+    }
 }

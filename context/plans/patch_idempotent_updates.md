@@ -1,9 +1,12 @@
 # Plan: PATCH verb migration + idempotent deck-card quantity
 
-**Status: PLANNED (2026-08-04), not started.** No code changes yet. Executes
-as a phased rollout across one server deploy, one client store release, a
-version-gate raise, and a cleanup deploy. Written to be executable later
-without this conversation's context.
+**Status (2026-08-04): Phase 1 BUILT, awaiting deploy.** Server-side PATCH
+routes + the absolute-quantity deck-card contract are implemented (all seven
+routes answer PATCH; deck-card PATCH is a new handler/`HttpPatchDeckCard`/
+`UpdateDeckCard::patch` path; repo gains a `quantity = $qty` arm). PUT
+untouched. Gate green locally (clippy -D warnings, nightly fmt, full test
+suite incl. DB integration). Next: push → prod deploy → verify per Phase 1's
+last bullet, then Phase 2 (client) rides the next release train.
 
 ## Why
 
