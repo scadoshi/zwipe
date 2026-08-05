@@ -153,13 +153,20 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.7.4 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.7.5 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.7.5:**
+
+- Undo on your deck's card list: step back adds, removals, quantity changes, board moves, and printing swaps.
+- Quick add: type a card name at the top of your deck and tap a result to add it.
+- Your deck's name, format, power, and tags now head the card list, with your leader and starred MVPs shown as card images. Every card row shows its artwork; the Art chip turns it off.
+- Smoother swiping: cards fly out from right where you let go, and accidental swipes are harder to trigger.
 
 **1.7.4:**
 

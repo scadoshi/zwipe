@@ -2,6 +2,20 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-08-04 — `1.7.5`, versionCode `32`** (the 1.7.5 feature train: deck-cards undo
+  (adds, removals, coalesced qty bursts, board moves, printing swaps; per-deck stacks
+  survive navigation), quick-add search bar, deck identity header, floating
+  type-to-search results, featured card images + row art with the Art chip, empty
+  Maybe/Side board gray-out, swipe feel pass (exit-from-release animation, raised
+  thresholds, return bounce), quantity tap debounce, and the PATCH migration client
+  half — PATCH verb on all seven update endpoints, absolute-quantity deck-card body,
+  clean Opdate wire form; server dual-accept halves were deployed + verified on prod
+  before this build). Built per the recipe: `dx bundle` → `launcher_icons.sh` →
+  `back_handler.sh` → gradle patch (compileSdk 36 / targetSdk 36 / versionCode 32,
+  versionName 1.7.5) → `gradlew :app:bundleRelease` → jarsigner. Artifact
+  `zwipe-1.7.5.aab`, signed + `jar verified`, targetSdk 36 + versionCode 32 confirmed
+  via bundletool. Emulator smoke test skipped (owner tests the release on-device;
+  runbook step demoted to optional this release). iOS counterpart build 70.
 - **2026-07-30 — `1.7.4`, versionCode `31`** (client error + crash reporting — anonymous,
   first-party: handled errors ride the usage batch with screen/component/action
   breadcrumbs and client-side dedupe, crashes exactly-once via panic-hook disk file →
