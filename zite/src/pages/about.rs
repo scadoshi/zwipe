@@ -181,7 +181,7 @@ pub fn About() -> Element {
                 h2 { "Under the Hood" }
                 p { class: "arch-subtitle", "The engineering discipline behind it." }
                 div { class: "card-grid",
-                    Panel { eyebrow: "Design", title: "Hexagonal Architecture",
+                    Panel { eyebrow: "Design", title: "Hexagonal architecture",
                         p { class: "card-summary",
                             "Ports and adapters, in practice."
                         }
@@ -196,7 +196,7 @@ pub fn About() -> Element {
                         }
                     }
 
-                    Panel { eyebrow: "Quality", title: "Testing & Lint Discipline",
+                    Panel { eyebrow: "Quality", title: "Testing & lint discipline",
                         p { class: "card-summary",
                             "627 tests, 377 in "
                             a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
@@ -243,7 +243,7 @@ pub fn About() -> Element {
                         }
                     }
 
-                    Panel { eyebrow: "Types", title: "Type Safety",
+                    Panel { eyebrow: "Types", title: "Type safety",
                         p { class: "card-summary",
                             "Newtypes everywhere. Invalid states don't compile."
                         }
@@ -263,7 +263,7 @@ pub fn About() -> Element {
                         }
                     }
 
-                    Panel { eyebrow: "Sync", title: "Card Data Pipeline",
+                    Panel { eyebrow: "Sync", title: "Card data pipeline",
                         p { class: "card-summary",
                             "110k+ printings nightly from "
                             a { href: URL_SCRYFALL, target: "_blank", rel: "noopener noreferrer", "Scryfall" }
