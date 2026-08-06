@@ -4,7 +4,35 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## Latest — 2026-08-05 (1.7.5 SUBMITTED both stores; PATCH migration server-side live; nightly double-run bug excised)
+## Latest — 2026-08-06 (zwipe.net home compressed into bands; the Flopsie caching saga; hourly origin TTLs)
+
+- **zwipe.net home reworked and DEPLOYED (`83670835` + follow-ups)**: after a
+  morning of rejected variants (split hero, wordmark-in-nav, fit-to-screen —
+  all reverted), the layout that stuck compresses everything below the
+  original hero into bands. The demo gallery and the three core sells (swipe
+  to build / served in synergy order / tags) share one band, featured flavor
+  tucks under the gallery, testimonials collapsed into one Reviews panel
+  (rating as a clickable share-style tag), page column widened to 74rem. Page
+  height down roughly a viewport; nothing floats bare on the grid. Copy swept
+  per human-copy (no dashes, sentence-case panel titles).
+- **The featured flavor card that never rotated — Cloudflare, not the server**:
+  a CF cache rule edge-held `/api/card/featured-flavor` ~20h (age 70666), so
+  every client saw one card ("Flopsie") all day; the element's zite fallback
+  froze the same stale copy, hiding the bug. Fixed at origin: the handler now
+  sends `Cache-Control` counting down to the top of the UTC hour
+  (`bb7266b1`), and the zite trapped-overlay bug was root-caused the same day
+  — the overlay rendered NESTED in the `content-enter` tree, so an animated
+  ancestor's transform became its `position: fixed` containing block; hoisted
+  to the page top level per the shared-deck pattern. Owner purged the edge
+  cache post-deploy; rotation verified working.
+- **Hourly origin TTLs across the public read surface (`8ec690c5`)**: card
+  catalogs, card-by-id/printings, stats, and changelog all send
+  `public, max-age=3600` (success-only, so 429s never become cacheable);
+  `/api/client/min-version` deliberately stays uncached so the version gate
+  propagates instantly. The CF rules respect origin TTL, so origin now owns
+  freshness everywhere it speaks.
+
+## 2026-08-05 (1.7.5 SUBMITTED both stores; PATCH migration server-side live; nightly double-run bug excised)
 
 - **1.7.5 submitted 2026-08-05** (iOS build 70, Android vc32, cut from the home
   Mac — `a4f8e82f`; histories have the detail). The batch, all on the deck
