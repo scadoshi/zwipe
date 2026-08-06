@@ -35,6 +35,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "Every search bar now has a clear button: one tap wipes what you typed and closes the results.",
         "Android: reopening the app after the system quietly closed it in the background now starts clean instead of crashing.",
         "Rate limit messages now say how long to wait in plain terms, like \"try again in a minute\".",
+        "Card roles now read only real rules text: split second spells are no longer labeled stax, and cards that exile from your own graveyard as a cost are no longer labeled graveyard hate.",
+        "The zwipe.net home page tightened up: the demo, the three core features, and the hour's featured flavor now share the screen, and reviews live in one panel.",
     ],
 }];
 
