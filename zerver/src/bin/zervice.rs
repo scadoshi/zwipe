@@ -153,9 +153,33 @@ async fn main() -> anyhow::Result<()> {
 
     if failures == 0 {
         tracing::info!("zervice completed: all 5 steps ok");
+        ping_healthcheck(config.healthcheck_ping_url.as_deref()).await;
         Ok(())
     } else {
         tracing::error!("zervice completed with {failures} failed step(s) — see errors above");
         anyhow::bail!("zervice finished with {failures} failed step(s)")
+    }
+}
+
+/// Dead-man's-switch ping on an all-steps-ok run: the receiving side
+/// (healthchecks.io) alerts on SILENCE, covering "never ran at all" — the
+/// blind spot `OnFailure=` email can't see (masked timer, wedged box; the
+/// 2026-08-05 cron ghost was this class). Skipped when the URL is unset (dev
+/// runs stay quiet), and a failed ping only warns: the sync itself succeeded,
+/// and a false "zervice is down" email from their side is the correct outcome
+/// if the ping can't get out.
+async fn ping_healthcheck(url: Option<&str>) {
+    let Some(url) = url else {
+        return;
+    };
+    let result = reqwest::Client::new()
+        .get(url)
+        .timeout(std::time::Duration::from_secs(10))
+        .send()
+        .await;
+    match result {
+        Ok(res) if res.status().is_success() => tracing::info!("healthcheck ping: ok"),
+        Ok(res) => tracing::warn!("healthcheck ping answered {}", res.status()),
+        Err(e) => tracing::warn!("healthcheck ping failed: {e}"),
     }
 }
