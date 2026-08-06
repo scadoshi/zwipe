@@ -58,7 +58,7 @@ See [`../../progress/overview.md`](../../progress/overview.md) top entry. Histor
    non-gated remains.
 
 So otags is now quiet and *waiting*: the only future work is the Phase 6 serving payoff once the
-dataset has weight (plus ongoing description authoring — `tag_descriptions_and_dictionary.md`).
+dataset has weight (description authoring COMPLETE 2026-08-06 — `../archive/otags/tag_descriptions_and_dictionary.md`).
 
 All 7 open questions resolved; Q1 revised after Phase 1 (otags supersede the heuristic).
 
@@ -89,7 +89,7 @@ Active (everything else is shipped and archived — see below):
 | `sequencing.md` | The phased build + per-phase status — Phases 0-5S all ✅ DONE; Phase 6 is the open item |
 | `moat.md` | The non-EDH cross-format dataset moat (the Phase 6 long game) |
 | `payoff.md` | Immediate vs long-term payoff, honestly separated |
-| `tag_descriptions_and_dictionary.md` | Description authoring — mechanism shipped; bulk authoring ongoing (~3,400 tail) |
+| `../archive/otags/tag_descriptions_and_dictionary.md` | Description authoring — DONE 2026-08-06, every populated tag covered (4,395) |
 
 Archived to [`../archive/otags/`](../archive/otags/) (fully shipped, 2026-07-25 sweep):
 `purpose.md`, `scope.md`, `compatibility.md`, `open-questions.md`, `dictionary_backend.md`,

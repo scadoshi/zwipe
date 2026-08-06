@@ -3,7 +3,9 @@
 **Goal:** grow `ORACLE_TAG_DESCRIPTIONS` (our own plain-English text for Scryfall
 oracle tags) in batches, **every description checked against the real cards that
 carry the tag**, until coverage is satisfactory. Part 1 of
-[`../../plans/otags/tag_descriptions_and_dictionary.md`](../../plans/otags/tag_descriptions_and_dictionary.md).
+[`../../plans/archive/otags/tag_descriptions_and_dictionary.md`](../../plans/archive/otags/tag_descriptions_and_dictionary.md)
+(DONE 2026-08-06 — this runbook stays live for future batches as Scryfall's
+tagger grows).
 
 This is a **repeatable loop** a fresh AI can run cold. It fans out subagents to
 draft, then adversarially verify against oracle text, then a human-in-the-loop
@@ -189,6 +191,8 @@ Ship path from there: user pushes -> next `zervice` overlays all authored text.
 
 ## Progress markers (update as you go)
 
-Coverage is `len(ORACLE_TAG_DESCRIPTIONS)` / ~4,500. Milestones so far: 7 (starter) ->
-82 (hand) -> 257 -> 500 -> 700. Log the latest in
-[`../../progress/overview.md`](../../progress/overview.md) when you cross a round number.
+Coverage is `len(ORACLE_TAG_DESCRIPTIONS)` / ~4,500. Milestones: 7 (starter) ->
+82 (hand) -> 257 -> 500 -> 700 -> 4,357 -> **COMPLETE at 4,395 (2026-08-06)** —
+every tag with a real card population covered. Future runs are incremental only:
+when the nightly coverage line shows new unauthored tags accumulating (Scryfall's
+tagger grows), run the loop on the new arrivals.

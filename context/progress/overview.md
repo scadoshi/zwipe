@@ -31,6 +31,21 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   `/api/client/min-version` deliberately stays uncached so the version gate
   propagates instantly. The CF rules respect origin TTL, so origin now owns
   freshness everywhere it speaks.
+- **Oracle-tag description authoring COMPLETE (`fe4b4647`)**: the final 38
+  landed via the runbook's draft-then-adversarial-verify fan-out — **4,395
+  descriptions, every tag with a real card population covered**, fully
+  replacing Scryfall's ~29% coverage. Verify pass earned its keep to the last:
+  7 of 38 drafts were wrong on slug-name traps (`typal-camel` grants rather
+  than counts, `tron` includes meld pairs). Plan archived; the runbook stays
+  live for incremental batches as Scryfall's tagger grows.
+- **Maintenance sweep, same day**: `oracle_tag_gaps` reminder-text audit found
+  187 misroled cards across all four heuristic rules (split second read as
+  Stax, delve/embalm as GraveyardHate) — fixed by stripping parenthesized text
+  before matching (`b65d7ba3`). keyring 3→4 migrated (`a499ab27`) with
+  Keychain continuity proven by a dual-linked v3-write/v4-read bridge test.
+  Zervice dead-man's switch fully armed (`1f613c57` + healthchecks.io check,
+  cron `0 4 * * *` UTC grace 2h): the `OnFailure=` email covers "ran and
+  failed", the ping covers "never ran at all".
 
 ## 2026-08-05 (1.7.5 SUBMITTED both stores; PATCH migration server-side live; nightly double-run bug excised)
 

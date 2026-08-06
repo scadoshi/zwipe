@@ -1,9 +1,15 @@
 # Oracle tag descriptions + dictionary
 
-**Status: Part 1 mechanism SHIPPED (2026-07-13, `0114cb38`); 1,100 descriptions
-authored (oracle-text-verified) — high-traffic head fully covered, tail ongoing.
-Part 2 (dictionary) BUILT 2026-07-14, ships in the 1.7.0 client — see
-[`dictionary_client.md`](dictionary_client.md).**
+**Status: DONE 2026-08-06 — the authoring project is COMPLETE.** Part 1
+mechanism SHIPPED 2026-07-13 (`0114cb38`); authoring proceeded in
+oracle-text-verified batches (1,100 → 4,348 by 2026-07-30) and the final 38
+landed 2026-08-06 (`fe4b4647`): **4,395 descriptions — every tag with a real
+card population is covered**, fully replacing Scryfall's ~29%. Part 2
+(dictionary) shipped in the 1.7.0 client. Remaining forever-work is only
+incremental: new tags appear as Scryfall's tagger grows — the nightly coverage
+log line is the watchdog, and the runbook
+(`../../development/runbooks/otag_description_authoring.md`) re-runs cold for
+any future batch.
 Two linked pieces the owner asked for:
 1. **Our own descriptions layer** — Scryfall describes only ~29% of tags (1,302 of
    4,494; the biggest tags are often blank); author our own over time until we
