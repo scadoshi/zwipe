@@ -21,7 +21,16 @@ use std::sync::LazyLock;
 /// categories come from Oracle Tags (`helpers::derive_categories`), not here.
 pub fn classify_oracle_tag_gaps(card: &Card) -> Vec<CardRole> {
     let sd = &card.scryfall_data;
-    let oracle = sd.oracle_text.as_deref().unwrap_or("").to_lowercase();
+    // Reminder text (parenthesized) smuggles pattern matches: split second's
+    // "(...players can't cast spells...)" made every split second card Stax,
+    // and delve/embalm/escape reminders ("exile ... from your graveyard")
+    // tagged own-graveyard costs as GraveyardHate — 187 misroled cards across
+    // the four rules when audited 2026-08-06. Rules text a card actually
+    // carries always exists outside the parens, so classification reads the
+    // stripped text only.
+    let oracle = REMINDER
+        .replace_all(&sd.oracle_text.as_deref().unwrap_or("").to_lowercase(), "")
+        .into_owned();
     let keywords: Vec<String> = sd
         .keywords
         .as_deref()
@@ -69,6 +78,9 @@ pub fn classify_oracle_tag_gaps(card: &Card) -> Vec<CardRole> {
 mod patterns {
     use super::*;
 
+    /// Parenthesized reminder text, stripped before classification.
+    pub static REMINDER: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"\([^)]*\)").expect("valid regex"));
     pub static PUMP: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"(target|equipped|enchanted) creature.{0,15}gets? \+\d+/\+\d+")
             .expect("valid regex")
@@ -144,5 +156,32 @@ mod tests {
     #[test]
     fn no_false_positive_on_vanilla() {
         assert!(classify_oracle_tag_gaps(&card_with("Flying")).is_empty());
+    }
+
+    #[test]
+    fn reminder_text_never_classifies() {
+        // Krosan Grip: split second's reminder says "players can't cast
+        // spells..." — removal, not Stax.
+        let split_second = classify_oracle_tag_gaps(&card_with(
+            "Split second (As long as this spell is on the stack, players can't cast spells or activate abilities that aren't mana abilities.)\nDestroy target artifact or enchantment.",
+        ));
+        assert!(!split_second.contains(&Stax), "got {split_second:?}");
+
+        // Become Immense: delve's reminder says "exile cards from your
+        // graveyard" — an own-graveyard cost, not GraveyardHate.
+        let delve = classify_oracle_tag_gaps(&card_with(
+            "Delve (Each card you exile from your graveyard while casting this spell pays for {1}.)\nTarget creature gets +6/+6 until end of turn.",
+        ));
+        assert!(!delve.contains(&GraveyardHate), "got {delve:?}");
+        // The rules text outside the parens still classifies normally.
+        assert!(delve.contains(&Pump), "got {delve:?}");
+    }
+
+    #[test]
+    fn real_rules_text_still_matches_after_stripping() {
+        let cats = classify_oracle_tag_gaps(&card_with(
+            "Players can't cast spells during combat. (This includes you.)",
+        ));
+        assert!(cats.contains(&Stax), "got {cats:?}");
     }
 }
