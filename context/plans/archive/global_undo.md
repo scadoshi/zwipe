@@ -1,7 +1,8 @@
 # Plan: global undo — one per-deck mutation history across screens
 
-**Status: BUILT 2026-08-05, rides 1.7.6. Compiles + clippy-clean; on-device
-run of the verification script still owed before the cut.** Predecessor:
+**Status: DONE — BUILT 2026-08-05 (`a7763093`) and DEVICE-VERIFIED the same
+day: the owner ran the full sim run sheet below on a real phone against the
+live server, all nine scenarios passed. Rides 1.7.6.** Predecessor:
 `archive/deck_cards_undo.md` — its architecture (UndoAction, UndoStore,
 apply_undo, stale guards) is the foundation, not replaced.
 
@@ -132,37 +133,38 @@ park/restore semantics unchanged.
 **Toasts.** Unchanged pattern — every button undo names the card. Gesture
 undo keeps whatever feedback it has today (no new toasts mid-swipe).
 
-## Verification — simulator run sheet (owner; automated tests cover the
-store primitives only: cap eviction + newest-first take, 3 tests green)
+## Verification — run sheet (owner-executed on a real device against prod,
+2026-08-05: ALL PASSED; automated tests cover the store primitives: cap
+eviction + newest-first take, 3 tests green)
 
-- [ ] **The motivating wrinkle:** on deck cards, change a card's qty → go
+- [x] **The motivating wrinkle:** on deck cards, change a card's qty → go
   to the remove screen and remove that same card → back to deck cards →
   Undo re-adds it at the old board and pre-burst qty → Undo again reverts
   the qty change. No "Already changed" anywhere in the sequence.
-- [ ] **Add-screen swipes reach the button:** right-swipe a card on the
+- [x] **Add-screen swipes reach the button:** right-swipe a card on the
   add screen → deck cards Undo removes it (toast names the card).
   Up-swipe (maybeboard) → Undo removes it from the maybeboard.
-- [ ] **Gesture undo consumes the entry:** right-swipe an add, down-swipe
+- [x] **Gesture undo consumes the entry:** right-swipe an add, down-swipe
   it back immediately → go to deck cards → Undo does NOT offer that add
   (the next entry is offered; no "Already changed" detour).
-- [ ] **Button first, gesture second (the double-delete guard):**
+- [x] **Button first, gesture second (the double-delete guard):**
   right-swipe an add → deck cards → Undo (card deleted) → back to the add
   screen → down-swipe that same swipe → stack rewinds visually, NO error
   toast, and the card is not double-deleted (server log quiet).
-- [ ] **Promote round-trip:** maybeboard source, right-swipe promotes to
+- [x] **Promote round-trip:** maybeboard source, right-swipe promotes to
   deck → deck cards Undo moves it back to the maybeboard. Then the mirror:
   promote → down-swipe (gesture) → deck cards Undo does not offer it.
-- [ ] **Remove screen:** remove a card + up-swipe another to a different
+- [x] **Remove screen:** remove a card + up-swipe another to a different
   board → both step back from deck cards Undo, in reverse order, with the
   removed card returning at its old qty and board.
-- [ ] **Command-zone printing:** change the commander's printing from the
+- [x] **Command-zone printing:** change the commander's printing from the
   deck cards screen → Undo restores the old art in the featured strip and
   the profile slot. Then swap to a DIFFERENT commander and Undo the
   earlier printing change → "Already changed", slot untouched.
-- [ ] **Import clears:** make a few undoable changes → import a list →
+- [x] **Import clears:** make a few undoable changes → import a list →
   the Undo button is gone (stack cleared); the import hint shows the
   "undo history starts fresh" line.
-- [ ] **Isolation + parking:** build a stack on deck A, edit deck B,
+- [x] **Isolation + parking:** build a stack on deck A, edit deck B,
   return to A → A's stack intact; B's separate. App restart forgets both
   (expected).
 
