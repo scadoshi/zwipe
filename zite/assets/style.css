@@ -374,7 +374,11 @@ code {
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        /* `none`, not translateY(0): `both` retains this, and any non-none
+           transform makes the animated element a containing block that traps
+           position:fixed overlays (the flavor card's full-art preview)
+           inside the page column. */
+        transform: none;
     }
 }
 
@@ -450,7 +454,8 @@ code {
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        /* `none` for the same containing-block reason as content-enter. */
+        transform: none;
     }
 }
 
