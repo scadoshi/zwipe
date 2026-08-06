@@ -1,6 +1,6 @@
 use crate::{
     Footer, Nav, Route,
-    components::{FeaturedFlavor, PageMeta, StatsStrip},
+    components::{PageMeta, StatsStrip},
 };
 use dioxus::prelude::*;
 use zwipe_components::{Banner, BannerStatus, Panel};
@@ -259,7 +259,6 @@ pub fn Home() -> Element {
                     }
                 }
             }
-            FeaturedFlavor {}
             Testimonials {}
         }
         Footer {}
