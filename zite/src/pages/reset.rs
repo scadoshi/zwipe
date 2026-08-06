@@ -100,7 +100,7 @@ pub fn Reset(token: String) -> Element {
                         details { class: "password-hint-toggle",
                             summary { "Password requirements" }
                             ul {
-                                li { "8–128 characters" }
+                                li { "8 to 128 characters" }
                                 li { "Uppercase, lowercase, number, symbol" }
                                 li { "No whitespace, 6+ unique chars" }
                                 li { "Max 3 consecutive repeated characters" }
