@@ -260,7 +260,7 @@ pub fn Home() -> Element {
                 // and tags. Hosting basics (accounts, sync, import) are
                 // assumed service table stakes, not pitched.
                 div { class: "features-stack",
-                    Panel { eyebrow: "Build", title: "Swipe to Build",
+                    Panel { eyebrow: "Build", title: "Swipe to build",
                         ul { class: "card-bullets",
                             li { "Right to add card to deck (or remove in remove flow)" }
                             li { "Left to skip card" }
@@ -269,14 +269,14 @@ pub fn Home() -> Element {
                             li { "Swipe-pick your commander, partner, background, or signature spell" }
                         }
                     }
-                    Panel { eyebrow: "Synergy", title: "Served in Synergy Order",
+                    Panel { eyebrow: "Synergy", title: "Served in synergy order",
                         ul { class: "card-bullets",
                             li { "Most synergistic cards show first based on your selected commander" }
                             li { "The order learns from swipes: crowd favorites rise as players build" }
                             li { "Color identity and per-format eligibility validated" }
                         }
                     }
-                    Panel { eyebrow: "Tags", title: "Know What Every Card Does",
+                    Panel { eyebrow: "Tags", title: "Know what every card does",
                         ul { class: "card-bullets",
                             li { "Every card labeled by role: ramp, removal, counterspell, tokens, and more" }
                             li { "Filter your feed by what a card does, not just its text" }
