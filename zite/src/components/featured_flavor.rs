@@ -3,9 +3,9 @@
 //! Same unauthed endpoint the app home screen reads (`featured_flavor_route`);
 //! the server flips the pick at the top of every UTC hour, so the site shows
 //! a living element that matches what app users see at the same moment.
-//! Fetch pattern mirrors `StatsStrip`, but instead of hiding on error the
-//! section falls back to a frozen real response (below), so the element
-//! always renders — including under `dx serve` with no backend.
+//! Fetch pattern mirrors `StatsStrip`: hide until live data lands. Debug
+//! builds additionally fall back to a frozen real response (below) so the
+//! element always renders under `dx serve` with no backend.
 //!
 //! Tapping the card-name tag requests the full-art overlay via the `overlay`
 //! signal; the HOME PAGE renders the overlay itself at its top level, outside
@@ -26,12 +26,19 @@ use zwipe_core::{
 };
 
 /// A real `/api/card/featured-flavor` response frozen 2026-08-06, decoded as
-/// the fallback while the live fetch is pending or failing. Live data
-/// replaces it the moment the fetch resolves.
+/// the DEBUG-ONLY fallback while the live fetch is pending or failing, so
+/// `dx serve` with no backend still renders the element. Release builds hide
+/// the section until live data lands (StatsStrip parity): a stale-but-real
+/// card is indistinguishable from a live one, which is exactly how the
+/// CF-cached copy went unnoticed for a day (owner call 2026-08-06).
+#[cfg(debug_assertions)]
 const SPOOF_CARD_JSON: &str = include_str!("featured_flavor_spoof.json");
 
 fn spoof_card() -> Option<Card> {
-    serde_json::from_str(SPOOF_CARD_JSON).ok()
+    #[cfg(debug_assertions)]
+    return serde_json::from_str(SPOOF_CARD_JSON).ok();
+    #[cfg(not(debug_assertions))]
+    None
 }
 
 /// Dismisses the flavor overlay with the shared 200ms exit animation.
