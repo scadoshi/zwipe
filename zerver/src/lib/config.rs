@@ -34,6 +34,7 @@ const RESEND_EMAIL_FROM_KEY: &str = "RESEND_EMAIL_FROM";
 
 /// Environment variable key for the log file directory.
 const LOG_DIR_KEY: &str = "LOG_DIR";
+const HEALTHCHECK_PING_URL_KEY: &str = "HEALTHCHECK_PING_URL";
 
 /// Default log directory on production servers.
 const LOG_DIR_DEFAULT: &str = "/var/log/zwipe";
@@ -174,6 +175,12 @@ pub struct ZerviceConfig {
 
     /// Directory for rolling log files. Defaults to `/var/log/zwipe` if not set.
     pub log_dir: String,
+
+    /// Dead-man's-switch ping URL (healthchecks.io), hit after an all-steps-ok
+    /// run. Optional: unset (dev runs) means no ping, and the alerting is
+    /// silence-based on the receiving side — the `OnFailure=` email covers
+    /// "ran and failed", this covers "never ran at all".
+    pub healthcheck_ping_url: Option<String>,
 }
 
 impl ZerviceConfig {
@@ -191,10 +198,12 @@ impl ZerviceConfig {
         let database_url = env_var_by_key(DATABASE_URL_KEY)?;
         let rust_log = env_var_by_key(RUST_LOG_KEY)?;
         let log_dir = std::env::var(LOG_DIR_KEY).unwrap_or_else(|_| LOG_DIR_DEFAULT.to_string());
+        let healthcheck_ping_url = std::env::var(HEALTHCHECK_PING_URL_KEY).ok();
         Ok(Self {
             database_url,
             rust_log,
             log_dir,
+            healthcheck_ping_url,
         })
     }
 }
