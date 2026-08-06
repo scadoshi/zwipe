@@ -71,7 +71,7 @@ impl Persist for Session {
 #[cfg(not(target_os = "android"))]
 mod platform {
     use super::Session;
-    use keyring::default;
+    use keyring::Entry;
 
     fn service() -> String {
         env!("CARGO_PKG_NAME").to_string() + "-service"
@@ -81,24 +81,27 @@ mod platform {
         env!("CARGO_PKG_NAME").to_string() + "-user"
     }
 
+    /// (service, username) must keep mapping to the Keychain item the
+    /// keyring-3 backend wrote, or existing sessions drop on upgrade.
+    fn entry() -> Result<Entry, keyring::Error> {
+        Entry::new(&service(), &username())
+    }
+
     pub fn save(session: &Session) -> anyhow::Result<()> {
-        let credential =
-            default::default_credential_builder().build(None, &service(), &username())?;
         let bytes = serde_json::to_vec(session)?;
-        credential.set_secret(&bytes)?;
+        entry()?.set_secret(&bytes)?;
         Ok(())
     }
 
     pub fn load() -> anyhow::Result<Option<Session>> {
-        let credential =
-            default::default_credential_builder().build(None, &service(), &username())?;
-        match credential.get_secret() {
+        let entry = entry()?;
+        match entry.get_secret() {
             Err(keyring::Error::NoEntry) => Ok(None),
             Err(e) => Err(e.into()),
             Ok(bytes) => {
                 let session: Session = serde_json::from_slice(&bytes)?;
                 if session.is_expired() {
-                    credential.delete_credential()?;
+                    entry.delete_credential()?;
                     return Ok(None);
                 }
                 Ok(Some(session))
@@ -107,9 +110,7 @@ mod platform {
     }
 
     pub fn delete() -> anyhow::Result<()> {
-        let credential =
-            default::default_credential_builder().build(None, &service(), &username())?;
-        credential.delete_credential()?;
+        entry()?.delete_credential()?;
         Ok(())
     }
 }

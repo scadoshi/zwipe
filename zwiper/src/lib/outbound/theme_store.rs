@@ -52,7 +52,7 @@ impl PersistTheme for ThemeConfig {
 #[cfg(not(target_os = "android"))]
 mod platform {
     use super::ThemeConfig;
-    use keyring::default;
+    use keyring::Entry;
 
     fn service() -> String {
         env!("CARGO_PKG_NAME").to_string() + "-service"
@@ -62,17 +62,17 @@ mod platform {
         env!("CARGO_PKG_NAME").to_string() + "-theme"
     }
 
+    fn entry() -> Result<Entry, keyring::Error> {
+        Entry::new(&service(), &username())
+    }
+
     pub fn save(theme: &ThemeConfig) -> anyhow::Result<()> {
-        let credential =
-            default::default_credential_builder().build(None, &service(), &username())?;
-        credential.set_secret(&serde_json::to_vec(theme)?)?;
+        entry()?.set_secret(&serde_json::to_vec(theme)?)?;
         Ok(())
     }
 
     pub fn load() -> anyhow::Result<Option<ThemeConfig>> {
-        let credential =
-            default::default_credential_builder().build(None, &service(), &username())?;
-        match credential.get_secret() {
+        match entry()?.get_secret() {
             Err(keyring::Error::NoEntry) => Ok(None),
             Err(e) => Err(e.into()),
             Ok(bytes) => Ok(Some(serde_json::from_slice(&bytes)?)),
