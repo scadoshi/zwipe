@@ -73,6 +73,8 @@ use axum::{
 use std::{sync::Arc, time::Duration};
 #[cfg(feature = "zerver")]
 use tower_governor::{GovernorLayer, errors::GovernorError, governor::GovernorConfigBuilder};
+#[cfg(feature = "zerver")]
+use tower_http::set_header::SetResponseHeaderLayer;
 
 /// Rate-limit error handler for the routes keyed by user id
 /// (`UserIdKeyExtractor`).
@@ -155,6 +157,35 @@ fn rate_limit_copy(wait_secs: u64) -> String {
 }
 
 pub use zwipe_core::http::paths::*;
+
+/// `Cache-Control: public, max-age=3600` for successful responses on the
+/// public read endpoints (card catalogs, marketing stats, changelog), so the
+/// CF edge (whose cache rules respect origin TTL) holds one copy per hour
+/// instead of falling back to its daily default — which held the flavor card
+/// ~20h on 2026-08-06. One simple number everywhere; only featured-flavor
+/// needs more (its content flips ON the hour, so its handler counts down to
+/// the boundary, and `if_not_present` lets that header win).
+///
+/// Success-only on purpose: without the guard a 429 or error body would leave
+/// browser-cacheable for an hour.
+#[cfg(feature = "zerver")]
+fn hourly_public_cache(response: &Response<Body>) -> Option<HeaderValue> {
+    response
+        .status()
+        .is_success()
+        .then(|| HeaderValue::from_static("public, max-age=3600"))
+}
+
+#[cfg(feature = "zerver")]
+type CacheHeaderFn = fn(&Response<Body>) -> Option<HeaderValue>;
+
+#[cfg(feature = "zerver")]
+fn hourly_cache_layer() -> SetResponseHeaderLayer<CacheHeaderFn> {
+    SetResponseHeaderLayer::if_not_present(
+        header::CACHE_CONTROL,
+        hourly_public_cache as CacheHeaderFn,
+    )
+}
 
 /// Routes that don't require authentication.
 #[cfg(feature = "zerver")]
@@ -364,7 +395,8 @@ pub fn public_routes() -> Router<AppState> {
                         .route("/sets", get(get_sets))
                         .layer(
                             GovernorLayer::new(public_card_config).error_handler(stable_rate_limit),
-                        ),
+                        )
+                        .layer(hourly_cache_layer()),
                 )
                 .nest(
                     "/marketing",
@@ -373,7 +405,8 @@ pub fn public_routes() -> Router<AppState> {
                         .layer(
                             GovernorLayer::new(public_marketing_config)
                                 .error_handler(stable_rate_limit),
-                        ),
+                        )
+                        .layer(hourly_cache_layer()),
                 )
                 .nest(
                     "/client",
@@ -384,12 +417,19 @@ pub fn public_routes() -> Router<AppState> {
                                 .error_handler(stable_rate_limit),
                         ),
                 )
-                .route(
-                    "/changelog",
-                    get(get_changelog).layer(
-                        GovernorLayer::new(public_changelog_config)
-                            .error_handler(stable_rate_limit),
-                    ),
+                // Merged rather than routed directly: the cache layer hangs on
+                // a wrapping Router because MethodRouter::layer can't infer
+                // its error type when chained after the governor.
+                .merge(
+                    Router::new()
+                        .route(
+                            "/changelog",
+                            get(get_changelog).layer(
+                                GovernorLayer::new(public_changelog_config)
+                                    .error_handler(stable_rate_limit),
+                            ),
+                        )
+                        .layer(hourly_cache_layer()),
                 )
                 .nest(
                     "/metrics",
