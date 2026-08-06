@@ -17090,6 +17090,155 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "hate-banding",
         "Strips banding and bands-with-other abilities from a target creature.",
     ),
+    (
+        "scales-with-mana-value",
+        "An effect that gets bigger based on the mana value of a card or permanent.",
+    ),
+    (
+        "low-mana-value-matters",
+        "Cares about cards with low mana value, often finding, returning, or destroying cheap ones.",
+    ),
+    (
+        "creates-bigger-body",
+        "A creature that creates or animates a creature bigger than itself.",
+    ),
+    (
+        "ward",
+        "Counters an opponent's spell or ability that targets this permanent unless they pay a cost.",
+    ),
+    (
+        "your-sacrifice-matters",
+        "Rewards you whenever you sacrifice one of your own permanents.",
+    ),
+    (
+        "multi-copy",
+        "Copies a permanent several times at once, as with myriad, squad, or mass copy effects.",
+    ),
+    (
+        "hate-high-mv",
+        "Answers or punishes cards with a high mana value, often countering or exiling them.",
+    ),
+    (
+        "hate-removal-sacrifice",
+        "Rewards you whenever you sacrifice a permanent, so forced sacrifices still pay off.",
+    ),
+    (
+        "times-resolved-matters",
+        "Tracks how many times an ability has resolved this turn, changing what it does.",
+    ),
+    (
+        "tron",
+        "A card that gets stronger or melds once you control the rest of its named set.",
+    ),
+    (
+        "rulebreaker",
+        "A commander that relaxes deckbuilding rules such as color identity or deck size.",
+    ),
+    (
+        "opponent-sacrifice-matters",
+        "Rewards you whenever an opponent sacrifices a creature or other permanent.",
+    ),
+    (
+        "legendify",
+        "Makes a permanent legendary, sometimes several at once.",
+    ),
+    (
+        "phasing-matters",
+        "Makes permanents phase in or out, stops them from phasing, or triggers when they do.",
+    ),
+    (
+        "cycle-hob-c-hybrid",
+        "A common two-color hybrid creature or Equipment you can cast with either of its colors.",
+    ),
+    (
+        "cycle-hob-company",
+        "A rare two-color creature that gets better when you control other creatures of its type.",
+    ),
+    (
+        "cycle-hob-c-adventurer",
+        "A common creature with an Adventure side, cast as a spell first and a creature later.",
+    ),
+    (
+        "cycle-hob-draft-signpost",
+        "An uncommon two-color creature that points you toward that color pair's draft archetype.",
+    ),
+    (
+        "cycle-hob-u-hybrid",
+        "An uncommon two-color hybrid card, castable with either color alone.",
+    ),
+    (
+        "cycle-hob-typal-dual",
+        "A common tapped dual land you can sacrifice to put two +1/+1 counters on a creature of its type.",
+    ),
+    (
+        "continuous-effect-from-graveyard",
+        "A card with a passive ability that keeps working while it sits in a graveyard.",
+    ),
+    (
+        "planeswalkerfall",
+        "Triggers an effect whenever a planeswalker you control enters the battlefield.",
+    ),
+    (
+        "affinity-for-elves",
+        "Costs {1} less to cast for each Elf you control.",
+    ),
+    (
+        "discard-outlet-legendary",
+        "Lets you discard a legendary card sharing a name with a legendary permanent you control.",
+    ),
+    (
+        "synergy-saddle",
+        "Rewards saddling, such as making your creatures Mounts and paying off when they're saddled.",
+    ),
+    (
+        "hate-typal-archon",
+        "Defends against Archons, such as by having protection from Archons.",
+    ),
+    ("trap-card", "A spell you can cast only during combat."),
+    (
+        "gives-assist",
+        "Grants assist to a spell so another player can pay some or all of its generic mana.",
+    ),
+    (
+        "tutor-creature-halfling",
+        "Searches your library for a Halfling card and puts it into your hand.",
+    ),
+    (
+        "tutor-creature-nephilim",
+        "Searches your library for a Nephilim card and puts it into your hand.",
+    ),
+    (
+        "typal-camel",
+        "A card that cares about Camel creatures you control.",
+    ),
+    (
+        "typal-lobster",
+        "A card that cares about how many Lobster creatures you control.",
+    ),
+    (
+        "typal-nautilus",
+        "A card that cares about how many Nautilus creatures you control.",
+    ),
+    (
+        "typal-nephilim",
+        "A card that cares about how many Nephilim creatures you control.",
+    ),
+    (
+        "typal-starfish",
+        "A card that cares about how many Starfish creatures you control.",
+    ),
+    (
+        "typal-trilobite",
+        "Cares about Trilobites you control, along with Crabs, Lobsters, Nautiluses, and Starfish.",
+    ),
+    (
+        "gives-living-weapon",
+        "Grants living weapon to your Equipment: each one enters with a 0/0 Germ token wearing it.",
+    ),
+    (
+        "gives-saddle",
+        "Grants saddle to your creatures: tap other creatures to make them saddled for the turn.",
+    ),
 ];
 
 /// Flatten [`ORACLE_TAG_DESCRIPTIONS`] into parallel `(slug, description)` arrays
