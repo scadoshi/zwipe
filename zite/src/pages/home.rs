@@ -1,9 +1,10 @@
 use crate::{
     Footer, Nav, Route,
-    components::{PageMeta, StatsStrip},
+    components::{FeaturedFlavor, PageMeta, StatsStrip, dismiss_flavor_overlay},
 };
 use dioxus::prelude::*;
-use zwipe_components::{Banner, BannerStatus, Panel};
+use zwipe_components::{Banner, BannerStatus, FlippableCardImage, Panel};
+use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
 
@@ -50,24 +51,25 @@ fn Testimonials() -> Element {
     ];
     rsx! {
         section { class: "testimonials",
-            div { class: "testimonials-header",
-                h2 { class: "testimonials-title", "Loved by deck builders" }
+            // One Reviews Panel holding everything: the live App Store rating
+            // as a clickable share-screen-style tag, then the review cards
+            // nested inside its body.
+            Panel { eyebrow: "Reviews", title: "Deck builder testimonials",
                 a {
-                    class: "testimonials-rating",
+                    class: "rating-tag",
                     href: APP_STORE_URL,
                     target: "_blank",
                     rel: "noopener noreferrer",
-                    "aria-label": "4.8 out of 5 stars from App Store ratings",
+                    "aria-label": "4.8 out of 5 stars on the App Store",
                     span { class: "rating-stars", "★★★★★" }
                     span { class: "rating-score", "4.8" }
-                    span { class: "rating-count", "App Store" }
                 }
-            }
-            div { class: "testimonials-grid",
-                for (quote, handle) in reviews {
-                    figure { class: "testimonial",
-                        blockquote { class: "testimonial-quote", "“{quote}”" }
-                        figcaption { class: "testimonial-author", "{handle}" }
+                div { class: "testimonials-grid",
+                    for (quote, handle) in reviews {
+                        figure { class: "testimonial",
+                            blockquote { class: "testimonial-quote", "“{quote}”" }
+                            figcaption { class: "testimonial-author", "{handle}" }
+                        }
                     }
                 }
             }
@@ -121,6 +123,14 @@ pub fn Home() -> Element {
     #[allow(clippy::indexing_slicing)]
     let (current_src, current_caption, current_label) = demos[index()];
 
+    // Featured flavor's full-art overlay state. The overlay is rendered HERE,
+    // at the page's top level outside the `content-enter` tree — mirroring
+    // the shared-deck page, whose overlay works. Nested inside the content
+    // tree, an animated ancestor's transform becomes the containing block for
+    // `position: fixed` and traps the overlay in the page column.
+    let flavor_overlay: Signal<Option<ScryfallData>> = use_signal(|| None);
+    let flavor_overlay_dismissing = use_signal(|| false);
+
     rsx! {
         PageMeta {
             title: "Mobile Magic: The Gathering & Commander Deck Builder",
@@ -166,8 +176,36 @@ pub fn Home() -> Element {
                 StatsStrip {}
             }
         }
+        // Tap-to-open full-art overlay for the featured flavor card, copied
+        // from the shared-deck page: a dimmed backdrop with the card art, tap
+        // anywhere to dismiss (the flip button stops propagation, so flipping
+        // never dismisses). Lives at the top level, outside `content-enter`.
+        if flavor_overlay().is_some() || flavor_overlay_dismissing() {
+            div { class: "sd-image-overlay-backdrop" }
+            div {
+                class: if flavor_overlay_dismissing() { "sd-image-overlay dismissing" } else { "sd-image-overlay" },
+                onclick: move |_| {
+                    dismiss_flavor_overlay(flavor_overlay, flavor_overlay_dismissing);
+                },
+                if let Some(sd) = flavor_overlay() {
+                    FlippableCardImage {
+                        sd,
+                        size: ImageSize::Large,
+                        class: "sd-image-overlay-img".to_string(),
+                        draggable: false,
+                    }
+                }
+            }
+        }
         div { class: "page content-enter",
-            figure { class: "project-gallery",
+            // The demo and the three core sells share one band: the gallery
+            // is ~70vh tall, and the stacked panels fill what used to be its
+            // dead side-space instead of renting another screen below it.
+            div { class: "demo-features",
+                // Left column: the demo gallery with the hour's flavor card
+                // tucked beneath it.
+                div { class: "demo-col",
+                    figure { class: "project-gallery",
                 div { class: "gallery-frame",
                     div { class: "gallery-header", "Demo" }
                     hr { class: "gallery-rule" }
@@ -216,46 +254,35 @@ pub fn Home() -> Element {
                     }
                 }
             }
-            div { class: "features-grid",
-                Panel { eyebrow: "Build", title: "Swipe to Build",
-                    ul { class: "card-bullets",
-                        li { "Right to add card to deck (or remove in remove flow)" }
-                        li { "Left to skip card" }
-                        li { "Up to add to maybeboard" }
-                        li { "Down to undo last swipe" }
-                    }
+                    FeaturedFlavor { overlay: flavor_overlay }
                 }
-                Panel { eyebrow: "Format", title: "Commander Ready",
-                    ul { class: "card-bullets",
-                        li { "Most synergistic cards show first based on your selected commander" }
-                        li { "Swipe-pick your commander, partner, background, or signature spell" }
-                        li { "Partners, backgrounds, Oathbreaker, and other Commander-like formats" }
-                        li { "Color identity validation" }
-                        li { "Per-format eligibility" }
+                // The three core sells — swiping, synergy-ordered serving,
+                // and tags. Hosting basics (accounts, sync, import) are
+                // assumed service table stakes, not pitched.
+                div { class: "features-stack",
+                    Panel { eyebrow: "Build", title: "Swipe to Build",
+                        ul { class: "card-bullets",
+                            li { "Right to add card to deck (or remove in remove flow)" }
+                            li { "Left to skip card" }
+                            li { "Up to add to maybeboard" }
+                            li { "Down to undo last swipe" }
+                        }
                     }
-                }
-                Panel { eyebrow: "Tags", title: "Know What Every Card Does",
-                    ul { class: "card-bullets",
-                        li { "Every card labeled by role: ramp, removal, counterspell, tokens, and more" }
-                        li { "Filter your feed by what a card does, not just its text" }
-                        li { "Tap any tag for a plain-language definition" }
-                        li { "Community-maintained, so the labels stay current" }
+                    Panel { eyebrow: "Synergy", title: "Served in Synergy Order",
+                        ul { class: "card-bullets",
+                            li { "Most synergistic cards show first based on your selected commander" }
+                            li { "Swipe-pick your commander, partner, background, or signature spell" }
+                            li { "Partners, backgrounds, Oathbreaker, and other Commander-like formats" }
+                            li { "Color identity and per-format eligibility validated" }
+                        }
                     }
-                }
-                Panel { eyebrow: "Cards", title: "Filter & Inspect",
-                    ul { class: "card-bullets",
-                        li { "Filter on any attribute you'd want" }
-                        li { "Stack and clear filters freely" }
-                        li { "Tap any card for its full rules text with real mana symbols, plus power/toughness or loyalty" }
-                        li { "Tap a keyword to see what it does" }
-                    }
-                }
-                Panel { eyebrow: "Decks", title: "Your Decks, Synced",
-                    ul { class: "card-bullets",
-                        li { "Import from an Archidekt URL or paste any decklist" }
-                        li { "Tag decks by archetype (Aggro, Tokens, Reanimator, and more)" }
-                        li { "Real accounts, no setup friction" }
-                        li { "Synced across sessions wherever you sign in" }
+                    Panel { eyebrow: "Tags", title: "Know What Every Card Does",
+                        ul { class: "card-bullets",
+                            li { "Every card labeled by role: ramp, removal, counterspell, tokens, and more" }
+                            li { "Filter your feed by what a card does, not just its text" }
+                            li { "Tap any tag for a plain-language definition" }
+                            li { "Community-maintained, so the labels stay current" }
+                        }
                     }
                 }
             }

@@ -109,7 +109,7 @@ a:hover {
 .page {
     flex: 1 0 auto;
     width: 100%;
-    max-width: 65.5rem;
+    max-width: 74rem;
     margin: 0 auto;
     padding: 0 1.5rem 5rem;
 }
@@ -429,7 +429,9 @@ code {
 .hero-card {
     display: flex;
     flex-direction: column;
-    max-width: 62.5rem;
+    /* Match the .page content width (74rem minus its 1.5rem side padding)
+       so the hero's edges align with the demo/features band below. */
+    max-width: 71rem;
     margin: 1.5rem auto 0;
     padding: 1rem 1.5rem;
     background-color: var(--bg-primary);
@@ -767,6 +769,94 @@ code {
     flex-shrink: 0;
     font-variant-numeric: tabular-nums;
     color: var(--text-subtle);
+}
+
+/* The demo gallery and the three core feature panels share one band — the
+   panels fill what used to be the gallery's dead side-space, cutting the
+   page's height by roughly a viewport. Stacks on narrow viewports. */
+.demo-features {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: stretch;
+    margin: 0.25rem 0 2.5rem;
+}
+
+.demo-features .project-gallery {
+    max-width: none;
+    margin: 0;
+}
+
+.demo-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.features-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Equal-height panels spanning the gallery's full height together. */
+.features-stack .panel-card {
+    flex: 1;
+}
+
+@media (max-width: 56rem) {
+    .demo-features {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Featured flavor ──────────────────────────────────────────────────────
+   The hour's shared flavor pick, same card the app home shows, flipping at
+   the top of every UTC hour. A Panel tucked under the demo gallery; tap the
+   card-name tag to open the full-art overlay (shared .sd-image-overlay*
+   styles). */
+.ff-quote {
+    font-style: italic;
+    color: var(--text-primary);
+    line-height: 1.5;
+    text-align: center;
+}
+
+.ff-name-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.8rem;
+}
+
+/* Card-name tag, matching the app home's .flavor-source-link pill. */
+.ff-name {
+    display: inline-block;
+    max-width: 100%;
+    padding: 0.28rem 0.8rem;
+    font-size: 0.8rem;
+    line-height: 1.3;
+    text-align: center;
+    color: var(--accent-primary);
+    background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
+    border-radius: 0.5rem;
+}
+
+.ff-name-link {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Hover-capable pointers only, so touch devices never keep a stuck grown
+   state. Same slight scale-up as the share screen's keyword chips. */
+@media (hover: hover) {
+    .ff-name-link:hover {
+        transform: scale(1.06);
+    }
+}
+
+.ff-name-link:active {
+    transform: scale(0.97);
 }
 
 /* ==================
@@ -1409,11 +1499,46 @@ footer {
      testimonials
  ==================== */
 
+/* Full page-column width, matching the demo/features band above; the lead
+   Panel and review Panels carry the visuals, nothing floats on the grid. */
 .testimonials {
-    max-width: 62.5rem;
-    margin: 3.5rem auto 0;
-    padding: 0 1.5rem;
-    text-align: center;
+    margin-top: 0;
+}
+
+/* Review cards nested in the Reviews panel body, below the rating tag. */
+.testimonials .testimonials-grid {
+    margin-top: 1.25rem;
+}
+
+/* App Store rating as a clickable share-screen-style chip (warning-tinted,
+   like the stars), with the flavor pill's hover grow. */
+.rating-tag {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.28rem 0.8rem;
+    font-size: 0.8rem;
+    text-decoration: none;
+    color: var(--color-warning);
+    background-color: color-mix(in srgb, var(--color-warning) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-warning) 35%, transparent);
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.rating-tag .rating-score {
+    color: var(--color-warning);
+}
+
+@media (hover: hover) {
+    .rating-tag:hover {
+        transform: scale(1.06);
+        color: var(--color-warning);
+    }
+}
+
+.rating-tag:active {
+    transform: scale(0.97);
 }
 
 .testimonials-header {
@@ -1458,17 +1583,17 @@ footer {
 .testimonials-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-    gap: 1rem;
+    gap: 1.5rem;
+    /* Reviews render as shared Panels; undo the section's centered text so
+       the panel grammar (left-aligned eyebrow/title/body) holds. */
+    text-align: left;
 }
 
+/* Plain text blocks inside the Reviews panel — the panel carries the card
+   chrome, so the quotes don't nest another box. */
 .testimonial {
     margin: 0;
-    padding: 1.25rem;
     text-align: left;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    box-shadow: var(--shadow-md);
 }
 
 .testimonial-quote {
