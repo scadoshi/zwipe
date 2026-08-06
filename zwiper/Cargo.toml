@@ -26,7 +26,7 @@ anyhow = { workspace = true }
 thiserror = { workspace = true }
 once_cell = { workspace = true }
 dotenvy = { workspace = true }
-keyring = { version = "3", features = ["apple-native"]}
+keyring = { version = "4" }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 uuid = { workspace = true }
