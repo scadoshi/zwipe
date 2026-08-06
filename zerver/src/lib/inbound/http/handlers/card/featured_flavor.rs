@@ -8,7 +8,11 @@
 //! `context/plans/featured_flavor.md`.
 
 #[cfg(feature = "zerver")]
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{
+    Json,
+    extract::State,
+    http::{StatusCode, header},
+};
 #[cfg(feature = "zerver")]
 use chrono::Timelike;
 #[cfg(feature = "zerver")]
@@ -24,10 +28,15 @@ use crate::{
 
 /// Serves the hour's featured flavor card (unauthed; the app home screen and
 /// the zwipe.net home page both read it).
+///
+/// `Cache-Control` declares freshness to the top of the UTC hour so edge
+/// caches (Cloudflare fronts prod) expire exactly when the pick flips.
+/// Without it, a CF cache rule edge-cached the response for ~20 hours and the
+/// whole world saw one card all day (2026-08-06).
 #[cfg(feature = "zerver")]
 pub async fn get_featured_flavor(
     State(state): State<AppState>,
-) -> Result<(StatusCode, Json<Card>), ApiError> {
+) -> Result<(StatusCode, [(header::HeaderName, String); 1], Json<Card>), ApiError> {
     let service = std::sync::Arc::clone(&state.card_service);
     let card = state
         .featured_flavor
@@ -35,17 +44,26 @@ pub async fn get_featured_flavor(
             let now = chrono::Utc::now();
             let hour_key = now.format("%Y-%m-%d-%H").to_string();
             let card = service.featured_flavor(&hour_key).await?;
-            Ok::<_, GetCardError>((card, next_utc_hour_deadline(&now)))
+            Ok::<_, GetCardError>((
+                card,
+                Instant::now() + Duration::from_secs(secs_until_next_utc_hour(&now)),
+            ))
         })
         .await
         .map_err(ApiError::from)?;
-    Ok((StatusCode::OK, Json(card)))
+    let max_age = secs_until_next_utc_hour(&chrono::Utc::now());
+    Ok((
+        StatusCode::OK,
+        [(header::CACHE_CONTROL, format!("public, max-age={max_age}"))],
+        Json(card),
+    ))
 }
 
-/// Monotonic deadline for the top of the next UTC hour, so every slot flip
-/// lands on the wall-clock boundary rather than drifting per refresh time.
+/// Seconds until the top of the next UTC hour — the slot deadline and the
+/// response `max-age` both derive from it, so the in-memory flip and the edge
+/// cache expiry land on the same wall-clock boundary.
 #[cfg(feature = "zerver")]
-fn next_utc_hour_deadline(now: &chrono::DateTime<chrono::Utc>) -> Instant {
+fn secs_until_next_utc_hour(now: &chrono::DateTime<chrono::Utc>) -> u64 {
     let secs_into_hour = u64::from(now.minute()) * 60 + u64::from(now.second());
-    Instant::now() + Duration::from_secs(3600 - secs_into_hour.min(3599))
+    3600 - secs_into_hour.min(3599)
 }
