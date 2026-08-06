@@ -266,13 +266,13 @@ pub fn Home() -> Element {
                             li { "Left to skip card" }
                             li { "Up to add to maybeboard" }
                             li { "Down to undo last swipe" }
+                            li { "Swipe-pick your commander, partner, background, or signature spell" }
                         }
                     }
                     Panel { eyebrow: "Synergy", title: "Served in Synergy Order",
                         ul { class: "card-bullets",
                             li { "Most synergistic cards show first based on your selected commander" }
-                            li { "Swipe-pick your commander, partner, background, or signature spell" }
-                            li { "Partners, backgrounds, Oathbreaker, and other Commander-like formats" }
+                            li { "The order learns from swipes: crowd favorites rise as players build" }
                             li { "Color identity and per-format eligibility validated" }
                         }
                     }
