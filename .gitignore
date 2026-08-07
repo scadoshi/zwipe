@@ -6,3 +6,7 @@ target/
 cache/
 *.ipa
 *.aab
+# Crate-local lockfiles are dead weight in a workspace (root Cargo.lock is the
+# only one builds use) and generate ghost Dependabot alerts against stale graphs.
+zerver/Cargo.lock
+zwiper/Cargo.lock
