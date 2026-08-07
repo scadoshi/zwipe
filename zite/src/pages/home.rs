@@ -205,55 +205,53 @@ pub fn Home() -> Element {
                 // Left column: the demo gallery with the hour's flavor card
                 // tucked beneath it.
                 div { class: "demo-col",
-                    figure { class: "project-gallery",
-                div { class: "gallery-frame",
-                    div { class: "gallery-header", "Demo" }
-                    hr { class: "gallery-rule" }
-                    div { class: "gallery-body",
-                        video {
-                            // key forces a remount when index changes so autoplay re-fires
-                            // for the new src instead of the browser keeping the old video.
-                            key: "{index()}",
-                            class: "gallery-video",
-                            src: current_src,
-                            "aria-label": "{current_label}",
-                            autoplay: true,
-                            muted: true,
-                            "loop": true,
-                            playsinline: true,
-                            controls: true,
-                            preload: "metadata",
-                        }
-                        if total > 1 {
-                            button {
-                                class: "gallery-nav gallery-prev",
-                                aria_label: "Previous demo",
-                                onclick: move |_| {
-                                    let i = index();
-                                    index.set(if i == 0 { total - 1 } else { i - 1 });
-                                },
-                                "←"
+                    // Same Panel grammar as the rest of the band; the per-clip
+                    // caption under the video does the describing.
+                    Panel { eyebrow: "Demo", title: "Watch it work",
+                        div { class: "gallery-body",
+                            video {
+                                // key forces a remount when index changes so autoplay re-fires
+                                // for the new src instead of the browser keeping the old video.
+                                key: "{index()}",
+                                class: "gallery-video",
+                                src: current_src,
+                                "aria-label": "{current_label}",
+                                autoplay: true,
+                                muted: true,
+                                "loop": true,
+                                playsinline: true,
+                                controls: true,
+                                preload: "metadata",
                             }
-                            button {
-                                class: "gallery-nav gallery-next",
-                                aria_label: "Next demo",
-                                onclick: move |_| {
-                                    let i = index();
-                                    index.set((i + 1) % total);
-                                },
-                                "→"
+                            if total > 1 {
+                                button {
+                                    class: "gallery-nav gallery-prev",
+                                    aria_label: "Previous demo",
+                                    onclick: move |_| {
+                                        let i = index();
+                                        index.set(if i == 0 { total - 1 } else { i - 1 });
+                                    },
+                                    "←"
+                                }
+                                button {
+                                    class: "gallery-nav gallery-next",
+                                    aria_label: "Next demo",
+                                    onclick: move |_| {
+                                        let i = index();
+                                        index.set((i + 1) % total);
+                                    },
+                                    "→"
+                                }
+                            }
+                        }
+                        hr { class: "gallery-rule" }
+                        div { class: "gallery-footer",
+                            span { key: "{index()}", class: "gallery-caption", "{current_caption}" }
+                            if total > 1 {
+                                span { class: "gallery-counter", "{index() + 1} / {total}" }
                             }
                         }
                     }
-                    hr { class: "gallery-rule" }
-                    div { class: "gallery-footer",
-                        figcaption { key: "{index()}", class: "gallery-caption", "{current_caption}" }
-                        if total > 1 {
-                            span { class: "gallery-counter", "{index() + 1} / {total}" }
-                        }
-                    }
-                }
-            }
                     FeaturedFlavor { overlay: flavor_overlay }
                 }
                 // The three core sells — swiping, synergy-ordered serving,
