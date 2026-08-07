@@ -17239,6 +17239,14 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "gives-saddle",
         "Grants saddle to your creatures: tap other creatures to make them saddled for the turn.",
     ),
+    (
+        "cycle-trk-landcycler",
+        "A creature you can discard for {2} to search your library for a basic land.",
+    ),
+    (
+        "typal-klingon",
+        "A card that cares about Klingon creatures you control.",
+    ),
 ];
 
 /// Flatten [`ORACLE_TAG_DESCRIPTIONS`] into parallel `(slug, description)` arrays
