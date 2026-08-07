@@ -25,7 +25,7 @@ use zwipe_core::{
     http::paths::featured_flavor_route,
 };
 
-/// A real `/api/card/featured-flavor` response frozen 2026-08-06, decoded as
+/// A real card response (Research Assistant, M15) frozen 2026-08-07, decoded as
 /// the DEBUG-ONLY fallback while the live fetch is pending or failing, so
 /// `dx serve` with no backend still renders the element. Release builds hide
 /// the section until live data lands (StatsStrip parity): a stale-but-real
