@@ -644,40 +644,16 @@ code {
         gallery
  ==================== */
 
-.project-gallery {
-    max-width: 36rem;
-    margin: 0.25rem auto 2.5rem;
-    padding: 0;
-}
+/* The demo lives in a shared Panel (eyebrow + title) like the rest of the
+   band; these classes style its body: the video window, prev/next, and the
+   caption footer split off by a full-width rule. */
 
-/* Media window styled like the app's alert dialogs: an accent header and a
-   footer caption, each split off the media by a full-width rule, all inside
-   one bg-primary card. */
-.gallery-frame {
-    display: flex;
-    flex-direction: column;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    box-shadow: var(--shadow-md);
-    overflow: hidden;
-    padding: 1rem 1.25rem;
-}
-
-.gallery-header {
-    color: var(--accent-primary);
-    text-align: center;
-    font-size: 1rem;
-    letter-spacing: 0.1em;
-}
-
-/* Full-width rule that breaks out of the frame's horizontal padding,
-   mirroring the app's .dialog-rule. */
+/* Breaks out of the panel-card's 1.5rem padding. */
 .gallery-rule {
     border: none;
     border-top: 1px solid var(--border-secondary);
     align-self: stretch;
-    margin: 0.75rem -1.25rem;
+    margin: 0.75rem -1.5rem;
 }
 
 .gallery-body {
@@ -780,11 +756,6 @@ code {
     gap: 1.5rem;
     align-items: stretch;
     margin: 0.25rem 0 2.5rem;
-}
-
-.demo-features .project-gallery {
-    max-width: none;
-    margin: 0;
 }
 
 .demo-col {
