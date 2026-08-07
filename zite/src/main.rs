@@ -7,8 +7,8 @@ mod components;
 mod pages;
 mod theme_store;
 use pages::{
-    About, Android, Changelog, Contribute, Discord, GuidePage, Guides, Home, Ios, Privacy, Reset,
-    SharedDeck, Verify,
+    About, Android, Changelog, Contribute, Discord, GuidePage, Guides, Home, Ios, NotFound,
+    Privacy, Reset, SharedDeck, Verify,
 };
 
 // Base URLs + contact points live in zwipe-core's `site` module (shared with
@@ -53,6 +53,11 @@ enum Route {
     Verify { token: String },
     #[route("/reset/:token")]
     Reset { token: String },
+    // Catch-all LAST so it only matches when nothing above does. The deploy
+    // copies index.html to 404.html, so unknown paths boot the shell and land
+    // here instead of the router's raw match-log dump.
+    #[route("/:..segments")]
+    NotFound { segments: Vec<String> },
 }
 
 fn main() {
