@@ -284,7 +284,9 @@ a.tag:hover {
 
 h1 {
     font-size: 2rem;
-    font-weight: 300;
+    /* 400, deliberately: only the 400/700 mono faces are loaded, so lighter
+       weights silently fall back here anyway. */
+    font-weight: 400;
     letter-spacing: 0.08em;
     margin-bottom: 0.75rem;
 }
@@ -789,7 +791,7 @@ code {
 .ff-quote {
     font-style: italic;
     color: var(--text-primary);
-    line-height: 1.5;
+    line-height: 1.55;
     text-align: center;
 }
 
@@ -810,7 +812,7 @@ code {
     color: var(--accent-primary);
     background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
-    border-radius: 0.5rem;
+    border-radius: 0.6rem;
 }
 
 .ff-name-link {
@@ -1037,7 +1039,7 @@ code {
     border: 1px solid var(--border-primary);
     color: var(--text-primary);
     font-family: "JetBrains Mono", monospace;
-    font-weight: 300;
+    font-weight: 400;
     font-size: 0.9rem;
     padding: 0.625rem 0.75rem;
     border-radius: 0.4rem;
@@ -1340,7 +1342,7 @@ code {
 
 .guide-kw {
     padding: 0.03rem 0.32rem;
-    border-radius: 0.3rem;
+    border-radius: 0.6rem;
     background-color: color-mix(in srgb, var(--text-primary) 9%, transparent);
     border: 1px solid color-mix(in srgb, var(--text-primary) 16%, transparent);
     color: var(--text-primary);
@@ -1493,7 +1495,7 @@ footer {
     color: var(--color-warning);
     background-color: color-mix(in srgb, var(--color-warning) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--color-warning) 35%, transparent);
-    border-radius: 0.5rem;
+    border-radius: 0.6rem;
     transition: all 0.2s ease;
 }
 
@@ -1954,7 +1956,7 @@ footer {
     padding: 0.15rem 0.5rem;
     font-size: 0.68rem;
     border: 1px solid transparent;
-    border-radius: 0.5rem;
+    border-radius: 0.6rem;
 }
 
 .sd-cz-role-zone {
@@ -2145,8 +2147,8 @@ footer {
 /* Dead-end alert title on the not-shared screen: red, centered, pulsing. */
 .sd-alert-title {
     display: block;
-    color: #ff3030;
-    font-weight: bold;
+    color: var(--color-error);
+    font-weight: 700;
     text-transform: uppercase;
     text-align: center;
     animation: sd-alert-pulse 1.6s ease-in-out infinite;
