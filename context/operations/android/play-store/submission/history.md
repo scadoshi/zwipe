@@ -2,6 +2,20 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-08-10 — `1.7.6`, versionCode `33`** (global undo across every deck-mutation
+  door with import resetting history, the Android resume-crash fix — `onDestroy`
+  process kill so reopening after OS-killed background is a clean cold start, the
+  featured flavor home element (hourly shared card), clear (×) buttons on all search
+  inputs, quick add searching past skips via the new `include_skipped` flag, and the
+  keyring 3→4 migration — Android unaffected at runtime (sessions are a private-storage
+  file) but first Android compile of the keyring-4 graph. Built per the recipe on the
+  **work Mac's first Android build** (fresh toolchain 2026-08-10: NDK 28.2.13676358,
+  platforms 36/36.1, build-tools 36.0.0, Gradle 9.1 via JBR 21): `dx bundle` →
+  `launcher_icons.sh` → `back_handler.sh` → gradle patch (compileSdk 36 / targetSdk 36
+  / versionCode 33) → `gradlew :app:bundleRelease` → jarsigner (JBR's — the
+  `/usr/bin` stub wants a system JDK). Manifest verified targetSdk 36 / vc33 / 1.7.6.
+  iOS counterpart build 71.)
+
 - **2026-08-04 — `1.7.5`, versionCode `32`** (the 1.7.5 feature train: deck-cards undo
   (adds, removals, coalesced qty bursts, board moves, printing swaps; per-deck stacks
   survive navigation), quick-add search bar, deck identity header, floating
