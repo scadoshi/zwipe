@@ -84,6 +84,13 @@ pub struct CardQuery {
     /// omit it parse to `false` (full-pool behavior).
     #[serde(default)]
     synergy: bool,
+    /// Deck-aware search only: when true, the deck's suppressed (skipped or
+    /// removed) cards stay in the results. Quick add sets this — typing a
+    /// card's name is explicit intent — while the swipe pile keeps the
+    /// default. Ignored by the plain (non-deck) search. `#[serde(default)]`
+    /// so older clients that omit it parse to `false` (suppressions applied).
+    #[serde(default)]
+    include_skipped: bool,
 }
 
 fn default_ascending() -> bool {
@@ -100,6 +107,7 @@ impl CardQuery {
         sort: Option<CardSortKey>,
         ascending: bool,
         synergy: bool,
+        include_skipped: bool,
     ) -> Self {
         Self {
             criteria,
@@ -108,6 +116,7 @@ impl CardQuery {
             sort,
             ascending,
             synergy,
+            include_skipped,
         }
     }
 
@@ -139,6 +148,11 @@ impl CardQuery {
     /// Deck-aware synergy membership mode (see field docs).
     pub fn synergy(&self) -> bool {
         self.synergy
+    }
+
+    /// Deck-aware suppression opt-out (see field docs).
+    pub fn include_skipped(&self) -> bool {
+        self.include_skipped
     }
 }
 
@@ -206,7 +220,8 @@ mod tests {
             "offset": 25,
             "order_by": "Cmc",
             "ascending": false,
-            "synergy": true
+            "synergy": true,
+            "include_skipped": false
         });
         assert_eq!(value, expected);
     }
@@ -226,9 +241,11 @@ mod tests {
     #[test]
     fn synergy_defaults_false_when_omitted() {
         // A client predating the synergy flag omits it; must parse to false
-        // (full-pool behavior), keeping the endpoint server-first safe.
+        // (full-pool behavior), keeping the endpoint server-first safe. Same
+        // contract for include_skipped: absent = suppressions applied.
         let query: CardQuery = serde_json::from_str(r#"{"name_contains":"bolt"}"#).unwrap();
         assert!(!query.synergy());
+        assert!(!query.include_skipped());
         // And the config defaults hold.
         assert_eq!(query.limit(), 25);
         assert_eq!(query.offset(), 0);

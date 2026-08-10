@@ -211,6 +211,7 @@ pub struct CardQueryBuilder {
     sort: Option<CardSortKey>,
     ascending: bool,
     synergy: bool,
+    include_skipped: bool,
 }
 
 impl Default for CardQueryBuilder {
@@ -280,6 +281,7 @@ impl Default for CardQueryBuilder {
             sort: None,
             ascending: true,
             synergy: false,
+            include_skipped: false,
         }
     }
 }
@@ -738,6 +740,7 @@ impl CardQueryBuilder {
             self.sort,
             self.ascending,
             self.synergy,
+            self.include_skipped,
         ))
     }
 

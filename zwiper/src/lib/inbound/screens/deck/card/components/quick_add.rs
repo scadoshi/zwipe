@@ -1,7 +1,8 @@
 //! Quick-add search bar for the deck cards screen.
 //!
 //! Type a card name, get a debounced, deck-aware search (cards already in the
-//! deck are excluded server-side), and add a result straight to the mainboard
+//! deck are excluded server-side, but skipped cards are included — see
+//! `include_skipped` below), and add a result straight to the mainboard
 //! with one tap. Synergy is deliberately off: `set_synergy(false)` drops the
 //! synergy-pool membership, and an explicit name sort keeps the server from
 //! applying synergy *ordering* (which it does whenever no sort is set). The
@@ -126,6 +127,11 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
             // Synergy off: no membership pool, and an explicit sort so the server
             // doesn't fall back to synergy ordering.
             builder.set_synergy(false);
+            // A typed card name is explicit intent: surface skipped (and
+            // removed) cards the swipe pile suppresses. Requires a server
+            // that knows the flag; older servers ignore it and keep the
+            // suppressed cards hidden.
+            builder.set_include_skipped(true);
             builder.set_sort(CardSortKey::Name);
             builder.set_limit(RESULT_LIMIT);
             let Ok(card_filter) = builder.build() else {
