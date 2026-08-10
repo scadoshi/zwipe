@@ -43,9 +43,15 @@ jni = "0.21"
 
 # iOS-only: `open_url` opens mailto:/http links via UIApplication.openURL, since
 # the webview's webbrowser backend rejects non-http(s) URLs on mobile.
+# keyring-core + the protected store: keyring's v1 wrapper has no iOS arm (it
+# errors at runtime), and iOS requires the store crate's `protected` feature
+# (enabled here, unified into the copy keyring already pulls) — see
+# `outbound/keyring_entry.rs`.
 [target.'cfg(target_os = "ios")'.dependencies]
 objc2 = "0.6"
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSURL", "NSDictionary"] }
+keyring-core = "1.0"
+apple-native-keyring-store = { version = "1.0", features = ["protected"] }
 
 # Desktop (dev) only: webbrowser is pulled transitively by dioxus-desktop; depend
 # on it directly so `open_url` can hand off mailto:/http on macOS/Windows/Linux.

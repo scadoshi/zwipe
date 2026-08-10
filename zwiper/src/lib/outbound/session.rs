@@ -71,7 +71,7 @@ impl Persist for Session {
 #[cfg(not(target_os = "android"))]
 mod platform {
     use super::Session;
-    use keyring::Entry;
+    use crate::outbound::keyring_entry::{self, Entry};
 
     fn service() -> String {
         env!("CARGO_PKG_NAME").to_string() + "-service"
@@ -84,7 +84,7 @@ mod platform {
     /// (service, username) must keep mapping to the Keychain item the
     /// keyring-3 backend wrote, or existing sessions drop on upgrade.
     fn entry() -> Result<Entry, keyring::Error> {
-        Entry::new(&service(), &username())
+        keyring_entry::entry(&service(), &username())
     }
 
     pub fn save(session: &Session) -> anyhow::Result<()> {
