@@ -14,7 +14,7 @@ Swipe to Build MTG Decks
 
 (170 character limit. Can be updated without a new submission — refresh this between releases to spotlight whatever's freshest.)
 
-Just shipped: undo for deck edits, a quick-add search bar, and card art across your deck list. Free, no ads.
+Just shipped: undo everywhere you build, an hourly featured card on the home screen, and quick add that finds your skipped cards. Free, no ads.
 
 ---
 
@@ -41,6 +41,17 @@ Other tools:
 - Your decks sync across sessions and devices
 
 Built for players who want a fast, focused mobile experience, not another cluttered desktop tool squeezed onto a small screen.
+
+---
+
+## What's New in This Version (1.7.6)
+
+(Kept within Android's 500-char release-note limit so both stores read the same length. The Android resume-crash fix is Android-only and not claimed here.)
+
+- Undo now reaches everything: swipes on the add and remove screens and printing swaps all step back from your deck's Undo button.
+- The home screen now features a card quote, fresh every hour, the same card for everyone.
+- Quick add now finds cards you skipped while swiping.
+- Every search bar has a clear button to wipe what you typed.
 
 ---
 
@@ -298,7 +309,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.7.5 |
+| Version | 1.7.6 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 

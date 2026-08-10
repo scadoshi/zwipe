@@ -153,13 +153,21 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.7.5 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.7.6 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.7.6:**
+
+- Fixed a crash when reopening the app after your phone closed it in the background.
+- Undo now reaches everything: swipes on the add and remove screens and printing swaps all step back from your deck's Undo button.
+- The home screen now features a card quote, fresh every hour, the same card for everyone.
+- Quick add now finds cards you skipped while swiping.
+- Every search bar has a clear button.
 
 **1.7.5:**
 
