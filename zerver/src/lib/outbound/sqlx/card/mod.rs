@@ -1024,10 +1024,14 @@ impl CardRepository for MyPostgres {
 
         // Suppression filtering: the deck's skipped/removed cards never come
         // back through the deck-aware search (Clear skips is the escape
-        // hatch). NOT EXISTS rather than a bind array — the set can be
-        // thousands of rows. Null-oracle printings pass, matching the
-        // exclusion clause above.
-        if let Some(deck_id) = deck_id {
+        // hatch). Quick add opts out via `include_skipped` — a typed card
+        // name is explicit intent, so suppressed cards stay findable there
+        // while the swipe pile keeps respecting them. NOT EXISTS rather than
+        // a bind array — the set can be thousands of rows. Null-oracle
+        // printings pass, matching the exclusion clause above.
+        if let Some(deck_id) = deck_id
+            && !request.include_skipped()
+        {
             sep.push("NOT EXISTS (SELECT 1 FROM deck_card_suppressions dcs WHERE dcs.deck_id = ");
             sep.push_bind_unseparated(deck_id);
             sep.push_unseparated(" AND dcs.oracle_id = latest_cards.oracle_id)");

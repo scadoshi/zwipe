@@ -800,6 +800,15 @@ impl CardQueryBuilder {
         self
     }
 
+    /// Toggles the deck-aware suppression opt-out. When on, the deck's
+    /// suppressed (skipped or removed) cards stay in results — quick add's
+    /// mode, where a typed name is explicit intent. A pure mode flag like
+    /// synergy — never makes the filter "active".
+    pub fn set_include_skipped(&mut self, include_skipped: bool) -> &mut Self {
+        self.include_skipped = include_skipped;
+        self
+    }
+
     // =================================
     // Exclude Filter Setters
     // =================================
@@ -1062,7 +1071,9 @@ impl CardQueryBuilder {
             ascending: self.ascending,
             // Synergy is a mode flag, not a search criterion: clearing the filter
             // keeps it, and it never makes the filter "active" on its own.
+            // Same for the suppression opt-out.
             synergy: self.synergy,
+            include_skipped: self.include_skipped,
             // Currency is a sticky preference: clearing the filter keeps it, and
             // it never makes the filter "active" on its own (only min/max do).
             price_currency: self.price_currency,

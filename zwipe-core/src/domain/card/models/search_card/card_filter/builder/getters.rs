@@ -374,6 +374,11 @@ impl CardQueryBuilder {
         self.ascending
     }
 
+    /// Returns the deck-aware suppression opt-out flag.
+    pub fn include_skipped(&self) -> bool {
+        self.include_skipped
+    }
+
     /// Returns the deck-aware synergy membership flag.
     pub fn synergy(&self) -> bool {
         self.synergy
