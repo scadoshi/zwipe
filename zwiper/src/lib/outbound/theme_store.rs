@@ -52,7 +52,7 @@ impl PersistTheme for ThemeConfig {
 #[cfg(not(target_os = "android"))]
 mod platform {
     use super::ThemeConfig;
-    use keyring::Entry;
+    use crate::outbound::keyring_entry::{self, Entry};
 
     fn service() -> String {
         env!("CARGO_PKG_NAME").to_string() + "-service"
@@ -63,7 +63,7 @@ mod platform {
     }
 
     fn entry() -> Result<Entry, keyring::Error> {
-        Entry::new(&service(), &username())
+        keyring_entry::entry(&service(), &username())
     }
 
     pub fn save(theme: &ThemeConfig) -> anyhow::Result<()> {

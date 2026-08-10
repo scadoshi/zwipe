@@ -9013,6 +9013,7 @@ name = "zwiper"
 version = "1.7.6"
 dependencies = [
  "anyhow",
+ "apple-native-keyring-store",
  "chrono",
  "dioxus",
  "dioxus-primitives",
@@ -9020,6 +9021,7 @@ dependencies = [
  "email_address",
  "jni 0.21.1",
  "keyring",
+ "keyring-core",
  "ndk-context",
  "objc2",
  "objc2-foundation",
