@@ -185,7 +185,9 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     }
                 }
 
-                div { class: "screen-content content-enter",
+                // Console pinned outside the scroll container (dictionary-style):
+                // imported entries scroll under it and clip at its lower edge.
+                div { class: "pinned-controls content-enter",
                     div { class: "import-controls",
                         div { class: "chip-row",
                             span { class: "chip-row-label", "From:" }
@@ -229,7 +231,9 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             }
                         }
                     }
+                }
 
+                div { class: "screen-content content-enter",
                     div { class: "container-sm",
                         if source() == ImportSource::Text {
                             label { class: "label", r#for: "import-text", "Paste decklist" }

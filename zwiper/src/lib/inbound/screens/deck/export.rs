@@ -160,7 +160,9 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     }
                 }
 
-                div { class: "screen-content content-enter",
+                // Console pinned outside the scroll container, matching the
+                // import screen; the decklist scrolls under it.
+                div { class: "pinned-controls content-enter",
                     div { class: "import-controls",
                         div { class: "chip-row",
                             span { class: "chip-row-label", "Export:" }
@@ -201,7 +203,9 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                             }
                         }
                     }
+                }
 
+                div { class: "screen-content content-enter",
                     div { class: "container-sm",
                         match export_text() {
                             Some(text) => rsx! {
