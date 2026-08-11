@@ -29,8 +29,8 @@ pub const UPCOMING: &[Release] = &[Release {
     version: "1.8.0",
     date: "",
     entries: &[
-        "Your deck list can now group and filter: fold decks into sections by format, color, or tag, and narrow the list with color and tag chips.",
-        "A one-time tip on the deck list walks through the new grouping and filtering controls. The ? button brings it back anytime.",
+        "The deck list now has Group by and Show rows: group your decks into sections by format, color, or tag, and filter them with color and tag chips.",
+        "A one-time tip on the deck list covers the new rows. The ? button brings it back whenever you want.",
     ],
 }];
 
