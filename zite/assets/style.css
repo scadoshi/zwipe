@@ -1478,8 +1478,8 @@ footer {
     margin-top: 0;
 }
 
-/* Review cards nested in the Reviews panel body, below the rating tag. */
-.testimonials .testimonials-grid {
+/* Review track nested in the Reviews panel body, below the rating tag. */
+.testimonials .testimonials-viewport {
     margin-top: 1.25rem;
 }
 
@@ -1553,19 +1553,70 @@ footer {
     opacity: 0.7;
 }
 
-.testimonials-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+/* Slow marquee: the viewport clips, the track slides. The review set renders
+   twice; each set carries its own gap plus a trailing pad, so translating the
+   track by exactly -50% (one set width) loops seamlessly. Soft fade masks at
+   the edges so cards enter and leave gently. */
+.testimonials-viewport {
+    overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+}
+
+.testimonials-track {
+    display: flex;
+    width: max-content;
+    animation: testimonials-scroll 70s linear infinite;
+}
+
+/* Reading speed wins: hovering anywhere over the reviews holds the track. */
+.testimonials-viewport:hover .testimonials-track {
+    animation-play-state: paused;
+}
+
+.testimonials-set {
+    display: flex;
     gap: 1.5rem;
-    /* Reviews render as shared Panels; undo the section's centered text so
-       the panel grammar (left-aligned eyebrow/title/body) holds. */
-    text-align: left;
+    padding-right: 1.5rem;
+}
+
+@keyframes testimonials-scroll {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+/* Reduced motion: no marquee — the first set wraps as a static grid and the
+   aria-hidden duplicate disappears. */
+@media (prefers-reduced-motion: reduce) {
+    .testimonials-track {
+        animation: none;
+        width: auto;
+    }
+    .testimonials-set {
+        flex-wrap: wrap;
+        padding-right: 0;
+    }
+    .testimonials-set-dup {
+        display: none;
+    }
+    .testimonials-viewport {
+        mask-image: none;
+        -webkit-mask-image: none;
+    }
 }
 
 /* Plain text blocks inside the Reviews panel — the panel carries the card
-   chrome, so the quotes don't nest another box. */
+   chrome, so the quotes don't nest another box. Fixed width so the track
+   lays out horizontally; capped for small screens. */
 .testimonial {
     margin: 0;
+    width: 22rem;
+    max-width: 75vw;
+    flex-shrink: 0;
     text-align: left;
 }
 
@@ -1577,11 +1628,27 @@ footer {
 }
 
 .testimonial-author {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
     margin-top: 0.85rem;
     font-family: "JetBrains Mono", monospace;
     font-size: 0.78rem;
     color: var(--text-primary);
     opacity: 0.7;
+}
+
+/* The feedback receipt: reviews that asked for a feature the app has since
+   built carry the version it landed in. Success-tinted chip, same 12%/35%
+   color-mix recipe as the rest of the chip family. */
+.shipped-tag {
+    padding: 0.1rem 0.5rem;
+    font-size: 0.7rem;
+    color: var(--color-success);
+    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
+    border-radius: 0.6rem;
+    white-space: nowrap;
 }
 
 /* ==================

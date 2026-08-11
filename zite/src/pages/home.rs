@@ -34,26 +34,51 @@ fn HomeJsonLd() -> Element {
     }
 }
 
-/// Public App Store reviews surfaced as social proof. Five-star reviews only;
-/// the four-star "set land amount" review is intentionally omitted (its request
-/// has since shipped). Quotes are lightly cleaned of transcription typos.
+/// Public App Store reviews surfaced as social proof, every rating included.
+/// Reviews that asked for a feature the app has since built carry a
+/// "Shipped in x.y.z" tag — the receipt that feedback lands. Quotes are
+/// lightly cleaned of transcription typos; the truncated land-amount review
+/// ends at its last full clause.
+///
+/// The track auto-scrolls (slow marquee) so every review gets seen without a
+/// click: the review set renders twice, the second copy aria-hidden, and CSS
+/// slides the track by exactly one set width for a seamless loop. Hover
+/// pauses it; reduced-motion gets a static wrapped grid instead.
 #[component]
 fn Testimonials() -> Element {
-    let reviews: Vec<(&str, &str)> = vec![
+    let reviews: Vec<(&str, &str, Option<&str>)> = vec![
         (
-            "Why!? Why has there not been a utility to filter cards for decks via relevant flavors/type/effects. This app does it.",
-            "Trailmix98",
+            "This one defo has some potential. I like that the developer for it (seems like just one guy?) is super welcoming to feedback and adding features. I messaged and asked for budgeting/land count tracking and he added it a day later. And it works perfectly. That's mega.",
+            "Spice mayonnaise",
+            None,
+        ),
+        (
+            "App seems super cool and a refreshing take on deck building. Main complaint so far is I wish there was a way to set a desired amount of lands before hand, say 40, and when you hit 60 no land cards in the deck it would have a pop up warning that says you only have space for x amount more lands.",
+            "Caed_",
+            Some("Shipped in 1.1.4"),
         ),
         (
             "Really have struggled in the past with deck building apps on mobile but this one definitely takes the cake as best. Super easy to concept out new deck ideas without a ton of research and planning! For sure my favorite deck building tool.",
             "Arctic creature",
+            None,
         ),
+        (
+            "I love MTG and this is a great app to deck build or just pass the time. Hoping that new features include saving what cards you've been through between sessions.",
+            "Mr.K to you",
+            Some("Shipped in 1.3.0"),
+        ),
+        (
+            "Why!? Why has there not been a utility to filter cards for decks via relevant flavors/type/effects. This app does it.",
+            "Trailmix98",
+            None,
+        ),
+        ("Great app to quickly build a nice deck.", "Audco02", None),
     ];
     rsx! {
         section { class: "testimonials",
             // One Reviews Panel holding everything: the live App Store rating
-            // as a clickable share-screen-style tag, then the review cards
-            // nested inside its body.
+            // as a clickable share-screen-style tag, then the auto-scrolling
+            // review track nested inside its body.
             Panel { eyebrow: "Reviews", title: "Deck builder testimonials",
                 a {
                     class: "rating-tag",
@@ -64,11 +89,24 @@ fn Testimonials() -> Element {
                     span { class: "rating-stars", "★★★★★" }
                     span { class: "rating-score", "4.8" }
                 }
-                div { class: "testimonials-grid",
-                    for (quote, handle) in reviews {
-                        figure { class: "testimonial",
-                            blockquote { class: "testimonial-quote", "“{quote}”" }
-                            figcaption { class: "testimonial-author", "{handle}" }
+                div { class: "testimonials-viewport",
+                    div { class: "testimonials-track",
+                        for dup in [false, true] {
+                            div {
+                                class: if dup { "testimonials-set testimonials-set-dup" } else { "testimonials-set" },
+                                "aria-hidden": "{dup}",
+                                for (quote , handle , shipped) in reviews.clone() {
+                                    figure { class: "testimonial",
+                                        blockquote { class: "testimonial-quote", "“{quote}”" }
+                                        figcaption { class: "testimonial-author",
+                                            "{handle}"
+                                            if let Some(tag) = shipped {
+                                                span { class: "shipped-tag", "{tag}" }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
