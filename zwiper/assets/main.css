@@ -2835,6 +2835,9 @@ button {
 
 .chip-row-label {
     font-size: 0.75rem;
+    /* Same weight as .card-group-header: these labels sit directly on the
+       background grid, and the regular face gets lost against it. */
+    font-weight: 600;
     color: var(--accent-tertiary);
     white-space: nowrap;
 }
