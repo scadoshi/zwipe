@@ -10,5 +10,3 @@ pub mod get_deck_card;
 pub mod import_deck_cards;
 /// Idempotent (PATCH, absolute-quantity) card update handler.
 pub mod patch_deck_card;
-/// Card quantity update handler (PUT, delta — retiring per the PATCH plan).
-pub mod update_deck_card;

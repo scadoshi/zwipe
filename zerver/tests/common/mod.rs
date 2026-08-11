@@ -197,6 +197,10 @@ impl TestApp {
         self.send(Method::PUT, path, Some(json), token).await
     }
 
+    pub async fn patch(&self, path: &str, json: Value, token: Option<&str>) -> (StatusCode, Value) {
+        self.send(Method::PATCH, path, Some(json), token).await
+    }
+
     pub async fn delete(&self, path: &str, token: Option<&str>) -> (StatusCode, Value) {
         self.send(Method::DELETE, path, None, token).await
     }

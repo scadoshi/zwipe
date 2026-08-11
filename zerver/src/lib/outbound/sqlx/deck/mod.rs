@@ -400,10 +400,9 @@ impl DeckRepository for Postgres {
 
     /// Dynamically builds an `UPDATE` query for the provided fields.
     ///
-    /// Supports updating quantity (relative delta), board, printing, and/or
-    /// MVP star. The database enforces a check constraint on `quantity`, so
-    /// negative deltas that would result in an invalid quantity surface as
-    /// `QuantityUnderflow`. MVP rules (context/plans/deck_mvps/): mainboard
+    /// Supports setting quantity (absolute), board, printing, and/or
+    /// MVP star. The database's check constraint on `quantity` stays as the
+    /// backstop, surfacing as `QuantityUnderflow` if it ever trips. MVP rules (context/plans/deck_mvps/): mainboard
     /// only, at most 3 per deck (checked in the tx), and moving a card off
     /// the mainboard clears its star in the same UPDATE.
     async fn update_deck_card(
@@ -456,13 +455,10 @@ impl DeckRepository for Postgres {
         }
         let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new("UPDATE deck_cards SET ");
         let mut sep = qb.separated(", ");
-        if let Some(update_quantity) = &request.update_quantity {
-            sep.push("quantity = quantity + ")
-                .push_bind_unseparated(**update_quantity);
-        }
         if let Some(set_quantity) = &request.set_quantity {
-            // PATCH form: absolute set — idempotent, can't underflow (≥ 1 by
-            // construction). Mutually exclusive with the delta above.
+            // Absolute set — idempotent, can't underflow (>= 1 by
+            // construction). The legacy delta arm was removed with the PUT
+            // route at the end of the PATCH migration.
             sep.push("quantity = ")
                 .push_bind_unseparated(**set_quantity);
         }

@@ -56,16 +56,36 @@ async fn deck_card_add_bump_remove(pool: sqlx::PgPool) {
     assert_eq!(dc["quantity"], 1);
     assert_eq!(dc["board"], "deck");
 
-    // update_quantity is a delta: +2 => 3
+    // quantity is absolute: set to 3
     let (status, dc) = app
+        .patch(
+            &format!("/api/deck/{did}/card/{sid}"),
+            json!({ "quantity": 3 }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "set qty: {dc}");
+    assert_eq!(dc["quantity"], 3);
+
+    // PUT retired with the version gate: the delta route is gone.
+    let (status, _) = app
         .put(
             &format!("/api/deck/{did}/card/{sid}"),
             json!({ "update_quantity": 2 }),
             Some(&token),
         )
         .await;
-    assert_eq!(status, StatusCode::OK, "bump qty: {dc}");
-    assert_eq!(dc["quantity"], 3);
+    assert_eq!(status, StatusCode::METHOD_NOT_ALLOWED, "PUT must be gone");
+
+    // Explicit null on a non-clearable field is a 422, not a silent no-op.
+    let (status, body) = app
+        .patch(
+            &format!("/api/deck/{did}/card/{sid}"),
+            json!({ "quantity": null, "board": "deck" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "null qty: {body}");
 
     // the full deck reflects the card + quantity
     let (_, full) = app.get(&format!("/api/deck/{did}"), Some(&token)).await;
@@ -253,17 +273,12 @@ async fn get_deck_carries_command_zone_cards(pool: sqlx::PgPool) {
     let bolt_oid = bolt.oracle_id().unwrap();
     seed_cards(&pool, &[commander, bolt]).await;
 
-    // Set the commander on the deck (Opdate::Set wire form).
+    // Set the commander on the deck (clean Opdate wire: bare value = set,
+    // absent = unchanged; the legacy tagged dialect is no longer decoded).
     let (status, updated) = app
-        .put(
+        .patch(
             &format!("/api/deck/{did}"),
-            json!({
-                "commander_id": { "Set": cmd_sid.to_string() },
-                "partner_commander_id": "Unchanged",
-                "background_id": "Unchanged",
-                "signature_spell_id": "Unchanged",
-                "format": "Unchanged"
-            }),
+            json!({ "commander_id": cmd_sid.to_string() }),
             Some(&token),
         )
         .await;
