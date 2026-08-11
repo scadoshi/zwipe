@@ -87,6 +87,8 @@ const DEMO_ORACLE_TAGS: Asset = asset!("/assets/demo/7_oracle_tags.mp4");
 const DEMO_DECK_CARDS_VIEW: Asset = asset!("/assets/demo/8_deck_cards.mp4");
 const DEMO_MVPS: Asset = asset!("/assets/demo/9_mvps.mp4");
 const DEMO_DECK_STATS: Asset = asset!("/assets/demo/10_deck_stats.mp4");
+const DEMO_SHARE_DECK: Asset = asset!("/assets/demo/11_share_deck.mp4");
+const DEMO_PROFILE: Asset = asset!("/assets/demo/12_profile.mp4");
 
 #[component]
 pub fn Home() -> Element {
@@ -137,6 +139,16 @@ pub fn Home() -> Element {
             DEMO_DECK_STATS,
             "Check your deck's stats, curve, and draw odds",
             "Demo: Deck stats",
+        ),
+        (
+            DEMO_SHARE_DECK,
+            "Share any deck with a public link",
+            "Demo: Share your deck",
+        ),
+        (
+            DEMO_PROFILE,
+            "Switch themes and catch up on the changelog",
+            "Demo: Themes and profile",
         ),
     ];
     let total = demos.len();
