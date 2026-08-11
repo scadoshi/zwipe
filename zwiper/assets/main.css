@@ -531,12 +531,29 @@ button {
 }
 
 .import-controls {
+    /* Fixed flex child inside the grid-painted .screen-content: stays put
+       while .import-scroll below owns the scrolling (dictionary pattern). */
+    flex: 0 0 auto;
     width: 100%;
     max-width: 40rem;
     padding: 0.75rem 1rem;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+}
+
+/* The scroll container under the console: imported entries / the decklist
+   slide under the pinned rows and clip at their lower edge, mirroring
+   .dict-list. */
+.import-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .hl-key {
