@@ -160,9 +160,10 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     }
                 }
 
-                // Console pinned outside the scroll container, matching the
-                // import screen; the decklist scrolls under it.
-                div { class: "pinned-controls content-enter",
+                div { class: "screen-content content-enter",
+                    // Console stays a fixed flex child on the grid; the
+                    // .import-scroll wrapper below owns the scrolling, so the
+                    // decklist slides under the console (dictionary pattern).
                     div { class: "import-controls",
                         div { class: "chip-row",
                             span { class: "chip-row-label", "Export:" }
@@ -203,10 +204,9 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                             }
                         }
                     }
-                }
 
-                div { class: "screen-content content-enter",
-                    div { class: "container-sm",
+                    div { class: "import-scroll",
+                        div { class: "container-sm",
                         match export_text() {
                             Some(text) => rsx! {
                                 label { class: "label", r#for: "export-text", "Decklist" }
@@ -230,6 +230,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
                             }
+                        }
                         }
                     }
                 }
