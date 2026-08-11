@@ -12,7 +12,7 @@ use crate::{
     inbound::{
         components::{
             auth::ensure_session::EnsureFresh,
-            hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey},
+            hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, open_and_record_hint},
             screen_header::ScreenHeader,
             telemetry::{
                 usage_buffer::UsageBuffer,
@@ -35,6 +35,7 @@ use zwipe_core::domain::{
     auth::models::session::Session,
     card::scryfall_data::colors::Color,
     deck::{deck_profile::DeckProfile, deck_tag_label},
+    user::models::hints::HINT_DECK_LIST,
 };
 
 /// Grouping dimensions for the deck list.
@@ -307,6 +308,12 @@ pub fn DeckList() -> Element {
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let decks_hint_open = use_signal(|| false);
 
+    // Deck-list hint: fires once decks have loaded and only if any exist —
+    // its main job is teaching the group/filter chip rows, which an empty
+    // list hides, so it waits for a later visit instead of burning its one
+    // showing (same gate as the deck cards screen's hint).
+    let mut decks_hint_fired = use_signal(|| false);
+
     let mut group_by = use_signal(|| DeckGroupBy::None);
     let mut selected_colors: Signal<HashSet<Color>> = use_signal(HashSet::new);
     let mut selected_tags: Signal<HashSet<String>> = use_signal(HashSet::new);
@@ -356,12 +363,24 @@ pub fn DeckList() -> Element {
         }
     });
 
+    use_effect(move || {
+        let has_decks = deck_profiles_resource
+            .read()
+            .as_ref()
+            .and_then(|r| r.as_ref().ok())
+            .is_some_and(|p| !p.is_empty());
+        if has_decks && !*decks_hint_fired.peek() {
+            decks_hint_fired.set(true);
+            open_and_record_hint(HINT_DECK_LIST, session, auth_client, decks_hint_open);
+        }
+    });
+
     rsx! {
             div { class: "screen",
                 ScreenHeader { title: "Decks", hint: decks_hint_open }
 
-                // On-demand only: no auto-open, no hints_shown key. Here for
-                // screen congruence and as a home for future bulk operations.
+                // Auto-opens once per account (HINT_DECK_LIST) via the gated
+                // effect above; the header's ? reopens it on demand.
                 HintDialog {
                     open: decks_hint_open,
                     title: "Your decks",
