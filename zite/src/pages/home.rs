@@ -78,34 +78,29 @@ fn Testimonials() -> Element {
 }
 
 const DEMO_CREATE_DECK: Asset = asset!("/assets/demo/1_create_deck.mp4");
-const DEMO_DECK_CARDS_VIEW: Asset = asset!("/assets/demo/2_deck_cards.mp4");
-const DEMO_ADD_DECK_CARDS: Asset = asset!("/assets/demo/3_add_deck_cards.mp4");
-const DEMO_FILTER: Asset = asset!("/assets/demo/4_filter.mp4");
-const DEMO_PROFILE: Asset = asset!("/assets/demo/5_profile.mp4");
-const DEMO_IMPORT_DECK_STATS: Asset = asset!("/assets/demo/6_import_deck_stats.mp4");
+const DEMO_IMPORT: Asset = asset!("/assets/demo/2_import.mp4");
+const DEMO_ADD_CARDS: Asset = asset!("/assets/demo/3_add_cards.mp4");
+const DEMO_REMOVE_CARDS: Asset = asset!("/assets/demo/4_remove_cards.mp4");
+const DEMO_FILTER: Asset = asset!("/assets/demo/5_filter.mp4");
+const DEMO_CARD_DETAILS: Asset = asset!("/assets/demo/6_card_details.mp4");
+const DEMO_ORACLE_TAGS: Asset = asset!("/assets/demo/7_oracle_tags.mp4");
+const DEMO_DECK_CARDS_VIEW: Asset = asset!("/assets/demo/8_deck_cards.mp4");
+const DEMO_MVPS: Asset = asset!("/assets/demo/9_mvps.mp4");
+const DEMO_DECK_STATS: Asset = asset!("/assets/demo/10_deck_stats.mp4");
 
 #[component]
 pub fn Home() -> Element {
+    // Ordered as the build flow: start a deck, fill it, refine it, read it.
     let demos: Vec<(Asset, &'static str, &'static str)> = vec![
         (
             DEMO_CREATE_DECK,
             "Create a deck and pick your commander",
-            "Demo: Create a Deck",
+            "Demo: Create a deck",
         ),
         (
-            DEMO_IMPORT_DECK_STATS,
-            "Import a decklist from a link, then check your deck's stats",
-            "Demo: Import & Stats",
-        ),
-        (
-            DEMO_DECK_CARDS_VIEW,
-            "Browse cards: keywords, full details, art, and printings",
-            "Demo: Deck Card View",
-        ),
-        (
-            DEMO_ADD_DECK_CARDS,
-            "Swipe cards out of your deck, then swipe new ones in",
-            "Demo: Swipe to Build",
+            DEMO_ADD_CARDS,
+            "Swipe new cards into your deck",
+            "Demo: Swipe to build",
         ),
         (
             DEMO_FILTER,
@@ -113,9 +108,35 @@ pub fn Home() -> Element {
             "Demo: Filters",
         ),
         (
-            DEMO_PROFILE,
-            "Switch themes from your profile",
-            "Demo: Themes & Profile",
+            DEMO_CARD_DETAILS,
+            "Open full card details while you swipe",
+            "Demo: Card details",
+        ),
+        (
+            DEMO_ORACLE_TAGS,
+            "Browse the tag dictionary and filter by oracle tag",
+            "Demo: Oracle tags",
+        ),
+        (
+            DEMO_REMOVE_CARDS,
+            "Swipe cards back out of your deck",
+            "Demo: Swipe to remove",
+        ),
+        (
+            DEMO_DECK_CARDS_VIEW,
+            "Browse your deck: art, printings, and groupings",
+            "Demo: Deck card view",
+        ),
+        (
+            DEMO_MVPS,
+            "Star MVPs so your key cards lead the deck",
+            "Demo: Deck MVPs",
+        ),
+        (DEMO_IMPORT, "Import a decklist from a link", "Demo: Import"),
+        (
+            DEMO_DECK_STATS,
+            "Check your deck's stats, curve, and draw odds",
+            "Demo: Deck stats",
         ),
     ];
     let total = demos.len();
