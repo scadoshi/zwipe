@@ -532,18 +532,20 @@ button {
 
 .import-controls {
     /* Fixed flex child inside the grid-painted .screen-content: stays put
-       while .import-scroll below owns the scrolling (dictionary pattern). */
+       while .import-scroll below owns the scrolling (dictionary pattern).
+       Bottom padding stays thin so the scroll fade starts right against
+       the hint bubble. */
     flex: 0 0 auto;
     width: 100%;
     max-width: 40rem;
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 1rem 0.25rem 1rem;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
 }
 
 /* The scroll container under the console: imported entries / the decklist
-   slide under the pinned rows and clip at their lower edge, mirroring
+   slide under the pinned rows and fade out at the edges, mirroring
    .dict-list. */
 .import-scroll {
     flex: 1 1 auto;
@@ -554,6 +556,20 @@ button {
     display: flex;
     flex-direction: column;
     align-items: center;
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 1rem,
+        #000 calc(100% - 1rem),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 1rem,
+        #000 calc(100% - 1rem),
+        transparent 100%
+    );
 }
 
 .hl-key {
