@@ -30,6 +30,7 @@ pub const UPCOMING: &[Release] = &[Release {
     date: "",
     entries: &[
         "Your deck list can now group and filter: fold decks into sections by format, color, or tag, and narrow the list with color and tag chips.",
+        "A one-time tip on the deck list walks through the new grouping and filtering controls. The ? button brings it back anytime.",
     ],
 }];
 
