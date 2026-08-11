@@ -43,7 +43,6 @@ use crate::inbound::http::handlers::{
     deck_card::{
         create_deck_card::create_deck_card, delete_deck_card::delete_deck_card,
         import_deck_cards::import_deck_cards, patch_deck_card::patch_deck_card,
-        update_deck_card::update_deck_card,
     },
     health::{are_server_and_database_running, is_server_running, root},
     metrics::{
@@ -63,7 +62,7 @@ use axum::Router;
 #[cfg(feature = "zerver")]
 use axum::extract::DefaultBodyLimit;
 #[cfg(feature = "zerver")]
-use axum::routing::{delete, get, post, put};
+use axum::routing::{delete, get, patch, post};
 #[cfg(feature = "zerver")]
 use axum::{
     body::Body,
@@ -534,21 +533,21 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                         .route("/", get(get_user))
                         .route(
                             "/change-password",
-                            put(change_password).patch(change_password).layer(
+                            patch(change_password).layer(
                                 GovernorLayer::new(Arc::clone(&sensitive_config))
                                     .error_handler(unauthorized_on_missing_key),
                             ),
                         )
                         .route(
                             "/change-username",
-                            put(change_username).patch(change_username).layer(
+                            patch(change_username).layer(
                                 GovernorLayer::new(Arc::clone(&sensitive_config))
                                     .error_handler(unauthorized_on_missing_key),
                             ),
                         )
                         .route(
                             "/change-email",
-                            put(change_email).patch(change_email).layer(
+                            patch(change_email).layer(
                                 GovernorLayer::new(Arc::clone(&sensitive_config))
                                     .error_handler(unauthorized_on_missing_key),
                             ),
@@ -562,11 +561,9 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                         )
                         .route(
                             "/preferences",
-                            get(get_preferences)
-                                .put(update_preferences)
-                                .patch(update_preferences),
+                            get(get_preferences).patch(update_preferences),
                         )
-                        .route("/hint", put(mark_hint_shown).patch(mark_hint_shown))
+                        .route("/hint", patch(mark_hint_shown))
                         .route("/metrics", get(get_my_metrics)),
                 )
                 .nest(
@@ -609,10 +606,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                         .route("/profile/{deck_id}", get(get_deck_profile))
                         .route(
                             "/{deck_id}",
-                            get(get_deck)
-                                .put(update_deck_profile)
-                                .patch(update_deck_profile)
-                                .delete(delete_deck),
+                            get(get_deck).patch(update_deck_profile).delete(delete_deck),
                         )
                         .route("/{deck_id}/clone", post(clone_deck))
                         .route("/{deck_id}/share", post(share_deck).delete(unshare_deck))
@@ -633,13 +627,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                                 .route("/search", post(search_deck_cards))
                                 .route(
                                     "/{scryfall_data_id}",
-                                    // PUT (delta body) and PATCH (absolute
-                                    // body) are different handlers during the
-                                    // migration window; PUT retires once the
-                                    // version gate passes the PATCH client.
-                                    put(update_deck_card)
-                                        .patch(patch_deck_card)
-                                        .delete(delete_deck_card),
+                                    patch(patch_deck_card).delete(delete_deck_card),
                                 ),
                         ),
                 ),

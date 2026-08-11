@@ -220,15 +220,11 @@ async fn deck_selected_otags_lift_matching_cards_end_to_end(pool: sqlx::PgPool) 
 
     // Set the commander and the deck's selected oracle tag.
     let (status, updated) = app
-        .put(
+        .patch(
             &format!("/api/deck/{did}"),
             json!({
-                "commander_id": { "Set": cmd_sid.to_string() },
-                "partner_commander_id": "Unchanged",
-                "background_id": "Unchanged",
-                "signature_spell_id": "Unchanged",
-                "format": "Unchanged",
-                "oracle_tags": { "Set": ["spot-removal"] }
+                "commander_id": cmd_sid.to_string(),
+                "oracle_tags": ["spot-removal"]
             }),
             Some(&token),
         )
@@ -252,16 +248,9 @@ async fn deck_selected_otags_lift_matching_cards_end_to_end(pool: sqlx::PgPool) 
 
     // Clear the otag: matching cards fall back to band 1, off the first page.
     let (status, cleared) = app
-        .put(
+        .patch(
             &format!("/api/deck/{did}"),
-            json!({
-                "commander_id": "Unchanged",
-                "partner_commander_id": "Unchanged",
-                "background_id": "Unchanged",
-                "signature_spell_id": "Unchanged",
-                "format": "Unchanged",
-                "oracle_tags": { "Set": [] }
-            }),
+            json!({ "oracle_tags": [] }),
             Some(&token),
         )
         .await;

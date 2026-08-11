@@ -42,13 +42,10 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer, de::DeserializeOwn
 /// hard error on purpose — without the skip attr it would emit `null`,
 /// which decodes as "clear this field" and silently wipes data.
 ///
-/// # Legacy dialect (accepted until the PATCH-migration cleanup)
-///
-/// The pre-1.7.5 derive shipped serde's externally-tagged encoding:
-/// `"Unchanged"` as a literal string and `{"Set": value}` wrappers. The
-/// custom `Deserialize` still accepts both so shipped clients keep working;
-/// the acceptance is dropped once the version gate passes the clean-wire
-/// clients (see `context/plans/patch_idempotent_updates.md`, Layer 3).
+/// The pre-1.7.5 legacy dialect (`"Unchanged"` string, `{"Set": value}`
+/// wrappers) is no longer decoded: the 1.7.5 version gate guarantees every
+/// client speaks the clean shape (`context/plans/patch_idempotent_updates.md`,
+/// Phase 5).
 ///
 /// # Etymology
 ///
@@ -78,31 +75,16 @@ impl<T: Serialize> Serialize for Opdate<T> {
     }
 }
 
-/// Dual-accept decode: the clean shape (`null` → `Set(None)`, bare value →
-/// `Set(Some)`, absent → `Unchanged` via `#[serde(default)]`) plus the
-/// legacy externally-tagged dialect (`"Unchanged"` string, `{"Set": value}`)
-/// from pre-1.7.5 clients. Goes clean-only at the migration cleanup.
-///
-/// Window ambiguity, accepted: an `Opdate<String>` whose legitimate value is
-/// the literal string `"Unchanged"` decodes as `Unchanged`. Current string
-/// fields are controlled vocab (format keys, power-level slugs), so this is
-/// unreachable in practice, and it disappears with the legacy arms.
+/// Clean-shape decode only: `null` → `Set(None)`, bare value → `Set(Some)`,
+/// absent → `Unchanged` via `#[serde(default)]`. The legacy externally-tagged
+/// dialect from pre-1.7.5 clients fails to decode (or, for `Opdate<String>`,
+/// reads as an ordinary value) — those clients are behind the version gate.
 impl<'de, T: DeserializeOwned> Deserialize<'de> for Opdate<T> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         use serde::de::Error as _;
         let value = serde_json::Value::deserialize(deserializer)?;
         match value {
             serde_json::Value::Null => Ok(Opdate::Set(None)),
-            serde_json::Value::String(s) if s == "Unchanged" => Ok(Opdate::Unchanged),
-            serde_json::Value::Object(map) if map.len() == 1 && map.contains_key("Set") => {
-                let inner = map.into_values().next().unwrap_or(serde_json::Value::Null);
-                match inner {
-                    serde_json::Value::Null => Ok(Opdate::Set(None)),
-                    other => T::deserialize(other)
-                        .map(|v| Opdate::Set(Some(v)))
-                        .map_err(D::Error::custom),
-                }
-            }
             other => T::deserialize(other)
                 .map(|v| Opdate::Set(Some(v)))
                 .map_err(D::Error::custom),
@@ -233,26 +215,15 @@ mod tests {
     }
 
     #[test]
-    fn legacy_dialect_still_decodes() {
-        // Pre-1.7.5 derive shapes must keep working until the gate cleanup.
-        let p: Probe = serde_json::from_str(r#"{"field":"Unchanged"}"#).unwrap();
-        assert_eq!(p.field, Opdate::Unchanged);
-        let p: Probe = serde_json::from_str(r#"{"field":{"Set":7}}"#).unwrap();
-        assert_eq!(p.field, Opdate::Set(Some(7)));
-        let p: Probe = serde_json::from_str(r#"{"field":{"Set":null}}"#).unwrap();
-        assert_eq!(p.field, Opdate::Set(None));
-    }
-
-    #[test]
-    fn window_ambiguity_documented() {
-        // An Opdate<String> literally valued "Unchanged" decodes as Unchanged
-        // during the dual-accept window. Controlled-vocab fields make this
-        // unreachable in practice; the legacy arm's removal ends it.
+    fn legacy_dialect_no_longer_decodes() {
+        // Pre-1.7.5 derive shapes are behind the version gate: the tagged
+        // object form fails outright for non-string targets...
+        assert!(serde_json::from_str::<Probe>(r#"{"field":{"Set":7}}"#).is_err());
+        assert!(serde_json::from_str::<Probe>(r#"{"field":"Unchanged"}"#).is_err());
+        // ...and the old "Unchanged" sentinel string is now just a string
+        // value — the window ambiguity died with the legacy arms.
         let p: StringProbe = serde_json::from_str(r#"{"field":"Unchanged"}"#).unwrap();
-        assert_eq!(p.field, Opdate::Unchanged);
-        // Any other string is a normal set.
-        let p: StringProbe = serde_json::from_str(r#"{"field":"commander"}"#).unwrap();
-        assert_eq!(p.field, Opdate::Set(Some("commander".to_string())));
+        assert_eq!(p.field, Opdate::Set(Some("Unchanged".to_string())));
     }
 
     #[test]

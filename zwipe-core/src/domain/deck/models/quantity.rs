@@ -11,11 +11,6 @@ use thiserror::Error;
 #[error("must be greater than 0")]
 pub struct InvalidQuantity;
 
-/// Error when update quantity is zero (would have no effect).
-#[derive(Debug, Error)]
-#[error("must be less or greater than 0")]
-pub struct InvalidUpdateQuanity;
-
 /// Validated card quantity (1-99 copies).
 ///
 /// Used when creating deck cards. Ensures quantity is positive.
@@ -71,44 +66,6 @@ impl<'de> Deserialize<'de> for Quantity {
     }
 }
 
-/// Delta quantity for updating card counts (can be negative to remove copies).
-///
-/// Used when updating existing deck cards. Allows positive (add copies)
-/// or negative (remove copies) values, but not zero (would have no effect).
-///
-/// # Example
-///
-/// ```rust,ignore
-/// // Add 2 more copies
-/// let update = UpdateQuantity::new(2)?;
-///
-/// // Remove 1 copy
-/// let update = UpdateQuantity::new(-1)?;
-/// ```
-#[derive(Debug, Clone)]
-pub struct UpdateQuantity(i32);
-
-impl UpdateQuantity {
-    /// Creates a new update quantity with validation.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`InvalidUpdateQuanity`] if quantity is zero (no-op).
-    pub fn new(add_quantity: i32) -> Result<Self, InvalidUpdateQuanity> {
-        if add_quantity == 0 {
-            return Err(InvalidUpdateQuanity);
-        }
-        Ok(Self(add_quantity))
-    }
-}
-
-impl Deref for UpdateQuantity {
-    type Target = i32;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -146,27 +103,5 @@ mod tests {
         let serialized = serde_json::to_value(quantity).unwrap();
         let deserialized = serde_json::from_value::<Quantity>(serialized).unwrap();
         assert_eq!(*deserialized, 1);
-    }
-
-    // --- UpdateQuantity ---
-
-    #[test]
-    fn test_update_quantity_new_accepts_positive() {
-        assert!(UpdateQuantity::new(1).is_ok());
-    }
-
-    #[test]
-    fn test_update_quantity_new_accepts_negative() {
-        assert!(UpdateQuantity::new(-1).is_ok());
-    }
-
-    #[test]
-    fn test_update_quantity_new_rejects_0() {
-        assert!(matches!(UpdateQuantity::new(0), Err(InvalidUpdateQuanity)));
-    }
-
-    #[test]
-    fn test_update_quantity_value_returns_inner() {
-        assert_eq!(*UpdateQuantity::new(1).unwrap(), 1);
     }
 }

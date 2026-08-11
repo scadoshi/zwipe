@@ -208,14 +208,15 @@ impl HttpCreateDeckProfileBuilder {
 /// Uses [`Opdate`] for nullable fields — absent means unchanged, `null`
 /// means clear, a bare value means set (the Opdate custom serde impls make
 /// this real; every field carries `default` + `skip_serializing_if` per the
-/// Opdate contract). The server also still accepts the pre-1.7.5 legacy
-/// dialect until the migration cleanup — see
-/// `context/plans/patch_idempotent_updates.md`, Layer 3.
+/// Opdate contract). `name` is the one non-clearable field: a deck always
+/// has a name, so explicit `null` there is a 422 (RFC 7396 resolution),
+/// enforced by the handler.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HttpUpdateDeckProfile {
-    /// New deck name; absent = leave unchanged (a name can't be cleared).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+    /// New deck name; absent = leave unchanged. Non-clearable: `null` is
+    /// rejected by the handler rather than ignored.
+    #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
+    pub name: Opdate<String>,
     /// Commander card ID with partial update semantics.
     #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]
     pub commander_id: Opdate<Uuid>,
@@ -299,7 +300,8 @@ pub struct HttpUpdateDeckProfileBuilder {
 }
 
 impl HttpUpdateDeckProfileBuilder {
-    /// Sets the new deck name.
+    /// Sets the new deck name. `None` leaves the name unchanged; the builder
+    /// cannot express "clear" because a name is non-clearable.
     pub fn name(mut self, name: Option<&str>) -> Self {
         self.name = name.map(|s| s.to_string());
         self
@@ -380,7 +382,9 @@ impl HttpUpdateDeckProfileBuilder {
     /// Builds the request.
     pub fn build(self) -> HttpUpdateDeckProfile {
         HttpUpdateDeckProfile {
-            name: self.name,
+            name: self
+                .name
+                .map_or(Opdate::Unchanged, |n| Opdate::Set(Some(n))),
             commander_id: self.commander_id,
             partner_commander_id: self.partner_commander_id,
             background_id: self.background_id,
@@ -497,17 +501,13 @@ mod tests {
 
     #[test]
     fn update_profile_defaults_land_target_to_unchanged_when_omitted() {
-        // Wire from an older client: every pre-existing field present,
-        // land_target absent. Must deserialize to Unchanged (leave it alone)
-        // rather than erroring on a missing field.
+        // A body touching other fields but not land_target must deserialize
+        // land_target (and friends) to Unchanged rather than erroring on a
+        // missing field.
         let json = r#"{
-            "name": null,
-            "commander_id": "Unchanged",
-            "partner_commander_id": "Unchanged",
-            "background_id": "Unchanged",
-            "signature_spell_id": "Unchanged",
-            "format": "Unchanged",
-            "tags": "Unchanged"
+            "name": "Renamed",
+            "format": "commander",
+            "tags": ["aggro"]
         }"#;
         let req: HttpUpdateDeckProfile = serde_json::from_str(json).unwrap();
         assert!(req.land_target.is_unchanged());
@@ -533,6 +533,10 @@ mod tests {
         assert_eq!(req.commander_id, Opdate::Set(None));
         assert_eq!(req.land_target, Opdate::Set(Some(33)));
         assert!(req.format.is_unchanged());
-        assert!(req.name.is_none());
+        assert!(req.name.is_unchanged());
+
+        // A null name decodes as Set(None) — the handler's 422 signal.
+        let req: HttpUpdateDeckProfile = serde_json::from_str(r#"{"name":null}"#).unwrap();
+        assert_eq!(req.name, Opdate::Set(None));
     }
 }
