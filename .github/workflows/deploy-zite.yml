@@ -91,9 +91,12 @@ jobs:
       - name: Install dioxus-cli
         # Fetches a prebuilt dx binary instead of compiling dioxus-cli from
         # source (which a `cargo install --force` would do on every run, ~minutes).
+        # Keep this matched to the workspace dioxus version (and the build
+        # Macs' `dx --version`) — a mismatch is a warning today but dx treats
+        # it as incompatible.
         uses: taiki-e/install-action@v2
         with:
-          tool: dioxus-cli@0.7.9
+          tool: dioxus-cli@0.7.10
 
       - name: Build (SSG)
         working-directory: zite
