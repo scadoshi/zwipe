@@ -86,7 +86,11 @@ jobs:
           cache-all-crates: true
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential
+        # binaryen provides wasm-opt: dx uses a PATH-installed copy and only
+        # falls back to downloading binaryen from GitHub releases when none
+        # exists — that fetch got refused three deploys running during the
+        # 2026-08-12 GitHub degradation, so we stopped depending on it.
+        run: sudo apt-get update && sudo apt-get install -y build-essential binaryen
 
       - name: Install dioxus-cli
         # Fetches a prebuilt dx binary instead of compiling dioxus-cli from
