@@ -1,6 +1,12 @@
 # Plan: PATCH migration — verb, idempotent quantity, Opdate wire form
 
-**Status (2026-08-05, one release train, three layers):**
+**Status: DONE 2026-08-12.** All five phases complete: layers 1-3 shipped with
+1.7.5 (released 2026-08-10), `MIN_CLIENT_VERSION=1.7.5` raised 2026-08-12, and
+the Phase 5 cleanup merged same day (PR #24, `04c1758d`) — PATCH-only endpoints,
+PUT→405, legacy Opdate dialect deleted, explicit null on non-clearable
+fields→422. `zcripts/metrics/errors.sql` is the post-merge canary.
+
+**Status as of 2026-08-05 (historical, one release train, three layers):**
 
 - ✔ **Layer 1 (verb) + Layer 2 (absolute quantity), server side — DEPLOYED
   to prod** (`6b3d17d9`, Deploy zerver green 2026-08-05). Verified: unauth

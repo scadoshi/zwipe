@@ -4,7 +4,51 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## Latest — 2026-08-06 (zwipe.net home compressed into bands; the Flopsie caching saga; hourly origin TTLs)
+## Latest — 2026-08-10 → 12 (1.7.5 and 1.7.6 released; 1.8.0 cut + submitted; version gate at 1.7.5; Phase 5 PATCH-only server live)
+
+Three days that closed the whole release train:
+
+- **1.7.5 released on both stores 2026-08-10** after ~5 days in review. Its
+  feature set (quick add, deck identity header, undo, floating results, swipe
+  feel pass, PATCH client half) is in `history.md` build 70 / vc32.
+- **1.7.6 cut from the work Mac the same day** (build 71 / vc33) — the
+  machine's first-ever release builds, followed by a full Android toolchain
+  install (NDK 28.2, platforms 36/36.1) and, next day, the dev-to-phone loop
+  (Apple Development cert NVSWB62C54 + Zwipe_Development profile). The repo
+  moved `~/Work/zwipe` → `~/Developer/zwipe` so the runbooks read verbatim.
+  The cut surfaced a real bug: **keyring 4's v1 wrapper has no iOS arm**
+  (compile-error on the store crate's missing `protected` feature, runtime
+  error even past that) — fixed via `outbound/keyring_entry.rs` installing
+  the protected store into keyring-core on iOS; the generic-password item
+  mapping was traced (and then device-proven) to keep 1.7.5 sessions alive
+  across the upgrade. Android vc33 published same-day; iOS build 71 passed
+  the on-device session-continuity test and shipped 2026-08-11. 1.7.6
+  carried global undo, featured flavor's app half, clear buttons, the
+  Android resume-crash fix, quick-add-past-skips (`include_skipped`), and
+  keyring 4.
+- **1.8.0 cut + submitted both stores 2026-08-12** (build 72 / vc34): deck
+  list Group by + Show chip rows, the deck-list one-time tip, pinned
+  import/export consoles with edge-fade scrolling, bolder chip-row labels.
+  First train under the new **any-feature-bumps-minor** convention
+  (`development/versioning.md`); deck folders PARKED indefinitely in its
+  favor. Quick add's skip fix came from the first real user bug report
+  (Collin, Android) — root-caused to the deck-aware search's suppression
+  filter, answered same-day, fixed next release.
+- **`MIN_CLIENT_VERSION=1.7.5` raised 2026-08-12** (owner set env +
+  restarted zerver; verified serving uncached). With DAU at 6, the
+  quiet-day requirement collapsed to a same-day merge: **PR #24 landed the
+  Phase 5 cleanup** — PATCH-only update endpoints, the seven PUT routes
+  gone (405), delta types and legacy Opdate arms deleted, explicit null on
+  non-clearable fields now 422. Net −190 lines. `errors.sql` is the
+  post-merge canary. Closes `patch_idempotent_updates.md` + `cut_1_7_5.md`
+  (archived). Same push: `webbrowser` bumped past RUSTSEC-2026-0257 after
+  the PR's audit gate caught it.
+- **First activity report read** (overview.sql, 2026-08-12): 957 lifetime
+  users, MAU 161 / WAU 49, activation to deck-built 90% but completion only
+  15.3% (median deck 26 cards) — the finish-a-deck cliff is the top roadmap
+  signal; fill-basics and composition targets aim straight at it.
+
+## 2026-08-06 (zwipe.net home compressed into bands; the Flopsie caching saga; hourly origin TTLs)
 
 - **zwipe.net home reworked and DEPLOYED (`83670835` + follow-ups)**: after a
   morning of rejected variants (split hero, wordmark-in-nav, fit-to-screen —

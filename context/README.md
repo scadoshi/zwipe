@@ -20,42 +20,33 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**Latest — 2026-08-05: 1.7.5 SUBMITTED to both stores, in review** (iOS build
-70 / Android vc32, cut from the home Mac; the work Mac became a second build
-machine the same day). The release, mostly on the deck cards screen: **quick
-add** (type-to-search, tap to add), the **deck identity header**, **floating
-type-to-search results** across all pickers, **quantity debounce** (one net
-call per tap burst), and **undo** (adds, removals, qty bursts, board moves,
-printing swaps — per-deck stacks that survive navigation). It also carries the
-client half of the **PATCH migration** (PATCH verb everywhere, absolute
-quantities, clean Opdate wire); all three server layers are already deployed
-and verified on prod. **After rollout:** raise `MIN_CLIENT_VERSION=1.7.5`,
-quiet days, then the Phase 5 cleanup — plan
-[`plans/patch_idempotent_updates.md`](plans/patch_idempotent_updates.md).
-Also 2026-08-05: the nightly-zervice **double-run bug excised** (cron ghost
-survived the July timer migration; deadlock postmortem in
-`operations/infrastructure/server.md`).
+**Latest — 2026-08-12: 1.8.0 SUBMITTED to both stores; PATCH-only server
+live.** The three-day arc: **1.7.5 released both stores 2026-08-10**, **1.7.6**
+(global undo, featured flavor, Android resume-crash fix, quick-add-past-skips,
+keyring 4) cut from the work Mac and released 2026-08-10/11, then **1.8.0**
+(deck list Group by + Show chip rows, one-time deck-list tip, pinned
+import/export consoles) cut and submitted 2026-08-12 — the first train under
+the **any-feature-bumps-minor** convention
+([`development/versioning.md`](development/versioning.md)). Same day:
+`MIN_CLIENT_VERSION=1.7.5` raised and the **Phase 5 cleanup merged** (PR #24)
+— PUT routes gone, legacy Opdate dialect deleted, PATCH is the only update
+wire. Both plans archived. The work Mac is now a full build machine for both
+platforms plus the dev-to-phone loop, and the repo lives at
+`~/Developer/zwipe`.
 
-**1.7.4 LIVE on both stores** (submitted 2026-07-30): **client error + crash
-reporting** (anonymous, first-party — its first real catch, the Android
-ndk-context resume crash, is triaged in todo) and the iOS photo-save crash
-fix. Privacy policy + both stores' data-safety declarations updated.
+**Watch items:** `zcripts/metrics/errors.sql` for stray-PUT canary rows (through
+~08-14), the crash reporter for the ndk-context panic going silent on vc33+
+sessions, 1.8.0 review/rollout, and the client-error-reporting prod
+verification.
 
-**1.7.3 LIVE** (2026-07-24): filter sheet current/staged split, average P/T,
-shared ranked otag search, otag definitions in the swipe details dialog;
-first targetSdk 36 Android build.
-
-**After this:** owner is building **global undo**
-([`plans/global_undo.md`](plans/global_undo.md)) — one per-deck mutation
-history across screens. Then the review-window quick wins (429 copy rounding,
-solid-background favicon, search-bar clear buttons, contribute page) and the
-**Android resume-crash fix** for 1.7.6. Then **Phase 6** — serve on the
-matured otag signal (data-gated, months out). Ongoing: description authoring
-into the tail (runbook at [`development/runbooks/`](development/runbooks/)),
-short-form marketing videos, review tracking, funnel numbers (gate the
-sign-in-with-Google decision), and draw-odds **Phase 4 (premium gating)**.
-Queued features: flavor rotation, share-page charts, mana pip-count filter,
-commander shortlist, deck folders.
+**After this:** next build candidates (owner to choose): the wasm build
+blockers toward the full webapp (the strongest 1.9/2.0 anchor), social
+features / featured decks, commander shortlist, fill basics — the activity
+report's 15.3% deck-completion cliff (median 26 cards) points hardest at
+fill-basics and composition targets. Then **Phase 6** — serve on the matured
+otag signal (data-gated, months out). Ongoing: otag description authoring into
+the tail, short-form marketing videos, review tracking, funnel numbers (gate
+the sign-in-with-Google decision), and draw-odds **Phase 4 (premium gating)**.
 
 See [`progress/overview.md`](progress/overview.md) for the high-level state,
 [`progress/feature_requests.md`](progress/feature_requests.md) for the weighted
