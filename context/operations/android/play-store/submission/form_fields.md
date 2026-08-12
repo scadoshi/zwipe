@@ -153,13 +153,20 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.7.6 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.8.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.8.0:**
+
+- The deck list now has Group by and Show rows: group your decks into sections by format, color, or tag, and filter them with color and tag chips.
+- A one-time tip covers the new rows. The ? button brings it back whenever you want.
+- Import and export keep their controls in place while results scroll underneath.
+- Chip row labels are bolder, so they hold up against the background grid.
 
 **1.7.6:**
 
