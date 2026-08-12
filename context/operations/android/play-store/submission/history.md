@@ -2,6 +2,15 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-08-12 — `1.8.0`, versionCode `34`** (deck list Group by + Show chip rows
+  (sections by format/color/tag, color-pip and tag filters), the deck-list
+  one-time tip, pinned import/export consoles with edge-fade scrolling, bolder
+  chip-row labels. First train under the any-feature-bumps-minor convention,
+  `development/versioning.md`. Built per the recipe on the work Mac; the
+  aarch64-linux-android target cache was wiped first (stale `~/Work` asset paths
+  baked in from the pre-move vc33 build). Manifest verified targetSdk 36 / vc34 /
+  1.8.0. iOS counterpart build 72.)
+
 - **2026-08-10 — `1.7.6`, versionCode `33`** (global undo across every deck-mutation
   door with import resetting history, the Android resume-crash fix — `onDestroy`
   process kill so reopening after OS-killed background is a clean cold start, the
