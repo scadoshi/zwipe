@@ -14,7 +14,7 @@ Swipe to Build MTG Decks
 
 (170 character limit. Can be updated without a new submission — refresh this between releases to spotlight whatever's freshest.)
 
-Just shipped: undo everywhere you build, an hourly featured card on the home screen, and quick add that finds your skipped cards. Free, no ads.
+Just shipped: group and filter your deck list by format, color, or tag. Free, no ads.
 
 ---
 
@@ -41,6 +41,17 @@ Other tools:
 - Your decks sync across sessions and devices
 
 Built for players who want a fast, focused mobile experience, not another cluttered desktop tool squeezed onto a small screen.
+
+---
+
+## What's New in This Version (1.8.0)
+
+(Kept within Android's 500-char release-note limit so both stores read the same length.)
+
+- The deck list now has Group by and Show rows: group your decks into sections by format, color, or tag, and filter them with color and tag chips.
+- A one-time tip covers the new rows. The ? button brings it back whenever you want.
+- Import and export keep their controls in place while results scroll underneath.
+- Chip row labels are bolder, so they hold up against the background grid.
 
 ---
 
@@ -309,7 +320,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.7.6 |
+| Version | 1.8.0 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
