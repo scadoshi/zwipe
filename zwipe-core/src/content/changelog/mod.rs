@@ -25,19 +25,20 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.8.0",
-    date: "",
-    entries: &[
-        "The deck list now has Group by and Show rows: group your decks into sections by format, color, or tag, and filter them with color and tag chips.",
-        "A one-time tip on the deck list covers the new rows. The ? button brings it back whenever you want.",
-        "The import and export screens keep their controls in place while results scroll underneath, fading out at the edges like the dictionary list.",
-        "The small chip row labels (From:, Board:, Group by:, and the rest) are bolder, so they hold up against the background grid.",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.8.0",
+        date: "Aug 12, 2026",
+        entries: &[
+            "The deck list now has Group by and Show rows: group your decks into sections by format, color, or tag, and filter them with color and tag chips.",
+            "A one-time tip on the deck list covers the new rows. The ? button brings it back whenever you want.",
+            "The import and export screens keep their controls in place while results scroll underneath, fading out at the edges like the dictionary list.",
+            "The small chip row labels (From:, Board:, Group by:, and the rest) are bolder, so they hold up against the background grid.",
+        ],
+    },
     Release {
         version: "1.7.6",
         date: "Aug 10, 2026",
