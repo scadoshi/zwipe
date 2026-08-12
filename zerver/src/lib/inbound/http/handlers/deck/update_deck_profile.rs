@@ -2,7 +2,11 @@
 use crate::{
     domain::deck::models::deck::update_deck_profile::UpdateDeckProfileError,
     inbound::http::{
-        ApiError, AppState, To500, handlers::metrics::check_completion::check_deck_completion,
+        ApiError, AppState, To500,
+        handlers::{
+            deck_card::patch_deck_card::reject_null,
+            metrics::check_completion::check_deck_completion,
+        },
         middleware::AuthenticatedUser,
     },
 };
@@ -83,13 +87,16 @@ pub async fn update_deck_profile(
     Path(deck_id): Path<Uuid>,
     Json(body): Json<HttpUpdateDeckProfile>,
 ) -> Result<(StatusCode, Json<DeckProfile>), ApiError> {
+    // A deck always has a name: explicit null is a 422 (RFC 7396 policy),
+    // absent leaves it unchanged.
+    let name = reject_null(body.name, "name")?;
     let format_raw: Option<Option<String>> = body.format.into_option();
     let format_option: Option<Option<&str>> = format_raw.as_ref().map(|opt| opt.as_deref());
     let power_level_raw: Option<Option<String>> = body.power_level.into_option();
     let power_level_option: Option<Option<&str>> =
         power_level_raw.as_ref().map(|opt| opt.as_deref());
     let request = UpdateDeckProfile::builder(deck_id, user.id)
-        .name(body.name.as_deref())
+        .name(name.as_deref())
         .commander_id(body.commander_id.into_option())
         .partner_commander_id(body.partner_commander_id.into_option())
         .background_id(body.background_id.into_option())

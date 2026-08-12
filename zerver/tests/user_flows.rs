@@ -19,7 +19,7 @@ async fn change_username_updates_profile(pool: sqlx::PgPool) {
     let (token, _) = app.register("olduser").await;
 
     let (status, updated) = app
-        .put(
+        .patch(
             "/api/user/change-username",
             json!({ "new_username": "newuser", "password": "TestPass123!" }),
             Some(&token),
@@ -41,7 +41,7 @@ async fn change_username_wrong_password_rejected(pool: sqlx::PgPool) {
     let (token, _) = app.register("stayput").await;
 
     let (status, _) = app
-        .put(
+        .patch(
             "/api/user/change-username",
             json!({ "new_username": "hacker", "password": "WrongPass123!" }),
             Some(&token),
@@ -63,7 +63,7 @@ async fn change_password_then_login_with_new(pool: sqlx::PgPool) {
     let (token, _) = app.register("pwuser").await;
 
     let (status, _) = app
-        .put(
+        .patch(
             "/api/user/change-password",
             json!({ "current_password": "TestPass123!", "new_password": "NewPass456!" }),
             Some(&token),
@@ -102,7 +102,7 @@ async fn change_email_updates_profile(pool: sqlx::PgPool) {
     let (token, _) = app.register("mailer").await;
 
     let (status, updated) = app
-        .put(
+        .patch(
             "/api/user/change-email",
             json!({ "email": "moved@test.local", "password": "TestPass123!" }),
             Some(&token),

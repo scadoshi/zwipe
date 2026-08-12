@@ -228,7 +228,16 @@ client log is the bare-value shape.
 
 ## Phase 5 — cleanup (the baked-in part)
 
-One commit, after Phase 4 has been quiet:
+**BUILT 2026-08-10 on branch `phase5-patch-cleanup`** — full inventory below
+implemented, gates green (403 core + all zerver suites incl. new PUT→405 and
+null→422 integration checks; clippy -D warnings; zwiper/zite compile
+untouched, constructor signatures preserved). The null policy landed as
+Opdate fields on `HttpPatchDeckCard` + `HttpUpdateDeckProfile.name` with a
+shared `reject_null` helper in the patch handler. **MERGE ONLY AFTER Phase 4**
+(gate at 1.7.5, quiet days) — main auto-deploys, and this branch drops the
+PUT routes and legacy Opdate decode that pre-gate clients still use.
+
+The original checklist, one commit, after Phase 4 has been quiet:
 
 - `routes.rs`: delete the seven `.put(...)` registrations.
 - Delete the old deck-card PUT handler + `HttpUpdateDeckCard` + the delta

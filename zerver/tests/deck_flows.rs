@@ -52,23 +52,39 @@ async fn deck_profile_lifecycle(pool: sqlx::PgPool) {
         "deck list missing the created deck: {list}"
     );
 
-    // update the name. The Opdate fields without #[serde(default)] must be sent;
-    // "Unchanged" is the wire form of Opdate::Unchanged.
+    // update the name (clean Opdate wire: absent = unchanged).
     let (status, updated) = app
-        .put(
+        .patch(
             &format!("/api/deck/{id}"),
-            json!({
-                "name": "Renamed",
-                "commander_id": "Unchanged",
-                "partner_commander_id": "Unchanged",
-                "background_id": "Unchanged",
-                "signature_spell_id": "Unchanged",
-                "format": "Unchanged"
-            }),
+            json!({ "name": "Renamed" }),
             Some(&token),
         )
         .await;
     assert_eq!(status, StatusCode::OK, "update: {updated}");
+
+    // A deck always has a name: explicit null is a 422, not a silent no-op.
+    let (status, body) = app
+        .patch(
+            &format!("/api/deck/{id}"),
+            json!({ "name": null }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "null name: {body}"
+    );
+
+    // PUT retired with the version gate.
+    let (status, _) = app
+        .put(
+            &format!("/api/deck/{id}"),
+            json!({ "name": "Renamed Again" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::METHOD_NOT_ALLOWED, "PUT must be gone");
     let (_, prof) = app
         .get(&format!("/api/deck/profile/{id}"), Some(&token))
         .await;
@@ -224,7 +240,7 @@ async fn deck_oracle_tags_round_trip(pool: sqlx::PgPool) {
     )
     .unwrap();
     let (status, upd) = app
-        .put(&format!("/api/deck/{id}"), update_body, Some(&token))
+        .patch(&format!("/api/deck/{id}"), update_body, Some(&token))
         .await;
     assert_eq!(status, StatusCode::OK, "update: {upd}");
     assert_eq!(upd["oracle_tags"], json!(["lifegain"]));
@@ -237,7 +253,7 @@ async fn deck_oracle_tags_round_trip(pool: sqlx::PgPool) {
     )
     .unwrap();
     let (status, cleared) = app
-        .put(&format!("/api/deck/{id}"), clear_body, Some(&token))
+        .patch(&format!("/api/deck/{id}"), clear_body, Some(&token))
         .await;
     assert_eq!(status, StatusCode::OK, "clear: {cleared}");
     assert_eq!(cleared["oracle_tags"], json!([]));

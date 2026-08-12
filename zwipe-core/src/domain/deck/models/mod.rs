@@ -35,5 +35,5 @@ pub use deck_warning::{DeckWarning, WarningAction};
 pub use format::{Format, InvalidFormat};
 pub use import_mode::ImportMode;
 pub use power_level::{InvalidPowerLevel, PowerLevel};
-pub use quantity::{InvalidQuantity, InvalidUpdateQuanity, Quantity, UpdateQuantity};
+pub use quantity::{InvalidQuantity, Quantity};
 pub use validate_deck::{DeckCommandZone, validate_deck};
