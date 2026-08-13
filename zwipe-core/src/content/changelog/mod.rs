@@ -26,7 +26,7 @@ pub struct Release {
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[Release {
-    version: "1.9.0",
+    version: "1.8.1",
     date: "",
     entries: &[
         "Tap a group header on your deck's card list to collapse it, with the same arrow card rows use. Tokens, Lands, Maybeboard, and Sideboard collapse too.",
