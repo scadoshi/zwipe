@@ -2867,17 +2867,8 @@ button {
     gap: 0.3rem;
 }
 
-.stepper-btn {
-    padding: 0.3rem 0.6rem;
-    border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-family: "JetBrains Mono", monospace;
-    transition: all 0.2s ease;
-}
+/* .stepper-btn moved to zwipe-components/assets/components.css — it ships
+   with the shared DrawOdds component. */
 
 .stepper-value {
     width: 2rem;

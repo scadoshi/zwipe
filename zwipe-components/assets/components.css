@@ -1846,3 +1846,18 @@ a.nav-dropdown-item.active:visited {
     border-color: var(--accent-primary);
     color: var(--accent-primary);
 }
+
+/* Stepper button (DrawOdds turn stepper; the app's combat filter reuses it).
+   Solid background gives native press feedback and suppresses WKWebView's
+   focus ring. */
+.stepper-btn {
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-family: "JetBrains Mono", monospace;
+    transition: all 0.2s ease;
+}

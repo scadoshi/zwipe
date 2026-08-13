@@ -14,6 +14,22 @@ use crate::domain::{
     deck::deck::DeckEntry,
 };
 
+/// One chart-ready per-color mana balance row (see
+/// [`DeckMetrics::mana_balance_rows`]).
+#[derive(Clone, PartialEq)]
+pub struct ManaBalanceRow {
+    /// Color letter (W/U/B/R/G).
+    pub label: &'static str,
+    /// Colored pips of this color the deck's costs consume.
+    pub consumed: usize,
+    /// Pips of this color the deck's sources can produce.
+    pub produced: usize,
+    /// Bar fill percentage (produced over the row's max, 4% sliver floor).
+    pub fill_pct: u32,
+    /// Whether production meets or exceeds consumption.
+    pub is_surplus: bool,
+}
+
 /// Aggregate statistics for a collection of cards.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DeckMetrics {
@@ -83,6 +99,116 @@ impl DeckMetrics {
             "colorless" => "clrls",
             _ => label,
         }
+    }
+
+    /// Max-normalized bar height for chart rendering: the tallest bar reads
+    /// 100, any nonzero count reads at least 4 (a visible sliver), zero is 0.
+    fn bar_pct(count: usize, max: usize) -> u32 {
+        if max > 0 && count > 0 {
+            (((count * 100) / max).max(4)) as u32
+        } else {
+            0
+        }
+    }
+
+    /// Chart-ready mana curve: `(count, height pct)` per CMC bucket (0–5, 6+).
+    pub fn mana_curve_bars(&self) -> [(usize, u32); 7] {
+        let max = self.cmc_histogram.iter().copied().max().unwrap_or(0);
+        std::array::from_fn(|i| {
+            let count = self.cmc_histogram.get(i).copied().unwrap_or(0);
+            (count, Self::bar_pct(count, max))
+        })
+    }
+
+    /// Chart-ready type distribution: `(abbreviated label, count, height pct)`.
+    pub fn type_bars(&self) -> Vec<(&'static str, usize, u32)> {
+        let max = self.type_counts.iter().map(|(_, c)| *c).max().unwrap_or(0);
+        self.type_counts
+            .iter()
+            .map(|(label, count)| {
+                (
+                    Self::abbreviate_type(label),
+                    *count,
+                    Self::bar_pct(*count, max),
+                )
+            })
+            .collect()
+    }
+
+    /// Chart-ready color distribution: `(abbreviated label, count, height pct)`.
+    pub fn color_bars(&self) -> Vec<(&'static str, usize, u32)> {
+        let max = self.color_counts.iter().map(|(_, c)| *c).max().unwrap_or(0);
+        self.color_counts
+            .iter()
+            .map(|(label, count)| {
+                (
+                    Self::abbreviate_color(label),
+                    *count,
+                    Self::bar_pct(*count, max),
+                )
+            })
+            .collect()
+    }
+
+    /// Chart-ready card-role distribution: `(label, count, width pct)`, `None`
+    /// when the deck has no role-tagged cards.
+    pub fn card_role_bars(&self) -> Option<Vec<(&'static str, usize, u32)>> {
+        if self.card_role_counts.is_empty() {
+            return None;
+        }
+        let max = self
+            .card_role_counts
+            .iter()
+            .map(|(_, c)| *c)
+            .max()
+            .unwrap_or(0);
+        Some(
+            self.card_role_counts
+                .iter()
+                .map(|(label, count)| (*label, *count, Self::bar_pct(*count, max)))
+                .collect(),
+        )
+    }
+
+    /// Chart-ready per-color mana balance (consumed vs producible pips), only
+    /// colors the deck actually consumes. Bar fill is produced over the row's
+    /// max with the same 4% nonzero sliver floor as the other charts.
+    pub fn mana_balance_rows(&self) -> Vec<ManaBalanceRow> {
+        let labels = ["W", "U", "B", "R", "G"];
+        labels
+            .iter()
+            .zip(self.mana_balance.iter())
+            .filter(|(_, (consumed, _produced))| *consumed > 0)
+            .map(|(label, (consumed, produced))| {
+                let bar_max = (*consumed).max(*produced);
+                let fill_pct = if *produced > 0 {
+                    (produced * 100).checked_div(bar_max).unwrap_or(0).max(4) as u32
+                } else {
+                    0
+                };
+                ManaBalanceRow {
+                    label,
+                    consumed: *consumed,
+                    produced: *produced,
+                    fill_pct,
+                    is_surplus: produced >= consumed,
+                }
+            })
+            .collect()
+    }
+
+    /// Draw-odds inputs: `(library size, [(bucket label, count)])` — lands
+    /// plus each card role. Library size is the mainboard (the commander sits
+    /// in the command zone, not the library).
+    pub fn draw_odds_buckets(&self) -> (u32, Vec<(&'static str, u32)>) {
+        let deck_size = (self.land_count + self.nonland_count) as u32;
+        let mut buckets: Vec<(&'static str, u32)> = vec![("Land", self.land_count as u32)];
+        buckets.extend(
+            self.card_role_counts
+                .iter()
+                .map(|(label, count)| (*label, *count as u32)),
+        );
+        (deck_size, buckets)
     }
 
     /// Computes metrics from deck entries, counting each card by its quantity.

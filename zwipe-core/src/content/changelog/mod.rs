@@ -25,7 +25,14 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.8.2",
+    date: "",
+    entries: &[
+        "Shared deck pages on zwipe.net now carry the app's deck sections: Budget, Tags, Distributions, Mana, and Draw odds sit between the featured cards and the list, collapsed until you want them.",
+        "Card groups on shared deck pages collapse from their headers too, with the same arrow and ease as the app.",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[

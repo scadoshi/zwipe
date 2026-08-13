@@ -1881,7 +1881,8 @@ footer {
    same theme variables) so the shared page reads as the same product. Tints
    mix with --bg-primary rather than transparent so the chips stay opaque and
    the page grid never shows through them. */
-.sd-header-meta .stat-chip {
+.sd-header-meta .stat-chip,
+.info-row-tags .stat-chip {
     display: inline-block;
     padding: 0.2rem 0.55rem;
     border-radius: 0.6rem;
@@ -1896,7 +1897,8 @@ footer {
         color-mix(in srgb, var(--accent-primary) 35%, var(--bg-primary));
 }
 
-.sd-header-meta .stat-chip-format {
+.sd-header-meta .stat-chip-format,
+.info-row-tags .stat-chip-format {
     color: var(--accent-secondary);
     background-color: color-mix(
         in srgb,
@@ -1910,7 +1912,8 @@ footer {
     );
 }
 
-.sd-header-meta .stat-chip-power {
+.sd-header-meta .stat-chip-power,
+.info-row-tags .stat-chip-power {
     color: var(--color-success);
     background-color: color-mix(
         in srgb,
@@ -1924,7 +1927,8 @@ footer {
     );
 }
 
-.sd-header-meta .stat-chip-zone {
+.sd-header-meta .stat-chip-zone,
+.info-row-tags .stat-chip-zone {
     color: var(--accent-tertiary);
     background-color: color-mix(
         in srgb,
@@ -1938,7 +1942,8 @@ footer {
     );
 }
 
-.sd-header-meta .stat-chip-tag {
+.sd-header-meta .stat-chip-tag,
+.info-row-tags .stat-chip-tag {
     color: var(--text-muted);
     background-color: color-mix(
         in srgb,
@@ -1948,7 +1953,8 @@ footer {
     border-color: color-mix(in srgb, var(--text-muted) 30%, var(--bg-primary));
 }
 
-.sd-header-meta .stat-chip-other {
+.sd-header-meta .stat-chip-other,
+.info-row-tags .stat-chip-other {
     color: var(--accent-primary);
     background-color: color-mix(
         in srgb,
@@ -1963,7 +1969,8 @@ footer {
 }
 
 /* Price chip: money reads green in every theme. */
-.sd-header-meta .stat-chip-price {
+.sd-header-meta .stat-chip-price,
+.info-row-tags .stat-chip-price {
     color: var(--color-success);
     background-color: color-mix(
         in srgb,
@@ -2149,6 +2156,130 @@ footer {
     .sd-columns {
         flex-direction: column;
     }
+}
+
+/* Stat panels (Budget, Tags, Distributions, Mana, Draw odds) between the
+   featured cards and the controls: collapsed header strips by default, in
+   the card grid's independent columns — expanding a panel pushes only its
+   own column down, never its row neighbors (same reason the card sections
+   use columns instead of a grid). */
+.sd-charts {
+    margin-bottom: 1.25rem;
+}
+
+.sd-charts .sd-group {
+    min-width: 0;
+    margin-bottom: 0.75rem;
+}
+
+.sd-charts .sd-column > .sd-group:last-child {
+    margin-bottom: 0;
+}
+
+/* Chart block stack inside a panel — the app's section-body rhythm. */
+.sd-chart-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+}
+
+/* The app's chip-row: chips in a wrapping row with breathing room. */
+.chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* Info rows inside the section panels; matches the app's main.css rules. */
+.info-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+    gap: 0.75rem;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-row-label {
+    font-size: 0.9rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    opacity: 0.5;
+    flex-shrink: 0;
+}
+
+.info-row-value {
+    font-size: 0.9rem;
+    font-weight: 400;
+    text-align: right;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.info-row-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    justify-content: flex-end;
+}
+
+.info-row.info-row-stacked {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.info-row.info-row-stacked .info-row-tags {
+    justify-content: flex-start;
+}
+
+/* Collapsible card groups: the app's deck cards collapse, mirrored — the
+   card-row disclosure arrow in the header, body easing open/closed via the
+   grid-template-rows 0fr<->1fr technique (same rules as the app's
+   .collapsible). */
+.sd-group-header.group-collapsible {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.25s ease;
+}
+
+.sd-group-header.group-collapsible.expanded .card-row-arrow {
+    transform: rotate(90deg);
+}
+
+.sd-group.collapsed .sd-group-header {
+    border-bottom-color: transparent;
+}
+
+.collapsible {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.25s ease;
+}
+
+.collapsible.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.collapsible-inner {
+    overflow: hidden;
+    min-height: 0;
 }
 
 .sd-group {

@@ -268,114 +268,16 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         buy_links::cardkingdom_url(&active, &cz_refs)
     });
 
-    let mana_curve_bars: Option<[(usize, u32); 7]> = chart_metrics.map(|m| {
-        let max_count = m.cmc_histogram.iter().copied().max().unwrap_or(0);
-        std::array::from_fn(|i| {
-            let count = m.cmc_histogram.get(i).copied().unwrap_or(0);
-            let pct = if max_count > 0 && count > 0 {
-                ((count * 100) / max_count).max(4) as u32
-            } else {
-                0
-            };
-            (count, pct)
-        })
-    });
+    let mana_curve_bars: Option<[(usize, u32); 7]> = chart_metrics.map(|m| m.mana_curve_bars());
+    let type_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(|m| m.type_bars());
+    let color_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(|m| m.color_bars());
+    let category_bars: Option<Vec<(&str, usize, u32)>> =
+        chart_metrics.and_then(|m| m.card_role_bars());
 
-    let type_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(|m| {
-        let max_count = m.type_counts.iter().map(|(_, c)| *c).max().unwrap_or(0);
-        m.type_counts
-            .iter()
-            .map(|(label, count)| {
-                let pct = if max_count > 0 && *count > 0 {
-                    ((count * 100) / max_count).max(4) as u32
-                } else {
-                    0
-                };
-                (DeckMetrics::abbreviate_type(label), *count, pct)
-            })
-            .collect()
-    });
-
-    let color_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(|m| {
-        let max_count = m.color_counts.iter().map(|(_, c)| *c).max().unwrap_or(0);
-        m.color_counts
-            .iter()
-            .map(|(label, count)| {
-                let pct = if max_count > 0 && *count > 0 {
-                    ((count * 100) / max_count).max(4) as u32
-                } else {
-                    0
-                };
-                (DeckMetrics::abbreviate_color(label), *count, pct)
-            })
-            .collect()
-    });
-
-    let category_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.and_then(|m| {
-        if m.card_role_counts.is_empty() {
-            return None;
-        }
-        let max_count = m
-            .card_role_counts
-            .iter()
-            .map(|(_, c)| *c)
-            .max()
-            .unwrap_or(0);
-        Some(
-            m.card_role_counts
-                .iter()
-                .map(|(label, count)| {
-                    let pct = if max_count > 0 && *count > 0 {
-                        ((count * 100) / max_count).max(4) as u32
-                    } else {
-                        0
-                    };
-                    (*label, *count, pct)
-                })
-                .collect(),
-        )
-    });
-
-    // Draw-odds buckets: (deck_size, [(label, count)]). Library size = the
-    // mainboard (the commander sits in the command zone, not the library). The
-    // DrawOdds component turns these into per-turn P(>=1) live.
-    let draw_odds_data: Option<(u32, Vec<(&'static str, u32)>)> = chart_metrics.map(|m| {
-        let deck_size = (m.land_count + m.nonland_count) as u32;
-        let mut buckets: Vec<(&'static str, u32)> = vec![("Land", m.land_count as u32)];
-        buckets.extend(
-            m.card_role_counts
-                .iter()
-                .map(|(label, count)| (*label, *count as u32)),
-        );
-        (deck_size, buckets)
-    });
-
-    let mana_balance_rows = chart_metrics.map(|m| -> Vec<_> {
-        let labels = ["W", "U", "B", "R", "G"];
-        labels
-            .iter()
-            .zip(m.mana_balance.iter())
-            .filter(|(_, (consumed, _produced))| *consumed > 0)
-            .map(|(label, (consumed, produced))| {
-                let bar_max = (*consumed).max(*produced);
-                // Floor a nonzero share at 4% so a barely-produced color still
-                // shows a visible sliver, matching the curve/type/color bars.
-                let fill_pct = if *produced > 0 {
-                    (produced * 100).checked_div(bar_max).unwrap_or(0).max(4) as u32
-                } else {
-                    0
-                };
-                let is_surplus = produced >= consumed;
-                ManaBalanceRow {
-                    label,
-                    consumed: *consumed,
-                    produced: *produced,
-                    fill_pct,
-                    is_surplus,
-                }
-            })
-            .collect()
-    });
+    let draw_odds_data: Option<(u32, Vec<(&'static str, u32)>)> =
+        chart_metrics.map(|m| m.draw_odds_buckets());
+    let mana_balance_rows: Option<Vec<ManaBalanceRow>> =
+        chart_metrics.map(|m| m.mana_balance_rows());
 
     rsx! {
             div { class: "screen",

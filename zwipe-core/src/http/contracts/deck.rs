@@ -483,6 +483,16 @@ pub struct HttpSharedDeck {
     /// app's token list). `#[serde(default)]` so payloads predating it parse.
     #[serde(default)]
     pub tokens: Vec<Card>,
+    /// Deck land target, if set — the share page shows Lands as
+    /// `actual / target` like the app. `#[serde(default)]` for old payloads.
+    #[serde(default)]
+    pub land_target: Option<i32>,
+    /// Deck price target (budget) in `price_target_currency`, if set.
+    #[serde(default)]
+    pub price_target: Option<f64>,
+    /// The price target's own stored currency (targets never convert).
+    #[serde(default)]
+    pub price_target_currency: Option<PriceCurrency>,
 }
 
 #[cfg(test)]

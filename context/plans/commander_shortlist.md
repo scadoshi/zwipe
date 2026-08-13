@@ -1,6 +1,23 @@
-# Commander shortlist / dedicated commander-swiping area
+# Commander maybeboard (was: commander shortlist)
 
-**Status: FEATURE REQUEST (2026-07-11). Not specced — needs product decisions.**
+**Status: FEATURE REQUEST (2026-07-11). Owner direction captured 2026-08-12 —
+not yet specced into a build plan.**
+
+## Owner direction (2026-08-12)
+
+- **Name: "commander maybeboard"** — sticks with existing app vocabulary
+  instead of introducing "shortlist".
+- Saving to it is **only offered during commander search** (the Zwipe-select
+  commander flow) — an up-swipe there adds to the maybeboard instead of the
+  ambiguous nothing it does today.
+- Its own **UI list page**: card entries with pictures, filterable, cards
+  expandable (the established card-row grammar).
+- Each entry offers **"Create deck with this commander"** → jumps straight to
+  the new-deck profile screen with the commander pre-filled, gated on deck
+  capacity (20-deck cap / unverified 1-deck cap).
+- Confirmed bigger-build shape: a new database table (per-user commander
+  maybeboard rows) + a new screen; needs real UI testing time, so it waits
+  for a dedicated train rather than riding a polish batch.
 
 ## The need
 

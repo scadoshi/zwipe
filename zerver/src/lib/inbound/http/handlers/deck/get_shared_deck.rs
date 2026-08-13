@@ -62,6 +62,9 @@ pub async fn get_shared_deck(
         signature_spell: shared.signature_spell,
         entries: shared.deck.entries,
         tokens: shared.tokens,
+        land_target: shared.deck.deck_profile.land_target,
+        price_target: shared.deck.deck_profile.price_target,
+        price_target_currency: shared.deck.deck_profile.price_target_currency,
     };
 
     Ok((StatusCode::OK, Json(body)))
