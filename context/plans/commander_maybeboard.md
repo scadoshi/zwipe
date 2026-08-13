@@ -116,6 +116,23 @@ Server ~0.5 day (migration + endpoints + tests), client ~1–1.5 days (screen +
 swipe wiring + prefill), plus owner UI review cycles on the list page. Rides
 its own train (a real feature → minor bump per `development/versioning.md`).
 
+## Serving split (decided 2026-08-13)
+
+The maybeboard's own Swipe overlay **excludes already-saved commanders** from
+its pile (discovery mode — a saved commander is a wasted deal); deck
+create/edit commander select **keeps serving them** (decision mode — those
+are the ones you're there to pick). Client-side page filter in SwipeSelect
+(`exclude_oracle_ids` prop, only the maybeboard passes it), with exhaustion
+keyed on the pre-filter page and bounded continue-pulling so a fully-excluded
+page can't dead-end the pile.
+
+**Stack-position caching: rejected** (owner + assistant concurred). The pile
+order reshuffles daily (seed `{user_id}:{date}`) so a cached cursor stales
+within 24h, and the overlay has too many host identities (per-deck
+create/edit x modes, keyless maybeboard) for the per-deck park pattern. The
+exclusion split above delivers the actual value (fresh cards on reopen) for
+near-zero machinery.
+
 ## Out of scope v1
 
 Snow/partner special-casing (partners save individually), ordering beyond

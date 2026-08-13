@@ -321,6 +321,11 @@ pub fn CommanderMaybeboard() -> Element {
                     if !already_saved {
                         entries.write().insert(0, card);
                     }
+                    // Belt and braces: a silent refetch reconciles to server
+                    // truth (order + preferred printing) behind the
+                    // optimistic insert.
+                    let tick = *reload.peek();
+                    reload.set(tick + 1);
                     toast.info(
                         format!("Added {name}"),
                         ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -491,17 +496,21 @@ pub fn CommanderMaybeboard() -> Element {
             .into();
     }
     let has_entries = !entries().is_empty();
-    // Result chips skip commanders already saved — nothing to add there.
-    let saved_oracles: HashSet<Uuid> = entries()
-        .iter()
-        .filter_map(|c| c.scryfall_data.oracle_id)
-        .collect();
+    // Already-saved oracles: quick-add result chips skip them (nothing to
+    // add), and the Swipe overlay excludes them from its pile (discovery
+    // wants fresh commanders; deck create/edit still serve saves).
+    let saved_oracles = use_memo(move || -> HashSet<Uuid> {
+        entries()
+            .iter()
+            .filter_map(|c| c.scryfall_data.oracle_id)
+            .collect()
+    });
     let shown_results: Vec<Card> = search_results()
         .iter()
         .filter(|c| {
             c.scryfall_data
                 .oracle_id
-                .is_some_and(|o| !saved_oracles.contains(&o))
+                .is_some_and(|o| !saved_oracles.read().contains(&o))
         })
         .cloned()
         .collect();
@@ -758,6 +767,7 @@ pub fn CommanderMaybeboard() -> Element {
                 host_screen: screen::COMMANDER_MAYBEBOARD,
                 open: swipe_open,
                 mode: swipe_mode,
+                exclude_oracle_ids: Some(saved_oracles.into()),
                 on_select: move |card: Card| {
                     swipe_open.set(false);
                     create_with(card);

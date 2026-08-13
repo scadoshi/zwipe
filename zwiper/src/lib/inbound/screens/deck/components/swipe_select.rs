@@ -140,6 +140,12 @@ pub(crate) fn SwipeSelect(
     /// Host screen const for error-report breadcrumbs, passed through to the
     /// printing sheet (this overlay serves deck edit and deck create).
     host_screen: &'static str,
+    /// Oracle ids kept out of the pile. The commander maybeboard passes its
+    /// own saves here (its Swipe is discovery — a saved commander is a wasted
+    /// deal); deck create/edit pass nothing, so saves still serve where the
+    /// user goes to actually pick one.
+    #[props(default)]
+    exclude_oracle_ids: Option<ReadSignal<HashSet<Uuid>>>,
 ) -> Element {
     // OS back gesture closes this overlay before touching the router.
     use_overlay_back(open);
@@ -188,6 +194,68 @@ pub(crate) fn SwipeSelect(
         }
     });
 
+    // The host's exclusion set, snapshotted at fetch time (peek: the pile
+    // shouldn't reshuffle mid-session as saves change).
+    let excluded_now = move || -> HashSet<Uuid> {
+        exclude_oracle_ids
+            .map(|ids| ids.peek().clone())
+            .unwrap_or_default()
+    };
+
+    // Append the next page (left-swipe prefetch). Dedup and the host's
+    // exclusions can filter a served page to nothing while the pool isn't
+    // actually dry, so keep pulling (bounded — exclusions are capped small)
+    // until cards land or the server truly runs out.
+    let mut load_more = move || {
+        if *is_loading_more.peek() || *exhausted.peek() {
+            return;
+        }
+        let Some(mode) = mode.peek().clone() else {
+            return;
+        };
+        is_loading_more.set(true);
+        spawn(async move {
+            for _ in 0..4 {
+                let off = *offset.peek();
+                let builder = mode_filter(&mode, filter_builder.peek().clone(), off);
+                let (Some(session), Ok(filter)) = (session.peek().clone(), builder.build()) else {
+                    break;
+                };
+                match client().search_commanders(&filter, &session).await {
+                    Ok(found) => {
+                        let raw_empty = found.is_empty();
+                        let seen: HashSet<Uuid> =
+                            cards.peek().iter().map(|c| c.scryfall_data.id).collect();
+                        let excluded = excluded_now();
+                        let mut page: Vec<Card> = found
+                            .into_iter()
+                            .filter(|c| !seen.contains(&c.scryfall_data.id))
+                            .filter(|c| {
+                                !c.scryfall_data
+                                    .oracle_id
+                                    .is_some_and(|o| excluded.contains(&o))
+                            })
+                            .collect();
+                        if raw_empty {
+                            exhausted.set(true);
+                            break;
+                        }
+                        offset.set(off + PAGE);
+                        if !page.is_empty() {
+                            cards.write().append(&mut page);
+                            break;
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!("zwipe select load-more failed: {e}");
+                        break;
+                    }
+                }
+            }
+            is_loading_more.set(false);
+        });
+    };
+
     // Fetch fresh results: on first open, and whenever the filter sheet changes
     // the filter. A reopen with an unchanged filter keeps the persisted stack.
     use_effect(move || {
@@ -218,13 +286,28 @@ pub(crate) fn SwipeSelect(
         spawn(async move {
             match client().search_commanders(&filter, &session).await {
                 Ok(found) => {
-                    let page: Vec<Card> = found;
-                    if page.is_empty() {
+                    let raw_empty = found.is_empty();
+                    let excluded = excluded_now();
+                    let page: Vec<Card> = found
+                        .into_iter()
+                        .filter(|c| {
+                            !c.scryfall_data
+                                .oracle_id
+                                .is_some_and(|o| excluded.contains(&o))
+                        })
+                        .collect();
+                    if raw_empty {
                         exhausted.set(true);
                     }
                     offset.set(PAGE);
+                    let need_more = !raw_empty && page.is_empty();
                     cards.set(page);
                     is_loading_cards.set(false);
+                    // The whole first page was excluded — pull ahead so the
+                    // pile doesn't open onto an empty skeleton.
+                    if need_more {
+                        load_more();
+                    }
                 }
                 Err(e) => {
                     tracing::warn!("zwipe select search failed: {e}");
@@ -233,46 +316,6 @@ pub(crate) fn SwipeSelect(
             }
         });
     });
-
-    // Append the next page (left-swipe prefetch).
-    let mut load_more = move || {
-        if *is_loading_more.peek() || *exhausted.peek() {
-            return;
-        }
-        let Some(mode) = mode.peek().clone() else {
-            return;
-        };
-        is_loading_more.set(true);
-        spawn(async move {
-            let off = *offset.peek();
-            let builder = mode_filter(&mode, filter_builder.peek().clone(), off);
-            let (Some(session), Ok(filter)) = (session.peek().clone(), builder.build()) else {
-                is_loading_more.set(false);
-                return;
-            };
-            match client().search_commanders(&filter, &session).await {
-                Ok(found) => {
-                    let seen: HashSet<Uuid> =
-                        cards.peek().iter().map(|c| c.scryfall_data.id).collect();
-                    let mut page: Vec<Card> = found
-                        .into_iter()
-                        .filter(|c| !seen.contains(&c.scryfall_data.id))
-                        .collect();
-                    if page.is_empty() {
-                        exhausted.set(true);
-                    } else {
-                        offset.set(off + PAGE);
-                        cards.write().append(&mut page);
-                    }
-                    is_loading_more.set(false);
-                }
-                Err(e) => {
-                    tracing::warn!("zwipe select load-more failed: {e}");
-                    is_loading_more.set(false);
-                }
-            }
-        });
-    };
 
     // Left = skip: advance, prefetch when running low.
     let mut advance = move || {
