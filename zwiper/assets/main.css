@@ -2570,6 +2570,11 @@ button {
 .collapsible {
     display: grid;
     grid-template-rows: 0fr;
+    /* One bounded column. Without minmax(0, 1fr), an OPEN group's inner
+       (overflow: visible, see below) regains its automatic minimum width and
+       wide content — an expanded card row's detail — pushes the auto track
+       past the container, clipping at the viewport (WebKit, deck cards). */
+    grid-template-columns: minmax(0, 1fr);
     opacity: 0;
     transition:
         grid-template-rows 0.25s ease,
@@ -2584,6 +2589,7 @@ button {
 .collapsible-inner {
     overflow: hidden;
     min-height: 0;
+    min-width: 0;
 }
 
 /* Visible at steady open state so floating search results

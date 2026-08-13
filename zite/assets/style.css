@@ -2266,6 +2266,9 @@ footer {
 .collapsible {
     display: grid;
     grid-template-rows: 0fr;
+    /* One bounded column, matching the app: keeps wide content (an expanded
+       row's detail) from pushing the auto track past the container. */
+    grid-template-columns: minmax(0, 1fr);
     opacity: 0;
     transition:
         grid-template-rows 0.25s ease,
@@ -2280,6 +2283,7 @@ footer {
 .collapsible-inner {
     overflow: hidden;
     min-height: 0;
+    min-width: 0;
 }
 
 .sd-group {
