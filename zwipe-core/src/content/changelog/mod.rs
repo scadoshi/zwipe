@@ -25,20 +25,21 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.8.1",
-    date: "",
-    entries: &[
-        "Tap a group header on your deck's card list to collapse it, with the same arrow card rows use. Tokens, Lands, Maybeboard, and Sideboard collapse too.",
-        "Search finds cards like Arcane Signet again: a newer foreign-language printing could hide a card's English version from name search. English printings win now.",
-        "The loading screens for the deck list and deck cards match the real layouts, card images and chip rows included, and the controls that never load (Group by, Show, the color pips) render right away instead of ghosting.",
-        "The commander and MVP cards at the top of the deck deal in from above, one after another.",
-        "Deck list group headers drop their underline.",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.8.1",
+        date: "Aug 12, 2026",
+        entries: &[
+            "Tap a group header on your deck's card list to collapse it, with the same arrow card rows use. Tokens, Lands, Maybeboard, and Sideboard collapse too.",
+            "Search finds cards like Arcane Signet again: a newer foreign-language printing could hide a card's English version from name search. English printings win now.",
+            "The loading screens for the deck list and deck cards match the real layouts, card images and chip rows included, and the controls that never load (Group by, Show, the color pips) render right away instead of ghosting.",
+            "The commander and MVP cards at the top of the deck deal in from above, one after another.",
+            "Deck list group headers drop their underline.",
+        ],
+    },
     Release {
         version: "1.8.0",
         date: "Aug 12, 2026",

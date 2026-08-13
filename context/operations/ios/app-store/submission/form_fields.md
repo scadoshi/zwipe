@@ -44,6 +44,17 @@ Built for players who want a fast, focused mobile experience, not another clutte
 
 ---
 
+## What's New in This Version (1.8.1)
+
+(Kept within Android's 500-char release-note limit so both stores read the same length. Combines the 1.8.0 notes — build 72 never left review, so users update straight from 1.7.6.)
+
+- The deck list now has Group by and Show rows: group your decks into sections by format, color, or tag, and filter them with color and tag chips.
+- Tap a group header on your deck's card list to collapse it.
+- Search finds cards again whose newest printing is foreign, like Arcane Signet.
+- Loading screens match the real layouts, and the commander and MVP cards deal in from above.
+
+---
+
 ## What's New in This Version (1.8.0)
 
 (Kept within Android's 500-char release-note limit so both stores read the same length.)
@@ -320,7 +331,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.8.0 |
+| Version | 1.8.1 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 

@@ -153,13 +153,20 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.8.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.8.1 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.8.1** (combines the 1.8.0 notes — vc34 never left review, so users update straight from 1.7.6; "leader" per the generic-copy rules):
+
+- The deck list now has Group by and Show rows: group your decks into sections by format, color, or tag, and filter them with color and tag chips.
+- Tap a group header on your deck's card list to collapse it.
+- Search finds cards again whose newest printing is foreign.
+- Loading screens match the real layouts, and your leader and MVP cards deal in from above.
 
 **1.8.0:**
 
