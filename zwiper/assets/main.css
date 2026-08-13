@@ -2946,7 +2946,8 @@ button {
 }
 
 .card-group {
-    margin-bottom: 1.5rem;
+    /* Matches the deck profile's section spacing (its flex column gap). */
+    margin-bottom: 1rem;
     overflow: hidden;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
