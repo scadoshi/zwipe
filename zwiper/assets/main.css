@@ -2985,6 +2985,30 @@ button {
     border-bottom: none;
 }
 
+/* Collapsible group headers (deck cards screen): the card-row disclosure
+   grammar — arrow points down while expanded, sideways when collapsed. */
+.card-group-header.group-collapsible {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.card-group-header.group-collapsible.expanded .card-row-arrow {
+    transform: rotate(90deg);
+}
+
+/* Collapsed: rows stay mounted but hidden, and the header's rule disappears
+   since nothing sits under it. */
+.card-group.collapsed > :not(.card-group-header) {
+    display: none;
+}
+
+.card-group.collapsed .card-group-header {
+    border-bottom: none;
+}
+
 /* =========================
   specific - info list (read-only card layout)
  =========================== */

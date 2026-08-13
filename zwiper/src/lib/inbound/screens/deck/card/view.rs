@@ -48,7 +48,10 @@ use crate::{
 };
 use dioxus::{core::spawn_forever, prelude::*};
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::{collections::HashMap, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    time::Duration,
+};
 use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
@@ -112,6 +115,33 @@ struct PendingQty {
 
 /// Quiet period after the last quantity tap before the net delta posts.
 const QTY_FLUSH_MS: u64 = 300;
+
+/// Collapsible group header: the card-row disclosure arrow + title, following
+/// the card-row idiom exactly (points down while expanded, spins sideways when
+/// collapsed). Tapping toggles the section's key in `collapsed_groups`; the
+/// group's rows stay mounted and hide via CSS, like the deck view's
+/// collapsible sections.
+#[component]
+fn GroupHeader(
+    title: String,
+    section_key: String,
+    collapsed_groups: Signal<HashSet<String>>,
+) -> Element {
+    let expanded = !collapsed_groups().contains(&section_key);
+    rsx! {
+        div {
+            class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
+            onclick: move |_| {
+                let mut set = collapsed_groups.write();
+                if !set.remove(&section_key) {
+                    set.insert(section_key.clone());
+                }
+            },
+            span { class: "card-row-arrow", "▸" }
+            "{title}"
+        }
+    }
+}
 
 #[component]
 pub fn View(deck_id: Uuid) -> Element {
@@ -316,6 +346,11 @@ pub fn View(deck_id: Uuid) -> Element {
     // hint waits for a later visit instead of burning its one showing.
     let deck_cards_hint_open = use_signal(|| false);
     let mut deck_cards_hint_fired = use_signal(|| false);
+
+    // Collapsed group sections, keyed by header label ("Tokens", "Lands",
+    // group-by labels, ...). Ephemeral per visit; rows stay mounted and hide
+    // via CSS so expanded-card state survives a collapse/expand round trip.
+    let collapsed_groups: Signal<HashSet<String>> = use_signal(HashSet::new);
     use_effect(move || {
         if !deck_entries.read().is_empty() && !*deck_cards_hint_fired.peek() {
             deck_cards_hint_fired.set(true);
@@ -1407,8 +1442,13 @@ pub fn View(deck_id: Uuid) -> Element {
                             rsx! {
                                 if let Some(tokens) = sorted_tokens {
                                     if !tokens.is_empty() {
-                                        div { class: "card-group row-enter",
-                                            div { class: "card-group-header", "Tokens ({tokens.len()})" }
+                                        div {
+                                            class: if collapsed_groups().contains("Tokens") { "card-group row-enter collapsed" } else { "card-group row-enter" },
+                                            GroupHeader {
+                                                title: format!("Tokens ({})", tokens.len()),
+                                                section_key: "Tokens",
+                                                collapsed_groups,
+                                            }
                                             for token in tokens.iter() {
                                                 CardRow {
                                                     card: token.clone(),
@@ -1445,8 +1485,13 @@ pub fn View(deck_id: Uuid) -> Element {
                         let mb_count = mb_entries.len();
                         rsx! {
                             if show_maybe() && !mb_entries.is_empty() {
-                                div { class: "card-group row-enter",
-                                    div { class: "card-group-header", "Maybeboard ({mb_count})" }
+                                div {
+                                    class: if collapsed_groups().contains("Maybeboard") { "card-group row-enter collapsed" } else { "card-group row-enter" },
+                                    GroupHeader {
+                                        title: format!("Maybeboard ({mb_count})"),
+                                        section_key: "Maybeboard",
+                                        collapsed_groups,
+                                    }
                                     for entry in mb_entries.iter() {
                                         {
                                             let card_id = entry.card.scryfall_data.id;
@@ -1496,8 +1541,13 @@ pub fn View(deck_id: Uuid) -> Element {
                         let sb_count = sb_entries.len();
                         rsx! {
                             if show_side() && !sb_entries.is_empty() {
-                                div { class: "card-group row-enter",
-                                    div { class: "card-group-header", "Sideboard ({sb_count})" }
+                                div {
+                                    class: if collapsed_groups().contains("Sideboard") { "card-group row-enter collapsed" } else { "card-group row-enter" },
+                                    GroupHeader {
+                                        title: format!("Sideboard ({sb_count})"),
+                                        section_key: "Sideboard",
+                                        collapsed_groups,
+                                    }
                                     for entry in sb_entries.iter() {
                                         {
                                             let card_id = entry.card.scryfall_data.id;
@@ -1617,9 +1667,12 @@ pub fn View(deck_id: Uuid) -> Element {
                                 .map(|c| row_meta.read().get(&c.scryfall_data.id).map_or(1, |m| m.qty))
                                 .sum();
                             rsx! {
-                        div { class: "card-group row-enter",
-                            div { class: "card-group-header",
-                                "{group.label} ({qty_count})"
+                        div {
+                            class: if collapsed_groups().contains(&group.label) { "card-group row-enter collapsed" } else { "card-group row-enter" },
+                            GroupHeader {
+                                title: format!("{} ({qty_count})", group.label),
+                                section_key: group.label.clone(),
+                                collapsed_groups,
                             }
                             for card in group.cards.iter() {
                                 {
@@ -1666,8 +1719,13 @@ pub fn View(deck_id: Uuid) -> Element {
                                 .map(|c| row_meta.read().get(&c.scryfall_data.id).map_or(1, |m| m.qty))
                                 .sum();
                             rsx! {
-                                div { class: "card-group row-enter",
-                                    div { class: "card-group-header", "Lands ({qty_count})" }
+                                div {
+                                    class: if collapsed_groups().contains("Lands") { "card-group row-enter collapsed" } else { "card-group row-enter" },
+                                    GroupHeader {
+                                        title: format!("Lands ({qty_count})"),
+                                        section_key: "Lands",
+                                        collapsed_groups,
+                                    }
                                     for card in lands.iter() {
                                         {
                                             let card_id = card.scryfall_data.id;

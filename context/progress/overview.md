@@ -47,6 +47,17 @@ Three days that closed the whole release train:
   users, MAU 161 / WAU 49, activation to deck-built 90% but completion only
   15.3% (median deck 26 cards) — the finish-a-deck cliff is the top roadmap
   signal; fill-basics and composition targets aim straight at it.
+- **Evening Discord-todo batch (2026-08-12, rides 1.9.0 except the server
+  fix):** the Arcane Signet search miss root-caused to `latest_cards`' dedup
+  ignoring language — a newer foreign printing (hoc Dwarvish spoilers, soa
+  Japanese reprints) shadowed the English one and the `language=en` default
+  hid the card from search; 268 cards affected, fixed by migration
+  `20260812210000` (English preference in the dedup + deck-reference remap,
+  verified 268 → 0 locally). Also: collapsible deck-cards groups (card-row
+  disclosure-arrow idiom, all five list sections), both deck screens'
+  skeletons rebuilt to match their live layouts, and the deck list group
+  headers' stray underline removed. Next train named 1.9.0 per the
+  any-feature-bumps-minor convention.
 
 ## 2026-08-06 (zwipe.net home compressed into bands; the Flopsie caching saga; hourly origin TTLs)
 
