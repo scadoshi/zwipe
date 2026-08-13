@@ -130,8 +130,8 @@ impl UsageBuffer {
     /// by the shown card's oracle id.
     ///
     /// Only `Right` (selected) and `Left` (skipped) express a decision; `Down`
-    /// (undo) and `Up` (unused on that screen) are ignored. No-op if the card
-    /// has no oracle id.
+    /// (undo) and `Up` (commander maybeboard save — non-committal, not a
+    /// pick) are ignored. No-op if the card has no oracle id.
     pub fn record_select_signal(&self, card_oracle_id: Option<Uuid>, direction: Direction) {
         let Some(card) = card_oracle_id else {
             return;

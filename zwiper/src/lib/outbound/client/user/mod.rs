@@ -9,6 +9,8 @@ pub mod change_email;
 pub mod change_password;
 /// Change username endpoint.
 pub mod change_username;
+/// Commander maybeboard endpoints (per-user "maybe this commander" list).
+pub mod commander_maybeboard;
 /// Delete user account endpoint.
 pub mod delete_user;
 /// Fetch user profile endpoint.

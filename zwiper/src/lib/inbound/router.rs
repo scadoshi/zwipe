@@ -12,6 +12,7 @@ use crate::inbound::{
                 add::Add as AddDeckCard, remove::Remove as RemoveDeckCard,
                 view::View as ViewDeckCard,
             },
+            commander_maybeboard::CommanderMaybeboard,
             create::CreateDeck,
             edit::EditDeck,
             export::ExportDeck,
@@ -69,6 +70,10 @@ pub enum Router {
     /// List all user's decks with name, format, and card count.
     #[route("/deck")]
     DeckList {},
+    /// Commander maybeboard — per-user "maybe this commander" list saved by
+    /// up-swiping during commander Zwipe-select.
+    #[route("/deck/commander-maybeboard")]
+    CommanderMaybeboard {},
     /// Create a new deck — name, format, commander selection.
     #[route("/deck/create")]
     CreateDeck,

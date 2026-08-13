@@ -6,7 +6,8 @@
 //! [`SwipeMode`] decides the always-on pool (commander, partner, background, or
 //! signature spell); cards are served in **EDHREC-popularity order** through the
 //! full [`CardFilterSheet`]. Swipe **left** to skip, **right** to choose,
-//! **down** to undo; up does nothing.
+//! **down** to undo; **up** saves to the commander maybeboard (commander and
+//! partner modes only — the pile advances and selection continues).
 
 use crate::{
     inbound::{
@@ -20,7 +21,7 @@ use crate::{
             },
             navigation::overlay_stack::use_overlay_back,
             screen_header::ScreenHeader,
-            telemetry::usage_buffer::UsageBuffer,
+            telemetry::{usage_buffer::UsageBuffer, vocabulary::component},
         },
         screens::deck::card::{
             components::{
@@ -30,7 +31,10 @@ use crate::{
             filter::card_filter_sheet::CardFilterSheet,
         },
     },
-    outbound::client::{ZwipeClient, card::search_commanders::ClientSearchCommanders},
+    outbound::client::{
+        ZwipeClient, card::search_commanders::ClientSearchCommanders,
+        user::commander_maybeboard::ClientCommanderMaybeboard,
+    },
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -100,6 +104,17 @@ impl SwipeMode {
     }
 }
 
+/// What the last pile-advancing swipe was, so a down-swipe undo can reverse
+/// it faithfully: a skip just comes back; a maybeboard save also un-saves.
+/// (Right-swipe commits and leaves the pile, so it never lands here.)
+#[derive(Clone, Copy)]
+enum SelectSwipe {
+    /// Left swipe — nothing persisted.
+    Skip,
+    /// Up swipe — saved this oracle to the commander maybeboard.
+    Maybe(Uuid),
+}
+
 /// Layers the mode constraint, no-tokens, and pagination onto a user-built
 /// filter. No default sort is pinned: a sortless filter reaches the server as
 /// sortless, so the deck-aware search serves its popularity-based, banded,
@@ -155,6 +170,9 @@ pub(crate) fn SwipeSelect(
     let mut is_loading_cards = use_signal(|| false);
     let mut is_loading_more = use_signal(|| false);
     let mut entering = use_signal(|| Option::<Direction>::None);
+    // One entry per pile-advancing swipe (left/up), popped by the down-swipe
+    // undo so it knows whether to also un-save a maybeboard entry.
+    let mut swipe_history: Signal<Vec<SelectSwipe>> = use_signal(Vec::new);
     let mut filters_overlay_open = use_signal(|| false);
     // Swipe-vocabulary hint: the "?" button reopens it; it also auto-opens once
     // per account the first time the screen is opened (gated, since this stays
@@ -190,6 +208,7 @@ pub(crate) fn SwipeSelect(
         current_index.set(0);
         offset.set(0);
         exhausted.set(false);
+        swipe_history.set(Vec::new());
         let builder = mode_filter(&current_mode, filter_builder.peek().clone(), 0);
         let (Some(session), Ok(filter)) = (session.peek().clone(), builder.build()) else {
             return;
@@ -265,17 +284,51 @@ pub(crate) fn SwipeSelect(
         }
     };
 
-    // Down = undo the last skip: bring the previous card back in.
+    // Down = undo the last swipe: bring the previous card back in, and if
+    // that swipe was an up (maybeboard save), un-save it too.
     let mut undo = move || {
-        if current_index() > 0 {
-            current_index.set(current_index() - 1);
-            entering.set(Some(Direction::Left));
-            toast.info(
-                "Undid skip".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(1500)),
-            );
-        } else {
+        if current_index() == 0 {
             toast.info("Nothing to undo".to_string(), ToastOptions::default());
+            return;
+        }
+        let last = swipe_history.write().pop();
+        current_index.set(current_index() - 1);
+        entering.set(Some(Direction::Left));
+        match last {
+            Some(SelectSwipe::Maybe(oracle_id)) => {
+                spawn(async move {
+                    let Some(session) = session.peek().clone() else {
+                        return;
+                    };
+                    match client()
+                        .remove_commander_maybeboard_card(oracle_id, &session)
+                        .await
+                    {
+                        Ok(()) => {
+                            toast.info(
+                                "Removed from your commander maybeboard".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                            );
+                        }
+                        Err(e) => {
+                            tracing::warn!("undo commander maybeboard save failed: {e}");
+                            usage_buffer.peek().report_error(
+                                host_screen,
+                                component::SWIPE_SELECT,
+                                "undo_commander_maybeboard",
+                                &e,
+                            );
+                            toast.error(e.to_user_message(), ToastOptions::default());
+                        }
+                    }
+                });
+            }
+            _ => {
+                toast.info(
+                    "Undid skip".to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
+            }
         }
     };
 
@@ -314,11 +367,18 @@ pub(crate) fn SwipeSelect(
         (Vec::new(), None, false)
     };
     let noun = mode().as_ref().map(SwipeMode::noun).unwrap_or("card");
-    let swipe_config = SwipeConfig::new(
-        vec![Direction::Left, Direction::Right, Direction::Down],
-        90.0,
-        2.5,
+    // Up-swipe = "maybe this commander" (per-user save), so it's only live in
+    // the modes whose pool is commanders. Background/signature-spell picks
+    // have no maybeboard home.
+    let maybe_enabled = matches!(
+        mode().as_ref(),
+        Some(SwipeMode::Commander(_) | SwipeMode::Partner)
     );
+    let mut directions = vec![Direction::Left, Direction::Right, Direction::Down];
+    if maybe_enabled {
+        directions.push(Direction::Up);
+    }
+    let swipe_config = SwipeConfig::new(directions, 90.0, 2.5);
 
     rsx! {
         div { class: "{screen_class}",
@@ -335,6 +395,7 @@ pub(crate) fn SwipeSelect(
                                 usage_buffer().record_swipe(Direction::Left);
                                 usage_buffer()
                                     .record_select_signal(card.scryfall_data.oracle_id, Direction::Left);
+                                swipe_history.write().push(SelectSwipe::Skip);
                                 advance();
                                 toast.info(
                                     "Skipped".to_string(),
@@ -355,7 +416,55 @@ pub(crate) fn SwipeSelect(
                                 );
                                 on_select.call(card);
                             },
-                            on_swipe_up: move |_card: Card| {},
+                            on_swipe_up: move |card: Card| {
+                                // Save is non-committal: the pile advances and
+                                // selection continues, exactly like a skip.
+                                usage_buffer().record_swipe(Direction::Up);
+                                advance();
+                                let Some(oracle_id) = card.scryfall_data.oracle_id else {
+                                    // Nothing was saved, so undo treats it
+                                    // like a plain skip.
+                                    swipe_history.write().push(SelectSwipe::Skip);
+                                    toast.error(
+                                        "This card can't be saved".to_string(),
+                                        ToastOptions::default(),
+                                    );
+                                    return;
+                                };
+                                swipe_history.write().push(SelectSwipe::Maybe(oracle_id));
+                                let Some(session) = session.peek().clone() else {
+                                    return;
+                                };
+                                spawn(async move {
+                                    match client()
+                                        .add_commander_maybeboard_card(oracle_id, &session)
+                                        .await
+                                    {
+                                        Ok(()) => {
+                                            toast.success(
+                                                "Added to your commander maybeboard".to_string(),
+                                                ToastOptions::default()
+                                                    .duration(Duration::from_millis(1500)),
+                                            );
+                                        }
+                                        Err(e) => {
+                                            tracing::warn!(
+                                                "add to commander maybeboard failed: {e}"
+                                            );
+                                            usage_buffer.peek().report_error(
+                                                host_screen,
+                                                component::SWIPE_SELECT,
+                                                "add_commander_maybeboard",
+                                                &e,
+                                            );
+                                            toast.error(
+                                                e.to_user_message(),
+                                                ToastOptions::default(),
+                                            );
+                                        }
+                                    }
+                                });
+                            },
                             on_swipe_down: move |_card: Card| {
                                 usage_buffer().record_swipe(Direction::Down);
                                 undo();
@@ -440,10 +549,17 @@ pub(crate) fn SwipeSelect(
                             HintColored { color: "--color-error", "left" }
                             " to skip it."
                         }
+                        if maybe_enabled {
+                            HintBullet {
+                                "Swipe "
+                                HintColored { color: "--color-warning", "up" }
+                                " to save it to your commander maybeboard."
+                            }
+                        }
                         HintBullet {
                             "Swipe "
                             HintColored { color: "--accent-tertiary", "down" }
-                            " to undo your last skip."
+                            " to undo your last swipe."
                         }
                     }
                     HintLine {

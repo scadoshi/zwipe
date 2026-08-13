@@ -45,6 +45,9 @@ pub(crate) fn CardRow(
     /// star rendered (non-mainboard rows, tokens, command zone).
     mvp: Option<bool>,
     on_toggle_mvp: Option<EventHandler<()>>,
+    /// Host-specific buttons appended to the shared row's expanded action bar.
+    #[props(default)]
+    extra_actions: Option<Element>,
 ) -> Element {
     let scryfall_data_for_preview = card.scryfall_data.clone();
     // Which face the expanded detail is flipped to (0 = front), so the fullscreen
@@ -82,6 +85,7 @@ pub(crate) fn CardRow(
             on_printing,
             mvp,
             on_toggle_mvp,
+            extra_actions,
             price_currency,
             show_classification: true,
             describe_tag,

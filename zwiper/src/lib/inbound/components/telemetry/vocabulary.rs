@@ -21,6 +21,7 @@ pub mod screen {
     pub const AUTH_REGISTER: &str = "auth_register";
     pub const AUTH_FORGOT_PASSWORD: &str = "auth_forgot_password";
     pub const CHANGELOG: &str = "changelog";
+    pub const COMMANDER_MAYBEBOARD: &str = "commander_maybeboard";
     pub const DECK_LIST: &str = "deck_list";
     pub const DECK_CREATE: &str = "deck_create";
     pub const DECK_EDIT: &str = "deck_edit";
@@ -52,4 +53,5 @@ pub mod component {
     pub const MORE_BUTTONS: &str = "more_buttons";
     pub const PRINTING_SHEET: &str = "printing_sheet";
     pub const QUICK_ADD: &str = "quick_add";
+    pub const SWIPE_SELECT: &str = "swipe_select";
 }

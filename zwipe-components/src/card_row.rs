@@ -37,6 +37,11 @@ pub fn CardRow(
     /// MVP star state: `Some(true)` filled, `Some(false)` outline, `None` = no
     /// star rendered (non-mainboard rows, tokens, command zone).
     mvp: Option<bool>,
+    /// Host-specific buttons appended to the expanded action bar (e.g. the
+    /// commander maybeboard's Create deck / Remove pair). The host supplies
+    /// `card-action-btn` buttons that stop propagation themselves.
+    #[props(default)]
+    extra_actions: Option<Element>,
     on_toggle_mvp: Option<EventHandler<()>>,
     /// Cursor enters/leaves the compact row (desktop hover previews). Never
     /// fires on touch devices (no mouseenter), so touch hosts can omit them.
@@ -103,7 +108,8 @@ pub fn CardRow(
     let has_slot_actions = on_qty_change.is_some()
         || on_printing.is_some()
         || (mvp.is_some() && on_toggle_mvp.is_some())
-        || on_move_to.is_some();
+        || on_move_to.is_some()
+        || extra_actions.is_some();
     // Always mounted; the `.open` class drives the grid-rows + opacity collapse
     // so the detail eases open and closed instead of popping.
     let collapse_class = if is_expanded {
@@ -229,6 +235,7 @@ pub fn CardRow(
                                     if is_mvp { "Unstar" } else { "Star" }
                                 }
                             }
+                            {extra_actions}
                         }
                         if let Some(handler) = on_move_to {
                             div { class: "card-action-row",

@@ -17,9 +17,13 @@ use crate::{
                 usage_buffer::UsageBuffer,
             },
         },
-        screens::deck::card::components::{
-            action_history::AddAction, add_stack_cache::use_add_stack_cache,
-            card_stack::use_card_stack, filter_store::use_filter_store, undo_log::use_undo_store,
+        screens::deck::{
+            card::components::{
+                action_history::AddAction, add_stack_cache::use_add_stack_cache,
+                card_stack::use_card_stack, filter_store::use_filter_store,
+                undo_log::use_undo_store,
+            },
+            create::CreateDeckCommanderSeed,
         },
     },
     outbound::{
@@ -158,6 +162,12 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
 
     let last_search_filter: Signal<Option<CardQueryBuilder>> = use_signal(|| None);
     use_context_provider(|| last_search_filter);
+
+    // One-shot commander seed for CreateDeck — set by the commander
+    // maybeboard's "Create deck" action, taken by CreateDeck at mount. Above
+    // the router so it survives the navigation.
+    let create_deck_commander_seed = CreateDeckCommanderSeed(use_signal(|| None));
+    use_context_provider(|| create_deck_commander_seed);
 
     // On-demand hint channel: an InfoButton anywhere posts a HintTopic here and
     // the app-root HintHost renders the dialog (hint_host.rs). One Option = one

@@ -29,10 +29,23 @@ deck's "Maybeboard"). Rejected: "shortlist" (new vocab), "saved commanders"
 
 ## UX
 
-- **Adding — only during commander Zwipe-select** (the command-zone swipe flow
-  in create/edit deck): **up-swipe = maybe**. Toast ("Added to your commander
-  maybeboard"), the pile advances, selection continues — saving is
-  non-committal and never ends the flow. No other entry points in v1.
+- **Adding (revised 2026-08-13 during owner review — three paths, not one):**
+  1. **Up-swipe during any commander Zwipe-select** (the command-zone swipe
+     flow in create/edit deck): up-swipe = maybe. Toast ("Added to your
+     commander maybeboard"), the pile advances, selection continues — saving
+     is non-committal and never ends the flow.
+  2. **The screen's own Swipe overlay** (a "Swipe" action-bar button mounts
+     the same SwipeSelect in Commander mode): up saves as above;
+     **right-swipe seeds a NEW deck** with that commander (create screen,
+     format Commander preselected) — the maybeboard doubles as a
+     commander-discovery surface, not just an archive.
+  3. **Quick add**: the screen's input runs a debounced commander name search
+     (top 8, shared floating chips hung downward — the bar sits at the top of
+     the page); tapping a chip saves it. Pure quick add, deliberately NOT a
+     list filter (owner + assistant concurred 2026-08-13: one input driving
+     two result sets reads ambiguous, and the 50-cap list never needs name
+     narrowing — the Show pips cover it, deck-list grammar). Already-saved
+     commanders drop out of the chips.
 - **The screen — "Commander maybeboard":** a list page of card entries with
   art, using the established card-row grammar (`SharedCardRow`: art thumb,
   name, expandable details, `show_classification`). Newest first.
@@ -47,9 +60,11 @@ deck's "Maybeboard"). Rejected: "shortlist" (new vocab), "saved commanders"
     picking one to save it here").
 - **Hints:** one-time `commander_maybeboard` key (hints_shown, no migration)
   on first screen visit; the swipe-select hint gains an up-swipe bullet.
-- **Entry point (decided 2026-08-13):** a "Commanders" button on the Decks
-  screen action bar (Back · Commanders · Create) — it's where deck-starting
-  thoughts live. (Alternative considered: a Home tile.)
+- **Entry point (decided 2026-08-13, revised same day):** a "Commander
+  maybeboard" button inside a new More bottom sheet on the Decks screen
+  (action bar Back · Create · More, More right-most) — owner call: it's a
+  side feature and shouldn't crowd the action bar. (Earlier candidates: a
+  dedicated action-bar "Commanders" button, a Home tile.)
 - **After "Create deck with this commander" (decided 2026-08-13):** the entry
   STAYS on the maybeboard (removal is one tap; auto-removal would surprise
   anyone building two decks around one commander).

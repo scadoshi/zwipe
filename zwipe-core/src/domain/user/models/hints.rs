@@ -41,6 +41,8 @@ pub const HINT_EXPORT: &str = "export";
 pub const HINT_ORACLE_TAG_DICTIONARY: &str = "oracle_tag_dictionary";
 /// Explainer for the oracle-tag example-cards browse (swipe navigation).
 pub const HINT_OTAG_EXAMPLES: &str = "otag_examples";
+/// Explainer for the commander maybeboard screen (up-swipe origin, actions).
+pub const HINT_COMMANDER_MAYBEBOARD: &str = "commander_maybeboard";
 
 /// Maximum length of a hint key.
 pub const HINT_KEY_MAX_LEN: usize = 64;

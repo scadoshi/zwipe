@@ -45,6 +45,12 @@ use zwipe_core::{
 /// spell, signature spell name).
 type FormatSnapshot = (Option<Format>, Option<Card>, String, Option<Card>, String);
 
+/// Context: one-shot commander seed from the commander maybeboard's "Create
+/// deck" action. Parked above the router (session_upkeep) so it survives the
+/// navigation; taken (and cleared) by [`CreateDeck`] at mount.
+#[derive(Clone, Copy)]
+pub(crate) struct CreateDeckCommanderSeed(pub(crate) Signal<Option<Card>>);
+
 /// Screen for creating a new deck with name and settings.
 #[component]
 pub fn CreateDeck() -> Element {
@@ -91,6 +97,20 @@ pub fn CreateDeck() -> Element {
     let mut oracle_tags: Signal<Vec<String>> = use_signal(Vec::new);
     let mut show_oracle_tags_select = use_signal(|| false);
     let create_hint = use_one_time_hint(HINT_CREATE_DECK);
+
+    // Commander maybeboard seed: its "Create deck" action parks the picked
+    // card here. Taken once at mount; the format is set directly (not through
+    // the format picker) so the clear-on-format-change cascade can't wipe the
+    // seed, and a later manual format change still clears it as usual.
+    let seed: CreateDeckCommanderSeed = use_context();
+    use_hook(move || {
+        let mut slot = seed.0;
+        if let Some(card) = slot.write().take() {
+            selected_format.set(Some(Format::Commander));
+            commander_display.set(card.scryfall_data.name.clone());
+            commander.set(Some(card));
+        }
+    });
 
     let toast = use_toast();
     let usage_buffer: Signal<UsageBuffer> = use_context();

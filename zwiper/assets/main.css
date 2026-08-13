@@ -2766,6 +2766,16 @@ button {
     justify-content: center;
 }
 
+/* Downward variant: the commander maybeboard's search bar sits at the very
+   top of the page, so its results hang below the anchor instead, floating
+   over the Show row and the list. */
+.search-float-results.search-float-below {
+    bottom: auto;
+    top: 0;
+    margin-bottom: 0;
+    margin-top: 0.5rem;
+}
+
 /* Entrance float-up (staggered per chip via inline animation-delay), then a
    soft idle drift so the layer reads as hovering rather than parked. */
 .search-float-chip {
@@ -3726,4 +3736,51 @@ button {
     color: var(--accent-tertiary);
     background-color: color-mix(in srgb, var(--accent-tertiary) 12%, var(--bg-primary));
     border-color: color-mix(in srgb, var(--accent-tertiary) 35%, var(--bg-primary));
+}
+
+/* ── Commander maybeboard ─────────────────────────────────────────────── */
+
+/* Every entry is a single copy — the shared row's qty column is noise here.
+   The compact row is a flex line, so hiding it just closes the gap. */
+.maybeboard-list .card-row-qty {
+    display: none;
+}
+
+/* Rows land softly when the fetch replaces the ghosts: each plays the shared
+   row-enter ease with a short cascade down the list (the group header is
+   child 1, so the first row is nth-child(2)). Rows past the eighth land
+   together on the tail delay — they're below the fold anyway. Keyed rows
+   persist across pip/filter narrowing, so the cascade doesn't replay there;
+   a quick-added row mounts near the top and eases in the same way. */
+.maybeboard-list .card-row {
+    animation: row-enter 0.3s ease-out both;
+    animation-delay: 320ms;
+}
+
+.maybeboard-list .card-row:nth-child(2) {
+    animation-delay: 0ms;
+}
+
+.maybeboard-list .card-row:nth-child(3) {
+    animation-delay: 45ms;
+}
+
+.maybeboard-list .card-row:nth-child(4) {
+    animation-delay: 90ms;
+}
+
+.maybeboard-list .card-row:nth-child(5) {
+    animation-delay: 135ms;
+}
+
+.maybeboard-list .card-row:nth-child(6) {
+    animation-delay: 180ms;
+}
+
+.maybeboard-list .card-row:nth-child(7) {
+    animation-delay: 225ms;
+}
+
+.maybeboard-list .card-row:nth-child(8) {
+    animation-delay: 270ms;
 }

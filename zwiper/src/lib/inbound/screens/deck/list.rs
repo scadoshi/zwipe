@@ -12,6 +12,7 @@ use crate::{
     inbound::{
         components::{
             auth::ensure_session::EnsureFresh,
+            bottom_sheet::BottomSheet,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, open_and_record_hint},
             screen_header::ScreenHeader,
             telemetry::{
@@ -317,6 +318,7 @@ pub fn DeckList() -> Element {
     let mut group_by = use_signal(|| DeckGroupBy::None);
     let mut selected_colors: Signal<HashSet<Color>> = use_signal(HashSet::new);
     let mut selected_tags: Signal<HashSet<String>> = use_signal(HashSet::new);
+    let mut show_more_sheet = use_signal(|| false);
 
     // Refresh user on mount so email_verified_at is current without re-login.
     use_effect(move || {
@@ -583,6 +585,22 @@ pub fn DeckList() -> Element {
                         }
                     },
                     "Create"
+                }
+                Button {
+                    variant: ButtonVariant::Util,
+                    onclick: move |_| show_more_sheet.set(true),
+                    "More"
+                }
+            }
+
+            // Side features live here rather than crowding the action bar.
+            BottomSheet { open: show_more_sheet, title: "More actions",
+                Button {
+                    onclick: move |_| {
+                        show_more_sheet.set(false);
+                        navigator.push(Router::CommanderMaybeboard {});
+                    },
+                    "Commander maybeboard"
                 }
             }
             }
