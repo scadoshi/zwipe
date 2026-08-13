@@ -1292,6 +1292,37 @@ impl CardRepository for MyPostgres {
         Ok(cards)
     }
 
+    async fn get_latest_cards_by_oracle_ids(
+        &self,
+        oracle_ids: &[uuid::Uuid],
+    ) -> Result<Vec<Card>, GetCardError> {
+        if oracle_ids.is_empty() {
+            return Ok(vec![]);
+        }
+        // latest_cards holds one row per oracle, so ANY($1) yields at most
+        // one printing per requested id.
+        let db_rows: Vec<DatabaseScryfallData> =
+            query_as("SELECT * FROM latest_cards WHERE oracle_id = ANY($1)")
+                .bind(oracle_ids)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| GetScryfallDataError::Database(e.into()))?;
+        let scryfall_data: Vec<ScryfallData> = db_rows
+            .into_iter()
+            .map(ScryfallData::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(GetScryfallDataError::Database)?;
+        if scryfall_data.is_empty() {
+            return Ok(vec![]);
+        }
+        let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
+        let card_profiles = self
+            .get_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
+            .await?;
+        let cards = card_profiles.sleeve(scryfall_data);
+        Ok(cards)
+    }
+
     /// Composes `search_scryfall_data` results with card profiles into `Card` values.
     async fn search_cards(&self, request: &CardQuery) -> Result<Vec<Card>, SearchCardsError> {
         let scryfall_data = self.search_scryfall_data(request).await?;

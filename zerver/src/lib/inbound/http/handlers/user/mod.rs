@@ -1,5 +1,7 @@
 //! User profile handlers.
 
+/// Commander maybeboard handlers (per-user "maybe this commander" list).
+pub mod commander_maybeboard;
 /// Returns the authenticated user's display preferences.
 pub mod get_preferences;
 /// Returns the authenticated user's profile.

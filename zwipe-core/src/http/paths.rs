@@ -184,6 +184,18 @@ pub fn unskip_deck_card_route(deck_id: Uuid, oracle_id: Uuid) -> String {
     format!("/api/deck/{}/suppressions/{}", deck_id, oracle_id)
 }
 
+pub fn get_commander_maybeboard_route() -> String {
+    "/api/user/commander-maybeboard".to_string()
+}
+
+pub fn add_commander_maybeboard_card_route(oracle_id: Uuid) -> String {
+    format!("/api/user/commander-maybeboard/{}", oracle_id)
+}
+
+pub fn remove_commander_maybeboard_card_route(oracle_id: Uuid) -> String {
+    format!("/api/user/commander-maybeboard/{}", oracle_id)
+}
+
 pub fn import_archidekt_deck_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}/import/archidekt", deck_id)
 }

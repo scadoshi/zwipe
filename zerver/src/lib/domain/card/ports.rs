@@ -5,10 +5,6 @@
 //! for fast querying.
 
 use crate::domain::BoxFuture;
-use std::future::Future;
-
-use chrono::{DateTime, Utc};
-
 use crate::{
     domain::card::{
         models::{search_card::error::SearchCardsError, zervice_metrics::ZerviceMetrics},
@@ -30,6 +26,8 @@ use crate::{
     },
     inbound::external::scryfall::{bulk::BulkEndpoint, oracle_tag::OracleTag as ScryfallOracleTag},
 };
+use chrono::{DateTime, Utc};
+use std::future::Future;
 use zwipe_core::domain::card::{
     Card, card_profile::CardProfile, oracle_tag::OracleTag, scryfall_data::ScryfallData,
     search_card::card_filter::CardQuery,
@@ -187,6 +185,14 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn get_printings(
         &self,
         oracle_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
+
+    /// Retrieves complete cards by oracle ids — at most one card per oracle,
+    /// the preferred printing per `latest_cards`. Unknown ids are silently
+    /// absent; row order is unspecified.
+    fn get_latest_cards_by_oracle_ids(
+        &self,
+        oracle_ids: &[uuid::Uuid],
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
     /// Searches for complete cards matching filter criteria.

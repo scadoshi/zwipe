@@ -13,6 +13,7 @@ use crate::domain::{
             deck::{
                 clear_deck_suppressions::ClearDeckSuppressionsError,
                 clone_deck::CloneDeckError,
+                commander_maybeboard::CommanderMaybeboardError,
                 create_deck_profile::CreateDeckProfileError,
                 delete_deck::DeleteDeckError,
                 get_deck::GetDeckError,
@@ -40,6 +41,7 @@ use zwipe_core::domain::{
         requests::{
             clear_deck_suppressions::ClearDeckSuppressions,
             clone_deck::CloneDeck,
+            commander_maybeboard::CommanderMaybeboardCard,
             create_deck_card::CreateDeckCard,
             create_deck_profile::CreateDeckProfile,
             delete_deck::DeleteDeck,
@@ -58,8 +60,8 @@ use zwipe_core::domain::{
 };
 
 use crate::domain::deck::{
-    MAX_CARDS_PER_DECK, MAX_DECKS_PER_USER, UNVERIFIED_MAX_CARDS_PER_DECK,
-    UNVERIFIED_MAX_DECKS_PER_USER,
+    MAX_CARDS_PER_DECK, MAX_COMMANDER_MAYBEBOARD, MAX_DECKS_PER_USER,
+    UNVERIFIED_MAX_CARDS_PER_DECK, UNVERIFIED_MAX_DECKS_PER_USER,
 };
 
 /// Deck service implementation handling deck building and card management operations.
@@ -435,6 +437,51 @@ where
 
     async fn unskip_deck_card(&self, request: &SkipDeckCard) -> Result<(), SkipDeckCardError> {
         self.deck_repo.unskip_deck_card(request).await
+    }
+
+    async fn get_commander_maybeboard(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<Card>, CommanderMaybeboardError> {
+        let oracle_ids = self
+            .deck_repo
+            .get_commander_maybeboard_oracle_ids(user_id)
+            .await?;
+        let cards = self
+            .card_repo
+            .get_latest_cards_by_oracle_ids(&oracle_ids)
+            .await
+            .map_err(|e| CommanderMaybeboardError::Database(e.into()))?;
+        // Re-impose save order (newest first) — ANY($1) hydration is
+        // unordered, and an entry whose card vanished from serving drops out.
+        let mut by_oracle: HashMap<Uuid, Card> = cards
+            .into_iter()
+            .filter_map(|card| card.scryfall_data.oracle_id.map(|oid| (oid, card)))
+            .collect();
+        Ok(oracle_ids
+            .iter()
+            .filter_map(|oid| by_oracle.remove(oid))
+            .collect())
+    }
+
+    async fn add_commander_maybeboard_card(
+        &self,
+        request: &CommanderMaybeboardCard,
+    ) -> Result<(), CommanderMaybeboardError> {
+        // The cap VALUE is policy and stays here; the check runs inside the
+        // repo's transaction (under the user row lock).
+        self.deck_repo
+            .add_commander_maybeboard_card(request, MAX_COMMANDER_MAYBEBOARD)
+            .await
+    }
+
+    async fn remove_commander_maybeboard_card(
+        &self,
+        request: &CommanderMaybeboardCard,
+    ) -> Result<(), CommanderMaybeboardError> {
+        self.deck_repo
+            .remove_commander_maybeboard_card(request)
+            .await
     }
 
     async fn import_deck_cards(

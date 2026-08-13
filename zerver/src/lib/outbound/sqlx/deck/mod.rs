@@ -12,6 +12,7 @@ use crate::{
         models::{
             deck::{
                 clear_deck_suppressions::ClearDeckSuppressionsError, clone_deck::CloneDeckError,
+                commander_maybeboard::CommanderMaybeboardError,
                 create_deck_profile::CreateDeckProfileError, delete_deck::DeleteDeckError,
                 get_deck_profile::GetDeckProfileError, share_deck::ShareDeckError,
                 skip_deck_card::SkipDeckCardError, update_deck_profile::UpdateDeckProfileError,
@@ -38,7 +39,8 @@ use zwipe_core::domain::deck::{
     Board, DeckCard, DeckName, DeckOtherTag, DeckTag,
     deck_profile::DeckProfile,
     requests::{
-        clear_deck_suppressions::ClearDeckSuppressions, create_deck_card::CreateDeckCard,
+        clear_deck_suppressions::ClearDeckSuppressions,
+        commander_maybeboard::CommanderMaybeboardCard, create_deck_card::CreateDeckCard,
         create_deck_profile::CreateDeckProfile, delete_deck::DeleteDeck,
         delete_deck_card::DeleteDeckCard, get_deck_profile::GetDeckProfile,
         get_deck_profiles::GetDeckProfiles, skip_deck_card::SkipDeckCard,
@@ -602,6 +604,98 @@ impl DeckRepository for Postgres {
         .execute(&self.pool)
         .await
         .map_err(|e| SkipDeckCardError::Database(e.into()))?;
+        Ok(())
+    }
+
+    async fn get_commander_maybeboard_oracle_ids(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> Result<Vec<uuid::Uuid>, CommanderMaybeboardError> {
+        let oracle_ids = query_scalar!(
+            r#"SELECT oracle_id FROM commander_maybeboard
+               WHERE user_id = $1
+               ORDER BY created_at DESC"#,
+            user_id,
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| CommanderMaybeboardError::Database(e.into()))?;
+        Ok(oracle_ids)
+    }
+
+    async fn add_commander_maybeboard_card(
+        &self,
+        request: &CommanderMaybeboardCard,
+        cap: i64,
+    ) -> Result<(), CommanderMaybeboardError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| CommanderMaybeboardError::Database(e.into()))?;
+        // The user row lock serializes concurrent adds for one user — there
+        // is no parent row like a deck to lock, so the count-then-insert
+        // TOCTOU closes here instead.
+        query!(
+            "SELECT 1 as one FROM users WHERE id = $1 FOR UPDATE",
+            request.user_id
+        )
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| CommanderMaybeboardError::Database(e.into()))?;
+        let known = query_scalar!(
+            r#"SELECT EXISTS(SELECT 1 FROM latest_cards WHERE oracle_id = $1) as "exists!""#,
+            request.oracle_id,
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|e| CommanderMaybeboardError::Database(e.into()))?;
+        if !known {
+            return Err(CommanderMaybeboardError::UnknownCard);
+        }
+        let inserted = query!(
+            r#"INSERT INTO commander_maybeboard (user_id, oracle_id)
+               VALUES ($1, $2)
+               ON CONFLICT (user_id, oracle_id) DO NOTHING"#,
+            request.user_id,
+            request.oracle_id,
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| CommanderMaybeboardError::Database(e.into()))?
+        .rows_affected();
+        // A duplicate add is a no-op success even at cap; only a NEW entry
+        // can tip the count over.
+        if inserted > 0 {
+            let count = query_scalar!(
+                r#"SELECT COUNT(*) as "count!" FROM commander_maybeboard WHERE user_id = $1"#,
+                request.user_id,
+            )
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| CommanderMaybeboardError::Database(e.into()))?;
+            if count > cap {
+                return Err(CommanderMaybeboardError::LimitReached);
+            }
+        }
+        tx.commit()
+            .await
+            .map_err(|e| CommanderMaybeboardError::Database(e.into()))?;
+        Ok(())
+    }
+
+    async fn remove_commander_maybeboard_card(
+        &self,
+        request: &CommanderMaybeboardCard,
+    ) -> Result<(), CommanderMaybeboardError> {
+        query!(
+            "DELETE FROM commander_maybeboard WHERE user_id = $1 AND oracle_id = $2",
+            request.user_id,
+            request.oracle_id,
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| CommanderMaybeboardError::Database(e.into()))?;
         Ok(())
     }
 

@@ -19,6 +19,10 @@ pub const UNVERIFIED_MAX_DECKS_PER_USER: i64 = 1;
 /// email address.
 pub const UNVERIFIED_MAX_CARDS_PER_DECK: i64 = 100;
 
+/// Maximum entries on a user's commander maybeboard. Over-cap adds are
+/// rejected (422), not evicted — every entry is a deliberate save.
+pub const MAX_COMMANDER_MAYBEBOARD: i64 = 50;
+
 /// Deck models and value objects (DeckProfile, Deck, DeckCard, operations).
 pub mod models;
 

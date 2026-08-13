@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO commander_maybeboard (user_id, oracle_id)\n               VALUES ($1, $2)\n               ON CONFLICT (user_id, oracle_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d371fb9b89d5fc4eea513a6bc67805c4affef58d46060c964121729ff14c4b0b"
+}

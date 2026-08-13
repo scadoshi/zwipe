@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM commander_maybeboard WHERE user_id = $1 AND oracle_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "728d4c69bee3cc7c0c2726bc99083b9d046df0fb0ebbfcf7f4a9d5b375b3ae50"
+}

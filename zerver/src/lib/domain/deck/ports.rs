@@ -10,6 +10,7 @@ use crate::domain::deck::models::{
     deck::{
         clear_deck_suppressions::ClearDeckSuppressionsError,
         clone_deck::CloneDeckError,
+        commander_maybeboard::CommanderMaybeboardError,
         create_deck_profile::CreateDeckProfileError,
         delete_deck::DeleteDeckError,
         get_deck::GetDeckError,
@@ -35,6 +36,7 @@ use zwipe_core::domain::{
         requests::{
             clear_deck_suppressions::ClearDeckSuppressions,
             clone_deck::CloneDeck,
+            commander_maybeboard::CommanderMaybeboardCard,
             create_deck_card::CreateDeckCard,
             create_deck_profile::CreateDeckProfile,
             delete_deck::DeleteDeck,
@@ -178,6 +180,29 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         &self,
         request: &SkipDeckCard,
     ) -> impl Future<Output = Result<(), SkipDeckCardError>> + Send;
+
+    /// Lists a user's commander maybeboard oracle ids, newest save first.
+    fn get_commander_maybeboard_oracle_ids(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<Vec<uuid::Uuid>, CommanderMaybeboardError>> + Send;
+
+    /// Adds a commander maybeboard entry (idempotent; duplicate = no-op
+    /// success). The `latest_cards` existence check, the insert, and the cap
+    /// check all run in one transaction under the user row lock (`FOR UPDATE`
+    /// serializes concurrent adds, closing the count-then-insert TOCTOU).
+    /// `cap` is resolved by the domain; policy stays there.
+    fn add_commander_maybeboard_card(
+        &self,
+        request: &CommanderMaybeboardCard,
+        cap: i64,
+    ) -> impl Future<Output = Result<(), CommanderMaybeboardError>> + Send;
+
+    /// Removes a commander maybeboard entry (idempotent).
+    fn remove_commander_maybeboard_card(
+        &self,
+        request: &CommanderMaybeboardCard,
+    ) -> impl Future<Output = Result<(), CommanderMaybeboardError>> + Send;
 
     // ========
     //  clone
@@ -335,6 +360,25 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         request: &SkipDeckCard,
     ) -> impl Future<Output = Result<(), SkipDeckCardError>> + Send;
 
+    /// Returns the user's commander maybeboard hydrated to full cards
+    /// (preferred printing via `latest_cards`), newest save first.
+    fn get_commander_maybeboard(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<Vec<Card>, CommanderMaybeboardError>> + Send;
+
+    /// Adds a commander maybeboard entry (idempotent, capped).
+    fn add_commander_maybeboard_card(
+        &self,
+        request: &CommanderMaybeboardCard,
+    ) -> impl Future<Output = Result<(), CommanderMaybeboardError>> + Send;
+
+    /// Removes a commander maybeboard entry (idempotent).
+    fn remove_commander_maybeboard_card(
+        &self,
+        request: &CommanderMaybeboardCard,
+    ) -> impl Future<Output = Result<(), CommanderMaybeboardError>> + Send;
+
     /// Imports cards from a plain-text decklist with authorization check.
     fn import_deck_cards(
         &self,
@@ -482,6 +526,24 @@ pub trait ErasedDeckService: Send + Sync + 'static {
         request: &'a SkipDeckCard,
     ) -> BoxFuture<'a, Result<(), SkipDeckCardError>>;
 
+    /// See [`DeckService::get_commander_maybeboard`].
+    fn get_commander_maybeboard(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> BoxFuture<'_, Result<Vec<Card>, CommanderMaybeboardError>>;
+
+    /// See [`DeckService::add_commander_maybeboard_card`].
+    fn add_commander_maybeboard_card<'a>(
+        &'a self,
+        request: &'a CommanderMaybeboardCard,
+    ) -> BoxFuture<'a, Result<(), CommanderMaybeboardError>>;
+
+    /// See [`DeckService::remove_commander_maybeboard_card`].
+    fn remove_commander_maybeboard_card<'a>(
+        &'a self,
+        request: &'a CommanderMaybeboardCard,
+    ) -> BoxFuture<'a, Result<(), CommanderMaybeboardError>>;
+
     /// See [`DeckService::import_deck_cards`].
     fn import_deck_cards<'a>(
         &'a self,
@@ -625,6 +687,27 @@ where
         request: &'a SkipDeckCard,
     ) -> BoxFuture<'a, Result<(), SkipDeckCardError>> {
         Box::pin(DeckService::unskip_deck_card(self, request))
+    }
+
+    fn get_commander_maybeboard(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> BoxFuture<'_, Result<Vec<Card>, CommanderMaybeboardError>> {
+        Box::pin(DeckService::get_commander_maybeboard(self, user_id))
+    }
+
+    fn add_commander_maybeboard_card<'a>(
+        &'a self,
+        request: &'a CommanderMaybeboardCard,
+    ) -> BoxFuture<'a, Result<(), CommanderMaybeboardError>> {
+        Box::pin(DeckService::add_commander_maybeboard_card(self, request))
+    }
+
+    fn remove_commander_maybeboard_card<'a>(
+        &'a self,
+        request: &'a CommanderMaybeboardCard,
+    ) -> BoxFuture<'a, Result<(), CommanderMaybeboardError>> {
+        Box::pin(DeckService::remove_commander_maybeboard_card(self, request))
     }
 
     fn import_deck_cards<'a>(
