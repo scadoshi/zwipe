@@ -927,7 +927,9 @@ button {
     box-shadow: var(--shadow-sm);
     cursor: pointer;
     transition: all 0.2s ease;
-    margin-bottom: 0.5rem;
+    /* Matches the deck profile's section gap and the deck cards' card-group
+       spacing (one 1rem rhythm across all three list surfaces). */
+    margin-bottom: 1rem;
 }
 
 .deck-list-row {
