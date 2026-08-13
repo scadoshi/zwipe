@@ -1159,6 +1159,62 @@ button {
     height: 0.65rem;
 }
 
+/* Chip-row skeleton (Group by / Show / Boards / Quick add rows) — mirrors
+   .chip-row: a short label bar then chips, wrapping like the real thing. */
+.skeleton-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    margin-bottom: 0.6rem;
+}
+
+.skeleton-chip-row-label {
+    width: 3.5rem;
+    height: 0.75rem;
+    flex: 0 0 auto;
+}
+
+/* Quick add stand-in: input-height bar filling the rest of its row. */
+.skeleton-input-bar {
+    flex: 1;
+    height: 2.1rem;
+    border-radius: 0.5rem;
+}
+
+/* Featured cards strip (command zone + MVPs): three card-shaped ghosts with
+   a name bar and role chip under each, like the real FeaturedCards. */
+.skeleton-featured-strip {
+    display: flex;
+    gap: 0.75rem;
+    width: 100%;
+    margin: 0.5rem 0 0.75rem 0;
+}
+
+.skeleton-featured-card {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.skeleton-card-image {
+    width: 100%;
+    aspect-ratio: 5 / 7;
+    border-radius: 0.5rem;
+}
+
+/* Row art thumbnail (the real rows lead with a landscape art crop). */
+.skeleton-card-thumb {
+    width: 2.6rem;
+    height: 1.9rem;
+    border-radius: 0.35rem;
+    flex: 0 0 auto;
+}
+
 /* Deck card list skeleton (deck cards screen) */
 .skeleton-card-list {
     display: flex;
@@ -1182,8 +1238,15 @@ button {
 }
 
 .skeleton-card-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
     padding: 0.65rem 1rem;
     border-bottom: 1px solid var(--border-secondary);
+}
+
+.skeleton-card-row .skeleton-card-bar-row {
+    flex: 1;
 }
 
 .skeleton-card-row:last-child {
