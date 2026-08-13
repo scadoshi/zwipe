@@ -52,7 +52,7 @@ use crate::inbound::http::handlers::{
     },
     user::{
         commander_maybeboard::{
-            add_commander_maybeboard_card, get_commander_maybeboard,
+            add_commander_maybeboard_card, clear_commander_maybeboard, get_commander_maybeboard,
             remove_commander_maybeboard_card,
         },
         get_preferences::get_preferences,
@@ -571,7 +571,10 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                         )
                         .route("/hint", patch(mark_hint_shown))
                         .route("/metrics", get(get_my_metrics))
-                        .route("/commander-maybeboard", get(get_commander_maybeboard))
+                        .route(
+                            "/commander-maybeboard",
+                            get(get_commander_maybeboard).delete(clear_commander_maybeboard),
+                        )
                         .route(
                             "/commander-maybeboard/{oracle_id}",
                             post(add_commander_maybeboard_card)

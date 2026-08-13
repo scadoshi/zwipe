@@ -196,6 +196,10 @@ pub fn remove_commander_maybeboard_card_route(oracle_id: Uuid) -> String {
     format!("/api/user/commander-maybeboard/{}", oracle_id)
 }
 
+pub fn clear_commander_maybeboard_route() -> String {
+    "/api/user/commander-maybeboard".to_string()
+}
+
 pub fn import_archidekt_deck_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}/import/archidekt", deck_id)
 }

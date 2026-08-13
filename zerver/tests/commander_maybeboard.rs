@@ -110,6 +110,42 @@ async fn unknown_and_invalid_oracle_ids_reject(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
+async fn clear_wipes_the_whole_maybeboard(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("wiper").await;
+    app.verify_email(&uid).await;
+
+    let a = card("Alpha Cmdr").mono("R");
+    let b = card("Bravo Cmdr").mono("G");
+    let oracles = [a.oracle_id().unwrap(), b.oracle_id().unwrap()];
+    seed_cards(&pool, &[a, b]).await;
+
+    for oracle in oracles {
+        let (status, _) = app
+            .post(
+                &format!("/api/user/commander-maybeboard/{oracle}"),
+                json!({}),
+                Some(&token),
+            )
+            .await;
+        assert_eq!(status, StatusCode::NO_CONTENT);
+    }
+    assert_eq!(maybeboard_names(&app, &token).await.len(), 2);
+
+    // clear empties it; clearing again is still a no-op success
+    for _ in 0..2 {
+        let (status, _) = app
+            .delete("/api/user/commander-maybeboard", Some(&token))
+            .await;
+        assert_eq!(status, StatusCode::NO_CONTENT, "clear");
+    }
+    assert!(
+        maybeboard_names(&app, &token).await.is_empty(),
+        "cleared to empty"
+    );
+}
+
+#[sqlx::test]
 async fn cap_rejects_but_duplicates_still_ok(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, uid) = app.register("hoarder").await;

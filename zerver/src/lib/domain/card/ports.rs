@@ -4,24 +4,26 @@
 //! All card data originates from the Scryfall API and is synced to the local database
 //! for fast querying.
 
-use crate::domain::BoxFuture;
 use crate::{
-    domain::card::{
-        models::{search_card::error::SearchCardsError, zervice_metrics::ZerviceMetrics},
-        requests::{
-            create_card::CreateCardError,
-            get_artists::GetArtistsError,
-            get_card::GetCardError,
-            get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
-            get_card_types::GetCardTypesError,
-            get_keywords::GetKeywordsError,
-            get_languages::GetLanguagesError,
-            get_oracle_tags::GetOracleTagsError,
-            get_oracle_words::GetOracleWordsError,
-            get_scryfall_data::{
-                GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
+    domain::{
+        BoxFuture,
+        card::{
+            models::{search_card::error::SearchCardsError, zervice_metrics::ZerviceMetrics},
+            requests::{
+                create_card::CreateCardError,
+                get_artists::GetArtistsError,
+                get_card::GetCardError,
+                get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
+                get_card_types::GetCardTypesError,
+                get_keywords::GetKeywordsError,
+                get_languages::GetLanguagesError,
+                get_oracle_tags::GetOracleTagsError,
+                get_oracle_words::GetOracleWordsError,
+                get_scryfall_data::{
+                    GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
+                },
+                get_sets::GetSetsError,
             },
-            get_sets::GetSetsError,
         },
     },
     inbound::external::scryfall::{bulk::BulkEndpoint, oracle_tag::OracleTag as ScryfallOracleTag},

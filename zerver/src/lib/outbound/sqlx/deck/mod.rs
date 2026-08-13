@@ -699,6 +699,20 @@ impl DeckRepository for Postgres {
         Ok(())
     }
 
+    async fn clear_commander_maybeboard(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> Result<u64, CommanderMaybeboardError> {
+        let result = query!(
+            "DELETE FROM commander_maybeboard WHERE user_id = $1",
+            user_id
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| CommanderMaybeboardError::Database(e.into()))?;
+        Ok(result.rows_affected())
+    }
+
     async fn delete_deck_card(&self, request: &DeleteDeckCard) -> Result<(), DeleteDeckCardError> {
         if !request
             .user_id

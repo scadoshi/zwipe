@@ -77,6 +77,21 @@ pub async fn add_commander_maybeboard_card(
     Ok(StatusCode::NO_CONTENT)
 }
 
+/// Deletes the authenticated user's entire commander maybeboard (idempotent).
+#[cfg(feature = "zerver")]
+pub async fn clear_commander_maybeboard(
+    State(state): State<AppState>,
+    user: AuthenticatedUser,
+) -> Result<StatusCode, ApiError> {
+    state
+        .deck_service
+        .clear_commander_maybeboard(user.id)
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
 /// Removes a commander from the authenticated user's maybeboard (idempotent).
 #[cfg(feature = "zerver")]
 pub async fn remove_commander_maybeboard_card(

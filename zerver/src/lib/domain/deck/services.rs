@@ -484,6 +484,13 @@ where
             .await
     }
 
+    async fn clear_commander_maybeboard(
+        &self,
+        user_id: Uuid,
+    ) -> Result<u64, CommanderMaybeboardError> {
+        self.deck_repo.clear_commander_maybeboard(user_id).await
+    }
+
     async fn import_deck_cards(
         &self,
         request: &ImportDeckCards,

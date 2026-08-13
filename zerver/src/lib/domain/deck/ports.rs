@@ -3,31 +3,32 @@
 //! This module defines the interfaces (ports) for deck management in hexagonal architecture.
 //! Decks are collections of Magic: The Gathering cards with metadata like name, commander, and copy limits.
 
-use crate::domain::BoxFuture;
-use std::future::Future;
-
-use crate::domain::deck::models::{
-    deck::{
-        clear_deck_suppressions::ClearDeckSuppressionsError,
-        clone_deck::CloneDeckError,
-        commander_maybeboard::CommanderMaybeboardError,
-        create_deck_profile::CreateDeckProfileError,
-        delete_deck::DeleteDeckError,
-        get_deck::GetDeckError,
-        get_deck_profile::GetDeckProfileError,
-        get_deck_tokens::GetDeckTokensError,
-        import_archidekt::ArchidektCard,
-        search_deck_cards::SearchDeckCardsError,
-        share_deck::{GetSharedDeckError, ShareDeckError, SharedDeck},
-        skip_deck_card::SkipDeckCardError,
-        update_deck_profile::UpdateDeckProfileError,
-    },
-    deck_card::{
-        create_deck_card::CreateDeckCardError, delete_deck_card::DeleteDeckCardError,
-        get_deck_card::GetDeckCardError, import_deck_cards::ImportDeckCardsError,
-        update_deck_card::UpdateDeckCardError,
+use crate::domain::{
+    BoxFuture,
+    deck::models::{
+        deck::{
+            clear_deck_suppressions::ClearDeckSuppressionsError,
+            clone_deck::CloneDeckError,
+            commander_maybeboard::CommanderMaybeboardError,
+            create_deck_profile::CreateDeckProfileError,
+            delete_deck::DeleteDeckError,
+            get_deck::GetDeckError,
+            get_deck_profile::GetDeckProfileError,
+            get_deck_tokens::GetDeckTokensError,
+            import_archidekt::ArchidektCard,
+            search_deck_cards::SearchDeckCardsError,
+            share_deck::{GetSharedDeckError, ShareDeckError, SharedDeck},
+            skip_deck_card::SkipDeckCardError,
+            update_deck_profile::UpdateDeckProfileError,
+        },
+        deck_card::{
+            create_deck_card::CreateDeckCardError, delete_deck_card::DeleteDeckCardError,
+            get_deck_card::GetDeckCardError, import_deck_cards::ImportDeckCardsError,
+            update_deck_card::UpdateDeckCardError,
+        },
     },
 };
+use std::future::Future;
 use zwipe_core::domain::{
     card::{Card, search_card::card_filter::CardQuery},
     deck::{
@@ -204,6 +205,13 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         request: &CommanderMaybeboardCard,
     ) -> impl Future<Output = Result<(), CommanderMaybeboardError>> + Send;
 
+    /// Deletes a user's entire commander maybeboard, returning the number of
+    /// rows removed. Idempotent.
+    fn clear_commander_maybeboard(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<u64, CommanderMaybeboardError>> + Send;
+
     // ========
     //  clone
     // ========
@@ -379,6 +387,13 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         request: &CommanderMaybeboardCard,
     ) -> impl Future<Output = Result<(), CommanderMaybeboardError>> + Send;
 
+    /// Clears the user's entire commander maybeboard (idempotent), returning
+    /// rows removed.
+    fn clear_commander_maybeboard(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<u64, CommanderMaybeboardError>> + Send;
+
     /// Imports cards from a plain-text decklist with authorization check.
     fn import_deck_cards(
         &self,
@@ -544,6 +559,12 @@ pub trait ErasedDeckService: Send + Sync + 'static {
         request: &'a CommanderMaybeboardCard,
     ) -> BoxFuture<'a, Result<(), CommanderMaybeboardError>>;
 
+    /// See [`DeckService::clear_commander_maybeboard`].
+    fn clear_commander_maybeboard(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> BoxFuture<'_, Result<u64, CommanderMaybeboardError>>;
+
     /// See [`DeckService::import_deck_cards`].
     fn import_deck_cards<'a>(
         &'a self,
@@ -708,6 +729,13 @@ where
         request: &'a CommanderMaybeboardCard,
     ) -> BoxFuture<'a, Result<(), CommanderMaybeboardError>> {
         Box::pin(DeckService::remove_commander_maybeboard_card(self, request))
+    }
+
+    fn clear_commander_maybeboard(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> BoxFuture<'_, Result<u64, CommanderMaybeboardError>> {
+        Box::pin(DeckService::clear_commander_maybeboard(self, user_id))
     }
 
     fn import_deck_cards<'a>(
