@@ -1,9 +1,10 @@
 # Commander maybeboard
 
-**Status: SPECCED 2026-08-13** (owner direction 2026-08-12; grew out of the
-"commander shortlist" feature request of 2026-07-11 — this file was
-`commander_shortlist.md`). Open decisions marked **OWNER** below; everything
-else is build-ready.
+**Status: BUILD-READY 2026-08-13** (owner direction 2026-08-12; grew out of
+the "commander shortlist" feature request of 2026-07-11 — this file was
+`commander_shortlist.md`). All three owner decisions resolved 2026-08-13 at
+the proposals: entry point = Decks action bar "Commanders" button,
+keep-entry-after-create = keep, cap = 50.
 
 ## The need (unchanged from the original request)
 
@@ -46,10 +47,10 @@ deck's "Maybeboard"). Rejected: "shortlist" (new vocab), "saved commanders"
     picking one to save it here").
 - **Hints:** one-time `commander_maybeboard` key (hints_shown, no migration)
   on first screen visit; the swipe-select hint gains an up-swipe bullet.
-- **OWNER — placement of the screen's entry point.** Proposal: a "Commanders"
-  button on the Decks screen action bar (Back · Commanders · Create) — it's
-  where deck-starting thoughts live. Alternative: a Home tile.
-- **OWNER — after "Create deck with this commander":** proposal — the entry
+- **Entry point (decided 2026-08-13):** a "Commanders" button on the Decks
+  screen action bar (Back · Commanders · Create) — it's where deck-starting
+  thoughts live. (Alternative considered: a Home tile.)
+- **After "Create deck with this commander" (decided 2026-08-13):** the entry
   STAYS on the maybeboard (removal is one tap; auto-removal would surprise
   anyone building two decks around one commander).
 
@@ -70,7 +71,7 @@ CREATE TABLE commander_maybeboard (
   hydrated through `latest_cards` on read, so entries always show the
   preferred printing (the 2026-08-12 English-preference fix makes this the
   right row by construction).
-- **Cap: 50 per user** (OWNER may adjust) — enforced in the service inside
+- **Cap: 50 per user (decided 2026-08-13)** — enforced in the service inside
   the insert transaction, `MAX_CARDS_PER_DECK` pattern.
 
 ## API (auth'd, private nest)
