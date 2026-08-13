@@ -404,80 +404,100 @@ pub fn DeckList() -> Element {
                 div { class: "flex-col",
                     style: "max-width: 40rem; width: 100%; padding: 2rem;",
 
-                    match &*deck_profiles_resource.read() {
-                        Some(Ok(deck_profiles)) => {
-                            if deck_profiles.is_empty() {
-                                rsx! {
-                                    div { class: "message-empty",
-                                        p { "No decks" }
+                    {
+                        // Snapshot the resource once: Some(profiles) when loaded,
+                        // None while loading (errors render their own message).
+                        let profiles: Option<Vec<DeckProfile>> = deck_profiles_resource
+                            .read()
+                            .as_ref()
+                            .and_then(|r| r.as_ref().ok())
+                            .cloned();
+                        let errored = matches!(&*deck_profiles_resource.read(), Some(Err(_)));
+                        let loading = !errored && profiles.is_none();
+
+                        // The chrome is static, so it renders real from the first
+                        // frame: Group by's options never load, and Show's All +
+                        // color pips stand at all five until the decks narrow
+                        // them. Only the tag chips (deck-derived) ghost while
+                        // loading; the deck tiles below stay skeleton.
+                        let colors_shown: Vec<Color> = match &profiles {
+                            Some(deck_profiles) => {
+                                let all: HashSet<Color> = deck_profiles
+                                    .iter()
+                                    .flat_map(identity_colors)
+                                    .collect();
+                                Color::all().into_iter().filter(|c| all.contains(c)).collect()
+                            }
+                            None => Color::all().to_vec(),
+                        };
+                        let tags_present: Vec<(String, String)> = profiles
+                            .as_ref()
+                            .map(|deck_profiles| {
+                                let mut seen = HashSet::new();
+                                let mut tags: Vec<(String, String)> = deck_profiles
+                                    .iter()
+                                    .flat_map(|p| tag_labels(p))
+                                    .filter(|(key, _)| seen.insert(key.clone()))
+                                    .collect();
+                                tags.sort_by_key(|(_, label)| label.clone());
+                                tags
+                            })
+                            .unwrap_or_default();
+                        let all_on = selected_colors().is_empty() && selected_tags().is_empty();
+                        let filtered: Option<Vec<DeckProfile>> = profiles.as_ref().map(|deck_profiles| {
+                            let mut kept: Vec<DeckProfile> = deck_profiles
+                                .iter()
+                                .filter(|p| matches_filters(p, &selected_colors(), &selected_tags()))
+                                .cloned()
+                                .collect();
+                            kept.sort_by_key(|p| p.name.to_lowercase());
+                            kept
+                        });
+                        // Hide the chrome only when there is nothing it could act
+                        // on: a loaded-and-empty list, or a load error.
+                        let show_rows = loading || profiles.as_ref().is_some_and(|p| !p.is_empty());
+                        rsx! {
+                            if show_rows {
+                                div { class: "chip-row",
+                                    span { class: "chip-row-label", "Group by:" }
+                                    for option in DeckGroupBy::all() {
+                                        Chip {
+                                            key: "{option}",
+                                            selected: group_by() == option,
+                                            onclick: move |_| group_by.set(option),
+                                            "{option}"
+                                        }
                                     }
                                 }
-                            } else {
-                                // Chip values come from the decks themselves: only
-                                // colors and tags that exist somewhere are offered.
-                                let colors_present: Vec<Color> = {
-                                    let all: HashSet<Color> = deck_profiles
-                                        .iter()
-                                        .flat_map(identity_colors)
-                                        .collect();
-                                    Color::all().into_iter().filter(|c| all.contains(c)).collect()
-                                };
-                                let tags_present: Vec<(String, String)> = {
-                                    let mut seen = HashSet::new();
-                                    let mut tags: Vec<(String, String)> = deck_profiles
-                                        .iter()
-                                        .flat_map(|p| tag_labels(p))
-                                        .filter(|(key, _)| seen.insert(key.clone()))
-                                        .collect();
-                                    tags.sort_by_key(|(_, label)| label.clone());
-                                    tags
-                                };
-                                let all_on = selected_colors().is_empty() && selected_tags().is_empty();
-                                let filtered: Vec<DeckProfile> = {
-                                    let mut kept: Vec<DeckProfile> = deck_profiles
-                                        .iter()
-                                        .filter(|p| matches_filters(p, &selected_colors(), &selected_tags()))
-                                        .cloned()
-                                        .collect();
-                                    kept.sort_by_key(|p| p.name.to_lowercase());
-                                    kept
-                                };
-                                let groups = group_decks(&filtered, group_by());
-                                rsx! {
-                                    div { class: "chip-row",
-                                        span { class: "chip-row-label", "Group by:" }
-                                        for option in DeckGroupBy::all() {
-                                            Chip {
-                                                key: "{option}",
-                                                selected: group_by() == option,
-                                                onclick: move |_| group_by.set(option),
-                                                "{option}"
-                                            }
+                                div { class: "chip-row",
+                                    span { class: "chip-row-label", "Show:" }
+                                    Chip {
+                                        selected: all_on,
+                                        onclick: move |_| {
+                                            selected_colors.write().clear();
+                                            selected_tags.write().clear();
+                                        },
+                                        "All"
+                                    }
+                                    for color in colors_shown {
+                                        Chip {
+                                            key: "{color.to_short_name()}",
+                                            selected: selected_colors().contains(&color),
+                                            onclick: move |_| {
+                                                let mut colors = selected_colors.write();
+                                                if !colors.remove(&color) {
+                                                    colors.insert(color);
+                                                }
+                                            },
+                                            i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
                                         }
                                     }
-                                    div { class: "chip-row",
-                                        span { class: "chip-row-label", "Show:" }
-                                        Chip {
-                                            selected: all_on,
-                                            onclick: move |_| {
-                                                selected_colors.write().clear();
-                                                selected_tags.write().clear();
-                                            },
-                                            "All"
+                                    if loading {
+                                        // Deck-derived tag chips ghost until the list lands.
+                                        for (i, size) in ["md", "sm", "lg", "sm", "md", "sm", "lg", "md"].iter().enumerate() {
+                                            div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
                                         }
-                                        for color in colors_present {
-                                            Chip {
-                                                key: "{color.to_short_name()}",
-                                                selected: selected_colors().contains(&color),
-                                                onclick: move |_| {
-                                                    let mut colors = selected_colors.write();
-                                                    if !colors.remove(&color) {
-                                                        colors.insert(color);
-                                                    }
-                                                },
-                                                i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
-                                            }
-                                        }
+                                    } else {
                                         for (key, label) in tags_present {
                                             Chip {
                                                 key: "{key}",
@@ -492,44 +512,48 @@ pub fn DeckList() -> Element {
                                             }
                                         }
                                     }
-                                    if filtered.is_empty() {
-                                        div { class: "message-empty",
-                                            p { "No decks match" }
-                                        }
+                                }
+                            }
+                            if errored {
+                                div { class: "message-empty",
+                                    p { "Could not load decks" }
+                                }
+                            } else if loading {
+                                DeckListSkeleton {}
+                            } else if profiles.as_ref().is_some_and(|p| p.is_empty()) {
+                                div { class: "message-empty",
+                                    p { "No decks" }
+                                }
+                            } else if let Some(filtered) = filtered {
+                                if filtered.is_empty() {
+                                    div { class: "message-empty",
+                                        p { "No decks match" }
                                     }
-                                    for group in groups {
-                                        if group_by() != DeckGroupBy::None {
-                                            div { class: "card-group-header deck-group-header",
-                                                if let Some(pips) = &group.pips
-                                                    && !pips.is_empty()
-                                                {
-                                                    for color in pips.clone() {
-                                                        i {
-                                                            key: "{color.to_short_name()}",
-                                                            class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                                                        }
+                                }
+                                for group in group_decks(&filtered, group_by()) {
+                                    if group_by() != DeckGroupBy::None {
+                                        div { class: "card-group-header deck-group-header",
+                                            if let Some(pips) = &group.pips
+                                                && !pips.is_empty()
+                                            {
+                                                for color in pips.clone() {
+                                                    i {
+                                                        key: "{color.to_short_name()}",
+                                                        class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
                                                     }
-                                                    " ({group.decks.len()})"
-                                                } else {
-                                                    "{group.header} ({group.decks.len()})"
                                                 }
+                                                " ({group.decks.len()})"
+                                            } else {
+                                                "{group.header} ({group.decks.len()})"
                                             }
                                         }
-                                        for profile in group.decks {
-                                            DeckRow { key: "{profile.id}", profile }
-                                        }
+                                    }
+                                    for profile in group.decks {
+                                        DeckRow { key: "{profile.id}", profile }
                                     }
                                 }
                             }
                         }
-                        Some(Err(_)) => rsx!{
-                            div { class : "message-empty",
-                                p { "Could not load decks" }
-                            }
-                        },
-                        None => rsx! {
-                            DeckListSkeleton {}
-                        },
                     }
 
                 }

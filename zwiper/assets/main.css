@@ -1159,30 +1159,6 @@ button {
     height: 0.65rem;
 }
 
-/* Chip-row skeleton (Group by / Show / Boards / Quick add rows) — mirrors
-   .chip-row: a short label bar then chips, wrapping like the real thing. */
-.skeleton-chip-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4rem;
-    width: 100%;
-    margin-bottom: 0.6rem;
-}
-
-.skeleton-chip-row-label {
-    width: 3.5rem;
-    height: 0.75rem;
-    flex: 0 0 auto;
-}
-
-/* Quick add stand-in: input-height bar filling the rest of its row. */
-.skeleton-input-bar {
-    flex: 1;
-    height: 2.1rem;
-    border-radius: 0.5rem;
-}
-
 /* Featured cards strip (command zone + MVPs): three card-shaped ghosts with
    a name bar and role chip under each, like the real FeaturedCards. */
 .skeleton-featured-strip {
@@ -1596,19 +1572,19 @@ button {
 /* Width variants so tag rows read like real mixed-length tags (xl stands in
    for a commander name). Base chip look comes from .skeleton-chip above. */
 .skeleton-chip-sm {
-    width: 4rem;
+    width: 2.6rem;
 }
 
 .skeleton-chip-md {
-    width: 5.5rem;
+    width: 4rem;
 }
 
 .skeleton-chip-lg {
-    width: 7rem;
+    width: 5.5rem;
 }
 
 .skeleton-chip-xl {
-    width: 11rem;
+    width: 9rem;
 }
 
 /* Export screen: a label bar + textarea-shaped block while the deck loads,

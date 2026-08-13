@@ -1329,8 +1329,32 @@ pub fn View(deck_id: Uuid) -> Element {
                                 span { key: "{tag}", class: "stat-chip stat-chip-other", "{tag.display_name()}" }
                             }
                         }
+                    } else if !deck_loaded() {
+                        // Identity ghost in the header's own spot until the
+                        // profile lands (the chip rows below render real —
+                        // they're static chrome, not data).
+                        div { class: "deck-cards-header",
+                            div { class: "skeleton-bar skeleton-deck-list-title" }
+                            div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                            div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                            div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                        }
                     }
 
+                    if !deck_loaded() && featured_cards.is_empty() {
+                        // Featured-cards ghost in place; vanishes on load for
+                        // decks with no command zone or MVPs (unknowable until
+                        // the data lands, same trade as the deck list's pips).
+                        div { class: "skeleton-featured-strip",
+                            for i in 0..3 {
+                                div { key: "{i}", class: "skeleton-featured-card",
+                                    div { class: "skeleton-bar skeleton-card-image" }
+                                    div { class: "skeleton-bar skeleton-card-bar-header" }
+                                    div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                                }
+                            }
+                        }
+                    }
                     FeaturedCards {
                         cards: featured_cards.clone(),
                         on_tap: move |card: Card| {
