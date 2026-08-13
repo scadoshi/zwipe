@@ -25,20 +25,22 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.9.0",
-    date: "",
-    entries: &[
-        "Swipe up while picking a commander to save it to your commander maybeboard.",
-        "Open the maybeboard from More on the Decks screen. Swipe deals commanders right there: right starts a deck with the pick, up saves it for later. Quick add saves commanders by name.",
-        "Maybeboard entries expand for details; Create deck starts a new deck with that commander and Remove drops it.",
-        "Shared deck pages on zwipe.net now carry the app's deck sections: Budget, Tags, Distributions, Mana, and Draw odds sit between the featured cards and the list, collapsed until you want them.",
-        "Card groups on shared deck pages collapse from their headers too, with the same arrow and ease as the app.",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.9.0",
+        date: "Aug 13, 2026",
+        entries: &[
+            "Swipe up while picking a commander to save it to your commander maybeboard.",
+            "Open the maybeboard from More on the Decks screen. Swipe deals commanders right there: right starts a deck with the pick, up saves it for later. Quick add saves commanders by name.",
+            "Maybeboard entries expand for details; Create deck starts a new deck with that commander and Remove drops it.",
+            "Expanded card rows inside grouped lists no longer stretch past the screen.",
+            "Shared deck pages on zwipe.net now carry the app's deck sections: Budget, Tags, Distributions, Mana, and Draw odds sit between the featured cards and the list, collapsed until you want them.",
+            "Card groups on shared deck pages collapse from their headers too, with the same arrow and ease as the app.",
+        ],
+    },
     Release {
         version: "1.8.1",
         date: "Aug 12, 2026",
