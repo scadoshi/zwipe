@@ -2,6 +2,15 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-08-12 — `1.8.1`, versionCode `35`** (the Discord-todo polish train:
+  collapsible deck-cards groups with the eased card-row arrow, skeleton
+  principle rework (static chrome renders real, in-place ghosts), featured
+  cards dealing in from above, all five color pips always on the deck list,
+  header underline removed; server rider: the latest_cards English-preference
+  migration. Replaces vc34's still-in-review release — users update 1.7.6 →
+  1.8.1. Built per the recipe on the work Mac, warm caches. Manifest verified
+  targetSdk 36 / vc35 / 1.8.1. iOS counterpart build 73.)
+
 - **2026-08-12 — `1.8.0`, versionCode `34`** (deck list Group by + Show chip rows
   (sections by format/color/tag, color-pip and tag filters), the deck-list
   one-time tip, pinned import/export consoles with edge-fade scrolling, bolder
