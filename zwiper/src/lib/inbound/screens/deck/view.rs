@@ -296,7 +296,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                             let land_target = deck_profile.land_target;
                             rsx! {
                             div { class: "content-enter",
-                                  style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;",
+                                  style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem 0;",
                                 DeckProfileSection {
                                     deck_profile: deck_profile.clone(),
                                     commander: commander(),

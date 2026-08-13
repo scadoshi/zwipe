@@ -927,9 +927,10 @@ button {
     box-shadow: var(--shadow-sm);
     cursor: pointer;
     transition: all 0.2s ease;
-    /* Matches the deck profile's section gap and the deck cards' card-group
-       spacing (one 1rem rhythm across all three list surfaces). */
-    margin-bottom: 1rem;
+    /* One 0.5rem rhythm between boxed elements app-wide (deck tiles,
+       card groups, profile/privacy/changelog sections, deck profile
+       sections) — and the console chip-rows above lists share it too. */
+    margin-bottom: 0.5rem;
 }
 
 .deck-list-row {
@@ -1202,7 +1203,8 @@ button {
 }
 
 .skeleton-card-group {
-    margin-bottom: 1.5rem;
+    /* The app-wide 0.5rem element rhythm (see .card). */
+    margin-bottom: 0.5rem;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
@@ -2948,8 +2950,8 @@ button {
 }
 
 .card-group {
-    /* Matches the deck profile's section spacing (its flex column gap). */
-    margin-bottom: 1rem;
+    /* The app-wide 0.5rem element rhythm (see .card). */
+    margin-bottom: 0.5rem;
     overflow: hidden;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
@@ -3047,7 +3049,8 @@ button {
 .profile-sections {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    /* The app-wide 0.5rem element rhythm (see .card). */
+    gap: 0.5rem;
     width: calc(100% - 4rem);
     max-width: 40rem;
     padding-bottom: 1rem;
@@ -3563,7 +3566,8 @@ button {
 .privacy-content {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    /* The app-wide 0.5rem element rhythm (see .card). */
+    gap: 0.5rem;
     width: calc(100% - 4rem);
     max-width: 40rem;
     padding-bottom: 1rem;

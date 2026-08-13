@@ -44,6 +44,17 @@ Built for players who want a fast, focused mobile experience, not another clutte
 
 ---
 
+## What's New in This Version (1.9.0)
+
+(Kept within Android's 500-char release-note limit so both stores read the same length. The last bullet folds in 1.8.1's highlights — drop it if build 73 / vc35 went live before this submission.)
+
+- Commander maybeboard: swipe up while picking a commander to save it for later.
+- Open it from More on the Decks screen: swipe or search for commanders right there, expand an entry for details, and start a deck with one via Create deck.
+- Expanded card rows in grouped lists no longer stretch off screen.
+- Card list groups collapse from their headers, and loading screens match the real layouts (1.8.1).
+
+---
+
 ## What's New in This Version (1.8.1)
 
 (Kept within Android's 500-char release-note limit so both stores read the same length. Combines the 1.8.0 notes — build 72 never left review, so users update straight from 1.7.6.)

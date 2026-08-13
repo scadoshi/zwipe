@@ -1683,7 +1683,8 @@ a.nav-dropdown-item.active:visited {
 .changelog-list {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    /* Matches the app's 0.5rem element rhythm. */
+    gap: 0.5rem;
 }
 
 .changelog-card {
