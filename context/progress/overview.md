@@ -59,6 +59,13 @@ Three days that closed the whole release train:
   headers' stray underline removed. Next train named 1.8.1 (owner call:
   this batch reads as fixes and UI polish, not a feature train, so it takes
   the patch slot despite the collapsible groups leaning feature-ish).
+  Review round added the animation pass (collapse/expand on the shared
+  .collapsible ease, featured cards dealing in from above with stagger) and
+  the closed-vs-open-vocabulary skeleton rule (static chrome renders real
+  from the first frame; all five color pips always). **1.8.1 CUT + SUBMITTED
+  both stores same night** (iOS build 73 / Android vc35), superseding
+  1.8.0's still-in-review build 72 / vc34 — users update 1.7.6 → 1.8.1
+  directly, so the store What's New combines both trains' notes.
 
 ## 2026-08-06 (zwipe.net home compressed into bands; the Flopsie caching saga; hourly origin TTLs)
 
