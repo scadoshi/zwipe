@@ -499,7 +499,7 @@ pub fn DeckList() -> Element {
                                     }
                                     for group in groups {
                                         if group_by() != DeckGroupBy::None {
-                                            div { class: "card-group-header",
+                                            div { class: "card-group-header deck-group-header",
                                                 if let Some(pips) = &group.pips
                                                     && !pips.is_empty()
                                                 {

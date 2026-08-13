@@ -2916,6 +2916,12 @@ button {
     border-bottom: 1px solid var(--border-secondary);
 }
 
+/* Deck list variant: headers float directly on the grid, where the rule
+   reads as a stray line instead of structure — the label alone is enough. */
+.deck-group-header {
+    border-bottom: none;
+}
+
 /* =========================
   specific - info list (read-only card layout)
  =========================== */
