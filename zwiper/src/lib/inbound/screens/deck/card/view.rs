@@ -116,29 +116,37 @@ struct PendingQty {
 /// Quiet period after the last quantity tap before the net delta posts.
 const QTY_FLUSH_MS: u64 = 300;
 
-/// Collapsible group header: the card-row disclosure arrow + title, following
-/// the card-row idiom exactly (points down while expanded, spins sideways when
-/// collapsed). Tapping toggles the section's key in `collapsed_groups`; the
-/// group's rows stay mounted and hide via CSS, like the deck view's
-/// collapsible sections.
+/// Collapsible card group: a header with the card-row disclosure arrow
+/// (points down while expanded, spins sideways when collapsed — the same
+/// eased rotation) over a body that opens and closes with the `.collapsible`
+/// grid-rows ease the deck view's sections use. Rows stay mounted through a
+/// collapse, so expanded-card state survives the round trip.
 #[component]
-fn GroupHeader(
+fn CollapsibleGroup(
     title: String,
     section_key: String,
     collapsed_groups: Signal<HashSet<String>>,
+    children: Element,
 ) -> Element {
     let expanded = !collapsed_groups().contains(&section_key);
     rsx! {
         div {
-            class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
-            onclick: move |_| {
-                let mut set = collapsed_groups.write();
-                if !set.remove(&section_key) {
-                    set.insert(section_key.clone());
-                }
-            },
-            span { class: "card-row-arrow", "▸" }
-            "{title}"
+            class: if expanded { "card-group row-enter" } else { "card-group row-enter collapsed" },
+            div {
+                class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
+                onclick: move |_| {
+                    let mut set = collapsed_groups.write();
+                    if !set.remove(&section_key) {
+                        set.insert(section_key.clone());
+                    }
+                },
+                span { class: "card-row-arrow", "▸" }
+                "{title}"
+            }
+            div {
+                class: if expanded { "collapsible open" } else { "collapsible" },
+                div { class: "collapsible-inner", {children} }
+            }
         }
     }
 }
@@ -1466,13 +1474,10 @@ pub fn View(deck_id: Uuid) -> Element {
                             rsx! {
                                 if let Some(tokens) = sorted_tokens {
                                     if !tokens.is_empty() {
-                                        div {
-                                            class: if collapsed_groups().contains("Tokens") { "card-group row-enter collapsed" } else { "card-group row-enter" },
-                                            GroupHeader {
-                                                title: format!("Tokens ({})", tokens.len()),
-                                                section_key: "Tokens",
-                                                collapsed_groups,
-                                            }
+                                        CollapsibleGroup {
+                                            title: format!("Tokens ({})", tokens.len()),
+                                            section_key: "Tokens",
+                                            collapsed_groups,
                                             for token in tokens.iter() {
                                                 CardRow {
                                                     card: token.clone(),
@@ -1509,13 +1514,10 @@ pub fn View(deck_id: Uuid) -> Element {
                         let mb_count = mb_entries.len();
                         rsx! {
                             if show_maybe() && !mb_entries.is_empty() {
-                                div {
-                                    class: if collapsed_groups().contains("Maybeboard") { "card-group row-enter collapsed" } else { "card-group row-enter" },
-                                    GroupHeader {
-                                        title: format!("Maybeboard ({mb_count})"),
-                                        section_key: "Maybeboard",
-                                        collapsed_groups,
-                                    }
+                                CollapsibleGroup {
+                                    title: format!("Maybeboard ({mb_count})"),
+                                    section_key: "Maybeboard",
+                                    collapsed_groups,
                                     for entry in mb_entries.iter() {
                                         {
                                             let card_id = entry.card.scryfall_data.id;
@@ -1565,13 +1567,10 @@ pub fn View(deck_id: Uuid) -> Element {
                         let sb_count = sb_entries.len();
                         rsx! {
                             if show_side() && !sb_entries.is_empty() {
-                                div {
-                                    class: if collapsed_groups().contains("Sideboard") { "card-group row-enter collapsed" } else { "card-group row-enter" },
-                                    GroupHeader {
-                                        title: format!("Sideboard ({sb_count})"),
-                                        section_key: "Sideboard",
-                                        collapsed_groups,
-                                    }
+                                CollapsibleGroup {
+                                    title: format!("Sideboard ({sb_count})"),
+                                    section_key: "Sideboard",
+                                    collapsed_groups,
                                     for entry in sb_entries.iter() {
                                         {
                                             let card_id = entry.card.scryfall_data.id;
@@ -1691,13 +1690,10 @@ pub fn View(deck_id: Uuid) -> Element {
                                 .map(|c| row_meta.read().get(&c.scryfall_data.id).map_or(1, |m| m.qty))
                                 .sum();
                             rsx! {
-                        div {
-                            class: if collapsed_groups().contains(&group.label) { "card-group row-enter collapsed" } else { "card-group row-enter" },
-                            GroupHeader {
-                                title: format!("{} ({qty_count})", group.label),
-                                section_key: group.label.clone(),
-                                collapsed_groups,
-                            }
+                        CollapsibleGroup {
+                            title: format!("{} ({qty_count})", group.label),
+                            section_key: group.label.clone(),
+                            collapsed_groups,
                             for card in group.cards.iter() {
                                 {
                                     let card_id = card.scryfall_data.id;
@@ -1743,13 +1739,10 @@ pub fn View(deck_id: Uuid) -> Element {
                                 .map(|c| row_meta.read().get(&c.scryfall_data.id).map_or(1, |m| m.qty))
                                 .sum();
                             rsx! {
-                                div {
-                                    class: if collapsed_groups().contains("Lands") { "card-group row-enter collapsed" } else { "card-group row-enter" },
-                                    GroupHeader {
-                                        title: format!("Lands ({qty_count})"),
-                                        section_key: "Lands",
-                                        collapsed_groups,
-                                    }
+                                CollapsibleGroup {
+                                    title: format!("Lands ({qty_count})"),
+                                    section_key: "Lands",
+                                    collapsed_groups,
                                     for card in lands.iter() {
                                         {
                                             let card_id = card.scryfall_data.id;

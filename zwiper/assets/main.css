@@ -2962,27 +2962,27 @@ button {
 }
 
 /* Collapsible group headers (deck cards screen): the card-row disclosure
-   grammar — arrow points down while expanded, sideways when collapsed. */
+   grammar — arrow points down while expanded, eases sideways when collapsed
+   (rotation transition rides .card-row-arrow's own 0.2s ease). The body
+   opens/closes via the shared .collapsible grid-rows ease; rows stay
+   mounted, so this only styles the header. */
 .card-group-header.group-collapsible {
     display: flex;
     align-items: center;
     gap: 0.4rem;
     cursor: pointer;
     user-select: none;
+    transition: border-color 0.25s ease;
 }
 
 .card-group-header.group-collapsible.expanded .card-row-arrow {
     transform: rotate(90deg);
 }
 
-/* Collapsed: rows stay mounted but hidden, and the header's rule disappears
-   since nothing sits under it. */
-.card-group.collapsed > :not(.card-group-header) {
-    display: none;
-}
-
+/* Collapsed: the header's rule fades out in step with the closing body,
+   since nothing sits under it once shut. */
 .card-group.collapsed .card-group-header {
-    border-bottom: none;
+    border-bottom-color: transparent;
 }
 
 /* =========================
@@ -3639,6 +3639,42 @@ button {
     min-width: 0;
     max-width: 11rem;
     text-align: center;
+    /* Cards deal in from above: drop + settle with a slight tilt, while
+       flex-grow (animatable) eases the width share so a card arriving late
+       (MVPs land after the commander) grows in and its siblings smoothly
+       cede width instead of snapping smaller. `backwards` keeps a card
+       invisible through its stagger delay. */
+    animation: deck-featured-deal 0.65s cubic-bezier(0.33, 1, 0.68, 1) backwards;
+}
+
+/* Staggered like a real deal: each card lands a beat after the one before. */
+.deck-featured-card:nth-child(2) {
+    animation-delay: 150ms;
+}
+.deck-featured-card:nth-child(3) {
+    animation-delay: 300ms;
+}
+.deck-featured-card:nth-child(4) {
+    animation-delay: 450ms;
+}
+.deck-featured-card:nth-child(5) {
+    animation-delay: 600ms;
+}
+.deck-featured-card:nth-child(6) {
+    animation-delay: 750ms;
+}
+
+@keyframes deck-featured-deal {
+    from {
+        flex-grow: 0.0001;
+        opacity: 0;
+        transform: translateY(-1.5rem) rotate(-3deg);
+    }
+    to {
+        flex-grow: 1;
+        opacity: 1;
+        transform: translateY(0) rotate(0deg);
+    }
 }
 
 .deck-featured-image {

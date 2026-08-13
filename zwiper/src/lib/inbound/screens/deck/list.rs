@@ -415,21 +415,14 @@ pub fn DeckList() -> Element {
                         let errored = matches!(&*deck_profiles_resource.read(), Some(Err(_)));
                         let loading = !errored && profiles.is_none();
 
-                        // The chrome is static, so it renders real from the first
-                        // frame: Group by's options never load, and Show's All +
-                        // color pips stand at all five until the decks narrow
-                        // them. Only the tag chips (deck-derived) ghost while
+                        // Static chrome renders real from the first frame, and the
+                        // rule is closed vs open vocabularies: Group by's options
+                        // and the five colors are closed sets, so they render
+                        // permanently (a color with no matching decks just yields
+                        // "No decks match" — never a selected chip that vanishes).
+                        // Tags are open and deck-derived, so they ghost while
                         // loading; the deck tiles below stay skeleton.
-                        let colors_shown: Vec<Color> = match &profiles {
-                            Some(deck_profiles) => {
-                                let all: HashSet<Color> = deck_profiles
-                                    .iter()
-                                    .flat_map(identity_colors)
-                                    .collect();
-                                Color::all().into_iter().filter(|c| all.contains(c)).collect()
-                            }
-                            None => Color::all().to_vec(),
-                        };
+                        let colors_shown: Vec<Color> = Color::all().to_vec();
                         let tags_present: Vec<(String, String)> = profiles
                             .as_ref()
                             .map(|deck_profiles| {

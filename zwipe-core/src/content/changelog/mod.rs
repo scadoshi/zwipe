@@ -31,7 +31,8 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "Tap a group header on your deck's card list to collapse it, with the same arrow card rows use. Tokens, Lands, Maybeboard, and Sideboard collapse too.",
         "Search finds cards like Arcane Signet again: a newer foreign-language printing could hide a card's English version from name search. English printings win now.",
-        "The loading screens for the deck list and deck cards match the real layouts, card images and chip rows included.",
+        "The loading screens for the deck list and deck cards match the real layouts, card images and chip rows included, and the controls that never load (Group by, Show, the color pips) render right away instead of ghosting.",
+        "The commander and MVP cards at the top of the deck deal in from above, one after another.",
         "Deck list group headers drop their underline.",
     ],
 }];
