@@ -1,6 +1,9 @@
 # Otag examples follow-up — audit issues + `fetch_usable_page` + dictionary follow-through
 
-**Status: PLANNED (2026-07-15).** Hand-off doc for the next AI session.
+**Status: DONE — shipped in 1.7.1 (2026-07-17); archived 2026-08-13.** The
+dictionary Examples/Use buttons, safe paging, and left/down-only examples
+browse all released per the 1.7.1 notes. Originally a hand-off doc for the
+next AI session.
 Covers (1) every issue found in the review of the uncommitted
 `otag-example-cards` Claude session work, (2) the agreed plan to fix the
 pagination / image-filter empty-page bug via a shared `fetch_usable_page`
