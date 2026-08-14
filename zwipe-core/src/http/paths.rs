@@ -108,6 +108,10 @@ pub fn get_keywords_route() -> String {
     "api/card/keywords".to_string()
 }
 
+pub fn get_keyword_reminders_route() -> String {
+    "api/card/keyword-reminders".to_string()
+}
+
 pub fn get_oracle_words_route() -> String {
     "api/card/oracle-words".to_string()
 }

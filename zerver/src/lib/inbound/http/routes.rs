@@ -16,7 +16,8 @@ use crate::inbound::http::handlers::{
     },
     card::{
         featured_flavor::get_featured_flavor, get_artists::get_artists, get_card::get_card,
-        get_card_roles::get_card_roles, get_card_types::get_card_types, get_keywords::get_keywords,
+        get_card_roles::get_card_roles, get_card_types::get_card_types,
+        get_keyword_reminders::get_keyword_reminders, get_keywords::get_keywords,
         get_languages::get_languages, get_oracle_tags::get_oracle_tags,
         get_oracle_words::get_oracle_words, get_printings::get_printings, get_sets::get_sets,
         search_card::search_cards, search_commanders::search_commanders,
@@ -393,6 +394,7 @@ pub fn public_routes() -> Router<AppState> {
                         .route("/artists", get(get_artists))
                         .route("/types", get(get_card_types))
                         .route("/keywords", get(get_keywords))
+                        .route("/keyword-reminders", get(get_keyword_reminders))
                         .route("/roles", get(get_card_roles))
                         .route("/oracle-tags", get(get_oracle_tags))
                         .route("/oracle-words", get(get_oracle_words))

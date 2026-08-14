@@ -14,6 +14,8 @@ pub mod get_card_roles;
 /// Fetch all card types (creature, instant, etc.).
 pub mod get_card_types;
 /// Fetch all keyword abilities.
+/// Fetch the served keyword-reminder catalog.
+pub mod get_keyword_reminders;
 pub mod get_keywords;
 /// Fetch all available languages.
 pub mod get_languages;

@@ -46,7 +46,7 @@ pub use changelog::Changelog;
 pub use charts::{ChartLabel, DeckCharts, DrawOdds, ManaCurve, ManaFulfillment};
 pub use chip::Chip;
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
-pub use keyword_chips::KeywordChips;
+pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use nav_bar::{BRAND_RESET_JS, NavBar};
 pub use nav_dropdown::NavDropdown;
 pub use oracle_text::OracleText;

@@ -39,6 +39,7 @@ use chrono::{DateTime, Utc};
 use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::interval;
+use zwipe_components::KeywordReminders;
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
@@ -217,6 +218,18 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     use_effect(move || {
         if let Some(session) = session() {
             catalog_cache.ensure_deck_tags(client, session);
+        }
+    });
+
+    // Served keyword reminders → the shared KeywordChips context, so
+    // definition fixes land on server deploy instead of an app-store train.
+    // Until (or unless) the fetch lands, chips use the compiled-in table.
+    let mut keyword_reminders_map: Signal<Option<std::collections::HashMap<String, String>>> =
+        use_signal(|| None);
+    use_context_provider(|| KeywordReminders(keyword_reminders_map));
+    use_effect(move || {
+        if let Some(map) = catalog_cache.keyword_reminders.cell().read().loaded() {
+            keyword_reminders_map.set(Some(map.clone()));
         }
     });
 

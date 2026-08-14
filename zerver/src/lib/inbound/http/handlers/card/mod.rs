@@ -10,6 +10,8 @@ pub mod get_card;
 pub mod get_card_roles;
 /// Distinct card type names handler.
 pub mod get_card_types;
+/// Keyword-reminder catalog handler (name → reminder text).
+pub mod get_keyword_reminders;
 /// Distinct keyword ability names handler.
 pub mod get_keywords;
 /// Distinct language names handler.

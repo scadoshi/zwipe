@@ -32,9 +32,9 @@ use crate::outbound::client::{
     ZwipeClient,
     card::{
         get_artists::ClientGetArtists, get_card_roles::ClientGetCardRoles,
-        get_card_types::ClientGetCardTypes, get_keywords::ClientGetKeywords,
-        get_oracle_tags::ClientGetOracleTags, get_oracle_words::ClientGetOracleWords,
-        get_sets::ClientGetSets,
+        get_card_types::ClientGetCardTypes, get_keyword_reminders::ClientGetKeywordReminders,
+        get_keywords::ClientGetKeywords, get_oracle_tags::ClientGetOracleTags,
+        get_oracle_words::ClientGetOracleWords, get_sets::ClientGetSets,
     },
     deck::get_deck_tags::ClientGetDeckTags,
 };
@@ -167,6 +167,9 @@ pub struct CatalogCache {
     pub sets: CatalogSlot<Vec<String>>,
     /// Keyword abilities (`GET /api/card/keywords`).
     pub keywords: CatalogSlot<Vec<String>>,
+    /// Keyword reminders (`GET /api/card/keyword-reminders`) — served so
+    /// definition fixes land on deploy; chips fall back to the compiled table.
+    pub keyword_reminders: CatalogSlot<std::collections::HashMap<String, String>>,
     /// Normalized oracle-text words (`GET /api/card/oracle-words`).
     pub oracle_words: CatalogSlot<Vec<String>>,
     /// Card types (`GET /api/card/types`).
@@ -187,6 +190,7 @@ pub fn use_catalog_cache() -> CatalogCache {
         artists: use_catalog_slot(),
         sets: use_catalog_slot(),
         keywords: use_catalog_slot(),
+        keyword_reminders: use_catalog_slot(),
         oracle_words: use_catalog_slot(),
         card_types: use_catalog_slot(),
         card_roles: use_catalog_slot(),
@@ -211,6 +215,7 @@ impl CatalogCache {
         self.ensure_artists(client);
         self.ensure_sets(client);
         self.ensure_keywords(client);
+        self.ensure_keyword_reminders(client);
         self.ensure_oracle_words(client);
         self.ensure_card_types(client);
         self.ensure_card_roles(client);
@@ -238,6 +243,14 @@ impl CatalogCache {
         self.keywords.refresh(move || async move {
             let http = client.peek().clone();
             http.get_keywords().await
+        });
+    }
+
+    /// Ensure the keyword-reminder catalog is warm/fresh (public).
+    pub fn ensure_keyword_reminders(self, client: Signal<ZwipeClient>) {
+        self.keyword_reminders.refresh(move || async move {
+            let http = client.peek().clone();
+            http.get_keyword_reminders().await
         });
     }
 

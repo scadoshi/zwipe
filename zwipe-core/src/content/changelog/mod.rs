@@ -30,6 +30,7 @@ pub const UPCOMING: &[Release] = &[Release {
     date: "",
     entries: &[
         "Keyword reminders for the newest sets: Blight, Prepared, Vivid, Start your engines!, and two dozen more now explain the actual mechanic instead of pointing you at the card.",
+        "Keyword definitions now update on their own, no app update needed.",
         "The deck list console sits at the same distance from the header as other screens, and the deck profile's section spacing evens out.",
     ],
 }];
