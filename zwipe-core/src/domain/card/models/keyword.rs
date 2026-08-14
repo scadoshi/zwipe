@@ -512,7 +512,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "Add or remove a time counter on each suspended card and Saga you control."
         }
         "behold" => {
-            "Reveal or note a creature of the named type from your hand or battlefield as a cost."
+            "To behold a creature of the named type, choose one you control or reveal one from your hand, as a cost."
         }
 
         // --- Ability words (stable triggers / thresholds) ---
