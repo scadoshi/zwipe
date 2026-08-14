@@ -4,7 +4,43 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## Latest — 2026-08-10 → 12 (1.7.5 and 1.7.6 released; 1.8.0 cut + submitted; version gate at 1.7.5; Phase 5 PATCH-only server live)
+## Latest — 2026-08-13 (commander maybeboard built end-to-end; 1.9.0 cut + submitted both stores; 1.8.1 released)
+
+- **1.8.1 went live on both stores** (fast review — submitted the night of
+  08-12, live before the 08-13 evening 1.9.0 submission).
+- **Commander maybeboard designed, built, and shipped in one day.** Owner
+  decisions locked at the proposals (More-sheet entry after a same-day
+  revision off the action bar, entries persist after deck create, cap 50).
+  Server half: `commander_maybeboard` migration + four endpoints
+  (add/remove/list/clear — idempotent, cap enforced under the user row lock,
+  GET hydrates newest-first via latest_cards). Client half grew through the
+  owner's live review into a full commander hub: up-swipe saves from any
+  commander Zwipe-select (down-swipe undo un-saves), the screen has card
+  rows with art + Art toggle, in-row Printing/Create deck/Remove (new shared
+  CardRow `extra_actions` slot), quick add with floating chips, Show pips +
+  the shared filter sheet, its own Swipe overlay (right-swipe seeds a new
+  deck via `CreateDeckCommanderSeed`; saves are excluded from its pile —
+  discovery vs decision serving split), clear-all dialog, and the
+  static-chrome skeleton with a row-enter cascade. Stack-position caching
+  REJECTED (daily seed reshuffle + too many host identities); per-card
+  "maybed" telemetry deferred until a consumer exists (the table is the
+  signal).
+- **Shipped-bug found during review: the 1.8.1 collapsible groups blew
+  expanded card rows past the viewport** (the open-state `overflow: visible`
+  inner regained its automatic minimum width inside the collapse grid).
+  Fixed with `minmax(0, 1fr)` + `min-width: 0` on app and zite copies.
+- **A 0.5rem element rhythm now spans the app and the share page** (deck
+  tiles, card groups + skeletons, deck profile sections, profile/privacy
+  sections, changelog cards, sd-groups/panels; consoles above lists match).
+  Share page also: featured commander/MVP images open the full-art overlay
+  on the shown face (shared FlippableCardImage gained `on_face_change`), and
+  stacked chart panels stretch to screen width below 800px.
+- **1.9.0 CUT + SUBMITTED both stores 2026-08-13 evening** (iOS build 74 /
+  Android vc36) as a normal update on top of live 1.8.1. Store copy updated
+  (standalone notes, Android generic-copy variant, promo text). Server +
+  zite halves ride the owner's push/deploy.
+
+## 2026-08-10 → 12 (1.7.5 and 1.7.6 released; 1.8.0 cut + submitted; version gate at 1.7.5; Phase 5 PATCH-only server live)
 
 Three days that closed the whole release train:
 
