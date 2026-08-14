@@ -2,6 +2,9 @@
 
 Text to paste into App Store Connect fields.
 
+Release-note rule: keep every "What's New" within 500 characters — Android's
+limit — so both stores ship the same notes.
+
 ---
 
 ## Subtitle (max 30 characters)
@@ -46,8 +49,6 @@ Built for players who want a fast, focused mobile experience, not another clutte
 
 ## What's New in This Version (1.9.1)
 
-(Kept within Android's 500-char release-note limit so both stores read the same length. Combines the 1.9.0 notes — build 74 never left review, so users update straight from 1.8.1.)
-
 - Commander maybeboard: swipe up while picking a commander to save it for later.
 - Open it from More on the Decks screen: swipe or search for commanders right there, and start a deck with one via Create deck.
 - Keyword reminders for the newest sets explain the real mechanic, and they now update without an app update.
@@ -56,8 +57,6 @@ Built for players who want a fast, focused mobile experience, not another clutte
 ---
 
 ## What's New in This Version (1.9.0)
-
-(Kept within Android's 500-char release-note limit so both stores read the same length. 1.8.1 went live before this submission, so these notes stand alone. Superseded by 1.9.1 before leaving review.)
 
 - Commander maybeboard: swipe up while picking a commander to save it for later.
 - Open it from More on the Decks screen: swipe or search for commanders right there, expand an entry for details, and start a deck with one via Create deck.
@@ -68,8 +67,6 @@ Built for players who want a fast, focused mobile experience, not another clutte
 
 ## What's New in This Version (1.8.1)
 
-(Kept within Android's 500-char release-note limit so both stores read the same length. Combines the 1.8.0 notes — build 72 never left review, so users update straight from 1.7.6.)
-
 - The deck list now has Group by and Show rows: group your decks into sections by format, color, or tag, and filter them with color and tag chips.
 - Tap a group header on your deck's card list to collapse it.
 - Search finds cards again whose newest printing is foreign, like Arcane Signet.
@@ -78,8 +75,6 @@ Built for players who want a fast, focused mobile experience, not another clutte
 ---
 
 ## What's New in This Version (1.8.0)
-
-(Kept within Android's 500-char release-note limit so both stores read the same length.)
 
 - The deck list now has Group by and Show rows: group your decks into sections by format, color, or tag, and filter them with color and tag chips.
 - A one-time tip covers the new rows. The ? button brings it back whenever you want.
@@ -90,8 +85,6 @@ Built for players who want a fast, focused mobile experience, not another clutte
 
 ## What's New in This Version (1.7.6)
 
-(Kept within Android's 500-char release-note limit so both stores read the same length. The Android resume-crash fix is Android-only and not claimed here.)
-
 - Undo now reaches everything: swipes on the add and remove screens and printing swaps all step back from your deck's Undo button.
 - The home screen now features a card quote, fresh every hour, the same card for everyone.
 - Quick add now finds cards you skipped while swiping.
@@ -100,8 +93,6 @@ Built for players who want a fast, focused mobile experience, not another clutte
 ---
 
 ## What's New in This Version (1.7.5)
-
-(Kept within Android's 500-char release-note limit so both stores read the same length.)
 
 - Undo on your deck's card list: step back adds, removals, quantity changes, board moves, and printing swaps.
 - Quick add: type a card name at the top of your deck and tap a result to add it.
@@ -112,16 +103,12 @@ Built for players who want a fast, focused mobile experience, not another clutte
 
 ## What's New in This Version (1.7.4)
 
-(Kept within Android's 500-char release-note limit so both stores read the same length.)
-
 - Fixed a crash when saving a card image to your photos from a long press. Saving now asks for permission and works.
 - The app now sends anonymous error and crash reports, so problems get found and fixed faster. No account or personal data rides along.
 
 ---
 
 ## What's New in This Version (1.7.3)
-
-(Kept within Android's 500-char release-note limit so both stores read the same length.)
 
 - Filter edits now wait for Apply: Reset stages the default, and Cancel puts your filter back.
 - See your deck's average power and toughness in the Distributions section.
@@ -133,8 +120,6 @@ Built for players who want a fast, focused mobile experience, not another clutte
 
 ## What's New in This Version (1.7.2)
 
-(Kept within Android's 500-char release-note limit so both stores read the same length.)
-
 - Lands now sit in their own section at the bottom of the deck list, in every grouping.
 - Your card filter now covers the Maybeboard and Sideboard, not just the main deck.
 - Tap outside any dialog to dismiss it.
@@ -144,8 +129,6 @@ Built for players who want a fast, focused mobile experience, not another clutte
 ---
 
 ## What's New in This Version (1.7.1)
-
-(Kept within Android's 500-char release-note limit so both stores read the same length.)
 
 - Image-less cards now show as a clean text card, so nothing's hidden while you swipe.
 - Tap an oracle tag on a card to read what it does and see example cards that use it.
@@ -157,8 +140,6 @@ Built for players who want a fast, focused mobile experience, not another clutte
 
 ## What's New in This Version (1.7.0)
 
-(Kept within Android's 500-char release-note limit so both stores read the same length.)
-
 - New oracle-tag dictionary: browse every tag by letter or search it, right from the tag picker.
 - Sharper oracle tags: better card roles, closer archetype matches, and over 1,000 plain-language descriptions.
 - Filters and pickers open instantly now, loaded once instead of every time.
@@ -168,8 +149,6 @@ Built for players who want a fast, focused mobile experience, not another clutte
 ---
 
 ## What's New in This Version (1.6.0)
-
-(Kept within Android's 500-char release-note limit so both stores read the same length.)
 
 - Card roles on every card: expand a card to see what it does, removal, ramp, card advantage, and tap a role for the community oracle tags underneath.
 - Give your deck a game plan: pick the oracle tags for your strategy, or choose an archetype like Aggro to seed them.

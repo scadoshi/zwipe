@@ -153,7 +153,7 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.8.1 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.9.1 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
@@ -161,21 +161,21 @@ TODO — complete the Data safety form. Starter facts to declare:
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
 
-**1.9.1** (combines the 1.9.0 notes — vc36 never left review, so users update straight from 1.8.1; "leader" per the generic-copy rules):
+**1.9.1:**
 
 - Leader maybeboard: swipe up while picking your deck's leader to save it for later.
 - Open it from More on the Decks screen: swipe or search for leaders right there, and start a deck with one via Create deck.
 - Keyword reminders for the newest sets explain the real mechanic, and they now update without an app update.
 - Expanded card rows in grouped lists no longer stretch off screen.
 
-**1.9.0** (1.8.1 went live before this submission, so these notes stand alone; "leader" per the generic-copy rules; superseded by 1.9.1 before leaving review):
+**1.9.0:**
 
 - Leader maybeboard: swipe up while picking your deck's leader to save it for later.
 - Open it from More on the Decks screen: swipe or search for leaders right there, expand an entry for details, and start a deck with one via Create deck.
 - Expanded card rows in grouped lists no longer stretch off screen.
 - Tighter, even spacing between cards and sections across the app.
 
-**1.8.1** (combines the 1.8.0 notes — vc34 never left review, so users update straight from 1.7.6; "leader" per the generic-copy rules):
+**1.8.1:**
 
 - The deck list now has Group by and Show rows: group your decks into sections by format, color, or tag, and filter them with color and tag chips.
 - Tap a group header on your deck's card list to collapse it.
@@ -317,7 +317,7 @@ Keep generic per the copycat note at the top (no "Commander", "Planeswalker", et
 - New quick tips on the import and export screens guide you through importing or sharing a decklist.
 - Bug fixes and reliability improvements.
 
-**1.1.0** (mirrors the iOS 1.1.0 What's New, reworded for the generic listing):
+**1.1.0:**
 
 - Tag your decks: add up to 5 strategy tags to label a deck at a glance — shown on your deck list and deck page.
 - Swipe to set your deck's leader, partner, background, or signature spell instead of searching.
