@@ -24,6 +24,7 @@ use crate::{
             },
             auth::ensure_session::EnsureFresh,
             bottom_sheet::BottomSheet,
+            catalog_cache::CatalogCache,
             hint_dialog::{
                 HintBullet, HintBullets, HintDialog, HintKey, HintLine, use_one_time_hint,
             },
@@ -34,16 +35,19 @@ use crate::{
             },
         },
         router::Router,
-        screens::deck::{
-            card::{
-                components::{
-                    card_row::{CardRow, ShowRowArt},
-                    image_preview::ImagePreview,
-                    printing_sheet::PrintingSheet,
+        screens::{
+            deck::{
+                card::{
+                    components::{
+                        card_row::{CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt},
+                        image_preview::ImagePreview,
+                        printing_sheet::PrintingSheet,
+                    },
+                    filter::card_filter_sheet::CardFilterSheet,
                 },
-                filter::card_filter_sheet::CardFilterSheet,
+                create::CreateDeckCommanderSeed,
             },
-            create::CreateDeckCommanderSeed,
+            oracle_tag_examples::OracleTagExamples,
         },
     },
     outbound::client::{
@@ -142,6 +146,30 @@ pub fn CommanderMaybeboard() -> Element {
     // them mounted, same as the deck cards screen). Screen-local.
     let mut show_row_art = use_signal(|| true);
     use_context_provider(|| ShowRowArt(show_row_art));
+
+    // Oracle-tag reveal inside expanded rows — the same wiring as the deck
+    // cards screen: a description lookup from the shared catalog cache and an
+    // examples-browse opener, handed to every CardRow via context. Without
+    // these the rows keep plain, non-expandable otag chips.
+    let cache: CatalogCache = use_context();
+    use_effect(move || {
+        cache.ensure_oracle_tags(auth_client);
+    });
+    let describe_tag = use_callback(move |slug: String| {
+        cache.oracle_tags.cell().read().loaded().and_then(|tags| {
+            tags.iter()
+                .find(|t| t.slug == slug)
+                .and_then(|t| t.description.clone())
+        })
+    });
+    let mut otag_examples_open = use_signal(|| false);
+    let mut otag_examples_slug = use_signal(String::new);
+    let open_examples = use_callback(move |slug: String| {
+        otag_examples_slug.set(slug);
+        otag_examples_open.set(true);
+    });
+    use_context_provider(|| OtagDescribe(describe_tag));
+    use_context_provider(|| OtagExamplesOpen(open_examples));
 
     let mut query = use_signal(String::new);
     let mut selected_colors: Signal<HashSet<Color>> = use_signal(HashSet::new);
@@ -797,6 +825,10 @@ pub fn CommanderMaybeboard() -> Element {
                         }
                     },
                 }
+            }
+
+            if otag_examples_open() {
+                OracleTagExamples { open: otag_examples_open, slug: otag_examples_slug() }
             }
 
             ImagePreview { card: preview_card, dismissing: preview_dismissing }
