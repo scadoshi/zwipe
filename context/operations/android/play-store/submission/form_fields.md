@@ -161,6 +161,13 @@ TODO — complete the Data safety form. Starter facts to declare:
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
 
+**1.9.0** (1.8.1 went live before this submission, so these notes stand alone; "leader" per the generic-copy rules):
+
+- Leader maybeboard: swipe up while picking your deck's leader to save it for later.
+- Open it from More on the Decks screen: swipe or search for leaders right there, expand an entry for details, and start a deck with one via Create deck.
+- Expanded card rows in grouped lists no longer stretch off screen.
+- Tighter, even spacing between cards and sections across the app.
+
 **1.8.1** (combines the 1.8.0 notes — vc34 never left review, so users update straight from 1.7.6; "leader" per the generic-copy rules):
 
 - The deck list now has Group by and Show rows: group your decks into sections by format, color, or tag, and filter them with color and tag chips.

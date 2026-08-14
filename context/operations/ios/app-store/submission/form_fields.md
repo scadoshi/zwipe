@@ -14,7 +14,7 @@ Swipe to Build MTG Decks
 
 (170 character limit. Can be updated without a new submission — refresh this between releases to spotlight whatever's freshest.)
 
-Just shipped: group and filter your deck list by format, color, or tag. Free, no ads.
+Just shipped: the commander maybeboard — swipe up on a commander to save it for later. Free, no ads.
 
 ---
 
@@ -46,12 +46,12 @@ Built for players who want a fast, focused mobile experience, not another clutte
 
 ## What's New in This Version (1.9.0)
 
-(Kept within Android's 500-char release-note limit so both stores read the same length. The last bullet folds in 1.8.1's highlights — drop it if build 73 / vc35 went live before this submission.)
+(Kept within Android's 500-char release-note limit so both stores read the same length. 1.8.1 went live before this submission, so these notes stand alone.)
 
 - Commander maybeboard: swipe up while picking a commander to save it for later.
 - Open it from More on the Decks screen: swipe or search for commanders right there, expand an entry for details, and start a deck with one via Create deck.
 - Expanded card rows in grouped lists no longer stretch off screen.
-- Card list groups collapse from their headers, and loading screens match the real layouts (1.8.1).
+- Tighter, even spacing between cards and sections across the app.
 
 ---
 
@@ -342,7 +342,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.8.1 |
+| Version | 1.9.0 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 

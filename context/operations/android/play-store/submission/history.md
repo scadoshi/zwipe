@@ -11,8 +11,9 @@ Per-release build log. Build recipe is in [build.md](build.md).
   seeding. Server riders: commander_maybeboard migration + 4 endpoints
   (add/remove/list/clear, cap 50). Fixes the collapsible-grid width blowout
   (expanded rows in grouped lists clipped at the viewport — shipped in 1.8.1)
-  and unifies the 0.5rem element rhythm app-wide. Replaces vc35's in-review
-  release. Built per the recipe on the work Mac. iOS counterpart build 74.)
+  and unifies the 0.5rem element rhythm app-wide. 1.8.1 (vc35) went live
+  before this submission, so 1.9.0 is a normal update on top of it. Built per
+  the recipe on the work Mac. iOS counterpart build 74.)
 
 - **2026-08-12 — `1.8.1`, versionCode `35`** (the Discord-todo polish train:
   collapsible deck-cards groups with the eased card-row arrow, skeleton
