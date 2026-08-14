@@ -638,10 +638,10 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "Tap creatures to add station counters to it; it unlocks stronger abilities at certain thresholds."
         }
         "max speed" => {
-            "Its bonus is active once you reach max speed (your Speed has climbed to 4)."
+            "Its bonus turns on once your Speed reaches the maximum of 4 (Speed rises once on each of your turns when an opponent loses life)."
         }
         "start your engines!" => {
-            "You get Speed 1; your Speed can rise to a maximum of 4, powering up Speed abilities."
+            "If you have no Speed, it starts at 1; it rises once on each of your turns when an opponent loses life, up to a maximum of 4."
         }
         "double team" => {
             "When it attacks, if it isn't a token, make a copy of it in your hand; then both lose double team."
@@ -671,10 +671,81 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "Turn target land you control into a 0/0 creature with haste that's still a land, then put N +1/+1 counters on it; if it dies, it returns tapped."
         }
 
-        // Any other keyword still gets a friendly, honest catch-all so every chip
-        // is tappable. Scryfall only ever feeds us real keyword names here.
+        // --- 2026 sets & crossover mechanics ---
+        // (Definitions grounded in the cards' own reminder text — swept
+        // 2026-08-14 against every keyword on 4+ cards in the database.)
+        "prepared" => {
+            "It's a creature with a spell face; while it's prepared, you may cast a copy of that spell, which unprepares it."
+        }
+        "blight" => "A player who blights N puts N -1/-1 counters on creatures they control.",
+        "vivid" => "Its effect scales with the number of colors among permanents you control.",
+        "sneak" => {
+            "Cast it for its sneak cost by returning an unblocked attacker you control to hand during the declare blockers step; it enters tapped and attacking."
+        }
+        "solved" => {
+            "A Case solves once its condition is met, checked at your end step; its Solved ability works from then on."
+        }
+        "renew" => {
+            "Pay its renew cost and exile it from your graveyard for the listed effect, only as a sorcery."
+        }
+        "repartee" => {
+            "Triggers whenever you cast an instant or sorcery spell that targets a creature."
+        }
+        "infusion" => "Its effect improves or triggers if you gained life this turn.",
+        "opus" => {
+            "Triggers whenever you cast an instant or sorcery spell; stronger if five or more mana was spent on it."
+        }
+        "increment" => {
+            "Whenever you cast a spell, if you spent more mana than this creature's power or toughness, put a +1/+1 counter on it."
+        }
+        "paradox" => "Cares about spells you cast from anywhere other than your hand.",
+        "disappear" => {
+            "Triggers at your end step if a permanent left the battlefield under your control this turn."
+        }
+        "paradigm" => {
+            "The spell exiles itself; after it first resolves, you may cast a free copy from exile at each of your first main phases."
+        }
+        "tiered" => {
+            "Choose one of its tiers as an additional cost; the effect matches the tier you paid for."
+        }
+        "teamwork" => {
+            "As an additional cost, you may tap creatures you control with total power N or more for the spell's bonus effect."
+        }
+        "power-up" => {
+            "Activate each power-up ability only once; it costs less by the creature's mana cost if it entered this turn."
+        }
+        "rulebreaker" => "Bends the deckbuilding rules as stated while it's your commander.",
+        "secret council" => {
+            "Each player votes in secret, then all votes are revealed and the effect happens."
+        }
+        "mono eminence" => {
+            "As the game begins, if it's your commander and your deck is the matching single color, you get the stated bonus."
+        }
+        "hero's reward" => {
+            "Triggers when it's put into a graveyard, granting the players the listed reward (a Horde-deck mechanic)."
+        }
+        "heal" => "Healing a creature removes all damage marked on it.",
+        "jump" => "Cast it from your graveyard by also discarding a card, then exile it.",
+
+        // --- Arena-only (digital) mechanics ---
+        "draft from a spellbook" => {
+            "Pick one of three random cards from that card's preset spellbook and put it into your hand (an Arena mechanic)."
+        }
+        "intensity" => {
+            "Starts at its printed intensity and permanently intensifies as its ability says; its effects scale with it (an Arena mechanic)."
+        }
+        "heist" => {
+            "Pick one of three random nonland cards from that player's library; you may cast it later (an Arena mechanic)."
+        }
+        "incorporate" => {
+            "Permanently builds the incorporated mana into the card's cost along with the granted ability (an Arena mechanic)."
+        }
+
+        // Anything else is a one-off named ability (crossover sets name these
+        // freely); the card's own text is the definition, so point there
+        // plainly. Scryfall only ever feeds us real keyword names here.
         _ => {
-            "A special keyword from this card's set. Check the card's text to see exactly what it does."
+            "A named ability unique to this card: its rules text on the card spells out everything it does."
         }
     }
 }
@@ -683,7 +754,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
 mod tests {
     use super::*;
 
-    const FALLBACK: &str = "A special keyword from this card's set. Check the card's text to see exactly what it does.";
+    const FALLBACK: &str = "A named ability unique to this card: its rules text on the card spells out everything it does.";
 
     #[test]
     fn known_keywords_get_specific_reminders() {

@@ -25,7 +25,14 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.9.1",
+    date: "",
+    entries: &[
+        "Keyword reminders for the newest sets: Blight, Prepared, Vivid, Start your engines!, and two dozen more now explain the actual mechanic instead of pointing you at the card.",
+        "The deck list console sits at the same distance from the header as other screens, and the deck profile's section spacing evens out.",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
