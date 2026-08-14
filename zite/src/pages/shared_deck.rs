@@ -91,21 +91,39 @@ fn SdCollapsibleGroup(
 }
 
 /// One pinned command zone card: image (when available) above name + role.
+/// Tapping the image opens the page's full-art overlay on the shown face,
+/// like the card rows below.
 #[component]
-fn CommandZoneCard(card: Card, role: String) -> Element {
+fn CommandZoneCard(
+    card: Card,
+    role: String,
+    mut overlay_card: Signal<Option<(ScryfallData, usize)>>,
+) -> Element {
     let name = card.scryfall_data.name.clone();
     let sd = card.scryfall_data;
     let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
+    // Which face the flip control is showing, so the overlay opens on it.
+    let mut current_face = use_signal(|| 0usize);
+    let sd_overlay = sd.clone();
     rsx! {
         div { class: "sd-cz-card",
             if has_image {
                 // Flippable so DFC commanders (e.g. Valki // Tibalt) show both
-                // faces; opens on the front.
-                FlippableCardImage {
-                    sd,
-                    size: ImageSize::Normal,
-                    class: "sd-cz-image".to_string(),
-                    draggable: false,
+                // faces; opens on the front. display:contents wrapper carries
+                // the tap without touching layout (the flip button stops
+                // propagation, so flipping never opens the overlay).
+                div {
+                    style: "display: contents;",
+                    onclick: move |_| {
+                        overlay_card.set(Some((sd_overlay.clone(), current_face())));
+                    },
+                    FlippableCardImage {
+                        sd,
+                        size: ImageSize::Normal,
+                        class: "sd-cz-image".to_string(),
+                        draggable: false,
+                        on_face_change: move |face: usize| current_face.set(face),
+                    }
                 }
             }
             div { class: "sd-cz-name", "{name}" }
@@ -918,19 +936,20 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                         CommandZoneCard {
                             card,
                             role: if is_oathbreaker { "Oathbreaker".to_string() } else { "Commander".to_string() },
+                            overlay_card,
                         }
                     }
                     if let Some(card) = deck.partner_commander.clone() {
-                        CommandZoneCard { card, role: "Partner".to_string() }
+                        CommandZoneCard { card, role: "Partner".to_string(), overlay_card }
                     }
                     if let Some(card) = deck.background.clone() {
-                        CommandZoneCard { card, role: "Background".to_string() }
+                        CommandZoneCard { card, role: "Background".to_string(), overlay_card }
                     }
                     if let Some(card) = deck.signature_spell.clone() {
-                        CommandZoneCard { card, role: "Signature spell".to_string() }
+                        CommandZoneCard { card, role: "Signature spell".to_string(), overlay_card }
                     }
                     for card in mvp_cards.iter().cloned() {
-                        CommandZoneCard { card, role: "MVP".to_string() }
+                        CommandZoneCard { card, role: "MVP".to_string(), overlay_card }
                     }
                 }
             }

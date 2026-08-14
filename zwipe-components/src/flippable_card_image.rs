@@ -55,6 +55,10 @@ pub fn FlippableCardImage(
     /// to the side the user was viewing elsewhere.
     #[props(default = 0)]
     initial_face: usize,
+    /// Fires with the new face index on flip, so a host can mirror the shown
+    /// side (e.g. open its image overlay on the face being viewed).
+    #[props(default)]
+    on_face_change: Option<EventHandler<usize>>,
 ) -> Element {
     let mut face_idx: Signal<usize> = use_signal(move || initial_face);
     // Bumped by the img's load event so the seen-URL check below re-runs.
@@ -157,7 +161,11 @@ pub fn FlippableCardImage(
                                         "aria-label": "Flip card",
                                         onclick: move |e| {
                                             e.stop_propagation();
-                                            face_idx.set((cur + 1) % total);
+                                            let next = (cur + 1) % total;
+                                            face_idx.set(next);
+                                            if let Some(handler) = on_face_change {
+                                                handler.call(next);
+                                            }
                                         },
                                         onpointerdown: move |e| { e.stop_propagation(); },
                                         onmousedown: move |e| { e.stop_propagation(); },
@@ -207,7 +215,11 @@ pub fn FlippableCardImage(
                         "aria-label": "Flip card",
                         onclick: move |e| {
                             e.stop_propagation();
-                            face_idx.set((cur + 1) % total);
+                            let next = (cur + 1) % total;
+                            face_idx.set(next);
+                            if let Some(handler) = on_face_change {
+                                handler.call(next);
+                            }
                         },
                         onpointerdown: move |e| { e.stop_propagation(); },
                         onmousedown: move |e| { e.stop_propagation(); },

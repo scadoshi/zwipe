@@ -2157,6 +2157,10 @@ footer {
 @media (max-width: 800px) {
     .sd-columns {
         flex-direction: column;
+        /* flex-start is for the row layout; once the axis flips it becomes
+           shrink-to-fit WIDTH and every stacked panel sizes to its title.
+           Stretch snaps them all to the container. */
+        align-items: stretch;
     }
 }
 
@@ -2297,6 +2301,11 @@ footer {
     overflow: hidden;
     /* The app's 0.5rem element rhythm. */
     margin-bottom: 0.5rem;
+}
+
+/* Tap target: the featured images open the full-art overlay. */
+.sd-cz-image {
+    cursor: pointer;
 }
 
 /* Matches the app's .card-group-header (accent-tertiary). */
