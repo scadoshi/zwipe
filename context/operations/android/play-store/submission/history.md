@@ -2,6 +2,16 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-08-14 — `1.9.1`, versionCode `37`** (the keyword-quality train:
+  reminder-definition sweep for 2026-set/crossover/Arena mechanics — 26 real
+  definitions grounded in the cards' own reminder text, Blight/Prepared/
+  Vivid/Start your engines! among them; reminders now served from
+  `/api/card/keyword-reminders` with the compiled table as offline fallback,
+  so future sweeps land on deploy; maybeboard otag chips reveal descriptions;
+  spacing riders. Replaces vc36's in-review release — users update 1.8.1 →
+  1.9.1, so the release notes combine both trains. Built per the recipe on
+  the work Mac. iOS counterpart build 75.)
+
 - **2026-08-13 — `1.9.0`, versionCode `36`** (commander maybeboard: up-swipe
   during any commander Zwipe-select saves to a per-user list; the new screen
   under the Decks More sheet has card rows with art + Art toggle, in-row

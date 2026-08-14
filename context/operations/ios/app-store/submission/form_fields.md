@@ -44,9 +44,20 @@ Built for players who want a fast, focused mobile experience, not another clutte
 
 ---
 
+## What's New in This Version (1.9.1)
+
+(Kept within Android's 500-char release-note limit so both stores read the same length. Combines the 1.9.0 notes — build 74 never left review, so users update straight from 1.8.1.)
+
+- Commander maybeboard: swipe up while picking a commander to save it for later.
+- Open it from More on the Decks screen: swipe or search for commanders right there, and start a deck with one via Create deck.
+- Keyword reminders for the newest sets explain the real mechanic, and they now update without an app update.
+- Expanded card rows in grouped lists no longer stretch off screen.
+
+---
+
 ## What's New in This Version (1.9.0)
 
-(Kept within Android's 500-char release-note limit so both stores read the same length. 1.8.1 went live before this submission, so these notes stand alone.)
+(Kept within Android's 500-char release-note limit so both stores read the same length. 1.8.1 went live before this submission, so these notes stand alone. Superseded by 1.9.1 before leaving review.)
 
 - Commander maybeboard: swipe up while picking a commander to save it for later.
 - Open it from More on the Decks screen: swipe or search for commanders right there, expand an entry for details, and start a deck with one via Create deck.
@@ -342,7 +353,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.9.0 |
+| Version | 1.9.1 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 

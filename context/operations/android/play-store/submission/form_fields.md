@@ -161,7 +161,14 @@ TODO — complete the Data safety form. Starter facts to declare:
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
 
-**1.9.0** (1.8.1 went live before this submission, so these notes stand alone; "leader" per the generic-copy rules):
+**1.9.1** (combines the 1.9.0 notes — vc36 never left review, so users update straight from 1.8.1; "leader" per the generic-copy rules):
+
+- Leader maybeboard: swipe up while picking your deck's leader to save it for later.
+- Open it from More on the Decks screen: swipe or search for leaders right there, and start a deck with one via Create deck.
+- Keyword reminders for the newest sets explain the real mechanic, and they now update without an app update.
+- Expanded card rows in grouped lists no longer stretch off screen.
+
+**1.9.0** (1.8.1 went live before this submission, so these notes stand alone; "leader" per the generic-copy rules; superseded by 1.9.1 before leaving review):
 
 - Leader maybeboard: swipe up while picking your deck's leader to save it for later.
 - Open it from More on the Decks screen: swipe or search for leaders right there, expand an entry for details, and start a deck with one via Create deck.
