@@ -365,7 +365,7 @@ pub fn CommanderMaybeboard() -> Element {
         })
     };
 
-    let mut create_with = move |card: Card| {
+    let create_with = move |card: Card| {
         if at_deck_limit() {
             toast.warning(
                 "Verify your email to create more than 1 deck".to_string(),
