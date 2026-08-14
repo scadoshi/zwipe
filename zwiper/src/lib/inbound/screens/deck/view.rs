@@ -349,8 +349,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     let land_count = metrics.as_ref().map(|m| m.land_count).unwrap_or(0);
                                     rsx! {
                                         if mana_curve_bars.is_some() || land_target.is_some() {
+                                          // Nested column: keep its gap equal to the outer
+                                          // sections column so Distributions/Mana/Draw odds
+                                          // space like every other section pair.
                                           div { class: "content-enter",
-                                                style: "display: flex; flex-direction: column; gap: 0.75rem;",
+                                                style: "display: flex; flex-direction: column; gap: 0.5rem;",
                                             // Distributions stays mainboard-only (its bars
                                             // are None without mainboard cards).
                                             if mana_curve_bars.is_some() {
