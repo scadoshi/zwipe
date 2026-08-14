@@ -2136,7 +2136,9 @@ footer {
 .sd-columns {
     display: flex;
     align-items: flex-start;
-    gap: 1.25rem;
+    /* The app's 0.5rem element rhythm — column gutters and the stacked
+       phone layout both use it. */
+    gap: 0.5rem;
 }
 
 .sd-column {
@@ -2164,12 +2166,13 @@ footer {
    own column down, never its row neighbors (same reason the card sections
    use columns instead of a grid). */
 .sd-charts {
-    margin-bottom: 1.25rem;
+    /* The app's 0.5rem element rhythm (chart strip -> controls console). */
+    margin-bottom: 0.5rem;
 }
 
 .sd-charts .sd-group {
     min-width: 0;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .sd-charts .sd-column > .sd-group:last-child {
@@ -2292,7 +2295,8 @@ footer {
     background-color: var(--bg-primary);
     box-shadow: var(--shadow-sm);
     overflow: hidden;
-    margin-bottom: 1.25rem;
+    /* The app's 0.5rem element rhythm. */
+    margin-bottom: 0.5rem;
 }
 
 /* Matches the app's .card-group-header (accent-tertiary). */
