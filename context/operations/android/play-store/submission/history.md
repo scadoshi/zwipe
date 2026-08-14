@@ -2,6 +2,18 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-08-13 — `1.9.0`, versionCode `36`** (commander maybeboard: up-swipe
+  during any commander Zwipe-select saves to a per-user list; the new screen
+  under the Decks More sheet has card rows with art + Art toggle, in-row
+  Printing/Create deck/Remove, quick add with floating chips, Show pips + the
+  shared filter sheet, its own Swipe overlay (right-swipe seeds a new deck,
+  saves excluded from the pile), and a clear-all dialog. Create-deck commander
+  seeding. Server riders: commander_maybeboard migration + 4 endpoints
+  (add/remove/list/clear, cap 50). Fixes the collapsible-grid width blowout
+  (expanded rows in grouped lists clipped at the viewport — shipped in 1.8.1)
+  and unifies the 0.5rem element rhythm app-wide. Replaces vc35's in-review
+  release. Built per the recipe on the work Mac. iOS counterpart build 74.)
+
 - **2026-08-12 — `1.8.1`, versionCode `35`** (the Discord-todo polish train:
   collapsible deck-cards groups with the eased card-row arrow, skeleton
   principle rework (static chrome renders real, in-place ghosts), featured
