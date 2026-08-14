@@ -404,7 +404,10 @@ pub fn DeckList() -> Element {
 
                 div { class: "screen-content",
                 div { class: "flex-col",
-                    style: "max-width: 40rem; width: 100%; padding: 2rem;",
+                    // Same wrapper as the deck cards and maybeboard screens,
+                    // so the console starts at the same distance from the
+                    // header on all three.
+                    style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
 
                     {
                         // Snapshot the resource once: Some(profiles) when loaded,
