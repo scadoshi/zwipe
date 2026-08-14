@@ -4,7 +4,32 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## Latest — 2026-08-13 (commander maybeboard built end-to-end; 1.9.0 cut + submitted both stores; 1.8.1 released)
+## Latest — 2026-08-14 (keyword-quality day; 1.9.1 cut + submitted both stores, superseding 1.9.0 in review)
+
+- **Keyword reminder sweep**: every keyword on 4+ database cards now has a
+  real definition (26 added for 2026-set/crossover/Arena mechanics — Blight,
+  Prepared, Vivid among them — each grounded in the cards' own reminder
+  text); Start your engines!/Max speed explain how Speed actually rises
+  (once per your turn when an opponent loses life); the unknown-keyword
+  fallback is now honest about one-off named abilities; Behold matches the
+  official Lorwyn Eclipsed template.
+- **Keyword reminders are now SERVED** (`GET /api/card/keyword-reminders`,
+  public card nest, hourly CF cache — the oracle-tag-catalog pattern):
+  future set sweeps land on deploy instead of an app train. The catalog_cache
+  slot + a KeywordReminders context feed the shared chips; the compiled
+  table stays the offline fallback. The endpoint test caught a real bug
+  (lowercase-keyed map vs capitalized card names — every lookup would have
+  silently missed). Live on prod: 884 entries verified.
+- **Maybeboard otag fix**: tapping a card-role tag on a commander entry now
+  reveals its description + Examples (the screen was missing the
+  OtagDescribe/OtagExamplesOpen contexts the row wrapper needs; the details
+  dialog path was never affected — it self-provides).
+- **1.9.1 CUT + SUBMITTED both stores 2026-08-14** (iOS build 75 / Android
+  vc37), superseding 1.9.0's still-in-review build 74 / vc36 — users update
+  1.8.1 → 1.9.1, so the What's New combines both trains. Also rides: the
+  unused-mut, deck-list padding, and deck-profile nested-gap riders.
+
+## 2026-08-13 (commander maybeboard built end-to-end; 1.9.0 cut + submitted both stores; 1.8.1 released)
 
 - **1.8.1 went live on both stores** (fast review — submitted the night of
   08-12, live before the 08-13 evening 1.9.0 submission).
