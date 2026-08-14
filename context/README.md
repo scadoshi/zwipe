@@ -8,7 +8,7 @@ the project's living documentation; each subdirectory owns one concern.
 | Directory | What's in it |
 |-----------|--------------|
 | [`product/`](product/) | What we're building — PRD, monetization, `premium/` feature catalog |
-| [`architecture/`](architecture/) | Why the app is built this way — structure, decisions, hosting |
+| [`architecture/`](architecture/) | Why the app is built this way — structure, decisions, hosting, content delivery (compiled vs fetched) |
 | [`development/`](development/) | How to write code here — commit/doc standards, newtypes, Dioxus, UI-text conventions |
 | [`operations/`](operations/) | How to build, deploy & ship — `infrastructure/`, `ios/`, `android/` |
 | [`marketing/`](marketing/) | Marketing material + tooling (business card, etc.) |
