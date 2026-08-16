@@ -360,15 +360,36 @@ cd ~/zwipe-src/zerver
 DATABASE_URL=postgres://zwipe:YOUR_DB_PASSWORD@127.0.0.1/zwipe sqlx migrate run
 ```
 
-**Matview ownership footgun (zervice least privilege, 2026-07-29):** the three
-materialized views (`latest_cards`, `card_signal_rollup`,
-`otag_context_signal_rollup`) are OWNED by the scoped `zervice` role because
-`REFRESH` requires ownership (`zcripts/server/sql/zervice_role.sql`). A
-migration that drops/recreates one of them resets ownership to the migration
-user (`zwipe`) — that migration must re-run
-`ALTER MATERIALIZED VIEW ... OWNER TO zervice` and
-`GRANT SELECT ... TO zwipe`, or the next nightly run fails (loudly, via the
-alert email).
+**Matview ownership footgun (zervice least privilege, 2026-07-29; bit again
+2026-08-14):** the three materialized views (`latest_cards`,
+`card_signal_rollup`, `otag_context_signal_rollup`) are OWNED by the scoped
+`zervice` role because `REFRESH` requires ownership
+(`zcripts/server/sql/zervice_role.sql`). A migration that drops/recreates one
+of them resets ownership to the migration user (`zwipe`) and the next nightly
+fails loudly (alert email + Healthchecks) — exactly what the
+`latest_cards_prefer_english` rebuild did on the 2026-08-13 deploy. Hand fix:
+re-run the ledger (`sudo -u postgres psql -d zwipe <
+~/zwipe-src/zcripts/server/sql/zervice_role.sql`).
+
+**Standard footer for any matview-recreating migration** — makes the rebuild
+self-healing while keeping grants out of dev/test clusters (conditional on
+the role existing, so the per-cluster principle holds):
+
+```sql
+-- Matview recreated above: hand ownership back to the zervice role where it
+-- exists (prod); no-op on dev/test clusters that don't have the role.
+DO $$ BEGIN
+    IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'zervice') THEN
+        ALTER MATERIALIZED VIEW latest_cards OWNER TO zervice;
+        GRANT SELECT ON latest_cards TO zwipe;
+    END IF;
+END $$;
+```
+
+(Considered and rejected 2026-08-15: pointing zervice at the main `zwipe`
+role. zervice parses ~1.7GB of untrusted Scryfall JSON nightly — the scoped
+role caps that blast radius at card data and can never read session tokens;
+its worst failure mode is this loud, one-command-fix alert.)
 
 ---
 
