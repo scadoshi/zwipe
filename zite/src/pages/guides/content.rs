@@ -241,6 +241,34 @@ pub static GUIDES: &[Guide] = &[
         ],
     },
     Guide {
+        slug: "organize-and-browse",
+        title: "Group, filter, and browse your lists",
+        summary: "The deck list and every card list share one chip grammar: Group by folds things into sections, Show narrows them, and group headers collapse.",
+        tags: &["Deck building", "Cards"],
+        related: &["filtering", "deck-tags", "swipe-to-build"],
+        blocks: &[
+            Block::Lead(
+                "Two screens carry chip consoles that reshape what you see: your deck list, and each deck's card list. The grammar is the same on both, so learn it once.",
+            ),
+            Block::H2("The deck list"),
+            Block::P(
+                "Group by folds your decks into sections by Format, Color, or Tag; a deck with several tags appears under each of them. Show narrows the list: color pips keep decks whose identity contains every pip you pick, tag chips match any of their tags, and All resets.",
+            ),
+            Block::H2("A deck's card list"),
+            Block::P(
+                "Group by sections the cards by Type, Mana value, Color, or Card role. Boards swaps the list between Main, Maybe, and Side. Show toggles Tokens, the Command zone, and Art, which eases the row artwork in and out for denser reading.",
+            ),
+            Block::H2("Collapse what you're done with"),
+            Block::P(
+                "Tap any group header on the card list to fold that section, with the same arrow the card rows use. Tokens, Lands, Maybeboard, and Sideboard fold the same way. Collapses last for the visit; everything opens fresh next time.",
+            ),
+            Block::H2("Quick add"),
+            Block::P(
+                "The Quick add bar at the top of the card list searches by name and adds a result to your mainboard with one tap. Results float over the list instead of pushing it around, and the search reaches cards you skipped while swiping.",
+            ),
+        ],
+    },
+    Guide {
         slug: "synergy",
         title: "Synergy-ranked cards",
         summary: "On a commander deck, Synergy keeps the stack to cards that work with your commander and shows the best fits first.",
@@ -568,7 +596,7 @@ pub static GUIDES: &[Guide] = &[
         title: "Star your deck's MVPs",
         summary: "Star up to three cards that define a deck. Stars show at a glance, steer that deck's suggestions, and travel when you clone.",
         tags: &["Deck building", "Cards"],
-        related: &["deck-tags", "deck-stats"],
+        related: &["deck-tags", "deck-stats", "share-your-deck"],
         blocks: &[
             Block::Lead(
                 "Every deck has a few cards that define it. Star up to three of them as MVPs, and Zwipe leans that deck's suggestions toward what you starred.",
@@ -591,6 +619,41 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::Note(
                 "Your MVPs also headline your shared deck page, featured up top alongside the command zone.",
+            ),
+        ],
+    },
+    Guide {
+        slug: "share-your-deck",
+        title: "Share a deck with a link",
+        summary: "One link makes any deck public. Viewers get the full picture in a browser: featured cards, stats, and the whole list. No account needed.",
+        tags: &["Deck building"],
+        related: &["deck-mvps", "deck-stats"],
+        blocks: &[
+            Block::Lead(
+                "Any deck can go public with one link. Whoever you send it to opens it in a browser, no account or app on their end.",
+            ),
+            Block::H2("Create the link"),
+            Block::Steps(&[
+                "Open the deck and tap More.",
+                "Tap Share deck, then Create link.",
+                "The link copies to your clipboard, ready to paste anywhere.",
+            ]),
+            Block::P(
+                "The link lives at zwipe.net and stays up until you turn it off. Come back to the same dialog for Copy link whenever you need it again.",
+            ),
+            Block::H2("What viewers see"),
+            Block::P(
+                "The page mirrors your deck view. Name, format, and tags sit up top, your commander and starred MVPs show as card images (tap one for the full art), and the deck's numbers sit in the same collapsible sections the app has: Budget, Tags, Distributions, Mana, and Draw odds.",
+            ),
+            Block::P(
+                "Below that is the full card list with the Group by, Show, and Filter by controls, expandable rows, collapsible group headers, and a section for the tokens your cards make.",
+            ),
+            Block::Note(
+                "The page tracks your latest saved deck, usually within a few minutes of an edit.",
+            ),
+            Block::H2("Stop sharing"),
+            Block::P(
+                "Same dialog, Stop share. The link dies immediately. Sharing again later mints a fresh link, so the old one stays dead wherever you posted it.",
             ),
         ],
     },
