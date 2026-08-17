@@ -2435,38 +2435,47 @@ footer {
 
 /* ── Guide screenshots ────────────────────────────────────────────────── */
 
-/* Sections with screenshots render text beside media (the home page's
-   two-column band) so tall phone captures don't elongate the page. Text
-   gets the wider track; collapses to stacked on phones. */
-.guide-band {
+/* One prose column with a single phone-shaped viewer beside it (the home
+   gallery's chrome): one tall capture on screen at a time, prev/next to
+   flip, sticky so it rides along as the text scrolls. Stacks on phones with
+   the gallery first. */
+.guide-gallery-layout {
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     gap: 1.5rem;
     align-items: start;
 }
 
-/* The image tracks the reader: sticky within its band so long prose keeps
-   its screenshot in view. */
-.guide-band-media {
+.guide-gallery-col {
     position: sticky;
     top: 1rem;
 }
 
+/* Guide captures are shorter than the home demo reel; size the body to the
+   image instead of reserving the home gallery's 70vh. */
+.guide-gallery-body {
+    min-height: 24rem;
+}
+
+.guide-gallery-col .gallery-video {
+    max-height: 60vh;
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
 @media (max-width: 800px) {
-    .guide-band {
+    .guide-gallery-layout {
         grid-template-columns: minmax(0, 1fr);
     }
-    .guide-band-media {
+    .guide-gallery-col {
         position: static;
+        order: -1;
     }
 }
 
 .guide-figure {
     margin: 1rem 0;
-}
-
-.guide-band-media .guide-figure {
-    margin: 1rem 0 0;
 }
 
 /* Framed like the site's cards; phone captures are tall, so cap the height

@@ -43,46 +43,88 @@ fn inline(text: &str) -> Element {
     }
 }
 
-/// Renders a guide's blocks grouped into sections split at `H2` boundaries.
-/// A section that carries screenshots becomes a text-beside-media band (the
-/// home page's two-column idiom) so tall phone captures sit next to their
-/// prose instead of elongating the page; text-only sections span full width.
-fn render_sections(blocks: &'static [Block]) -> Element {
-    let mut sections: Vec<(Vec<&'static Block>, Vec<&'static Block>)> = Vec::new();
-    let mut text: Vec<&'static Block> = Vec::new();
-    let mut images: Vec<&'static Block> = Vec::new();
-    for b in blocks {
-        if matches!(b, Block::H2(_)) && (!text.is_empty() || !images.is_empty()) {
-            sections.push((std::mem::take(&mut text), std::mem::take(&mut images)));
-        }
-        match b {
-            Block::Image { .. } => images.push(b),
-            _ => text.push(b),
+/// Renders a guide's content. With screenshots present, the prose runs in
+/// one column with a single phone-shaped gallery beside it (the home page's
+/// prev/next viewer) — one tall capture on screen at a time, sticky while
+/// the text scrolls. Without screenshots, blocks render linearly as ever.
+fn render_content(blocks: &'static [Block]) -> Element {
+    let shots: Vec<(&'static str, &'static str, Option<&'static str>)> = blocks
+        .iter()
+        .filter_map(|b| match b {
+            Block::Image { file, alt, caption } => Some((*file, *alt, *caption)),
+            _ => None,
+        })
+        .collect();
+    let text = blocks.iter().filter(|b| !matches!(b, Block::Image { .. }));
+
+    if shots.is_empty() {
+        return rsx! {
+            for b in text {
+                {render_block(b)}
+            }
+        };
+    }
+    rsx! {
+        div { class: "guide-gallery-layout",
+            div {
+                for b in text {
+                    {render_block(b)}
+                }
+            }
+            div { class: "guide-gallery-col", GuideGallery { shots } }
         }
     }
-    sections.push((text, images));
+}
+
+/// The guide's screenshot viewer: one image at a time with the home
+/// gallery's prev/next chrome, caption from the shot's own text.
+#[component]
+fn GuideGallery(shots: Vec<(&'static str, &'static str, Option<&'static str>)>) -> Element {
+    let mut index = use_signal(|| 0usize);
+    let total = shots.len();
+    let i = index().min(total.saturating_sub(1));
+    let (file, alt, caption) = shots[i];
+    let caption_text = caption.unwrap_or(alt);
+    let src = content::guide_image(file);
 
     rsx! {
-        for (i , (text , images)) in sections.into_iter().enumerate() {
-            if images.is_empty() {
-                div { key: "{i}",
-                    for b in text {
-                        {render_block(b)}
-                    }
+        div { class: "gallery-body guide-gallery-body",
+            if let Some(src) = src {
+                img {
+                    key: "{i}",
+                    class: "gallery-video",
+                    src: "{src}",
+                    alt: "{alt}",
+                    loading: "lazy",
+                    draggable: false,
                 }
-            } else {
-                div { key: "{i}", class: "guide-band",
-                    div { class: "guide-band-text",
-                        for b in text {
-                            {render_block(b)}
-                        }
-                    }
-                    div { class: "guide-band-media",
-                        for b in images {
-                            {render_block(b)}
-                        }
-                    }
+            }
+            if total > 1 {
+                button {
+                    class: "gallery-nav gallery-prev",
+                    aria_label: "Previous screenshot",
+                    onclick: move |_| {
+                        let i = index();
+                        index.set(if i == 0 { total - 1 } else { i - 1 });
+                    },
+                    "←"
                 }
+                button {
+                    class: "gallery-nav gallery-next",
+                    aria_label: "Next screenshot",
+                    onclick: move |_| {
+                        let i = index();
+                        index.set((i + 1) % total);
+                    },
+                    "→"
+                }
+            }
+        }
+        hr { class: "gallery-rule" }
+        div { class: "gallery-footer",
+            span { key: "{i}", class: "gallery-caption", "{caption_text}" }
+            if total > 1 {
+                span { class: "gallery-counter", "{i + 1} / {total}" }
             }
         }
     }
@@ -278,7 +320,7 @@ pub fn GuidePage(slug: String) -> Element {
                 h1 { class: "guide-title", "{g.title}" }
             }
             div { class: "guide-content section panel",
-                {render_sections(g.blocks)}
+                {render_content(g.blocks)}
             }
             if !g.related.is_empty() {
                 div { class: "guide-related section panel",
