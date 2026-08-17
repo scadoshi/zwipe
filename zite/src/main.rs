@@ -123,6 +123,25 @@ fn App() -> Element {
         loaded.set(true);
     });
 
+    // Track the sticky nav's real height into --nav-height so sticky content
+    // (the guide gallery) docks below it even when the nav wraps taller at
+    // narrow widths. A body-level ResizeObserver catches every layout change
+    // and re-queries the nav fresh, so per-route nav remounts can't hold a
+    // stale node. use_future: install exactly once, not per re-render.
+    use_future(|| async {
+        let _ = eval(
+            r#"(() => {
+                const set = () => {
+                    const nav = document.querySelector('.nav-wrapper');
+                    if (nav) document.documentElement.style.setProperty('--nav-height', nav.offsetHeight + 'px');
+                };
+                new ResizeObserver(set).observe(document.body);
+                set();
+            })();"#,
+        )
+        .await;
+    });
+
     // Apply the theme class to <body> so CSS variable lookups (e.g.
     // body { background-color: var(--bg-primary) }) resolve, and persist the
     // choice for next visit. The `loaded` guard keeps the pre-load default
