@@ -123,7 +123,7 @@ pub fn Guides() -> Element {
     rsx! {
         PageMeta {
             title: "Guides",
-            description: "How-to guides for building Magic: The Gathering decks on mobile with Zwipe: swiping to build, filtering, budgeting, land targets, deck stats, commanders, and more.",
+            description: "How-to guides for the Zwipe Magic: The Gathering deck builder: swiping, filtering, budgeting, commanders, stats, and more.",
             path: "/guides",
         }
         Nav {}

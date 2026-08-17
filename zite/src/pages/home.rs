@@ -204,8 +204,8 @@ pub fn Home() -> Element {
 
     rsx! {
         PageMeta {
-            title: "Mobile Magic: The Gathering & Commander Deck Builder",
-            description: "Zwipe is a Magic: The Gathering deck builder built for mobile. Swipe right to add, left to skip, up to maybe, down to undo. Swipe-pick your commander, tag decks by archetype, synergy-ranked cards, Commander-ready, decks synced across sessions.",
+            title: "Magic: The Gathering Deck Builder for Mobile",
+            description: "Magic: The Gathering deck builder for mobile. Swipe right to add, left to skip. Commander-ready, with synergy-ranked cards.",
             path: "/",
         }
         HomeJsonLd {}

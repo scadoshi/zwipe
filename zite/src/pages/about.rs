@@ -23,7 +23,7 @@ pub fn About() -> Element {
     rsx! {
         PageMeta {
             title: "About",
-            description: "Zwipe is built by Scotty Fermo (scadoshi). About page covers the tech stack (Rust, Dioxus, WASM, Axum, PostgreSQL) and the architecture behind the deck builder.",
+            description: "Who builds Zwipe and how: one developer, full-stack Rust (Dioxus, Axum, PostgreSQL), and the architecture behind the app.",
             path: "/about",
         }
         Nav {}

@@ -171,7 +171,7 @@ pub static GUIDES: &[Guide] = &[
     Guide {
         slug: "swipe-memory",
         title: "Swipe memory: skips that stick",
-        summary: "Skips and removals are remembered per deck, survive closing the app, and every deck keeps your place. Clear skips to start over.",
+        summary: "Skips and removals stick per deck and survive closing the app. Clear skips starts a deck over.",
         tags: &["Swiping"],
         related: &["swipe-to-build", "remove-cards"],
         blocks: &[
@@ -201,7 +201,7 @@ pub static GUIDES: &[Guide] = &[
     Guide {
         slug: "filtering",
         title: "Filter the card pool",
-        summary: "Stack filters to control which cards you see: name, color, mana, type, text, keyword, rarity, set, artist, price, card role, and format.",
+        summary: "Stack filters to control which cards you see: color, mana, type, text, keyword, rarity, set, price, and more.",
         tags: &["Filtering", "Cards"],
         related: &["card-roles", "oracle-tags"],
         blocks: &[
@@ -261,7 +261,7 @@ pub static GUIDES: &[Guide] = &[
     Guide {
         slug: "organize-and-browse",
         title: "Group, filter, and browse your lists",
-        summary: "The deck list and every card list share one chip grammar: Group by folds things into sections, Show narrows them, and group headers collapse.",
+        summary: "The deck list and card lists share one chip grammar: Group by folds into sections, Show narrows, and headers collapse.",
         tags: &["Deck building", "Cards"],
         related: &["filtering", "deck-tags", "swipe-to-build"],
         blocks: &[
@@ -358,7 +358,7 @@ pub static GUIDES: &[Guide] = &[
     Guide {
         slug: "commander-maybeboard",
         title: "Save commanders for later",
-        summary: "One account-wide list for commanders you might build someday: swipe up to save one, then browse, search, and start decks straight from it.",
+        summary: "One account-wide list of commanders you might build someday: swipe up to save, then start decks straight from it.",
         tags: &["Commander", "Deck building"],
         related: &["commander-and-formats", "swipe-to-build"],
         blocks: &[
@@ -574,7 +574,7 @@ pub static GUIDES: &[Guide] = &[
     Guide {
         slug: "tags-roles-and-oracle-tags",
         title: "Deck tags, card roles & oracle tags: how they fit",
-        summary: "One mental model for the three tagging concepts in Zwipe: deck tags seed oracle tags, oracle tags sharpen suggestions, and card roles are the read-side view.",
+        summary: "One mental model for Zwipe tagging: deck tags seed oracle tags, oracle tags sharpen suggestions, card roles show the read.",
         tags: &["Oracle tags", "Cards"],
         related: &["deck-tags", "card-roles", "oracle-tags"],
         blocks: &[
@@ -643,7 +643,7 @@ pub static GUIDES: &[Guide] = &[
     Guide {
         slug: "share-your-deck",
         title: "Share a deck with a link",
-        summary: "One link makes any deck public. Viewers get the full picture in a browser: featured cards, stats, and the whole list. No account needed.",
+        summary: "One link makes any deck public: featured cards, stats, and the full list in any browser. No account needed.",
         tags: &["Deck building"],
         related: &["deck-mvps", "deck-stats"],
         blocks: &[
@@ -678,7 +678,7 @@ pub static GUIDES: &[Guide] = &[
     Guide {
         slug: "deck-stats",
         title: "Read your deck stats & charts",
-        summary: "The deck view fills with live numbers and charts: counts, prices, mana curve, color and type breakdowns, fulfillment, and draw odds.",
+        summary: "The deck view fills with live numbers: counts, prices, mana curve, color and type breakdowns, and draw odds.",
         tags: &["Deck stats"],
         related: &["budgeting", "land-targets", "import-export"],
         blocks: &[

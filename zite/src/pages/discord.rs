@@ -6,7 +6,7 @@ pub fn Discord() -> Element {
     rsx! {
         PageMeta {
             title: "Discord",
-            description: "Join the Zwipe Discord community. Connect with other users, report bugs, suggest enhancements, and follow development updates.",
+            description: "Join the Zwipe Discord: talk decks, report bugs, suggest features, and follow development.",
             path: "/discord",
         }
         Nav {}

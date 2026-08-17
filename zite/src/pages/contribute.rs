@@ -14,7 +14,7 @@ pub fn Contribute() -> Element {
     rsx! {
         PageMeta {
             title: "Contribute",
-            description: "Support Zwipe development. Donate via Stripe, Buy Me a Coffee, or GitHub Sponsors. Funds keep the app free and the servers running.",
+            description: "Support Zwipe via Stripe, Buy Me a Coffee, or GitHub Sponsors. Funds keep the app free and the servers running.",
             path: "/contribute",
         }
         Nav {}
