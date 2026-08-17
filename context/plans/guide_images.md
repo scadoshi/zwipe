@@ -1,6 +1,6 @@
 # Guide images
 
-**Status: ACTIVE 2026-08-16 — infra DONE, capturing `getting-started` (3 shots, list below).** One guide at a time, in the tracker order below. Built to
+**Status: ACTIVE — `getting-started` SHIPPED 2026-08-17. Next up: `swipe-to-build` (3 shots, list below).** One guide at a time, in the tracker order below. Built to
 survive interruption: the tracker + per-guide shot lists say exactly where we
 left off and what to capture next.
 
@@ -51,7 +51,7 @@ left off and what to capture next.
 
 Format: `nn — what the image must show` (alt text ≈ the same sentence).
 
-- [ ] **getting-started** (3)
+- [x] **getting-started** (3) — shipped 2026-08-17
   - 01 — create-deck form with name, format picked, commander filled
   - 02 — add screen mid-stack: a card up top, Synergy/Filter chips visible
   - 03 — deck view with a real deck: featured cards + stats sections

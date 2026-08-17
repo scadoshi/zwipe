@@ -3,6 +3,8 @@
 //! app: labels here mirror the real in-app UI text. Never describe where
 //! synergy data comes from; only its user-facing behavior.
 
+use dioxus::prelude::*;
+
 /// A block of article content. Rendered in order by `super::render_block`.
 pub enum Block {
     /// Emphasized intro paragraph.
@@ -35,8 +37,17 @@ pub enum Block {
 /// literal path, so each shipped image gets one arm here, added when the file
 /// lands (see `context/plans/guide_images.md`). `None` renders nothing — an
 /// [`Block::Image`] without its registry arm is a wiring bug caught by eye.
-pub fn guide_image(file: &str) -> Option<dioxus::prelude::Asset> {
+pub fn guide_image(file: &str) -> Option<Asset> {
     match file {
+        "getting-started/01-create-deck.webp" => {
+            Some(asset!("/assets/guides/getting-started/01-create-deck.webp"))
+        }
+        "getting-started/02-add-cards.webp" => {
+            Some(asset!("/assets/guides/getting-started/02-add-cards.webp"))
+        }
+        "getting-started/03-deck-cards.webp" => {
+            Some(asset!("/assets/guides/getting-started/03-deck-cards.webp"))
+        }
         _ => None,
     }
 }
@@ -69,6 +80,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Make a deck, name it, and pick a format. A commander format also unlocks the command-zone fields: commander, and where relevant partner, background, or signature spell.",
             ),
+            Block::Image {
+                file: "getting-started/01-create-deck.webp",
+                alt: "The Create Deck form with a name typed, the Commander format picked, and Krenko, Mob Boss as commander",
+                caption: None,
+            },
             Block::H2("Build by swiping"),
             Block::P("Open the deck, tap Add Deck Cards, and act on the top card with a flick:"),
             Block::Swipe(&[
@@ -77,6 +93,11 @@ pub static GUIDES: &[Guide] = &[
                 ("up", "send it to your maybeboard"),
                 ("down", "undo your last swipe"),
             ]),
+            Block::Image {
+                file: "getting-started/02-add-cards.webp",
+                alt: "The Add Deck Cards screen with a Goblin on top of the stack and the Search, Maybeboard, and Synergy chips above it",
+                caption: None,
+            },
             Block::P(
                 "Every add saves instantly and syncs across your devices. Skips stick too: swipe left and that card stays out of this deck, even after you close the app. Each deck also keeps your place, so you can hop between decks and pick up where you left off.",
             ),
@@ -88,6 +109,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "As the deck grows, the deck view fills with live stats, charts, and a warnings list with one-tap fixes. Trim with the remove flow, set a budget or land target, and import or export any time. Each area has its own guide below.",
             ),
+            Block::Image {
+                file: "getting-started/03-deck-cards.webp",
+                alt: "A built deck's card list: featured commander and MVP images up top, quick add, and the group and filter rows",
+                caption: None,
+            },
         ],
     },
     // Build
