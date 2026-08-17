@@ -3,14 +3,10 @@
 **Status: ACTIVE — 4 guides shipped (getting-started, swipe-to-build,
 commander-and-formats, filtering; 9 webps + 1 shared reference).**
 
-**Resume here (in order):**
-1. **Verify shipped images sit in the right places.** Read (view) every webp
-   under `zite/assets/guides/*/` and check each against its `Block::Image`
-   entry in `zite/src/pages/guides/content.rs`: the picture matches its alt
-   text, and it sits in the right guide. The captures were eyeballed before
-   conversion but never re-verified as shipped files. Registry arms live in
-   `guide_image()` in content.rs — every file needs one or it silently
-   doesn't render.
+**Resume here:**
+1. ~~Verify shipped images sit in the right places.~~ Done 2026-08-17: all 9
+   shipped webps viewed and matched against their `Block::Image` alt text and
+   `guide_image()` registry arms — no mismatches.
 2. **Next capture session: `commander-maybeboard` (3 shots, tracker below).**
    Owner drops raw PNGs on the Desktop (not staging — that's been the real
    flow) with rough names; assistant converts (`cwebp -q 82 -resize 860 0`),
