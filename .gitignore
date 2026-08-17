@@ -10,3 +10,4 @@ cache/
 # only one builds use) and generate ghost Dependabot alerts against stale graphs.
 zerver/Cargo.lock
 zwiper/Cargo.lock
+zite/assets/guides/_staging/

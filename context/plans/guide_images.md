@@ -1,7 +1,6 @@
 # Guide images
 
-**Status: ACTIVE 2026-08-16 — nothing captured yet. Next up: infra step, then
-`getting-started`.** One guide at a time, in the tracker order below. Built to
+**Status: ACTIVE 2026-08-16 — infra DONE, capturing `getting-started` (3 shots, list below).** One guide at a time, in the tracker order below. Built to
 survive interruption: the tracker + per-guide shot lists say exactly where we
 left off and what to capture next.
 
@@ -44,9 +43,9 @@ left off and what to capture next.
 
 ## One-time infra (before the first guide)
 
-- [ ] `Block::Image` variant + `render_block` arm + `.guide-img` CSS
-- [ ] `_staging/` dir note in zite README or a `.gitkeep`, excluded from git
-- [ ] `guide_image` asset registry scaffold
+- [x] `Block::Image` variant + `render_block` arm + `.guide-img` CSS
+- [x] `_staging/` dir created + gitignored
+- [x] `guide_image` asset registry scaffold (in content.rs, empty until first image)
 
 ## Tracker + shot lists
 

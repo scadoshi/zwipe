@@ -21,6 +21,24 @@ pub enum Block {
     Note(&'static str),
     /// Monospace flow diagram (whitespace preserved), for showing how steps connect.
     Diagram(&'static str),
+    /// Screenshot with alt text and an optional caption. `file` is the path
+    /// under `assets/guides/` (e.g. `"getting-started/01-create-form.webp"`),
+    /// resolved through the [`guide_image`] registry.
+    Image {
+        file: &'static str,
+        alt: &'static str,
+        caption: Option<&'static str>,
+    },
+}
+
+/// Compile-time asset registry for guide screenshots. `asset!()` needs a
+/// literal path, so each shipped image gets one arm here, added when the file
+/// lands (see `context/plans/guide_images.md`). `None` renders nothing — an
+/// [`Block::Image`] without its registry arm is a wiring bug caught by eye.
+pub fn guide_image(file: &str) -> Option<dioxus::prelude::Asset> {
+    match file {
+        _ => None,
+    }
 }
 
 pub struct Guide {
