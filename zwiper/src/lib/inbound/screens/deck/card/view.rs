@@ -60,6 +60,7 @@ use zwipe_core::{
         auth::models::session::Session,
         card::{
             Card,
+            scryfall_data::colors::Color,
             search_card::{
                 card_filter::{
                     builder::CardQueryBuilder, card_sort_key::CardSortKey,
@@ -125,6 +126,10 @@ const QTY_FLUSH_MS: u64 = 300;
 fn CollapsibleGroup(
     title: String,
     section_key: String,
+    /// Color-identity pips rendered before the title, for color groups. The
+    /// same wrapper the deck list uses, so pips are one size app-wide.
+    #[props(default)]
+    pips: Option<Vec<Color>>,
     collapsed_groups: Signal<HashSet<String>>,
     children: Element,
 ) -> Element {
@@ -141,6 +146,16 @@ fn CollapsibleGroup(
                     }
                 },
                 span { class: "card-row-arrow", "▸" }
+                if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
+                    span { class: "identity-pips",
+                        for color in pips.iter() {
+                            i {
+                                key: "{color.to_short_name()}",
+                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                            }
+                        }
+                    }
+                }
                 "{title}"
             }
             div {
@@ -1691,8 +1706,15 @@ pub fn View(deck_id: Uuid) -> Element {
                                 .sum();
                             rsx! {
                         CollapsibleGroup {
-                            title: format!("{} ({qty_count})", group.label),
-                            section_key: group.label.clone(),
+                            // Color groups show pips in place of a label, so the
+                            // title is just the count; the key comes from the pips.
+                            title: if group.label.is_empty() {
+                                format!("({qty_count})")
+                            } else {
+                                format!("{} ({qty_count})", group.label)
+                            },
+                            section_key: group.key(),
+                            pips: group.pips.clone(),
                             collapsed_groups,
                             for card in group.cards.iter() {
                                 {

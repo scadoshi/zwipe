@@ -257,7 +257,7 @@ fn DeckRow(profile: DeckProfile) -> Element {
                     {profile.name.to_string()}
                 }
                 if !pips.is_empty() {
-                    span { class: "deck-list-identity",
+                    span { class: "identity-pips",
                         for color in pips {
                             i {
                                 key: "{color.to_short_name()}",
@@ -537,7 +537,7 @@ pub fn DeckList() -> Element {
                                                 // Same wrapper the deck rows use, so a group's
                                                 // pips are the size of the pips on the decks
                                                 // beneath it.
-                                                span { class: "deck-list-identity",
+                                                span { class: "identity-pips",
                                                     for color in pips.clone() {
                                                         i {
                                                             key: "{color.to_short_name()}",

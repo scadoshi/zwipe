@@ -29,6 +29,8 @@ pub const UPCOMING: &[Release] = &[Release {
     version: "1.9.2",
     date: "In progress",
     entries: &[
+        "Grouping a deck's cards by color now gives each color combination its own group, so your Azorius cards sit together instead of sharing one Multicolor pile with everything else.",
+        "Color group headers show mana pips instead of the color's name, on your deck's cards, the deck list, and shared deck pages.",
         "Color group headers on the deck list show the same size pips as the decks under them.",
     ],
 }];

@@ -55,8 +55,35 @@ impl std::fmt::Display for GroupByOption {
 pub struct CardGroup {
     /// Display label for this group (e.g., "creatures", "3", "blue").
     pub label: String,
+    /// Color-identity pips, in WUBRG order, when grouping by
+    /// [`GroupByOption::Color`]. The view renders these in place of a color
+    /// word, so `label` is empty for colored groups (colorless keeps its
+    /// word — there's no pip for "no colors"). `None` for every other
+    /// grouping option.
+    pub pips: Option<Vec<Color>>,
     /// Cards belonging to this group, in the order they were received.
     pub cards: Vec<Card>,
+}
+
+impl CardGroup {
+    /// Stable identity for this group, used as the collapse key. Colored
+    /// groups carry no label, so they key off their pips instead — without
+    /// this every colored group would share the empty string and collapse as
+    /// one.
+    pub fn key(&self) -> String {
+        if !self.label.is_empty() {
+            return self.label.clone();
+        }
+        self.pips
+            .as_ref()
+            .map(|pips| {
+                pips.iter()
+                    .map(|c| c.to_short_name())
+                    .collect::<Vec<_>>()
+                    .join("")
+            })
+            .unwrap_or_default()
+    }
 }
 
 /// Extension trait for grouping a `Vec<Card>` into labelled buckets.
@@ -74,6 +101,11 @@ impl GroupCards for Vec<Card> {
         if option == GroupByOption::CardRole {
             return group_by_card_role(self);
         }
+        // Color grouping has an open-ended bucket set (one per color combination),
+        // so it can't use the fixed-label path below.
+        if option == GroupByOption::Color {
+            return group_by_color(self);
+        }
 
         let labels: Vec<&str> = match option {
             GroupByOption::CardType => vec![
@@ -87,16 +119,8 @@ impl GroupCards for Vec<Card> {
                 "Other",
             ],
             GroupByOption::Cmc => vec!["0", "1", "2", "3", "4", "5", "6+"],
-            GroupByOption::Color => vec![
-                "White",
-                "Blue",
-                "Black",
-                "Red",
-                "Green",
-                "Multicolor",
-                "Colorless",
-            ],
-            GroupByOption::CardRole => unreachable!(),
+            GroupByOption::Color => unreachable!("color uses group_by_color"),
+            GroupByOption::CardRole => unreachable!("card role uses group_by_card_role"),
         };
         let mut buckets: Vec<Vec<Card>> = vec![Vec::new(); labels.len()];
         self.into_iter().for_each(|card| {
@@ -114,10 +138,65 @@ impl GroupCards for Vec<Card> {
             .filter(|(_, cards)| !cards.is_empty())
             .map(|(label, cards)| CardGroup {
                 label: label.to_string(),
+                pips: None,
                 cards,
             })
             .collect()
     }
+}
+
+/// Groups by exact color identity: one group per distinct combination, so
+/// Azorius cards sit together and apart from Jeskai, rather than every
+/// multicolored card sharing one "Multicolor" bucket. This mirrors how the
+/// deck list groups decks by color.
+///
+/// Colored groups carry [`CardGroup::pips`] and an empty label — the view
+/// renders pips where a color word used to be. Colorless keeps its word and
+/// sorts last.
+fn group_by_color(cards: Vec<Card>) -> Vec<CardGroup> {
+    let mut groups: Vec<CardGroup> = Vec::new();
+    for card in cards {
+        let pips = identity_pips(&card);
+        match groups
+            .iter_mut()
+            .find(|g| g.pips.as_deref() == Some(pips.as_slice()))
+        {
+            Some(group) => group.cards.push(card),
+            None => {
+                let label = if pips.is_empty() {
+                    "Colorless".to_string()
+                } else {
+                    String::new()
+                };
+                groups.push(CardGroup {
+                    label,
+                    pips: Some(pips),
+                    cards: vec![card],
+                });
+            }
+        }
+    }
+    // Fewest colors first, each in WUBRG order, colorless last — the same
+    // ordering the deck list uses for its color groups.
+    groups.sort_by_key(|g| {
+        let pips = g.pips.clone().unwrap_or_default();
+        let order: Vec<usize> = pips
+            .iter()
+            .map(|c| Color::all().iter().position(|a| a == c).unwrap_or(0))
+            .collect();
+        (pips.is_empty(), pips.len(), order)
+    });
+    groups
+}
+
+/// A card's color identity in WUBRG order, so two cards with the same colors
+/// always produce the same pip sequence and land in the same group.
+fn identity_pips(card: &Card) -> Vec<Color> {
+    let identity = &card.scryfall_data.color_identity;
+    Color::all()
+        .into_iter()
+        .filter(|c| identity.contains(c))
+        .collect()
 }
 
 /// Groups cards by card role. Cards with multiple roles appear in each matching
@@ -143,12 +222,14 @@ fn group_by_card_role(cards: Vec<Card>) -> Vec<CardGroup> {
         .into_iter()
         .map(|(slug, cards)| CardGroup {
             label: role_label(&slug),
+            pips: None,
             cards,
         })
         .collect();
     if !uncategorized.is_empty() {
         groups.push(CardGroup {
             label: "uncategorized".to_string(),
+            pips: None,
             cards: uncategorized,
         });
     }
@@ -160,7 +241,7 @@ fn classify(card: &Card, option: GroupByOption) -> usize {
     match option {
         GroupByOption::CardType => classify_card_type(card),
         GroupByOption::Cmc => classify_cmc(card),
-        GroupByOption::Color => classify_color(card),
+        GroupByOption::Color => unreachable!("color uses group_by_color"),
         GroupByOption::CardRole => unreachable!("card role uses group_by_card_role"),
     }
 }
@@ -196,28 +277,6 @@ fn classify_cmc(card: &Card) -> usize {
     let cmc = card.scryfall_data.cmc.unwrap_or(0.0);
     let floored = cmc.floor() as usize;
     floored.min(6) // indices 0–5 for "0"–"5", index 6 for "6+"
-}
-
-/// Color identity classification — uses WUBRG order + multicolor + colorless.
-fn classify_color(card: &Card) -> usize {
-    let ci = &card.scryfall_data.color_identity;
-    if ci.is_empty() {
-        return 6; // "colorless"
-    }
-    if ci.len() >= 2 {
-        return 5; // "multicolor"
-    }
-    let Some(color) = ci.first() else {
-        return 6; // "colorless
-    };
-    // Exactly one color — map to WUBRG index (0–4)
-    match color {
-        Color::White => 0,
-        Color::Blue => 1,
-        Color::Black => 2,
-        Color::Red => 3,
-        Color::Green => 4,
-    }
 }
 
 #[cfg(test)]
@@ -463,16 +522,50 @@ mod tests {
         let mut card = make_card("Plains");
         card.scryfall_data.color_identity = Colors::from([Color::White]);
         let result = vec![card].group_by(GroupByOption::Color);
-        assert_eq!(result[0].label, "White");
+        // Colored groups render as pips, so the label stays empty.
+        assert_eq!(result[0].label, "");
+        assert_eq!(result[0].pips.as_deref(), Some([Color::White].as_slice()));
     }
 
+    /// Each color combination is its own group — the old behavior funnelled
+    /// every multicolored card into one "Multicolor" bucket.
     #[test]
-    fn test_group_by_color_multicolor() {
-        let mut card = make_card("Atraxa");
-        card.scryfall_data.color_identity =
-            Colors::from([Color::White, Color::Blue, Color::Black, Color::Green]);
-        let result = vec![card].group_by(GroupByOption::Color);
-        assert_eq!(result[0].label, "Multicolor");
+    fn test_group_by_color_splits_combinations() {
+        let mut azorius = make_card("Azorius Card");
+        azorius.scryfall_data.color_identity = Colors::from([Color::White, Color::Blue]);
+        let mut azorius_two = make_card("Another Azorius Card");
+        azorius_two.scryfall_data.color_identity = Colors::from([Color::White, Color::Blue]);
+        let mut rakdos = make_card("Rakdos Card");
+        rakdos.scryfall_data.color_identity = Colors::from([Color::Black, Color::Red]);
+
+        let result = vec![azorius, rakdos, azorius_two].group_by(GroupByOption::Color);
+        assert_eq!(result.len(), 2);
+        assert_eq!(
+            result[0].pips.as_deref(),
+            Some([Color::White, Color::Blue].as_slice())
+        );
+        assert_eq!(result[0].cards.len(), 2);
+        assert_eq!(
+            result[1].pips.as_deref(),
+            Some([Color::Black, Color::Red].as_slice())
+        );
+        assert_eq!(result[1].cards.len(), 1);
+    }
+
+    /// Color identity normalizes to WUBRG order, so the same colors group
+    /// together however the source listed them.
+    #[test]
+    fn test_group_by_color_normalizes_pip_order() {
+        let mut a = make_card("A");
+        a.scryfall_data.color_identity = Colors::from([Color::Red, Color::White]);
+        let mut b = make_card("B");
+        b.scryfall_data.color_identity = Colors::from([Color::White, Color::Red]);
+        let result = vec![a, b].group_by(GroupByOption::Color);
+        assert_eq!(result.len(), 1);
+        assert_eq!(
+            result[0].pips.as_deref(),
+            Some([Color::White, Color::Red].as_slice())
+        );
     }
 
     #[test]
@@ -480,20 +573,43 @@ mod tests {
         let card = make_card("Eldrazi"); // color_identity = empty by default
         let result = vec![card].group_by(GroupByOption::Color);
         assert_eq!(result[0].label, "Colorless");
+        assert!(result[0].pips.as_deref().is_some_and(<[Color]>::is_empty));
     }
 
+    /// Fewest colors first in WUBRG order, colorless last.
     #[test]
     fn test_group_by_color_group_order() {
         let mut white = make_card("White Card");
         white.scryfall_data.color_identity = Colors::from([Color::White]);
         let mut red = make_card("Red Card");
         red.scryfall_data.color_identity = Colors::from([Color::Red]);
+        let mut boros = make_card("Boros Card");
+        boros.scryfall_data.color_identity = Colors::from([Color::White, Color::Red]);
         let colorless = make_card("Colorless Card"); // empty color_identity
-        // Groups emitted in fixed order: white(0), red(3), colorless(6)
-        let result = vec![colorless, red, white].group_by(GroupByOption::Color);
-        assert_eq!(result.len(), 3);
-        assert_eq!(result[0].label, "White");
-        assert_eq!(result[1].label, "Red");
-        assert_eq!(result[2].label, "Colorless");
+
+        let result = vec![colorless, boros, red, white].group_by(GroupByOption::Color);
+        assert_eq!(result.len(), 4);
+        assert_eq!(result[0].pips.as_deref(), Some([Color::White].as_slice()));
+        assert_eq!(result[1].pips.as_deref(), Some([Color::Red].as_slice()));
+        assert_eq!(
+            result[2].pips.as_deref(),
+            Some([Color::White, Color::Red].as_slice())
+        );
+        assert_eq!(result[3].label, "Colorless");
+    }
+
+    /// Collapse keys must differ per group; colored groups have no label to
+    /// key off, so they fall back to their pips.
+    #[test]
+    fn test_color_group_keys_are_distinct() {
+        let mut white = make_card("White Card");
+        white.scryfall_data.color_identity = Colors::from([Color::White]);
+        let mut azorius = make_card("Azorius Card");
+        azorius.scryfall_data.color_identity = Colors::from([Color::White, Color::Blue]);
+        let colorless = make_card("Colorless Card");
+
+        let result = vec![white, azorius, colorless].group_by(GroupByOption::Color);
+        let keys: Vec<String> = result.iter().map(super::CardGroup::key).collect();
+        assert_eq!(keys, vec!["W", "WU", "Colorless"]);
     }
 }

@@ -498,6 +498,26 @@
     line-height: 1.5em;
 }
 
+/* A run of color-identity pips standing in for a name: the deck row's colors,
+   and the group headers that group by color (deck list, deck cards, and the
+   share page). Shared rather than per-screen so a pip is one size wherever it
+   names a color, instead of shrinking to whatever text it sits beside. */
+.identity-pips {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Square, at the stat-chip's height rather than the small inline glyph size. */
+.identity-pips i.ms.ms-cost {
+    box-sizing: border-box;
+    width: 1.55rem;
+    height: 1.55rem;
+    font-size: 1rem;
+    border-radius: 0.5rem;
+    padding: 0;
+}
+
 /* Squircle every mana pip so it shares the app's rounded-rect grammar (buttons,
    mana filter boxes) instead of mana-font's default circle. The element+two-class
    selector outranks mana-font's own border-radius; box-shadow follows the radius. */

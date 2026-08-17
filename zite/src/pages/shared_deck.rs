@@ -54,6 +54,31 @@ struct PreviewCard {
     leaving: bool,
 }
 
+/// One card section in the deck grid: the command zone, tokens, lands, or a
+/// group from the Group by control.
+struct Section {
+    /// Collapse identity. Separate from `title` because color groups show pips
+    /// instead of a name, leaving titles that can repeat.
+    key: String,
+    /// Header text, e.g. `Creatures (21)`, or a bare count for color groups.
+    title: String,
+    /// Color pips shown before the title, when grouping by color.
+    pips: Option<Vec<Color>>,
+    cards: Vec<Card>,
+}
+
+impl Section {
+    /// A section whose header is a plain name, with no pips.
+    fn titled(title: String, cards: Vec<Card>) -> Self {
+        Self {
+            key: title.clone(),
+            title,
+            pips: None,
+            cards,
+        }
+    }
+}
+
 /// Collapsible bordered group (card sections and the stat panels alike): a
 /// header with the card-row disclosure arrow over a body easing open/closed
 /// via the `.collapsible` grid-rows technique — the app's deck-screen
@@ -63,6 +88,9 @@ struct PreviewCard {
 fn SdCollapsibleGroup(
     title: String,
     section_key: String,
+    /// Color-identity pips rendered before the title, for color groups.
+    #[props(default)]
+    pips: Option<Vec<Color>>,
     collapsed_groups: Signal<HashSet<String>>,
     children: Element,
 ) -> Element {
@@ -80,6 +108,16 @@ fn SdCollapsibleGroup(
                     }
                 },
                 span { class: "card-row-arrow", "▸" }
+                if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
+                    span { class: "identity-pips",
+                        for color in pips.iter() {
+                            i {
+                                key: "{color.to_short_name()}",
+                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                            }
+                        }
+                    }
+                }
                 "{title}"
             }
             div {
@@ -566,14 +604,17 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     // balance them into independent columns. CSS multi-column would
     // reflow the whole layout when a card expands (shifting groups between
     // columns); independent flex columns let a column just grow taller.
-    let mut sections: Vec<(String, Vec<Card>)> = Vec::new();
+    let mut sections: Vec<Section> = Vec::new();
     // Tokens the deck's cards produce (server-derived), shown like the app's
     // token list. Name-sorted, not run through the card filter.
     if show_tokens() && !deck.tokens.is_empty() {
         let tokens: Vec<Card> = Cards::from(deck.tokens.clone())
             .sorted(CardSortKey::Name, true)
             .into();
-        sections.push((format!("Tokens ({})", tokens.len()), tokens));
+        sections.push(Section::titled(
+            format!("Tokens ({})", tokens.len()),
+            tokens,
+        ));
     }
     if show_command_zone() {
         let mut cz: Vec<Card> = Vec::new();
@@ -591,13 +632,16 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             } else {
                 "Commander"
             };
-            sections.push((header.to_string(), cz));
+            sections.push(Section::titled(header.to_string(), cz));
         }
         if let Some(c) = &deck.background {
-            sections.push(("Background".to_string(), vec![c.clone()]));
+            sections.push(Section::titled("Background".to_string(), vec![c.clone()]));
         }
         if let Some(c) = &deck.signature_spell {
-            sections.push(("Signature spell".to_string(), vec![c.clone()]));
+            sections.push(Section::titled(
+                "Signature spell".to_string(),
+                vec![c.clone()],
+            ));
         }
     }
     for group in groups {
@@ -606,13 +650,26 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             .iter()
             .map(|c| i64::from(*qty_by_id.get(&c.scryfall_data.id).unwrap_or(&1)))
             .sum();
-        sections.push((format!("{} ({})", group.label, qty), group.cards));
+        // Color groups render as pips with no label, so the title is the bare
+        // count and the collapse key comes from the group itself — two color
+        // groups with equal counts would otherwise share a key and fold together.
+        let title = if group.label.is_empty() {
+            format!("({qty})")
+        } else {
+            format!("{} ({})", group.label, qty)
+        };
+        sections.push(Section {
+            key: group.key(),
+            title,
+            pips: group.pips.clone(),
+            cards: group.cards,
+        });
     }
     // Lands as a dedicated section (pulled out of the group-by so it's consistent
     // across grouping modes), appended last so it closes out the final column —
     // keeps it connected to the grid instead of an orphan band.
     if !lands.is_empty() {
-        sections.push((format!("Lands ({land_qty})"), lands));
+        sections.push(Section::titled(format!("Lands ({land_qty})"), lands));
     }
 
     // Distribution charts, mirroring the app's deck screen sections: metrics
@@ -809,7 +866,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     // (not shortest-column greedy) so section order survives both layouts:
     // desktop columns read left-to-right in order, and the phone single-column
     // stack keeps the same order instead of scrambling it.
-    let section_heights: Vec<usize> = sections.iter().map(|(_, cards)| cards.len() + 2).collect();
+    let section_heights: Vec<usize> = sections.iter().map(|s| s.cards.len() + 2).collect();
     let run_height =
         |from: usize, to: usize| -> usize { section_heights.iter().take(to).skip(from).sum() };
     let n = sections.len();
@@ -824,7 +881,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             }
         }
     }
-    let mut columns: Vec<Vec<(String, Vec<Card>)>> = vec![Vec::new(); COLS];
+    let mut columns: Vec<Vec<Section>> = (0..COLS).map(|_| Vec::new()).collect();
     for (idx, section) in sections.into_iter().enumerate() {
         let ci = if idx < cuts.0 {
             0
@@ -1067,13 +1124,14 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             section { class: "sd-columns",
                 for (ci, col) in columns.into_iter().enumerate() {
                     div { class: "sd-column", key: "{ci}",
-                        for (header, cards) in col {
+                        for section in col {
                             SdCollapsibleGroup {
-                                key: "{header}",
-                                title: header.clone(),
-                                section_key: header.clone(),
+                                key: "{section.key}",
+                                title: section.title.clone(),
+                                section_key: section.key.clone(),
+                                pips: section.pips.clone(),
                                 collapsed_groups,
-                                for card in cards {
+                                for card in section.cards {
                                     CardRow {
                                         key: "{card.scryfall_data.id}",
                                         qty: *qty_by_id.get(&card.scryfall_data.id).unwrap_or(&1),
