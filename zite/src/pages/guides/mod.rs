@@ -307,12 +307,15 @@ pub fn GuidePage(slug: String) -> Element {
                 let shots = guide_shots(g.blocks);
                 let article = rsx! {
                     div { class: "guide-content section panel",
-                        h1 { class: "guide-title", "{g.title}" }
+                        // Panel-header anatomy (title + rule) on an h1 so
+                        // the page keeps its semantic heading.
+                        h1 { class: "panel-title guide-title", "{g.title}" }
                         div { class: "guide-title-tags",
                             for t in g.tags.iter().copied() {
                                 span { class: "tag {tag_color_class(t)}", "{t}" }
                             }
                         }
+                        hr { class: "panel-rule" }
                         {render_text(g.blocks)}
                     }
                 };

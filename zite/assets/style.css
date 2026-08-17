@@ -2512,5 +2512,6 @@ footer {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
-    margin: 0.5rem 0 1rem;
+    /* The panel-rule below owns the bottom spacing. */
+    margin: 0.5rem 0 0;
 }
