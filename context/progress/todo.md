@@ -26,6 +26,8 @@ at `context/archive/complete_2026_q1.md`.
 
 - [ ] **Verify the Android resume-crash fix in the field (1.7.6+ live since 2026-08-10).** The onDestroy process-kill shipped untested-on-device by owner call; the verify is the crash reporter — the ndk-context panic site should be silent for vc33+ sessions (it fired 10 rows on 1.7.4). Check after a week of 1.7.6+ adoption; full history in `overview.md` 2026-08-12. Note: the iOS backgrounding-unresponsive bug below is likely the same trigger and is NOT covered by this fix.
 
+- [ ] **Deck list group-by-Color header pip mis-sized (owner report 2026-08-17).** When the Decks screen groups by Color, the group headers' color pips render smaller than the pips on the deck rows themselves, and the mana icon inside sits low in its container — nearly clipping the bottom edge. Fix: size the group-header pip to match the deck-row pip (both versions are visible in one screenshot when grouped by Color, so the diff is easy to eyeball). Cosmetic, but it kept the organize-and-browse guide screenshot on group-by-Tag instead of Color; recapture that shot by Color after the fix if desired (`context/plans/guide_images.md`).
+
 - [ ] **App unresponsive after long backgrounding (owner report 2026-07-30, iOS observed).** Leave the app backgrounded for a long time, return: sometimes the ENTIRE screen is unclickable until force-close + relaunch. Investigation leads, none confirmed: (a) a full-screen element left mounted and intercepting taps (modal backdrop, toast container, an overlay whose dismiss never fired); (b) the WebView's JS event bridge dying after OS memory pressure while the rendered page survives (wry/dioxus eval channel); (c) something in the resume path (visibility flusher, session refresh single-flight) wedging the main loop. Repro is intermittent — next occurrence, note which screen it happened on and whether scrolling still works (scroll-works-but-taps-don't points to (b)); the new crash/error reporting won't catch this class (no panic, no error toast).
 
 Recently resolved (outcomes in [`overview.md`](overview.md)):
@@ -43,6 +45,8 @@ Completed fixes are archived to
 ---
 
 ## Features — queued (owner 2026-07-11)
+
+- [ ] **Collapsible deck list groups — rethink the grouping style (owner 2026-08-17, needs design discussion first).** Deck list groups (Group by Format/Color/Tag) can't collapse today; the card list's groups can (shipped 1.8.1). Owner's sketch: restyle the deck list like the card list — each group becomes a single contained element/outline whose entries read as rows of one table, instead of today's floating per-deck panels — which would give group headers a natural tap-to-collapse target. Open question the owner explicitly wants thoughts on before building: does that make the deck list and card list screens look too similar? Pairs naturally with the group-header pip bug fix above (same screen, same headers).
 
 - [ ] **Share page: featured commander/MVP cards deal in like the app (owner 2026-08-13).** Replace the featured strip's skeleton ghosts on zwipe.net's shared deck page with the app's entrance instead: cards animate in as they load, using the deck cards screen's `deck-featured-deal` idiom (dealt from above with rotate + nth-child stagger, `backwards` fill, the ~0.65s cubic-bezier ease in `zwiper/assets/main.css`). Port the keyframes to `zite/assets/style.css` and drop the `sd-featured` skeleton block in `zite/src/pages/shared_deck.rs` (the rest of the page's skeleton stays). zite-only, no train dependency — can deploy anytime.
 
