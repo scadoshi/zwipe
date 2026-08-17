@@ -118,6 +118,24 @@ pub fn guide_image(file: &str) -> Option<Asset> {
         "deck-mvps/01-featured-strip.webp" => {
             Some(asset!("/assets/guides/deck-mvps/01-featured-strip.webp"))
         }
+        "deck-tags/01-tag-picker.webp" => {
+            Some(asset!("/assets/guides/deck-tags/01-tag-picker.webp"))
+        }
+        "oracle-tags/01-tag-search.webp" => {
+            Some(asset!("/assets/guides/oracle-tags/01-tag-search.webp"))
+        }
+        "oracle-tags/02-tags-section.webp" => {
+            Some(asset!("/assets/guides/oracle-tags/02-tags-section.webp"))
+        }
+        "card-roles/01-role-chips.webp" => {
+            Some(asset!("/assets/guides/card-roles/01-role-chips.webp"))
+        }
+        "oracle-tag-dictionary/01-by-letter.webp" => Some(asset!(
+            "/assets/guides/oracle-tag-dictionary/01-by-letter.webp"
+        )),
+        "oracle-tag-dictionary/02-search.webp" => Some(asset!(
+            "/assets/guides/oracle-tag-dictionary/02-search.webp"
+        )),
         _ => None,
     }
 }
@@ -663,6 +681,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Open Tags from the edit form, then tap to add or remove; each tag shows its definition up top. Search by name, and use × to clear them all.",
             ),
+            Block::Image {
+                file: "deck-tags/01-tag-picker.webp",
+                alt: "The Deck tags picker at five of five, the tapped tag's definition showing above the alphabetical list",
+                caption: None,
+            },
             Block::H2("How many"),
             Block::P(
                 "Up to five tags per deck (shown as N/5), from one flat alphabetical list. Tags are only ever added, never renamed, so old ones keep working.",
@@ -695,6 +718,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "The Oracle tags field shows a curated set of the most useful tags up front, and search reaches the rest, about 4,500 in all. A deck can hold up to 30.",
             ),
+            Block::Image {
+                file: "oracle-tags/01-tag-search.webp",
+                alt: "The Oracle tags picker mid-search, matching tags listed with the selected ones outlined",
+                caption: None,
+            },
             Block::Note(
                 "Not sure what a tag does? Tap Dictionary in the picker to look it up. See Browse the oracle-tag dictionary.",
             ),
@@ -702,6 +730,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Selected oracle tags sharpen which cards Zwipe suggests while you swipe, and on a commander deck they contribute to the synergy order alongside your commander. See Synergy-ranked cards.",
             ),
+            Block::Image {
+                file: "oracle-tags/02-tags-section.webp",
+                alt: "The deck view's Tags section: deck tags, the oracle tags they seeded, and other tags below",
+                caption: None,
+            },
             Block::Note(
                 "Deck tags are the easy on-ramp; oracle tags are the specific dial. See Deck tags, card roles & oracle tags: how they fit for how all three connect.",
             ),
@@ -725,10 +758,20 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "An A to Z rail runs across the top, plus a # group for tags that start with a number. Tap a letter to list every tag that starts with it, in alphabetical order.",
             ),
+            Block::Image {
+                file: "oracle-tag-dictionary/01-by-letter.webp",
+                alt: "The dictionary on the letter S, each entry showing its description and parent tag",
+                caption: None,
+            },
             Block::H2("Search"),
             Block::P(
                 "Type in the search box to match across the whole catalog by tag name or description, not just the letter you're on. A broad search shows the first matches.",
             ),
+            Block::Image {
+                file: "oracle-tag-dictionary/02-search.webp",
+                alt: "A dictionary search for burn, listing the tag and its relatives with descriptions",
+                caption: None,
+            },
             Block::H2("What each entry shows"),
             Block::P(
                 "Every row lists the tag's name, its description, and any parent tags it sits under. Descriptions are written by hand over time, so some tags still read \"No description yet.\"",
@@ -756,6 +799,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Tap a role chip to reveal the specific oracle tags underneath it. A trailing \"Other tags\" chip holds any of the card's functional tags that don't fall under a role.",
             ),
+            Block::Image {
+                file: "card-roles/01-role-chips.webp",
+                alt: "An expanded card row with its Card roles chips, one opened to the oracle tags beneath it and a description",
+                caption: None,
+            },
             Block::H2("Role distribution"),
             Block::P(
                 "The deck view's Distributions section includes a Role distribution chart, the same roles as the card chips, but counted across your whole deck, so you can see at a glance where it's thin.",

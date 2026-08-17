@@ -1,20 +1,14 @@
 # Guide images
 
-**Status: ACTIVE — 14 of 19 guides shipped (getting-started, swipe-to-build,
-commander-and-formats, filtering, commander-maybeboard, organize-and-browse,
-share-your-deck, remove-cards, swipe-memory, synergy, deck-stats, budgeting,
-land-targets, deck-mvps; 27 webps + 1 shared reference).**
+**Status: ACTIVE — 18 of 19 guides done; 33 webps + 1 shared reference.**
 
-**Remaining: deck-tags (1), oracle-tags (2), card-roles (1),
-oracle-tag-dictionary (1), import-export (2). Plus
-tags-roles-and-oracle-tags, which is a concept guide and ships with none.**
+**Remaining: `import-export` (2) — the last guide with no images.**
 
 **Resume here:**
 1. ~~Verify shipped images sit in the right places.~~ Done 2026-08-17: all 9
    shipped webps viewed and matched against their `Block::Image` alt text and
    `guide_image()` registry arms — no mismatches.
-2. **Next capture session: the tags run — `deck-tags` (1), `oracle-tags` (2),
-   `card-roles` (1), `oracle-tag-dictionary` (1), then `import-export` (2).**
+2. **Next (and last) capture session: `import-export` (2).**
    Owner drops raw PNGs on the Desktop (not staging — that's been the real
    flow) with rough names; assistant converts (`cwebp -q 82 -resize 860 0`),
    places, adds registry arms + `Block::Image` entries, compiles, commits,
@@ -125,16 +119,19 @@ Format: `nn — what the image must show` (alt text ≈ the same sentence).
   - 01 — Mana section: Lands actual/target row + curve
 - [x] **deck-mvps** (1) — shipped 2026-08-17
   - 01 — deck view featured strip with starred MVPs
-- [ ] **deck-tags** (1)
+- [x] **deck-tags** (1) — shipped 2026-08-17
   - 01 — deck tag picker open with a few tags selected
-- [ ] **oracle-tags** (2)
+- [x] **oracle-tags** (2) — shipped 2026-08-17
   - 01 — oracle tag select with search results
   - 02 — deck view Tags section showing chosen oracle tags
-- [ ] **card-roles** (1)
+- [x] **card-roles** (1) — shipped 2026-08-17
   - 01 — expanded card row: Card roles chips under the details
-- [ ] **tags-roles-and-oracle-tags** (0 — concept guide, links carry it)
-- [ ] **oracle-tag-dictionary** (1)
-  - 01 — dictionary screen mid-letter with a description open
+- [x] **tags-roles-and-oracle-tags** (0) — concept guide, links carry it; the
+  three guides it connects all have their own screenshots now
+- [x] **oracle-tag-dictionary** (2) — shipped 2026-08-17
+  - 01 — dictionary browsing a letter, descriptions + parent tags visible
+  - 02 — dictionary mid-search (the guide splits browse and search, so both
+    sections get a picture)
 - [ ] **import-export** (2)
   - 01 — import screen with a pasted list
   - 02 — export screen with boards toggled
