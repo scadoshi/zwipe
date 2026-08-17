@@ -43,6 +43,51 @@ fn inline(text: &str) -> Element {
     }
 }
 
+/// Renders a guide's blocks grouped into sections split at `H2` boundaries.
+/// A section that carries screenshots becomes a text-beside-media band (the
+/// home page's two-column idiom) so tall phone captures sit next to their
+/// prose instead of elongating the page; text-only sections span full width.
+fn render_sections(blocks: &'static [Block]) -> Element {
+    let mut sections: Vec<(Vec<&'static Block>, Vec<&'static Block>)> = Vec::new();
+    let mut text: Vec<&'static Block> = Vec::new();
+    let mut images: Vec<&'static Block> = Vec::new();
+    for b in blocks {
+        if matches!(b, Block::H2(_)) && (!text.is_empty() || !images.is_empty()) {
+            sections.push((std::mem::take(&mut text), std::mem::take(&mut images)));
+        }
+        match b {
+            Block::Image { .. } => images.push(b),
+            _ => text.push(b),
+        }
+    }
+    sections.push((text, images));
+
+    rsx! {
+        for (i , (text , images)) in sections.into_iter().enumerate() {
+            if images.is_empty() {
+                div { key: "{i}",
+                    for b in text {
+                        {render_block(b)}
+                    }
+                }
+            } else {
+                div { key: "{i}", class: "guide-band",
+                    div { class: "guide-band-text",
+                        for b in text {
+                            {render_block(b)}
+                        }
+                    }
+                    div { class: "guide-band-media",
+                        for b in images {
+                            {render_block(b)}
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn render_block(b: &'static Block) -> Element {
     match b {
         Block::Lead(t) => rsx! { p { class: "guide-lead", {inline(t)} } },
@@ -233,9 +278,7 @@ pub fn GuidePage(slug: String) -> Element {
                 h1 { class: "guide-title", "{g.title}" }
             }
             div { class: "guide-content section panel",
-                for b in g.blocks.iter() {
-                    {render_block(b)}
-                }
+                {render_sections(g.blocks)}
             }
             if !g.related.is_empty() {
                 div { class: "guide-related section panel",

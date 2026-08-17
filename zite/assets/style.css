@@ -2435,8 +2435,38 @@ footer {
 
 /* ── Guide screenshots ────────────────────────────────────────────────── */
 
+/* Sections with screenshots render text beside media (the home page's
+   two-column band) so tall phone captures don't elongate the page. Text
+   gets the wider track; collapses to stacked on phones. */
+.guide-band {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+/* The image tracks the reader: sticky within its band so long prose keeps
+   its screenshot in view. */
+.guide-band-media {
+    position: sticky;
+    top: 1rem;
+}
+
+@media (max-width: 800px) {
+    .guide-band {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .guide-band-media {
+        position: static;
+    }
+}
+
 .guide-figure {
     margin: 1rem 0;
+}
+
+.guide-band-media .guide-figure {
+    margin: 1rem 0 0;
 }
 
 /* Framed like the site's cards; phone captures are tall, so cap the height
