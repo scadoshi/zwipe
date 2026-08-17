@@ -41,6 +41,10 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 - **Guides search bar** (`7d7b773a`): client-side filter over the compiled
   `GUIDES` array, matching title, summary, tags, and body text, composed with
   the existing tag chips.
+- **Verified on prod 2026-08-17**: the command-zone art URLs (deployed and
+  checked on device), the Arcane Signet name-search fix (2026-08-13 deploy),
+  and the commander maybeboard, which has been working against prod for some
+  time. Maybeboard plan archived.
 
 ---
 
