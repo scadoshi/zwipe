@@ -1,15 +1,17 @@
 # Guide images
 
-**Status: ACTIVE — 7 guides shipped (getting-started, swipe-to-build,
+**Status: ACTIVE — 10 of 19 guides shipped (getting-started, swipe-to-build,
 commander-and-formats, filtering, commander-maybeboard, organize-and-browse,
-share-your-deck; 19 webps + 1 shared reference).**
+share-your-deck, remove-cards, swipe-memory, synergy; 22 webps + 1 shared
+reference).**
 
 **Resume here:**
 1. ~~Verify shipped images sit in the right places.~~ Done 2026-08-17: all 9
    shipped webps viewed and matched against their `Block::Image` alt text and
    `guide_image()` registry arms — no mismatches.
-2. **Next capture session: the single-shot run — `remove-cards`, `swipe-memory`,
-   `synergy` (1 each, tracker below); they can come in one batch.**
+2. **Next capture session: the deck-view run — `deck-stats` (2), `budgeting`
+   (1), `land-targets` (1), `deck-mvps` (1), `deck-tags` (1); all live on the
+   deck view, so they can come in one batch.**
    Owner drops raw PNGs on the Desktop (not staging — that's been the real
    flow) with rough names; assistant converts (`cwebp -q 82 -resize 860 0`),
    places, adds registry arms + `Block::Image` entries, compiles, commits,
@@ -105,11 +107,11 @@ Format: `nn — what the image must show` (alt text ≈ the same sentence).
 - [x] **filtering** (2) — shipped 2026-08-17 (02 became the Filters hint dialog; the sheet shot is shared with swipe-to-build)
   - 01 — filter sheet: colors + type section
   - 02 — add screen with the Filter dot lit (active filter)
-- [ ] **remove-cards** (1)
+- [x] **remove-cards** (1) — shipped 2026-08-17
   - 01 — remove screen with a card mid-swipe
-- [ ] **swipe-memory** (1)
+- [x] **swipe-memory** (1) — shipped 2026-08-17
   - 01 — deck More sheet with Clear skips visible
-- [ ] **synergy** (1)
+- [x] **synergy** (1) — shipped 2026-08-17
   - 01 — add screen, Synergy chip on, an on-theme suggestion up top
 - [ ] **deck-stats** (2)
   - 01 — Distributions section open (type/color bars)

@@ -96,6 +96,13 @@ pub fn guide_image(file: &str) -> Option<Asset> {
         "share-your-deck/03-stop-share.webp" => {
             Some(asset!("/assets/guides/share-your-deck/03-stop-share.webp"))
         }
+        "remove-cards/01-remove-swipe.webp" => {
+            Some(asset!("/assets/guides/remove-cards/01-remove-swipe.webp"))
+        }
+        "swipe-memory/01-clear-skips.webp" => {
+            Some(asset!("/assets/guides/swipe-memory/01-clear-skips.webp"))
+        }
+        "synergy/01-synergy-on.webp" => Some(asset!("/assets/guides/synergy/01-synergy-on.webp")),
         _ => None,
     }
 }
@@ -252,6 +259,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "The Boards row picks the pool you're trimming: Main, Maybe, Side, or All. Filter narrows it further, and Refresh restarts the stack and clears your undo history.",
             ),
+            Block::Image {
+                file: "remove-cards/01-remove-swipe.webp",
+                alt: "The Remove Deck Cards screen mid-swipe, with the Boards row set to Main above the pile",
+                caption: None,
+            },
             Block::Note(
                 "A card you remove also stops showing up when adding to this deck, the same as a skip. Clear the deck's skips to bring removed cards back into the pool.",
             ),
@@ -283,6 +295,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Open the deck's More menu and tap Clear skips. Every card you skipped or removed for that deck comes back into the pool, and swiping starts fresh.",
             ),
+            Block::Image {
+                file: "swipe-memory/01-clear-skips.webp",
+                alt: "The deck's More actions sheet with Clear skips among the actions",
+                caption: None,
+            },
             Block::Note("Clearing skips can't be undone, and it only affects the one deck."),
         ],
     },
@@ -414,6 +431,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "The Synergy chip appears on the Add Deck Cards screen once your deck has a commander. On, the stack is limited to fitting cards, best first; off, you browse everything legal. It's on by default and re-deals when toggled.",
             ),
+            Block::Image {
+                file: "synergy/01-synergy-on.webp",
+                alt: "The add screen with the Synergy chip lit and a Goblin on top of the stack for a Goblin commander",
+                caption: None,
+            },
             Block::Note(
                 "If a commander's synergy isn't ready yet, Zwipe shows all cards and says \"Synergy warming up\" once.",
             ),
