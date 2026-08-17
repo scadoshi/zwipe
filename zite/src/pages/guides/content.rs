@@ -103,6 +103,21 @@ pub fn guide_image(file: &str) -> Option<Asset> {
             Some(asset!("/assets/guides/swipe-memory/01-clear-skips.webp"))
         }
         "synergy/01-synergy-on.webp" => Some(asset!("/assets/guides/synergy/01-synergy-on.webp")),
+        "deck-stats/01-distributions.webp" => {
+            Some(asset!("/assets/guides/deck-stats/01-distributions.webp"))
+        }
+        "deck-stats/02-draw-odds.webp" => {
+            Some(asset!("/assets/guides/deck-stats/02-draw-odds.webp"))
+        }
+        "budgeting/01-budget-section.webp" => {
+            Some(asset!("/assets/guides/budgeting/01-budget-section.webp"))
+        }
+        "land-targets/01-mana-section.webp" => {
+            Some(asset!("/assets/guides/land-targets/01-mana-section.webp"))
+        }
+        "deck-mvps/01-featured-strip.webp" => {
+            Some(asset!("/assets/guides/deck-mvps/01-featured-strip.webp"))
+        }
         _ => None,
     }
 }
@@ -588,6 +603,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Zwipe alerts you once as the deck crosses 50%, 75%, and 100% of the budget (for example, \"Deck at 82.50% of your $50.00 budget\"), and a standing warning appears if you go over.",
             ),
+            Block::Image {
+                file: "budgeting/01-budget-section.webp",
+                alt: "The Budget section with the currency chips and a total running past its price target",
+                caption: None,
+            },
             Block::Note(
                 "Cards with no price in your currency count as zero, so the total is a floor, not an appraisal.",
             ),
@@ -615,6 +635,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Cross the target while editing and Zwipe toasts \"Land target reached\" or \"Below land target,\" and a standing warning shows whenever you're under.",
             ),
+            Block::Image {
+                file: "land-targets/01-mana-section.webp",
+                alt: "The Mana section: lands counted against their target, average mana value, the curve, and cost fulfillment",
+                caption: None,
+            },
             Block::H2("Lands leave the stack"),
             Block::P(
                 "When you open the add screen with your land count already at target (your target, or the format default), Zwipe excludes lands from the swipe stack so it stops dealing you ones you don't need. It adds `Land` to the `Basic types` exclude filter. To bring lands back while you're still at target, remove that exclude yourself; a `Reset` keeps it in place, since excluding lands is the default once you're at target. Reaching the target mid-session takes effect the next time you enter the screen.",
@@ -789,6 +814,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "In a deck's card list, tap a card to expand its row, then tap Star. A gold ★ shows on the row so your MVPs read at a glance, and Unstar frees the slot.",
             ),
+            Block::Image {
+                file: "deck-mvps/01-featured-strip.webp",
+                alt: "A deck's featured strip: the commander beside three starred MVPs, each labeled under its card",
+                caption: None,
+            },
             Block::H2("Three per deck"),
             Block::P(
                 "Each deck holds three MVP slots. Once three are starred, Zwipe turns down a fourth (\"This deck already has 3 MVPs\"), so promoting a new one means unstarring one first. The cap is the point: it keeps your MVPs to the cards that truly define the deck, not a wish list.",
@@ -878,10 +908,20 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Distributions cover card type, strategic role, and color. Role distribution reads on the same roles shown as chips on each card. Mana holds the mana curve (nonland cards by cost, 0 to 6+) and mana fulfillment (whether your mana base makes enough of each color, with a ✔ when covered).",
             ),
+            Block::Image {
+                file: "deck-stats/01-distributions.webp",
+                alt: "The Distributions section open: average power and toughness, type bars, and the role breakdown below",
+                caption: None,
+            },
             Block::H2("Draw odds"),
             Block::P(
                 "The chance of drawing at least one card of a type (lands, or any category) by a chosen turn, updated live and stepped turn by turn.",
             ),
+            Block::Image {
+                file: "deck-stats/02-draw-odds.webp",
+                alt: "The Draw odds section open with the turn stepper on the opening hand and a percentage per category",
+                caption: None,
+            },
             Block::H2("Warnings"),
             Block::P(
                 "Rule problems (size, copy limit, off-color, missing commander, over budget, under land target) list here with a count badge and often a one-tap fix.",
