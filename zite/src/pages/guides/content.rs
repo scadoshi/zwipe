@@ -136,6 +136,15 @@ pub fn guide_image(file: &str) -> Option<Asset> {
         "oracle-tag-dictionary/02-search.webp" => Some(asset!(
             "/assets/guides/oracle-tag-dictionary/02-search.webp"
         )),
+        "import-export/01-import-paste.webp" => {
+            Some(asset!("/assets/guides/import-export/01-import-paste.webp"))
+        }
+        "import-export/02-imported.webp" => {
+            Some(asset!("/assets/guides/import-export/02-imported.webp"))
+        }
+        "import-export/03-export.webp" => {
+            Some(asset!("/assets/guides/import-export/03-export.webp"))
+        }
         _ => None,
     }
 }
@@ -990,13 +999,28 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "On Import, pick a source (Text, or an Archidekt URL), a Mode (add to or replace the board), and a Board (Main, Maybe, or Side). Text is one card per line, like \"1 Sol Ring.\"",
             ),
+            Block::Image {
+                file: "import-export/01-import-paste.webp",
+                alt: "The Import screen with a decklist pasted in, the source, mode, and board chips set above it",
+                caption: None,
+            },
             Block::P(
                 "After importing, matched cards show under Imported and anything unmatched under Unresolved, each with a reason.",
             ),
+            Block::Image {
+                file: "import-export/02-imported.webp",
+                alt: "A finished import: the matched cards listed under Imported with a count of what came in",
+                caption: None,
+            },
             Block::H2("Exporting"),
             Block::P(
                 "Export builds a plain decklist with Commander, Deck, Maybeboard, and Sideboard sections. Toggle which boards to include, then tap Copy.",
             ),
+            Block::Image {
+                file: "import-export/03-export.webp",
+                alt: "The Export screen with the board chips above a decklist split into Commander and Deck sections",
+                caption: None,
+            },
             Block::Note(
                 "The export matches the importer, so a copied list pastes straight back in, or over to a friend.",
             ),

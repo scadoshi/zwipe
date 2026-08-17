@@ -1,14 +1,27 @@
 # Guide images
 
-**Status: ACTIVE — 18 of 19 guides done; 33 webps + 1 shared reference.**
+**Status: COMPLETE (2026-08-17).** Every guide that wants screenshots has
+them: 36 webps across 19 guides, captured and shipped in one day.
+`tags-roles-and-oracle-tags` ships with none by design — it's the concept
+guide that connects the other three, and links carry it.
 
-**Remaining: `import-export` (2) — the last guide with no images.**
+Verified at close: registry arms, `Block::Image` references, and files on
+disk all number 36 and agree exactly — no image referenced without a registry
+arm (which would silently not render), no arm without a file, no orphan file.
 
-**Resume here:**
-1. ~~Verify shipped images sit in the right places.~~ Done 2026-08-17: all 9
-   shipped webps viewed and matched against their `Block::Image` alt text and
-   `guide_image()` registry arms — no mismatches.
-2. **Next (and last) capture session: `import-export` (2).**
+**If you add images later:** convert with `cwebp -q 82 -resize 860 0` (phone
+captures; browser captures keep their native width — don't upscale), drop
+under `zite/assets/guides/<slug>/<nn>-<what>.webp`, add a `guide_image()` arm
+AND a `Block::Image` next to the section it illustrates, then `cargo check -p
+zite`. Re-run the three-way check above if you touch several at once.
+
+**Optional follow-ups, owner's call:**
+- A Synergy-off shot beside the Synergy-on one in `synergy` — the guide is
+  about a toggle and currently shows one side. The share-dialog before/after
+  pair is the precedent.
+- `organize-and-browse` 01 is grouped by Tag because group-by-Color has a
+  header-pip bug (logged in progress/todo.md). Recapture by Color once fixed,
+  if desired.
    Owner drops raw PNGs on the Desktop (not staging — that's been the real
    flow) with rough names; assistant converts (`cwebp -q 82 -resize 860 0`),
    places, adds registry arms + `Block::Image` entries, compiles, commits,
@@ -132,6 +145,7 @@ Format: `nn — what the image must show` (alt text ≈ the same sentence).
   - 01 — dictionary browsing a letter, descriptions + parent tags visible
   - 02 — dictionary mid-search (the guide splits browse and search, so both
     sections get a picture)
-- [ ] **import-export** (2)
-  - 01 — import screen with a pasted list
-  - 02 — export screen with boards toggled
+- [x] **import-export** (3) — shipped 2026-08-17
+  - 01 — import screen with a pasted list, source/mode/board chips set
+  - 02 — the finished import: matched cards under Imported with the count
+  - 03 — export screen with the board chips and the built decklist
