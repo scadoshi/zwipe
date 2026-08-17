@@ -2456,7 +2456,9 @@ footer {
 
 .guide-gallery-col {
     position: sticky;
-    top: 1rem;
+    /* Clears the sticky nav (~5rem tall) plus a breathing gap, so the panel
+       docks below the header instead of sliding under it. */
+    top: 6rem;
 }
 
 /* Guide captures are shorter than the home demo reel; size the body to the
