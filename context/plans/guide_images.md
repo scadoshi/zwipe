@@ -1,6 +1,6 @@
 # Guide images
 
-**Status: ACTIVE — `getting-started` SHIPPED 2026-08-17. Next up: `swipe-to-build` (3 shots, list below).** One guide at a time, in the tracker order below. Built to
+**Status: ACTIVE — 4 guides shipped (getting-started, swipe-to-build, commander-and-formats, filtering). Next up: `commander-maybeboard` (3 shots, list below).** One guide at a time, in the tracker order below. Built to
 survive interruption: the tracker + per-guide shot lists say exactly where we
 left off and what to capture next.
 
@@ -55,11 +55,11 @@ Format: `nn — what the image must show` (alt text ≈ the same sentence).
   - 01 — create-deck form with name, format picked, commander filled
   - 02 — add screen mid-stack: a card up top, Synergy/Filter chips visible
   - 03 — deck view with a real deck: featured cards + stats sections
-- [ ] **swipe-to-build** (3)
+- [x] **swipe-to-build** (3) — shipped 2026-08-17
   - 01 — add screen with the swipe hint dialog open (the four directions)
   - 02 — card filter sheet open over the add screen
   - 03 — "From" row on Maybeboard: the maybeboard stack being swiped
-- [ ] **commander-and-formats** (2)
+- [x] **commander-and-formats** (2) — shipped 2026-08-17
   - 01 — format picker open, a commander format's details showing
   - 02 — commander Zwipe select: a legendary on top of the pile
 - [ ] **commander-maybeboard** (3)
@@ -73,7 +73,7 @@ Format: `nn — what the image must show` (alt text ≈ the same sentence).
 - [ ] **share-your-deck** (2, browser captures)
   - 01 — the Share deck dialog in the app (Create link)
   - 02 — a shared deck page on zwipe.net, featured cards + sections visible
-- [ ] **filtering** (2)
+- [x] **filtering** (2) — shipped 2026-08-17 (02 became the Filters hint dialog; the sheet shot is shared with swipe-to-build)
   - 01 — filter sheet: colors + type section
   - 02 — add screen with the Filter dot lit (active filter)
 - [ ] **remove-cards** (1)

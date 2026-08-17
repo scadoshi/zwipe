@@ -48,6 +48,24 @@ pub fn guide_image(file: &str) -> Option<Asset> {
         "getting-started/03-deck-cards.webp" => {
             Some(asset!("/assets/guides/getting-started/03-deck-cards.webp"))
         }
+        "swipe-to-build/01-swipe-hint.webp" => {
+            Some(asset!("/assets/guides/swipe-to-build/01-swipe-hint.webp"))
+        }
+        "swipe-to-build/02-filter-sheet.webp" => {
+            Some(asset!("/assets/guides/swipe-to-build/02-filter-sheet.webp"))
+        }
+        "swipe-to-build/03-maybeboard-stack.webp" => Some(asset!(
+            "/assets/guides/swipe-to-build/03-maybeboard-stack.webp"
+        )),
+        "commander-and-formats/01-format-picker.webp" => Some(asset!(
+            "/assets/guides/commander-and-formats/01-format-picker.webp"
+        )),
+        "commander-and-formats/02-swipe-select.webp" => Some(asset!(
+            "/assets/guides/commander-and-formats/02-swipe-select.webp"
+        )),
+        "filtering/02-filter-hint.webp" => {
+            Some(asset!("/assets/guides/filtering/02-filter-hint.webp"))
+        }
         _ => None,
     }
 }
@@ -140,6 +158,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Only the top card is interactive, and double-faced cards flip to show the back.",
             ),
+            Block::Image {
+                file: "swipe-to-build/01-swipe-hint.webp",
+                alt: "The Swipe to build hint over the add screen: the four colored directions plus the Synergy note",
+                caption: None,
+            },
             Block::H2("Skips are remembered"),
             Block::P(
                 "A left swipe keeps that card out of this deck for good, even after you reopen the app. Clear skips in the deck's More menu brings them back. The swipe-memory guide covers this in full.",
@@ -155,6 +178,16 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Filter decides which cards are dealt; a dot marks an active filter. Sorting reorders the current set only. The \"From\" row swaps the stack to your Maybeboard, where a right swipe promotes a card into the deck.",
             ),
+            Block::Image {
+                file: "swipe-to-build/02-filter-sheet.webp",
+                alt: "The filter sheet open over the add screen with Types picked and a mana value range set",
+                caption: None,
+            },
+            Block::Image {
+                file: "swipe-to-build/03-maybeboard-stack.webp",
+                alt: "The From row switched to Maybeboard: the pile dealing saved cards with the Maybeboard chip lit",
+                caption: None,
+            },
             Block::H2("Undo"),
             Block::P(
                 "Swipe down to undo your last swipe; undoing an add removes the card again, and undoing a skip brings the card back. Your place and undo history travel with each deck, so leaving and returning picks up where you left off. Refresh (or changing the filter) starts a fresh stack and clears the history.",
@@ -248,6 +281,11 @@ pub static GUIDES: &[Guide] = &[
                 "`Format`: `Is commander in` and `Is legal in`.",
                 "`Price`: a currency (`USD`, `EUR`, or `TIX`) with optional min and max.",
             ]),
+            Block::Image {
+                file: "swipe-to-build/02-filter-sheet.webp",
+                alt: "The filter sheet mid-use: Types selected, a mana value range of 2 to 5, and a red color pip picked",
+                caption: None,
+            },
             Block::H2("Combining"),
             Block::P(
                 "Sections combine with `AND`, so stack as many as you like. A multi-value section's `Any`/`All` toggle sets whether a card needs one selected value or all of them, and `include` and `exclude` can run at once.",
@@ -255,6 +293,11 @@ pub static GUIDES: &[Guide] = &[
             Block::Note(
                 "Set a value as both `include` and `exclude` and Zwipe reverts it, since nothing would match.",
             ),
+            Block::Image {
+                file: "filtering/02-filter-hint.webp",
+                alt: "The Filters hint: filters decide which cards you see; stack sections and tap Apply",
+                caption: None,
+            },
             Block::H2("Sorting"),
             Block::P(
                 "Sort by `Name`, `Mana value`, `Power`, `Toughness`, `Rarity`, `Release Date`, `Price`, `Popularity`, or `Random`. Sorting only reorders the set you're looking at; it never changes which cards are eligible. Your filter and sort follow you between screens.",
@@ -361,6 +404,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Each format has its own rules: Commander is 100 cards, singleton, 40 life; Oathbreaker is 60 with a planeswalker and signature spell; 60-card constructed formats allow four copies. Changing the format clears your commander.",
             ),
+            Block::Image {
+                file: "commander-and-formats/01-format-picker.webp",
+                alt: "The Format picker with Commander selected, commander formats listed first",
+                caption: None,
+            },
             Block::H2("Pick a commander"),
             Block::P(
                 "Each command-zone field (Commander, plus Partner, Background, or Signature spell when relevant) offers two paths:",
@@ -372,6 +420,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Partner and Background appear only when your commander supports them. Oathbreaker needs a signature spell within the planeswalker's colors.",
             ),
+            Block::Image {
+                file: "commander-and-formats/02-swipe-select.webp",
+                alt: "The Swipe select pile with a legendary creature on top",
+                caption: None,
+            },
             Block::Note(
                 "Some partners name a specific mate (\"Partner with [Name]\"). Pick one and Zwipe fills in the named partner for you.",
             ),
