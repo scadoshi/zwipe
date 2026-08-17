@@ -57,6 +57,12 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   EDHREC-popularity order via `swipe_select.rs`). The three long-running
   verifications (Phase-5 canary, crash-reporting prod check, Android
   resume-crash) were reworded from "wait for 1.7.5" to actionable-now.
+- **Share page featured cards deal in** (`eb053115`): the app's
+  `.deck-featured-card` entrance ported to zwipe.net — same easing, tilt and
+  150ms stagger, including the flex-grow ease so a late MVP grows in while its
+  siblings cede width. The featured skeleton is gone (ghosting first would
+  replace the entrance with a swap); the rest of the page's skeleton stays.
+  Honors prefers-reduced-motion.
 
 ---
 
