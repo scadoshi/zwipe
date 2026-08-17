@@ -45,6 +45,18 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   checked on device), the Arcane Signet name-search fix (2026-08-13 deploy),
   and the commander maybeboard, which has been working against prod for some
   time. Maybeboard plan archived.
+- **Stale-list sweep 2026-08-17**: three todo entries described shipped work.
+  **Oracle tags** were marked "HORIZON, big" while the whole build phase has
+  been live since 2026-07-25 (ingest, the `oracle_tags` filter, the picker, the
+  dictionary, card roles from otag subtrees, three guides; `card_otags` was
+  created *and* renamed to `card_oracle_tags` back in migration
+  `20260712010000`). Its only open piece — Phase 6, serving on the matured
+  signal — was already a separate entry, so the HORIZON line was a duplicate.
+  Plan directory archived to `plans/archive/otags/`. Also closed: **synergy
+  scores** (the Synergy chip) and **popularity data** (commanders serve in
+  EDHREC-popularity order via `swipe_select.rs`). The three long-running
+  verifications (Phase-5 canary, crash-reporting prod check, Android
+  resume-crash) were reworded from "wait for 1.7.5" to actionable-now.
 
 ---
 
