@@ -1474,7 +1474,10 @@ a.nav-dropdown-item.active:visited {
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
-    max-width: 420px;
+    /* Viewport-aware cap: 420px on desktop, viewport minus 3rem on phones so
+       the stack keeps a 1.5rem right margin mirroring the 1.5rem left offset
+       instead of running off the edge when a banner's copy is long. */
+    max-width: min(420px, calc(100vw - 3rem));
     transition: transform 0.25s ease;
 }
 
