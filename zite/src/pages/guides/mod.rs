@@ -43,35 +43,25 @@ fn inline(text: &str) -> Element {
     }
 }
 
-/// Renders a guide's content. With screenshots present, the prose runs in
-/// one column with a single phone-shaped gallery beside it (the home page's
-/// prev/next viewer) — one tall capture on screen at a time, sticky while
-/// the text scrolls. Without screenshots, blocks render linearly as ever.
-fn render_content(blocks: &'static [Block]) -> Element {
-    let shots: Vec<(&'static str, &'static str, Option<&'static str>)> = blocks
+/// A guide's screenshots, harvested for the sidecar gallery panel.
+fn guide_shots(
+    blocks: &'static [Block],
+) -> Vec<(&'static str, &'static str, Option<&'static str>)> {
+    blocks
         .iter()
         .filter_map(|b| match b {
             Block::Image { file, alt, caption } => Some((*file, *alt, *caption)),
             _ => None,
         })
-        .collect();
-    let text = blocks.iter().filter(|b| !matches!(b, Block::Image { .. }));
+        .collect()
+}
 
-    if shots.is_empty() {
-        return rsx! {
-            for b in text {
-                {render_block(b)}
-            }
-        };
-    }
+/// Renders a guide's prose blocks linearly (screenshots are harvested into
+/// the sidecar gallery panel instead of rendering inline).
+fn render_text(blocks: &'static [Block]) -> Element {
     rsx! {
-        div { class: "guide-gallery-layout",
-            div {
-                for b in text {
-                    {render_block(b)}
-                }
-            }
-            div { class: "guide-gallery-col", GuideGallery { shots } }
+        for b in blocks.iter().filter(|b| !matches!(b, Block::Image { .. })) {
+            {render_block(b)}
         }
     }
 }
@@ -319,8 +309,27 @@ pub fn GuidePage(slug: String) -> Element {
                 }
                 h1 { class: "guide-title", "{g.title}" }
             }
-            div { class: "guide-content section panel",
-                {render_content(g.blocks)}
+            // With screenshots, the article and a sidecar gallery Panel sit
+            // as siblings: prose panel beside the phone viewer on wide
+            // screens, gallery first when stacked on phones.
+            {
+                let shots = guide_shots(g.blocks);
+                if shots.is_empty() {
+                    rsx! {
+                        div { class: "guide-content section panel", {render_text(g.blocks)} }
+                    }
+                } else {
+                    rsx! {
+                        div { class: "guide-with-gallery",
+                            div { class: "guide-content section panel", {render_text(g.blocks)} }
+                            div { class: "guide-gallery-col",
+                                Panel { eyebrow: "Screens", title: "In the app",
+                                    GuideGallery { shots }
+                                }
+                            }
+                        }
+                    }
+                }
             }
             if !g.related.is_empty() {
                 div { class: "guide-related section panel",

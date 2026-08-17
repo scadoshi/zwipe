@@ -2435,15 +2435,22 @@ footer {
 
 /* ── Guide screenshots ────────────────────────────────────────────────── */
 
-/* One prose column with a single phone-shaped viewer beside it (the home
-   gallery's chrome): one tall capture on screen at a time, prev/next to
-   flip, sticky so it rides along as the text scrolls. Stacks on phones with
-   the gallery first. */
-.guide-gallery-layout {
+/* The article panel and the sidecar gallery Panel sit as grid siblings:
+   prose in the wide track, one phone-shaped viewer (home gallery chrome,
+   prev/next) in the narrow one, sticky so it rides along as the text
+   scrolls. Stacks on phones with the gallery first. */
+.guide-with-gallery {
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     gap: 1.5rem;
     align-items: start;
+    margin-bottom: 2.5rem;
+}
+
+/* The grid gap owns the spacing; the article panel's .section margin would
+   double it below the row. */
+.guide-with-gallery > .section {
+    margin-bottom: 0;
 }
 
 .guide-gallery-col {
@@ -2465,7 +2472,7 @@ footer {
 }
 
 @media (max-width: 800px) {
-    .guide-gallery-layout {
+    .guide-with-gallery {
         grid-template-columns: minmax(0, 1fr);
     }
     .guide-gallery-col {
