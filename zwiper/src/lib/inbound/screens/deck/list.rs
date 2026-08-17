@@ -84,6 +84,22 @@ fn identity_colors(profile: &DeckProfile) -> Vec<Color> {
         .collect()
 }
 
+/// The deck's command-zone art crops, in zone order: commander (or
+/// oathbreaker), then partner, background, and signature spell. Server-resolved
+/// on the profile, so the row draws its command zone without fetching cards.
+/// Realistically one or two — no printed card fills more than two slots.
+fn command_zone_art(profile: &DeckProfile) -> Vec<&str> {
+    [
+        profile.commander_art_url.as_deref(),
+        profile.partner_commander_art_url.as_deref(),
+        profile.background_art_url.as_deref(),
+        profile.signature_spell_art_url.as_deref(),
+    ]
+    .into_iter()
+    .flatten()
+    .collect()
+}
+
 /// Every tag on the deck as (key, label): deck tags keyed by raw slug,
 /// descriptive tags keyed by display name. One namespace — the Show row and
 /// tag grouping treat them alike.
@@ -126,12 +142,85 @@ struct DeckGroup {
     decks: Vec<DeckProfile>,
 }
 
+impl DeckGroup {
+    /// Stable identity for the collapse set. Color groups render as pips with
+    /// no header text, so they key off the pip sequence instead — otherwise
+    /// every color group would share the empty string and fold as one.
+    fn key(&self) -> String {
+        if !self.header.is_empty() {
+            return self.header.clone();
+        }
+        self.pips
+            .as_ref()
+            .map(|pips| {
+                pips.iter()
+                    .map(Color::to_short_name)
+                    .collect::<Vec<_>>()
+                    .join("")
+            })
+            .unwrap_or_default()
+    }
+}
+
+/// One collapsible section of the deck list: the card list's group grammar
+/// (tap the header to fold, arrow rotates, rows stay mounted and hide via
+/// CSS). Ephemeral per visit, like the deck cards screen.
+#[component]
+fn DeckGroupSection(
+    group_key: String,
+    header: String,
+    pips: Option<Vec<Color>>,
+    count: usize,
+    collapsed_groups: Signal<HashSet<String>>,
+    children: Element,
+) -> Element {
+    let mut collapsed_groups = collapsed_groups;
+    let expanded = !collapsed_groups().contains(&group_key);
+    rsx! {
+        div {
+            class: if expanded { "card-group row-enter" } else { "card-group row-enter collapsed" },
+            div {
+                class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
+                onclick: move |_| {
+                    let mut set = collapsed_groups.write();
+                    if !set.remove(&group_key) {
+                        set.insert(group_key.clone());
+                    }
+                },
+                span { class: "card-row-arrow", "▸" }
+                if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
+                    // Same wrapper the deck rows use, so a group's pips are the
+                    // size of the pips on the decks beneath it.
+                    span { class: "identity-pips",
+                        for color in pips.iter() {
+                            i {
+                                key: "{color.to_short_name()}",
+                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                            }
+                        }
+                    }
+                    "({count})"
+                } else {
+                    "{header} ({count})"
+                }
+            }
+            div {
+                class: if expanded { "collapsible open" } else { "collapsible" },
+                div { class: "collapsible-inner", {children} }
+            }
+        }
+    }
+}
+
 /// Folds an (already filtered, name-sorted) list into sections for the chosen
 /// dimension. `DeckGroupBy::None` returns one headerless group.
 fn group_decks(profiles: &[DeckProfile], by: DeckGroupBy) -> Vec<DeckGroup> {
     match by {
+        // Ungrouped is still one group, headed "All", so the list looks the
+        // same whether or not Group by is on — one container, one collapsible
+        // header.
         DeckGroupBy::None => vec![DeckGroup {
-            header: String::new(),
+            header: "All".to_string(),
             pips: None,
             decks: profiles.to_vec(),
         }],
@@ -245,14 +334,30 @@ fn DeckRow(profile: DeckProfile) -> Element {
             || f.max_cards().is_some_and(|m| count > m as i64)
     });
     let pips = identity_colors(&profile);
+    let art = command_zone_art(&profile);
     let deck_id = profile.id;
     rsx! {
         div {
-            class: "card row-enter",
+            class: "card-row deck-row row-enter",
             onclick: move |_| {
                 navigator.push(Router::ViewDeck { deck_id });
             },
             div { class: "deck-list-row",
+                // The command zone leads the row inline, as flex items beside
+                // the name — so the chips wrap onto the next line underneath
+                // the art rather than into a column beside it. Two crops (a
+                // pair of partners, or oathbreaker + signature spell) simply
+                // sit one after another.
+                for url in art.iter() {
+                    img {
+                        key: "{url}",
+                        class: "deck-row-art-img",
+                        src: "{url}",
+                        loading: "lazy",
+                        draggable: false,
+                        alt: "",
+                    }
+                }
                 h3 { class: "font-light text-base tracking-wide deck-list-name",
                     {profile.name.to_string()}
                 }
@@ -316,6 +421,9 @@ pub fn DeckList() -> Element {
     let mut decks_hint_fired = use_signal(|| false);
 
     let mut group_by = use_signal(|| DeckGroupBy::None);
+    // Collapsed group keys, ephemeral per visit — the deck cards screen's rule:
+    // everything opens fresh next time.
+    let collapsed_groups: Signal<HashSet<String>> = use_signal(HashSet::new);
     let mut selected_colors: Signal<HashSet<Color>> = use_signal(HashSet::new);
     let mut selected_tags: Signal<HashSet<String>> = use_signal(HashSet::new);
     let mut show_more_sheet = use_signal(|| false);
@@ -528,31 +636,21 @@ pub fn DeckList() -> Element {
                                         p { "No decks match" }
                                     }
                                 }
+                                // Every mode renders the same way: contained
+                                // groups with collapsible headers, the same
+                                // grammar as a deck's card list. Ungrouped is
+                                // simply the single "All" group.
                                 for group in group_decks(&filtered, group_by()) {
-                                    if group_by() != DeckGroupBy::None {
-                                        div { class: "card-group-header deck-group-header",
-                                            if let Some(pips) = &group.pips
-                                                && !pips.is_empty()
-                                            {
-                                                // Same wrapper the deck rows use, so a group's
-                                                // pips are the size of the pips on the decks
-                                                // beneath it.
-                                                span { class: "identity-pips",
-                                                    for color in pips.clone() {
-                                                        i {
-                                                            key: "{color.to_short_name()}",
-                                                            class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                                                        }
-                                                    }
-                                                }
-                                                "({group.decks.len()})"
-                                            } else {
-                                                "{group.header} ({group.decks.len()})"
-                                            }
+                                    DeckGroupSection {
+                                        key: "{group.key()}",
+                                        group_key: group.key(),
+                                        header: group.header.clone(),
+                                        pips: group.pips.clone(),
+                                        count: group.decks.len(),
+                                        collapsed_groups,
+                                        for profile in group.decks {
+                                            DeckRow { key: "{profile.id}", profile }
                                         }
-                                    }
-                                    for profile in group.decks {
-                                        DeckRow { key: "{profile.id}", profile }
                                     }
                                 }
                             }

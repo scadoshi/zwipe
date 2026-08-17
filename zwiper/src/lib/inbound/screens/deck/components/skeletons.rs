@@ -152,18 +152,31 @@ pub(crate) fn DeckListSkeleton() -> Element {
         &["lg", "md", "sm", "md"],
     ];
     rsx! {
-        // Tiles only: the chip rows above are static chrome the live screen
-        // renders real from the first frame (only its tag chips ghost).
-        div { class: "skeleton-deck-list",
-            for (i , chips) in TILES.iter().enumerate() {
-                div { key: "{i}", class: "skeleton-deck-list-item",
-                    div { class: "skeleton-deck-list-head",
-                        div { class: "skeleton-bar skeleton-deck-list-title" }
-                        div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
-                    }
-                    div { class: "skeleton-deck-list-tags",
-                        for (j , size) in chips.iter().enumerate() {
-                            div { key: "{j}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
+        // The same DOM the loaded list renders: the "All" group container, its
+        // collapsible header, and deck rows inside — built from the live
+        // classes (`card-group`, `card-group-header`, `collapsible`,
+        // `card-row`, `deck-list-row`) rather than skeleton lookalikes, so the
+        // two can't drift apart. Only the per-deck content is ghosted; the
+        // chip rows above and this header are chrome the live screen also
+        // renders real from the first frame.
+        div { class: "card-group",
+            div { class: "card-group-header group-collapsible expanded skeleton-deck-list-header",
+                span { class: "card-row-arrow", "▸" }
+                "All"
+            }
+            div { class: "collapsible open",
+                div { class: "collapsible-inner",
+                    for (i , chips) in TILES.iter().enumerate() {
+                        div { key: "{i}", class: "card-row",
+                            // One wrapping row, like the live one: art, name,
+                            // then chips that wrap underneath the art.
+                            div { class: "deck-list-row",
+                                div { class: "skeleton-bar skeleton-deck-list-art" }
+                                div { class: "skeleton-bar skeleton-deck-list-title" }
+                                for (j , size) in chips.iter().enumerate() {
+                                    div { key: "{j}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
+                                }
+                            }
                         }
                     }
                 }

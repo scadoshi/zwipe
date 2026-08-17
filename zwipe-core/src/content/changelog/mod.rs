@@ -29,9 +29,13 @@ pub const UPCOMING: &[Release] = &[Release {
     version: "1.9.2",
     date: "In progress",
     entries: &[
+        "Your decks now lead with their command zone's art on the Decks screen: the commander, both partners, or the oathbreaker and its signature spell.",
+        "The Decks screen is one connected list now, the way your deck's cards are. Turning on Group by splits it into sections, and those fold from their headers with the same arrow.",
         "Grouping a deck's cards by color now gives each color combination its own group, so your Azorius cards sit together instead of sharing one Multicolor pile with everything else.",
         "Color group headers show mana pips instead of the color's name, on your deck's cards, the deck list, and shared deck pages.",
         "Color group headers on the deck list show the same size pips as the decks under them.",
+        "The guides page on zwipe.net has a search bar. It matches a guide's title, summary, tags, and the text inside it, narrows alongside the tag chips, and clears with one tap. Matching guides fade in as the list changes.",
+        "The Group by and Filter by labels on shared deck pages are bolder, so they hold up against the background grid like the app's.",
     ],
 }];
 
