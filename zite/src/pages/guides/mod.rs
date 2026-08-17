@@ -9,7 +9,7 @@
 mod content;
 
 use crate::{Footer, Nav, Route, WEB_BASE, components::PageMeta};
-use content::{Block, GUIDES};
+use content::{Block, GUIDES, Guide};
 use dioxus::prelude::*;
 use zwipe_components::Panel;
 
@@ -171,6 +171,54 @@ fn render_block(b: &'static Block) -> Element {
     }
 }
 
+/// Everything about a guide the index search can match: title, summary, tags,
+/// and the article's prose. Lowercased, with the `backtick` keyword markers
+/// stripped so a search for "group by" hits `Group by` in the body too.
+///
+/// Built per keystroke over the compiled [`GUIDES`] array (19 articles, no
+/// index, no network) — cheap enough that caching would cost more than it saves.
+fn haystack(g: &Guide) -> String {
+    let mut s = String::new();
+    let mut push = |t: &str| {
+        s.push_str(t);
+        s.push(' ');
+    };
+    push(g.title);
+    push(g.summary);
+    for t in g.tags.iter().copied() {
+        push(t);
+    }
+    for b in g.blocks.iter() {
+        match b {
+            Block::Lead(t) | Block::H2(t) | Block::P(t) | Block::Note(t) => push(t),
+            Block::Steps(items) | Block::Bullets(items) => {
+                for it in items.iter().copied() {
+                    push(it);
+                }
+            }
+            Block::Swipe(rows) => {
+                for (dir, meaning) in rows.iter() {
+                    push(dir);
+                    push(meaning);
+                }
+            }
+            // Diagrams are ASCII flow art and images live in the gallery —
+            // neither reads as prose a searcher would type.
+            Block::Diagram(_) | Block::Image { .. } => {}
+        }
+    }
+    s.retain(|c| c != '`');
+    s.to_lowercase()
+}
+
+/// Whether a guide matches the query: every whitespace-separated term has to
+/// appear somewhere in its [`haystack`], so extra words narrow rather than
+/// widen the result set.
+fn matches_query(g: &Guide, query: &str) -> bool {
+    let hay = haystack(g);
+    query.split_whitespace().all(|term| hay.contains(term))
+}
+
 /// Tag vocabulary for the index filter row, in display order. Each guide is
 /// tagged with 1-3 of these in `content.rs`.
 const GUIDE_TAGS: &[&str] = &[
@@ -197,6 +245,19 @@ fn tag_color_class(tag: &str) -> &'static str {
 #[component]
 pub fn Guides() -> Element {
     let mut selected = use_signal(|| Option::<&'static str>::None);
+    let mut query = use_signal(String::new);
+    // Search and the tag chips narrow the same list: a guide shows when it
+    // passes both.
+    let q = query().trim().to_lowercase();
+    let hits: Vec<&Guide> = GUIDES
+        .iter()
+        .filter(|g| selected().is_none_or(|t| g.tags.contains(&t)))
+        .filter(|g| q.is_empty() || matches_query(g, &q))
+        .collect();
+    // Signature of the visible set, prefixed onto each card's key so the cards
+    // remount — and replay their entrance — only when the results actually
+    // change, not on every keystroke that leaves the same list standing.
+    let sig = hits.iter().map(|g| g.slug).collect::<Vec<_>>().join(",");
     rsx! {
         PageMeta {
             title: "Guides",
@@ -209,7 +270,29 @@ pub fn Guides() -> Element {
                 h1 { "Guides" }
                 p { class: "tagline", "How Zwipe works, one feature at a time." }
             }
+            // One console row, the app's chip-row anatomy: inline label, the
+            // search input with its clear button, then the tag chips.
             div { class: "guide-filter",
+                span { class: "guide-filter-label", "Filter:" }
+                input {
+                    class: "guide-search-input",
+                    r#type: "text",
+                    placeholder: "Search guides",
+                    aria_label: "Search guides",
+                    value: "{query}",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |evt| query.set(evt.value()),
+                }
+                if !query().is_empty() {
+                    button {
+                        class: "guide-search-clear",
+                        aria_label: "Clear search",
+                        onclick: move |_| query.set(String::new()),
+                        "\u{00d7}"
+                    }
+                }
                 button {
                     class: if selected().is_none() { "chip selected" } else { "chip" },
                     onclick: move |_| selected.set(None),
@@ -229,11 +312,34 @@ pub fn Guides() -> Element {
                     }
                 }
             }
+            if hits.is_empty() {
+                div { class: "guide-empty",
+                    p {
+                        if q.is_empty() {
+                            "No guides match that tag."
+                        } else {
+                            "No guides match \u{201c}{query().trim()}\u{201d}."
+                        }
+                    }
+                    button {
+                        class: "chip",
+                        onclick: move |_| {
+                            query.set(String::new());
+                            selected.set(None);
+                        },
+                        "Clear search"
+                    }
+                }
+            }
             div { class: "card-grid",
-                for g in GUIDES.iter().filter(|g| selected().is_none_or(|t| g.tags.contains(&t))) {
+                for (i , g) in hits.iter().enumerate() {
                     Link {
+                        key: "{sig}|{g.slug}",
                         to: Route::GuidePage { slug: g.slug.to_string() },
-                        class: "guide-card",
+                        class: "guide-card guide-card-in",
+                        // Stagger the deal-in, capped so a wide result set
+                        // doesn't trail on for a second.
+                        style: "animation-delay: {i.min(8) * 35}ms;",
                         Panel { title: "{g.title}",
                             p { class: "card-summary", "{g.summary}" }
                             div { class: "guide-tags",
