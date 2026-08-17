@@ -37,6 +37,10 @@ pub struct DatabaseDeckProfile {
     pub background_name: Option<String>,
     pub signature_spell_name: Option<String>,
     pub color_identity: Option<Vec<String>>,
+    pub commander_art_url: Option<String>,
+    pub partner_commander_art_url: Option<String>,
+    pub background_art_url: Option<String>,
+    pub signature_spell_art_url: Option<String>,
 }
 
 /// converts database deck to validated domain deck
@@ -100,6 +104,10 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
             background_name: value.background_name,
             signature_spell_name: value.signature_spell_name,
             color_identity: value.color_identity.unwrap_or_default(),
+            commander_art_url: value.commander_art_url,
+            partner_commander_art_url: value.partner_commander_art_url,
+            background_art_url: value.background_art_url,
+            signature_spell_art_url: value.signature_spell_art_url,
         })
     }
 }
@@ -167,6 +175,10 @@ mod tests {
             background_name: None,
             signature_spell_name: None,
             color_identity: None,
+            commander_art_url: None,
+            partner_commander_art_url: None,
+            background_art_url: None,
+            signature_spell_art_url: None,
         }
     }
 

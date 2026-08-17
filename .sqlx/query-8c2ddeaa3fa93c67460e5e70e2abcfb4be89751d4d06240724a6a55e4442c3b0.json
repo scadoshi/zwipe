@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, oracle_tags, land_target, price_target, price_target_currency, user_id)\n               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)\n               RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags as \"tags?\", power_level, other_tags as \"other_tags?\", oracle_tags as \"oracle_tags?\", land_target, price_target, price_target_currency, share_token, user_id,\n                         0::bigint as \"card_count\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as \"commander_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = partner_commander_id) as \"partner_commander_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = background_id) as \"background_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = signature_spell_id) as \"signature_spell_name?\",\n                         (SELECT array_agg(DISTINCT ci)\n                            FROM scryfall_data sci, unnest(sci.color_identity) AS ci\n                           WHERE sci.id = ANY(ARRAY[commander_id, partner_commander_id, background_id, signature_spell_id]\n                                              || ARRAY(SELECT dc2.scryfall_data_id FROM deck_cards dc2 WHERE dc2.deck_id = id AND dc2.board = 'deck'))) as \"color_identity?: Vec<String>\"",
+  "query": "SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                      d.format, d.tags as \"tags?\", d.power_level, d.other_tags as \"other_tags?\", d.oracle_tags as \"oracle_tags?\", d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id,\n                      COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as \"card_count\",\n                      sd.name as \"commander_name?\",\n                      (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as \"partner_commander_name?\",\n                      (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as \"background_name?\",\n                      (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as \"signature_spell_name?\",\n                      -- Command-zone art, as correlated subqueries rather than off the\n                      -- joined `sd` so the GROUP BY below stays as it is. COALESCE is\n                      -- the front-face fallback double-faced cards need.\n                      (SELECT COALESCE(s5.image_uris->>'art_crop', s5.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s5 WHERE s5.id = d.commander_id) as \"commander_art_url?\",\n                      (SELECT COALESCE(s6.image_uris->>'art_crop', s6.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s6 WHERE s6.id = d.partner_commander_id) as \"partner_commander_art_url?\",\n                      (SELECT COALESCE(s7.image_uris->>'art_crop', s7.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s7 WHERE s7.id = d.background_id) as \"background_art_url?\",\n                      (SELECT COALESCE(s8.image_uris->>'art_crop', s8.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s8 WHERE s8.id = d.signature_spell_id) as \"signature_spell_art_url?\",\n                      (SELECT array_agg(DISTINCT ci)\n                         FROM scryfall_data sci, unnest(sci.color_identity) AS ci\n                        WHERE sci.id = ANY(ARRAY[d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id]\n                                           || ARRAY(SELECT dc2.scryfall_data_id FROM deck_cards dc2 WHERE dc2.deck_id = d.id AND dc2.board = 'deck'))) as \"color_identity?: Vec<String>\"\n               FROM decks d\n               LEFT JOIN deck_cards dc ON d.id = dc.deck_id\n               LEFT JOIN scryfall_data sd ON d.commander_id = sd.id\n               WHERE d.id = $1\n               GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                        d.format, d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id, sd.name",
   "describe": {
     "columns": [
       {
@@ -189,7 +189,12 @@
         "ordinal": 17,
         "name": "commander_name?",
         "type_info": "Text",
-        "origin": "Expression"
+        "origin": {
+          "Table": {
+            "table": "scryfall_data",
+            "name": "name"
+          }
+        }
       },
       {
         "ordinal": 18,
@@ -211,6 +216,30 @@
       },
       {
         "ordinal": 21,
+        "name": "commander_art_url?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 22,
+        "name": "partner_commander_art_url?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 23,
+        "name": "background_art_url?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 24,
+        "name": "signature_spell_art_url?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 25,
         "name": "color_identity?: Vec<String>",
         "type_info": "TextArray",
         "origin": "Expression"
@@ -218,19 +247,6 @@
     ],
     "parameters": {
       "Left": [
-        "Varchar",
-        "Uuid",
-        "Uuid",
-        "Uuid",
-        "Uuid",
-        "Text",
-        "Jsonb",
-        "Text",
-        "Jsonb",
-        "Jsonb",
-        "Int4",
-        "Float8",
-        "Text",
         "Uuid"
       ]
     },
@@ -252,6 +268,10 @@
       true,
       false,
       null,
+      false,
+      null,
+      null,
+      null,
       null,
       null,
       null,
@@ -259,5 +279,5 @@
       null
     ]
   },
-  "hash": "974fb87de03991cb8e03a7cc3631f78ea04866e6202cc55208bae2a737bd89fc"
+  "hash": "8c2ddeaa3fa93c67460e5e70e2abcfb4be89751d4d06240724a6a55e4442c3b0"
 }

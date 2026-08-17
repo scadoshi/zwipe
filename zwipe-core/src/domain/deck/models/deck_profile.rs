@@ -75,4 +75,63 @@ pub struct DeckProfile {
     /// without the field parse to an empty vec.
     #[serde(default)]
     pub color_identity: Vec<String>,
+    /// Art-crop URL for the commander's chosen printing, so a deck can show its
+    /// command zone without fetching the cards themselves. Resolved server-side
+    /// with the same front-face fallback as
+    /// [`ScryfallData::art_crop_url`](crate::domain::card::ScryfallData::art_crop_url),
+    /// so double-faced commanders resolve to their front art.
+    ///
+    /// These four are `#[serde(default)]` like the fields above: a payload from
+    /// a server that predates them parses to `None`, and a server that sends
+    /// them is ignored by clients that don't know them yet.
+    #[serde(default)]
+    pub commander_art_url: Option<String>,
+    /// Art-crop URL for the partner commander's printing (if set).
+    #[serde(default)]
+    pub partner_commander_art_url: Option<String>,
+    /// Art-crop URL for the background enchantment's printing (if set).
+    #[serde(default)]
+    pub background_art_url: Option<String>,
+    /// Art-crop URL for the signature spell's printing (if set).
+    #[serde(default)]
+    pub signature_spell_art_url: Option<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A payload from a server that predates the command-zone art fields still
+    /// parses — the client half of this change can ship before the server half
+    /// without breaking, and a client that has cached older payloads keeps
+    /// working. The reverse direction (an older client reading a payload that
+    /// *has* the fields) needs no test: the struct doesn't set
+    /// `deny_unknown_fields`, so serde skips what it doesn't know.
+    #[test]
+    fn parses_payload_without_command_zone_art() {
+        let json = serde_json::json!({
+            "id": Uuid::nil(),
+            "name": "Test deck",
+            "commander_id": null,
+            "partner_commander_id": null,
+            "background_id": null,
+            "signature_spell_id": null,
+            "format": null,
+            "land_target": null,
+            "price_target": null,
+            "price_target_currency": null,
+            "share_token": null,
+            "user_id": Uuid::nil(),
+            "card_count": 0,
+            "commander_name": null,
+            "partner_commander_name": null,
+            "background_name": null,
+            "signature_spell_name": null,
+        });
+        let profile: DeckProfile = serde_json::from_value(json).unwrap();
+        assert!(profile.commander_art_url.is_none());
+        assert!(profile.partner_commander_art_url.is_none());
+        assert!(profile.background_art_url.is_none());
+        assert!(profile.signature_spell_art_url.is_none());
+    }
 }

@@ -198,3 +198,45 @@ a persisted slot. The database plus the clock is the durable state.
 commander") wants a keyed map — see `AppState.last_active_cache`
 (`DashMap<Uuid, Instant>`). If a keyed-with-deadline need ever appears, build
 a `TtlMap` beside `TtlSlot`; don't stretch the slot.
+
+## Command Zone Stays Flat: Contingent Facts Are Not Type-Level Laws
+
+**Decision (2026-08-17):** `DeckProfile` keeps the command zone as flat
+optional fields — `commander_id` / `partner_commander_id` / `background_id` /
+`signature_spell_id`, each with a parallel `*_name` and `*_art_url`. We
+deliberately did NOT introduce a `CommandZone` sum type whose variants
+enumerate the legal slot combinations (`Commander`, `CommanderAndPartner`,
+`CommanderAndBackground`, `Oathbreaker { .. }`).
+
+**The proposal and why it was rejected.** The flat shape can represent states
+Magic doesn't allow — a Commander deck holding a signature spell, an art URL
+with no card, a partner with no commander. The obvious fix is a sum type that
+makes them unrepresentable. The owner's counter-argument is the one that
+decided it: **partner-plus-background is not forbidden by the rules — it just
+hasn't been printed.** Encoding "these slots are mutually exclusive" as an
+enum bakes a fact about Wizards' printing history into the type system. The
+day a card carries both Partner and Choose a Background, the fix isn't a new
+field, it's a new variant plus every match arm across three crates, under
+release pressure, for a card that was always legal. Types should encode what
+is *necessarily* true, not what is *currently* true.
+
+**Why the looseness is tolerable.** The invalid states are unreachable in
+practice — verified 2026-08-17: building an Oathbreaker deck and switching it
+to Commander does not persist the oathbreaker or signature spell. The
+construction surface is tiny: `DeckProfile` is built only by the DB `TryFrom`,
+one test helper, and a few optimistic-update sites in `zwiper`'s `edit.rs`
+that use struct spread (`..`) and so can only change what they name.
+
+**What actually guards correctness:** runtime validation in `validate_deck.rs`,
+which reports card-level problems (commander isn't legendary, signature spell
+isn't an instant or sorcery, partner lacks Partner) as `DeckWarning`s with
+optional one-tap `WarningAction`s. This is load-bearing and a sum type would
+have deleted part of it: **you cannot warn about a state your types can't
+hold**, and silently dropping an orphaned slot at parse time would hide the
+card from the UI while it still sat in the database.
+
+**Revisit when:** the deck-list restyle (command-zone art rows) actually
+consumes these fields. If rendering from flat fields proves awkward, the
+narrow fix is a per-slot `Option<CommandZoneSlot>` grouping id + name + art —
+which kills art-without-a-card (a real invariant) while staying agnostic about
+which slots may coexist. Do not reach for the combination enum.

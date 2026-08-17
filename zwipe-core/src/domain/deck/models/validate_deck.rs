@@ -603,6 +603,10 @@ mod tests {
             background_name: None,
             signature_spell_name: None,
             color_identity: Vec::new(),
+            commander_art_url: None,
+            partner_commander_art_url: None,
+            background_art_url: None,
+            signature_spell_art_url: None,
         }
     }
 

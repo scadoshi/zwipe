@@ -101,6 +101,10 @@ impl DeckRepository for Postgres {
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = partner_commander_id) as "partner_commander_name?",
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = background_id) as "background_name?",
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = signature_spell_id) as "signature_spell_name?",
+                         (SELECT COALESCE(sd.image_uris->>'art_crop', sd.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data sd WHERE sd.id = commander_id) as "commander_art_url?",
+                         (SELECT COALESCE(sd.image_uris->>'art_crop', sd.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data sd WHERE sd.id = partner_commander_id) as "partner_commander_art_url?",
+                         (SELECT COALESCE(sd.image_uris->>'art_crop', sd.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data sd WHERE sd.id = background_id) as "background_art_url?",
+                         (SELECT COALESCE(sd.image_uris->>'art_crop', sd.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data sd WHERE sd.id = signature_spell_id) as "signature_spell_art_url?",
                          (SELECT array_agg(DISTINCT ci)
                             FROM scryfall_data sci, unnest(sci.color_identity) AS ci
                            WHERE sci.id = ANY(ARRAY[commander_id, partner_commander_id, background_id, signature_spell_id]
@@ -225,6 +229,13 @@ impl DeckRepository for Postgres {
                       (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as "partner_commander_name?",
                       (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as "background_name?",
                       (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as "signature_spell_name?",
+                      -- Command-zone art, as correlated subqueries rather than off the
+                      -- joined `sd` so the GROUP BY below stays as it is. COALESCE is
+                      -- the front-face fallback double-faced cards need.
+                      (SELECT COALESCE(s5.image_uris->>'art_crop', s5.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s5 WHERE s5.id = d.commander_id) as "commander_art_url?",
+                      (SELECT COALESCE(s6.image_uris->>'art_crop', s6.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s6 WHERE s6.id = d.partner_commander_id) as "partner_commander_art_url?",
+                      (SELECT COALESCE(s7.image_uris->>'art_crop', s7.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s7 WHERE s7.id = d.background_id) as "background_art_url?",
+                      (SELECT COALESCE(s8.image_uris->>'art_crop', s8.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s8 WHERE s8.id = d.signature_spell_id) as "signature_spell_art_url?",
                       (SELECT array_agg(DISTINCT ci)
                          FROM scryfall_data sci, unnest(sci.color_identity) AS ci
                         WHERE sci.id = ANY(ARRAY[d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id]
@@ -259,6 +270,13 @@ impl DeckRepository for Postgres {
                       (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as "partner_commander_name?",
                       (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as "background_name?",
                       (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as "signature_spell_name?",
+                      -- Command-zone art, as correlated subqueries rather than off the
+                      -- joined `sd` so the GROUP BY below stays as it is. COALESCE is
+                      -- the front-face fallback double-faced cards need.
+                      (SELECT COALESCE(s5.image_uris->>'art_crop', s5.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s5 WHERE s5.id = d.commander_id) as "commander_art_url?",
+                      (SELECT COALESCE(s6.image_uris->>'art_crop', s6.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s6 WHERE s6.id = d.partner_commander_id) as "partner_commander_art_url?",
+                      (SELECT COALESCE(s7.image_uris->>'art_crop', s7.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s7 WHERE s7.id = d.background_id) as "background_art_url?",
+                      (SELECT COALESCE(s8.image_uris->>'art_crop', s8.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s8 WHERE s8.id = d.signature_spell_id) as "signature_spell_art_url?",
                       (SELECT array_agg(DISTINCT ci)
                          FROM scryfall_data sci, unnest(sci.color_identity) AS ci
                         WHERE sci.id = ANY(ARRAY[d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id]
@@ -389,6 +407,10 @@ impl DeckRepository for Postgres {
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.partner_commander_id) as partner_commander_name,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.background_id) as background_name,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.signature_spell_id) as signature_spell_name,
+                       (SELECT COALESCE(sd.image_uris->>'art_crop', sd.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data sd WHERE sd.id = decks.commander_id) as commander_art_url,
+                       (SELECT COALESCE(sd.image_uris->>'art_crop', sd.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data sd WHERE sd.id = decks.partner_commander_id) as partner_commander_art_url,
+                       (SELECT COALESCE(sd.image_uris->>'art_crop', sd.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data sd WHERE sd.id = decks.background_id) as background_art_url,
+                       (SELECT COALESCE(sd.image_uris->>'art_crop', sd.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data sd WHERE sd.id = decks.signature_spell_id) as signature_spell_art_url,
                        (SELECT array_agg(DISTINCT ci)
                           FROM scryfall_data sci, unnest(sci.color_identity) AS ci
                          WHERE sci.id = ANY(ARRAY[decks.commander_id, decks.partner_commander_id, decks.background_id, decks.signature_spell_id]
