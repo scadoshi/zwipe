@@ -66,6 +66,18 @@ pub fn guide_image(file: &str) -> Option<Asset> {
         "filtering/02-filter-hint.webp" => {
             Some(asset!("/assets/guides/filtering/02-filter-hint.webp"))
         }
+        "commander-maybeboard/01-swipe-select-hint.webp" => Some(asset!(
+            "/assets/guides/commander-maybeboard/01-swipe-select-hint.webp"
+        )),
+        "commander-maybeboard/02-saved-commanders.webp" => Some(asset!(
+            "/assets/guides/commander-maybeboard/02-saved-commanders.webp"
+        )),
+        "commander-maybeboard/03-expanded-row.webp" => Some(asset!(
+            "/assets/guides/commander-maybeboard/03-expanded-row.webp"
+        )),
+        "commander-maybeboard/04-maybeboard-hint.webp" => Some(asset!(
+            "/assets/guides/commander-maybeboard/04-maybeboard-hint.webp"
+        )),
         _ => None,
     }
 }
@@ -458,6 +470,11 @@ pub static GUIDES: &[Guide] = &[
                 ("up", "save it to your commander maybeboard"),
                 ("down", "undo your last swipe"),
             ]),
+            Block::Image {
+                file: "commander-maybeboard/01-swipe-select-hint.webp",
+                alt: "The Swipe select hint: right chooses that commander, up saves it to your commander maybeboard",
+                caption: None,
+            },
             Block::P(
                 "Saving never interrupts the pick: the pile advances and you keep swiping. A down swipe right after takes the save back too. The list holds up to 50 commanders.",
             ),
@@ -465,15 +482,30 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Open it from the Decks screen: More, then Commander maybeboard. Saves show newest first as card rows with art (the Art chip hides it). Expand a row for its full details and three actions:",
             ),
+            Block::Image {
+                file: "commander-maybeboard/02-saved-commanders.webp",
+                alt: "The Commander maybeboard screen: saved commanders as art rows with power level, price, and color pips",
+                caption: None,
+            },
             Block::Bullets(&[
                 "`Create deck` starts a new deck with that commander already in the command zone and the format set to Commander.",
                 "`Printing` swaps which printing shows, and the printing you pick carries into Create deck.",
                 "`Remove` takes it off the list.",
             ]),
+            Block::Image {
+                file: "commander-maybeboard/03-expanded-row.webp",
+                alt: "A saved commander expanded to its full details with the Printing, Create deck, and Remove buttons",
+                caption: None,
+            },
             Block::H2("Add without swiping"),
             Block::P(
                 "The Quick add bar searches commanders by name; tap a result to save it on the spot. The color pips and the Filter button narrow the list of saves, same as filtering anywhere else.",
             ),
+            Block::Image {
+                file: "commander-maybeboard/04-maybeboard-hint.webp",
+                alt: "The Commander maybeboard hint: Swipe deals commanders here, Quick add searches by name, Create deck starts a deck",
+                caption: None,
+            },
             Block::H2("Swipe right from the list"),
             Block::P(
                 "The Swipe button deals commanders right on this screen, with your saves left out of the pile so every card is a fresh idea. A right swipe starts a new deck with the pick; up saves it for later, like everywhere else.",
