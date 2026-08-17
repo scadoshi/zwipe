@@ -1,14 +1,14 @@
 # Guide images
 
-**Status: ACTIVE — 5 guides shipped (getting-started, swipe-to-build,
-commander-and-formats, filtering, commander-maybeboard; 13 webps + 1 shared
-reference).**
+**Status: ACTIVE — 6 guides shipped (getting-started, swipe-to-build,
+commander-and-formats, filtering, commander-maybeboard, organize-and-browse;
+16 webps + 1 shared reference).**
 
 **Resume here:**
 1. ~~Verify shipped images sit in the right places.~~ Done 2026-08-17: all 9
    shipped webps viewed and matched against their `Block::Image` alt text and
    `guide_image()` registry arms — no mismatches.
-2. **Next capture session: `organize-and-browse` (3 shots, tracker below).**
+2. **Next capture session: `share-your-deck` (2 shots, tracker below).**
    Owner drops raw PNGs on the Desktop (not staging — that's been the real
    flow) with rough names; assistant converts (`cwebp -q 82 -resize 860 0`),
    places, adds registry arms + `Block::Image` entries, compiles, commits,
@@ -88,9 +88,11 @@ Format: `nn — what the image must show` (alt text ≈ the same sentence).
   - 02 — the maybeboard screen with several saved commanders (art on)
   - 03 — one row expanded: Printing / Create deck / Remove buttons visible
   - 04 — the Commander maybeboard hint dialog (Swipe / Quick add / Create deck bullets)
-- [ ] **organize-and-browse** (3)
-  - 01 — deck list grouped by Color with Show pips active
-  - 02 — card list with one group collapsed (arrow sideways)
+- [x] **organize-and-browse** (3) — shipped 2026-08-17 (01 grouped by Tag not
+  Color: the color group-header pip has a size/centering bug, logged in
+  progress/todo.md; recapture by Color once fixed if desired)
+  - 01 — deck list grouped by Tag with Show pips + tag chips visible
+  - 02 — card list grouped by Type with Creatures collapsed (arrow sideways)
   - 03 — quick add results floating over the list
 - [ ] **share-your-deck** (2, browser captures)
   - 01 — the Share deck dialog in the app (Create link)

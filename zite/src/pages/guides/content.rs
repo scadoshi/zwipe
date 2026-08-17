@@ -78,6 +78,15 @@ pub fn guide_image(file: &str) -> Option<Asset> {
         "commander-maybeboard/04-maybeboard-hint.webp" => Some(asset!(
             "/assets/guides/commander-maybeboard/04-maybeboard-hint.webp"
         )),
+        "organize-and-browse/01-deck-list-by-tag.webp" => Some(asset!(
+            "/assets/guides/organize-and-browse/01-deck-list-by-tag.webp"
+        )),
+        "organize-and-browse/02-cards-by-type-collapsed.webp" => Some(asset!(
+            "/assets/guides/organize-and-browse/02-cards-by-type-collapsed.webp"
+        )),
+        "organize-and-browse/03-quick-add-results.webp" => Some(asset!(
+            "/assets/guides/organize-and-browse/03-quick-add-results.webp"
+        )),
         _ => None,
     }
 }
@@ -353,6 +362,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Group by folds your decks into sections by Format, Color, or Tag; a deck with several tags appears under each of them. Show narrows the list: color pips keep decks whose identity contains every pip you pick, tag chips match any of their tags, and All resets.",
             ),
+            Block::Image {
+                file: "organize-and-browse/01-deck-list-by-tag.webp",
+                alt: "The deck list grouped by Tag: Aggro and Artifacts sections with the Show pips and tag chips above",
+                caption: None,
+            },
             Block::H2("A deck's card list"),
             Block::P(
                 "Group by sections the cards by Type, Mana value, Color, or Card role. Boards swaps the list between Main, Maybe, and Side. Show toggles Tokens, the Command zone, and Art, which eases the row artwork in and out for denser reading.",
@@ -361,10 +375,20 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Tap any group header on the card list to fold that section, with the same arrow the card rows use. Tokens, Lands, Maybeboard, and Sideboard fold the same way. Collapses last for the visit; everything opens fresh next time.",
             ),
+            Block::Image {
+                file: "organize-and-browse/02-cards-by-type-collapsed.webp",
+                alt: "A card list grouped by Type with the Creatures section collapsed between expanded groups",
+                caption: None,
+            },
             Block::H2("Quick add"),
             Block::P(
                 "The Quick add bar at the top of the card list searches by name and adds a result to your mainboard with one tap. Results float over the list instead of pushing it around, and the search reaches cards you skipped while swiping.",
             ),
+            Block::Image {
+                file: "organize-and-browse/03-quick-add-results.webp",
+                alt: "Quick add mid-search: results floating over the card list, one tap from the mainboard",
+                caption: None,
+            },
         ],
     },
     Guide {
