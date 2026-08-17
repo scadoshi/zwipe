@@ -87,6 +87,15 @@ pub fn guide_image(file: &str) -> Option<Asset> {
         "organize-and-browse/03-quick-add-results.webp" => Some(asset!(
             "/assets/guides/organize-and-browse/03-quick-add-results.webp"
         )),
+        "share-your-deck/01-share-dialog.webp" => Some(asset!(
+            "/assets/guides/share-your-deck/01-share-dialog.webp"
+        )),
+        "share-your-deck/02-shared-page.webp" => {
+            Some(asset!("/assets/guides/share-your-deck/02-shared-page.webp"))
+        }
+        "share-your-deck/03-stop-share.webp" => {
+            Some(asset!("/assets/guides/share-your-deck/03-stop-share.webp"))
+        }
         _ => None,
     }
 }
@@ -791,6 +800,11 @@ pub static GUIDES: &[Guide] = &[
                 "Tap Share deck, then Create link.",
                 "The link copies to your clipboard, ready to paste anywhere.",
             ]),
+            Block::Image {
+                file: "share-your-deck/01-share-dialog.webp",
+                alt: "The Share deck dialog before sharing: anyone with the link can view this deck, with a Create link button",
+                caption: None,
+            },
             Block::P(
                 "The link lives at zwipe.net and stays up until you turn it off. Come back to the same dialog for Copy link whenever you need it again.",
             ),
@@ -798,6 +812,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "The page mirrors your deck view. Name, format, and tags sit up top, your commander and starred MVPs show as card images (tap one for the full art), and the deck's numbers sit in the same collapsible sections the app has: Budget, Tags, Distributions, Mana, and Draw odds.",
             ),
+            Block::Image {
+                file: "share-your-deck/02-shared-page.webp",
+                alt: "A shared deck open in a browser at zwipe.net: featured cards, Budget and Tags sections, and the card list below",
+                caption: None,
+            },
             Block::P(
                 "Below that is the full card list with the Group by, Show, and Filter by controls, expandable rows, collapsible group headers, and a section for the tokens your cards make.",
             ),
@@ -808,6 +827,11 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Same dialog, Stop share. The link dies immediately. Sharing again later mints a fresh link, so the old one stays dead wherever you posted it.",
             ),
+            Block::Image {
+                file: "share-your-deck/03-stop-share.webp",
+                alt: "The same dialog once a deck is shared, now offering Copy link and Stop share",
+                caption: None,
+            },
         ],
     },
     Guide {
