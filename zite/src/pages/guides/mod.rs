@@ -299,29 +299,31 @@ pub fn GuidePage(slug: String) -> Element {
         document::Script { r#type: "application/ld+json", "{json_ld}" }
         Nav {}
         div { class: "page content-enter guide-page",
-            div { class: "section panel",
-                div { class: "guide-breadcrumb",
-                    Link { to: Route::Guides {}, "Guides" }
-                    span { class: "crumb-sep", "→" }
-                    span { class: "crumb-cat", "{primary}" }
-                    span { class: "crumb-sep", "→" }
-                    span { "{g.title}" }
-                }
-                h1 { class: "guide-title", "{g.title}" }
-            }
             // With screenshots, the article and a sidecar gallery Panel sit
             // as siblings: prose panel beside the phone viewer on wide
-            // screens, gallery first when stacked on phones.
+            // screens, gallery first when stacked on phones. The article
+            // panel carries its own eyebrow (the primary category) + h1.
             {
                 let shots = guide_shots(g.blocks);
+                let article = rsx! {
+                    div { class: "guide-content section panel",
+                        h1 { class: "guide-title", "{g.title}" }
+                        div { class: "guide-title-tags",
+                            for t in g.tags.iter().copied() {
+                                span { class: "tag {tag_color_class(t)}", "{t}" }
+                            }
+                        }
+                        {render_text(g.blocks)}
+                    }
+                };
                 if shots.is_empty() {
                     rsx! {
-                        div { class: "guide-content section panel", {render_text(g.blocks)} }
+                        {article}
                     }
                 } else {
                     rsx! {
                         div { class: "guide-with-gallery",
-                            div { class: "guide-content section panel", {render_text(g.blocks)} }
+                            {article}
                             div { class: "guide-gallery-col",
                                 Panel { eyebrow: "Screens", title: "In the app",
                                     GuideGallery { shots }

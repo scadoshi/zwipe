@@ -2503,3 +2503,11 @@ footer {
     font-size: 0.8rem;
     color: var(--text-subtle);
 }
+
+/* Tag chips under the article title (same chips as the index cards). */
+.guide-title-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.5rem 0 1rem;
+}
