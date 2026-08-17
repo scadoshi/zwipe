@@ -2441,7 +2441,8 @@ footer {
    scrolls. Stacks on phones with the gallery first. */
 .guide-with-gallery {
     display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    /* Gallery left, prose right (owner call 2026-08-17). */
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
     gap: 1.5rem;
     align-items: start;
     margin-bottom: 2.5rem;
@@ -2477,7 +2478,6 @@ footer {
     }
     .guide-gallery-col {
         position: static;
-        order: -1;
     }
 }
 

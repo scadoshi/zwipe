@@ -323,12 +323,12 @@ pub fn GuidePage(slug: String) -> Element {
                 } else {
                     rsx! {
                         div { class: "guide-with-gallery",
-                            {article}
                             div { class: "guide-gallery-col",
                                 Panel { eyebrow: "Screens", title: "In the app",
                                     GuideGallery { shots }
                                 }
                             }
+                            {article}
                         }
                     }
                 }
