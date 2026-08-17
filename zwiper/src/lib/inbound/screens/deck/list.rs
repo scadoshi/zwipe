@@ -534,13 +534,18 @@ pub fn DeckList() -> Element {
                                             if let Some(pips) = &group.pips
                                                 && !pips.is_empty()
                                             {
-                                                for color in pips.clone() {
-                                                    i {
-                                                        key: "{color.to_short_name()}",
-                                                        class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                                                // Same wrapper the deck rows use, so a group's
+                                                // pips are the size of the pips on the decks
+                                                // beneath it.
+                                                span { class: "deck-list-identity",
+                                                    for color in pips.clone() {
+                                                        i {
+                                                            key: "{color.to_short_name()}",
+                                                            class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                                                        }
                                                     }
                                                 }
-                                                " ({group.decks.len()})"
+                                                "({group.decks.len()})"
                                             } else {
                                                 "{group.header} ({group.decks.len()})"
                                             }

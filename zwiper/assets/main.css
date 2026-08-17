@@ -2968,9 +2968,15 @@ button {
 }
 
 /* Deck list variant: headers float directly on the grid, where the rule
-   reads as a stray line instead of structure — the label alone is enough. */
+   reads as a stray line instead of structure — the label alone is enough.
+   Flex because the color-group headers carry identity pips, which size
+   themselves in rem and would otherwise ride the header's smaller text
+   baseline instead of centering against the count. */
 .deck-group-header {
     border-bottom: none;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
 }
 
 /* Collapsible group headers (deck cards screen): the card-row disclosure
