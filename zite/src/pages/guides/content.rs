@@ -273,7 +273,7 @@ pub static GUIDES: &[Guide] = &[
         title: "Choose a commander & format",
         summary: "Pick a format, then a commander. Zwipe enforces each format's rules and your commander's color identity.",
         tags: &["Commander", "Deck building"],
-        related: &["synergy"],
+        related: &["synergy", "commander-maybeboard"],
         blocks: &[
             Block::Lead(
                 "Your format sets the rules, your commander sets the colors, and Zwipe keeps the build inside both.",
@@ -295,7 +295,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::Steps(&[
                 "Type to search. Filter on limits results to eligible cards; off searches any card by name.",
-                "Tap Zwipe for the swipe picker, most-played first: right to choose, left to skip, down to undo.",
+                "Tap Zwipe for the swipe picker, most-played first: right to choose, left to skip, up to save it for later, down to undo.",
             ]),
             Block::P(
                 "Partner and Background appear only when your commander supports them. Oathbreaker needs a signature spell within the planeswalker's colors.",
@@ -306,6 +306,55 @@ pub static GUIDES: &[Guide] = &[
             Block::H2("Color identity"),
             Block::P(
                 "In commander formats, your deck's colors come from the commander (plus partner and background). The add screen stays inside those colors, and anything off-color is flagged in warnings.",
+            ),
+        ],
+    },
+    Guide {
+        slug: "commander-maybeboard",
+        title: "Save commanders for later",
+        summary: "One account-wide list for commanders you might build someday: swipe up to save one, then browse, search, and start decks straight from it.",
+        tags: &["Commander", "Deck building"],
+        related: &["commander-and-formats", "swipe-to-build"],
+        blocks: &[
+            Block::Lead(
+                "Found a commander you like but you're not building it today? Swipe up while picking a commander and it lands on your commander maybeboard, one list shared across your whole account.",
+            ),
+            Block::H2("Two maybeboards, one word"),
+            Block::P(
+                "Every deck has its own maybeboard for cards you might add to that deck. The commander maybeboard is different: it belongs to your account, not any deck, and it holds commanders only. Same gesture, same idea, wider scope.",
+            ),
+            Block::H2("Save a commander"),
+            Block::P(
+                "In any commander Zwipe picker, while creating or editing a deck, the up swipe saves the card on top:",
+            ),
+            Block::Swipe(&[
+                ("right", "choose it for this deck"),
+                ("left", "skip it"),
+                ("up", "save it to your commander maybeboard"),
+                ("down", "undo your last swipe"),
+            ]),
+            Block::P(
+                "Saving never interrupts the pick: the pile advances and you keep swiping. A down swipe right after takes the save back too. The list holds up to 50 commanders.",
+            ),
+            Block::H2("The Commander maybeboard screen"),
+            Block::P(
+                "Open it from the Decks screen: More, then Commander maybeboard. Saves show newest first as card rows with art (the Art chip hides it). Expand a row for its full details and three actions:",
+            ),
+            Block::Bullets(&[
+                "`Create deck` starts a new deck with that commander already in the command zone and the format set to Commander.",
+                "`Printing` swaps which printing shows, and the printing you pick carries into Create deck.",
+                "`Remove` takes it off the list.",
+            ]),
+            Block::H2("Add without swiping"),
+            Block::P(
+                "The Quick add bar searches commanders by name; tap a result to save it on the spot. The color pips and the Filter button narrow the list of saves, same as filtering anywhere else.",
+            ),
+            Block::H2("Swipe right from the list"),
+            Block::P(
+                "The Swipe button deals commanders right on this screen, with your saves left out of the pile so every card is a fresh idea. A right swipe starts a new deck with the pick; up saves it for later, like everywhere else.",
+            ),
+            Block::Note(
+                "Clear the whole list from More, then Clear maybeboard. It asks first, because there's no undo.",
             ),
         ],
     },
