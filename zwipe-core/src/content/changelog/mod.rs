@@ -34,6 +34,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Grouping a deck's cards by color now gives each color combination its own group, so your Azorius cards sit together instead of sharing one Multicolor pile with everything else.",
         "Color group headers show mana pips instead of the color's name, on your deck's cards, the deck list, and shared deck pages.",
         "Color group headers on the deck list show the same size pips as the decks under them.",
+        "The commander and MVP cards on a shared deck page now deal in from above as they load, one after another, the way they do in the app.",
         "The guides page on zwipe.net has a search bar. It matches a guide's title, summary, tags, and the text inside it, narrows alongside the tag chips, and clears with one tap. Matching guides fade in as the list changes.",
         "The Group by and Filter by labels on shared deck pages are bolder, so they hold up against the background grid like the app's.",
     ],

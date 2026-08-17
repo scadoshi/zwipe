@@ -300,15 +300,10 @@ fn SharedDeckSkeleton() -> Element {
                     }
                 }
             }
-            section { class: "sd-featured",
-                for i in 0..4 {
-                    div { key: "{i}", class: "sd-cz-card",
-                        div { class: "sk sk-card" }
-                        div { class: "sk sk-line sk-line-name" }
-                        div { class: "sk sk-line sk-line-role" }
-                    }
-                }
-            }
+            // No featured ghosts: the real cards deal themselves in from above
+            // as they arrive (see .sd-cz-card's animation), the way the app's
+            // deck screen does. Ghosting them first would replace that entrance
+            // with a swap. The rest of the page's skeleton stays.
             div { class: "sk sk-controls" }
             section { class: "sd-groups",
                 // Ghost card-list groups: like every other skeleton piece,

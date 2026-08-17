@@ -1797,25 +1797,9 @@ footer {
     width: 6rem;
 }
 
-.sk-card {
-    width: 100%;
-    aspect-ratio: 5 / 7;
-    border-radius: 4.75% / 3.5%;
-}
-
-.sk-line {
-    height: 0.7rem;
-    margin: 0.45rem auto 0;
-    border-radius: 0.3rem;
-}
-
-.sk-line-name {
-    width: 80%;
-}
-
-.sk-line-role {
-    width: 45%;
-}
+/* (The featured strip's ghosts lived here — .sk-card, .sk-line,
+   .sk-line-name, .sk-line-role. They're gone: the real cards now deal
+   themselves in from above as they load, so there's nothing to ghost.) */
 
 .sk-controls {
     height: 12rem;
@@ -2087,6 +2071,50 @@ footer {
     min-width: 0;
     max-width: 13rem;
     text-align: center;
+    /* Cards deal in from above: drop + settle with a slight tilt, while
+       flex-grow (animatable) eases the width share so a card arriving late
+       grows in and its siblings smoothly cede width instead of snapping
+       smaller. `backwards` keeps a card invisible through its stagger delay.
+       Ported from the app's .deck-featured-card so both entrances match. */
+    animation: sd-featured-deal 0.65s cubic-bezier(0.33, 1, 0.68, 1) backwards;
+}
+
+/* Staggered like a real deal: each card lands a beat after the one before. */
+.sd-cz-card:nth-child(2) {
+    animation-delay: 150ms;
+}
+.sd-cz-card:nth-child(3) {
+    animation-delay: 300ms;
+}
+.sd-cz-card:nth-child(4) {
+    animation-delay: 450ms;
+}
+.sd-cz-card:nth-child(5) {
+    animation-delay: 600ms;
+}
+.sd-cz-card:nth-child(6) {
+    animation-delay: 750ms;
+}
+
+@keyframes sd-featured-deal {
+    from {
+        flex-grow: 0.0001;
+        opacity: 0;
+        transform: translateY(-1.5rem) rotate(-3deg);
+    }
+    to {
+        flex-grow: 1;
+        opacity: 1;
+        transform: translateY(0) rotate(0deg);
+    }
+}
+
+/* Reduced motion: cards are simply there, no deal. The page already honors
+   this for the testimonials marquee. */
+@media (prefers-reduced-motion: reduce) {
+    .sd-cz-card {
+        animation: none;
+    }
 }
 
 /* `.sd-cz-image` is now the FlippableCardImage wrapper; fill the card and style
