@@ -1,6 +1,30 @@
 # Guide images
 
-**Status: ACTIVE — 4 guides shipped (getting-started, swipe-to-build, commander-and-formats, filtering). Next up: `commander-maybeboard` (3 shots, list below).** One guide at a time, in the tracker order below. Built to
+**Status: ACTIVE — 4 guides shipped (getting-started, swipe-to-build,
+commander-and-formats, filtering; 9 webps + 1 shared reference).**
+
+**Resume here (in order):**
+1. **Verify shipped images sit in the right places.** Read (view) every webp
+   under `zite/assets/guides/*/` and check each against its `Block::Image`
+   entry in `zite/src/pages/guides/content.rs`: the picture matches its alt
+   text, and it sits in the right guide. The captures were eyeballed before
+   conversion but never re-verified as shipped files. Registry arms live in
+   `guide_image()` in content.rs — every file needs one or it silently
+   doesn't render.
+2. **Next capture session: `commander-maybeboard` (3 shots, tracker below).**
+   Owner drops raw PNGs on the Desktop (not staging — that's been the real
+   flow) with rough names; assistant converts (`cwebp -q 82 -resize 860 0`),
+   places, adds registry arms + `Block::Image` entries, compiles, commits,
+   ticks the tracker.
+
+**Layout note (settled 2026-08-17, don't re-derive):** guide screenshots
+render in ONE prev/next gallery per guide — a sidecar `Panel` (eyebrow
+"Screens" / title "In the app") in the LEFT column, prose right, sticky
+below the nav via the measured `--nav-height` var (body ResizeObserver in
+`zite/src/main.rs`). `Block::Image` position in the data no longer affects
+layout (the gallery harvests them in order) but keep entries next to their
+sections as documentation. Article header = h1 with `panel-title` sizing +
+tag chips + `panel-rule`. One guide at a time, in the tracker order below. Built to
 survive interruption: the tracker + per-guide shot lists say exactly where we
 left off and what to capture next.
 
