@@ -1,8 +1,8 @@
 # Back-swipe audit — overlays that exit the screen instead of closing
 
-**Status: FIXES APPLIED 2026-08-17, awaiting device testing.** Four overlays
-registered (see the test list at the bottom); the inventory below is what the
-pass found. Ships in 1.9.2.
+**Status: FIXED AND VERIFIED ON BOTH PLATFORMS 2026-08-17.** Ships in 1.9.2.
+Four overlays registered; the inventory below is what the pass found and the
+test list at the bottom is what was run.
 
 ## Symptom
 
@@ -174,3 +174,35 @@ iOS and Android reach `close_top()` through different bridges (a
 `UIScreenEdgePanGestureRecognizer` vs the patched `MainActivity` dispatching
 `zwipe:back`). The registration fix is shared, so a failure on **one** platform
 only points at that bridge, not at this work.
+
+
+## Verification results (2026-08-17)
+
+Both bridges exercised, which mattered here: iOS reaches `close_top()` through
+a `UIScreenEdgePanGestureRecognizer`, Android through the patched
+`MainActivity` dispatching `zwipe:back`. A registration fix is shared, but a
+bridge bug would not have been.
+
+**iOS** — owner ran the list by hand on device: passing.
+
+**Android** — driven over adb against the 1.9.2 build, using `KEYCODE_BACK`
+(the hardware/nav-bar path, which normally goes untested):
+
+| Test | Result |
+|---|---|
+| #1 Format picker — the reported bug | **PASS** — closed, stayed on Edit Deck |
+| #5 Deck list More sheet (shared `BottomSheet`) | **PASS** — closed, stayed on Decks |
+| #15 Nested: Oracle tags → Dictionary | **PASS** — one layer per back, innermost first |
+| Fall-through: back with nothing open | **PASS** — left Edit Deck for the deck screen |
+
+That last row is as important as the fixes: it proves registration did not
+*over*-capture. Back still navigates when there is nothing to close, so the
+stack is not swallowing intents it should pass on.
+
+The nested case is the strongest single result — three levels deep, each back
+peeling exactly one layer, which exercises the LIFO ordering, the per-instance
+ids and the auto-deregistration on close all at once.
+
+**Not yet exercised**, all lower risk: the preferences theme-revert (#8), the
+printing sheet (#3), and the AlertDialog family (#14), which never broke since
+`AlertDialogRoot` has always registered.
