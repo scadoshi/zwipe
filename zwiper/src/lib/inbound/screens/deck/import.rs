@@ -180,7 +180,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             " the cards import into"
                         }
                         HintBullet {
-                            "Importing replaces the deck, so undo history starts fresh"
+                            "Importing clears this deck's undo history, in either mode"
                         }
                     }
                 }
