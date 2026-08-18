@@ -1,7 +1,7 @@
 # Ubuntu Server Setup
 
 > **NOTE (2026-06-13): Prod no longer runs here.** Production migrated to a
-> Hetzner VPS (`zerver-prod`, tailnet `100.114.251.8`, admin `ssh root@…`) —
+> Hetzner VPS (`zerver-prod`, tailnet `<server-tailnet-ip>`, admin `ssh root@…`) —
 > see `context/plans/vps_migration.md`. This home box is powered off but kept
 > intact as the rollback. The checklist below remains the general
 > rebuild/setup reference (it's what the VPS was built from); only the

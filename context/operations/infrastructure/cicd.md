@@ -154,9 +154,9 @@ If the server is rebuilt and the runner is lost:
 Tailscale is used for SSHing into the server from your Mac or any network. It is **not**
 used for CI/CD deploys (self-hosted runner eliminated that need).
 
-**Current server Tailscale IP**: `100.114.251.8` (Hetzner VPS `zerver-prod`, since the 2026-06-13 migration — see `context/plans/vps_migration.md`). The old home box was `100.91.55.16` (powered off, kept as rollback). Tailscale IPs are stable and private (not publicly routable).
+**Current server**: Hetzner VPS `zerver-prod`, since the 2026-06-13 migration (see `context/plans/vps_migration.md`). Its Tailscale address is written here as `<server-tailnet-ip>`: tailnet addresses are redacted because this repo is public, the same convention as the `192.168.1.XXX` LAN addresses below. `tailscale status` on any tailnet device lists them, and the owner supplies the value when a session needs it. The old home box was `<old-box-tailnet-ip>` (powered off, kept as rollback). Tailscale IPs are stable and private (not publicly routable).
 
-**Runners (post-migration):** two self-hosted runners live on the VPS — `zerver-prod` (repo `scadoshi/zwipe`, dir `~/actions-runner-zwipe`) and `zynergy-prod` (repo `scadoshi/zynergy`, dir `~/actions-runner-zynergy`), both boot-enabled. The deploy step's `sudo systemctl {stop,start} zerver` works because `/etc/sudoers.d/scadoshi` grants NOPASSWD for exactly those service-restart commands (all other admin = `ssh root@100.114.251.8`).
+**Runners (post-migration):** two self-hosted runners live on the VPS — `zerver-prod` (repo `scadoshi/zwipe`, dir `~/actions-runner-zwipe`) and `zynergy-prod` (repo `scadoshi/zynergy`, dir `~/actions-runner-zynergy`), both boot-enabled. The deploy step's `sudo systemctl {stop,start} zerver` works because `/etc/sudoers.d/scadoshi` grants NOPASSWD for exactly those service-restart commands (all other admin = `ssh root@<server-tailnet-ip>`).
 
 ### Setup
 
@@ -173,14 +173,14 @@ Install from the App Store, sign in with the same account.
 
 **SSH into server from anywhere:**
 ```bash
-ssh scadoshi@100.114.251.8        # service user (limited sudo)
-ssh root@100.114.251.8            # admin (full sudo) — key-only, tailnet
+ssh scadoshi@<server-tailnet-ip>        # service user (limited sudo)
+ssh root@<server-tailnet-ip>            # admin (full sudo) — key-only, tailnet
 ```
 
 ### Tailscale Admin Configuration
 
 - **Tag**: `tag:ci` (Access controls → Tags)
-- **ACL rule**: `tag:ci → 100.114.251.8` all ports (kept for potential future use; was `100.91.55.16` pre-migration)
+- **ACL rule**: `tag:ci → <server-tailnet-ip>` all ports (kept for potential future use; was `<old-box-tailnet-ip>` pre-migration)
 - **OAuth credential**: `github-actions` with `devices:core` + `auth_keys` scopes (kept for reference)
 
 ### Notes
