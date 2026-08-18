@@ -1,7 +1,8 @@
 # Back-swipe audit — overlays that exit the screen instead of closing
 
-**Status: OPEN.** Confirmed broken in at least one place, with an inventory
-below showing it is not a one-off. Needs one focused session, not a drive-by.
+**Status: FIXES APPLIED 2026-08-17, awaiting device testing.** Four overlays
+registered (see the test list at the bottom); the inventory below is what the
+pass found. Ships in 1.9.2.
 
 ## Symptom
 
@@ -53,17 +54,24 @@ is the bug, and it is a whole class rather than a single defect.
 
 **Confirmed gaps:**
 
-- **`components/bottom_sheet.rs` — the shared `BottomSheet` does not register.**
+- **FIXED — `components/bottom_sheet.rs`: the shared `BottomSheet` did not register.**
   This is the big one: it is used by the deck view's More menu
   (`more_buttons.rs`), the deck list, the commander maybeboard, profile, and
   preferences. One unregistered primitive, at least six screens affected.
-- **`screens/deck/components/format_select.rs`** — the reported bug. It renders
+- **FIXED — `screens/deck/components/format_select.rs`** — the reported bug. It renders
   a full-screen in-place overlay (`class: "screen-content … tag-screen"`),
   structurally identical to `oracle_tag_select`, which *does* register. A
   straight copy-paste omission.
 
-**To verify during the pass** (all own an `open: Signal<bool>`; some may be
-AlertDialog-based and therefore already covered):
+**Verified during the pass.** `tag_select.rs` and `printing_sheet.rs` were
+also unregistered and are now FIXED (printing_sheet hand-rolls its own backdrop
+rather than using `BottomSheet`, so the shared fix did not reach it).
+`card_info.rs`, `clone_deck_dialog.rs`, `logout_dialog.rs`,
+`delete_account_dialog.rs` and `change_password.rs` are AlertDialog-based and
+were already covered; `change_email.rs`, `change_username.rs` and
+`preferences.rs` are `BottomSheet`-based and are covered by the shared fix.
+`oracle_tags.rs`, `view.rs` and `deck_fields.rs` render no overlay markup of
+their own — they are hosts whose children register. The original list was:
 
 `screens/deck/components/tag_select.rs`,
 `screens/deck/card/components/card_info.rs`,
@@ -120,3 +128,49 @@ rather than fixing the one reported case.
   before suspecting this code. See
   [`android_resume_crash.md`](android_resume_crash.md), where the same manual
   step is hypothesis 1.
+
+## Test list (2026-08-17 fixes — verify on device)
+
+Every overlay below should behave the same way: **first back closes the
+overlay and leaves the screen where it was; a second back leaves the screen.**
+Failure looks like one back doing both.
+
+### Newly fixed — these were broken, test them first
+
+| # | Where | How to get there | Expected |
+|---|---|---|---|
+| 1 | **Format picker** | Deck edit/create → Format | Back = Cancel: reverts the format *and* its command-zone cascade, stays on the edit form. This was the reported bug (back used to exit the whole edit screen). |
+| 2 | **Deck tag picker** | Deck edit/create → Tags | Back = Cancel: selection reverts to what it was on open, stays on the form. |
+| 3 | **Printing sheet** | Any card row → expand → Printing | Sheet closes, screen stays. If you'd swiped to a different printing, expect the "Printing discarded" toast, same as tapping the backdrop. |
+| 4 | **Deck More sheet** | Deck view → More | Sheet closes only. |
+| 5 | **Deck list More sheet** | Decks → More | Sheet closes only. |
+| 6 | **Commander maybeboard More** | Decks → More → Commander maybeboard → More | Sheet closes only. |
+| 7 | **Profile sheets** | Profile → Change username / Change email | Sheet closes only. |
+| 8 | **Preferences sheet** | Profile → Preferences, change the theme, then back | Sheet closes **and the theme reverts** (back mirrors the backdrop, which discards an unsaved theme). |
+
+### Regression check — these already worked, confirm they still do
+
+| # | Where | Expected |
+|---|---|---|
+| 9 | Oracle tag picker (edit → Tags → Oracle tags) | closes, form stays |
+| 10 | Oracle tag **dictionary**, opened from that picker | closes back to the picker, **not** out to the form (the nested case) |
+| 11 | Oracle tag examples | closes back to where it opened |
+| 12 | Card filter sheet (Add/Remove/Deck cards → Filter) | closes only |
+| 13 | Swipe select (commander picker) | closes only |
+| 14 | Any AlertDialog: Clear skips, Delete deck, Clone deck, Logout, Delete account, hint dialogs | dialog closes only |
+
+### Edge cases worth one pass each
+
+| # | Case | Expected |
+|---|---|---|
+| 15 | Two overlays deep (picker → dictionary) | Back unwinds **one level per swipe**, innermost first |
+| 16 | Back at a root screen with nothing open | Android: exits the app. iOS: no-op. Neither crashes |
+| 17 | Open a sheet, rotate or toggle system dark mode, then back | Sheet still closes correctly (the overlay stack survives the config change) |
+| 18 | Open an overlay, background the app, return, then back | Still closes the overlay, not the screen |
+
+### Platform note
+
+iOS and Android reach `close_top()` through different bridges (a
+`UIScreenEdgePanGestureRecognizer` vs the patched `MainActivity` dispatching
+`zwipe:back`). The registration fix is shared, so a failure on **one** platform
+only points at that bridge, not at this work.
