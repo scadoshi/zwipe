@@ -1,6 +1,7 @@
 use dioxus::{document::eval, prelude::*};
 
 use crate::{Footer, Nav, components::PageMeta};
+use zwipe_components::Panel;
 
 /// Live App Store listing for Zwipe (iOS).
 const APP_STORE_URL: &str = "https://apps.apple.com/us/app/zwipe-tcg/id6761341603";
@@ -28,16 +29,17 @@ pub fn Ios() -> Element {
         document::Meta { http_equiv: "refresh", content: "0; url={APP_STORE_URL}" }
         Nav {}
         div { class: "page content-enter",
-            div { class: "section panel",
-                h1 { "Opening the App Store…" }
-                p {
-                    "If you're not redirected automatically, "
-                    a {
-                        href: "{APP_STORE_URL}",
-                        target: "_blank",
-                        rel: "noopener noreferrer",
-                        class: "store-btn",
-                        "open Zwipe on the App Store ↗"
+            div { class: "section",
+                Panel { eyebrow: "Download", title: "Opening the App Store…", title_h1: true,
+                    p {
+                        "If you're not redirected automatically, "
+                        a {
+                            href: "{APP_STORE_URL}",
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                            class: "store-btn",
+                            "open Zwipe on the App Store ↗"
+                        }
                     }
                 }
             }

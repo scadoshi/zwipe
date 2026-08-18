@@ -1,5 +1,6 @@
 use crate::{DISCORD_URL, Footer, Nav, SUPPORT_EMAIL, components::PageMeta};
 use dioxus::prelude::*;
+use zwipe_components::Panel;
 use zwipe_core::legal::{PRIVACY_LAST_UPDATED, PRIVACY_POLICY_HTML};
 
 /// Splits the shared policy HTML into one fragment per `<h2>` heading so each
@@ -25,9 +26,10 @@ pub fn Privacy() -> Element {
         }
         Nav {}
         div { class: "page content-enter",
-            div { class: "section panel",
-                h1 { "Privacy Policy" }
-                p { "Last updated: {PRIVACY_LAST_UPDATED}" }
+            div { class: "section",
+                Panel { eyebrow: "Legal", title: "Privacy Policy", title_h1: true,
+                    p { "Last updated: {PRIVACY_LAST_UPDATED}" }
+                }
             }
 
             div { class: "privacy-content section",

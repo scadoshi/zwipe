@@ -266,9 +266,10 @@ pub fn Guides() -> Element {
         }
         Nav {}
         div { class: "page content-enter",
-            div { class: "page-header section panel",
-                h1 { "Guides" }
-                p { class: "tagline", "How Zwipe works, one feature at a time." }
+            div { class: "page-header",
+                Panel { eyebrow: "Explore", title: "Guides", title_h1: true,
+                    p { class: "tagline", "How Zwipe works, one feature at a time." }
+                }
             }
             // One console row, the app's chip-row anatomy: inline label, the
             // search input with its clear button, then the tag chips.
@@ -368,11 +369,12 @@ pub fn GuidePage(slug: String) -> Element {
             Nav {}
             div { class: "page content-enter",
                 div { class: "section",
-                    h1 { "Guide not found" }
-                    p { class: "guide-p",
-                        "That guide doesn't exist. "
-                        Link { to: Route::Guides {}, "Back to all guides" }
-                        "."
+                    Panel { eyebrow: "Guides", title: "Guide not found", title_h1: true,
+                        p { class: "guide-p",
+                            "That guide doesn't exist. "
+                            Link { to: Route::Guides {}, "Back to all guides" }
+                            "."
+                        }
                     }
                 }
             }

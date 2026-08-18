@@ -23,6 +23,12 @@ pub fn Panel(
     /// Panel title.
     #[props(default)]
     title: Option<String>,
+    /// Render the title as an `h1` instead of the default `h3`. For page heroes,
+    /// where the panel's title IS the document's heading — a page whose only
+    /// heading is an `h3` reads as a fragment to crawlers and screen readers.
+    /// Cards and in-page panels leave this off.
+    #[props(default = false)]
+    title_h1: bool,
     /// Optional status pill shown beside the eyebrow.
     #[props(default)]
     status: Option<BannerStatus>,
@@ -55,7 +61,11 @@ pub fn Panel(
                         }
                     }
                     if let Some(title) = title {
-                        h3 { class: "panel-title", "{title}" }
+                        if title_h1 {
+                            h1 { class: "panel-title", "{title}" }
+                        } else {
+                            h3 { class: "panel-title", "{title}" }
+                        }
                     }
                 }
                 hr { class: "panel-rule" }

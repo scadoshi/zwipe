@@ -1,6 +1,7 @@
 use dioxus::{document::eval, prelude::*};
 
 use crate::{Footer, Nav, components::PageMeta};
+use zwipe_components::Panel;
 
 /// Live Google Play listing for Zwipe (Android). Locale-adaptive; no `&hl`.
 const PLAY_STORE_URL: &str = "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe";
@@ -28,16 +29,17 @@ pub fn Android() -> Element {
         document::Meta { http_equiv: "refresh", content: "0; url={PLAY_STORE_URL}" }
         Nav {}
         div { class: "page content-enter",
-            div { class: "section panel",
-                h1 { "Opening Google Play…" }
-                p {
-                    "If you're not redirected automatically, "
-                    a {
-                        href: "{PLAY_STORE_URL}",
-                        target: "_blank",
-                        rel: "noopener noreferrer",
-                        class: "store-btn",
-                        "get Zwipe on Google Play ↗"
+            div { class: "section",
+                Panel { eyebrow: "Download", title: "Opening Google Play…", title_h1: true,
+                    p {
+                        "If you're not redirected automatically, "
+                        a {
+                            href: "{PLAY_STORE_URL}",
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                            class: "store-btn",
+                            "get Zwipe on Google Play ↗"
+                        }
                     }
                 }
             }

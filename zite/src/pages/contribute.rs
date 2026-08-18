@@ -19,12 +19,13 @@ pub fn Contribute() -> Element {
         }
         Nav {}
         div { class: "page content-enter",
-            div { class: "section panel",
-                h1 { "Contribute" }
-                p {
-                    "Zwipe is a solo indie project: designed, built, and shipped by one person.
-                    If you're enjoying it, any support goes directly toward server costs and
-                    keeping development moving."
+            div { class: "section",
+                Panel { eyebrow: "Support", title: "Contribute", title_h1: true,
+                    p {
+                        "Zwipe is a solo indie project: designed, built, and shipped by one person.
+                        If you're enjoying it, any support goes directly toward server costs and
+                        keeping development moving."
+                    }
                 }
             }
 

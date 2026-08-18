@@ -1,6 +1,6 @@
 use crate::{Footer, Nav, components::PageMeta};
 use dioxus::prelude::*;
-use zwipe_components::Changelog as ChangelogContent;
+use zwipe_components::{Changelog as ChangelogContent, Panel};
 
 #[component]
 pub fn Changelog() -> Element {
@@ -12,9 +12,10 @@ pub fn Changelog() -> Element {
         }
         Nav {}
         div { class: "page content-enter",
-            div { class: "page-header section panel",
-                h1 { "Changelog" }
-                p { class: "tagline", "Every release, newest first." }
+            div { class: "page-header",
+                Panel { eyebrow: "Releases", title: "Changelog", title_h1: true,
+                    p { class: "tagline", "Every release, newest first." }
+                }
             }
             ChangelogContent {}
         }

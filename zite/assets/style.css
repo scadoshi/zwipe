@@ -840,26 +840,9 @@ code {
     margin-bottom: 2rem;
 }
 
-.about-header h1 {
-    margin-bottom: 0.25rem;
-}
-
-.about-headline {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.6rem 0.75rem;
-    margin-bottom: 1.25rem;
-}
-
-.about-headline h1 {
-    margin: 0;
-}
-
-.about-headline .profile-links,
-.about-headline .tag-row {
-    display: contents;
-}
+/* (.about-headline and its h1/contents rules lived here. The about hero is a
+   real Panel now: the title comes from panel-title, the profile links ride the
+   panel's action row, and the tag row sits in the body.) */
 
 .profile-links {
     display: flex;

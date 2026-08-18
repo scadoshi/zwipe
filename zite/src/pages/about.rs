@@ -28,14 +28,18 @@ pub fn About() -> Element {
         }
         Nav {}
         div { class: "page content-enter",
-            div { class: "about-header section panel",
-                div { class: "about-headline",
-                    h1 { "Scotty Fermo" }
-                    div { class: "profile-links",
+            div { class: "about-header section",
+                // The profile links ride the panel's own action row rather than
+                // a bespoke header block, so this hero matches every other page.
+                Panel {
+                    eyebrow: "About",
+                    title: "Scotty Fermo",
+                    title_h1: true,
+                    actions: rsx! {
                         a { class: "profile-link", href: "https://scottyfermo.com", target: "_blank", rel: "noopener noreferrer", "scottyfermo.com ↗" }
                         a { class: "profile-link", href: "https://github.com/scadoshi", target: "_blank", rel: "noopener noreferrer", "GitHub ↗" }
                         a { class: "profile-link", href: "https://www.linkedin.com/in/scotty-fermo-41a35b141/", target: "_blank", rel: "noopener noreferrer", "LinkedIn ↗" }
-                    }
+                    },
                     div { class: "tag-row",
                         span { class: "tag", "Rust" }
                         span { class: "tag", "Full-stack" }
@@ -43,13 +47,13 @@ pub fn About() -> Element {
                         span { class: "tag", "PostgreSQL" }
                         span { class: "tag", "Systems" }
                     }
-                }
-                p {
-                    "Zwipe is a solo project: designed, built, and shipped by one person.
-                    This page is the look under the hood, the architecture and the
-                    engineering discipline behind a one-person, full-stack Rust app.
-                    The goal was simple: make deck building feel good on mobile, and
-                    build it that way from the ground up."
+                    p {
+                        "Zwipe is a solo project: designed, built, and shipped by one person.
+                        This page is the look under the hood, the architecture and the
+                        engineering discipline behind a one-person, full-stack Rust app.
+                        The goal was simple: make deck building feel good on mobile, and
+                        build it that way from the ground up."
+                    }
                 }
             }
 
