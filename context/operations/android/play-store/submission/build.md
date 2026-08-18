@@ -204,18 +204,24 @@ against the signed artifact settle it:
 
 ```bash
 AAB=zwipe-<version>.aab
-AAPT=~/Library/Android/sdk/build-tools/34.0.0/aapt2
-unzip -o "$AAB" 'base/dex/*.dex' -d /tmp/aabchk
+rm -rf /tmp/aabchk && unzip -qo "$AAB" 'base/dex/*.dex' 'base/manifest/*' -d /tmp/aabchk
 
-strings /tmp/aabchk/base/dex/*.dex | grep -c "zwipe:back"       # back handler -> >=1
-strings /tmp/aabchk/base/dex/*.dex | grep -c '^killProcess$'    # onDestroy kill -> 1
-$AAPT dump xmltree --file AndroidManifest.xml "$AAB" \
-  | grep -iE "launchMode|configChanges"
+strings /tmp/aabchk/base/dex/*.dex | grep -c "zwipe:back"    # back handler -> >=1
+strings /tmp/aabchk/base/dex/*.dex | grep -c '^killProcess$' # onDestroy kill -> 1
+strings /tmp/aabchk/base/manifest/AndroidManifest.xml \
+  | grep -E "singleTask|uiMode"                              # manifest -> both
 ```
 
-Expect `launchMode(0x0101001d)=2` (singleTask) and a `configChanges` value that
-includes `uiMode` (`0x400017a4` with the current set). Anything else means
-`patch_bundle.sh` didn't run, or ran before a later `dx bundle` wiped it.
+All four greps must hit. Anything missing means `patch_bundle.sh` didn't run,
+or ran before a later `dx bundle` wiped it.
+
+**Note on tooling:** an AAB's manifest is protobuf, not binary XML, so
+`aapt2 dump xmltree --file AndroidManifest.xml <aab>` prints nothing — that
+form only works on an APK. `strings` on the extracted
+`base/manifest/AndroidManifest.xml` is the reliable check for a bundle. (On an
+APK you can use `aapt2 dump xmltree --file AndroidManifest.xml app.apk` and
+expect `launchMode(0x0101001d)=2` plus a `configChanges` value including
+`uiMode`, e.g. `0x400017a4`.)
 
 This check is why the `ndk-context` crash was finally pinned down: it proved
 the shipped 1.9.1 *did* contain the patch, which killed the "we forgot the
