@@ -26,6 +26,23 @@ in [../../setup.md](../../setup.md).
 5. **dx regenerates `MainActivity.kt` too** (bare `class MainActivity :
    WryActivity()`), which closes the app on the OS back gesture. Re-apply the
    back-navigation patch after `dx bundle` (step 1c) or back-swipe ships broken.
+6. **dx regenerates `AndroidManifest.xml` as well**, without `launchMode` and
+   with a short `configChanges` list. Ship it unpatched and you reship the
+   `ndk-context` crash (an explicit component start — a notification tap, the
+   Play Store's **Open** button after an update — creates a second Activity in
+   the live process and native init runs twice) *and* the bug where a system
+   dark/light switch silently closes the app. **This one survived five releases
+   because it was a checklist item nobody ran.**
+
+**→ Because of 1, 5 and 6, run one command after every `dx bundle`:**
+
+```bash
+zcripts/android/patch_bundle.sh     # launcher icons + back handler + manifest
+```
+
+Then do the Gradle edits (step 2) and repackage. **Add future patches to that
+script, not to this list** — the whole reason it exists is that a list of
+things to remember is a list of things to forget.
 
 ---
 
@@ -178,6 +195,34 @@ jarsigner -verify zwipe-<VERSION>.aab   # -> "jar verified."
 ```
 
 (`self-signed certificate` is expected and fine for an upload key.)
+
+## 4a. Verify the patches actually shipped (30 seconds, do not skip)
+
+The post-bundle patches are invisible once the AAB is built, and a missing one
+fails *silently* — the release just quietly carries the old bug. Three greps
+against the signed artifact settle it:
+
+```bash
+AAB=zwipe-<version>.aab
+AAPT=~/Library/Android/sdk/build-tools/34.0.0/aapt2
+unzip -o "$AAB" 'base/dex/*.dex' -d /tmp/aabchk
+
+strings /tmp/aabchk/base/dex/*.dex | grep -c "zwipe:back"       # back handler -> >=1
+strings /tmp/aabchk/base/dex/*.dex | grep -c '^killProcess$'    # onDestroy kill -> 1
+$AAPT dump xmltree --file AndroidManifest.xml "$AAB" \
+  | grep -iE "launchMode|configChanges"
+```
+
+Expect `launchMode(0x0101001d)=2` (singleTask) and a `configChanges` value that
+includes `uiMode` (`0x400017a4` with the current set). Anything else means
+`patch_bundle.sh` didn't run, or ran before a later `dx bundle` wiped it.
+
+This check is why the `ndk-context` crash was finally pinned down: it proved
+the shipped 1.9.1 *did* contain the patch, which killed the "we forgot the
+build step" theory in seconds and pointed at the real cause
+([`../../../../plans/archive/android_ndk_context_crash.md`](../../../../plans/archive/android_ndk_context_crash.md)).
+
+---
 
 ## 4b. Remove old AABs
 
