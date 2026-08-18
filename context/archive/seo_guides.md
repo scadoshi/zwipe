@@ -1,7 +1,7 @@
 # SEO Guides — A Guide for Every Page of Zwipe
 
 **Status: ARCHIVED 2026-07-06 — largely shipped.** The guides knowledge base
-went live on zite (`e1f40f57`, `c079929a`): 12 per-feature guides under
+went live on zite (`88504c81`, `406de999`): 12 per-feature guides under
 `/guides` with `PageMeta` per route, covering most of the inventory below.
 Unshipped leftovers are tracked in `progress/todo.md` (Web/Zite Polish):
 guide routes missing from `sitemap.xml`, per-guide Article/HowTo JSON-LD,

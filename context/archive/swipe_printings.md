@@ -1,6 +1,6 @@
 # Printings while swiping (add / remove / commander)
 
-**Status: SHIPPED 2026-07-11 (`999ef00a`, "view printings while swiping"). All
+**Status: SHIPPED 2026-07-11 (`4cf3b4c9`, "view printings while swiping"). All
 three screens (add, remove, commander) done; remove is view-only as decided.
 Client-only — no server or contract changes. The spec below records what was built.**
 

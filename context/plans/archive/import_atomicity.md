@@ -1,6 +1,6 @@
 # Deck import — make the whole operation atomic
 
-**Status: SHIPPED 2026-07-27 (`048e99dc`).** Implemented as designed (explicit-
+**Status: SHIPPED 2026-07-27 (`b4cc65bb`).** Implemented as designed (explicit-
 fields signature, ownership-before-empty-return, ride-along included). Verified
 by 5 new `#[sqlx::test]` cases in `zerver/tests/import_atomicity.rs` — including
 the concurrent-race test proving the `FOR UPDATE` serialization — plus a live

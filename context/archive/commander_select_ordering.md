@@ -1,10 +1,10 @@
 # Commander select — true popularity base + fresh ordering
 
-**Status: LIVE on prod 2026-07-07 (`b10c3c7f` server, zynergy 1.1.0 worker;
+**Status: LIVE on prod 2026-07-07 (`e970e37b` server, zynergy 1.1.0 worker;
 archived same day). The full pipeline is running: migration deployed,
 worker role granted, first sweep wrote 3,325 commanders (Ur-Dragon 48,535 on
 top), endpoint `POST /api/card/search/commanders` live and dormant. The
-client leg (`d212e93b`, swipe_select → new endpoint, sort pin removed) is on
+client leg (`9d0b2670`, swipe_select → new endpoint, sort pin removed) is on
 main and rides the next store build — until then shipped clients keep the
 old ordering. Architecture evolved during build (owner call): commander
 search became a FIRST-CLASS endpoint instead of piggybacking the deck-aware

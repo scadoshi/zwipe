@@ -1,6 +1,6 @@
 # Commander-select signal — first-party impression + selection counts
 
-**Status: §1-3 SHIPPED TO MAIN 2026-07-07 (`aa10a5be` feat + `fb30e371` docs;
+**Status: §1-3 SHIPPED TO MAIN 2026-07-07 (`7f8519f2` feat + `ddbe6e45` docs;
 archived 2026-07-07). §4 Consumer B (first-party popularity term) remains
 deliberately unbuilt: a data-gated retune, weight 0 until select coverage is
 real — this doc is its spec. Server-first: the migration/ingest ride the next

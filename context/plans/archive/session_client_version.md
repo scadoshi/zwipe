@@ -5,7 +5,7 @@
 Login, register, and refresh all covered. On refresh the client **re-sends** the
 current version (it overwrites, unlike platform's pure carry-forward) so the row
 tracks the version that is actually running, not the one it was born at. Mirrors
-the `platform` work in commit `09763a97` / [`session_platform.md`](session_platform.md).**
+the `platform` work in commit `4e7917b3` / [`session_platform.md`](session_platform.md).**
 
 **One sentence:** stamp each session (refresh-token row) with the app version
 (`CARGO_PKG_VERSION`, e.g. `"1.6.1"`) that created or last rotated it, so we can

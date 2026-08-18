@@ -25,7 +25,7 @@ same card details, MDFCs included, differing only in the bottom action bar.
 - **`CardDetailsDialog`** (still named `CardRulesDialog` in code until the rename)
   has its own renderer with per-face `build_rules` (handles MDFCs), the **reorder**
   (type -> text -> stats, then keywords + card roles), and **one-face-at-a-time +
-  Flip** — all shipped in commit **`013d862e`**. That commit is the reference
+  Flip** — all shipped in commit **`ea73de3e`**. That commit is the reference
   implementation to lift into `CardDetails`.
 
 Two renderers, only one of which handles MDFCs and the new layout.
@@ -99,7 +99,7 @@ aesthetic (a small util-styled control, no glow).
 ## Reference & inventory (for the executor)
 
 - **Lift from** `zwiper/src/lib/inbound/screens/deck/card/components/card_info.rs`
-  (commit `013d862e`): `FaceRules`, `stats_line`, `build_rules` (~lines 9-70), and
+  (commit `ea73de3e`): `FaceRules`, `stats_line`, `build_rules` (~lines 9-70), and
   the `CardRulesDialog` render (per-face selection via a `face` signal, the reorder,
   the Flip `AlertDialogAction`). Move `build_rules`/`FaceRules`/`stats_line` verbatim
   into `card_details.rs`; they depend only on `zwipe_core::domain::card::Card`
@@ -132,6 +132,6 @@ Then:
 
 ## Note
 
-This **supersedes** the reorder + flip shipped in `card_info.rs` (`013d862e`) — that
-logic is lifted into the shared `CardDetails` and the local copy removed. `013d862e`
+This **supersedes** the reorder + flip shipped in `card_info.rs` (`ea73de3e`) — that
+logic is lifted into the shared `CardDetails` and the local copy removed. `ea73de3e`
 is the reference for the per-face `build_rules`, the reorder, and the flip.

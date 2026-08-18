@@ -10,7 +10,7 @@ equivalents so all three surfaces (zwiper, zite, portfolio) share one system.
 ## Prerequisite (blocks everything)
 
 Portfolio pins `zwipe-components` via the **GitHub git dep**, currently rev
-`04dd9276…` / version 1.4.0 (`Cargo.lock`; `Cargo.toml` floats the default
+`82508838…` / version 1.4.0 (`Cargo.lock`; `Cargo.toml` floats the default
 branch). None of this can build until the new shared components are on the zwipe
 repo's default branch. Then, in the portfolio:
 

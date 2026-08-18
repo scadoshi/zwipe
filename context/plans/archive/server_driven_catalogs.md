@@ -7,19 +7,19 @@ type changes are internal to `zwipe-core` and only affect the next client build)
 `MIN_CLIENT_VERSION` bump. Full workspace green (clippy `--workspace -D warnings`, tests, build).
 
 ### DONE (commits, in order)
-- **Part 0 — lossy deserialization** (`d036b86b`): `serde_helpers::lossy_vec` on the served enum-vecs
+- **Part 0 — lossy deserialization** (`90d1ca64`): `serde_helpers::lossy_vec` on the served enum-vecs
   (`mechanical_categories`, deck `other_tags`) so an unknown slug never crashes an old client.
-- **Catalog endpoints + fetchers** (`e16c0ba2`): `GET /api/card/roles` (public, `CardRoleView`) +
+- **Catalog endpoints + fetchers** (`ee3c70c7`): `GET /api/card/roles` (public, `CardRoleView`) +
   `GET /api/deck/tags` (authed, `DeckTagView` incl. `seed_otags`); `ClientGetCardRoles` /
   `ClientGetDeckTags`.
-- **Part B — roles fully server-driven:** the filter fetches the role catalog (`3948829a`); and
-  **`CardProfile.card_roles: Vec<CardRole> → Vec<String>` slugs** (`3c3b83f2`) so a new server role
+- **Part B — roles fully server-driven:** the filter fetches the role catalog (`3bc6637c`); and
+  **`CardProfile.card_roles: Vec<CardRole> → Vec<String>` slugs** (`1402032f`) so a new server role
   renders on cards/lists/chips without a release. `card_role::role_label(slug)` resolves labels
   (curated for known, prettified for new). `group_by_category` buckets dynamically by slug.
 - **Part C — deck tags fully server-driven:** `DeckProfile.tags` / `HttpSharedDeck.tags →
-  Vec<String>` slugs (`fe2e1896`); `deck_tag::deck_tag_label(slug)` resolver; display sites (deck
+  Vec<String>` slugs (`a8437173`); `deck_tag::deck_tag_label(slug)` resolver; display sites (deck
   view, deck list, zite shared deck) + `seed_oracle_tags` take slugs; **the picker (`TagSelect`)
-  now renders options from the fetched `GET /api/deck/tags` catalog** (`818af097`), so a new deck
+  now renders options from the fetched `GET /api/deck/tags` catalog** (`667bea15`), so a new deck
   tag is selectable — create/edit fetch it and pass it as a `catalog` prop.
 
 ### Remaining follow-ups (small, non-gating)
@@ -78,7 +78,7 @@ minimal machinery.
 > change with a **DB write and no deploy at all**. Bigger change (admin tooling, derivation
 > reads from DB). Note it; don't build it yet.
 
-## Part 0 — the compatibility bridge: lossy slug deserialization — ✅ DONE (`d036b86b`)
+## Part 0 — the compatibility bridge: lossy slug deserialization — ✅ DONE (`90d1ca64`)
 
 **Built 2026-07-12 (unpushed).** `zwipe-core/src/serde_helpers.rs::lossy_vec` — reads `Vec<String>`,
 `filter_map`s into the enum, drops unknowns — applied via
@@ -200,7 +200,7 @@ it, it's stored as a slug and re-served — end to end, no client enum change.
 
 ## Sequencing
 
-0. **Part 0 — lossy slug deserialization** (`zwipe-core`, foundational): ✅ **DONE** (`d036b86b`,
+0. **Part 0 — lossy slug deserialization** (`zwipe-core`, foundational): ✅ **DONE** (`90d1ca64`,
    unpushed). Must ship in the first role/deck-tag-carrying client release — it's baked into the
    pending (un-deployed) client, so that's satisfied on the next deploy + client ship.
 1. **B — role catalog** (self-contained, our lane): DTO + `GET /api/card/roles` + make

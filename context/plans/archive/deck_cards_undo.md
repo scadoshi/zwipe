@@ -2,12 +2,12 @@
 
 **Status (2026-08-04): DONE.** All four phases complete:
 
-- ✔ Phase 1 — quantity debounce, `319747c7`. Verified live against zerver
+- ✔ Phase 1 — quantity debounce, `03b8aa14`. Verified live against zerver
   logs (+9 burst → one PUT, net-zero burst → no call, delete on crossing).
 - ✔ Phases 2–3 — undo built per Architecture below (`undo_log.rs`, five
   recording points, `apply_undo`, conditional ActionBar Undo button).
 - ✔ Phase 4 — verified on device (owner UI pass, 2026-08-04), committed as
-  `3885049e` with the 1.7.5 changelog bullet.
+  `0de58c91` with the 1.7.5 changelog bullet.
 
 Remaining ideas live in Parked below (MVP restore, command-zone printing,
 the e2e-harness scenarios). No open work in this plan.
@@ -116,7 +116,7 @@ Toast copy (plain, name-first): "Removed {name}", "Re-added {name}",
 
 ## Phases
 
-1. ✔ **Qty debounce** — done, `319747c7`.
+1. ✔ **Qty debounce** — done, `03b8aa14`.
 2. **UndoLog scaffolding** — `undo_log.rs` (enum, newtype, cap, push
    helper), module registration, context provision in `View`, `record: bool`
    threaded through `change_quantity` / `move_to_board` (call sites pass

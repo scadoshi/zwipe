@@ -1,7 +1,7 @@
 # zwipe-components — a shared UI component crate
 
-**Status: v1 SHIPPED 2026-07-07 (`244dd83a` crate + button migration,
-`06ac48da` workspace import regroup). The crate is a live workspace member;
+**Status: v1 SHIPPED 2026-07-07 (`b7ab406b` crate + button migration,
+`806fe0b4` workspace import regroup). The crate is a live workspace member;
 `Button` (Primary/Small/Util + danger/disabled/class/style), `Chip`, and
 `ActionBar` are authored; `components.css` is copied into both apps by
 `build.rs` and linked; ~50 zwiper buttons and ~14 action bars migrated; zite's

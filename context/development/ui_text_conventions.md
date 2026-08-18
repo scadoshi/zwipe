@@ -2,7 +2,7 @@
 
 How user-facing text is cased, which fonts to use, and the CSS reset patterns that keep them applied.
 
-Established during the 2026-05-24 zwiper casing revamp (commits `77b768e3`, `51497e2b`).
+Established during the 2026-05-24 zwiper casing revamp (commits `b1cacaaf`, `4cbe57ea`).
 
 ---
 

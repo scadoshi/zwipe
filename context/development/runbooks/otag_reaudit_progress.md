@@ -1,7 +1,7 @@
 # Oracle-tag description RE-AUDIT — progress & findings
 
 Second-pass QA re-run of `ORACLE_TAG_DESCRIPTIONS` using the **improved two-stage
-workflow** (card-data grounding + skeptical Verify stage, commit `99dc2091`). Ranks
+workflow** (card-data grounding + skeptical Verify stage, commit `f0f1398d`). Ranks
 1-2000 were originally checked by the *old* single-stage workflow that was blind to
 cost/color/hybrid/rarity and over-generalized cycles; this re-audit re-checks them from
 the top by population to catch what the old pass missed. Companion to the forward-audit

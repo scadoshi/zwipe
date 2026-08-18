@@ -111,34 +111,34 @@ Shipped in the v1.6.0 push (all CI gates green; migration `20260712030000` ran o
 
 **BUILT + committed** (unpushed at time of writing; every commit additive → no client break;
 tests + clippy + nightly-fmt green; `.sqlx` regenerated where needed):
-- **Projection** `card_profiles.oracle_tags` + `refresh_card_oracle_tags` in zervice — `ac92b6a6`.
+- **Projection** `card_profiles.oracle_tags` + `refresh_card_oracle_tags` in zervice — `c820f2c6`.
 - **Derivation** `outbound/sqlx/card/helpers/derive_categories.rs` — `CATEGORY_ROOTS` (18 otag
   categories) recursive-CTE subtree expansion through `oracle_tags.parent_ids` + `Tokens` via
-  `all_parts`; writes `card_profiles.mechanical_categories` — `3798090a`.
+  `all_parts`; writes `card_profiles.mechanical_categories` — `84afef5f`.
 - **oracle_tag_gaps** `zwipe-core/.../mechanical_category/oracle_tag_gaps.rs` —
   `classify_oracle_tag_gaps` for the 4 stragglers (Pump/Stax/Protection/GraveyardHate), documented
-  self-explaining header. Additive (`classify.rs` still present) — `8bdad628`.
+  self-explaining header. Additive (`classify.rs` still present) — `ffb2b5f5`.
 - **Wiring** `CardService::derive_card_categories` (SQL derive 18+Tokens, then a Rust merge pass
-  adding the 4 gaps) **replaces** `classify_untagged_cards` in `zervice` step 3 — `b7dbd9d0`.
+  adding the 4 gaps) **replaces** `classify_untagged_cards` in `zervice` step 3 — `f48a5a16`.
   ⚠ **DEPLOYED (v1.6.0); populates on the next prod `zervice` run** (nightly / manual
   `./zervice`) — same wire shape, better values, reversible.
 - **Display field** `CardProfile.oracle_tags: Vec<String>` (`#[serde(default)]`) on served cards;
-  `.sqlx` regenerated + `prepare --check` passes — `ff57c776`.
+  `.sqlx` regenerated + `prepare --check` passes — `b6b0641d`.
 - **Filter** `oracle_tags_contains_any/all/excludes` end-to-end (criteria → getters → in-memory
   `matches` → builder fields/default/clash/getters/setters/construction → SQL `?|`/`@>`/`NOT ?|`
-  on `card_profiles.oracle_tags`) + card_filter_parity case — `4411204e`.
+  on `card_profiles.oracle_tags`) + card_filter_parity case — `6238cca8`.
 - **Catalog endpoint** `GET /api/card/oracle-tags` (nested under `/api/card` with the keyword/artist
   family, not the bare `/api/oracle-tags`) — serves all **4,494** tags as
   `OracleTag { slug, label, description, parent_slugs }` (new zwipe-core DTO; repo resolves
   `parent_ids`→parent slugs, slug-ordered). `CardRepository/CardService/ErasedCardService` +
   handler + route + `ClientGetOracleTags` zwiper client + `.sqlx` + read test. Live-smoke verified
-  (4,494; ~29% carry a Scryfall description) — `f11cc1e3`.
+  (4,494; ~29% carry a Scryfall description) — `429296b1`.
 - **Filter picker** `zwiper/.../deck/card/filter/oracle_tags.rs` — `OracleTags` accordion section:
   curated default grid (`CURATED_ORACLE_TAGS`, 48 = the 24 originals→best-populated real slug +
   functional fills, only those the catalog still serves), any/all toggle, exclude section, typeahead
   over the full catalog. Wired into `card_filter_sheet.rs` (import + active-indicator + clear). Note:
   filters on a card's **direct** slugs (not hierarchy-expanded), hence concrete slugs like
-  `spot-removal` over the parent `removal` — `41512c59`.
+  `spot-removal` over the parent `removal` — `0f037b0a`.
 - **Deploy hardening (earlier):** whole `zervice` pipeline is **non-fatal per step** with
   `step N/5 …: starting/ok/FAILED` logging + non-zero exit on any failure.
 
@@ -150,10 +150,10 @@ a prod zervice run, then deleted (cleanup below).
 
 ### ▶ RESUME HERE (next session) — remaining Phase 2
 
-1. ✅ **DONE** — `GET /api/card/oracle-tags` endpoint (`f11cc1e3`).
-2. ✅ **DONE** — otag filter picker (`41512c59`).
+1. ✅ **DONE** — `GET /api/card/oracle-tags` endpoint (`429296b1`).
+2. ✅ **DONE** — otag filter picker (`0f037b0a`).
 3. ✅ **DONE** — card roles → oracle-tags drill-down (server-grouped) + naming alignment
-   (`b404180d` backend, `6fc32c40` frontend). Owner chose server-side grouping over a client
+   (`836ac3b5` backend, `5e19c23b` frontend). Owner chose server-side grouping over a client
    static map so the role↔tag mapping + noise filter update on **deploy**, not on mobile releases.
    **Backend:** `card_profiles.oracle_tags_by_role` (role → its tags) + `other_oracle_tags`
    (role-less functional tags, noise stripped), computed by `helpers/oracle_tag_groups.rs`
@@ -174,7 +174,7 @@ a prod zervice run, then deleted (cleanup below).
    version-gated wire migration) — see `open-questions.md` §1 and Phase M below. Owner confirmed
    (2026-07-11) the coarse axis stays `card_roles` (NOT folded into the granular `oracle_tags`
    name). NB the frontend **display labels** already say "Card roles" / "Role distribution"
-   (done in `6fc32c40`); Phase M is the remaining **wire/DB** rename (`oracle_tags_by_role` keys +
+   (done in `5e19c23b`); Phase M is the remaining **wire/DB** rename (`oracle_tags_by_role` keys +
    `mechanical_categories` field/column → `card_roles`), version-gated.
 
 ### The authored map (in `derive_categories.rs` `CATEGORY_ROOTS` + `oracle_tag_gaps.rs`)
@@ -242,7 +242,7 @@ back-compat-safe (tests in `contracts/deck.rs`). **No bump.**
 `Vec<String>` slugs (free strings from the `oracle_tags` catalog), NOT an enum. Store/decode as
 `Vec<String>` (no `TryFrom` enum filter). Everything else mirrors `other_tags` exactly.
 
-- **Slice A — backend plumbing (mechanical, additive): ✅ DONE `08b485eb`.** Migration
+- **Slice A — backend plumbing (mechanical, additive): ✅ DONE `858fed10`.** Migration
   `20260712040000`, `DeckProfile.oracle_tags` + `deck_oracle_tags.rs` (dedupe + cap 30),
   create/update requests, HTTP contracts (create/update/shared), sqlx create/get/get_all/update/
   clone + decode, handlers, `.sqlx` regen, HTTP round-trip test in `deck_flows`. Not yet pushed.
@@ -264,25 +264,25 @@ back-compat-safe (tests in `contracts/deck.rs`). **No bump.**
     INSERT+RETURNING, **get**/**get_all** SELECT, **update** QueryBuilder branch + RETURNING, and
     **clone_deck** INSERT+SELECT copy. `.sqlx` regen (create/get use macros; update is QueryBuilder).
   </details>
-- **Slice B — the seed map: ✅ DONE `7690f984`.** `DeckTag::oracle_tag_slugs(&self)` in `deck_tag.rs`
+- **Slice B — the seed map: ✅ DONE `b3a61b8a`.** `DeckTag::oracle_tag_slugs(&self)` in `deck_tag.rs`
   maps ~50 common archetypes → curated slugs (all 107 owner-approved + validated against the live
   catalog; unmapped → `&[]`). `seed_oracle_tags(&[DeckTag])` (deck_oracle_tags.rs) unions + dedupes.
   Tuned over time via feedback. Not yet pushed.
-- **Slice C — frontend: ✅ FIRST CUT `789a0b70` (visuals to tune).** New `OracleTagSelect` overlay
+- **Slice C — frontend: ✅ FIRST CUT `dff8ce73` (visuals to tune).** New `OracleTagSelect` overlay
   (`deck/components/oracle_tag_select.rs`) — fetched catalog + curated default grid + full-catalog
   search + def-bar, cap 30; wired as an "Oracle tags" field in `deck_fields.rs` + `create.rs`/`edit.rs`
   (create `Option`, update `Opdate` diff). Seeding: a `use_effect` on `selected_tags` unions
   `seed_oracle_tags` for **newly-added** deck tags only (peek-based, additive; deselects + manual
   removals stick; edit inits `seeded_from` to the loaded tags so it doesn't re-seed). `CURATED_ORACLE_TAGS`
   promoted to zwipe-core, shared with the card filter. Compiles + clippy + fmt green; **not pushed**.
-  UX polish landed (`baf23278`): reconcile-on-Done seeding (drop old seed, add new from final deck
+  UX polish landed (`a363401d`): reconcile-on-Done seeding (drop old seed, add new from final deck
   tags, keep manual picks; one info toast) instead of per-tap; Cancel buttons on the deck-tag,
   oracle-tag, and format pickers (snapshot on open; format restores its command-zone cascade);
-  "Tags"→"Deck tags" rename; chip-wrap CSS. **Deck-view refactor** (`baf23278`, `36ce531e`): the
+  "Tags"→"Deck tags" rename; chip-wrap CSS. **Deck-view refactor** (`a363401d`, `89813247`): the
   profile card is now just name/format/commander/power level; the tag rows moved to a collapsible
   **Tags** section (`DeckTagsSection`, count badge) and the budget rows to a collapsible **Budget**
   section (`DeckBudgetSection`), both collapsed by default, ordered Profile → Budget → Tags. The
-  create/edit **form** mirrors that: `Profile` / `Budget` / `Tags` sub-headings (`ef708a08`), tag
+  create/edit **form** mirrors that: `Profile` / `Budget` / `Tags` sub-headings (`a6185097`), tag
   fields grouped at the bottom. `CURATED_ORACLE_TAGS` lives in zwipe-core, shared by the card filter +
   deck picker. All green (clippy + fmt); **not pushed**. Slice C is effectively done bar further visual
   tuning.
@@ -383,7 +383,7 @@ client build required. Only the **non-EDH** half waits on the client update belo
 
 ### Slice B — client update (populates `deck_id`, unlocks non-EDH) — ✅ DONE, SHIPPED in 1.6.0
 
-**Shipped `1a857e67` ("send deck_id in swipe signal, emit for non-Commander decks"), in the 1.6.0
+**Shipped `e4b5a6a5` ("send deck_id in swipe signal, emit for non-Commander decks"), in the 1.6.0
 build (build 64, 2026-07-12).** `usage_buffer.rs::record_signal`/`record_removal` now key by
 `(commander, card, deck_id)`, no longer early-return on a missing commander (only on a missing
 card oracle id), and flush `deck_id: Some(deck_id)`. `add.rs`/`remove.rs` pass `deck_id`. So
@@ -462,12 +462,12 @@ rationale: `../archive/otags/compatibility.md` §Naming.
 
 ### DONE 2026-07-12 (committed, UNPUSHED) — type rename + Step 1
 
-- **Type rename `MechanicalCategory → CardRole`** (commit `4455fd20`). Pure, wire-invisible: the
+- **Type rename `MechanicalCategory → CardRole`** (commit `b11dc0cc`). Pure, wire-invisible: the
   enum + its error `InvalidCardRole` renamed across all crates (incl. `zwipe-components`); serde
   variant values (`"ramp"`, `"graveyard_hate"`, …) **unchanged**. The **module dir**
   `zwipe-core/.../models/mechanical_category/` and the **wire/DB field** `mechanical_categories`
   were deliberately left as-is (they move in the sunset). Verified a pure rename + fmt reflow.
-- **Step 1 — dual-emit + dual-accept (additive, no bump)** (commit `a20d56ca`):
+- **Step 1 — dual-emit + dual-accept (additive, no bump)** (commit `a00e5030`):
   - **Emit both:** `CardProfile` (`zwipe-core/.../card_profile.rs`) gained
     `#[serde(default)] pub card_roles: Vec<CardRole>` beside `mechanical_categories`; the sqlx
     conversion (`zerver/.../outbound/sqlx/card/card_profile.rs`) sets

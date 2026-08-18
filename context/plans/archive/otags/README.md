@@ -8,7 +8,7 @@ matured signal) and ongoing description authoring remain. Historical build log b
 (retirement, `oracle_tags` filter, `GET /api/card/oracle-tags`, server-grouped card roles →
 oracle-tags drill-down) live since v1.6.0. **Phase 3 (deck-level otag selection), Phase 4
 (serving term), and Phase 5 Slice A (generalized-context signal, dark) all shipped in the
-2026-07-12 push** — Phase 3 A/B/C (`08b485eb`, `7690f984`, `789a0b70`+polish), Phase 4
+2026-07-12 push** — Phase 3 A/B/C (`858fed10`, `b3a61b8a`, `dff8ce73`+polish), Phase 4
 `W_ORACLE_TAG` serve term, Phase 5A `otag_context_signal` + rollup + additive `deck_id` wire.
 Two additive migrations run on this deploy (`20260712040000_add_deck_oracle_tags`,
 `20260712060000_create_otag_context_signal`); the Phase 5 rollup + retirement/grouping repopulate
@@ -19,16 +19,16 @@ batch: **Phase M fully sunset** (`mechanical_categories → card_roles`, incl. D
 **Phase 5S dual-accept** (signal fully `deck_id`-driven server-side + legacy fallback; 1.7.0
 client pushes `deck_id` only), the **oracle-tag dictionary**, and the **unified catalog cache**.
 See [`../../progress/overview.md`](../../progress/overview.md) top entry. History below:
-- **Phase 5 Slice B (client) — DONE** (`1a857e67`): `zwiper` populates `CardSignalDelta.deck_id`
+- **Phase 5 Slice B (client) — DONE** (`e4b5a6a5`): `zwiper` populates `CardSignalDelta.deck_id`
   and emits for commander-less decks. Non-EDH signal now flows once shipped.
-- **Phase 5 wire made lenient — DONE** (`77801be6`): `CardSignalDelta.commander_oracle_id` is now
+- **Phase 5 wire made lenient — DONE** (`ce35aa7f`): `CardSignalDelta.commander_oracle_id` is now
   `Option<Uuid>` (`#[serde(default)]`) — non-EDH decks omit it, EDH sends `Some`; the per-card
   commander tables skip commander-less signals (no nil pollution). Additive, no bump.
-- **Phase 2 tail — `classify.rs` DELETED** (`f8ed0e36`): retirement proven on prod (88,304 profiles
+- **Phase 2 tail — `classify.rs` DELETED** (`ecfb9441`): retirement proven on prod (88,304 profiles
   categorized from otags; Cultivate=ramp+tutor, Swords=lifegain+removal). Server-internal only,
   client-compatible.
-- **Phase M — type rename `MechanicalCategory → CardRole` + Step 1 dual-emit DONE** (`4455fd20`,
-  `a20d56ca`): responses emit `card_roles` beside `mechanical_categories`; criteria accept
+- **Phase M — type rename `MechanicalCategory → CardRole` + Step 1 dual-emit DONE** (`b11dc0cc`,
+  `a00e5030`): responses emit `card_roles` beside `mechanical_categories`; criteria accept
   `card_roles_*` via serde alias. Additive, no bump.
 - **Phase M Step 2 (client migration) DONE — built + green, NOT yet committed** (2026-07-12): read
   side (`zwiper`/`zite`/`zwipe-components` read `CardProfile.card_roles` — `card_info.rs`,
@@ -37,7 +37,7 @@ See [`../../progress/overview.md`](../../progress/overview.md) top entry. Histor
   `card_roles_*` and still accepts the legacy key). `matches.rs` + `CardQueryBuilder` Rust names
   stay `mechanical_categories_*` (only the serde name is wire-visible). Sits in the working tree
   intermingled with two other concurrent efforts (mana-pip fix, education hints) — commit as-is.
-- **Cleanup:** `DeckServeContext` struct replaced the 8-arg serve signature (`9f783745`).
+- **Cleanup:** `DeckServeContext` struct replaced the 8-arg serve signature (`c67ad5a6`).
 
 ## Where we stand (2026-07-12) — the build phase is essentially DONE
 

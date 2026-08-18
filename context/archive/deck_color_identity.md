@@ -1,8 +1,8 @@
 # Deck color identity on the profile
 
 **Status: SHIPPED (local, unpushed) 2026-07-11.** Client render committed in
-`c46ee448` (with pip color tinting); server derivation + DTO field + `.sqlx` in
-`4ae63435`. Not yet pushed to `main` (push auto-deploys prod). Derive-only: **no
+`9d3e7e7d` (with pip color tinting); server derivation + DTO field + `.sqlx` in
+`51957baa`. Not yet pushed to `main` (push auto-deploys prod). Derive-only: **no
 migration, no stored column.**
 
 Part of the deck-cards-screen revamp (squircle mana pips, price/stat tags, flowing
@@ -112,7 +112,7 @@ constraint), and the list query already joins `deck_cards` for card_count.
 Pips parse the DTO codes into a `HashSet<Color>`, then iterate `Color::all()`
 filtered to members, rendering `i.ms.ms-{code_lower}.ms-cost` (lowercase mana-font
 classes). `.deck-list-identity` is `inline-flex` with a small gap; pips inherit the
-global squircle/border from `components.css` via `ms-cost`. `c46ee448` also tinted
+global squircle/border from `components.css` via `ms-cost`. `9d3e7e7d` also tinted
 each pip's outline + glyph to its own mana color.
 
 ## Still open

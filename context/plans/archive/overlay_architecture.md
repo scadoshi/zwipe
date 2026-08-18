@@ -1,7 +1,7 @@
 # Overlay architecture — back-aware overlays + route audit
 
 **Status: Parts 1 + 2 + the dictionary/examples conversion SHIPPED 2026-07-16
-(commit `dc44ce3f`), device-tested working. The remaining route conversions from the
+(commit `84956333`), device-tested working. The remaining route conversions from the
 Part 3 audit (Export, Import, ViewDeckCard, EditDeck, Privacy, Changelog) are optional
 future work — none is required for the primitive to be complete.** Umbrella /
 infrastructure plan. Client-only (zwiper). Establishes a reusable **overlay** primitive
@@ -34,7 +34,7 @@ to pop routes. Once back can also close an overlay, that constraint is gone. Rou
 still exist for real destinations; overlays cover everything that should sit *on
 top* without destroying what's underneath.
 
-## As-built (2026-07-16, commit `dc44ce3f`) — source of truth
+## As-built (2026-07-16, commit `84956333`) — source of truth
 
 The shipped API diverges from the Part 1 sketch below in one deliberate way: the
 stack stores a **close `Callback`**, not the overlay's `open` signal. That lets both
@@ -200,8 +200,8 @@ convert; **?OWNER** = judgment call, needs a decision.
 | `DeckList` | Home | **KEEP** | Hub. |
 | `ViewDeck` | list, and returned-to from edit/import/export/create | **KEEP** | The per-deck hub; everything returns here. |
 | `Profile` | Home | **KEEP** | Settled destination. |
-| `OracleTagDictionary` | deck oracle-tag selector + card filter | **DONE (→OVERLAY)** | Converted `dc44ce3f`. Reference layer over a picker; Use writes the host's live signal ("Tag added to deck" / "Added to filter"). Route dropped. See [`dictionary_adopt_flow.md`](dictionary_adopt_flow.md). |
-| `OracleTagExamples` | dictionary | **DONE (→OVERLAY)** | Converted `dc44ce3f`. Nested swipe-screen overlay over the dictionary; route dropped. Proves a swipe screen works as an overlay. |
+| `OracleTagDictionary` | deck oracle-tag selector + card filter | **DONE (→OVERLAY)** | Converted `84956333`. Reference layer over a picker; Use writes the host's live signal ("Tag added to deck" / "Added to filter"). Route dropped. See [`dictionary_adopt_flow.md`](dictionary_adopt_flow.md). |
+| `OracleTagExamples` | dictionary | **DONE (→OVERLAY)** | Converted `84956333`. Nested swipe-screen overlay over the dictionary; route dropped. Proves a swipe screen works as an overlay. |
 | `ExportDeck` | deck view (more/warnings) | **→OVERLAY** (strong) | It's "show me this deck's decklist text" — a modal over the deck. No reason to leave ViewDeck. |
 | `ImportDeck` | deck view (more/warnings) | **→OVERLAY** (likely) | Paste-a-decklist modal action on this deck; returning should land back on the same deck view untouched. |
 | `ViewDeckCard` | deck view | **?OWNER** | "Browse this deck's cards" — a layer over ViewDeck. Overlay would preserve ViewDeck scroll/state; but it's a substantial screen. Lean overlay. |
@@ -217,11 +217,11 @@ the route model actively hurts.
 ## Part 4 — Sequencing
 
 1. ~~**Infra (Part 1):** `OverlayBackStack` + `use_overlay_back` + back-handler
-   change + z-index registry.~~ **DONE `dc44ce3f`.**
-2. ~~**Retrofit (Part 2):** wire the existing overlays.~~ **DONE `dc44ce3f`** — plus
+   change + z-index registry.~~ **DONE `84956333`.**
+2. ~~**Retrofit (Part 2):** wire the existing overlays.~~ **DONE `84956333`** — plus
    the shared `AlertDialogRoot` wrapper, so all dialogs close on back too.
 3. ~~**Dictionary + Examples (→OVERLAY):** the first real conversion.~~ **DONE
-   `dc44ce3f`** — spec in [`dictionary_adopt_flow.md`](dictionary_adopt_flow.md);
+   `84956333`** — spec in [`dictionary_adopt_flow.md`](dictionary_adopt_flow.md);
    swipe-screen-as-overlay proven end to end.
 4. **Export, then Import (→OVERLAY):** clear wins, self-contained modals over deck
    view. *Not started — optional.*
@@ -267,6 +267,6 @@ Steps 1–3 are shipped. Steps 4–5 are independently shippable if/when wanted.
    / Add / Remove / Privacy / Changelog to convert (and priority)? None are urgent —
    nothing "breaks" today.
 2. ~~Retrofit existing overlays now or with their next touch?~~ **Resolved — did it
-   now (`dc44ce3f`).**
+   now (`84956333`).**
 3. ~~Where do converted overlay components live?~~ **Resolved — kept under
    `screens/`** (dictionary/examples stayed put; no `components/overlays/` home).

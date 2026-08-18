@@ -1,6 +1,6 @@
 # Plan: global undo — one per-deck mutation history across screens
 
-**Status: DONE — BUILT 2026-08-05 (`a7763093`) and DEVICE-VERIFIED the same
+**Status: DONE — BUILT 2026-08-05 (`f72dad61`) and DEVICE-VERIFIED the same
 day: the owner ran the full sim run sheet below on a real phone against the
 live server, all nine scenarios passed. Rides 1.7.6.** Predecessor:
 `archive/deck_cards_undo.md` — its architecture (UndoAction, UndoStore,

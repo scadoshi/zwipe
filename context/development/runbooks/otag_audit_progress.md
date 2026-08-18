@@ -39,7 +39,7 @@ suggested fixes are shippable. ~16–17 apply-worthy; 3 audit flags were themsel
 
 ## Batch 6 (rank 2001-2200, improved two-stage workflow)
 
-First batch run with the **card-data grounding + Verify stage** (commit `99dc2091`). 200 audited: **175 clean, 20 suspect, 4 wrong**; the Verify stage **overturned 1** auditor flag.
+First batch run with the **card-data grounding + Verify stage** (commit `f0f1398d`). 200 audited: **175 clean, 20 suspect, 4 wrong**; the Verify stage **overturned 1** auditor flag.
 
 **Regression signal (the fix worked).** This batch was deliberately dense with `cycle-*` tags and cost/color/rarity claims, the exact category that produced the 3 false flags in the first 2000. It produced **zero** false cost/color/hybrid flags. The opposite happened: the auditor now *uses* the pulled cost/colors to make correct calls it previously guessed wrong, e.g. flagging `cycle-clb-back-enemy-legend` as mono-colored via `colors [G]/[W]/[B]`, and `cycle-arb-u-hybrid-gold` as three-color via `{2}{G/U}{W}` `colors [G,U,W]`. Overturn rate 1/25 (~4%) with all survivors genuine, table below.
 

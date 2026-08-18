@@ -2,18 +2,18 @@
 
 **Status: DONE 2026-08-12.** All five phases complete: layers 1-3 shipped with
 1.7.5 (released 2026-08-10), `MIN_CLIENT_VERSION=1.7.5` raised 2026-08-12, and
-the Phase 5 cleanup merged same day (PR #24, `04c1758d`) — PATCH-only endpoints,
+the Phase 5 cleanup merged same day (PR #24, `cb8cc8f1`) — PATCH-only endpoints,
 PUT→405, legacy Opdate dialect deleted, explicit null on non-clearable
 fields→422. `zcripts/metrics/errors.sql` is the post-merge canary.
 
 **Status as of 2026-08-05 (historical, one release train, three layers):**
 
 - ✔ **Layer 1 (verb) + Layer 2 (absolute quantity), server side — DEPLOYED
-  to prod** (`6b3d17d9`, Deploy zerver green 2026-08-05). Verified: unauth
+  to prod** (`a79aa989`, Deploy zerver green 2026-08-05). Verified: unauth
   PATCH probes on all four route families return 401 (registered, auth
   rejects — 405 would mean missing), and a live dev-client deck rename went
   out as `PATCH /api/deck/{id}` and stuck.
-- ✔ **Layers 1+2, client side — BUILT** (`aa62a374`, unpushed): all seven
+- ✔ **Layers 1+2, client side — BUILT** (`a3aed2fe`, unpushed): all seven
   endpoints send PATCH; deck-card body is `HttpPatchDeckCard` with absolute
   quantity. Owner device-testing against prod in progress (`zwiper/.env`
   temporarily points at `https://api.zwipe.net`; flip back to
@@ -97,7 +97,7 @@ Key code:
 
 ## Phase 1 — server: add PATCH routes, change nothing else ✔ DONE
 
-Shipped `6b3d17d9`, deployed to prod 2026-08-05 (Deploy zerver green).
+Shipped `a79aa989`, deployed to prod 2026-08-05 (Deploy zerver green).
 Verified: unauth PATCH probes → 401 on all families; authed dev-client
 rename PATCH observed working live. As built:
 
@@ -123,7 +123,7 @@ rename PATCH observed working live. As built:
 
 ## Phase 2 — client: switch to PATCH + absolute quantity ✔ BUILT
 
-Shipped `aa62a374` (unpushed at time of writing); owner device-testing
+Shipped `a3aed2fe` (unpushed at time of writing); owner device-testing
 against prod. Rides the next client release (server must already be live —
 standing "server ships first, sits a day" ordering). As built:
 
@@ -147,7 +147,7 @@ standing "server ships first, sits a day" ordering). As built:
 
 Built as specced below (custom Serialize/Deserialize in helpers.rs, all 13
 Opdate fields + name normalized, docs fixed, full test set incl. the legacy
-fixture; 406 core + 213 zerver tests green), deployed 2026-08-05 (`39ded717`,
+fixture; 406 core + 213 zerver tests green), deployed 2026-08-05 (`b582f9ce`,
 Deploy zerver green), and verified live from the dev client: a rename
 (single-key body), a land-target set (bare value), and a land-target clear
 (null) all accepted by prod. All that remains for the train is Phase 3

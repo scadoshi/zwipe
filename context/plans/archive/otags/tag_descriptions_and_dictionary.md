@@ -1,9 +1,9 @@
 # Oracle tag descriptions + dictionary
 
 **Status: DONE 2026-08-06 — the authoring project is COMPLETE.** Part 1
-mechanism SHIPPED 2026-07-13 (`0114cb38`); authoring proceeded in
+mechanism SHIPPED 2026-07-13 (`b2ead5f6`); authoring proceeded in
 oracle-text-verified batches (1,100 → 4,348 by 2026-07-30) and the final 38
-landed 2026-08-06 (`fe4b4647`): **4,395 descriptions — every tag with a real
+landed 2026-08-06 (`facb64d1`): **4,395 descriptions — every tag with a real
 card population is covered**, fully replacing Scryfall's ~29%. Part 2
 (dictionary) shipped in the 1.7.0 client. Remaining forever-work is only
 incremental: new tags appear as Scryfall's tagger grows — the nightly coverage
@@ -19,7 +19,7 @@ Two linked pieces the owner asked for:
    to surf. **BUILT 2026-07-14** (letter-first browse + search; ships in 1.7.0).
 
 They're one arc: the dictionary renders the descriptions. Raw slugs (shipped
-`ffd52c5e`) make this more valuable: the slug is the stable key, the "?" and the
+`73242c98`) make this more valuable: the slug is the stable key, the "?" and the
 dictionary carry the meaning.
 
 ## One sentence

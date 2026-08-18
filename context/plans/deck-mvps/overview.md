@@ -1,6 +1,6 @@
 # Deck MVPs — star the cards that define your deck
 
-**Status: Phase 1 BUILT + SHIPPED TO MAIN 2026-07-07 (`abaaec0e`; server
+**Status: Phase 1 BUILT + SHIPPED TO MAIN 2026-07-07 (`e0244c9c`; server
 steps 1–7 + client), API-verified end-to-end on dev and simulator-verified
 (star reworked during the pass: indicator on starred rows only, Star/Unstar
 button in the expanded row — an outline star on every row was 97% noise). Phases 2 (signal weight) and 3
@@ -54,7 +54,7 @@ feed the strongest per-card signal the system collects.
 3. **Deck steering** (server-only, later) — [`server.md`](server.md) step 9.
 4. **Artifacts** — MVPs on shared deck pages / weekly share cards (pairs
    with the badges backlog item). **Shipped on the shared deck page 2026-07-07**
-   (`d8f7dd4e` + `e5ed5e33`): the payload already carried `mvp_at`, so starred
+   (`e4f5699a` + `63bffd3c`): the payload already carried `mvp_at`, so starred
    cards render the warning-gold ★ inline, and the page opens with a featured
    row of the commander + the MVPs as full art (each labeled) — the personality
    statement this plan envisioned. Weekly share cards remain.

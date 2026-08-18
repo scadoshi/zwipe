@@ -1,6 +1,6 @@
 # Deck share page — a public URL for any deck
 
-**Status: SHIPPED 2026-07-07 (`985dde3e` server, `d8f7dd4e` zite, `f3b1d17a`
+**Status: SHIPPED 2026-07-07 (`89ec0129` server, `e4f5699a` zite, `4211ad63`
 client). All three legs landed the same day: the `share_token` migration +
 owner-checked POST/DELETE `/api/deck/{id}/share` + public IP-limited GET
 `/api/share/deck/{token}` (identity-stripped, clone stays private); the zite

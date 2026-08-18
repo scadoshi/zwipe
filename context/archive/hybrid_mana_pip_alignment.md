@@ -1,6 +1,6 @@
 # Hybrid mana pip glyph misalignment — investigation & fix plan
 
-**Status: SHIPPED 2026-07-12 (`bb4bef05`).** Fixed via Path A: for the ~20 hybrid classes,
+**Status: SHIPPED 2026-07-12 (`9a2d093e`).** Fixed via Path A: for the ~20 hybrid classes,
 restore mana-font's box geometry (`display: inline-block; 1.3em; line-height: 1.35em`) plus
 `box-sizing: content-box` so the 1px squircle border sits *outside* the padding box the
 half-offsets target — matching mana-font's native border-less box. Kept our border/radius/

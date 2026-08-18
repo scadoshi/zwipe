@@ -211,7 +211,7 @@ git commit -m "Update sqlx offline cache"
 refreshes a crate-local copy. A stale `zerver/.sqlx/` (leftover from an early
 per-crate prepare) shadowed the root data and broke the 2026-07-05 deploy — the
 first release to change an *existing* query's column types in place (daily-activity
-BIGINT). Removed in `6556209d`; never run `cargo sqlx prepare` from inside `zerver/`
+BIGINT). Removed in `2e7fd985`; never run `cargo sqlx prepare` from inside `zerver/`
 without `--workspace`. The verify step (workflow step 5) now catches any
 offline-data drift before the build.
 

@@ -99,7 +99,7 @@ pub struct HttpCrashReport {
 - `HttpUsageBatch` gains `#[serde(default)] pub client_errors: Vec<ClientErrorReport>`.
 - **Version/platform ride ON the report** (decided 2026-07-28): the batch
   itself carries neither, and the only server-side source is the per-session
-  app version on the refresh-token row (`ce8abcad`) — reachable but a join the
+  app version on the refresh-token row (`d1c874fe`) — reachable but a join the
   ingest doesn't need. Self-reported like `HttpCrashReport` already does;
   it's untrusted debugging metadata, not authorization data.
 - **`clamped()` must cover the new field** — it's the batch's untrusted-input
