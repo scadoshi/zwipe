@@ -20,7 +20,9 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Bugs
 
-- [ ] **~2026-08-25: read the crash + error tables and confirm the Android fix held.** One week after 1.9.2 reaches users. This is the step that was skipped after 1.7.6 and cost five releases of false confidence, so do not close the bug on the lab result alone. Run both queries — crashes alone can fall because *adoption* fell:
+- [ ] **1.9.2 in review at both stores since 2026-08-17** (iOS build 76 / Android versionCode 39). When it goes live: confirm the deck list restyle and back-swipe behave on a store build, note the release date in both `history.md` files, and delete this line. Also reinstall Zwipe from the store on the Pixel — it is currently on a debug-signed 1.9.2 build, which Play cannot update.
+
+- [ ] **One week after 1.9.2 goes LIVE (not submitted), read the crash + error tables and confirm the Android fix held.** Submitted to both stores 2026-08-17; the clock starts when review clears and users actually update, so ~2026-08-25 at the earliest and later if review drags. This is the step that was skipped after 1.7.6 and cost five releases of false confidence, so do not close the bug on the lab result alone. Run both queries — crashes alone can fall because *adoption* fell:
 
   ```sql
   -- must be zero for ndk-context on 1.9.2+
