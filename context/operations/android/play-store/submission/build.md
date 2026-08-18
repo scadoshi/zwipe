@@ -60,6 +60,22 @@ This compiles the Rust lib, stages `libmain.so` into the Gradle project's
 `jniLibs/`, and produces an AAB targeting SDK **34** (wrong — fixed next).
 Generated Gradle project: `target/dx/zwipe/release/android/app/`.
 
+## 1b–1d. Apply every post-bundle patch (one command)
+
+`dx bundle` regenerates the whole android/ tree each time, so three patches
+must be re-applied after it and before the Gradle repackage. Run them together:
+
+```bash
+zcripts/android/patch_bundle.sh
+```
+
+That is launcher icons + back navigation + manifest, described individually
+below. **Skipping any one ships a broken release quietly** — the manifest patch
+in particular guards the ndk-context crash that survived five versions because
+this was a checklist rather than a command
+([`../../../../plans/android_resume_crash.md`](../../../../plans/android_resume_crash.md)).
+Add future patches to that script, not to this list.
+
 ## 1b. Regenerate launcher icons (dx ships its default droid)
 
 dx's generated project uses the **default Android droid** for the launcher icon
@@ -90,6 +106,28 @@ zcripts/android/back_handler.sh
 Skip it and the edge-swipe / hardware back closes the app from any screen (the
 pre-2026-07-09 bug). See [`../../../../archive/back_swipe_gesture.md`](../../../../archive/back_swipe_gesture.md).
 R8 keeps the handler (it's used), but the step-5 smoke test is the confirmation.
+
+## 1d. Patch the manifest (launchMode + configChanges)
+
+dx generates `MainActivity` with **no `launchMode`** (defaults to `standard`)
+and a short `configChanges` list. Both are bugs:
+
+- Without `launchMode="singleTask"`, an explicit start of the component while
+  an instance exists (notification tap, another app, an app shortcut, the Play
+  Store's **Open** button after an update) creates a *second* Activity in the
+  live process. This app is a `NativeActivity`, so native init runs twice and
+  `ndk_context` panics on `assert!(previous.is_none())`.
+- Without `uiMode` in `configChanges`, a system dark/light switch recreates the
+  Activity — which reaches `onDestroy`, where the back-handler's process kill
+  fires, so the app silently vanishes mid-session.
+
+```bash
+zcripts/android/manifest.sh
+```
+
+Verified on device 2026-08-17 against the shipped 1.9.1 build: the same
+`am start` panics without the patch and is clean when the instance is reused.
+Full evidence: [`../../../../plans/android_resume_crash.md`](../../../../plans/android_resume_crash.md).
 
 ## 2. Bump targetSdk (and versionCode) in the generated Gradle
 
