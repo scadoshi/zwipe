@@ -23,8 +23,10 @@ Per-release build log. Build recipe is in [build.md](build.md).
   suggestion steering that had never been built. Site/docs, deploy-only: all 20
   guides corrected against the app, a false password-blocklist claim removed
   from /about, sitemap drift now fails the build, and oracle-tag descriptions
-  finished at 4,521 of 4,522. Built on the work Mac; `patch_bundle.sh` applied
-  and all four step-4a greps verified against the signed AAB. iOS counterpart
+  finished at 4,521 of 4,522. Built on the work Mac, then rebuilt the same day
+  against h2 0.4.16 (RUSTSEC-2026-0258, reached via reqwest) keeping versionCode
+  40 since nothing had been uploaded; `patch_bundle.sh` applied and all four
+  step-4a greps verified against the signed AAB both times. iOS counterpart
   build 77.)
 
 - **2026-08-17 — `1.9.2`, versionCode `39`** (the reliability + deck-list
