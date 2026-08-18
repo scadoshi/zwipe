@@ -3,8 +3,10 @@
 Per-release build log. Build recipe is in [build.md](build.md).
 
 - **2026-08-18 — `1.9.3`, versionCode `40`** (the correctness train, built
-  ahead of 1.9.2 clearing review so it can be submitted the moment that slot
-  frees. **Not yet submitted.** Server half: **MVP steering** (deck-MVPs phase
+  ahead of 1.9.2 clearing review so it could go the moment that slot freed.
+  **Submitted to Play 2026-08-18**, ahead of the iOS half: Apple still had
+  1.9.2 in review, so iOS build 77 sits unuploaded and the two stores are out
+  of step until Apple clears. Server half: **MVP steering** (deck-MVPs phase
   3) gives cards whose `card_roles` overlap the deck's mainboard MVPs a flat
   `W_STEER = 0.12` lift on the synergy serve, riding the existing
   `DeckServeContext` seam beside `deck_oracle_tags` so it is dormant for decks
