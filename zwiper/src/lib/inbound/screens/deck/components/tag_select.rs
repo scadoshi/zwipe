@@ -10,6 +10,7 @@
 use crate::inbound::components::{
     concept_explainers::DeckTagsExplainer,
     hint_dialog::{HintBullet, HintBullets, HintDialog},
+    navigation::overlay_stack::use_overlay_back_action,
     screen_header::ScreenHeader,
 };
 use dioxus::prelude::*;
@@ -40,6 +41,16 @@ pub(crate) fn TagSelect(
             snapshot.set(selected_tags.peek().clone());
         }
     });
+
+    // OS back gesture closes this picker before the router sees it, and maps to
+    // Cancel rather than Done: it reverts to the snapshot then closes, the same
+    // as the Cancel button below.
+    let cancel = use_callback(move |_: ()| {
+        let mut selected_tags = selected_tags;
+        selected_tags.set(snapshot());
+        on_close.call(());
+    });
+    use_overlay_back_action(open.into(), cancel);
 
     let screen_class = if open() {
         "screen swipe-select-screen show"

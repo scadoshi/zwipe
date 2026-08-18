@@ -7,6 +7,7 @@ use super::{
 use crate::{
     inbound::components::{
         interactions::carousel::{Carousel, dots::CarouselDots, state::CarouselState},
+        navigation::overlay_stack::use_overlay_back_action,
         telemetry::{usage_buffer::UsageBuffer, vocabulary::component},
     },
     outbound::client::{ZwipeClient, card::get_printings::ClientGetPrintings},
@@ -110,6 +111,22 @@ pub(crate) fn PrintingSheet(
     let current_idx = carousel_state().current_index;
     let has_changed = !printings().is_empty() && current_idx != initial_index();
     let visible_card = printings().get(current_idx).cloned();
+
+    // OS back closes the sheet before the router sees it. This one hand-rolls
+    // its own backdrop + `.bottom-sheet` markup instead of using the shared
+    // `BottomSheet`, so it needs its own registration — and it mirrors the
+    // backdrop exactly, warning when an unsaved printing is about to be lost.
+    let dismiss = use_callback(move |_: ()| {
+        let mut open = open;
+        if !read_only && has_changed {
+            toast.warning(
+                "Printing discarded".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(1500)),
+            );
+        }
+        open.set(false);
+    });
+    use_overlay_back_action(open.into(), dismiss);
 
     rsx! {
         // Modal backdrop

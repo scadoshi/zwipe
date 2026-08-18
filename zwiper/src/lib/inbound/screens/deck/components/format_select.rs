@@ -8,6 +8,7 @@
 
 use crate::inbound::components::{
     hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog},
+    navigation::overlay_stack::use_overlay_back_action,
     screen_header::ScreenHeader,
 };
 use dioxus::prelude::*;
@@ -60,6 +61,14 @@ pub(crate) fn FormatSelect(
     on_close: EventHandler<()>,
     on_cancel: EventHandler<()>,
 ) -> Element {
+    // OS back gesture closes this overlay before touching the router. Back maps
+    // to Cancel, not Done: leaving a picker should abandon the pick, and the
+    // parent's on_cancel restores the format + command-zone snapshot and closes.
+    // Without this the back swipe fell through to the router and left the whole
+    // edit screen (owner report 2026-08-17).
+    let cancel = use_callback(move |_: ()| on_cancel.call(()));
+    use_overlay_back_action(open.into(), cancel);
+
     let mut query = use_signal(String::new);
     let mut focused = use_signal(|| Option::<Format>::None);
     let hint_open = use_signal(|| false);

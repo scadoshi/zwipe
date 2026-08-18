@@ -5,6 +5,8 @@ use std::time::Duration;
 use tokio::time::sleep;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 
+use crate::inbound::components::navigation::overlay_stack::use_overlay_back_action;
+
 /// A slide-up bottom sheet with backdrop, title, content slot, and footer.
 ///
 /// `footer` overrides the default single "Close" button (e.g. a Back/Save pair).
@@ -17,6 +19,20 @@ pub fn BottomSheet(
     footer: Option<Element>,
     on_dismiss: Option<EventHandler<()>>,
 ) -> Element {
+    // The OS back gesture closes the sheet before the router sees it, exactly
+    // as tapping the backdrop does — `on_dismiss` first (preferences relies on
+    // it to revert an unsaved theme), then close. Registered here rather than
+    // per-screen so every sheet in the app inherits it; a sheet that has to
+    // remember its own hook is a sheet that eventually forgets.
+    let dismiss = use_callback(move |_: ()| {
+        let mut open = open;
+        if let Some(h) = on_dismiss {
+            h.call(());
+        }
+        open.set(false);
+    });
+    use_overlay_back_action(open.into(), dismiss);
+
     // On the first render the sheet carries `transition: none` (via the
     // `bottom-sheet-premount` class), then drops it once mounted. Without this,
     // iOS WebKit replays the transform transition on insert — animating the
