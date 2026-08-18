@@ -1,7 +1,7 @@
 //! Frontend application configuration.
 //!
-//! Loads compile-time environment variables for the Leptos WASM frontend.
-//! Configuration is baked into the WASM binary at build time.
+//! Loads compile-time environment variables baked in by `build.rs`. Values are
+//! fixed per build, so every device running a given binary sees the same ones.
 
 #![allow(clippy::unwrap_used)]
 
@@ -46,8 +46,11 @@ impl Config {
     ///
     /// # Panics
     ///
-    /// Panics if environment variables are missing or invalid at compile time.
-    /// This is intentional - configuration errors should be caught at build time.
+    /// Panics if `BACKEND_URL` doesn't parse. `build.rs` checks the variable is
+    /// present and well-formed, so reaching this is a build-configuration bug
+    /// rather than anything a user can trigger: the value is identical in every
+    /// copy of a given binary, so a bad one fails on the first launch of any
+    /// build rather than for some users and not others.
     pub fn from_env() -> Self {
         let backend_url = Url::from_str(BACKEND_URL)
             .context(format!("invalid url in BACKEND_URL: {}", BACKEND_URL))

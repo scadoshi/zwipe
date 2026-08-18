@@ -14,6 +14,21 @@ fn main() {
     let rust_backtrace = std::env::var(RUST_BACKTRACE_KEY)
         .unwrap_or_else(|_| panic!("{} must be set in .env file", RUST_BACKTRACE_KEY));
 
+    // Fail the build, not the first launch. `Config::from_env` parses this with
+    // `Url::from_str` and unwraps; the value is baked in, so a malformed one
+    // panics on startup for every install of that build. Cheap scheme+host check
+    // here catches the realistic mistakes (empty, typo'd, missing scheme).
+    let rest = backend_url
+        .strip_prefix("https://")
+        .or_else(|| backend_url.strip_prefix("http://"))
+        .unwrap_or_else(|| {
+            panic!("{BACKEND_URL_KEY} must start with http:// or https://, got {backend_url:?}")
+        });
+    assert!(
+        !rest.is_empty() && !rest.starts_with('/'),
+        "{BACKEND_URL_KEY} has no host: {backend_url:?}"
+    );
+
     println!("cargo:rustc-env={}={}", BACKEND_URL_KEY, backend_url);
     println!("cargo:info=setting {} to {}", BACKEND_URL_KEY, backend_url);
 
