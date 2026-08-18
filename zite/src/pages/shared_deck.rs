@@ -383,30 +383,30 @@ pub fn SharedDeck(token: String) -> Element {
                     description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
                     path: "/deck".to_string(),
                 }
-                div { class: "form-page content-enter",
-                    span { class: "sd-alert-title", "Could not load this deck" }
-                    hr {
-                        style: "border: none; border-top: 1px solid var(--border-secondary); margin: 0.75rem -2rem;",
-                    }
-                    p { class: "subtitle", style: "text-align: center; margin-bottom: 1rem;",
-                        "Error: {e}"
-                    }
-                    div { class: "sd-retry-row",
-                        button {
-                            class: "sd-retry",
-                            disabled: retrying(),
-                            onclick: move |_| {
-                                retrying.set(true);
-                                result.restart();
-                                spawn(async move {
-                                    // Minimum visible spinner so an instant
-                                    // failure still reads as a click.
-                                    sleep_ms(500).await;
-                                    retrying.set(false);
-                                });
-                            },
-                            if retrying() { "Retrying\u{2026}" } else { "Retry" }
-                        }
+                div { class: "dead-end content-enter",
+                    Panel {
+                        eyebrow: "Shared deck",
+                        title: "Could not load this deck",
+                        title_h1: true,
+                        // Retry rides the panel's own action row.
+                        actions: rsx! {
+                            button {
+                                class: "sd-retry",
+                                disabled: retrying(),
+                                onclick: move |_| {
+                                    retrying.set(true);
+                                    result.restart();
+                                    spawn(async move {
+                                        // Minimum visible spinner so an instant
+                                        // failure still reads as a click.
+                                        sleep_ms(500).await;
+                                        retrying.set(false);
+                                    });
+                                },
+                                if retrying() { "Retrying\u{2026}" } else { "Retry" }
+                            }
+                        },
+                        p { class: "subtitle", "Error: {e}" }
                     }
                 }
             },

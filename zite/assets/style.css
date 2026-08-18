@@ -2479,22 +2479,14 @@ footer {
     animation: sd-alert-pulse 1.6s ease-in-out infinite;
 }
 
-.dead-end .panel-eyebrow-row {
+.dead-end .panel-eyebrow-row,
+.dead-end .panel-actions {
     justify-content: center;
 }
 
 .dead-end .subtitle {
     text-align: center;
     margin-bottom: 0;
-}
-
-.sd-alert-title {
-    display: block;
-    color: var(--color-error);
-    font-weight: 700;
-    text-transform: uppercase;
-    text-align: center;
-    animation: sd-alert-pulse 1.6s ease-in-out infinite;
 }
 
 @keyframes sd-alert-pulse {
@@ -2505,11 +2497,6 @@ footer {
     50% {
         opacity: 0.45;
     }
-}
-
-.sd-retry-row {
-    display: flex;
-    justify-content: center;
 }
 
 .sd-retry {
