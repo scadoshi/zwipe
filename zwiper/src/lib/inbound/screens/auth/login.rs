@@ -13,15 +13,9 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe::domain::auth::models::password::Password;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
-    domain::{
-        Email,
-        auth::models::session::Session,
-        logo,
-        user::{models::theme::ThemeConfig, username::Username},
-    },
+    domain::{auth::models::session::Session, logo, user::models::theme::ThemeConfig},
     http::contracts::auth::HttpAuthenticateUser,
 };
 
@@ -38,20 +32,22 @@ pub fn Login() -> Element {
     let username_or_email = use_signal(String::new);
     let password = use_signal(String::new);
 
-    let mut submit_attempted = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
     let toast = use_toast();
 
-    let inputs_are_valid = move || {
-        (Username::new(username_or_email()).is_ok() || Email::new(username_or_email()).is_ok())
-            && Password::new(password()).is_ok()
-    };
+    // Login deliberately does NOT apply registration policy to what's typed.
+    // Those rules can tighten, and an account whose password or username predates
+    // a change would be rejected here and never reach the server to be told why,
+    // locking out a user whose credentials are perfectly correct. The server is
+    // the only authority on whether credentials are valid; all we check is that
+    // there is something to send.
+    let inputs_are_present =
+        move || !username_or_email().trim().is_empty() && !password().is_empty();
 
     let mut attempt_submit = move || {
-        submit_attempted.set(true);
-        if !inputs_are_valid() {
+        if !inputs_are_present() {
             toast.error(
-                "Invalid credentials".to_string(),
+                "Enter your username or email and password".to_string(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
             );
             return;
