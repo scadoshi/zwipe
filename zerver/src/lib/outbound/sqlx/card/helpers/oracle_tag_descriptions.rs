@@ -17194,6 +17194,552 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "cycle-mbc-mono-planeswalker",
         "Part of a cycle of mono-colored planeswalkers.",
     ),
+    (
+        "affinity",
+        "Costs less to cast for each thing it counts, usually permanents of one type you control.",
+    ),
+    (
+        "animate",
+        "Turns something that isn't a creature into one, often with set power and toughness.",
+    ),
+    (
+        "black-effect",
+        "An umbrella for iconically black effects: discard, paying life for cards, tutoring.",
+    ),
+    (
+        "blue-effect",
+        "An umbrella for iconically blue effects: countering, bouncing, looting, extra turns.",
+    ),
+    (
+        "burn",
+        "Deals damage to creatures, players, planeswalkers, or battles.",
+    ),
+    (
+        "card-names",
+        "An umbrella for naming quirks: puns, anagrams, alliteration, and references in card names.",
+    ),
+    (
+        "castable-from-nonhand",
+        "Cards you can cast from exile, your graveyard, or your library instead of your hand.",
+    ),
+    (
+        "characteristic-defining-ability",
+        "An ability on the card that sets its own color, subtype, power, or toughness.",
+    ),
+    (
+        "combat-manipulation",
+        "An umbrella for effects that force or control who attacks or blocks in combat.",
+    ),
+    (
+        "commander-matters",
+        "Cards that care about your commander's color identity, commander tax, or recasting it.",
+    ),
+    (
+        "conjure",
+        "Creates a card out of thin air and puts it into a game zone, a digital only mechanic.",
+    ),
+    (
+        "control-changing-effects",
+        "Changes who controls a permanent or spell by stealing, giving, or swapping it.",
+    ),
+    (
+        "cost-reducer-saga",
+        "Makes your Saga spells cost less to cast.",
+    ),
+    (
+        "counter-fuel",
+        "Lets you remove counters to pay for an effect.",
+    ),
+    (
+        "cycle",
+        "Marks a card as part of a cycle, a group of parallel cards built to one template.",
+    ),
+    (
+        "cycle-ascendancy",
+        "A cycle of three color enchantments, one per Khans clan or New Capenna family.",
+    ),
+    (
+        "cycle-block-grn-c-guild-kw",
+        "A cycle of two color cards, one per Ravnica guild, each built on that guild's mechanic.",
+    ),
+    (
+        "cycle-block-grn-guild-champion",
+        "A cycle of legendary creatures, one per Ravnica guild, each that guild's champion.",
+    ),
+    (
+        "cycle-block-grn-guildmage",
+        "A cycle of two color creatures, one per Ravnica guild, with a tap ability in each color.",
+    ),
+    (
+        "cycle-block-grn-guildmaster",
+        "A cycle of legendary creatures and planeswalkers, one per Ravnica guild, each its leader.",
+    ),
+    (
+        "cycle-block-grn-hybrid-critter",
+        "A cycle of two-color hybrid creatures, each with a small keyword or ability tied to its guild.",
+    ),
+    (
+        "cycle-block-grn-locket",
+        "A cycle of mana rocks that tap for either of two colors, or sacrifice to draw two cards.",
+    ),
+    (
+        "cycle-block-grn-mmnn",
+        "A cycle of gold creatures costing two pips of each of two colors, with guild-themed abilities.",
+    ),
+    (
+        "cycle-block-grn-r-split",
+        "A cycle of rare split cards: a cheap hybrid-cost half and a costlier two-color half.",
+    ),
+    (
+        "cycle-block-grn-u-split",
+        "A cycle of uncommon split cards: a cheap half with one hybrid pip and a gold half.",
+    ),
+    (
+        "cycle-block-shm-c-h-1-drop",
+        "A cycle of one-mana hybrid creatures, each with a small ability or keyword.",
+    ),
+    (
+        "cycle-block-shm-u-h-3-drop",
+        "A cycle of three-mana hybrid creatures, each with a keyword or ability tied to its two colors.",
+    ),
+    (
+        "cycle-block-ths-minor-god",
+        "A cycle of indestructible enchantment gods that are creatures only at seven devotion to their two colors.",
+    ),
+    (
+        "cycle-bondland",
+        "A cycle of dual lands that enter tapped unless you have two or more opponents.",
+    ),
+    (
+        "cycle-checkland",
+        "A cycle of dual lands that enter tapped unless you control a land of one of their two types.",
+    ),
+    (
+        "cycle-colorless-land",
+        "A land cycle whose lands tap only for colorless mana, each with its own extra ability.",
+    ),
+    (
+        "cycle-cycling-land",
+        "A land cycle whose lands enter tapped and have cycling, so you can discard one to draw.",
+    ),
+    (
+        "cycle-demigod-aura",
+        "A cycle of auras that give the enchanted creature different bonuses based on its colors.",
+    ),
+    (
+        "cycle-dft-draft-signpost",
+        "Aetherdrift's two-color signposts, one per color pair, pointing drafters at each archetype.",
+    ),
+    (
+        "cycle-dka-draft-signpost",
+        "Dark Ascension's draft signposts: enemy-color flashback spells and two-color creature lords.",
+    ),
+    (
+        "cycle-dmu-draft-signpost",
+        "Legendary two-color creatures from Dominaria United that signpost each draft archetype.",
+    ),
+    (
+        "cycle-dual-creatureland",
+        "A cycle of lands that enter tapped, tap for either of two colors, and can become creatures.",
+    ),
+    (
+        "cycle-dual-land",
+        "Covers land cycles whose lands each produce two colors of mana.",
+    ),
+    (
+        "cycle-dual-tapland",
+        "A cycle of lands that enter tapped and tap for either of two colors, with no other ability.",
+    ),
+    (
+        "cycle-ecl-draft-signpost",
+        "Two-color signpost creatures from Lorwyn Eclipsed that point drafters at its archetypes.",
+    ),
+    (
+        "cycle-eld-draft-signpost",
+        "A cycle of two color cards from Throne of Eldraine that point drafters to that pair's archetype.",
+    ),
+    (
+        "cycle-fastland",
+        "A cycle of dual lands that enter untapped only while you control two or fewer other lands.",
+    ),
+    (
+        "cycle-fetchland",
+        "A cycle of lands that sacrifice for 1 life to put one of two basic land types onto the battlefield.",
+    ),
+    (
+        "cycle-hybrid-filterland",
+        "A cycle of lands that tap for colorless, or turn one hybrid mana into two of their two colors.",
+    ),
+    (
+        "cycle-hybrid-modal",
+        "A cycle of spells with a hybrid cost whose effect changes based on which color paid for it.",
+    ),
+    (
+        "cycle-iko-draft-signpost",
+        "A cycle of two color cards from Ikoria that point drafters to that pair's archetype.",
+    ),
+    (
+        "cycle-jumpstart-hybrid-legend",
+        "A cycle of legendary creatures with abilities that call for hybrid mana in a second color.",
+    ),
+    (
+        "cycle-khm-draft-signpost",
+        "A cycle of two color legends and Sagas from Kaldheim that point drafters to that pair's archetype.",
+    ),
+    (
+        "cycle-land",
+        "Groups every land cycle: monocolor, dual, tri, and other matched sets of lands.",
+    ),
+    (
+        "cycle-mh2-draft-signpost",
+        "A cycle of two color cards from Modern Horizons 2 that point drafters to that pair's archetype.",
+    ),
+    (
+        "cycle-mh3-draft-signpost",
+        "A cycle of two-color Modern Horizons 3 cards that signpost a draft archetype.",
+    ),
+    (
+        "cycle-mono-land",
+        "An umbrella for cycles of lands that each produce just one kind of mana.",
+    ),
+    (
+        "cycle-napland",
+        "A cycle of lands that tap for colorless freely, or for either of two colors if they skip their next untap step.",
+    ),
+    (
+        "cycle-nonmana-land",
+        "An umbrella for cycles of lands that produce no mana at all, like fetchlands and banding lands.",
+    ),
+    (
+        "cycle-ody-filterland",
+        "A cycle of lands that pay one generic mana and tap to add one mana of each of two colors.",
+    ),
+    (
+        "cycle-painland",
+        "A cycle of lands that tap for colorless freely, or for either of two colors while dealing you 1 damage.",
+    ),
+    (
+        "cycle-pathway",
+        "A cycle of modal double-faced lands where you choose one of two single-colored sides to play.",
+    ),
+    (
+        "cycle-playtest-dual-land",
+        "A cycle of playtest-card dual lands that each tap for two colors and carry one odd extra ability.",
+    ),
+    (
+        "cycle-primeval-dragon",
+        "A cycle of three-color legendary Dragons with flying that offer a paid bonus when they hit a player.",
+    ),
+    (
+        "cycle-restless-land",
+        "A cycle of lands that enter tapped, tap for two colors, and can animate with an attack trigger.",
+    ),
+    (
+        "cycle-reveal-land",
+        "A cycle of dual lands that enter untapped if you reveal a matching land card from your hand.",
+    ),
+    (
+        "cycle-shrine",
+        "A cycle of legendary enchantments that grow more powerful for each Shrine you control.",
+    ),
+    (
+        "cycle-slowland",
+        "A cycle of dual lands that enter tapped unless you control two or more other lands.",
+    ),
+    (
+        "cycle-snc-draft-signpost",
+        "A cycle of two-color signpost cards for the Streets of New Capenna draft archetypes.",
+    ),
+    (
+        "cycle-spirit-avatar",
+        "A cycle of Spirit Avatar creatures cast with five hybrid mana symbols of one color pair.",
+    ),
+    (
+        "cycle-stx-draft-signpost",
+        "A cycle of two-color signpost creatures for the Strixhaven draft archetypes.",
+    ),
+    (
+        "cycle-talisman",
+        "A cycle of two-mana rocks that tap for colorless, or for one of two colors and 1 damage to you.",
+    ),
+    (
+        "cycle-tla-draft-signpost",
+        "A cycle of two-color signpost cards for the Avatar: The Last Airbender draft archetypes.",
+    ),
+    (
+        "cycle-tmt-draft-signpost",
+        "A cycle of two-color signpost cards for the Teenage Mutant Ninja Turtles draft archetypes.",
+    ),
+    (
+        "cycle-triland",
+        "A cycle of lands that each produce three different colors of mana.",
+    ),
+    (
+        "cycle-triple-tapland",
+        "A cycle of lands that enter tapped and tap for any of their three colors.",
+    ),
+    (
+        "cycle-usg-enemy-hate",
+        "A cycle of cards that each punish or exploit one specific enemy color.",
+    ),
+    (
+        "cycle-verge",
+        "A cycle of dual lands: one color taps freely, the other needs a matching basic land in play.",
+    ),
+    (
+        "cycle-zendikar-creatureland",
+        "A cycle of dual lands that enter tapped and can become creatures for mana until end of turn.",
+    ),
+    (
+        "depletion-land",
+        "A land with depletion counters that delay its untap or run out and sacrifice it.",
+    ),
+    (
+        "deprecated-card-types",
+        "Cards printed with card types the game dropped, like interrupt, mana source, or Legend.",
+    ),
+    (
+        "deprecated-mechanics",
+        "Cards that use old mechanics or rule wordings the game has since replaced or dropped.",
+    ),
+    (
+        "dice-roll",
+        "Makes you roll one or more dice, with the result deciding the effect.",
+    ),
+    (
+        "dilemma",
+        "Forces a player to choose among options that are all bad for them.",
+    ),
+    (
+        "dnd",
+        "A card referencing characters, monsters, items, spells, or mechanics from Dungeons and Dragons.",
+    ),
+    (
+        "draft-signpost",
+        "One of a set's cycle of cards, usually two-color, that points at a draft archetype.",
+    ),
+    (
+        "draw",
+        "Draws you one or more cards from a spell or ability.",
+    ),
+    (
+        "emerge",
+        "Lets you cast it by sacrificing a creature or artifact, reducing the emerge cost by its mana value.",
+    ),
+    (
+        "flavors-of-vanilla",
+        "A card with no abilities, only keyword abilities, or none that matter after it enters.",
+    ),
+    (
+        "freeze",
+        "Stops a permanent from untapping during its controller's next untap step or steps.",
+    ),
+    (
+        "green-effect",
+        "Does something iconically green: ramp, land tutoring, lure effects, or hitting fliers.",
+    ),
+    (
+        "hate",
+        "A card built to punish or shut down a specific color, card type, zone, or strategy.",
+    ),
+    (
+        "hate-typal",
+        "Shuts down or punishes creatures of one or more specific creature types.",
+    ),
+    (
+        "helper-card",
+        "A reference card printed to help you track a mechanic, not a card you play.",
+    ),
+    (
+        "impulse-color",
+        "Digs into the top of your library and puts a card of a specific color into your hand.",
+    ),
+    (
+        "impulse-to-zone",
+        "Looks at the top cards of your library and moves some of them into another zone.",
+    ),
+    (
+        "keyword-counter",
+        "Puts a keyword counter on a creature, granting flying, trample, indestructible, or similar.",
+    ),
+    (
+        "keyword-errata",
+        "A card whose rules text was rewritten to use a keyword that didn't exist when it was printed.",
+    ),
+    (
+        "library-manipulation",
+        "Lets you set up your library, putting cards on top of it or on the bottom.",
+    ),
+    (
+        "life-divider",
+        "Makes a player lose a fraction of their life total, rounded up.",
+    ),
+    (
+        "mill",
+        "Puts cards from the top of a library into the graveyard or exile without drawing them.",
+    ),
+    (
+        "peek",
+        "Lets you look at hidden information, like an opponent's hand or the top of a library.",
+    ),
+    (
+        "phyrexian-mana",
+        "Has a Phyrexian mana symbol in a cost, so you can pay 2 life instead of that mana.",
+    ),
+    (
+        "planeswalker-deck-staples",
+        "A planeswalker deck card that searches for the deck's planeswalker or benefits from it.",
+    ),
+    (
+        "protection",
+        "Keeps permanents or players safe from removal, often with hexproof, indestructible, or ward.",
+    ),
+    (
+        "recursion",
+        "Gets a card back from a graveyard to use again, by returning or casting it from there.",
+    ),
+    (
+        "recursion-any",
+        "Returns a card of any type from a graveyard to hand or library.",
+    ),
+    (
+        "recursion-battle",
+        "Brings a battle card back from a graveyard, whether to hand, library, or the battlefield.",
+    ),
+    (
+        "recursion-land",
+        "Brings a land card back from a graveyard, whether to hand, library, or the battlefield.",
+    ),
+    (
+        "recursion-planeswalker",
+        "Brings a planeswalker card back from a graveyard to your hand or the battlefield.",
+    ),
+    (
+        "recursion-self",
+        "A card that returns itself from your graveyard, or lets you cast it from there.",
+    ),
+    (
+        "red-effect",
+        "Does something iconically red, like rummaging, impulsive draw, or damage to everything.",
+    ),
+    (
+        "regrowth-saga",
+        "Returns a historic card, such as a Saga, from your graveyard to your hand.",
+    ),
+    (
+        "removal",
+        "Destroys, exiles, bounces, or otherwise neutralizes a permanent.",
+    ),
+    (
+        "removal-burn",
+        "Removes a creature or planeswalker by dealing damage to it.",
+    ),
+    (
+        "remove-counters",
+        "Removes counters from a permanent or player, such as +1/+1, loyalty, or poison.",
+    ),
+    (
+        "restock",
+        "Puts cards from a graveyard back into a library, on top, on the bottom, or shuffled in.",
+    ),
+    (
+        "sacrifice-outlet",
+        "Gives you a way to sacrifice a permanent, usually as a cost, for some benefit.",
+    ),
+    (
+        "seek",
+        "Puts a random card from your library into your hand or another zone.",
+    ),
+    (
+        "seek-land",
+        "Puts a random land card from your library into your hand or onto the battlefield.",
+    ),
+    (
+        "seek-to-zone",
+        "A family of seek effects grouped by which zone the random card lands in.",
+    ),
+    (
+        "tapper",
+        "Taps down a creature or other permanent, often to stop it from attacking or blocking.",
+    ),
+    (
+        "thingfall",
+        "A family of triggers that fire whenever another permanent enters the battlefield.",
+    ),
+    (
+        "token-versions-of-cards",
+        "Covers tokens identical to real cards, the cards that make them, and the cards copied.",
+    ),
+    (
+        "tricycle-land",
+        "A land that taps for three colors, enters tapped, and can be cycled to draw a card.",
+    ),
+    (
+        "tutor",
+        "Searches your library for a card and puts it into your hand, the battlefield, or elsewhere.",
+    ),
+    (
+        "tutor-artifact-spacecraft",
+        "Searches your library for a Spacecraft artifact card.",
+    ),
+    (
+        "tutor-color",
+        "Searches your library for a card by color, such as a black card or a multicolored one.",
+    ),
+    ("tutor-land", "Searches your library for a land card."),
+    (
+        "tutor-noncreature",
+        "Searches your library for a card that isn't a creature.",
+    ),
+    (
+        "tutor-to",
+        "Searches your library and puts the card into a set zone: hand, battlefield, graveyard, or top.",
+    ),
+    (
+        "typal",
+        "Cares about a shared creature type, rewarding you for having creatures of that type.",
+    ),
+    (
+        "typal-creature",
+        "Cares about a chosen creature type, whether or not the card itself is a creature.",
+    ),
+    ("typal-eye", "Cares about or supports Eye creatures."),
+    (
+        "typal-leviathan",
+        "Cares about Leviathans, often grouped with Krakens, Octopuses, and Serpents.",
+    ),
+    (
+        "type-errata-addition",
+        "Cards given an extra creature type by errata, or given one when they had none.",
+    ),
+    (
+        "type-errata-genericise",
+        "Cards whose niche creature type became a common one, like Viashino to Lizard.",
+    ),
+    (
+        "type-errata-specific",
+        "Cards whose unusually specific creature type was errataed to a more common, broader type.",
+    ),
+    (
+        "un-design",
+        "A card with a mechanic or feature unique to the joke Un-sets, not used in normal Magic.",
+    ),
+    (
+        "unstable-variant",
+        "A card printed in Unstable in several versions that differ in art or rules text.",
+    ),
+    (
+        "untapper",
+        "Untaps a creature, land, artifact, or other permanent.",
+    ),
+    (
+        "vertical-cycle",
+        "A card in a cycle whose members step up in cost, colors, or effect.",
+    ),
+    (
+        "white-effect",
+        "An iconically white effect: preventing damage, stopping spells, or evening out the board.",
+    ),
 ];
 
 /// Flatten [`ORACLE_TAG_DESCRIPTIONS`] into parallel `(slug, description)` arrays
