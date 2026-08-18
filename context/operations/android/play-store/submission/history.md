@@ -2,6 +2,31 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-08-18 — `1.9.3`, versionCode `40`** (the correctness train, built
+  ahead of 1.9.2 clearing review so it can be submitted the moment that slot
+  frees. **Not yet submitted.** Server half: **MVP steering** (deck-MVPs phase
+  3) gives cards whose `card_roles` overlap the deck's mainboard MVPs a flat
+  `W_STEER = 0.12` lift on the synergy serve, riding the existing
+  `DeckServeContext` seam beside `deck_oracle_tags` so it is dormant for decks
+  with no MVPs and reverts exactly at 0.0; flat rather than the plan's overlap
+  count because three MVPs frequently share one role, which a tally would lift
+  above commander synergy. **Migration `20260818120000`** adds
+  `deck_cards_mvp_mainboard_only`, closing a hole where the import upsert set
+  `board` on conflict without clearing `mvp_at`, stranding a star on a card off
+  the mainboard where the podium cap could not see it (prod had no violations).
+  Client half: sign-in no longer applies registration policy to a typed
+  password or username, which would have locked out existing accounts on any
+  future tightening; changing an email now updates the session's verification
+  state and prompts to verify; `BACKEND_URL` is validated at build time rather
+  than panicking on first launch; and an in-app copy sweep corrected help that
+  promised behavior the code lacked, most notably the MVP hint claiming
+  suggestion steering that had never been built. Site/docs, deploy-only: all 20
+  guides corrected against the app, a false password-blocklist claim removed
+  from /about, sitemap drift now fails the build, and oracle-tag descriptions
+  finished at 4,521 of 4,522. Built on the work Mac; `patch_bundle.sh` applied
+  and all four step-4a greps verified against the signed AAB. iOS counterpart
+  build 77.)
+
 - **2026-08-17 — `1.9.2`, versionCode `39`** (the reliability + deck-list
   train. The `ndk-context` crash was root-caused and fixed after surviving five
   releases: `MainActivity` carried no `launchMode`, so an explicit component
