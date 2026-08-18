@@ -4,6 +4,44 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
+## Latest — 2026-08-18: oracle-tag descriptions finished, 4,521 of 4,522
+
+Every oracle tag in the catalog now carries our own plain-English description
+except one. The authoring project that had been running in batches since
+2026-07-30 is done.
+
+- **The tail was 138 tags** (`73db05c3`): 69 that still carried Scryfall's own
+  copy and 69 that were blank, taking `ORACLE_TAG_DESCRIPTIONS` from 4,383 to
+  4,521. The single holdout is `nanni`: one card (Xanathar, Guild Kingpin), no
+  parent, no children, no derivable meaning, so it stays blank rather than get
+  invented copy. The nightly coverage line is what surfaces it.
+- **This is also how the markdown left the column.** Eleven of Scryfall's
+  descriptions carried cross-links with relative Tagger URLs
+  (`[dual land](/tags/card/dual-land)`), which would have rendered as literal
+  brackets and a dead path if the tagger ever correlated one of those tags to a
+  card. Owner's call was to fix it by owning every description rather than
+  building a sanitizer, so no parser was written and none is needed.
+- **20 orphaned entries removed first** (`e565f342`). The unknown-slug WARN had
+  grown 12 → 20, and the cause was a tagger *rename* pass rather than new tags:
+  `hand-neutral`/`hand-positive`/`hand-negative` were replaced by a `hand-size-*`
+  family that splits on maximum hand size instead of card-advantage direction, so
+  that text was dropped rather than moved. Two dead references surfaced in the
+  same sweep that nothing warns about: `CATEGORY_ROOTS` still listed retired
+  `hand-positive` under `card_advantage`, and `NOISE_ORACLE_TAG_SLUGS` still hid
+  `hand-neutral`. **Behavior change:** `ROLE_TAG_OVERRIDES`' dangling
+  `synergy-sacrifice` was remapped to `your-sacrifice-matters`, which carries 118
+  cards where the dead slug carried none, so the `sacrifice` role gains cards.
+- **What the blanks actually were.** Worth recording so this doesn't get
+  re-investigated as a coverage problem: 69 of the 75 blanks reached zero cards.
+  They are umbrella nodes only ever subtree-expanded (`typal`, `removal-burn`,
+  the `recursion-*` family) and `cycle-*` set signposts Scryfall lists but never
+  correlates to our catalog. The gap was always cosmetic; it got closed for
+  completeness and to evict the markdown, not because users were seeing blanks.
+- **Ships on the next zerver deploy**, overlaid into `oracle_tags.description`
+  inside the sync transaction. No migration, no client change.
+
+---
+
 ## Latest — 2026-08-17 (big day: Android crash root-caused after 5 versions, back-swipe class of bug fixed, deck list restyled, guides fully illustrated)
 
 - **Deck list restyled** (`4aea68b5`): deck rows now lead with their command
