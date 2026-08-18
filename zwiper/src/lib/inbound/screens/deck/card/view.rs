@@ -1899,7 +1899,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
                     HintBullet {
                         HintKey { color: "--color-warning", "Star" }
-                        " marks a deck MVP: up to three mainboard cards that define this deck."
+                        " marks a deck MVP: up to three mainboard cards that define this deck. Suggestions lean toward cards that share their roles."
                     }
                 }
             }

@@ -56,6 +56,9 @@ pub struct DeckServeContext<'a> {
     pub commander_seed: Option<String>,
     /// The deck's selected oracle tags for the `W_ORACLE_TAG` correlation term.
     pub deck_oracle_tags: &'a [String],
+    /// Distinct `card_roles` of the deck's mainboard MVPs, for the `W_STEER`
+    /// term. Empty (the default) leaves ordering byte-identical.
+    pub mvp_card_roles: &'a [String],
 }
 
 /// Database port for MTG card operations.

@@ -15,10 +15,15 @@ use serde_json::json;
 use uuid::Uuid;
 
 use zwipe::{
-    domain::card::ports::{CardRepository, DeckServeContext},
+    domain::{
+        card::ports::{CardRepository, DeckServeContext},
+        deck::ports::DeckRepository,
+    },
     outbound::sqlx::postgres::Postgres,
 };
-use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::domain::{
+    card::search_card::card_filter::CardQuery, deck::requests::get_deck_profile::GetDeckProfile,
+};
 
 /// A default `CardQuery` — no criteria, no explicit sort (so the synergy /
 /// popularity ordering is the one under test).
@@ -339,5 +344,120 @@ async fn deck_oracle_tags_lift_matching_cards_in_banded_serve(pool: sqlx::PgPool
     assert!(
         zzz_with >= 1,
         "with the deck's selected otag, matching cards are lifted onto the first page (got {zzz_with})"
+    );
+}
+
+/// MVP steering (deck-MVPs phase 3) reads only the roles that should steer:
+/// mainboard stars, deduped, with maybeboard stars and unstarred cards ignored.
+/// The serve term is a flat overlap lift, so a role shared by two MVPs must
+/// appear once — a tally here would silently double that role's weight.
+#[sqlx::test]
+async fn mvp_card_roles_are_mainboard_stars_deduped(pool: sqlx::PgPool) {
+    let ramp = card("Ramp One").categories(&["ramp", "draw"]);
+    let ramp2 = card("Ramp Two").categories(&["ramp"]);
+    let maybe = card("Maybe Star").categories(&["wipe"]);
+    let plain = card("Not Starred").categories(&["removal"]);
+    // (scryfall id, oracle id, board, starred)
+    let rows = [
+        (ramp.id(), ramp.oracle_id().unwrap(), "deck", true),
+        (ramp2.id(), ramp2.oracle_id().unwrap(), "deck", true),
+        (maybe.id(), maybe.oracle_id().unwrap(), "maybeboard", true),
+        (plain.id(), plain.oracle_id().unwrap(), "deck", false),
+    ];
+    seed_cards(&pool, &[ramp, ramp2, maybe, plain]).await;
+
+    let user_id: Uuid = sqlx::query_scalar(
+        "INSERT INTO users (username, email, password_hash) VALUES ('mvpsteer', 'mvpsteer@x.co', 'x') RETURNING id",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let deck_id: Uuid = sqlx::query_scalar(
+        "INSERT INTO decks (name, format, user_id) VALUES ('Steer', 'commander', $1) RETURNING id",
+    )
+    .bind(user_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    for (sd_id, oracle_id, board, starred) in rows {
+        sqlx::query(
+            "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at)
+             VALUES ($1, $2, $3, 1, $4, CASE WHEN $5 THEN now() ELSE NULL END)",
+        )
+        .bind(deck_id)
+        .bind(sd_id)
+        .bind(oracle_id)
+        .bind(board)
+        .bind(starred)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+
+    let repo = Postgres { pool: pool.clone() };
+    let request = GetDeckProfile { user_id, deck_id };
+    let mut roles = repo.get_mvp_card_roles(&request).await.unwrap();
+    roles.sort();
+
+    // "ramp" is on both mainboard MVPs but must appear once; "wipe" is a
+    // maybeboard star and "removal" is unstarred, so neither steers.
+    assert_eq!(roles, vec!["draw".to_string(), "ramp".to_string()]);
+}
+
+/// The `W_STEER` term lifts cards sharing a role with the deck's MVPs, and is
+/// dormant when the deck has none. Mirrors the otag-lift test: an empty score
+/// map puts both cards on the unscored anchor, so the steering term alone
+/// decides the order and the alphabetical tiebreak shows when it is off.
+#[sqlx::test]
+async fn mvp_roles_lift_matching_cards(pool: sqlx::PgPool) {
+    seed_cards(
+        &pool,
+        &[
+            // Alphabetically first, so it leads absent any steering.
+            card("Aaa Plain").mono("R"),
+            card("Zzz Ramp").mono("R").categories(&["ramp"]),
+        ],
+    )
+    .await;
+
+    let scores = json!({});
+    let repo = Postgres { pool: pool.clone() };
+
+    // Deck whose MVPs are ramp: the ramp card overtakes the alphabetical lead.
+    let served = repo
+        .search_scryfall_data_deck_aware(
+            &default_query(),
+            DeckServeContext {
+                synergy_scores: Some(&scores),
+                mvp_card_roles: &["ramp".to_string()],
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+    let names: Vec<&str> = served.iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(
+        names,
+        vec!["Zzz Ramp", "Aaa Plain"],
+        "a card sharing an MVP role should lead"
+    );
+
+    // No MVPs: the term is dormant and the plain alphabetical order returns.
+    let served = repo
+        .search_scryfall_data_deck_aware(
+            &default_query(),
+            DeckServeContext {
+                synergy_scores: Some(&scores),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+    let names: Vec<&str> = served.iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(
+        names,
+        vec!["Aaa Plain", "Zzz Ramp"],
+        "a deck with no MVPs must order exactly as before"
     );
 }

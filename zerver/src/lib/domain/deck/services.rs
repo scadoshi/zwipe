@@ -345,6 +345,17 @@ where
         // already synergy-ordered, so it buys little).
         let deck_oracle_tags = &deck_profile.oracle_tags;
 
+        // MVP steering (deck-MVPs phase 3): the roles of this deck's mainboard
+        // MVPs lift like-kinded cards within the synergy serve. A deck with no
+        // MVPs returns an empty set and orders exactly as before. Failing to
+        // read them must not fail the serve, so a repo error degrades to no
+        // steering rather than an error response.
+        let mvp_card_roles = self
+            .deck_repo
+            .get_mvp_card_roles(request)
+            .await
+            .unwrap_or_default();
+
         let cards = self
             .card_repo
             .search_cards_deck_aware(
@@ -355,6 +366,7 @@ where
                     synergy_scores: synergy_scores.as_ref(),
                     synergy_only,
                     deck_oracle_tags,
+                    mvp_card_roles: &mvp_card_roles,
                     ..Default::default()
                 },
             )

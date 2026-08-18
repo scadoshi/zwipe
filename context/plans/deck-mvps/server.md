@@ -86,7 +86,7 @@ signal-ordering FROM, numerator term `+ W_MVP * COALESCE(mvp.vested, 0)`
 inside the shrunk rate's numerator; `const W_MVP: f64 = 3.0` next to the
 other dials.
 
-## 9. Deck steering (phase 3, server-only)
+## 9. Deck steering (phase 3, server-only) — BUILT 2026-08-18
 
 For the serving deck, boost cards sharing the deck's MVPs' mechanical
 categories: a scalar subquery collects the MVP cards'
@@ -94,3 +94,18 @@ categories: a scalar subquery collects the MVP cards'
 `+ W_STEER * (overlap count with that set)`. Score shifts happen *before*
 banding, so steering reads as band migration. Design detail at build; keep
 `W_STEER` a dial with 0.0 revert.
+
+**As built (2026-08-18).** `W_STEER = 0.12`, a **flat** lift rather than the
+overlap *count* specced above: three MVPs frequently share one role, and a
+tally would then weight that single role above commander synergy. Owner's call
+was to ship flat and revisit if it reads blunt. It rides the existing
+`DeckServeContext` seam next to `deck_oracle_tags`, so the term is dormant when
+the deck has no MVPs and those decks order byte-identically; `0.0` is still the
+exact revert. Roles come from `DeckRepository::get_mvp_card_roles`, which
+unnests `card_profiles.card_roles` for mainboard stars and dedupes, and a repo
+error degrades to no steering rather than failing the serve. **No vesting**:
+that guards the global signal, while steering your own deck was settled as
+immediate. Note this steers by *kind*, not by resurfacing the MVPs, which are
+already in the deck and excluded from the pool. Tests: `repo_card.rs`
+(`mvp_card_roles_are_mainboard_stars_deduped`, `mvp_roles_lift_matching_cards`,
+the latter asserting both the lift and the no-MVP dormancy).

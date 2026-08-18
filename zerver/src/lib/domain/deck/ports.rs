@@ -112,6 +112,16 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         request: &GetDeckProfile,
     ) -> impl Future<Output = Result<Vec<DeckCard>, GetDeckCardError>> + Send;
 
+    /// The distinct `card_roles` of a deck's mainboard MVPs, for the serve's
+    /// `W_STEER` term. Empty when the deck has no MVPs (or none of them carry
+    /// roles), which leaves serve ordering untouched. Unvested MVPs count:
+    /// vesting guards the *global* signal, while steering your own deck is
+    /// immediate by design.
+    fn get_mvp_card_roles(
+        &self,
+        request: &GetDeckProfile,
+    ) -> impl Future<Output = Result<Vec<String>, GetDeckCardError>> + Send;
+
     // ========
     //  update
     // ========

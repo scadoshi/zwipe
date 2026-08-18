@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT role AS \"role!\"\n               FROM deck_cards dc\n               JOIN card_profiles cp ON cp.scryfall_data_id = dc.scryfall_data_id\n               CROSS JOIN LATERAL jsonb_array_elements_text(cp.card_roles) AS role\n               WHERE dc.deck_id = $1 AND dc.board = 'deck' AND dc.mvp_at IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "role!",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "6fa482af39e4768659559d0016693446fb6a9e76365ed89733dfeb599fdba786"
+}

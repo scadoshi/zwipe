@@ -105,6 +105,17 @@ const SHRINK_K: f64 = 10.0;
 /// exactly (the revert lever), and an empty otag set is a no-op regardless.
 const W_ORACLE_TAG: f64 = 0.20;
 
+/// Weight of the MVP steering term (deck-MVPs phase 3): a flat lift for cards
+/// whose `card_profiles.card_roles` overlap the roles of the deck's mainboard
+/// MVPs. Units are synergy-score points (scores span roughly -0.6..1.0). Sized
+/// below `W_ORACLE_TAG` because a deck's three MVPs can share one role and
+/// would otherwise lift that whole role above commander synergy. Flat, not a
+/// per-role tally: matching two MVP roles is not twice the endorsement, and a
+/// tally spikes hard when all three MVPs are the same kind of card. The term
+/// is dormant when the deck has no MVPs, and `0.0` disables it exactly (the
+/// revert lever).
+const W_STEER: f64 = 0.12;
+
 /// Base score for cards absent from the commander's synergy map. Sits below
 /// the scoreless-list floor (-10, see `SynergyPayload::into_scores`) so the
 /// unscored tail stays below every scored card — at zero dials this exactly
@@ -349,6 +360,7 @@ impl CardRepository for MyPostgres {
             synergy_only,
             commander_seed,
             deck_oracle_tags,
+            mvp_card_roles,
         } = context;
         // WHERE clauses read the predicate fields; LIMIT/OFFSET/ORDER BY read
         // the query config — the CardCriteria/CardQuery split, mirrored here.
@@ -392,6 +404,17 @@ impl CardRepository for MyPostgres {
                     " + {W_ORACLE_TAG} * (card_profiles.oracle_tags ?| "
                 ));
                 qb.push_bind(deck_oracle_tags.to_vec());
+                qb.push(")::int");
+            }
+            // MVP steering (deck-MVPs phase 3): a flat lift for cards sharing a
+            // role with the deck's mainboard MVPs. The MVPs themselves are
+            // already in the deck and thus excluded from the pool, so this
+            // steers by kind rather than resurfacing the starred cards. Dormant
+            // when the deck has no MVPs, so those decks keep byte-identical
+            // ordering.
+            if !mvp_card_roles.is_empty() {
+                qb.push(format!(" + {W_STEER} * (card_profiles.card_roles ?| "));
+                qb.push_bind(mvp_card_roles.to_vec());
                 qb.push(")::int");
             }
         };

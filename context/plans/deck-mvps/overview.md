@@ -3,8 +3,10 @@
 **Status: Phase 1 BUILT + SHIPPED TO MAIN 2026-07-07 (`e0244c9c`; server
 steps 1–7 + client), API-verified end-to-end on dev and simulator-verified
 (star reworked during the pass: indicator on starred rows only, Star/Unstar
-button in the expanded row — an outline star on every row was 97% noise). Phases 2 (signal weight) and 3
-(steering) remain server-only follow-ups. As-built deltas: export carries NO
+button in the expanded row — an outline star on every row was 97% noise). Phase 3 (steering) BUILT
+2026-08-18 (`W_STEER`, flat role-overlap lift, see
+[`server.md`](server.md) step 9); phase 2 (signal weight) remains a server-only
+follow-up. As-built deltas: export carries NO
 MVP marker (a trailing `*` would corrupt pastes into Archidekt/Moxfield —
 cross-tool safety won; MVPs travel via clone); the star renders inside the
 name cell (the row grid is fixed-width columns); the one-time `deck-mvps`

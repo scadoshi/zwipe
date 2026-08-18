@@ -323,6 +323,33 @@ impl DeckRepository for Postgres {
         Ok(deck_cards)
     }
 
+    /// Distinct `card_roles` across the deck's mainboard MVPs. Unnests each
+    /// MVP's roles array and dedupes, so three MVPs sharing a role contribute
+    /// it once — the serve term is a flat lift, not a tally.
+    async fn get_mvp_card_roles(
+        &self,
+        request: &GetDeckProfile,
+    ) -> Result<Vec<String>, GetDeckCardError> {
+        if !request
+            .user_id
+            .owns_deck(request.deck_id, &self.pool)
+            .await?
+        {
+            return Err(GetDeckCardError::Forbidden);
+        }
+        let roles = query_scalar!(
+            r#"SELECT DISTINCT role AS "role!"
+               FROM deck_cards dc
+               JOIN card_profiles cp ON cp.scryfall_data_id = dc.scryfall_data_id
+               CROSS JOIN LATERAL jsonb_array_elements_text(cp.card_roles) AS role
+               WHERE dc.deck_id = $1 AND dc.board = 'deck' AND dc.mvp_at IS NOT NULL"#,
+            request.deck_id
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(roles)
+    }
+
     // ========
     //  update
     // ========
