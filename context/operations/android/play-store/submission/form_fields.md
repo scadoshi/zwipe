@@ -153,7 +153,7 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.9.2 (`CARGO_PKG_VERSION`, aligns with the min-version gate), versionCode 39 |
+| Version (client) | 1.9.3 (`CARGO_PKG_VERSION`, aligns with the min-version gate), versionCode 40 |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
