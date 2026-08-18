@@ -5,7 +5,7 @@
 Login, register, and refresh all covered. On refresh the client **re-sends** the
 current version (it overwrites, unlike platform's pure carry-forward) so the row
 tracks the version that is actually running, not the one it was born at. Mirrors
-the `platform` work in commit `4e7917b3` / [`session_platform.md`](session_platform.md).**
+the `platform` work in commit `4e7917b3` / `session_platform.md` (never written; the work landed directly in that commit).**
 
 **One sentence:** stamp each session (refresh-token row) with the app version
 (`CARGO_PKG_VERSION`, e.g. `"1.6.1"`) that created or last rotated it, so we can
@@ -41,7 +41,7 @@ the whole point.
 
 Version is a free-form semver `String`, not a closed set, so there is **no enum /
 newtype** to add (unlike `ClientPlatform`). It mirrors `HttpMinClientVersion.min_version`
-in [`../../zwipe-core/src/http/contracts/client.rs`](../../zwipe-core/src/http/contracts/client.rs),
+in [`../../../zwipe-core/src/http/contracts/client.rs`](../../../zwipe-core/src/http/contracts/client.rs),
 which is already a plain `String`. Stored/serialized as the raw version string.
 
 ### 2. Wire contract — optional field on the auth requests
@@ -55,7 +55,7 @@ pub client_version: Option<String>,
 ```
 
 `Option` + `#[serde(default)]` = additive and backward-compatible (old clients
-omit it -> `None`). Per [`../development/api_evolution.md`](../development/api_evolution.md):
+omit it -> `None`). Per [`../development/api_evolution.md`](../../development/api_evolution.md):
 new request fields are additive, server deploys first, client second, no gate
 needed.
 

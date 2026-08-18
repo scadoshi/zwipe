@@ -61,7 +61,7 @@ table gets populated — that plan lives in the worker's own repo, not here.
 - **Staleness.** The select stack is identical for every user on every
   open. The band shuffle shipped in 1.3.2 never reaches it because the
   client pins an explicit sort (the known caveat in
-  [`suggestion_signal.md`](suggestion_signal.md) "Where it runs").
+  [`suggestion_signal.md`](../plans/archive/suggestion_signal.md) "Where it runs").
 - **`edhrec_rank` measures the wrong quantity.** It ranks a card by decks
   *containing* it, not decks it *helms*. Within the legendary-creature
   pool, the head is 99-staples (Syr Konrad 252, Etali 260, Ragavan 269,

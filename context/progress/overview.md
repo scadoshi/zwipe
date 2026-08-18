@@ -605,7 +605,7 @@ server-served changelog, non-commander metric capture / Phase 5.)
   slow-changing filter/picker catalogs (artists, sets, keywords, oracle words, types,
   roles, oracle tags, deck tags) once at startup (1-day TTL, stale-while-revalidate);
   filters/pickers/dictionary read it instead of refetching on open → instant, no
-  reload flicker. [`../plans/catalog_session_cache.md`](../plans/catalog_session_cache.md).
+  reload flicker. [`../plans/archive/catalog_session_cache.md`](../plans/archive/catalog_session_cache.md).
 - **Phase M fully sunset.** `mechanical_categories → card_roles` end to end: dropped the
   legacy wire field + the `mechanical_categories_*` criteria alias, renamed the DB
   column + GIN index (migration `20260714130000`) and every live Rust/SQL reference,
@@ -618,7 +618,7 @@ server-served changelog, non-commander metric capture / Phase 5.)
   1.6.0 clients still land signal (also spoof-proofs the commander tables, ownership-scoped).
   The 1.7.0 client pushes `deck_id` only. **Slice B was already live in 1.6.0**, so non-EDH
   has been collecting since then. Step 3 (drop the legacy wire + fallback) waits on a 1.7.0
-  floor. Details: [`../plans/otags/sequencing.md`](../plans/otags/sequencing.md) Phase 5S.
+  floor. Details: [`../plans/archive/otags/sequencing.md`](../plans/archive/otags/sequencing.md) Phase 5S.
 - **Per-deck card cap raised to 500, counting all boards** (`e0abdb5d`). Was 250
   mainboard-only (leaving maybe/side uncapped — an abuse gap); now `count_cards_in_deck`
   sums every board against a 500 cap (unverified still 100), with clearer "all boards
@@ -659,7 +659,7 @@ tail (runbook).
   our authored `ORACLE_TAG_DESCRIPTIONS` const into `oracle_tags.description`
   **inside the sync transaction** (ours always wins over Scryfall's, survives the
   daily nuke+reinsert) — differs from the original serve-merge plan; details in
-  [`../plans/otags/tag_descriptions_and_dictionary.md`](../plans/otags/tag_descriptions_and_dictionary.md).
+  [`../plans/archive/otags/tag_descriptions_and_dictionary.md`](../plans/archive/otags/tag_descriptions_and_dictionary.md).
 - **Oracle-tag descriptions: 1,100 authored (was ~29% Scryfall, 1,302/4,494).**
   Bulk-authored highest-card-population first via a repeatable draft → oracle-text-verify
   subagent pipeline (each description drafted, then adversarially checked against the
@@ -680,7 +680,7 @@ tail (runbook).
 - Planned next: **in-app oracle-tag dictionary page** (renders the 1,100+ authored
   descriptions; starting ~2026-07-14) → continue description authoring into the tail →
   **changelog served from the server** (stop hard-coding it in the app binary; new
-  [`../plans/changelog_server.md`](../plans/changelog_server.md)). All on `todo.md`.
+  [`../plans/archive/changelog_server.md`](../plans/archive/changelog_server.md)). All on `todo.md`.
 
 ---
 
@@ -991,7 +991,7 @@ served "consistently in the same pattern and sequence" every session).
 - Build caught two real bugs pre-deploy: NULL `oracle_id` would have NULLed
   the sort key and floated 80 cards to the top of every stack; and anchoring
   unscored cards at 0 would have jumped them above negative-scored synergy
-  entries. Full design + baselines: [`../plans/suggestion_signal.md`](../plans/suggestion_signal.md).
+  entries. Full design + baselines: [`../plans/archive/suggestion_signal.md`](../plans/archive/suggestion_signal.md).
 
 Also in the 1.3.2 window: zite demo videos refreshed for the 1.3.x screens
 (plus a new import-and-stats demo), and the deploy pipeline hardened twice —
@@ -1229,7 +1229,7 @@ deploy first (project rule); three additive nullable migrations are involved
   flushes with the usage batch on a 30s timer **and on app-background**
   (`visibilitychange`/`pagehide` — so a swipe-to-close no longer loses the last
   window; covers the whole telemetry buffer). Verified collecting end-to-end
-  against the local app. Plan: `../plans/suggestion_signal.md` — **Phase 3
+  against the local app. Plan: `../plans/archive/suggestion_signal.md` — **Phase 3
   (ranking) remains** (a later server-only read-path change).
 
 **UI / polish:**

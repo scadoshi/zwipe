@@ -19,7 +19,7 @@ swipe.
 
 | Plan | Status |
 |------|--------|
-| [`otag_example_cards.md`](archive/otag_example_cards.md) | SHIPPED 1.7.1 (archived); **row UX superseded** by § Dictionary follow-through below |
+| [`otag_example_cards.md`](otag_example_cards.md) | SHIPPED 1.7.1 (archived); **row UX superseded** by § Dictionary follow-through below |
 | [`otag_filter_search_only.md`](otag_filter_search_only.md) | IMPLEMENTED (uncommitted) |
 | [`auth_route_gate.md`](auth_route_gate.md) | IMPLEMENTED (uncommitted) |
 
@@ -138,7 +138,7 @@ land with or after `fetch_usable_page`.
 Examples now toasts `e.to_user_message()` on `ensure_fresh` Err (auth failures
 still fall through to the AuthGate redirect). The broader "every screen handles
 this differently" cleanup is captured separately in
-[`authed_error_handler.md`](authed_error_handler.md) (BACKLOG).
+[`authed_error_handler.md`](../authed_error_handler.md) (BACKLOG).
 
 **Where:** `oracle_tag_examples.rs` load path.
 
@@ -290,7 +290,7 @@ Eyeball (`RulesButton` / card details) stays; still not a swipe.
 ### Dictionary link on card filter (prerequisite for filter **Use**)
 
 Card filter `OracleTags` still lacks a Dictionary entry point (backlog /
-[`progress/todo.md`](../progress/todo.md)). Add a **Dictionary** control
+[`progress/todo.md`](../../progress/todo.md)). Add a **Dictionary** control
 parity with the deck strategy picker so users can open the dict with
 **filter** return intent and **Use** write-back.
 

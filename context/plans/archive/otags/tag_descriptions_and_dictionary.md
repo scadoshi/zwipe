@@ -8,7 +8,7 @@ card population is covered**, fully replacing Scryfall's ~29%. Part 2
 (dictionary) shipped in the 1.7.0 client. Remaining forever-work is only
 incremental: new tags appear as Scryfall's tagger grows — the nightly coverage
 log line is the watchdog, and the runbook
-(`../../development/runbooks/otag_description_authoring.md`) re-runs cold for
+(`../../../development/runbooks/otag_description_authoring.md`) re-runs cold for
 any future batch.
 Two linked pieces the owner asked for:
 1. **Our own descriptions layer** — Scryfall describes only ~29% of tags (1,302 of
@@ -88,7 +88,7 @@ migrates cleanly to a DB table later if live editing is ever wanted — out of s
 
 ### Authoring workflow (the open work)
 
-**Runbook:** [`../../development/runbooks/otag_description_authoring.md`](../../development/runbooks/otag_description_authoring.md)
+**Runbook:** [`../../../development/runbooks/otag_description_authoring.md`](../../../development/runbooks/otag_description_authoring.md)
 — the repeatable AI-orchestrated loop (fan out subagents to draft + verify each
 description against real card oracle text, then splice into the const). Ships a
 reusable `Workflow` script alongside it. Follow that to run a batch.

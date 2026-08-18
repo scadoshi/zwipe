@@ -33,7 +33,7 @@ reads the column. 1,100 authored so far.
 
 `/api/card/oracle-tags` is **already** matched by Cloudflare **Rule 1 "Cache card
 metadata"** (`starts_with(path, "/api/card/")`, Edge TTL **24h**, ignore origin
-Cache-Control) — see [`../../operations/infrastructure/cloudflare.md`](../../operations/infrastructure/cloudflare.md).
+Cache-Control) — see [`../../../operations/infrastructure/cloudflare.md`](../../../operations/infrastructure/cloudflare.md).
 **No new cache rule is required.** Origin gets ~one hit per POP per day; cache HITs
 skip the tunnel (~5–10ms vs ~125ms).
 

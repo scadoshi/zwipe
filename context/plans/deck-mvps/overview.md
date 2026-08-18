@@ -59,6 +59,6 @@ feed the strongest per-card signal the system collects.
    row of the commander + the MVPs as full art (each labeled) — the personality
    statement this plan envisioned. Weekly share cards remain.
 
-Related: [`../suggestion_signal.md`](../suggestion_signal.md) (the ordering
+Related: [`../archive/suggestion_signal.md`](../archive/suggestion_signal.md) (the ordering
 this feeds), [`../../archive/wildcard-slot/`](../../archive/wildcard-slot/overview.md) (exposure
 for deep cards; MVPs are the confirmation layer on what wildcards surface).

@@ -6,7 +6,7 @@ deltas from the original sketch (offset math, determinism sort) — see
 [`server.md`](server.md) "As-built deltas".**
 
 **What this builds, in one sentence:** each 25-card hand the default ordering
-deals (see [`../suggestion_signal.md`](../suggestion_signal.md), band
+deals (see [`../../plans/archive/suggestion_signal.md`](../../plans/archive/suggestion_signal.md), band
 shuffle — `BAND_SIZE = 25`, one page = one hand) reserves a slot for a card
 drawn from far deeper in the ranking, weighted toward cards with few or no
 impressions — every session probes a slice of the pool that today can never

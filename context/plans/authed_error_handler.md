@@ -9,7 +9,7 @@ and surfaces failures the same way — killing the "some screens toast, some swa
 inconsistency at its root.
 
 **Related:** the examples-screen silent-failure bug
-([`otag_examples_followup.md`](otag_examples_followup.md) P3, since patched with a
+([`otag_examples_followup.md`](archive/otag_examples_followup.md) P3, since patched with a
 local toast) was a *symptom* of this. This plan is the structural fix.
 
 ---

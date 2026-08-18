@@ -259,5 +259,5 @@ unnecessary. Read over SSH from the prod database:
 The pipeline also proved its worth the same day: those 94 crashes were the
 evidence that root-caused the Android `ndk-context` bug, which had survived
 five releases precisely because nobody had read them
-([`archive/android_ndk_context_crash.md`](archive/android_ndk_context_crash.md)).
+([`android_ndk_context_crash.md`](android_ndk_context_crash.md)).
 That is the payoff this plan was built for.

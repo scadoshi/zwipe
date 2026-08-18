@@ -1,5 +1,9 @@
 # Learning Progress Tracker
 
+> **Dead index.** The `brain/` files linked below were removed long ago; this
+> page is kept only as a record of how the docs used to be organized.
+
+
 Tracks learning progress across confidence levels for AI teaching optimization.
 
 **Last Updated**: Restructured into modular files for better AI context management.

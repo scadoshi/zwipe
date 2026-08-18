@@ -90,7 +90,7 @@ That is launcher icons + back navigation + manifest, described individually
 below. **Skipping any one ships a broken release quietly** — the manifest patch
 in particular guards the ndk-context crash that survived five versions because
 this was a checklist rather than a command
-([`../../../../plans/android_resume_crash.md`](../../../../plans/android_resume_crash.md)).
+([`../../../../plans/archive/android_ndk_context_crash.md`](../../../../plans/archive/android_ndk_context_crash.md)).
 Add future patches to that script, not to this list.
 
 ## 1b. Regenerate launcher icons (dx ships its default droid)
@@ -144,7 +144,7 @@ zcripts/android/manifest.sh
 
 Verified on device 2026-08-17 against the shipped 1.9.1 build: the same
 `am start` panics without the patch and is clean when the instance is reused.
-Full evidence: [`../../../../plans/android_resume_crash.md`](../../../../plans/android_resume_crash.md).
+Full evidence: [`../../../../plans/archive/android_ndk_context_crash.md`](../../../../plans/archive/android_ndk_context_crash.md).
 
 ## 2. Bump targetSdk (and versionCode) in the generated Gradle
 

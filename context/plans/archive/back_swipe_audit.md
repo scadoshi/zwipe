@@ -126,7 +126,7 @@ rather than fixing the one reported case.
 - Android's bridge depends on `zcripts/android/back_handler.sh` having been run
   post-bundle; if back does nothing at all on Android, suspect the build step
   before suspecting this code. See
-  [`android_resume_crash.md`](android_resume_crash.md), where the same manual
+  [`android_ndk_context_crash.md`](android_ndk_context_crash.md), where the same manual
   step is hypothesis 1.
 
 ## Test list (2026-08-17 fixes — verify on device)

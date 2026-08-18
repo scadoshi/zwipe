@@ -18,7 +18,7 @@ on the next prod `zervice` run.
 batch: **Phase M fully sunset** (`mechanical_categories → card_roles`, incl. DB-column rename),
 **Phase 5S dual-accept** (signal fully `deck_id`-driven server-side + legacy fallback; 1.7.0
 client pushes `deck_id` only), the **oracle-tag dictionary**, and the **unified catalog cache**.
-See [`../../progress/overview.md`](../../progress/overview.md) top entry. History below:
+See [`../../progress/overview.md`](../../../progress/overview.md) top entry. History below:
 - **Phase 5 Slice B (client) — DONE** (`e4b5a6a5`): `zwiper` populates `CardSignalDelta.deck_id`
   and emits for commander-less decks. Non-EDH signal now flows once shipped.
 - **Phase 5 wire made lenient — DONE** (`ce35aa7f`): `CardSignalDelta.commander_oracle_id` is now
@@ -91,7 +91,7 @@ Active (everything else is shipped and archived — see below):
 | `payoff.md` | Immediate vs long-term payoff, honestly separated |
 | `../archive/otags/tag_descriptions_and_dictionary.md` | Description authoring — DONE 2026-08-06, every populated tag covered (4,395) |
 
-Archived to [`../archive/otags/`](../archive/otags/) (fully shipped, 2026-07-25 sweep):
+Archived to [`../archive/otags/`](./) (fully shipped, 2026-07-25 sweep):
 `purpose.md`, `scope.md`, `compatibility.md`, `open-questions.md`, `dictionary_backend.md`,
 `dictionary_client.md`, `hint_host.md`, `mapping_sweep_review.md`, `user_education.md`.
 The related `../archive/catalog_session_cache.md` (catalog prefetch) also shipped.
