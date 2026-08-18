@@ -35,8 +35,9 @@ ZWIPE is a mobile-first Magic: The Gathering deck builder with swipe-based navig
 cargo run --bin zerver          # Run web server
 cargo run --bin zervice         # Run background sync job (Scryfall updates)
 cargo test --workspace          # Run all tests
-cargo clippy --workspace --all-targets -- -D warnings
+cargo clippy -p zwipe-core -p zerver --all-targets -- -D warnings  # what CI runs
 ```
+All three workflows run the `-p zwipe-core -p zerver` form. `cargo clippy --workspace --all-targets -- -D warnings` is a stricter local option that also covers the client crates, which the owner sees warnings from on every `dx build`.
 
 ### Frontend (zwiper)
 ```bash
@@ -71,9 +72,11 @@ copy shadows correct data (broke the 2026-07-05 deploy; details in
 ```
 zwiper ──→ zwipe-core ←── zerver
 zite   ──→ zwipe-core
+zwiper ──→ zwipe-components ←── zite
+zwiper ──→ zerver          (ApiError only)
 ```
 
-zwipe-core owns all shared domain types. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers). zwiper and zite import from zwipe-core for domain types and from zerver only for HTTP contract types (routes, ApiError, Http* structs).
+zwipe-core owns all shared domain types, including every `Http*` contract (`zwipe-core/src/http/contracts/`) and the route path constants. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers). zwiper and zite both get their domain and contract types from zwipe-core. Only zwiper depends on zerver, and only for `ApiError` and the server-side `Password`. zite has no zerver dependency at all. zwipe-components is the shared Dioxus UI crate (components plus `themes.css`/`components.css`) that both clients depend on.
 
 ### Hexagonal (Ports & Adapters) Pattern
 
@@ -94,7 +97,7 @@ src/lib/
 
 ### Key Patterns
 
-**Newtypes for type safety**: `UserId`, `DeckId`, `EmailAddress`, `Password` - prevents mixing IDs, enforces validation at construction
+**Newtypes for type safety**: `Username`, `Quantity`, `DeckName` (core) and `Password` (zerver) - validation enforced at construction. IDs are deliberately raw `Uuid` (e.g. `DeckProfile { id: Uuid, user_id: Uuid }`); there is no `UserId` or `DeckId` wrapper
 
 **Module structure**: Uses `module/mod.rs` pattern (not monolithic `module.rs` files)
 
@@ -104,7 +107,7 @@ src/lib/
 
 ## Linting
 
-26 Clippy warnings configured in workspace `Cargo.toml`. Thresholds in `clippy.toml`:
+22 Clippy warnings configured in workspace `Cargo.toml`. Thresholds in `clippy.toml`:
 - `too-many-arguments-threshold = 7` (refactor to builder pattern above this)
 - `type-complexity-threshold = 250`
 - `cognitive-complexity-threshold = 25`
@@ -134,6 +137,8 @@ context/
 ├── architecture/           — why things are built the way they are
 ├── operations/             — how to build, deploy & ship (infrastructure/, ios/, android/)
 ├── development/            — coding standards (commits, docs, newtypes, dioxus)
+├── plans/                  — specs for in-flight work (archive/ holds shipped and abandoned ones)
+├── marketing/              — promo art templates (html) + plans/ video scripts
 ├── progress/               — where we are (overview.md, todo.md, backlog.md)
 └── archive/                — no longer active (brain, complete-*, learning framework)
 ```

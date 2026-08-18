@@ -7,20 +7,21 @@ Full-stack Rust application using hexagonal architecture. One language across al
 ## The Family
 
 ```
-┌─────────┐     ┌─────────────┐     ┌─────────┐
+┌──────────┐     ┌──────────────┐     ┌──────────┐
 │  zwiper  │────→│  zwipe-core  │←────│  zerver  │
 │ (mobile) │     │   (domain)   │     │  (api)   │
-└─────────┘     └─────────────┘     └────┬─────┘
-                       ↑                  │
-                ┌──────┘            ┌─────┴─────┐
-                │                   │  zervice   │
-            ┌───┴──┐               │  (sync)    │
-            │ zite  │               └───────────┘
-            │ (web) │
-            └──────┘               ┌───────────┐
-                                   │   zort     │
-                                   │ (classify) │
-                                   └───────────┘
+└────┬─────┘     └──────────────┘     └────┬─────┘
+     │                  ↑                  │
+     │           ┌──────┘            ┌─────┴──────┐
+     │           │                   │  zervice   │
+     │       ┌───┴───┐               │  (sync)    │
+     │       │ zite  │               └────────────┘
+     │       │ (web) │
+     │       └───┬───┘
+     │           │
+     │  ┌────────┴─────────┐
+     └─→│ zwipe-components │  (shared Dioxus UI + themes.css)
+        └──────────────────┘
 ```
 
 | Crate | Binary | Role | Depends on |
@@ -28,9 +29,10 @@ Full-stack Rust application using hexagonal architecture. One language across al
 | **zwipe-core** | — (library) | Shared domain types, validation, HTTP contracts | serde, uuid, chrono, thiserror |
 | **zerver** | `zerver` | Axum REST API, PostgreSQL, JWT auth | zwipe-core, axum, sqlx, tokio |
 | **zerver** | `zervice` | Background sync (Scryfall card data) | zwipe-core (via zerver lib) |
-| **zwiper** | `zwiper` | Dioxus cross-platform mobile app | zwipe-core, zerver (feature-gated for ApiError only), dioxus |
-| **zite** | `zite` | Dioxus static website (zwipe.net) | zwipe-core, dioxus |
-| **zort** | `zort` (future) | AI card classification client | Postgres direct, LLM API |
+| **zwiper** | `zwiper` | Dioxus cross-platform mobile app | zwipe-core, zwipe-components, zerver (feature-gated for ApiError only), dioxus |
+| **zite** | `zite` | Dioxus static website (zwipe.net) | zwipe-core, zwipe-components, dioxus |
+| **zwipe-components** | — (library) | Shared Dioxus UI components + `themes.css`/`components.css` | zwipe-core, dioxus |
+| **zort** | — (hypothetical) | AI card classification client. Sketched only: no crate, no directory, nothing built | Postgres direct, LLM API |
 
 ---
 
@@ -65,12 +67,15 @@ zwipe-core/src/
 │   │   │   │   ├── card_faces.rs   — Double-faced card data
 │   │   │   │   └── all_parts.rs    — Related tokens/parts
 │   │   │   └── search_card/
-│   │   │       ├── card_filter/    — CardFilter + CardFilterBuilder (30+ fields)
-│   │   │       │   ├── mod.rs      — CardFilter struct
+│   │   │       ├── card_filter/    — CardQuery + CardQueryBuilder (~50 criteria fields)
+│   │   │       │   ├── mod.rs      — Module docs (query vs in-memory split)
+│   │   │       │   ├── query.rs    — CardQuery (criteria + Limit + ordering)
+│   │   │       │   ├── criteria/   — CardCriteria predicate core + matches()
 │   │   │       │   ├── builder/    — Fluent builder with setters/getters
-│   │   │       │   ├── error.rs    — InvalidCardFilter
-│   │   │       │   └── order_by_option.rs
-│   │   │       ├── filter_cards.rs — In-memory filter + sort
+│   │   │       │   ├── error.rs    — InvalidCardCriteria
+│   │   │       │   ├── card_sort_key.rs — CardSortKey (name, CMC, rarity, etc.)
+│   │   │       │   └── price_currency.rs — PriceCurrency (USD/EUR/TIX)
+│   │   │       ├── cards.rs        — Cards collection: matching(), sorted(), sort_deck_entries()
 │   │   │       ├── group_cards.rs  — GroupByOption (type/cmc/color), CardGroup
 │   │   │       ├── card_type.rs    — CardType enum (7 types)
 │   │   │       ├── commander_eligibility.rs — Per-format eligibility + partner validation
@@ -81,7 +86,8 @@ zwipe-core/src/
 │   │   ├── models/
 │   │   │   ├── deck.rs             — Deck aggregate (DeckProfile + entries + warnings)
 │   │   │   ├── deck_profile.rs     — DeckProfile (commander, partner, background, sig spell)
-│   │   │   ├── deck_card.rs        — DeckCard (quantity, maybeboard)
+│   │   │   ├── deck_card.rs        — DeckCard (quantity, board, mvp_at)
+│   │   │   ├── board.rs            — Board enum (Deck, Maybeboard, Sideboard)
 │   │   │   ├── deck_metrics.rs     — DeckMetrics (mana curve, type/color dist, prices)
 │   │   │   ├── deck_warning.rs     — DeckWarning + WarningAction (FixQuantity, ClearCommander, Remove)
 │   │   │   ├── validate_deck.rs    — Pure validation (count, legality, copies, color identity, commander, partner, background, spell)
@@ -117,7 +123,7 @@ zwipe-core/src/
     └── contracts/
         ├── auth.rs                 — HttpLogin, HttpRegister, etc.
         ├── deck.rs                 — HttpCreateDeckProfile, HttpUpdateDeckProfile
-        ├── deck_card.rs            — HttpCreateDeckCard, HttpUpdateDeckCard
+        ├── deck_card.rs            — HttpCreateDeckCard, HttpPatchDeckCard
         └── user.rs                 — HttpChangeEmail, HttpChangePassword, etc.
 ```
 
@@ -190,21 +196,31 @@ zerver/src/
         └── resend/             — Transactional email via Resend API
 ```
 
-**Database (PostgreSQL, 10 tables + 1 materialized view):**
+**Database (PostgreSQL, 30 tables + 3 materialized views):** `zerver/migrations/`
+is the source of truth for the full schema. The ones you touch most:
 
 | Table | Purpose |
 |-------|---------|
 | `users` | Accounts (email, username, hashed password, lockout) |
 | `user_preferences` | Theme, dark mode |
 | `scryfall_data` | All card printings (~110k rows, ~100 columns) |
-| `card_profiles` | Internal card metadata (is_token, mechanical_categories) |
-| `latest_cards` | **Materialized view** — deduplicated to latest printing per oracle_id (~35k rows). Refreshed by zervice after sync. All search queries read from this view. |
+| `card_profiles` | Internal card metadata (is_token, card_roles) |
 | `decks` | Deck profiles (name, format, commander_id, partner_commander_id, background_id, signature_spell_id) |
-| `deck_cards` | Deck-card join (quantity, board) |
+| `deck_cards` | Deck-card join (quantity, board, mvp_at) |
+| `otags` / `card_otags` | Oracle tag catalog and card-to-tag join |
 | `refresh_tokens` | Rotating refresh tokens (SHA-256 hashed, max 5/user) |
 | `email_verification_tokens` | One-time email verification |
 | `password_reset_tokens` | One-time password reset |
-| `scryfall_data_sync_metrics` | Sync job audit trail |
+| `zervice_metrics` | Sync job audit trail |
+
+The rest are signal/analytics tables (user and commander signal, weekly facets,
+lifetime counters, events) plus client error and crash reporting.
+
+| Materialized view | Purpose |
+|-------|---------|
+| `latest_cards` | Deduplicated to latest printing per oracle_id (~35k rows). Refreshed by zervice after sync. All search queries read from this view. |
+| `card_signal_rollup` | Aggregated per-card signal |
+| `otag_context_signal_rollup` | Aggregated per-otag contextual signal |
 
 ---
 
@@ -271,7 +287,7 @@ zwiper/src/
             └── user/           — Profile, preferences, delete
 ```
 
-**Platforms:** iOS (primary), Android (near ready), Web (preview), Desktop
+**Platforms:** iOS (primary), Android, Web (preview), Desktop
 
 ---
 
@@ -287,8 +303,8 @@ zite/src/
     ├── about.rs            — Developer bio, tech stack, architecture
     ├── contribute.rs       — Stripe, Buy Me a Coffee, GitHub Sponsors
     ├── discord.rs          — Community invite
-    ├── ios.rs              — App Store download (pending)
-    ├── android.rs          — Play Store download (pending)
+    ├── ios.rs              — App Store download
+    ├── android.rs          — Play Store download
     ├── privacy.rs          — Privacy policy
     ├── verify.rs           — Email verification (token from URL)
     └── reset.rs            — Password reset form (shared validation from zwipe-core)
@@ -298,9 +314,11 @@ zite/src/
 
 ---
 
-## zort — AI Classification Client (Future)
+## zort — AI Classification Client (Hypothetical)
 
-Standalone binary for mechanical category classification. Connects directly to PostgreSQL, classifies cards via LLM, writes tags back.
+Nothing here exists. No `zort/` directory, no workspace member, no code. The sketch is kept because the shape is still the plan if card-role classification ever moves out of zervice.
+
+Standalone binary for card role classification. Connects directly to PostgreSQL, classifies cards via LLM, writes tags back.
 
 ```
 zort/                       (future crate)
@@ -309,7 +327,7 @@ zort/                       (future crate)
     └── main.rs             — Subcommands: classify, reclassify, delta, audit
 ```
 
-**Not embedded in zervice** — keeps deterministic sync separate from non-deterministic AI. See `plans/mechanical-category.md` for full design.
+**Not embedded in zervice** — keeps deterministic sync separate from non-deterministic AI.
 
 ---
 
@@ -317,7 +335,7 @@ zort/                       (future crate)
 
 **Hexagonal architecture:** Domain logic has no external dependencies. Inbound adapters (HTTP handlers, UI screens) and outbound adapters (database repositories, API clients) are swappable.
 
-**Newtypes for type safety:** `UserId`, `DeckId`, `EmailAddress`, `Password`, `Quantity`, `DeckName` — prevents mixing IDs, enforces validation at construction.
+**Newtypes for type safety:** `Username`, `DeckName`, `Quantity` (zwipe-core) and `Password` (zerver) enforce validation at construction. IDs stay bare `Uuid` on purpose: `DeckProfile { id: Uuid, user_id: Uuid }`. There are no `UserId`/`DeckId` wrappers.
 
 **Database adapter pattern:** Domain types never have SQLx derives. `Database*` wrapper structs with primitive fields convert to domain types via `TryFrom`. See `decisions.md`.
 
@@ -327,6 +345,6 @@ zort/                       (future crate)
 
 **Deck validation:** Pure function in zwipe-core. Warnings are informational (not blocking). `WarningAction` enum tells the UI what fix to offer per warning type.
 
-**Maybeboard:** Boolean flag on deck_cards. Excluded from metrics, validation, card count. Toggle via update_deck_card. Export/import supports `// Maybeboard` headers.
+**Boards:** `DeckCard.board` is a `Board` enum (`Deck`, `Maybeboard`, `Sideboard`), stored as text on `deck_cards` behind a CHECK constraint. Maybeboard and sideboard cards are excluded from metrics, validation, and card count. Set via update_deck_card. Export/import supports `// Maybeboard` headers.
 
 **Commander system:** Supports all partner variants (Partner, Partner with [Name], Friends Forever, Doctor's Companion), backgrounds (Choose a Background), and Oathbreaker (signature spell). Color identity = union of command zone. Eligibility filtering per format.

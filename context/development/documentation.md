@@ -153,13 +153,19 @@ pub fn all() -> [Self; 5]
 
 Use container-level docs for architectural notes:
 ```rust
-/// # Design Note
-///
-/// This struct derives `sqlx::FromRow` (when `zerver` feature is enabled) to avoid
-/// maintaining separate domain and database models for this large structure.
-/// If the database ever changes, only the derive macro needs replacement.
-pub struct ScryfallData { /* ... */ }
+/// raw database deck record
+/// (unvalidated data from `PostgreSQL`)
+#[allow(missing_docs)]
+#[derive(Debug, Clone, FromRow)]
+pub struct DatabaseDeckProfile { /* primitive fields only */ }
 ```
+
+The note that earns its place here is *why the wrapper exists at all*: `FromRow`
+lives on `DatabaseDeckProfile` in `zerver/src/lib/outbound/sqlx/deck/models.rs`,
+never on `DeckProfile`, because zwipe-core must not know about Postgres. The
+wrapper holds primitives (`String`, `Option<Uuid>`, `serde_json::Value`) and
+converts to the domain type via `TryFrom`, which is where validation runs. Say
+that once on the wrapper rather than on each of its two dozen fields.
 
 ---
 

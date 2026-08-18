@@ -39,16 +39,19 @@ This rule exists because the same backend message may surface in multiple fronte
 
 ## Font: JetBrains Mono
 
-The whole product (zwiper + zite) uses [JetBrains Mono](https://www.jetbrains.com/lp/mono/) loaded from the `@fontsource/jetbrains-mono` CDN. Was previously Cascadia Code at weight 300; swapped to JetBrains at weight 400.
+The whole product (zwiper + zite) uses [JetBrains Mono](https://www.jetbrains.com/lp/mono/) at weight 400. Was previously Cascadia Code at weight 300. The two apps load it differently.
 
-### Import pattern
+### zwiper: self-hosted
 
-In **`zwiper/assets/main.css`** and **`zite/assets/style.css`** (top of file):
+The woff2 files live in `zwiper/assets/fonts/` (400, 500, 700), are registered with `asset!()` so they ship inside the app bundle, and the `@font-face` rules are injected from `zwiper/src/bin/zwipe.rs`. No CDN: an app that has to work offline can't wait on jsdelivr, and the full font carries the U+2580-U+259F block elements the ASCII logo needs at the monospace advance width, which fontsource's subsets drop. `zwiper/assets/main.css:3` documents this at the top of the file.
+
+### zite: CDN
+
+`zite/assets/style.css` still imports from the `@fontsource/jetbrains-mono` CDN (top of file):
 
 ```css
-@import url('https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/400.css');
-@import url('https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/500.css');  /* zwiper only */
-@import url('https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/700.css');
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/400.css");
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/700.css");
 ```
 
 ### Body declaration
@@ -96,15 +99,11 @@ Applies to `.logo` (hero ASCII) and `.nav-logo` (tiny version in nav bar). Both 
 
 ## Theme Display Names
 
-Theme slugs (`gruvbox`, `tokyo-night`, `rose-pine`, etc.) are stored as-is in `ALLOWED_THEMES` (zwipe-core) and drive CSS class names. For display in theme pickers, both zite and zwiper have a `display_theme_name(slug)` helper that capitalizes each hyphen-split word.
+Theme slugs (`gruvbox`, `tokyo-night`, `rose-pine`, etc.) are stored as-is in `ALLOWED_THEMES` (zwipe-core) and drive CSS class names. For display in theme pickers, `display_theme_name(slug)` capitalizes each hyphen-split word.
 
-**Special case:** `rose-pine` displays as **"Rosé Pine"** (accent on the first e). Hardcoded in the helper rather than renaming the slug because the slug drives CSS class names + DB stored values for every user with that theme selected. A 3-line display-only special-case is cheaper than a SQL migration + CSS rename.
+**Special case:** `rose-pine` displays as **"Rosé Pine"** (accent on the first e). Hardcoded in the helper rather than renaming the slug because the slug drives CSS class names + DB stored values for every user with that theme selected. A display-only special-case is cheaper than a SQL migration + CSS rename. Same treatment for `vscode` → "VS Code", `github` → "GitHub", `synthwave-84` → "Synthwave '84", `powershell` → "PowerShell", `docs-rs` → "docs.rs".
 
-If new themes need display-name overrides, add another `if slug == "..." { return ... }` branch at the top of `display_theme_name()` in both:
-- `zite/src/main.rs`
-- `zwiper/src/lib/inbound/screens/profile/preferences.rs`
-
-(The duplication could be lifted into `zwipe-core` eventually, but with only two callers it's not worth the indirection yet.)
+The canonical copy is `zwipe-components/src/theme_picker.rs:21`, a `match` at the top of the function — add new overrides there. zite no longer has its own; it renders the shared `ThemePicker`. `zwiper/src/lib/inbound/screens/profile/preferences.rs:27` still holds a duplicate for its preferences sheet, so an override added to only one of the two will disagree across surfaces.
 
 ---
 

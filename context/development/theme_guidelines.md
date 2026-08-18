@@ -6,7 +6,7 @@ Rules for the CSS theme system. Follow these when adding or modifying themes.
 
 ## Variable System
 
-Every theme defines exactly 18 CSS variables:
+Every theme defines exactly 19 CSS variables:
 
 | Variable | Purpose |
 |----------|---------|
@@ -64,7 +64,7 @@ Light themes invert the relationship (dark text on light background) but follow 
 
 3. **Choose 3 accents** that express the theme's personality. These have the most creative freedom.
 
-4. **Add both dark and light variants** as `.theme-{name}-dark` and `.theme-{name}-light` classes in `shared/themes.css`.
+4. **Add both dark and light variants** as `.theme-{name}-dark` and `.theme-{name}-light` classes in `zwipe-components/assets/themes.css`.
 
 5. **Register in `ALLOWED_THEMES`** in `zwipe-core/src/domain/user/models/preferences.rs`.
 
@@ -104,12 +104,16 @@ for name, color in pairs.items():
 
 | File | Role |
 |------|------|
-| `shared/themes.css` | Single source of truth for all theme CSS variables |
+| `zwipe-components/assets/themes.css` | Single source of truth for all theme CSS variables |
+| `zwipe-components/src/lib.rs` | `THEMES_CSS` / `COMPONENTS_CSS` — the CSS files `include_str!`'d as string constants |
 | `zwipe-core/src/domain/user/models/theme.rs` | `ThemeConfig` (default theme + css class) |
 | `zwipe-core/src/domain/user/models/preferences.rs` | `ALLOWED_THEMES` registry + `UserPreferences` default |
-| `zwiper/build.rs`, `zite/build.rs` | Copy `shared/themes.css` into asset directories at build time |
-| `zite/src/main.rs`, `zwiper/src/lib/inbound/screens/profile/preferences.rs` | `display_theme_name(slug)` helper — capitalizes hyphen-split words; special-cases (e.g. `rose-pine` → "Rosé Pine") go here, not in the slug |
+| `zwipe-components/src/theme_picker.rs` | `ThemePicker` and the canonical `display_theme_name(slug)` — capitalizes hyphen-split words; special-cases (`rose-pine` → "Rosé Pine", `vscode` → "VS Code", etc.) go here, not in the slug |
 
-Theme CSS files in `zwiper/assets/` and `zite/assets/` are build artifacts (gitignored). Edit `shared/themes.css` only.
+**How the CSS reaches the apps:** neither build.rs copies it. `zwiper/build.rs` only bakes `.env` values into the binary, and `zite/build.rs` only writes `public/sitemap.xml`. The crate exports both stylesheets as `&'static str` constants (`include_str!`), and each app inlines them with `document::Style` at the top of its root component: `zwiper/src/bin/zwipe.rs:104` and `zite/src/main.rs:171`. Cascade order matters: `THEMES_CSS` first, then `COMPONENTS_CSS`, then the app's own stylesheet.
+
+Edit `zwipe-components/assets/themes.css` only. There is no `shared/` directory.
+
+`zwiper/src/lib/inbound/screens/profile/preferences.rs:27` still carries its own copy of `display_theme_name` for the preferences sheet. Keep the two in sync when adding an override, or fold zwiper onto the shared one.
 
 For text/casing/font rules across the app see `context/development/ui_text_conventions.md`.

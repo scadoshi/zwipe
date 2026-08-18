@@ -40,19 +40,10 @@ Note: Update `.cargo/config.toml` linker config if it still points at aarch64 to
 - DATABASE_URL uses `127.0.0.1` (TCP), not `localhost` (socket) — peer auth blocks socket for non-system users
 - `<` and `>` in DB password URL-encoded as `%3C` / `%3E` in connection string
 
-## Status (2026-03-27)
+## Status
 
-- [ ] Disassemble desktop, remove GPU, reassemble
-- [ ] Boot with Ubuntu Server USB installer (headless install)
-- [ ] Install PostgreSQL, create `zwipe` DB + user
-- [ ] Install `cloudflared`, configure tunnel to `api.zwipe.net`
-- [ ] Deploy zerver + zervice binaries (cross-compiled x86_64 from Mac or built on server)
-- [ ] Configure zerver `.env`, run SQLx migrations
-- [ ] Start `zerver` systemd service, add `zervice` cron
-- [ ] Create `/var/log/zwipe/` for rolling log files
-- [ ] Run `zervice` once manually to seed Scryfall card data
-- [ ] Verify iOS app hits `api.zwipe.net` successfully
+Migration complete (2026-03-27). Server built, PostgreSQL and cloudflared installed, `zerver` running under systemd with `zervice` on cron, logs in `/var/log/zwipe/`, card data seeded, and the apps hitting `api.zwipe.net`.
 
 ## Full Step-by-Step Reference
 
-See `context/project/shipping.md` — update that file with x86_64 steps once migration is complete.
+See `context/operations/infrastructure/` for the deploy and server runbooks.

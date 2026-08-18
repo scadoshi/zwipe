@@ -35,7 +35,7 @@ Then apply the surface's constraint:
   anything that might need correcting between trains should be servable.
   Compiled copies remain as *offline fallbacks* where absence would hurt.
 
-## The matrix (as of 1.9.1)
+## The matrix (as of 1.9.2)
 
 | Content | zerver | zite | zwiper | Fallback in app |
 |---|---|---|---|---|

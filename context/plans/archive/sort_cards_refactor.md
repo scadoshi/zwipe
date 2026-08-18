@@ -1,5 +1,12 @@
 # Refactor: Extract `SortCards` Trait from Inline Sort Logic
 
+**Status: ARCHIVED - NEVER BUILT. Superseded by `Cards::sorted`
+(`zwipe-core/src/domain/card/models/search_card/cards.rs:77`) and
+`sort_deck_entries` (same file), which cover the need this plan was written
+for. Nothing below matches the current code: there is no `filter_cards.rs`,
+no `SortCards`, no `OrderByOption`, and `CardFilterBuilder` is now
+`CardQueryBuilder`. Kept for history only.**
+
 ## Problem
 
 `view.rs` and `remove.rs` both contain an identical ~50-line inline sort block
