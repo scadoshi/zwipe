@@ -183,7 +183,7 @@ pub static GUIDES: &[Guide] = &[
                 caption: None,
             },
             Block::H2("Build by swiping"),
-            Block::P("Open the deck, tap Add Deck Cards, and act on the top card with a flick:"),
+            Block::P("Open the deck, tap Cards, then Add, and act on the top card with a flick:"),
             Block::Swipe(&[
                 ("right", "add the card to your deck"),
                 ("left", "skip it"),
@@ -365,7 +365,7 @@ pub static GUIDES: &[Guide] = &[
                 "`Combat`: power and toughness, `exact` or a `range`.",
                 "`Rarity`, `Set`, `Artist`: include or exclude values.",
                 "`Flavor text`: contains, or doesn't contain.",
-                "`Card role`: 24 strategic roles (`Ramp`, `Removal`, `Draw`, `Board Wipe`, and so on).",
+                "`Card roles`: 27 strategic roles (`Ramp`, `Removal`, `Draw`, `Wipe`, and so on).",
                 "`Oracle tags`: the granular, community-maintained functional tags (spot removal, ramp, reanimation, and thousands more); include or exclude, with a curated set up front and search for the rest.",
                 "`Format`: `Is commander in` and `Is legal in`.",
                 "`Price`: a currency (`USD`, `EUR`, or `TIX`) with optional min and max.",
@@ -380,7 +380,7 @@ pub static GUIDES: &[Guide] = &[
                 "Sections combine with `AND`, so stack as many as you like. A multi-value section's `Any`/`All` toggle sets whether a card needs one selected value or all of them, and `include` and `exclude` can run at once.",
             ),
             Block::Note(
-                "Set a value as both `include` and `exclude` and Zwipe reverts it, since nothing would match.",
+                "Pick the same value as both `include` and `exclude` and `Apply` stops with \"Filter can't both include and exclude\" for that section, leaving the sheet open so you can fix it.",
             ),
             Block::Image {
                 file: "filtering/02-filter-hint.webp",
@@ -389,7 +389,7 @@ pub static GUIDES: &[Guide] = &[
             },
             Block::H2("Sorting"),
             Block::P(
-                "Sort by `Name`, `Mana value`, `Power`, `Toughness`, `Rarity`, `Release Date`, `Price`, `Popularity`, or `Random`. Sorting only reorders the set you're looking at; it never changes which cards are eligible. Your filter and sort follow you between screens.",
+                "Sort by `Name`, `Mana value`, `Power`, `Toughness`, `Rarity`, `Release Date`, `Price`, `Popularity`, or `Random`. Sorting only reorders the set you're looking at; it never changes which cards are eligible. Each screen keeps its own filter and sort for the session, so changing them here never affects another screen.",
             ),
             Block::H2("Defaults and Reset"),
             Block::P(
@@ -428,7 +428,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("The deck list"),
             Block::P(
-                "Group by folds your decks into sections by Format, Color, or Tag; a deck with several tags appears under each of them. Show narrows the list: color pips keep decks whose identity contains every pip you pick, tag chips match any of their tags, and All resets.",
+                "Group by folds your decks into sections by Format, Color, or Tag; a deck with several tags appears under each of them. None leaves them ungrouped, which is still one collapsible group headed All. Color makes a group per exact color combination, headed by its mana pips instead of a color word. Show narrows the list: color pips keep decks whose identity contains every pip you pick, tag chips match any of their tags, and All resets.",
             ),
             Block::Image {
                 file: "organize-and-browse/01-deck-list-by-tag.webp",
@@ -437,11 +437,11 @@ pub static GUIDES: &[Guide] = &[
             },
             Block::H2("A deck's card list"),
             Block::P(
-                "Group by sections the cards by Type, Mana value, Color, or Card role. Boards swaps the list between Main, Maybe, and Side. Show toggles Tokens, the Command zone, and Art, which eases the row artwork in and out for denser reading.",
+                "Group by sections the cards by Type, Mana value, Color, or Card role, and None leaves them in one list; grouping by Color makes a group per exact color combination, headed by its mana pips. Boards is three independent toggles, Main, Maybe, and Side, so you can read two boards at once; turn the last one off and Main snaps back on. Show toggles Tokens, the Command zone, and Art, which eases the row artwork in and out for denser reading.",
             ),
             Block::H2("Collapse what you're done with"),
             Block::P(
-                "Tap any group header on the card list to fold that section, with the same arrow the card rows use. Tokens, Lands, Maybeboard, and Sideboard fold the same way. Collapses last for the visit; everything opens fresh next time.",
+                "Tap any group header on either list to fold that section, with the same arrow the card rows use. On the card list, Tokens, Lands, Maybeboard, and Sideboard fold the same way. Collapses last for the visit; everything opens fresh next time.",
             ),
             Block::Image {
                 file: "organize-and-browse/02-cards-by-type-collapsed.webp",
@@ -524,7 +524,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::Steps(&[
                 "Type to search. Filter on limits results to eligible cards; off searches any card by name.",
-                "Tap Zwipe for the swipe picker, most-played first: right to choose, left to skip, up to save it for later, down to undo.",
+                "Tap Swipe for the Swipe select screen, most-played first: right to choose, left to skip, up to save it for later, down to undo.",
             ]),
             Block::P(
                 "Partner and Background appear only when your commander supports them. Oathbreaker needs a signature spell within the planeswalker's colors.",
@@ -559,7 +559,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Save a commander"),
             Block::P(
-                "In any commander Zwipe picker, while creating or editing a deck, the up swipe saves the card on top:",
+                "In any Swipe select picker for a commander, while creating or editing a deck, the up swipe saves the card on top:",
             ),
             Block::Swipe(&[
                 ("right", "choose it for this deck"),
@@ -624,7 +624,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Set a budget"),
             Block::P(
-                "On the edit form, pick a currency (USD, EUR, or TIX) and an amount under Price target; leave it blank for no budget. It shows in the deck's Profile.",
+                "On the edit form, pick a currency (USD, EUR, or TIX) and an amount under Price target; leave it blank for no budget. It shows in the deck's Budget section.",
             ),
             Block::H2("As it fills up"),
             Block::P(
@@ -640,7 +640,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Prices and buying"),
             Block::P(
-                "The Stats section shows Total price and Average card price, switchable across USD, EUR, and TIX, and each card lists its prices while you swipe. Buy deck (under More) opens mass-entry links to TCGplayer and Card Kingdom.",
+                "The Budget section shows Total price and Average card price, switchable across USD, EUR, and TIX with the currency chip in its header, and each card lists its prices while you swipe. Buy deck (under More) opens mass-entry links to TCGplayer and Card Kingdom.",
             ),
         ],
     },
@@ -752,16 +752,16 @@ pub static GUIDES: &[Guide] = &[
     Guide {
         slug: "oracle-tag-dictionary",
         title: "Browse the oracle-tag dictionary",
-        summary: "A read-only reference for every oracle tag: browse A to Z or search by name and description to learn what any tag means.",
+        summary: "A reference for every oracle tag: browse A to Z or search by name and description, see example cards, and use a tag on the spot.",
         tags: &["Oracle tags"],
         related: &["oracle-tags", "card-roles"],
         blocks: &[
             Block::Lead(
-                "The oracle-tag dictionary is a read-only reference for every oracle tag, about 4,500 in all, each with a plain-language description of what it means.",
+                "The oracle-tag dictionary covers every oracle tag, about 4,500 in all, each with a plain-language description of what it means.",
             ),
             Block::H2("Opening it"),
             Block::P(
-                "Open the Oracle tags picker from Tags on the deck's edit form, then tap Dictionary next to Search. The picker's help also has a Browse the full dictionary button. It's read-only, so looking around here never changes your deck.",
+                "Open the Oracle tags picker from Tags on the deck's edit form, then tap Dictionary next to Search. The picker's help button has a Dictionary button too. The card filter sheet reaches it as well: the Oracle tags section carries its own Dictionary button for include and for exclude.",
             ),
             Block::H2("Browse by letter"),
             Block::P(
@@ -783,10 +783,10 @@ pub static GUIDES: &[Guide] = &[
             },
             Block::H2("What each entry shows"),
             Block::P(
-                "Every row lists the tag's name, its description, and any parent tags it sits under. Descriptions are written by hand over time, so some tags still read \"No description yet.\"",
+                "Every row lists the tag's name, its description, and any parent tags it sits under, then two buttons: Examples shows cards that carry the tag, and Use adopts the tag into the deck or filter you opened the dictionary from, without leaving the picker. Descriptions are written by hand over time, so some tags still read \"No description yet.\"",
             ),
             Block::Note(
-                "This is the reference view. To use oracle tags on a deck, see Sharpen suggestions with oracle tags.",
+                "For the wider picture of picking oracle tags on a deck, see Sharpen suggestions with oracle tags.",
             ),
         ],
     },
@@ -955,15 +955,11 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Profile, Budget & Tags"),
             Block::P(
-                "Profile summarizes the deck: name, format, commander (and partner, background, or signature spell), and a Power level, the Commander bracket from Exhibition (1) to cEDH (5). Budget holds your price and land targets. Tags holds your deck tags and oracle tags.",
-            ),
-            Block::H2("Stats"),
-            Block::P(
-                "Cards, Average mana value, Lands, Total price, and Average card price, with a USD / EUR / TIX currency chip.",
+                "Profile summarizes the deck: name, format, commander (and partner, background, or signature spell), your Cards count, and a Power level, the Commander bracket from Exhibition (1) to cEDH (5). Budget holds your price target, Total price, and Average card price, with a USD / EUR / TIX currency chip in its header; your land target lives in Mana. Tags holds your deck tags and oracle tags.",
             ),
             Block::H2("Charts"),
             Block::P(
-                "Distributions cover card type, strategic role, and color. Role distribution reads on the same roles shown as chips on each card. Mana holds the mana curve (nonland cards by cost, 0 to 6+) and mana fulfillment (whether your mana base makes enough of each color, with a ✔ when covered).",
+                "Distributions cover card type, strategic role, and color. Role distribution reads on the same roles shown as chips on each card. Mana holds your Lands against their target, Average mana value, the mana curve (nonland cards by cost, 0 to 6+), and mana fulfillment (whether your mana base makes enough of each color, with a ✔ when covered).",
             ),
             Block::Image {
                 file: "deck-stats/01-distributions.webp",

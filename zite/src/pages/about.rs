@@ -44,6 +44,7 @@ pub fn About() -> Element {
                         span { class: "tag", "Rust" }
                         span { class: "tag", "Full-stack" }
                         span { class: "tag", "iOS" }
+                        span { class: "tag", "Android" }
                         span { class: "tag", "PostgreSQL" }
                         span { class: "tag", "Systems" }
                     }
@@ -62,13 +63,14 @@ pub fn About() -> Element {
                 p { class: "arch-subtitle", "Five Rust crates in one workspace. What each one does, and where it pulls from." }
                 div { class: "card-grid",
                     Panel {
-                        eyebrow: "iOS app",
+                        eyebrow: "Mobile app",
                         title: "zwiper",
                         actions: rsx! {
                             a { class: "panel-action", href: URL_ZWIPER, target: "_blank", rel: "noopener noreferrer", "Source \u{2197}" }
                         },
                         div { class: "arch-tags",
                             span { class: "tag", "iOS" }
+                            span { class: "tag", "Android" }
                             a { class: "tag", href: URL_DIOXUS, target: "_blank", rel: "noopener noreferrer", "Dioxus" }
                             a { class: "tag", href: URL_WASM, target: "_blank", rel: "noopener noreferrer", "WASM" }
                         }
@@ -202,7 +204,7 @@ pub fn About() -> Element {
 
                     Panel { eyebrow: "Quality", title: "Testing & lint discipline",
                         p { class: "card-summary",
-                            "627 tests, 377 in "
+                            "694 tests, 406 in "
                             a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
                             ". Enforced by the compiler."
                         }
@@ -234,7 +236,7 @@ pub fn About() -> Element {
                             "Hand-rolled, stricter than a deckbuilder needs."
                         }
                         ul { class: "card-bullets",
-                            li { "Argon2id, plus a 170-pattern password blocklist" }
+                            li { "Argon2id, with length, character-class and repetition rules" }
                             li { "Rotating refresh tokens, replay-safe" }
                             li { "Short-lived JWTs; refresh tokens stored hashed" }
                             li {

@@ -21,6 +21,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://zwipe.net/changelog</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://zwipe.net/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -66,12 +71,22 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://zwipe.net/guides/organize-and-browse</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://zwipe.net/guides/synergy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://zwipe.net/guides/commander-and-formats</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://zwipe.net/guides/commander-maybeboard</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -112,6 +127,11 @@
   </url>
   <url>
     <loc>https://zwipe.net/guides/deck-mvps</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://zwipe.net/guides/share-your-deck</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
