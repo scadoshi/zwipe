@@ -617,7 +617,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     }
                     HintBullet {
                         "Stats appear as the deck grows, tap a section like "
-                        HintKey { color: "--color-success", "Stats" }
+                        HintKey { color: "--color-success", "Budget" }
                         " or "
                         HintKey { color: "--color-warning", "Mana" }
                         " to expand it"
