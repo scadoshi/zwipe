@@ -22,9 +22,9 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Bugs
 
-- [ ] **1.9.2 in review at both stores since 2026-08-17** (iOS build 76 / Android versionCode 39). When it goes live: confirm the deck list restyle and back-swipe behave on a store build, note the release date in both `history.md` files, and delete this line. Also reinstall Zwipe from the store on the Pixel — it is currently on a debug-signed 1.9.2 build, which Play cannot update.
+- [ ] **1.9.2 went LIVE at both stores 2026-08-18** (iOS build 76 / Android versionCode 39). Remaining: confirm the deck list restyle and back-swipe behave on a store build, and reinstall Zwipe from the store on the Pixel, which is still on a debug-signed build Play cannot update. Delete this line once both are done.
 
-- [ ] **One week after 1.9.2 goes LIVE (not submitted), read the crash + error tables and confirm the Android fix held.** Submitted to both stores 2026-08-17; the clock starts when review clears and users actually update, so ~2026-08-25 at the earliest and later if review drags. This is the step that was skipped after 1.7.6 and cost five releases of false confidence, so do not close the bug on the lab result alone. Run both queries — crashes alone can fall because *adoption* fell:
+- [ ] **One week after 1.9.2 goes LIVE (not submitted), read the crash + error tables and confirm the Android fix held.** **Live at both stores 2026-08-18, so the clock has started: run this on or after 2026-08-25.** 1.9.3 is in review behind it and carries the same manifest patches, so a mid-week 1.9.3 rollout does not reset the window. This is the step that was skipped after 1.7.6 and cost five releases of false confidence, so do not close the bug on the lab result alone. Run both queries — crashes alone can fall because *adoption* fell:
 
   ```sql
   -- must be zero for ndk-context on 1.9.2+

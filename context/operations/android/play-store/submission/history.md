@@ -31,7 +31,7 @@ Per-release build log. Build recipe is in [build.md](build.md).
   step-4a greps verified against the signed AAB both times. iOS counterpart
   build 77.)
 
-- **2026-08-17 — `1.9.2`, versionCode `39`** (the reliability + deck-list
+- **2026-08-17 — `1.9.2`, versionCode `39`** (**released 2026-08-18**; the reliability + deck-list
   train. The `ndk-context` crash was root-caused and fixed after surviving five
   releases: `MainActivity` carried no `launchMode`, so an explicit component
   start — a notification, another app, the Play Store's Open button — created a

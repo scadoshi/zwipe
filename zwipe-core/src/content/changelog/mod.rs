@@ -43,7 +43,7 @@ pub const UPCOMING: &[Release] = &[Release {
 pub const RELEASES: &[Release] = &[
     Release {
         version: "1.9.2",
-        date: "Aug 17, 2026",
+        date: "Aug 18, 2026",
         entries: &[
             "Your decks now show their command zone's art on the Decks screen: the commander, both partners, or the oathbreaker and its signature spell.",
             "The Decks screen is one connected list. Turning on Group by splits it into sections you can fold from their headers.",
