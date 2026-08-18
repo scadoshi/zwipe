@@ -51,6 +51,12 @@ The day-to-day loop — launch/wipe the emulator, `dx serve` vs build-and-instal
 `adb` helpers, and troubleshooting — lives in **[emulator.md](emulator.md)**,
 kept separate so this page stays first-time-setup only.
 
+For a **physical device** (USB debugging, installing a test build over the
+Play-signed one, driving the app by screenshot, and the triggers that expose
+lifecycle bugs) see **[device_testing.md](device_testing.md)**. Reach for the
+real device when the bug is lifecycle-shaped — the emulator's WebView is close
+but not identical.
+
 ## Notes
 
 - Same Rust codebase as iOS — one `zwiper/` directory, different build targets
