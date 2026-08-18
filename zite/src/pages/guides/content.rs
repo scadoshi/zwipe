@@ -244,18 +244,18 @@ pub static GUIDES: &[Guide] = &[
             },
             Block::H2("Skips are remembered"),
             Block::P(
-                "A left swipe keeps that card out of this deck for good, even after you reopen the app. Clear skips in the deck's More menu brings them back. The swipe-memory guide covers this in full.",
+                "A left swipe keeps that card out of this deck's swipe pile, even after you reopen the app. Clear skips in the deck's More menu brings them back. The swipe-memory guide covers this in full.",
             ),
             Block::H2("Synergy"),
             Block::P(
-                "On a commander deck, the Synergy chip keeps the stack to cards that fit your commander, best fits first. Off, you browse every legal card. It's on by default and re-deals the stack when toggled.",
+                "On a commander deck, the Synergy chip keeps the stack to cards that fit your commander, best fits first in hands of 25. Off, you browse every legal card. It's on by default and re-deals the stack when toggled.",
             ),
             Block::Note(
                 "If synergy is still warming up, Zwipe shows the full pool and tells you once.",
             ),
             Block::H2("Filter, sort, and the maybeboard"),
             Block::P(
-                "Filter decides which cards are dealt; a dot marks an active filter. Sorting reorders the current set only. The \"From\" row swaps the stack to your Maybeboard, where a right swipe promotes a card into the deck.",
+                "Filter decides which cards are dealt; a dot marks an active filter. Sorting reorders the current set only. The \"From:\" row swaps the stack to your Maybeboard, where a right swipe promotes a card into the deck. Each source keeps its own filter, and the Maybeboard starts unfiltered.",
             ),
             Block::Image {
                 file: "swipe-to-build/02-filter-sheet.webp",
@@ -319,11 +319,11 @@ pub static GUIDES: &[Guide] = &[
         related: &["swipe-to-build", "remove-cards"],
         blocks: &[
             Block::Lead(
-                "Zwipe remembers the cards you pass on. Skip a card and it stays out of that deck's suggestions, so you never have to swipe past the same card twice.",
+                "Zwipe remembers the cards you pass on. Skip a card and it stays out of that deck's swipe pile, so you don't swipe past the same card twice.",
             ),
             Block::H2("Skips stay skipped"),
             Block::P(
-                "A left swipe on the add screen tells Zwipe you don't want that card in this deck. It stops appearing while you build, and it stays gone after you close and reopen the app. Removing a card from a deck does the same, so trimmed cards don't come back as suggestions.",
+                "A left swipe on the add screen tells Zwipe you don't want that card in this deck. It stops appearing in the swipe pile, and it stays gone after you close and reopen the app. Quick add still finds it by name, since typing a name is explicit intent. Removing a card from a deck skips it the same way, so trimmed cards don't come back in the pile.",
             ),
             Block::H2("It's per deck"),
             Block::P(
@@ -331,7 +331,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Pick up where you left off"),
             Block::P(
-                "Every deck keeps its place in the stack, along with your recent swipes for undo. Jump out to tweak another deck and come back, and Zwipe drops you right back where you were instead of starting over.",
+                "While the app is open, each deck keeps its place in the stack along with your recent swipes for undo, so you can jump out to tweak another deck and come back where you left off. Restarting the app, or changing the filter, deals a fresh stack.",
             ),
             Block::H2("Changed your mind? Clear skips"),
             Block::P(
@@ -462,7 +462,7 @@ pub static GUIDES: &[Guide] = &[
     Guide {
         slug: "synergy",
         title: "Synergy-ranked cards",
-        summary: "On a commander deck, Synergy keeps the stack to cards that work with your commander and shows the best fits first.",
+        summary: "On a commander deck, Synergy keeps the stack to cards that work with your commander and deals the best fits first.",
         tags: &["Commander", "Cards"],
         related: &["commander-and-formats", "oracle-tags"],
         blocks: &[
@@ -471,7 +471,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Where and how"),
             Block::P(
-                "The Synergy chip appears on the Add Deck Cards screen once your deck has a commander. On, the stack is limited to fitting cards, best first; off, you browse everything legal. It's on by default and re-deals when toggled.",
+                "The Synergy chip sits on the \"From:\" row of the Add Deck Cards screen whenever the source is Search and your deck has a commander. On, the stack is limited to fitting cards, served best-first in hands of 25 and shuffled within each hand per deck per day, so the same commander doesn't deal an identical stack twice; off, you browse everything legal. It's on by default and re-deals when toggled.",
             ),
             Block::Image {
                 file: "synergy/01-synergy-on.webp",
@@ -839,7 +839,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Card roles: the read-side view"),
             Block::P(
-                "Card roles are different from the other two: you never pick them. Each card's oracle tags are rolled up into a small set of coarse roles, Removal, Ramp, Card advantage, shown as chips on the card. Tap a role to see the oracle tags underneath it.",
+                "Card roles are different from the other two: you never assign them, they're computed from a card's oracle tags. Those tags roll up into a small set of coarse roles, Removal, Ramp, Card advantage, shown as chips when you expand a card's row or open its rules. Tap a role to see the oracle tags underneath it. You can still filter the stack by role.",
             ),
             Block::H2("How it flows"),
             Block::Diagram(
