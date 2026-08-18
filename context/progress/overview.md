@@ -63,6 +63,21 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   siblings cede width. The featured skeleton is gone (ghosting first would
   replace the entrance with a swap); the rest of the page's skeleton stays.
   Honors prefers-reduced-motion.
+- **Prod verification pass 2026-08-17** (SSH to zerver set up, so these are
+  now readable without hand-pasting): the **post-Phase-5 canary is clean** (14
+  days of client errors, zero 405/method-not-allowed rows) and **client error +
+  crash reporting is verified by real traffic** rather than the planned
+  synthetic test (11 error rows / 15 occurrences with breadcrumbs and dedupe
+  counts working, 94 crashes captured). Both closed.
+- **Android resume crash is NOT fixed** — the 1.7.6 onDestroy process-kill
+  failed and nobody knew for five versions. 92 of 94 recorded crashes are the
+  one `ndk-context` double-init assert, and 1.9.1 is running 20 crashes over
+  two days against 12 distinct Android users. Reopened as a live bug with a
+  plan: [`../plans/android_resume_crash.md`](../plans/android_resume_crash.md).
+  Correction worth remembering: the `/Users/<name>/.cargo/...` panic prefix is
+  a compile-time path present in every shipped binary, not a device
+  fingerprint — misreading it as "these are the owner's own test devices" is
+  what made the bug look benign.
 
 ---
 
