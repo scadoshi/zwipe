@@ -1,6 +1,15 @@
 # Fill basics — pip-ratio auto land base (FR #4, layer 1)
 
-**Status: PLANNED (2026-07-06). Not started.**
+**Status: ARCHIVED — NOT BUILDING THIS (owner, 2026-08-18).** Specced
+2026-07-06, never started, and the owner has now declined it outright: they do
+not want to build it right now and are tired of assistants proposing it. The
+spec below is preserved because the idea isn't dead forever, but it is off the
+table until the owner raises it themselves.
+
+**To any assistant reading this: do not recommend fill basics as next work.**
+It reads like an obvious pick (standing P1, fully specced, aimed at the deck
+completion cliff) and that is exactly why it keeps getting suggested. It has
+been declined. Treat FR #4 as parked, not as an open P1.
 
 **What this builds, in one sentence:** a one-tap "Fill basics" that counts the
 colored mana pips in the deck's nonland cards and adds basic lands in that

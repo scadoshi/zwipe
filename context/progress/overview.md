@@ -224,7 +224,9 @@ Three days that closed the whole release train:
 - **First activity report read** (overview.sql, 2026-08-12): 957 lifetime
   users, MAU 161 / WAU 49, activation to deck-built 90% but completion only
   15.3% (median deck 26 cards) — the finish-a-deck cliff is the top roadmap
-  signal; fill-basics and composition targets aim straight at it.
+  signal. Fill basics was the obvious answer to it and the owner declined
+  the build 2026-08-18 ([`../plans/archive/fill_basics.md`](../plans/archive/fill_basics.md)),
+  so the cliff stands without a chosen fix.
 - **Evening Discord-todo batch (2026-08-12, rides 1.8.1 except the server
   fix):** the Arcane Signet search miss root-caused to `latest_cards`' dedup
   ignoring language — a newer foreign printing (hoc Dwarvish spoilers, soa

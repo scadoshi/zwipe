@@ -41,10 +41,11 @@ verification.
 
 **After this:** next build candidates (owner to choose): the wasm build
 blockers toward the full webapp (the strongest 1.9/2.0 anchor), social
-features / featured decks, commander shortlist, fill basics — the activity
+features / featured decks, commander shortlist — the activity
 report's 15.3% deck-completion cliff (median 26 cards) points hardest at
-fill-basics and composition targets. Then **Phase 6** — serve on the matured
-otag signal (data-gated, months out). Ongoing: otag description authoring into
+composition targets (fill basics was declined 2026-08-18, see
+[`plans/archive/fill_basics.md`](plans/archive/fill_basics.md)). Then
+**Phase 6** — serve on the matured otag signal (data-gated, months out). Ongoing: otag description authoring into
 the tail, short-form marketing videos, review tracking, funnel numbers (gate
 the sign-in-with-Google decision), and draw-odds **Phase 4 (premium gating)**.
 

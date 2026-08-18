@@ -50,7 +50,7 @@ Marked ✅ in the tables below; numbers kept stable (plans/commits reference the
 
 | # | Feature | Impact | Effort | Priority | Notes |
 |---|---------|--------|--------|----------|-------|
-| 4 | Auto land base from color-pip ratio as you build | High | M | **P1** | Used on every deck. High stickiness. |
+| 4 | Auto land base from color-pip ratio as you build | High | M | **PARKED** | Declined by owner 2026-08-18 — not building it now, and not to be re-proposed as next work. Spec preserved at [`../plans/archive/fill_basics.md`](../plans/archive/fill_basics.md). Was P1 on impact alone; revisit only if the owner raises it. |
 | 5 | Land count target / cap so you don't over/under-run | Med | S | ✅ Shipped | Land-target stepper in deck form + crossing toast (1.2.0). Pairs with #4/#19. |
 | 6 | Mana-value-aware suggestion weighting (surface lower MV as curve fills) | High | M | P2 | Makes the recommender feel smart. Manual MV-range filter already exists as a stopgap. |
 | 7 | Embeddings-based auto-build / decklist analysis (assemble ~80% of a deck, swipe the rest) | High | L | P3 | North-star; aligns with the synergy/recommender roadmap. |
@@ -107,6 +107,6 @@ Marked ✅ in the tables below; numbers kept stable (plans/commits reference the
 
 ## Suggested next to ship
 (#5, #8, #15, #17, #19 shipped; see "Shipped so far" above.)
-1. **#4 Auto land base** — high stickiness, every-deck value; unblocks #6.
+1. ~~**#4 Auto land base**~~ — PARKED by owner 2026-08-18 (see the row above); #6 no longer waits on it.
 2. **#12 Deck stats mid-build** — planned (qol bundle D): util-bar button → stats bottom sheet reusing the deck charts.
 3. **#1 Live drag indicators** — parked on `feat/qol-drag-indicators` pending a visual-style call; revive if it resurfaces.
