@@ -10,7 +10,7 @@
 #   back_handler.sh    missing -> OS back exits the app instead of navigating
 #   manifest.sh        missing -> the ndk-context double-init crash returns,
 #                                 and a system theme change closes the app
-#                                 (context/plans/android_resume_crash.md)
+#                                 (context/plans/archive/android_ndk_context_crash.md)
 #
 # The manifest bug survived five releases partly because this was a checklist.
 # Call this one script instead; add new patches here rather than to the docs.

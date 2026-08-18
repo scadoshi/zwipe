@@ -6,7 +6,7 @@ Android analogue of iOS
 
 | Part | What it covers |
 |------|----------------|
-| [build.md](build.md) | Gotchas + prerequisites + build the signed AAB (dx bundle → icons → back_handler → gradle patch → repackage → sign → smoke-test). **The core runbook.** |
+| [build.md](build.md) | Gotchas + prerequisites + build the signed AAB (dx bundle → `patch_bundle.sh` (icons + back handler + manifest) → gradle patch → repackage → sign → verify). **The core runbook.** |
 | [publish.md](publish.md) | Upload to the Play Console, roll out to closed testing, recruit testers; native-debug-symbols note. |
 | [production_access.md](production_access.md) | Play Console production-access questionnaire answers (after the 14-day closed-testing cycle). |
 | [form_fields.md](form_fields.md) | Store listing copy. |

@@ -158,13 +158,13 @@ The build will appear in App Store Connect after 5–10 minutes.
 
 ```bash
 xcrun altool --validate-app -f ~/Developer/zwipe/Zwipe.ipa -t ios \
-  --apiKey C2L47TDDPV --apiIssuer 644db668-17b6-4d50-ac1a-70f8ea838d0d
+  --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>
 
 xcrun altool --upload-app -f ~/Developer/zwipe/Zwipe.ipa -t ios \
-  --apiKey C2L47TDDPV --apiIssuer 644db668-17b6-4d50-ac1a-70f8ea838d0d
+  --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>
 ```
 
-API key file: `~/.private_keys/AuthKey_C2L47TDDPV.p8`
+API key file: `~/.private_keys/AuthKey_<KEY_ID>.p8`
 
 ---
 

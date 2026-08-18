@@ -1,9 +1,9 @@
 # Ubuntu Server Setup
 
 > **NOTE (2026-06-13): Prod no longer runs here.** Production migrated to a
-> Hetzner VPS (`zerver-prod`, tailnet `<server-tailnet-ip>`, admin `ssh root@…`) —
-> see `context/plans/vps_migration.md`. This home box is powered off but kept
-> intact as the rollback. The checklist below remains the general
+> Hetzner VPS (`zerver-prod`, tailnet `<server-tailnet-ip>`, admin `ssh root@…`).
+> (The old `context/plans/vps_migration.md` write-up no longer exists.) This
+> home box is powered off but kept intact as the rollback. The checklist below remains the general
 > rebuild/setup reference (it's what the VPS was built from); only the
 > WiFi/netplan section is home-box-specific.
 
@@ -28,7 +28,8 @@ Backend served via Cloudflare Tunnel — no port forwarding, TLS handled by Clou
 - [ ] Run initial migrations: `cargo sqlx migrate run --source zerver/migrations`
 - [ ] Install `cloudflared`, configure tunnel to `api.zwipe.net`
 - [ ] Start `zerver` systemd service
-- [ ] Add `zervice` nightly cron (4am daily)
+- [ ] Install the `zervice` systemd units from `zcripts/server/systemd/` (`zervice.service`, `zervice.timer`, `zervice-alert.service`, `zervice-alert.sh`) into `/etc/systemd/system/`, script to `~/zwipe/`. Nightly timer, NOT cron
+- [ ] Place `~/zwipe/.env.zervice` (see the zervice scheduling section below) and run `zcripts/server/sql/zervice_role.sql` to create the scoped Postgres role
 - [ ] Add backup cron (5am daily) — see `backups.md`
 - [ ] Run `zervice` once manually to seed Scryfall card data
 - [ ] Install self-hosted GitHub Actions runner (see `cicd.md`) — this is what deploys code, runs migrations, and restarts zerver on every push to main
@@ -248,7 +249,7 @@ sudo systemctl status zerver
 
 **5. Optionally reseed card data:**
 ```bash
-cd ~/zwipe && ./zervice
+cd ~/zwipe && set -a && source .env.zervice && set +a && ./zervice
 ```
 
 This re-syncs all 35k+ cards from Scryfall. Takes a few minutes.
@@ -302,6 +303,11 @@ RUST_BACKTRACE=1
 RESEND_API_KEY=<from Resend dashboard>
 RESEND_EMAIL_FROM=support@zwipe.net
 # LOG_DIR omitted — defaults to /var/log/zwipe
+# MIN_CLIENT_VERSION=0.0.0 — the default, which DISABLES the client-version
+# gate. A box rebuilt straight from this template ships with the gate off;
+# set the real floor before it takes traffic.
+# HEALTHCHECK_PING_URL omitted — optional; zervice pings it on a clean run
+# so the monitor can alert on silence. Also belongs in .env.zervice.
 # SUPPORT_EMAIL_ADDRESS + WEB_BASE_URL omitted — default to support@zwipe.net
 # and https://zwipe.net. Set both here when switching the public domain.
 ```
@@ -481,9 +487,9 @@ fires on next boot.
 
 **Least privilege (2026-07-29):** `zervice.service` reads
 `/home/scadoshi/zwipe/.env.zervice` — exactly `DATABASE_URL`, `RUST_LOG`,
-`LOG_DIR` (the bin's `ZerviceConfig` accepts nothing more; it holds no
-JWT/Resend secrets). The alert unit keeps reading the MAIN `.env` because it
-legitimately needs the Resend creds.
+`LOG_DIR`, plus optional `HEALTHCHECK_PING_URL` (the bin's `ZerviceConfig`
+accepts nothing more; it holds no JWT/Resend secrets). The alert unit keeps
+reading the MAIN `.env` because it legitimately needs the Resend creds.
 
 **Scoped Postgres role — the lifecycle.** `.env.zervice`'s `DATABASE_URL`
 connects as the `zervice` role; `zcripts/server/sql/zervice_role.sql` is the
@@ -547,8 +553,9 @@ double-runs again, count the banners first.
 
 `/var/log/zwipe/zervice-cron.log` is obsolete (the journal covers early
 startup); zervice's own rolling files at `$LOG_DIR/zervice.YYYY-MM-DD.log`
-are unchanged. Planned follow-ups: dead-man's switch + least-privilege split
-(`context/plans/zervice_least_privilege.md`).
+are unchanged. Both planned follow-ups shipped: the dead-man's switch
+(`HEALTHCHECK_PING_URL`) and the least-privilege split
+(`context/archive/zervice_least_privilege.md`).
 
 zervice is a run-once binary — it syncs cards from Scryfall, cleans expired sessions,
 and exits. Logs are written to `$LOG_DIR/zervice.YYYY-MM-DD.log` (default: `/var/log/zwipe/`).

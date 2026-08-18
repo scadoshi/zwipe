@@ -14,7 +14,7 @@
 # `dx bundle` and BEFORE the Gradle repackage — the same window as
 # launcher_icons.sh. See
 # context/operations/android/play-store/submission/build.md and
-# context/plans/back_swipe_gesture.md.
+# context/archive/back_swipe_gesture.md.
 #
 # Usage: zcripts/android/back_handler.sh [MAIN_ACTIVITY_KT]
 set -euo pipefail

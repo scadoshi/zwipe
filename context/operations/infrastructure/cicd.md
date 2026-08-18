@@ -12,6 +12,10 @@ to `~/zwipe/`, and restarts the systemd service. No network tunnels, no deploy k
 
 Triggers automatically on push to `main` when any of these paths change:
 - `zerver/**`
+- `zwipe-core/**`
+- `Cargo.toml`
+- `Cargo.lock`
+- `.sqlx/**`
 - `.github/workflows/deploy-zerver.yml`
 
 Also has `workflow_dispatch` for manual runs from the GitHub Actions tab.
@@ -64,7 +68,7 @@ for the passive GitHub-Advisory feed.
 1. Checks out the repo
 2. Installs stable Rust toolchain (cached)
 3. Restores cargo cache (fast subsequent builds)
-4. Runs SQLx migrations (`set -a && source ~/zwipe/.env` to export `DATABASE_URL`, then `cargo sqlx migrate run`)
+4. Runs SQLx migrations (`set -a && source ~/zwipe/.env` to export `DATABASE_URL`, then `cargo sqlx migrate run --source zerver/migrations`)
 5. Verifies the committed `.sqlx/` matches the just-migrated schema (`cargo sqlx prepare --workspace --check -- --workspace --exclude zwiper --exclude zite`) — fails fast with "query data is stale" instead of E0308 soup mid-build. The GUI crates are excluded because `--check` compiles crates to find their queries, and zwiper's Linux desktop deps (glib/GTK via pkg-config) don't exist on the headless VPS — this failed the first two verify runs (2026-07-06) before being scoped; only zerver has queries anyway
 6. Builds `zerver` and `zervice` in release mode (`SQLX_OFFLINE=true`)
 7. Stops zerver, copies binaries to `~/zwipe/`, starts zerver
@@ -134,10 +138,13 @@ The runner needs to restart zerver without a password prompt. This should alread
 configured, but verify:
 
 ```bash
-sudo visudo
-# Confirm this line exists at the bottom:
+sudo cat /etc/sudoers.d/scadoshi
+# Confirm this line exists:
 # scadoshi ALL=(ALL) NOPASSWD: /bin/systemctl stop zerver, /bin/systemctl start zerver, /bin/systemctl restart zerver
 ```
+
+Edit it with `sudo visudo -f /etc/sudoers.d/scadoshi` if it is missing — the drop-in
+file, not the main `/etc/sudoers`.
 
 ### Re-registering after a server rebuild
 
@@ -154,7 +161,7 @@ If the server is rebuilt and the runner is lost:
 Tailscale is used for SSHing into the server from your Mac or any network. It is **not**
 used for CI/CD deploys (self-hosted runner eliminated that need).
 
-**Current server**: Hetzner VPS `zerver-prod`, since the 2026-06-13 migration (see `context/plans/vps_migration.md`). Its Tailscale address is written here as `<server-tailnet-ip>`: tailnet addresses are redacted because this repo is public, the same convention as the `192.168.1.XXX` LAN addresses below. `tailscale status` on any tailnet device lists them, and the owner supplies the value when a session needs it. The old home box was `<old-box-tailnet-ip>` (powered off, kept as rollback). Tailscale IPs are stable and private (not publicly routable).
+**Current server**: Hetzner VPS `zerver-prod`, since the 2026-06-13 migration. Its Tailscale address is written here as `<server-tailnet-ip>`: tailnet addresses are redacted because this repo is public, the same convention as the `192.168.1.XXX` LAN addresses below. `tailscale status` on any tailnet device lists them, and the owner supplies the value when a session needs it. The old home box was `<old-box-tailnet-ip>` (powered off, kept as rollback). Tailscale IPs are stable and private (not publicly routable).
 
 **Runners (post-migration):** two self-hosted runners live on the VPS — `zerver-prod` (repo `scadoshi/zwipe`, dir `~/actions-runner-zwipe`) and `zynergy-prod` (repo `scadoshi/zynergy`, dir `~/actions-runner-zynergy`), both boot-enabled. The deploy step's `sudo systemctl {stop,start} zerver` works because `/etc/sudoers.d/scadoshi` grants NOPASSWD for exactly those service-restart commands (all other admin = `ssh root@<server-tailnet-ip>`).
 
@@ -230,14 +237,15 @@ GitHub → Actions tab → Deploy zerver → Run workflow → Run workflow
 
 `.github/workflows/deploy-zite.yml`
 
-Triggers on push to `main` when files under `zite/**` change (or the workflow file itself).
-Also has `workflow_dispatch` for manual runs.
+Triggers on push to `main` when files under `zite/**`, `zwipe-core/**`, or
+`zwipe-components/**` change (or the workflow file itself). Also has
+`workflow_dispatch` for manual runs.
 
 ## What the Workflow Does
 
-1. Installs `build-essential` (needed because Rust compiles proc-macro crates for the host target even when targeting WASM)
-2. Installs `dioxus-cli` from source with `--force` (uses cargo cache keyed to `zite/Cargo.lock` to speed up repeat runs)
-3. Runs `dx build --release --platform web` from `zite/` directory
+1. Installs `build-essential` (Rust compiles proc-macro crates for the host target even when targeting WASM) and `binaryen`, which provides `wasm-opt`. dx uses a copy already on PATH and only falls back to downloading binaryen from GitHub releases when there is none; that fetch failed three deploys running during the 2026-08-12 GitHub degradation
+2. Installs a prebuilt `dioxus-cli@0.7.10` binary via `taiki-e/install-action`, so nothing compiles from source. Keep the pin matched to the workspace dioxus version and to `dx --version` on the build Macs
+3. Runs `dx build --release --platform web --ssg --force-sequential` from `zite/` directory. `--ssg` pre-renders every route from the app's `static_routes` server function; `--force-sequential` is not optional, because without it the parallel client build finishes last and overwrites the SSG'd `public/index.html` with the bare shell
 4. Writes `CNAME` (zwipe.net) into the build output at `zite/target/dx/zite/release/web/public/`
 5. Copies `index.html` → `404.html` in the same directory (SPA routing — GitHub Pages serves 404.html for unknown routes, Dioxus Router takes over)
 6. Uploads the build output as a GitHub Pages artifact
@@ -265,6 +273,4 @@ CNAME  www  scadoshi.github.io
 
 ## Notes
 
-- First run after a Cargo.lock change takes ~8–10 minutes (compiles dioxus-cli from source)
-- Subsequent runs restore dx from cache and finish much faster
-- The `CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: gcc` env var is set on both the install and build steps to resolve the host-target linker name mismatch on ubuntu-latest runners
+- The `CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: gcc` env var is set on the build step only, to resolve the host-target linker name mismatch on ubuntu-latest runners

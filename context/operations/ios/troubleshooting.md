@@ -285,7 +285,7 @@ Happens when duplicate certificates are cleaned up from Keychain Access — the 
 8. Delete the old cached profile and clean build:
 
 ```bash
-rm /Users/scottyrayfermo/Library/Developer/Xcode/UserData/Provisioning\ Profiles/*.mobileprovision
+rm ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/*.mobileprovision
 rm -rf ~/Developer/zwipe/target/dx/zwipe/debug/ios/
 cd ~/Developer/zwipe/zwiper
 BACKEND_URL=https://api.zwipe.net dx build --platform ios --device "scotland-mobile"

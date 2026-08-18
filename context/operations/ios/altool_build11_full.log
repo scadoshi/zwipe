@@ -987,7 +987,7 @@ APP STORE CONNECT API list-apps RESPONSE:
 }
 =======================================
 2026-04-08 11:44:59.469 DEBUG: [altool.982C74340] DETERMINING appleID for apps and bundleID.
-2026-04-08 11:44:59.470 DEBUG: [altool.982C74340] CDP8KeyFile: p8 private key loaded from '/Users/scottyrayfermo/.private_keys/AuthKey_C2L47TDDPV.p8'.
+2026-04-08 11:44:59.470 DEBUG: [altool.982C74340] CDP8KeyFile: p8 private key loaded from '/Users/<user>/.private_keys/AuthKey_<KEY_ID>.p8'.
 2026-04-08 11:44:59.471 DEBUG: [altool.982C76FC0] 
 ==========================
 KPI REQUEST (CD altool version:26.30.4.173004 ran validateApp using JWT(null))
@@ -1437,4 +1437,4 @@ CREATE BUILD (ASSET_UPLOAD) RESPONSE:
    previousBundleVersion : 11
    iris-code : ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE
 2026-04-08 11:45:00.243 ERROR: [altool.104BEEE40] ExitFailure (31)
-Failed to validate archive at '/Users/scottyrayfermo/Developer/zwipe/Zwipe.ipa'.
+Failed to validate archive at '/Users/<user>/Developer/zwipe/Zwipe.ipa'.

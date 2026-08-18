@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Patch the dx-generated AndroidManifest.xml for two crash/UX bugs that the
-# default manifest causes. See context/plans/android_resume_crash.md.
+# default manifest causes. See context/plans/archive/android_ndk_context_crash.md.
 #
 # 1. launchMode="singleTask" — without it MainActivity defaults to `standard`,
 #    so any EXPLICIT start of the component while an instance already exists

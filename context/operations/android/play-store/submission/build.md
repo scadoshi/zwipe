@@ -83,7 +83,7 @@ Generated Gradle project: `target/dx/zwipe/release/android/app/`.
 must be re-applied after it and before the Gradle repackage. Run them together:
 
 ```bash
-zcripts/android/patch_bundle.sh
+~/Developer/zwipe/zcripts/android/patch_bundle.sh
 ```
 
 That is launcher icons + back navigation + manifest, described individually
@@ -101,7 +101,7 @@ Regenerate them from the Zwipe source icon. Like the Gradle edits, this runs
 **after `dx bundle`** (which wipes `res/`) and before the repackage:
 
 ```bash
-zcripts/android/launcher_icons.sh
+~/Developer/zwipe/zcripts/android/launcher_icons.sh
 ```
 
 This rewrites the legacy webp at every density and the adaptive foreground (a
@@ -117,7 +117,7 @@ router. Like the icons, dx **wipes this on every `dx bundle`**, so run it
 **after `dx bundle`** and **before** the Gradle repackage:
 
 ```bash
-zcripts/android/back_handler.sh
+~/Developer/zwipe/zcripts/android/back_handler.sh
 ```
 
 Skip it and the edge-swipe / hardware back closes the app from any screen (the
@@ -139,7 +139,7 @@ and a short `configChanges` list. Both are bugs:
   fires, so the app silently vanishes mid-session.
 
 ```bash
-zcripts/android/manifest.sh
+~/Developer/zwipe/zcripts/android/manifest.sh
 ```
 
 Verified on device 2026-08-17 against the shipped 1.9.1 build: the same
@@ -186,7 +186,7 @@ Confirm the target landed:
 
 ```bash
 bundletool dump manifest --bundle=app/build/outputs/bundle/release/app-release.aab \
-  | grep -iE 'targetSdk|versionCode'   # -> targetSdkVersion="35"
+  | grep -iE 'targetSdk|versionCode'   # -> targetSdkVersion="36"
 ```
 
 ## 4. Sign with the upload key

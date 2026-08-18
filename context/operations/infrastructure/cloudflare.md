@@ -105,10 +105,11 @@ ingress:
 > **~20% of requests 502**. Forcing IPv4 fixes it. (The old home box had no
 > IPv6, so it never surfaced — discovered during the 2026-06-13 VPS cutover.)
 
-**Current tunnels:** `zwipe-vps` (UUID `2b5d54b3-f05a-47ad-9785-5f7348987618`,
-on the Hetzner VPS) serves `api.zwipe.net` as of the 2026-06-13 cutover. The
-old home tunnel `zwipe` (`70ba169b-…`) is retained for rollback until home is
-decommissioned.
+**Current tunnels:** `zwipe-vps` (UUID `<tunnel-uuid>`, on the Hetzner VPS)
+serves `api.zwipe.net` as of the 2026-06-13 cutover. The old home tunnel
+`zwipe` (`<old-tunnel-uuid>`) is retained for rollback until home is
+decommissioned. (Both real UUIDs live in the password manager; this repo is
+public.)
 
 ### Add DNS record
 

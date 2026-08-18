@@ -18,7 +18,7 @@ once.
 | From | To | Notes |
 |------|----|-------|
 | `~/certs/` (whole directory) | same path | `zwipe-dist-key.pem` + `distribution.cer` + `Zwipe_App_Store.mobileprovision`, plus the Android `zwipe-upload.jks` |
-| `~/.private_keys/AuthKey_C2L47TDDPV.p8` | same path | Only needed for the `altool` fallback; copy it anyway |
+| `~/.private_keys/AuthKey_<KEY_ID>.p8` | same path | Only needed for the `altool` fallback; copy it anyway |
 
 Move them over something private (AirDrop, USB, an encrypted disk image). The
 `.pem` and `.jks` are unrecoverable private keys, so no email, no Slack, no

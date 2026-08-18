@@ -12,7 +12,7 @@ What to back up and restore when wiping this Mac to return to stable macOS.
 |------|-------|-----|
 | `~/certs/` | Copy to USB/iCloud | Distribution cert private key (`zwipe-dist-key.pem`) — if lost, must revoke and recreate the cert on developer.apple.com. Also holds `zwipe-upload.jks` (see below) |
 | `~/certs/zwipe-upload.jks` | Rides along with `~/certs/` | Android **upload keystore**. Not re-creatable: losing it means a Play Console key-reset request before you can ship another Android update. Called out separately because it lives in a directory whose name reads iOS-only |
-| `~/.private_keys/AuthKey_C2L47TDDPV.p8` | Copy to USB | App Store Connect API key, **one-time download**. Only the deprecated `altool` fallback in [publish.md](app-store/submission/publish.md) uses it, but if lost the key must be revoked and re-issued |
+| `~/.private_keys/AuthKey_<KEY_ID>.p8` | Copy to USB | App Store Connect API key, **one-time download**. Only the deprecated `altool` fallback in [publish.md](app-store/submission/publish.md) uses it, but if lost the key must be revoked and re-issued |
 | `~/.ssh/` | Copy to USB | SSH keys for server access. Can be regenerated with physical server access, but saves time |
 | Git repo | `git push` all branches | Code is on GitHub, just make sure everything is pushed |
 
@@ -31,12 +31,15 @@ What to back up and restore when wiping this Mac to return to stable macOS.
 
 ## Server access — not at risk
 
-You have **physical access** to the server. Even if you lose all SSH keys:
-1. Plug in a keyboard/monitor
-2. Log in as `scadoshi`
+Prod is a Hetzner VPS as of the 2026-06-13 migration, so there is no keyboard to
+plug in. The way back after losing every SSH key is the provider's rescue
+console:
+1. Hetzner Cloud console → the `zerver-prod` server → **Rescue** / **Console**
+2. Log in as `scadoshi` (or `root`) from the browser console
 3. Add your new SSH public key to `~/.ssh/authorized_keys`
 
-The server itself is unaffected by your Mac wipe. Nothing to worry about there.
+The home box that used to serve prod is retired, so its physical access is no
+longer the fallback. The server itself is unaffected by your Mac wipe.
 
 ---
 

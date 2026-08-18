@@ -26,7 +26,7 @@ export const meta = {
 }
 
 // EDIT THIS: absolute path to <repo>/zerver/.env on the machine you run on.
-const ENV = '/Users/scottyrayfermo/Developer/zwipe/zerver/.env'
+const ENV = 'zerver/.env' // repo-relative: agents run from the repo root, so neither Mac needs to edit this
 
 const AUDIT_SCHEMA = {
   type: 'object',

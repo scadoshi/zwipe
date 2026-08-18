@@ -1,8 +1,10 @@
 # Running Binaries Manually on the Server
 
-`zerver` and `zervice` need environment variables from `~/zwipe/.env` (JWT_SECRET,
-DATABASE_URL, etc.). The systemd service handles this automatically, but manual runs
-require sourcing the `.env` first.
+`zerver` needs environment variables from `~/zwipe/.env` (JWT_SECRET, DATABASE_URL,
+etc.). `zervice` reads the much smaller `~/zwipe/.env.zervice` instead. Its systemd
+unit points `EnvironmentFile=` at that file, and sourcing the full `.env` for a manual
+run would hand the sync binary every secret it was deliberately cut off from. The
+systemd units handle this automatically; manual runs source the right file first.
 
 ---
 
@@ -10,13 +12,13 @@ require sourcing the `.env` first.
 
 ```bash
 cd ~/zwipe
-set -a && source .env && set +a
+set -a && source .env.zervice && set +a
 ./zervice
 ```
 
 zervice is a run-once binary — it syncs cards from Scryfall, cleans expired sessions,
 and exits. Useful after dropping/recreating the database to repopulate cards immediately
-instead of waiting for the nightly cron.
+instead of waiting for the nightly timer.
 
 ---
 
