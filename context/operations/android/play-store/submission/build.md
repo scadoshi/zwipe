@@ -68,12 +68,22 @@ things to remember is a list of things to forget.
 
 ## 1. Build the release bundle
 
+Export the build env first, in this shell. Without `ANDROID_NDK_HOME` the
+bundle fails immediately with "Android not installed properly", which reads
+like a broken SDK rather than a missing variable:
+
 ```bash
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export ANDROID_NDK_HOME=$(ls -d "$ANDROID_HOME"/ndk/* | head -1)
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+export BACKEND_URL="https://api.zwipe.net"
+
 cd ~/Developer/zwipe/zwiper
 dx bundle --release --platform android --package-types aab
 ```
 
-This compiles the Rust lib, stages `libmain.so` into the Gradle project's
+`JAVA_HOME` and `ANDROID_HOME` are needed again at step 3, so exporting all
+four here saves re-doing it. This compiles the Rust lib, stages `libmain.so` into the Gradle project's
 `jniLibs/`, and produces an AAB targeting SDK **34** (wrong — fixed next).
 Generated Gradle project: `target/dx/zwipe/release/android/app/`.
 
