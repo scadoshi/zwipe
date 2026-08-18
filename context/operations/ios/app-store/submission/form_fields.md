@@ -17,7 +17,7 @@ Swipe to Build MTG Decks
 
 (170 character limit. Can be updated without a new submission — refresh this between releases to spotlight whatever's freshest.)
 
-Just shipped: the commander maybeboard — swipe up on a commander to save it for later. Free, no ads.
+Just shipped: your decks now show their commander's art on the Decks screen, and back closes what's open instead of backing out. Free, no ads.
 
 ---
 
@@ -44,6 +44,15 @@ Other tools:
 - Your decks sync across sessions and devices
 
 Built for players who want a fast, focused mobile experience, not another cluttered desktop tool squeezed onto a small screen.
+
+---
+
+## What's New in This Version (1.9.2)
+
+- Your decks now show their command zone's art on the Decks screen: the commander, both partners, or the oathbreaker and its signature spell.
+- The Decks screen is one connected list. Group by splits it into sections you can fold from their headers.
+- Grouping a deck's cards by color gives each color combination its own group, with mana pips in the headers.
+- Back now closes what's open instead of leaving the screen: the format and tag pickers, the printing sheet, and the More sheets.
 
 ---
 
@@ -332,7 +341,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.9.1 |
+| Version | 1.9.2 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 

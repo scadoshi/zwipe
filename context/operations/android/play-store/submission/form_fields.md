@@ -153,13 +153,21 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.9.1 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.9.2 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.9.2:**
+
+- Your decks now show their leader's art on the Decks screen, partners and signature spells included.
+- The Decks screen is one connected list. Group by splits it into sections you can fold.
+- Grouping a deck's cards by color gives each combination its own group, with mana pips in the headers.
+- Back now closes what's open instead of leaving the screen.
+- Fixed a crash when opening the app while it was already running, and light/dark switching no longer closes it.
 
 **1.9.1:**
 
