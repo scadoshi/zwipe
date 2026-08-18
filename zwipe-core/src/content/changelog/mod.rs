@@ -25,7 +25,19 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.9.3",
+    date: "In progress",
+    entries: &[
+        "Your deck's MVPs now steer what you're shown. Cards that share a role with a starred card come up sooner while you swipe.",
+        "Signing in no longer turns away a password for not matching the current password rules. Only new passwords are checked, so a change to those rules can't lock you out of an account that already works.",
+        "Changing your email now tells you to verify the new address, and the app knows you're unverified until you do instead of finding out when a deck won't save.",
+        "Importing a card onto your maybeboard or sideboard no longer leaves its MVP star behind on a card that isn't in your deck.",
+        "Choosing a printing while swiping no longer says it was saved. It re-skins the card in your stack, and swiping right adds that printing.",
+        "In-app help now matches the app: the deck view's sections, what a filter carries between screens, what Add mode does on import, and what starring a card actually does.",
+        "The guides on zwipe.net were corrected against the app, and every oracle tag now carries a description written for Zwipe.",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
