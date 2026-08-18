@@ -47,6 +47,16 @@ Built for players who want a fast, focused mobile experience, not another clutte
 
 ---
 
+## What's New in This Version (1.9.3)
+
+- Cards sharing a role with your deck's MVPs now come up sooner while you swipe.
+- Sign-in no longer rejects a password for failing the current password rules.
+- Changing your email now prompts you to verify the new address.
+- Importing a starred card onto another board no longer keeps its MVP star.
+- Corrected in-app help and messages across the deck, card, filter, and import screens.
+
+---
+
 ## What's New in This Version (1.9.2)
 
 - Your decks now show their command zone's art on the Decks screen: the commander, both partners, or the oathbreaker and its signature spell.
