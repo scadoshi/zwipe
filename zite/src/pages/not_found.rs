@@ -11,6 +11,7 @@
 
 use crate::{Footer, Nav, components::PageMeta};
 use dioxus::prelude::*;
+use zwipe_components::Panel;
 
 #[component]
 pub fn NotFound(segments: Vec<String>) -> Element {
@@ -23,13 +24,14 @@ pub fn NotFound(segments: Vec<String>) -> Element {
         // Keep dead paths out of search results.
         document::Meta { name: "robots", content: "noindex" }
         Nav {}
-        div { class: "form-page content-enter",
-            span { class: "sd-alert-title", "Page not found" }
-            hr {
-                style: "border: none; border-top: 1px solid var(--border-secondary); margin: 0.75rem -2rem;",
-            }
-            p { class: "subtitle", style: "text-align: center; margin-bottom: 0;",
-                "Nothing lives at this address. It may have moved with a site update, or the link may be incomplete."
+        div { class: "dead-end content-enter",
+            Panel {
+                eyebrow: "404",
+                title: "Page not found",
+                title_h1: true,
+                p { class: "subtitle",
+                    "Nothing lives at this address. It may have moved with a site update, or the link may be incomplete."
+                }
             }
         }
         Footer {}

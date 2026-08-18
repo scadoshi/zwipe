@@ -2461,6 +2461,33 @@ footer {
 }
 
 /* Dead-end alert title on the not-shared screen: red, centered, pulsing. */
+/* Dead-end pages (404, unshared deck) are the shared Panel: the card, its
+   rule, and the body come from the component, so only the narrow width and
+   the alert voice live here — title red, uppercase, centred and pulsing
+   rather than the usual left-aligned accent heading. */
+.dead-end {
+    max-width: 25rem;
+    /* bottom margin auto absorbs the free space in the flex column, pinning
+       the footer to the bottom without stretching this card. */
+    margin: 3.75rem auto auto;
+}
+
+.dead-end .panel-title {
+    color: var(--color-error);
+    text-transform: uppercase;
+    text-align: center;
+    animation: sd-alert-pulse 1.6s ease-in-out infinite;
+}
+
+.dead-end .panel-eyebrow-row {
+    justify-content: center;
+}
+
+.dead-end .subtitle {
+    text-align: center;
+    margin-bottom: 0;
+}
+
 .sd-alert-title {
     display: block;
     color: var(--color-error);

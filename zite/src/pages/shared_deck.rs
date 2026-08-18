@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 use zwipe_components::{
     CardRow as SharedCardRow, Chip, DeckCharts, DrawOdds, FlippableCardImage, ManaCurve,
-    ManaFulfillment,
+    ManaFulfillment, Panel,
 };
 use zwipe_core::{
     domain::{
@@ -366,13 +366,14 @@ pub fn SharedDeck(token: String) -> Element {
                 // Inform-and-stop alert, formatted like the app's
                 // update-required screen; deliberately a dead end (the nav is
                 // right there for anyone who wants to explore).
-                div { class: "form-page content-enter",
-                    span { class: "sd-alert-title", "Deck not shared" }
-                    hr {
-                        style: "border: none; border-top: 1px solid var(--border-secondary); margin: 0.75rem -2rem;",
-                    }
-                    p { class: "subtitle", style: "text-align: center; margin-bottom: 0;",
-                        "This deck is no longer shared. The owner may have stopped sharing it, or the link may be incomplete."
+                div { class: "dead-end content-enter",
+                    Panel {
+                        eyebrow: "Shared deck",
+                        title: "Deck not shared",
+                        title_h1: true,
+                        p { class: "subtitle",
+                            "This deck is no longer shared. The owner may have stopped sharing it, or the link may be incomplete."
+                        }
                     }
                 }
             },
