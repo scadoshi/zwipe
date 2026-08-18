@@ -20,34 +20,41 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**Latest — 2026-08-12: 1.8.0 SUBMITTED to both stores; PATCH-only server
-live.** The three-day arc: **1.7.5 released both stores 2026-08-10**, **1.7.6**
-(global undo, featured flavor, Android resume-crash fix, quick-add-past-skips,
-keyring 4) cut from the work Mac and released 2026-08-10/11, then **1.8.0**
-(deck list Group by + Show chip rows, one-time deck-list tip, pinned
-import/export consoles) cut and submitted 2026-08-12 — the first train under
-the **any-feature-bumps-minor** convention
-([`development/versioning.md`](development/versioning.md)). Same day:
-`MIN_CLIENT_VERSION=1.7.5` raised and the **Phase 5 cleanup merged** (PR #24)
-— PUT routes gone, legacy Opdate dialect deleted, PATCH is the only update
-wire. Both plans archived. The work Mac is now a full build machine for both
-platforms plus the dev-to-phone loop, and the repo lives at
-`~/Developer/zwipe`.
+**Latest — 2026-08-17: 1.9.2 SUBMITTED to both stores** (iOS build 76 /
+Android versionCode 39), and it is the first build carrying a fix for the
+Android `ndk-context` crash that had survived five releases. Root cause was
+never the resume path: `MainActivity` had no `launchMode`, so an explicit
+component start created a *second* Activity in a live process and re-ran
+NativeActivity's native init. A second bug found the same day (`configChanges`
+omitted `uiMode`, so a system theme change tore the Activity down and the
+onDestroy process-kill silently closed the app) is fixed too. Both are applied
+post-bundle by `zcripts/android/patch_bundle.sh`, and skipping that script
+silently reships the crash. 1.9.2 also carries the back-swipe overlay fixes,
+the deck list restyle with command-zone art, per-combination color grouping
+with mana pips, and the zite work (guides search, Panel heroes, 36 guide
+screenshots).
 
-**Watch items:** `zcripts/metrics/errors.sql` for stray-PUT canary rows (through
-~08-14), the crash reporter for the ndk-context panic going silent on vc33+
-sessions, 1.8.0 review/rollout, and the client-error-reporting prod
-verification.
+**Then 2026-08-18:** oracle-tag descriptions finished at **4,521 of 4,522**
+(`nanni` deliberately blank), which also evicted the last of Scryfall's copy
+and the markdown cross-links that came with it.
+
+**Watch items:** 1.9.2 clearing review at both stores, then a **field check one
+week after it goes LIVE** (not after submission) confirming the Android crash
+fix held, run against both the crash table *and* Android session volume so a
+drop in crashes can't be mistaken for a fix when it is really a drop in users.
+Also: the Pixel needs a reinstall from Play once 1.9.2 is live, since it is
+currently on a debug-signed build Play cannot update.
 
 **After this:** next build candidates (owner to choose): the wasm build
-blockers toward the full webapp (the strongest 1.9/2.0 anchor), social
-features / featured decks, commander shortlist — the activity
-report's 15.3% deck-completion cliff (median 26 cards) points hardest at
-composition targets (fill basics was declined 2026-08-18, see
-[`plans/archive/fill_basics.md`](plans/archive/fill_basics.md)). Then
-**Phase 6** — serve on the matured otag signal (data-gated, months out). Ongoing: otag description authoring into
-the tail, short-form marketing videos, review tracking, funnel numbers (gate
-the sign-in-with-Google decision), and draw-odds **Phase 4 (premium gating)**.
+blockers toward the full webapp (the strongest 2.0 anchor), social features /
+featured decks, commander shortlist, import printings. The activity report's
+15.3% deck-completion cliff (median 26 cards) points hardest at composition
+targets; fill basics was the other answer to it and was **declined 2026-08-18**
+([`plans/archive/fill_basics.md`](plans/archive/fill_basics.md)), so do not
+re-propose it. Then **Phase 6** — serve on the matured otag signal (data-gated,
+months out). Ongoing: short-form marketing videos, review tracking, funnel
+numbers (gate the sign-in-with-Google decision), and draw-odds **Phase 4
+(premium gating)**.
 
 See [`progress/overview.md`](progress/overview.md) for the high-level state,
 [`progress/feature_requests.md`](progress/feature_requests.md) for the weighted
