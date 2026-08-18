@@ -29,13 +29,13 @@ pub const UPCOMING: &[Release] = &[Release {
     version: "1.9.3",
     date: "In progress",
     entries: &[
-        "Your deck's MVPs now steer what you're shown. Cards that share a role with a starred card come up sooner while you swipe.",
-        "Signing in no longer turns away a password for not matching the current password rules. Only new passwords are checked, so a change to those rules can't lock you out of an account that already works.",
-        "Changing your email now tells you to verify the new address, and the app knows you're unverified until you do instead of finding out when a deck won't save.",
-        "Importing a card onto your maybeboard or sideboard no longer leaves its MVP star behind on a card that isn't in your deck.",
-        "Choosing a printing while swiping no longer says it was saved. It re-skins the card in your stack, and swiping right adds that printing.",
-        "In-app help now matches the app: the deck view's sections, what a filter carries between screens, what Add mode does on import, and what starring a card actually does.",
-        "The guides on zwipe.net were corrected against the app, and every oracle tag now carries a description written for Zwipe.",
+        "Cards sharing a role with your deck's MVPs now come up sooner while you swipe.",
+        "Sign-in no longer rejects a password for failing the current password rules.",
+        "Changing your email now prompts you to verify the new address.",
+        "Importing a starred card onto another board no longer keeps its MVP star.",
+        "Choosing a printing while swiping no longer reports it as saved.",
+        "Corrected in-app help and messages across the deck, card, filter, and import screens.",
+        "Corrected the guides on zwipe.net, and every oracle tag now has a Zwipe-written description.",
     ],
 }];
 
