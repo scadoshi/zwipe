@@ -97,4 +97,4 @@ the launcher intent — that distinction is what exposed the ndk-context crash.
   ([`../../plans/archive/android_ndk_context_crash.md`](../../plans/archive/android_ndk_context_crash.md))
 - **Back-swipe overlay fixes**: verified with `KEYCODE_BACK` across the format
   picker, a bottom sheet, and the nested picker→dictionary case
-  ([`../../plans/back_swipe_audit.md`](../../plans/back_swipe_audit.md))
+  ([`../../plans/archive/back_swipe_audit.md`](../../plans/archive/back_swipe_audit.md))

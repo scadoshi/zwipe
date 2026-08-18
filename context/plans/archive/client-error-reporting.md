@@ -1,6 +1,6 @@
 # Plan: client error + crash reporting
 
-**Status: BUILT (2026-07-29), NOT yet verified in production.** Server +
+**Status: COMPLETE — verified in production 2026-08-17.** Server +
 client halves implemented and tested locally (668 tests green across the
 three crates); the call-site sweep is COMPLETE: all 73 authed
 `to_user_message` toast sites report (every deck/card/profile/otag screen +
@@ -243,3 +243,21 @@ pub struct HttpCrashReport {
   window into those.
 - Store data-safety label review: confirm the labels' existing "diagnostics"
   disclosure covers this before ship; adjust if not.
+
+
+## Production verification (2026-08-17)
+
+Verified by **real traffic** rather than the synthetic checks this plan
+specified — stronger evidence, and it made the forced-422 / forced-panic steps
+unnecessary. Read over SSH from the prod database:
+
+- **11 error rows / 15 occurrences**, with breadcrumbs populated
+  (`deck_card_add` / `add_maybeboard` / `api_unprocessable`), version and
+  platform tagged, and dedupe counting correctly (rows with counts of 2 and 3).
+- **94 crash rows** captured across 6 client versions and both platforms.
+
+The pipeline also proved its worth the same day: those 94 crashes were the
+evidence that root-caused the Android `ndk-context` bug, which had survived
+five releases precisely because nobody had read them
+([`archive/android_ndk_context_crash.md`](archive/android_ndk_context_crash.md)).
+That is the payoff this plan was built for.

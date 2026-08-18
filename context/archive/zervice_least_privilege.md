@@ -9,7 +9,7 @@ Decided: zerver stays fully permissive as the `zwipe` owner role — the app-rol
 split is a deliberate non-goal for now (see "Zerver app-role split" in
 `progress/backlog.md` for the rationale and what it would take).
 **Addendum 2026-07-29 (later same day):** the nightly session sweep RETURNS
-via `UpkeepService` in `plans/client-error-reporting.md` — belt-and-suspenders
+via `UpkeepService` in `plans/archive/client-error-reporting.md` — belt-and-suspenders
 over the insert-time drive-by (dormant users' expired rows), with a surgical
 grant (`DELETE` + column-scoped `SELECT (expires_at)` on `refresh_tokens`) so
 zervice still cannot read session data. AuthService stays out of zervice.

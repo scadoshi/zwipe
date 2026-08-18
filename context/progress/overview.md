@@ -37,7 +37,7 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 - **Guides fully illustrated**: 36 screenshots across 19 guides, captured and
   wired in one day; `tags-roles-and-oracle-tags` ships with none by design.
   Registry arms, `Block::Image` references, and files on disk verified to
-  agree exactly. Plan closed (`context/plans/guide_images.md`).
+  agree exactly. Plan closed (`context/plans/archive/guide_images.md`).
 - **Guides search bar** (`cc35897a`): client-side filter over the compiled
   `GUIDES` array, matching title, summary, tags, and body text, composed with
   the existing tag chips.
@@ -400,7 +400,7 @@ Three days that closed the whole release train:
 - **Client error + crash reporting planned** (`8b13fa4a`, hardened
   `07467d16`): handled errors ride the usage batch (clamped), crashes go
   exactly-once via panic-hook disk file → unauthed endpoint →
-  `ON CONFLICT (crash_id)`. Ready to build (`plans/client-error-reporting.md`).
+  `ON CONFLICT (crash_id)`. Ready to build (`plans/archive/client-error-reporting.md`).
 
 ## 2026-07-25 (Phase 5S step-3 cleanup)
 
