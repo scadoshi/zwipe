@@ -6,7 +6,7 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ## Latest — 2026-08-17 (deck list restyle + command zone on the wire; guides fully illustrated)
 
-- **Deck list restyled** (`266fcf51`): deck rows now lead with their command
+- **Deck list restyled** (`095aa30c`): deck rows now lead with their command
   zone's art (commander, both partners, or oathbreaker + signature spell),
   inline in the wrapping row so chips wrap underneath the art. The whole list
   is one container of rows like the card list, and every mode renders as a
@@ -16,7 +16,7 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   `deck-list-row`) instead of lookalikes, so it can't drift from the real
   list. Dropped `.deck-group-header`, which existed only to strip a rule that
   now has structure to divide.
-- **Command zone art on the wire** (`5e5b5c9c`): `DeckProfile` carries
+- **Command zone art on the wire** (`416e3012`): `DeckProfile` carries
   art_crop URLs for all four command-zone slots, resolved server-side with the
   same front-face fallback as `ScryfallData::art_crop_url`. Existing-client
   safe both directions (serde(default) + no `deny_unknown_fields`), pinned by
@@ -27,18 +27,18 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   isn't forbidden by the rules, it just hasn't been printed, and encoding that
   as an enum would bake printing history into the type system. The warnings
   system also needs to *hold* invalid states to report them.
-- **Card color grouping** (`0ea9e48c`): grouping by color now splits each
+- **Card color grouping** (`4442c59d`): grouping by color now splits each
   color combination into its own group (matching the deck list) instead of one
   Multicolor bucket, and headers show mana pips instead of color words — on
   the deck's cards, the deck list, and shared deck pages. Identity-pip sizing
   moved to the shared `components.css` so a pip is one size wherever it names
   a color. Deck-list header pips were also mis-sized against their own rows
-  (`ec40e021`).
+  (`db466671`).
 - **Guides fully illustrated**: 36 screenshots across 19 guides, captured and
   wired in one day; `tags-roles-and-oracle-tags` ships with none by design.
   Registry arms, `Block::Image` references, and files on disk verified to
   agree exactly. Plan closed (`context/plans/guide_images.md`).
-- **Guides search bar** (`7d7b773a`): client-side filter over the compiled
+- **Guides search bar** (`e8ae2725`): client-side filter over the compiled
   `GUIDES` array, matching title, summary, tags, and body text, composed with
   the existing tag chips.
 - **Verified on prod 2026-08-17**: the command-zone art URLs (deployed and
@@ -57,7 +57,7 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   EDHREC-popularity order via `swipe_select.rs`). The three long-running
   verifications (Phase-5 canary, crash-reporting prod check, Android
   resume-crash) were reworded from "wait for 1.7.5" to actionable-now.
-- **Share page featured cards deal in** (`eb053115`): the app's
+- **Share page featured cards deal in** (`bb581b14`): the app's
   `.deck-featured-card` entrance ported to zwipe.net — same easing, tilt and
   150ms stagger, including the flex-grow ease so a late MVP grows in while its
   siblings cede width. The featured skeleton is gone (ghosting first would
