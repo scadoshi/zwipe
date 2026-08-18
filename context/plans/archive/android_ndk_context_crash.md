@@ -1,6 +1,6 @@
 # Android crash — ndk-context double-init
 
-**Status: ROOT CAUSE FOUND 2026-08-17, reproduced on device, fix identified.**
+**Status: FIXED AND VERIFIED ON DEVICE 2026-08-17.** Ships in 1.9.2.
 Was mis-titled a "resume crash" for five versions. Resume is not involved.
 
 ```
@@ -125,3 +125,37 @@ The `/Users/<name>/.cargo/...` panic prefix is a **compile-time** path shipped
 inside every binary, not a device fingerprint. `scottyrayfermo` on 1.7.4/1.7.5
 vs `scottyfermo` on 1.7.6+ is a build-machine changeover. Misreading it as
 "these are the owner's own devices" is what made this look benign.
+
+
+## Verification (Pixel 6, patched build, 2026-08-17)
+
+Same device, same binary, only the manifest changed. `launchMode=2`
+(singleTask) and `configChanges=0x400017a4` (now including `uiMode`) confirmed
+present in the built APK before testing.
+
+| Test | Before | After |
+|---|---|---|
+| `am start -n …/MainActivity` while running | **panic**, pid died | clean, **same pid** |
+| Same, five times in a row | — | clean, same pid |
+| System dark mode on | app **vanished** | **survives**, same pid |
+| System dark mode off | app **vanished** | **survives**, same pid |
+| Total `ndk-context` / panic lines across all of it | many | **0** |
+
+One process (pid 19347) survived every case that previously killed the app.
+
+The fix is a build-time manifest patch (`zcripts/android/manifest.sh`, run by
+`zcripts/android/patch_bundle.sh`), so it lands on the next Android release
+build. Nothing in Rust changed.
+
+## Follow-ups
+
+- **Field confirmation:** watch `crash_reports` for 7 days after 1.9.2 reaches
+  users, against Android session volume (queries above). Do not call it done on
+  the strength of the lab result alone — that is the 1.7.6 mistake in reverse.
+- **Revisit the `onDestroy` process kill.** It was a workaround for a crash it
+  never prevented, and it costs the user their place whenever a genuine
+  teardown happens. With `uiMode` handled it fires far less often. Remove it
+  only after 1.9.2 proves out, and change one thing at a time.
+- **Re-test the iOS "unresponsive after long backgrounding" bug** against this
+  build. Different platform and no shared cause established, but both are
+  webview-lifecycle failures and it is worth one look.

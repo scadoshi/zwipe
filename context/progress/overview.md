@@ -69,20 +69,26 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   crash reporting is verified by real traffic** rather than the planned
   synthetic test (11 error rows / 15 occurrences with breadcrumbs and dedupe
   counts working, 94 crashes captured). Both closed.
-- **Android resume crash is NOT fixed** — the 1.7.6 onDestroy process-kill
-  failed and nobody knew for five versions. 92 of 94 recorded crashes are the
-  one `ndk-context` double-init assert, and 1.9.1 is running 20 crashes over
-  two days against 12 distinct Android users. Reopened as a live bug with a
-  plan: [`../plans/android_resume_crash.md`](../plans/android_resume_crash.md).
-  Correction worth remembering: the `/Users/<name>/.cargo/...` panic prefix is
-  a compile-time path present in every shipped binary, not a device
-  fingerprint — misreading it as "these are the owner's own test devices" is
-  what made the bug look benign.
-
----
-
-## 2026-08-14 (keyword-quality day; 1.9.1 cut + submitted both stores, superseding 1.9.0 in review)
-
+- **Android crash ROOT-CAUSED AND FIXED, verified on device.** It was never a
+  resume crash. `MainActivity` had no `launchMode`, so it defaulted to
+  `standard` and any *explicit* component start while an instance existed
+  (notification tap, another app, an app shortcut, the Play Store's Open button
+  after an update) created a SECOND Activity in the live process — and because
+  the app is a `NativeActivity`, that re-ran wry/tao's native init and tripped
+  `ndk_context`'s `assert!(previous.is_none())`. The 1.7.6 `onDestroy` process
+  kill could never have helped: nothing is destroyed in that path. Fixed with
+  `launchMode="singleTask"`. A second bug surfaced the same session —
+  `configChanges` omitted `uiMode`, so a system theme change recreated the
+  Activity, *did* reach `onDestroy`, and the process kill silently closed the
+  app mid-session (auto dark mode at sunset would do this on a schedule) —
+  fixed by widening `configChanges`. Both are manifest patches applied by
+  `zcripts/android/manifest.sh`; `patch_bundle.sh` now runs icons, back handler
+  and manifest together, because a four-step checklist is how this survived
+  five releases. Verified on a Pixel 6 against the shipped build: the launch
+  that panicked is clean five times over, dark-mode toggles no longer kill the
+  app, zero panics. Plan archived:
+  [`../plans/archive/android_ndk_context_crash.md`](../plans/archive/android_ndk_context_crash.md).
+  Still to do: confirm in the field for 7 days after 1.9.2 ships.
 - **Keyword reminder sweep**: every keyword on 4+ database cards now has a
   real definition (26 added for 2026-set/crossover/Arena mechanics — Blight,
   Prepared, Vivid among them — each grounded in the cards' own reminder

@@ -29,6 +29,8 @@ pub const UPCOMING: &[Release] = &[Release {
     version: "1.9.2",
     date: "In progress",
     entries: &[
+        "Android: fixed the crash behind nearly every crash report we had. Opening Zwipe from a notification, another app, or the Play Store's Open button could start a second copy of the app on top of the running one and take it down.",
+        "Android: switching your phone between light and dark mode no longer closes the app.",
         "Your decks now lead with their command zone's art on the Decks screen: the commander, both partners, or the oathbreaker and its signature spell.",
         "The Decks screen is one connected list now, the way your deck's cards are. Turning on Group by splits it into sections, and those fold from their headers with the same arrow.",
         "Grouping a deck's cards by color now gives each color combination its own group, so your Azorius cards sit together instead of sharing one Multicolor pile with everything else.",
