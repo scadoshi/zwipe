@@ -4,7 +4,7 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## Latest — 2026-08-17 (deck list restyle + command zone on the wire; guides fully illustrated)
+## Latest — 2026-08-17 (big day: Android crash root-caused after 5 versions, back-swipe class of bug fixed, deck list restyled, guides fully illustrated)
 
 - **Deck list restyled** (`4aea68b5`): deck rows now lead with their command
   zone's art (commander, both partners, or oathbreaker + signature spell),
@@ -63,6 +63,33 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   siblings cede width. The featured skeleton is gone (ghosting first would
   replace the entrance with a swap); the rest of the page's skeleton stays.
   Honors prefers-reduced-motion.
+- **Back-swipe overlay class fixed and verified on both platforms**
+  (`10e564a4` pre-rewrite): back only closed an overlay if that overlay had
+  *registered* with `OverlayBackStack`, and registration was opt-in — so
+  anything that forgot the hook fell through to `go_back()` and threw the user
+  out of the screen. Registering the shared `BottomSheet` fixed five screens at
+  once (deck view, deck list, maybeboard, profile, preferences); `format_select`
+  (the reported bug), `tag_select` and `printing_sheet` needed their own. Same
+  lesson as the manifest: a shared primitive that registers on everyone's behalf
+  beats a rule each new overlay has to remember. Verified on iOS by hand and on
+  Android over adb, including the nested picker→dictionary case and the
+  fall-through case proving it didn't over-capture.
+- **zite page heroes now use the real `Panel`** with eyebrow + title, the last
+  place on the site not speaking the card grammar. `Panel` gained `title_h1` so
+  a page hero keeps its `h1` instead of the component's `h3` — the portfolio's
+  Side Quests page has the same latent gap and can now fix it in a word.
+- **Physical-device Android testing is now a documented capability**
+  ([`../operations/android/device_testing.md`](../operations/android/device_testing.md))
+  and prod metrics are readable over SSH from the work Mac, which is how three
+  long-running verifications got closed in an afternoon rather than staying
+  open for weeks.
+- **Repo hygiene**: an attribution trailer on one 2026-02-16 commit was
+  stripped, rewriting 1666 descendants; every commit SHA cited across
+  `context/` was remapped by subject line (436 references in 35 files, twice —
+  once per rewrite). Tailnet addresses were redacted from the public repo,
+  matching the LAN convention already in those files. **If history is ever
+  rewritten again, re-run that remap** — the archive files are dense with SHAs
+  and they die silently.
 - **Prod verification pass 2026-08-17** (SSH to zerver set up, so these are
   now readable without hand-pasting): the **post-Phase-5 canary is clean** (14
   days of client errors, zero 405/method-not-allowed rows) and **client error +
