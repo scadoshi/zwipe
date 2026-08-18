@@ -106,11 +106,18 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
                 match auth_client().change_email(request, &session_value).await {
                     Ok(updated_user) => {
                         let new_email = updated_user.email.clone();
-                        session_value.user.email = updated_user.email;
+                        // Take the whole user, not just the address: the server
+                        // clears `email_verified_at` on an email change, and
+                        // copying only the email left the session claiming the
+                        // account was still verified while it sat on the
+                        // unverified deck and card limits.
+                        session_value.user = updated_user;
                         session.set(Some(session_value));
                         toast.success(
-                            format!("Email changed to {}", new_email),
-                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                            format!(
+                                "Email changed to {new_email}. Verify it to restore full access."
+                            ),
+                            ToastOptions::default().duration(Duration::from_millis(3000)),
                         );
                         clear_inputs();
                         submit_attempted.set(false);
