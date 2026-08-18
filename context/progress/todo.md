@@ -20,6 +20,22 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Bugs
 
+- [ ] **~2026-08-25: read the crash + error tables and confirm the Android fix held.** One week after 1.9.2 reaches users. This is the step that was skipped after 1.7.6 and cost five releases of false confidence, so do not close the bug on the lab result alone. Run both queries — crashes alone can fall because *adoption* fell:
+
+  ```sql
+  -- must be zero for ndk-context on 1.9.2+
+  SELECT client_version, date(occurred_at) AS day, count(*) AS crashes
+  FROM crash_reports WHERE message LIKE '%ndk-context%'
+  GROUP BY 1,2 ORDER BY 2 DESC LIMIT 14;
+
+  -- the denominator: are there actually Android users on the new build?
+  SELECT client_version, platform, count(DISTINCT user_id) AS users
+  FROM refresh_tokens WHERE created_at > now() - interval '7 days'
+    AND platform = 'android' GROUP BY 1,2 ORDER BY 3 DESC;
+  ```
+
+  Readable over SSH from the work Mac (ask the owner for the address; the metrics suite lives in `zcripts/metrics/`). While in there, also check `errors.sql` for anything new that 1.9.2 introduced. If clean: delete this line and the crash line below. If not clean: the archived plan lists the hypotheses that were never ruled out (a second Activity path we did not find, or the bridge itself) — [`../plans/archive/android_ndk_context_crash.md`](../plans/archive/android_ndk_context_crash.md).
+
 - [ ] **Android ndk-context crash — FIXED AND VERIFIED ON DEVICE 2026-08-17; confirm in the field after 1.9.2 ships, then delete this line.** Root cause was never the resume path: `MainActivity` had no `launchMode`, so an explicit component start (notification tap, another app, an app shortcut, the Play Store's Open button after an update) created a SECOND Activity in the live process, re-running NativeActivity's native init and tripping `assert!(previous.is_none())`. Fixed with `launchMode="singleTask"`; a second bug found the same session (`configChanges` omitted `uiMode`, so a system theme change tore down the Activity and the onDestroy process-kill silently closed the app) fixed by widening configChanges. Both applied by `zcripts/android/manifest.sh` via `patch_bundle.sh`. Verified on a Pixel 6: the launch that panicked is clean five times over, dark-mode toggles no longer kill the app, zero panics. **Field check:** zero ndk-context crashes for 7 days at comparable Android session volume (queries in the archived plan). Evidence: [`../plans/archive/android_ndk_context_crash.md`](../plans/archive/android_ndk_context_crash.md).
 - [ ] **Back-swipe overlay fixes — DONE AND VERIFIED ON BOTH PLATFORMS 2026-08-17; ships in 1.9.2, delete this line once released.** Cause was structural: overlays only participate in back handling if they *register* with `OverlayBackStack`, and registration was opt-in, so anything that forgot the hook fell through to `go_back()` and ejected the user. Fixed by registering the shared `BottomSheet` (which alone covers the deck view, deck list, maybeboard, profile and preferences sheets), plus `format_select` (the reported bug; back maps to Cancel), `tag_select`, and `printing_sheet` (hand-rolls its own backdrop, so the shared fix didn't reach it). Verified on iOS by hand and on Android over adb with `KEYCODE_BACK`, including the nested picker->dictionary case and the fall-through case that proves registration didn't over-capture. Untested and lower risk: preferences theme-revert, printing sheet, AlertDialogs. Plan: [`../plans/archive/back_swipe_audit.md`](../plans/archive/back_swipe_audit.md).
 - [ ] **App unresponsive after long backgrounding (owner report 2026-07-30, iOS observed).** Leave the app backgrounded for a long time, return: sometimes the ENTIRE screen is unclickable until force-close + relaunch. Investigation leads, none confirmed: (a) a full-screen element left mounted and intercepting taps (modal backdrop, toast container, an overlay whose dismiss never fired); (b) the WebView's JS event bridge dying after OS memory pressure while the rendered page survives (wry/dioxus eval channel); (c) something in the resume path (visibility flusher, session refresh single-flight) wedging the main loop. Repro is intermittent — next occurrence, note which screen it happened on and whether scrolling still works (scroll-works-but-taps-don't points to (b)); the new crash/error reporting won't catch this class (no panic, no error toast).
