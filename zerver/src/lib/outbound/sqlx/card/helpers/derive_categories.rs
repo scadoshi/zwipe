@@ -44,7 +44,7 @@ pub const CATEGORY_ROOTS: &[(&str, &[&str])] = &[
     ("burn", &["burn"]),
     // Broad umbrella: everything that nets cards. Draw (below) is the literal-draw
     // subset of this, so the two intentionally overlap.
-    ("card_advantage", &["card-advantage", "hand-positive"]),
+    ("card_advantage", &["card-advantage"]),
     ("copy", &["copy", "clone"]),
     ("counterspell", &["counterspell"]),
     (
@@ -161,7 +161,7 @@ pub const ROLE_TAG_OVERRIDES: &[(&str, &[&str])] = &[
     (
         "sacrifice",
         &[
-            "synergy-sacrifice",
+            "your-sacrifice-matters",
             "sacrifice-self",
             "synergy-sacrifice-self",
         ],

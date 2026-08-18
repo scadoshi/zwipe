@@ -132,10 +132,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Has a trigger that only does something if a condition is true.",
     ),
     (
-        "hand-neutral",
-        "Replaces itself so your hand size stays the same.",
-    ),
-    (
         "repeatable-pp-counters",
         "Repeatably puts +1/+1 counters on creatures.",
     ),
@@ -184,10 +180,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     ("attacking-matters", "Cares about creatures attacking."),
     ("delayed-trigger", "Sets up an ability that triggers later."),
-    (
-        "hand-positive",
-        "Card advantage that leaves you with more cards in hand.",
-    ),
     (
         "more-expensive-than-mv",
         "Can cost more to cast or use than its mana value.",
@@ -538,10 +530,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "shapechange",
         "Sets a creature's base power and toughness, sometimes also changing its types.",
-    ),
-    (
-        "hand-negative",
-        "Makes you discard one or more cards from your hand.",
     ),
     (
         "cda-power",
@@ -1239,10 +1227,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Exiles itself after it finishes resolving, rather than going to the graveyard.",
     ),
     (
-        "personal-text",
-        "Uses personal pronouns like he, she, or him in its rules text instead of it.",
-    ),
-    (
         "typal-goblin",
         "Cares about Goblins, whether you control them or how many you have.",
     ),
@@ -1361,10 +1345,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "card-types-in-graveyard-matter",
         "Cares about how many different card types are in your graveyard, often getting stronger or gaining abilities once four or more are present.",
-    ),
-    (
-        "synergy-sacrifice",
-        "Rewards you for sacrificing your own permanents.",
     ),
     (
         "typal-human",
@@ -2907,10 +2887,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Exiles cards with a chosen name, usually every copy, from a player's hand, library, and graveyard.",
     ),
     (
-        "variable-effect-same-ability",
-        "An ability whose effect changes based on a condition, often how many times it has resolved this turn.",
-    ),
-    (
         "spite-damage",
         "Deals damage in retaliation whenever it is dealt damage.",
     ),
@@ -3773,10 +3749,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "seek-to-battlefield",
         "Seeks a card from your library and puts it onto the battlefield.",
-    ),
-    (
-        "serpent-like",
-        "A creature that can't attack unless a specific condition, like an Island, is met.",
     ),
     (
         "sneaky-self-trigger",
@@ -5390,10 +5362,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "A card that cares about Otters, often grouping them with Birds, Frogs, and Rats.",
     ),
     (
-        "hate-sacrifice",
-        "Stops players from sacrificing permanents, or punishes them for doing so.",
-    ),
-    (
         "typal-golem",
         "Creates Golem tokens or boosts the Golems you control.",
     ),
@@ -5888,10 +5856,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "turn-face-down",
         "Turns a creature face down, usually making it a 2/2 with no text until it's turned face up.",
-    ),
-    (
-        "static-effect-in-graveyard",
-        "A card whose ability keeps working even while it sits in your graveyard.",
     ),
     (
         "cycle-blb-duo",
@@ -7342,10 +7306,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Returns an Aura or Equipment card from your graveyard to your hand.",
     ),
     (
-        "relaxed-commander-restriction",
-        "Bends Commander deckbuilding rules like color identity or deck size when it's your commander.",
-    ),
-    (
         "animate-dead-like",
         "An enchantment that puts a creature onto the battlefield and then becomes an Aura attached to it.",
     ),
@@ -7360,10 +7320,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "alternate-cost-life",
         "Lets you pay life instead of this spell's mana cost.",
-    ),
-    (
-        "untracked-effect",
-        "Creates a lasting effect with no counter or token marking it, so you must remember it yourself.",
     ),
     (
         "typal-sneaky",
@@ -9702,10 +9658,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "cycle-clb-dethrone-background",
         "A Background that gives your commander creatures a bonus when they attack the player with the most life.",
-    ),
-    (
-        "cycle-clb-monument",
-        "No cards carry this tag in the catalog, so no functional description can be authored.",
     ),
     (
         "cycle-clb-forward-ally-legend",
@@ -13117,10 +13069,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Stops players from paying life to cast spells or activate abilities.",
     ),
     (
-        "hate-phasing",
-        "Interacts with the phasing mechanic, forcing or preventing permanents from phasing.",
-    ),
-    (
         "hate-protection",
         "Interacts with protection, often gaining it based on nearby creatures.",
     ),
@@ -13972,10 +13920,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "A creature that counts as a Cleric, Rogue, Warrior, and Wizard for your party.",
     ),
     (
-        "multicast",
-        "Lets you cast several spells for free from a set of exiled or revealed cards.",
-    ),
-    (
         "cycle-m21-basri-vertical",
         "Part of the M21 Basri cycle, built around putting +1/+1 counters on your creatures.",
     ),
@@ -14323,10 +14267,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "cycle-dka-monster-lord",
         "A creature that boosts other creatures of its own tribe, from Dark Ascension's lord cycle.",
-    ),
-    (
-        "synergy-phasing",
-        "Cares about permanents phasing in or out.",
     ),
     (
         "tutor-creature-dinosaur",
@@ -15342,10 +15282,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "tutor-creature-ally",
         "Searches your library for an Ally creature card.",
-    ),
-    (
-        "hunter-trigger",
-        "Triggers a bonus effect whenever a creature it dealt damage to this turn dies.",
     ),
     (
         "impulse-artifact-creature",
@@ -16590,10 +16526,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Costs 1 less to cast for each Cave you control.",
     ),
     (
-        "worse-in-multiplayer",
-        "A card that scales down or backfires as more opponents are in the game.",
-    ),
-    (
         "affinity-for-citizens",
         "Costs 1 less to cast for each Citizen you control.",
     ),
@@ -16748,10 +16680,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "flicker-vehicle",
         "Exiles a creature or Vehicle and returns it to the battlefield shortly after.",
-    ),
-    (
-        "fun",
-        "A card with a playful, quirky effect meant to make games more fun.",
     ),
     (
         "gains-cascade",
@@ -17127,10 +17055,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Tracks how many times an ability has resolved this turn, changing what it does.",
     ),
     (
-        "tron",
-        "A card that gets stronger or melds once you control the rest of its named set.",
-    ),
-    (
         "rulebreaker",
         "A commander that relaxes deckbuilding rules such as color identity or deck size.",
     ),
@@ -17194,7 +17118,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "hate-typal-archon",
         "Defends against Archons, such as by having protection from Archons.",
     ),
-    ("trap-card", "A spell you can cast only during combat."),
     (
         "gives-assist",
         "Grants assist to a spell so another player can pay some or all of its generic mana.",
@@ -17246,6 +17169,30 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "typal-klingon",
         "A card that cares about Klingon creatures you control.",
+    ),
+    (
+        "no-planeswalker-type",
+        "A planeswalker with no planeswalker type on its type line.",
+    ),
+    (
+        "sacrifice-matters",
+        "Rewards you for sacrificing permanents, or for making an opponent sacrifice theirs.",
+    ),
+    (
+        "mono-red-value",
+        "A red card that generates repeatable value or card advantage, which red usually lacks.",
+    ),
+    (
+        "synergy-noflying",
+        "Cares about creatures that don't have flying.",
+    ),
+    (
+        "cycle-hob-bear-vertical",
+        "Part of a vertical cycle of Bears that repeats one idea at increasing sizes.",
+    ),
+    (
+        "cycle-mbc-mono-planeswalker",
+        "Part of a cycle of mono-colored planeswalkers.",
     ),
 ];
 

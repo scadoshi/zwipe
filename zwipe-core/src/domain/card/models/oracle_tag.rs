@@ -107,7 +107,6 @@ pub const NOISE_ORACLE_TAG_SLUGS: &[&str] = &[
     "digital-only-mechanics",
     "noncreature-typal",
     "symmetrical",
-    "hand-neutral",
     "drawback",
     "single-target-instant-sorcery",
     "group-slug",
