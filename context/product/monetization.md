@@ -14,9 +14,10 @@ that directory is the living idea catalog.
 
 **Free tier** — full core functionality, no paywall:
 - Account + persistent sessions
-- Unlimited decks
+- Up to 20 decks (1 before email verification)
 - Swipe-to-build interface across the full Scryfall card database
 - Deck metrics (mana curve, color breakdown, pip balance)
+- Synergy scores (the Synergy chip, synergy-ordered search, community-signal blending)
 - Import/export (Moxfield, Archidekt formats)
 - Advanced card filtering
 
@@ -24,8 +25,13 @@ that directory is the living idea catalog.
 - AI deck analysis via preset prompts: cuts, upgrades, win conditions, bracket coaching
 - Smart swipe-stack ordering + taste profile from swipe history
 - Price intelligence: history, watch thresholds, shopping-list drop alerts (current prices stay free)
-- Synergy integration — synergy scores, theme/archetype suggestions
+- Synergy integration — theme/archetype suggestions (synergy scores themselves ship free, see below)
 - Note: collection tracking and the bracket badge are deliberately FREE (moat + acquisition — see `premium/`)
+
+> **Open question (2026-08-18):** synergy scores were listed as paid here since
+> the 2026-03 decision, but they shipped free to everyone. Nothing has been
+> decided about what replaces them in the paid tier. Left open deliberately
+> rather than filled in with a guess.
 
 **No ads** — ever. Ads look terrible, tank reviews, and CPMs for a niche hobby audience are lousy.
 

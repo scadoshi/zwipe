@@ -1,5 +1,12 @@
 # Deck tags — the foundation everything else consumes
 
+> **Superseded by oracle tags (2026-07).** Kept for the reasoning, not the
+> plan. Deck tags themselves shipped in 1.1.0/1.2.0. The
+> `card_profiles.mechanical_categories` column was renamed to `card_roles` by
+> migration `20260714130000`, and the Layer 1 oracle-text heuristic described
+> below was deleted in July and replaced by community oracle tags. See
+> `../../progress/backlog.md:62`, where Layers 2-3 are closed as superseded.
+
 **Tier: free (infrastructure).** Not a premium feature itself — the join key
 that makes four premium features possible. Likely the next build step
 (noted 2026-06-10).
@@ -7,7 +14,7 @@ that makes four premium features possible. Likely the next build step
 ## Concept
 
 Two tag layers drawing from **one closed vocabulary** (the mechanical-category
-taxonomy, see `../../plans/mechanical-category.md`):
+taxonomy):
 
 - **Card tags** — what a card *does*. Already planned:
   `card_profiles.mechanical_categories`, Layer 1 oracle-text heuristics

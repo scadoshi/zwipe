@@ -6,7 +6,7 @@ Planned features and improvements for after App Store launch.
 
 ## High Priority
 
-- **Deck Migration — Archidekt SHIPPED (2026-06-10), Moxfield DENIED**: Archidekt URL import landed in 1.0.5 (see `context/plans/deck_import.md`). Moxfield support denied API access (2026-06-10) — policy excludes deckbuilding apps. They plan a scoped deck-export endpoint for such services (no ETA, announced via their help pages when live); periodically check their help pages and re-request access then. The text-paste importer covers Moxfield users meanwhile.
+- **Deck Migration — Archidekt SHIPPED (2026-06-10), Moxfield DENIED**: Archidekt URL import landed in 1.0.5 (the plan doc `context/plans/deck_import.md` is gone, with no archived copy). Moxfield support denied API access (2026-06-10) — policy excludes deckbuilding apps. They plan a scoped deck-export endpoint for such services (no ETA, announced via their help pages when live); periodically check their help pages and re-request access then. The text-paste importer covers Moxfield users meanwhile.
 - **recommander.cards integration — gated on a dedicated API key.** https://recommander.cards/ is a third-party card-suggestion engine we'd like Zwipe to consume for recommendation data. **Finding (2026-06-23): the public endpoint's rate limit is far too low to be viable — on the order of ~10 requests/hour.** Two ways it breaks: (1) all Zwipe traffic would funnel through our single backend, exhausting that hourly cap in seconds; (2) if instead clients called it directly, an IP-keyed limit collides for mobile users sharing a Wi-Fi network (same public IP), throttling each other. So the integration is **only viable with a dedicated API key carrying production-grade limits.** Until then, don't build against it (we already have our own recommendation data to fall back on). Outreach is in progress; specifics are kept out of this public repo (local notes only). (noted 2026-06-09; rate-limit constraint added 2026-06-23)
 - **Deck import atomicity (#7) — SHIPPED 2026-07-27** (`b4cc65bb`): `apply_import_batch` runs lock + limit-check + upsert + replace-reconcile in one tx (`FOR UPDATE` closes the concurrent-import TOCTOU; `create_deck_card` got the same fix). 5 new `#[sqlx::test]` cases incl. the race, plus a live E2E pass (real text imports + the real Archidekt Satya deck, set-equality-verified). Plan archived at `context/plans/archive/import_atomicity.md`.
 **Done & removed:** Split `CardFilter` into `CardCriteria` + `CardQuery` + `Cards` — executed 2026-07-02 (`e681e58f`), wire unchanged, on main awaiting the next release. Outcome in `overview.md`; plan doc deleted.
@@ -73,7 +73,7 @@ categorization is planned; owner call 2026-07-27.
 
 **Why three layers:** Rule-based heuristics get you launched. LLM classification corrects the 20-30% that heuristics miss. A fine-tuned model makes it self-sustaining without ongoing API costs. Each layer builds on the last.
 
-See `context/plans/mechanical-category.md` for full implementation plan including taxonomy and schema.
+The full implementation plan (taxonomy + schema) lived at `context/plans/mechanical-category.md`, which no longer exists and has no archived copy.
 
 ---
 
@@ -85,13 +85,13 @@ See `context/plans/mechanical-category.md` for full implementation plan includin
 - **Credential-stuffing defense**: Layer a second governor on `/login`, `/forgot-password`, `/verify-email`, `/reset-password` keyed by the submitted email/username (normalized lowercase) in addition to the existing IP-keyed governor. IP alone doesn't catch a distributed botnet hitting one email across many IPs; account lockout is the strict per-account version of this but kicks in late. Requires a small `KeyExtractor` that peeks at the JSON body (or runs as middleware before governor and stuffs the key into request extensions). See `inbound/http/routes.rs:71-114` for the existing IP-keyed configs to stack against. (Per-user-id keying on authenticated routes is **already done** via `UserIdKeyExtractor` in `middleware.rs`.)
 
 ## Mobile & Deployment
-- **Android KeyStore**: Verify keyring configuration
-- **Android Build**: Test and polish Android target
+- ~~**Android KeyStore**~~: done, the keyring shipped and signs every Play upload.
+- ~~**Android Build**~~: done, Android is live in Play production.
 
 ## Future Features
-- **Synergy scores**: per-commander synergy data for commander decks (prioritized 2026-06-10 — see `todo.md` Next Up)
+- ~~**Synergy scores**~~: shipped. The Synergy chip, synergy-ordered deck search and community-signal blending are all live and free. Outcome in `overview.md`.
 - **Collection Management**: User card ownership tracking
-- **Social Features**: Deck sharing, public deck browser
+- **Social Features**: public deck browser. Deck sharing shipped: zite routes `/deck/:token` and zerver serves it from `handlers/deck/get_shared_deck.rs`.
 - **Multi-Language UI**: i18n for application text (card language infra already complete)
 
 ## Patch Discipline

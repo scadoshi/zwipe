@@ -34,8 +34,8 @@ the MVPs, which is what's shipped.)
    frame; hold it.
 
 ## Notes
-- **1.4.0 feature** (client). Film against a 1.4.0 or dev build; the MVP payload
-  already reaches the shared page.
+- Shipped in 1.4.0 (client). Film against the current store build, or a dev
+  build for clean data; the MVP payload already reaches the shared page.
 - **Do not claim steering yet.** MVP-weighted serve ordering (the deck leaning
   its own suggestions toward the MVPs) is a later server-only phase
   ([`../../plans/deck-mvps/overview.md`](../../plans/deck-mvps/overview.md)

@@ -1,6 +1,10 @@
 # Zwipe — Product Requirements Document
 
-**Status: Feature complete. Ready for App Store submission (2026-03-29).**
+**Historical MVP PRD, as of 2026-03.** This is the pre-launch scoping
+document, kept as a record of what the MVP was meant to be. It is not a
+description of the app today. Zwipe has been live on the App Store since
+2026-06-06 and in Play production since July 2026; for current state see
+`../progress/overview.md`. Claims below are annotated where they diverged.
 
 ## Vision
 A mobile-first Magic: The Gathering deck builder with a swipe-based card browsing interface. Built for Commander players who want a fast, enjoyable mobile experience — not another cluttered desktop tool ported to a small screen.
@@ -13,10 +17,10 @@ Swipe right to add cards, left to skip. Deep filter system for color, type, orac
 
 ## Monetization
 
-Freemium. See `context/decisions/monetization.md`.
+Freemium. See `context/product/monetization.md`.
 
-- **Free**: All core features — unlimited decks, full card database, swipe interface, filters, metrics
-- **Paid subscription**: AI card suggestions, synergy scores (post-App Store launch)
+- **Free**: All core features — up to 20 decks (1 before email verification), full card database, swipe interface, filters, metrics, synergy scores
+- **Paid subscription**: AI card suggestions (post-App Store launch). Synergy scores were planned as paid here and shipped free instead; what fills the gap is an open question, see `monetization.md`
 
 ## Target Audience
 
@@ -111,7 +115,7 @@ DeckCard
 **User Story**: As a user, I want access to current Magic cards for deck building.
 
 **Functionality**:
-- Core set of Standard-legal cards (1000-2000 cards)
+- Core set of Standard-legal cards (1000-2000 cards). *Shipped much larger: the catalog carries roughly 115k Scryfall printings, not a curated Standard subset.*
 - Basic card information (name, cost, type, image)
 - Simple filtering by format legality
 - Card data seeded from public MTG API
@@ -212,7 +216,7 @@ DeckCard
 ### Phase 1: Backend Foundation (3-4 weeks)
 - Rust API setup with Axum framework
 - User authentication with JWT
-- Basic card and deck models with Diesel ORM
+- Basic card and deck models with Diesel ORM. *Shipped on sqlx instead.*
 - PostgreSQL database setup
 - Card data seeding
 

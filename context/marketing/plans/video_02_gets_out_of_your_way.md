@@ -40,8 +40,9 @@ pairing here.
    in the edit and cut straight to the toast.
 
 ## Notes
-- Film against a 1.3.0 build (iOS build 57 / Android versionCode 18, or the dev
-  build) — per-swipe skips and per-deck resume are both 1.3.0 features.
+- Film against the current store build, or a dev build for clean data.
+  Per-swipe skips and per-deck resume both shipped in 1.3.0 and have been live
+  since.
 - Keep beats 1–3 tight; "kill and reopen, still gone" is the money shot, and
   beat 5's instant resume is the close-second thumb-stopper.
 - Dialog copy for reference: title "Clear skips", body "Cards you've skipped or

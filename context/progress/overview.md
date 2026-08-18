@@ -187,7 +187,10 @@ except one. The authoring project that had been running in batches since
 ## 2026-08-13 (commander maybeboard built end-to-end; 1.9.0 cut + submitted both stores; 1.8.1 released)
 
 - **1.8.1 went live on both stores** (fast review — submitted the night of
-  08-12, live before the 08-13 evening 1.9.0 submission).
+  08-12, live before the 08-13 evening 1.9.0 submission). What rode in it:
+  - **Collapsible deck cards groups — BUILT 2026-08-12.** Every list section (group-by groups, Tokens, Lands, Maybeboard, Sideboard) gains a tappable header with the card-row disclosure arrow (down open, sideways collapsed); rows stay mounted and hide via CSS so expanded-card state survives. Command-zone single-row headers deliberately stay static. Ephemeral per visit. HR-in-groups fix rode the same day (deck list headers drop border-bottom via `.deck-group-header`).
+  - **Deck list + deck cards skeletons — UPDATED 2026-08-12.** Both now mirror the live layouts: deck list gains Group by / Show chip-row ghosts; deck cards gains identity header + tag chips, three featured-card image ghosts, quick add bar, chip rows, and art thumbnails on every row ghost.
+  - **Deck list group + filter — BUILT 2026-08-11** (1.8.0's build 72/vc34 submissions were superseded before release; 1.8.1 shipped as build 73/vc35). Group by (None/Format/Color/Tag sections) + Show filter row (color pips, tag chips) on the deck list, plus the one-time HINT_DECK_LIST tip. First train under the any-feature-bumps-minor convention (`development/versioning.md`). If folders ever get built, the section rendering here is most of their UI.
 - **Commander maybeboard designed, built, and shipped in one day.** Owner
   decisions locked at the proposals (More-sheet entry after a same-day
   revision off the action bar, entries persist after deck create, cap 50).
@@ -825,7 +828,7 @@ Prod migrated off the home box to a **Hetzner CPX31 VPS** on 2026-06-13 (see ent
 | Profile (change email/username/password) | ✅ |
 | Account deletion | ✅ |
 | Unverified email toast + soft limits | ✅ |
-| Preferences screen (9 themes, dark mode) | ✅ |
+| Preferences screen (31 themes, dark mode) | ✅ |
 | Set name on swipe screens | ✅ |
 | Clear filter (inline button + clears stack) | ✅ |
 | Entrance transitions on all screens | ✅ |
@@ -1335,13 +1338,13 @@ Two server-side changes that needed the propagation wait landed and deployed: **
 
 ## Production migrated to VPS (2026-06-13)
 
-Prod moved off the home Ubuntu box to a **Hetzner CPX31** (Hillsboro OR, Ubuntu 26.04, PG 18). `api.zwipe.net` now serves from the VPS through a Cloudflare tunnel; the three services run as systemd units (`zerver`, `zynergy` worker, `cloudflared`). CI runners + nightly crons (zervice 4am, backup 5am → R2) moved to the VPS; home crons disabled and the box powered off but intact as the rollback for ~1–2 weeks. Hardened: key-only SSH, ufw deny-all + tailnet-only, CI sudo scoped to `systemctl {start,stop,restart} {zerver,zynergy}`. A backup-restore drill passed first (PG17→18 clean: 115,805 cards / 24 users / 37 decks intact). Full runbook + gotchas in `../plans/vps_migration.md`. *Open follow-ups in `todo.md`: confirm the first unattended crons, repurpose the home box + rotate the still-shared R2 keys.*
+Prod moved off the home Ubuntu box to a **Hetzner CPX31** (Hillsboro OR, Ubuntu 26.04, PG 18). `api.zwipe.net` now serves from the VPS through a Cloudflare tunnel; the three services run as systemd units (`zerver`, `zynergy` worker, `cloudflared`). CI runners + nightly crons (zervice 4am, backup 5am → R2) moved to the VPS; home crons disabled and the box powered off but intact as the rollback for ~1–2 weeks. Hardened: key-only SSH, ufw deny-all + tailnet-only, CI sudo scoped to `systemctl {start,stop,restart} {zerver,zynergy}`. A backup-restore drill passed first (PG17→18 clean: 115,805 cards / 24 users / 37 decks intact). The runbook + gotchas lived in `../plans/vps_migration.md`, which no longer exists and has no archived copy. *Open follow-ups in `todo.md`: confirm the first unattended crons, repurpose the home box + rotate the still-shared R2 keys.*
 
 ---
 
 ## Synergy data layer — cache-first (2026-06-11, build 32)
 
-Per-commander synergy/popularity payloads are computed by a separate least-privilege worker (`zynergy` — own DB role, runner, and systemd unit) and cached in Postgres; zerver only reads, never writes. Deck-aware search (`POST /api/deck/{id}/card/search`) excludes in-deck cards and defaults to synergy ordering when no sort is given; the client add-cards screen consumes it and auto-serves suggestions on open (build 32 / 1.0.6). Plan: `../plans/synergy_data_layer.md`. *Data-source strategy: check local memory before extending.*
+Per-commander synergy/popularity payloads are computed by a separate least-privilege worker (`zynergy` — own DB role, runner, and systemd unit) and cached in Postgres; zerver only reads, never writes. Deck-aware search (`POST /api/deck/{id}/card/search`) excludes in-deck cards and defaults to synergy ordering when no sort is given; the client add-cards screen consumes it and auto-serves suggestions on open (build 32 / 1.0.6). Plan doc `../plans/synergy_data_layer.md` no longer exists and has no archived copy. *Data-source strategy: check local memory before extending.*
 
 ---
 
@@ -1358,7 +1361,7 @@ Per-commander synergy/popularity payloads are computed by a separate least-privi
 
 **Two features built, merged, and shipped in one day. Server live on prod as v1.0.5; iOS build 31 uploaded via Transporter and submitted as 1.0.5.**
 
-- **Archidekt deck import** (`feat/deck-import-archidekt`) — `POST /api/deck/{deck_id}/import/archidekt` takes a deck URL, fetches Archidekt's open JSON API server-side, resolves every printing by Scryfall UID (`card.uid` == `scryfall_data.id`; name fallback recovers null-oracle reversible printings), and imports into an existing deck with identical semantics to the text importer. Deliberately simplified mid-build: no commander/format sync, no deck creation — just cards onto the selected board. The verified Archidekt `deckFormat` id table is preserved in `context/plans/deck_import.md` for a future opt-in sync.
+- **Archidekt deck import** (`feat/deck-import-archidekt`) — `POST /api/deck/{deck_id}/import/archidekt` takes a deck URL, fetches Archidekt's open JSON API server-side, resolves every printing by Scryfall UID (`card.uid` == `scryfall_data.id`; name fallback recovers null-oracle reversible printings), and imports into an existing deck with identical semantics to the text importer. Deliberately simplified mid-build: no commander/format sync, no deck creation — just cards onto the selected board. The verified Archidekt `deckFormat` id table was kept in `context/plans/deck_import.md`, which no longer exists and has no archived copy.
 - **Add/Replace import modes** — both importers carry `mode: ImportMode` (`#[serde(default)]`, absent = Add, so deployed 1.0.4 clients are unaffected). Replace makes the target board exactly match the imported list (board-scoped; an import where nothing resolves never wipes). Import screen gained pinned From/Mode/Board chip rows with per-combination hint text.
 - **Min-version gate** (`feat/min-version-gate`) — server-driven force-update kill-switch: public `GET /api/client/min-version` reads `MIN_CLIENT_VERSION` env (`0.0.0` = open, live default; malformed value refuses startup), `zwipe_core::version` does x.y.z compare failing open, zwiper polls in the 60s upkeep loop (first tick at launch) and swaps the router for a blocking "Update required" screen linking to the App Store. Every install ≥1.0.5 is force-updatable; builds ≤1.0.4 ignore it forever, so 1.0.5 itself rides the old propagation wait.
 - **API evolution rule documented** (`context/development/api_evolution.md`) — new request fields are always additive + `#[serde(default)]`; server deploys first, client ships second, no gate needed. The min-version gate is reserved for changes that can't be expressed additively.

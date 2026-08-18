@@ -12,8 +12,9 @@ behavior than a warning.
 ## To weigh tomorrow
 
 - Behavior change is in `zwiper/.../screens/deck/card/add.rs` — the
-  `filter_builder.is_empty()` / `is_empty_ignoring_deck_context()` branches
-  (~lines 444–454) and the "leave stack empty and nudge to filter" path (~640s).
+  `filter_builder.is_empty()` / `is_empty_ignoring_deck_context_and_auto_lands()`
+  branches (`add.rs:710` and `add.rs:1498`; the method was renamed since this was
+  written) and the "leave stack empty and nudge to filter" path.
 - Trade-off: serving everything on an empty filter is more discoverable and
   matches the "just inspire me" discovery idea (`feature_requests.md` #2), but a
   full unfiltered pull is a heavier query and a less-targeted stack. Decide

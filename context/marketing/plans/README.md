@@ -51,7 +51,5 @@ still a strong P1). #9 (MVPs) is cheap to shoot right after #8 and pairs with it
 
 **Timing note:** every feature on this slate is **live in the 1.7.x store
 builds** — film everything against the current store build (or a dev build for
-clean data). The old 1.3.0/1.4.0 gating is obsolete. One nuance: #11's
-in-dialog tag definitions during swiping are **1.7.3** (in review as of
-2026-07-27) — if filming before it clears, capture that beat on a dev build or
-use the deck-row definition reveal (1.7.1) instead.
+clean data). All per-version gating in this slate is obsolete, including #11's
+in-dialog tag definitions during swiping, which shipped in 1.7.3.

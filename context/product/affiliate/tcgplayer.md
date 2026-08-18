@@ -2,6 +2,9 @@
 
 **Status: application submitted 2026-06-23 — In Review** on Impact (impact.com).
 TCGplayer runs its affiliate program on Impact Radius; they notify on a response.
+**Last checked: 2026-08-18.** Still no response. This file is the single source
+of truth for affiliate status; `../../progress/todo.md` points here rather than
+restating it. Update the last-checked date whenever you look.
 
 ## Why
 
@@ -25,7 +28,7 @@ Zwipe is a mobile-first Magic: The Gathering deck builder with a swipe-based int
 
 Our audience is high-intent Magic players actively assembling decks who then need to buy the cards they've added. Zwipe surfaces one-tap buy links straight from a finished deck, so the path from "I want this card" to checkout is immediate. The app is free with no ads — our revenue is purchase-driven, which aligns our incentives directly with sending brands ready-to-buy customers.
 
-Live on the iOS App Store, in closed testing on Google Play, and on the web at zwipe.net.
+Live on the iOS App Store, live in Google Play production, and on the web at zwipe.net.
 
 **Content & interests** (comma-separated, no spaces):
 

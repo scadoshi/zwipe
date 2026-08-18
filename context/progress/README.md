@@ -1,6 +1,6 @@
 # Progress — Where We Are
 
-The project's running state, split across three files. Each answers a different
+The project's running state, split across five files. Each answers a different
 question; keeping them distinct is what stops this area from rotting into one
 giant changelog.
 

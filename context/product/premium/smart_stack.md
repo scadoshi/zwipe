@@ -53,4 +53,7 @@ load regardless of the taste profile.
 ## Depends on
 
 Deck tags + card categories for the tag-match signal; swipe-event ingestion
-(new — nothing records left swipes today); IAP entitlements to gate ranking.
+(**satisfied**: left swipes have been recorded since migration
+`20260702000000_create_swipe_memory.sql`, which added `user_card_signal`,
+`user_week_signal` and `deck_card_suppressions`); IAP entitlements to gate
+ranking, which is the only gate left.
