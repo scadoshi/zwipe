@@ -68,6 +68,9 @@ jobs:
   build:
     needs: [test, lint] # blocked if tests or lints fail
     runs-on: ubuntu-latest
+    # Backstop: a normal run is well under 10 minutes. Without this a wedged
+    # step burns the default job limit before anyone notices.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
@@ -90,7 +93,28 @@ jobs:
         # falls back to downloading binaryen from GitHub releases when none
         # exists — that fetch got refused three deploys running during the
         # 2026-08-12 GitHub degradation, so we stopped depending on it.
-        run: sudo apt-get update && sudo apt-get install -y build-essential binaryen
+        #
+        # apt is the only step here that talks to a network mirror, and it is
+        # the one that wedges: on 2026-08-18 it sat for 26 minutes with GitHub
+        # reporting no incident. So it gets explicit acquire timeouts, three
+        # attempts, and a step timeout, which turns a mirror stall into a fast
+        # failure you can re-run instead of a job that hangs unnoticed.
+        # `taiki-e/install-action` is not an option here: it carries no
+        # binaryen/wasm-opt manifest and would fall back to cargo-binstall.
+        timeout-minutes: 6
+        run: |
+          set -euo pipefail
+          APT_OPTS="-o Acquire::Retries=3 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15"
+          for attempt in 1 2 3; do
+            if sudo apt-get $APT_OPTS update \
+              && sudo apt-get $APT_OPTS install -y build-essential binaryen; then
+              exit 0
+            fi
+            echo "apt attempt $attempt failed, retrying" >&2
+            sleep $((attempt * 10))
+          done
+          echo "apt failed three times; the mirror is likely degraded" >&2
+          exit 1
 
       - name: Install dioxus-cli
         # Fetches a prebuilt dx binary instead of compiling dioxus-cli from
