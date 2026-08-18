@@ -25,25 +25,26 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.9.2",
-    date: "In progress",
-    entries: &[
-        "Your decks now show their command zone's art on the Decks screen: the commander, both partners, or the oathbreaker and its signature spell.",
-        "The Decks screen is one connected list. Turning on Group by splits it into sections you can fold from their headers.",
-        "Grouping a deck's cards by color now gives each color combination its own group, instead of one Multicolor pile.",
-        "Color group headers show mana pips instead of color names, on your deck's cards, the deck list, and shared deck pages.",
-        "Back now closes what's open instead of leaving the screen. This covers the format and tag pickers, the printing sheet, and the More sheets.",
-        "Android: fixed a crash when opening Zwipe from a notification, another app, or the Play Store while it was already running.",
-        "Android: switching your phone between light and dark mode no longer closes the app.",
-        "The guides page on zwipe.net has a search bar. It matches a guide's title, summary, tags, and text.",
-        "The commander and MVP cards on a shared deck page deal in from above as they load.",
-        "Deck list color group headers show the same size pips as the decks under them.",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.9.2",
+        date: "Aug 17, 2026",
+        entries: &[
+            "Your decks now show their command zone's art on the Decks screen: the commander, both partners, or the oathbreaker and its signature spell.",
+            "The Decks screen is one connected list. Turning on Group by splits it into sections you can fold from their headers.",
+            "Grouping a deck's cards by color now gives each color combination its own group, instead of one Multicolor pile.",
+            "Color group headers show mana pips instead of color names, on your deck's cards, the deck list, and shared deck pages.",
+            "Back now closes what's open instead of leaving the screen. This covers the format and tag pickers, the printing sheet, and the More sheets.",
+            "Android: fixed a crash when opening Zwipe from a notification, another app, or the Play Store while it was already running.",
+            "Android: switching your phone between light and dark mode no longer closes the app.",
+            "The guides page on zwipe.net has a search bar. It matches a guide's title, summary, tags, and text.",
+            "The commander and MVP cards on a shared deck page deal in from above as they load.",
+            "Deck list color group headers show the same size pips as the decks under them.",
+        ],
+    },
     Release {
         version: "1.9.1",
         date: "Aug 14, 2026",

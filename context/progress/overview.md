@@ -63,6 +63,13 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
   siblings cede width. The featured skeleton is gone (ghosting first would
   replace the entrance with a swap); the rest of the page's skeleton stays.
   Honors prefers-reduced-motion.
+- **1.9.2 CUT AND SUBMITTED both stores 2026-08-17** (iOS build 76 / Android
+  versionCode 39). 1.9.1 was already live, so this is a normal update on top of
+  it and the release notes cover only this train. Artifacts built on the work
+  Mac (Xcode 26.6 / 17F113, iphoneos26.5; targetSdk 36) and verified before
+  upload: the AAB was checked for `zwipe:back`, `killProcess`, `singleTask` and
+  `uiMode`, since a missing post-bundle patch fails silently and would have
+  quietly reshipped the crash.
 - **Back-swipe overlay class fixed and verified on both platforms**
   (`10e564a4` pre-rewrite): back only closed an overlay if that overlay had
   *registered* with `OverlayBackStack`, and registration was opt-in — so

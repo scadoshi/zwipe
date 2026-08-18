@@ -2,6 +2,27 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-08-17 — `1.9.2`, versionCode `39`** (the reliability + deck-list
+  train. The `ndk-context` crash was root-caused and fixed after surviving five
+  releases: `MainActivity` carried no `launchMode`, so an explicit component
+  start — a notification, another app, the Play Store's Open button — created a
+  second Activity in the live process and NativeActivity's native init ran
+  twice, tripping `assert!(previous.is_none())`. `launchMode="singleTask"`
+  fixes it. A second bug surfaced the same session: `configChanges` omitted
+  `uiMode`, so a system dark/light switch recreated the Activity, reached
+  `onDestroy`, and the 1.7.6 process-kill silently closed the app. Both are
+  manifest patches, now applied by `zcripts/android/patch_bundle.sh` alongside
+  the icons and back handler — one command, because the manifest gap survived
+  as an unrun checklist item. Back-swipe overlays fixed as a class: the shared
+  `BottomSheet` now registers with `OverlayBackStack` on every sheet's behalf,
+  plus format_select, tag_select and printing_sheet. Deck list restyled into
+  one contained list of card-style rows led by command-zone art, with
+  collapsible groups; `DeckProfile` gained additive art URLs. Card color
+  grouping splits per color combination with mana-pip headers. Verified on a
+  Pixel 6 before cutting: the crash repro is silent and back unwinds one
+  overlay at a time. Built per the recipe on the work Mac and **submitted for review
+  2026-08-17**. iOS counterpart build 76.)
+
 - **2026-08-14 — `1.9.1`, versionCode `37`** (the keyword-quality train:
   reminder-definition sweep for 2026-set/crossover/Arena mechanics — 26 real
   definitions grounded in the cards' own reminder text, Blight/Prepared/
