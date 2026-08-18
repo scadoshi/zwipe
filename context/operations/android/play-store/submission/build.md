@@ -168,7 +168,15 @@ grep -nE 'compileSdk|targetSdk|versionCode|versionName' app/build.gradle.kts
 
 ## 3. Repackage with Gradle directly (NOT `dx bundle`)
 
+`gradlew` needs both env vars or it fails with an unhelpful message: without
+`JAVA_HOME` it says "Unable to locate a Java Runtime" (macOS ships no system
+JDK — use Android Studio's bundled JBR), and without `ANDROID_HOME` it says
+"SDK location not found".
+
 ```bash
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+cd ~/Developer/zwipe/target/dx/zwipe/release/android/app
 ./gradlew :app:bundleRelease --console=plain
 # unsigned output:
 ls app/build/outputs/bundle/release/app-release.aab
@@ -183,15 +191,17 @@ bundletool dump manifest --bundle=app/build/outputs/bundle/release/app-release.a
 
 ## 4. Sign with the upload key
 
+`jarsigner` is not on `PATH` either — it lives in the same JBR:
+
 ```bash
 cd ~/Developer/zwipe
-jarsigner -keystore ~/certs/zwipe-upload.jks \
+"$JAVA_HOME/bin/jarsigner" -keystore ~/certs/zwipe-upload.jks \
   -sigalg SHA256withRSA -digestalg SHA-256 \
   -signedjar zwipe-<VERSION>.aab \
   target/dx/zwipe/release/android/app/app/build/outputs/bundle/release/app-release.aab \
   zwipe-upload
 # enter the keystore password when prompted (or -storepass pass:... — avoid leaving it in history)
-jarsigner -verify zwipe-<VERSION>.aab   # -> "jar verified."
+"$JAVA_HOME/bin/jarsigner" -verify zwipe-<VERSION>.aab   # -> "jar verified."
 ```
 
 (`self-signed certificate` is expected and fine for an upload key.)

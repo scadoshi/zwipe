@@ -47,6 +47,10 @@ cd ~/Developer/zwipe/zwiper
 BACKEND_URL=https://api.zwipe.net dx build --release --platform ios --device "scotland-mobile"
 ```
 
+From the workspace root instead, add `--package zwiper` — `dx` refuses to guess
+which binary crate to build and lists zerver/zite/zwiper. Same for
+`dx bundle --platform android`.
+
 ## 2. Patch Info.plist (Dioxus doesn't generate these correctly)
 
 ```bash
