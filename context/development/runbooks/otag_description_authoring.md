@@ -4,8 +4,9 @@
 oracle tags) in batches, **every description checked against the real cards that
 carry the tag**, until coverage is satisfactory. Part 1 of
 [`../../plans/archive/otags/tag_descriptions_and_dictionary.md`](../../plans/archive/otags/tag_descriptions_and_dictionary.md)
-(DONE 2026-08-06 — this runbook stays live for future batches as Scryfall's
-tagger grows).
+(**tail finished 2026-08-18 at 4,521 of 4,522** — this runbook stays live for
+future batches as Scryfall's tagger grows, which it does by renaming as well as
+adding).
 
 This is a **repeatable loop** a fresh AI can run cold. It fans out subagents to
 draft, then adversarially verify against oracle text, then a human-in-the-loop
@@ -21,8 +22,14 @@ each by hand doesn't scale; the verify stage is what keeps accuracy high at scal
 ## Are these compared against real cards? Yes — two layers
 
 1. **Verify stage (every tag):** each verifier agent pulls the actual `oracle_text`
-   of up to 6 real cards that carry the tag and judges the drafted description
-   against what those cards literally do. That produces the `accurate` / `minor` /
+   of real cards and judges the drafted description against what those cards
+   literally do. Grounding is **hierarchy-aware**: it passes the tag's parents,
+   its children, and cards sampled from the tag *plus its direct children*. That
+   last part matters more than it sounds. Plenty of tags carry zero cards of
+   their own because they are umbrella nodes (`recursion-land`, `typal-creature`)
+   or cycle roots whose members live on child tags, and an inner join against
+   `card_oracle_tags` returns nothing for those. It is what lets `cycle-fetchland`
+   be written off actual fetchlands instead of guessed from its name. That produces the `accurate` / `minor` /
    `wrong` verdict and any correction. Nothing ships un-grounded.
 2. **Human spot-check (sample):** after the workflow, hand-verify ~10 of the most
    obscure/mis-nameable tags per batch against oracle text (query in Step 3) before
@@ -184,15 +191,42 @@ Ship path from there: user pushes -> next `zervice` overlays all authored text.
   never run tree-wide git ops; `git add` only your files by explicit path.
 - **No SQLx prepare needed.** The overlay uses runtime `sqlx::query`, not a
   `query!` macro, so `.sqlx/` offline data is untouched.
-- **Cost.** ~7 slugs/chunk, sonnet draft + opus verify. A 200-tag batch is ~58 agents
-  and ~1.4M output tokens, ~4-5 min wall clock. Scale batch size to appetite.
-- **Priority is population, not the catalog order.** Always author highest-card-count
-  blanks first so the most-seen tags get covered soonest.
+- **Cost.** 7 slugs/chunk for populated tags, 10 for hierarchy-grounded ones
+  (lighter payload per tag). Sonnet draft + opus verify. The 2026-08-18 run was
+  138 tags = 28 agents, ~874k output tokens, ~5 min wall clock. Scale to appetite.
+- **`pop: 0` is normal, not a bug.** An empty card list means the tag is an
+  umbrella or cycle root, not that the tag is meaningless. Read the children list
+  instead. The prompts say this explicitly because a drafter handed nothing will
+  invent.
+- **Priority is population, not the catalog order** — while any populated tag is
+  still unauthored. As of 2026-08-18 none are, so future runs are just whatever
+  the tagger added or renamed.
+- **The grounding query takes ~20s.** That is the recursive subtree expansion over
+  big roots. It is not hung; the prompt tells agents not to kill it.
 
 ## Progress markers (update as you go)
 
-Coverage is `len(ORACLE_TAG_DESCRIPTIONS)` / ~4,500. Milestones: 7 (starter) ->
-82 (hand) -> 257 -> 500 -> 700 -> 4,357 -> **COMPLETE at 4,395 (2026-08-06)** —
-every tag with a real card population covered. Future runs are incremental only:
-when the nightly coverage line shows new unauthored tags accumulating (Scryfall's
-tagger grows), run the loop on the new arrivals.
+Coverage is `len(ORACLE_TAG_DESCRIPTIONS)` / the live catalog count. Milestones:
+7 (starter) -> 82 (hand) -> 257 -> 500 -> 700 -> 4,357 -> 4,395 (2026-08-06, every
+tag with a real card population) -> **4,521 of 4,522 (2026-08-18), the whole tail
+including unpopulated umbrella and cycle tags**. The one holdout is `nanni`: a
+single card, no parent, no children, nothing to derive a meaning from, so it stays
+blank rather than get invented copy.
+
+Future runs are incremental. Two things move the number, and the second is the one
+that surprises people:
+
+1. **New tags.** The nightly coverage line shows the blank count rising.
+2. **Renames and retirements.** The `ORACLE_TAG_DESCRIPTIONS references unknown
+   oracle-tag slugs` WARN is how this shows up, and a jump in it means the tagger
+   reorganized something rather than that we typo'd. In August 2026 the whole
+   `hand-neutral`/`hand-positive`/`hand-negative` trio was replaced by a
+   `hand-size-*` family that splits on maximum hand size instead of card-advantage
+   direction, so the old text had to be dropped rather than moved. Check for a
+   successor before deleting; check what it actually *means* before reusing the text.
+
+**Also sweep the non-warn-checked lists when slugs retire.** Only
+`ROLE_TAG_OVERRIDES` gets a warn. `CATEGORY_ROOTS` (`derive_categories.rs`) and
+`NOISE_ORACLE_TAG_SLUGS` (`zwipe-core/.../oracle_tag.rs`) both reference slugs and
+both rot silently: each was holding a dead reference discovered only by grepping
+during the 2026-08-18 cleanup.
