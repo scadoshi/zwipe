@@ -460,7 +460,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     return;
                 }
                 toast.info(
-                    "Undid skip".to_string(),
+                    "Undid keep".to_string(),
                     ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
             }
@@ -652,7 +652,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 usage_buffer().record_swipe(Direction::Left);
                                 stack.record(RemoveAction::Keep);
                                 toast.info(
-                                    "Skipped".to_string(),
+                                    "Kept".to_string(),
                                     ToastOptions::default().duration(Duration::from_millis(1500)),
                                 );
                                 // Skip: advance circularly within the stack

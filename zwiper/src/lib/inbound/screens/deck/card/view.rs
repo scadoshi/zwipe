@@ -1895,11 +1895,11 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
                     HintBullet {
                         HintKey { color: "--accent-tertiary", "Show" }
-                        " reveals tokens and the command zone."
+                        " toggles tokens, the command zone, and row art."
                     }
                     HintBullet {
                         HintKey { color: "--color-warning", "Star" }
-                        " marks a deck MVP: up to three cards that define this deck. Zwipe leans your suggestions toward them."
+                        " marks a deck MVP: up to three mainboard cards that define this deck."
                     }
                 }
             }

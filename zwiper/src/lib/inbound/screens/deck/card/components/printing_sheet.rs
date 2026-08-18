@@ -34,6 +34,12 @@ pub(crate) fn PrintingSheet(
     /// keyed on the exact `scryfall_data_id` already on the deck).
     #[props(default)]
     read_only: bool,
+    /// Confirmation shown after Save. Host-specific because only some hosts
+    /// persist: the deck view PATCHes the deck card, while the add screen just
+    /// re-skins the card still sitting in the swipe stack, where "saved" would
+    /// claim a deck change that never happened.
+    #[props(default = "Printing saved")]
+    saved_message: &'static str,
 ) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
@@ -220,7 +226,7 @@ pub(crate) fn PrintingSheet(
                                     onclick: move |_| {
                                         on_save(new_card.clone());
                                         toast.info(
-                                            "Printing saved".to_string(),
+                                            saved_message.to_string(),
                                             ToastOptions::default().duration(Duration::from_millis(1500)),
                                         );
                                         open.set(false);

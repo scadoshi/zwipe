@@ -672,7 +672,7 @@ pub(crate) fn CardFilterSheet(
                             return;
                         }
                         if validate_before_apply && !filter_builder.read().has_search_intent() {
-                            toast.warning("Filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                            toast.warning("Filter is empty, nothing applied".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                         } else {
                             bump_filter();
                             // Drop the snapshot so closing keeps the committed
@@ -729,7 +729,7 @@ pub(crate) fn CardFilterSheet(
                     HintKey { color: "--color-warning", "Reset" }
                     " then "
                     HintKey { color: "--color-success", "Apply" }
-                    " to return to this screen's default view. Your filter sticks as you move between screens."
+                    " to return to this screen's default view. Each screen keeps its own filter for the session."
                 }
             }
         }

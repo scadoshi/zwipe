@@ -1622,6 +1622,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     card,
                     open: printing_open,
                     on_save: move |new_card: Card| stack.replace_current(new_card),
+                    saved_message: "Printing swapped",
                 }
             }
 
