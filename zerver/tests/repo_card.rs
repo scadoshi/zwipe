@@ -348,23 +348,25 @@ async fn deck_oracle_tags_lift_matching_cards_in_banded_serve(pool: sqlx::PgPool
 }
 
 /// MVP steering (deck-MVPs phase 3) reads only the roles that should steer:
-/// mainboard stars, deduped, with maybeboard stars and unstarred cards ignored.
-/// The serve term is a flat overlap lift, so a role shared by two MVPs must
-/// appear once — a tally here would silently double that role's weight.
+/// mainboard stars, deduped, with unstarred cards ignored. The serve term is a
+/// flat overlap lift, so a role shared by two MVPs must appear once — a tally
+/// here would silently double that role's weight. A non-mainboard star can't be
+/// constructed at all now (`deck_cards_mvp_mainboard_only`); the import path
+/// that used to strand one is covered in `import_atomicity.rs`.
 #[sqlx::test]
 async fn mvp_card_roles_are_mainboard_stars_deduped(pool: sqlx::PgPool) {
     let ramp = card("Ramp One").categories(&["ramp", "draw"]);
     let ramp2 = card("Ramp Two").categories(&["ramp"]);
-    let maybe = card("Maybe Star").categories(&["wipe"]);
+    let side = card("Side Card").categories(&["wipe"]);
     let plain = card("Not Starred").categories(&["removal"]);
     // (scryfall id, oracle id, board, starred)
     let rows = [
         (ramp.id(), ramp.oracle_id().unwrap(), "deck", true),
         (ramp2.id(), ramp2.oracle_id().unwrap(), "deck", true),
-        (maybe.id(), maybe.oracle_id().unwrap(), "maybeboard", true),
+        (side.id(), side.oracle_id().unwrap(), "maybeboard", false),
         (plain.id(), plain.oracle_id().unwrap(), "deck", false),
     ];
-    seed_cards(&pool, &[ramp, ramp2, maybe, plain]).await;
+    seed_cards(&pool, &[ramp, ramp2, side, plain]).await;
 
     let user_id: Uuid = sqlx::query_scalar(
         "INSERT INTO users (username, email, password_hash) VALUES ('mvpsteer', 'mvpsteer@x.co', 'x') RETURNING id",
@@ -400,8 +402,9 @@ async fn mvp_card_roles_are_mainboard_stars_deduped(pool: sqlx::PgPool) {
     let mut roles = repo.get_mvp_card_roles(&request).await.unwrap();
     roles.sort();
 
-    // "ramp" is on both mainboard MVPs but must appear once; "wipe" is a
-    // maybeboard star and "removal" is unstarred, so neither steers.
+    // "ramp" is on both mainboard MVPs but must appear once; "wipe" sits on an
+    // unstarred maybeboard card and "removal" on an unstarred mainboard card,
+    // so neither steers.
     assert_eq!(roles, vec!["draw".to_string(), "ramp".to_string()]);
 }
 

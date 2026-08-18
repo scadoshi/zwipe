@@ -250,3 +250,76 @@ async fn concurrent_imports_cannot_race_past_the_limit(pool: sqlx::PgPool) {
         "the deck never exceeds the cap"
     );
 }
+
+/// MVPs are mainboard-only, and import is the one writer that could break that:
+/// it sets `board` on conflict, so importing a starred card onto another board
+/// used to move the row and leave the star behind. A stranded star is invisible
+/// to the podium cap, which counts mainboard stars only, so the deck could then
+/// hold four. A CHECK constraint backs the fix; this proves the path.
+#[sqlx::test]
+async fn importing_a_starred_card_to_another_board_drops_the_star(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "starmover").await;
+    seed_cards(
+        &pool,
+        &[card("Lightning Bolt").mono("R").type_line("Instant")],
+    )
+    .await;
+
+    let (status, r) = app
+        .post(
+            &format!("/api/deck/{did}/card/import"),
+            json!({ "text": "1 Lightning Bolt" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "seed import: {r}");
+
+    let sd_id: String = sqlx::query_scalar(
+        "SELECT scryfall_data_id::text FROM deck_cards WHERE deck_id = $1::uuid",
+    )
+    .bind(&did)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let (status, r) = app
+        .patch(
+            &format!("/api/deck/{did}/card/{sd_id}"),
+            json!({ "mvp": true }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "star: {r}");
+    // Guard against a vacuous pass: the star must really be set before the move.
+    let starred: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM deck_cards WHERE deck_id = $1::uuid AND mvp_at IS NOT NULL AND board = 'deck'",
+    )
+    .bind(&did)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        starred, 1,
+        "the card should be a mainboard MVP before the move"
+    );
+
+    // Re-import the same card onto the maybeboard. The row moves boards, and
+    // the star must not travel with it.
+    let (status, r) = app
+        .post(
+            &format!("/api/deck/{did}/card/import"),
+            json!({ "text": "1 Lightning Bolt", "board": "maybeboard" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "move import: {r}");
+
+    let stranded: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM deck_cards WHERE deck_id = $1::uuid AND mvp_at IS NOT NULL AND board <> 'deck'",
+    )
+    .bind(&did)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(stranded, 0, "a star must not survive leaving the mainboard");
+}

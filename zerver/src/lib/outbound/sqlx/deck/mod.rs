@@ -893,7 +893,11 @@ impl DeckRepository for Postgres {
             },
         );
         qb.push(
-            " ON CONFLICT (deck_id, oracle_id) DO UPDATE SET quantity = EXCLUDED.quantity, board = EXCLUDED.board RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board, mvp_at",
+                        // `mvp_at` must follow the board: an import that moves a starred
+            // card off the mainboard has to drop the star, or it strands an MVP
+            // the podium cap can't see (the cap counts mainboard stars only).
+            // A CHECK constraint backs this up.
+            " ON CONFLICT (deck_id, oracle_id) DO UPDATE SET quantity = EXCLUDED.quantity, board = EXCLUDED.board, mvp_at = CASE WHEN EXCLUDED.board = 'deck' THEN deck_cards.mvp_at ELSE NULL END RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board, mvp_at",
         );
         let rows: Vec<DatabaseDeckCard> =
             qb.build_query_as().fetch_all(&mut *tx).await.map_err(db)?;
