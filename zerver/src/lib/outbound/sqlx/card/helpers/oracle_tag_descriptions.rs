@@ -2192,10 +2192,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Taps lands or other permanents, often to deny mana or keep them from untapping.",
     ),
     (
-        "sacrifice-outlet-permanent",
-        "Lets you sacrifice any permanent, usually for a benefit.",
-    ),
-    (
         "hate-planeswalker",
         "Answers, hinders, or defends against planeswalkers, or rewards attacking them.",
     ),
@@ -2247,10 +2243,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "non-mana-ward",
         "Ward that makes an opponent pay a non-mana cost, like discarding a card or losing life, to target it.",
-    ),
-    (
-        "reanimate-copy",
-        "Brings back a copy of a card from a graveyard instead of the original, often as a token.",
     ),
     (
         "tutor-to-top",
@@ -12313,10 +12305,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "A Saga that grants a different effect over its three chapters as lore counters are added.",
     ),
     (
-        "cycle-msh-basic-dual",
-        "A land that taps for colorless anytime, or for one of two colors if it just entered or you control a basic.",
-    ),
-    (
         "cycle-msh-c-modal-teamwork",
         "A modal spell that lets you tap creatures with enough total power to choose both modes instead of one.",
     ),
@@ -15668,10 +15656,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Has you roll the planar die to trigger a chaos or planar effect.",
     ),
     (
-        "sacrifice-outlet-treasure",
-        "Lets you sacrifice Treasure tokens as the cost to trigger an effect.",
-    ),
-    (
         "seek-artifact-spacecraft",
         "Finds a Spacecraft card at random from your library and puts it into your hand.",
     ),
@@ -17739,6 +17723,38 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "white-effect",
         "An iconically white effect: preventing damage, stopping spells, or evening out the board.",
+    ),
+    (
+        "clone-assassin",
+        "A clone that removes the creature it copied, right away or later.",
+    ),
+    (
+        "clone-graveyard",
+        "Enters as a copy of a card in a graveyard rather than one on the battlefield.",
+    ),
+    (
+        "copy-from-graveyard",
+        "Brings back a copy of a card from a graveyard instead of the original, often as a token.",
+    ),
+    (
+        "cycle-msh-lair-dual",
+        "A cycle of lands that tap for colorless anytime, or for one of two colors if they just entered or you control a basic land.",
+    ),
+    (
+        "experience",
+        "Gives you experience counters, which you keep and which grow an effect as they add up.",
+    ),
+    (
+        "high-mana-value-matters",
+        "Cares about spells or permanents at or above a mana value threshold, like 5 or greater.",
+    ),
+    (
+        "repeatable-proliferate",
+        "A repeatable source of proliferate.",
+    ),
+    (
+        "sacrifice-outlet-universal",
+        "Lets you sacrifice any permanent, regardless of its type, usually for a benefit.",
     ),
 ];
 
