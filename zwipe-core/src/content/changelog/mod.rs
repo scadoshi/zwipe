@@ -25,22 +25,23 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.9.3",
-    date: "In progress",
-    entries: &[
-        "Cards sharing a role with your deck's MVPs now come up sooner while you swipe.",
-        "Sign-in no longer rejects a password for failing the current password rules.",
-        "Changing your email now prompts you to verify the new address.",
-        "Importing a starred card onto another board no longer keeps its MVP star.",
-        "Choosing a printing while swiping no longer reports it as saved.",
-        "Corrected in-app help and messages across the deck, card, filter, and import screens.",
-        "Corrected the guides on zwipe.net, and every oracle tag now has a Zwipe-written description.",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.9.3",
+        date: "Aug 20, 2026",
+        entries: &[
+            "Cards sharing a role with your deck's MVPs now come up sooner while you swipe.",
+            "Sign-in no longer rejects a password for failing the current password rules.",
+            "Changing your email now prompts you to verify the new address.",
+            "Importing a starred card onto another board no longer keeps its MVP star.",
+            "Choosing a printing while swiping no longer reports it as saved.",
+            "Corrected in-app help and messages across the deck, card, filter, and import screens.",
+            "Corrected the guides on zwipe.net, and every oracle tag now has a Zwipe-written description.",
+        ],
+    },
     Release {
         version: "1.9.2",
         date: "Aug 18, 2026",
