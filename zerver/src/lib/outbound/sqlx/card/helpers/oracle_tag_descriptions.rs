@@ -17726,7 +17726,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "clone-assassin",
-        "A clone that removes the creature it copied, right away or later.",
+        "A clone that can destroy a creature with the copied name, on arrival or from an activated ability.",
     ),
     (
         "clone-graveyard",
@@ -17741,10 +17741,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "A cycle of lands that tap for colorless anytime, or for one of two colors if they just entered or you control a basic land.",
     ),
     (
-        "experience",
-        "Gives you experience counters, which you keep and which grow an effect as they add up.",
-    ),
-    (
         "high-mana-value-matters",
         "Cares about spells or permanents at or above a mana value threshold, like 5 or greater.",
     ),
@@ -17754,7 +17750,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "sacrifice-outlet-universal",
-        "Lets you sacrifice any permanent, regardless of its type, usually for a benefit.",
+        "Sacrifices permanents of any type, not just creatures, whether as a cost or a forced effect.",
     ),
 ];
 
