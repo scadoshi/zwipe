@@ -49,7 +49,7 @@ scanned by auth). Redundant once the drive-by also purges expired.
   unit's `EnvironmentFile=` stays as-is.
 - **Tests**: extend the auth integration suite — insert a session while the
   user holds expired tokens → expired ones are gone; cap behavior unchanged.
-- `resend-verifications-cli.md` is parked (caveat recorded in that plan);
+- `resend-verifications-cli.md` is archived at plans/archive/ (caveat recorded in that plan);
   no coordination needed here.
 
 ## Phase 2 — scoped Postgres role (server-side, after phase 1 settles)
