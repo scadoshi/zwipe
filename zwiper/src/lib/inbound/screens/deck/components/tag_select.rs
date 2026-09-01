@@ -104,10 +104,8 @@ pub(crate) fn TagSelect(
 
                         div { class: "tag-def-bar",
                             if let Some(tag) = focused() {
-                                div { key: "{tag.slug}",
-                                    div { class: "tag-def-name", "{tag.display_name}" }
-                                    div { class: "tag-def-text", "{tag.description}" }
-                                }
+                                div { class: "tag-def-name", "{tag.display_name}" }
+                                div { class: "tag-def-text", "{tag.description}" }
                             } else {
                                 div { class: "tag-def-name", "Hint" }
                                 div { class: "tag-def-text", "Tap a tag to see its definition here." }

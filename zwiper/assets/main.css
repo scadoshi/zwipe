@@ -3380,28 +3380,6 @@ button {
     box-shadow: var(--shadow-sm);
 }
 
-/* Swapping the focused tag replays this ease (the def content is keyed per
-   tag, so it remounts), letting the bar grow to a taller description smoothly
-   instead of snapping. The max-height cap only shapes the curve and must stay
-   above the tallest description, or the end of the grow would clip-jump; the
-   animation doesn't persist, so no clamp remains at rest. */
-@keyframes tag-def-ease {
-    from {
-        max-height: 0;
-        opacity: 0;
-    }
-    to {
-        max-height: 9rem;
-        opacity: 1;
-    }
-}
-
-.tag-def-text,
-.tag-def-list {
-    overflow: hidden;
-    animation: tag-def-ease 220ms ease;
-}
-
 .tag-def-name {
     color: var(--accent-tertiary);
     font-weight: 600;

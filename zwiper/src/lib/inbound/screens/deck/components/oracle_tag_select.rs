@@ -174,11 +174,9 @@ pub(crate) fn OracleTagSelect(
 
                         div { class: "tag-def-bar",
                             if let Some(t) = focused() {
-                                div { key: "{t.slug}",
-                                    div { class: "tag-def-name", "{t.slug}" }
-                                    div { class: "tag-def-text",
-                                        { t.description.unwrap_or_else(|| "No description for this tag.".to_string()) }
-                                    }
+                                div { class: "tag-def-name", "{t.slug}" }
+                                div { class: "tag-def-text",
+                                    { t.description.unwrap_or_else(|| "No description for this tag.".to_string()) }
                                 }
                             } else {
                                 div { class: "tag-def-name", "Hint" }
