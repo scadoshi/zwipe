@@ -18,13 +18,13 @@ impl From<SearchCardsError> for ApiError {
 /// Searches cards using a `CardQuery` deserialized from the JSON body.
 #[cfg(feature = "zerver")]
 pub async fn search_cards(
-    _: AuthenticatedUser,
+    user: AuthenticatedUser,
     State(state): State<AppState>,
     Json(body): Json<CardQuery>,
 ) -> Result<(StatusCode, Json<Vec<Card>>), ApiError> {
     state
         .card_service
-        .search_cards(&body)
+        .search_cards(&body, user.id)
         .await
         .map_err(ApiError::from)
         .map(|cards| (StatusCode::OK, Json(cards)))

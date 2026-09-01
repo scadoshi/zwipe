@@ -270,3 +270,65 @@ async fn deck_selected_otags_lift_matching_cards_end_to_end(pool: sqlx::PgPool) 
         "no selected otags => matching cards stay in band 1, off the first page"
     );
 }
+
+/// The plain card search (the deck form's typed commander/partner pickers)
+/// honors the Universes Beyond preference: with the exclusion on, a typed
+/// name that only exists as a crossover card returns nothing, and flipping
+/// the setting off brings it back. Regression for the 1.10.0 smoke-test hole
+/// where typing "sonic" served Sonic past the exclusion.
+#[sqlx::test]
+async fn plain_search_honors_universes_beyond_preference(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    seed_cards(
+        &pool,
+        &[
+            card("Plain Legend").mono("R"),
+            card("Sonic the Hedgehog")
+                .mono("R")
+                .set("sld", "Secret Lair Drop")
+                .stamp("triangle"),
+        ],
+    )
+    .await;
+    let (token, _) = app.register("ubsearcher").await;
+
+    let (status, _) = app
+        .patch(
+            "/api/user/preferences",
+            json!({ "exclude_universes_beyond": true }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let (status, results) = app
+        .post(
+            "/api/card/search",
+            json!({ "name_contains": "sonic" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{results}");
+    assert!(
+        names(&results).is_empty(),
+        "excluded crossover card served from typed search: {results}"
+    );
+
+    let (status, _) = app
+        .patch(
+            "/api/user/preferences",
+            json!({ "exclude_universes_beyond": false }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let (_, results) = app
+        .post(
+            "/api/card/search",
+            json!({ "name_contains": "sonic" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(names(&results), vec!["Sonic the Hedgehog"]);
+}

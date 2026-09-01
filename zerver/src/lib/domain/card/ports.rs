@@ -459,10 +459,14 @@ pub trait CardService: Clone + Send + Sync + 'static {
         oracle_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
-    /// Searches for complete cards matching filter criteria.
+    /// Searches for complete cards matching filter criteria. Applies the
+    /// user's Universes Beyond preference, same as the deck-aware serve and
+    /// commander select (the plain search backs the deck form's typed
+    /// commander/partner pickers).
     fn search_cards(
         &self,
         request: &CardQuery,
+        user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// Searches for commanders (context/archive/commander_select_ordering.md):
@@ -602,6 +606,7 @@ pub trait ErasedCardService: Send + Sync + 'static {
     fn search_cards<'a>(
         &'a self,
         request: &'a CardQuery,
+        user_id: uuid::Uuid,
     ) -> BoxFuture<'a, Result<Vec<Card>, SearchCardsError>>;
 
     /// See [`CardService::search_commanders`].
@@ -727,8 +732,9 @@ where
     fn search_cards<'a>(
         &'a self,
         request: &'a CardQuery,
+        user_id: uuid::Uuid,
     ) -> BoxFuture<'a, Result<Vec<Card>, SearchCardsError>> {
-        Box::pin(CardService::search_cards(self, request))
+        Box::pin(CardService::search_cards(self, request, user_id))
     }
 
     fn search_commanders<'a>(

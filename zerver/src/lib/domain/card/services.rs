@@ -202,8 +202,31 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.get_printings(oracle_id).await
     }
 
-    async fn search_cards(&self, request: &CardQuery) -> Result<Vec<Card>, SearchCardsError> {
-        self.repo.search_cards(request).await
+    async fn search_cards(
+        &self,
+        request: &CardQuery,
+        user_id: uuid::Uuid,
+    ) -> Result<Vec<Card>, SearchCardsError> {
+        // The Universes Beyond preference applies here too: this path backs
+        // the deck form's typed commander/partner pickers, and typed-name
+        // intent does not override a "never serve crossover cards" setting
+        // (unlike suppressions, which typed Quick add deliberately bypasses).
+        // A failed read degrades to serving everything.
+        let (exclude_universes_beyond, universes_beyond_exception_set_names) = self
+            .repo
+            .get_universes_beyond_preferences(user_id)
+            .await
+            .unwrap_or_default();
+        self.repo
+            .search_cards_deck_aware(
+                request,
+                crate::domain::card::ports::DeckServeContext {
+                    exclude_universes_beyond,
+                    universes_beyond_exception_set_names,
+                    ..Default::default()
+                },
+            )
+            .await
     }
 
     async fn search_commanders(
