@@ -114,16 +114,18 @@ pub(crate) fn FormatSelect(
 
                         div { class: "tag-def-bar",
                             if let Some(fmt) = focused() {
-                                div { class: "tag-def-name", "{fmt.display_name()}" }
-                                ul { class: "tag-def-list",
-                                    li { "Pool: {fmt.card_pool()}" }
-                                    li { "Cards: {size_text(fmt)}" }
-                                    li { "Life: {fmt.starting_life()}" }
-                                    if fmt.has_commander() || fmt.has_signature_spell() {
-                                        li { "Command zone: {command_zone_text(fmt)}" }
-                                    }
-                                    if let Some(dmg) = fmt.commander_damage() {
-                                        li { "Commander damage: {dmg}" }
+                                div { key: "{fmt.display_name()}",
+                                    div { class: "tag-def-name", "{fmt.display_name()}" }
+                                    ul { class: "tag-def-list",
+                                        li { "Pool: {fmt.card_pool()}" }
+                                        li { "Cards: {size_text(fmt)}" }
+                                        li { "Life: {fmt.starting_life()}" }
+                                        if fmt.has_commander() || fmt.has_signature_spell() {
+                                            li { "Command zone: {command_zone_text(fmt)}" }
+                                        }
+                                        if let Some(dmg) = fmt.commander_damage() {
+                                            li { "Commander damage: {dmg}" }
+                                        }
                                     }
                                 }
                             } else {
