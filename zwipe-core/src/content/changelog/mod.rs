@@ -37,6 +37,7 @@ pub const RELEASES: &[Release] = &[
             "Set filters check every printing of a card. Including a set matches everything printed there; excluding one no longer hides cards also printed elsewhere.",
             "Searches show a card's in-universe printing when it has one, instead of its newest crossover printing.",
             "An empty search says why: the filter matched nothing, or Synergy is on and limiting results.",
+            "Tapping a deck tag, oracle tag, or format eases its definition open instead of snapping to the new size.",
         ],
     },
     Release {
