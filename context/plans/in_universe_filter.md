@@ -1,16 +1,21 @@
 # In-universe filter + printing-aware set filters
 
-**Status: server half BUILT 2026-09-01, all gates green, awaiting owner test +
-push. Steps 1–4 done: toast `75239e02`, const/table/overlay `6dc30b48`, view
-rebuild `b443b054`, printing-aware set predicates `f4dcd650`. Remaining: step
-5, the exclude-UB chip (client + core criterion + server predicate), which
-forces the client release (owner bumped it to 1.10.0). ON DEPLOY: re-run `zcripts/server/sql/zervice_role.sql` on prod
-(new oou_sets grant + matview ownership reset by the rebuild), or the nightly
-fails. Build notes: the remap now snapshots old picks first, moving only rows
-whose pick changed, so deliberate printing-sheet choices survive (improvement
-over the 06-06/08-12 remaps). Verified locally: 38,709 rows unchanged, 719
-picks flipped in-universe, Sol Ring's pick legitimately stays SLD (oval
-in-universe art) while its 74-set array fixes the exclusion bug.**
+**Status: SHIPPED end to end 2026-09-01 — a one-day plan-to-prod run. Server:
+toast `75239e02`, const/table/overlay `6dc30b48`, view rebuild `b443b054`,
+printing-aware set predicates `f4dcd650`, preference pipeline `98d67e41`.
+Client (step 5 grew into a global preference, owner call): Profile Show/Hide
+row + Exceptions chip sheet with the Secret Lair catch-all, `a31819f1`, shipped
+as 1.10.0 (build 78 / vc41, both stores, submitted same day). Prod deploy
+verified: migrations applied, `zervice_role.sql` re-run as postgres, manual
+zervice run printed `oou sets overlay: 71 wholly-UB set codes`. Device smoke
+test caught one hole — the deck form's typed commander picker rode the plain
+search and bypassed the preference — fixed server-side `bd167f6b` (service
+fetches the preference; HTTP regression test) and re-verified on device.
+Build notes worth keeping: the view remap snapshots old picks and moves only
+rows whose pick changed (printing-sheet choices survive, unlike the
+06-06/08-12 remaps); 719 picks flipped in-universe; Sol Ring's pick
+legitimately stays SLD (oval in-universe art) while its 74-set array fixes the
+exclusion bug. Standing chore: top up `universe::FRANCHISES` per UB release.**
 
 **One sentence:** set filters currently run against the one printing
 `latest_cards` happens to pick, so excluding a set can hide a card entirely
