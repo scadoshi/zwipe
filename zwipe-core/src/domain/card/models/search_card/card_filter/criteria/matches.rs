@@ -523,6 +523,11 @@ impl CardCriteria {
             return false;
         }
 
+        // Known divergence from the server (2026-09-01): zerver matches set
+        // filters against printing_set_names, the card's full printing
+        // history; here only the wire card's own printing is visible, so the
+        // check stays pick-based. Acceptable for the small in-memory
+        // maybeboard pool this path filters.
         if let Some(sets) = self.set_equals_any()
             && !sets.iter().any(|s| s == &sd.set_name)
         {

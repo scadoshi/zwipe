@@ -656,9 +656,11 @@ impl CardRepository for MyPostgres {
         }
 
         if let Some(sets) = criteria.set_equals_any() {
-            sep.push("set_name = ANY(");
+            // Printing-aware: matches a card with a printing in any of these
+            // sets, not just the view's picked printing (printing_set_names
+            // aggregates every printing). && is array overlap.
+            sep.push("printing_set_names && ");
             sep.push_bind_unseparated(sets);
-            sep.push_unseparated(")");
         }
 
         if let Some(artists) = criteria.artist_equals_any() {
@@ -674,9 +676,13 @@ impl CardRepository for MyPostgres {
         }
 
         if let Some(sets) = criteria.set_excludes_any() {
-            sep.push("NOT (set_name = ANY(");
+            // Printing-aware: a card survives unless EVERY set it was printed
+            // in is excluded (<@ is "contained by"). One excluded set can no
+            // longer hide a staple whose picked printing happened to be there,
+            // the Sol Ring / Secret Lair Drop bug this replaced.
+            sep.push("NOT (printing_set_names <@ ");
             sep.push_bind_unseparated(sets);
-            sep.push_unseparated("))");
+            sep.push_unseparated(")");
         }
 
         if let Some(artists) = criteria.artist_excludes_any() {

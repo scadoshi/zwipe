@@ -22,7 +22,10 @@ use zwipe::{
     outbound::sqlx::postgres::Postgres,
 };
 use zwipe_core::domain::{
-    card::{scryfall_data::universe::OUT_OF_UNIVERSE_SETS, search_card::card_filter::CardQuery},
+    card::{
+        scryfall_data::universe::OUT_OF_UNIVERSE_SETS,
+        search_card::card_filter::{CardQuery, builder::CardQueryBuilder},
+    },
     deck::requests::get_deck_profile::GetDeckProfile,
 };
 
@@ -497,4 +500,110 @@ async fn oou_sets_overlay_syncs_table_to_const(pool: sqlx::PgPool) {
         .collect();
     expected.sort();
     assert_eq!(in_db, expected, "oou_sets must mirror the const exactly");
+}
+
+/// The in-universe ORDER BY tiebreaker: with two same-day printings of one
+/// card, the pick must be the in-universe one, and an OOU-only card keeps its
+/// OOU pick (all rows tie on the term). Also proves printing_set_names
+/// aggregates both printings.
+#[sqlx::test]
+async fn latest_cards_pick_prefers_in_universe_printing(pool: sqlx::PgPool) {
+    let oracle = Uuid::from_u128(0x0001);
+    seed_cards(
+        &pool,
+        &[
+            card("Universal Staple")
+                .mono("R")
+                .oracle(Some(oracle))
+                .set("tst", "Test Set"),
+            card("Universal Staple")
+                .mono("R")
+                .oracle(Some(oracle))
+                .set("spm", "Marvel's Spider-Man"),
+            card("Beyond Only")
+                .mono("R")
+                .set("spm", "Marvel's Spider-Man"),
+        ],
+    )
+    .await;
+
+    let (set_name, all_sets): (String, Vec<String>) = sqlx::query_as(
+        "SELECT set_name, printing_set_names FROM latest_cards WHERE name = 'Universal Staple'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        set_name, "Test Set",
+        "in-universe printing must win the pick"
+    );
+    let mut all_sets = all_sets;
+    all_sets.sort();
+    assert_eq!(all_sets, vec!["Marvel's Spider-Man", "Test Set"]);
+
+    let beyond_pick: String =
+        sqlx::query_scalar("SELECT set_name FROM latest_cards WHERE name = 'Beyond Only'")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        beyond_pick, "Marvel's Spider-Man",
+        "an OOU-only card keeps its OOU pick"
+    );
+}
+
+/// Array-semantics set filters: include matches any printing's set (not just
+/// the pick), and exclude only hides a card when EVERY printing's set is
+/// excluded — the Sol Ring / Secret Lair Drop shadowing bug.
+#[sqlx::test]
+async fn set_filters_are_printing_aware(pool: sqlx::PgPool) {
+    let oracle = Uuid::from_u128(0x0002);
+    seed_cards(
+        &pool,
+        &[
+            card("Universal Staple")
+                .mono("R")
+                .oracle(Some(oracle))
+                .set("tst", "Test Set"),
+            card("Universal Staple")
+                .mono("R")
+                .oracle(Some(oracle))
+                .set("spm", "Marvel's Spider-Man"),
+            card("Beyond Only")
+                .mono("R")
+                .set("spm", "Marvel's Spider-Man"),
+        ],
+    )
+    .await;
+    let repo = Postgres { pool: pool.clone() };
+
+    // Include: the staple's pick is Test Set, but its spm printing must match.
+    let mut b = CardQueryBuilder::new();
+    b.set_set_equals_any(vec!["Marvel's Spider-Man"]);
+    let served = repo
+        .search_scryfall_data(&b.build().unwrap())
+        .await
+        .unwrap();
+    let mut names: Vec<&str> = served.iter().map(|s| s.name.as_str()).collect();
+    names.sort();
+    assert_eq!(
+        names,
+        vec!["Beyond Only", "Universal Staple"],
+        "include must match any printing's set"
+    );
+
+    // Exclude: the staple survives (it also exists in Test Set); the
+    // spm-only card is gone.
+    let mut b = CardQueryBuilder::new();
+    b.set_set_excludes_any(vec!["Marvel's Spider-Man"]);
+    let served = repo
+        .search_scryfall_data(&b.build().unwrap())
+        .await
+        .unwrap();
+    let names: Vec<&str> = served.iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(
+        names,
+        vec!["Universal Staple"],
+        "exclude must only hide cards with no printing left"
+    );
 }
