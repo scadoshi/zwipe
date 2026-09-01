@@ -153,13 +153,22 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.9.3 (`CARGO_PKG_VERSION`, aligns with the min-version gate), versionCode 40 |
+| Version (client) | 1.10.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate), versionCode 41 |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.10.0:**
+
+(Play phrasing drops the "Universes Beyond" and "Secret Lair" marks per the copycat rule; the in-app setting still uses them.)
+
+- A new Profile setting hides crossover cards from searches and leader picks. Franchise exceptions let your favorites through.
+- Set filters check every printing: including a set matches everything printed there, and excluding one no longer hides cards also printed elsewhere.
+- Searches show a card's original-universe printing when it has one.
+- An empty search now says why.
 
 **1.9.3:**
 

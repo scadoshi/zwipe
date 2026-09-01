@@ -17,7 +17,7 @@ Swipe to Build MTG Decks
 
 (170 character limit. Can be updated without a new submission — refresh this between releases to spotlight whatever's freshest.)
 
-Just shipped: your decks now show their commander's art on the Decks screen, and back closes what's open instead of backing out. Free, no ads.
+Just shipped: hide Universes Beyond cards from your searches and commander picks, with exceptions for the franchises you like. Free, no ads.
 
 ---
 
@@ -44,6 +44,15 @@ Other tools:
 - Your decks sync across sessions and devices
 
 Built for players who want a fast, focused mobile experience, not another cluttered desktop tool squeezed onto a small screen.
+
+---
+
+## What's New in This Version (1.10.0)
+
+- A Universes Beyond setting in Profile hides crossover cards from searches and commander picks. Franchise exceptions let your favorites through, Secret Lair drops included.
+- Set filters check every printing: including a set matches everything printed there, and excluding one no longer hides cards also printed elsewhere.
+- Searches show a card's in-universe printing when it has one.
+- An empty search now says why.
 
 ---
 
