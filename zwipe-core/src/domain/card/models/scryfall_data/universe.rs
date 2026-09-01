@@ -189,17 +189,44 @@ pub const FRANCHISES: &[UbFranchise] = &[
     },
 ];
 
+/// Exception-only entries: mixed sets whose UB cards are caught by the
+/// per-card triangle stamp, never by set code. These codes MUST stay out of
+/// `all_set_codes` (and so out of oou_sets and the OOU test), or every
+/// in-universe printing in the set would be misclassified. They exist so the
+/// exceptions whitelist can rescue a mixed set's UB cards wholesale: the
+/// crossover Secret Lairs (SpongeBob, PlayStation, Furby, and every future
+/// drop) become one selection instead of a hand-maintained franchise each.
+/// Rescue-only semantics make this safe: the exception term only ever brings
+/// back cards the exclusion hid, so the set's in-universe cards are untouched.
+pub const MIXED_SET_FRANCHISES: &[UbFranchise] = &[UbFranchise {
+    slug: "secret-lair",
+    name: "Secret Lair",
+    sets: &[
+        ("sld", "Secret Lair Drop"),
+        ("slc", "Secret Lair Countdown"),
+        ("slp", "Secret Lair Promo"),
+        ("pssc", "Secret Lair Showcase Planes"),
+        ("slu", "Secret Lair: Ultimate Edition"),
+    ],
+}];
+
 /// Every wholly-UB set code across all franchises (the oou_sets overlay and
-/// SQL pick predicates).
+/// SQL pick predicates). Deliberately excludes [`MIXED_SET_FRANCHISES`].
 pub fn all_set_codes() -> impl Iterator<Item = &'static str> {
     FRANCHISES
         .iter()
         .flat_map(|f| f.sets.iter().map(|(code, _)| *code))
 }
 
-/// Looks up a franchise by its stored slug.
+/// Every franchise offered in the exceptions whitelist: the wholly-UB ones
+/// plus the exception-only mixed sets.
+pub fn selectable_franchises() -> impl Iterator<Item = &'static UbFranchise> {
+    FRANCHISES.iter().chain(MIXED_SET_FRANCHISES.iter())
+}
+
+/// Looks up a franchise by its stored slug, exception-only entries included.
 pub fn franchise_by_slug(slug: &str) -> Option<&'static UbFranchise> {
-    FRANCHISES.iter().find(|f| f.slug == slug)
+    selectable_franchises().find(|f| f.slug == slug)
 }
 
 /// Set names covered by the given exception slugs, for overlap against
@@ -252,11 +279,22 @@ mod tests {
             assert!(codes.insert(code), "duplicate set code: {code}");
         }
         let mut slugs = std::collections::HashSet::new();
-        for f in FRANCHISES {
+        for f in selectable_franchises() {
             assert_eq!(f.slug, f.slug.to_lowercase(), "slugs are lowercase");
             assert!(slugs.insert(f.slug), "duplicate franchise slug: {}", f.slug);
             assert!(!f.sets.is_empty(), "franchise {} has no sets", f.slug);
         }
+    }
+
+    #[test]
+    fn mixed_set_franchises_stay_out_of_the_oou_test() {
+        // Secret Lair is selectable as an exception but must never classify
+        // its in-universe cards as OOU.
+        assert!(franchise_by_slug("secret-lair").is_some());
+        assert!(!all_set_codes().any(|c| c == "sld"));
+        assert!(!is_out_of_universe(Some("oval"), "sld"));
+        let names = exception_set_names(&["secret-lair".to_string()]);
+        assert!(names.contains(&"Secret Lair Drop".to_string()));
     }
 
     #[test]

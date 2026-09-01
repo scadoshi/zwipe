@@ -301,6 +301,7 @@ pub struct CardFixture {
     oversized: bool,
     promo: bool,
     content_warning: Option<bool>,
+    security_stamp: Option<String>,
     card_roles: Vec<String>,
     oracle_tags: Vec<String>,
 }
@@ -340,6 +341,7 @@ pub fn card(name: &str) -> CardFixture {
         oversized: false,
         promo: false,
         content_warning: None,
+        security_stamp: None,
         card_roles: Vec::new(),
         oracle_tags: Vec::new(),
     }
@@ -450,6 +452,11 @@ impl CardFixture {
         self.set_name = name.to_string();
         self
     }
+    /// Security stamp on the printing (e.g. "triangle" for Universes Beyond).
+    pub fn stamp(mut self, stamp: &str) -> Self {
+        self.security_stamp = Some(stamp.to_string());
+        self
+    }
     /// Mark this card legal in a format (e.g. `"commander"`). Repeatable.
     pub fn legal(mut self, format: &str) -> Self {
         self.legalities[format] = json!("legal");
@@ -522,7 +529,7 @@ pub async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
              border_color, booster, collector_number, digital, finishes, frame, full_art, \
              highres_image, image_status, oversized, prices, promo, rarity, related_uris, \
              released_at, reprint, scryfall_set_uri, set_name, set_search_uri, set_type, \
-             set_uri, set, set_id, story_spotlight, textless, variation) ",
+             set_uri, set, set_id, story_spotlight, textless, variation, security_stamp) ",
         );
         qb.push_values(cards.iter(), |mut b, c| {
             let prices = json!({ "usd": c.usd });
@@ -584,7 +591,8 @@ pub async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
                 .push_bind(c.set_id)
                 .push_bind(false) // story_spotlight
                 .push_bind(false) // textless
-                .push_bind(false); // variation
+                .push_bind(false) // variation
+                .push_bind(c.security_stamp.clone());
         });
         qb.build().execute(pool).await.unwrap();
 

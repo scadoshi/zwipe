@@ -25,7 +25,16 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.10.0",
+    date: "",
+    entries: &[
+        "A Universes Beyond setting in Profile hides crossover cards from searches and commander picks. Checking a franchise there keeps it.",
+        "Set filters check every printing of a card. Including a set matches everything printed there; excluding one no longer hides cards also printed elsewhere.",
+        "Searches show a card's in-universe printing when it has one, instead of its newest crossover printing.",
+        "An empty search says why: the filter matched nothing, or Synergy is on and limiting results.",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[

@@ -679,3 +679,64 @@ async fn universes_beyond_preference_filters_serve(pool: sqlx::PgPool) {
         vec!["Airbender Only", "Plain Card", "Universal Staple"]
     );
 }
+
+/// The Secret Lair exception: a card that exists only as a triangle-stamped
+/// Secret Lair printing (the PlayStation drop's Kratos, SpongeBob, Furby) is
+/// hidden by the UB exclusion, and whitelisting Secret Lair brings it back.
+/// Rescue-only semantics: in-universe Secret Lair cards were never hidden.
+#[sqlx::test]
+async fn secret_lair_exception_rescues_lair_only_ub_cards(pool: sqlx::PgPool) {
+    seed_cards(
+        &pool,
+        &[
+            card("Plain Card").mono("R"),
+            card("Lair Crossover")
+                .mono("R")
+                .set("sld", "Secret Lair Drop")
+                .stamp("triangle"),
+            card("Lair In Universe")
+                .mono("R")
+                .set("sld", "Secret Lair Drop")
+                .stamp("oval"),
+        ],
+    )
+    .await;
+    let repo = Postgres { pool: pool.clone() };
+    let q = default_query();
+
+    // Exclusion on, no exceptions: only the triangle Lair card vanishes.
+    let served = repo
+        .search_scryfall_data_deck_aware(
+            &q,
+            DeckServeContext {
+                exclude_universes_beyond: true,
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+    let mut names: Vec<&str> = served.iter().map(|s| s.name.as_str()).collect();
+    names.sort_unstable();
+    assert_eq!(names, vec!["Lair In Universe", "Plain Card"]);
+
+    // Secret Lair whitelisted: the crossover comes back.
+    let served = repo
+        .search_scryfall_data_deck_aware(
+            &q,
+            DeckServeContext {
+                exclude_universes_beyond: true,
+                universes_beyond_exception_set_names: universe::exception_set_names(&[
+                    "secret-lair".to_string(),
+                ]),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+    let mut names: Vec<&str> = served.iter().map(|s| s.name.as_str()).collect();
+    names.sort_unstable();
+    assert_eq!(
+        names,
+        vec!["Lair Crossover", "Lair In Universe", "Plain Card"]
+    );
+}

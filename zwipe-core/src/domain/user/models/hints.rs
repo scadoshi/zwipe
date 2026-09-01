@@ -33,6 +33,8 @@ pub const HINT_DECK_CARDS: &str = "deck_cards";
 pub const HINT_PROFILE: &str = "profile";
 /// Explainer for the shared card-filter bottom sheet (add/remove/view screens).
 pub const HINT_FILTER: &str = "filter";
+/// Explainer for the Universes Beyond exceptions sheet on the profile screen.
+pub const HINT_UNIVERSES_BEYOND_EXCEPTIONS: &str = "universes_beyond_exceptions";
 /// Explainer for the import cards screen (source, add/replace, board).
 pub const HINT_IMPORT: &str = "import";
 /// Explainer for the export deck screen (board selection, copy decklist).

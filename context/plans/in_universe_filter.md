@@ -4,7 +4,7 @@
 push. Steps 1–4 done: toast `75239e02`, const/table/overlay `6dc30b48`, view
 rebuild `b443b054`, printing-aware set predicates `f4dcd650`. Remaining: step
 5, the exclude-UB chip (client + core criterion + server predicate), which
-forces 1.9.4. ON DEPLOY: re-run `zcripts/server/sql/zervice_role.sql` on prod
+forces the client release (owner bumped it to 1.10.0). ON DEPLOY: re-run `zcripts/server/sql/zervice_role.sql` on prod
 (new oou_sets grant + matview ownership reset by the rebuild), or the nightly
 fails. Build notes: the remap now snapshots old picks first, moving only rows
 whose pick changed, so deliberate printing-sheet choices survive (improvement
@@ -141,9 +141,9 @@ so filtering must stop consulting the pick at all — hence the array.
 3. View migration (array + ORDER BY + remap) — deployable alone; fixes art
    picks immediately.
 4. Set predicates to array semantics + `cargo sqlx prepare --workspace`.
-5. OOU chip end to end (this is the piece that forces 1.9.4+).
+5. OOU chip end to end (this is the piece that forces the client release; owner bumped the workspace to 1.10.0).
 
 Steps 2–4 are server-side only and improve every existing client the moment
 they deploy. Version discipline per todo: any zwiper/zwipe-core change (steps
-2's const and 5) invalidates current store artifacts → next cut is 1.9.4,
+2's const and 5) invalidates current store artifacts → next cut is 1.10.0,
 build 78 / versionCode 41.

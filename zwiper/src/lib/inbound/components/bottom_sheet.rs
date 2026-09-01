@@ -11,6 +11,8 @@ use crate::inbound::components::navigation::overlay_stack::use_overlay_back_acti
 ///
 /// `footer` overrides the default single "Close" button (e.g. a Back/Save pair).
 /// `on_dismiss` fires when the backdrop is tapped, before the sheet closes.
+/// `hint` renders a grayed "?" at the header's right edge that opens the given
+/// dialog signal, mirroring `ScreenHeader`'s affordance.
 #[component]
 pub fn BottomSheet(
     mut open: Signal<bool>,
@@ -18,6 +20,7 @@ pub fn BottomSheet(
     children: Element,
     footer: Option<Element>,
     on_dismiss: Option<EventHandler<()>>,
+    hint: Option<Signal<bool>>,
 ) -> Element {
     // The OS back gesture closes the sheet before the router sees it, exactly
     // as tapping the backdrop does — `on_dismiss` first (preferences relies on
@@ -74,8 +77,16 @@ pub fn BottomSheet(
             } else {
                 "bottom-sheet bottom-sheet-premount"
             },
-            div { class: "modal-header",
+            div { class: "modal-header", style: "position: relative;",
                 span { style: "font-size: 1rem; color: var(--accent-tertiary);", "{title}" }
+                if let Some(mut hint_open) = hint {
+                    Button {
+                        variant: ButtonVariant::Util,
+                        style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
+                        onclick: move |_| hint_open.set(true),
+                        "?"
+                    }
+                }
             }
             div { class: "modal-content",
                 div { class: "flex-col", style: "gap: 0.5rem;",

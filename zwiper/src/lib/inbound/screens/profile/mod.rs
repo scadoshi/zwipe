@@ -12,6 +12,8 @@ pub mod change_username;
 mod components;
 /// User preferences bottom sheet.
 pub mod preferences;
+/// Universes Beyond preference bottom sheet.
+pub mod universes_beyond;
 
 use crate::{
     inbound::{
@@ -31,7 +33,10 @@ use crate::{
     outbound::{
         client::{
             ZwipeClient,
-            user::{get_user::ClientGetUser, preferences::ClientUpdatePreferences},
+            user::{
+                get_user::ClientGetUser,
+                preferences::{ClientGetPreferences, ClientUpdatePreferences},
+            },
         },
         open_url,
     },
@@ -47,10 +52,12 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use preferences::{PreferencesSheet, display_theme_name};
 use std::time::Duration;
+use universes_beyond::UniversesBeyondExceptionsSheet;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
+        card::scryfall_data::universe::franchise_by_slug,
         site::WEB_BASE,
         user::models::{hints::HINT_PROFILE, theme::ThemeConfig},
     },
@@ -74,6 +81,17 @@ pub fn Profile() -> Element {
     let mut show_delete_dialog = use_signal(|| false);
     let mut show_more_sheet = use_signal(|| false);
     let mut preferences_open = use_signal(|| false);
+    let mut ub_exceptions_open = use_signal(|| false);
+
+    // Universes Beyond preference, fetched once on mount. The toggle writes
+    // through immediately (dark-mode pattern); the exceptions sheet edits and
+    // writes back the whitelist.
+    let mut ub_hide = use_signal(|| false);
+    let mut ub_exceptions: Signal<Vec<String>> = use_signal(Vec::new);
+    let mut ub_loaded = use_signal(|| false);
+    // Exceptions explainer, shared with the sheet: the row's "?" and the
+    // sheet's header "?" both open it.
+    let mut ub_hint_open = use_signal(|| false);
     let mut change_username_open = use_signal(|| false);
     let mut change_email_open = use_signal(|| false);
     let mut change_password_open = use_signal(|| false);
@@ -102,6 +120,75 @@ pub fn Profile() -> Element {
             }
         });
     });
+
+    // Load the stored Universes Beyond preference once on mount.
+    use_effect(move || {
+        spawn(async move {
+            let Ok(session_val) = session.ensure_fresh(client).await else {
+                return;
+            };
+            match client().get_preferences(&session_val).await {
+                Ok(prefs) => {
+                    ub_hide.set(prefs.exclude_universes_beyond);
+                    ub_exceptions.set(prefs.universes_beyond_exceptions);
+                    ub_loaded.set(true);
+                }
+                Err(e) => {
+                    tracing::warn!("get preferences failed: {e}");
+                }
+            }
+        });
+    });
+
+    // Show/Hide toggle for Universes Beyond: flips optimistically and persists
+    // immediately, reverting on failure. Same shape as the dark-mode toggle.
+    let mut toggle_universes_beyond = move || {
+        let prev = *ub_hide.peek();
+        let next = !prev;
+        ub_hide.set(next);
+        let request = HttpUpdatePreferences {
+            theme: None,
+            dark_mode: None,
+            exclude_universes_beyond: Some(next),
+            universes_beyond_exceptions: None,
+        };
+        spawn(async move {
+            let session_val = match session.ensure_fresh(client).await {
+                Ok(session_val) => session_val,
+                Err(e) => {
+                    ub_hide.set(prev);
+                    usage_buffer.peek().report_error(
+                        screen::PROFILE,
+                        component::NONE,
+                        "update_preferences",
+                        &e,
+                    );
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
+                    return;
+                }
+            };
+            match client().update_preferences(request, &session_val).await {
+                Ok(prefs) => ub_hide.set(prefs.exclude_universes_beyond),
+                Err(e) => {
+                    ub_hide.set(prev);
+                    tracing::warn!("update universes beyond failed: {e}");
+                    usage_buffer.peek().report_error(
+                        screen::PROFILE,
+                        component::NONE,
+                        "update_preferences",
+                        &e,
+                    );
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
+                }
+            }
+        });
+    };
 
     let navigator = use_navigator();
 
@@ -177,6 +264,15 @@ pub fn Profile() -> Element {
                             " right here, or tap "
                             HintKey { color: "--accent-primary", "Change" }
                             " on Theme to pick a palette"
+                        }
+                        HintBullet {
+                            "Set "
+                            HintKey { color: "--accent-secondary", "Universes Beyond" }
+                            " to Hide to keep crossover cards out of searches and commander picks"
+                        }
+                        HintBullet {
+                            HintKey { color: "--accent-secondary", "Exceptions" }
+                            " picks franchises that still show up while hidden"
                         }
                         HintBullet {
                             "Tap "
@@ -275,6 +371,60 @@ pub fn Profile() -> Element {
                                         }
                                     }
                                 }
+
+                                div {
+                                    class: "profile-row",
+                                    span { class: "profile-row-label", "Universes Beyond" }
+                                    div { class: "profile-row-value",
+                                        Button {
+                                            variant: ButtonVariant::Util,
+                                            disabled: !ub_loaded(),
+                                            onclick: move |_| toggle_universes_beyond(),
+                                            if ub_hide() { "Hide" } else { "Show" }
+                                        }
+                                    }
+                                }
+
+                                div {
+                                    class: if ub_hide() { "profile-row ub-exceptions-row" } else { "profile-row ub-exceptions-row ub-chips-disabled" },
+                                    span { style: "display:flex;align-items:center;gap:0.35rem;",
+                                        button {
+                                            class: "info-button",
+                                            r#type: "button",
+                                            onclick: move |evt| {
+                                                evt.stop_propagation();
+                                                ub_hint_open.set(true);
+                                            },
+                                            "?"
+                                        }
+                                        span { class: "profile-row-label", "Exceptions" }
+                                    }
+                                    div { class: "profile-row-value",
+                                        Button {
+                                            variant: ButtonVariant::Util,
+                                            disabled: !ub_loaded() || !ub_hide(),
+                                            onclick: move |_| ub_exceptions_open.set(true),
+                                            "Change"
+                                        }
+                                    }
+                                    if !ub_exceptions().is_empty() {
+                                        div { class: "ub-exception-chips",
+                                            {
+                                                let mut names: Vec<&str> = ub_exceptions()
+                                                    .iter()
+                                                    .filter_map(|s| franchise_by_slug(s))
+                                                    .map(|f| f.name)
+                                                    .collect();
+                                                names.sort_unstable();
+                                                rsx! {
+                                                    for name in names {
+                                                        span { class: "stat-chip stat-chip-tag", { name } }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             div { class: "profile-list",
@@ -358,6 +508,11 @@ pub fn Profile() -> Element {
                 LogoutDialog { open: show_logout_dialog }
                 DeleteAccountDialog { open: show_delete_dialog }
                 PreferencesSheet { open: preferences_open }
+                UniversesBeyondExceptionsSheet {
+                    open: ub_exceptions_open,
+                    exceptions: ub_exceptions,
+                    hint_open: ub_hint_open,
+                }
                 ChangeUsernameSheet { open: change_username_open }
                 ChangeEmailSheet { open: change_email_open }
                 ChangePasswordSheet { open: change_password_open }
