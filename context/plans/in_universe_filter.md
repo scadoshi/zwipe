@@ -123,11 +123,12 @@ so filtering must stop consulting the pick at all — hence the array.
 ## Build order
 
 1. **Standalone quick fix, no dependency on the rest:** no-results toast in
-   `add.rs` (search Ok branch, after the deck-dedup filter): stack empty +
-   `filter_snapshot.synergy()` + not warming → warning toast "No results with
-   Synergy on; try turning it off in the filter"; otherwise "No results for
-   this filter". Skip warming (its own toast already explains the fallback).
-   Diff was drafted 2026-09-01 and reverted pending this plan; trivial to redo.
+   `add.rs` (search Ok branch, after the deck-dedup filter). One composed
+   message: base "No results for this filter", plus a suffix when synergy is
+   on: "; tap Synergy to turn it off" (the chip is on the add screen top
+   right, not in the filter sheet), or "; Synergy is warming up, so all cards
+   were searched" while warming (a warming search runs against the full pool,
+   so emptiness there is the filter's own doing and the copy says so).
 2. Curated const + zervice overlay + `oou_sets` table.
 3. View migration (array + ORDER BY + remap) — deployable alone; fixes art
    picks immediately.

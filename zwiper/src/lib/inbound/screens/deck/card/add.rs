@@ -972,17 +972,35 @@ pub fn Add(deck_id: Uuid) -> Element {
                 Ok((cards_from_search, warming)) => {
                     synergy_warming.set(warming);
                     let deck_ids = deck_cards_ids();
-                    stack.replace(
-                        cards_from_search
-                            .into_iter()
-                            .filter(|card| {
-                                !card
-                                    .scryfall_data
-                                    .oracle_id
-                                    .is_some_and(|oid| deck_ids.contains(&oid))
-                            })
-                            .collect(),
-                    );
+                    let served: Vec<Card> = cards_from_search
+                        .into_iter()
+                        .filter(|card| {
+                            !card
+                                .scryfall_data
+                                .oracle_id
+                                .is_some_and(|oid| deck_ids.contains(&oid))
+                        })
+                        .collect();
+                    // Say why the screen is empty: a bare skeleton reads as
+                    // "no cards exist". Synergy is the usual silent culprit,
+                    // intersecting every other filter with the commander's
+                    // pool; while warming the server searched the full pool
+                    // instead, so warming is context rather than the cause.
+                    if served.is_empty() {
+                        let mut message = String::from("No results for this filter");
+                        if filter_snapshot.synergy() {
+                            message.push_str(if warming {
+                                "; Synergy is warming up, so all cards were searched"
+                            } else {
+                                "; tap Synergy to turn it off"
+                            });
+                        }
+                        toast.warning(
+                            message,
+                            ToastOptions::default().duration(Duration::from_millis(3500)),
+                        );
+                    }
+                    stack.replace(served);
                     // Record the filter that produced these results.
                     last_search_filter.set(Some(filter_snapshot));
                     // Set offset for next page
