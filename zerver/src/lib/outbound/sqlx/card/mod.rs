@@ -239,6 +239,37 @@ impl CardRepository for MyPostgres {
     }
 
     async fn refresh_latest_cards(&self) -> anyhow::Result<()> {
+        // Overlay zwipe-core's wholly-UB set list into oou_sets before the
+        // refresh, so the view's printing preference always matches the
+        // deployed const. Delete-then-fill keeps removals honest; the pair
+        // shares a transaction so the refresh never sees a half-applied list.
+        let codes: Vec<String> =
+            zwipe_core::domain::card::models::scryfall_data::universe::OUT_OF_UNIVERSE_SETS
+                .iter()
+                .map(|code| (*code).to_string())
+                .collect();
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .context("failed to begin oou_sets overlay transaction")?;
+        sqlx::query("DELETE FROM oou_sets WHERE code <> ALL($1)")
+            .bind(&codes)
+            .execute(&mut *tx)
+            .await
+            .context("failed to prune oou_sets")?;
+        sqlx::query(
+            "INSERT INTO oou_sets (code) SELECT unnest($1::text[]) ON CONFLICT (code) DO NOTHING",
+        )
+        .bind(&codes)
+        .execute(&mut *tx)
+        .await
+        .context("failed to fill oou_sets")?;
+        tx.commit()
+            .await
+            .context("failed to commit oou_sets overlay")?;
+        tracing::info!("oou sets overlay: {} wholly-UB set codes", codes.len());
+
         sqlx::query("REFRESH MATERIALIZED VIEW latest_cards")
             .execute(&self.pool)
             .await

@@ -12,6 +12,8 @@ pub mod legalities;
 pub mod prices;
 /// Rarity types (Common, Uncommon, Rare, Mythic).
 pub mod rarity;
+/// Universes Beyond mapping (triangle stamp + wholly-UB set list).
+pub mod universe;
 
 use all_parts::AllParts;
 use card_faces::CardFaces;
@@ -332,6 +334,12 @@ impl ScryfallData {
         self.type_line
             .as_deref()
             .is_some_and(|tl| tl.to_lowercase().contains("land"))
+    }
+
+    /// Returns `true` if this printing is out of universe (Universes Beyond):
+    /// triangle security stamp, or a wholly-UB set. See [`universe`].
+    pub fn is_out_of_universe(&self) -> bool {
+        universe::is_out_of_universe(self.security_stamp.as_deref(), &self.set)
     }
 
     /// Returns the URL for the card's primary (front) face image at the given size,

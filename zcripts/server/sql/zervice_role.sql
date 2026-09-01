@@ -37,6 +37,11 @@ GRANT SELECT, INSERT, UPDATE, DELETE
 -- signal sources (scryfall_data/card_profiles already covered above).
 GRANT SELECT ON commander_card_signal, otag_context_signal TO zervice;
 
+-- Step 4: oou_sets overlay (the wholly-UB set list from zwipe-core's
+-- OUT_OF_UNIVERSE_SETS const) runs right before the latest_cards refresh,
+-- and the view's backing query reads the table at refresh time.
+GRANT SELECT, INSERT, DELETE ON oou_sets TO zervice;
+
 -- Ownership transfer strips the previous owner's implicit read, and zerver
 -- serves from these views — so capture each view's owner BEFORE the ALTER and
 -- grant SELECT back to it ('zwipe' on prod, the dev user locally). Per-view,

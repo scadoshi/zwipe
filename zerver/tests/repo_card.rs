@@ -22,7 +22,8 @@ use zwipe::{
     outbound::sqlx::postgres::Postgres,
 };
 use zwipe_core::domain::{
-    card::search_card::card_filter::CardQuery, deck::requests::get_deck_profile::GetDeckProfile,
+    card::{scryfall_data::universe::OUT_OF_UNIVERSE_SETS, search_card::card_filter::CardQuery},
+    deck::requests::get_deck_profile::GetDeckProfile,
 };
 
 /// A default `CardQuery` — no criteria, no explicit sort (so the synergy /
@@ -463,4 +464,37 @@ async fn mvp_roles_lift_matching_cards(pool: sqlx::PgPool) {
         vec!["Aaa Plain", "Zzz Ramp"],
         "a deck with no MVPs must order exactly as before"
     );
+}
+
+/// The oou_sets overlay inside `refresh_latest_cards` must make the table
+/// exactly mirror zwipe-core's OUT_OF_UNIVERSE_SETS const: additions land,
+/// removals prune, and the migration seed drifting from the const self-heals
+/// on the next run.
+#[sqlx::test]
+async fn oou_sets_overlay_syncs_table_to_const(pool: sqlx::PgPool) {
+    let repo = Postgres { pool: pool.clone() };
+
+    // Drift the seeded table both ways: a code the const doesn't carry, and a
+    // real code gone missing.
+    sqlx::query("INSERT INTO oou_sets (code) VALUES ('zzz')")
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM oou_sets WHERE code = 'spm'")
+        .execute(&pool)
+        .await
+        .unwrap();
+
+    repo.refresh_latest_cards().await.unwrap();
+
+    let in_db: Vec<String> = sqlx::query_scalar("SELECT code FROM oou_sets ORDER BY code")
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+    let mut expected: Vec<String> = OUT_OF_UNIVERSE_SETS
+        .iter()
+        .map(|code| (*code).to_string())
+        .collect();
+    expected.sort();
+    assert_eq!(in_db, expected, "oou_sets must mirror the const exactly");
 }
