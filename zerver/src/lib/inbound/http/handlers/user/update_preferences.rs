@@ -36,8 +36,14 @@ pub async fn update_preferences(
     State(state): State<AppState>,
     Json(body): Json<HttpUpdatePreferences>,
 ) -> Result<(StatusCode, Json<UserPreferences>), ApiError> {
-    let request = UpdatePreferences::new(user.id, body.theme.as_deref(), body.dark_mode)
-        .map_err(ApiError::from)?;
+    let request = UpdatePreferences::new(
+        user.id,
+        body.theme.as_deref(),
+        body.dark_mode,
+        body.exclude_universes_beyond,
+        body.universes_beyond_exceptions,
+    )
+    .map_err(ApiError::from)?;
 
     state
         .user_service

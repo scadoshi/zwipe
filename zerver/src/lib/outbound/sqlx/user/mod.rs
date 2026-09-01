@@ -31,6 +31,8 @@ struct DatabaseUserPreferences {
     user_id: Uuid,
     theme: String,
     dark_mode: bool,
+    exclude_universes_beyond: bool,
+    universes_beyond_exceptions: Vec<String>,
 }
 
 impl From<DatabaseUserPreferences> for UserPreferences {
@@ -38,6 +40,8 @@ impl From<DatabaseUserPreferences> for UserPreferences {
         Self {
             theme: db.theme,
             dark_mode: db.dark_mode,
+            exclude_universes_beyond: db.exclude_universes_beyond,
+            universes_beyond_exceptions: db.universes_beyond_exceptions,
         }
     }
 }
@@ -98,7 +102,8 @@ impl UserRepository for Postgres {
     async fn get_preferences(&self, user_id: Uuid) -> Result<UserPreferences, GetPreferencesError> {
         let result = query_as!(
             DatabaseUserPreferences,
-            "SELECT user_id, theme, dark_mode FROM user_preferences WHERE user_id = $1",
+            "SELECT user_id, theme, dark_mode, exclude_universes_beyond, universes_beyond_exceptions \
+             FROM user_preferences WHERE user_id = $1",
             user_id
         )
         .fetch_optional(&self.pool)
@@ -120,17 +125,27 @@ impl UserRepository for Postgres {
 
         let result = query_as!(
             DatabaseUserPreferences,
-            r#"INSERT INTO user_preferences (user_id, theme, dark_mode, updated_at)
-               VALUES ($1, COALESCE($2, 'zwipe'), COALESCE($3, true), NOW())
+            r#"INSERT INTO user_preferences
+                   (user_id, theme, dark_mode, exclude_universes_beyond,
+                    universes_beyond_exceptions, updated_at)
+               VALUES ($1, COALESCE($2, 'zwipe'), COALESCE($3, true),
+                       COALESCE($4, false), COALESCE($5::text[], '{}'::text[]), NOW())
                ON CONFLICT (user_id)
                DO UPDATE SET
                    theme = COALESCE($2, user_preferences.theme),
                    dark_mode = COALESCE($3, user_preferences.dark_mode),
+                   exclude_universes_beyond =
+                       COALESCE($4, user_preferences.exclude_universes_beyond),
+                   universes_beyond_exceptions =
+                       COALESCE($5::text[], user_preferences.universes_beyond_exceptions),
                    updated_at = NOW()
-               RETURNING user_id, theme, dark_mode"#,
+               RETURNING user_id, theme, dark_mode, exclude_universes_beyond,
+                         universes_beyond_exceptions"#,
             request.user_id,
             request.theme,
-            request.dark_mode
+            request.dark_mode,
+            request.exclude_universes_beyond,
+            request.universes_beyond_exceptions.as_deref()
         )
         .fetch_one(&mut *tx)
         .await

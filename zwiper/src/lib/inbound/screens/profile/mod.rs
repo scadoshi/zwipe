@@ -117,6 +117,8 @@ pub fn Profile() -> Element {
         let request = HttpUpdatePreferences {
             theme: Some(next.name.clone()),
             dark_mode: Some(next.is_dark),
+            exclude_universes_beyond: None,
+            universes_beyond_exceptions: None,
         };
         spawn(async move {
             let session_val = match session.ensure_fresh(client).await {

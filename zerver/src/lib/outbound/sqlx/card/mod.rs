@@ -244,9 +244,8 @@ impl CardRepository for MyPostgres {
         // deployed const. Delete-then-fill keeps removals honest; the pair
         // shares a transaction so the refresh never sees a half-applied list.
         let codes: Vec<String> =
-            zwipe_core::domain::card::models::scryfall_data::universe::OUT_OF_UNIVERSE_SETS
-                .iter()
-                .map(|code| (*code).to_string())
+            zwipe_core::domain::card::models::scryfall_data::universe::all_set_codes()
+                .map(str::to_string)
                 .collect();
         let mut tx = self
             .pool
@@ -392,6 +391,8 @@ impl CardRepository for MyPostgres {
             commander_seed,
             deck_oracle_tags,
             mvp_card_roles,
+            exclude_universes_beyond,
+            universes_beyond_exception_set_names,
         } = context;
         // WHERE clauses read the predicate fields; LIMIT/OFFSET/ORDER BY read
         // the query config — the CardCriteria/CardQuery split, mirrored here.
@@ -1107,6 +1108,23 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(" ->> LOWER(name)) IS NOT NULL");
         }
 
+        // Universes Beyond preference: serve a card only when its pick is
+        // in-universe (the view's pick preference makes that a card-level
+        // truth: an OOU pick means no in-universe printing exists) or it has
+        // a printing in a whitelisted franchise. An empty whitelist overlaps
+        // nothing and the OR term is inert.
+        if exclude_universes_beyond {
+            let ub_codes: Vec<String> =
+                zwipe_core::domain::card::models::scryfall_data::universe::all_set_codes()
+                    .map(str::to_string)
+                    .collect();
+            sep.push("(NOT (COALESCE(security_stamp, '') = 'triangle' OR set = ANY(");
+            sep.push_bind_unseparated(ub_codes);
+            sep.push_unseparated(")) OR printing_set_names && ");
+            sep.push_bind_unseparated(universes_beyond_exception_set_names);
+            sep.push_unseparated(")");
+        }
+
         // Filter out NULLs for sorted field
         if let Some(order_by) = request.sort() {
             let null_filter = match order_by {
@@ -1511,6 +1529,25 @@ impl CardRepository for MyPostgres {
         Ok(sets)
     }
 
+    async fn get_universes_beyond_preferences(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> anyhow::Result<(bool, Vec<String>)> {
+        let row: Option<(bool, Vec<String>)> = sqlx::query_as(
+            "SELECT exclude_universes_beyond, universes_beyond_exceptions \
+             FROM user_preferences WHERE user_id = $1",
+        )
+        .bind(user_id)
+        .fetch_optional(&self.pool)
+        .await
+        .context("failed to read universes beyond preferences")?;
+        let (exclude, slugs) = row.unwrap_or((false, Vec::new()));
+        Ok((
+            exclude,
+            zwipe_core::domain::card::models::scryfall_data::universe::exception_set_names(&slugs),
+        ))
+    }
+
     async fn get_languages(&self) -> Result<Vec<String>, GetLanguagesError> {
         let languages: Vec<String> = query_scalar!(
             "SELECT DISTINCT lang FROM latest_cards
@@ -1685,11 +1722,19 @@ impl CardRepository for MyPostgres {
         user_id: uuid::Uuid,
     ) -> Result<Vec<Card>, SearchCardsError> {
         let seed = format!("{user_id}:{}", Utc::now().date_naive());
+        // Same degrade-to-everything read as the deck-aware serve: the UB
+        // preference should never fail commander select.
+        let (exclude_universes_beyond, universes_beyond_exception_set_names) = self
+            .get_universes_beyond_preferences(user_id)
+            .await
+            .unwrap_or_default();
         let scryfall_data = self
             .search_scryfall_data_deck_aware(
                 request,
                 DeckServeContext {
                     commander_seed: Some(seed),
+                    exclude_universes_beyond,
+                    universes_beyond_exception_set_names,
                     ..Default::default()
                 },
             )

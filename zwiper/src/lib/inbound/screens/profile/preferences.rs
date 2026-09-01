@@ -116,6 +116,8 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
         let request = HttpUpdatePreferences {
             theme: Some(selected_theme()),
             dark_mode: Some(selected_dark()),
+            exclude_universes_beyond: None,
+            universes_beyond_exceptions: None,
         };
         open.set(false);
         spawn(async move {

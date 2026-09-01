@@ -1,74 +1,222 @@
 //! Universes Beyond mapping: which printings are out of universe.
 //!
 //! A printing is out of universe when it carries the triangle security stamp
-//! OR its set code appears in [`OUT_OF_UNIVERSE_SETS`]. The stamp alone is not
-//! enough: WotC retired it starting with Marvel's Spider-Man (2025-09), so the
-//! newest UB tentpoles print with oval or no stamp, and even stamped UB sets
-//! hold a few stampless stragglers. The list alone is not enough either: mixed
-//! sets (Secret Lair Drop, Ravnica: Clue Edition, promo grab-bags) hold UB
-//! cards next to in-universe ones, and there the per-card stamp decides. The
-//! pre-stamp crossover Lairs (Walking Dead, Stranger Things, Street Fighter,
-//! Fortnite) need no special handling: Scryfall records them triangle-stamped
-//! under their canonical Universes Within names, with the UB originals kept
-//! only as flavor names.
+//! OR its set code belongs to a franchise in [`FRANCHISES`]. The stamp alone
+//! is not enough: WotC retired it starting with Marvel's Spider-Man (2025-09),
+//! so the newest UB tentpoles print with oval or no stamp, and even stamped UB
+//! sets hold stampless satellites (art series, minigames, front cards). The
+//! list alone is not enough either: mixed sets (Secret Lair Drop, Ravnica:
+//! Clue Edition, promo grab-bags) hold UB cards next to in-universe ones, and
+//! there the per-card stamp decides. The pre-stamp crossover Lairs (Walking
+//! Dead, Stranger Things, Street Fighter, Fortnite) need no special handling:
+//! Scryfall records them triangle-stamped under their canonical Universes
+//! Within names, with the UB originals kept only as flavor names.
 //!
-//! Maintenance: this list is hand-kept and must gain the set codes of each
-//! wholly-UB set as it releases (a few times a year). "Recent and stampless"
-//! does not imply UB: The Zeta Set (slz) is a stampless in-universe reprint
-//! box, so each addition is a judgment call. Census query to find candidates,
-//! run against the synced catalog:
+//! Franchises are the user-facing grouping for the exclude-UB preference's
+//! exceptions ("exclude UB but let Middle-earth through"): slugs are stored in
+//! `user_preferences.universes_beyond_exceptions`, names label the checkboxes,
+//! and the (code, name) pairs drive both the SQL predicates (set names match
+//! `latest_cards.printing_set_names`) and the nightly `oou_sets` overlay.
+//!
+//! Maintenance: hand-kept; add each wholly-UB set (satellites included) as it
+//! releases, a few times a year. "Recent and stampless" does not imply UB (The
+//! Zeta Set is a stampless in-universe reprint box), so each addition is a
+//! judgment call. Census query for candidates, against the synced catalog:
 //!
 //! ```sql
 //! SELECT set, set_name, set_type, min(released_at), count(*)
 //! FROM scryfall_data GROUP BY 1, 2, 3
-//! HAVING count(*) FILTER (WHERE security_stamp = 'triangle') = 0
-//!    AND min(released_at) > '<last census date>'
+//! HAVING min(released_at) > '<last census date>'
 //! ORDER BY 4;
 //! ```
-//!
-//! Consumers: the client's in-memory filter matching, zerver's search
-//! predicates, and (via the `oou_sets` table zervice overlays each sync) the
-//! `latest_cards` materialized view's printing-preference ORDER BY.
 
-/// Set codes of wholly Universes Beyond sets, satellites included, grouped by
-/// franchise. Mixed sets are deliberately absent; their UB cards are caught by
-/// the triangle stamp instead.
-#[rustfmt::skip]
-pub const OUT_OF_UNIVERSE_SETS: &[&str] = &[
-    // The Lord of the Rings: Tales of Middle-earth (2023)
-    "ltr", "ltc", "pltr", "tltr", "tltc", "pltc",
-    // Doctor Who (2023)
-    "who", "twho",
-    // Fallout (2024)
-    "pip", "tpip",
-    // Warhammer 40,000 (2022)
-    "40k", "t40k",
-    // Final Fantasy (2025)
-    "fin", "fic", "fca", "pfin", "tfin", "tfic", "wfin", "rfin", "pss5",
-    // Assassin's Creed (2024)
-    "acr", "tacr",
-    // Jurassic World Collection (2023)
-    "rex", "trex",
-    // Transformers (2022)
-    "bot", "tbot",
-    // Marvel's Spider-Man (2025, stampless from here on)
-    "spm", "spe", "pspm", "mar", "lmar", "aspm", "tspm",
-    // Avatar: The Last Airbender (2025)
-    "tla", "tle", "ptla", "ttla", "ttle", "atla", "atle", "ftla", "jtla",
-    // Marvel Super Heroes (2026)
-    "msh", "msc", "tmsh", "tmsc", "amsh", "fmsc",
-    // Teenage Mutant Ninja Turtles (2026)
-    "tmt", "tmc", "pza", "ttmt", "ttmc", "ftmc", "atmt",
-    // The Hobbit (2026)
-    "hob", "hoc", "thob",
-    // Star Trek (2026)
-    "trk", "trc", "ttrk", "sds",
+/// One Universes Beyond franchise: the unit users except from the exclude-UB
+/// preference.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct UbFranchise {
+    /// Stable identifier stored in user preferences. Never rename.
+    pub slug: &'static str,
+    /// Display name for the exceptions checkboxes.
+    pub name: &'static str,
+    /// Every set in the franchise as (set code, set name), satellites
+    /// included. Codes drive the oou_sets overlay and pick predicates; names
+    /// match `latest_cards.printing_set_names`.
+    pub sets: &'static [(&'static str, &'static str)],
+}
+
+/// Wholly Universes Beyond sets, grouped by franchise. Mixed sets are
+/// deliberately absent; their UB cards are caught by the triangle stamp.
+pub const FRANCHISES: &[UbFranchise] = &[
+    UbFranchise {
+        slug: "middle-earth",
+        name: "Middle-earth",
+        sets: &[
+            ("ltr", "The Lord of the Rings: Tales of Middle-earth"),
+            ("ltc", "Tales of Middle-earth Commander"),
+            ("pltr", "Tales of Middle-earth Promos"),
+            ("tltr", "Tales of Middle-earth Tokens"),
+            ("tltc", "Tales of Middle-earth Commander Tokens"),
+            ("pltc", "Tales of Middle-earth Deluxe Commander Kit"),
+            ("altr", "Tales of Middle-earth Art Series"),
+            ("fltr", "Tales of Middle-earth Front Cards"),
+            ("altc", "Tales of Middle-earth Scene Box"),
+            (
+                "mltr",
+                "The Lord of the Rings: Tales of Middle-earth Minigames",
+            ),
+            ("hob", "The Hobbit"),
+            ("hoc", "The Hobbit Eternal"),
+            ("thob", "The Hobbit Tokens"),
+        ],
+    },
+    UbFranchise {
+        slug: "doctor-who",
+        name: "Doctor Who",
+        sets: &[("who", "Doctor Who"), ("twho", "Doctor Who Tokens")],
+    },
+    UbFranchise {
+        slug: "fallout",
+        name: "Fallout",
+        sets: &[("pip", "Fallout"), ("tpip", "Fallout Tokens")],
+    },
+    UbFranchise {
+        slug: "warhammer-40k",
+        name: "Warhammer 40,000",
+        sets: &[
+            ("40k", "Warhammer 40,000 Commander"),
+            ("t40k", "Warhammer 40,000 Tokens"),
+        ],
+    },
+    UbFranchise {
+        slug: "final-fantasy",
+        name: "Final Fantasy",
+        sets: &[
+            ("fin", "Final Fantasy"),
+            ("fic", "Final Fantasy Commander"),
+            ("fca", "Final Fantasy: Through the Ages"),
+            ("pfin", "Final Fantasy Promos"),
+            ("tfin", "Final Fantasy Tokens"),
+            ("tfic", "Final Fantasy Commander Tokens"),
+            ("afin", "Final Fantasy Art Series"),
+            ("afic", "Final Fantasy Scene Box"),
+            ("rfin", "Final Fantasy Regional Promos"),
+            ("wfin", "FIN Asia WPN Promo Tokens"),
+            ("pss5", "FIN Standard Showdown"),
+        ],
+    },
+    UbFranchise {
+        slug: "assassins-creed",
+        name: "Assassin's Creed",
+        sets: &[
+            ("acr", "Assassin's Creed"),
+            ("tacr", "Assassin's Creed Tokens"),
+            ("aacr", "Assassin's Creed Art Series"),
+            ("macr", "Assassin's Creed Minigames"),
+        ],
+    },
+    UbFranchise {
+        slug: "jurassic-world",
+        name: "Jurassic World",
+        sets: &[
+            ("rex", "Jurassic World Collection"),
+            ("trex", "Jurassic World Collection Tokens"),
+        ],
+    },
+    UbFranchise {
+        slug: "transformers",
+        name: "Transformers",
+        sets: &[("bot", "Transformers"), ("tbot", "Transformers Tokens")],
+    },
+    UbFranchise {
+        slug: "marvel",
+        name: "Marvel",
+        sets: &[
+            ("spm", "Marvel's Spider-Man"),
+            ("spe", "Marvel's Spider-Man Eternal"),
+            ("pspm", "Marvel's Spider-Man Promos"),
+            ("aspm", "Marvel's Spider-Man Art Series"),
+            ("tspm", "Marvel's Spider-Man Tokens"),
+            ("mar", "Marvel Universe"),
+            ("lmar", "Marvel Legends Series Inserts"),
+            ("msh", "Marvel Super Heroes"),
+            ("msc", "Marvel Super Heroes Commander"),
+            ("tmsh", "Marvel Super Heroes Tokens"),
+            ("tmsc", "Marvel Super Heroes Commander Tokens"),
+            ("amsh", "Marvel Super Heroes Art Series"),
+            ("fmsc", "Marvel Super Heroes Jumpstart Front Cards"),
+        ],
+    },
+    UbFranchise {
+        slug: "avatar-the-last-airbender",
+        name: "Avatar: The Last Airbender",
+        sets: &[
+            ("tla", "Avatar: The Last Airbender"),
+            ("tle", "Avatar: The Last Airbender Eternal"),
+            ("ptla", "Avatar: The Last Airbender Promos"),
+            ("ttla", "Avatar: The Last Airbender Tokens"),
+            ("ttle", "Avatar: The Last Airbender Eternal Tokens"),
+            ("atla", "Avatar: the Last Airbender Art Series"),
+            ("atle", "Avatar: the Last Airbender Eternal Art Series"),
+            (
+                "ftla",
+                "Avatar: The Last Airbender Beginner Box Front Cards",
+            ),
+            ("jtla", "Avatar: The Last Airbender Jumpstart Front Cards"),
+        ],
+    },
+    UbFranchise {
+        slug: "teenage-mutant-ninja-turtles",
+        name: "Teenage Mutant Ninja Turtles",
+        sets: &[
+            ("tmt", "Teenage Mutant Ninja Turtles"),
+            ("tmc", "Teenage Mutant Ninja Turtles Eternal"),
+            ("pza", "Teenage Mutant Ninja Turtles Source Material"),
+            ("ttmt", "Teenage Mutant Ninja Turtles Tokens"),
+            ("ttmc", "Teenage Mutant Ninja Turtles Eternal Tokens"),
+            ("ftmc", "Teenage Mutant Ninja Turtles Eternal Front Cards"),
+            ("atmt", "Teenage Mutant Ninja Turtles Art Series"),
+        ],
+    },
+    UbFranchise {
+        slug: "star-trek",
+        name: "Star Trek",
+        sets: &[
+            ("trk", "Star Trek"),
+            ("trc", "Star Trek Commander"),
+            ("ttrk", "Star Trek Tokens"),
+            ("sds", "Stardates"),
+        ],
+    },
 ];
+
+/// Every wholly-UB set code across all franchises (the oou_sets overlay and
+/// SQL pick predicates).
+pub fn all_set_codes() -> impl Iterator<Item = &'static str> {
+    FRANCHISES
+        .iter()
+        .flat_map(|f| f.sets.iter().map(|(code, _)| *code))
+}
+
+/// Looks up a franchise by its stored slug.
+pub fn franchise_by_slug(slug: &str) -> Option<&'static UbFranchise> {
+    FRANCHISES.iter().find(|f| f.slug == slug)
+}
+
+/// Set names covered by the given exception slugs, for overlap against
+/// `latest_cards.printing_set_names`. Unknown slugs are ignored so a retired
+/// franchise slug in stored preferences degrades to no exception.
+pub fn exception_set_names(slugs: &[String]) -> Vec<String> {
+    slugs
+        .iter()
+        .filter_map(|s| franchise_by_slug(s))
+        .flat_map(|f| f.sets.iter().map(|(_, name)| (*name).to_string()))
+        .collect()
+}
 
 /// Returns `true` if a printing with this security stamp and set code is out
 /// of universe (Universes Beyond).
 pub fn is_out_of_universe(security_stamp: Option<&str>, set: &str) -> bool {
-    security_stamp == Some("triangle") || OUT_OF_UNIVERSE_SETS.contains(&set)
+    security_stamp == Some("triangle") || all_set_codes().any(|code| code == set)
 }
 
 #[cfg(test)]
@@ -97,11 +245,24 @@ mod tests {
     }
 
     #[test]
-    fn list_is_lowercase_and_deduplicated() {
-        let mut seen = std::collections::HashSet::new();
-        for code in OUT_OF_UNIVERSE_SETS {
-            assert_eq!(*code, code.to_lowercase(), "set codes are lowercase");
-            assert!(seen.insert(*code), "duplicate set code: {code}");
+    fn codes_and_slugs_are_lowercase_and_deduplicated() {
+        let mut codes = std::collections::HashSet::new();
+        for code in all_set_codes() {
+            assert_eq!(code, code.to_lowercase(), "set codes are lowercase");
+            assert!(codes.insert(code), "duplicate set code: {code}");
         }
+        let mut slugs = std::collections::HashSet::new();
+        for f in FRANCHISES {
+            assert_eq!(f.slug, f.slug.to_lowercase(), "slugs are lowercase");
+            assert!(slugs.insert(f.slug), "duplicate franchise slug: {}", f.slug);
+            assert!(!f.sets.is_empty(), "franchise {} has no sets", f.slug);
+        }
+    }
+
+    #[test]
+    fn exception_set_names_expands_known_slugs_and_ignores_unknown() {
+        let names = exception_set_names(&["doctor-who".to_string(), "not-a-franchise".to_string()]);
+        assert_eq!(names, vec!["Doctor Who", "Doctor Who Tokens"]);
+        assert!(exception_set_names(&[]).is_empty());
     }
 }

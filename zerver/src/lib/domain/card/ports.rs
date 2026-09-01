@@ -59,6 +59,14 @@ pub struct DeckServeContext<'a> {
     /// Distinct `card_roles` of the deck's mainboard MVPs, for the `W_STEER`
     /// term. Empty (the default) leaves ordering byte-identical.
     pub mvp_card_roles: &'a [String],
+    /// User preference: hide cards with no in-universe printing. The pick
+    /// preference in latest_cards makes the picked printing's stamp/set a
+    /// card-level truth, so the predicate reads the row directly.
+    pub exclude_universes_beyond: bool,
+    /// Set NAMES whose printings are served despite the exclusion (the
+    /// user's whitelisted franchises, expanded via `universe`). Overlapped
+    /// against `printing_set_names`.
+    pub universes_beyond_exception_set_names: Vec<String>,
 }
 
 /// Database port for MTG card operations.
@@ -228,6 +236,14 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 
     /// Retrieves all distinct set codes from card database.
     fn get_sets(&self) -> impl Future<Output = Result<Vec<String>, GetSetsError>> + Send;
+
+    /// The user's Universes Beyond serving preference: the exclude flag plus
+    /// the exception franchises already expanded to set names for the
+    /// `printing_set_names` overlap. No preferences row = default off.
+    fn get_universes_beyond_preferences(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> impl Future<Output = anyhow::Result<(bool, Vec<String>)>> + Send;
 
     /// Retrieves all distinct language codes from card database.
     fn get_languages(&self) -> impl Future<Output = Result<Vec<String>, GetLanguagesError>> + Send;

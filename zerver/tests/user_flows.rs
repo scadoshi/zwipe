@@ -151,3 +151,63 @@ async fn delete_user_cascades_decks(pool: sqlx::PgPool) {
         .unwrap();
     assert_eq!(decks, 0, "decks cascaded on user delete");
 }
+
+#[sqlx::test]
+async fn universes_beyond_preference_round_trips(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("ubuser").await;
+
+    // Defaults: off, empty whitelist.
+    let (status, prefs) = app.get("/api/user/preferences", Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "get preferences: {prefs}");
+    assert_eq!(prefs["exclude_universes_beyond"], false);
+    assert_eq!(prefs["universes_beyond_exceptions"], json!([]));
+
+    // Set both; the theme fields stay untouched (partial update).
+    let (status, updated) = app
+        .patch(
+            "/api/user/preferences",
+            json!({
+                "exclude_universes_beyond": true,
+                "universes_beyond_exceptions": ["middle-earth", "final-fantasy"],
+            }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "update: {updated}");
+    assert_eq!(updated["exclude_universes_beyond"], true);
+    assert_eq!(
+        updated["universes_beyond_exceptions"],
+        json!(["middle-earth", "final-fantasy"])
+    );
+
+    // A theme-only update (an old client's payload) must not wipe them.
+    let (status, updated) = app
+        .patch(
+            "/api/user/preferences",
+            json!({ "theme": "dracula", "dark_mode": false }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "theme-only update: {updated}");
+    assert_eq!(updated["theme"], "dracula");
+    assert_eq!(updated["exclude_universes_beyond"], true);
+    assert_eq!(
+        updated["universes_beyond_exceptions"],
+        json!(["middle-earth", "final-fantasy"])
+    );
+
+    // Unknown franchise slugs are rejected.
+    let (status, body) = app
+        .patch(
+            "/api/user/preferences",
+            json!({ "universes_beyond_exceptions": ["not-a-franchise"] }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "unknown slug: {body}"
+    );
+}

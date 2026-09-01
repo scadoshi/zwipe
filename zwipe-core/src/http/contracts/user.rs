@@ -11,6 +11,14 @@ pub struct HttpUpdatePreferences {
     pub theme: Option<String>,
     /// Dark mode setting, or absent to leave unchanged.
     pub dark_mode: Option<bool>,
+    /// Universes Beyond exclusion, or absent to leave unchanged. serde
+    /// defaults keep payloads from clients that predate the field.
+    #[serde(default)]
+    pub exclude_universes_beyond: Option<bool>,
+    /// Exception franchise slugs (whole-list replace), or absent to leave
+    /// unchanged.
+    #[serde(default)]
+    pub universes_beyond_exceptions: Option<Vec<String>>,
 }
 
 /// HTTP request body for marking a one-time UI hint as shown.

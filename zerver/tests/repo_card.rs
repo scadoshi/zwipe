@@ -23,7 +23,7 @@ use zwipe::{
 };
 use zwipe_core::domain::{
     card::{
-        scryfall_data::universe::OUT_OF_UNIVERSE_SETS,
+        scryfall_data::universe,
         search_card::card_filter::{CardQuery, builder::CardQueryBuilder},
     },
     deck::requests::get_deck_profile::GetDeckProfile,
@@ -470,7 +470,7 @@ async fn mvp_roles_lift_matching_cards(pool: sqlx::PgPool) {
 }
 
 /// The oou_sets overlay inside `refresh_latest_cards` must make the table
-/// exactly mirror zwipe-core's OUT_OF_UNIVERSE_SETS const: additions land,
+/// exactly mirror zwipe-core's universe franchise codes: additions land,
 /// removals prune, and the migration seed drifting from the const self-heals
 /// on the next run.
 #[sqlx::test]
@@ -494,10 +494,7 @@ async fn oou_sets_overlay_syncs_table_to_const(pool: sqlx::PgPool) {
         .fetch_all(&pool)
         .await
         .unwrap();
-    let mut expected: Vec<String> = OUT_OF_UNIVERSE_SETS
-        .iter()
-        .map(|code| (*code).to_string())
-        .collect();
+    let mut expected: Vec<String> = universe::all_set_codes().map(str::to_string).collect();
     expected.sort();
     assert_eq!(in_db, expected, "oou_sets must mirror the const exactly");
 }
@@ -605,5 +602,80 @@ async fn set_filters_are_printing_aware(pool: sqlx::PgPool) {
         names,
         vec!["Universal Staple"],
         "exclude must only hide cards with no printing left"
+    );
+}
+
+/// The Universes Beyond serve preference: exclusion hides cards with no
+/// in-universe printing, the franchise whitelist lets its cards back through,
+/// and a card with any in-universe printing is never touched.
+#[sqlx::test]
+async fn universes_beyond_preference_filters_serve(pool: sqlx::PgPool) {
+    let oracle = Uuid::from_u128(0x0003);
+    seed_cards(
+        &pool,
+        &[
+            card("Plain Card").mono("R"),
+            card("Universal Staple")
+                .mono("R")
+                .oracle(Some(oracle))
+                .set("tst", "Test Set"),
+            card("Universal Staple")
+                .mono("R")
+                .oracle(Some(oracle))
+                .set("spm", "Marvel's Spider-Man"),
+            card("Beyond Only")
+                .mono("R")
+                .set("spm", "Marvel's Spider-Man"),
+            card("Airbender Only")
+                .mono("R")
+                .set("tla", "Avatar: The Last Airbender"),
+        ],
+    )
+    .await;
+    let repo = Postgres { pool: pool.clone() };
+    let q = default_query();
+
+    // Preference off: everything serves.
+    let served = repo
+        .search_scryfall_data_deck_aware(&q, DeckServeContext::default())
+        .await
+        .unwrap();
+    assert_eq!(served.len(), 4, "off must serve all cards");
+
+    // On with no whitelist: UB-only cards vanish, the staple stays (its pick
+    // is the in-universe printing).
+    let served = repo
+        .search_scryfall_data_deck_aware(
+            &q,
+            DeckServeContext {
+                exclude_universes_beyond: true,
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+    let mut names: Vec<&str> = served.iter().map(|s| s.name.as_str()).collect();
+    names.sort_unstable();
+    assert_eq!(names, vec!["Plain Card", "Universal Staple"]);
+
+    // On with Avatar whitelisted: the Avatar card returns, Marvel stays gone.
+    let served = repo
+        .search_scryfall_data_deck_aware(
+            &q,
+            DeckServeContext {
+                exclude_universes_beyond: true,
+                universes_beyond_exception_set_names: universe::exception_set_names(&[
+                    "avatar-the-last-airbender".to_string(),
+                ]),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+    let mut names: Vec<&str> = served.iter().map(|s| s.name.as_str()).collect();
+    names.sort_unstable();
+    assert_eq!(
+        names,
+        vec!["Airbender Only", "Plain Card", "Universal Staple"]
     );
 }
