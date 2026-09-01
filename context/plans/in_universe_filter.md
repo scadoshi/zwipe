@@ -1,8 +1,16 @@
 # In-universe filter + printing-aware set filters
 
-**Status: DESIGN AGREED with owner 2026-09-01. Not started. Build order below —
-server half ships alone and fixes the worst of it; the client chip rides the
-next release (1.9.4+).**
+**Status: server half BUILT 2026-09-01, all gates green, awaiting owner test +
+push. Steps 1–4 done: toast `75239e02`, const/table/overlay `6dc30b48`, view
+rebuild `b443b054`, printing-aware set predicates `f4dcd650`. Remaining: step
+5, the exclude-UB chip (client + core criterion + server predicate), which
+forces 1.9.4. ON DEPLOY: re-run `zcripts/server/sql/zervice_role.sql` on prod
+(new oou_sets grant + matview ownership reset by the rebuild), or the nightly
+fails. Build notes: the remap now snapshots old picks first, moving only rows
+whose pick changed, so deliberate printing-sheet choices survive (improvement
+over the 06-06/08-12 remaps). Verified locally: 38,709 rows unchanged, 719
+picks flipped in-universe, Sol Ring's pick legitimately stays SLD (oval
+in-universe art) while its 74-set array fixes the exclusion bug.**
 
 **One sentence:** set filters currently run against the one printing
 `latest_cards` happens to pick, so excluding a set can hide a card entirely
