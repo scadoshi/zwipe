@@ -179,6 +179,8 @@ wire changes.
   or stay quiet? (Plan assumes quiet: a background top-up failing mid-swipe
   with a toast would interrupt the gesture; the pile just stops growing and
   a retry happens on the next fetch anyway.)
+  ANSWER: I think a toast is fine here. Otherwise a user gets no cards at the end of swiping and has no warning.
 - `use_authed(screen)` per screen vs a screen-less handle with `screen` passed
   per call: plan assumes per-screen (matches how `screen::` constants are used
   today, one per file).
+  ANSWER: Yeah we will want to pass in screens indicating where we failed. I guess maybe screen doesn't mater during errors for this shared component but I think it probably does. Having as screen type that captures all of the needed information would be good here. Think Screen::Auth(Screen) would be good.
