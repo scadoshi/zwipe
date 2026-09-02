@@ -231,6 +231,18 @@ pub fn About() -> Element {
                         }
                     }
 
+                    Panel { eyebrow: "Process", title: "How AI is used",
+                        p { class: "card-summary",
+                            "The learning comes first. The typing comes last."
+                        }
+                        ul { class: "card-bullets",
+                            li { "It starts with research: teaching myself, cross-referencing with a model, learning the approaches before picking one" }
+                            li { "Security checked at every stop, implementations validated against other models, everything tested" }
+                            li { "Only once I could build it myself does the model take over the typing, and I read the code. That's where the speed comes from" }
+                            li { "All of it is open source. Read it; criticism is welcome" }
+                        }
+                    }
+
                     Panel { eyebrow: "Auth", title: "Authentication",
                         p { class: "card-summary",
                             "Hand-rolled, stricter than a deckbuilder needs."
