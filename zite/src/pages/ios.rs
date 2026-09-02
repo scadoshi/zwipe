@@ -35,8 +35,6 @@ pub fn Ios() -> Element {
                         "If you're not redirected automatically, "
                         a {
                             href: "{APP_STORE_URL}",
-                            target: "_blank",
-                            rel: "noopener noreferrer",
                             class: "store-btn",
                             "open Zwipe on the App Store ↗"
                         }

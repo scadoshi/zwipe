@@ -83,8 +83,6 @@ fn Testimonials() -> Element {
                 a {
                     class: "rating-tag",
                     href: APP_STORE_URL,
-                    target: "_blank",
-                    rel: "noopener noreferrer",
                     "aria-label": "4.8 out of 5 stars on the App Store",
                     span { class: "rating-stars", "★★★★★" }
                     span { class: "rating-score", "4.8" }
@@ -227,7 +225,7 @@ pub fn Home() -> Element {
             div { class: "hero-card",
                 p { class: "tagline",
                     "The "
-                    a { href: "https://magic.wizards.com/en", target: "_blank", rel: "noopener noreferrer", "Magic: The Gathering" }
+                    a { href: "https://magic.wizards.com/en", "Magic: The Gathering" }
                     " deck builder built for mobile. Swipe "
                     span { class: "swipe-add", "right" }
                     " to add card to deck (or remove on remove flow), "

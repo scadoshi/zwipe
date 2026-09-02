@@ -44,7 +44,7 @@ pub fn Privacy() -> Element {
                         "Questions or requests? Email "
                         a { href: "mailto:{SUPPORT_EMAIL}", "{SUPPORT_EMAIL}" }
                         " or join the "
-                        a { href: "{DISCORD_URL}", target: "_blank", rel: "noopener noreferrer", "Discord" }
+                        a { href: "{DISCORD_URL}", "Discord" }
                         " for support."
                     }
                 }

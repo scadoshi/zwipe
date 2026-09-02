@@ -38,8 +38,6 @@ pub fn Contribute() -> Element {
                             a {
                                 class: "panel-action",
                                 href: STRIPE_URL,
-                                target: "_blank",
-                                rel: "noopener noreferrer",
                                 "Contribute \u{2197}"
                             }
                         },
@@ -52,8 +50,6 @@ pub fn Contribute() -> Element {
                             a {
                                 class: "panel-action",
                                 href: BMC_URL,
-                                target: "_blank",
-                                rel: "noopener noreferrer",
                                 "Contribute \u{2197}"
                             }
                         },
@@ -66,8 +62,6 @@ pub fn Contribute() -> Element {
                             a {
                                 class: "panel-action",
                                 href: GITHUB_SPONSORS_URL,
-                                target: "_blank",
-                                rel: "noopener noreferrer",
                                 "Contribute \u{2197}"
                             }
                         },

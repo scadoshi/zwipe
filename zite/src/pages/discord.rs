@@ -21,8 +21,6 @@ pub fn Discord() -> Element {
                     p {
                         a {
                             href: "{DISCORD_URL}",
-                            target: "_blank",
-                            rel: "noopener noreferrer",
                             class: "store-btn",
                             "Join the Discord ↗"
                         }

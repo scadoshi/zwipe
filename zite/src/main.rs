@@ -260,8 +260,6 @@ pub fn Footer() -> Element {
                 "Zwipe is unofficial Fan Content permitted under the "
                 a {
                     href: "https://company.wizards.com/en/legal/fancontentpolicy",
-                    target: "_blank",
-                    rel: "noopener noreferrer",
                     "Fan Content Policy"
                 }
                 ". Not approved/endorsed by Wizards. Portions of the materials used are property "

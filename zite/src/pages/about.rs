@@ -36,9 +36,9 @@ pub fn About() -> Element {
                     title: "Scotty Fermo",
                     title_h1: true,
                     actions: rsx! {
-                        a { class: "profile-link", href: "https://scottyfermo.com", target: "_blank", rel: "noopener noreferrer", "scottyfermo.com ↗" }
-                        a { class: "profile-link", href: "https://github.com/scadoshi", target: "_blank", rel: "noopener noreferrer", "GitHub ↗" }
-                        a { class: "profile-link", href: "https://www.linkedin.com/in/scotty-fermo-41a35b141/", target: "_blank", rel: "noopener noreferrer", "LinkedIn ↗" }
+                        a { class: "profile-link", href: "https://scottyfermo.com", "scottyfermo.com ↗" }
+                        a { class: "profile-link", href: "https://github.com/scadoshi", "GitHub ↗" }
+                        a { class: "profile-link", href: "https://www.linkedin.com/in/scotty-fermo-41a35b141/", "LinkedIn ↗" }
                     },
                     div { class: "tag-row",
                         span { class: "tag", "Rust" }
@@ -66,26 +66,26 @@ pub fn About() -> Element {
                         eyebrow: "Mobile app",
                         title: "zwiper",
                         actions: rsx! {
-                            a { class: "panel-action", href: URL_ZWIPER, target: "_blank", rel: "noopener noreferrer", "Source \u{2197}" }
+                            a { class: "panel-action", href: URL_ZWIPER, "Source \u{2197}" }
                         },
                         div { class: "arch-tags",
                             span { class: "tag", "iOS" }
                             span { class: "tag", "Android" }
-                            a { class: "tag", href: URL_DIOXUS, target: "_blank", rel: "noopener noreferrer", "Dioxus" }
-                            a { class: "tag", href: URL_WASM, target: "_blank", rel: "noopener noreferrer", "WASM" }
+                            a { class: "tag", href: URL_DIOXUS, "Dioxus" }
+                            a { class: "tag", href: URL_WASM, "WASM" }
                         }
                         ul { class: "card-bullets",
                             li { "Swipe to build, search cards, keep decks in sync" }
                             li {
                                 "Talks to "
-                                a { href: URL_ZERVER, target: "_blank", rel: "noopener noreferrer", "zerver" }
+                                a { href: URL_ZERVER, "zerver" }
                                 " over HTTPS"
                             }
                             li {
                                 "Imports "
-                                a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
+                                a { href: URL_ZWIPE_CORE, "zwipe-core" }
                                 " and "
-                                a { href: URL_ZWIPE_COMPONENTS, target: "_blank", rel: "noopener noreferrer", "zwipe-components" }
+                                a { href: URL_ZWIPE_COMPONENTS, "zwipe-components" }
                             }
                         }
                     }
@@ -93,25 +93,25 @@ pub fn About() -> Element {
                         eyebrow: "Website",
                         title: "zite",
                         actions: rsx! {
-                            a { class: "panel-action", href: URL_ZITE, target: "_blank", rel: "noopener noreferrer", "Source \u{2197}" }
+                            a { class: "panel-action", href: URL_ZITE, "Source \u{2197}" }
                         },
                         div { class: "arch-tags",
                             span { class: "tag", "web" }
-                            a { class: "tag", href: URL_DIOXUS, target: "_blank", rel: "noopener noreferrer", "Dioxus" }
-                            a { class: "tag", href: URL_WASM, target: "_blank", rel: "noopener noreferrer", "WASM" }
+                            a { class: "tag", href: URL_DIOXUS, "Dioxus" }
+                            a { class: "tag", href: URL_WASM, "WASM" }
                         }
                         ul { class: "card-bullets",
                             li { "Marketing, landing, password reset, and email verification" }
                             li {
                                 "Talks to "
-                                a { href: URL_ZERVER, target: "_blank", rel: "noopener noreferrer", "zerver" }
+                                a { href: URL_ZERVER, "zerver" }
                                 " over HTTPS"
                             }
                             li {
                                 "Imports "
-                                a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
+                                a { href: URL_ZWIPE_CORE, "zwipe-core" }
                                 " and "
-                                a { href: URL_ZWIPE_COMPONENTS, target: "_blank", rel: "noopener noreferrer", "zwipe-components" }
+                                a { href: URL_ZWIPE_COMPONENTS, "zwipe-components" }
                             }
                         }
                     }
@@ -119,28 +119,28 @@ pub fn About() -> Element {
                         eyebrow: "Backend",
                         title: "zerver",
                         actions: rsx! {
-                            a { class: "panel-action", href: URL_ZERVER, target: "_blank", rel: "noopener noreferrer", "Source \u{2197}" }
+                            a { class: "panel-action", href: URL_ZERVER, "Source \u{2197}" }
                         },
                         div { class: "arch-tags",
                             span { class: "tag", "REST API" }
-                            a { class: "tag", href: URL_AXUM, target: "_blank", rel: "noopener noreferrer", "Axum" }
-                            a { class: "tag", href: URL_TOKIO, target: "_blank", rel: "noopener noreferrer", "Tokio" }
-                            a { class: "tag", href: URL_SQLX, target: "_blank", rel: "noopener noreferrer", "SQLx" }
+                            a { class: "tag", href: URL_AXUM, "Axum" }
+                            a { class: "tag", href: URL_TOKIO, "Tokio" }
+                            a { class: "tag", href: URL_SQLX, "SQLx" }
                         }
                         ul { class: "card-bullets",
                             li { "The REST API behind everything: auth, sessions, decks, cards, and users" }
                             li {
                                 "Reads and writes a "
-                                a { href: URL_POSTGRES, target: "_blank", rel: "noopener noreferrer", "PostgreSQL" }
+                                a { href: URL_POSTGRES, "PostgreSQL" }
                                 " database"
                             }
                             li {
                                 "A nightly job pulls the card catalog from "
-                                a { href: URL_SCRYFALL, target: "_blank", rel: "noopener noreferrer", "Scryfall" }
+                                a { href: URL_SCRYFALL, "Scryfall" }
                             }
                             li {
                                 "Imports "
-                                a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
+                                a { href: URL_ZWIPE_CORE, "zwipe-core" }
                             }
                         }
                     }
@@ -148,20 +148,20 @@ pub fn About() -> Element {
                         eyebrow: "Shared UI",
                         title: "zwipe-components",
                         actions: rsx! {
-                            a { class: "panel-action", href: URL_ZWIPE_COMPONENTS, target: "_blank", rel: "noopener noreferrer", "Source \u{2197}" }
+                            a { class: "panel-action", href: URL_ZWIPE_COMPONENTS, "Source \u{2197}" }
                         },
                         div { class: "arch-tags",
-                            a { class: "tag", href: URL_DIOXUS, target: "_blank", rel: "noopener noreferrer", "Dioxus" }
+                            a { class: "tag", href: URL_DIOXUS, "Dioxus" }
                         }
                         ul { class: "card-bullets",
                             li { "The Dioxus UI shared across the clients: buttons, action bar, card row, changelog" }
                             li {
                                 "Reused beyond Zwipe on "
-                                a { href: "https://scottyfermo.com", target: "_blank", rel: "noopener noreferrer", "scottyfermo.com" }
+                                a { href: "https://scottyfermo.com", "scottyfermo.com" }
                             }
                             li {
                                 "Imports "
-                                a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
+                                a { href: URL_ZWIPE_CORE, "zwipe-core" }
                             }
                         }
                     }
@@ -169,7 +169,7 @@ pub fn About() -> Element {
                         eyebrow: "Shared domain",
                         title: "zwipe-core",
                         actions: rsx! {
-                            a { class: "panel-action", href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "Source \u{2197}" }
+                            a { class: "panel-action", href: URL_ZWIPE_CORE, "Source \u{2197}" }
                         },
                         div { class: "arch-tags",
                             span { class: "tag", "Pure Rust" }
@@ -193,7 +193,7 @@ pub fn About() -> Element {
                         }
                         ul { class: "card-bullets",
                             li {
-                                a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
+                                a { href: URL_ZWIPE_CORE, "zwipe-core" }
                                 ": zero framework dependencies"
                             }
                             li { "Inbound and outbound adapters swap freely" }
@@ -205,7 +205,7 @@ pub fn About() -> Element {
                     Panel { eyebrow: "Quality", title: "Testing & lint discipline",
                         p { class: "card-summary",
                             "694 tests, 406 in "
-                            a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
+                            a { href: URL_ZWIPE_CORE, "zwipe-core" }
                             ". Enforced by the compiler."
                         }
                         ul { class: "card-bullets",
@@ -222,7 +222,7 @@ pub fn About() -> Element {
                             li { "22 Clippy rules, workspace-wide" }
                             li {
                                 "Compile-time SQL: "
-                                a { href: URL_SQLX, target: "_blank", rel: "noopener noreferrer", "sqlx" }
+                                a { href: URL_SQLX, "sqlx" }
                                 " "
                                 code { "query!" }
                                 " fails the build, not runtime"
@@ -284,7 +284,7 @@ pub fn About() -> Element {
                     Panel { eyebrow: "Sync", title: "Card data pipeline",
                         p { class: "card-summary",
                             "110k+ printings nightly from "
-                            a { href: URL_SCRYFALL, target: "_blank", rel: "noopener noreferrer", "Scryfall" }
+                            a { href: URL_SCRYFALL, "Scryfall" }
                             ". The hard part isn't the cron."
                         }
                         ul { class: "card-bullets",
@@ -297,7 +297,7 @@ pub fn About() -> Element {
                             li { "Materialized view for dedup search (~35k unique)" }
                             li {
                                 "Roles derived at sync, stored on the row: filter one indexed column (see "
-                                a { href: URL_CARD_ROLE, target: "_blank", rel: "noopener noreferrer", "card_role" }
+                                a { href: URL_CARD_ROLE, "card_role" }
                                 ")"
                             }
                         }

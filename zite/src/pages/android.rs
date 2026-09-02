@@ -35,8 +35,6 @@ pub fn Android() -> Element {
                         "If you're not redirected automatically, "
                         a {
                             href: "{PLAY_STORE_URL}",
-                            target: "_blank",
-                            rel: "noopener noreferrer",
                             class: "store-btn",
                             "get Zwipe on Google Play ↗"
                         }
