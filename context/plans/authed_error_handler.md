@@ -55,12 +55,17 @@ pub struct Authed {
     usage_buffer: Signal<UsageBuffer>,
     toast: /* the use_toast() handle type — verify; it is Copy (moved into
               closures everywhere today) */,
-    screen: &'static str,
+    screen: Screen,
 }
 
-/// Reads the contexts once. `screen` is the telemetry vocabulary constant,
-/// passed at hook time so call sites don't repeat it.
-pub fn use_authed(screen: &'static str) -> Authed;
+/// Reads the contexts once. `screen` is the typed screen (owner decision
+/// 2026-09-02: a hierarchical enum, e.g. `Screen::Auth(AuthScreen::Login)`,
+/// `Screen::Deck(DeckScreen::CardAdd)`), passed at hook time so call sites
+/// don't repeat it. The enum's `as_str()` MUST map to the existing `screen::`
+/// vocabulary strings byte-for-byte — the wire format and `client_errors`
+/// dedupe keys stay unchanged; the enum adds compile-time structure on top,
+/// and room to carry more context later without touching the wire.
+pub fn use_authed(screen: Screen) -> Authed;
 
 impl Authed {
     /// The uniform path: ensure_fresh → run → on any Err, report_error +
@@ -79,9 +84,10 @@ impl Authed {
     pub async fn try_run<T, Fut>(&self, op: &'static str, f: ...)
         -> Result<T, ClientError>;
 
-    /// Telemetry only, no toast — for background work where a toast would
-    /// be noise (prefetch, load-more top-ups, usage flush). The current
-    /// silent sites become *deliberately* quiet instead of accidentally.
+    /// Telemetry only, no toast — for true background work where a toast
+    /// would be noise (image/catalog prefetch, fire-and-forget flushes).
+    /// Owner's default is the OTHER way: when in doubt, toast — a user who
+    /// hits a dead end deserves a warning (see the load-more decision below).
     pub async fn run_quiet<T, Fut>(&self, op: &'static str, f: ...) -> Option<T>;
 }
 ```
@@ -89,7 +95,7 @@ impl Authed {
 Call sites become:
 
 ```rust
-let authed = use_authed(screen::PROFILE);
+let authed = use_authed(Screen::Profile(ProfileScreen::Main));
 ...
 if let Some(prefs) = authed
     .run("get_preferences", |c, s| async move { c.get_preferences(&s).await })
@@ -123,7 +129,7 @@ two local names — the rename is cosmetic):
 | File | Sites | Notes |
 |---|---|---|
 | deck/card/view.rs | 12 | biggest win; several optimistic patterns → try_run |
-| deck/card/add.rs | 11 | load_more is silent today → run_quiet, deliberately |
+| deck/card/add.rs | 11 | load_more is silent today → gets a toast (owner decision below) |
 | deck/commander_maybeboard.rs | 6 | uses the `auth_client` name |
 | deck/view.rs | 5 | |
 | deck/card/remove.rs | 5 | |
@@ -173,14 +179,19 @@ decision and op-string check. Realistic as 2–3 sittings following the phases
 above. Client-only → rides the next client release (1.10.1+); no server or
 wire changes.
 
-## Open questions for the owner
+## Owner decisions (2026-09-02)
 
-- Should the currently-silent `add.rs` load-more toast on failure after all,
-  or stay quiet? (Plan assumes quiet: a background top-up failing mid-swipe
-  with a toast would interrupt the gesture; the pile just stops growing and
-  a retry happens on the next fetch anyway.)
-  ANSWER: I think a toast is fine here. Otherwise a user gets no cards at the end of swiping and has no warning.
-- `use_authed(screen)` per screen vs a screen-less handle with `screen` passed
-  per call: plan assumes per-screen (matches how `screen::` constants are used
-  today, one per file).
-  ANSWER: Yeah we will want to pass in screens indicating where we failed. I guess maybe screen doesn't mater during errors for this shared component but I think it probably does. Having as screen type that captures all of the needed information would be good here. Think Screen::Auth(Screen) would be good.
+- **Load-more toasts on failure.** The silent-stops-growing behavior means a
+  user reaches the end of the pile with no cards and no warning, so `add.rs`
+  load-more converts with `run`, not `run_quiet`. The general lean: when in
+  doubt, toast. `run_quiet` survives only for work the user never initiated
+  and never waits on (prefetch, fire-and-forget flushes).
+- **Typed screens.** `use_authed` takes a hierarchical `Screen` enum
+  (`Screen::Auth(AuthScreen::Login)`-shaped) rather than the bare `&'static
+  str` constants, capturing where a failure happened as structured data.
+  Non-negotiable constraint: `Screen::as_str()` maps to the existing
+  `screen::` vocabulary strings exactly, keeping the wire format and the
+  `client_errors` dedupe keys continuous. Building the enum (one variant per
+  existing constant, grouped auth/profile/deck/card) is a small prerequisite
+  step before phase 1; the old constants can delegate to it during the
+  transition.
