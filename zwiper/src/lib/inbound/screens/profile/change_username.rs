@@ -2,15 +2,12 @@
 
 use crate::{
     inbound::components::{
-        auth::ensure_session::EnsureFresh,
+        auth::authed::use_authed,
         bottom_sheet::BottomSheet,
         fields::text_input::TextInput,
-        telemetry::{
-            usage_buffer::UsageBuffer,
-            vocabulary::{component, screen},
-        },
+        telemetry::vocabulary::{ProfileScreen, Screen},
     },
-    outbound::client::{ZwipeClient, user::change_username::ClientChangeUsername},
+    outbound::client::user::change_username::ClientChangeUsername,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -25,7 +22,7 @@ use zwipe_core::{
 #[component]
 pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
     let mut session: Signal<Option<Session>> = use_context();
-    let auth_client: Signal<ZwipeClient> = use_context();
+    let authed = use_authed(Screen::Profile(ProfileScreen::ChangeUsername));
 
     let mut new_username = use_signal(String::new);
     let mut username_error: Signal<Option<String>> = use_signal(|| None);
@@ -52,7 +49,6 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
     let mut submit_attempted = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
     let toast = use_toast();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     let mut inputs_are_valid = move || {
         validate_username();
@@ -84,53 +80,30 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
             let request = HttpChangeUsername::new(&new_username(), &password());
             is_loading.set(true);
             spawn(async move {
-                let mut session_value = match session.ensure_fresh(auth_client).await {
-                    Ok(session_value) => session_value,
-                    Err(e) => {
-                        usage_buffer.peek().report_error(
-                            screen::PROFILE_CHANGE_USERNAME,
-                            component::NONE,
-                            "change_username",
-                            &e,
-                        );
-                        toast.error(
-                            e.to_user_message(),
-                            ToastOptions::default().duration(Duration::from_millis(3000)),
-                        );
-                        is_loading.set(false);
-                        return;
+                if let Some(updated_user) = authed
+                    .run("change_username", |c, s| async move {
+                        c.change_username(request, &s).await
+                    })
+                    .await
+                {
+                    let new_name = updated_user.username.clone();
+                    // Re-read rather than mutate the captured session: the
+                    // facade consumed it, and the signal holds the freshest
+                    // (possibly rotated) value anyway.
+                    let current = session.peek().clone();
+                    if let Some(mut current) = current {
+                        current.user.username = updated_user.username;
+                        session.set(Some(current));
                     }
-                };
-
-                match auth_client().change_username(request, &session_value).await {
-                    Ok(updated_user) => {
-                        let new_name = updated_user.username.clone();
-                        session_value.user.username = updated_user.username;
-                        session.set(Some(session_value));
-                        toast.success(
-                            format!("Username changed to {}", new_name),
-                            ToastOptions::default().duration(Duration::from_millis(1500)),
-                        );
-                        clear_inputs();
-                        submit_attempted.set(false);
-                        is_loading.set(false);
-                        open.set(false);
-                    }
-                    Err(e) => {
-                        tracing::warn!("change username failed: {e}");
-                        usage_buffer.peek().report_error(
-                            screen::PROFILE_CHANGE_USERNAME,
-                            component::NONE,
-                            "change_username",
-                            &e,
-                        );
-                        toast.error(
-                            e.to_user_message(),
-                            ToastOptions::default().duration(Duration::from_millis(3000)),
-                        );
-                        is_loading.set(false);
-                    }
+                    toast.success(
+                        format!("Username changed to {}", new_name),
+                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                    );
+                    clear_inputs();
+                    submit_attempted.set(false);
+                    open.set(false);
                 }
+                is_loading.set(false);
             });
         }
     };

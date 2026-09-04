@@ -3,15 +3,12 @@
 use crate::{
     domain::error::UserFacing,
     inbound::components::{
-        auth::ensure_session::EnsureFresh,
+        auth::authed::use_authed,
         bottom_sheet::BottomSheet,
         fields::text_input::TextInput,
-        telemetry::{
-            usage_buffer::UsageBuffer,
-            vocabulary::{component, screen},
-        },
+        telemetry::vocabulary::{ProfileScreen, Screen},
     },
-    outbound::client::{ZwipeClient, user::change_email::ClientChangeEmail},
+    outbound::client::user::change_email::ClientChangeEmail,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -26,7 +23,7 @@ use zwipe_core::{
 #[component]
 pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
     let mut session: Signal<Option<Session>> = use_context();
-    let auth_client: Signal<ZwipeClient> = use_context();
+    let authed = use_authed(Screen::Profile(ProfileScreen::ChangeEmail));
 
     let mut new_email = use_signal(String::new);
     let mut email_error: Signal<Option<String>> = use_signal(|| None);
@@ -53,7 +50,6 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
     let mut submit_attempted = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
     let toast = use_toast();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     let mut inputs_are_valid = move || {
         validate_email();
@@ -85,60 +81,33 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
             let request = HttpChangeEmail::new(&new_email(), &password());
             is_loading.set(true);
             spawn(async move {
-                let mut session_value = match session.ensure_fresh(auth_client).await {
-                    Ok(session_value) => session_value,
-                    Err(e) => {
-                        usage_buffer.peek().report_error(
-                            screen::PROFILE_CHANGE_EMAIL,
-                            component::NONE,
-                            "change_email",
-                            &e,
-                        );
-                        toast.error(
-                            e.to_user_message(),
-                            ToastOptions::default().duration(Duration::from_millis(3000)),
-                        );
-                        is_loading.set(false);
-                        return;
+                if let Some(updated_user) = authed
+                    .run("change_email", |c, s| async move {
+                        c.change_email(request, &s).await
+                    })
+                    .await
+                {
+                    let new_email = updated_user.email.clone();
+                    // Take the whole user, not just the address: the server
+                    // clears `email_verified_at` on an email change, and
+                    // copying only the email left the session claiming the
+                    // account was still verified while it sat on the
+                    // unverified deck and card limits. Re-read rather than
+                    // mutate the captured session (the facade consumed it).
+                    let current = session.peek().clone();
+                    if let Some(mut current) = current {
+                        current.user = updated_user;
+                        session.set(Some(current));
                     }
-                };
-
-                match auth_client().change_email(request, &session_value).await {
-                    Ok(updated_user) => {
-                        let new_email = updated_user.email.clone();
-                        // Take the whole user, not just the address: the server
-                        // clears `email_verified_at` on an email change, and
-                        // copying only the email left the session claiming the
-                        // account was still verified while it sat on the
-                        // unverified deck and card limits.
-                        session_value.user = updated_user;
-                        session.set(Some(session_value));
-                        toast.success(
-                            format!(
-                                "Email changed to {new_email}. Verify it to restore full access."
-                            ),
-                            ToastOptions::default().duration(Duration::from_millis(3000)),
-                        );
-                        clear_inputs();
-                        submit_attempted.set(false);
-                        is_loading.set(false);
-                        open.set(false);
-                    }
-                    Err(e) => {
-                        tracing::warn!("change email failed: {e}");
-                        usage_buffer.peek().report_error(
-                            screen::PROFILE_CHANGE_EMAIL,
-                            component::NONE,
-                            "change_email",
-                            &e,
-                        );
-                        toast.error(
-                            e.to_user_message(),
-                            ToastOptions::default().duration(Duration::from_millis(3000)),
-                        );
-                        is_loading.set(false);
-                    }
+                    toast.success(
+                        format!("Email changed to {new_email}. Verify it to restore full access."),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
+                    clear_inputs();
+                    submit_attempted.set(false);
+                    open.set(false);
                 }
+                is_loading.set(false);
             });
         }
     };

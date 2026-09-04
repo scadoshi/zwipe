@@ -1,9 +1,9 @@
 use crate::{
     inbound::components::{
-        auth::ensure_session::EnsureFresh,
+        auth::{authed::use_authed, ensure_session::EnsureFresh},
         telemetry::{
             usage_buffer::UsageBuffer,
-            vocabulary::{component, screen},
+            vocabulary::{ProfileScreen, Screen, component, screen},
         },
     },
     outbound::client::{
@@ -57,6 +57,10 @@ pub(crate) fn VerificationActions() -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
     let usage_buffer: Signal<UsageBuffer> = use_context();
+    // check_verified goes through the facade; the resend button stays on the
+    // raw pattern because it branches on TooManyRequests (info toast, keep
+    // the cooldown) and the facade would double-toast that path.
+    let authed = use_authed(Screen::Profile(ProfileScreen::Main));
     let mut is_resending = use_signal(|| false);
     let mut is_checking = use_signal(|| false);
     // Seconds left on the resend cooldown; the button re-enables at zero.
@@ -136,47 +140,29 @@ pub(crate) fn VerificationActions() -> Element {
                 evt.stop_propagation();
                 is_checking.set(true);
                 spawn(async move {
-                    let s = match session.ensure_fresh(client).await {
-                        Ok(s) => s,
-                        Err(e) => {
-                            usage_buffer.peek().report_error(screen::PROFILE, component::EMAIL_VERIFICATION, "check_verified", &e);
-                            toast.error(
-                                e.to_user_message(),
-                                ToastOptions::default().duration(Duration::from_millis(5000)),
+                    if let Some(fresh_user) = authed
+                        .run_at(component::EMAIL_VERIFICATION, "check_verified", |c, s| async move {
+                            c.get_user(&s).await
+                        })
+                        .await
+                    {
+                        let verified = fresh_user.email_verified_at.is_some();
+                        // Write the fresh user back into the session so
+                        // the badge (and anything else) updates in place.
+                        let current = session.peek().clone();
+                        if let Some(mut current) = current {
+                            current.user = fresh_user;
+                            session.set(Some(current));
+                        }
+                        if verified {
+                            toast.success(
+                                "Email verified".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(3000)),
                             );
-                            is_checking.set(false);
-                            return;
-                        }
-                    };
-                    match client().get_user(&s).await {
-                        Ok(fresh_user) => {
-                            let verified = fresh_user.email_verified_at.is_some();
-                            // Write the fresh user back into the session so
-                            // the badge (and anything else) updates in place.
-                            let current = session.peek().clone();
-                            if let Some(mut current) = current {
-                                current.user = fresh_user;
-                                session.set(Some(current));
-                            }
-                            if verified {
-                                toast.success(
-                                    "Email verified".to_string(),
-                                    ToastOptions::default()
-                                        .duration(Duration::from_millis(3000)),
-                                );
-                            } else {
-                                toast.info(
-                                    "Not verified yet. Check your inbox".to_string(),
-                                    ToastOptions::default()
-                                        .duration(Duration::from_millis(3000)),
-                                );
-                            }
-                        }
-                        Err(e) => {
-                            usage_buffer.peek().report_error(screen::PROFILE, component::EMAIL_VERIFICATION, "check_verified", &e);
-                            toast.error(
-                                e.to_user_message(),
-                                ToastOptions::default().duration(Duration::from_millis(5000)),
+                        } else {
+                            toast.info(
+                                "Not verified yet. Check your inbox".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(3000)),
                             );
                         }
                     }

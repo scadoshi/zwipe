@@ -6,30 +6,24 @@ use crate::{
             AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
             AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
         },
-        auth::ensure_session::EnsureFresh,
+        auth::authed::use_authed,
         bottom_sheet::BottomSheet,
         fields::text_input::TextInput,
-        telemetry::{
-            usage_buffer::UsageBuffer,
-            vocabulary::{component, screen},
-        },
+        telemetry::vocabulary::{ProfileScreen, Screen},
     },
-    outbound::client::{ZwipeClient, user::change_password::ClientChangePassword},
+    outbound::client::user::change_password::ClientChangePassword,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe::domain::auth::models::password::Password;
 use zwipe_components::{Button, ButtonVariant};
-use zwipe_core::{
-    domain::auth::models::session::Session, http::contracts::auth::HttpChangePassword,
-};
+use zwipe_core::http::contracts::auth::HttpChangePassword;
 
 /// Bottom sheet for updating the user's password.
 #[component]
 pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
-    let session: Signal<Option<Session>> = use_context();
-    let auth_client: Signal<ZwipeClient> = use_context();
+    let authed = use_authed(Screen::Profile(ProfileScreen::ChangePassword));
 
     // we do not validate current password on frontend
     // as to not lock them out of changing
@@ -58,7 +52,6 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     let mut show_confirm = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
     let toast = use_toast();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     let mut inputs_are_valid = move || {
         validate_new_password();
@@ -88,50 +81,22 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
             let request = HttpChangePassword::new(&current_password(), &new_password());
             is_loading.set(true);
             spawn(async move {
-                let session = match session.ensure_fresh(auth_client).await {
-                    Ok(session) => session,
-                    Err(e) => {
-                        usage_buffer.peek().report_error(
-                            screen::PROFILE_CHANGE_PASSWORD,
-                            component::NONE,
-                            "change_password",
-                            &e,
-                        );
-                        toast.error(
-                            e.to_user_message(),
-                            ToastOptions::default().duration(Duration::from_millis(3000)),
-                        );
-                        is_loading.set(false);
-                        return;
-                    }
-                };
-
-                match auth_client().change_password(request, &session).await {
-                    Ok(()) => {
-                        toast.success(
-                            "Password change successful".to_string(),
-                            ToastOptions::default().duration(Duration::from_millis(1500)),
-                        );
-                        clear_inputs();
-                        submit_attempted.set(false);
-                        is_loading.set(false);
-                        open.set(false);
-                    }
-                    Err(e) => {
-                        tracing::warn!("change password failed: {e}");
-                        usage_buffer.peek().report_error(
-                            screen::PROFILE_CHANGE_PASSWORD,
-                            component::NONE,
-                            "change_password",
-                            &e,
-                        );
-                        toast.error(
-                            e.to_user_message(),
-                            ToastOptions::default().duration(Duration::from_millis(3000)),
-                        );
-                        is_loading.set(false);
-                    }
+                if authed
+                    .run("change_password", |c, s| async move {
+                        c.change_password(request, &s).await
+                    })
+                    .await
+                    .is_some()
+                {
+                    toast.success(
+                        "Password change successful".to_string(),
+                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                    );
+                    clear_inputs();
+                    submit_attempted.set(false);
+                    open.set(false);
                 }
+                is_loading.set(false);
             });
         }
     };

@@ -5,13 +5,10 @@
 
 use crate::{
     inbound::components::{
-        auth::ensure_session::EnsureFresh,
+        auth::authed::use_authed,
         bottom_sheet::BottomSheet,
         hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, open_and_record_hint},
-        telemetry::{
-            usage_buffer::UsageBuffer,
-            vocabulary::{component, screen},
-        },
+        telemetry::vocabulary::{ProfileScreen, Screen},
     },
     outbound::client::{ZwipeClient, user::preferences::ClientUpdatePreferences},
 };
@@ -38,10 +35,12 @@ pub fn UniversesBeyondExceptionsSheet(
     mut exceptions: Signal<Vec<String>>,
     hint_open: Signal<bool>,
 ) -> Element {
+    // session + client feed the hint recorder, which stays outside the facade
+    // (it is not an authed data call).
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
+    let authed = use_authed(Screen::Profile(ProfileScreen::Preferences));
 
     let mut draft: Signal<Vec<String>> = use_signal(Vec::new);
 
@@ -71,43 +70,17 @@ pub fn UniversesBeyondExceptionsSheet(
         };
         open.set(false);
         spawn(async move {
-            let session_val = match session.ensure_fresh(client).await {
-                Ok(session_val) => session_val,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::PROFILE_PREFERENCES,
-                        component::NONE,
-                        "update_preferences",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                    return;
-                }
-            };
-            match client().update_preferences(request, &session_val).await {
-                Ok(prefs) => {
-                    exceptions.set(prefs.universes_beyond_exceptions);
-                    toast.success(
-                        "Exceptions saved".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
-                    );
-                }
-                Err(e) => {
-                    tracing::warn!("update preferences failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::PROFILE_PREFERENCES,
-                        component::NONE,
-                        "update_preferences",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                }
+            if let Some(prefs) = authed
+                .run("update_preferences", |c, s| async move {
+                    c.update_preferences(request, &s).await
+                })
+                .await
+            {
+                exceptions.set(prefs.universes_beyond_exceptions);
+                toast.success(
+                    "Exceptions saved".to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
             }
         });
     };

@@ -2,24 +2,18 @@
 
 use crate::{
     inbound::components::{
-        auth::ensure_session::EnsureFresh,
+        auth::authed::use_authed,
         bottom_sheet::BottomSheet,
-        telemetry::{
-            usage_buffer::UsageBuffer,
-            vocabulary::{component, screen},
-        },
+        telemetry::vocabulary::{ProfileScreen, Screen},
     },
-    outbound::client::{ZwipeClient, user::preferences::ClientUpdatePreferences},
+    outbound::client::user::preferences::ClientUpdatePreferences,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_components::{Button, ButtonVariant};
 use zwipe_core::{
-    domain::{
-        auth::models::session::Session,
-        user::{models::theme::ThemeConfig, preferences::ALLOWED_THEMES},
-    },
+    domain::user::{models::theme::ThemeConfig, preferences::ALLOWED_THEMES},
     http::contracts::user::HttpUpdatePreferences,
 };
 
@@ -91,11 +85,9 @@ fn ThemeRow(
 /// restores the theme that was active when the sheet opened.
 #[component]
 pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
-    let session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
     let mut theme_config: Signal<ThemeConfig> = use_context();
     let toast = use_toast();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
+    let authed = use_authed(Screen::Profile(ProfileScreen::Preferences));
 
     let mut original_theme = use_signal(|| theme_config.peek().clone());
     let mut selected_theme = use_signal(|| theme_config.peek().name.clone());
@@ -121,43 +113,17 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
         };
         open.set(false);
         spawn(async move {
-            let session_val = match session.ensure_fresh(client).await {
-                Ok(session_val) => session_val,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::PROFILE_PREFERENCES,
-                        component::NONE,
-                        "update_preferences",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                    return;
-                }
-            };
-            match client().update_preferences(request, &session_val).await {
-                Ok(prefs) => {
-                    theme_config.set(ThemeConfig::from(&prefs));
-                    toast.success(
-                        "Theme saved".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
-                    );
-                }
-                Err(e) => {
-                    tracing::warn!("update preferences failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::PROFILE_PREFERENCES,
-                        component::NONE,
-                        "update_preferences",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                }
+            if let Some(prefs) = authed
+                .run("update_preferences", |c, s| async move {
+                    c.update_preferences(request, &s).await
+                })
+                .await
+            {
+                theme_config.set(ThemeConfig::from(&prefs));
+                toast.success(
+                    "Theme saved".to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
             }
         });
     };
