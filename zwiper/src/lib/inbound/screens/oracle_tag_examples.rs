@@ -15,15 +15,12 @@
 use crate::{
     inbound::{
         components::{
-            auth::ensure_session::EnsureFresh,
+            auth::authed::use_authed,
             hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, use_one_time_hint},
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             navigation::overlay_stack::use_overlay_back,
             screen_header::ScreenHeader,
-            telemetry::{
-                usage_buffer::UsageBuffer,
-                vocabulary::{component, screen},
-            },
+            telemetry::vocabulary::{OracleTagScreen, Screen, screen},
         },
         screens::deck::card::components::{
             action_history::{BrowseAction, MAX_CARDS_IN_STACK},
@@ -32,14 +29,13 @@ use crate::{
             printing_sheet::PrintingSheet,
         },
     },
-    outbound::client::{ZwipeClient, card::search_cards::ClientSearchCards},
+    outbound::client::card::search_cards::ClientSearchCards,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
-    auth::models::session::Session,
     card::{
         Card,
         search_card::card_filter::{builder::CardQueryBuilder, card_sort_key::CardSortKey},
@@ -58,10 +54,8 @@ const LOAD_MORE_THRESHOLD: usize = 5;
 #[component]
 pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
     use_overlay_back(open);
-    let session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
+    let authed = use_authed(Screen::OracleTag(OracleTagScreen::Examples));
 
     // The tag we're serving, held in a signal so the fetch closures stay `Copy`.
     // Re-navigating to a different tag always remounts (the dictionary sits
@@ -121,52 +115,28 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
         };
 
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    // A true auth failure clears the session and the AuthGate
-                    // redirects; a transient network/server error leaves it intact,
-                    // so surface it instead of a misleading empty state.
-                    usage_buffer.peek().report_error(
-                        screen::ORACLE_TAG_EXAMPLES,
-                        component::NONE,
-                        "load_examples",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                    is_loading_more.set(false);
-                    is_loading_cards.set(false);
-                    return;
-                }
-            };
-
-            match client().search_cards(&filter, &session).await {
-                Ok(new_cards) => {
-                    if new_cards.is_empty() {
-                        pagination_exhausted.set(true);
-                    } else {
-                        // Image-less cards render as a text identity frame
-                        // (FlippableCardImage), so we keep them — no client
-                        // filter means no barren pages either.
-                        current_offset.set(offset + PAGE_LIMIT);
-                        stack.append(new_cards);
-                    }
-                    is_loading_more.set(false);
-                    is_loading_cards.set(false);
-                }
-                Err(e) => {
-                    tracing::warn!("oracle-tag examples fetch failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::ORACLE_TAG_EXAMPLES,
-                        component::NONE,
-                        "load_examples",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                    is_loading_more.set(false);
-                    is_loading_cards.set(false);
+            // The facade refreshes, reports, and toasts on failure (a true
+            // auth failure also clears the session and the AuthGate
+            // redirects); the screen only handles the happy path and its own
+            // loading flags.
+            if let Some(new_cards) = authed
+                .run("load_examples", |c, s| async move {
+                    c.search_cards(&filter, &s).await
+                })
+                .await
+            {
+                if new_cards.is_empty() {
+                    pagination_exhausted.set(true);
+                } else {
+                    // Image-less cards render as a text identity frame
+                    // (FlippableCardImage), so we keep them — no client
+                    // filter means no barren pages either.
+                    current_offset.set(offset + PAGE_LIMIT);
+                    stack.append(new_cards);
                 }
             }
+            is_loading_more.set(false);
+            is_loading_cards.set(false);
         });
     };
 

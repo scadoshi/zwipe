@@ -4,6 +4,8 @@
 
 /// Router layout that gates all authed routes behind a valid session.
 pub mod auth_gate;
+/// Authed-call facade: refresh + telemetry + toast in one place.
+pub mod authed;
 /// Awaitable session freshness guard with single-flight refresh.
 pub mod ensure_session;
 /// Background session upkeep loop and app context providers.
