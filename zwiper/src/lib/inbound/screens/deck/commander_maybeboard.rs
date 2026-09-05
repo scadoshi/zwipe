@@ -678,15 +678,15 @@ pub fn CommanderMaybeboard() -> Element {
                         }
                     } else if load_failed() {
                         div { class: "message-empty",
-                            p { "Could not load your commander maybeboard" }
+                            span { class: "chip-note", "Could not load your commander maybeboard" }
                         }
                     } else if !has_entries {
                         div { class: "message-empty",
-                            p { "No commanders" }
+                            span { class: "chip-note", "No commanders" }
                         }
                     } else if filtered.is_empty() {
                         div { class: "message-empty",
-                            p { "No commanders match" }
+                            span { class: "chip-note", "No commanders match" }
                         }
                     } else {
                         // Same bordered container the deck cards list wraps

@@ -622,18 +622,18 @@ pub fn DeckList() -> Element {
                             }
                             if errored {
                                 div { class: "message-empty",
-                                    p { "Could not load decks" }
+                                    span { class: "chip-note", "Could not load decks" }
                                 }
                             } else if loading {
                                 DeckListSkeleton {}
                             } else if profiles.as_ref().is_some_and(|p| p.is_empty()) {
                                 div { class: "message-empty",
-                                    p { "No decks" }
+                                    span { class: "chip-note", "No decks" }
                                 }
                             } else if let Some(filtered) = filtered {
                                 if filtered.is_empty() {
                                     div { class: "message-empty",
-                                        p { "No decks match" }
+                                        span { class: "chip-note", "No decks match" }
                                     }
                                 }
                                 // Every mode renders the same way: contained
