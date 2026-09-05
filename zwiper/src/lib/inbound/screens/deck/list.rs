@@ -11,14 +11,11 @@
 use crate::{
     inbound::{
         components::{
-            auth::ensure_session::EnsureFresh,
+            auth::authed::use_authed,
             bottom_sheet::BottomSheet,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, open_and_record_hint},
             screen_header::ScreenHeader,
-            telemetry::{
-                usage_buffer::UsageBuffer,
-                vocabulary::{component, screen},
-            },
+            telemetry::vocabulary::{DeckScreen, Screen},
         },
         router::Router,
         screens::deck::components::skeletons::DeckListSkeleton,
@@ -411,7 +408,7 @@ pub fn DeckList() -> Element {
     let auth_client: Signal<ZwipeClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
     let toast = use_toast();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
+    let authed = use_authed(Screen::Deck(DeckScreen::List));
     let decks_hint_open = use_signal(|| false);
 
     // Deck-list hint: fires once decks have loaded and only if any exist —
@@ -451,26 +448,19 @@ pub fn DeckList() -> Element {
 
     let mut deck_profiles_resource: Resource<Result<Vec<DeckProfile>, ClientError>> =
         use_resource(move || async move {
-            let session = session.ensure_fresh(auth_client).await?;
-
-            auth_client().get_deck_profiles(&session).await
+            // try_run keeps the Result the errored/loading branches match on;
+            // reporting and the error toast live in the facade.
+            authed
+                .try_run(
+                    "load_decks",
+                    |c, s| async move { c.get_deck_profiles(&s).await },
+                )
+                .await
         });
 
     // Restart resource on component mount to ensure fresh data
     use_effect(move || {
         deck_profiles_resource.restart();
-    });
-
-    use_effect(move || {
-        if let Some(Err(e)) = &*deck_profiles_resource.read() {
-            usage_buffer
-                .peek()
-                .report_error(screen::DECK_LIST, component::NONE, "load_decks", &e);
-            toast.error(
-                e.to_user_message(),
-                ToastOptions::default().duration(Duration::from_millis(3000)),
-            );
-        }
     });
 
     use_effect(move || {
