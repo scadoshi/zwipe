@@ -11,14 +11,14 @@
 use super::undo_log::{UndoAction, UndoLog};
 use crate::{
     inbound::components::{
-        auth::ensure_session::EnsureFresh,
+        auth::authed::use_authed,
         telemetry::{
             usage_buffer::UsageBuffer,
-            vocabulary::{component, screen},
+            vocabulary::{DeckScreen, Screen, component},
         },
     },
     outbound::client::{
-        ZwipeClient, deck::search_deck_cards::ClientSearchDeckCards,
+        deck::search_deck_cards::ClientSearchDeckCards,
         deck_card::create_deck_card::ClientCreateDeckCard,
     },
 };
@@ -29,7 +29,6 @@ use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe_core::{
     domain::{
-        auth::models::session::Session,
         card::{
             Card,
             search_card::card_filter::{builder::CardQueryBuilder, card_sort_key::CardSortKey},
@@ -80,9 +79,8 @@ setTimeout(fit, 400);
 /// list re-groups and shows the card immediately.
 #[component]
 pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element {
-    let session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();
+    let authed = use_authed(Screen::Deck(DeckScreen::CardView));
     let mut filter_reset_counter: Signal<u32> = use_context();
     let undo_log: UndoLog = use_context();
     let toast = use_toast();
@@ -114,15 +112,6 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
                 return;
             }
 
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(_) => {
-                    is_searching.set(false);
-                    show_dropdown.set(false);
-                    return;
-                }
-            };
-
             let mut builder = CardQueryBuilder::with_name_contains(q.trim());
             // Synergy off: no membership pool, and an explicit sort so the server
             // doesn't fall back to synergy ordering.
@@ -141,22 +130,21 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
             };
 
             usage_buffer().record_search();
-            match client()
-                .search_deck_cards(deck_id, &card_filter, &session)
+            // Quiet: fires per debounced keystroke; the dropdown just closes.
+            match authed
+                .run_quiet_at(
+                    component::QUICK_ADD,
+                    "quick_add_search",
+                    |c, s| async move { c.search_deck_cards(deck_id, &card_filter, &s).await },
+                )
                 .await
             {
-                Ok((cards, _synergy_warming)) => {
+                Some((cards, _synergy_warming)) => {
                     results.set(cards);
                     is_searching.set(false);
                     show_dropdown.set(true);
                 }
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_VIEW,
-                        component::QUICK_ADD,
-                        "quick_add_search",
-                        &e,
-                    );
+                None => {
                     is_searching.set(false);
                     show_dropdown.set(false);
                 }
@@ -174,22 +162,13 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
 
         let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_VIEW,
-                        component::QUICK_ADD,
-                        "quick_add_card",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                    return;
-                }
-            };
-
-            match client().create_deck_card(deck_id, &request, &session).await {
-                Ok(deck_card) => {
+            match authed
+                .run_at(component::QUICK_ADD, "quick_add_card", |c, s| async move {
+                    c.create_deck_card(deck_id, &request, &s).await
+                })
+                .await
+            {
+                Some(deck_card) => {
                     deck_entries.write().push(DeckEntry { card, deck_card });
                     let current = *filter_reset_counter.peek();
                     filter_reset_counter.set(current + 1);
@@ -202,15 +181,7 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
                         ToastOptions::default().duration(Duration::from_millis(1500)),
                     );
                 }
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_VIEW,
-                        component::QUICK_ADD,
-                        "quick_add_card",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                }
+                None => {}
             }
         });
     };
