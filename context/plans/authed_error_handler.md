@@ -1,9 +1,32 @@
 # Centralized authed-call error handling (facade)
 
-**Status: PLANNED (expanded 2026-09-01 from the 2026-07-15 backlog sketch;
-owner wants it soon — "best to do it as soon as possible"). Not started. Do it
-as its own PR, not folded into a feature. Any code lands as 1.10.1+ (build 79 /
-versionCode 42) — 1.10.0 is in review.**
+**Status: MIGRATION COMPLETE on the `authed-facade` branch 2026-09-06 (built
+2026-09-04..06). ~60 sites converted across 22 files, net ≈ −900 lines of
+ceremony; every remaining `ensure_fresh` caller is a sanctioned holdout (the
+sweep grep is clean). Rides 1.10.1+ (build 79 / versionCode 42). Remaining
+before merge: owner dead-backend pass over the deck screens (the profile
+cluster passed 2026-09-05), then merge to main.**
+
+**Final holdout list** (each carries an in-code comment):
+- Infrastructure, by design: `session_upkeep`, `signal_logout`, `hint_dialog`
+  (`open_and_record_hint`), `flush_loop`, and `ensure_session` itself.
+- Variant-specific error copy: `email_verification` resend (downgrades
+  `TooManyRequests` to an info toast, keeps the cooldown).
+- **Staged compensation (6 sites)**: the swipe-undo arms in `add.rs` (3),
+  `remove.rs` (2), and the maybeboard-promote undo — they compensate
+  differently depending on whether the *refresh* or the *call* failed (full
+  rewind vs deliberately leaving the action standing), which run/try_run
+  collapses. Seven data points now argue for a future `run_staged` variant
+  exposing the failure stage; design it from these real cases if the facade
+  ever grows again.
+
+Notable behavior upgrades made during the audit (the migration's other half):
+printing-sheet saves were fully silent and now report + toast as
+`change_printing`; load-more toasts (owner decision); the tokens fetch,
+deck-context load, skip posts, and both typed-search dropdowns are now
+*deliberately* quiet with telemetry instead of accidentally silent; deck
+view/edit/export/list resources keep their `Result` types via `try_run` with
+their duplicate error-watching effects deleted.
 
 **One sentence:** replace the per-call-site `ensure_fresh` + hand-rolled error
 handling with one thin authed facade so every authed request refreshes, reports
@@ -142,6 +165,20 @@ two local names — the rename is cosmetic):
 
 `session_upkeep` and `signal_logout` are the two likely keep-as-is sites (see
 above), so the migration target is ~64 sites.
+
+## Dead-backend findings (owner smoke test, 2026-09-05)
+
+Clicking through every screen against a dead backend after phase 2: profile,
+deck list, and deck create all error loudly (converted + already-toasting
+sites behave). Two pre-existing silent failures OUTSIDE the facade's scope
+surfaced, tracked here so they aren't lost:
+
+- **Catalog cache (otags / card roles): fails silently and never retries**,
+  so pickers sit empty all session with no explanation. The cache stays a
+  facade holdout, but it wants its own fix: an inline empty state in the
+  pickers ("couldn't load, tap to retry"), not a toast.
+- **Home flavor text quietly absent** on failure. Unauthed and decorative;
+  probably fine, noted for completeness.
 
 ## Migration plan
 
