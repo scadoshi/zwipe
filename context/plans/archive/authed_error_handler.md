@@ -1,11 +1,11 @@
 # Centralized authed-call error handling (facade)
 
-**Status: MIGRATION COMPLETE on the `authed-facade` branch 2026-09-06 (built
-2026-09-04..06). ~60 sites converted across 22 files, net ≈ −900 lines of
-ceremony; every remaining `ensure_fresh` caller is a sanctioned holdout (the
-sweep grep is clean). Rides 1.10.1+ (build 79 / versionCode 42). Remaining
-before merge: owner dead-backend pass over the deck screens (the profile
-cluster passed 2026-09-05), then merge to main.**
+**Status: SHIPPED — merged to main 2026-09-06 via PR #25 (built 2026-09-04..06
+on the `authed-facade` branch, since deleted). ~60 sites converted across 22
+files, net ≈ −900 lines of ceremony; every remaining `ensure_fresh` caller is
+a sanctioned holdout (the sweep grep is clean). Rides the next client release
+(1.10.1+). Open follow-ups moved to todo: the catalog-cache picker empty
+state, and the run_staged idea stays parked here with its six-case file.**
 
 **Final holdout list** (each carries an in-code comment):
 - Infrastructure, by design: `session_upkeep`, `signal_logout`, `hint_dialog`
