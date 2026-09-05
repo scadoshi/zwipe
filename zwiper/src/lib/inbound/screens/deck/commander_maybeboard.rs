@@ -22,7 +22,7 @@ use crate::{
                 AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
                 AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
             },
-            auth::ensure_session::EnsureFresh,
+            auth::authed::use_authed,
             bottom_sheet::BottomSheet,
             catalog_cache::CatalogCache,
             hint_dialog::{
@@ -31,7 +31,7 @@ use crate::{
             screen_header::ScreenHeader,
             telemetry::{
                 usage_buffer::UsageBuffer,
-                vocabulary::{component, screen},
+                vocabulary::{Screen, screen},
             },
         },
         router::Router,
@@ -51,7 +51,7 @@ use crate::{
         },
     },
     outbound::client::{
-        ClientError, ZwipeClient, card::search_commanders::ClientSearchCommanders,
+        ZwipeClient, card::search_commanders::ClientSearchCommanders,
         deck::get_deck_profiles::ClientGetDeckList,
         user::commander_maybeboard::ClientCommanderMaybeboard,
     },
@@ -139,6 +139,7 @@ pub fn CommanderMaybeboard() -> Element {
     let session: Signal<Option<Session>> = use_context();
     let toast = use_toast();
     let usage_buffer: Signal<UsageBuffer> = use_context();
+    let authed = use_authed(Screen::CommanderMaybeboard);
     let hint_open = use_one_time_hint(HINT_COMMANDER_MAYBEBOARD);
     let seed: CreateDeckCommanderSeed = use_context();
     // Art-crop thumbnails on the rows, on by default; the "Art" chip in the
@@ -208,42 +209,19 @@ pub fn CommanderMaybeboard() -> Element {
     use_effect(move || {
         let _tick = reload();
         spawn(async move {
-            let session = match session.ensure_fresh(auth_client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::COMMANDER_MAYBEBOARD,
-                        component::NONE,
-                        "load_maybeboard",
-                        &e,
-                    );
-                    load_failed.set(entries.peek().is_empty());
-                    is_loading.set(false);
-                    return;
-                }
-            };
-            match auth_client().get_commander_maybeboard(&session).await {
+            match authed
+                .try_run("load_maybeboard", |c, s| async move {
+                    c.get_commander_maybeboard(&s).await
+                })
+                .await
+            {
                 Ok(cards) => {
                     entries.set(cards);
                     load_failed.set(false);
-                    is_loading.set(false);
                 }
-                Err(e) => {
-                    tracing::warn!("commander maybeboard load failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::COMMANDER_MAYBEBOARD,
-                        component::NONE,
-                        "load_maybeboard",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                    load_failed.set(entries.peek().is_empty());
-                    is_loading.set(false);
-                }
+                Err(_) => load_failed.set(entries.peek().is_empty()),
             }
+            is_loading.set(false);
         });
     });
 
@@ -277,13 +255,6 @@ pub fn CommanderMaybeboard() -> Element {
             if query() != q {
                 return;
             }
-            let session = match session.ensure_fresh(auth_client).await {
-                Ok(session) => session,
-                Err(_) => {
-                    is_searching.set(false);
-                    return;
-                }
-            };
             let mut builder = CardQueryBuilder::with_name_contains(q.trim());
             builder.set_is_commander_in_format(Format::Commander);
             builder.set_is_token(false);
@@ -294,21 +265,17 @@ pub fn CommanderMaybeboard() -> Element {
                 return;
             };
             usage_buffer().record_search();
-            match auth_client().search_commanders(&filter, &session).await {
-                Ok(found) => {
-                    search_results.set(found);
-                    is_searching.set(false);
-                }
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::COMMANDER_MAYBEBOARD,
-                        component::NONE,
-                        "maybeboard_search",
-                        &e,
-                    );
-                    is_searching.set(false);
-                }
+            // Quiet: fires per debounced keystroke; a toast per failed keypress
+            // would bury the screen, and the results simply stay stale.
+            if let Some(found) = authed
+                .run_quiet("maybeboard_search", |c, s| async move {
+                    c.search_commanders(&filter, &s).await
+                })
+                .await
+            {
+                search_results.set(found);
             }
+            is_searching.set(false);
         });
     });
 
@@ -323,24 +290,13 @@ pub fn CommanderMaybeboard() -> Element {
             .write()
             .retain(|c| c.scryfall_data.oracle_id != Some(oracle_id));
         spawn(async move {
-            let session = match session.ensure_fresh(auth_client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::COMMANDER_MAYBEBOARD,
-                        component::NONE,
-                        "add_commander_maybeboard",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                    return;
-                }
-            };
-            match auth_client()
-                .add_commander_maybeboard_card(oracle_id, &session)
+            match authed
+                .run("add_commander_maybeboard", |c, s| async move {
+                    c.add_commander_maybeboard_card(oracle_id, &s).await
+                })
                 .await
             {
-                Ok(()) => {
+                Some(()) => {
                     let name = card.scryfall_data.name.clone();
                     let already_saved = entries
                         .peek()
@@ -359,27 +315,22 @@ pub fn CommanderMaybeboard() -> Element {
                         ToastOptions::default().duration(Duration::from_millis(1500)),
                     );
                 }
-                Err(e) => {
-                    tracing::warn!("commander maybeboard add failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::COMMANDER_MAYBEBOARD,
-                        component::NONE,
-                        "add_commander_maybeboard",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                }
+                None => {}
             }
         });
     };
 
     // Deck profiles back the same proactive create gate as the deck list's
     // Create button: unverified accounts are limited to 1 deck.
-    let deck_profiles_resource: Resource<Result<Vec<DeckProfile>, ClientError>> =
+    // Quiet: backs the create gate only; a failure just leaves the gate open
+    // the way the old Result-flattening did, and telemetry records it now.
+    let deck_profiles_resource: Resource<Option<Vec<DeckProfile>>> =
         use_resource(move || async move {
-            let session = session.ensure_fresh(auth_client).await?;
-
-            auth_client().get_deck_profiles(&session).await
+            authed
+                .run_quiet("load_deck_profiles", |c, s| async move {
+                    c.get_deck_profiles(&s).await
+                })
+                .await
         });
 
     let at_deck_limit = move || {
@@ -388,7 +339,7 @@ pub fn CommanderMaybeboard() -> Element {
                 && deck_profiles_resource
                     .read()
                     .as_ref()
-                    .and_then(|r| r.as_ref().ok())
+                    .and_then(|o| o.as_ref())
                     .is_some_and(|p| !p.is_empty())
         })
     };
@@ -410,85 +361,38 @@ pub fn CommanderMaybeboard() -> Element {
 
     let clear_maybeboard = move || {
         spawn(async move {
-            let session = match session.ensure_fresh(auth_client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::COMMANDER_MAYBEBOARD,
-                        component::NONE,
-                        "clear_commander_maybeboard",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                    return;
-                }
-            };
-            match auth_client().clear_commander_maybeboard(&session).await {
-                Ok(()) => {
-                    entries.set(Vec::new());
-                    toast.info(
-                        "Maybeboard cleared".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
-                    );
-                }
-                Err(e) => {
-                    tracing::warn!("commander maybeboard clear failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::COMMANDER_MAYBEBOARD,
-                        component::NONE,
-                        "clear_commander_maybeboard",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                }
+            if authed
+                .run("clear_commander_maybeboard", |c, s| async move {
+                    c.clear_commander_maybeboard(&s).await
+                })
+                .await
+                .is_some()
+            {
+                entries.set(Vec::new());
+                toast.info(
+                    "Maybeboard cleared".to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
             }
         });
     };
 
     let on_remove = move |oracle_id: Uuid| {
         spawn(async move {
-            let session = match session.ensure_fresh(auth_client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::COMMANDER_MAYBEBOARD,
-                        component::NONE,
-                        "remove_commander_maybeboard",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                    return;
-                }
-            };
-            match auth_client()
-                .remove_commander_maybeboard_card(oracle_id, &session)
+            if authed
+                .run("remove_commander_maybeboard", |c, s| async move {
+                    c.remove_commander_maybeboard_card(oracle_id, &s).await
+                })
                 .await
+                .is_some()
             {
-                Ok(()) => {
-                    entries
-                        .write()
-                        .retain(|c| c.scryfall_data.oracle_id != Some(oracle_id));
-                    toast.info(
-                        "Removed".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
-                    );
-                }
-                Err(e) => {
-                    tracing::warn!("commander maybeboard remove failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::COMMANDER_MAYBEBOARD,
-                        component::NONE,
-                        "remove_commander_maybeboard",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                }
+                entries
+                    .write()
+                    .retain(|c| c.scryfall_data.oracle_id != Some(oracle_id));
+                toast.info(
+                    "Removed".to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
             }
         });
     };
