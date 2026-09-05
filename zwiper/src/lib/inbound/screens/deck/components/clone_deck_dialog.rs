@@ -5,21 +5,18 @@ use crate::{
                 AlertDialogActions, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
                 AlertDialogRoot, AlertDialogTitle,
             },
-            auth::ensure_session::EnsureFresh,
-            telemetry::{
-                usage_buffer::UsageBuffer,
-                vocabulary::{component, screen},
-            },
+            auth::authed::use_authed,
+            telemetry::vocabulary::{DeckScreen, Screen, component},
         },
         router::Router,
     },
-    outbound::client::{ZwipeClient, deck::clone_deck::ClientCloneDeck},
+    outbound::client::deck::clone_deck::ClientCloneDeck,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::{domain::auth::models::session::Session, http::contracts::deck::HttpCloneDeck};
+use zwipe_core::http::contracts::deck::HttpCloneDeck;
 
 /// Clone deck dialog — prompts for a new name, calls the clone endpoint,
 /// and navigates to the new deck on success.
@@ -29,11 +26,9 @@ pub(crate) fn CloneDeckDialog(
     default_name: String,
     mut open: Signal<bool>,
 ) -> Element {
-    let session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
     let navigator = use_navigator();
     let toast = use_toast();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
+    let authed = use_authed(Screen::Deck(DeckScreen::View));
 
     let mut new_name = use_signal(String::new);
     let mut is_cloning = use_signal(|| false);
@@ -82,21 +77,14 @@ pub(crate) fn CloneDeckDialog(
                             is_cloning.set(true);
                             let name = new_name().trim().to_string();
                             spawn(async move {
-                                let s = match session.ensure_fresh(client).await {
-                                    Ok(s) => s,
-                                    Err(e) => {
-                                        usage_buffer.peek().report_error(screen::DECK_VIEW, component::CLONE_DECK_DIALOG, "clone_deck", &e);
-                                        toast.error(
-                                            e.to_user_message(),
-                                            ToastOptions::default().duration(Duration::from_millis(3000)),
-                                        );
-                                        is_cloning.set(false);
-                                        return;
-                                    }
-                                };
                                 let body = HttpCloneDeck { new_name: name.clone() };
-                                match client().clone_deck(source_deck_id, &body, &s).await {
-                                    Ok(cloned) => {
+                                match authed
+                                    .run_at(component::CLONE_DECK_DIALOG, "clone_deck", |c, s| async move {
+                                        c.clone_deck(source_deck_id, &body, &s).await
+                                    })
+                                    .await
+                                {
+                                    Some(cloned) => {
                                         open.set(false);
                                         toast.info(
                                             format!("Cloned as \"{name}\""),
@@ -104,12 +92,7 @@ pub(crate) fn CloneDeckDialog(
                                         );
                                         navigator.push(Router::ViewDeck { deck_id: cloned.deck_id });
                                     }
-                                    Err(e) => {
-                                        usage_buffer.peek().report_error(screen::DECK_VIEW, component::CLONE_DECK_DIALOG, "clone_deck", &e);
-                                        toast.error(
-                                            e.to_user_message(),
-                                            ToastOptions::default().duration(Duration::from_millis(3000)),
-                                        );
+                                    None => {
                                         is_cloning.set(false);
                                     }
                                 }

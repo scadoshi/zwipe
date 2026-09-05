@@ -2212,6 +2212,20 @@ button {
     box-shadow: var(--shadow-sm);
 }
 
+/* Non-interactive note chip: the empty/error states that used to be bare
+   text against the background grid (deck list, commander maybeboard). Same
+   face as .chip-unselected, minus the pointer. */
+.chip-note {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-muted);
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    box-shadow: var(--shadow-sm);
+}
+
 .chip-remove {
     all: unset;
     cursor: pointer;

@@ -18,15 +18,12 @@ pub mod universes_beyond;
 use crate::{
     inbound::{
         components::{
-            auth::ensure_session::EnsureFresh,
+            auth::authed::use_authed,
             bottom_sheet::BottomSheet,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
             logout_dialog::LogoutDialog,
             screen_header::ScreenHeader,
-            telemetry::{
-                usage_buffer::UsageBuffer,
-                vocabulary::{component, screen},
-            },
+            telemetry::vocabulary::{ProfileScreen, Screen},
         },
         router::Router,
     },
@@ -49,9 +46,7 @@ use components::{
     email_verification::{EmailVerification, VerificationActions},
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use preferences::{PreferencesSheet, display_theme_name};
-use std::time::Duration;
 use universes_beyond::UniversesBeyondExceptionsSheet;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
@@ -74,8 +69,7 @@ pub fn Profile() -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let mut theme_config: Signal<ThemeConfig> = use_context();
-    let toast = use_toast();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
+    let authed = use_authed(Screen::Profile(ProfileScreen::Main));
 
     let mut show_logout_dialog = use_signal(|| false);
     let mut show_delete_dialog = use_signal(|| false);
@@ -121,21 +115,21 @@ pub fn Profile() -> Element {
         });
     });
 
-    // Load the stored Universes Beyond preference once on mount.
+    // Load the stored Universes Beyond preference once on mount. Quiet on
+    // failure: the rows stay disabled until loaded, and a toast on every
+    // flaky profile open would be noise (the failure still reaches
+    // telemetry through the facade).
     use_effect(move || {
         spawn(async move {
-            let Ok(session_val) = session.ensure_fresh(client).await else {
-                return;
-            };
-            match client().get_preferences(&session_val).await {
-                Ok(prefs) => {
-                    ub_hide.set(prefs.exclude_universes_beyond);
-                    ub_exceptions.set(prefs.universes_beyond_exceptions);
-                    ub_loaded.set(true);
-                }
-                Err(e) => {
-                    tracing::warn!("get preferences failed: {e}");
-                }
+            if let Some(prefs) = authed
+                .run_quiet("get_preferences", |c, s| async move {
+                    c.get_preferences(&s).await
+                })
+                .await
+            {
+                ub_hide.set(prefs.exclude_universes_beyond);
+                ub_exceptions.set(prefs.universes_beyond_exceptions);
+                ub_loaded.set(true);
             }
         });
     });
@@ -153,39 +147,16 @@ pub fn Profile() -> Element {
             universes_beyond_exceptions: None,
         };
         spawn(async move {
-            let session_val = match session.ensure_fresh(client).await {
-                Ok(session_val) => session_val,
-                Err(e) => {
-                    ub_hide.set(prev);
-                    usage_buffer.peek().report_error(
-                        screen::PROFILE,
-                        component::NONE,
-                        "update_preferences",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                    return;
-                }
-            };
-            match client().update_preferences(request, &session_val).await {
+            // try_run: the facade reports and toasts; the Err back here only
+            // drives the optimistic revert.
+            match authed
+                .try_run("update_preferences", |c, s| async move {
+                    c.update_preferences(request, &s).await
+                })
+                .await
+            {
                 Ok(prefs) => ub_hide.set(prefs.exclude_universes_beyond),
-                Err(e) => {
-                    ub_hide.set(prev);
-                    tracing::warn!("update universes beyond failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::PROFILE,
-                        component::NONE,
-                        "update_preferences",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                }
+                Err(_) => ub_hide.set(prev),
             }
         });
     };
@@ -208,39 +179,17 @@ pub fn Profile() -> Element {
             universes_beyond_exceptions: None,
         };
         spawn(async move {
-            let session_val = match session.ensure_fresh(client).await {
-                Ok(session_val) => session_val,
-                Err(e) => {
-                    theme_config.set(prev);
-                    usage_buffer.peek().report_error(
-                        screen::PROFILE,
-                        component::NONE,
-                        "load_profile",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                    return;
-                }
-            };
-            match client().update_preferences(request, &session_val).await {
+            // try_run: reporting and toasts live in the facade; Err drives
+            // the optimistic revert. (This also normalizes the old refresh
+            // path's "load_profile" op to "update_preferences".)
+            match authed
+                .try_run("update_preferences", |c, s| async move {
+                    c.update_preferences(request, &s).await
+                })
+                .await
+            {
                 Ok(prefs) => theme_config.set(ThemeConfig::from(&prefs)),
-                Err(e) => {
-                    theme_config.set(prev);
-                    tracing::warn!("update dark mode failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::PROFILE,
-                        component::NONE,
-                        "update_preferences",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                }
+                Err(_) => theme_config.set(prev),
             }
         });
     };

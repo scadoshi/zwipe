@@ -10,14 +10,11 @@ use super::components::{
 use crate::{
     inbound::{
         components::{
-            auth::ensure_session::EnsureFresh,
+            auth::authed::use_authed,
             catalog_cache::CatalogCache,
             hint_dialog::use_one_time_hint,
             screen_header::ScreenHeader,
-            telemetry::{
-                usage_buffer::UsageBuffer,
-                vocabulary::{component, screen},
-            },
+            telemetry::vocabulary::{DeckScreen, Screen, screen},
         },
         router::Router,
     },
@@ -113,7 +110,7 @@ pub fn CreateDeck() -> Element {
     });
 
     let toast = use_toast();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
+    let authed = use_authed(Screen::Deck(DeckScreen::Create));
     // Oracle tags currently contributed by deck-tag seeding. Seeding is reconciled
     // once when the deck-tag picker closes (see the TagSelect `on_close`): drop the
     // old seed set, add the new one, keep manual picks. So selecting then
@@ -155,24 +152,6 @@ pub fn CreateDeck() -> Element {
         is_saving.set(true);
 
         spawn(async move {
-            let session = match session.ensure_fresh(auth_client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CREATE,
-                        component::NONE,
-                        "create_deck",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                    is_saving.set(false);
-                    return;
-                }
-            };
-
             let commander_id = commander().map(|c| c.scryfall_data.id);
             let format_str = selected_format().map(|f| f.to_legality_key().to_string());
             let tags: Vec<String> = selected_tags().iter().map(|t| t.to_string()).collect();
@@ -197,23 +176,18 @@ pub fn CreateDeck() -> Element {
                 .price_target_currency(price_target_val.map(|_| price_target_currency()))
                 .build();
 
-            match auth_client().create_deck_profile(&request, &session).await {
+            match authed
+                .try_run("create_deck", |c, s| async move {
+                    c.create_deck_profile(&request, &s).await
+                })
+                .await
+            {
                 Ok(created) => {
                     navigator.push(Router::ViewDeck {
                         deck_id: created.id,
                     });
                 }
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CREATE,
-                        component::NONE,
-                        "create_deck",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
+                Err(_) => {
                     is_saving.set(false);
                 }
             }

@@ -3,35 +3,28 @@
 use crate::{
     inbound::{
         components::{
-            auth::ensure_session::EnsureFresh,
+            auth::authed::use_authed,
             chip::Chip,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
             screen_header::ScreenHeader,
-            telemetry::{
-                usage_buffer::UsageBuffer,
-                vocabulary::{component, screen},
-            },
+            telemetry::vocabulary::{DeckScreen, Screen},
         },
         router::Router,
     },
-    outbound::client::{ClientError, ZwipeClient, deck::get_deck::ClientGetDeck},
+    outbound::client::{ClientError, deck::get_deck::ClientGetDeck},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
-use zwipe_core::domain::{
-    auth::models::session::Session, deck::Deck, user::models::hints::HINT_EXPORT,
-};
+use zwipe_core::domain::{deck::Deck, user::models::hints::HINT_EXPORT};
 
 #[component]
 pub fn ExportDeck(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
-    let session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
+    let authed = use_authed(Screen::Deck(DeckScreen::Export));
 
     let mut include_deck: Signal<bool> = use_signal(|| true);
     let mut include_sideboard: Signal<bool> = use_signal(|| false);
@@ -41,20 +34,14 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     let export_hint = use_one_time_hint(HINT_EXPORT);
 
     let deck_resource: Resource<Result<Deck, ClientError>> = use_resource(move || async move {
-        let session = session.ensure_fresh(client).await?;
-        client().get_deck(deck_id, &session).await
-    });
-
-    use_effect(move || {
-        if let Some(Err(e)) = &*deck_resource.read() {
-            usage_buffer
-                .peek()
-                .report_error(screen::DECK_EXPORT, component::NONE, "load_deck", &e);
-            toast.error(
-                e.to_user_message(),
-                ToastOptions::default().duration(Duration::from_millis(3000)),
-            );
-        }
+        // try_run keeps the Result the memo below flattens; reporting and the
+        // error toast live in the facade.
+        authed
+            .try_run(
+                "load_deck",
+                |c, s| async move { c.get_deck(deck_id, &s).await },
+            )
+            .await
     });
 
     // Derive export text reactively from deck data + maybeboard toggle

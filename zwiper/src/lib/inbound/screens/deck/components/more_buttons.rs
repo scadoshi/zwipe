@@ -5,12 +5,12 @@ use crate::{
                 AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
                 AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
             },
-            auth::ensure_session::EnsureFresh,
+            auth::authed::use_authed,
             bottom_sheet::BottomSheet,
             telemetry::{
                 flush_loop::flush_once,
                 usage_buffer::UsageBuffer,
-                vocabulary::{component, screen},
+                vocabulary::{DeckScreen, Screen, component},
             },
         },
         router::Router,
@@ -46,6 +46,7 @@ pub(crate) fn MoreButtons(
     let client: Signal<ZwipeClient> = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let toast = use_toast();
+    let authed = use_authed(Screen::Deck(DeckScreen::View));
     let mut show_clear_skips_dialog = use_signal(|| false);
     let mut show_share_dialog = use_signal(|| false);
 
@@ -66,53 +67,32 @@ pub(crate) fn MoreButtons(
 
     let share_deck = move || {
         spawn(async move {
-            let Ok(fresh) = session.ensure_fresh(client).await else {
-                toast.error("Session expired".to_string(), ToastOptions::default());
-                return;
-            };
-            match client().share_deck(deck_id, &fresh).await {
-                Ok(result) => {
-                    share_token.set(Some(result.share_token));
-                    copy_link(result.share_token);
-                }
-                Err(e) => {
-                    tracing::warn!("share deck failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::DECK_VIEW,
-                        component::MORE_BUTTONS,
-                        "share_deck",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                }
+            if let Some(result) = authed
+                .run_at(component::MORE_BUTTONS, "share_deck", |c, s| async move {
+                    c.share_deck(deck_id, &s).await
+                })
+                .await
+            {
+                share_token.set(Some(result.share_token));
+                copy_link(result.share_token);
             }
         });
     };
 
     let stop_sharing = move || {
         spawn(async move {
-            let Ok(fresh) = session.ensure_fresh(client).await else {
-                toast.error("Session expired".to_string(), ToastOptions::default());
-                return;
-            };
-            match client().unshare_deck(deck_id, &fresh).await {
-                Ok(_) => {
-                    share_token.set(None);
-                    toast.info(
-                        "Link disabled".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
-                    );
-                }
-                Err(e) => {
-                    tracing::warn!("unshare deck failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::DECK_VIEW,
-                        component::MORE_BUTTONS,
-                        "unshare_deck",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                }
+            if authed
+                .run_at(component::MORE_BUTTONS, "unshare_deck", |c, s| async move {
+                    c.unshare_deck(deck_id, &s).await
+                })
+                .await
+                .is_some()
+            {
+                share_token.set(None);
+                toast.info(
+                    "Link disabled".to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
             }
         });
     };
@@ -122,27 +102,19 @@ pub(crate) fn MoreButtons(
             // Flush pending skips first so this window's not-yet-sent skips
             // are wiped too, not re-suppressed by the next flush.
             flush_once(&usage_buffer(), &client, &session).await;
-            let Ok(fresh) = session.ensure_fresh(client).await else {
-                toast.error("Session expired".to_string(), ToastOptions::default());
-                return;
-            };
-            match client().clear_deck_suppressions(deck_id, &fresh).await {
-                Ok(_) => {
-                    toast.info(
-                        "Skips cleared".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
-                    );
-                }
-                Err(e) => {
-                    tracing::warn!("clear suppressions failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::DECK_VIEW,
-                        component::MORE_BUTTONS,
-                        "clear_suppressions",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                }
+            if authed
+                .run_at(
+                    component::MORE_BUTTONS,
+                    "clear_suppressions",
+                    |c, s| async move { c.clear_deck_suppressions(deck_id, &s).await },
+                )
+                .await
+                .is_some()
+            {
+                toast.info(
+                    "Skips cleared".to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
             }
         });
     };

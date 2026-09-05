@@ -11,13 +11,13 @@ use super::components::{
 use crate::{
     inbound::{
         components::{
-            auth::ensure_session::EnsureFresh,
+            auth::authed::use_authed,
             catalog_cache::CatalogCache,
             hint_dialog::use_one_time_hint,
             screen_header::ScreenHeader,
             telemetry::{
                 usage_buffer::UsageBuffer,
-                vocabulary::{component, screen},
+                vocabulary::{DeckScreen, Screen, component, screen},
             },
         },
         router::Router,
@@ -146,14 +146,21 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
     let toast = use_toast();
     let usage_buffer: Signal<UsageBuffer> = use_context();
+    let authed = use_authed(Screen::Deck(DeckScreen::Edit));
 
     // ========================================
     // Fetch deck profile
     // ========================================
     let original_deck_resource: Resource<Result<Deck, ClientError>> =
         use_resource(move || async move {
-            let session = session.ensure_fresh(client).await?;
-            client().get_deck(deck_id, &session).await
+            // try_run keeps the Result the watcher matches on; reporting and
+            // the error toast live in the facade.
+            authed
+                .try_run(
+                    "load_deck",
+                    |c, s| async move { c.get_deck(deck_id, &s).await },
+                )
+                .await
         });
     use_effect(move || match original_deck_resource() {
         Some(Ok(deck)) => {
@@ -188,16 +195,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             // deck-tag reconcile drops exactly those and keeps manual picks.
             applied_seed.set(seed_oracle_tags(&deck.deck_profile.tags));
         }
-        Some(Err(e)) => {
-            usage_buffer
-                .peek()
-                .report_error(screen::DECK_EDIT, component::NONE, "load_deck", &e);
-            toast.error(
-                e.to_user_message(),
-                ToastOptions::default().duration(Duration::from_millis(3000)),
-            );
-        }
-        None => (),
+        Some(Err(_)) | None => (),
     });
 
     // ========================================
@@ -494,24 +492,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         is_saving.set(true);
 
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_EDIT,
-                        component::NONE,
-                        "save_profile",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                    is_saving.set(false);
-                    return;
-                }
-            };
-
             if !has_made_changes() {
                 toast.error(
                     InvalidUpdateDeckProfile::NoUpdates.to_string(),
@@ -537,25 +517,17 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 .oracle_tags(oracle_tags_update())
                 .build();
 
-            match client()
-                .update_deck_profile(deck_id, &request, &session)
+            match authed
+                .try_run("save_profile", |c, s| async move {
+                    c.update_deck_profile(deck_id, &request, &s).await
+                })
                 .await
             {
                 Ok(_updated) => {
                     is_saving.set(false);
                     navigator.push(Router::ViewDeck { deck_id });
                 }
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_EDIT,
-                        component::NONE,
-                        "save_profile",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
+                Err(_) => {
                     is_saving.set(false);
                 }
             }
