@@ -5,7 +5,7 @@ use super::components::{
 use crate::{
     inbound::{
         components::{
-            auth::ensure_session::EnsureFresh,
+            auth::{authed::use_authed, ensure_session::EnsureFresh},
             chip::Chip,
             hint_dialog::{
                 HintBullet, HintBullets, HintColored, HintDialog, HintKey, HintLine,
@@ -16,7 +16,7 @@ use crate::{
             telemetry::{
                 flush_loop::flush_once,
                 usage_buffer::UsageBuffer,
-                vocabulary::{component, screen},
+                vocabulary::{DeckScreen, Screen, component, screen},
             },
         },
         screens::deck::card::{
@@ -210,6 +210,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let toast = use_toast();
+    let authed = use_authed(Screen::Deck(DeckScreen::CardAdd));
 
     // Toast once when synergy goes cold (the search fell back to the full pool).
     // Deduped via a prev-value cell so re-searches / load-more while still warming
@@ -302,15 +303,14 @@ pub fn Add(deck_id: Uuid) -> Element {
 
         usage_buffer().record_search();
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(_) => {
-                    is_loading_more.set(false);
-                    return;
-                }
-            };
-
-            match client().search_deck_cards(deck_id, &filter, &session).await {
+            // Owner decision (2026-09-02): load-more failures toast. The old
+            // silence meant the pile just stopped growing with no warning.
+            match authed
+                .try_run("load_more", |c, s| async move {
+                    c.search_deck_cards(deck_id, &filter, &s).await
+                })
+                .await
+            {
                 Ok((new_cards, warming)) => {
                     synergy_warming.set(warming);
                     let existing_cards = stack.cards();
@@ -346,8 +346,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                     is_loading_more.set(false);
                 }
-                Err(e) => {
-                    tracing::warn!("pagination load failed: {e}");
+                Err(_) => {
                     is_loading_more.set(false);
                 }
             }
@@ -402,37 +401,17 @@ pub fn Add(deck_id: Uuid) -> Element {
         let card_name = card.scryfall_data.name;
 
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_ADD,
-                        component::NONE,
-                        "add_card",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                    return;
+            if authed
+                .run("add_card", |c, s| async move {
+                    c.create_deck_card(deck_id, &request, &s).await
+                })
+                .await
+                .is_some()
+            {
+                if let Some(oid) = oracle_id {
+                    deck_cards_ids.write().insert(oid);
                 }
-            };
-
-            match client().create_deck_card(deck_id, &request, &session).await {
-                Ok(_) => {
-                    if let Some(oid) = oracle_id {
-                        deck_cards_ids.write().insert(oid);
-                    }
-                    undo_store.push(deck_id, UndoAction::Added { card_id, card_name });
-                }
-                Err(e) => {
-                    tracing::warn!("add card to deck failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_ADD,
-                        component::NONE,
-                        "add_card",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                }
+                undo_store.push(deck_id, UndoAction::Added { card_id, card_name });
             }
         });
     };
@@ -445,22 +424,13 @@ pub fn Add(deck_id: Uuid) -> Element {
         let card_name = card.scryfall_data.name.clone();
 
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_ADD,
-                        component::NONE,
-                        "add_maybeboard",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                    return;
-                }
-            };
-
-            match client().create_deck_card(deck_id, &request, &session).await {
-                Ok(deck_card) => {
+            match authed
+                .run("add_maybeboard", |c, s| async move {
+                    c.create_deck_card(deck_id, &request, &s).await
+                })
+                .await
+            {
+                Some(deck_card) => {
                     if let Some(oid) = oracle_id {
                         deck_cards_ids.write().insert(oid);
                     }
@@ -469,16 +439,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     // shows this card without a refetch.
                     mb_entries.write().push(DeckEntry { card, deck_card });
                 }
-                Err(e) => {
-                    tracing::warn!("add card to maybeboard failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_ADD,
-                        component::NONE,
-                        "add_maybeboard",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                }
+                None => {}
             }
         });
     };
@@ -511,29 +472,11 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // Delete the suppression row posted at swipe time.
                 if let Some(oracle_id) = card.scryfall_data.oracle_id {
                     spawn(async move {
-                        let session = match session.ensure_fresh(client).await {
-                            Ok(session) => session,
-                            Err(e) => {
-                                usage_buffer.peek().report_error(
-                                    screen::DECK_CARD_ADD,
-                                    component::NONE,
-                                    "undo_skip",
-                                    &e,
-                                );
-                                toast.error(e.to_user_message(), ToastOptions::default());
-                                return;
-                            }
-                        };
-                        if let Err(e) = client()
-                            .unskip_deck_card(deck_id, oracle_id, &session)
-                            .await
-                        {
-                            tracing::warn!("undo skip (unskip) failed: {e}");
-                            toast.error(
-                                format!("Failed to undo skip: {}", e),
-                                ToastOptions::default(),
-                            );
-                        }
+                        let _ = authed
+                            .run("undo_skip", |c, s| async move {
+                                c.unskip_deck_card(deck_id, oracle_id, &s).await
+                            })
+                            .await;
                     });
                 }
                 toast.info(
@@ -569,6 +512,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                     return;
                 }
 
+                // Facade holdout: this arm compensates differently per failure
+                // stage (refresh failure fully rewinds; a failed delete leaves
+                // the add standing on purpose), which run/try_run can't express.
                 spawn(async move {
                     let session = match session.ensure_fresh(client).await {
                         Ok(session) => session,
@@ -635,6 +581,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     return;
                 }
 
+                // Facade holdout: staged compensation, same as the Add arm.
                 spawn(async move {
                     let session = match session.ensure_fresh(client).await {
                         Ok(session) => session,
@@ -733,15 +680,15 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Fetch deck cards on mount for filtering
     use_effect(move || {
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(_) => {
-                    return;
-                }
-            };
-
-            match client().get_deck(deck_id, &session).await {
-                Ok(deck) => {
+            // Quiet: the screen deliberately works without deck context (the
+            // Err arm below always just logged); telemetry still records now.
+            let fetched = authed
+                .run_quiet("load_deck_context", |c, s| async move {
+                    c.get_deck(deck_id, &s).await
+                })
+                .await;
+            match fetched {
+                Some(deck) => {
                     let mut ids: HashSet<_> = deck
                         .entries
                         .iter()
@@ -866,11 +813,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         filter_reset_counter.set(current + 1);
                     }
                 }
-                Err(e) => {
-                    tracing::warn!(
-                        "deck card filter fetch failed, continuing without filtering: {e}"
-                    );
-                }
+                None => {}
             }
         });
     });
@@ -950,14 +893,6 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         };
 
-        // Peek session to avoid subscribing this effect to session changes.
-        // The interval-based upkeep loop (spawn_upkeeper) handles session refresh.
-        let session_signal = session;
-        let Some(session) = session.peek().clone() else {
-            toast.error("Session expired".to_string(), ToastOptions::default());
-            return;
-        };
-
         is_loading_cards.set(true);
 
         // Snapshot the filter builder state before the async block owns context.
@@ -967,8 +902,13 @@ pub fn Add(deck_id: Uuid) -> Element {
         spawn(async move {
             // Flush buffered usage (signals feed synergy ordering) before the
             // refetch. Skips post directly at swipe time.
-            flush_once(&usage_buffer(), &client, &session_signal).await;
-            match client().search_deck_cards(deck_id, &filter, &session).await {
+            flush_once(&usage_buffer(), &client, &session).await;
+            match authed
+                .try_run("search_cards", |c, s| async move {
+                    c.search_deck_cards(deck_id, &filter, &s).await
+                })
+                .await
+            {
                 Ok((cards_from_search, warming)) => {
                     synergy_warming.set(warming);
                     let deck_ids = deck_cards_ids();
@@ -1007,15 +947,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     current_offset.set(pagination_limit);
                     is_loading_cards.set(false);
                 }
-                Err(e) => {
-                    tracing::warn!("card search failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_ADD,
-                        component::NONE,
-                        "search_cards",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
+                Err(_) => {
                     is_loading_cards.set(false);
                 }
             }
@@ -1068,44 +1000,22 @@ pub fn Add(deck_id: Uuid) -> Element {
         }
 
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_ADD,
-                        component::NONE,
-                        "promote_maybeboard",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                    return;
-                }
-            };
-
-            match client()
-                .update_deck_card(deck_id, scryfall_data_id, &request, &session)
+            if authed
+                .run("promote_maybeboard", |c, s| async move {
+                    c.update_deck_card(deck_id, scryfall_data_id, &request, &s)
+                        .await
+                })
                 .await
+                .is_some()
             {
-                Ok(_) => {
-                    undo_store.push(
-                        deck_id,
-                        UndoAction::MovedBoard {
-                            card_id: scryfall_data_id,
-                            card_name,
-                            from: Board::Maybeboard,
-                        },
-                    );
-                }
-                Err(e) => {
-                    tracing::warn!("promote to deck failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_ADD,
-                        component::NONE,
-                        "promote_maybeboard",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                }
+                undo_store.push(
+                    deck_id,
+                    UndoAction::MovedBoard {
+                        card_id: scryfall_data_id,
+                        card_name,
+                        from: Board::Maybeboard,
+                    },
+                );
             }
         });
     };
@@ -1163,6 +1073,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                 mb_stack.insert_current(card.clone());
                 let request = HttpPatchDeckCard::new(None, Some("maybeboard".to_string()));
 
+                // Facade holdout: staged compensation (refresh failure cancels
+                // the primed entry; a failed move leaves the promote standing).
                 spawn(async move {
                     let session = match session.ensure_fresh(client).await {
                         Ok(session) => session,
@@ -1330,12 +1242,14 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     // skip is lost to a quick app kill.
                                     if let Some(oracle_id) = card.scryfall_data.oracle_id {
                                         spawn(async move {
-                                            let Ok(session) = session.ensure_fresh(client).await else {
-                                                return;
-                                            };
-                                            if let Err(e) = client().skip_deck_card(deck_id, oracle_id, &session).await {
-                                                tracing::warn!("skip post failed: {e}");
-                                            }
+                                            // Quiet: fires on every left swipe; a per-swipe
+                                            // toast on a bad connection would bury the screen,
+                                            // and the visual skip already happened.
+                                            let _ = authed
+                                                .run_quiet("skip_card", |c, s| async move {
+                                                    c.skip_deck_card(deck_id, oracle_id, &s).await
+                                                })
+                                                .await;
                                         });
                                     }
                                     stack.record(AddAction::Skip);
@@ -1523,16 +1437,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                         if add_source() == AddSource::Maybeboard {
                             // Maybeboard mode: re-fetch deck to reload maybeboard entries
                             spawn(async move {
-                                let session = match session.ensure_fresh(client).await {
-                                    Ok(session) => session,
-                                    Err(e) => {
-                                        usage_buffer.peek().report_error(screen::DECK_CARD_ADD, component::NONE, "search_cards", &e);
-                                        toast.error(e.to_user_message(), ToastOptions::default());
-                                        return;
-                                    }
-                                };
-
-                                if let Ok(deck) = client().get_deck(deck_id, &session).await {
+                                if let Some(deck) = authed
+                                    .run("search_cards", |c, s| async move {
+                                        c.get_deck(deck_id, &s).await
+                                    })
+                                    .await
+                                {
                                     let mb: Vec<DeckEntry> = deck.entries
                                         .iter()
                                         .filter(|e| e.deck_card.board.is_maybeboard())
@@ -1563,12 +1473,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 return;
                             };
 
-                            let session_signal = session;
-                            let Some(session) = session.peek().clone() else {
-                                toast.error("Session expired".to_string(), ToastOptions::default());
-                                return;
-                            };
-
                             stack.reset();
                             reset_image_ease();
                             last_search_filter.set(None);
@@ -1583,8 +1487,13 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 // Flush buffered usage (signals feed synergy
                                 // ordering) before the refetch. Skips post
                                 // directly at swipe time.
-                                flush_once(&usage_buffer(), &client, &session_signal).await;
-                                match client().search_deck_cards(deck_id, &filter, &session).await {
+                                flush_once(&usage_buffer(), &client, &session).await;
+                                match authed
+                                    .try_run("search_cards", |c, s| async move {
+                                        c.search_deck_cards(deck_id, &filter, &s).await
+                                    })
+                                    .await
+                                {
                                     Ok((cards_from_search, warming)) => {
                                         synergy_warming.set(warming);
                                         let deck_ids = deck_cards_ids();
@@ -1600,10 +1509,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                         current_offset.set(pagination_limit);
                                         is_loading_cards.set(false);
                                     }
-                                    Err(e) => {
-                                        tracing::warn!("card search failed: {e}");
-                                        usage_buffer.peek().report_error(screen::DECK_CARD_ADD, component::NONE, "search_cards", &e);
-                                        toast.error(e.to_user_message(), ToastOptions::default());
+                                    Err(_) => {
                                         is_loading_cards.set(false);
                                     }
                                 }
