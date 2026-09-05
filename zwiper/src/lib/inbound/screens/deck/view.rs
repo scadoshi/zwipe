@@ -16,12 +16,12 @@ use crate::{
                 AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
                 AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
             },
-            auth::ensure_session::EnsureFresh,
+            auth::authed::use_authed,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
             screen_header::ScreenHeader,
             telemetry::{
                 usage_buffer::UsageBuffer,
-                vocabulary::{component, screen},
+                vocabulary::{DeckScreen, Screen, component, screen},
             },
         },
         router::Router,
@@ -47,7 +47,6 @@ use uuid::Uuid;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
     domain::{
-        auth::models::session::Session,
         card::Card,
         deck::{
             DeckEntry, deck_metrics::DeckMetrics, deck_profile::DeckProfile,
@@ -67,21 +66,27 @@ type DeckResult = Result<(Vec<DeckEntry>, Vec<DeckWarning>, Vec<Card>), ClientEr
 pub fn ViewDeck(deck_id: Uuid) -> Element {
     // config
     let navigator = use_navigator();
-    let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
 
     // original deck information
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let toast = use_toast();
     let usage_buffer: Signal<UsageBuffer> = use_context();
+    let authed = use_authed(Screen::Deck(DeckScreen::View));
 
     // `use_reactive!` ties these resources to `deck_id` so they re-fetch when the
     // route param changes without a remount — e.g. cloning navigates ViewDeck →
     // ViewDeck, and a plain `move ||` closure would keep serving the old deck.
     let mut deck_profile_resource: Resource<Result<DeckProfile, ClientError>> =
         use_resource(use_reactive!(|deck_id| async move {
-            let session = session.ensure_fresh(client).await?;
-            client().get_deck_profile(deck_id, &session).await
+            // try_run keeps the Result the downstream Ok/Err matches expect;
+            // reporting and the error toast live in the facade now (the old
+            // separate error-watching effect is gone).
+            authed
+                .try_run("load_deck", |c, s| async move {
+                    c.get_deck_profile(deck_id, &s).await
+                })
+                .await
         }));
     let commander_resource: Resource<Result<Option<Card>, ClientError>> =
         use_resource(move || async move {
@@ -96,23 +101,14 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         });
     let mut deck_resource: Resource<DeckResult> =
         use_resource(use_reactive!(|deck_id| async move {
-            let session = session.ensure_fresh(client).await?;
-            client()
-                .get_deck(deck_id, &session)
+            authed
+                .try_run("load_deck", |c, s| async move {
+                    c.get_deck(deck_id, &s)
+                        .await
+                        .map(|d| (d.entries, d.warnings, d.command_zone_cards))
+                })
                 .await
-                .map(|d| (d.entries, d.warnings, d.command_zone_cards))
         }));
-    use_effect(move || {
-        if let Some(Err(e)) = &*deck_profile_resource.read() {
-            usage_buffer
-                .peek()
-                .report_error(screen::DECK_VIEW, component::NONE, "load_deck", &e);
-            toast.error(
-                e.to_user_message(),
-                ToastOptions::default().duration(Duration::from_millis(3000)),
-            );
-        }
-    });
 
     use_effect(move || match commander_resource() {
         Some(Ok(Some(original_commander))) => {
@@ -171,39 +167,14 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     });
     let attempt_delete = move || {
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_VIEW,
-                        component::NONE,
-                        "delete_deck",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                    return;
-                }
-            };
-
-            match client().delete_deck(deck_id, &session).await {
-                Ok(_) => {
-                    navigator.push(Router::DeckList {});
-                }
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_VIEW,
-                        component::NONE,
-                        "delete_deck",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                }
+            if authed
+                .run("delete_deck", |c, s| async move {
+                    c.delete_deck(deck_id, &s).await
+                })
+                .await
+                .is_some()
+            {
+                navigator.push(Router::DeckList {});
             }
         });
     };
@@ -448,23 +419,18 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             let request = HttpPatchDeckCard::new(Some(target_qty), None);
 
                                             spawn(async move {
-                                                let session = match session.ensure_fresh(client).await {
-                                                    Ok(session) => session,
-                                                    Err(_) => return,
-                                                };
-
-                                                match client().update_deck_card(deck_id, card_id, &request, &session).await {
-                                                    Ok(_) => {
-                                                        toast.info(
-                                                            format!("Quantity set to {target_qty}"),
-                                                            ToastOptions::default().duration(Duration::from_millis(1500)),
-                                                        );
-                                                        deck_resource.restart();
-                                                    }
-                                                    Err(e) => {
-                                                        usage_buffer.peek().report_error(screen::DECK_VIEW, component::NONE, "update_card_quantity", &e);
-                                                        toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
-                                                    }
+                                                if authed
+                                                    .run("update_card_quantity", |c, s| async move {
+                                                        c.update_deck_card(deck_id, card_id, &request, &s).await
+                                                    })
+                                                    .await
+                                                    .is_some()
+                                                {
+                                                    toast.info(
+                                                        format!("Quantity set to {target_qty}"),
+                                                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                                                    );
+                                                    deck_resource.restart();
                                                 }
                                             });
                                         },
@@ -474,13 +440,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 .build();
 
                                             spawn(async move {
-                                                let session = match session.ensure_fresh(client).await {
-                                                    Ok(session) => session,
-                                                    Err(_) => return,
-                                                };
-
-                                                match client().update_deck_profile(deck_id, &request, &session).await {
-                                                    Ok(_) => {
+                                                match authed
+                                                    .run("remove_commander", |c, s| async move {
+                                                        c.update_deck_profile(deck_id, &request, &s).await
+                                                    })
+                                                    .await
+                                                {
+                                                    Some(_) => {
                                                         let label = if deck_profile_resource().is_some_and(|r| r.as_ref().ok().is_some_and(|p| p.format.as_ref().is_some_and(|f| f.has_signature_spell()))) {
                                                             "Oathbreaker"
                                                         } else {
@@ -494,10 +460,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                         deck_profile_resource.restart();
                                                         deck_resource.restart();
                                                     }
-                                                    Err(e) => {
-                                                        usage_buffer.peek().report_error(screen::DECK_VIEW, component::NONE, "remove_commander", &e);
-                                                        toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
-                                                    }
+                                                    None => {}
                                                 }
                                             });
                                         },
