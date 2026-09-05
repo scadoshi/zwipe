@@ -5,20 +5,17 @@
 use crate::{
     inbound::{
         components::{
-            auth::ensure_session::EnsureFresh,
+            auth::authed::use_authed,
             chip::Chip,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
             screen_header::ScreenHeader,
-            telemetry::{
-                usage_buffer::UsageBuffer,
-                vocabulary::{component, screen},
-            },
+            telemetry::vocabulary::{DeckScreen, Screen},
         },
         router::Router,
         screens::deck::card::components::undo_log::UndoStore,
     },
     outbound::client::{
-        ZwipeClient, deck::import_archidekt_deck::ClientImportArchidektDeck,
+        deck::import_archidekt_deck::ClientImportArchidektDeck,
         deck_card::import_deck_cards::ClientImportDeckCards,
     },
 };
@@ -28,7 +25,6 @@ use std::time::Duration;
 use uuid::Uuid;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
-    auth::models::session::Session,
     deck::{ImportMode, requests::import_deck_cards::ImportDeckCardsResult},
     user::models::hints::HINT_IMPORT,
 };
@@ -45,8 +41,6 @@ enum ImportSource {
 #[component]
 pub fn ImportDeck(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
-    let session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
 
     let mut source = use_signal(|| ImportSource::Text);
     let mut mode = use_signal(|| ImportMode::Add);
@@ -63,7 +57,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
     // semantically void — the whole undo stack clears on success (disclosed
     // in the hint below).
     let mut undo_store: UndoStore = use_context();
-    let usage_buffer: Signal<UsageBuffer> = use_context();
+    let authed = use_authed(Screen::Deck(DeckScreen::Import));
 
     let board_word = board_selection.read().unwrap_or("mainboard");
 
@@ -75,38 +69,20 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
         loading.set(true);
 
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_IMPORT,
-                        component::NONE,
-                        "import_cards",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                    loading.set(false);
-                    return;
-                }
-            };
-
-            let response = match source {
-                ImportSource::Text => {
-                    client()
-                        .import_deck_cards(deck_id, &text(), board, mode, &session)
-                        .await
-                }
-                ImportSource::Archidekt => {
-                    client()
-                        .import_archidekt_deck(deck_id, &url(), board, mode, &session)
-                        .await
-                }
-            };
-
-            match response {
+            match authed
+                .try_run("import_cards", |c, s| async move {
+                    match source {
+                        ImportSource::Text => {
+                            c.import_deck_cards(deck_id, &text(), board, mode, &s).await
+                        }
+                        ImportSource::Archidekt => {
+                            c.import_archidekt_deck(deck_id, &url(), board, mode, &s)
+                                .await
+                        }
+                    }
+                })
+                .await
+            {
                 Ok(r) => {
                     result.set(Some(r.clone()));
                     let imported = r.imported.len();
@@ -138,17 +114,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     }
                     loading.set(false);
                 }
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_IMPORT,
-                        component::NONE,
-                        "import_cards",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
+                Err(_) => {
                     loading.set(false);
                 }
             }
