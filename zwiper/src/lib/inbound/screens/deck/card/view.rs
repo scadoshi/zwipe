@@ -9,7 +9,7 @@ use super::components::{
 use crate::{
     inbound::{
         components::{
-            auth::ensure_session::EnsureFresh,
+            auth::authed::use_authed,
             catalog_cache::CatalogCache,
             chip::Chip,
             hint_dialog::{
@@ -19,7 +19,7 @@ use crate::{
             screen_header::ScreenHeader,
             telemetry::{
                 usage_buffer::UsageBuffer,
-                vocabulary::{component, screen},
+                vocabulary::{DeckScreen, Screen, screen},
             },
         },
         screens::{
@@ -34,7 +34,7 @@ use crate::{
         },
     },
     outbound::client::{
-        ClientError, ZwipeClient,
+        ZwipeClient,
         card::get_card::ClientGetCard,
         deck::{
             get_deck::ClientGetDeck, get_deck_profile::ClientGetDeckProfile,
@@ -191,10 +191,13 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut filter_reset_counter: Signal<u32> = use_signal(|| 0);
     use_context_provider(|| filter_reset_counter);
 
+    // session + client feed the hint recorder; usage_buffer records swipes
+    // and removals (its error reporting now rides the facade).
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let toast = use_toast();
+    let authed = use_authed(Screen::Deck(DeckScreen::CardView));
 
     // Deck identity for the header block (name + format/power/tag chips, like
     // the zite share page).
@@ -238,31 +241,19 @@ pub fn View(deck_id: Uuid) -> Element {
                 continue;
             }
             spawn_forever(async move {
-                let Ok(session) = session.ensure_fresh(client).await else {
-                    return;
-                };
-                let result = if p.baseline + p.delta < 1 {
-                    client()
-                        .delete_deck_card(deck_id, card_id, &session)
-                        .await
-                        .map(|_| ())
-                } else {
-                    // PATCH: the burst's absolute target, replay-safe.
-                    let request = HttpPatchDeckCard::new(Some(p.baseline + p.delta), None);
-                    client()
-                        .update_deck_card(deck_id, card_id, &request, &session)
-                        .await
-                        .map(|_| ())
-                };
-                if let Err(e) = result {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_VIEW,
-                        component::NONE,
-                        "flush_quantity",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                }
+                let _ = authed
+                    .run("flush_quantity", |c, s| async move {
+                        if p.baseline + p.delta < 1 {
+                            c.delete_deck_card(deck_id, card_id, &s).await.map(|_| ())
+                        } else {
+                            // PATCH: the burst's absolute target, replay-safe.
+                            let request = HttpPatchDeckCard::new(Some(p.baseline + p.delta), None);
+                            c.update_deck_card(deck_id, card_id, &request, &s)
+                                .await
+                                .map(|_| ())
+                        }
+                    })
+                    .await;
             });
         }
     });
@@ -414,125 +405,111 @@ pub fn View(deck_id: Uuid) -> Element {
     // Fetches deck entries, separates the commander into its own pinned slot.
     use_effect(move || {
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(_) => {
-                    return;
-                }
-            };
-
-            let mut entries = match client().get_deck(deck_id, &session).await {
-                Ok(deck) => {
+            // The whole load rides one facade call: only get_deck's failure
+            // aborts (reported + toasted, where the refresh failure used to
+            // be silent); the profile and command-zone fetches keep their
+            // tolerant .ok() handling inside.
+            let _ = authed
+                .run("load_deck", |c, s| async move {
+                    let deck = c.get_deck(deck_id, &s).await?;
                     command_zone_cards.set(deck.command_zone_cards);
-                    deck.entries
-                }
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_VIEW,
-                        component::NONE,
-                        "load_deck",
-                        &e,
-                    );
-                    toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                    return;
-                }
-            };
+                    let mut entries = deck.entries;
 
-            // Resolve commander and signature spell from profile.
-            // Pull from entries if present, otherwise fetch separately.
-            if let Ok(profile) = client().get_deck_profile(deck_id, &session).await {
-                deck_name.set(profile.name.to_string());
-                deck_format.set(profile.format);
-                deck_power.set(profile.power_level);
-                deck_tags.set(profile.tags.clone());
-                deck_other_tags.set(profile.other_tags.clone());
-                is_oathbreaker.set(
-                    profile
-                        .format
-                        .as_ref()
-                        .is_some_and(|f| f.has_signature_spell()),
-                );
-                // Explicit target only — no toasts unless the user set one.
-                land_target.set(profile.land_target);
-                price_budget.set(profile.price_target);
-                price_budget_currency
-                    .set(profile.price_target_currency.unwrap_or(PriceCurrency::Usd));
+                    // Resolve commander and signature spell from profile.
+                    // Pull from entries if present, otherwise fetch separately.
+                    if let Ok(profile) = c.get_deck_profile(deck_id, &s).await {
+                        deck_name.set(profile.name.to_string());
+                        deck_format.set(profile.format);
+                        deck_power.set(profile.power_level);
+                        deck_tags.set(profile.tags.clone());
+                        deck_other_tags.set(profile.other_tags.clone());
+                        is_oathbreaker.set(
+                            profile
+                                .format
+                                .as_ref()
+                                .is_some_and(|f| f.has_signature_spell()),
+                        );
+                        // Explicit target only — no toasts unless the user set one.
+                        land_target.set(profile.land_target);
+                        price_budget.set(profile.price_target);
+                        price_budget_currency
+                            .set(profile.price_target_currency.unwrap_or(PriceCurrency::Usd));
 
-                // Resolve command zone cards by oracle_id (not printing-specific scryfall_data_id).
-                // Fetch the card first to get its oracle_id, then remove from entries by oracle_id.
-                if let Some(commander_id) = profile.commander_id {
-                    let fetched = client().get_card(commander_id).await.ok();
-                    if let Some(ref card) = fetched
-                        && let Some(oid) = card.scryfall_data.oracle_id
-                    {
-                        entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
+                        // Resolve command zone cards by oracle_id (not printing-specific scryfall_data_id).
+                        // Fetch the card first to get its oracle_id, then remove from entries by oracle_id.
+                        if let Some(commander_id) = profile.commander_id {
+                            let fetched = c.get_card(commander_id).await.ok();
+                            if let Some(ref card) = fetched
+                                && let Some(oid) = card.scryfall_data.oracle_id
+                            {
+                                entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
+                            }
+                            commander_card.set(fetched);
+                        }
+
+                        if let Some(spell_id) = profile.signature_spell_id {
+                            let fetched = c.get_card(spell_id).await.ok();
+                            if let Some(ref card) = fetched
+                                && let Some(oid) = card.scryfall_data.oracle_id
+                            {
+                                entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
+                            }
+                            signature_spell_card.set(fetched);
+                        }
+
+                        if let Some(partner_id) = profile.partner_commander_id {
+                            let fetched = c.get_card(partner_id).await.ok();
+                            if let Some(ref card) = fetched
+                                && let Some(oid) = card.scryfall_data.oracle_id
+                            {
+                                entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
+                            }
+                            partner_card.set(fetched);
+                        }
+
+                        if let Some(bg_id) = profile.background_id {
+                            let fetched = c.get_card(bg_id).await.ok();
+                            if let Some(ref card) = fetched
+                                && let Some(oid) = card.scryfall_data.oracle_id
+                            {
+                                entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
+                            }
+                            background_card.set(fetched);
+                        }
                     }
-                    commander_card.set(fetched);
-                }
 
-                if let Some(spell_id) = profile.signature_spell_id {
-                    let fetched = client().get_card(spell_id).await.ok();
-                    if let Some(ref card) = fetched
-                        && let Some(oid) = card.scryfall_data.oracle_id
-                    {
-                        entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
+                    // Update DeckCards context for filter sheet (all cards including maybeboard)
+                    let all_cards: Vec<Card> = entries.iter().map(|e| e.card.clone()).collect();
+                    deck_cards_for_filter.set(all_cards);
+
+                    deck_entries.set(entries);
+                    deck_loaded.set(true);
+
+                    if !filter_builder.peek().is_empty() {
+                        toast.warning(
+                            "Filter is active".to_string(),
+                            ToastOptions::default().duration(Duration::from_millis(2000)),
+                        );
                     }
-                    signature_spell_card.set(fetched);
-                }
 
-                if let Some(partner_id) = profile.partner_commander_id {
-                    let fetched = client().get_card(partner_id).await.ok();
-                    if let Some(ref card) = fetched
-                        && let Some(oid) = card.scryfall_data.oracle_id
-                    {
-                        entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
-                    }
-                    partner_card.set(fetched);
-                }
-
-                if let Some(bg_id) = profile.background_id {
-                    let fetched = client().get_card(bg_id).await.ok();
-                    if let Some(ref card) = fetched
-                        && let Some(oid) = card.scryfall_data.oracle_id
-                    {
-                        entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
-                    }
-                    background_card.set(fetched);
-                }
-            }
-
-            // Update DeckCards context for filter sheet (all cards including maybeboard)
-            let all_cards: Vec<Card> = entries.iter().map(|e| e.card.clone()).collect();
-            deck_cards_for_filter.set(all_cards);
-
-            deck_entries.set(entries);
-            deck_loaded.set(true);
-
-            if !filter_builder.peek().is_empty() {
-                toast.warning(
-                    "Filter is active".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(2000)),
-                );
-            }
-
-            let current = *filter_reset_counter.peek();
-            filter_reset_counter.set(current + 1);
+                    let current = *filter_reset_counter.peek();
+                    filter_reset_counter.set(current + 1);
+                    Ok(())
+                })
+                .await;
         });
     });
 
-    let tokens_resource: Resource<Result<Vec<Card>, ClientError>> =
-        use_resource(move || async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(_) => {
-                    return Ok(Vec::new());
-                }
-            };
-            client().get_deck_tokens(deck_id, &session).await
-        });
+    // Quiet: tokens are a decorative section and failures used to flatten to
+    // "no tokens" anyway; the facade at least records them now.
+    let tokens_resource: Resource<Vec<Card>> = use_resource(move || async move {
+        authed
+            .run_quiet("load_tokens", |c, s| async move {
+                c.get_deck_tokens(deck_id, &s).await
+            })
+            .await
+            .unwrap_or_default()
+    });
 
     // Effect 2 — filter + group (reads `filter_reset_counter`, `group_by_option`, `board_filter` reactively)
     use_effect(move || {
@@ -777,37 +754,21 @@ pub fn View(deck_id: Uuid) -> Element {
                     return;
                 }
 
-                let session = match session.ensure_fresh(client).await {
-                    Ok(session) => session,
-                    Err(e) => {
-                        usage_buffer.peek().report_error(
-                            screen::DECK_CARD_VIEW,
-                            component::NONE,
-                            "change_quantity",
-                            &e,
-                        );
-                        toast.error(e.to_user_message(), ToastOptions::default());
-                        return;
-                    }
-                };
-
                 if pending.baseline + pending.delta < 1 {
-                    if let Err(e) = client().delete_deck_card(deck_id, card_id, &session).await {
-                        usage_buffer.peek().report_error(
-                            screen::DECK_CARD_VIEW,
-                            component::NONE,
-                            "change_quantity",
-                            &e,
-                        );
-                        toast.error(e.to_user_message(), ToastOptions::default());
-                    }
+                    let _ = authed
+                        .run("change_quantity", |c, s| async move {
+                            c.delete_deck_card(deck_id, card_id, &s).await
+                        })
+                        .await;
                 } else {
                     // PATCH: the burst's absolute target (baseline + net), so
                     // a retried or replayed request lands on the same value.
                     let request =
                         HttpPatchDeckCard::new(Some(pending.baseline + pending.delta), None);
-                    match client()
-                        .update_deck_card(deck_id, card_id, &request, &session)
+                    match authed
+                        .try_run("change_quantity", |c, s| async move {
+                            c.update_deck_card(deck_id, card_id, &request, &s).await
+                        })
                         .await
                     {
                         Ok(_) => {
@@ -828,14 +789,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 });
                             }
                         }
-                        Err(e) => {
-                            usage_buffer.peek().report_error(
-                                screen::DECK_CARD_VIEW,
-                                component::NONE,
-                                "change_quantity",
-                                &e,
-                            );
-                            toast.error(e.to_user_message(), ToastOptions::default());
+                        Err(_) => {
                             // Roll the whole burst back to its pre-burst quantity.
                             if let Some(entry) = deck_entries
                                 .write()
@@ -883,31 +837,13 @@ pub fn View(deck_id: Uuid) -> Element {
 
         let request = HttpPatchDeckCard::new(None, Some(target.display_name().to_string()));
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_VIEW,
-                        component::NONE,
-                        "move_board",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                    return;
-                }
-            };
-
-            if let Err(e) = client()
-                .update_deck_card(deck_id, card_id, &request, &session)
+            if authed
+                .try_run("move_board", |c, s| async move {
+                    c.update_deck_card(deck_id, card_id, &request, &s).await
+                })
                 .await
+                .is_err()
             {
-                usage_buffer.peek().report_error(
-                    screen::DECK_CARD_VIEW,
-                    component::NONE,
-                    "move_board",
-                    &e,
-                );
-                toast.error(e.to_user_message(), ToastOptions::default());
                 // Rollback
                 if let Some(entry) = deck_entries
                     .write()
@@ -952,22 +888,10 @@ pub fn View(deck_id: Uuid) -> Element {
 
         let request = HttpPatchDeckCard::with_mvp(target);
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_VIEW,
-                        component::NONE,
-                        "toggle_mvp",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                    return;
-                }
-            };
-
-            match client()
-                .update_deck_card(deck_id, card_id, &request, &session)
+            match authed
+                .try_run("toggle_mvp", |c, s| async move {
+                    c.update_deck_card(deck_id, card_id, &request, &s).await
+                })
                 .await
             {
                 Ok(updated) => {
@@ -980,14 +904,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         entry.deck_card.mvp_at = updated.mvp_at;
                     }
                 }
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_VIEW,
-                        component::NONE,
-                        "toggle_mvp",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
+                Err(_) => {
                     // Rollback
                     if let Some(entry) = deck_entries
                         .write()
@@ -1042,28 +959,11 @@ pub fn View(deck_id: Uuid) -> Element {
                 toast.info(format!("Removed {card_name}"), short);
 
                 spawn(async move {
-                    let session = match session.ensure_fresh(client).await {
-                        Ok(session) => session,
-                        Err(e) => {
-                            usage_buffer.peek().report_error(
-                                screen::DECK_CARD_VIEW,
-                                component::NONE,
-                                "undo",
-                                &e,
-                            );
-                            toast.error(e.to_user_message(), ToastOptions::default());
-                            return;
-                        }
-                    };
-                    if let Err(e) = client().delete_deck_card(deck_id, card_id, &session).await {
-                        usage_buffer.peek().report_error(
-                            screen::DECK_CARD_VIEW,
-                            component::NONE,
-                            "undo",
-                            &e,
-                        );
-                        toast.error(e.to_user_message(), ToastOptions::default());
-                    }
+                    let _ = authed
+                        .run("undo", |c, s| async move {
+                            c.delete_deck_card(deck_id, card_id, &s).await
+                        })
+                        .await;
                 });
             }
             UndoAction::Removed { entry, baseline } => {
@@ -1095,20 +995,12 @@ pub fn View(deck_id: Uuid) -> Element {
                 toast.info(format!("Re-added {card_name}"), short);
 
                 spawn(async move {
-                    let session = match session.ensure_fresh(client).await {
-                        Ok(session) => session,
-                        Err(e) => {
-                            usage_buffer.peek().report_error(
-                                screen::DECK_CARD_VIEW,
-                                component::NONE,
-                                "undo",
-                                &e,
-                            );
-                            toast.error(e.to_user_message(), ToastOptions::default());
-                            return;
-                        }
-                    };
-                    match client().create_deck_card(deck_id, &request, &session).await {
+                    match authed
+                        .try_run("undo", |c, s| async move {
+                            c.create_deck_card(deck_id, &request, &s).await
+                        })
+                        .await
+                    {
                         Ok(deck_card) => {
                             // Adopt the server row (fresh ids).
                             if let Some(entry) = deck_entries
@@ -1119,14 +1011,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 entry.deck_card = deck_card;
                             }
                         }
-                        Err(e) => {
-                            usage_buffer.peek().report_error(
-                                screen::DECK_CARD_VIEW,
-                                component::NONE,
-                                "undo",
-                                &e,
-                            );
-                            toast.error(e.to_user_message(), ToastOptions::default());
+                        Err(_) => {
                             deck_entries
                                 .write()
                                 .retain(|e| e.card.scryfall_data.id != card_id);
@@ -1185,31 +1070,11 @@ pub fn View(deck_id: Uuid) -> Element {
                 toast.info(format!("{card_name} printing restored"), short);
 
                 spawn(async move {
-                    let session = match session.ensure_fresh(client).await {
-                        Ok(session) => session,
-                        Err(e) => {
-                            usage_buffer.peek().report_error(
-                                screen::DECK_CARD_VIEW,
-                                component::NONE,
-                                "undo",
-                                &e,
-                            );
-                            toast.error(e.to_user_message(), ToastOptions::default());
-                            return;
-                        }
-                    };
-                    if let Err(e) = client()
-                        .update_deck_card(deck_id, new_id, &request, &session)
-                        .await
-                    {
-                        usage_buffer.peek().report_error(
-                            screen::DECK_CARD_VIEW,
-                            component::NONE,
-                            "undo",
-                            &e,
-                        );
-                        toast.error(e.to_user_message(), ToastOptions::default());
-                    }
+                    let _ = authed
+                        .run("undo", |c, s| async move {
+                            c.update_deck_card(deck_id, new_id, &request, &s).await
+                        })
+                        .await;
                 });
             }
             UndoAction::CommandZonePrintingChanged {
@@ -1260,31 +1125,11 @@ pub fn View(deck_id: Uuid) -> Element {
                 toast.info(format!("{card_name} printing restored"), short);
 
                 spawn(async move {
-                    let session = match session.ensure_fresh(client).await {
-                        Ok(session) => session,
-                        Err(e) => {
-                            usage_buffer.peek().report_error(
-                                screen::DECK_CARD_VIEW,
-                                component::NONE,
-                                "undo",
-                                &e,
-                            );
-                            toast.error(e.to_user_message(), ToastOptions::default());
-                            return;
-                        }
-                    };
-                    if let Err(e) = client()
-                        .update_deck_profile(deck_id, &request, &session)
-                        .await
-                    {
-                        usage_buffer.peek().report_error(
-                            screen::DECK_CARD_VIEW,
-                            component::NONE,
-                            "undo",
-                            &e,
-                        );
-                        toast.error(e.to_user_message(), ToastOptions::default());
-                    }
+                    let _ = authed
+                        .run("undo", |c, s| async move {
+                            c.update_deck_profile(deck_id, &request, &s).await
+                        })
+                        .await;
                 });
             }
         }
@@ -1482,7 +1327,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     // Token list
                     if show_tokens() {
                         {
-                            let sorted_tokens: Option<Vec<Card>> = tokens_resource().and_then(|r| r.ok()).map(|t| {
+                            let sorted_tokens: Option<Vec<Card>> = tokens_resource().map(|t| {
                                 let b = filter_builder.peek();
                                 Cards::from(t).sorted(b.sort().unwrap_or(CardSortKey::Name), b.ascending()).into()
                             });
@@ -1925,12 +1770,15 @@ pub fn View(deck_id: Uuid) -> Element {
                                 };
                                 let old_card = card.clone();
                                 spawn(async move {
-                                    let session_val = match session.ensure_fresh(client).await {
-                                        Ok(session_val) => session_val,
-                                        Err(_) => return,
-                                    };
-
-                                    if client().update_deck_profile(deck_id, &request, &session_val).await.is_ok() {
+                                    // Was fully silent on failure; the facade
+                                    // now reports and toasts (new op).
+                                    if authed
+                                        .run("change_printing", |c, s| async move {
+                                            c.update_deck_profile(deck_id, &request, &s).await
+                                        })
+                                        .await
+                                        .is_some()
+                                    {
                                         match slot {
                                             CommandZoneSlot::Commander => commander_card.set(Some(new_card.clone())),
                                             CommandZoneSlot::Partner => partner_card.set(Some(new_card.clone())),
@@ -1949,12 +1797,15 @@ pub fn View(deck_id: Uuid) -> Element {
                                 let request = HttpPatchDeckCard::with_printing(&new_id.to_string());
                                 let old_card = card.clone();
                                 spawn(async move {
-                                    let session_val = match session.ensure_fresh(client).await {
-                                        Ok(session_val) => session_val,
-                                        Err(_) => return,
-                                    };
-
-                                    if client().update_deck_card(deck_id, old_id, &request, &session_val).await.is_ok() {
+                                    // Was fully silent on failure; the facade
+                                    // now reports and toasts (new op).
+                                    if authed
+                                        .run("change_printing", |c, s| async move {
+                                            c.update_deck_card(deck_id, old_id, &request, &s).await
+                                        })
+                                        .await
+                                        .is_some()
+                                    {
                                         if let Some(entry) = deck_entries
                                             .write()
                                             .iter_mut()
