@@ -6,7 +6,7 @@ use super::components::{
 use crate::{
     inbound::{
         components::{
-            auth::ensure_session::EnsureFresh,
+            auth::{authed::use_authed, ensure_session::EnsureFresh},
             chip::Chip,
             hint_dialog::{
                 HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint,
@@ -15,7 +15,7 @@ use crate::{
             screen_header::ScreenHeader,
             telemetry::{
                 usage_buffer::UsageBuffer,
-                vocabulary::{component, screen},
+                vocabulary::{DeckScreen, Screen, component, screen},
             },
         },
         screens::deck::card::{
@@ -111,6 +111,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();
+    let authed = use_authed(Screen::Deck(DeckScreen::CardRemove));
     let toast = use_toast();
     // The global per-deck undo stack (walked by the deck cards screen's Undo
     // button). This screen records its deck mutations into the parked stack
@@ -218,15 +219,14 @@ pub fn Remove(deck_id: Uuid) -> Element {
     // Effect 1 — mount load (reads `session` reactively)
     use_effect(move || {
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(_) => {
-                    return;
-                }
-            };
-
-            match client().get_deck(deck_id, &session).await {
-                Ok(deck) => {
+            match authed
+                .run(
+                    "load_deck",
+                    |c, s| async move { c.get_deck(deck_id, &s).await },
+                )
+                .await
+            {
+                Some(deck) => {
                     let all_cards: Vec<Card> =
                         deck.entries.iter().map(|e| e.card.clone()).collect();
                     deck_cards_for_filter.set(all_cards);
@@ -244,16 +244,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     let current = *filter_reset_counter.peek();
                     filter_reset_counter.set(current + 1);
                 }
-                Err(e) => {
-                    tracing::warn!("deck load failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_REMOVE,
-                        component::NONE,
-                        "load_deck",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                }
+                None => {}
             }
         });
     });
@@ -315,40 +306,16 @@ pub fn Remove(deck_id: Uuid) -> Element {
             .cloned();
 
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_REMOVE,
-                        component::NONE,
-                        "remove_card",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                    return;
-                }
-            };
-
-            match client()
-                .delete_deck_card(deck_id, scryfall_data_id, &session)
+            if authed
+                .run("remove_card", |c, s| async move {
+                    c.delete_deck_card(deck_id, scryfall_data_id, &s).await
+                })
                 .await
+                .is_some()
+                && let Some(entry) = removed_entry
             {
-                Ok(_) => {
-                    if let Some(entry) = removed_entry {
-                        let baseline = *entry.deck_card.quantity;
-                        undo_store.push(deck_id, UndoAction::Removed { entry, baseline });
-                    }
-                }
-                Err(e) => {
-                    tracing::warn!("delete deck card failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_REMOVE,
-                        component::NONE,
-                        "remove_card",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                }
+                let baseline = *entry.deck_card.quantity;
+                undo_store.push(deck_id, UndoAction::Removed { entry, baseline });
             }
         });
     };
@@ -369,46 +336,23 @@ pub fn Remove(deck_id: Uuid) -> Element {
         let request = HttpPatchDeckCard::new(None, Some(to.display_name().to_string()));
 
         spawn(async move {
-            let session = match session.ensure_fresh(client).await {
-                Ok(session) => session,
-                Err(e) => {
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_REMOVE,
-                        component::NONE,
-                        "move_card",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                    return;
-                }
-            };
-
-            match client()
-                .update_deck_card(deck_id, scryfall_data_id, &request, &session)
+            if authed
+                .run("move_card", |c, s| async move {
+                    c.update_deck_card(deck_id, scryfall_data_id, &request, &s)
+                        .await
+                })
                 .await
+                .is_some()
+                && let Some(from) = from
             {
-                Ok(_) => {
-                    if let Some(from) = from {
-                        undo_store.push(
-                            deck_id,
-                            UndoAction::MovedBoard {
-                                card_id: scryfall_data_id,
-                                card_name,
-                                from,
-                            },
-                        );
-                    }
-                }
-                Err(e) => {
-                    tracing::warn!("move card to board failed: {e}");
-                    usage_buffer.peek().report_error(
-                        screen::DECK_CARD_REMOVE,
-                        component::NONE,
-                        "move_card",
-                        &e,
-                    );
-                    toast.error(e.to_user_message(), ToastOptions::default());
-                }
+                undo_store.push(
+                    deck_id,
+                    UndoAction::MovedBoard {
+                        card_id: scryfall_data_id,
+                        card_name,
+                        from,
+                    },
+                );
             }
         });
     };
@@ -497,6 +441,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
                 // Restore on the backend
                 let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
+                // Facade holdout: staged compensation (refresh failure cancels
+                // the primed entry; a failed call leaves the action standing).
                 spawn(async move {
                     let session = match session.ensure_fresh(client).await {
                         Ok(session) => session,
@@ -568,6 +514,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 // Move back to the board it came from, server then local
                 let request = HttpPatchDeckCard::new(None, Some(from.display_name().to_string()));
 
+                // Facade holdout: staged compensation (refresh failure cancels
+                // the primed entry; a failed call leaves the action standing).
                 spawn(async move {
                     let session = match session.ensure_fresh(client).await {
                         Ok(session) => session,
