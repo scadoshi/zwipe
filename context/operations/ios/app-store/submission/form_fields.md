@@ -47,6 +47,14 @@ Built for players who want a fast, focused mobile experience, not another clutte
 
 ---
 
+## What's New in This Version (1.10.1)
+
+- Every screen now reports a failed connection with the same brief message; a few actions used to fail silently, including saving a printing change.
+- Running out of cards while swiping now warns you when the next batch fails to load.
+- The Decks screen and the deck-leader maybeboard show a small note when their lists can't load.
+
+---
+
 ## What's New in This Version (1.10.0)
 
 - A Universes Beyond setting in Profile hides crossover cards from searches and commander picks. Franchise exceptions let your favorites through, Secret Lair drops included.

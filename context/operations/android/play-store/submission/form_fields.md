@@ -153,13 +153,19 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.10.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate), versionCode 41 |
+| Version (client) | 1.10.1 (`CARGO_PKG_VERSION`, aligns with the min-version gate), versionCode 42 |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.10.1:**
+
+- Every screen now reports a failed connection with the same brief message; a few actions used to fail silently, including saving a printing change.
+- Running out of cards while swiping now warns you when the next batch fails to load.
+- The Decks screen and the leader maybeboard show a small note when their lists can't load.
 
 **1.10.0:**
 
