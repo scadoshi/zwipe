@@ -25,7 +25,16 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.10.1",
+    date: "",
+    entries: &[
+        "Anything that fails while talking to the server now says so, with the same brief message on every screen. A few actions used to fail silently, including saving a printing change.",
+        "If the next batch of cards fails to load while you swipe, a message says so instead of the pile just running dry.",
+        "The Decks screen and the commander maybeboard show a small note chip when their lists can't load.",
+        "Links on zwipe.net open in the same tab. Ctrl or middle click still opens a new one.",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
