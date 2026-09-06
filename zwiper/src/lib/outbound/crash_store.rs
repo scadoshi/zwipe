@@ -3,7 +3,11 @@
 //!
 //! Native-only (iOS/Android/desktop) — the web preview gets no-ops: a disk
 //! write isn't a thing there and browser crashes are a different animal. One
-//! file, last-crash-wins: a crash loop overwrites rather than accumulates.
+//! file, last-crash-wins ACROSS launches: a crash loop overwrites rather than
+//! accumulates. WITHIN a process the first panic wins: a panic that unwinds
+//! into a no-unwind frame (an FFI callback) raises a second panic before the
+//! abort, and letting it write would replace the real cause with "panic in a
+//! function that cannot unwind" (seen twice in the field on 1.9.3 iOS).
 //! The `crash_id` is stamped at panic time, so however many launches retry
 //! the send, the server stores exactly one row per crash.
 
@@ -20,18 +24,32 @@ pub fn install_panic_hook() {
 
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
-        let report = HttpCrashReport {
-            crash_id: Uuid::new_v4(),
-            client_version: env!("CARGO_PKG_VERSION").to_string(),
-            platform: ClientPlatform::CURRENT,
-            // `{info}` carries the panic payload + source location.
-            message: format!("{info}"),
-            occurred_at: Utc::now(),
+        // First panic wins within this process: on a double panic the second
+        // hook run is the abort shell, not the cause. A crash loop across
+        // launches still overwrites, since each process starts flag-clear.
+        if first_panic_of_this_process() {
+            let report = HttpCrashReport {
+                crash_id: Uuid::new_v4(),
+                client_version: env!("CARGO_PKG_VERSION").to_string(),
+                platform: ClientPlatform::CURRENT,
+                // `{info}` carries the panic payload + source location.
+                message: format!("{info}"),
+                occurred_at: Utc::now(),
+            }
+            .clamped();
+            write_report(&report);
         }
-        .clamped();
-        write_report(&report);
         previous(info);
     }));
+}
+
+/// Trips once per process: true only for the first caller. Keeps the first
+/// panic's report on disk when a second panic fires during the abort path.
+#[cfg(not(target_arch = "wasm32"))]
+fn first_panic_of_this_process() -> bool {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    static REPORTED: AtomicBool = AtomicBool::new(false);
+    !REPORTED.swap(true, Ordering::Relaxed)
 }
 
 /// Serializes the report to the crash file (best effort — a panic hook has
@@ -103,6 +121,15 @@ mod tests {
         // 2xx path: clear deletes; nothing survives for the next launch.
         clear();
         assert!(take_pending().is_none(), "cleared after acknowledged send");
+    }
+
+    /// The double-panic guard: only the first panic of a process may write,
+    /// so an abort-path second panic cannot clobber the real cause.
+    #[test]
+    fn first_panic_flag_trips_once() {
+        assert!(super::first_panic_of_this_process());
+        assert!(!super::first_panic_of_this_process());
+        assert!(!super::first_panic_of_this_process());
     }
 }
 
