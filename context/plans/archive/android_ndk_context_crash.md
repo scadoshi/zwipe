@@ -1,6 +1,6 @@
 # Android crash — ndk-context double-init
 
-**Status: FIXED AND VERIFIED ON DEVICE 2026-08-17.** Ships in 1.9.2.
+**Status: FIXED — FIELD-VERIFIED 2026-09-06.** Shipped in 1.9.2 (live 2026-08-18).
 Was mis-titled a "resume crash" for five versions. Resume is not involved.
 
 ```
@@ -119,6 +119,16 @@ FROM crash_reports WHERE message LIKE '%ndk-context%'
 GROUP BY 1,2 ORDER BY 2 DESC LIMIT 14;
 ```
 
+**Result (run 2026-09-06, prod): PASSED.** Newest ndk-context crash anywhere
+was 2026-08-21 — 16 days of silence against ~10/day on unpatched builds, and
+the denominator held (9 Android users active in the trailing week, 8 on
+1.9.2+, four of them already on 1.10.0). The `errors.sql` sweep showed no new
+error classes from 1.9.2/1.9.3/1.10.0 and no contract drift. The one crash
+after the cutover — a single 1.9.3-android row on 08-21 — is the exact
+assertion from a build compiled on the owner's Mac; dev installs skip
+`patch_bundle.sh` and therefore the manifest patch, and the owner's Pixel was
+on a debug-signed install that whole window. Store builds: clean.
+
 ## Note for whoever reads crash rows
 
 The `/Users/<name>/.cargo/...` panic prefix is a **compile-time** path shipped
@@ -149,9 +159,8 @@ build. Nothing in Rust changed.
 
 ## Follow-ups
 
-- **Field confirmation:** watch `crash_reports` for 7 days after 1.9.2 reaches
-  users, against Android session volume (queries above). Do not call it done on
-  the strength of the lab result alone — that is the 1.7.6 mistake in reverse.
+- ~~**Field confirmation:**~~ **DONE 2026-09-06, passed** (result above). The
+  7-day window was met with margin — 16 days crash-free on store builds.
 - **Revisit the `onDestroy` process kill.** It was a workaround for a crash it
   never prevented, and it costs the user their place whenever a genuine
   teardown happens. With `uiMode` handled it fires far less often. Remove it
