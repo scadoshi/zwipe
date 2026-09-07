@@ -4,6 +4,43 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
+## Latest — 2026-09-07: 1.10.0 and 1.10.1 both LIVE on both stores
+
+Two releases cleared review back to back; Apple and Play confirmed live
+2026-09-07.
+
+- **1.10.0 (iOS build 78 / Android vc41, submitted 09-01) is the in-universe
+  project**: the Universes Beyond preference (Profile's Show/Hide row +
+  franchise-exceptions chip sheet, Secret Lair catch-all included), applied
+  server-side at serve time so old clients get it too; printing-aware set
+  filters (per-oracle `printing_set_names` — include means "has a printing
+  in", exclude means "every printing excluded"), which closed the third
+  printing-shadowing incident (an SLD exclude used to remove Sol Ring
+  outright); the in-universe pick preference; and the no-results toast. The
+  09-01 device smoke test caught the one hole — the deck form's typed
+  commander picker rode the plain search and ignored the preference — fixed
+  server-side (`bd167f6b`) and re-verified the same night. Full design:
+  `plans/archive/in_universe_filter.md`.
+- **1.10.1 (build 79 / vc42, submitted 09-06)** carries the authed facade's
+  user-visible half: every failed server call now reports with the same brief
+  toast, the printing-sheet saves that failed 100% silently now report,
+  load-more warns when the swipe pile runs dry, and the deck list + commander
+  maybeboard error states render as note chips. Under it sits the facade
+  itself (PR #25: ~60 call sites across 22 files onto one error path, net
+  ≈ −900 lines) and the crash-hook first-panic fix (`1105c36b`), so a double
+  panic can no longer overwrite its own cause on the way out. The changelog
+  entry (Sep 6) is compiled in and served to older clients via
+  `/api/changelog`.
+- **The ndk-context crash is closed for good**: field check run 2026-09-06
+  passed (16 days of zero crashes on store builds against ~10/day before the
+  fix, with real Android adoption). Result recorded in
+  `plans/archive/android_ndk_context_crash.md`.
+- Surviving chores stayed in todo: the per-UB-release `FRANCHISES` top-up,
+  the 1.10.2 riders (catalog-cache picker empty state, iOS shake-to-undo),
+  and the Pixel store-reinstall, now actionable with 1.10.1 live.
+
+---
+
 ## Latest — 2026-08-18: oracle-tag descriptions finished, 4,521 of 4,522
 
 Every oracle tag in the catalog now carries our own plain-English description
