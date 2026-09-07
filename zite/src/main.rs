@@ -22,6 +22,7 @@ const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
 const FAVICON_32: Asset = asset!("/assets/favicon-32x32.png");
 const APPLE_TOUCH_ICON: Asset = asset!("/assets/icon-180.png");
 const MANIFEST: Asset = asset!("/assets/site.webmanifest");
+const REVEAL_JS: Asset = asset!("/assets/reveal.js");
 const Z_LOGO: &str = zwipe_core::domain::logo::Z;
 
 #[derive(Routable, Clone, PartialEq)]
@@ -168,9 +169,17 @@ fn App() -> Element {
         document::Link { rel: "icon", r#type: "image/png", sizes: "32x32", href: FAVICON_32 }
         document::Link { rel: "apple-touch-icon", href: APPLE_TOUCH_ICON }
         document::Link { rel: "manifest", href: MANIFEST }
+        // Fonts are self-hosted in public/fonts (see the @font-face block in
+        // style.css); preloading the two latin weights starts those fetches
+        // before CSS parsing discovers them, closing the fallback-font flash.
+        document::Link { rel: "preload", href: "/fonts/jetbrains-mono-latin-400-normal.woff2", r#as: "font", r#type: "font/woff2", crossorigin: "anonymous" }
+        document::Link { rel: "preload", href: "/fonts/jetbrains-mono-latin-700-normal.woff2", r#as: "font", r#type: "font/woff2", crossorigin: "anonymous" }
         document::Style { {THEMES_CSS} }
         document::Style { {COMPONENTS_CSS} }
         document::Stylesheet { href: STYLE }
+        // Scroll reveal for panels below the fold; deferred, and everything
+        // it does is progressive.
+        document::Script { defer: true, src: REVEAL_JS }
         Router::<Route> {}
     }
 }

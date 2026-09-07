@@ -66,7 +66,7 @@ pub fn About() -> Element {
                         eyebrow: "Mobile app",
                         title: "zwiper",
                         actions: rsx! {
-                            a { class: "panel-action", href: URL_ZWIPER, "Source \u{2197}" }
+                            a { class: "panel-action", href: URL_ZWIPER, "Source" span { class: "ext", "\u{2197}" } }
                         },
                         div { class: "arch-tags",
                             span { class: "tag", "iOS" }
@@ -93,7 +93,7 @@ pub fn About() -> Element {
                         eyebrow: "Website",
                         title: "zite",
                         actions: rsx! {
-                            a { class: "panel-action", href: URL_ZITE, "Source \u{2197}" }
+                            a { class: "panel-action", href: URL_ZITE, "Source" span { class: "ext", "\u{2197}" } }
                         },
                         div { class: "arch-tags",
                             span { class: "tag", "web" }
@@ -119,7 +119,7 @@ pub fn About() -> Element {
                         eyebrow: "Backend",
                         title: "zerver",
                         actions: rsx! {
-                            a { class: "panel-action", href: URL_ZERVER, "Source \u{2197}" }
+                            a { class: "panel-action", href: URL_ZERVER, "Source" span { class: "ext", "\u{2197}" } }
                         },
                         div { class: "arch-tags",
                             span { class: "tag", "REST API" }
@@ -148,7 +148,7 @@ pub fn About() -> Element {
                         eyebrow: "Shared UI",
                         title: "zwipe-components",
                         actions: rsx! {
-                            a { class: "panel-action", href: URL_ZWIPE_COMPONENTS, "Source \u{2197}" }
+                            a { class: "panel-action", href: URL_ZWIPE_COMPONENTS, "Source" span { class: "ext", "\u{2197}" } }
                         },
                         div { class: "arch-tags",
                             a { class: "tag", href: URL_DIOXUS, "Dioxus" }
@@ -169,7 +169,7 @@ pub fn About() -> Element {
                         eyebrow: "Shared domain",
                         title: "zwipe-core",
                         actions: rsx! {
-                            a { class: "panel-action", href: URL_ZWIPE_CORE, "Source \u{2197}" }
+                            a { class: "panel-action", href: URL_ZWIPE_CORE, "Source" span { class: "ext", "\u{2197}" } }
                         },
                         div { class: "arch-tags",
                             span { class: "tag", "Pure Rust" }

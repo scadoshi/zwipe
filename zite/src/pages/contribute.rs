@@ -38,7 +38,7 @@ pub fn Contribute() -> Element {
                             a {
                                 class: "panel-action",
                                 href: STRIPE_URL,
-                                "Contribute \u{2197}"
+                                "Contribute" span { class: "ext", "\u{2197}" }
                             }
                         },
                         p { class: "card-summary", "Pay what you want. No account required." }
@@ -50,7 +50,7 @@ pub fn Contribute() -> Element {
                             a {
                                 class: "panel-action",
                                 href: BMC_URL,
-                                "Contribute \u{2197}"
+                                "Contribute" span { class: "ext", "\u{2197}" }
                             }
                         },
                         p { class: "card-summary", "Quick one-off support through Buy Me a Coffee." }
@@ -62,7 +62,7 @@ pub fn Contribute() -> Element {
                             a {
                                 class: "panel-action",
                                 href: GITHUB_SPONSORS_URL,
-                                "Contribute \u{2197}"
+                                "Contribute" span { class: "ext", "\u{2197}" }
                             }
                         },
                         p { class: "card-summary", "Recurring monthly support via GitHub Sponsors." }

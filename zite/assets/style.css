@@ -1,6 +1,56 @@
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/400.css");
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/700.css");
 @import url("https://cdn.jsdelivr.net/npm/mana-font@latest/css/mana.css");
+
+/* Self-hosted JetBrains Mono (latin + latin-ext subsets from @fontsource),
+   served verbatim out of public/fonts. Replaces the jsdelivr @imports, which
+   were unpinned (@latest) and delayed the whole stylesheet on a cold cache.
+   font-display: swap shows fallback mono immediately and swaps when each
+   ~7-21KB file lands. The mana-font import above still rides the CDN. */
+
+@font-face {
+    font-family: "JetBrains Mono";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: url("/fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+        U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+        U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: "JetBrains Mono";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url("/fonts/jetbrains-mono-latin-700-normal.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+        U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+        U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: "JetBrains Mono";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: url("/fonts/jetbrains-mono-latin-ext-400-normal.woff2") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
+        U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
+        U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+        U+A720-A7FF;
+}
+
+@font-face {
+    font-family: "JetBrains Mono";
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url("/fonts/jetbrains-mono-latin-ext-700-normal.woff2") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
+        U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
+        U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+        U+A720-A7FF;
+}
 
 /* ==================
         base
@@ -34,6 +84,7 @@ body {
    is painted by the fixed pseudo-element below. */
 body {
     --grid-line: color-mix(in srgb, var(--text-primary) 4%, transparent);
+    --grid-line-major: color-mix(in srgb, var(--text-primary) 9%, transparent);
     --grid-size: 28px;
     --bg-sink: color-mix(in srgb, var(--bg-primary), #000 15%);
     background-color: var(--bg-sink);
@@ -64,9 +115,15 @@ body::before {
     z-index: -1;
     pointer-events: none;
     background-image:
+        linear-gradient(var(--grid-line-major) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line-major) 1px, transparent 1px),
         linear-gradient(var(--grid-line) 1px, transparent 1px),
         linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-    background-size: var(--grid-size) var(--grid-size);
+    background-size:
+        calc(var(--grid-size) * 4) calc(var(--grid-size) * 4),
+        calc(var(--grid-size) * 4) calc(var(--grid-size) * 4),
+        var(--grid-size) var(--grid-size),
+        var(--grid-size) var(--grid-size);
 }
 
 /* Floating bubble — opaque panel lifted off the grid with a soft shadow. */
@@ -92,8 +149,59 @@ a {
     text-underline-offset: 3px;
 }
 
-a:hover {
-    color: var(--accent-primary);
+/* Selected text in the accent tint instead of the browser's default blue,
+   which clashes with every theme in the palette. */
+::selection {
+    background-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
+    color: var(--text-primary);
+}
+
+/* Trailing external-link arrows (the \u{2197} glyphs, wrapped in .ext spans)
+   nudge along their own diagonal on hover. inline-block because transforms
+   don't apply to inline boxes; the 1ch gap lives here because the pills are
+   flex containers and a trailing space in a flex item collapses. */
+.ext {
+    display: inline-block;
+    margin-left: 1ch;
+    transition: transform 0.25s ease;
+}
+
+/* Hover states that answer the cursor: links brighten toward the text color
+   (the old rule hovered to its own resting color), panels lift a few pixels
+   with a deeper shadow.
+
+   The panel rules carry the body prefix on purpose: the crate's
+   components.css is inlined in a <style> block AFTER this sheet's <link>, so
+   a bare .panel-card here loses the cascade to the crate's
+   `transition: border-color 0.2s` and the lift snaps with no transition at
+   all. The extra selector outranks it regardless of order. */
+@media (hover: hover) {
+    a:hover {
+        color: color-mix(in srgb, var(--accent-primary) 30%, var(--text-primary));
+    }
+
+    a:hover .ext {
+        transform: translate(0.12em, -0.12em);
+    }
+
+    body .panel-card {
+        transition:
+            border-color 0.4s ease,
+            transform 0.4s ease,
+            box-shadow 0.4s ease;
+    }
+
+    body .panel-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-md);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body .panel-card:hover,
+    a:hover .ext {
+        transform: none;
+    }
 }
 
 /* ==================
