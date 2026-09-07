@@ -203,6 +203,18 @@ body .reveal-pending.reveal-in {
         transform: translate(0.12em, -0.12em);
     }
 
+    /* Chip hover lives here rather than in the shared components.css so the
+       app never inherits it: WebView hover styles can stick after a tap.
+       Same lift vocabulary as the panels, scaled to chip size. */
+    .chip:not(.disabled):not(.selected):hover {
+        border-color: var(--accent-primary);
+        color: var(--accent-primary);
+    }
+
+    .chip:not(.disabled):hover {
+        transform: translateY(-2px);
+    }
+
     body .panel-card {
         transition:
             border-color 0.4s ease,
@@ -233,6 +245,7 @@ body .reveal-pending.reveal-in {
 @media (prefers-reduced-motion: reduce) {
     body .panel-card:hover,
     .hero-card:hover,
+    .chip:hover,
     a:hover .ext {
         transform: none;
     }

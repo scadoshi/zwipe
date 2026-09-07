@@ -30,24 +30,6 @@
     color: var(--accent-secondary);
 }
 
-@media (hover: hover) {
-    .chip:not(.disabled):not(.selected):hover {
-        border-color: var(--accent-primary);
-        color: var(--accent-primary);
-    }
-
-    /* Same lift vocabulary as the panels, scaled to chip size. */
-    .chip:not(.disabled):hover {
-        transform: translateY(-2px);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .chip:hover {
-        transform: none;
-    }
-}
-
 /* Mana glyphs inside a chip (color-identity filter chips). */
 /* Inert chip: the toggle's target is empty/inapplicable right now. */
 .chip.disabled {
@@ -1728,9 +1710,12 @@ a.nav-dropdown-item.active:visited {
     gap: 0.5rem;
 }
 
-/* Wrapper only: it carries the remount key and the ease-in; the card chrome
-   is the shared Panel inside. */
 .changelog-card {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
     animation: changelog-card-in 0.35s ease-out both;
 }
 
@@ -1745,6 +1730,25 @@ a.nav-dropdown-item.active:visited {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+.changelog-version-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.changelog-version {
+    font-size: 1.1rem;
+    color: var(--accent-primary);
+    font-weight: 700;
+    margin: 0;
+}
+
+.changelog-date {
+    color: var(--text-muted);
+    font-size: 0.8rem;
 }
 
 .changelog-bullets {
