@@ -35,6 +35,17 @@
         border-color: var(--accent-primary);
         color: var(--accent-primary);
     }
+
+    /* Same lift vocabulary as the panels, scaled to chip size. */
+    .chip:not(.disabled):hover {
+        transform: translateY(-2px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chip:hover {
+        transform: none;
+    }
 }
 
 /* Mana glyphs inside a chip (color-identity filter chips). */

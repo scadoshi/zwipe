@@ -64,7 +64,7 @@ fn ChangelogSkeleton() -> Element {
         }
         div { class: "changelog-list",
             for (c , bullets) in CARD_BULLETS.iter().enumerate() {
-                div { key: "{c}", class: "changelog-card",
+                div { key: "{c}", class: "changelog-card panel-card",
                     div { class: "changelog-skeleton-row",
                         div { class: "skeleton-bar changelog-skeleton-version" }
                         div { class: "skeleton-bar changelog-skeleton-date" }
