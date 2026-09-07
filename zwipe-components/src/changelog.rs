@@ -16,6 +16,8 @@
 use dioxus::prelude::*;
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 
+use crate::{BannerStatus, Panel};
+
 /// The `major.minor` of a version string, e.g. "1.3.1" -> "1.3", "1.0.10" ->
 /// "1.0". Slices the input, so a `&str` in yields a `&str` borrowed from it.
 fn major_minor(version: &str) -> &str {
@@ -79,19 +81,29 @@ pub fn Changelog(#[props(default = HttpChangelog::current())] data: HttpChangelo
         div { class: "changelog-list",
             for (i, release) in data.upcoming.iter().chain(data.releases.iter()).enumerate() {
                 if selected().as_deref().is_none_or(|key| key == major_minor(&release.version)) {
-                    div { key: "{filter_key}-{release.version}", class: "changelog-card",
-                        div { class: "changelog-version-row",
-                            h2 { class: "changelog-version", "{release.version}" }
-                            span { class: "changelog-date", "{release.date}" }
-                            if i < upcoming_count {
-                                span { class: "status-tag status-doing", "Upcoming" }
-                            } else if i == upcoming_count {
-                                span { class: "status-tag status-done", "Latest" }
-                            }
-                        }
-                        ul { class: "changelog-bullets",
-                            for entry in release.entries.iter() {
-                                li { "{entry}" }
+                    {
+                        // Upcoming entries carry a Doing pill; the first
+                        // released entry after them is the Latest.
+                        let (status, label) = if i < upcoming_count {
+                            (Some(BannerStatus::Doing), Some("Upcoming".to_string()))
+                        } else if i == upcoming_count {
+                            (Some(BannerStatus::Done), Some("Latest".to_string()))
+                        } else {
+                            (None, None)
+                        };
+                        rsx! {
+                            div { key: "{filter_key}-{release.version}", class: "changelog-card",
+                                Panel {
+                                    eyebrow: release.date.clone(),
+                                    title: release.version.clone(),
+                                    status,
+                                    status_label: label,
+                                    ul { class: "changelog-bullets",
+                                        for entry in release.entries.iter() {
+                                            li { "{entry}" }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
