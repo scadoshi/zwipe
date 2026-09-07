@@ -166,6 +166,25 @@ a {
     transition: transform 0.25s ease;
 }
 
+/* Scroll reveal (assets/reveal.js): panels start sunk and faded, then ease
+   up when the observer flags them on screen. The body prefix outranks the
+   crate's .panel-card transition on the same elements while the reveal runs
+   (components.css is inlined after this sheet); the script strips both
+   classes afterward, handing the panel back to its normal hover behavior.
+   Without JS nothing gets the pending class and content simply shows. */
+body .reveal-pending {
+    opacity: 0;
+    transform: translateY(14px);
+}
+
+body .reveal-pending.reveal-in {
+    opacity: 1;
+    transform: none;
+    transition:
+        opacity 0.55s ease-out,
+        transform 0.55s ease-out;
+}
+
 /* Hover states that answer the cursor: links brighten toward the text color
    (the old rule hovered to its own resting color), panels lift a few pixels
    with a deeper shadow.
