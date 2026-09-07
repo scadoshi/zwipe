@@ -195,10 +195,25 @@ a {
         transform: translateY(-3px);
         box-shadow: var(--shadow-md);
     }
+
+    /* The hero is its own card (not the shared Panel), so it opts into the
+       same lift and the accent border the crate gives panels. Its resting
+       shadow is already --shadow-md, so only the border and lift move. */
+    .hero-card {
+        transition:
+            border-color 0.4s ease,
+            transform 0.4s ease;
+    }
+
+    .hero-card:hover {
+        border-color: var(--accent-primary);
+        transform: translateY(-3px);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
     body .panel-card:hover,
+    .hero-card:hover,
     a:hover .ext {
         transform: none;
     }
