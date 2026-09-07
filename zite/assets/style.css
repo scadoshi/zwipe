@@ -215,6 +215,26 @@ body .reveal-pending.reveal-in {
         transform: translateY(-2px);
     }
 
+    /* Changelog cards keep the panel hover on the web (the app's WebView
+       never loads this sheet, so taps can't stick there). body-prefixed for
+       the same cascade reason as the panel rules above. */
+    body .changelog-card {
+        transition:
+            border-color 0.4s ease,
+            transform 0.4s ease,
+            box-shadow 0.4s ease;
+        /* The crate's mount ease-in fills `both`, which pins transform and
+           opacity after it finishes and would swallow the hover lift.
+           backwards still covers the pre-animation frame. */
+        animation-fill-mode: backwards;
+    }
+
+    body .changelog-card:hover {
+        border-color: var(--accent-primary);
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-md);
+    }
+
     body .panel-card {
         transition:
             border-color 0.4s ease,
@@ -244,6 +264,7 @@ body .reveal-pending.reveal-in {
 
 @media (prefers-reduced-motion: reduce) {
     body .panel-card:hover,
+    body .changelog-card:hover,
     .hero-card:hover,
     .chip:hover,
     a:hover .ext {
