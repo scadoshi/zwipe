@@ -845,6 +845,8 @@ code {
 
 .gallery-video {
     display: block;
+    /* Replaced elements in a flex row floor at intrinsic size otherwise. */
+    min-width: 0;
     max-width: 100%;
     max-height: 70vh;
     height: auto;
@@ -955,7 +957,10 @@ code {
 
 @media (max-width: 56rem) {
     .demo-features {
-        grid-template-columns: 1fr;
+        /* minmax(0, ...): a bare 1fr floors at the content's min-width, so a
+           demo video's intrinsic width could push the column past the
+           viewport on phones. */
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 
