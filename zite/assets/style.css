@@ -962,6 +962,18 @@ code {
            viewport on phones. */
         grid-template-columns: minmax(0, 1fr);
     }
+
+    /* Phone-scale demo: drop the desktop 70vh reservation (the clips share
+       one aspect ratio, so there's no swap jump to guard against at this
+       width) and cap the video so the autoplaying block doesn't swallow the
+       screen. */
+    .gallery-body {
+        min-height: 0;
+    }
+
+    .gallery-video {
+        max-height: 55vh;
+    }
 }
 
 /* ── Featured flavor ──────────────────────────────────────────────────────
