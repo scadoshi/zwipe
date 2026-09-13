@@ -4,6 +4,8 @@ Mobile-first Magic: The Gathering deck builder with swipe-based navigation.
 
 **Status:** live on the iOS App Store and Google Play; web client at [zwipe.net](https://zwipe.net).
 
+![Swiping through cards to add them to a deck](demo/demo.gif)
+
 ## Tech stack
 
 Full-stack Rust:
