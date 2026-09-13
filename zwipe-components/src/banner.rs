@@ -14,7 +14,8 @@ use dioxus::prelude::*;
 /// The colored status pill shown in the banner header.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BannerStatus {
-    /// Shipped / live (green pill), default label "Live".
+    /// Shipped / finished (green pill), default label "Done". Callers that mean
+    /// "live in production" rather than "work complete" pass their own label.
     Done,
     /// In progress (amber pill), default label "Doing".
     Doing,
@@ -33,7 +34,7 @@ impl BannerStatus {
     /// Label used when the caller doesn't override it.
     pub(crate) fn default_label(self) -> &'static str {
         match self {
-            BannerStatus::Done => "Live",
+            BannerStatus::Done => "Done",
             BannerStatus::Doing => "Doing",
         }
     }
