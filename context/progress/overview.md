@@ -4,6 +4,41 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
+## Latest — 2026-09-13: the 53-hour outage, and the hardening that closes it
+
+Prod was down 2026-09-11 06:33 → 09-13 11:14 UTC. unattended-upgrades
+installed a glibc patch; needrestart bounced every libc-linked service;
+zerver won the race back up before Postgres finished, failed its pool open
+("peer closed connection without sending TLS close_notify"), and exited —
+with code 0, which `Restart=on-failure` read as a clean stop, so systemd
+never retried. Cloudflare's hourly cache kept the public GETs (site,
+changelog, app flavor) looking alive while every authed call 502'd, so the
+only alarm that fired was Dartan on Discord 21 hours in ("Is the app
+down?"). Detection took ~2 days; recovery, once diagnosed, was one
+`systemctl restart`.
+
+Hardening, all landed 2026-09-13:
+
+- **zerver.service is `Restart=always` + `RestartSec=5`** (drop-in on the
+  live box; the provisioning template in `operations/infrastructure/server.md`
+  now bakes it in for rebuilds).
+- **zerver retries the startup DB connect 12x5s** before giving up, exits
+  nonzero when it does, and the connect error no longer carries
+  `DATABASE_URL` — the old message logged the db password into the journal
+  on every startup failure (`2af14433`).
+- **UptimeRobot pings `https://api.zwipe.net/health` every 5 minutes**
+  (email + app push) — an uncached endpoint that goes straight through to
+  zerver, chosen because it 502'd for the entire outage while cached routes
+  lied. zervice was already covered by Healthchecks.io's dead-man switch.
+- **Reboot-tested the same day**: the pending libc reboot doubled as a live
+  drill — Postgres, cloudflared, and zerver all came up unattended,
+  observed public downtime under a minute.
+
+Still open, unhurried: rotate the db password that pre-scrub journal lines
+carry (localhost-only listener).
+
+---
+
 ## Latest — 2026-09-07: 1.10.0 and 1.10.1 both LIVE on both stores
 
 Two releases cleared review back to back; Apple and Play confirmed live

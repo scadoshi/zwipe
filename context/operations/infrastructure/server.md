@@ -454,7 +454,7 @@ User=scadoshi
 WorkingDirectory=/home/scadoshi/zwipe
 EnvironmentFile=/home/scadoshi/zwipe/.env
 ExecStart=/home/scadoshi/zwipe/zerver
-Restart=on-failure
+Restart=always
 RestartSec=5
 
 [Install]
@@ -472,7 +472,12 @@ sudo systemctl status zerver   # verify it's running
 What each command does:
 - `enable` — registers zerver to start on boot
 - `start` — starts it immediately without rebooting
-- `Restart=on-failure` — if zerver crashes, systemd brings it back automatically
+- `Restart=always` — systemd brings zerver back no matter how it exits. It was
+  `on-failure` until 2026-09-13: a startup DB race during an unattended libc
+  upgrade made zerver exit cleanly and stay down for 53 hours (the 09-11
+  outage), so any exit now restarts. The live server carries this as a drop-in
+  at `/etc/systemd/system/zerver.service.d/override.conf`; on a rebuild this
+  template already includes it.
 - `status` — shows running state and the last few log lines
 
 ---
