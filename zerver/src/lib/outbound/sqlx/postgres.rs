@@ -114,14 +114,37 @@ pub struct Postgres {
 impl Postgres {
     /// Creates a new PostgreSQL connection with optimized pool settings.
     ///
+    /// The initial connect retries for about a minute: a simultaneous
+    /// service restart (unattended-upgrades bouncing Postgres and this
+    /// process together) is recoverable, not a config error. The error
+    /// omits the connection URL because it carries the database password.
+    ///
     /// # Errors
     ///
-    /// Returns an error if the connection cannot be established.
+    /// Returns an error if the connection cannot be established within the
+    /// retry window.
     pub async fn new(path: &str) -> anyhow::Result<Self> {
-        let pool = PostgresPoolOptions::new()
-            .connect(path)
-            .await
-            .context(format!("failed to open database at {}", path))?;
+        const ATTEMPTS: u32 = 12;
+        const RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(5);
+        let mut attempt = 1;
+        let pool = loop {
+            match PostgresPoolOptions::new().connect(path).await {
+                Ok(pool) => break pool,
+                Err(e) if attempt < ATTEMPTS => {
+                    tracing::warn!(
+                        "database connect attempt {attempt}/{ATTEMPTS} failed: {e}; retrying in {}s",
+                        RETRY_DELAY.as_secs()
+                    );
+                    attempt += 1;
+                    tokio::time::sleep(RETRY_DELAY).await;
+                }
+                Err(e) => {
+                    return Err(e).context(format!(
+                        "failed to open the database after {ATTEMPTS} attempts"
+                    ));
+                }
+            }
+        };
 
         Ok(Self { pool })
     }

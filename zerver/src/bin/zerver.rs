@@ -15,7 +15,11 @@ async fn main() {
     logo::Zerver::print();
     match run().await {
         Ok(_) => (),
-        Err(e) => eprintln!("main failed: {e:?}"),
+        Err(e) => {
+            // Nonzero exit so systemd's Restart=on-failure fires.
+            eprintln!("main failed: {e:?}");
+            std::process::exit(1);
+        }
     }
 }
 
