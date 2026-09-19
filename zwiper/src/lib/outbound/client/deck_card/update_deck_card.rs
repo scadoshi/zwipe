@@ -1,8 +1,8 @@
-//! Update a deck card (PATCH — idempotent, absolute quantity).
+//! Update a deck card (PATCH: idempotent, absolute quantity).
 //!
 //! Speaks the PATCH wire shape ([`HttpPatchDeckCard`]): `quantity` sets an
 //! absolute value, so retries/replays are harmless. The server's legacy PUT
-//! delta route still exists for older shipped clients — migration:
+//! delta route still exists for older shipped clients: migration:
 //! `context/plans/patch_idempotent_updates.md`.
 
 use crate::outbound::client::{ClientError, ZwipeClient};

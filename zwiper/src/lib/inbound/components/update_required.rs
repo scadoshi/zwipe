@@ -1,6 +1,6 @@
 //! Full-screen blocking view shown when this build is below the server's
 //! minimum supported version. Rendered by the root component in place of the
-//! router — deliberately no dismiss affordance.
+//! router: deliberately no dismiss affordance.
 
 use dioxus::prelude::*;
 use zwipe_core::domain::site::WEB_BASE;
@@ -25,7 +25,7 @@ const STORE_LABEL: &str = "Open App Store";
 pub fn UpdateRequired() -> Element {
     rsx! {
         div { class: "screen",
-            // Empty header bar — frames the top symmetrically with the footer.
+            // Empty header bar: frames the top symmetrically with the footer.
             // The red card title below is the single "Update required" headline.
             div { class: "page-header" }
             div { class: "screen-content centered content-enter",

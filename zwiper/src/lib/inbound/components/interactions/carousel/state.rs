@@ -74,11 +74,11 @@ impl CarouselState {
     ///
     /// The flex strip's own box is exactly one viewport wide (each page is
     /// `flex: 0 0 100%` and the extra pages *overflow* the strip, clipped by the
-    /// viewport's `overflow: hidden`), so `100%` of the strip equals one page —
+    /// viewport's `overflow: hidden`), so `100%` of the strip equals one page,
     /// translating by `index * 100%` lands on page `index`. This is drift-proof:
     /// unlike a pixel-per-page translate off a measured `page_width_px` (whose
     /// error accumulates as `index * error` and veers sideways more with each
-    /// page — the printing-carousel drift), the percentage needs no measurement.
+    /// page: the printing-carousel drift), the percentage needs no measurement.
     /// `page_width_px` is still used for snap *thresholds*, where a small error is
     /// harmless.
     pub fn translate_x_css(&self) -> String {

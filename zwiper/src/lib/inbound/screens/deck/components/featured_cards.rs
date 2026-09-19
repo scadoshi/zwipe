@@ -1,5 +1,5 @@
 //! Featured strip at the top of the deck screen: command zone + MVPs as card
-//! images on one line, each labeled — the deck's identity at a glance.
+//! images on one line, each labeled: the deck's identity at a glance.
 //!
 //! Mirrors the zite share page's featured row (`sd-featured`), sharing the
 //! [`FlippableCardImage`] so DFC commanders can show both faces. Cards share
@@ -45,7 +45,7 @@ fn FeaturedCard(card: Card, role: String, on_tap: EventHandler<Card>) -> Element
 pub fn FeaturedCards(
     /// `(card, role label)` pairs, command zone first then MVPs.
     cards: Vec<(Card, String)>,
-    /// Fired with the tapped card — the host opens its image overlay.
+    /// Fired with the tapped card: the host opens its image overlay.
     on_tap: EventHandler<Card>,
 ) -> Element {
     if cards.is_empty() {

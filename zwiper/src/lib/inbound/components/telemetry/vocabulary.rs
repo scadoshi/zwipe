@@ -1,7 +1,7 @@
 //! Closed vocabulary for error-report breadcrumbs.
 //!
 //! The single home for every `screen`/`component` value that may ride a
-//! [`ClientErrorReport`] — names are the flattened module path of the screen
+//! [`ClientErrorReport`]: names are the flattened module path of the screen
 //! or component that surfaces the error (`screens/deck/edit.rs` →
 //! `deck_edit`), so the const is derivable from the file you're standing in.
 //! Free-form strings never enter reports: the server aggregates on `screen`,
@@ -202,7 +202,7 @@ mod tests {
     }
 }
 
-/// Components (module names) — the optional drill-down under a host screen.
+/// Components (module names): the optional drill-down under a host screen.
 #[allow(missing_docs)]
 pub mod component {
     /// The screen itself surfaced the error (no component breadcrumb).

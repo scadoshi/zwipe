@@ -190,7 +190,7 @@ pub(crate) fn MoreButtons(
         }
 
         // One dialog covers the whole share lifecycle (mirrors the Buy-deck
-        // dialog). "Stop sharing" acts directly from here — the dialog itself
+        // dialog). "Stop sharing" acts directly from here; the dialog itself
         // is the deliberate surface, and the description carries the caveat,
         // so no second confirmation dialog stacks on top.
         AlertDialogRoot {

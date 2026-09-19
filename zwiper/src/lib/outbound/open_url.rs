@@ -15,10 +15,8 @@ pub fn open(url: &str) {
     }
 }
 
-// ============================================================================
 // iOS: UIApplication.openURL. Mirrors the `webbrowser` crate's iOS backend,
 // minus its `http(s)`-only gate so that `mailto:` is allowed through.
-// ============================================================================
 #[cfg(target_os = "ios")]
 mod platform {
     use objc2::{
@@ -32,7 +30,7 @@ mod platform {
     #[repr(transparent)]
     struct FakeBlock(*const c_void);
 
-    // SAFETY: `#[repr(transparent)]` over a pointer — same layout as an optional
+    // SAFETY: `#[repr(transparent)]` over a pointer, same layout as an optional
     // block reference, which is what `completionHandler:` expects.
     unsafe impl Encode for FakeBlock {
         const ENCODING: Encoding = Encoding::Block;
@@ -65,10 +63,8 @@ mod platform {
     }
 }
 
-// ============================================================================
 // Android: an ACTION_VIEW intent, resolved by the OS to the right app. Same JNI
 // + ndk-context pattern as `outbound/session.rs`.
-// ============================================================================
 #[cfg(target_os = "android")]
 mod platform {
     use jni::objects::JObject;
@@ -117,9 +113,7 @@ mod platform {
     }
 }
 
-// ============================================================================
 // Desktop (dev): webbrowser, which handles mailto: on macOS/Windows/Linux.
-// ============================================================================
 #[cfg(not(any(target_os = "ios", target_os = "android")))]
 mod platform {
     pub fn open(url: &str) -> anyhow::Result<()> {

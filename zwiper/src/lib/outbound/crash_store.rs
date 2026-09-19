@@ -1,7 +1,7 @@
 //! Crash capture: a panic hook writes the report to disk; the next launch
 //! posts it and clears the file only on a 2xx.
 //!
-//! Native-only (iOS/Android/desktop) — the web preview gets no-ops: a disk
+//! Native-only (iOS/Android/desktop): the web preview gets no-ops: a disk
 //! write isn't a thing there and browser crashes are a different animal. One
 //! file, last-crash-wins ACROSS launches: a crash loop overwrites rather than
 //! accumulates. WITHIN a process the first panic wins: a panic that unwinds
@@ -52,7 +52,7 @@ fn first_panic_of_this_process() -> bool {
     !REPORTED.swap(true, Ordering::Relaxed)
 }
 
-/// Serializes the report to the crash file (best effort — a panic hook has
+/// Serializes the report to the crash file (best effort: a panic hook has
 /// nowhere to report its own failures).
 #[cfg(not(target_arch = "wasm32"))]
 fn write_report(report: &HttpCrashReport) {
@@ -70,7 +70,7 @@ pub fn take_pending() -> Option<HttpCrashReport> {
 }
 
 /// Deletes the crash file. Call ONLY after the server acknowledged the report
-/// (2xx) — an unsent report must survive for the next launch's retry.
+/// (2xx): an unsent report must survive for the next launch's retry.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn clear() {
     if let Some(path) = platform::crash_file() {
@@ -85,7 +85,7 @@ mod tests {
     use uuid::Uuid;
     use zwipe_core::domain::auth::models::platform::ClientPlatform;
 
-    /// One test owns the whole lifecycle — the store is a single shared file
+    /// One test owns the whole lifecycle: the store is a single shared file
     /// (desktop: temp dir), so split tests would race under the parallel
     /// harness.
     #[test]
@@ -104,7 +104,7 @@ mod tests {
         write_report(&report);
 
         // A failed send leaves the file: reading it again yields the SAME
-        // crash_id — the server-side dedupe key that makes retries safe.
+        // crash_id, the server-side dedupe key that makes retries safe.
         let first = take_pending().expect("pending crash found");
         let second = take_pending().expect("still pending until cleared");
         assert_eq!(first.crash_id, crash_id);
@@ -150,7 +150,7 @@ mod platform {
         )
     }
 
-    /// iOS: the sandbox's Documents dir — always writable, survives restarts.
+    /// iOS: the sandbox's Documents dir, always writable, survives restarts.
     #[cfg(target_os = "ios")]
     pub fn crash_file() -> Option<PathBuf> {
         Some(
@@ -160,7 +160,7 @@ mod platform {
         )
     }
 
-    /// Desktop (dev builds): the temp dir is plenty — no user-facing value in
+    /// Desktop (dev builds): the temp dir is plenty; no user-facing value in
     /// persisting dev crashes across reboots.
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     #[expect(

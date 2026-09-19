@@ -10,12 +10,12 @@ use crate::inbound::components::navigation::overlay_stack::use_overlay_back_acti
 
 /// Root container for alert dialogs, managing open/closed state.
 ///
-/// Renders a dim overlay backdrop as a sibling when open — the upstream
+/// Renders a dim overlay backdrop as a sibling when open: the upstream
 /// `dioxus-primitives::AlertDialogRoot` deliberately does not emit a backdrop
 /// (the docs note it's the caller's responsibility), so we render one here so
 /// every consumer of this wrapper picks it up automatically.
 ///
-/// Tapping the backdrop closes the dialog through `on_open_change(false)` — the
+/// Tapping the backdrop closes the dialog through `on_open_change(false)`, the
 /// same cancel path as the Cancel button and the back gesture. A dialog's action
 /// only ever fires from its own `AlertDialogAction`, so a backdrop tap can never
 /// confirm; it just cancels, which is safe even for destructive confirms.
@@ -25,7 +25,7 @@ pub fn AlertDialogRoot(props: AlertDialogRootProps) -> Element {
     let default_open = props.default_open;
     let is_open = use_memo(move || (open_prop)().unwrap_or(default_open));
 
-    // The OS back gesture closes an open dialog before touching the router — via
+    // The OS back gesture closes an open dialog before touching the router, via
     // the same `on_open_change` its consumer wired up, so all its close cleanup
     // runs. Covers every dialog built on this wrapper (hint, card details, confirms).
     let on_change = props.on_open_change;
@@ -111,7 +111,7 @@ pub fn AlertDialogCancel(props: AlertDialogCancelProps) -> Element {
 
 /// Confirm/action button that triggers the primary action.
 ///
-/// Pass `danger: true` for irreversible destructive operations — the button
+/// Pass `danger: true` for irreversible destructive operations; the button
 /// will render with the `alert-dialog-action-danger` style (red border + text).
 #[component]
 pub fn AlertDialogAction(

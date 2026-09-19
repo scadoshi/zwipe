@@ -54,7 +54,7 @@ impl OnSwipe for SwipeState {
 
         self.set_latest_swipe(config);
 
-        // Capture where the finger released BEFORE reset() clears the points —
+        // Capture where the finger released BEFORE reset() clears the points,
         // the exit overlay seeds its first animation frame from this.
         self.release_delta = self.delta_from_start_point();
 

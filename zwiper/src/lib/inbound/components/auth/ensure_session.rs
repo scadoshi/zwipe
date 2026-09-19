@@ -1,6 +1,6 @@
 //! Awaitable session freshness guard with single-flight refresh.
 //!
-//! Replaces the old fire-and-forget `Upkeep` pattern. Call sites await
+//! Call sites await
 //! `ensure_fresh` to obtain a session whose access token is valid; if a
 //! refresh is needed, exactly one `POST /api/auth/refresh` goes out no
 //! matter how many callers race (cold start mounts several resources at
@@ -20,7 +20,7 @@ use zwipe_core::{
     domain::auth::models::session::Session, http::contracts::auth::HttpRefreshSession,
 };
 
-/// Process-wide single-flight lock — at most one refresh request in flight.
+/// Process-wide single-flight lock: at most one refresh request in flight.
 /// Losers of the race wait for the winner's result instead of firing their own.
 static REFRESH_LOCK: OnceLock<Arc<Mutex<()>>> = OnceLock::new();
 
@@ -45,7 +45,7 @@ impl EnsureFresh for Signal<Option<Session>> {
     async fn ensure_fresh(self, client: Signal<ZwipeClient>) -> Result<Session, ClientError> {
         let mut session = self;
 
-        // Fast path — no lock. peek() rather than session() so resources
+        // Fast path: no lock. peek() rather than session() so resources
         // calling this aren't subscribed to re-run on every refresh.
         let Some(current) = session.peek().clone() else {
             return Err(ClientError::Api(ApiError::Unauthorized(
@@ -64,7 +64,7 @@ impl EnsureFresh for Signal<Option<Session>> {
             return Ok(current);
         }
 
-        // Slow path — single flight. Whoever wins the lock refreshes;
+        // Slow path: single flight. Whoever wins the lock refreshes;
         // everyone else blocks here, then passes the re-check below.
         let guard = refresh_lock().lock_owned().await;
 
@@ -87,12 +87,12 @@ impl EnsureFresh for Signal<Option<Session>> {
             let _guard = guard;
             let request =
                 HttpRefreshSession::new(&current.user.id.to_string(), &current.refresh_token.value);
-            // clone the client out before awaiting — holding the signal read
+            // clone the client out before awaiting; holding the signal read
             // guard across the await would block writes while pending
             let client = client.peek().clone();
             let result = match client.refresh(&request).await {
                 Ok(new) => {
-                    // persist before set — keyring must always hold the
+                    // persist before set; keyring must always hold the
                     // live rotated token
                     new.infallible_save();
                     session.set(Some(new.clone()));

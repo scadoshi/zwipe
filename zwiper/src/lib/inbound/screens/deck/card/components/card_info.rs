@@ -88,7 +88,7 @@ pub(crate) fn RulesButton(open: Signal<bool>) -> Element {
 /// foreign-language). Opened from the util-bar [`RulesButton`] via the shared
 /// `open` signal. Wraps the shared [`CardDetails`] for the body, but drives the
 /// Flip control from the dialog's own footer bar (alongside Close and an optional
-/// view-only Printings) rather than letting the body render it inline — so the
+/// view-only Printings) rather than letting the body render it inline, so the
 /// dialog scrolls in one place and its controls stay pinned.
 #[component]
 pub(crate) fn CardDetailsDialog(
@@ -162,7 +162,7 @@ pub(crate) fn CardDetailsDialog(
                 AlertDialogDescription {
                     // The name lives in the title; the shared body shows the
                     // per-face cost, so `show_name` is off. The description is the
-                    // sole scroll container (`card-rules` no longer scrolls), and
+                    // sole scroll container (`card-rules` does not scroll), and
                     // Flip is hoisted to the footer, so `show_flip` is off.
                     div { id: "card-details-rules", class: "card-rules",
                         CardDetails {

@@ -9,7 +9,7 @@ use zwipe_core::http::contracts::changelog::HttpChangelog;
 
 /// Trait for fetching the changelog.
 ///
-/// Public and unauthenticated — the changelog is identical for every user and
+/// Public and unauthenticated: the changelog is identical for every user and
 /// wanted pre-login. Fetched once when the changelog screen opens; callers fall
 /// back to the copy compiled into the binary if this fails.
 #[allow(missing_docs)]

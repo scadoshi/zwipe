@@ -17,7 +17,7 @@ use zwipe_core::domain::auth::models::session::Session;
 pub const FLUSH_INTERVAL_SECS: u64 = 30;
 
 /// Spawns a periodic flush task. Each tick snapshots counters and posts them
-/// if any are non-zero. The task drops the batch on HTTP failure — vanity
+/// if any are non-zero. The task drops the batch on HTTP failure, vanity
 /// data isn't worth retry plumbing.
 pub fn spawn_usage_flusher(
     buffer: UsageBuffer,
@@ -33,7 +33,7 @@ pub fn spawn_usage_flusher(
     });
 }
 
-/// Spawns a task that flushes whenever the app is **backgrounded** — the JS
+/// Spawns a task that flushes whenever the app is **backgrounded**; the JS
 /// `visibilitychange → hidden` / `pagehide` events. Backgrounding precedes a
 /// swipe-to-kill, so this captures the last unflushed window (especially the
 /// suggestion signal) that the 30s timer would otherwise lose. A true instant
@@ -58,7 +58,7 @@ pub fn spawn_visibility_flusher(
     });
 }
 
-/// One-shot flush — useful on screen exit / route changes.
+/// One-shot flush: useful on screen exit / route changes.
 pub async fn flush_once(
     buffer: &UsageBuffer,
     client: &dioxus::prelude::Signal<ZwipeClient>,
@@ -68,7 +68,7 @@ pub async fn flush_once(
         return;
     };
     let Ok(current_session) = session.ensure_fresh(*client).await else {
-        // Not logged in / token couldn't refresh — drop the batch.
+        // Not logged in / token couldn't refresh: drop the batch.
         // Metrics are user-scoped vanity data; not worth retry plumbing.
         return;
     };

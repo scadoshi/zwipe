@@ -88,7 +88,7 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
                     .await
                 {
                     let new_email = updated_user.email.clone();
-                    // Take the whole user, not just the address: the server
+                    // Take the whole user, not only the address: the server
                     // clears `email_verified_at` on an email change, and
                     // copying only the email left the session claiming the
                     // account was still verified while it sat on the

@@ -1,11 +1,11 @@
-//! Commander maybeboard screen — the per-user "maybe this commander" list,
+//! Commander maybeboard screen: the per-user "maybe this commander" list,
 //! and a direct commander-discovery surface.
 //!
 //! Entries arrive three ways: up-swiping during any commander Zwipe-select,
 //! up-swiping in this screen's own Swipe overlay, or tapping a floating
 //! result chip under the Quick add input (a debounced commander-name search,
 //! hung downward since this console sits at the top of the page). The input
-//! is pure quick add — narrowing the saved list belongs to the five color
+//! is pure quick add: narrowing the saved list belongs to the five color
 //! pips alone (contains-all identity semantics, like the deck list's Show
 //! row); both console rows render statically per the closed-vocabulary
 //! skeleton rule.
@@ -148,7 +148,7 @@ pub fn CommanderMaybeboard() -> Element {
     let mut show_row_art = use_signal(|| true);
     use_context_provider(|| ShowRowArt(show_row_art));
 
-    // Oracle-tag reveal inside expanded rows — the same wiring as the deck
+    // Oracle-tag reveal inside expanded rows: the same wiring as the deck
     // cards screen: a description lookup from the shared catalog cache and an
     // examples-browse opener, handed to every CardRow via context. Without
     // these the rows keep plain, non-expandable otag chips.
@@ -186,7 +186,7 @@ pub fn CommanderMaybeboard() -> Element {
     let mut printing_card: Signal<Option<Card>> = use_signal(|| None);
     let mut printing_open = use_signal(|| false);
 
-    // Local filter context for the shared CardFilterSheet — blank by default
+    // Local filter context for the shared CardFilterSheet, blank by default
     // and Reset returns to blank; no format filter (the list is commanders
     // only). Same wiring as the Swipe select overlay's local sheet.
     let mut filter_builder = use_signal(CardQueryBuilder::new);
@@ -225,7 +225,7 @@ pub fn CommanderMaybeboard() -> Element {
         });
     });
 
-    // Refetch when the Swipe overlay closes — its up-swipes saved entries.
+    // Refetch when the Swipe overlay closes: its up-swipes saved entries.
     let mut swipe_was_open = use_signal(|| false);
     use_effect(move || {
         if swipe_open() {
@@ -396,7 +396,7 @@ pub fn CommanderMaybeboard() -> Element {
 
     // In-memory narrowing: the Show pips (contains-all identity, empty set =
     // All) compose with the filter sheet's criteria. The quick-add input
-    // deliberately narrows nothing — one input driving two result sets reads
+    // deliberately narrows nothing; one input driving two result sets reads
     // ambiguous. `filter_reset_counter` is the subscription (the sheet's
     // Apply bumps it); the builder itself is peeked so mid-edit sheet state
     // doesn't reshuffle the list, mirroring the deck cards screen.
@@ -509,7 +509,7 @@ pub fn CommanderMaybeboard() -> Element {
                         }
                     }
                     // Catalog results float below the bar, over the Show row
-                    // and list — the shared search-float chips, hung downward
+                    // and list: the shared search-float chips, hung downward
                     // (this console is the top of the page, so down is the
                     // only direction with room). Tap a chip to save it.
                     if searching_catalog {

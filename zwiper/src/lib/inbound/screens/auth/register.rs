@@ -96,7 +96,7 @@ pub fn Register() -> Element {
         }
         is_loading.set(true);
 
-        // Funnel: a validated submit is going to the server (success or not —
+        // Funnel: a validated submit is going to the server (success or not,
         // registration success itself lands in user_events).
         record_anonymous_event(auth_client, AnonymousEventKind::RegisterSubmitted);
 

@@ -4,7 +4,7 @@
 //! platform store itself. On iOS the wrapper is a dead end twice over: its
 //! store selection has no iOS arm (`Entry::new` errors at runtime), and the
 //! Apple store crate compiles for iOS only with its `protected` feature (the
-//! "protected data" store — the one secure store iOS has). So iOS installs
+//! "protected data" store: the one secure store iOS has). So iOS installs
 //! that store into `keyring-core` here, once, and uses the core `Entry`
 //! directly. The two `Entry` types share their method surface and error type
 //! (`keyring::Error` is a re-export of `keyring_core::Error`), so callers
@@ -12,7 +12,7 @@
 //!
 //! Continuity: the protected store keys items as generic passwords by
 //! (service, account) via the same Security-framework calls the keyring-3 iOS
-//! backend used, so sessions written by 1.7.5 stay readable after upgrade —
+//! backend used, so sessions written by 1.7.5 stay readable after upgrade;
 //! the iOS sibling of the keyring-3→4 macOS bridge proof (2026-08-06).
 
 #[cfg(not(target_os = "ios"))]

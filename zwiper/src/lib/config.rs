@@ -19,7 +19,7 @@ const RUST_BACKTRACE: &str = env!("RUST_BACKTRACE");
 ///
 /// These values are baked into the WASM binary at compile time using `env!()` macro:
 /// - `BACKEND_URL`: API server URL (e.g., "http://localhost:3000")
-/// - `RUST_LOG`: Tracing directive (e.g., "info" or "info,zwiper=debug") —
+/// - `RUST_LOG`: Tracing directive (e.g., "info" or "info,zwiper=debug"),
 ///   parsed by `tracing_subscriber::EnvFilter` at startup.
 /// - `RUST_BACKTRACE`: Backtrace configuration ("0", "1", "full")
 ///
@@ -35,7 +35,7 @@ pub struct Config {
     /// Backend API server URL.
     pub backend_url: Url,
     /// Tracing directive (e.g. `"info"` or `"info,zwiper=debug"`). Passed to
-    /// `tracing_subscriber::EnvFilter::new` — matches zerver's pattern.
+    /// `tracing_subscriber::EnvFilter::new`; matches zerver's pattern.
     pub rust_log: String,
     /// Backtrace configuration for debugging.
     pub rust_backtrace: String,

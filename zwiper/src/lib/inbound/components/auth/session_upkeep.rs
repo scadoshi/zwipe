@@ -60,7 +60,7 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Stored above the router (as `Signal<Option<FlavorCard>>`) so it survives
 /// navigation: Home reads it and only refetches when empty or expired. The
 /// server serves ONE shared pick per UTC hour, so expiry pins to the top of
-/// the next hour — the app flips exactly when the server does.
+/// the next hour: the app flips exactly when the server does.
 #[derive(Clone)]
 pub struct FlavorCard {
     /// The card whose flavor text is shown.
@@ -104,7 +104,7 @@ pub enum ChangelogCache {
     Failed,
 }
 
-/// Min-version gate state — true when this build is below the server minimum.
+/// Min-version gate state: true when this build is below the server minimum.
 ///
 /// Newtype so `try_use_context` / `use_context` lookups can't collide with
 /// other `Signal<bool>` contexts: a bare `Signal<bool>` here was once grabbed
@@ -114,7 +114,7 @@ pub enum ChangelogCache {
 pub struct UpgradeRequired(Signal<bool>);
 
 impl UpgradeRequired {
-    /// Reactive read — subscribes the caller to gate changes.
+    /// Reactive read: subscribes the caller to gate changes.
     pub fn required(&self) -> bool {
         (self.0)()
     }
@@ -124,7 +124,7 @@ impl UpgradeRequired {
 /// polls the server's minimum supported app version.
 ///
 /// Also initializes context providers for session, client, card filter, and
-/// cards. Returns the [`UpgradeRequired`] gate — true when this build is
+/// cards. Returns the [`UpgradeRequired`] gate, true when this build is
 /// below the server minimum; the root component swaps the router for a
 /// blocking update screen.
 pub fn spawn_upkeeper() -> UpgradeRequired {
@@ -140,7 +140,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     let overlay_back_stack = use_overlay_back_stack();
     use_context_provider(|| overlay_back_stack);
 
-    // Remembered filters, one per (screen, deck) — each deck-card screen
+    // Remembered filters, one per (screen, deck); each deck-card screen
     // provides its own filter signal seeded from here and parks it back on
     // leave (see filter_store.rs).
     let filter_store = use_filter_store();
@@ -151,12 +151,12 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     use_context_provider(|| undo_store);
 
     // The add screen's search stack (cards, cursor, undo history, animation)
-    // — app-scoped so leaving and re-entering the screen resumes mid-stack
+    // app-scoped so leaving and re-entering the screen resumes mid-stack
     // instead of re-serving already-swiped (and durably skipped) cards.
     let add_stack = use_card_stack::<AddAction>();
     use_context_provider(|| add_stack);
 
-    // Parked add stacks, one per deck (MRU-capped) — leaving the add screen
+    // Parked add stacks, one per deck (MRU-capped); leaving the add screen
     // parks the live stack here; returning to that deck restores it.
     let add_stack_cache = use_add_stack_cache();
     use_context_provider(|| add_stack_cache);
@@ -164,7 +164,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     let last_search_filter: Signal<Option<CardQueryBuilder>> = use_signal(|| None);
     use_context_provider(|| last_search_filter);
 
-    // One-shot commander seed for CreateDeck — set by the commander
+    // One-shot commander seed for CreateDeck: set by the commander
     // maybeboard's "Create deck" action, taken by CreateDeck at mount. Above
     // the router so it survives the navigation.
     let create_deck_commander_seed = CreateDeckCommanderSeed(use_signal(|| None));
@@ -176,11 +176,11 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     let hint_topic: Signal<Option<HintTopic>> = use_signal(|| None);
     use_context_provider(|| hint_topic);
 
-    // Home flavor card — cached above the router with a TTL (see FlavorCard).
+    // Home flavor card: cached above the router with a TTL (see FlavorCard).
     let flavor_card: Signal<Option<FlavorCard>> = use_signal(|| None);
     use_context_provider(|| flavor_card);
 
-    // Changelog — fetched once in the background at startup and cached above the
+    // Changelog: fetched once in the background at startup and cached above the
     // router for the session, so opening the Changelog screen is instant. The
     // screen shows a skeleton while this is Loading and falls back to the
     // compiled-in copy if it Fails. Public, so it runs even logged out.
@@ -200,7 +200,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
         }
     });
 
-    // Catalog cache — slow-changing filter metadata (artists, sets, keywords,
+    // Catalog cache: slow-changing filter metadata (artists, sets, keywords,
     // oracle words, card types, card roles, oracle tags) prefetched in the
     // background at startup and held above the router with a 1-day TTL, so filter
     // sheets / pickers / the dictionary read the cache instead of each firing a
@@ -233,7 +233,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
         }
     });
 
-    // Theme — a live session's preferences win (freshest for this account),
+    // Theme: a live session's preferences win (freshest for this account),
     // else the last-used theme cached locally (so pre-auth screens render in it
     // even logged out / after a device-to-device change), else the default.
     let theme = use_signal(|| {
@@ -254,7 +254,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // Flushed by two tasks sharing this one buffer: a 30s timer, and a
     // visibility flush that fires the instant the app backgrounds (so a
     // swipe-to-close doesn't lose the last unflushed window).
-    // use_hook: spawn exactly once — a plain call here would leak a new flush
+    // use_hook: spawn exactly once; a plain call here would leak a new flush
     // loop every time the root component re-renders.
     let usage_buffer = use_signal(UsageBuffer::new);
     use_context_provider(|| usage_buffer);
@@ -269,7 +269,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
         }
 
         // A previous run crashed: post its report (unauthed endpoint) and
-        // clear the file only on success — a failed send retries next launch,
+        // clear the file only on success; a failed send retries next launch,
         // and the server dedupes on crash_id.
         #[cfg(not(target_arch = "wasm32"))]
         if let Some(report) = crate::outbound::crash_store::take_pending() {
@@ -287,15 +287,15 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
         }
     });
 
-    // Min-version gate — flipped true when the server says this build is too
+    // Min-version gate: flipped true when the server says this build is too
     // old. Provided as context (newtyped) so any screen can read it if needed.
     let mut upgrade_required = use_signal(|| false);
     use_context_provider(|| UpgradeRequired(upgrade_required));
 
-    // use_future (not bare spawn) for the same once-only reason as above —
+    // use_future (not bare spawn) for the same once-only reason as above,
     // the gate flipping re-renders the root, which re-runs this function.
     use_future(move || async move {
-        // first tick fires immediately — this is the cold-start refresh
+        // first tick fires immediately; this is the cold-start refresh
         let mut interval = interval(Duration::from_secs(60));
         loop {
             interval.tick().await;
@@ -303,7 +303,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
             let _ = session.ensure_fresh(client).await;
 
             // Min-version gate check. Fails open: only a successful response
-            // can flip the gate — a network hiccup never locks anyone out.
+            // can flip the gate; a network hiccup never locks anyone out.
             let http = client.peek().clone();
             if let Ok(min) = http.get_min_client_version().await {
                 let required = !version_at_least(APP_VERSION, &min.min_version);

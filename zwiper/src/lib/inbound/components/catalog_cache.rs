@@ -1,10 +1,10 @@
-//! App-wide catalog cache — slow-changing card/deck filter metadata, fetched
+//! App-wide catalog cache: slow-changing card/deck filter metadata, fetched
 //! once at startup and held above the router for the session.
 //!
 //! The filter subsections, pickers, and (soon) the oracle-tag dictionary all read
 //! the same lists: artists, sets, keywords, oracle words, card types, card roles,
 //! oracle tags, and deck tags. Those lists only change when Scryfall / `zervice`
-//! refreshes (daily) or when we deploy catalog consts — not when a user opens a
+//! refreshes (daily) or when we deploy catalog consts, not when a user opens a
 //! filter sheet. Re-fetching on every open is wasteful (mobile latency, redundant
 //! origin / Cloudflare work, janky skeletons mid-flow), so we prefetch them in the
 //! background at launch and let consumers read the cache instead of each firing
@@ -16,7 +16,7 @@
 //! blank mid-session. Cold start (process killed) clears this and re-prefetches.
 //!
 //! The eight public card catalogs send **no** `Authorization` header, so they warm
-//! even logged out and keep Cloudflare cache HITs working — do not add bearer auth
+//! even logged out and keep Cloudflare cache HITs working: do not add bearer auth
 //! to them. Deck tags are the one authed catalog; they warm once a session exists.
 
 use crate::outbound::client::ClientError;
@@ -90,7 +90,7 @@ pub struct CatalogSlot<T: 'static> {
     fetching: Signal<bool>,
 }
 
-// Signals are `Copy` for any `T: 'static`, so a slot is too — but a derive would
+// Signals are `Copy` for any `T: 'static`, so a slot is too, but a derive would
 // wrongly demand `T: Copy`. Hand-write the impls (and thus `CatalogCache`'s).
 impl<T: 'static> Clone for CatalogSlot<T> {
     fn clone(&self) -> Self {
@@ -100,7 +100,7 @@ impl<T: 'static> Clone for CatalogSlot<T> {
 impl<T: 'static> Copy for CatalogSlot<T> {}
 
 impl<T: Clone + PartialEq + 'static> CatalogSlot<T> {
-    /// Reactive handle to the cell — read it with `.read().loaded()`.
+    /// Reactive handle to the cell: read it with `.read().loaded()`.
     pub fn cell(&self) -> Signal<CatalogCell<T>> {
         self.cell
     }
@@ -167,7 +167,7 @@ pub struct CatalogCache {
     pub sets: CatalogSlot<Vec<String>>,
     /// Keyword abilities (`GET /api/card/keywords`).
     pub keywords: CatalogSlot<Vec<String>>,
-    /// Keyword reminders (`GET /api/card/keyword-reminders`) — served so
+    /// Keyword reminders (`GET /api/card/keyword-reminders`): served so
     /// definition fixes land on deploy; chips fall back to the compiled table.
     pub keyword_reminders: CatalogSlot<std::collections::HashMap<String, String>>,
     /// Normalized oracle-text words (`GET /api/card/oracle-words`).
@@ -176,9 +176,9 @@ pub struct CatalogCache {
     pub card_types: CatalogSlot<Vec<String>>,
     /// Card-role catalog (`GET /api/card/roles`).
     pub card_roles: CatalogSlot<Vec<CardRoleView>>,
-    /// Oracle-tag catalog (`GET /api/card/oracle-tags`) — picker, filter, dictionary.
+    /// Oracle-tag catalog (`GET /api/card/oracle-tags`): picker, filter, dictionary.
     pub oracle_tags: CatalogSlot<Vec<OracleTag>>,
-    /// Deck-tag catalog (`GET /api/deck/tags`) — authed; warmed after session.
+    /// Deck-tag catalog (`GET /api/deck/tags`): authed; warmed after session.
     pub deck_tags: CatalogSlot<Vec<DeckTagView>>,
 }
 
@@ -210,7 +210,7 @@ fn use_catalog_slot<T: 'static>() -> CatalogSlot<T> {
 impl CatalogCache {
     /// Prefetch every public card catalog. Called once at startup; each fetch is
     /// independent single-flight, so a later consumer read is a no-op HIT. Never
-    /// sends auth — keeps Cloudflare cache HITs alive.
+    /// sends auth: keeps Cloudflare cache HITs alive.
     pub fn prefetch_public(self, client: Signal<ZwipeClient>) {
         self.ensure_artists(client);
         self.ensure_sets(client);
@@ -287,7 +287,7 @@ impl CatalogCache {
         });
     }
 
-    /// Ensure the deck-tag catalog is warm/fresh (authed — needs a session).
+    /// Ensure the deck-tag catalog is warm/fresh (authed: needs a session).
     pub fn ensure_deck_tags(self, client: Signal<ZwipeClient>, session: Session) {
         self.deck_tags.refresh(move || async move {
             let http = client.peek().clone();

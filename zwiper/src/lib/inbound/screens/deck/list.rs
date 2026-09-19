@@ -2,10 +2,10 @@
 //!
 //! The list carries the deck cards screen's chip-row grammar: a single-select
 //! "Group by:" row that folds the list into `card-group-header` sections
-//! (format, color identity, or tag — a deck with several tags appears under
+//! (format, color identity, or tag: a deck with several tags appears under
 //! each), and a "Show:" filter row seeded from the decks themselves (color
 //! pips, deck tags, descriptive tags) with All as the reset. Both are
-//! ephemeral per visit — with the 20-deck cap there is no state worth
+//! ephemeral per visit: with the 20-deck cap there is no state worth
 //! persisting.
 
 use crate::{
@@ -84,7 +84,7 @@ fn identity_colors(profile: &DeckProfile) -> Vec<Color> {
 /// The deck's command-zone art crops, in zone order: commander (or
 /// oathbreaker), then partner, background, and signature spell. Server-resolved
 /// on the profile, so the row draws its command zone without fetching cards.
-/// Realistically one or two — no printed card fills more than two slots.
+/// Realistically one or two: no printed card fills more than two slots.
 fn command_zone_art(profile: &DeckProfile) -> Vec<&str> {
     [
         profile.commander_art_url.as_deref(),
@@ -98,7 +98,7 @@ fn command_zone_art(profile: &DeckProfile) -> Vec<&str> {
 }
 
 /// Every tag on the deck as (key, label): deck tags keyed by raw slug,
-/// descriptive tags keyed by display name. One namespace — the Show row and
+/// descriptive tags keyed by display name. One namespace, the Show row and
 /// tag grouping treat them alike.
 fn tag_labels(profile: &DeckProfile) -> Vec<(String, String)> {
     profile
@@ -141,7 +141,7 @@ struct DeckGroup {
 
 impl DeckGroup {
     /// Stable identity for the collapse set. Color groups render as pips with
-    /// no header text, so they key off the pip sequence instead — otherwise
+    /// no header text, so they key off the pip sequence instead: otherwise
     /// every color group would share the empty string and fold as one.
     fn key(&self) -> String {
         if !self.header.is_empty() {
@@ -214,7 +214,7 @@ fn DeckGroupSection(
 fn group_decks(profiles: &[DeckProfile], by: DeckGroupBy) -> Vec<DeckGroup> {
     match by {
         // Ungrouped is still one group, headed "All", so the list looks the
-        // same whether or not Group by is on — one container, one collapsible
+        // same whether or not Group by is on: one container, one collapsible
         // header.
         DeckGroupBy::None => vec![DeckGroup {
             header: "All".to_string(),
@@ -341,7 +341,7 @@ fn DeckRow(profile: DeckProfile) -> Element {
             },
             div { class: "deck-list-row",
                 // The command zone leads the row inline, as flex items beside
-                // the name — so the chips wrap onto the next line underneath
+                // the name, so the chips wrap onto the next line underneath
                 // the art rather than into a column beside it. Two crops (a
                 // pair of partners, or oathbreaker + signature spell) simply
                 // sit one after another.
@@ -411,14 +411,14 @@ pub fn DeckList() -> Element {
     let authed = use_authed(Screen::Deck(DeckScreen::List));
     let decks_hint_open = use_signal(|| false);
 
-    // Deck-list hint: fires once decks have loaded and only if any exist —
+    // Deck-list hint: fires once decks have loaded and only if any exist,
     // its main job is teaching the group/filter chip rows, which an empty
     // list hides, so it waits for a later visit instead of burning its one
     // showing (same gate as the deck cards screen's hint).
     let mut decks_hint_fired = use_signal(|| false);
 
     let mut group_by = use_signal(|| DeckGroupBy::None);
-    // Collapsed group keys, ephemeral per visit — the deck cards screen's rule:
+    // Collapsed group keys, ephemeral per visit: the deck cards screen's rule:
     // everything opens fresh next time.
     let collapsed_groups: Signal<HashSet<String>> = use_signal(HashSet::new);
     let mut selected_colors: Signal<HashSet<Color>> = use_signal(HashSet::new);
@@ -522,7 +522,7 @@ pub fn DeckList() -> Element {
                         // rule is closed vs open vocabularies: Group by's options
                         // and the five colors are closed sets, so they render
                         // permanently (a color with no matching decks just yields
-                        // "No decks match" — never a selected chip that vanishes).
+                        // "No decks match", never a selected chip that vanishes).
                         // Tags are open and deck-derived, so they ghost while
                         // loading; the deck tiles below stay skeleton.
                         let colors_shown: Vec<Color> = Color::all().to_vec();

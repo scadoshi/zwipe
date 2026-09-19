@@ -17,7 +17,7 @@ use zwipe_core::{
 /// Trait for importing an Archidekt deck's cards into an existing deck.
 ///
 /// The server fetches and parses the deck, resolves printings by Scryfall id,
-/// and imports the cards exactly like the plain-text importer — same boards,
+/// and imports the cards exactly like the plain-text importer: same boards,
 /// same add/replace modes, same result shape.
 #[allow(missing_docs)]
 pub trait ClientImportArchidektDeck {

@@ -23,7 +23,7 @@ pub fn BottomSheet(
     hint: Option<Signal<bool>>,
 ) -> Element {
     // The OS back gesture closes the sheet before the router sees it, exactly
-    // as tapping the backdrop does — `on_dismiss` first (preferences relies on
+    // as tapping the backdrop does, `on_dismiss` first (preferences relies on
     // it to revert an unsaved theme), then close. Registered here rather than
     // per-screen so every sheet in the app inherits it; a sheet that has to
     // remember its own hook is a sheet that eventually forgets.
@@ -38,13 +38,13 @@ pub fn BottomSheet(
 
     // On the first render the sheet carries `transition: none` (via the
     // `bottom-sheet-premount` class), then drops it once mounted. Without this,
-    // iOS WebKit replays the transform transition on insert — animating the
-    // sheet from its default position down to translateY(100%) — so a screen
+    // iOS WebKit replays the transform transition on insert, animating the
+    // sheet from its default position down to translateY(100%), so a screen
     // that mounts a sheet on startup (e.g. Home with the support button on an
     // authenticated launch) flashes it sliding away. The flag must flip *after*
     // WebKit's first post-insert paint: a synchronous `use_effect` re-enables
     // the transition before that paint and the replay still shows, so we defer
-    // a couple frames. This is a class, not an inline style — clearing an inline
+    // a couple frames. This is a class, not an inline style; clearing an inline
     // `transition: none` back to empty doesn't reliably take in this WebView, so
     // it would linger and kill every sheet's open/close animation.
     let mut mounted = use_signal(|| false);
@@ -69,7 +69,7 @@ pub fn BottomSheet(
             // class drops after mount so the normal open/close slide animates.
             // This is a class, not an inline style, because clearing an inline
             // `transition: none` back to empty doesn't reliably take in this
-            // WebView — the rule lingers and kills every sheet's animation.
+            // WebView: the rule lingers and kills every sheet's animation.
             class: if open() {
                 "bottom-sheet show"
             } else if mounted() {

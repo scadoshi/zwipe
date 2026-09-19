@@ -46,7 +46,7 @@ use zwipe_core::domain::{
 };
 
 /// Newtype so `try_use_context` doesn't collide with other `Signal<bool>`
-/// contexts — a bare `Signal<bool>` lookup here once grabbed the root
+/// contexts: a bare `Signal<bool>` lookup here once grabbed the root
 /// min-version gate and flashed the "Update required" screen on Apply.
 #[derive(Clone, Copy)]
 pub(crate) struct CollapseExpanded(pub(crate) Signal<bool>);
@@ -73,7 +73,7 @@ pub(crate) fn CardFilterSheet(
 
     // Filter explainer: the "?" reopens it; it also auto-opens once per account
     // the first time the sheet is opened (gated, since this component stays
-    // mounted while the sheet is closed — a plain mount-time hint would misfire).
+    // mounted while the sheet is closed; a plain mount-time hint would misfire).
     let mut hint_open = use_signal(|| false);
     let mut hint_fired = use_signal(|| false);
     use_effect(move || {
@@ -86,7 +86,7 @@ pub(crate) fn CardFilterSheet(
     // Current/staged split: the builder in context is the staged draft the
     // sections edit; Apply commits it via the counter bump. Snapshot the
     // applied state when the sheet opens so Cancel, the backdrop, or the OS
-    // back gesture restores it on close — Apply drops the snapshot first so a
+    // back gesture restores it on close, Apply drops the snapshot first so a
     // commit sticks.
     let mut applied_snapshot: Signal<Option<CardQueryBuilder>> = use_signal(|| None);
     use_effect(move || {
@@ -114,7 +114,7 @@ pub(crate) fn CardFilterSheet(
 
     // Oracle-tag dictionary overlay. Owned here (not in the `OracleTags` section)
     // so it renders as a sibling of the bottom sheet, outside the sheet's
-    // `transform` — a `position: fixed` overlay nested inside that transform would
+    // `transform`; a `position: fixed` overlay nested inside that transform would
     // be trapped to the sheet's box instead of the viewport. The include/exclude
     // "Dictionary" buttons flip `otag_dict_open`, recording via `otag_dict_exclude`
     // which list the Use button feeds.
@@ -236,7 +236,7 @@ pub(crate) fn CardFilterSheet(
         )
     };
 
-    // Track accordion item index — shifts when format filter is included
+    // Track accordion item index: shifts when format filter is included
     let mut idx = 0usize;
     let mut next_idx = move || {
         idx += 1;
@@ -651,7 +651,7 @@ pub(crate) fn CardFilterSheet(
             ActionBar {
                 Button {
                     variant: ButtonVariant::Util,
-                    // Close without applying — the same escape as the backdrop.
+                    // Close without applying: the same escape as the backdrop.
                     // Closing restores the open-snapshot, discarding draft edits.
                     onclick: move |_| open.set(false),
                     "Cancel"

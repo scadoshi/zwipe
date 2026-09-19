@@ -1,6 +1,6 @@
 //! Pre-auth funnel events (app opened, register viewed/submitted).
 //!
-//! Each app launch gets one random session UUID, held in memory only — it
+//! Each app launch gets one random session UUID, held in memory only, it
 //! identifies a funnel attempt, not a person or an install. Posts are
 //! fire-and-forget: a failed send is logged and dropped, never surfaced.
 

@@ -98,7 +98,7 @@ fn ensure_lands_excluded(mut filter_builder: Signal<CardQueryBuilder>) {
         .map(<[CardType]>::to_vec)
         .unwrap_or_default();
 
-    // Drop Land from any include list — including and excluding Land at once
+    // Drop Land from any include list: including and excluding Land at once
     // matches nothing. Setting an empty vec clears the filter.
     if let Some(includes) = contains_any {
         let kept: Vec<CardType> = includes
@@ -137,7 +137,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut filter_builder: Signal<CardQueryBuilder> =
         use_signal(move || restored_filter.unwrap_or_default());
     use_context_provider(|| filter_builder);
-    // App-scoped search stack (cards, cursor, undo history, animation) —
+    // App-scoped search stack (cards, cursor, undo history, animation),
     // survives navigation so re-entry resumes mid-stack.
     let mut stack: CardStack<AddAction> = use_context();
     // Parked stacks for other decks; this deck's parked entry (if any) is
@@ -192,7 +192,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     // (server fell back to the full pool); drives the inline "warming up" note.
     let mut synergy_warming = use_signal(|| false);
     let mut mb_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
-    // Screen-local maybeboard stack — a cycling view over `mb_entries`.
+    // Screen-local maybeboard stack: a cycling view over `mb_entries`.
     let mut mb_stack = use_card_stack::<MaybeboardAction>();
 
     // Filters overlay at bottom of screen state
@@ -239,7 +239,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut is_loading_cards = use_signal(|| false);
 
     // Park this deck's stack on leave so returning resumes mid-stack. Only a
-    // served stack parks — an empty one, or one with no recorded filter,
+    // served stack parks, an empty one, or one with no recorded filter,
     // refetches next time anyway.
     use_drop(move || {
         let Some(filter) = last_search_filter.peek().clone() else {
@@ -353,7 +353,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         });
     };
 
-    // Swipe config — the stack owns its own SwipeState internally.
+    // Swipe config: the stack owns its own SwipeState internally.
     // Thresholds tuned for responsive rapid swiping: a short drag (60px) OR
     // a quick flick (1.5 px/ms over the 10px minimum) commits.
     let swipe_config = SwipeConfig::new(
@@ -369,7 +369,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     // Advance past the just-committed card. The stack fires its on_swipe_*
     // callbacks after the exit transition, so by now the card is off-screen.
-    // The cursor may land one past the end (empty window) — that keeps undo
+    // The cursor may land one past the end (empty window); that keeps undo
     // aligned with the swipe that just committed.
     let mut advance_after_commit = move || {
         let total = stack.len();
@@ -388,7 +388,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             // Past the last card with nothing left to fetch.
             toast.warning("End of results".to_string(), ToastOptions::default());
         } else if total > 0 && stack.index() + 1 >= total.saturating_sub(load_more_threshold) {
-            // Within the prefetch threshold — top the stack up.
+            // Within the prefetch threshold: top the stack up.
             load_more_cards();
         }
     };
@@ -456,7 +456,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         }
 
-        // The cursor now sits on the very card the action committed — the
+        // The cursor now sits on the very card the action committed, the
         // linear stack never drops swiped cards, so the card is read back
         // from the stack rather than stored in the history.
         let Some(card) = stack.current() else {
@@ -491,10 +491,10 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                 // Reconcile with the global stack: take this add's entry
                 // back. Entry gone AND card gone from the deck means the
-                // deck-cards Undo button already reversed it — skip the
+                // deck-cards Undo button already reversed it, skip the
                 // server delete (it would double-delete); the stack UI is
                 // already rewound. Entry gone but card still present means
-                // it aged out of the cap — delete anyway.
+                // it aged out of the cap, delete anyway.
                 let taken = undo_store.take_newest(
                     deck_id,
                     |a| matches!(a, UndoAction::Added { card_id: id, .. } if *id == card_id),
@@ -549,7 +549,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         Err(e) => {
                             tracing::warn!("undo add (delete deck card) failed: {e}");
                             toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
-                            // Don't restore action or index - user can try again by adding the card
+                            // Don't restore action or index; the user can try again by adding the card
                             // The add still stands server-side, so its global entry does too.
                             if let Some(action) = taken {
                                 undo_store.push(deck_id, action);
@@ -728,7 +728,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                 deck_has_commander.set(deck.deck_profile.commander_id.is_some());
                 // Default Synergy ON when the deck has a commander (the
-                // curated pool); OFF otherwise. Only for a fresh filter —
+                // curated pool); OFF otherwise. Only for a fresh filter,
                 // a restored one keeps the user's own toggle state.
                 if !had_restored_filter {
                     filter_builder
@@ -747,7 +747,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     .map(|e| *e.deck_card.quantity)
                     .sum();
                 mainboard_land_count.set(land_count);
-                // Explicit target only — no land toasts unless the user set one.
+                // Explicit target only: no land toasts unless the user set one.
                 land_target.set(deck.deck_profile.land_target);
                 // If the deck already meets its land target (explicit override
                 // or the format default), start with lands excluded from the
@@ -800,7 +800,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
 
                 // Auto-serve: with deck context now populated, an empty
-                // stack can be filled immediately — the deck-aware search
+                // stack can be filled immediately; the deck-aware search
                 // serves the default filter synergy-ordered, 25 a page.
                 // A non-empty stack is a preserved session; leave it be.
                 if stack.peek_is_empty() {
@@ -837,7 +837,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     stack.restore(parked.cards, parked.index, parked.history);
                     return;
                 }
-                // Filter changed since parking — fall through to a fresh fetch.
+                // Filter changed since parking: fall through to a fresh fetch.
             }
         }
 
@@ -857,7 +857,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         // meaningful query. A commander format *with* a commander pulls
         // synergy suggestions from cache; otherwise we need some intent (a
         // filter, a sort, or synergy on). Only a truly blank query on a deck
-        // with no commander is left unserved, nudging the user to filter — an
+        // with no commander is left unserved, nudging the user to filter; an
         // empty screen with no prompt reads as "no cards exist".
         if *deck_loaded.peek() && matches!(*add_source.peek(), AddSource::Search) {
             let is_commander_format = deck_format.peek().is_some_and(|f| f.has_commander());
@@ -878,7 +878,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         }
 
         // Auto-serve: a filter holding only deck context (format legality +
-        // commander identity) is a valid search now — the deck-aware endpoint
+        // commander identity) is a valid search now; the deck-aware endpoint
         // serves it synergy-ordered. Only a truly empty builder (deck has no
         // format/commander, context not yet loaded) fails build() and keeps
         // today's empty state; the mount effect re-triggers once context lands.
@@ -947,7 +947,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         });
     });
 
-    // Maybeboard filter effect — applies client-side filtering + sorting
+    // Maybeboard filter effect: applies client-side filtering + sorting
     use_effect(move || {
         let _ = add_source();
         let _ = filter_reset_counter();
@@ -1039,7 +1039,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                 // Reconcile with the global stack before touching the UI:
                 // entry gone AND the card already back on the maybeboard
-                // means the deck-cards Undo button reversed this promote —
+                // means the deck-cards Undo button reversed this promote,
                 // re-inserting would duplicate the card in the stack, and
                 // the server move would be a no-op at best. Pure history
                 // rewind instead.
@@ -1198,7 +1198,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 "{label}"
                             }
                         }
-                        // Synergy ON/OFF — constrains the stack to the commander's
+                        // Synergy ON/OFF: constrains the stack to the commander's
                         // synergy pool, then sorts within it. Search source +
                         // commander only (no commander = nothing to constrain to).
                         // Pinned right (margin-left:auto) so it reads as its own
@@ -1231,7 +1231,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 on_swipe_left: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Left);
                                     usage_buffer().record_signal(deck_id, card.scryfall_data.oracle_id, Direction::Left);
-                                    // Post the durable skip immediately — a buffered
+                                    // Post the durable skip immediately: a buffered
                                     // skip is lost to a quick app kill.
                                     if let Some(oracle_id) = card.scryfall_data.oracle_id {
                                         spawn(async move {
@@ -1261,7 +1261,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                         let prev = mainboard_land_count();
                                         let now = prev + 1;
                                         mainboard_land_count.set(now);
-                                        // Toast only on the upward crossing — debounced so
+                                        // Toast only on the upward crossing: debounced so
                                         // every further land doesn't re-fire.
                                         if let Some(target) = land_target()
                                             && prev < target && now >= target
@@ -1270,7 +1270,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                                 format!("Land target reached ({target})"),
                                                 ToastOptions::default().duration(Duration::from_millis(2500)),
                                             );
-                                            // We don't touch the filter mid-session — a
+                                            // We don't touch the filter mid-session: a
                                             // refetch here would reset the swipe stack and
                                             // lose the user's spot. Lands are excluded only
                                             // on the next entry to the add screen (see the
@@ -1583,7 +1583,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 open: filters_overlay_open,
                 show_format_filter: true,
                 show_active_indicators: true,
-                // Only the server search needs intent — Maybeboard filters
+                // Only the server search needs intent: Maybeboard filters
                 // client-side and its default is a blank filter, so an empty
                 // Apply there (e.g. right after Reset) must commit, not warn.
                 validate_before_apply: add_source() == AddSource::Search,

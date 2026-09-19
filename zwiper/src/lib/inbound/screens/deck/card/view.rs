@@ -105,7 +105,7 @@ struct DeckRowMeta {
 /// could overlap and race their rollbacks.
 #[derive(Clone, Copy)]
 struct PendingQty {
-    /// Quantity before the burst — the delete threshold and rollback target.
+    /// Quantity before the burst: the delete threshold and rollback target.
     baseline: i32,
     /// Net delta across the burst.
     delta: i32,
@@ -118,7 +118,7 @@ struct PendingQty {
 const QTY_FLUSH_MS: u64 = 300;
 
 /// Collapsible card group: a header with the card-row disclosure arrow
-/// (points down while expanded, spins sideways when collapsed — the same
+/// (points down while expanded, spins sideways when collapsed: the same
 /// eased rotation) over a body that opens and closes with the `.collapsible`
 /// grid-rows ease the deck view's sections use. Rows stay mounted through a
 /// collapse, so expanded-card state survives the round trip.
@@ -206,12 +206,12 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut deck_power: Signal<Option<PowerLevel>> = use_signal(|| None);
     let mut deck_tags: Signal<Vec<String>> = use_signal(Vec::new);
     let mut deck_other_tags: Signal<Vec<DeckOtherTag>> = use_signal(Vec::new);
-    // Source of truth — all non-commander entries (active + maybeboard)
+    // Source of truth: all non-commander entries (active + maybeboard)
     let mut deck_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
     // Command-zone cards (commander, partner, etc.), folded into the budget total.
     let mut command_zone_cards: Signal<Vec<Card>> = use_signal(Vec::new);
 
-    // Undo log — mutations push their inverses; the ActionBar's conditional
+    // Undo log: mutations push their inverses; the ActionBar's conditional
     // Undo button pops them (apply_undo below). Provided as context so the
     // quick-add bar can record its adds. Seeded from the app-level per-deck
     // store on mount and parked back on leave, so the stack survives
@@ -229,7 +229,7 @@ pub fn View(deck_id: Uuid) -> Element {
     // A tap inside the debounce window must still reach the server when the
     // user leaves the screen: post every mapped burst on unmount. Detached
     // tasks (the screen's scope is going away), so failures only report and
-    // toast — no local state to roll back.
+    // toast; no local state to roll back.
     use_drop(move || {
         let bursts: Vec<(Uuid, PendingQty)> = pending_qty
             .peek()
@@ -303,7 +303,7 @@ pub fn View(deck_id: Uuid) -> Element {
     // come later if people want it sticky).
     let mut show_row_art = use_signal(|| true);
     use_context_provider(|| ShowRowArt(show_row_art));
-    // What the UI renders — grouped card lists (active cards only)
+    // What the UI renders: grouped card lists (active cards only)
     let mut displayed_groups: Signal<Vec<CardGroup>> = use_signal(Vec::new);
     // Active lands, pulled out of the group-by pipeline and pinned to the bottom
     // in their own section (filtered + sorted like the groups above).
@@ -312,7 +312,7 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut group_by_option: Signal<GroupByOption> = use_signal(|| GroupByOption::CardType);
     // Which card row is expanded (None = all collapsed)
     let mut expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
-    // Commander is always pinned — never part of groupable entries
+    // Commander is always pinned: never part of groupable entries
     let mut commander_card: Signal<Option<Card>> = use_signal(|| None);
     // Signature spell pinned alongside commander (Oathbreaker only)
     let mut signature_spell_card: Signal<Option<Card>> = use_signal(|| None);
@@ -332,12 +332,12 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut show_tokens: Signal<bool> = use_signal(|| false);
     // Toggle to show/hide command zone pinned sections (default: shown)
     let mut show_command_zone: Signal<bool> = use_signal(|| true);
-    // Board filter — multi-select toggles (deck is always on)
+    // Board filter: multi-select toggles (deck is always on)
     let mut show_deck: Signal<bool> = use_signal(|| true);
     let mut show_maybe: Signal<bool> = use_signal(|| false);
     let mut show_side: Signal<bool> = use_signal(|| false);
 
-    // Card image preview — stores the card to preview (None = closed). Carries the
+    // Card image preview: stores the card to preview (None = closed). Carries the
     // full ScryfallData so the modal's FlippableCardImage can read both faces of DFCs.
     let preview_card: Signal<
         Option<(zwipe_core::domain::card::scryfall_data::ScryfallData, usize)>,
@@ -384,8 +384,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
     // Index deck entries by printing id so the card-row render resolves
     // qty/board/mvp in O(1) instead of scanning `deck_entries` per card
-    // (previously ~3 linear scans per row → O(n^2) across the list). First
-    // occurrence wins, matching the prior `.find()` semantics. Recomputes only
+    // First occurrence wins. Recomputes only
     // when `deck_entries` changes.
     let row_meta: Memo<HashMap<Uuid, DeckRowMeta>> = use_memo(move || {
         let entries = deck_entries.read();
@@ -401,13 +400,12 @@ pub fn View(deck_id: Uuid) -> Element {
         map
     });
 
-    // Effect 1 — mount load (reads `session` reactively)
+    // Effect 1: mount load (reads `session` reactively)
     // Fetches deck entries, separates the commander into its own pinned slot.
     use_effect(move || {
         spawn(async move {
             // The whole load rides one facade call: only get_deck's failure
-            // aborts (reported + toasted, where the refresh failure used to
-            // be silent); the profile and command-zone fetches keep their
+            // aborts (reported and toasted); the profile and command-zone fetches keep their
             // tolerant .ok() handling inside.
             let _ = authed
                 .run("load_deck", |c, s| async move {
@@ -429,7 +427,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 .as_ref()
                                 .is_some_and(|f| f.has_signature_spell()),
                         );
-                        // Explicit target only — no toasts unless the user set one.
+                        // Explicit target only: no toasts unless the user set one.
                         land_target.set(profile.land_target);
                         price_budget.set(profile.price_target);
                         price_budget_currency
@@ -500,8 +498,8 @@ pub fn View(deck_id: Uuid) -> Element {
         });
     });
 
-    // Quiet: tokens are a decorative section and failures used to flatten to
-    // "no tokens" anyway; the facade at least records them now.
+    // Quiet: tokens are a decorative section, so a failure reads as "no tokens";
+    // the facade records it.
     let tokens_resource: Resource<Vec<Card>> = use_resource(move || async move {
         authed
             .run_quiet("load_tokens", |c, s| async move {
@@ -511,7 +509,7 @@ pub fn View(deck_id: Uuid) -> Element {
             .unwrap_or_default()
     });
 
-    // Effect 2 — filter + group (reads `filter_reset_counter`, `group_by_option`, `board_filter` reactively)
+    // Effect 2: filter + group (reads `filter_reset_counter`, `group_by_option`, `board_filter` reactively)
     use_effect(move || {
         let _ = filter_reset_counter();
         let _ = group_by_option();
@@ -536,7 +534,7 @@ pub fn View(deck_id: Uuid) -> Element {
         let partner = partner_card.peek().clone();
         let bg = background_card.peek().clone();
 
-        // Pinned cards use the bare predicate — a one-card membership test.
+        // Pinned cards use the bare predicate: a one-card membership test.
         let filter_pinned =
             |card: Option<Card>,
              criteria: &zwipe_core::domain::card::search_card::card_filter::CardCriteria|
@@ -587,7 +585,7 @@ pub fn View(deck_id: Uuid) -> Element {
         }
     });
 
-    // Mainboard land count from the source of truth — quantity-aware (10 land
+    // Mainboard land count from the source of truth, quantity-aware (10 land
     // rows at ×4 = 40), MDFC land faces included via is_land. Recomputed each
     // call so it never drifts.
     let main_land_count = move || -> i32 {
@@ -648,7 +646,7 @@ pub fn View(deck_id: Uuid) -> Element {
         }
     };
 
-    // `record: false` marks an undo-driven call — it must not push a fresh
+    // `record: false` marks an undo-driven call; it must not push a fresh
     // undo entry (no ping-pong) and skips the user-action toasts its inverse
     // already covers.
     let mut change_quantity =
@@ -737,7 +735,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
                 // Only the burst's latest tap posts; earlier taps wake to a newer
                 // generation and stand down. Navigating away cancels these tasks
-                // instead — the use_drop exit flush posts whatever is still mapped.
+                // instead; the use_drop exit flush posts whatever is still mapped.
                 let flushed = {
                     let mut pending_qty = pending_qty;
                     let mut map = pending_qty.write();
@@ -772,7 +770,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         .await
                     {
                         Ok(_) => {
-                            // One burst, one undo entry — recorded only once the
+                            // One burst, one undo entry: recorded only once the
                             // server took it, so undo never inverts a rolled-back
                             // burst.
                             if record
@@ -895,7 +893,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 .await
             {
                 Ok(updated) => {
-                    // Adopt the server's timestamp — the vesting clock.
+                    // Adopt the server's timestamp: the vesting clock.
                     if let Some(entry) = deck_entries
                         .write()
                         .iter_mut()
@@ -921,7 +919,7 @@ pub fn View(deck_id: Uuid) -> Element {
     };
 
     // Pop the newest undo entry and apply its inverse. Consumes the entry
-    // even when the world has moved on (the inverse no longer applies) — a
+    // even when the world has moved on (the inverse cannot apply), a
     // stale entry gets an "Already changed" toast instead of a doomed
     // request. Undo-driven mutations pass record: false so they never push
     // fresh entries (no ping-pong).
@@ -950,7 +948,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     stale();
                     return;
                 }
-                // Not a deliberate removal — no record_removal signal here.
+                // Not a deliberate removal: no record_removal signal here.
                 deck_entries
                     .write()
                     .retain(|e| e.card.scryfall_data.id != card_id);
@@ -1083,7 +1081,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 new_id,
             } => {
                 // The slot must still hold the printing this entry swapped
-                // in — a commander swapped or cleared since makes the
+                // in; a commander swapped or cleared since makes the
                 // inverse stale.
                 let mut slot_signal = match slot {
                     CommandZoneSlot::Commander => commander_card,
@@ -1178,7 +1176,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 div { class: "screen-content",
 
                 div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
-                    // Deck identity — name + format/power/tag chips in one
+                    // Deck identity: name + format/power/tag chips in one
                     // wrapping row, echoing the zite share page (same stat-chip
                     // accents).
                     if !deck_name().is_empty() {
@@ -1199,7 +1197,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
                     } else if !deck_loaded() {
                         // Identity ghost in the header's own spot until the
-                        // profile lands (the chip rows below render real —
+                        // profile lands (the chip rows below render real,
                         // they're static chrome, not data).
                         div { class: "deck-cards-header",
                             div { class: "skeleton-bar skeleton-deck-list-title" }
@@ -1363,7 +1361,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         {
                             let b = filter_builder.peek();
                             // Honor the active card filter here too, matching the
-                            // mainboard pipeline (Effect 2) — not just sort.
+                            // mainboard pipeline (Effect 2), not only sort.
                             if !b.is_empty()
                                 && let Ok(criteria) = b.build_criteria()
                             {
@@ -1416,7 +1414,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         {
                             let b = filter_builder.peek();
                             // Honor the active card filter here too, matching the
-                            // mainboard pipeline (Effect 2) — not just sort.
+                            // mainboard pipeline (Effect 2), not only sort.
                             if !b.is_empty()
                                 && let Ok(criteria) = b.build_criteria()
                             {
@@ -1596,7 +1594,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
                     }
 
-                    // Lands section — pinned at the bottom of the mainboard, out of
+                    // Lands section: pinned at the bottom of the mainboard, out of
                     // the group-by pipeline so it reads the same in every grouping
                     // mode. Hide lands via the card filter's Land type exclusion.
                     if show_deck() && !displayed_lands().is_empty() {
@@ -1760,7 +1758,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
                         match command_zone_slot() {
                             Some(slot) => {
-                                // Command zone card — update deck profile
+                                // Command zone card: update deck profile
                                 let id = Opdate::Set(Some(new_id));
                                 let request = match slot {
                                     CommandZoneSlot::Commander => HttpUpdateDeckProfile::builder().commander_id(id).build(),
@@ -1793,7 +1791,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 });
                             }
                             None => {
-                                // Regular deck card — update deck card
+                                // Regular deck card: update deck card
                                 let request = HttpPatchDeckCard::with_printing(&new_id.to_string());
                                 let old_card = card.clone();
                                 spawn(async move {

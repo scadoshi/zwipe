@@ -22,7 +22,7 @@ use crate::{
 };
 
 /// Signal buffer key: `(card oracle id, deck id)`. The deck id rides the wire
-/// as the sole context key — the server derives the commander (EDH) or the
+/// as the sole context key: the server derives the commander (EDH) or the
 /// generalized `(format, color-identity)` per-otag context from it.
 type SignalKey = (Uuid, Uuid);
 
@@ -60,7 +60,7 @@ struct UsageBufferInner {
     select_signals: Mutex<HashMap<Uuid, SelectTally>>,
     /// Handled-error reports deduped by [`ErrorKey`]. Capped at
     /// [`HttpUsageBatch::MAX_CLIENT_ERRORS_PER_FLUSH`] distinct entries per
-    /// flush window — an error loop increments existing counts but never
+    /// flush window: an error loop increments existing counts but never
     /// grows the map past the cap.
     errors: Mutex<HashMap<ErrorKey, u32>>,
 }
@@ -108,7 +108,7 @@ impl UsageBuffer {
     /// `(card, deck)`. The server derives the deck's commander or generalized
     /// per-otag context, so non-Commander decks contribute signal too.
     ///
-    /// `Down` (undo) is ignored — only added/skipped/maybed express intent. No-op
+    /// `Down` (undo) is ignored: only added/skipped/maybed express intent. No-op
     /// if the card has no oracle id.
     pub fn record_signal(&self, deck_id: Uuid, card_oracle_id: Option<Uuid>, direction: Direction) {
         let Some(card) = card_oracle_id else {
@@ -130,7 +130,7 @@ impl UsageBuffer {
     /// by the shown card's oracle id.
     ///
     /// Only `Right` (selected) and `Left` (skipped) express a decision; `Down`
-    /// (undo) and `Up` (commander maybeboard save — non-committal, not a
+    /// (undo) and `Up` (commander maybeboard save: non-committal, not a
     /// pick) are ignored. No-op if the card has no oracle id.
     pub fn record_select_signal(&self, card_oracle_id: Option<Uuid>, direction: Direction) {
         let Some(card) = card_oracle_id else {
@@ -148,17 +148,17 @@ impl UsageBuffer {
     }
 
     /// Reports a handled error that was just surfaced to the user, and mirrors
-    /// it into the local tracing log (one call, two sinks — client logs and
+    /// it into the local tracing log (one call, two sinks: client logs and
     /// the server table tell the same story).
     ///
-    /// `screen`/`component`/`action` come from [`super::vocabulary`] — the
+    /// `screen`/`component`/`action` come from [`super::vocabulary`], the
     /// closed, module-path-derived breadcrumb. `component` is `""` when the
     /// screen itself surfaced the error.
     ///
     /// `Network` errors are logged but never buffered: they're mostly the
     /// user's connectivity, and couldn't be reported over the same dead
     /// connection anyway. `Decode` messages are reduced to the error's shape
-    /// (quoted input fragments stripped) — response bodies must never ride a
+    /// (quoted input fragments stripped): response bodies must never ride a
     /// report or a log line.
     pub fn report_error(
         &self,
@@ -204,7 +204,7 @@ impl UsageBuffer {
         }
     }
 
-    /// Records one deliberate removal of a card from a deck — a delayed negative
+    /// Records one deliberate removal of a card from a deck: a delayed negative
     /// signal, distinct from an add-stack skip. Keyed by `(card, deck)`. No-op
     /// if the card has no oracle id.
     pub fn record_removal(&self, deck_id: Uuid, card_oracle_id: Option<Uuid>) {
@@ -327,7 +327,7 @@ fn api_error_kind(api: &ApiError) -> &'static str {
 /// of the input around the failure point (`invalid type: string "..."`), and
 /// response-body content must never ride a report or a log line. Double-quoted
 /// spans collapse to `"…"`; field names in backticks and line/column positions
-/// survive — they're the useful part.
+/// survive: they're the useful part.
 fn sanitized_decode_message(detail: &str) -> String {
     let mut out = String::with_capacity(detail.len().min(128));
     let mut in_quotes = false;

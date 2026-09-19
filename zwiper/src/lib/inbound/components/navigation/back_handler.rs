@@ -93,10 +93,10 @@ mod ios {
     };
     use tokio::sync::mpsc::UnboundedSender;
 
-    /// `UIGestureRecognizerStateBegan` — fire once as the pan starts, so the
+    /// `UIGestureRecognizerStateBegan`: fire once as the pan starts, so the
     /// nav feels as immediate as tapping Back.
     const STATE_BEGAN: isize = 1;
-    /// `UIRectEdgeLeft` (1 << 1) — recognize only pans from the left screen edge.
+    /// `UIRectEdgeLeft` (1 << 1): recognize only pans from the left screen edge.
     const EDGE_LEFT: usize = 2;
 
     /// Rust state carried by the Obj-C target object.

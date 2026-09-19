@@ -7,7 +7,7 @@
 //!
 //! The theme isn't a secret, but this reuses the same backends as [`session`]
 //! (keyring on Apple/desktop, a JSON file in Android private storage) to avoid
-//! new platform code. Unlike the session, it is never deleted on logout — the
+//! new platform code. Unlike the session, it is never deleted on logout; the
 //! whole point is that the login screen keeps the last theme.
 //!
 //! [`session`]: crate::outbound::session
@@ -46,9 +46,7 @@ impl PersistTheme for ThemeConfig {
     }
 }
 
-// ============================================================================
 // Apple / desktop: OS store via keyring (same service as the session).
-// ============================================================================
 #[cfg(not(target_os = "android"))]
 mod platform {
     use super::ThemeConfig;
@@ -80,9 +78,7 @@ mod platform {
     }
 }
 
-// ============================================================================
 // Android: a JSON file in the app's private internal storage.
-// ============================================================================
 #[cfg(target_os = "android")]
 mod platform {
     use super::ThemeConfig;

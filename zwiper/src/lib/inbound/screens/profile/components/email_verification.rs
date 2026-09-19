@@ -96,7 +96,7 @@ pub(crate) fn VerificationActions() -> Element {
                             "Verification email sent".to_string(),
                             ToastOptions::default().duration(Duration::from_millis(3000)),
                         ),
-                        // Raced the server window — an email already went
+                        // Raced the server window: an email already went
                         // out recently, so keep the countdown running.
                         Err(ClientError::Api(ApiError::TooManyRequests(_))) => toast.info(
                             "Please wait a moment".to_string(),
@@ -108,7 +108,7 @@ pub(crate) fn VerificationActions() -> Element {
                                 e.to_user_message(),
                                 ToastOptions::default().duration(Duration::from_millis(5000)),
                             );
-                            // The send didn't happen — don't strand the
+                            // The send didn't happen: don't strand the
                             // user behind a timer.
                             cooldown.set(0);
                             is_resending.set(false);

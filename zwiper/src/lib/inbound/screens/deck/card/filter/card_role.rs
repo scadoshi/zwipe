@@ -1,5 +1,5 @@
 //! Card-role filter component. The role list is server-driven: fetched from the
-//! card-role catalog (`GET /api/card/roles`), not a compiled enum — so new roles
+//! card-role catalog (`GET /api/card/roles`), not a compiled enum, so new roles
 //! appear without a client release. No fallback (same as artists/oracle-tags).
 
 use crate::{inbound::components::catalog_cache::CatalogCache, outbound::client::ZwipeClient};

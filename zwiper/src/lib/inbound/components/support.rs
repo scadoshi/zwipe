@@ -25,11 +25,11 @@ const PLATFORM: &str = "Android";
 #[cfg(not(target_os = "android"))]
 const PLATFORM: &str = "iOS";
 
-/// Button glyph — a plain `!` to mirror the faded `?` hint button.
+/// Button glyph: a plain `!` to mirror the faded `?` hint button.
 const GLYPH: &str = "!";
 
 /// Percent-encodes a string for use in a `mailto:` query (RFC 3986 unreserved
-/// set passes through; everything else — spaces, newlines, `·` — is encoded).
+/// set passes through; everything else (spaces, newlines, `·`) is encoded).
 fn urlencode(input: &str) -> String {
     let mut out = String::with_capacity(input.len());
     for byte in input.bytes() {

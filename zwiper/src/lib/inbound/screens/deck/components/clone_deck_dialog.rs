@@ -18,7 +18,7 @@ use std::time::Duration;
 use uuid::Uuid;
 use zwipe_core::http::contracts::deck::HttpCloneDeck;
 
-/// Clone deck dialog — prompts for a new name, calls the clone endpoint,
+/// Clone deck dialog: prompts for a new name, calls the clone endpoint,
 /// and navigates to the new deck on success.
 #[component]
 pub(crate) fn CloneDeckDialog(

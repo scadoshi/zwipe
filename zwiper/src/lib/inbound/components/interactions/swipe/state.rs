@@ -160,7 +160,7 @@ impl SwipeState {
 
     /// Evaluates the current swipe and sets `latest_swipe` if thresholds are met.
     pub fn set_latest_swipe(&mut self, config: &SwipeConfig) {
-        // A flick (speed path) only counts after this much travel — low values
+        // A flick (speed path) only counts after this much travel; low values
         // let a millimeter twitch commit a swipe the user meant to abort.
         const DISTANCE_THRESHOLD_FOR_SPEED_TO_BE_VALID: f64 = 32.0;
 

@@ -125,17 +125,17 @@ pub fn Home() -> Element {
         });
     });
 
-    // Featured flavor — ONE shared server pick per UTC hour (unauthed
+    // Featured flavor: ONE shared server pick per UTC hour (unauthed
     // endpoint; everyone sees the same card at the same moment). Cached
     // app-wide until the top of the next hour (FlavorCard context); refetch
-    // only when empty or expired, and overwrite only on success — rapid
+    // only when empty or expired, and overwrite only on success, rapid
     // navigation reuses the cache and a failed refetch keeps the last card
     // instead of blanking.
     let mut flavor: Signal<Option<FlavorCard>> = use_context();
     use_effect(move || {
         // Subscribe to the session so expiry is also re-checked when it
-        // refreshes (~60s), not only on mount — the fetch itself no longer
-        // needs the session.
+        // refreshes (~60s), not only on mount; the fetch itself does not
+        // need the session.
         let _ = session();
         let needs_refresh = flavor.peek().as_ref().is_none_or(FlavorCard::is_expired);
         if !needs_refresh {

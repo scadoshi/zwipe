@@ -1,12 +1,12 @@
 //! Client-side error type: the app's error currency.
 //!
 //! Owns the two translations the server can't see:
-//! - transport/decode failures ([`ClientError::Network`] / [`ClientError::Decode`]) —
+//! - transport/decode failures ([`ClientError::Network`] / [`ClientError::Decode`]),
 //!   these never crossed the wire, so they don't belong in the shared [`ApiError`]
 //!   vocabulary;
 //! - wire responses back into vocabulary via `From<(StatusCode, String)>`.
 //!
-//! User-facing copy lives here too ([`ClientError::to_user_message`]) — the
+//! User-facing copy lives here too ([`ClientError::to_user_message`]), the
 //! client owns the client-to-user translation. Server-authored 4xx messages
 //! pass through verbatim: by contract they are user-safe copy.
 
@@ -29,7 +29,7 @@ pub enum ClientError {
 }
 
 impl ClientError {
-    /// Returns a safe, user-facing message — never leaks internal details like URLs or stack traces.
+    /// Returns a safe, user-facing message: never leaks internal details like URLs or stack traces.
     pub fn to_user_message(&self) -> String {
         match self {
             ClientError::Network(_) => {

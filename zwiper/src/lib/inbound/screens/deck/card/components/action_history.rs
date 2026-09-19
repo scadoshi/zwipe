@@ -2,7 +2,7 @@
 //!
 //! Split by stack discipline, not by screen. A linear stack (Add screen's
 //! search source) keeps swiped cards behind the cursor, so its actions carry
-//! no data — undo steps back onto the very card it undoes. Cycling stacks
+//! no data: undo steps back onto the very card it undoes. Cycling stacks
 //! (maybeboard source, Remove screen) drop the card from the list when a
 //! swipe commits, so those variants keep the only surviving copy.
 
@@ -20,11 +20,11 @@ pub trait StackAction {
 /// in the stack at the position undo rewinds to.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AddAction {
-    /// Left swipe — durable skip.
+    /// Left swipe: durable skip.
     Skip,
-    /// Right swipe — added to the deck.
+    /// Right swipe: added to the deck.
     Add,
-    /// Up swipe — sent to the maybeboard.
+    /// Up swipe: sent to the maybeboard.
     Maybe,
 }
 
@@ -42,9 +42,9 @@ impl StackAction for AddAction {
 /// stack, so that variant carries it for undo's re-insert.
 #[derive(Clone, Debug, PartialEq)]
 pub enum MaybeboardAction {
-    /// Left swipe — cycle past without acting.
+    /// Left swipe: cycle past without acting.
     Skip,
-    /// Right swipe — promoted to the deck.
+    /// Right swipe: promoted to the deck.
     Promote {
         /// The promoted card (removed from the stack on commit).
         card: Box<Card>,
@@ -64,14 +64,14 @@ impl StackAction for MaybeboardAction {
 /// displayed stack, so those variants carry it for undo's re-insert.
 #[derive(Clone, Debug, PartialEq)]
 pub enum RemoveAction {
-    /// Left swipe — keep the card, cycle past.
+    /// Left swipe: keep the card, cycle past.
     Keep,
-    /// Right swipe — removed from the deck.
+    /// Right swipe: removed from the deck.
     Remove {
         /// The removed card (dropped from stack and deck on commit).
         card: Box<Card>,
     },
-    /// Up swipe — moved between boards. `from` lets undo restore the
+    /// Up swipe: moved between boards. `from` lets undo restore the
     /// original board.
     MoveBoard {
         /// The moved card (dropped from the displayed stack on commit).
@@ -99,7 +99,7 @@ impl StackAction for RemoveAction {
 /// from the left.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum BrowseAction {
-    /// Left swipe — advanced to the next example card.
+    /// Left swipe: advanced to the next example card.
     Next,
 }
 
@@ -114,5 +114,5 @@ impl StackAction for BrowseAction {
 /// Maximum cards to keep in memory before requiring refresh.
 pub const MAX_CARDS_IN_STACK: usize = 500;
 
-/// Warning threshold - show toast when approaching limit.
+/// Warning threshold: show a toast when approaching the limit.
 pub const CARDS_WARNING_THRESHOLD: usize = 400;

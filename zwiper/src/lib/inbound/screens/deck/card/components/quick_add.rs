@@ -1,7 +1,7 @@
 //! Quick-add search bar for the deck cards screen.
 //!
 //! Type a card name, get a debounced, deck-aware search (cards already in the
-//! deck are excluded server-side, but skipped cards are included — see
+//! deck are excluded server-side, but skipped cards are included, see
 //! `include_skipped` below), and add a result straight to the mainboard
 //! with one tap. Synergy is deliberately off: `set_synergy(false)` drops the
 //! synergy-pool membership, and an explicit name sort keeps the server from
@@ -38,12 +38,12 @@ use zwipe_core::{
     http::contracts::deck_card::HttpCreateDeckCard,
 };
 
-/// Minimum characters before a search fires — keeps single-letter typing from
+/// Minimum characters before a search fires: keeps single-letter typing from
 /// hammering the server and returning a near-full pool.
 const MIN_QUERY_LEN: usize = 2;
 /// Debounce so results follow typing without a request per keystroke.
 const DEBOUNCE_MS: u64 = 300;
-/// Result cap — matches the commander picker's 5, keeping the float to about
+/// Result cap: matches the commander picker's 5, keeping the float to about
 /// two chip rows so the header above comfortably covers it.
 const RESULT_LIMIT: u32 = 5;
 
@@ -184,8 +184,8 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
     };
 
     // Measured overlay: results float over the content above (no reflow) in
-    // the common case; when they'd run past the scrollport top — under the
-    // screen header — the fit effect below grows the anchor by exactly the
+    // the common case; when they'd run past the scrollport top, under the
+    // screen header; the fit effect below grows the anchor by exactly the
     // overflow, spending real space only in those edge cases.
     use_effect(move || {
         let open = show_dropdown();
@@ -241,7 +241,7 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
                     autocorrect: "off",
                     spellcheck: "false",
                     // Scroll back to the top on focus so the header above the
-                    // bar — the float's canvas — is in view before results
+                    // bar (the float's canvas) is in view before results
                     // appear, instead of them tucking under the screen header.
                     onfocus: move |_| {
                         let _ = document::eval(

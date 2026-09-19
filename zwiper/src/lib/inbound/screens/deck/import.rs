@@ -1,4 +1,4 @@
-//! Import cards screen — plain-text decklist or an Archidekt URL, in add or
+//! Import cards screen: plain-text decklist or an Archidekt URL, in add or
 //! replace mode. Both sources import into the selected board of this deck and
 //! share the same result shape.
 
@@ -54,7 +54,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
     let import_hint = use_one_time_hint(HINT_IMPORT);
     let toast = use_toast();
     // An import overwrites the deck, so entries recorded before it are
-    // semantically void — the whole undo stack clears on success (disclosed
+    // semantically void; the whole undo stack clears on success (disclosed
     // in the hint below).
     let mut undo_store: UndoStore = use_context();
     let authed = use_authed(Screen::Deck(DeckScreen::Import));

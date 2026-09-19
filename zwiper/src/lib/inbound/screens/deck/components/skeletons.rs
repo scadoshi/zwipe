@@ -23,7 +23,7 @@ pub(crate) fn DeckStatsSkeleton() -> Element {
     rsx! {
         div { class: "skeleton-stats",
             // Stats opens expanded; the sections below it (Distributions,
-            // Mana, Draw odds) start collapsed — header-only boxes.
+            // Mana, Draw odds) start collapsed: header-only boxes.
             SkeletonInfoList { rows: 5 }
             for i in 0..3 {
                 div { key: "{i}", class: "skeleton-chart-box",
@@ -144,7 +144,7 @@ pub(crate) fn DeckProfileSkeleton() -> Element {
 
 #[component]
 pub(crate) fn DeckListSkeleton() -> Element {
-    // Three varied ghost tiles — different tag counts and widths so the list
+    // Three varied ghost tiles: different tag counts and widths so the list
     // reads like real mixed decks (the xl chip stands in for a commander name).
     const TILES: &[&[&str]] = &[
         &["md", "lg", "xl", "sm", "md", "sm"],
@@ -153,7 +153,7 @@ pub(crate) fn DeckListSkeleton() -> Element {
     ];
     rsx! {
         // The same DOM the loaded list renders: the "All" group container, its
-        // collapsible header, and deck rows inside — built from the live
+        // collapsible header, and deck rows inside, built from the live
         // classes (`card-group`, `card-group-header`, `collapsible`,
         // `card-row`, `deck-list-row`) rather than skeleton lookalikes, so the
         // two can't drift apart. Only the per-deck content is ghosted; the

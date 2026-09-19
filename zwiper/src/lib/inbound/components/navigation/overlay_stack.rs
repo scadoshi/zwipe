@@ -2,10 +2,10 @@
 //!
 //! The OS back intent (iOS edge-swipe / Android hardware or gesture back) is
 //! bridged by [`BackHandlerLayout`](super::back_handler), which normally routes
-//! it to the router's `go_back`. But *overlays* — anything shown on top of the
+//! it to the router's `go_back`. But *overlays*, anything shown on top of the
 //! current screen without a route change: in-place `.screen` overlays toggled by
 //! an `open` signal (`SwipeSelect`, `OracleTagSelect`, the card-filter sheet) and
-//! the `AlertDialog`-based dialogs — are not routes, so a raw `go_back` would blow
+//! the `AlertDialog`-based dialogs, are not routes, so a raw `go_back` would blow
 //! past them and exit the whole screen. This stack lets the back intent close the
 //! top-most open overlay first, falling through to the router only when none are
 //! open.
@@ -15,7 +15,7 @@
 //! for ones that close through a callback, e.g. the shared `AlertDialogRoot`
 //! wrapper driving `on_open_change`). The back handler calls
 //! [`OverlayBackStack::close_top`]. Because closing flips the overlay's open state,
-//! the registration effect then deregisters it — the stack stays truthful with no
+//! the registration effect then deregisters it: the stack stays truthful with no
 //! manual bookkeeping.
 
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -113,7 +113,7 @@ pub fn use_overlay_back(open: Signal<bool>) {
 }
 
 /// Registers an overlay that closes through a callback rather than a settable
-/// signal — e.g. the shared `AlertDialogRoot` wrapper, whose open state is driven
+/// signal: e.g. the shared `AlertDialogRoot` wrapper, whose open state is driven
 /// by its consumer via `on_open_change`. `is_open` reflects the overlay's open
 /// state; `on_close` performs the close.
 pub fn use_overlay_back_action(is_open: ReadSignal<bool>, on_close: Callback<()>) {

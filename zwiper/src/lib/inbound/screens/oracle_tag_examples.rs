@@ -1,8 +1,8 @@
-//! Oracle-tag example cards — a deck-free swipe browse.
+//! Oracle-tag example cards: a deck-free swipe browse.
 //!
 //! Reached by tapping a row in the oracle-tag dictionary: serves real cards that
 //! carry the tag so you can see what it catches, most-iconic first (EDHREC rank).
-//! Read-only — there is no deck to collect into, so the gesture grammar is
+//! Read-only: there is no deck to collect into, so the gesture grammar is
 //! reduced to navigation: swipe **left** for the next card, **down** to go back
 //! one. Right/up are not allowed by the `SwipeConfig`, so those gestures return
 //! the card to center instead of committing. The ActionBar carries the same
@@ -129,7 +129,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                     pagination_exhausted.set(true);
                 } else {
                     // Image-less cards render as a text identity frame
-                    // (FlippableCardImage), so we keep them — no client
+                    // (FlippableCardImage), so we keep them; no client
                     // filter means no barren pages either.
                     current_offset.set(offset + PAGE_LIMIT);
                     stack.append(new_cards);
@@ -148,7 +148,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
     });
 
     // Advance past the just-committed card. The cursor may land one past the end
-    // (empty window) — that's the "no more cards" state.
+    // (empty window), that's the "no more cards" state.
     let mut advance_after_commit = move || {
         let total = stack.len();
         if !stack.advance() {
@@ -170,7 +170,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
             return;
         };
         if !stack.step_back(&action) {
-            // Couldn't step back (already at the top) — restore the history.
+            // Couldn't step back (already at the top): restore the history.
             stack.record(action);
         }
     };

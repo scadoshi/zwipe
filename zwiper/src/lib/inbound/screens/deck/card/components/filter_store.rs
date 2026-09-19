@@ -4,7 +4,7 @@
 //! each screen owns a local `Signal<CardQueryBuilder>` (provided as context so
 //! the filter modules bind to it), initialized from here on mount and parked
 //! back on drop. Independent contexts replace the old shared filter and its
-//! "move it across unless it looks like a default" guesswork — cross-screen
+//! "move it across unless it looks like a default" guesswork: cross-screen
 //! contamination is structurally impossible. In-memory only: an app restart
 //! forgets. Plan: `context/plans/filter_persistence.md`.
 
@@ -15,7 +15,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 /// Which screen a remembered filter belongs to. The add screen's two sources
-/// are separate scopes — toggling parks one and restores the other.
+/// are separate scopes: toggling parks one and restores the other.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FilterScope {
     /// Deck cards screen (view).

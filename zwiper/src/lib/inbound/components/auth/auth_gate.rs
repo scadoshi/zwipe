@@ -2,10 +2,9 @@
 //!
 //! A router layout wrapping every authed route: if no valid session exists it
 //! redirects to the login screen, otherwise it renders the matched child route
-//! via `Outlet`. Replaces the former per-screen `Bouncer` wrapper so "authed" is
-//! the default and only the pre-auth screens (login / register / forgot-password)
-//! are public — a new authed screen is gated by being under this layout, with
-//! nothing to remember to wrap.
+//! via `Outlet`. "Authed" is the default and only the pre-auth screens (login /
+//! register / forgot-password) are public: a new authed screen is gated by
+//! being under this layout, with nothing to remember to wrap.
 
 use crate::inbound::router::Router;
 use dioxus::prelude::*;

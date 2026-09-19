@@ -8,7 +8,7 @@
 //!
 //! The catalog is read from the shared app-wide [`CatalogCache`] (prefetched at
 //! startup, 1-day TTL, stale-while-revalidate), the same copy the oracle-tag
-//! picker and card filter read — one fetch of the ~4,500-row list per session.
+//! picker and card filter read: one fetch of the ~4,500-row list per session.
 
 use crate::{
     inbound::{

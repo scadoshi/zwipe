@@ -79,7 +79,7 @@ impl<A: 'static> CardStack<A> {
         (self.index)()
     }
 
-    /// The `STACK_DEPTH` cards from the cursor — `SwipeStack`'s render window.
+    /// The `STACK_DEPTH` cards from the cursor: `SwipeStack`'s render window.
     pub fn window(&self) -> Vec<Card> {
         self.cards()
             .into_iter()
@@ -110,7 +110,7 @@ impl<A: 'static> CardStack<A> {
 
     // ── contents ─────────────────────────────────────────────────────────
 
-    /// Swaps in a new card list and rewinds the cursor. History survives —
+    /// Swaps in a new card list and rewinds the cursor. History survives,
     /// undo semantics across a re-filter are the caller's call (see `rewind`).
     pub fn replace(&mut self, cards: Vec<Card>) {
         self.cards.set(cards);
@@ -138,7 +138,7 @@ impl<A: 'static> CardStack<A> {
         self.entering.set(None);
     }
 
-    /// Snapshot for parking (peeked — no subscriptions).
+    /// Snapshot for parking (peeked: no subscriptions).
     pub fn park_state(&self) -> (Vec<Card>, usize, Vec<A>)
     where
         A: Clone,
@@ -251,7 +251,7 @@ impl<A: 'static> CardStack<A> {
 
 impl<A: StackAction + 'static> CardStack<A> {
     /// Linear undo cursor move: steps back one and primes the enter animation
-    /// from the action's exit direction. Returns false at the first card —
+    /// from the action's exit direction. Returns false at the first card,
     /// callers should `record` the action back.
     pub fn step_back(&mut self, action: &A) -> bool {
         let idx = (self.index)();

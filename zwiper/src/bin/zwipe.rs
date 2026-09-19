@@ -21,7 +21,7 @@ const TOAST_CSS: Asset = asset!("/assets/toast.css");
 
 // Self-hosted JetBrains Mono. Registered via asset!() (not a CSS url(), which
 // manganis does not bundle) so the woff2 files ship in the app bundle. The full
-// font includes U+2580–U+259F block elements at the monospace advance width —
+// font includes U+2580–U+259F block elements at the monospace advance width,
 // fontsource's subsets drop them, so the ASCII logo's block glyphs otherwise
 // fall back to a misaligned symbol font on Android WebView.
 const FONT_JBM_400: Asset = asset!("/assets/fonts/jetbrains-mono-400.woff2");
@@ -122,7 +122,7 @@ fn App() -> Element {
                     max_toasts: 3_usize,
                     class: "toast-container",
                     Router::<Router> {}
-                    // App-root receiver for on-demand "?" hints — rendered beside
+                    // App-root receiver for on-demand "?" hints, rendered beside
                     // the router so its dialog escapes every screen's containing
                     // block (see hint_host.rs).
                     HintHost {}

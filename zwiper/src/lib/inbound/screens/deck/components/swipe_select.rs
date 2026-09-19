@@ -1,13 +1,13 @@
-//! Full-screen "Swipe select" screen — swipe to pick a command-zone card.
+//! Full-screen "Swipe select" screen: swipe to pick a command-zone card.
 //!
 //! Rendered as a sibling overlay above the create/edit form and toggled by
-//! `open` — it stays mounted while closed so its filter and swipe position
+//! `open`: it stays mounted while closed so its filter and swipe position
 //! persist, letting you commit a pick and reopen right where you left off. The
 //! [`SwipeMode`] decides the always-on pool (commander, partner, background, or
 //! signature spell); cards are served in **EDHREC-popularity order** through the
 //! full [`CardFilterSheet`]. Swipe **left** to skip, **right** to choose,
 //! **down** to undo; **up** saves to the commander maybeboard (commander and
-//! partner modes only — the pile advances and selection continues).
+//! partner modes only: the pile advances and selection continues).
 
 use crate::{
     inbound::{
@@ -109,9 +109,9 @@ impl SwipeMode {
 /// (Right-swipe commits and leaves the pile, so it never lands here.)
 #[derive(Clone, Copy)]
 enum SelectSwipe {
-    /// Left swipe — nothing persisted.
+    /// Left swipe: nothing persisted.
     Skip,
-    /// Up swipe — saved this oracle to the commander maybeboard.
+    /// Up swipe: saved this oracle to the commander maybeboard.
     Maybe(Uuid),
 }
 
@@ -141,7 +141,7 @@ pub(crate) fn SwipeSelect(
     /// printing sheet (this overlay serves deck edit and deck create).
     host_screen: &'static str,
     /// Oracle ids kept out of the pile. The commander maybeboard passes its
-    /// own saves here (its Swipe is discovery — a saved commander is a wasted
+    /// own saves here (its Swipe is discovery: a saved commander is a wasted
     /// deal); deck create/edit pass nothing, so saves still serve where the
     /// user goes to actually pick one.
     #[props(default)]
@@ -168,7 +168,7 @@ pub(crate) fn SwipeSelect(
     let mut current_index = use_signal(|| 0usize);
     let mut offset = use_signal(|| 0u32);
     let mut exhausted = use_signal(|| false);
-    // Counter value + mode that produced the cards currently in the stack — lets
+    // Counter value + mode that produced the cards currently in the stack, lets
     // us tell a reopen (keep state) from a real filter change or a mode change
     // (e.g. a new commander shifts the signature-spell color identity → refetch).
     let mut last_searched = use_signal(|| u32::MAX);
@@ -182,7 +182,7 @@ pub(crate) fn SwipeSelect(
     let mut filters_overlay_open = use_signal(|| false);
     // Swipe-vocabulary hint: the "?" button reopens it; it also auto-opens once
     // per account the first time the screen is opened (gated, since this stays
-    // mounted while closed — a plain mount-time one-time hint would misfire).
+    // mounted while closed; a plain mount-time one-time hint would misfire).
     let hint_open = use_signal(|| false);
     let show_details = use_signal(|| false);
     let mut printing_open = use_signal(|| false);
@@ -204,7 +204,7 @@ pub(crate) fn SwipeSelect(
 
     // Append the next page (left-swipe prefetch). Dedup and the host's
     // exclusions can filter a served page to nothing while the pool isn't
-    // actually dry, so keep pulling (bounded — exclusions are capped small)
+    // actually dry, so keep pulling (bounded; exclusions are capped small)
     // until cards land or the server truly runs out.
     let mut load_more = move || {
         if *is_loading_more.peek() || *exhausted.peek() {
@@ -303,7 +303,7 @@ pub(crate) fn SwipeSelect(
                     let need_more = !raw_empty && page.is_empty();
                     cards.set(page);
                     is_loading_cards.set(false);
-                    // The whole first page was excluded — pull ahead so the
+                    // The whole first page was excluded: pull ahead so the
                     // pile doesn't open onto an empty skeleton.
                     if need_more {
                         load_more();
@@ -393,7 +393,7 @@ pub(crate) fn SwipeSelect(
 
     // The screen stays mounted and fades via CSS (`.show`). The inner content is
     // unmounted whenever closed so a just-committed card can't snap back to
-    // center mid-fade — the solid screen simply fades out, easing the form in.
+    // center mid-fade; the solid screen simply fades out, easing the form in.
     let screen_class = if open() {
         "screen swipe-select-screen show"
     } else {

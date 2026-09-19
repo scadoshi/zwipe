@@ -49,38 +49,38 @@ pub enum Router {
     ForgotPassword {},
 
     // ── authed ── everything below requires a valid session (AuthGate
-    // redirects to /login otherwise), so screens no longer self-gate.
+    // redirects to /login otherwise), so screens do not self-gate.
     #[layout(AuthGate)]
-    /// Landing screen — greeting, navigation to decks/profile.
+    /// Landing screen: greeting, navigation to decks/profile.
     #[route("/")]
     Home {},
 
-    /// User profile overview — username/email/password edits, preferences, delete account.
+    /// User profile overview: username/email/password edits, preferences, delete account.
     #[route("/user")]
     Profile {},
 
-    /// Privacy policy — shared legal copy, reached from Profile.
+    /// Privacy policy: shared legal copy, reached from Profile.
     #[route("/privacy")]
     PrivacyPolicy {},
 
-    /// Release history — shared changelog, reached from Profile.
+    /// Release history: shared changelog, reached from Profile.
     #[route("/changelog")]
     Changelog {},
 
     /// List all user's decks with name, format, and card count.
     #[route("/deck")]
     DeckList {},
-    /// Commander maybeboard — per-user "maybe this commander" list saved by
+    /// Commander maybeboard: per-user "maybe this commander" list saved by
     /// up-swiping during commander Zwipe-select.
     #[route("/deck/commander-maybeboard")]
     CommanderMaybeboard {},
-    /// Create a new deck — name, format, commander selection.
+    /// Create a new deck: name, format, commander selection.
     #[route("/deck/create")]
     CreateDeck,
-    /// Edit an existing deck's profile — name, format, commander.
+    /// Edit an existing deck's profile: name, format, commander.
     #[route("/deck/update/:deck_id")]
     EditDeck { deck_id: Uuid },
-    /// View deck details — profile, stats, price breakdown, mana curve, type/color distribution.
+    /// View deck details: profile, stats, price breakdown, mana curve, type/color distribution.
     #[route("/deck/get/:deck_id")]
     ViewDeck { deck_id: Uuid },
 
@@ -91,17 +91,17 @@ pub enum Router {
     #[route("/deck/card/export/:deck_id")]
     ExportDeck { deck_id: Uuid },
 
-    /// Swipe-based card search — swipe right to add cards to the deck.
+    /// Swipe-based card search: swipe right to add cards to the deck.
     #[route("/deck/card/add/:deck_id")]
     AddDeckCard {
         deck_id: Uuid,
     },
-    /// Browse all cards in the deck — expandable rows with card details and image preview.
+    /// Browse all cards in the deck: expandable rows with card details and image preview.
     #[route("/deck/card/view/:deck_id")]
     ViewDeckCard {
         deck_id: Uuid,
     },
-    /// Swipe-based card removal — swipe right to remove cards from the deck.
+    /// Swipe-based card removal: swipe right to remove cards from the deck.
     #[route("/deck/card/remove/:deck_id")]
     RemoveDeckCard {
         deck_id: Uuid,

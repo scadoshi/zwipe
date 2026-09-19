@@ -1,4 +1,4 @@
-//! Fetch the featured flavor card — one shared pick per UTC hour.
+//! Fetch the featured flavor card: one shared pick per UTC hour.
 //!
 //! Unauthed: the home screen shows it pre- and post-login, and the server
 //! serves everyone the same card from its in-memory slot (see the featured

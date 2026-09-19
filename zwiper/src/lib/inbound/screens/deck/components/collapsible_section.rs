@@ -1,4 +1,4 @@
-//! Collapsible card section for the deck view — a titled card whose body eases
+//! Collapsible card section for the deck view: a titled card whose body eases
 //! open/closed (height + opacity) like the edit-deck commander fields, with a
 //! left arrow that rotates like the deck cards screen. Accordion-style: a shared
 //! `open_section` signal keeps only one section open at a time.
@@ -18,7 +18,7 @@ pub(crate) fn CollapsibleSection(
     /// the section's open state and is not part of the expand/collapse hit area.
     #[props(default)]
     header_accessory: Option<Element>,
-    /// Shared accordion state — holds the title of the one open section, if any.
+    /// Shared accordion state: holds the title of the one open section, if any.
     mut open_section: Signal<Option<String>>,
     children: Element,
 ) -> Element {
@@ -36,7 +36,7 @@ pub(crate) fn CollapsibleSection(
         // cut off a negative-margin full-bleed rule.
         div {
             style: format!("width:100%;background:var(--bg-primary);box-shadow:var(--shadow-sm);border:1px solid {border};border-radius:0.5rem;padding:0.75rem 0;display:flex;flex-direction:column;cursor:pointer;user-select:none;"),
-            // The whole card is the toggle hit area — including the padded fill
+            // The whole card is the toggle hit area: including the padded fill
             // above and below the header, and (when collapsed) the strip where the
             // hidden controls sit. The body and the header accessory stop
             // propagation so interacting with them never collapses the section.

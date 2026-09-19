@@ -1,4 +1,4 @@
-//! Commander search — the dedicated select-serving path.
+//! Commander search: the dedicated select-serving path.
 //!
 //! Same `CardQuery` body as the plain search, but the server orders by
 //! decks-helmed popularity, banded + wildcarded per user per day, with

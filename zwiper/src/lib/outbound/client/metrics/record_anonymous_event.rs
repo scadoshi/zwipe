@@ -1,4 +1,4 @@
-//! Pre-auth funnel event POST (no auth — there is no user yet).
+//! Pre-auth funnel event POST (no auth: there is no user yet).
 
 use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;

@@ -27,7 +27,7 @@ pub trait ClientSearchDeckCards {
 }
 
 impl ClientSearchDeckCards for ZwipeClient {
-    /// Returns `(cards, synergy_warming)` — `synergy_warming` is true when
+    /// Returns `(cards, synergy_warming)`: `synergy_warming` is true when
     /// synergy was requested but the commander's cache was still warming, so the
     /// server served the full pool (signalled via the `x-synergy-applied` header).
     async fn search_deck_cards(

@@ -120,7 +120,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
     });
 
-    // Reactive Zwipe-select modes — derived from the current format / commander.
+    // Reactive Zwipe-select modes: derived from the current format / commander.
     let commander_mode = use_memo(move || selected_format().map(SwipeMode::Commander));
     let partner_mode = use_memo(|| Some(SwipeMode::Partner));
     let background_mode = use_memo(|| Some(SwipeMode::Background));
@@ -148,9 +148,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let authed = use_authed(Screen::Deck(DeckScreen::Edit));
 
-    // ========================================
     // Fetch deck profile
-    // ========================================
     let original_deck_resource: Resource<Result<Deck, ClientError>> =
         use_resource(move || async move {
             // try_run keeps the Result the watcher matches on; reporting and
@@ -197,9 +195,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
     });
 
-    // ========================================
     // Fetch commander card
-    // ========================================
     let original_commander_resource: Resource<Result<Option<Card>, ClientError>> =
         use_resource(move || async move {
             let Some(Ok(Deck {
@@ -236,9 +232,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
     });
 
-    // ========================================
     // Fetch partner commander card
-    // ========================================
     let original_partner_resource: Resource<Result<Option<Card>, ClientError>> =
         use_resource(move || async move {
             let Some(Ok(Deck {
@@ -275,9 +269,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
     });
 
-    // ========================================
     // Fetch background card
-    // ========================================
     let original_background_resource: Resource<Result<Option<Card>, ClientError>> =
         use_resource(move || async move {
             let Some(Ok(Deck {
@@ -314,9 +306,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
     });
 
-    // ========================================
     // Fetch signature spell card
-    // ========================================
     let original_spell_resource: Resource<Result<Option<Card>, ClientError>> =
         use_resource(move || async move {
             let Some(Ok(Deck {
@@ -353,9 +343,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
     });
 
-    // ========================================
     // Change tracking
-    // ========================================
     let deck_name_update = use_memo(move || {
         if deck_name() != original_deck_name() {
             Some(deck_name())

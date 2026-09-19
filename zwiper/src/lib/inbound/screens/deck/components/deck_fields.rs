@@ -31,7 +31,7 @@ use zwipe_core::domain::{
     },
 };
 
-/// Upper bound for the land-target stepper — no deck runs more lands than this.
+/// Upper bound for the land-target stepper: no deck runs more lands than this.
 const MAX_LAND_TARGET: i32 = 100;
 
 /// "Partner with [Name]" names exactly one legal partner, so a commander pick
@@ -40,7 +40,7 @@ const MAX_LAND_TARGET: i32 = 100;
 /// Friends forever / Doctor's companion pair freely and are untouched.
 ///
 /// Call this only from explicit commander selections (typeahead click, Zwipe
-/// select) — never from the commander-change effect, which also fires on
+/// select): never from the commander-change effect, which also fires on
 /// edit-screen load and would toast on every open of a partner deck. The
 /// commander-change clear effect runs before this fetch returns, so the fill
 /// lands on a freshly cleared slot; the completion guard bails if the user
@@ -69,7 +69,7 @@ pub(crate) fn autofill_named_partner(
         };
         match client().search_cards(&filter, &session).await {
             Ok(cards) => {
-                // Exact full-name match first — the front-face tier is only a
+                // Exact full-name match first: the front-face tier is only a
                 // fallback for mates that exist solely as a DFC, and must not
                 // pick a reversible `A // A` printing over the real card.
                 let exact = cards
@@ -159,7 +159,7 @@ pub(crate) fn DeckFields(
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let toast = use_toast();
 
-    // Deck name inline validation — mirrors the auth/profile per-field pattern:
+    // Deck name inline validation: mirrors the auth/profile per-field pattern:
     // show the error under the field as the user types (after first input), so a
     // bad name surfaces here instead of as a toast on save.
     let mut deck_name_touched = use_signal(|| false);
@@ -176,45 +176,35 @@ pub(crate) fn DeckFields(
         }
     });
 
-    // ========================================
     // Commander search state
-    // ========================================
     let mut cmd_search_query = use_signal(String::new);
     let mut cmd_search_results = use_signal(Vec::<Card>::new);
     let mut cmd_is_searching = use_signal(|| false);
     let mut cmd_show_dropdown = use_signal(|| false);
     let mut cmd_filter_on = use_signal(|| true);
 
-    // ========================================
     // Partner search state
-    // ========================================
     let mut partner_search_query = use_signal(String::new);
     let mut partner_search_results = use_signal(Vec::<Card>::new);
     let mut partner_is_searching = use_signal(|| false);
     let mut partner_show_dropdown = use_signal(|| false);
     let mut partner_filter_on = use_signal(|| true);
 
-    // ========================================
     // Background search state
-    // ========================================
     let mut bg_search_query = use_signal(String::new);
     let mut bg_search_results = use_signal(Vec::<Card>::new);
     let mut bg_is_searching = use_signal(|| false);
     let mut bg_show_dropdown = use_signal(|| false);
     let mut bg_filter_on = use_signal(|| true);
 
-    // ========================================
     // Signature spell search state
-    // ========================================
     let mut spell_search_query = use_signal(String::new);
     let mut spell_search_results = use_signal(Vec::<Card>::new);
     let mut spell_is_searching = use_signal(|| false);
     let mut spell_show_dropdown = use_signal(|| false);
     let mut spell_filter_on = use_signal(|| true);
 
-    // ========================================
     // Visibility memos
-    // ========================================
     let show_commander = use_memo(move || selected_format().is_some_and(|f| f.has_commander()));
 
     let show_partner = use_memo(move || {
@@ -243,9 +233,7 @@ pub(crate) fn DeckFields(
     // so an empty field starts at the sensible count rather than zero.
     let land_heuristic = use_memo(move || selected_format().and_then(|f| f.default_land_target()));
 
-    // ========================================
     // Cascading clear effects
-    // ========================================
 
     // Format change → reset all filter toggles
     use_effect(move || {
@@ -259,7 +247,7 @@ pub(crate) fn DeckFields(
     // Commander change → clear partner and background (they depend on the
     // commander's abilities). Guarded by the previous commander's id: the edit
     // screen loads commander and partner through independent racing resources,
-    // so the None → Some transition of the initial load must NOT clear — if
+    // so the None → Some transition of the initial load must NOT clear, if
     // the partner resolved first, the commander's arrival would wipe it (the
     // field showed empty + a phantom "Save changes" on every edit open of a
     // partner deck). A genuine change is Some → Some(other) or Some → None;
@@ -282,9 +270,7 @@ pub(crate) fn DeckFields(
         bg_show_dropdown.set(false);
     });
 
-    // ========================================
     // Commander debounced search
-    // ========================================
     use_effect(move || {
         let query = cmd_search_query();
 
@@ -296,7 +282,7 @@ pub(crate) fn DeckFields(
 
         cmd_is_searching.set(true);
         // Reveal the dropdown immediately so the "Searching..." indicator shows
-        // during the debounce — otherwise the field looks empty for ~1s and a
+        // during the debounce; otherwise the field looks empty for ~1s and a
         // slow reveal reads as "card missing."
         cmd_show_dropdown.set(true);
 
@@ -336,9 +322,7 @@ pub(crate) fn DeckFields(
         });
     });
 
-    // ========================================
-    // Partner debounced search (1 char minimum — small card pool)
-    // ========================================
+    // Partner debounced search (1 char minimum: small card pool)
     use_effect(move || {
         let query = partner_search_query();
 
@@ -387,9 +371,7 @@ pub(crate) fn DeckFields(
         });
     });
 
-    // ========================================
-    // Background debounced search (1 char minimum — small card pool)
-    // ========================================
+    // Background debounced search (1 char minimum, small card pool)
     use_effect(move || {
         let query = bg_search_query();
 
@@ -438,9 +420,7 @@ pub(crate) fn DeckFields(
         });
     });
 
-    // ========================================
     // Signature spell debounced search
-    // ========================================
     use_effect(move || {
         let query = spell_search_query();
 
@@ -491,16 +471,12 @@ pub(crate) fn DeckFields(
     });
 
     rsx! {
-        // ========================================
-        // Profile — name, format, command zone, power level.
-        // ========================================
+        // Profile: name, format, command zone, power level.
         div { style: "margin-bottom: 0.5rem;",
             span { class: "card-title", "Profile" }
         }
 
-        // ========================================
         // Deck name
-        // ========================================
         TextInput {
             label: "Deck name",
             value: deck_name,
@@ -509,9 +485,7 @@ pub(crate) fn DeckFields(
             error: deck_name_error(),
         }
 
-        // ========================================
         // Format (open the full-screen picker to choose)
-        // ========================================
         div {
             div { class: "label-row",
                 label { class: "label", "Format" }
@@ -537,9 +511,7 @@ pub(crate) fn DeckFields(
             }
         }
 
-        // ========================================
         // Commander selector
-        // ========================================
         Collapsible { show: show_commander(),
             div {
                 div { class: "label-row",
@@ -643,9 +615,7 @@ pub(crate) fn DeckFields(
             }
         }
 
-        // ========================================
         // Partner commander selector
-        // ========================================
         Collapsible { show: show_partner(),
             div {
                 div { class: "label-row",
@@ -740,9 +710,7 @@ pub(crate) fn DeckFields(
             }
         }
 
-        // ========================================
         // Background selector
-        // ========================================
         Collapsible { show: show_background(),
             div {
                 div { class: "label-row",
@@ -837,9 +805,7 @@ pub(crate) fn DeckFields(
             }
         }
 
-        // ========================================
         // Signature spell selector
-        // ========================================
         Collapsible { show: show_signature_spell(),
             div {
                 div { class: "label-row",
@@ -934,9 +900,7 @@ pub(crate) fn DeckFields(
             }
         }
 
-        // ========================================
         // Power level (single-select WotC bracket; Not set = none)
-        // ========================================
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
                 label { class: "label", "Power level" }
@@ -966,16 +930,12 @@ pub(crate) fn DeckFields(
             }
         }
 
-        // ========================================
-        // Budget — land target + price target.
-        // ========================================
+        // Budget: land target + price target.
         div { style: "margin-top: 1.5rem;",
             span { class: "card-title", "Budget" }
         }
 
-        // ========================================
         // Land target (Not set = use the format heuristic)
-        // ========================================
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
                 label { class: "label", "Land target" }
@@ -1019,9 +979,7 @@ pub(crate) fn DeckFields(
             }
         }
 
-        // ========================================
         // Price target (budget; empty = no budget)
-        // ========================================
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
                 label { class: "label", "Price target" }
@@ -1061,10 +1019,8 @@ pub(crate) fn DeckFields(
             }
         }
 
-        // ========================================
-        // Tags — deck tags, oracle tags, other tags. Grouped at the bottom
+        // Tags: deck tags, oracle tags, other tags. Grouped at the bottom
         // (under a "Tags" heading) to mirror the deck view's Tags section.
-        // ========================================
         div { style: "margin-top: 1.5rem;",
             span { class: "card-title", "Tags" }
         }

@@ -1,11 +1,9 @@
 //! Authed-call facade: the one place every screen-initiated authed request
 //! refreshes the session, reports failures to telemetry, and toasts.
 //!
-//! Replaces the per-call-site ceremony (`ensure_fresh` + hand-rolled
-//! `report_error` + toast) that every screen used to copy, and that some
-//! screens inevitably got wrong: the "some screens toast, some swallow"
-//! inconsistency this kills at the root
-//! (context/plans/authed_error_handler.md).
+//! Screens go through this instead of calling `ensure_fresh`, `report_error`,
+//! and the toast themselves, so every screen handles a failed authed call the
+//! same way (context/plans/authed_error_handler.md).
 //!
 //! Not for everything: `session_upkeep`, `signal_logout`, the catalog cache,
 //! and the hint recorder have shapes that don't fit a screen-scoped facade

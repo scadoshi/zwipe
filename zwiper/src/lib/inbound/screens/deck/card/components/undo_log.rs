@@ -6,7 +6,7 @@
 //! (see `apply_undo` in `view.rs`). The swipe screens' own gesture undo
 //! stays local, but reconciles through this store: it takes its entry back
 //! before reversing, and skips its server mutation when the entry is
-//! already gone (consumed by the button). Memory-only by design — the
+//! already gone (consumed by the button). Memory-only by design, the
 //! decision trail is in `context/plans/global_undo.md` (built on
 //! `archive/deck_cards_undo.md`).
 
@@ -18,12 +18,12 @@ use zwipe_core::domain::{
     deck::{Board, DeckEntry},
 };
 
-/// Cap — enough to walk back a whole editing session; oldest entries drop.
+/// Cap: enough to walk back a whole editing session; oldest entries drop.
 const MAX_UNDO_ACTIONS: usize = 100;
 
 /// Identifies which command zone slot a card occupies for printing updates.
 /// Lives here rather than in `view.rs`: the log is shared infrastructure,
-/// and screens depend on it — never the reverse.
+/// and screens depend on it: never the reverse.
 #[derive(Clone, Copy, PartialEq)]
 pub(crate) enum CommandZoneSlot {
     Commander,
@@ -37,7 +37,7 @@ pub(crate) enum CommandZoneSlot {
 #[derive(Clone)]
 pub(crate) enum UndoAction {
     /// A card was added (quick add or an add-screen swipe); undo deletes it
-    /// (without the deliberate-removal telemetry signal — undoing an add is
+    /// (without the deliberate-removal telemetry signal: undoing an add is
     /// not a removal opinion).
     Added { card_id: Uuid, card_name: String },
     /// A card was removed (qty crossed below 1, or a remove-screen swipe);
@@ -58,7 +58,7 @@ pub(crate) enum UndoAction {
     },
     /// A regular deck card changed printing; undo restores the old printing.
     PrintingChanged { old_card: Card, new_id: Uuid },
-    /// A command-zone card changed printing — a deck-profile slot update,
+    /// A command-zone card changed printing: a deck-profile slot update,
     /// not a deck_card row; undo rebuilds the profile request with the old
     /// printing id and restores the slot's pinned card signal.
     CommandZonePrintingChanged {
@@ -68,12 +68,12 @@ pub(crate) enum UndoAction {
     },
 }
 
-/// Append with the cap enforced — shared by the live log and the parked
+/// Append with the cap enforced: shared by the live log and the parked
 /// stacks so both drop oldest identically.
 ///
 /// Entries carry no id: the plan sketched a per-entry u64, but the as-built
 /// reconciliation (`take_newest` below) identifies an entry by matching its
-/// action — the swipe screens record actions before their server call
+/// action: the swipe screens record actions before their server call
 /// resolves, so an id minted at record time had nothing to attach to, and a
 /// predicate over (variant, card) picks the same entry newest-first.
 fn push_capped(log: &mut Vec<UndoAction>, action: UndoAction) {
@@ -84,7 +84,7 @@ fn push_capped(log: &mut Vec<UndoAction>, action: UndoAction) {
     }
 }
 
-/// Newest-first predicate removal — the reconciliation primitive behind
+/// Newest-first predicate removal: the reconciliation primitive behind
 /// `UndoStore::take_newest`, split out so the selection logic is testable
 /// without a signal runtime.
 fn take_newest_in(
@@ -108,7 +108,7 @@ impl UndoLog {
 }
 
 /// App-scoped park/restore for per-deck undo stacks, so the log survives
-/// navigating away and back (mirroring `FilterStore`'s filter parking —
+/// navigating away and back (mirroring `FilterStore`'s filter parking,
 /// filters surviving while undo evaporated read as a bug). In-memory only:
 /// an app restart forgets. The stale-entry guards in `apply_undo` cover the
 /// deck refetching fresher state between visits.
@@ -127,7 +127,7 @@ pub(crate) fn use_undo_store() -> UndoStore {
 
 impl UndoStore {
     /// The stack last parked for this deck (empty if none). Clones rather
-    /// than takes — restore runs inside the screen's mount initializer, and
+    /// than takes: restore runs inside the screen's mount initializer, and
     /// writing the store mid-render is the bug FilterStore's clone-on-restore
     /// shape avoids; the leftover copy is simply overwritten on next park.
     pub fn restore(&self, deck_id: Uuid) -> Vec<UndoAction> {
@@ -144,13 +144,13 @@ impl UndoStore {
     }
 
     /// Records a mutation made while the deck cards screen (and its live
-    /// log) is unmounted — the add/remove screens' recording path. Writes
+    /// log) is unmounted: the add/remove screens' recording path. Writes
     /// straight into the parked stack; the next restore picks it up.
     pub fn push(&mut self, deck_id: Uuid, action: UndoAction) {
         push_capped(self.entries.write().entry(deck_id).or_default(), action);
     }
 
-    /// Takes back the newest parked entry matching the predicate — gesture
+    /// Takes back the newest parked entry matching the predicate: gesture
     /// undo's reconciliation. `Some` means the mutation was still
     /// outstanding (proceed with the reversing server call); `None` means
     /// the button already consumed it (skip the server call, the world is
@@ -164,7 +164,7 @@ impl UndoStore {
         take_newest_in(self.entries.write().get_mut(&deck_id)?, matches)
     }
 
-    /// Drops the deck's whole stack — import overwrites the deck, so every
+    /// Drops the deck's whole stack: import overwrites the deck, so every
     /// entry recorded before it is semantically void (owner decision in the
     /// plan; the import screen's hint discloses it).
     pub fn clear(&mut self, deck_id: Uuid) {
@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn take_newest_picks_the_latest_match() {
-        // The same card added twice with another card's entry between —
+        // The same card added twice with another card's entry between,
         // gesture undo of the second add must take the SECOND entry.
         let card = Uuid::new_v4();
         let other = Uuid::new_v4();

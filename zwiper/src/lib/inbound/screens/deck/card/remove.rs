@@ -118,7 +118,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
     // and takes them back when its own gesture undo reverses one.
     let mut undo_store: UndoStore = use_context();
 
-    // Source of truth — all entries in the deck
+    // Source of truth: all entries in the deck
     let mut deck_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
     // Command-zone cards (commander, partner, etc.), folded into the budget total.
     let mut command_zone_cards: Signal<Vec<Card>> = use_signal(Vec::new);
@@ -128,7 +128,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
     use_context_provider(|| DeckCards(deck_cards_for_filter));
 
     // What the swipe UI iterates over (may be a filtered subset of
-    // `deck_entries`) — a cycling stack over the displayed cards.
+    // `deck_entries`), a cycling stack over the displayed cards.
     let mut stack = use_card_stack::<RemoveAction>();
     // Guards filter effect from running before the deck has loaded
     let mut deck_loaded: Signal<bool> = use_signal(|| false);
@@ -144,7 +144,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let mut price_budget: Signal<Option<f64>> = use_signal(|| None);
     let mut price_budget_currency: Signal<PriceCurrency> = use_signal(|| PriceCurrency::Usd);
 
-    // Swipe config — the stack owns its own SwipeState internally.
+    // Swipe config: the stack owns its own SwipeState internally.
     // Thresholds tuned for responsive rapid swiping: a short drag (60px) OR
     // a quick flick (1.5 px/ms over the 10px minimum) commits.
     let swipe_config = SwipeConfig::new(
@@ -216,7 +216,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
         }
     };
 
-    // Effect 1 — mount load (reads `session` reactively)
+    // Effect 1: mount load (reads `session` reactively)
     use_effect(move || {
         spawn(async move {
             if let Some(deck) = authed
@@ -228,7 +228,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
             {
                 let all_cards: Vec<Card> = deck.entries.iter().map(|e| e.card.clone()).collect();
                 deck_cards_for_filter.set(all_cards);
-                // Explicit target only — no land toasts unless the user set one.
+                // Explicit target only: no land toasts unless the user set one.
                 land_target.set(deck.deck_profile.land_target);
                 let budget_currency = deck
                     .deck_profile
@@ -245,7 +245,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
         });
     });
 
-    // Effect 2 — filter (reads `filter_reset_counter`, `board_filter` reactively; peeks entries)
+    // Effect 2: filter (reads `filter_reset_counter`, `board_filter` reactively; peeks entries)
     use_effect(move || {
         let _ = filter_reset_counter();
         let _ = board_filter();
@@ -271,7 +271,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
             .collect();
 
         // Step 2: apply card attribute criteria, then the builder's sort. The
-        // in-memory path takes bare criteria — no pagination to zero out.
+        // in-memory path takes bare criteria; no pagination to zero out.
         let filtered = if builder.is_empty() {
             board_filtered_cards
         } else {
@@ -293,7 +293,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
         };
 
         let scryfall_data_id = card.scryfall_data.id;
-        // Snapshot the full entry now — the global undo entry wants the old
+        // Snapshot the full entry now: the global undo entry wants the old
         // board and quantity, and the optimistic removal drops it shortly.
         let removed_entry = deck_entries
             .peek()
@@ -362,7 +362,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 .retain(|e| e.card.card_profile.scryfall_data_id != id);
             stack.remove_current();
         }
-        // The cursor is unchanged — the next card slides into position.
+        // The cursor is unchanged: the next card slides into position.
     };
 
     // Board-move counterpart of remove_current_card: the entry survives in
@@ -380,7 +380,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
             }
             stack.remove_current();
         }
-        // The cursor is unchanged — the next card slides into position.
+        // The cursor is unchanged: the next card slides into position.
     };
 
     let mut undo_last_action = move || {
@@ -410,7 +410,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
                 // Reconcile with the global stack before touching the UI:
                 // entry gone AND the card already back in the deck means the
-                // deck-cards Undo button re-added it — a second create would
+                // deck-cards Undo button re-added it; a second create would
                 // duplicate the row. Pure history rewind instead.
                 let taken = undo_store.take_newest(deck_id, |a| {
                     matches!(
@@ -484,7 +484,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
                 // Reconcile with the global stack: entry gone AND the card
                 // already sitting on its original board means the deck-cards
-                // Undo button moved it back — pure history rewind.
+                // Undo button moved it back: pure history rewind.
                 let taken = undo_store.take_newest(deck_id, |a| {
                     matches!(
                         a,

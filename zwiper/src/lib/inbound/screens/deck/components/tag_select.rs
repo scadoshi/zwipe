@@ -1,7 +1,7 @@
 //! Full-screen tag picker.
 //!
 //! Rendered as a sibling overlay above the create/edit form and toggled by
-//! `open` — it stays mounted while closed so the search query and scroll
+//! `open`: it stays mounted while closed so the search query and scroll
 //! position persist. Every [`DeckTag`] shows as a chip in alphabetical order;
 //! tapping one toggles selection and reveals its definition in the bar pinned
 //! at the top, so users learn what a tag does while picking it. The search box

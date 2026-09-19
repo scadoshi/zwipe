@@ -9,7 +9,7 @@ use zwipe_core::http::contracts::client::HttpMinClientVersion;
 
 /// Trait for fetching the server's minimum supported app version.
 ///
-/// Public and unauthenticated — a gated client must be able to learn it's
+/// Public and unauthenticated: a gated client must be able to learn it's
 /// gated without a valid session. Polled by the upkeep loop, so this logs at
 /// debug rather than info.
 #[allow(missing_docs)]

@@ -3,7 +3,7 @@
 //! Provides a complete swipe gesture system for card swiping interactions,
 //! supporting both touch and mouse events with configurable thresholds.
 //!
-//! The primary consumer is [`stack::SwipeStack`] — a peeking card stack where
+//! The primary consumer is [`stack::SwipeStack`], a peeking card stack where
 //! only the top card is interactive, commits exit fully off-screen, and undo
 //! brings the last-committed card back in from the direction it exited.
 

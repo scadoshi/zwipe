@@ -25,7 +25,7 @@ pub(crate) fn PrintingSheet(
     card: Card,
     mut open: Signal<bool>,
     on_save: EventHandler<Card>,
-    /// Host screen const (`vocabulary::screen`) for error-report breadcrumbs —
+    /// Host screen const (`vocabulary::screen`) for error-report breadcrumbs,
     /// this sheet serves several screens, and the report's aggregation axis is
     /// always the host, never the component.
     host_screen: &'static str,
@@ -120,7 +120,7 @@ pub(crate) fn PrintingSheet(
 
     // OS back closes the sheet before the router sees it. This one hand-rolls
     // its own backdrop + `.bottom-sheet` markup instead of using the shared
-    // `BottomSheet`, so it needs its own registration — and it mirrors the
+    // `BottomSheet`, so it needs its own registration, and it mirrors the
     // backdrop exactly, warning when an unsaved printing is about to be lost.
     let dismiss = use_callback(move |_: ()| {
         let mut open = open;

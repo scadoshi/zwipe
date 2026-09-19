@@ -40,7 +40,7 @@ pub(crate) fn display_theme_name(slug: &str) -> String {
         .join(" ")
 }
 
-/// Themes with adjusted palettes for color-vision deficiency — grouped at the
+/// Themes with adjusted palettes for color-vision deficiency: grouped at the
 /// bottom of the picker.
 const COLORBLIND_THEMES: &[&str] = &["protanopia", "deuteranopia", "tritanopia", "achromatopsia"];
 

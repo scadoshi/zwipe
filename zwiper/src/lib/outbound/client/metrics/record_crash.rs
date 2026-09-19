@@ -1,4 +1,4 @@
-//! Crash report POST (no auth — the launch after a crash may have no session).
+//! Crash report POST (no auth: the launch after a crash may have no session).
 
 use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;

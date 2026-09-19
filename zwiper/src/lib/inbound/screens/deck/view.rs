@@ -75,7 +75,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let authed = use_authed(Screen::Deck(DeckScreen::View));
 
     // `use_reactive!` ties these resources to `deck_id` so they re-fetch when the
-    // route param changes without a remount — e.g. cloning navigates ViewDeck →
+    // route param changes without a remount, e.g. cloning navigates ViewDeck →
     // ViewDeck, and a plain `move ||` closure would keep serving the old deck.
     let mut deck_profile_resource: Resource<Result<DeckProfile, ClientError>> =
         use_resource(use_reactive!(|deck_id| async move {
@@ -134,7 +134,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let first_deck_hint_open = use_one_time_hint(HINT_FIRST_DECK);
 
     let show_buy_dialog = use_signal(|| false);
-    // Accordion state for the deck-view sections — holds the title of the one
+    // Accordion state for the deck-view sections, holds the title of the one
     // open section. Stats is auto-expanded on load.
     let open_section: Signal<Option<String>> = use_signal(|| Some("Budget".to_string()));
     // Currency selected in the Budget header chips, shared with the price rows.
@@ -357,8 +357,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 title: "Mana",
                                                 open_section: open_section,
                                                 // Lands: actual count, shown as `actual / target`
-                                                // when a land target is set. Moved here from the
-                                                // Budget section in 1.6.0.
+                                                // when a land target is set.
                                                 {
                                                     let value = match land_target {
                                                         Some(target) => format!("{land_count} / {target}"),
@@ -414,7 +413,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             deck_resource.restart();
                                         },
                                         on_fix_quantity: move |(card_id, target_qty): (Uuid, i32)| {
-                                            // PATCH sets the absolute target directly — no more
+                                            // PATCH sets the absolute target directly: no more
                                             // deriving a delta from a possibly-stale current qty.
                                             let request = HttpPatchDeckCard::new(Some(target_qty), None);
 

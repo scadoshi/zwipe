@@ -133,7 +133,7 @@ pub fn CreateDeck() -> Element {
         }
     });
 
-    // Reactive Zwipe-select modes — derived from the current format / commander.
+    // Reactive Zwipe-select modes: derived from the current format / commander.
     let commander_mode = use_memo(move || selected_format().map(SwipeMode::Commander));
     let partner_mode = use_memo(|| Some(SwipeMode::Partner));
     let background_mode = use_memo(|| Some(SwipeMode::Background));

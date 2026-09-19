@@ -4,7 +4,7 @@
 //! `keyring` crate (Keychain on iOS/macOS, Credential Manager on Windows,
 //! Secret Service on Linux).
 //!
-//! `keyring` has **no Android backend** — there it silently falls back to an
+//! `keyring` has **no Android backend**: there it silently falls back to an
 //! in-memory mock store that's lost on app restart (which is why Android wasn't
 //! persisting sessions). So on Android we persist the session to a JSON file in
 //! the app's **private internal storage** (`/data/data/<pkg>/files/`), which is
@@ -65,9 +65,7 @@ impl Persist for Session {
     }
 }
 
-// ============================================================================
 // Apple / desktop: OS secure store via keyring.
-// ============================================================================
 #[cfg(not(target_os = "android"))]
 mod platform {
     use super::Session;
@@ -115,9 +113,7 @@ mod platform {
     }
 }
 
-// ============================================================================
 // Android: a JSON file in the app's private internal storage.
-// ============================================================================
 #[cfg(target_os = "android")]
 mod platform {
     use super::Session;

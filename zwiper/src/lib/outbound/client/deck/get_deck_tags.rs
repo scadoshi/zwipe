@@ -8,7 +8,7 @@ use zwipe::inbound::http::routes::get_deck_tags_route;
 use zwipe_core::domain::{auth::models::session::Session, deck::DeckTagView};
 
 /// Trait for fetching the full deck-tag catalog (slug, label, description, seed
-/// otags). Authenticated — it lives under the deck routes; the deck-tag picker
+/// otags). Authenticated; it lives under the deck routes; the deck-tag picker
 /// (an authed flow) is its consumer.
 #[allow(missing_docs)]
 pub trait ClientGetDeckTags {

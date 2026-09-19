@@ -29,7 +29,7 @@ impl SignalLogout for Signal<Option<Session>> {
                 Err(e) => {
                     // ensure_fresh already cleared signal + keyring on auth
                     // rejection; on transient errors still honor the user's
-                    // logout locally — the server token expires naturally.
+                    // logout locally; the server token expires naturally.
                     tracing::warn!("logout without server invalidation: {e}");
                     if let Some(current) = session.peek().clone() {
                         current.infallible_delete();
@@ -39,7 +39,7 @@ impl SignalLogout for Signal<Option<Session>> {
                 }
             };
 
-            // Always clear the local session — the user asked to log out regardless
+            // Always clear the local session: the user asked to log out regardless
             // of whether the server can be reached to invalidate the refresh token.
             current.infallible_delete();
             session.set(None);

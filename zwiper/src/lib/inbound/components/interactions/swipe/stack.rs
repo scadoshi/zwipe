@@ -8,7 +8,7 @@
 //!    detached layer above the stack, playing a one-shot CSS keyframe that
 //!    flies it off-screen and removes itself on `animationend`.
 //! 2. The parent's `on_swipe_*` callback fires immediately so `current_index`
-//!    advances right away — the card beneath becomes the new top on the very
+//!    advances right away: the card beneath becomes the new top on the very
 //!    next render and is interactive without delay.
 //!
 //! Down-swipes do not exit. They fire `on_swipe_down` for undo and the active
@@ -46,7 +46,7 @@ const PEEK_SCALE_STEP: f64 = 0.0;
 const TILT_PER_PX: f64 = 0.06;
 
 /// One committed card mid-exit. The seed fields carry the transform the card
-/// had at the moment the finger released it — the exit keyframe starts from
+/// had at the moment the finger released it: the exit keyframe starts from
 /// there (via CSS custom properties) instead of snapping back to rest first.
 #[derive(Clone, PartialEq)]
 struct ExitingCard {
@@ -128,7 +128,7 @@ pub fn SwipeStack(
                         };
                         // Suppress visual movement on downward drags. The
                         // gesture is still tracked (so set_latest_swipe will
-                        // fire `Direction::Down` on threshold) — only the
+                        // fire `Direction::Down` on threshold); only the
                         // rendered transform is clamped. Undo then triggers
                         // and the previous card slides in via the existing
                         // entering keyframe. Upward movement is likewise only
@@ -180,7 +180,7 @@ pub fn SwipeStack(
                         entering_class
                     );
 
-                    // Gesture handlers — only bound on the top card.
+                    // Gesture handlers: only bound on the top card.
                     let config_touch_end = config.clone();
                     let config_mouse_end = config.clone();
                     let card_for_handlers = card.clone();
@@ -188,7 +188,7 @@ pub fn SwipeStack(
                     // Dispatches the committed latest_swipe from SwipeState.
                     // For exit directions, push the card onto the overlay AND
                     // fire the parent callback immediately so current_index
-                    // advances synchronously — the new top is interactive on
+                    // advances synchronously; the new top is interactive on
                     // the next render with no gesture-block guard.
                     let dispatch_latest = {
                         let card = card_for_handlers;
@@ -283,7 +283,7 @@ pub fn SwipeStack(
                             },
 
                             onanimationend: move |_| {
-                                // Enter keyframe finished — clear the request.
+                                // Enter keyframe finished: clear the request.
                                 if is_top && entering.peek().is_some() {
                                     entering.set(None);
                                 }
@@ -315,7 +315,7 @@ pub fn SwipeStack(
                     };
                     let id = exiting.id;
                     // The keyframes read these custom properties for their
-                    // `from` frame — the card departs from where it was
+                    // `from` frame, the card departs from where it was
                     // released instead of clipping back to rest.
                     let style = format!(
                         "z-index: 100; --exit-from-x: {}px; --exit-from-y: {}px; --exit-from-rot: {}deg;",
@@ -331,7 +331,7 @@ pub fn SwipeStack(
                             },
 
                             // Same element as the resting/peek cards (non-flippable
-                            // here) so the fly-off matches — and image-less cards
+                            // here) so the fly-off matches, and image-less cards
                             // show their text frame instead of going blank.
                             FlippableCardImage {
                                 sd: exiting.card.scryfall_data,
