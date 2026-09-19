@@ -1424,7 +1424,7 @@ Per-commander synergy/popularity payloads are computed by a separate least-privi
 
 - **First-run hints** — `hints_shown` jsonb on users + `PUT /api/user/hint`; six one-time dialogs (login, profile, first deck, deck cards, add/remove swipes) plus a persistent "?" reopener in every screen header.
 - **Security notification emails** on email / username / password changes — notifies the *old* address (the one an attacker doesn't control), user values HTML-escaped, fire-and-forget via Resend.
-- **Resend-verification throttle** — dedicated limiter (burst 1, then 1/60s per user); client greys the button with a matching 60s countdown + a "Check again" that flips the verified badge in place.
+- **Resend-verification throttle** — dedicated limiter (burst 1, then 1/60s per user); client grays the button with a matching 60s countdown + a "Check again" that flips the verified badge in place.
 - **Fixes** — missing-auth responses now return 401 (were 500, from the user-keyed rate-limit layer running before the auth extractor); `GET /health` runs the combined server+db check; the "Update required" screen no longer flashes on filter apply (a Dioxus context type-collision, newtyped away).
 
 ---

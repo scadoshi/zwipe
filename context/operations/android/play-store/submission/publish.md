@@ -41,7 +41,7 @@ the track, **not** the release page or the bundle. (First hit 2026-07-11.)
   Testers → **Google Groups** → paste the group address → Save. Anyone who joins
   the group becomes an eligible tester automatically — no per-person adding. Post
   the group join link + the opt-in URL together.
-- The **"Copy link" stays greyed until the release clears review and is live** on
+- The **"Copy link" stays grayed until the release clears review and is live** on
   the track ("the link will be shown when you publish"). The opt-in URL is
   predictable, though: `https://play.google.com/apps/testing/com.scadoshi.zwipe`
   — it only works post-publish and only for list/group members.

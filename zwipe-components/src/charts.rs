@@ -153,7 +153,7 @@ pub fn DrawOdds(deck_size: u32, buckets: Vec<(&'static str, u32)>) -> Element {
             div { style: "display:flex;align-items:center;justify-content:center;gap:0.6rem;",
                 // Reuse the combat-filter stepper button: solid background gives
                 // native press feedback and suppresses WKWebView's focus ring.
-                // The onclick guards no-op at the bounds; no grey-out.
+                // The onclick guards no-op at the bounds; no gray-out.
                 button {
                     class: "stepper-btn",
                     onclick: move |_| { let t = turn(); if t > 0 { turn.set(t - 1); } },

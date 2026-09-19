@@ -117,7 +117,7 @@ Small UX improvements to the deck view screen and related flows.
 
 Originally 9 themes, now 15 (including 3 colorblind-accessible).
 
-- [x] Define Zwipe color scheme — slate blue-grey bg, magenta off-white text, muted blue accents (`28559812`)
+- [x] Define Zwipe color scheme — slate blue-gray bg, magenta off-white text, muted blue accents (`28559812`)
 - [x] Audit CSS variable usage — semantic consistency across all screens (`28559812`)
 - [x] Add 3-variable accent system (`--accent-primary/secondary/tertiary`) to every theme (`28559812`)
 - [x] Normalize contrast ratios across all themes — text-muted/text-subtle adjusted (`28559812`)

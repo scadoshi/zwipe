@@ -3224,7 +3224,7 @@ button {
     margin: 0.75rem 0 0.4rem;
 }
 
-/* Universes Beyond sheet: greyed franchise chips until the hide toggle is on,
+/* Universes Beyond sheet: grayed franchise chips until the hide toggle is on,
    and short explanatory notes under the title and section label. */
 .pref-row:disabled {
     opacity: 0.45;

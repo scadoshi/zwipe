@@ -1,6 +1,6 @@
 //! In-memory card grouping for local `Vec<Card>` slices.
 //!
-//! Partitions a `Vec<Card>` into labelled groups based on card type, mana value,
+//! Partitions a `Vec<Card>` into labeled groups based on card type, mana value,
 //! or color identity. Works alongside `filter_cards.rs`; the caller is expected
 //! to `filter_by` first (which handles sorting), then `group_by`.
 //!
@@ -50,7 +50,7 @@ impl std::fmt::Display for GroupByOption {
     }
 }
 
-/// A labelled group of cards.
+/// A labeled group of cards.
 #[derive(Debug, Clone)]
 pub struct CardGroup {
     /// Display label for this group (e.g., "creatures", "3", "blue").
@@ -86,7 +86,7 @@ impl CardGroup {
     }
 }
 
-/// Extension trait for grouping a `Vec<Card>` into labelled buckets.
+/// Extension trait for grouping a `Vec<Card>` into labeled buckets.
 pub trait GroupCards {
     /// Partitions cards into groups according to the given option.
     ///

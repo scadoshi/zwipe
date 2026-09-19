@@ -62,7 +62,7 @@ mana-font's `font-size: 0.55em !important` — plus a 0.5px `translateY`, and it
 across rebuilds.
 
 Secondary: the two-tone color comes from `--ms-split-top`/`--ms-split-bottom` (gradient
-background) + the glyph `color`; our fixed `color: #393835` tints both glyphs grey.
+background) + the glyph `color`; our fixed `color: #393835` tints both glyphs gray.
 
 ## Resolution — the fix targets absolute positioning, NOT glyph size
 
@@ -88,7 +88,7 @@ halves sit in the squircle. Start by proving the rule is live (set an obviously-
 confirm a half jumps), then dial in.
 
 **Two-tone color (separate, optional):** the split colors come from `--ms-split-top`/
-`--ms-split-bottom` (gradient bg) + glyph `color`; our `color: #393835` greys both glyphs. To
+`--ms-split-bottom` (gradient bg) + glyph `color`; our `color: #393835` grays both glyphs. To
 restore two-tone, stop overriding `color` on hybrids and let mana-font's vars drive it. Decide
 independently of alignment.
 

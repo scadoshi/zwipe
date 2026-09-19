@@ -40,7 +40,7 @@ forwarding). This guide consolidates all Cloudflare and domain configuration.
 | Type | Name | Purpose |
 |------|------|---------|
 | TXT | `resend._domainkey` | DKIM — Resend signs outgoing mail |
-| TXT | `@` (contains `v=spf1 include:amazonses.com`) | SPF — authorises Resend's servers |
+| TXT | `@` (contains `v=spf1 include:amazonses.com`) | SPF — authorizes Resend's servers |
 | TXT | `_dmarc` | DMARC — required by Gmail/Yahoo/Microsoft |
 
 DMARC record value: `v=DMARC1; p=none; rua=mailto:<support address>`

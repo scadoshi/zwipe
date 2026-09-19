@@ -48,7 +48,7 @@ pub(crate) fn EmailVerification(
     }
 }
 
-/// Verification-row actions: a resend button that greys out behind a 60s
+/// Verification-row actions: a resend button that grays out behind a 60s
 /// countdown after each send, and a refresh-icon button that re-fetches the
 /// user so the badge flips to Verified without leaving the screen.
 #[component]
@@ -73,7 +73,7 @@ pub(crate) fn VerificationActions() -> Element {
             onclick: move |evt: MouseEvent| {
                 evt.stop_propagation();
                 is_resending.set(true);
-                // Optimistic: grey out for the full window right away so
+                // Optimistic: gray out for the full window right away so
                 // rapid clicks can't race the request. Cleared below if
                 // the send genuinely failed.
                 cooldown.set(RESEND_COOLDOWN_SECS);

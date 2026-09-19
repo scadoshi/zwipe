@@ -487,7 +487,7 @@
     vertical-align: middle;
 }
 
-/* Roomier grey pill around the number, closer to a real card. Applied to the
+/* Roomier gray pill around the number, closer to a real card. Applied to the
    mana cost, the oracle-text symbols, and the compact-row color pips alike so
    the glyph stays centered in the pill everywhere. */
 .card-detail-cost .ms-cost,
@@ -530,7 +530,7 @@ i.ms.ms-cost {
     /* Outline + glyph in the pip's own mana color, 70% darker than mana-font's
        fill, as fixed hex so they stay recognizable across every theme (replaces
        the old theme border, which clashed with the fixed fill). Base is MTG's
-       colorless grey for {C}/generic numerals; the five colors override below. */
+       colorless gray for {C}/generic numerals; the five colors override below. */
     border: 1px solid #393835;
     color: #393835;
     padding: 0 1px;

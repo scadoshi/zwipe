@@ -2656,7 +2656,7 @@ footer {
 /* Dead-end alert title on the not-shared screen: red, centered, pulsing. */
 /* Dead-end pages (404, unshared deck) are the shared Panel: the card, its
    rule, and the body come from the component, so only the narrow width and
-   the alert voice live here — title red, uppercase, centred and pulsing
+   the alert voice live here — title red, uppercase, centered and pulsing
    rather than the usual left-aligned accent heading. */
 .dead-end {
     max-width: 25rem;

@@ -42,7 +42,7 @@ impl ButtonVariant {
 /// A push button.
 ///
 /// `variant` picks the style, `danger` applies the destructive treatment,
-/// `disabled` greys it out. `class` appends extra classes (e.g. an animation
+/// `disabled` grays it out. `class` appends extra classes (e.g. an animation
 /// or a one-off layout modifier) and `style` covers the rare inline-styled
 /// site. Both keep the handful of special call sites migratable without a new
 /// prop each.

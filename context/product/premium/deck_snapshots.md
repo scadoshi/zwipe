@@ -1,7 +1,7 @@
 # Deck snapshots / version history
 
 **Tier: DECIDED 2026-06-10 — premium.** Cheap storage, high attachment value —
-the kind of quiet feature that makes cancelling feel like losing something.
+the kind of quiet feature that makes canceling feel like losing something.
 
 ## Concept
 

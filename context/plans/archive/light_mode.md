@@ -25,7 +25,7 @@ levers make that safe:
 ### 1. Grid-panel "sink" darkening — DONE (brighter)
 The scroll area (`.screen-content`) and one other panel fill with
 `--bg-sink`, defined in `.app-shell` as `color-mix(bg-primary, #000 15%)`. On a
-cream palette that 15% black reads as a dirty grey-cream panel. Fixed for light
+cream palette that 15% black reads as a dirty gray-cream panel. Fixed for light
 themes only by lightening the sink toward white so the content sits a touch
 brighter than the chrome (fresh paper feel) instead of dirtier:
 ```css
