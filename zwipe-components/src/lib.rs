@@ -11,7 +11,7 @@
 //! `document::Style`.
 //!
 //! **CSS cascade order matters:** load themes first, then components, then the
-//! site's own stylesheet — `THEMES_CSS` → `COMPONENTS_CSS` → site CSS — so
+//! site's own stylesheet (`THEMES_CSS`, then `COMPONENTS_CSS`, then site CSS) so
 //! component rules resolve theme variables and site rules can override
 //! component defaults at equal specificity.
 //!

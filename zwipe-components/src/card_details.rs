@@ -4,7 +4,7 @@
 //!
 //! One engine for every surface so they never drift: the expanded [`CardRow`],
 //! zite's shared-deck row (via `CardRow`), and zwiper's swipe eyeball dialog all
-//! render this. Only the action bar differs - the component owns the always-on
+//! render this. Only the action bar differs: the component owns the always-on
 //! actions (Flip for multi-faced cards, Image when art + a handler are present)
 //! and appends whatever the host passes via `actions`.
 //!
@@ -173,7 +173,6 @@ pub fn CardDetails(
     let mut face_idx = face.unwrap_or(internal_face);
     let cur = face_idx().min(face_count.saturating_sub(1));
     let current_face = faces.as_ref().and_then(|f| f.get(cur)).cloned();
-    // Head cost tracks the shown face.
     let cost = current_face
         .as_ref()
         .map(|f| f.mana_cost.clone())

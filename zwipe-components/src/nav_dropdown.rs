@@ -3,7 +3,7 @@
 //! the menu doesn't close while the cursor travels from trigger to menu.
 //!
 //! The host owns the `open` signal (so item `onclick`s can close the menu
-//! after acting) and the menu contents — typically `.nav-dropdown-item`
+//! after acting) and the menu contents, typically `.nav-dropdown-item`
 //! buttons/links, optionally grouped under `.nav-dropdown-label` subtitles.
 //! [`ThemePicker`] is built on this; a site nav can use it for its own menus
 //! (e.g. a Projects dropdown).

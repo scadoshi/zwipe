@@ -3,9 +3,9 @@
 //!
 //! Pure div-bar charts (no canvas, no JS) styled against the theme variables,
 //! fed the chart-ready tuples `DeckMetrics` produces (`mana_curve_bars`,
-//! `type_bars`, `color_bars`, `card_role_bars`). Moved here from zwiper's
-//! `deck_charts` so both surfaces render the same picture; the app-only
-//! interactive pieces (draw odds, mana fulfillment) stayed behind.
+//! `type_bars`, `color_bars`, `card_role_bars`). Shared so both surfaces render
+//! the same picture; the interactive pieces (draw odds, mana fulfillment) are
+//! used by the app only.
 
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::{deck_metrics::ManaBalanceRow, draw_odds::p_at_least_one};
@@ -29,7 +29,6 @@ pub fn DeckCharts(
     color_bars: Option<Vec<(&'static str, usize, u32)>>,
 ) -> Element {
     rsx! {
-        // ── types ──────────────────────────────────────
         if let Some(type_bars) = type_bars.as_ref() {
             div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
                 ChartLabel { text: "Type distribution" }
@@ -51,7 +50,6 @@ pub fn DeckCharts(
             }
         }
 
-        // ── categories (horizontal bars) ─────────────
         if let Some(cat_bars) = category_bars.as_ref() {
             if !cat_bars.is_empty() {
                 div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
@@ -77,7 +75,6 @@ pub fn DeckCharts(
             }
         }
 
-        // ── colors ─────────────────────────────────────
         if let Some(color_bars) = color_bars.as_ref() {
             div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
                 ChartLabel { text: "Color distribution" }
@@ -127,7 +124,7 @@ pub fn ManaCurve(mana_curve_bars: [(usize, u32); 7]) -> Element {
     }
 }
 
-/// Draw odds — `P(>=1)` per category as horizontal bars, with ‹ › to step the
+/// Draw odds: `P(>=1)` per category as horizontal bars, with ‹ › to step the
 /// draw window from the opening hand through later turns. On the draw:
 /// `draws = 7 + turn` (opening hand = turn 0). `buckets` is `(label, count K)`;
 /// probabilities recompute live for the selected turn from the deck's engine.
@@ -171,7 +168,7 @@ pub fn DrawOdds(deck_size: u32, buckets: Vec<(&'static str, u32)>) -> Element {
             }
             for (label, pct) in rows {
                 // Key includes pct so a changed row remounts (fresh DOM) instead
-                // of an in-place style update — the WebView drops the latter and
+                // of an in-place style update; the WebView drops the latter and
                 // leaves the bar unfilled on alternating turns otherwise.
                 div {
                     key: "{label}-{pct}",

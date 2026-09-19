@@ -2,7 +2,7 @@
 //! collapses behind a hamburger toggle below the 60rem breakpoint.
 //!
 //! The shell owns the structure (wrapper, toggle, collapsing panel) and its
-//! CSS; the host owns the content via slots — its brand link, its `li` link
+//! CSS; the host owns the content via slots: its brand link, its `li` link
 //! items, and an optional trailing panel item (typically [`ThemePicker`]).
 //! The host also owns the `open` signal so link `onclick`s can close the
 //! panel after navigating.

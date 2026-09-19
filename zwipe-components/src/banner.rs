@@ -5,7 +5,7 @@
 //! either the countdown finishing or the user pressing close it fades and
 //! collapses out of the stack. Consumers wrap one or more in a
 //! `div.banner-stack` (the fixed-position column is a site layout concern) and
-//! pass the message plus their own call-to-action link as `children` — the link
+//! pass the message plus their own call-to-action link as `children`; the link
 //! can't live here because internal routing is app-specific. Styling lives in
 //! `assets/components.css`.
 

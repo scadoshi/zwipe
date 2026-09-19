@@ -2,8 +2,7 @@
 //! (color-blind themes grouped in their own bottom section) plus a dark/light
 //! mode toggle.
 //!
-//! Authored in zite and lifted here (the canonical copy per the
-//! portfolio-adoption ruling); the host passes its `Signal<ThemeConfig>` in,
+//! This is the canonical copy for every site; the host passes its `Signal<ThemeConfig>` in,
 //! so how the theme is provided (context, prop drilling) and applied (body
 //! class, wrapper div) stays the host's business.
 

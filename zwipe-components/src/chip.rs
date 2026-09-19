@@ -13,7 +13,7 @@ use dioxus::prelude::*;
 pub fn Chip(
     selected: bool,
     onclick: EventHandler<MouseEvent>,
-    /// Grayed out and inert — for a toggle whose target is currently empty
+    /// Grayed out and inert, for a toggle whose target is currently empty
     /// or otherwise inapplicable. Off by default.
     #[props(default)]
     disabled: bool,

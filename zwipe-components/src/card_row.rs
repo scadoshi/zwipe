@@ -5,7 +5,7 @@
 //! One component for every surface: the app passes edit callbacks (quantity,
 //! printing, star, move-to-board); a read-only page like zite's shared deck
 //! passes only what it supports (e.g. `on_image`) and hover callbacks for its
-//! desktop preview. Every action is an `Option` — `None` simply omits the
+//! desktop preview. Every action is an `Option`; `None` simply omits the
 //! control.
 
 use dioxus::prelude::*;
@@ -51,7 +51,7 @@ pub fn CardRow(
     /// setting. Defaults to USD.
     #[props(default)]
     price_currency: PriceCurrency,
-    /// Opt-in: render the card's classification beside the keywords - the coarse
+    /// Opt-in: render the card's classification beside the keywords: the coarse
     /// roles it fulfills, each drilling down to its grouped oracle tags, plus an
     /// "Other tags" bucket. Off by default so read-only/embed hosts (e.g. the
     /// portfolio) are unaffected.
@@ -68,7 +68,7 @@ pub fn CardRow(
     /// Opt-in: an art-crop thumbnail at the far left of the compact row
     /// (lazy-loaded; rows without an art crop render as before). `None`
     /// (default) renders no art DOM at all, so existing hosts are unaffected;
-    /// `Some(visible)` keeps the thumb mounted and eases it in/out — a host
+    /// `Some(visible)` keeps the thumb mounted and eases it in/out, so a host
     /// toggle animates instead of clipping.
     #[props(default)]
     show_art: Option<bool>,
@@ -154,8 +154,8 @@ pub fn CardRow(
                 span { class: "card-row-qty", "{qty}" }
                 span { class: "card-row-name",
                     // MVP star: indicator only, rendered solely on starred
-                    // rows (an outline star on every row is 97% noise) —
-                    // toggling lives on the expanded view's Star button.
+                    // rows (an outline star on every row is 97% noise).
+                    // Toggling lives on the expanded view's Star button.
                     if mvp == Some(true) {
                         span { class: "card-row-mvp", "★" }
                     }

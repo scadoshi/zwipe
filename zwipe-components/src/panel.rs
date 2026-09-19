@@ -2,7 +2,7 @@
 //!
 //! The canonical Zwipe card/dialog shape: an optional header (eyebrow + title +
 //! status pill), a rule, the body, and an optional actions row under a second
-//! rule — `header <hr> body <hr> actions`. Used for content cards on the site,
+//! rule: `header <hr> body <hr> actions`. Used for content cards on the site,
 //! in the app, and on the portfolio so they all read as one system. `eyebrow`,
 //! `title`, `status`, and `actions` are all optional; a rule is only drawn where
 //! the adjacent section exists. Styling is in `assets/components.css`.
@@ -13,7 +13,7 @@ use dioxus::prelude::*;
 /// A content panel: `header <hr> body <hr> actions`.
 ///
 /// The body is `children`; the footer button row is the `actions` slot (each
-/// consumer supplies its own links/buttons — internal routing is app-specific).
+/// consumer supplies its own links/buttons, since internal routing is app-specific).
 /// Give action links/buttons the `panel-action` class for the shared pill look.
 #[component]
 pub fn Panel(
@@ -24,7 +24,7 @@ pub fn Panel(
     #[props(default)]
     title: Option<String>,
     /// Render the title as an `h1` instead of the default `h3`. For page heroes,
-    /// where the panel's title IS the document's heading — a page whose only
+    /// where the panel's title IS the document's heading. A page whose only
     /// heading is an `h3` reads as a fragment to crawlers and screen readers.
     /// Cards and in-page panels leave this off.
     #[props(default = false)]

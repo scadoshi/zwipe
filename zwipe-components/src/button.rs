@@ -1,7 +1,7 @@
 //! Shared button component.
 //!
-//! The single source for the app's push buttons — the full-width form/dialog
-//! `.btn`, the compact bar `.util-btn`, and the small `.btn-xs` — so every
+//! The single source for the app's push buttons (the full-width form/dialog
+//! `.btn`, the compact bar `.util-btn`, and the small `.btn-xs`) so every
 //! button looks and behaves the same across `zwiper` and `zite`. Styling lives
 //! in `assets/components.css` (copied into each app's bundle at build time).
 
@@ -44,7 +44,7 @@ impl ButtonVariant {
 /// `variant` picks the style, `danger` applies the destructive treatment,
 /// `disabled` greys it out. `class` appends extra classes (e.g. an animation
 /// or a one-off layout modifier) and `style` covers the rare inline-styled
-/// site — both keep the handful of special call sites migratable without a new
+/// site. Both keep the handful of special call sites migratable without a new
 /// prop each.
 #[component]
 pub fn Button(

@@ -24,7 +24,7 @@ fn seen_urls() -> &'static Mutex<HashSet<String>> {
 }
 
 /// Forgets all seen URLs so every image's next render eases in again. Called
-/// on deliberate stack refreshes - the fade doubles as feedback that fresh
+/// on deliberate stack refreshes, where the fade doubles as feedback that fresh
 /// results arrived.
 pub fn reset_image_ease() {
     if let Ok(mut seen) = seen_urls().lock() {
@@ -34,7 +34,7 @@ pub fn reset_image_ease() {
 
 /// Renders a card image with a flip-icon overlay for cards that have multiple faces.
 ///
-/// Owns the `face_idx` state internally (seeded from `initial_face`) - when a
+/// Owns the `face_idx` state internally (seeded from `initial_face`). When a
 /// parent re-renders this component with a different `sd`, Dioxus destroys and
 /// recreates it and the face resets to `initial_face`.
 ///
@@ -132,8 +132,8 @@ pub fn FlippableCardImage(
     rsx! {
         div { class: "flippable-card-wrapper{flippable_class} {class}",
             // Inner box shrink-wraps the image so the flip button anchors to the
-            // image's own top-right corner, not the letterboxed wrapper - no layout
-            // shift between DFC and single-faced cards.
+            // image's own top-right corner, not the letterboxed wrapper, so there is
+            // no layout shift between DFC and single-faced cards.
             div { class: "flip-face",
                 if let Some(url) = image_url {
                     img {
