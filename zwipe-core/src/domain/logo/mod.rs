@@ -9,6 +9,7 @@
 //! - **ZERVER**: Backend server logo
 //! - **ZERVICE**: Background service logo
 //! - **ZWIPER**: Frontend application logo
+//! - **ZYNERGY**: Synergy cache worker logo
 //!
 //! # Usage
 //!
@@ -102,5 +103,24 @@ impl Zwiper {
     /// Prints the ZWIPER ASCII art logo to stdout.
     pub fn print() {
         println!("{ZWIPER}");
+    }
+}
+
+/// ASCII art logo for ZYNERGY (synergy cache worker).
+pub const ZYNERGY: &str = include_str!("zynergy.txt");
+
+/// ZYNERGY logo printer.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// Zynergy::print(); // Prints logo to stdout
+/// ```
+pub struct Zynergy;
+
+impl Zynergy {
+    /// Prints the ZYNERGY ASCII art logo to stdout.
+    pub fn print() {
+        println!("{ZYNERGY}");
     }
 }
