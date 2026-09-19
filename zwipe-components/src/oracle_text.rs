@@ -5,13 +5,13 @@ use dioxus::prelude::*;
 
 /// A parsed slice of oracle text.
 enum Segment {
-    /// Literal text.
+    /// Literal text (newlines preserved by the container's `white-space`).
     Text(String),
-    /// A Mana-font class suffix: `u`, `tap`, `wu`, `2w`.
+    /// A Mana-font class suffix, e.g. `u`, `tap`, `e`, `wu`, `2w`.
     Symbol(String),
 }
 
-/// Splits oracle text into literal runs and `{...}` symbols.
+/// Splits oracle text into literal runs and `{...}` symbol tokens.
 fn parse(text: &str) -> Vec<Segment> {
     let mut out = Vec::new();
     let mut buf = String::new();
@@ -26,6 +26,7 @@ fn parse(text: &str) -> Vec<Segment> {
             out.push(Segment::Symbol(symbol_class(&after[..close])));
             rest = &after[close + 1..];
         } else {
+            // Unterminated brace: keep the remainder as literal text.
             buf.push_str(&rest[open..]);
             rest = "";
         }
@@ -37,8 +38,8 @@ fn parse(text: &str) -> Vec<Segment> {
     out
 }
 
-/// Scryfall symbol body to Mana-font class suffix: lowercase, slashes dropped
-/// (`W/U` -> `wu`), tap and untap special-cased.
+/// Maps a Scryfall symbol body (no braces) to a Mana-font class suffix:
+/// lowercase, slashes dropped (`W/U` -> `wu`), with the tap/untap specials.
 fn symbol_class(sym: &str) -> String {
     let s = sym.to_ascii_lowercase().replace('/', "");
     match s.as_str() {
@@ -48,10 +49,11 @@ fn symbol_class(sym: &str) -> String {
     }
 }
 
-/// Oracle text with symbols rendered as glyphs.
+/// Oracle text with mana/tap/energy/etc. symbols rendered as glyphs.
 #[component]
 pub fn OracleText(text: String, class: String) -> Element {
-    // Scryfall's single newline between abilities reads cramped.
+    // Scryfall separates abilities with a single newline, which reads cramped.
+    // Double them so each ability gets a blank line between it and the next.
     let text = text.replace('\n', "\n\n");
     rsx! {
         p { class: "{class}",

@@ -1,16 +1,23 @@
-//! A [`NavDropdown`] of every allowed theme plus a dark/light toggle. The host
-//! passes its `Signal<ThemeConfig>` in; how the theme is provided and applied
-//! stays the host's business.
+//! Site-style theme picker: a [`NavDropdown`] of every allowed theme
+//! (color-blind themes grouped in their own bottom section) plus a dark/light
+//! mode toggle.
+//!
+//! Authored in zite and lifted here (the canonical copy per the
+//! portfolio-adoption ruling); the host passes its `Signal<ThemeConfig>` in,
+//! so how the theme is provided (context, prop drilling) and applied (body
+//! class, wrapper div) stays the host's business.
 
 use dioxus::prelude::*;
 use zwipe_core::domain::user::{models::theme::ThemeConfig, preferences::ALLOWED_THEMES};
 
 use crate::NavDropdown;
 
-/// Themes grouped in their own bottom section, matching zwiper's preferences sheet.
+/// Themes shown in their own bottom section of the picker. Mirrors the app's
+/// preferences sheet (zwiper) so every surface groups these identically.
 const COLORBLIND_THEMES: &[&str] = &["protanopia", "deuteranopia", "tritanopia", "achromatopsia"];
 
-/// Title-cased label for a theme slug, with brand casings special-cased.
+/// Human-readable label for a theme slug: title-cased words, with the accents
+/// and brand casings that title-casing can't produce special-cased.
 fn display_theme_name(slug: &str) -> String {
     match slug {
         "rose-pine" => return "Rosé Pine".to_string(),
@@ -41,6 +48,8 @@ pub fn ThemePicker(theme: Signal<ThemeConfig>) -> Element {
     let mut open = use_signal(|| false);
     let current = theme.read().name.clone();
     let is_dark = theme.read().is_dark;
+    // ALLOWED_THEMES is already alphabetical; filtering preserves that order
+    // for the main group and pulls the color-blind themes into a bottom section.
     let regular_themes = ALLOWED_THEMES
         .iter()
         .copied()

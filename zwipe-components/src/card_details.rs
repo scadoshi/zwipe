@@ -1,11 +1,12 @@
-//! Shared card-detail body: head, type/rarity, oracle text, stats, then the
-//! whole-card keywords and card roles, with a Flip control for multi-faced
-//! cards and a bottom action bar.
+//! Shared card-detail body: the reordered rules panel (head, type/rarity, oracle
+//! text, stats, then whole-card keywords + card roles) with elegant MDFC handling
+//! and an owned Flip control, plus a bottom action bar.
 //!
-//! The expanded [`CardRow`], zite's shared-deck row, and zwiper's swipe eyeball
-//! dialog all render this so they never drift. Only the action bar differs: the
-//! component owns Flip (multi-faced cards) and Image (art plus a handler), and
-//! appends whatever the host passes via `actions`.
+//! One engine for every surface so they never drift: the expanded [`CardRow`],
+//! zite's shared-deck row (via `CardRow`), and zwiper's swipe eyeball dialog all
+//! render this. Only the action bar differs - the component owns the always-on
+//! actions (Flip for multi-faced cards, Image when art + a handler are present)
+//! and appends whatever the host passes via `actions`.
 //!
 //! [`CardRow`]: crate::CardRow
 
@@ -14,7 +15,8 @@ use zwipe_core::domain::card::{Card, scryfall_data::ImageSize};
 
 use crate::{CardRoleChips, KeywordChips, OracleText};
 
-/// One face's rules text. Multi-faced cards yield one per face.
+/// One card face's rules text, extracted for display. Single-faced cards yield
+/// one of these; multi-faced cards (DFCs, split, etc.) yield one per face.
 #[derive(Clone)]
 struct FaceRules {
     type_line: String,
@@ -23,7 +25,8 @@ struct FaceRules {
     oracle: String,
 }
 
-/// Power/toughness, loyalty, or defense, whichever applies first.
+/// Format the power/toughness, loyalty, or defense line for a face. Returns the
+/// first that applies; `None` if the face has none (e.g. an instant).
 fn stats_line(
     power: &Option<String>,
     toughness: &Option<String>,
@@ -39,9 +42,10 @@ fn stats_line(
     }
 }
 
-/// Rules text per face, for printings whose image is text-light (Secret Lair,
-/// full-art, foreign-language). Uses per-face text when the top level has none;
-/// `None` when there is nothing worth showing.
+/// Pull the oracle text and stats off a card so it can be shown in-app when the
+/// printing's image is text-light (Secret Lair, full-art, foreign-language).
+/// Prefers a multi-faced card's per-face text when the top level has none.
+/// Returns `None` when there's nothing worth showing.
 fn build_rules(card: &Card) -> Option<Vec<FaceRules>> {
     let sd = &card.scryfall_data;
 
@@ -76,49 +80,64 @@ fn build_rules(card: &Card) -> Option<Vec<FaceRules>> {
     }])
 }
 
-/// Number of rules faces [`CardDetails`] renders for a card: 0 when there is
-/// nothing to show, >1 for DFC/split cards. Hosts placing their own Flip
-/// control use this to decide whether to render it.
+/// Number of rules faces a card renders as in [`CardDetails`]: 1 for a normal
+/// card, >1 for DFC/split cards (shown one at a time behind Flip), 0 when there's
+/// nothing to show. Hosts that place their own Flip control outside the component
+/// (e.g. an eyeball dialog putting it in a footer bar) use this to decide whether
+/// to render it.
 pub fn card_face_count(card: &Card) -> usize {
     build_rules(card).map(|f| f.len()).unwrap_or(0)
 }
 
-/// The shared card-detail body and action bar. Multi-faced cards show one face
-/// at a time behind Flip so a long two-face card never overflows a
-/// non-scrolling host.
+/// The shared card-detail body + action bar.
+///
+/// Renders the current face's type line, oracle text, and stats (reordered so the
+/// text reads before the numbers), then the whole-card keyword and card-role
+/// clusters. Multi-faced cards show one face at a time behind a Flip control whose
+/// `face` state this component owns, so a long two-face card never overflows a
+/// non-scrolling host. The action bar carries Flip (multi-faced only) and Image
+/// (when art + `on_image` are present), then the host's own `actions`.
 #[component]
 pub fn CardDetails(
     card: Card,
-    /// Show the card name in the head. Off for hosts that show it elsewhere.
+    /// Show the card name in the detail head. Off for hosts that show the name
+    /// elsewhere (the eyeball dialog's title).
     #[props(default = true)]
     show_name: bool,
-    /// Show the mana cost in the head. Off for hosts that show it elsewhere.
+    /// Show the mana cost in the detail head. Off for hosts that show it elsewhere
+    /// (the eyeball dialog pins it in the title).
     #[props(default = true)]
     show_cost: bool,
-    /// Render card roles and their oracle tags below the keywords.
+    /// Render the card-role classification (roles + grouped oracle tags) below the
+    /// keywords. Off by default so read-only embeds (e.g. the portfolio) opt in.
     #[props(default)]
     show_classification: bool,
-    /// Renders an Image button when the card has art; what "view image" means
-    /// is the host's business.
+    /// Image action: renders a default bar button when the card has art and a
+    /// handler is supplied; what "view image" means is the host's business.
     on_image: Option<EventHandler<()>>,
-    /// Fires with the new face index on flip, so a host can mirror the shown
-    /// side elsewhere.
+    /// Fires with the new face index whenever the card is flipped, so a host can
+    /// mirror the shown side elsewhere (e.g. zite's image preview + hover stack).
     on_face_change: Option<EventHandler<usize>>,
-    /// Host-owned face index, for hosts that drive Flip from their own chrome.
-    /// Pair with `show_flip: false`.
+    /// Controlled shown-face index. When `Some`, the host owns the face state so
+    /// it can drive Flip from its own chrome (e.g. a dialog footer); when `None`,
+    /// this component owns it internally. Pair with `show_flip: false`.
     #[props(default)]
     face: Option<Signal<usize>>,
-    /// Render the built-in Flip control for multi-faced cards.
+    /// Render the built-in Flip control in the action bar for multi-faced cards.
+    /// Off for hosts that place Flip elsewhere (and pass `face` to drive it).
     #[props(default = true)]
     show_flip: bool,
-    /// Whether `actions` carries any buttons; the slot can't be introspected.
+    /// Whether `actions` carries any buttons, so the bar renders to hold them.
+    /// (The slot itself can't be introspected.)
     #[props(default)]
     has_actions: bool,
-    /// Host buttons appended to the action bar. Use `card-action-btn` and
-    /// `card-action-row` so they match the defaults.
+    /// Host buttons appended to the action bar (qty stepper, printing, star,
+    /// move-to). Build them with the shared `card-action-btn`/`card-action-row`
+    /// styling so they match the defaults.
     #[props(default)]
     actions: Option<Element>,
-    /// Resolve an oracle tag's description. Forwarded to [`CardRoleChips`].
+    /// Resolve an oracle tag's description, making exposed tags tappable-to-reveal
+    /// in the card-role cluster. Forwarded to [`CardRoleChips`]; see there.
     #[props(default)]
     describe_tag: Option<Callback<String, Option<String>>>,
     /// Open the example-cards browse for a tag slug. Forwarded to [`CardRoleChips`].
@@ -132,6 +151,8 @@ pub fn CardDetails(
     let keywords = sd.keywords.clone().unwrap_or_default();
     let has_image = sd.primary_image_url(ImageSize::Large).is_some();
 
+    // Card roles (with their grouped oracle tags) render below the keywords, but
+    // only when the host opts in via `show_classification`.
     let (roles, tags_by_role, other_tags) = if show_classification {
         (
             card.card_profile.card_roles.clone(),
@@ -143,13 +164,16 @@ pub fn CardDetails(
     };
 
     let faces = build_rules(&card);
+    // Multi-faced cards (DFCs) show one face at a time with a Flip control, so a
+    // long two-face card can't overflow a non-scrolling host.
     let face_count = faces.as_ref().map(|f| f.len()).unwrap_or(0);
-    // The internal signal is created even when the host passes `face`, so the
-    // hook call order stays stable across renders.
+    // Host-controlled face state when `face` is passed, else an internal signal
+    // (the hook always runs so the call order stays stable across renders).
     let internal_face = use_signal(|| 0usize);
     let mut face_idx = face.unwrap_or(internal_face);
     let cur = face_idx().min(face_count.saturating_sub(1));
     let current_face = faces.as_ref().and_then(|f| f.get(cur)).cloned();
+    // Head cost tracks the shown face.
     let cost = current_face
         .as_ref()
         .map(|f| f.mana_cost.clone())
@@ -189,6 +213,8 @@ pub fn CardDetails(
                     }
                 }
             }
+            // Analysis cluster below the face: all keywords and (opt-in) all card
+            // roles for the whole card, shown once.
             if !keywords.is_empty() {
                 KeywordChips { keywords }
             }

@@ -1,7 +1,12 @@
-//! Expandable card row: a compact line (qty, name, price, color pips) that
-//! eases open to [`CardDetails`] plus an action row. Every action is an
-//! `Option`; `None` omits the control, so read-only hosts pass only what they
-//! support.
+//! Expandable card row: a compact grid line (qty, name, price, color pips)
+//! that eases open to the card's full detail (cost, type, rarity, keywords,
+//! oracle text, stats) plus an optional action row.
+//!
+//! One component for every surface: the app passes edit callbacks (quantity,
+//! printing, star, move-to-board); a read-only page like zite's shared deck
+//! passes only what it supports (e.g. `on_image`) and hover callbacks for its
+//! desktop preview. Every action is an `Option` — `None` simply omits the
+//! control.
 
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -12,45 +17,58 @@ use zwipe_core::domain::{
 
 use crate::CardDetails;
 
-/// Expandable card row with an optional action bar.
+/// Expandable card row with compact view and optional actions.
 #[component]
 pub fn CardRow(
     card: Card,
     qty: i32,
     mut expanded_card: Signal<Option<Uuid>>,
-    /// Renders an Image button when the card has art; what "view image" means
-    /// is the host's business.
+    /// Image action: the button renders when the card has art and a handler is
+    /// provided; what "view image" means (fullscreen preview, overlay) is the
+    /// host's business.
     on_image: Option<EventHandler<()>>,
-    /// Fires with the new face index when the expanded detail is flipped.
+    /// Fires with the new face index when the expanded detail is flipped, so a
+    /// host can mirror the shown side (e.g. zite's hover preview + image overlay).
     on_face_change: Option<EventHandler<usize>>,
     on_qty_change: Option<EventHandler<i32>>,
     on_move_to: Option<EventHandler<Board>>,
     current_board: Option<Board>,
     on_printing: Option<EventHandler<Card>>,
-    /// `Some(true)` filled star, `Some(false)` outline, `None` no star.
+    /// MVP star state: `Some(true)` filled, `Some(false)` outline, `None` = no
+    /// star rendered (non-mainboard rows, tokens, command zone).
     mvp: Option<bool>,
-    /// Host buttons appended to the expanded action bar. They must be
-    /// `card-action-btn`s that stop propagation themselves.
+    /// Host-specific buttons appended to the expanded action bar (e.g. the
+    /// commander maybeboard's Create deck / Remove pair). The host supplies
+    /// `card-action-btn` buttons that stop propagation themselves.
     #[props(default)]
     extra_actions: Option<Element>,
     on_toggle_mvp: Option<EventHandler<()>>,
-    /// Desktop hover previews. Never fire on touch devices.
+    /// Cursor enters/leaves the compact row (desktop hover previews). Never
+    /// fires on touch devices (no mouseenter), so touch hosts can omit them.
     on_hover_enter: Option<EventHandler<()>>,
     on_hover_leave: Option<EventHandler<()>>,
-    /// Currency for the compact-row price. Defaults to USD.
+    /// Currency for the compact-row price, from the deck's price-target
+    /// setting. Defaults to USD.
     #[props(default)]
     price_currency: PriceCurrency,
-    /// Render card roles and their oracle tags beside the keywords.
+    /// Opt-in: render the card's classification beside the keywords - the coarse
+    /// roles it fulfills, each drilling down to its grouped oracle tags, plus an
+    /// "Other tags" bucket. Off by default so read-only/embed hosts (e.g. the
+    /// portfolio) are unaffected.
     #[props(default)]
     show_classification: bool,
-    /// Resolve an oracle tag's description. Forwarded to [`CardDetails`].
+    /// Resolve an oracle tag's description, making exposed tags tappable-to-reveal
+    /// their definition. Forwarded to `CardDetails` → `CardRoleChips`.
     #[props(default)]
     describe_tag: Option<Callback<String, Option<String>>>,
-    /// Open the example-cards browse for a tag slug. Forwarded to [`CardDetails`].
+    /// Open the example-cards browse for a tag slug. Forwarded to `CardDetails` →
+    /// `CardRoleChips`; shows an "Examples" button on an expanded tag.
     #[props(default)]
     on_examples: Option<Callback<String>>,
-    /// Art-crop thumbnail at the far left. `None` renders no art DOM;
-    /// `Some(visible)` keeps it mounted and eases it in and out, so a host
+    /// Opt-in: an art-crop thumbnail at the far left of the compact row
+    /// (lazy-loaded; rows without an art crop render as before). `None`
+    /// (default) renders no art DOM at all, so existing hosts are unaffected;
+    /// `Some(visible)` keeps the thumb mounted and eases it in/out — a host
     /// toggle animates instead of clipping.
     #[props(default)]
     show_art: Option<bool>,
@@ -69,12 +87,15 @@ pub fn CardRow(
     } else {
         "card-row-art art-hidden"
     };
+    // Compact-row price in the deck's chosen currency (nonfoil→foil fallback);
+    // `None` (no price in that currency) omits the tag entirely.
     let price_display = card_price(sd, price_currency).map(|p| price_currency.format_amount(p));
     let pt_display = match (&sd.power, &sd.toughness) {
         (Some(p), Some(t)) => format!("{p}/{t}"),
         _ => String::new(),
     };
-    // Color identity is unordered; Color's Ord is WUBRG order.
+    // Color identity is an unordered set; sort to canonical WUBRG order
+    // (Color's Ord follows its WUBRG variant declaration).
     let mut colors = sd.color_identity.iter().copied().collect::<Vec<_>>();
     colors.sort();
     let color_codes = colors
@@ -82,14 +103,15 @@ pub fn CardRow(
         .map(|c| c.to_short_name().to_lowercase())
         .collect::<Vec<_>>();
     let loyalty_display = sd.loyalty.clone().unwrap_or_default();
-    // Image is a `CardDetails` default, so it doesn't count here.
+    // The `actions` slot the shared detail hangs its bar on: qty stepper,
+    // printing, star, move-to. Image is a `CardDetails` default, not part of it.
     let has_slot_actions = on_qty_change.is_some()
         || on_printing.is_some()
         || (mvp.is_some() && on_toggle_mvp.is_some())
         || on_move_to.is_some()
         || extra_actions.is_some();
-    // Always mounted; `.open` drives a CSS collapse so the detail eases rather
-    // than pops.
+    // Always mounted; the `.open` class drives the grid-rows + opacity collapse
+    // so the detail eases open and closed instead of popping.
     let collapse_class = if is_expanded {
         "card-row-collapse open"
     } else {
@@ -131,12 +153,16 @@ pub fn CardRow(
                 span { class: "card-row-arrow", "▸" }
                 span { class: "card-row-qty", "{qty}" }
                 span { class: "card-row-name",
-                    // Indicator only; toggling lives on the expanded view's Star button.
+                    // MVP star: indicator only, rendered solely on starred
+                    // rows (an outline star on every row is 97% noise) —
+                    // toggling lives on the expanded view's Star button.
                     if mvp == Some(true) {
                         span { class: "card-row-mvp", "★" }
                     }
                     "{name}"
                 }
+                // Card-stat tag: P/T (always slashed, e.g. 4/5) for creatures,
+                // else a bare loyalty number for planeswalkers.
                 if !pt_display.is_empty() {
                     span { class: "card-row-stat", "{pt_display}" }
                 } else if !loyalty_display.is_empty() {

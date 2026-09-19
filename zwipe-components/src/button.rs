@@ -1,5 +1,9 @@
-//! Push buttons: the full-width `.btn`, the compact bar `.util-btn`, and the
-//! small `.btn-xs`.
+//! Shared button component.
+//!
+//! The single source for the app's push buttons — the full-width form/dialog
+//! `.btn`, the compact bar `.util-btn`, and the small `.btn-xs` — so every
+//! button looks and behaves the same across `zwiper` and `zite`. Styling lives
+//! in `assets/components.css` (copied into each app's bundle at build time).
 
 use dioxus::prelude::*;
 
@@ -25,17 +29,23 @@ impl ButtonVariant {
         }
     }
 
-    /// Modifier class for destructive actions.
+    /// Danger modifier class for the variant (destructive actions).
     fn danger_class(self) -> &'static str {
         match self {
             ButtonVariant::Util => "util-btn-danger",
+            // `.btn` and `.btn-xs` share the same danger treatment.
             ButtonVariant::Primary | ButtonVariant::Small => "btn-danger",
         }
     }
 }
 
-/// A push button. `class` appends extra classes; `style` is for the rare
-/// inline-styled call site.
+/// A push button.
+///
+/// `variant` picks the style, `danger` applies the destructive treatment,
+/// `disabled` greys it out. `class` appends extra classes (e.g. an animation
+/// or a one-off layout modifier) and `style` covers the rare inline-styled
+/// site — both keep the handful of special call sites migratable without a new
+/// prop each.
 #[component]
 pub fn Button(
     #[props(default)] variant: ButtonVariant,
