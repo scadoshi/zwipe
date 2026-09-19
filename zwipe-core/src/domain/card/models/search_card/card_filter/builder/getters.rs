@@ -15,9 +15,7 @@ use crate::domain::{
 };
 
 impl CardQueryBuilder {
-    // =================================
-    // Text Filter Getters
-    // =================================
+    // == Text Filter Getters ==
 
     /// Returns the name filter value.
     pub fn name_contains(&self) -> Option<&str> {
@@ -39,9 +37,7 @@ impl CardQueryBuilder {
         self.oracle_text_contains_all.as_deref()
     }
 
-    // =================================
-    // Keywords Filter Getters
-    // =================================
+    // == Keywords Filter Getters ==
 
     /// Returns the keywords_contains_any filter value.
     pub fn keywords_contains_any(&self) -> Option<&[String]> {
@@ -63,9 +59,7 @@ impl CardQueryBuilder {
         self.has_flavor_text
     }
 
-    // =================================
-    // Type Filter Getters
-    // =================================
+    // == Type Filter Getters ==
 
     /// Returns the type line filter value.
     pub fn type_line_contains(&self) -> Option<&str> {
@@ -92,9 +86,7 @@ impl CardQueryBuilder {
         self.card_type_contains_all.as_deref()
     }
 
-    // =================================
-    // Metadata Filter Getters
-    // =================================
+    // == Metadata Filter Getters ==
 
     /// Returns the set filter value.
     pub fn set_equals_any(&self) -> Option<&[String]> {
@@ -111,9 +103,7 @@ impl CardQueryBuilder {
         self.rarity_equals_any.as_ref()
     }
 
-    // =================================
-    // Mana Filter Getters
-    // =================================
+    // == Mana Filter Getters ==
 
     /// Returns the CMC exact match filter value.
     pub fn cmc_equals(&self) -> Option<f64> {
@@ -150,9 +140,7 @@ impl CardQueryBuilder {
         self.color_identity_within.as_ref()
     }
 
-    // =================================
-    // Produced Mana Filter Getters
-    // =================================
+    // == Produced Mana Filter Getters ==
 
     /// Returns the produced_mana_contains_any filter value.
     pub fn produced_mana_contains_any(&self) -> Option<&[String]> {
@@ -164,9 +152,7 @@ impl CardQueryBuilder {
         self.produced_mana_contains_all.as_deref()
     }
 
-    // =================================
-    // Combat Stat Getters
-    // =================================
+    // == Combat Stat Getters ==
 
     /// Returns the power exact match filter value.
     pub fn power_equals(&self) -> Option<i32> {
@@ -188,9 +174,7 @@ impl CardQueryBuilder {
         self.toughness_range
     }
 
-    // =================================
-    // Card Flag Getters
-    // =================================
+    // == Card Flag Getters ==
 
     /// Returns the is_token filter value.
     pub fn is_token(&self) -> Option<bool> {
@@ -227,27 +211,21 @@ impl CardQueryBuilder {
         self.language.as_deref()
     }
 
-    // =================================
-    // Legalities Filter Getters
-    // =================================
+    // == Legalities Filter Getters ==
 
     /// Returns the legalities_contains_any filter value.
     pub fn legalities_contains_any(&self) -> Option<&[String]> {
         self.legalities_contains_any.as_deref()
     }
 
-    // =================================
-    // Commander Filter Getters
-    // =================================
+    // == Commander Filter Getters ==
 
     /// Returns the commander eligibility format filter.
     pub fn is_commander_in_format(&self) -> Option<&Format> {
         self.is_commander_in_format.as_ref()
     }
 
-    // =================================
-    // Partner/Background/Spell Getters
-    // =================================
+    // == Partner/Background/Spell Getters ==
 
     /// Returns the partner card filter.
     pub fn is_partner(&self) -> Option<bool> {
@@ -264,9 +242,7 @@ impl CardQueryBuilder {
         self.is_signature_spell
     }
 
-    // =================================
-    // Mechanical Category Getters
-    // =================================
+    // == Mechanical Category Getters ==
 
     /// Returns the mechanical category ANY filter.
     pub fn card_roles_contains_any(&self) -> Option<&[String]> {
@@ -298,9 +274,7 @@ impl CardQueryBuilder {
         self.oracle_tags_excludes.as_deref()
     }
 
-    // =================================
-    // Exclude Filter Getters
-    // =================================
+    // == Exclude Filter Getters ==
 
     pub fn name_not_contains(&self) -> Option<&str> {
         self.name_not_contains.as_deref()
@@ -350,9 +324,7 @@ impl CardQueryBuilder {
         self.artist_excludes_any.as_deref()
     }
 
-    // =================================
-    // Pagination & Config Getters
-    // =================================
+    // == Pagination & Config Getters ==
 
     /// Returns the result limit.
     pub fn limit(&self) -> u32 {

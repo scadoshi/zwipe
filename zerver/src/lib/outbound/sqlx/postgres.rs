@@ -48,9 +48,7 @@ impl IsConstraintViolation for sqlx::Error {
     }
 }
 
-// =========
-//   config
-// =========
+// == config ==
 
 /// PostgreSQL connection pool with production-ready defaults.
 ///
@@ -97,9 +95,7 @@ impl PostgresPoolOptions {
     }
 }
 
-// =====================
-//  database connection
-// =====================
+// == database connection ==
 
 /// PostgreSQL database adapter with connection pooling.
 ///

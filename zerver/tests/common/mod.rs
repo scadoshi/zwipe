@@ -243,9 +243,7 @@ impl TestApp {
     }
 }
 
-// =====================================================================
-//  Card fixtures
-// =====================================================================
+// == Card fixtures ==
 //
 // `cards` (the `scryfall_data` table) is a ~90-column wire mirror of the
 // Scryfall API with ~35 NOT NULL columns and no domain `Default`. Building a

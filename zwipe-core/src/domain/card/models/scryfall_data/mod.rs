@@ -27,9 +27,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-// ======
-//  main
-// ======
+// == main ==
 
 /// Complete card data from Scryfall API.
 ///
@@ -41,9 +39,7 @@ use uuid::Uuid;
 ///
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct ScryfallData {
-    // ==================
-    // Core Card Fields
-    // ==================
+    // == Core Card Fields ==
     // Basic card identification and platform-specific IDs
     /// This card's Arena ID, if any. A large percentage of cards are not available on Arena and do not have this ID.
     pub arena_id: Option<i32>,
@@ -94,9 +90,7 @@ pub struct ScryfallData {
     /// A link to this card object on Scryfall's API.
     pub uri: String,
 
-    // ==================
-    // Gameplay Fields
-    // ==================
+    // == Gameplay Fields ==
     // Properties relevant to game rules and deck building
     /// If this card relates to other cards, an array with Related Card Objects.
     pub all_parts: Option<AllParts>,
@@ -167,9 +161,7 @@ pub struct ScryfallData {
     /// The type line of this card.
     pub type_line: Option<String>,
 
-    // ==================
-    // Print Fields
-    // ==================
+    // == Print Fields ==
     // Properties unique to this specific printing
     /// The name of the illustrator of this card.
     pub artist: Option<String>,

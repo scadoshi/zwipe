@@ -19,9 +19,7 @@
 use std::collections::HashSet;
 use thiserror::Error;
 
-// ========
-//  errors
-// ========
+// == errors ==
 
 /// Password validation errors indicating which policy requirement failed.
 ///
@@ -100,9 +98,7 @@ pub struct TooFewUniqueChars(u8);
 /// At least one of these characters must be present in every password.
 pub const SYMBOLS: &str = r#"~!@#$%^&*()_+=[]{}\/?|:;<>,."#;
 
-// ==============
-//  validation
-// ==============
+// == validation ==
 
 /// Validates a password against the full password policy.
 ///

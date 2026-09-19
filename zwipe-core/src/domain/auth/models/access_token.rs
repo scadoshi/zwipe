@@ -16,9 +16,7 @@ use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 use uuid::Uuid;
 
-// ========
-//  errors
-// ========
+// == errors ==
 
 /// Errors when parsing a JWT token string.
 #[derive(Debug, Clone, Error)]
@@ -32,9 +30,7 @@ pub enum InvalidJwt {
     Format,
 }
 
-// ==========
-//  newtypes
-// ==========
+// == newtypes ==
 
 /// JWT claims containing user information.
 ///
@@ -58,9 +54,7 @@ pub struct UserClaims {
     pub iat: i64,
 }
 
-// ======
-//  main
-// ======
+// == main ==
 
 /// A validated JWT token string with the correct format.
 ///
@@ -140,9 +134,7 @@ mod tests {
     use super::*;
     use std::str::FromStr;
 
-    // ================
-    //  `Jwt` tests
-    // ================
+    // == `Jwt` tests ==
 
     #[test]
     fn test_access_token_new_accepts_valid_token() {
@@ -188,9 +180,7 @@ mod tests {
         assert_ne!(token1, token3);
     }
 
-    // ====================
-    //  `UserClaims` tests
-    // ====================
+    // == `UserClaims` tests ==
 
     #[test]
     fn test_user_claims_serialization_round_trip() {
@@ -243,9 +233,7 @@ mod tests {
         assert_ne!(claims1, claims3);
     }
 
-    // ==============================
-    //  `AccessToken::is_expired` tests
-    // ==============================
+    // == `AccessToken::is_expired` tests ==
 
     #[test]
     fn test_access_token_is_not_expired_when_expiry_is_in_future() {

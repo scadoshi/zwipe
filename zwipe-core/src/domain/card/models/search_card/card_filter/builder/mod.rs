@@ -352,9 +352,7 @@ impl CardQueryBuilder {
         !self.is_empty_ignoring_deck_context() || self.sort.is_some() || self.synergy
     }
 
-    // =================================
-    // Quick Constructors (with_*)
-    // =================================
+    // == Quick Constructors (with_*) ==
     // These create a new builder with default values plus one filter.
     // Useful for single-filter searches.
 

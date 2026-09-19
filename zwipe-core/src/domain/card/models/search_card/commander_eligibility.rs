@@ -5,9 +5,7 @@
 
 use crate::domain::{card::Card, deck::Format};
 
-// =================================
-// Commander Eligibility
-// =================================
+// == Commander Eligibility ==
 
 /// Checks whether a card is a valid commander for the given format.
 pub fn is_valid_commander(card: &Card, format: &Format) -> bool {
@@ -54,9 +52,7 @@ pub fn is_valid_commander(card: &Card, format: &Format) -> bool {
     }
 }
 
-// =================================
-// Partner Eligibility
-// =================================
+// == Partner Eligibility ==
 
 /// The kind of partner ability a card has, if any.
 #[derive(Debug, Clone, PartialEq)]
@@ -142,9 +138,7 @@ fn extract_named_partner(oracle_text: &str) -> Option<String> {
     Some(name.to_string())
 }
 
-// =================================
-// Background Eligibility
-// =================================
+// == Background Eligibility ==
 
 /// Whether a card has "Choose a Background" (making it background-eligible as commander).
 pub fn has_choose_a_background(card: &Card) -> bool {
@@ -164,9 +158,7 @@ pub fn is_background_card(card: &Card) -> bool {
         && type_line.contains("Background")
 }
 
-// =================================
-// Signature Spell Eligibility
-// =================================
+// == Signature Spell Eligibility ==
 
 /// Whether a card is a valid signature spell type (instant or sorcery).
 pub fn is_valid_signature_spell_type(card: &Card) -> bool {
@@ -284,9 +276,7 @@ mod tests {
         assert!(!is_valid_commander(&card, &Format::Modern));
     }
 
-    // =================================
-    // Partner Tests
-    // =================================
+    // == Partner Tests ==
 
     fn make_partner(name: &str, keyword: &str) -> Card {
         let mut card = make_card(name);
@@ -379,9 +369,7 @@ mod tests {
         assert_eq!(partner_kind(&card), None);
     }
 
-    // =================================
-    // Background Tests
-    // =================================
+    // == Background Tests ==
 
     #[test]
     fn choose_a_background_detected() {
@@ -411,9 +399,7 @@ mod tests {
         assert!(!is_background_card(&card));
     }
 
-    // =================================
-    // Signature Spell Tests
-    // =================================
+    // == Signature Spell Tests ==
 
     #[test]
     fn instant_is_valid_signature_spell() {

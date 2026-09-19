@@ -56,9 +56,7 @@ use tower_http::{
 #[cfg(feature = "zerver")]
 use uuid::Uuid;
 
-// =======
-//  error
-// =======
+// == error ==
 
 /// Shared error vocabulary between the server and its clients.
 ///
@@ -145,9 +143,7 @@ where
     }
 }
 
-// ========
-//  security headers
-// ========
+// == security headers ==
 
 /// Adds security-relevant HTTP response headers to every response.
 ///
@@ -170,9 +166,7 @@ async fn security_headers(request: Request, next: Next) -> Response {
     response
 }
 
-// ========
-//  server
-// ========
+// == server ==
 
 /// Bind address and CORS origins for the HTTP server.
 #[cfg(feature = "zerver")]

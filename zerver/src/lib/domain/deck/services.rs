@@ -105,9 +105,7 @@ where
     DR: DeckRepository,
     CR: CardRepository,
 {
-    // ========
-    //  create
-    // ========
+    // == create ==
     async fn create_deck_profile(
         &self,
         request: &CreateDeckProfile,
@@ -172,9 +170,7 @@ where
         self.deck_repo.create_deck_card(request, card_limit).await
     }
 
-    // =====
-    //  get
-    // =====
+    // == get ==
     async fn get_deck_profile(
         &self,
         request: &GetDeckProfile,
@@ -415,9 +411,7 @@ where
         Ok(tokens)
     }
 
-    // ========
-    //  update
-    // ========
+    // == update ==
     async fn update_deck_profile(
         &self,
         request: &UpdateDeckProfile,
@@ -435,9 +429,7 @@ where
         self.deck_repo.update_deck_card(request).await
     }
 
-    // ========
-    //  delete
-    // ========
+    // == delete ==
     async fn delete_deck(&self, request: &DeleteDeck) -> Result<(), DeleteDeckError> {
         self.deck_repo.delete_deck(request).await
     }
@@ -822,9 +814,7 @@ where
         })
     }
 
-    // =======
-    //  clone
-    // =======
+    // == clone ==
     async fn clone_deck(&self, request: &CloneDeck) -> Result<Uuid, CloneDeckError> {
         // 1. Verify the source exists and is owned by the caller. get_deck_profile
         //    on the repo already enforces ownership (returns Forbidden on mismatch)
@@ -863,9 +853,7 @@ where
             .await
     }
 
-    // =======
-    //  share
-    // =======
+    // == share ==
     async fn share_deck(&self, request: &GetDeckProfile) -> Result<Uuid, ShareDeckError> {
         self.get_deck_profile(request).await.map_err(|e| match e {
             GetDeckProfileError::Forbidden => ShareDeckError::Forbidden,

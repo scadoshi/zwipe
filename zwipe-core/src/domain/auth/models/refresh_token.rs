@@ -22,9 +22,7 @@ use thiserror::Error;
 /// Refresh token lifespan (14 days).
 const REFRESH_TOKEN_LIFESPAN: Duration = Duration::days(14);
 
-// =======
-//  error
-// =======
+// == error ==
 
 /// Errors that can occur while validating a refresh token string.
 #[derive(Debug, Error)]
@@ -37,9 +35,7 @@ pub enum InvalidRefreshToken {
     InvalidCharacters,
 }
 
-// ======
-//  main
-// ======
+// == main ==
 
 /// A refresh token for obtaining new access tokens.
 ///

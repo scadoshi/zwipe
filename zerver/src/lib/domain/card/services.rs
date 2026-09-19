@@ -77,9 +77,7 @@ where
 }
 
 impl<R: CardRepository> CardService for Service<R> {
-    // ========
-    //  create
-    // ========
+    // == create ==
     async fn upsert(&self, scryfall_data: ScryfallData) -> Result<Card, CreateCardError> {
         self.repo.upsert(&scryfall_data).await
     }
@@ -173,9 +171,7 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.refresh_oracle_tag_groups().await
     }
 
-    // =====
-    //  get
-    // =====
+    // == get ==
     async fn featured_flavor(&self, hour_key: &str) -> Result<Card, GetCardError> {
         use crate::domain::card::requests::get_scryfall_data::GetScryfallDataError;
         let id = self

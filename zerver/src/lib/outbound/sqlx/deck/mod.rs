@@ -80,9 +80,7 @@ fn deck_oracle_tags_to_json(tags: &[String]) -> serde_json::Value {
 }
 
 impl DeckRepository for Postgres {
-    // ========
-    //  create
-    // ========
+    // == create ==
     async fn create_deck_profile(
         &self,
         request: &CreateDeckProfile,
@@ -189,9 +187,7 @@ impl DeckRepository for Postgres {
         Ok(deck_card)
     }
 
-    // =======
-    //  count
-    // =======
+    // == count ==
     async fn count_decks_by_user(&self, user_id: uuid::Uuid) -> Result<i64, anyhow::Error> {
         let count = sqlx::query_scalar!("SELECT COUNT(*) FROM decks WHERE user_id = $1", user_id)
             .fetch_one(&self.pool)
@@ -213,9 +209,7 @@ impl DeckRepository for Postgres {
         Ok(count)
     }
 
-    // =====
-    //  get
-    // =====
+    // == get ==
     async fn get_deck_profile(
         &self,
         request: &GetDeckProfile,
@@ -350,9 +344,7 @@ impl DeckRepository for Postgres {
         Ok(roles)
     }
 
-    // ========
-    //  update
-    // ========
+    // == update ==
     /// Dynamically builds an `UPDATE` query for only the provided fields.
     ///
     /// Always sets `updated_at` to the current timestamp regardless of which
@@ -543,9 +535,7 @@ impl DeckRepository for Postgres {
         Ok(deck_card)
     }
 
-    // ========
-    //  delete
-    // ========
+    // == delete ==
     async fn delete_deck(&self, request: &DeleteDeck) -> Result<(), DeleteDeckError> {
         if !request
             .user_id
@@ -938,9 +928,7 @@ impl DeckRepository for Postgres {
         Ok(deck_cards)
     }
 
-    // =======
-    //  clone
-    // =======
+    // == clone ==
     async fn clone_deck(
         &self,
         source_deck_id: uuid::Uuid,
@@ -998,9 +986,7 @@ impl DeckRepository for Postgres {
         Ok(new_deck_id)
     }
 
-    // =======
-    //  share
-    // =======
+    // == share ==
     async fn set_share_token(&self, deck_id: uuid::Uuid) -> Result<uuid::Uuid, ShareDeckError> {
         // Always regenerates: re-sharing rotates the token so old links die.
         let token = query_scalar!(

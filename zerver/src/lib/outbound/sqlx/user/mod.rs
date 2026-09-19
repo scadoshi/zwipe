@@ -47,9 +47,7 @@ impl From<DatabaseUserPreferences> for UserPreferences {
 }
 
 impl UserRepository for Postgres {
-    // =====
-    //  get
-    // =====
+    // == get ==
 
     async fn get_user(&self, user_id: Uuid) -> Result<User, GetUserError> {
         let database_user = query_as!(
@@ -65,9 +63,7 @@ impl UserRepository for Postgres {
         Ok(user)
     }
 
-    // =======
-    //  hints
-    // =======
+    // == hints ==
 
     async fn mark_hint_shown(&self, request: &MarkHintShown) -> Result<User, MarkHintShownError> {
         let database_user = query_as!(
@@ -95,9 +91,7 @@ impl UserRepository for Postgres {
         Ok(user)
     }
 
-    // ===============
-    //  preferences
-    // ===============
+    // == preferences ==
 
     async fn get_preferences(&self, user_id: Uuid) -> Result<UserPreferences, GetPreferencesError> {
         let result = query_as!(

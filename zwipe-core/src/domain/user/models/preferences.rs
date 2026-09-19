@@ -136,9 +136,7 @@ pub enum InvalidUpdatePreferences {
 mod tests {
     use super::*;
 
-    // =========
-    //  default
-    // =========
+    // == default ==
 
     #[test]
     fn default_is_gruvbox_dark() {
@@ -147,9 +145,7 @@ mod tests {
         assert!(prefs.dark_mode);
     }
 
-    // ====================
-    //  valid theme names
-    // ====================
+    // == valid theme names ==
 
     #[test]
     fn accepts_all_allowed_themes() {
@@ -179,9 +175,7 @@ mod tests {
         ));
     }
 
-    // =======================
-    //  partial update (None)
-    // =======================
+    // == partial update (None) ==
 
     #[test]
     fn none_theme_passes_through() {
@@ -205,9 +199,7 @@ mod tests {
         assert!(result.dark_mode.is_none());
     }
 
-    // ===================
-    //  universes beyond
-    // ===================
+    // == universes beyond ==
 
     #[test]
     fn accepts_known_franchise_slugs() {

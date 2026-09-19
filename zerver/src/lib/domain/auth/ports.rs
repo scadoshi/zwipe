@@ -41,9 +41,7 @@ use zwipe_core::domain::{
 /// This trait is a "port" - it defines WHAT operations are needed without specifying HOW
 /// they're implemented. The actual database logic is in the "adapter" layer.
 pub trait AuthRepository: Clone + Send + Sync + 'static {
-    // ========
-    //  create
-    // ========
+    // == create ==
 
     /// Creates a new user and initial refresh token (registration).
     ///
@@ -74,9 +72,7 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         request: &RefreshSession,
     ) -> impl Future<Output = Result<RefreshToken, RefreshSessionError>> + Send;
 
-    // =====
-    //  get
-    // =====
+    // == get ==
 
     /// Retrieves user data with password hash for authentication.
     ///
@@ -87,9 +83,7 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         request: &AuthenticateUser,
     ) -> impl Future<Output = Result<UserWithPasswordHash, AuthenticateUserError>> + Send;
 
-    // ========
-    //  lockout
-    // ========
+    // == lockout ==
 
     /// Increments the failed login counter for a user.
     ///
@@ -107,9 +101,7 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         user_id: Uuid,
     ) -> impl Future<Output = Result<(), AuthenticateUserError>> + Send;
 
-    // ========
-    //  update
-    // ========
+    // == update ==
 
     /// Updates a user's password after verification and revokes all active sessions.
     ///
@@ -135,9 +127,7 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         request: &ChangeEmail,
     ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
 
-    // ========
-    //  delete
-    // ========
+    // == delete ==
 
     /// Deletes a user account after password verification.
     ///
@@ -155,9 +145,7 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         user_id: Uuid,
     ) -> impl Future<Output = Result<(), RevokeSessionsError>> + Send;
 
-    // ========================
-    //  email verification
-    // ========================
+    // == email verification ==
 
     /// Stores a new email verification token for the given user.
     fn store_email_verification_token(
@@ -187,9 +175,7 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         user_id: Uuid,
     ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
 
-    // ========================
-    //  password reset
-    // ========================
+    // == password reset ==
 
     /// Looks up a user ID by email. Returns `None` if the email is not registered.
     ///
@@ -254,16 +240,12 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
 ///
 /// Implemented in `domain/auth/services` with business logic and calls to `AuthRepository`.
 pub trait AuthService: Clone + Send + Sync + 'static {
-    // ========
-    //  config
-    // ========
+    // == config ==
 
     /// Returns the JWT secret for signing access tokens.
     fn jwt_secret(&self) -> &JwtSecret;
 
-    // ========
-    //  create
-    // ========
+    // == create ==
 
     /// Registers a new user and creates their first session.
     ///
@@ -297,9 +279,7 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         request: &AuthenticateUser,
     ) -> impl Future<Output = Result<Session, AuthenticateUserError>> + Send;
 
-    // ========
-    //  update
-    // ========
+    // == update ==
 
     /// Changes a user's password after verifying current password and revokes all active sessions.
     ///
@@ -325,9 +305,7 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         request: &ChangeEmail,
     ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
 
-    // ========
-    //  delete
-    // ========
+    // == delete ==
 
     /// Deletes a user account after password verification.
     ///
@@ -345,9 +323,7 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         request: &RevokeSessions,
     ) -> impl Future<Output = Result<(), RevokeSessionsError>> + Send;
 
-    // ========================
-    //  email verification
-    // ========================
+    // == email verification ==
 
     /// Generates and stores a verification token, then sends the verification email.
     ///
@@ -365,9 +341,7 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         request: &VerifyEmail,
     ) -> impl Future<Output = Result<(), VerifyEmailError>> + Send;
 
-    // ========================
-    //  password reset
-    // ========================
+    // == password reset ==
 
     /// Initiates a password reset flow for the given email.
     ///

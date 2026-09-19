@@ -71,9 +71,7 @@ pub struct DeckServeContext<'a> {
 
 /// Database port for MTG card operations.
 pub trait CardRepository: Clone + Send + Sync + 'static {
-    // ========
-    //  create
-    // ========
+    // == create ==
 
     /// Inserts or updates a single card.
     fn upsert(
@@ -136,9 +134,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// `card_oracle_tags` (aggregated per `oracle_id`, fanned to every printing).
     fn refresh_card_oracle_tags(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
-    // =====
-    //  get
-    // =====
+    // == get ==
 
     /// Retrieves Scryfall data by Scryfall card ID.
     fn get_scryfall_data(
@@ -331,9 +327,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         commander_printing_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Option<serde_json::Value>, SearchCardsError>> + Send;
 
-    // ====================
-    //  category derivation
-    // ====================
+    // == category derivation ==
 
     /// Fetches a batch of cards by their IDs.
     fn get_cards_batch(
@@ -385,9 +379,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 ///
 /// Implemented in `domain/card/services` with repository calls + Scryfall API client.
 pub trait CardService: Clone + Send + Sync + 'static {
-    // ========
-    //  create
-    // ========
+    // == create ==
 
     /// Inserts a single card (internal/testing only).
     fn upsert(
@@ -430,9 +422,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// `other_oracle_tags`) from the tag hierarchy (nightly, zervice).
     fn refresh_oracle_tag_groups(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
 
-    // =====
-    //  get
-    // =====
+    // == get ==
 
     /// The featured-flavor card for an hour bucket; the repository's
     /// deterministic pick assembled like `get_card`.

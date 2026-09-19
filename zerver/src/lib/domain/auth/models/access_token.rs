@@ -21,9 +21,7 @@ use thiserror::Error;
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::user::User;
 
-// ========
-//  errors
-// ========
+// == errors ==
 
 #[cfg(feature = "zerver")]
 /// Errors when constructing a JWT secret.
@@ -74,9 +72,7 @@ impl From<jsonwebtoken::errors::Error> for InvalidJwt {
     }
 }
 
-// ==========
-//  newtypes
-// ==========
+// == newtypes ==
 
 #[cfg(feature = "zerver")]
 /// Server-side secret key for signing and validating JWT tokens.
@@ -108,9 +104,7 @@ impl JwtSecret {
     }
 }
 
-// ===================
-//  extension traits
-// ===================
+// == extension traits ==
 
 #[cfg(feature = "zerver")]
 /// Extension trait for validating JWT signatures on the server.
@@ -167,9 +161,7 @@ impl AccessTokenExt for AccessToken {
     }
 }
 
-// =======================
-//  serde for InvalidJwt
-// =======================
+// == serde for InvalidJwt ==
 
 #[cfg(feature = "zerver")]
 impl Serialize for InvalidJwt {
@@ -200,9 +192,7 @@ mod tests {
     use uuid::Uuid;
     use zwipe_core::domain::{Email, user::username::Username};
 
-    // ========================
-    //  `JwtSecret` tests
-    // ========================
+    // == `JwtSecret` tests ==
 
     #[test]
     fn test_jwt_secret_new_accepts_valid_secret() {
@@ -244,9 +234,7 @@ mod tests {
         assert_eq!(bytes, b"test-secret-that-is-long-enough-for-validation");
     }
 
-    // =============================
-    //  `AccessToken` generation tests
-    // =============================
+    // == `AccessToken` generation tests ==
 
     #[test]
     fn test_generate_access_token_success_creates_valid_tokens() {
@@ -336,9 +324,7 @@ mod tests {
         assert_eq!(claims.email.to_string(), "test@email.com");
     }
 
-    // =============================
-    //  `AccessToken` validation tests
-    // =============================
+    // == `AccessToken` validation tests ==
 
     #[test]
     fn test_validate_access_token_success_returns_correct_claims() {
@@ -375,9 +361,7 @@ mod tests {
         assert!(result.is_err());
     }
 
-    // ==========================
-    //  `AccessToken` claims tests
-    // ==========================
+    // == `AccessToken` claims tests ==
 
     #[test]
     fn test_access_token_claims_have_correct_expiration_and_issued_at() {
@@ -414,9 +398,7 @@ mod tests {
         assert_eq!(claims.email, user.email);
     }
 
-    // =====================
-    //  integration tests
-    // =====================
+    // == integration tests ==
 
     #[test]
     fn test_generate_and_validate_round_trip_with_multiple_user_ids() {

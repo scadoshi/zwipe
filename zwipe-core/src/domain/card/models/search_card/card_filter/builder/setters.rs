@@ -12,9 +12,7 @@ use super::{CardQueryBuilder, CardSortKey, CardType, Colors, Format, PriceCurren
 use crate::domain::card::scryfall_data::rarity::Rarities;
 
 impl CardQueryBuilder {
-    // =================================
-    // Text Filter Setters
-    // =================================
+    // == Text Filter Setters ==
 
     /// Sets card name filter (case-insensitive substring). Empty strings = None.
     pub fn set_name_contains(&mut self, name_contains: impl Into<String>) -> &mut Self {
@@ -85,9 +83,7 @@ impl CardQueryBuilder {
         self
     }
 
-    // =================================
-    // Keywords Filter Setters
-    // =================================
+    // == Keywords Filter Setters ==
 
     /// Sets filter matching any of multiple keywords (OR logic). Empty vec = None.
     pub fn set_keywords_contains_any<I, S>(&mut self, keywords_contains_any: I) -> &mut Self
@@ -158,9 +154,7 @@ impl CardQueryBuilder {
         self
     }
 
-    // =================================
-    // Type Filter Setters
-    // =================================
+    // == Type Filter Setters ==
 
     /// Sets type line filter (e.g., "Legendary Creature"). Empty strings = None.
     pub fn set_type_line_contains(&mut self, type_line_contains: impl Into<String>) -> &mut Self {
@@ -247,9 +241,7 @@ impl CardQueryBuilder {
         self
     }
 
-    // =================================
-    // Printing/Metadata Setters
-    // =================================
+    // == Printing/Metadata Setters ==
 
     /// Sets filter matching any of multiple set names (e.g., "Modern Horizons 2"). Empty vec = None.
     pub fn set_set_equals_any(
@@ -307,9 +299,7 @@ impl CardQueryBuilder {
         self
     }
 
-    // =================================
-    // Mana Filter Setters
-    // =================================
+    // == Mana Filter Setters ==
 
     /// Sets CMC exact match filter.
     pub fn set_cmc_equals(&mut self, cmc_equals: f64) -> &mut Self {
@@ -395,9 +385,7 @@ impl CardQueryBuilder {
         self
     }
 
-    // =================================
-    // Produced Mana Filter Setters
-    // =================================
+    // == Produced Mana Filter Setters ==
 
     /// Sets filter matching cards that produce any of the listed mana colors (OR logic). Empty vec = None.
     pub fn set_produced_mana_contains_any<I, S>(
@@ -445,9 +433,7 @@ impl CardQueryBuilder {
         self
     }
 
-    // =================================
-    // Combat Stat Setters
-    // =================================
+    // == Combat Stat Setters ==
 
     /// Sets exact power filter.
     pub fn set_power_equals(&mut self, power_equals: i32) -> &mut Self {
@@ -497,9 +483,7 @@ impl CardQueryBuilder {
         self
     }
 
-    // =================================
-    // Card Flag Setters
-    // =================================
+    // == Card Flag Setters ==
 
     /// Sets filter for token status.
     pub fn set_is_token(&mut self, is_token: bool) -> &mut Self {
@@ -585,9 +569,7 @@ impl CardQueryBuilder {
         self
     }
 
-    // =================================
-    // Legalities Filter Setters
-    // =================================
+    // == Legalities Filter Setters ==
 
     /// Sets filter matching cards legal in any of the provided formats. Empty vec = None.
     pub fn set_legalities_contains_any<I, S>(&mut self, legalities_contains_any: I) -> &mut Self
@@ -609,9 +591,7 @@ impl CardQueryBuilder {
         self
     }
 
-    // =================================
-    // Commander Filter Setters
-    // =================================
+    // == Commander Filter Setters ==
 
     /// Sets the commander eligibility filter for a specific format.
     pub fn set_is_commander_in_format(&mut self, format: Format) -> &mut Self {
@@ -625,9 +605,7 @@ impl CardQueryBuilder {
         self
     }
 
-    // =================================
-    // Partner/Background/Spell Setters
-    // =================================
+    // == Partner/Background/Spell Setters ==
 
     /// Sets the partner card filter.
     pub fn set_is_partner(&mut self, val: bool) -> &mut Self {
@@ -665,9 +643,7 @@ impl CardQueryBuilder {
         self
     }
 
-    // =================================
-    // Mechanical Category Setters
-    // =================================
+    // == Mechanical Category Setters ==
 
     /// Sets the mechanical category ANY filter (cards matching at least one).
     pub fn set_card_roles_contains_any<I, S>(&mut self, categories: I) -> &mut Self
@@ -758,9 +734,7 @@ impl CardQueryBuilder {
         self
     }
 
-    // =================================
-    // Pagination & Config Setters
-    // =================================
+    // == Pagination & Config Setters ==
 
     /// Sets result limit (max cards returned).
     pub fn set_limit(&mut self, limit: u32) -> &mut Self {
@@ -809,9 +783,7 @@ impl CardQueryBuilder {
         self
     }
 
-    // =================================
-    // Exclude Filter Setters
-    // =================================
+    // == Exclude Filter Setters ==
 
     /// Sets name not-contains filter (punctuation-insensitive). Empty strings = None.
     pub fn set_name_not_contains(&mut self, name_not_contains: impl Into<String>) -> &mut Self {
@@ -1049,9 +1021,7 @@ impl CardQueryBuilder {
         self
     }
 
-    // =================================
-    // Utility Methods
-    // =================================
+    // == Utility Methods ==
 
     /// Clears all search filters, keeps only config (limit, offset, flags, language).
     ///

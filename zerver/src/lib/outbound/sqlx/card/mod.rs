@@ -164,9 +164,7 @@ const POPULARITY_JOIN: &str = "LEFT JOIN (SELECT oracle_id AS pop_oracle_id, dec
 const SELECT_SIGNAL_JOIN: &str = "LEFT JOIN (SELECT commander_oracle_id AS sel_oid, shown AS sel_shown FROM commander_select_signal) sel ON sel.sel_oid = latest_cards.oracle_id";
 
 impl CardRepository for MyPostgres {
-    // ========
-    //  create
-    // ========
+    // == create ==
     async fn upsert(&self, scryfall_data: &ScryfallData) -> Result<Card, CreateCardError> {
         let mut tx = self.pool.begin().await?;
         let card = scryfall_data.single_upsert_with_tx(&mut tx).await?;
@@ -320,9 +318,7 @@ impl CardRepository for MyPostgres {
         Ok(())
     }
 
-    // =====
-    //  get
-    // =====
+    // == get ==
     async fn get_scryfall_data(
         &self,
         request: &GetScryfallData,
@@ -1766,9 +1762,7 @@ impl CardRepository for MyPostgres {
         Ok(payload)
     }
 
-    // ====================
-    //  category derivation
-    // ====================
+    // == category derivation ==
 
     async fn get_cards_batch(&self, ids: &[uuid::Uuid]) -> Result<Vec<Card>, anyhow::Error> {
         if ids.is_empty() {

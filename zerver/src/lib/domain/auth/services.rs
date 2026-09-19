@@ -187,16 +187,12 @@ where
     UR: UserRepository + Clone,
     ES: EmailSender,
 {
-    // ========
-    //  config
-    // ========
+    // == config ==
     fn jwt_secret(&self) -> &JwtSecret {
         &self.jwt_secret
     }
 
-    // ========
-    //  create
-    // ========
+    // == create ==
     async fn register_user(&self, request: &RegisterUser) -> Result<Session, RegisterUserError> {
         let (user, refresh_token) = self
             .auth_repo
@@ -355,9 +351,7 @@ where
         Ok(())
     }
 
-    // ========
-    //  update
-    // ========
+    // == update ==
     async fn change_username(&self, request: &ChangeUsername) -> Result<User, ChangeUsernameError> {
         let old_username = self.verify_password(&request.into()).await?.username;
         let user = self.auth_repo.change_username(request).await?;
@@ -416,17 +410,13 @@ where
         Ok(())
     }
 
-    // ========
-    //  delete
-    // ========
+    // == delete ==
     async fn delete_user(&self, request: &DeleteUser) -> Result<(), DeleteUserError> {
         self.verify_password(&request.into()).await?;
         self.auth_repo.delete_user(request).await
     }
 
-    // ========================
-    //  email verification
-    // ========================
+    // == email verification ==
 
     async fn send_verification_email(
         &self,
@@ -479,9 +469,7 @@ where
         Ok(())
     }
 
-    // ========================
-    //  password reset
-    // ========================
+    // == password reset ==
 
     async fn request_password_reset(
         &self,

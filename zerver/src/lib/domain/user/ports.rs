@@ -58,9 +58,7 @@ pub trait UserRepository: Clone + Send + Sync + 'static {
 
 /// Service port for user profile business logic.
 pub trait UserService: Clone + Send + Sync + 'static {
-    // =====
-    //  get
-    // =====
+    // == get ==
 
     /// Retrieves a user profile by ID.
     ///
@@ -70,9 +68,7 @@ pub trait UserService: Clone + Send + Sync + 'static {
         request: &GetUser,
     ) -> impl Future<Output = Result<User, GetUserError>> + Send;
 
-    // ===============
-    //  preferences
-    // ===============
+    // == preferences ==
 
     /// Fetches display preferences for a user.
     fn get_preferences(
@@ -86,9 +82,7 @@ pub trait UserService: Clone + Send + Sync + 'static {
         request: &UpdatePreferences,
     ) -> impl Future<Output = Result<UserPreferences, UpdatePreferencesError>> + Send;
 
-    // =======
-    //  hints
-    // =======
+    // == hints ==
 
     /// Marks a one-time UI hint as shown; returns the updated user.
     fn mark_hint_shown(

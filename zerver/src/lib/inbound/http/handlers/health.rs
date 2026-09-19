@@ -6,9 +6,7 @@ use chrono::Utc;
 use serde::Serialize;
 use serde_json::{Value, json};
 
-// ======
-//  root
-// ======
+// == root ==
 
 /// Root endpoint response with package name, version, and status.
 #[derive(Debug, Serialize)]
@@ -39,9 +37,7 @@ pub async fn root() -> Json<Value> {
     )))
 }
 
-// =========
-//  health
-// =========
+// == health ==
 
 #[derive(Debug, Serialize)]
 struct HealthCheckResponse {

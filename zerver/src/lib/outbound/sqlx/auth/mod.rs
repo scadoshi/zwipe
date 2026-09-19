@@ -46,9 +46,7 @@ use zwipe_core::domain::{
 };
 
 impl AuthRepository for Postgres {
-    // ========
-    //  create
-    // ========
+    // == create ==
     async fn create_user_and_refresh_token(
         &self,
         request: &RegisterUser,
@@ -86,9 +84,7 @@ impl AuthRepository for Postgres {
 
         Ok(refresh_token)
     }
-    // =====
-    //  get
-    // =====
+    // == get ==
     /// Looks up a user by ID, username, **or** email using a single `OR` query.
     async fn get_user_with_password_hash(
         &self,
@@ -106,9 +102,7 @@ impl AuthRepository for Postgres {
 
         Ok(user)
     }
-    // ========
-    //  lockout
-    // ========
+    // == lockout ==
 
     /// Atomically increments failed login counter with a sliding 30-minute window.
     /// Sets `lockout_until = NOW() + 30 min` after 5 failures within the window.
@@ -158,9 +152,7 @@ impl AuthRepository for Postgres {
         Ok(())
     }
 
-    // ========
-    //  update
-    // ========
+    // == update ==
     async fn change_password_and_revoke_sessions(
         &self,
         request: &ChangePassword,
@@ -291,9 +283,7 @@ impl AuthRepository for Postgres {
 
         Ok(new)
     }
-    // ========
-    //  delete
-    // ========
+    // == delete ==
     async fn delete_user(&self, request: &DeleteUser) -> Result<(), DeleteUserError> {
         let mut tx = self.pool.begin().await?;
 
@@ -322,9 +312,7 @@ impl AuthRepository for Postgres {
         Ok(())
     }
 
-    // ========================
-    //  email verification
-    // ========================
+    // == email verification ==
 
     async fn store_email_verification_token(
         &self,
@@ -381,9 +369,7 @@ impl AuthRepository for Postgres {
         Ok(())
     }
 
-    // ========================
-    //  password reset
-    // ========================
+    // == password reset ==
 
     async fn get_user_id_by_email(&self, email: &str) -> Result<Option<Uuid>, anyhow::Error> {
         let user_id: Option<Uuid> = query_scalar!("SELECT id FROM users WHERE email = $1", email)

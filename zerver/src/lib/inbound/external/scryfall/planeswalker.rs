@@ -13,9 +13,7 @@ use reqwest::{
 use serde::Deserialize;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
-// ==============================
-//  equip onto scryfall requests
-// ==============================
+// == equip onto scryfall requests ==
 pub(super) const USER_AGENT_VALUE: &str = "zwipe/0.0";
 pub(super) const ACCEPT_VALUE: &str = "*/*";
 pub(super) const SCRYFALL_API_BASE: &str = "https://api.scryfall.com";
@@ -27,9 +25,7 @@ struct ScryfallDataSearchResponse {
     data: Vec<ScryfallData>,
 }
 
-// =========
-//  helpers
-// =========
+// == helpers ==
 
 /// Wraps a `RequestBuilder` with Scryfall API headers (User-Agent, Accept).
 #[derive(Debug)]

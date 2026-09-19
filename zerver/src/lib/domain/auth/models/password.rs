@@ -302,9 +302,7 @@ impl std::fmt::Display for HashedPassword {
 mod tests {
     use super::*;
 
-    // ==================
-    //  password hashing
-    // ==================
+    // == password hashing ==
 
     #[test]
     fn test_hash_password_success_creates_valid_hashes() {
@@ -320,9 +318,7 @@ mod tests {
         assert!(hash.0.matches('$').count() >= 4); // format: $argon2$variant$params$salt$hash
     }
 
-    // =================================
-    //  `Password`.hash() ergonomic api
-    // =================================
+    // == `Password`.hash() ergonomic api ==
 
     #[test]
     fn test_password_hash_method_creates_valid_hashes() {
@@ -484,13 +480,9 @@ mod tests {
         assert!(!hash.0.is_empty());
     }
 
-    // =======================
-    //  password verification
-    // =======================
+    // == password verification ==
 
-    // ======================================
-    //  remaining validation rule coverage
-    // ======================================
+    // == remaining validation rule coverage ==
 
     #[test]
     fn test_password_validation_rejects_whitespace() {
@@ -632,9 +624,7 @@ mod tests {
         assert!(!hash.verify("Пароль1🔒").unwrap()); // Missing !
     }
 
-    // =======================
-    //  security & edge cases
-    // =======================
+    // == security & edge cases ==
 
     #[test]
     fn test_hash_verification_round_trip_with_various_inputs() {
@@ -686,9 +676,7 @@ mod tests {
         }
     }
 
-    // ==============================
-    //  `HashedPassword` constructor
-    // ==============================
+    // == `HashedPassword` constructor ==
 
     #[test]
     fn test_hashed_password_new_accepts_valid_argon2_hash() {
@@ -764,9 +752,7 @@ mod tests {
         }
     }
 
-    // =============
-    //  integration
-    // =============
+    // == integration ==
 
     #[test]
     fn test_complete_password_authentication_flow() {

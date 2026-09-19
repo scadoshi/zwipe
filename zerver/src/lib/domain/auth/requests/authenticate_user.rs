@@ -225,9 +225,7 @@ impl AuthenticateUser {
     }
 }
 
-// ==========================================
-// Re-authentication conversions
-// ==========================================
+// == Re-authentication conversions ==
 //
 // Sensitive operations (changing password, email, username, or deleting account)
 // require re-authentication with the current password. These conversions allow

@@ -34,18 +34,14 @@ use zwipe_core::domain::card::{Card, card_profile::CardProfile, scryfall_data::S
 /// of the root cause, so these are silently skipped during error reporting.
 const POSTGRES_TX_ABORT_MESSAGE: &str = "current transaction is aborted";
 
-// ====================
-//  validation helpers
-// ====================
+// == validation helpers ==
 
 /// Determines if a card is a token based on Scryfall layout field.
 fn is_token(scryfall_data: &ScryfallData) -> bool {
     scryfall_data.layout == "token"
 }
 
-// ===========
-//  insertion
-// ===========
+// == insertion ==
 
 // below allows redundant operations within `CardRepository`
 // without having to create new transactions

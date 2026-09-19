@@ -5,9 +5,7 @@ use uuid::Uuid;
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
-// ========
-//  errors
-// ========
+// == errors ==
 
 #[cfg(feature = "zerver")]
 /// Errors that can occur when retrieving a card profile.
@@ -43,9 +41,7 @@ impl From<uuid::Error> for InvalidCardProfileIds {
     }
 }
 
-// ==========
-//  requests
-// ==========
+// == requests ==
 
 #[cfg(feature = "zerver")]
 /// Request to get a single card profile by Scryfall ID.

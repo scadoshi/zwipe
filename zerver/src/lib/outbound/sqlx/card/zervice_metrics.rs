@@ -68,9 +68,7 @@ impl Encode<'_, Postgres> for ErrorMetrics {
     }
 }
 
-// ========
-//  plural
-// ========
+// == plural ==
 
 impl TryFrom<VecErrorMetrics> for JsonValue {
     type Error = serde_json::Error;

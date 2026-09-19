@@ -7,9 +7,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-// =======
-//  parts
-// =======
+// == parts ==
 
 /// Scryfall sync operation status.
 ///
@@ -123,9 +121,7 @@ impl std::ops::Deref for VecErrorMetrics {
     }
 }
 
-// ======
-//  main
-// ======
+// == main ==
 
 /// Metrics for a Scryfall bulk data sync operation.
 ///

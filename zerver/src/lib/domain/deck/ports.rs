@@ -54,9 +54,7 @@ use zwipe_core::domain::{
 
 /// Database port for deck building operations.
 pub trait DeckRepository: Clone + Send + Sync + 'static {
-    // ========
-    //  create
-    // ========
+    // == create ==
 
     /// Creates a new deck profile.
     fn create_deck_profile(
@@ -74,9 +72,7 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         card_limit: i64,
     ) -> impl Future<Output = Result<DeckCard, CreateDeckCardError>> + Send;
 
-    // =======
-    //  count
-    // =======
+    // == count ==
 
     /// Returns the number of decks owned by a user.
     fn count_decks_by_user(
@@ -90,9 +86,7 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         deck_id: uuid::Uuid,
     ) -> impl Future<Output = Result<i64, anyhow::Error>> + Send;
 
-    // =====
-    //  get
-    // =====
+    // == get ==
 
     /// Retrieves a single deck profile by ID.
     fn get_deck_profile(
@@ -122,9 +116,7 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         request: &GetDeckProfile,
     ) -> impl Future<Output = Result<Vec<String>, GetDeckCardError>> + Send;
 
-    // ========
-    //  update
-    // ========
+    // == update ==
 
     /// Updates deck profile metadata.
     fn update_deck_profile(
@@ -138,9 +130,7 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         request: &UpdateDeckCard,
     ) -> impl Future<Output = Result<DeckCard, UpdateDeckCardError>> + Send;
 
-    // ========
-    //  delete
-    // ========
+    // == delete ==
 
     /// Deletes a deck and all its cards.
     fn delete_deck(
@@ -222,9 +212,7 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<u64, CommanderMaybeboardError>> + Send;
 
-    // ========
-    //  clone
-    // ========
+    // == clone ==
 
     /// Transactionally copies a source deck's profile and all entries into a
     /// new deck owned by `owner_id` with the given `new_name`. Returns the
@@ -238,9 +226,7 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         owner_id: uuid::Uuid,
     ) -> impl Future<Output = Result<uuid::Uuid, CloneDeckError>> + Send;
 
-    // =======
-    //  share
-    // =======
+    // == share ==
 
     /// Generates (or regenerates) the deck's share token and returns it.
     /// The caller must have already verified ownership.
@@ -266,9 +252,7 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
 
 /// Service port for deck building business logic.
 pub trait DeckService: Clone + Send + Sync + 'static {
-    // ========
-    //  create
-    // ========
+    // == create ==
 
     /// Creates a new deck profile with authorization check.
     fn create_deck_profile(
@@ -282,9 +266,7 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         request: &CreateDeckCard,
     ) -> impl Future<Output = Result<DeckCard, CreateDeckCardError>> + Send;
 
-    // =====
-    //  get
-    // =====
+    // == get ==
 
     /// Retrieves a deck profile with authorization check.
     fn get_deck_profile(
@@ -326,9 +308,7 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         request: &GetDeckProfile,
     ) -> impl Future<Output = Result<Vec<Card>, GetDeckTokensError>> + Send;
 
-    // ========
-    //  update
-    // ========
+    // == update ==
 
     /// Updates deck profile with authorization check.
     fn update_deck_profile(
@@ -342,9 +322,7 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         request: &UpdateDeckCard,
     ) -> impl Future<Output = Result<DeckCard, UpdateDeckCardError>> + Send;
 
-    // ========
-    //  delete
-    // ========
+    // == delete ==
 
     /// Deletes a deck with authorization check.
     fn delete_deck(
@@ -425,9 +403,7 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         mode: zwipe_core::domain::deck::ImportMode,
     ) -> impl Future<Output = Result<ImportDeckCardsResult, ImportDeckCardsError>> + Send;
 
-    // ========
-    //  clone
-    // ========
+    // == clone ==
 
     /// Clones an existing deck owned by the caller into a new deck with a
     /// caller-chosen name. Performs source ownership check and deck-count
@@ -438,9 +414,7 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         request: &CloneDeck,
     ) -> impl Future<Output = Result<uuid::Uuid, CloneDeckError>> + Send;
 
-    // =======
-    //  share
-    // =======
+    // == share ==
 
     /// Generates (or regenerates) the deck's share token with authorization
     /// check. Returns the new token; any previous link dies with its token.
