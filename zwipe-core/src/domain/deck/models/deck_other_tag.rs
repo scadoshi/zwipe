@@ -3,7 +3,7 @@
 //! Distinct from [`DeckTag`](super::deck_tag::DeckTag) (what the deck *does*,
 //! the gameplay axis) and [`PowerLevel`](super::power_level::PowerLevel) (a
 //! single-select rating). This is the multi-select bucket for descriptors that
-//! aren't about the game plan — Budget, Jank, Meme, Precon, … — and is meant to
+//! aren't about the game plan (Budget, Jank, Meme, Precon, …) and is meant to
 //! grow freely over time.
 //!
 //! Variants are only ever added, never removed or renamed, so previously-stored

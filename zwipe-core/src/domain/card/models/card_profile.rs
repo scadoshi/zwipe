@@ -15,7 +15,7 @@ use uuid::Uuid;
 /// Currently minimal, but designed for future expansion with user-specific data.
 #[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
 pub struct CardProfile {
-    /// Scryfall UUID — the primary key shared with the `scryfall_data` table.
+    /// Scryfall UUID, the primary key shared with the `scryfall_data` table.
     pub scryfall_data_id: Uuid,
     /// Whether this is a token (not a real card).
     pub is_token: bool,
@@ -50,8 +50,7 @@ mod tests {
 
     #[test]
     fn serializes_card_roles_without_legacy_mechanical_categories() {
-        // Phase M sunset: the wire carries `card_roles` only; the legacy
-        // `mechanical_categories` field is gone.
+        // The wire carries `card_roles` only.
         let ts = DateTime::<Utc>::from_timestamp(0, 0).unwrap();
         let profile = CardProfile {
             scryfall_data_id: Uuid::nil(),

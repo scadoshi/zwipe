@@ -794,16 +794,16 @@ impl CardQueryBuilder {
 
     /// Toggles deck-aware synergy membership mode (Synergy ON/OFF). When on, the
     /// deck-aware search constrains results to the commander's synergy pool, then
-    /// sorts within it. A pure mode flag — never makes the filter "active".
+    /// sorts within it. A pure mode flag; it never makes the filter "active".
     pub fn set_synergy(&mut self, synergy: bool) -> &mut Self {
         self.synergy = synergy;
         self
     }
 
     /// Toggles the deck-aware suppression opt-out. When on, the deck's
-    /// suppressed (skipped or removed) cards stay in results — quick add's
+    /// suppressed (skipped or removed) cards stay in results, quick add's
     /// mode, where a typed name is explicit intent. A pure mode flag like
-    /// synergy — never makes the filter "active".
+    /// synergy; it never makes the filter "active".
     pub fn set_include_skipped(&mut self, include_skipped: bool) -> &mut Self {
         self.include_skipped = include_skipped;
         self

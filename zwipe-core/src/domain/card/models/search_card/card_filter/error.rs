@@ -7,7 +7,7 @@ pub enum InvalidCardCriteria {
     #[error("must have at least one filter")]
     Empty,
     /// A value appears in both an include and an exclude list for the same
-    /// attribute — a contradiction that matches zero cards (e.g. include and
+    /// attribute, a contradiction that matches zero cards (e.g. include and
     /// exclude the Land card type).
     #[error("filter both includes and excludes {field}: {values}")]
     Contradiction {

@@ -2,9 +2,9 @@
 //!
 //! Two types share one predicate core, [`CardCriteria`]:
 //!
-//! - [`CardQuery`] — the **database query** POSTed to the server: criteria plus
+//! - [`CardQuery`]: the **database query** POSTed to the server: criteria plus
 //!   bounded pagination ([`query::Limit`]) and ordering.
-//! - [`Cards`](crate::domain::card::search_card::cards::Cards) — the
+//! - [`Cards`](crate::domain::card::search_card::cards::Cards): the
 //!   **in-memory collection**, whose operations take bare criteria and cannot
 //!   express a limit.
 //!

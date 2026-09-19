@@ -197,7 +197,7 @@ impl DeckMetrics {
             .collect()
     }
 
-    /// Draw-odds inputs: `(library size, [(bucket label, count)])` — lands
+    /// Draw-odds inputs: `(library size, [(bucket label, count)])`, lands
     /// plus each card role. Library size is the mainboard (the commander sits
     /// in the command zone, not the library).
     pub fn draw_odds_buckets(&self) -> (u32, Vec<(&'static str, u32)>) {
@@ -213,7 +213,7 @@ impl DeckMetrics {
 
     /// Computes metrics from deck entries, counting each card by its quantity.
     ///
-    /// Maybeboard and sideboard cards are excluded — metrics reflect the active deck only.
+    /// Maybeboard and sideboard cards are excluded; metrics reflect the active deck only.
     pub fn from_entries(entries: &[DeckEntry]) -> Self {
         Self::from_entries_and_command_zone(entries, &[])
     }
@@ -281,7 +281,7 @@ impl DeckMetrics {
 
             // Card roles. `card_roles` are server slugs; this compact chart keys off
             // the known CardRole set (fixed short-label axes), so a server-added role
-            // slug isn't charted here — it still shows in grouped lists + on the card.
+            // slug isn't charted here; it still shows in grouped lists + on the card.
             for slug in &card.card_profile.card_roles {
                 if let Some(idx) = all_cats
                     .iter()
@@ -300,7 +300,7 @@ impl DeckMetrics {
                 }
             }
 
-            // Pip produced: walk produced_mana (covers lands, rocks, dorks — all mana producers)
+            // Pip produced: walk produced_mana (covers lands, rocks, dorks, all mana producers)
             if let Some(produced) = &card.scryfall_data.produced_mana {
                 for s in produced {
                     if let Some(idx) = produced_color_index(s)
@@ -495,7 +495,7 @@ fn numeric_stat(top: Option<&str>, front_face: Option<&str>) -> Option<f64> {
     top.or(front_face).and_then(|v| v.parse::<f64>().ok())
 }
 
-/// Card type classification — first match wins (matches group_cards.rs logic).
+/// Card type classification; first match wins (matches group_cards.rs logic).
 #[cfg(test)]
 mod budget_tests {
     use super::budget_tier;
@@ -547,14 +547,14 @@ fn classify_type(card: &Card) -> usize {
         .unwrap_or(7)
 }
 
-/// CMC classification — floor to integer, cap at 6.
+/// CMC classification: floor to integer, cap at 6.
 fn classify_cmc(card: &Card) -> usize {
     let cmc = card.scryfall_data.cmc.unwrap_or(0.0);
     (cmc.floor() as usize).min(6)
 }
 
 /// Count colored pip symbols in a Scryfall mana_cost string (e.g. "{2}{R}{R}").
-/// Only counts pure single-color symbols — skips hybrid ({W/U}), phyrexian ({W/P}), etc.
+/// Only counts pure single-color symbols; skips hybrid ({W/U}), phyrexian ({W/P}), etc.
 fn count_color_pips(mana_cost: &str) -> [usize; 5] {
     let mut counts = [0usize; 5];
     for token in mana_cost.split('{').skip(1) {
@@ -565,7 +565,7 @@ fn count_color_pips(mana_cost: &str) -> [usize; 5] {
             "B" => counts[2] += 1,
             "R" => counts[3] += 1,
             "G" => counts[4] += 1,
-            _ => {} // {2}, {X}, {C}, {W/U}, {W/P} — ignored
+            _ => {} // {2}, {X}, {C}, {W/U}, {W/P} are ignored
         }
     }
     counts
@@ -655,7 +655,7 @@ pub fn deck_price(entries: &[DeckEntry], command_zone: &[Card], currency: PriceC
     mainboard_total_price(entries, currency) + command_zone_total
 }
 
-/// Color identity classification — WUBRG order + multicolor + colorless.
+/// Color identity classification: WUBRG order + multicolor + colorless.
 fn classify_color(card: &Card) -> usize {
     let ci = &card.scryfall_data.color_identity;
     if ci.is_empty() {
@@ -968,7 +968,7 @@ mod tests {
         let commander = entry.card.clone();
 
         let metrics = DeckMetrics::from_entries_and_command_zone(&[entry], &[commander]);
-        // Same scryfall id already active — not double-counted.
+        // Same scryfall id already active, so not double-counted.
         assert_eq!(metrics.total_cards, 1);
         assert!((metrics.total_price_usd.unwrap() - 2.00).abs() < f64::EPSILON);
     }

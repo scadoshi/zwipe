@@ -1,6 +1,6 @@
 //! Password validation.
 //!
-//! This module implements a comprehensive password security policy with validation
+//! This module implements the password security policy with validation
 //! rules to prevent weak credentials.
 //!
 //! # Password Policy

@@ -19,7 +19,7 @@ use crate::domain::{
 
 /// Layouts representing cards playable in Magic formats.
 ///
-/// Unknown layouts **default to hidden** (safe behavior) — new Scryfall layouts
+/// Unknown layouts **default to hidden** (safe behavior); new Scryfall layouts
 /// won't appear in results until explicitly whitelisted here.
 pub const PLAYABLE_LAYOUTS: &[&str] = &[
     "normal",
@@ -45,7 +45,7 @@ impl CardCriteria {
     /// Unset criteria (`None`) never exclude a card, so an empty criteria set
     /// matches everything. Parity note: `is_partner` / `is_background` /
     /// `is_signature_spell` are **not** evaluated here (matching the old
-    /// in-memory filter) — they are command-zone pool constraints only the
+    /// in-memory filter); they are command-zone pool constraints only the
     /// server-side search applies.
     pub fn matches(&self, card: &Card) -> bool {
         let sd = &card.scryfall_data;

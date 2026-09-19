@@ -31,7 +31,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 /// Errors if any value appears in both an include list and the exclude list for
-/// the same attribute — a contradiction that matches zero cards. `field` names
+/// the same attribute, a contradiction that matches zero cards. `field` names
 /// the attribute for the error message; `includes` is the set of include lists
 /// (e.g. `contains_any` + `contains_all`), `excludes` the exclude list.
 fn check_include_exclude_clash<T: PartialEq + Debug>(
@@ -63,7 +63,7 @@ fn check_include_exclude_clash<T: PartialEq + Debug>(
 /// Errors if a substring `contains` filter and its `not_contains` counterpart
 /// contradict. Since "contains C" requires the value to include C (and therefore
 /// every substring of C), a `not_contains` term that is a substring of the
-/// contains term matches zero cards — e.g. name contains "test" and doesn't
+/// contains term matches zero cards, e.g. name contains "test" and doesn't
 /// contain "test" (or "tes"). Compared punctuation/case-insensitively to mirror
 /// how these fields are searched.
 fn check_contains_not_contains_clash(
@@ -98,12 +98,12 @@ fn check_contains_not_contains_clash(
 ///
 /// # Usage Patterns
 ///
-/// **Quick constructor** - Use `with_*` methods for single-filter searches:
+/// **Quick constructor**: use `with_*` methods for single-filter searches:
 /// ```rust,ignore
 /// let filter = CardQueryBuilder::with_name_contains("Lightning Bolt").build()?;
 /// ```
 ///
-/// **Fluent builder** - Chain `set_*` methods for complex searches:
+/// **Fluent builder**: chain `set_*` methods for complex searches:
 /// ```rust,ignore
 /// let filter = CardQueryBuilder::new()
 ///     .set_name_contains("Dragon")
@@ -320,7 +320,7 @@ impl CardQueryBuilder {
     /// but also disregards an automatic `Land` type exclusion.
     ///
     /// The add screen excludes lands from the swipe pool once the deck's land
-    /// target is met — a default, not a user choice, so it should not read as
+    /// target is met, a default rather than a user choice, so it should not read as
     /// an active filter. Pass `lands_auto_excluded = true` when that default is
     /// in effect (the target is met) so a lone `Land` exclude doesn't count.
     pub fn is_empty_ignoring_deck_context_and_auto_lands(&self, lands_auto_excluded: bool) -> bool {
@@ -722,13 +722,13 @@ impl CardQueryBuilder {
 
     /// Builds a [`CardQuery`] (the server search request) with validation.
     ///
-    /// The builder's `limit` is clamped into a bounded [`Limit`] here — the
+    /// The builder's `limit` is clamped into a bounded [`Limit`] here; the
     /// server path is the only one that can carry pagination at all.
     ///
     /// # Errors
     ///
     /// Returns [`InvalidCardCriteria::Empty`] only when there is nothing to run
-    /// at all — no criteria, no sort, and synergy off (the unbounded full pool
+    /// at all: no criteria, no sort, and synergy off (the unbounded full pool
     /// with no intent). A sort or synergy mode is enough to serve the pool
     /// paginated and ordered. Also returns
     /// [`InvalidCardCriteria::Contradiction`] for include/exclude clashes.
@@ -754,7 +754,7 @@ impl CardQueryBuilder {
     pub fn build_criteria(&self) -> Result<CardCriteria, InvalidCardCriteria> {
         // Reject only the true firehose: no criteria, no sort, synergy off. An
         // explicit sort or synergy mode is intent enough to serve all cards
-        // (paginated, ordered) — mirrors `has_search_intent`.
+        // (paginated, ordered); mirrors `has_search_intent`.
         if self.is_empty() && self.sort.is_none() && !self.synergy {
             return Err(InvalidCardCriteria::Empty);
         }
@@ -1005,7 +1005,7 @@ mod tests {
         synergy.set_sort(CardSortKey::PriceUsd);
         assert!(synergy.has_search_intent());
 
-        // A real user filter is intent, as before.
+        // A real user filter is intent.
         let mut named = CardQueryBuilder::new();
         named.set_name_contains("bolt");
         assert!(named.has_search_intent());
@@ -1019,7 +1019,7 @@ mod tests {
             Err(InvalidCardCriteria::Empty)
         ));
 
-        // A sort with no filter builds — serves the full pool, ordered.
+        // A sort with no filter builds; it serves the full pool, ordered.
         let mut sorted = CardQueryBuilder::new();
         sorted.set_sort(CardSortKey::Name);
         assert!(sorted.build().is_ok());
@@ -1059,7 +1059,7 @@ mod tests {
 
     #[test]
     fn card_type_include_exclude_different_values_builds() {
-        // Include creatures, exclude lands — different values, no clash.
+        // Include creatures, exclude lands: different values, no clash.
         let mut builder = CardQueryBuilder::new();
         builder.set_card_type_contains_all(vec![CardType::Creature]);
         builder.set_card_type_excludes_any(vec![CardType::Land]);

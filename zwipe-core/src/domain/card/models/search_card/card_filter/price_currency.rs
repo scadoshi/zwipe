@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 /// `scryfall_data.prices`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum PriceCurrency {
-    /// US Dollars (TCGplayer) — the default.
+    /// US Dollars (TCGplayer), the default.
     #[default]
     Usd,
     /// Euros (Cardmarket).

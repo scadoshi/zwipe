@@ -4,7 +4,7 @@
 //! stack) and exposes the two in-memory operations as explicit steps:
 //! [`matching`](Cards::matching) (predicate, via
 //! [`CardCriteria::matches`]) and [`sorted`](Cards::sorted) (ordering, via
-//! [`CardSortKey::compare`]). There is deliberately **no limit/offset here** —
+//! [`CardSortKey::compare`]). There is deliberately **no limit/offset here**;
 //! pagination is a [`CardQuery`](super::card_filter::CardQuery) concern; the
 //! in-memory path cannot express one, by construction.
 //!
@@ -28,7 +28,7 @@ use rand::seq::SliceRandom;
 
 /// A collection of cards already loaded in memory.
 ///
-/// Operations take bare [`CardCriteria`] — never a query — and read like a
+/// Operations take bare [`CardCriteria`], never a query, and read like a
 /// slice via `Deref`.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Cards(Vec<Card>);
@@ -90,7 +90,7 @@ impl Cards {
     }
 
     /// True if any card matches `criteria`. The single-card membership test
-    /// (`Cards::from(vec![card]).any_match(...)`) needs no allocation dance —
+    /// (`Cards::from(vec![card]).any_match(...)`) needs no allocation dance;
     /// prefer calling [`CardCriteria::matches`] directly when you hold one card.
     pub fn any_match(&self, criteria: &CardCriteria) -> bool {
         self.0.iter().any(|card| criteria.matches(card))
@@ -795,7 +795,7 @@ mod tests {
         mono_red.scryfall_data.color_identity = Colors::from([Color::Red]);
         let mut rg = make_card("Gruul");
         rg.scryfall_data.color_identity = Colors::from([Color::Red, Color::Green]);
-        // within Red only — Gruul has Green so it's excluded
+        // within Red only; Gruul has Green, so it's excluded
         let filter = CardQueryBuilder::with_color_identity_within([Color::Red])
             .build_criteria()
             .unwrap();

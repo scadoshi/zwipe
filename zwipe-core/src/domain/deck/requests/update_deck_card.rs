@@ -60,7 +60,7 @@ pub struct UpdateDeckCard {
 impl UpdateDeckCard {
     /// Creates an idempotent (PATCH) update request with validation:
     /// `quantity`, when present, is an **absolute** value to set (≥ 1), not
-    /// a delta — replaying the request is harmless.
+    /// a delta; replaying the request is harmless.
     ///
     /// At least one of `quantity`, `board`, `new_scryfall_data_id`, or `mvp`
     /// must be `Some`.

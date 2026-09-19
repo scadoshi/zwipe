@@ -1,7 +1,7 @@
 //! In-memory card grouping for local `Vec<Card>` slices.
 //!
 //! Partitions a `Vec<Card>` into labelled groups based on card type, mana value,
-//! or color identity. Works alongside `filter_cards.rs` — the caller is expected
+//! or color identity. Works alongside `filter_cards.rs`; the caller is expected
 //! to `filter_by` first (which handles sorting), then `group_by`.
 //!
 //! # Example
@@ -58,7 +58,7 @@ pub struct CardGroup {
     /// Color-identity pips, in WUBRG order, when grouping by
     /// [`GroupByOption::Color`]. The view renders these in place of a color
     /// word, so `label` is empty for colored groups (colorless keeps its
-    /// word — there's no pip for "no colors"). `None` for every other
+    /// word; there's no pip for "no colors"). `None` for every other
     /// grouping option.
     pub pips: Option<Vec<Color>>,
     /// Cards belonging to this group, in the order they were received.
@@ -67,7 +67,7 @@ pub struct CardGroup {
 
 impl CardGroup {
     /// Stable identity for this group, used as the collapse key. Colored
-    /// groups carry no label, so they key off their pips instead — without
+    /// groups carry no label, so they key off their pips instead; without
     /// this every colored group would share the empty string and collapse as
     /// one.
     pub fn key(&self) -> String {
@@ -97,7 +97,7 @@ pub trait GroupCards {
 
 impl GroupCards for Vec<Card> {
     fn group_by(self, option: GroupByOption) -> Vec<CardGroup> {
-        // Card-role grouping is multi-bucket — a card can appear in multiple groups
+        // Card-role grouping is multi-bucket: a card can appear in multiple groups
         if option == GroupByOption::CardRole {
             return group_by_card_role(self);
         }
@@ -150,7 +150,7 @@ impl GroupCards for Vec<Card> {
 /// multicolored card sharing one "Multicolor" bucket. This mirrors how the
 /// deck list groups decks by color.
 ///
-/// Colored groups carry [`CardGroup::pips`] and an empty label — the view
+/// Colored groups carry [`CardGroup::pips`] and an empty label; the view
 /// renders pips where a color word used to be. Colorless keeps its word and
 /// sorts last.
 fn group_by_color(cards: Vec<Card>) -> Vec<CardGroup> {
@@ -176,7 +176,7 @@ fn group_by_color(cards: Vec<Card>) -> Vec<CardGroup> {
             }
         }
     }
-    // Fewest colors first, each in WUBRG order, colorless last — the same
+    // Fewest colors first, each in WUBRG order, colorless last, the same
     // ordering the deck list uses for its color groups.
     groups.sort_by_key(|g| {
         let pips = g.pips.clone().unwrap_or_default();
@@ -246,7 +246,7 @@ fn classify(card: &Card, option: GroupByOption) -> usize {
     }
 }
 
-/// Card type classification — first match wins.
+/// Card type classification; first match wins.
 ///
 /// Priority: Land → Creature → Planeswalker → Artifact → Enchantment →
 /// Instant → Sorcery → Other.
@@ -272,7 +272,7 @@ fn classify_card_type(card: &Card) -> usize {
         .unwrap_or(7) // "other"
 }
 
-/// CMC classification — floor to integer, cap at 6.
+/// CMC classification: floor to integer, cap at 6.
 fn classify_cmc(card: &Card) -> usize {
     let cmc = card.scryfall_data.cmc.unwrap_or(0.0);
     let floored = cmc.floor() as usize;
@@ -527,8 +527,8 @@ mod tests {
         assert_eq!(result[0].pips.as_deref(), Some([Color::White].as_slice()));
     }
 
-    /// Each color combination is its own group — the old behavior funnelled
-    /// every multicolored card into one "Multicolor" bucket.
+    /// Each color combination is its own group; multicolored cards are not
+    /// funnelled into one "Multicolor" bucket.
     #[test]
     fn test_group_by_color_splits_combinations() {
         let mut azorius = make_card("Azorius Card");

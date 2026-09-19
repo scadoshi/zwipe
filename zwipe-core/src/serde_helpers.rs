@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer};
 /// Deserialize a JSON array into `Vec<T>`, silently **dropping** any element
 /// that fails to deserialize into `T` (instead of failing the whole payload).
 ///
-/// Forward-compatibility bridge for enum-vecs on **served** types — card roles
+/// Forward-compatibility bridge for enum-vecs on **served** types: card roles
 /// (`CardRole`), deck tags (`DeckTag`/`DeckOtherTag`). A newer server can add a
 /// role/tag slug that an older client's compiled enum doesn't know; with a strict
 /// derived `Deserialize` that unknown variant would error the *entire* card/deck.

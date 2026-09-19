@@ -1,7 +1,7 @@
 //! Client platform of a session.
 //!
 //! Which kind of client created (or last rotated) a session. Recorded per
-//! session — a single user can hold sessions from several platforms at once —
+//! session (a single user can hold sessions from several platforms at once)
 //! for platform analytics and targeted comms. Serialized/stored as a lowercase
 //! string (`"ios"`, `"android"`, `"desktop"`, `"web"`).
 

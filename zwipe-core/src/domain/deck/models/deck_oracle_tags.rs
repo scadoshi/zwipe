@@ -1,7 +1,7 @@
 //! Deck-level oracle tags: the granular functional tags a deck declares as its
 //! strategy. Unlike [`DeckTag`](super::deck_tag::DeckTag) / `DeckOtherTag`
 //! (curated enums), these are free slug strings from the `oracle_tags` catalog
-//! (e.g. `spot-removal`), so validation is just dedupe + a cap - no enum parse.
+//! (e.g. `spot-removal`), so validation is just dedupe + a cap, no enum parse.
 //! Picking an archetype seeds these client-side (the `DeckTag → otag-set` map
 //! arrives in Phase 3 Slice B).
 
@@ -9,7 +9,7 @@ use super::deck_tag::{DeckTag, DeckTagView};
 use std::collections::HashSet;
 
 /// Maximum oracle tags a deck may declare. Higher than `MAX_DECK_TAGS` (5)
-/// because oracle tags are granular - a deck legitimately touches many.
+/// because oracle tags are granular; a deck legitimately touches many.
 pub const MAX_DECK_ORACLE_TAGS: usize = 30;
 
 /// The oracle-tag slugs seeded by a set of selected deck tags: the union of each
@@ -42,7 +42,7 @@ pub fn seed_oracle_tags_from_catalog(tags: &[String], catalog: &[DeckTagView]) -
 }
 
 /// Dedupes raw oracle-tag slugs, preserving first-seen order (mirrors
-/// `parse_tags`' dedupe, minus the enum validation - slugs are free strings).
+/// `parse_tags`' dedupe, minus the enum validation; slugs are free strings).
 pub fn dedupe_oracle_tags(raw: &[String]) -> Vec<String> {
     let mut seen = HashSet::new();
     raw.iter()

@@ -8,7 +8,7 @@ use uuid::Uuid;
 ///
 /// A closed set shared by client and server: an unknown kind fails
 /// deserialization instead of landing as a stray string. The client only
-/// fires these while unauthenticated — once a user exists, the sparse
+/// fires these while unauthenticated; once a user exists, the sparse
 /// `user_events` log takes over (registration success is its `register` row).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -34,7 +34,7 @@ impl AnonymousEventKind {
 
 /// One pre-auth funnel event posted by an unauthenticated client.
 ///
-/// `session_id` is a random UUID the client generates per install/launch —
+/// `session_id` is a random UUID the client generates per install/launch;
 /// it carries no identity and exists only so funnel steps from the same
 /// session can be counted once (distinct sessions per kind).
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -48,7 +48,7 @@ pub struct HttpAnonymousEvent {
 /// Batched usage counters posted by the client.
 ///
 /// The client buffers counts in memory and flushes periodically (every ~30s
-/// and on screen-exit / app backgrounding). All fields are additive — the
+/// and on screen-exit / app backgrounding). All fields are additive; the
 /// server increments the corresponding lifetime and daily counters.
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct HttpUsageBatch {
@@ -85,16 +85,16 @@ pub struct HttpUsageBatch {
 
 /// One handled-error report: a `ClientError` was surfaced to the user
 /// (toast/dialog) on the client. Deduped client-side within a flush window
-/// (`count`), aggregate-only — no user identity beyond the authed usage batch
+/// (`count`), aggregate-only, no user identity beyond the authed usage batch
 /// it rides in.
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct ClientErrorReport {
-    /// Host screen, flattened module path (`"deck_edit"`, `"auth_login"`) —
+    /// Host screen, flattened module path (`"deck_edit"`, `"auth_login"`), a
     /// closed vocabulary from client-side consts. The aggregation axis;
     /// component names never leak into it.
     pub screen: String,
     /// `""` for the screen itself; else the component module name
-    /// (`"card_filter_sheet"`) — the drill-down breadcrumb. Dialogs/sheets
+    /// (`"card_filter_sheet"`): the drill-down breadcrumb. Dialogs/sheets
     /// report their host screen plus their own component name.
     #[serde(default)]
     pub component: String,
@@ -105,14 +105,14 @@ pub struct ClientErrorReport {
     pub kind: String,
     /// Human-readable detail. 4xx messages are user-safe by contract; decode
     /// messages must be reduced to the error's shape client-side (serde
-    /// errors quote input fragments — response bodies must never ride a
+    /// errors quote input fragments; response bodies must never ride a
     /// report). Truncated on both sides.
     pub message: String,
     /// How many times this exact error fired within the flush window.
     pub count: u32,
-    /// `CARGO_PKG_VERSION` — self-reported, untrusted debugging metadata.
+    /// `CARGO_PKG_VERSION`, self-reported, untrusted debugging metadata.
     pub client_version: String,
-    /// `"ios"` / `"android"` / `"web"` — self-reported.
+    /// `"ios"` / `"android"` / `"web"`, self-reported.
     pub platform: String,
 }
 
@@ -128,7 +128,7 @@ impl ClientErrorReport {
 
     /// Returns a copy with every string truncated to its cap and `count`
     /// clamped to [`HttpUsageBatch::MAX_PER_FLUSH`]. Client-side truncation is
-    /// untrusted — the server clamps regardless.
+    /// untrusted; the server clamps regardless.
     #[must_use]
     pub fn clamped(&self) -> Self {
         Self {
@@ -151,15 +151,15 @@ impl ClientErrorReport {
 /// exactly one row per crash.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HttpCrashReport {
-    /// Stamped at panic time — the server's dedupe key.
+    /// Stamped at panic time; the server's dedupe key.
     pub crash_id: Uuid,
-    /// `CARGO_PKG_VERSION` — self-reported, untrusted debugging metadata.
+    /// `CARGO_PKG_VERSION`, self-reported, untrusted debugging metadata.
     pub client_version: String,
     /// Platform of the crashed build.
     pub platform: crate::domain::auth::models::platform::ClientPlatform,
     /// Panic payload + location. Truncated on both sides.
     pub message: String,
-    /// When the panic hook ran (client clock — untrusted, indicative only).
+    /// When the panic hook ran (client clock, untrusted and indicative only).
     pub occurred_at: DateTime<Utc>,
 }
 
@@ -168,7 +168,7 @@ impl HttpCrashReport {
     pub const MAX_MESSAGE_CHARS: usize = 2_000;
 
     /// Returns a copy with `message` and `client_version` truncated to their
-    /// caps. Client-side truncation is untrusted — the server clamps
+    /// caps. Client-side truncation is untrusted; the server clamps
     /// regardless.
     #[must_use]
     pub fn clamped(&self) -> Self {
@@ -194,18 +194,18 @@ fn truncated_chars(s: &str, max: usize) -> String {
 ///
 /// Keyed by the swiped card plus its deck (`deck_id`); the server derives the
 /// deck's commander (EDH) or generalized `(format, color-identity)` context
-/// from it. `shown` is the impression denominator — currently the client sends
+/// from it. `shown` is the impression denominator; currently the client sends
 /// `added + skipped + maybed`, leaving room for true impressions later.
 ///
 /// The legacy `commander_oracle_id` wire field was dropped 2026-07-24 (Phase 5S
-/// step 3), after `MIN_CLIENT_VERSION` was floored to 1.7.0 — every serving
+/// step 3), after `MIN_CLIENT_VERSION` was floored to 1.7.0; every serving
 /// client sends `deck_id`. A straggler payload still carrying the old field
 /// deserializes fine (serde ignores unknown fields).
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct CardSignalDelta {
     /// Card oracle id.
     pub card_oracle_id: Uuid,
-    /// Deck the swipe belongs to — the sole context key: the server derives the
+    /// Deck the swipe belongs to. The sole context key: the server derives the
     /// deck's commander, format, color identity, and tags from it
     /// (context/plans/otags/ Phase 5). Kept `Option` for wire leniency; the
     /// server drops signals it can't resolve to an owned deck.
@@ -227,7 +227,7 @@ pub struct CardSignalDelta {
 ///
 /// Keyed by the **shown candidate's** oracle id (the card swiped on the
 /// Zwipe-select screen), unlike [`CardSignalDelta`] whose lead key is the
-/// deck's commander. `shown` is the impression denominator — the client
+/// deck's commander. `shown` is the impression denominator; the client
 /// sends `selected + skipped` (down-swipe undo is not a decision and is
 /// excluded).
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -249,7 +249,7 @@ pub struct CommanderSelectDelta {
 /// already flushed (a pre-flush undo simply drops the pending entry
 /// client-side and never reaches the wire). Ingest writes these into the
 /// deck's suppression set (`source = 'skip'`) after verifying ownership;
-/// removal suppressions never ride this contract — the server records them
+/// removal suppressions never ride this contract; the server records them
 /// directly on the delete-card endpoint.
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct DeckSkipDelta {
@@ -282,7 +282,7 @@ impl HttpUsageBatch {
     pub const MAX_SKIP_DECKS_PER_FLUSH: usize = 50;
 
     /// Maximum accepted number of distinct handled-error reports per flush.
-    /// Matches the client-side buffer cap — beyond it, an error loop stops
+    /// Matches the client-side buffer cap; beyond it, an error loop stops
     /// adding entries (its repeats still tally into existing `count`s).
     pub const MAX_CLIENT_ERRORS_PER_FLUSH: usize = 20;
 
@@ -515,7 +515,7 @@ mod tests {
 
     #[test]
     fn client_error_report_component_defaults_to_empty() {
-        // `component` is `#[serde(default)]` — a report from the screen
+        // `component` is `#[serde(default)]`, so a report from the screen
         // itself omits it entirely.
         let json = r#"{"screen":"deck_edit","action":"save","kind":"api_unprocessable",
             "message":"deck limit reached","count":2,"client_version":"1.8.0","platform":"ios"}"#;
@@ -578,9 +578,9 @@ mod tests {
 
     #[test]
     fn signal_with_legacy_commander_field_still_parses() {
-        // The legacy `commander_oracle_id` wire field was dropped (Phase 5S
-        // step 3). A straggler payload still carrying it must deserialize —
-        // serde ignores unknown fields — with deck_id carrying the context.
+        // A payload still carrying the old `commander_oracle_id` wire field
+        // must deserialize (serde ignores unknown fields), with deck_id
+        // carrying the context.
         let json = r#"{"swipes_right":0,"swipes_left":0,"swipes_up":0,"swipes_down":0,"searches":0,
             "signals":[{"commander_oracle_id":"11111111-1111-1111-1111-111111111111",
                         "card_oracle_id":"00000000-0000-0000-0000-000000000000",
@@ -673,7 +673,7 @@ pub struct HttpLifetimeCounters {
     pub decks_created: i32,
     /// Decks that have reached a valid state at least once.
     pub decks_completed: i32,
-    /// Last write to this counter row. Not a last-active signal —
+    /// Last write to this counter row. Not a last-active signal;
     /// `users.last_active_at` is the canonical one.
     pub updated_at: DateTime<Utc>,
 }

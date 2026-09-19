@@ -6,7 +6,7 @@
 //! testable end-to-end without touching prod; release builds resolve to the
 //! public domains. `zerver` layers an env override on top for its config
 //! (see `zerver/src/lib/config.rs`); the clients bake these in directly.
-//! (`zite/build.rs` keeps one mirrored literal for sitemap generation —
+//! (`zite/build.rs` keeps one mirrored literal for sitemap generation;
 //! build scripts can't import the lib.)
 
 /// Public web base URL (zite), no trailing slash.

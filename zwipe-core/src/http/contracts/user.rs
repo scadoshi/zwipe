@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// HTTP request body for updating preferences.
 ///
-/// Uses `Option<T>` for partial update semantics — absent fields are unchanged.
+/// Uses `Option<T>` for partial update semantics: absent fields are unchanged.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HttpUpdatePreferences {
     /// Theme identifier, or absent to leave unchanged.

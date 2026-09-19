@@ -171,7 +171,7 @@ impl TryFrom<&str> for CardRole {
 
 /// Wire view of a card role for the server-delivered role catalog
 /// (`GET /api/card/roles`). Lets a client label any role slug it's sent without
-/// a compiled enum — see `context/plans/server_driven_catalogs.md` (Part B).
+/// a compiled enum; see `context/plans/server_driven_catalogs.md` (Part B).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CardRoleView {
     /// snake_case slug (matches the served role values, e.g. `graveyard_hate`).
@@ -195,7 +195,7 @@ impl CardRole {
 
 /// Display label for a role **slug**: the curated `display_name` if the slug is a
 /// known `CardRole`, otherwise the prettified slug. Lets card-role display work off
-/// server-delivered slugs (`CardProfile.card_roles`) — a server-added role still
+/// server-delivered slugs (`CardProfile.card_roles`); a server-added role still
 /// shows a readable label without a client release, while known roles keep their
 /// curated labels (e.g. `counters` → "+1/+1 Counters").
 pub fn role_label(slug: &str) -> String {

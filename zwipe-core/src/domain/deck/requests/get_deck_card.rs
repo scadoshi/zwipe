@@ -1,4 +1,4 @@
-//! Get deck card operation — validation error only.
+//! Get deck card operation; validation error only.
 
 use thiserror::Error;
 

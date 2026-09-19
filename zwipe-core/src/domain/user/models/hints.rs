@@ -22,7 +22,7 @@ pub const HINT_REMOVE_DECK_CARDS: &str = "remove_deck_cards";
 pub const HINT_CREATE_DECK: &str = "create_deck";
 /// Explainer for the edit deck form (name, format, command zone).
 pub const HINT_EDIT_DECK: &str = "edit_deck";
-/// Browsing dialog on the deck list (fires only once decks exist — its main
+/// Browsing dialog on the deck list (fires only once decks exist; its main
 /// job is teaching the group/filter chip rows, which an empty list hides).
 pub const HINT_DECK_LIST: &str = "deck_list";
 /// Welcome dialog on first opening a deck profile.

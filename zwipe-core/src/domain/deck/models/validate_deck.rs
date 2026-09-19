@@ -66,7 +66,7 @@ pub fn validate_deck(
 
     let mut warnings = Vec::new();
 
-    // Budget warning is format-independent — a price target applies to any deck.
+    // Budget warning is format-independent; a price target applies to any deck.
     check_price_target(deck_profile, &active_entries, command_zone, &mut warnings);
 
     let Some(format) = &deck_profile.format else {
@@ -134,7 +134,7 @@ fn check_card_count(format: &Format, profile: &DeckProfile, warnings: &mut Vec<D
     }
 }
 
-/// Warns when the mainboard has fewer lands than the deck's land target — the
+/// Warns when the mainboard has fewer lands than the deck's land target: the
 /// user's explicit override if set, otherwise the format heuristic. Mirrors the
 /// other format-derived checks, which warn off the format's rules regardless.
 fn check_land_target(
@@ -160,7 +160,7 @@ fn check_land_target(
 }
 
 /// Warns when the mainboard total price exceeds the deck's price target
-/// (budget). Explicit-only — a budget is always user-chosen, never inferred.
+/// (budget). Explicit-only: a budget is always user-chosen, never inferred.
 fn check_price_target(
     profile: &DeckProfile,
     active_entries: &[DeckEntry],
@@ -843,7 +843,7 @@ mod tests {
             let mut profile = test_profile(Some(Format::Commander));
             profile.commander_id = Some(commander.scryfall_data.id);
 
-            // Card with black — outside RGWU identity
+            // Card with black, outside RGWU identity
             let mut entry = make_entry("Doom Blade", 1);
             entry.card.scryfall_data.color_identity = Colors::from([Color::Black]);
 
@@ -939,7 +939,7 @@ mod tests {
             profile.commander_id = Some(commander.scryfall_data.id);
             profile.partner_commander_id = Some(partner.scryfall_data.id);
 
-            // Blue card — within partner's identity but not commander's
+            // Blue card, within partner's identity but not commander's
             let mut entry = make_entry("Counterspell", 1);
             entry.card.scryfall_data.color_identity = Colors::from([Color::Blue]);
 

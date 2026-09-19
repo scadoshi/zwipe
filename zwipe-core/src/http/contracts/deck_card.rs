@@ -106,7 +106,7 @@ impl HttpPatchDeckCard {
 pub struct HttpImportDeckCards {
     /// Plain-text decklist (one card per line).
     pub text: String,
-    /// Optional board override — when set, all imported cards are placed on
+    /// Optional board override; when set, all imported cards are placed on
     /// this board regardless of section headers in the text.
     /// Values: `"deck"`, `"maybeboard"`, `"sideboard"`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -136,7 +136,7 @@ mod tests {
 
     #[test]
     fn patch_body_distinguishes_null_from_absent() {
-        // Explicit null decodes as Set(None) — the handler's 422 signal —
+        // Explicit null decodes as Set(None), the handler's 422 signal,
         // while an absent field stays Unchanged. Plain Option couldn't tell
         // these apart, which is why the fields are Opdate.
         let body: HttpPatchDeckCard = serde_json::from_str(r#"{"quantity":null}"#).unwrap();

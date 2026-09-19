@@ -96,7 +96,7 @@ impl Username {
     ///
     /// # Arguments
     ///
-    /// * `raw` - The raw username string to validate
+    /// * `raw`: the raw username string to validate
     ///
     /// # Errors
     ///

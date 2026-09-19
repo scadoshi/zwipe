@@ -39,11 +39,11 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer, de::DeserializeOwn
 /// `#[serde(default, skip_serializing_if = "Opdate::is_unchanged")]`:
 /// `default` maps an absent key to `Unchanged`, and the skip keeps
 /// `Unchanged` off the wire entirely. Serializing a bare `Unchanged` is a
-/// hard error on purpose — without the skip attr it would emit `null`,
+/// hard error on purpose: without the skip attr it would emit `null`,
 /// which decodes as "clear this field" and silently wipes data.
 ///
 /// The pre-1.7.5 legacy dialect (`"Unchanged"` string, `{"Set": value}`
-/// wrappers) is no longer decoded: the 1.7.5 version gate guarantees every
+/// wrappers) is not decoded: the 1.7.5 version gate guarantees every
 /// client speaks the clean shape (`context/plans/patch_idempotent_updates.md`,
 /// Phase 5).
 ///
@@ -61,7 +61,7 @@ pub enum Opdate<T> {
 /// Clean wire form: `Set(Some(v))` → the bare value, `Set(None)` → `null`.
 ///
 /// `Unchanged` errors: it must be kept off the wire by the field's
-/// `skip_serializing_if` attr — emitting `null` instead would read as
+/// `skip_serializing_if` attr; emitting `null` instead would read as
 /// "clear" on decode and destroy data, so a forgotten attr fails loudly.
 impl<T: Serialize> Serialize for Opdate<T> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
@@ -78,7 +78,7 @@ impl<T: Serialize> Serialize for Opdate<T> {
 /// Clean-shape decode only: `null` → `Set(None)`, bare value → `Set(Some)`,
 /// absent → `Unchanged` via `#[serde(default)]`. The legacy externally-tagged
 /// dialect from pre-1.7.5 clients fails to decode (or, for `Opdate<String>`,
-/// reads as an ordinary value) — those clients are behind the version gate.
+/// reads as an ordinary value); those clients are behind the version gate.
 impl<'de, T: DeserializeOwned> Deserialize<'de> for Opdate<T> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         use serde::de::Error as _;
@@ -220,8 +220,7 @@ mod tests {
         // object form fails outright for non-string targets...
         assert!(serde_json::from_str::<Probe>(r#"{"field":{"Set":7}}"#).is_err());
         assert!(serde_json::from_str::<Probe>(r#"{"field":"Unchanged"}"#).is_err());
-        // ...and the old "Unchanged" sentinel string is now just a string
-        // value — the window ambiguity died with the legacy arms.
+        // ...and an "Unchanged" string is just a string value.
         let p: StringProbe = serde_json::from_str(r#"{"field":"Unchanged"}"#).unwrap();
         assert_eq!(p.field, Opdate::Set(Some("Unchanged".to_string())));
     }

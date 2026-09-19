@@ -5,7 +5,7 @@
 //! the read-side projection the server serves and the client consumes to build the
 //! otag filter picker: the slug players filter on plus the human label, definition,
 //! and parent slugs for grouping. It is deliberately lighter than the ingest record
-//! (no ids, taggings, or aliases) - only what a picker needs.
+//! (no ids, taggings, or aliases), only what a picker needs.
 
 use serde::{Deserialize, Serialize};
 
@@ -130,7 +130,7 @@ pub fn is_noise_oracle_tag(slug: &str) -> bool {
 /// every otag search surface (deck selector, card filter, dictionary): exact
 /// slug/label matches first, then slug/label substring matches, then
 /// description-only matches, each tier alphabetical by slug. A blank query
-/// returns nothing — pickers show their curated/browse views instead. Callers
+/// returns nothing; pickers show their curated/browse views instead. Callers
 /// apply their own result cap.
 pub fn search_oracle_tags(tags: &[OracleTag], query: &str) -> Vec<OracleTag> {
     let q = query.trim().to_lowercase();

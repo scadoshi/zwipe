@@ -74,7 +74,7 @@ impl Default for UserPreferences {
 
 /// Validated request to update a user's preferences.
 ///
-/// Uses `Option<T>` for partial update semantics — `None` means unchanged.
+/// Uses `Option<T>` for partial update semantics: `None` means unchanged.
 #[derive(Debug)]
 pub struct UpdatePreferences {
     /// User to update.

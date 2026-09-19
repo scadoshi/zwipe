@@ -1,6 +1,6 @@
 //! Card domain types shared between frontend and backend.
 
-/// User-specific card metadata (favorites, notes - future expansion).
+/// User-specific card metadata (favorites, notes; future expansion).
 pub mod card_profile;
 /// Mechanical category classification (ramp, draw, removal, etc.).
 pub mod card_role;
@@ -10,7 +10,7 @@ pub mod keyword;
 pub mod oracle_tag;
 /// Scryfall API data models.
 pub mod scryfall_data;
-/// Card search with comprehensive filtering.
+/// Card search and filtering.
 pub mod search_card;
 
 use card_profile::CardProfile;

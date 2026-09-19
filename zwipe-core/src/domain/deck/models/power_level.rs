@@ -1,4 +1,4 @@
-//! Deck power level — the official WotC Commander Bracket a deck is built for.
+//! Deck power level: the official WotC Commander Bracket a deck is built for.
 //!
 //! A single-select rating (not a tag): a deck has exactly one, and it's worth
 //! sorting/filtering on. Distinct from [`DeckTag`](super::deck_tag::DeckTag)

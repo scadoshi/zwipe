@@ -5,7 +5,7 @@
 //! identical to the pre-split `CardFilter` (criteria fields at the top level
 //! alongside `limit` / `offset` / `order_by` / `ascending` / `synergy`).
 //!
-//! `limit` is untrusted pagination input, so it is a clamping [`Limit`] — the
+//! `limit` is untrusted pagination input, so it is a clamping [`Limit`]; the
 //! in-memory path ([`Cards`](crate::domain::card::search_card::cards::Cards))
 //! cannot express a limit at all.
 
@@ -17,7 +17,7 @@ use serde_with::skip_serializing_none;
 
 /// Bounded result-page size for the server search.
 ///
-/// Construction clamps to [`Limit::MAX`] — including on deserialize, so an
+/// Construction clamps to [`Limit::MAX`], including on deserialize, so an
 /// over-large value from the wire can never reach the database. (zerver keeps
 /// its own SQL-side clamp as defense-in-depth.)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -62,7 +62,7 @@ impl<'de> Deserialize<'de> for Limit {
 ///
 /// Built via [`CardQueryBuilder`](super::builder::CardQueryBuilder). The
 /// in-memory filter path uses bare [`CardCriteria`] instead and cannot carry
-/// pagination — that split is the point.
+/// pagination; that split is the point.
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CardQuery {
@@ -85,8 +85,8 @@ pub struct CardQuery {
     #[serde(default)]
     synergy: bool,
     /// Deck-aware search only: when true, the deck's suppressed (skipped or
-    /// removed) cards stay in the results. Quick add sets this — typing a
-    /// card's name is explicit intent — while the swipe pile keeps the
+    /// removed) cards stay in the results. Quick add sets this (typing a
+    /// card's name is explicit intent) while the swipe pile keeps the
     /// default. Ignored by the plain (non-deck) search. `#[serde(default)]`
     /// so older clients that omit it parse to `false` (suppressions applied).
     #[serde(default)]

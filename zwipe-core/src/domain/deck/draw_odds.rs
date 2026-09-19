@@ -1,4 +1,4 @@
-//! Hypergeometric draw odds — the probability of drawing cards of a category
+//! Hypergeometric draw odds: the probability of drawing cards of a category
 //! from a deck **without replacement**.
 //!
 //! Pure math, no dependencies. Given a `deck_size`-card deck holding
@@ -30,10 +30,10 @@ fn ln_choose(n: u32, k: u32) -> f64 {
 /// `P(exactly k of the category)` when drawing `draws` cards from a `deck_size`
 /// deck containing `successes` of the category. Returns `0.0` for an impossible
 /// `k` (more than exist, or too many to leave room for the rest of the hand).
-/// `draws` is capped at `deck_size` — you can't draw more cards than the deck holds.
+/// `draws` is capped at `deck_size`; you can't draw more cards than the deck holds.
 pub fn p_exactly(deck_size: u32, successes: u32, draws: u32, k: u32) -> f64 {
     // Cap first: you can't draw more than the deck holds. A 0-card draw (empty
-    // deck, or draws == 0) yields exactly 0 successes with certainty — the
+    // deck, or draws == 0) yields exactly 0 successes with certainty; the
     // general computation below produces that (C(·,0) = 1); no special-case.
     let draws = draws.min(deck_size);
     // k of the successes, and (draws - k) of the non-successes, must both fit.

@@ -205,7 +205,7 @@ impl HttpCreateDeckProfileBuilder {
 
 /// Deck metadata update request body with partial update semantics.
 ///
-/// Uses [`Opdate`] for nullable fields — absent means unchanged, `null`
+/// Uses [`Opdate`] for nullable fields: absent means unchanged, `null`
 /// means clear, a bare value means set (the Opdate custom serde impls make
 /// this real; every field carries `default` + `skip_serializing_if` per the
 /// Opdate contract). `name` is the one non-clearable field: a deck always
@@ -447,7 +447,7 @@ pub struct HttpDeckShareToken {
 
 /// Public shared-deck response body (GET `/api/share/deck/{token}`).
 ///
-/// Deliberately carries **no user identity** — no username, user id, or
+/// Deliberately carries **no user identity**: no username, user id, or
 /// email. The page shows a deck, not an account.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct HttpSharedDeck {
@@ -483,7 +483,7 @@ pub struct HttpSharedDeck {
     /// app's token list). `#[serde(default)]` so payloads predating it parse.
     #[serde(default)]
     pub tokens: Vec<Card>,
-    /// Deck land target, if set — the share page shows Lands as
+    /// Deck land target, if set; the share page shows Lands as
     /// `actual / target` like the app. `#[serde(default)]` for old payloads.
     #[serde(default)]
     pub land_target: Option<i32>,
@@ -528,7 +528,7 @@ mod tests {
     #[test]
     fn update_profile_clean_wire() {
         // Clean dialect (1.7.5+): a name-only rename carries exactly one key
-        // — no "Unchanged" strings, no {"Set": ...} wrappers.
+        // (no "Unchanged" strings, no {"Set": ...} wrappers).
         let body = HttpUpdateDeckProfile::builder()
             .name(Some("j08-b1"))
             .build();
@@ -545,7 +545,7 @@ mod tests {
         assert!(req.format.is_unchanged());
         assert!(req.name.is_unchanged());
 
-        // A null name decodes as Set(None) — the handler's 422 signal.
+        // A null name decodes as Set(None), the handler's 422 signal.
         let req: HttpUpdateDeckProfile = serde_json::from_str(r#"{"name":null}"#).unwrap();
         assert_eq!(req.name, Opdate::Set(None));
     }

@@ -70,9 +70,9 @@ impl User {
     ///
     /// # Arguments
     ///
-    /// * `id` - Unique user identifier
-    /// * `username` - Validated username
-    /// * `email` - Validated email address
+    /// * `id`: unique user identifier
+    /// * `username`: validated username
+    /// * `email`: validated email address
     ///
     /// # Example
     ///

@@ -6,7 +6,7 @@
 //! card's role. The set is curated (from EDHREC themes and Archidekt/Moxfield
 //! tags) and fixed so tags stay clean and filterable.
 //!
-//! The list is large on purpose — the picker is a searchable typeahead, so more
+//! The list is large on purpose; the picker is a searchable typeahead, so more
 //! options cost nothing on screen. Variants are only ever added, never removed
 //! or renamed, so previously-stored tags keep parsing.
 
@@ -865,7 +865,7 @@ impl DeckTag {
 
 /// Display label for a deck-tag **slug**: the curated `display_name` if the slug is
 /// a known `DeckTag`, otherwise the prettified slug. Lets deck-tag display/selection
-/// work off server slugs (`DeckProfile.tags`) — a server-added tag shows a readable
+/// work off server slugs (`DeckProfile.tags`); a server-added tag shows a readable
 /// label without a client release, while known tags keep their curated labels.
 pub fn deck_tag_label(slug: &str) -> String {
     DeckTag::try_from(slug)

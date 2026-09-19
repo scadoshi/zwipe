@@ -2,14 +2,14 @@
 //! Oracle Tags cannot cleanly express: `Pump`, `Stax`, `Protection`, `GraveyardHate`.
 //!
 //! As of 2026-07-11 the other ~18 categories are derived from Oracle-tag subtrees
-//! (the community gold standard) and `Tokens` from `all_parts` — see
+//! (the community gold standard) and `Tokens` from `all_parts`; see
 //! `context/plans/otags/` (Phase 2). Those concepts map cleanly to otags. These four
 //! do NOT: the otag taxonomy carves the space differently (no single "single-target
 //! pump" or "tax/denial" concept, and `hate-graveyard` under-covers graveyard hate).
 //! So we keep a small, stable regex heuristic *only* for them.
 //!
-//! This is deliberately NOT the old brittle 24-category guesswork — it is the residual
-//! ~4 with no gold-standard equivalent. Everything else was retired to Oracle Tags.
+//! These are the residual ~4 roles with no gold-standard equivalent; every
+//! other role comes from Oracle Tags.
 
 use super::CardRole;
 use crate::domain::card::Card;
@@ -17,14 +17,14 @@ use regex::Regex;
 use std::sync::LazyLock;
 
 /// Classifies a card into the subset of `{Pump, Stax, Protection, GraveyardHate}`
-/// it matches — the categories with no clean Oracle-tag equivalent. All other
+/// it matches: the categories with no clean Oracle-tag equivalent. All other
 /// categories come from Oracle Tags (`helpers::derive_categories`), not here.
 pub fn classify_oracle_tag_gaps(card: &Card) -> Vec<CardRole> {
     let sd = &card.scryfall_data;
     // Reminder text (parenthesized) smuggles pattern matches: split second's
     // "(...players can't cast spells...)" made every split second card Stax,
     // and delve/embalm/escape reminders ("exile ... from your graveyard")
-    // tagged own-graveyard costs as GraveyardHate — 187 misroled cards across
+    // tagged own-graveyard costs as GraveyardHate: 187 misroled cards across
     // the four rules when audited 2026-08-06. Rules text a card actually
     // carries always exists outside the parens, so classification reads the
     // stripped text only.
@@ -161,14 +161,14 @@ mod tests {
     #[test]
     fn reminder_text_never_classifies() {
         // Krosan Grip: split second's reminder says "players can't cast
-        // spells..." — removal, not Stax.
+        // spells...", which is removal, not Stax.
         let split_second = classify_oracle_tag_gaps(&card_with(
             "Split second (As long as this spell is on the stack, players can't cast spells or activate abilities that aren't mana abilities.)\nDestroy target artifact or enchantment.",
         ));
         assert!(!split_second.contains(&Stax), "got {split_second:?}");
 
         // Become Immense: delve's reminder says "exile cards from your
-        // graveyard" — an own-graveyard cost, not GraveyardHate.
+        // graveyard", an own-graveyard cost, not GraveyardHate.
         let delve = classify_oracle_tag_gaps(&card_with(
             "Delve (Each card you exile from your graveyard while casting this spell pays for {1}.)\nTarget creature gets +6/+6 until end of turn.",
         ));

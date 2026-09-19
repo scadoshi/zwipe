@@ -672,7 +672,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
         }
 
         // --- 2026 sets & crossover mechanics ---
-        // (Definitions grounded in the cards' own reminder text — swept
+        // (Definitions grounded in the cards' own reminder text, swept
         // 2026-08-14 against every keyword on 4+ cards in the database.)
         "prepared" => {
             "It's a creature with a spell face; while it's prepared, you may cast a copy of that spell, which unprepares it."

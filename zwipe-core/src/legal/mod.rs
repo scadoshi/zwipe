@@ -2,7 +2,7 @@
 //!
 //! The privacy policy body lives here as a single HTML `const` so the mobile app
 //! (`zwiper`) and the website (`zite`) render identical text from one source and
-//! can never drift apart. It is pure data — a `&'static str` — so it adds no
+//! can never drift apart. It is pure data, a `&'static str`, so it adds no
 //! dependencies and respects this crate's purity rules. Both apps render it with
 //! `div { dangerous_inner_html: PRIVACY_POLICY_HTML }`; this is safe because the
 //! copy is our own static text, never user input.
@@ -14,7 +14,7 @@
 /// When the privacy policy was last revised, shown in each app's header.
 pub const PRIVACY_LAST_UPDATED: &str = "July 2026";
 
-/// The privacy policy body as an HTML fragment — headings, paragraphs, lists, and
+/// The privacy policy body as an HTML fragment: headings, paragraphs, lists, and
 /// inline `https://` links. Rendered via `dangerous_inner_html` in both apps. The
 /// contact line (support `mailto:`) is rendered per-app and is not part of this.
 pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>

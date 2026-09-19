@@ -4,7 +4,7 @@
 //! a deliberately conservative subset of RFC 5321 chosen to maximize interoperability
 //! with downstream consumers (DNS-resolvable domains only, no exotic syntax).
 //!
-//! Use this type everywhere — never construct an [`email_address::EmailAddress`]
+//! Use this type everywhere; never construct an [`email_address::EmailAddress`]
 //! directly. The newtype is what makes the strict ruleset enforceable; a free
 //! parser function could always be bypassed by calling the underlying crate's
 //! constructors. Outbound adapters that need a `&str` for transport call
@@ -21,15 +21,15 @@ use std::{fmt::Display, ops::Deref, str::FromStr};
 pub type InvalidEmail = email_address::Error;
 
 /// A validated email address whose textual form is the canonical
-/// `local-part@sub.domain.tld` shape — nothing more, nothing less.
+/// `local-part@sub.domain.tld` shape, nothing more, nothing less.
 ///
 /// # Validation rules
 ///
 /// Stricter than the default `email_address` parse:
 /// - Must have a TLD (`user@example.com` ok, `user@apple` rejected).
-/// - No domain literals (`user@[1.2.3.4]` rejected — we require a resolvable
+/// - No domain literals (`user@[1.2.3.4]` rejected; we require a resolvable
 ///   hostname).
-/// - No display-text wrappers (`Name <user@example.com>` rejected — display
+/// - No display-text wrappers (`Name <user@example.com>` rejected; display
 ///   names are an envelope concern, not part of the address itself).
 ///
 /// These rules exist so that every [`Email`] is unambiguously routable by any

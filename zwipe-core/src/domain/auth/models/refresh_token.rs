@@ -72,7 +72,7 @@ impl RefreshToken {
 /// Trait for computing SHA-256 hashes of refresh tokens.
 ///
 /// Used to hash tokens before database storage. The database never stores
-/// plaintext refresh token values - only their SHA-256 hashes.
+/// plaintext refresh token values, only their SHA-256 hashes.
 pub trait Sha256Hash {
     /// Computes the SHA-256 hash of this value as a hex string.
     fn sha256_hash(&self) -> String;

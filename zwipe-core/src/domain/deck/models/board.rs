@@ -15,12 +15,12 @@ pub struct InvalidBoard;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum Board {
-    /// Active deck — counted in metrics, validated against format rules.
+    /// Active deck: counted in metrics, validated against format rules.
     #[default]
     Deck,
-    /// Considering — excluded from metrics and validation.
+    /// Considering: excluded from metrics and validation.
     Maybeboard,
-    /// Tournament sideboard — excluded from metrics, validated separately.
+    /// Tournament sideboard: excluded from metrics, validated separately.
     Sideboard,
 }
 

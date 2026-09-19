@@ -354,7 +354,7 @@ impl ScryfallData {
         self.face_image_url(0, size)
     }
 
-    /// Returns the front face's art-crop URL (the artwork band only) — the
+    /// Returns the front face's art-crop URL (the artwork band only); the
     /// source for row thumbnails. Same front-face fallback as
     /// [`Self::face_image_url`]: top-level `image_uris` first, then
     /// `card_faces[0]` (DFCs carry images per face).
@@ -396,7 +396,7 @@ impl ScryfallData {
     /// Returns `card_faces.len()` when both faces have their own image URIs (the
     /// only case where flipping is meaningful) and `1` otherwise. Layouts like
     /// `split` and `adventure` have a single physical image with both halves baked
-    /// in — their `card_faces` entries lack per-face `image_uris`, so we treat
+    /// in; their `card_faces` entries lack per-face `image_uris`, so we treat
     /// them as single-faced for rendering purposes.
     pub fn face_count(&self) -> usize {
         match self.card_faces.as_ref() {
@@ -441,7 +441,7 @@ mod tests {
     #[test]
     fn snow_basic_lands_are_basic() {
         // Snow basics slot a "Snow" supertype between "Basic" and "Land",
-        // which broke the old contiguous "basic land" substring check.
+        // so a contiguous "basic land" substring check would miss them.
         assert!(is_basic_land(Some("Basic Snow Land — Plains")));
         assert!(is_basic_land(Some("Basic Snow Land — Mountain")));
     }

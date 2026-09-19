@@ -49,7 +49,7 @@ pub fn is_valid_commander(card: &Card, format: &Format) -> bool {
         // Any planeswalker
         Format::Oathbreaker => type_line.contains("Planeswalker"),
 
-        // Non-commander formats — nothing is a valid commander
+        // Non-commander formats: nothing is a valid commander
         _ => false,
     }
 }
@@ -61,13 +61,13 @@ pub fn is_valid_commander(card: &Card, format: &Format) -> bool {
 /// The kind of partner ability a card has, if any.
 #[derive(Debug, Clone, PartialEq)]
 pub enum PartnerKind {
-    /// Generic "Partner" keyword — compatible with any other Generic partner.
+    /// Generic "Partner" keyword: compatible with any other Generic partner.
     Generic,
-    /// "Partner with [Name]" — compatible only with the named card.
+    /// "Partner with [Name]": compatible only with the named card.
     Named(String),
-    /// "Friends forever" — compatible with any other FriendsForever card.
+    /// "Friends forever": compatible with any other FriendsForever card.
     FriendsForever,
-    /// "Doctor's companion" — compatible with Time Lord Doctor cards.
+    /// "Doctor's companion": compatible with Time Lord Doctor cards.
     DoctorsCompanion,
 }
 
@@ -90,7 +90,7 @@ pub fn partner_kind(card: &Card) -> Option<PartnerKind> {
         return Some(PartnerKind::DoctorsCompanion);
     }
 
-    // Generic Partner — has "Partner" keyword but NOT "Partner with"
+    // Generic Partner: has "Partner" keyword but NOT "Partner with"
     if keywords.iter().any(|k| k == "Partner") {
         return Some(PartnerKind::Generic);
     }

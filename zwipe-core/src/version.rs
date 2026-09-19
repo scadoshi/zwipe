@@ -1,7 +1,7 @@
 //! App version comparison for the client min-version gate.
 //!
 //! Deliberately tiny: versions are `x.y.z` numeric tuples (missing segments
-//! read as 0). No `semver` crate — Zwipe versions never carry pre-release or
+//! read as 0). No `semver` crate; Zwipe versions never carry pre-release or
 //! build metadata. Both sides use this: the client compares its own version
 //! against the server's minimum, and tests pin the semantics.
 
@@ -26,7 +26,7 @@ pub fn parse_version(version: &str) -> Option<(u64, u64, u64)> {
 
 /// Whether `current` satisfies `minimum` (numeric tuple compare).
 ///
-/// **Fails open**: if either side doesn't parse, returns `true` — a malformed
+/// **Fails open**: if either side doesn't parse, returns `true`; a malformed
 /// version string must never lock users out of the app.
 pub fn version_at_least(current: &str, minimum: &str) -> bool {
     match (parse_version(current), parse_version(minimum)) {

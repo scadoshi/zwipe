@@ -39,7 +39,7 @@ impl CardSortKey {
 
 impl CardSortKey {
     /// Ascending comparison of two cards under this key. Missing/non-numeric
-    /// values sort last (ascending); `Random` compares equal — shuffling is the
+    /// values sort last (ascending); `Random` compares equal; shuffling is the
     /// collection's job, not a pairwise ordering.
     ///
     /// Shared by [`Cards::sorted`](crate::domain::card::search_card::cards::Cards::sorted)

@@ -102,7 +102,7 @@ mod tests {
     use super::*;
 
     /// A payload from a server that predates the command-zone art fields still
-    /// parses — the client half of this change can ship before the server half
+    /// parses; the client half of this change can ship before the server half
     /// without breaking, and a client that has cached older payloads keeps
     /// working. The reverse direction (an older client reading a payload that
     /// *has* the fields) needs no test: the struct doesn't set
