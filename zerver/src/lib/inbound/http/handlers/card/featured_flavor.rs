@@ -1,9 +1,9 @@
-//! The featured flavor card — one shared pick per UTC hour.
+//! The featured flavor card: one shared pick per UTC hour.
 //!
 //! Everyone sees the same card at the same moment: the pick is deterministic
 //! per hour (see the repository's `featured_flavor_id`), and the `TtlSlot` on
 //! AppState serves it from memory with a deadline pinned to the top of the
-//! next UTC hour — one DB pass per hour flip, single-flight under load, and a
+//! next UTC hour: one DB pass per hour flip, single-flight under load, and a
 //! restart mid-hour re-derives the identical card. Plan:
 //! `context/plans/featured_flavor.md`.
 
@@ -59,7 +59,7 @@ pub async fn get_featured_flavor(
     ))
 }
 
-/// Seconds until the top of the next UTC hour — the slot deadline and the
+/// Seconds until the top of the next UTC hour: the slot deadline and the
 /// response `max-age` both derive from it, so the in-memory flip and the edge
 /// cache expiry land on the same wall-clock boundary.
 #[cfg(feature = "zerver")]

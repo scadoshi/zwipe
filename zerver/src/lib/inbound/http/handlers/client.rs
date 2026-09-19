@@ -11,7 +11,7 @@ use crate::inbound::http::AppState;
 
 /// Returns the minimum app version this server supports.
 ///
-/// Public and unauthenticated — stale clients must be able to learn they're
+/// Public and unauthenticated: stale clients must be able to learn they're
 /// gated without a valid session. The value comes from `MIN_CLIENT_VERSION`
 /// in the server env; `"0.0.0"` means the gate is open.
 #[cfg(feature = "zerver")]

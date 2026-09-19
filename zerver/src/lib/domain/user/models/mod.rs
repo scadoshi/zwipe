@@ -1,4 +1,4 @@
-//! User domain models — server-side error types only.
+//! User domain models: server-side error types only.
 //!
 //! Domain types (User, Username, UserPreferences) live in zwipe-core.
 

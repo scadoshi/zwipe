@@ -137,7 +137,7 @@ pub trait MetricsService: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
     /// Stores a crash report from an unauthenticated client (exactly once
-    /// per `crash_id` — the client retries until it sees a 2xx).
+    /// per `crash_id`: the client retries until it sees a 2xx).
     fn record_crash(
         &self,
         report: &HttpCrashReport,

@@ -161,7 +161,7 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
     /// the same deck, closing the limit-check TOCTOU. `card_limit` is resolved
     /// by the domain (policy stays there); `email_verified` picks
     /// `LimitReached` vs `UnverifiedLimitReached`. Bulk deletes do NOT
-    /// suppress — importing a new list isn't a per-card rejection.
+    /// suppress; importing a new list isn't a per-card rejection.
     fn apply_import_batch(
         &self,
         user_id: uuid::Uuid,
@@ -229,7 +229,7 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
     /// Transactionally copies a source deck's profile and all entries into a
     /// new deck owned by `owner_id` with the given `new_name`. Returns the
     /// new deck's id. The caller must have already verified `owner_id` owns
-    /// `source_deck_id` — this method performs no authorization check.
+    /// `source_deck_id`: this method performs no authorization check.
     /// `share_token` is deliberately not copied: clones start private.
     fn clone_deck(
         &self,
@@ -411,7 +411,7 @@ pub trait DeckService: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<ImportDeckCardsResult, ImportDeckCardsError>> + Send;
 
     /// Imports an Archidekt card list into an existing deck owned by `user_id`,
-    /// onto the given board — exactly like `import_deck_cards`, except cards
+    /// onto the given board, exactly like `import_deck_cards`, except cards
     /// resolve by Scryfall printing id (with a name fallback) instead of by
     /// name. With [`zwipe_core::domain::deck::ImportMode::Replace`], the board
     /// is made to exactly match the list.

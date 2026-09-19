@@ -113,7 +113,7 @@ impl TryFrom<DatabaseScryfallData> for ScryfallData {
 
     fn try_from(db: DatabaseScryfallData) -> Result<Self, Self::Error> {
         Ok(ScryfallData {
-            // Core Card Fields — pass through
+            // Core Card Fields: pass through
             arena_id: db.arena_id,
             id: db.id,
             lang: db.lang,
@@ -131,7 +131,7 @@ impl TryFrom<DatabaseScryfallData> for ScryfallData {
             scryfall_uri: db.scryfall_uri,
             uri: db.uri,
 
-            // Gameplay Fields — convert special types
+            // Gameplay Fields: convert special types
             all_parts: db.all_parts.map(|j| j.0),
             card_faces: db.card_faces.map(|j| j.0),
             cmc: db.cmc,
@@ -159,7 +159,7 @@ impl TryFrom<DatabaseScryfallData> for ScryfallData {
             toughness: db.toughness,
             type_line: db.type_line,
 
-            // Print Fields — convert special types, pass through rest
+            // Print Fields: convert special types, pass through rest
             artist: db.artist,
             artist_ids: db.artist_ids,
             attraction_lights: db.attraction_lights,

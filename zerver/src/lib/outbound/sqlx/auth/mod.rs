@@ -230,7 +230,7 @@ impl AuthRepository for Postgres {
     }
 
     /// Rotates a refresh token: validates the existing token (ownership, expiry,
-    /// revocation), deletes it, and issues a new one — all within a single transaction.
+    /// revocation), deletes it, and issues a new one, all within a single transaction.
     async fn use_refresh_token(
         &self,
         request: &RefreshSession,
@@ -269,7 +269,7 @@ impl AuthRepository for Postgres {
             .await?;
 
         // belt-and-suspenders: zero rows deleted means another transaction
-        // already consumed this token — refuse to mint a replacement
+        // already consumed this token, so refuse to mint a replacement
         if deleted.rows_affected() != 1 {
             return Err(RefreshSessionError::Revoked(request.user_id));
         }

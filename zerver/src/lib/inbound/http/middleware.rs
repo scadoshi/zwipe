@@ -57,7 +57,7 @@ pub struct AuthenticatedUser {
 ///
 /// Used on private routes so each user gets their own rate limit bucket
 /// regardless of IP address. Falls back to `UnableToExtractKey` for
-/// missing or invalid tokens — the auth middleware rejects those downstream.
+/// missing or invalid tokens; the auth middleware rejects those downstream.
 #[cfg(feature = "zerver")]
 #[derive(Debug, Clone)]
 pub struct UserIdKeyExtractor {
@@ -104,7 +104,7 @@ const CF_CONNECTING_IP: &str = "cf-connecting-ip";
 /// The server runs behind a Cloudflare Tunnel: `cloudflared` proxies every
 /// request from `127.0.0.1`, so the TCP peer address is identical for all
 /// external clients. `PeerIpKeyExtractor` keys on that peer, which would place
-/// the entire internet in a single shared rate-limit bucket — one client could
+/// the entire internet in a single shared rate-limit bucket; one client could
 /// exhaust it and lock everyone out, and per-attacker brute-force throttling
 /// wouldn't work at all.
 ///
@@ -114,7 +114,7 @@ const CF_CONNECTING_IP: &str = "cf-connecting-ip";
 /// (ufw default-deny inbound; only loopback and `tailscale0` are allowed), so
 /// the header is trustworthy here.
 ///
-/// Falls back to the socket peer IP when the header is absent — i.e. for
+/// Falls back to the socket peer IP when the header is absent, i.e. for
 /// non-Cloudflare paths (localhost health checks, Tailscale admin access),
 /// which are trusted. Real internet traffic always carries the header.
 #[cfg(feature = "zerver")]
@@ -154,14 +154,14 @@ impl From<UserClaims> for AuthenticatedUser {
     }
 }
 
-/// Debounce window for `users.last_active_at` bumps — at most one DB write
+/// Debounce window for `users.last_active_at` bumps: at most one DB write
 /// per user per window regardless of request volume.
 #[cfg(feature = "zerver")]
 const LAST_ACTIVE_DEBOUNCE: Duration = Duration::from_secs(60);
 
 /// Bumps `users.last_active_at` for authenticated requests, debounced per user.
 ///
-/// Peeks the Bearer token without enforcing it — missing or invalid tokens
+/// Peeks the Bearer token without enforcing it; missing or invalid tokens
 /// pass through untouched and are rejected downstream by the
 /// `AuthenticatedUser` extractor. The write is fire-and-forget so it never
 /// adds latency to the request path. The debounce cache is in-memory and

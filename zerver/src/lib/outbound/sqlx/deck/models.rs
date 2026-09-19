@@ -71,7 +71,7 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
                     .collect()
             })
             .unwrap_or_default();
-        // Free slugs from the oracle_tags catalog - no enum filter.
+        // Free slugs from the oracle_tags catalog, no enum filter.
         let oracle_tags = value
             .oracle_tags
             .and_then(|v| serde_json::from_value::<Vec<String>>(v).ok())

@@ -1,6 +1,6 @@
 //! Deck management domain logic.
 //!
-//! This module provides comprehensive deck building and management for Magic: The Gathering.
+//! This module provides deck building and management for Magic: The Gathering.
 //! Users can create decks, add/remove cards, and manage deck configurations like commander
 //! selection and copy limits (singleton vs. standard).
 
@@ -20,7 +20,7 @@ pub const UNVERIFIED_MAX_DECKS_PER_USER: i64 = 1;
 pub const UNVERIFIED_MAX_CARDS_PER_DECK: i64 = 100;
 
 /// Maximum entries on a user's commander maybeboard. Over-cap adds are
-/// rejected (422), not evicted — every entry is a deliberate save.
+/// rejected (422), not evicted: every entry is a deliberate save.
 pub const MAX_COMMANDER_MAYBEBOARD: i64 = 50;
 
 /// Deck models and value objects (DeckProfile, Deck, DeckCard, operations).

@@ -1,14 +1,14 @@
 //! Serving-layer caches.
 //!
 //! [`TtlSlot`] is a cached *variable*, not a cache store: one global value
-//! that knows how to refresh itself. There are no keys and no lookups — the
+//! that knows how to refresh itself. There are no keys and no lookups; the
 //! slot holds THE current value (the featured flavor card, a metrics blob)
 //! plus the deadline after which it must be rebuilt. Overwrite-on-expiry is
 //! the entire eviction policy.
 //!
 //! Deadlines are pinned instants, not durations, so each use case aligns
 //! expiry to whatever boundary it wants (top of the UTC hour, +5 minutes,
-//! next sync). AppState carries one typed slot per use case — the "registry"
+//! next sync). AppState carries one typed slot per use case; the "registry"
 //! is the struct itself, so every cached type is known at compile time and
 //! there are no string keys to collide.
 
@@ -41,10 +41,10 @@ impl<V: Clone> TtlSlot<V> {
     ///
     /// Single-flight: an expired slot funnels concurrent callers through the
     /// write lock, the first rebuilds, the rest re-check and serve the fresh
-    /// value — one refresh per expiry no matter the request load.
+    /// value; one refresh per expiry no matter the request load.
     ///
     /// Stale grace: if the refresh fails but an expired value exists, the
-    /// stale value is served and the error logged — for content like the
+    /// stale value is served and the error logged; for content like the
     /// featured flavor, an hour-stale card beats a 5xx.
     pub async fn get_or_refresh<F, Fut, E>(&self, refresh: F) -> Result<V, E>
     where

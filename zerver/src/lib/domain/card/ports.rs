@@ -51,7 +51,7 @@ pub struct DeckServeContext<'a> {
     pub synergy_scores: Option<&'a serde_json::Value>,
     /// Constrain results to the score map's cards (the synergy membership fence).
     pub synergy_only: bool,
-    /// Commander-select shuffle seed (`{user_id}:{date}`) — enables token/emblem
+    /// Commander-select shuffle seed (`{user_id}:{date}`), which enables token/emblem
     /// exclusion + the banded shuffle. `None` on every non-commander-select path.
     pub commander_seed: Option<String>,
     /// The deck's selected oracle tags for the `W_ORACLE_TAG` correlation term.
@@ -95,7 +95,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         zervice_metrics: &mut ZerviceMetrics,
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 
-    /// Delta upserts - only updates cards newer than database version.
+    /// Delta upserts: only updates cards newer than database version.
     fn batch_delta_upsert(
         &self,
         multiple_scryfall_data: &[ScryfallData],
@@ -120,7 +120,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn refresh_card_signal_rollup(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
     /// Refreshes the `otag_context_signal_rollup` materialized view
-    /// (generalized-context per-otag signal — the cross-format moat dataset).
+    /// (generalized-context per-otag signal, the cross-format moat dataset).
     fn refresh_otag_context_signal_rollup(&self)
     -> impl Future<Output = anyhow::Result<()>> + Send;
 
@@ -176,7 +176,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// from flavor-text cards released in the last 12 months (all-time
     /// fallback so the pool is never empty while any flavor text exists).
     /// Ordering hashes ids with `hour_key`, so the same key always yields the
-    /// same card — the serving cache is an optimization, never state.
+    /// same card: the serving cache is an optimization, never state.
     fn featured_flavor_id(
         &self,
         hour_key: &str,
@@ -200,7 +200,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         oracle_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
-    /// Retrieves complete cards by oracle ids — at most one card per oracle,
+    /// Retrieves complete cards by oracle ids, at most one card per oracle,
     /// the preferred printing per `latest_cards`. Unknown ids are silently
     /// absent; row order is unspecified.
     fn get_latest_cards_by_oracle_ids(
@@ -291,7 +291,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// Finds cards by exact name match (case-insensitive).
     ///
     /// Returns one card per unique card name, using the latest printing.
-    /// Names with no matching card are silently omitted — no `NotFound` error is returned.
+    /// Names with no matching card are silently omitted; no `NotFound` error is returned.
     /// Used for bulk import operations where substring match is undesirable.
     fn find_cards_by_exact_names(
         &self,
@@ -324,7 +324,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// Fetches the cached synergy payload for a commander by **printing** id
-    /// (`scryfall_data.id` — resolved to oracle internally). `None` when the
+    /// (`scryfall_data.id`, resolved to oracle internally). `None` when the
     /// commander has no cache row yet (graceful absence).
     fn commander_synergy_payload(
         &self,
@@ -369,7 +369,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 ///
 /// Orchestrates card operations including:
 /// - **Scryfall Sync**: Downloads and syncs bulk card data from Scryfall API
-/// - **Card Search**: Comprehensive filtering (text, mana, rarity, etc.)
+/// - **Card Search**: Filtering (text, mana, rarity, etc.)
 /// - **Card Retrieval**: Get single/multiple cards with full data
 /// - **Metadata Lists**: Distinct artists, sets, languages, types
 ///
@@ -434,7 +434,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
     //  get
     // =====
 
-    /// The featured-flavor card for an hour bucket — the repository's
+    /// The featured-flavor card for an hour bucket; the repository's
     /// deterministic pick assembled like `get_card`.
     fn featured_flavor(
         &self,
@@ -546,7 +546,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// Finds cards by exact name match (case-insensitive).
     ///
     /// Returns one card per unique card name, using the latest printing.
-    /// Names with no matching card are silently omitted — no `NotFound` error is returned.
+    /// Names with no matching card are silently omitted; no `NotFound` error is returned.
     /// Used for bulk import operations where substring match is undesirable.
     fn find_cards_by_exact_names(
         &self,

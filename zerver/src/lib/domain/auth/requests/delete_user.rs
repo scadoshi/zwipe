@@ -148,7 +148,7 @@ mod tests {
 
     #[test]
     fn test_delete_user_new_accepts_empty_password() {
-        // Empty password is accepted — verification happens at service layer
+        // Empty password is accepted; verification happens at service layer
         let user_id = Uuid::new_v4();
         let result = DeleteUser::new(user_id, "");
         assert!(result.is_ok());

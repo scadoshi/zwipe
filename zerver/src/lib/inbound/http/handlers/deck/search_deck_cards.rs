@@ -31,7 +31,7 @@ impl From<SearchDeckCardsError> for ApiError {
 }
 
 /// Deck-aware card search: same `CardQuery` body as the plain search, but
-/// scoped to a deck — cards already in the deck (any board, plus profile
+/// scoped to a deck: cards already in the deck (any board, plus profile
 /// slots) are excluded, and results default to synergy ordering when no
 /// explicit `order_by` is set.
 #[cfg(feature = "zerver")]
@@ -56,7 +56,7 @@ pub async fn search_deck_cards(
         .await
         .map_err(ApiError::from)
         .map(|(cards, synergy_warming)| {
-            // Signal cold-synergy fallback via a header — the body stays a bare
+            // Signal cold-synergy fallback via a header: the body stays a bare
             // card array, so older clients (which ignore the header) keep working.
             let applied = if synergy_warming { "false" } else { "true" };
             (

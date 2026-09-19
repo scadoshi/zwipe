@@ -3,7 +3,7 @@
 //! Fetches a public deck from Archidekt's open JSON API
 //! (`GET https://archidekt.com/api/decks/{id}/`) and reduces it to the card
 //! list the deck service can import. Archidekt embeds the Scryfall printing id
-//! on every card (`card.uid`), so resolution downstream is a direct id lookup —
+//! on every card (`card.uid`), so resolution downstream is a direct id lookup:
 //! no fuzzy name matching, and the exact printing is preserved.
 //!
 //! Archidekt's API is undocumented (open beta); this adapter deliberately
@@ -23,7 +23,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 /// Errors fetching or parsing an Archidekt deck.
 #[derive(Debug, Error)]
 pub enum ArchidektError {
-    /// The deck wasn't found (404) — private, unlisted, or wrong id.
+    /// The deck wasn't found (404): private, unlisted, or wrong id.
     #[error("deck not found on archidekt")]
     NotFound,
     /// Archidekt returned a non-success status other than 404.

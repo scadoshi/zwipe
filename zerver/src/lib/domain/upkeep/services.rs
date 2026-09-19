@@ -1,4 +1,4 @@
-//! Upkeep service — the nightly maintenance step's business logic.
+//! Upkeep service: the nightly maintenance step's business logic.
 
 use crate::domain::upkeep::ports::{UpkeepRepository, UpkeepService};
 

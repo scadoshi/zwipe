@@ -3,7 +3,7 @@
 //!
 //! Written by the synergy worker, read here. Shape contract:
 //! `context/plans/synergy_data_layer.md`. Parsing is deliberately lenient
-//! (unknown fields ignored, missing scores tolerated) — shape drift upstream
+//! (unknown fields ignored, missing scores tolerated); shape drift upstream
 //! must degrade to "no signal", never to a failed search.
 
 use serde::Deserialize;
@@ -28,7 +28,7 @@ pub struct SynergyList {
 /// One card entry. Only the fields ordering needs.
 #[derive(Debug, Deserialize)]
 pub struct SynergyCard {
-    /// Exact card name — resolved against `scryfall_data.name`.
+    /// Exact card name, resolved against `scryfall_data.name`.
     pub name: String,
     /// Synergy score (roughly −1..1); absent/null for some lists.
     #[serde(default)]

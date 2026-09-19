@@ -31,7 +31,7 @@ use zwipe_core::domain::card::{Card, card_profile::CardProfile, scryfall_data::S
 /// Postgres error substring used to filter noise from card-by-card fallback retries.
 ///
 /// When a transaction is aborted, subsequent statements produce this error instead
-/// of the root cause — so these are silently skipped during error reporting.
+/// of the root cause, so these are silently skipped during error reporting.
 const POSTGRES_TX_ABORT_MESSAGE: &str = "current transaction is aborted";
 
 // ====================

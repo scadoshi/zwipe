@@ -1,7 +1,7 @@
 //! Serve the keyword-reminder catalog (name → plain-language reminder).
 //!
 //! The reminder table lives in `zwipe_core::domain::card::keyword` and is
-//! compiled into every binary — but apps ship on store trains, so serving the
+//! compiled into every binary, but apps ship on store trains, so serving the
 //! server's copy lets definition fixes land on deploy (the oracle-tag catalog
 //! precedent). The map covers every keyword the database actually serves,
 //! resolved through the same function clients fall back to when offline.

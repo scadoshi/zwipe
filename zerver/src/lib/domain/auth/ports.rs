@@ -193,7 +193,7 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
 
     /// Looks up a user ID by email. Returns `None` if the email is not registered.
     ///
-    /// Never exposes `UserNotFound` in error — only DB failures are returned.
+    /// Never exposes `UserNotFound` in error; only DB failures are returned.
     fn get_user_id_by_email(
         &self,
         email: &str,
@@ -371,7 +371,7 @@ pub trait AuthService: Clone + Send + Sync + 'static {
 
     /// Initiates a password reset flow for the given email.
     ///
-    /// Always returns `Ok(())` — user-not-found and cooldown are silently swallowed
+    /// Always returns `Ok(())`; user-not-found and cooldown are silently swallowed
     /// to prevent email enumeration.
     fn request_password_reset(
         &self,

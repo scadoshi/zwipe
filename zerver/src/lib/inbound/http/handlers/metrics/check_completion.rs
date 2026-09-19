@@ -5,7 +5,7 @@
 //! state for the first time, stamps `first_completed_at`, emits a
 //! `DeckCompleted` event, and increments the lifetime completed counter.
 //!
-//! Designed to be fire-and-forget via `tokio::spawn` — a metrics failure
+//! Designed to be fire-and-forget via `tokio::spawn`: a metrics failure
 //! must not break the user-visible mutation that triggered it.
 
 use std::sync::Arc;
@@ -18,7 +18,7 @@ use crate::domain::{
 use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 
 /// Runs the deck-completion check after a mutation. Logs but does not return
-/// errors — callers spawn this off the request path.
+/// errors; callers spawn this off the request path.
 pub async fn check_deck_completion(
     deck_service: Arc<dyn ErasedDeckService>,
     metrics: Arc<dyn ErasedMetricsService>,

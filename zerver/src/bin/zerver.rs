@@ -28,7 +28,7 @@ async fn run() -> anyhow::Result<()> {
 
     // EnvFilter::try_from_default_env() reads RUST_LOG directly from the process env;
     // when unset/invalid we fall back to the directive string loaded via Config (which
-    // came from .env). ONE filter, attached globally to the registry — a per-layer
+    // came from .env). ONE filter, attached globally to the registry; a per-layer
     // EnvFilter copy on each fmt layer silently DROPS events (incl. errors) once the
     // directive set has per-target entries (found live 2026-07-30; both sinks want
     // identical filtering anyway).

@@ -14,7 +14,7 @@ use zwipe_core::domain::card::scryfall_data::ScryfallData;
 /// Scryfall retired the plain-JSON `download_uri` in late July 2026; bulk
 /// files are now served exclusively as gzipped JSON Lines via
 /// `jsonl_download_uri` (one object per line). Line-by-line parsing also
-/// avoids the old whole-array-in-memory spike.
+/// avoids holding the whole array in memory.
 #[derive(Deserialize, Debug)]
 pub(super) struct BulkDataObject {
     pub(super) jsonl_download_uri: String,

@@ -314,7 +314,7 @@ where
         // The synergy score map is needed in two cases: as the membership set
         // when Synergy is ON, or as the default ordering when no explicit sort is
         // set. A missing/unparseable signal degrades to the filter's own
-        // semantics (full pool) — which is also the cold-cache fallback for ON.
+        // semantics (full pool), which is also the cold-cache fallback for ON.
         let synergy_only = filter.synergy();
         let synergy_scores: Option<serde_json::Value> = match deck_profile.commander_id {
             Some(commander_id) if synergy_only || filter.sort().is_none() => self
@@ -340,7 +340,7 @@ where
 
         // Oracle-tag-aware ordering (Phase 4): the deck's explicitly selected
         // otags lift matching cards within the synergy serve. Ladder v1 is just
-        // the selected set — empty leaves ordering byte-identical (a future rung
+        // the selected set: empty leaves ordering byte-identical (a future rung
         // could fall back to the commander's own otags, but commander decks are
         // already synergy-ordered, so it buys little).
         let deck_oracle_tags = &deck_profile.oracle_tags;
@@ -475,7 +475,7 @@ where
             .get_latest_cards_by_oracle_ids(&oracle_ids)
             .await
             .map_err(|e| CommanderMaybeboardError::Database(e.into()))?;
-        // Re-impose save order (newest first) — ANY($1) hydration is
+        // Re-impose save order (newest first): ANY($1) hydration is
         // unordered, and an entry whose card vanished from serving drops out.
         let mut by_oracle: HashMap<Uuid, Card> = cards
             .into_iter()
@@ -797,7 +797,7 @@ where
         // Ownership, the card-limit check, the upsert, and the replace-mode
         // reconcile all run atomically in the repo (one tx under a deck row
         // lock). An empty batch (bad URL, nothing resolved) never wipes a
-        // board — the repo returns before any write. The limit VALUE is policy
+        // board: the repo returns before any write. The limit VALUE is policy
         // and stays here.
         let card_limit = if email_verified {
             MAX_CARDS_PER_DECK
@@ -935,7 +935,7 @@ where
             .signature_spell_id
             .and_then(|id| cz_cards.get(&id).cloned());
 
-        // Tokens the deck's cards produce — same derivation as `get_deck_tokens`,
+        // Tokens the deck's cards produce, same derivation as `get_deck_tokens`,
         // so the public shared page matches the app without an authed call.
         let token_ids: ScryfallDataIds = deck
             .entries

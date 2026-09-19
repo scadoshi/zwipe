@@ -1,4 +1,4 @@
-//! Deck entity and related operations — server-side error types only.
+//! Deck entity and related operations: server-side error types only.
 //!
 //! Domain types (Deck, DeckEntry, DeckProfile, etc.) live in zwipe-core.
 

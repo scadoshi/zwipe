@@ -77,7 +77,7 @@ const MAX_SEARCH_LIMIT: u32 = 250;
 
 // Default-synergy-ordering dials (context/plans/suggestion_signal.md,
 // Phase 3a+3b band revision). `W_SIGNAL = 0.0` and `BAND_SIZE = 1` together
-// reproduce the pre-signal score ordering exactly — that's the revert lever.
+// reproduce the pre-signal score ordering exactly; that's the revert lever.
 
 /// Weight of the pooled add-rate term (centered on the global rate, so a
 /// card with no data contributes exactly zero). Units are synergy-score
@@ -89,7 +89,7 @@ const W_SIGNAL: f64 = 0.15;
 /// (base + signal) score are cut into hands of this many, bands served in
 /// strict order, position within a band purely the (card, deck, day) hash.
 /// 25 matches the client page size, so each page is exactly one shuffled
-/// hand — cast-level variety per deck per day without a band-2 card ever
+/// hand; cast-level variety per deck per day without a band-2 card ever
 /// leading band 1. 1 = pure score ordering (no shuffle).
 const BAND_SIZE: i64 = 25;
 
@@ -118,8 +118,8 @@ const W_STEER: f64 = 0.12;
 
 /// Base score for cards absent from the commander's synergy map. Sits below
 /// the scoreless-list floor (-10, see `SynergyPayload::into_scores`) so the
-/// unscored tail stays below every scored card — at zero dials this exactly
-/// reproduces the old `NULLS LAST` ordering. Signal and jitter still shuffle
+/// unscored tail stays below every scored card; at zero dials this exactly
+/// matches plain `NULLS LAST` ordering. Signal and jitter still shuffle
 /// the tail internally; letting strong signal lift tail cards into the scored
 /// region is a deliberate future retune (raise this anchor), not v1.
 const UNSCORED_ANCHOR: f64 = -10.5;
@@ -132,7 +132,7 @@ const UNSCORED_ANCHOR: f64 = -10.5;
 const WILDCARD_SLOTS: i64 = 1;
 
 /// The reachable horizon: mirrors the client add-stack hard cap (zwiper
-/// `MAX_CARDS_IN_STACK`, action_history.rs — zerver can't import it). Cards
+/// `MAX_CARDS_IN_STACK`, action_history.rs, which zerver can't import). Cards
 /// ranked past this are structurally unreachable by band pagination within a
 /// session, so no signal can ever accrue for them without the wildcard probe.
 const DEEP_POOL_FLOOR: i64 = 500;
@@ -146,11 +146,11 @@ const WILDCARD_POSITION: usize = 17;
 /// `edhrec_rank` as the fallback for commanders the table doesn't cover, then
 /// name, then id for a stable tiebreak. Shared by the wildcard CTE's
 /// `row_number()` and the non-wildcard banded ORDER BY. Absent popularity rows
-/// sort last, so an empty table degrades to pure `edhrec_rank` — the revert
+/// sort last, so an empty table degrades to pure `edhrec_rank`; the revert
 /// lever. (context/archive/commander_select_ordering.md §2.)
 const POPULARITY_RANK: &str = "pop.pop_decks DESC NULLS LAST, latest_cards.edhrec_rank ASC NULLS LAST, latest_cards.name ASC, latest_cards.id";
 
-/// The popularity join, aliased so it exposes only `pop_decks` — never a bare
+/// The popularity join, aliased so it exposes only `pop_decks`, never a bare
 /// `name`/`oracle_id`/`decks`, which would collide with `latest_cards` and the
 /// shared WHERE filters (name search, exclude-oracle_ids) and make those
 /// columns ambiguous. Keyed on the real card's oracle_id.
@@ -159,7 +159,7 @@ const POPULARITY_JOIN: &str = "LEFT JOIN (SELECT oracle_id AS pop_oracle_id, dec
 /// First-party select-signal join for the commander-select wildcard's
 /// least-shown deep slice, aliased for the same ambiguity reason as
 /// [`POPULARITY_JOIN`]. An absent row COALESCEs to 0 impressions, so an empty
-/// table leaves the deep slice on the daily shuffle alone — the dormant-until-
+/// table leaves the deep slice on the daily shuffle alone; the dormant-until-
 /// data-accrues behavior (context/archive/commander_select_signal.md §3).
 const SELECT_SIGNAL_JOIN: &str = "LEFT JOIN (SELECT commander_oracle_id AS sel_oid, shown AS sel_shown FROM commander_select_signal) sel ON sel.sel_oid = latest_cards.oracle_id";
 
@@ -373,7 +373,7 @@ impl CardRepository for MyPostgres {
     /// `commander_seed` switches the engine into commander-select mode
     /// (context/archive/commander_select_ordering.md): decks-helmed popularity
     /// ordering, banded + wildcarded by that caller-supplied seed (typically
-    /// `{user_id}:{date}` — no deck required), and token/emblem printings
+    /// `{user_id}:{date}`, no deck required), and token/emblem printings
     /// excluded from the candidate pool. Exposed as `search_commanders`; every
     /// other caller passes a default context and is unaffected.
     async fn search_scryfall_data_deck_aware(
@@ -395,7 +395,7 @@ impl CardRepository for MyPostgres {
             universes_beyond_exception_set_names,
         } = context;
         // WHERE clauses read the predicate fields; LIMIT/OFFSET/ORDER BY read
-        // the query config — the CardCriteria/CardQuery split, mirrored here.
+        // the query config: the CardCriteria/CardQuery split, mirrored here.
         let criteria = request.criteria();
         // Default synergy ordering (no explicit sort, score map present) gets
         // the signal + jitter terms, which need the pooled rollup and the
@@ -418,7 +418,7 @@ impl CardRepository for MyPostgres {
         //   base: the commander's synergy score (unscored cards anchor below
         //         the scored floor, see UNSCORED_ANCHOR)
         //   signal: the pooled net-rate, shrunk toward and centered on the
-        //         global rate — a card with no impressions adds zero.
+        //         global rate; a card with no impressions adds zero.
         let push_score = |qb: &mut QueryBuilder<Postgres>, scores: &serde_json::Value| {
             qb.push("COALESCE((");
             qb.push_bind(scores.clone());
@@ -495,7 +495,7 @@ impl CardRepository for MyPostgres {
             // instead of synergy score. The deep slice orders least-shown first
             // using the first-party select signal; with no signal rows yet the
             // COALESCE floors every pool_shown to 0 and the ordering collapses
-            // to the daily shuffle alone — byte-identical to the pre-signal
+            // to the daily shuffle alone, byte-identical to the pre-signal
             // behavior (context/archive/commander_select_signal.md §3). Both
             // joins are 1:1 (PK on oracle_id) and aliased so no bare
             // `name`/`oracle_id` collides with the shared WHERE filters.
@@ -551,7 +551,7 @@ impl CardRepository for MyPostgres {
 
         // Commander-select candidate pool must exclude token/emblem printings.
         // The popularity table (written by the synergy worker) keys on the real
-        // card's oracle_id and excludes these layouts, so serving must agree —
+        // card's oracle_id and excludes these layouts, so serving must agree;
         // otherwise a same-named token could be offered as a commander and would
         // never join a real deck. Applies to every commander search, even one
         // with an explicit sort. (context/archive/commander_select_ordering.md §1.)
@@ -713,7 +713,7 @@ impl CardRepository for MyPostgres {
         }
 
         // Price range against the selected currency's JSONB price. NULLIF turns
-        // empty/missing prices into NULL (excluded — no cast error), matching the
+        // empty/missing prices into NULL (excluded, no cast error), matching the
         // client predicate. json_key() is a fixed enum literal, not user input.
         if criteria.price_min().is_some() || criteria.price_max().is_some() {
             let col = format!(
@@ -989,9 +989,9 @@ impl CardRepository for MyPostgres {
                          (type_line ILIKE '%Creature%' OR type_line ILIKE '%Planeswalker%'))",
                     );
                 }
-                // Uncommon creature — legendary or not. Two fixes here:
+                // Uncommon creature: legendary or not. Two fixes here:
                 //   1. Rarity is stored as the short code ('U'), not the word
-                //      'uncommon' — the old literal matched nothing.
+                //      'uncommon'.
                 //   2. PDH eligibility is "has appeared at uncommon in ANY
                 //      printing", not "this cached printing is uncommon", so we
                 //      check all printings via scryfall_data (catches cards whose
@@ -1075,7 +1075,7 @@ impl CardRepository for MyPostgres {
         }
 
         // Deck-aware exclusion: omit cards already in the deck. Null-oracle
-        // printings are kept — they can't match a deck's oracle_ids anyway,
+        // printings are kept; they can't match a deck's oracle_ids anyway,
         // and a bare NOT(= ANY) would NULL them out of the results.
         if !exclude_oracle_ids.is_empty() {
             sep.push("(oracle_id IS NULL OR NOT (oracle_id = ANY(");
@@ -1085,10 +1085,10 @@ impl CardRepository for MyPostgres {
 
         // Suppression filtering: the deck's skipped/removed cards never come
         // back through the deck-aware search (Clear skips is the escape
-        // hatch). Quick add opts out via `include_skipped` — a typed card
+        // hatch). Quick add opts out via `include_skipped`: a typed card
         // name is explicit intent, so suppressed cards stay findable there
         // while the swipe pile keeps respecting them. NOT EXISTS rather than
-        // a bind array — the set can be thousands of rows. Null-oracle
+        // a bind array; the set can be thousands of rows. Null-oracle
         // printings pass, matching the exclusion clause above.
         if let Some(deck_id) = deck_id
             && !request.include_skipped()
@@ -1178,16 +1178,16 @@ impl CardRepository for MyPostgres {
             //   band slice: the normal banded page, WILDCARD_SLOTS narrower.
             //         Offsets are consumption-aligned (page_index * band
             //         width), so no ranked card is ever skipped between
-            //         pages — the client advances by its page size but
+            //         pages; the client advances by its page size but
             //         dedups by id, so the server owns the math here.
-            //   deep slice: the probe — cards beyond the reachable horizon,
+            //   deep slice: the probe, cards beyond the reachable horizon,
             //         least-shown first, then the daily shuffle; pages walk
             //         the deep list so a probe never repeats within a day.
             //         A pool that never reaches the horizon (tight filters,
             //         synergy ON) yields an empty slice and pure band
             //         serving, automatically.
             // The outer ORDER BY re-sorts deterministically (UNION ALL order
-            // is not guaranteed): band cards in band order, probes last —
+            // is not guaranteed): band cards in band order, probes last;
             // the Rust splice below lifts them to WILDCARD_POSITION.
             let limit = i64::from(request.limit().min(MAX_SEARCH_LIMIT));
             let band_limit = (limit - WILDCARD_SLOTS).max(1);
@@ -1213,10 +1213,10 @@ impl CardRepository for MyPostgres {
             //   score: the commander's synergy score (unscored cards anchor
             //          below the scored floor, see UNSCORED_ANCHOR) + the
             //          pooled net-rate, shrunk toward and centered on the
-            //          global rate — a card with no impressions adds zero.
+            //          global rate; a card with no impressions adds zero.
             //   bands: cards ranked by score are cut into BAND_SIZE hands.
             //          Bands stay in strict order; position *within* a band
-            //          is purely the (card, deck, day) hash — a different
+            //          is purely the (card, deck, day) hash; a different
             //          opening hand per deck per day, while a band-2 card
             //          can never lead band 1. Score-jitter was tried first
             //          and replaced: it permutes positions but never rotates
@@ -1275,7 +1275,7 @@ impl CardRepository for MyPostgres {
             .map_err(SearchScryfallDataError::Database)?;
 
         // Wildcard splice: the outer ORDER BY sorts probes after the band
-        // page, so any rows past the band width are wildcards — lift them to
+        // page, so any rows past the band width are wildcards: lift them to
         // a fixed mid-hand position. A short band page (pool exhausted) can
         // hide a probe inside the band width; it then simply serves at the
         // tail, which is fine.
@@ -1696,7 +1696,7 @@ impl CardRepository for MyPostgres {
         context: DeckServeContext<'_>,
     ) -> Result<Vec<Card>, SearchCardsError> {
         // Card-level wrapper: forward the deck-serve context straight through
-        // (its callers never set a commander seed — that path is commander-select).
+        // (its callers never set a commander seed; that path is commander-select).
         let scryfall_data = self
             .search_scryfall_data_deck_aware(request, context)
             .await?;

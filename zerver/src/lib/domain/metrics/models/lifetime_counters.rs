@@ -24,7 +24,7 @@ pub struct LifetimeCounters {
     pub decks_created: i32,
     /// Decks that have reached a valid state at least once.
     pub decks_completed: i32,
-    /// Last write to this counter row. Not a last-active signal —
+    /// Last write to this counter row. Not a last-active signal;
     /// `users.last_active_at` is the canonical one.
     pub updated_at: DateTime<Utc>,
 }

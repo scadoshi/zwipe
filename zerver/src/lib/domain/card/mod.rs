@@ -1,6 +1,6 @@
 //! Magic: The Gathering card data and search.
 //!
-//! This module manages the comprehensive card database sourced from Scryfall API,
+//! This module manages the card database sourced from Scryfall API,
 //! providing search, retrieval, and synchronization capabilities for MTG cards.
 //!
 //! # Card Data Source

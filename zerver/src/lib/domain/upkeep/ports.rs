@@ -1,6 +1,6 @@
 //! Port traits for nightly upkeep (maintenance) operations.
 //!
-//! Constructed ONLY by the zervice bin — zerver's HTTP wiring never straps
+//! Constructed ONLY by the zervice bin; zerver's HTTP wiring never straps
 //! this on. The scoped `zervice` Postgres role's grants
 //! (`zcripts/server/sql/zervice_role.sql`) define exactly what upkeep may
 //! touch; a method added here needs a matching grant there.
@@ -23,7 +23,7 @@ pub trait UpkeepRepository: Clone + Send + Sync + 'static {
         retention_days: i32,
     ) -> impl Future<Output = anyhow::Result<u64>> + Send;
 
-    /// Deletes expired refresh tokens across all users — the final dusting
+    /// Deletes expired refresh tokens across all users, the final dusting
     /// for dormant users the insert-time drive-by never revisits. Returns the
     /// number of rows removed. (The grant behind this is deliberately
     /// destruction-only: `DELETE` + column-scoped `SELECT (expires_at)`.)

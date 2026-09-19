@@ -1,4 +1,4 @@
-//! User metrics domain — counters, events, and audit log.
+//! User metrics domain: counters, events, and audit log.
 //!
 //! Vanity dashboard totals and high-volume usage signals. The client buffers
 //! swipe / search counts and flushes them periodically; rare events

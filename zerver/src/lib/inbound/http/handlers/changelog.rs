@@ -8,7 +8,7 @@ use zwipe_core::http::contracts::changelog::HttpChangelog;
 
 /// Returns the changelog: upcoming teasers plus the shipped release history.
 ///
-/// Public and unauthenticated — the changelog is identical for every user and
+/// Public and unauthenticated: the changelog is identical for every user and
 /// wanted pre-login. The data is compiled into the server binary
 /// (`zwipe_core::domain::changelog`), so updating it is a plain server deploy,
 /// no app resubmit. Clients fetch this at startup and fall back to their own

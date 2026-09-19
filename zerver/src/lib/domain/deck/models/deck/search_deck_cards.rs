@@ -1,6 +1,6 @@
 //! Deck-aware card search operation (exclusion + synergy ordering).
 //!
-//! Service-layer error type only — request/response shapes are the shared
+//! Service-layer error type only: request/response shapes are the shared
 //! `CardQuery` / `Card` from zwipe_core.
 
 #[cfg(feature = "zerver")]

@@ -110,7 +110,7 @@ impl MetricsRepository for Postgres {
         let d32 = batch.swipes_down as i32;
         let s32 = batch.searches as i32;
 
-        // Resolve every deck's context from `deck_id` — the client sends only the
+        // Resolve every deck's context from `deck_id`: the client sends only the
         // deck now, the backend derives the rest. Ownership-scoped (`user_id`), so a
         // client can only attribute signal to decks it owns. Per owned deck we resolve
         // its commander's oracle id (EDH) and its `format_ci` key (non-EDH), used by
@@ -151,10 +151,9 @@ impl MetricsRepository for Postgres {
         }
 
         // First-party suggestion signal: aggregate per-(commander, card) tallies,
-        // commander resolved from the deck — the sole source since Phase 5S step 3
-        // (the legacy client-sent commander fallback was dropped 2026-07-24 behind
-        // the 1.7.0 `MIN_CLIENT_VERSION` floor). Pure aggregate — no user_id. A deck
-        // with no commander (a non-Commander deck) is skipped here — it has no lead
+        // commander resolved from the deck (clients at or above the 1.7.0
+        // `MIN_CLIENT_VERSION` floor never send one). Pure aggregate, no user_id. A deck
+        // with no commander (a non-Commander deck) is skipped here: it has no lead
         // key for this table and feeds the otag-context signal below via (format, CI).
         for sig in &batch.signals {
             let Some(commander) = sig
@@ -224,14 +223,14 @@ impl MetricsRepository for Postgres {
             .map_err(db)?;
         }
 
-        // Generalized-context per-otag signal (Phase 5 — the cross-format moat
+        // Generalized-context per-otag signal (Phase 5, the cross-format moat
         // dataset, context/plans/otags/moat.md; shipped dark). For every add-stack
         // signal we credit each OTAG OF THE SWIPED CARD (card_profiles.oracle_tags),
         // keyed by the deck's generalized context:
         //   * commander present → 'commander:<oracle_id>' (every existing client),
         //   * else deck_id present → 'format_ci:<format>:<CI>' from the deck row
         //     (non-Commander decks; ownership-scoped). Nothing otag/format/CI is on
-        //     the wire — it is all derived here. Pure aggregate, no user_id.
+        //     the wire; it is all derived here. Pure aggregate, no user_id.
         if !batch.signals.is_empty() {
             // Otags of every swiped card (cards with none contribute nothing).
             let signal_card_ids: Vec<Uuid> =
@@ -322,7 +321,7 @@ impl MetricsRepository for Postgres {
         }
 
         // Commander-select signal: pooled shown/selected/skipped per candidate.
-        // Pure aggregate — no user_id, no per-user mirror (deliberately the
+        // Pure aggregate: no user_id, no per-user mirror (deliberately the
         // lighter posture; see context/archive/commander_select_signal.md).
         for sig in &batch.select_signals {
             query!(
@@ -612,7 +611,7 @@ impl MetricsRepository for Postgres {
     }
 
     async fn record_crash(&self, report: &HttpCrashReport) -> Result<(), MetricsError> {
-        // Client-side truncation is untrusted — clamp before insert. The
+        // Client-side truncation is untrusted, so clamp before insert. The
         // crash_id conflict target makes retries (client deletes its crash
         // file only on 2xx) idempotent: exactly one stored row per crash.
         let report = report.clamped();

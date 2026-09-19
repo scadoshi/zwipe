@@ -96,7 +96,7 @@ pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Resu
     }
 
     // Coverage line: the opposite gap to the typo guard above. Three numbers,
-    // two goals — `blank` is the user-visible gap (no description from any
+    // two goals: `blank` is the user-visible gap (no description from any
     // source), `authored` tracks the replace-Scryfall bulk-authoring goal
     // (the rest are Scryfall's own copy). Visible in every nightly log so
     // coverage drift is impossible to miss.

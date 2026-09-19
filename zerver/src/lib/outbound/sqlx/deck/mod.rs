@@ -176,7 +176,7 @@ impl DeckRepository for Postgres {
         .fetch_one(&mut *tx)
         .await?;
         // Adding a card cancels any suppression on it (e.g. undoing a removal
-        // re-adds the card — the "doesn't fit" signal no longer holds).
+        // re-adds the card; the "doesn't fit" signal no longer holds).
         query!(
             "DELETE FROM deck_card_suppressions WHERE deck_id = $1 AND oracle_id = $2",
             request.deck_id,
@@ -201,7 +201,7 @@ impl DeckRepository for Postgres {
     }
 
     async fn count_cards_in_deck(&self, deck_id: uuid::Uuid) -> Result<i64, anyhow::Error> {
-        // Counts ALL boards (mainboard + maybeboard + sideboard) — this feeds the
+        // Counts ALL boards (mainboard + maybeboard + sideboard); this feeds the
         // per-deck card cap, which applies across every board.
         let count = sqlx::query_scalar!(
             "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1",
@@ -325,7 +325,7 @@ impl DeckRepository for Postgres {
 
     /// Distinct `card_roles` across the deck's mainboard MVPs. Unnests each
     /// MVP's roles array and dedupes, so three MVPs sharing a role contribute
-    /// it once — the serve term is a flat lift, not a tally.
+    /// it once: the serve term is a flat lift, not a tally.
     async fn get_mvp_card_roles(
         &self,
         request: &GetDeckProfile,
@@ -469,7 +469,7 @@ impl DeckRepository for Postgres {
         }
         let mut tx = self.pool.begin().await?;
         if request.mvp == Some(true) {
-            // Board rule: the star lands on the mainboard — either the board
+            // Board rule: the star lands on the mainboard; either the board
             // this request sets, or the row's current board when untouched.
             let effective_board = match &request.board {
                 Some(board) => *board,
@@ -507,9 +507,8 @@ impl DeckRepository for Postgres {
         let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new("UPDATE deck_cards SET ");
         let mut sep = qb.separated(", ");
         if let Some(set_quantity) = &request.set_quantity {
-            // Absolute set — idempotent, can't underflow (>= 1 by
-            // construction). The legacy delta arm was removed with the PUT
-            // route at the end of the PATCH migration.
+            // Absolute set: idempotent, can't underflow (>= 1 by
+            // construction).
             sep.push("quantity = ")
                 .push_bind_unseparated(**set_quantity);
         }
@@ -682,7 +681,7 @@ impl DeckRepository for Postgres {
             .begin()
             .await
             .map_err(|e| CommanderMaybeboardError::Database(e.into()))?;
-        // The user row lock serializes concurrent adds for one user — there
+        // The user row lock serializes concurrent adds for one user; there
         // is no parent row like a deck to lock, so the count-then-insert
         // TOCTOU closes here instead.
         query!(

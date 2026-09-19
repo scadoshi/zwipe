@@ -127,7 +127,7 @@ impl std::ops::Deref for VecErrorMetrics {
 //  main
 // ======
 
-/// Comprehensive metrics for a Scryfall bulk data sync operation.
+/// Metrics for a Scryfall bulk data sync operation.
 ///
 /// Tracks timing, counts, errors, and final status. Used for:
 /// - Monitoring sync progress

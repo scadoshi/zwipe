@@ -89,7 +89,7 @@ use tower_http::set_header::SetResponseHeaderLayer;
 /// extractor, and it calls the key extractor to bucket the request. When the
 /// request has no valid Bearer token the extractor returns
 /// `GovernorError::UnableToExtractKey`, and tower_governor's default maps that
-/// to a **500** — so an unauthenticated call to a private route answered 500
+/// to a **500**, so an unauthenticated call to a private route answered 500
 /// instead of 401, polluting error logs and misleading health probes.
 ///
 /// This remaps that one case to **401 Unauthorized** (the honest status for
@@ -167,7 +167,7 @@ pub use zwipe_core::http::paths::*;
 /// `Cache-Control: public, max-age=3600` for successful responses on the
 /// public read endpoints (card catalogs, marketing stats, changelog), so the
 /// CF edge (whose cache rules respect origin TTL) holds one copy per hour
-/// instead of falling back to its daily default — which held the flavor card
+/// instead of falling back to its daily default, which held the flavor card
 /// ~20h on 2026-08-06. One simple number everywhere; only featured-flavor
 /// needs more (its content flips ON the hour, so its handler counts down to
 /// the boundary, and `if_not_present` lets that header win).
@@ -197,7 +197,7 @@ fn hourly_cache_layer() -> SetResponseHeaderLayer<CacheHeaderFn> {
 #[cfg(feature = "zerver")]
 #[allow(clippy::expect_used)]
 pub fn public_routes() -> Router<AppState> {
-    // 5 req / 30s — tight limit, brute-force target
+    // 5 req / 30s: tight limit, brute-force target
     let login_config = Arc::new(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(6))
@@ -206,7 +206,7 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // 5 req / 1hr — rarely needed legitimately
+    // 5 req / 1hr: rarely needed legitimately
     let register_config = Arc::new(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(720))
@@ -215,7 +215,7 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // 20 req / 1min — clients refresh on cold start
+    // 20 req / 1min: clients refresh on cold start
     let refresh_config = Arc::new(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(3))
@@ -224,7 +224,7 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // 5 req / 1hr per IP — password reset is rare
+    // 5 req / 1hr per IP: password reset is rare
     let forgot_password_config = Arc::new(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(720))
@@ -233,7 +233,7 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // 10 req / 1hr per IP — verify-email + reset-password
+    // 10 req / 1hr per IP: verify-email + reset-password
     let verify_reset_config = Arc::new(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(360))
@@ -242,7 +242,7 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // 60 req / min per IP — card metadata is public and CF-cached, but a tight
+    // 60 req / min per IP: card metadata is public and CF-cached, but a tight
     // limit guards the origin from someone bypassing CF to scrape directly.
     let public_card_config = Arc::new(
         GovernorConfigBuilder::default()
@@ -252,7 +252,7 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // 30 req / 2s per IP — public marketing aggregates. CF cache absorbs most
+    // 30 req / 2s per IP: public marketing aggregates. CF cache absorbs most
     // traffic; this guards origin if someone bypasses CF or warms many POPs.
     let public_marketing_config = Arc::new(
         GovernorConfigBuilder::default()
@@ -262,7 +262,7 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // 30 req / 2s per IP — min-version gate poll. ~30-byte payload hit once a
+    // 30 req / 2s per IP: min-version gate poll. ~30-byte payload hit once a
     // minute per app; modest cap guards origin without risking lockout noise.
     let public_client_config = Arc::new(
         GovernorConfigBuilder::default()
@@ -272,7 +272,7 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // 30 req / 2s per IP — public changelog. Fetched once per app launch and
+    // 30 req / 2s per IP: public changelog. Fetched once per app launch and
     // Cloudflare edge-caches it, so origin traffic is tiny; this guards the
     // origin if someone bypasses CF or warms many POPs.
     let public_changelog_config = Arc::new(
@@ -283,7 +283,7 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // 10 req / min per IP — pre-auth funnel events. A legitimate session
+    // 10 req / min per IP: pre-auth funnel events. A legitimate session
     // fires a handful ever (app opened, register viewed/submitted); this is
     // an unauthenticated write, so keep the row-spam ceiling low.
     let anonymous_event_config = Arc::new(
@@ -294,7 +294,7 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // Burst 2, then 1 req / min per IP — crash reports. A legitimate client
+    // Burst 2, then 1 req / min per IP: crash reports. A legitimate client
     // posts at most one per launch; this is an unauthenticated write that
     // inserts a row per call, so it gets the strictest limiter (the crash_id
     // upsert makes anything past it idempotent).
@@ -306,7 +306,7 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // 30 req / 2s per IP — public shared-deck reads. A page load fetches once
+    // 30 req / 2s per IP: public shared-deck reads. A page load fetches once
     // and CF may cache briefly; this guards origin against token scanning.
     let public_share_config = Arc::new(
         GovernorConfigBuilder::default()
@@ -316,7 +316,7 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // 30 req / 2s per IP — health checks. Generous for frequent polling
+    // 30 req / 2s per IP: health checks. Generous for frequent polling
     // (manual curls, uptime monitors) while capping unauthenticated floods,
     // notably /health/database which pings Postgres.
     let health_config = Arc::new(
@@ -474,7 +474,7 @@ pub fn public_routes() -> Router<AppState> {
 #[cfg(feature = "zerver")]
 #[allow(clippy::expect_used)]
 pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
-    // 500 req / 5min (~1.67/s avg) — generous for swiping, keyed by user ID
+    // 500 req / 5min (~1.67/s avg): generous for swiping, keyed by user ID
     let private_config = Arc::new(
         GovernorConfigBuilder::default()
             .period(Duration::from_millis(600))
@@ -483,7 +483,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // burst 2, then 1 req/30min — account mutations are done once; 2 attempts covers typos
+    // burst 2, then 1 req/30min: account mutations are done once; 2 attempts covers typos
     let sensitive_config = Arc::new(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(1800))
@@ -492,7 +492,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // burst 20, then 1 req/10s — commander autocomplete needs headroom for fast typers
+    // burst 20, then 1 req/10s: commander autocomplete needs headroom for fast typers
     let card_search_config = Arc::new(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(10))
@@ -501,7 +501,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // burst 1, then 1 req/60s — resend verification: a fast multi-click sends
+    // burst 1, then 1 req/60s: resend verification: a fast multi-click sends
     // one email, the rest get 429. Window matches the client cooldown timer.
     let resend_verification_config = Arc::new(
         GovernorConfigBuilder::default()
@@ -511,7 +511,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // 12 req/min — clients flush usage every ~30s; this gives ample headroom
+    // 12 req/min: clients flush usage every ~30s; this gives ample headroom
     let metrics_usage_config = Arc::new(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(5))
@@ -661,7 +661,7 @@ mod tests {
         // Short waits: one message for the whole window.
         assert_eq!(rate_limit_copy(1), rate_limit_copy(60));
         assert_eq!(rate_limit_copy(61), rate_limit_copy(300));
-        // Long lockouts round up in 5-minute steps — 1784s and 1500s share
+        // Long lockouts round up in 5-minute steps: 1784s and 1500s share
         // "about 30 minutes"; a fresh lockout in the next step differs.
         assert_eq!(
             rate_limit_copy(1784),

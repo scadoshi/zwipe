@@ -8,7 +8,7 @@ pub struct RequestPasswordReset {
 
 /// Errors that can occur while initiating a password reset.
 ///
-/// Only database failures are exposed — user-not-found is intentionally
+/// Only database failures are exposed; user-not-found is intentionally
 /// swallowed to prevent email enumeration.
 #[derive(Debug, thiserror::Error)]
 pub enum RequestPasswordResetError {

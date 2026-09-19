@@ -1,8 +1,7 @@
 //! Idempotent (PATCH) deck-card update.
 //!
 //! `quantity` is an **absolute** value ("set to 3"), so replaying the
-//! request is harmless. The legacy PUT delta route was removed once the
-//! version gate passed the PATCH-speaking clients — migration:
+//! request is harmless. Migration notes:
 //! `context/plans/patch_idempotent_updates.md`.
 //!
 //! Every field of a deck card is non-clearable, so an explicit `null` in
@@ -42,7 +41,7 @@ impl From<UpdateDeckCardError> for ApiError {
             UpdateDeckCardError::NotFound => {
                 Self::UnprocessableEntity("deck card not found".to_string())
             }
-            // Verbatim client-facing copy — the app shows this in a toast.
+            // Verbatim client-facing copy: the app shows this in a toast.
             UpdateDeckCardError::MvpCapReached => {
                 Self::UnprocessableEntity("This deck already has 3 MVPs".to_string())
             }

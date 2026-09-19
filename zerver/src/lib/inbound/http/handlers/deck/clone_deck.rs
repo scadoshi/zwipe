@@ -70,7 +70,7 @@ impl From<InvalidCloneDeck> for ApiError {
 /// Clones an existing deck owned by the authenticated user.
 ///
 /// The source deck id is taken from the URL path; the new deck name comes
-/// from the JSON body. The response contains only the new deck's id —
+/// from the JSON body. The response contains only the new deck's id;
 /// the client navigates to the deck view which loads the full aggregate.
 #[cfg(feature = "zerver")]
 pub async fn clone_deck(
@@ -105,7 +105,7 @@ pub async fn clone_deck(
             tracing::warn!(error = ?e, "metrics: record deck_created event failed (clone)");
         }
         // A clone is a complete copy of an existing deck, so it may already be
-        // valid — run the completion check immediately.
+        // valid, so run the completion check immediately.
         check_deck_completion(deck_service, metrics, uid, new_deck_id).await;
     });
 

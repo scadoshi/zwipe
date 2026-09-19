@@ -1,7 +1,7 @@
 //! HTTP layer: Axum server, error mapping, middleware, and route definitions.
 
 #[cfg(feature = "zerver")]
-/// Serving-layer caches (`TtlSlot` — one typed slot per cached value).
+/// Serving-layer caches (`TtlSlot`, one typed slot per cached value).
 pub mod cache;
 /// HTTP request handlers organized by domain.
 pub mod handlers;
@@ -62,8 +62,8 @@ use uuid::Uuid;
 
 /// Shared error vocabulary between the server and its clients.
 ///
-/// The server produces these from domain errors and renders them in `IntoResponse`
-/// — the **single exit path**: `InternalServerError` logs its carried detail there
+/// The server produces these from domain errors and renders them in `IntoResponse`,
+/// the **single exit path**: `InternalServerError` logs its carried detail there
 /// and sends a generic body, so an unlogged 500 is structurally impossible. Other
 /// variants forward their message to the client verbatim (4xx messages are
 /// user-safe copy by contract). Clients rebuild the vocabulary from
@@ -127,7 +127,7 @@ impl IntoResponse for ApiError {
 
 /// Converts an error to [`ApiError::InternalServerError`], capturing the full
 /// debug repr and a backtrace into the variant while the concrete type still
-/// exists. No logging happens here — `IntoResponse` is the single exit path
+/// exists. No logging happens here; `IntoResponse` is the single exit path
 /// that logs the carried detail before stripping it from the response.
 #[cfg(feature = "zerver")]
 trait To500 {
@@ -151,9 +151,9 @@ where
 
 /// Adds security-relevant HTTP response headers to every response.
 ///
-/// - `X-Content-Type-Options: nosniff` — prevents MIME-type sniffing
-/// - `X-Frame-Options: DENY` — prevents clickjacking via iframe embedding
-/// - `Referrer-Policy: strict-origin-when-cross-origin` — limits referrer leakage
+/// - `X-Content-Type-Options: nosniff` prevents MIME-type sniffing
+/// - `X-Frame-Options: DENY` prevents clickjacking via iframe embedding
+/// - `Referrer-Policy: strict-origin-when-cross-origin` limits referrer leakage
 #[cfg(feature = "zerver")]
 async fn security_headers(request: Request, next: Next) -> Response {
     let mut response = next.run(request).await;
@@ -258,7 +258,7 @@ pub fn build_router(
     let x_request_id = header::HeaderName::from_static("x-request-id");
     axum::Router::new()
         .merge(
-            // last-active layer wraps private routes only — it peeks the Bearer
+            // last-active layer wraps private routes only: it peeks the Bearer
             // token, so it must sit where every request carries one
             private_routes(jwt_secret).layer(axum::middleware::from_fn_with_state(
                 state.clone(),

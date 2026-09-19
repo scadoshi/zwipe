@@ -60,7 +60,7 @@ pub const CATEGORY_ROOTS: &[(&str, &[&str])] = &[
         ],
     ),
     ("drain", &["drain-life"]),
-    // Literal card-drawing only — the narrow subset of `card_advantage`.
+    // Literal card-drawing only: the narrow subset of `card_advantage`.
     (
         "draw",
         &[
@@ -112,7 +112,7 @@ pub const CATEGORY_ROOTS: &[(&str, &[&str])] = &[
 
 /// Manual one-off patches: exact oracle-tag slugs whose wording dodges Scryfall's
 /// hierarchy but clearly belong to a role. Unlike [`CATEGORY_ROOTS`], these are
-/// matched **exactly** — never subtree-expanded — so an entry adds precisely that
+/// matched **exactly** (never subtree-expanded), so an entry adds precisely that
 /// tag and nothing beneath it. Key = a real `CardRole` (snake_case),
 /// checked by unit test; value = real oracle-tag slugs, checked by a non-fatal
 /// `zervice` warn. Fed into both derivation and grouping. Grow as you audit;
@@ -207,7 +207,7 @@ pub fn override_pairs() -> (Vec<String>, Vec<String>) {
 /// expansion: tags whose Scryfall parent chain drags them under a role's root but
 /// which don't belong there. The subtree mechanism only adds, and a tag can sit
 /// under several roots at once (multi-parent), so narrowing a root can't remove
-/// these cleanly — an explicit exclusion is the only sync-proof lever. Matched
+/// these cleanly; an explicit exclusion is the only sync-proof lever. Matched
 /// **exactly** (no subtree expansion), keyed by a real `CardRole` (unit-test
 /// checked); slug side is warn-checked against the live catalog. Applied in both
 /// derivation and grouping. Grow as you audit; applies on the next `zervice` run.
@@ -268,7 +268,7 @@ async fn warn_unknown_slugs(pool: &PgPool, slugs: &[String], source: &str) {
 /// `Tokens` for any card whose `all_parts` contains a token component, and writes
 /// the sorted category array per printing. Returns rows affected.
 ///
-/// Writes the **otag-derived + Tokens portion only** — the 4 heuristic stragglers
+/// Writes the **otag-derived + Tokens portion only**; the 4 heuristic stragglers
 /// are also merged in from `oracle_tag_gaps.rs` at integration (see module docs).
 /// Wired into `zervice` as the first step of `derive_card_categories`.
 pub async fn derive_categories(pool: &PgPool) -> anyhow::Result<u64> {
@@ -376,7 +376,7 @@ mod tests {
     }
 
     /// The map covers the otag-derived roles plus the heuristic stragglers and
-    /// Tokens as supplements (Protection/Pump/Stax/GraveyardHate/Tokens — for
+    /// Tokens as supplements (Protection/Pump/Stax/GraveyardHate/Tokens, for
     /// grouping + union coverage). Only Finisher (dropped) stays out.
     #[test]
     fn map_covers_otag_roles_plus_stragglers() {

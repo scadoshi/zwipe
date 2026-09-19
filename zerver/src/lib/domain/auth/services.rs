@@ -38,9 +38,9 @@ use zwipe_core::domain::{
 /// A throwaway Argon2 hash used to equalize login timing for non-existent
 /// accounts. Generated lazily with the same default Argon2 params as real
 /// hashes, so verifying against it costs the same as verifying a real one. It
-/// never matches any input — its only job is to burn equivalent CPU so a
+/// never matches any input; its only job is to burn equivalent CPU so a
 /// missing account isn't measurably faster to reject than a real one with a
-/// wrong password (which would leak whether the account exists — enumeration).
+/// wrong password (which would leak whether the account exists: enumeration).
 #[allow(clippy::expect_used)]
 static TIMING_EQUALIZER_HASH: LazyLock<HashedPassword> = LazyLock::new(|| {
     Password::new("Zw1pe!Dummy#Hash7")
@@ -238,7 +238,7 @@ where
                 // Equalize timing with the wrong-password path: run an Argon2
                 // verify against a dummy hash so a non-existent account isn't
                 // measurably faster to reject (prevents username/email
-                // enumeration via response timing). Result is discarded — it
+                // enumeration via response timing). Result is discarded; it
                 // never matches.
                 let _ = TIMING_EQUALIZER_HASH.verify(&request.password);
                 tracing::warn!(event = "login_failure", reason = "user_not_found", identifier = %request.identifier);
@@ -247,7 +247,7 @@ where
             Err(e) => return Err(e),
         };
 
-        // Check lockout before Argon2 — avoids expensive hashing for locked accounts.
+        // Check lockout before Argon2 to avoid expensive hashing for locked accounts.
         if let Some(until) = user_with_password_hash.lockout_until
             && until > Utc::now()
         {
@@ -448,7 +448,7 @@ where
         let link = format!("{}/verify/{raw}", self.web_base_url);
         // Dev convenience: surface the link + raw token in the server log so a
         // developer can verify an email without a working email provider. Debug
-        // builds only — a release build never logs a live verification token.
+        // builds only; a release build never logs a live verification token.
         #[cfg(debug_assertions)]
         tracing::warn!(
             event = "dev_email_verification",
@@ -489,7 +489,7 @@ where
     ) -> Result<(), RequestPasswordResetError> {
         let user_id = match self.auth_repo.get_user_id_by_email(&request.email).await? {
             Some(id) => id,
-            // Silently return Ok — never reveal whether an email is registered
+            // Silently return Ok; never reveal whether an email is registered
             None => {
                 tracing::debug!(event = "password_reset_unknown_email");
                 return Ok(());
@@ -515,7 +515,7 @@ where
             .await?;
 
         let link = format!("{}/reset/{raw}", self.web_base_url);
-        // Dev convenience: same as verification — surface the reset link + token
+        // Dev convenience: same as verification, surface the reset link + token
         // so password reset is testable without an email provider. Debug only.
         #[cfg(debug_assertions)]
         tracing::warn!(

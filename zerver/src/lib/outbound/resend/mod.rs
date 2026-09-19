@@ -9,7 +9,7 @@ use crate::domain::email::{
 /// Resend HTTP API adapter.
 ///
 /// Calls `POST https://api.resend.com/emails` using `reqwest` (already a workspace dep).
-/// Construct once and clone into services — the inner [`reqwest::Client`] is a connection pool.
+/// Construct once and clone into services: the inner [`reqwest::Client`] is a connection pool.
 #[derive(Debug, Clone)]
 pub struct Resend {
     client: reqwest::Client,

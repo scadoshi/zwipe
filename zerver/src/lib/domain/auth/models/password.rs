@@ -1,6 +1,6 @@
 //! Password validation, hashing, and verification.
 //!
-//! This module implements a comprehensive password security policy with validation,
+//! This module implements the password security policy with validation,
 //! Argon2id hashing, and secure verification. It enforces industry-standard password
 //! requirements to prevent weak credentials.
 //!
@@ -53,7 +53,7 @@ use zwipe_core::domain::auth::password::InvalidPassword;
 /// A validated password that meets all security policy requirements.
 ///
 /// This is a value object that guarantees any instance contains a password
-/// that has been validated against the comprehensive password policy. The raw
+/// that has been validated against the password policy. The raw
 /// password string is wrapped and can only be accessed via [`read()`](Self::read).
 ///
 /// # Validation
@@ -440,7 +440,7 @@ mod tests {
 
     #[test]
     fn test_hash_password_handles_max_length_input() {
-        // 128 chars is the maximum — use "abc" pattern to avoid TooManyRepeats
+        // 128 chars is the maximum: use "abc" pattern to avoid TooManyRepeats
         let suffix = "A1!";
         let padding: String = "abcdef".chars().cycle().take(128 - suffix.len()).collect();
         let long_password = format!("{}{}", padding, suffix);
@@ -510,7 +510,7 @@ mod tests {
 
     #[test]
     fn test_password_validation_rejects_too_many_repeats() {
-        // 4 consecutive same chars anywhere in the password — exceeds limit of 3
+        // 4 consecutive same chars anywhere in the password: exceeds limit of 3
         assert!(matches!(
             Password::new("Aaaaa1!bc"),
             Err(InvalidPassword::TooManyRepeats(_))
@@ -520,36 +520,36 @@ mod tests {
             Err(InvalidPassword::TooManyRepeats(_))
         ));
 
-        // Exactly 3 consecutive — at the boundary, should pass
+        // Exactly 3 consecutive: at the boundary, should pass
         assert!(Password::new("Aaa1!bcde").is_ok());
     }
 
     #[test]
     fn test_password_validation_rejects_too_few_unique_chars() {
-        // 4 unique chars — below minimum of 6
+        // 4 unique chars: below minimum of 6
         assert!(matches!(
             Password::new("AbAb1!Ab"),
             Err(InvalidPassword::TooFewUniqueChars(_))
         ));
-        // 5 unique chars — still below minimum
+        // 5 unique chars: still below minimum
         assert!(matches!(
             Password::new("AbcAbc1!"),
             Err(InvalidPassword::TooFewUniqueChars(_))
         ));
 
-        // 8 unique chars — should pass
+        // 8 unique chars: should pass
         assert!(Password::new("Abcde1!f").is_ok());
     }
 
     #[test]
     fn test_password_validation_minimum_length_boundary() {
-        // 7 chars — one below minimum
+        // 7 chars: one below minimum
         assert!(matches!(
             Password::new("Abcde1!"),
             Err(InvalidPassword::TooShort)
         ));
 
-        // Exactly 8 chars — minimum valid length
+        // Exactly 8 chars: minimum valid length
         assert!(Password::new("Abcde1!x").is_ok());
     }
 

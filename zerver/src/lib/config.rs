@@ -42,13 +42,13 @@ const LOG_DIR_DEFAULT: &str = "/var/log/zwipe";
 /// Environment variable key for the minimum supported client app version.
 const MIN_CLIENT_VERSION_KEY: &str = "MIN_CLIENT_VERSION";
 
-/// Default minimum client version — `0.0.0` means the gate is open.
+/// Default minimum client version. `0.0.0` means the gate is open.
 const MIN_CLIENT_VERSION_DEFAULT: &str = "0.0.0";
 
 /// Environment variable key for the public web base URL (email verify/reset links).
 const WEB_BASE_URL_KEY: &str = "WEB_BASE_URL";
 
-/// Default public web base URL — the shared `site` constant (debug builds
+/// Default public web base URL: the shared `site` constant (debug builds
 /// resolve to the local zite dev server, so locally logged verification/reset
 /// links open end-to-end); the env var overrides it either way.
 const WEB_BASE_URL_DEFAULT: &str = zwipe_core::domain::site::WEB_BASE;
@@ -73,7 +73,7 @@ pub struct Config {
     pub bind_address: String,
 
     /// Tracing filter directive(s). Accepts a bare level (`"info"`) or
-    /// per-target directives (`"info,sqlx=warn,zwipe=debug"`) — fed to
+    /// per-target directives (`"info,sqlx=warn,zwipe=debug"`), fed to
     /// `tracing_subscriber::EnvFilter`.
     pub rust_log: String,
 
@@ -163,7 +163,7 @@ impl Config {
 
 /// Minimal configuration for the `zervice` sync binary.
 ///
-/// Zervice only talks to Postgres and writes logs — it must not require (or
+/// Zervice only talks to Postgres and writes logs; it must not require (or
 /// even be offered) JWT/Resend/email secrets. Keep this to exactly what the
 /// sync pipeline needs; the systemd unit feeds it a matching `.env.zervice`.
 pub struct ZerviceConfig {
@@ -178,7 +178,7 @@ pub struct ZerviceConfig {
 
     /// Dead-man's-switch ping URL (healthchecks.io), hit after an all-steps-ok
     /// run. Optional: unset (dev runs) means no ping, and the alerting is
-    /// silence-based on the receiving side — the `OnFailure=` email covers
+    /// silence-based on the receiving side; the `OnFailure=` email covers
     /// "ran and failed", this covers "never ran at all".
     pub healthcheck_ping_url: Option<String>,
 }

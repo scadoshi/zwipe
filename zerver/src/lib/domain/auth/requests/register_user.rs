@@ -1,6 +1,6 @@
 //! User registration operation.
 //!
-//! This module handles new user account creation with comprehensive validation
+//! This module handles new user account creation with validation
 //! and security measures. Registration involves:
 //!
 //! 1. Validating username, email, and password against policies

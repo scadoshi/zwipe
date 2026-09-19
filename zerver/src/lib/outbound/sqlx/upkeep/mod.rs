@@ -1,6 +1,6 @@
 //! PostgreSQL adapter for upkeep (nightly maintenance) deletes.
 //!
-//! Runs under the scoped `zervice` role in production — every statement here
+//! Runs under the scoped `zervice` role in production; every statement here
 //! must be covered by `zcripts/server/sql/zervice_role.sql`. Uses runtime
 //! queries (not the `query!` macro) deliberately: the session prune's grant is
 //! destruction-only (`DELETE` + column-scoped `SELECT (expires_at)`), and

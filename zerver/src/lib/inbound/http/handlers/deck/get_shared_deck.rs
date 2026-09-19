@@ -28,12 +28,12 @@ impl From<GetSharedDeckError> for ApiError {
     }
 }
 
-/// Public shared-deck read — no auth; possession of the token is the
+/// Public shared-deck read, no auth: possession of the token is the
 /// authority. Revoked or never-issued tokens 404. Responses may be CF-cached
 /// briefly (~5 min): a shared deck updating a few minutes late is fine, and a
 /// revoked token dying a few minutes late is acceptable.
 ///
-/// The response strips owner identity — a malformed token is answered exactly
+/// The response strips owner identity: a malformed token is answered exactly
 /// like a revoked one, so the endpoint never confirms what exists.
 #[cfg(feature = "zerver")]
 pub async fn get_shared_deck(

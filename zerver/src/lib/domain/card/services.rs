@@ -103,7 +103,7 @@ impl<R: CardRepository> CardService for Service<R> {
     }
 
     async fn derive_card_categories(&self, batch_size: usize) -> anyhow::Result<(u32, u32)> {
-        // 1. Oracle-tag subtrees (18) + Tokens via all_parts — one SQL pass, all cards.
+        // 1. Oracle-tag subtrees (18) + Tokens via all_parts: one SQL pass, all cards.
         let otag_rows = self.repo.derive_oracle_tag_categories().await?;
 
         // 2. Merge the 4 heuristic stragglers otags can't express (oracle_tag_gaps).

@@ -114,7 +114,7 @@ pub enum InvalidAuthenticateUser {
 
     /// No password was provided.
     ///
-    /// Login only checks the password is non-empty — it is NOT policy-gated,
+    /// Login only checks the password is non-empty; it is NOT policy-gated,
     /// since existing users may have passwords created under older policies. The
     /// password is verified against the stored hash at the service layer.
     #[error("password must be present")]
