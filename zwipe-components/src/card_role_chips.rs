@@ -1,44 +1,28 @@
-//! Card roles with drill-down to their oracle tags.
-//!
-//! Renders the coarse roles a card fulfills (Removal, Ramp, ...) as chips. A role
-//! that has functional oracle tags beneath it (server-grouped) eases those tags
-//! open when tapped, reusing the keyword hint reveal; a role with none (the
-//! heuristic/token roles) is a plain, non-expandable chip. A trailing "Other
-//! tags" chip holds the card's functional tags that fall under no role. This is
-//! the card's whole tag story: role = the high-level thing, oracle tags = the
-//! specific things underneath, distinct from deck-level Deck Tags.
-//!
-//! When the host supplies `describe_tag` / `on_examples`, each exposed oracle tag
-//! becomes tappable too: it eases its dictionary definition open beneath the tag
-//! row (with an optional "Examples" button), telescoping under the role. The tag
-//! reveal is nested inside the role reveal, so collapsing the role hides it and
-//! reopening the role restores it (its open state persists, like the keywords).
+//! Card roles (Removal, Ramp, ...) as chips. A role with oracle tags beneath it
+//! eases them open when tapped; a trailing "Other tags" chip holds tags under
+//! no role. With `describe_tag` or `on_examples` set, each tag is tappable too
+//! and telescopes its definition open under the role.
 
 use dioxus::prelude::*;
 use std::collections::BTreeMap;
 use zwipe_core::domain::card::card_role::role_label;
 
-/// Card roles as chips; expandable to their grouped oracle tags, plus an "Other
-/// tags" bucket. `tags_by_role` is keyed by role slug (`CardRole`'s
-/// snake_case form); `other_tags` are the uncategorized functional tags.
+/// Card roles as chips, expandable to their oracle tags. `tags_by_role` is
+/// keyed by role slug.
 #[component]
 pub fn CardRoleChips(
     roles: Vec<String>,
     tags_by_role: BTreeMap<String, Vec<String>>,
     other_tags: Vec<String>,
-    /// Optional help affordance rendered beside the "Card roles" label (e.g.
-    /// an `InfoButton`). Left to the consumer since this crate can't depend
-    /// on zwiper's session-aware hint plumbing.
+    /// Help affordance beside the "Card roles" label. Left to the host since
+    /// this crate can't depend on zwiper's hint plumbing.
     #[props(default)]
     help: Option<Element>,
-    /// Resolve an oracle tag's plain-language description (from the host's catalog
-    /// cache). When set, exposed tags become tappable and reveal their definition
-    /// inline. `None` from the callback renders as "No description yet".
+    /// Resolve an oracle tag's description. `None` renders "No description yet".
     #[props(default)]
     describe_tag: Option<Callback<String, Option<String>>>,
-    /// Open the example-cards browse for a tag slug. When set, an expanded tag's
-    /// reveal shows an "Examples" button. Left to the host since the browse is a
-    /// zwiper overlay.
+    /// Open the example-cards browse for a tag slug; adds an "Examples" button
+    /// to an expanded tag.
     #[props(default)]
     on_examples: Option<Callback<String>>,
 ) -> Element {
@@ -46,8 +30,7 @@ pub fn CardRoleChips(
         return rsx! {};
     }
 
-    // Chip list: each role (label + its tags), then an "Other tags" entry. A chip
-    // is expandable iff it has tags; empty roles render as plain chips.
+    // A chip is expandable iff it has tags.
     let mut items: Vec<(String, Vec<String>)> = roles
         .iter()
         .map(|slug| {
@@ -60,9 +43,8 @@ pub fn CardRoleChips(
     }
 
     let mut open = use_signal(|| None::<usize>);
-    // `shown` holds the last-opened index and is NOT cleared on close, so the
-    // revealed tags stay mounted while the container animates collapsing. Clearing
-    // it (like `open`) would yank the DOM node instantly and snap the close shut.
+    // `shown` is not cleared on close, so the revealed tags stay mounted while
+    // the container animates shut.
     let mut shown = use_signal(|| None::<usize>);
     let open_idx = open();
     let reveal_tags: Vec<String> = shown()
@@ -75,10 +57,7 @@ pub fn CardRoleChips(
         "keyword-reveal"
     };
 
-    // Second telescope level: which exposed tag's definition is open. Persists
-    // across role collapse/reopen (never cleared on role toggle), mirroring how the
-    // role reveal itself keeps state. `shown_tag` keeps the last one mounted through
-    // the collapse animation, same reason as `shown`.
+    // Persists across role collapse and reopen. `shown_tag` works like `shown`.
     let mut open_tag = use_signal(|| None::<String>);
     let mut shown_tag = use_signal(|| None::<String>);
     let tags_expandable = describe_tag.is_some() || on_examples.is_some();
@@ -114,15 +93,11 @@ pub fn CardRoleChips(
             div { class: "{reveal_class}",
                 div { class: "keyword-reveal-inner",
                     if !reveal_tags.is_empty() {
-                        // Block-quote frame (matches the keyword reminder) so it
-                        // reads as the tapped role's exposed oracle tags.
                         div { class: "otag-reveal-block",
                             div { class: "card-detail-meta card-detail-otags",
                                 for tag in reveal_tags.iter().cloned() {
                                     if tags_expandable {
                                         {
-                                            // One clone owned by the toggle closure; `tag` itself
-                                            // stays for the key/class/label.
                                             let slug = tag.clone();
                                             rsx! {
                                                 button {
@@ -148,9 +123,8 @@ pub fn CardRoleChips(
                             }
                             if tags_expandable {
                                 {
-                                    // Only reveal for a tag that belongs to the
-                                    // currently-shown role, so switching roles hides
-                                    // a stale definition (and coming back restores it).
+                                    // Only reveal a tag under the shown role, so switching
+                                    // roles hides a stale definition.
                                     let shown = shown_tag();
                                     let in_role = shown.as_ref().is_some_and(|s| reveal_tags.contains(s));
                                     let is_open = open_tag().as_ref().is_some_and(|s| reveal_tags.contains(s));

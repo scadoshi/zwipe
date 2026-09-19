@@ -1,16 +1,11 @@
-//! Deck distribution charts, shared by the app's Distributions section and
-//! the zwipe.net shared-deck page.
-//!
-//! Pure div-bar charts (no canvas, no JS) styled against the theme variables,
-//! fed the chart-ready tuples `DeckMetrics` produces (`mana_curve_bars`,
-//! `type_bars`, `color_bars`, `card_role_bars`). Moved here from zwiper's
-//! `deck_charts` so both surfaces render the same picture; the app-only
-//! interactive pieces (draw odds, mana fulfillment) stayed behind.
+//! Deck distribution charts, shared by the app and the zwipe.net shared-deck
+//! page. Pure div bars (no canvas, no JS) styled against the theme variables,
+//! fed the tuples `DeckMetrics` produces.
 
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::{deck_metrics::ManaBalanceRow, draw_odds::p_at_least_one};
 
-/// Sentence-case accent sub-heading shown above each flattened chart block.
+/// Accent sub-heading above each chart block.
 #[component]
 pub fn ChartLabel(text: &'static str) -> Element {
     rsx! {
@@ -20,8 +15,7 @@ pub fn ChartLabel(text: &'static str) -> Element {
     }
 }
 
-/// Count-based distribution charts (types, categories, colors), rendered as
-/// flat sub-blocks.
+/// Type, role, and color distribution charts.
 #[component]
 pub fn DeckCharts(
     type_bars: Option<Vec<(&'static str, usize, u32)>>,
@@ -29,7 +23,6 @@ pub fn DeckCharts(
     color_bars: Option<Vec<(&'static str, usize, u32)>>,
 ) -> Element {
     rsx! {
-        // ── types ──────────────────────────────────────
         if let Some(type_bars) = type_bars.as_ref() {
             div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
                 ChartLabel { text: "Type distribution" }
@@ -51,7 +44,6 @@ pub fn DeckCharts(
             }
         }
 
-        // ── categories (horizontal bars) ─────────────
         if let Some(cat_bars) = category_bars.as_ref() {
             if !cat_bars.is_empty() {
                 div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
@@ -77,7 +69,6 @@ pub fn DeckCharts(
             }
         }
 
-        // ── colors ─────────────────────────────────────
         if let Some(color_bars) = color_bars.as_ref() {
             div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
                 ChartLabel { text: "Color distribution" }
@@ -102,7 +93,7 @@ pub fn DeckCharts(
     }
 }
 
-/// Mana curve (nonland CMC histogram), rendered flat.
+/// Nonland CMC histogram.
 #[component]
 pub fn ManaCurve(mana_curve_bars: [(usize, u32); 7]) -> Element {
     rsx! {
@@ -127,10 +118,9 @@ pub fn ManaCurve(mana_curve_bars: [(usize, u32); 7]) -> Element {
     }
 }
 
-/// Draw odds — `P(>=1)` per category as horizontal bars, with ‹ › to step the
-/// draw window from the opening hand through later turns. On the draw:
-/// `draws = 7 + turn` (opening hand = turn 0). `buckets` is `(label, count K)`;
-/// probabilities recompute live for the selected turn from the deck's engine.
+/// `P(>=1)` per bucket as horizontal bars, with a stepper over the draw
+/// window: `draws = 7 + turn`, turn 0 being the opening hand. `buckets` is
+/// `(label, count)`.
 #[component]
 pub fn DrawOdds(deck_size: u32, buckets: Vec<(&'static str, u32)>) -> Element {
     const MAX_TURN: u32 = 20;
@@ -141,10 +131,8 @@ pub fn DrawOdds(deck_size: u32, buckets: Vec<(&'static str, u32)>) -> Element {
     } else {
         format!("Odds of ≥1 by turn {}", turn())
     };
-    // Map each bucket to its odds in the loop header rather than a
-    // `{ let …; rsx! }` block inside the `for` (which confuses Dioxus node
-    // diffing and drops the bar-width style on alternating turns); the keyed
-    // loop below remounts changed rows.
+    // Computed outside the `for`: a `{ let ..; rsx! }` block inside it confuses
+    // Dioxus diffing and drops the bar-width style on alternating turns.
     let rows = buckets.iter().map(|(label, k)| {
         (
             *label,
@@ -154,9 +142,7 @@ pub fn DrawOdds(deck_size: u32, buckets: Vec<(&'static str, u32)>) -> Element {
     rsx! {
         div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
             div { style: "display:flex;align-items:center;justify-content:center;gap:0.6rem;",
-                // Reuse the combat-filter stepper button: solid background gives
-                // native press feedback and suppresses WKWebView's focus ring.
-                // The onclick guards no-op at the bounds; no grey-out.
+                // `stepper-btn`'s solid background suppresses WKWebView's focus ring.
                 button {
                     class: "stepper-btn",
                     onclick: move |_| { let t = turn(); if t > 0 { turn.set(t - 1); } },
@@ -170,9 +156,8 @@ pub fn DrawOdds(deck_size: u32, buckets: Vec<(&'static str, u32)>) -> Element {
                 }
             }
             for (label, pct) in rows {
-                // Key includes pct so a changed row remounts (fresh DOM) instead
-                // of an in-place style update — the WebView drops the latter and
-                // leaves the bar unfilled on alternating turns otherwise.
+                // Key includes pct so a changed row remounts; the WebView drops
+                // an in-place style update and leaves the bar unfilled.
                 div {
                     key: "{label}-{pct}",
                     style: "display:flex;align-items:center;gap:0.5rem;",
@@ -191,7 +176,7 @@ pub fn DrawOdds(deck_size: u32, buckets: Vec<(&'static str, u32)>) -> Element {
     }
 }
 
-/// Per-color mana cost fulfillment, rendered flat.
+/// Per-color mana produced versus consumed.
 #[component]
 pub fn ManaFulfillment(rows: Vec<ManaBalanceRow>) -> Element {
     if rows.is_empty() {

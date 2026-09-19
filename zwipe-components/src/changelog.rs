@@ -1,38 +1,20 @@
-//! Shared changelog rendering.
-//!
-//! The release history, rendered identically on the website (`zite`) and in the
-//! app (`zwiper`). The data lives in `zwipe_core::content::changelog` (pure, so
-//! the server can serve it too); this crate owns the rendering and styling so
-//! the surfaces never drift. Each consumer wraps the [`Changelog`] component in
-//! its own chrome (a page with nav/footer on the web, a sheet in the app).
-//! Styling is in `assets/components.css`.
-//!
-//! The component takes the changelog as a prop, defaulting to the copy compiled
-//! into the binary ([`HttpChangelog::current`]). `zite` renders that default;
-//! `zwiper` fetches `/api/changelog` and feeds the fresh copy in, so new
-//! entries appear without an app resubmit. Passing the same wire type either
-//! way keeps one rendering path.
+//! Release history, rendered the same on zite and in zwiper. The data lives in
+//! `zwipe_core::content::changelog`; zwiper fetches `/api/changelog` so new
+//! entries appear without an app resubmit.
 
 use dioxus::prelude::*;
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 
-/// The `major.minor` of a version string, e.g. "1.3.1" -> "1.3", "1.0.10" ->
-/// "1.0". Slices the input, so a `&str` in yields a `&str` borrowed from it.
+/// The `major.minor` of a version string: "1.3.1" -> "1.3", "1.0.10" -> "1.0".
 fn major_minor(version: &str) -> &str {
     version.rsplit_once('.').map_or(version, |(head, _)| head)
 }
 
-/// The release history: a major.minor chip filter over a newest-first list of
-/// versions, each with its date and notes. Defaults to the latest release's
-/// line; "All" shows everything. Renders just the content block (chips + list),
-/// so wrap it in your own page or sheet chrome.
-///
-/// `data` defaults to the compiled-in changelog; pass a fetched
-/// [`HttpChangelog`] to render a server-updated copy.
+/// A major.minor chip filter over a newest-first release list. Renders just
+/// the content block; wrap it in your own page or sheet chrome. `data`
+/// defaults to the compiled-in changelog.
 #[component]
 pub fn Changelog(#[props(default = HttpChangelog::current())] data: HttpChangelog) -> Element {
-    // major.minor keys in display order (newest first), deduped, for the
-    // filter. Owned so the chip click handlers can capture them.
     let mut minors: Vec<String> = Vec::new();
     for release in data.upcoming.iter().chain(data.releases.iter()) {
         let key = major_minor(&release.version).to_string();
@@ -41,18 +23,14 @@ pub fn Changelog(#[props(default = HttpChangelog::current())] data: HttpChangelo
         }
     }
 
-    // None = "All"; Some(key) narrows to one line. Defaults to the latest
-    // released line (not the upcoming teaser); "All" stays an option.
+    // `None` is "All". Defaults to the latest released line, not the upcoming teaser.
     let default_line = data
         .releases
         .first()
         .map(|r| major_minor(&r.version).to_string());
     let mut selected = use_signal(|| default_line.clone());
-    // Included in each card's key so switching filters remounts the visible
-    // cards, replaying their ease-in animation.
+    // Part of each card's key so switching filters remounts and replays the ease-in.
     let filter_key = selected().unwrap_or_else(|| "all".to_string());
-    // Upcoming entries render first with an "Upcoming" badge; the first released
-    // entry after them is the "Latest".
     let upcoming_count = data.upcoming.len();
 
     rsx! {

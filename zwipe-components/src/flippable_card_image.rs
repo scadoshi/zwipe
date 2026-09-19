@@ -1,9 +1,5 @@
-//! Card image with a built-in flip control for double-faced cards.
-//!
-//! Shared by zwiper (swipe stack, printing sheet, fullscreen preview) and zite
-//! (shared-deck image overlay) so the flip affordance behaves identically
-//! everywhere. Owns its `face_idx` internally; a host can seed the first face
-//! shown via `initial_face` (e.g. to open an overlay already on the back side).
+//! Card image with a flip control for double-faced cards, shared by zwiper and
+//! zite so the affordance behaves identically everywhere.
 
 use dioxus::prelude::*;
 use std::{
@@ -14,58 +10,46 @@ use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
 use crate::OracleText;
 
-/// Image URLs whose bytes have already arrived once this session. These
-/// render instantly; only first-time loads play the ease-in. Keyed by URL
-/// (not component) because stack shifts recreate component instances, which
-/// would otherwise replay the fade on every already-cached image.
+/// Image URLs already loaded this session; only first-time loads ease in.
+/// Keyed by URL because stack shifts recreate component instances, which would
+/// otherwise replay the fade on cached images.
 fn seen_urls() -> &'static Mutex<HashSet<String>> {
     static SEEN: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
     SEEN.get_or_init(|| Mutex::new(HashSet::new()))
 }
 
-/// Forgets all seen URLs so every image's next render eases in again. Called
-/// on deliberate stack refreshes - the fade doubles as feedback that fresh
-/// results arrived.
+/// Forgets all seen URLs so every image eases in again. The fade doubles as
+/// feedback on a deliberate stack refresh.
 pub fn reset_image_ease() {
     if let Ok(mut seen) = seen_urls().lock() {
         seen.clear();
     }
 }
 
-/// Renders a card image with a flip-icon overlay for cards that have multiple faces.
-///
-/// Owns the `face_idx` state internally (seeded from `initial_face`) - when a
-/// parent re-renders this component with a different `sd`, Dioxus destroys and
-/// recreates it and the face resets to `initial_face`.
-///
-/// Single-faced cards render just the image; the flip control is hidden so
-/// non-DFC cards look identical to before.
+/// Card image with a flip overlay for multi-faced cards. Owns `face_idx`; a
+/// new `sd` recreates the component and resets it to `initial_face`.
 #[component]
 pub fn FlippableCardImage(
     sd: ReadSignal<ScryfallData>,
     size: ImageSize,
     #[props(default = String::new())] class: String,
     #[props(default = true)] draggable: bool,
-    /// Whether to render the flip button overlay. Set `false` on non-interactive
-    /// surfaces like exiting swipe-stack cards or peeking-underneath cards where
-    /// the button would be confusingly visible without being tappable.
+    /// Render the flip button. Off for non-interactive surfaces (exiting or
+    /// peeking stack cards) where it would be visible but not tappable.
     #[props(default = true)]
     flippable: bool,
-    /// Face to show first (0 = front). Lets a host open the image already flipped
-    /// to the side the user was viewing elsewhere.
+    /// Face to show first, 0 being the front.
     #[props(default = 0)]
     initial_face: usize,
-    /// Fires with the new face index on flip, so a host can mirror the shown
-    /// side (e.g. open its image overlay on the face being viewed).
+    /// Fires with the new face index on flip.
     #[props(default)]
     on_face_change: Option<EventHandler<usize>>,
 ) -> Element {
     let mut face_idx: Signal<usize> = use_signal(move || initial_face);
-    // Bumped by the img's load event so the seen-URL check below re-runs.
+    // Bumped by the img's load event so the seen-URL check re-runs.
     let mut load_nudge: Signal<u32> = use_signal(|| 0);
     let _ = load_nudge();
     let total = sd.read().face_count();
-    // Clamp so a stale/over-large `initial_face` still resolves to a real face.
     let cur = face_idx().min(total.saturating_sub(1));
     let alt = {
         let sd_read = sd.read();
@@ -79,9 +63,8 @@ pub fn FlippableCardImage(
     let image_url: Option<String> = sd.read().face_image_url(cur, size).map(str::to_owned);
     let is_no_image = image_url.is_none();
 
-    // Identity fields for the no-image placeholder, resolved for the shown face
-    // (so a flipped DFC shows the back's text, not the front's). Rarity/set are
-    // card-level. Read only when there's no image, so an art card pays nothing.
+    // No-image placeholder fields, resolved for the shown face. Only read when
+    // there's no image, so an art card pays nothing.
     let (mana_cost, type_line, rarity, set_name, oracle_text, flavor_text, pt) = if is_no_image {
         let sd_read = sd.read();
         let face = sd_read.card_faces.as_ref().and_then(|f| f.get(cur));
@@ -131,9 +114,8 @@ pub fn FlippableCardImage(
 
     rsx! {
         div { class: "flippable-card-wrapper{flippable_class} {class}",
-            // Inner box shrink-wraps the image so the flip button anchors to the
-            // image's own top-right corner, not the letterboxed wrapper - no layout
-            // shift between DFC and single-faced cards.
+            // Shrink-wraps the image so the flip button anchors to its corner,
+            // not the letterboxed wrapper.
             div { class: "flip-face",
                 if let Some(url) = image_url {
                     img {
@@ -149,8 +131,7 @@ pub fn FlippableCardImage(
                         },
                     }
                 } else {
-                    // No art: draw a card-shaped text proxy (name, mana, type,
-                    // rules) in the image's footprint instead of an empty box.
+                    // No art: a card-shaped text proxy in the image's footprint.
                     div { class: "no-image-card",
                         div { class: "nic-head",
                             span { class: "nic-name", "{alt}" }
@@ -179,8 +160,6 @@ pub fn FlippableCardImage(
                             }
                         }
                         hr { class: "nic-rule" }
-                        // Boxed marker where the art would be, so it's clear why
-                        // this card is text-only.
                         div { class: "nic-art",
                             span { class: "nic-noart", "No image" }
                         }

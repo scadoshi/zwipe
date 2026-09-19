@@ -1,20 +1,14 @@
-//! Selectable chip button.
-//!
-//! The single source for the small toggle buttons used across filter screens,
-//! import/export controls, deck fields, and the shared deck page. Renders the
-//! shared `.chip` / `.chip.selected` styling so every chip looks and behaves
-//! the same in `zwiper` and `zite`.
+//! The small toggle button used across filter screens, deck fields, and the
+//! shared deck page.
 
 use dioxus::prelude::*;
 
-/// A selectable chip. `selected` drives the highlighted state, `onclick` fires
-/// on tap, and `children` is the label (text or nodes).
+/// A selectable chip; `children` is the label.
 #[component]
 pub fn Chip(
     selected: bool,
     onclick: EventHandler<MouseEvent>,
-    /// Grayed out and inert — for a toggle whose target is currently empty
-    /// or otherwise inapplicable. Off by default.
+    /// Grayed out and inert.
     #[props(default)]
     disabled: bool,
     children: Element,

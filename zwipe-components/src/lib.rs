@@ -1,22 +1,12 @@
-//! Shared Dioxus UI components for the Zwipe surfaces.
+//! Shared Dioxus UI components for zwiper and zite, styled by
+//! `assets/components.css` against the palettes in `assets/themes.css`.
+//! External consumers can't reach those files by path, so both are also
+//! exported as [`COMPONENTS_CSS`] and [`THEMES_CSS`] to inline via
+//! `document::Style`. Load themes, then components, then the site's own CSS so
+//! the cascade resolves in that order.
 //!
-//! `zwiper` (the app) and `zite` (the marketing/site) both depend on this crate
-//! so buttons, chips, and action bars look and behave identically across them.
-//! Styling ships alongside: `assets/components.css` (the components' rules) and
-//! `assets/themes.css` (the theme palettes those rules resolve against). The
-//! workspace apps copy both into their own asset bundles at build time;
-//! external consumers (e.g. the portfolio site, via a git dependency) can't
-//! reach the crate's files by path, so the same CSS is also exported as the
-//! [`COMPONENTS_CSS`] / [`THEMES_CSS`] string constants to inline via
-//! `document::Style`.
-//!
-//! **CSS cascade order matters:** load themes first, then components, then the
-//! site's own stylesheet — `THEMES_CSS` → `COMPONENTS_CSS` → site CSS — so
-//! component rules resolve theme variables and site rules can override
-//! component defaults at equal specificity.
-//!
-//! These components deliberately depend only on base `dioxus` (no platform
-//! features) and `zwipe-core`, so any Dioxus target can consume them.
+//! Depends only on base `dioxus` and `zwipe-core`, so any Dioxus target can
+//! consume it.
 
 mod action_bar;
 mod banner;
@@ -53,12 +43,10 @@ pub use oracle_text::OracleText;
 pub use page_meta::{PageMeta, SiteMeta};
 pub use panel::Panel;
 pub use theme_picker::ThemePicker;
-// The theme domain types live in zwipe-core (user preferences persist them
-// server-side); re-exported here so UI consumers have one import path.
+// Re-exported so UI consumers have one import path.
 pub use zwipe_core::domain::user::{models::theme::ThemeConfig, preferences::ALLOWED_THEMES};
 
-/// The shared component rules, for consumers outside this workspace.
+/// The component rules, for consumers outside this workspace.
 pub const COMPONENTS_CSS: &str = include_str!("../assets/components.css");
-/// The shared theme palettes (14 themes, dark + light), for consumers outside
-/// this workspace.
+/// The theme palettes, for consumers outside this workspace.
 pub const THEMES_CSS: &str = include_str!("../assets/themes.css");

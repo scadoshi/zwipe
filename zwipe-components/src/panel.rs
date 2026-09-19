@@ -1,41 +1,32 @@
 //! Shared content panel.
 //!
-//! The canonical Zwipe card/dialog shape: an optional header (eyebrow + title +
-//! status pill), a rule, the body, and an optional actions row under a second
-//! rule — `header <hr> body <hr> actions`. Used for content cards on the site,
-//! in the app, and on the portfolio so they all read as one system. `eyebrow`,
-//! `title`, `status`, and `actions` are all optional; a rule is only drawn where
-//! the adjacent section exists. Styling is in `assets/components.css`.
+//! The Zwipe card/dialog shape, `header <hr> body <hr> actions`. Header and
+//! actions are optional; a rule is only drawn where the adjacent section exists.
 
 use crate::banner::BannerStatus;
 use dioxus::prelude::*;
 
-/// A content panel: `header <hr> body <hr> actions`.
-///
-/// The body is `children`; the footer button row is the `actions` slot (each
-/// consumer supplies its own links/buttons — internal routing is app-specific).
-/// Give action links/buttons the `panel-action` class for the shared pill look.
+/// A content panel. The body is `children`; `actions` is the footer button
+/// row, whose links get the `panel-action` class for the shared pill look.
 #[component]
 pub fn Panel(
-    /// Uppercase eyebrow label above the title (e.g. "One-Time").
+    /// Uppercase label above the title.
     #[props(default)]
     eyebrow: Option<String>,
     /// Panel title.
     #[props(default)]
     title: Option<String>,
-    /// Render the title as an `h1` instead of the default `h3`. For page heroes,
-    /// where the panel's title IS the document's heading — a page whose only
-    /// heading is an `h3` reads as a fragment to crawlers and screen readers.
-    /// Cards and in-page panels leave this off.
+    /// Render the title as an `h1`, for page heroes where it is the document
+    /// heading; an `h3`-only page reads as a fragment to crawlers.
     #[props(default = false)]
     title_h1: bool,
-    /// Optional status pill shown beside the eyebrow.
+    /// Status pill beside the eyebrow.
     #[props(default)]
     status: Option<BannerStatus>,
-    /// Overrides the status pill's default label.
+    /// Overrides the pill's default label.
     #[props(default)]
     status_label: Option<String>,
-    /// Footer button row. Omit for a panel with no actions.
+    /// Footer button row.
     #[props(default)]
     actions: Option<Element>,
     /// Body content.

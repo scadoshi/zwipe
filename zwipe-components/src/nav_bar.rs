@@ -1,19 +1,12 @@
 //! Sticky site nav shell: brand on the left, a link panel on the right that
-//! collapses behind a hamburger toggle below the 60rem breakpoint.
-//!
-//! The shell owns the structure (wrapper, toggle, collapsing panel) and its
-//! CSS; the host owns the content via slots — its brand link, its `li` link
-//! items, and an optional trailing panel item (typically [`ThemePicker`]).
-//! The host also owns the `open` signal so link `onclick`s can close the
-//! panel after navigating.
-//!
-//! [`ThemePicker`]: crate::ThemePicker
+//! collapses behind a hamburger below 60rem. The shell owns structure and CSS;
+//! the host fills the slots and owns the `open` signal so link `onclick`s can
+//! close the panel.
 
 use dioxus::prelude::*;
 
-/// JS run on brand-click by convention: smooth-scroll to top and restart the
-/// `.logo` entrance animation. Exported so every surface's brand link shares
-/// one copy (`document::eval(BRAND_RESET_JS)`).
+/// Run on brand click: smooth-scroll to top and restart the `.logo` entrance
+/// animation. One copy for every surface, via `document::eval`.
 pub const BRAND_RESET_JS: &str = r#"
     window.scrollTo({ top: 0, behavior: 'smooth' });
     const el = document.querySelector('.logo');
@@ -27,18 +20,15 @@ pub const BRAND_RESET_JS: &str = r#"
 /// Nav shell with a hamburger-collapsing link panel.
 #[component]
 pub fn NavBar(
-    /// Panel open state, host-owned: pass a fresh signal and close it from
-    /// your link `onclick`s.
+    /// Panel open state. Close it from your link `onclick`s.
     open: Signal<bool>,
-    /// Brand element (the host's home link).
+    /// The host's home link.
     brand: Element,
-    /// Optional content pinned outside the collapsing panel, rendered between
-    /// the brand and the toggle (e.g. zite's always-visible store CTAs at
-    /// hamburger widths). The host styles it; the shell just places it.
+    /// Content pinned outside the collapsing panel, between brand and toggle.
     persistent: Option<Element>,
-    /// Link items (`li` elements) rendered inside the panel's `ul.nav-links`.
+    /// `li` items for the panel's `ul.nav-links`.
     links: Element,
-    /// Optional trailing panel item after the links (e.g. the theme picker).
+    /// Trailing panel item after the links, typically [`ThemePicker`](crate::ThemePicker).
     trailing: Option<Element>,
 ) -> Element {
     let mut open = open;

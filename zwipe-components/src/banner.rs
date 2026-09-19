@@ -1,29 +1,21 @@
-//! Shared announcement banner.
-//!
-//! A dismissible toast for site announcements (a new release, a featured
-//! project). It self-manages its lifecycle: slides in, runs a countdown, and on
-//! either the countdown finishing or the user pressing close it fades and
-//! collapses out of the stack. Consumers wrap one or more in a
-//! `div.banner-stack` (the fixed-position column is a site layout concern) and
-//! pass the message plus their own call-to-action link as `children` — the link
-//! can't live here because internal routing is app-specific. Styling lives in
-//! `assets/components.css`.
+//! Dismissible announcement toast. Slides in, runs a countdown, and fades out
+//! on timeout or close. Consumers wrap one or more in a `div.banner-stack` and
+//! pass the message and call-to-action link as `children`, since routing is
+//! app-specific.
 
 use dioxus::prelude::*;
 
-/// The colored status pill shown in the banner header.
+/// The colored status pill in the banner header.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BannerStatus {
-    /// Shipped / finished (green pill), default label "Done". Callers that mean
-    /// "live in production" rather than "work complete" pass their own label.
+    /// Green pill, default label "Done".
     Done,
-    /// In progress (amber pill), default label "Doing".
+    /// Amber pill, default label "Doing".
     Doing,
 }
 
 impl BannerStatus {
-    /// CSS classes for the pill. `pub(crate)` so [`Panel`](crate::Panel) renders
-    /// an identical status pill.
+    /// CSS classes for the pill. Shared with [`Panel`](crate::Panel).
     pub(crate) fn class(self) -> &'static str {
         match self {
             BannerStatus::Done => "status-tag status-done",
@@ -57,13 +49,9 @@ impl BannerState {
     }
 }
 
-/// A dismissible announcement toast.
-///
-/// `category` is the eyebrow label, `status` the colored pill (`status_label`
-/// overrides its text). The message and its call-to-action link go in
-/// `children`. The `.banner-progress` bar auto-dismisses after
-/// `auto_dismiss_secs` (pauses on hover); the `✕` button dismisses immediately.
-/// Wrap one or more in a `div.banner-stack`.
+/// A dismissible announcement toast. `category` is the eyebrow, `status` the
+/// pill (`status_label` overrides its text). Auto-dismisses after
+/// `auto_dismiss_secs`, pausing on hover.
 #[component]
 pub fn Banner(
     category: String,
@@ -73,8 +61,6 @@ pub fn Banner(
     children: Element,
 ) -> Element {
     let mut state = use_signal(|| BannerState::Shown);
-    // Once dismissed the element leaves the DOM; the `.banner-leave` animation
-    // has already collapsed the stack gap by then.
     if state() == BannerState::Dismissed {
         return rsx! {};
     }
