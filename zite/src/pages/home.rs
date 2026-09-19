@@ -36,13 +36,13 @@ fn HomeJsonLd() -> Element {
 
 /// Public App Store reviews surfaced as social proof, every rating included.
 /// Reviews that asked for a feature the app has since built carry a
-/// "Shipped in x.y.z" tag — the receipt that feedback lands. Quotes are
+/// "Shipped in x.y.z" tag, the receipt that feedback lands. Quotes are
 /// lightly cleaned of transcription typos; the truncated land-amount review
 /// ends at its last full clause.
 ///
 /// The track auto-scrolls (slow marquee) so every review gets seen without a
 /// click: the review set renders twice, the second copy aria-hidden, and CSS
-/// slides the track by exactly one set width for a seamless loop. Hover
+/// slides the track by exactly one set width so the loop has no visible seam. Hover
 /// pauses it; reduced-motion gets a static wrapped grid instead.
 #[component]
 fn Testimonials() -> Element {
@@ -193,7 +193,7 @@ pub fn Home() -> Element {
     let (current_src, current_caption, current_label) = demos[index()];
 
     // Featured flavor's full-art overlay state. The overlay is rendered HERE,
-    // at the page's top level outside the `content-enter` tree — mirroring
+    // at the page's top level outside the `content-enter` tree, mirroring
     // the shared-deck page, whose overlay works. Nested inside the content
     // tree, an animated ancestor's transform becomes the containing block for
     // `position: fixed` and traps the overlay in the page column.
@@ -268,11 +268,9 @@ pub fn Home() -> Element {
         }
         div { class: "page content-enter",
             // The demo and the three core sells share one band: the gallery
-            // is ~70vh tall, and the stacked panels fill what used to be its
-            // dead side-space instead of renting another screen below it.
+            // is ~70vh tall, so the stacked panels fill its side-space
+            // instead of renting another screen below it.
             div { class: "demo-features",
-                // Left column: the demo gallery with the hour's flavor card
-                // tucked beneath it.
                 div { class: "demo-col",
                     // Same Panel grammar as the rest of the band; the per-clip
                     // caption under the video does the describing.
@@ -323,7 +321,7 @@ pub fn Home() -> Element {
                     }
                     FeaturedFlavor { overlay: flavor_overlay }
                 }
-                // The three core sells — swiping, synergy-ordered serving,
+                // The three core sells: swiping, synergy-ordered serving,
                 // and tags. Hosting basics (accounts, sync, import) are
                 // assumed service table stakes, not pitched.
                 div { class: "features-stack",

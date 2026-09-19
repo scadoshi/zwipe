@@ -178,7 +178,7 @@ fn render_block(b: &'static Block) -> Element {
 /// stripped so a search for "group by" hits `Group by` in the body too.
 ///
 /// Built per keystroke over the compiled [`GUIDES`] array (19 articles, no
-/// index, no network) — cheap enough that caching would cost more than it saves.
+/// index, no network), cheap enough that caching would cost more than it saves.
 fn haystack(g: &Guide) -> String {
     let mut s = String::new();
     let mut push = |t: &str| {
@@ -204,7 +204,7 @@ fn haystack(g: &Guide) -> String {
                     push(meaning);
                 }
             }
-            // Diagrams are ASCII flow art and images live in the gallery —
+            // Diagrams are ASCII flow art and images live in the gallery;
             // neither reads as prose a searcher would type.
             Block::Diagram(_) | Block::Image { .. } => {}
         }
@@ -257,7 +257,7 @@ pub fn Guides() -> Element {
         .filter(|g| q.is_empty() || matches_query(g, &q))
         .collect();
     // Signature of the visible set, prefixed onto each card's key so the cards
-    // remount — and replay their entrance — only when the results actually
+    // remount (and replay their entrance) only when the results actually
     // change, not on every keystroke that leaves the same list standing.
     let sig = hits.iter().map(|g| g.slug).collect::<Vec<_>>().join(",");
     rsx! {
@@ -384,7 +384,7 @@ pub fn GuidePage(slug: String) -> Element {
         };
     };
 
-    // The primary tag stands in for the old category (breadcrumb + JSON-LD).
+    // The primary tag is the category for the breadcrumb and JSON-LD.
     let primary = g.tags.first().copied().unwrap_or("Guides");
 
     // Article JSON-LD for rich results: headline/description/section straight

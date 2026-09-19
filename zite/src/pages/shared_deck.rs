@@ -39,7 +39,7 @@ use zwipe_core::{
 enum FetchError {
     /// 404: never shared, or sharing was stopped.
     NotShared,
-    /// Anything else — worth a retry.
+    /// Anything else, worth a retry.
     Network(String),
 }
 
@@ -81,8 +81,8 @@ impl Section {
 
 /// Collapsible bordered group (card sections and the stat panels alike): a
 /// header with the card-row disclosure arrow over a body easing open/closed
-/// via the `.collapsible` grid-rows technique — the app's deck-screen
-/// collapse, mirrored, but multi-open (no accordion). Card groups default
+/// via the `.collapsible` grid-rows technique. It mirrors the app's deck-screen
+/// collapse but is multi-open (no accordion). Card groups default
 /// open, stat panels default collapsed; all ephemeral per visit.
 #[component]
 fn SdCollapsibleGroup(
@@ -256,7 +256,7 @@ fn CardRow(
                 };
                 // Push onto the top of the stack (newest first), cap at 5.
                 // No timer yet: the card is held as long as the cursor stays
-                // on the row — the leave handler starts its 2s countdown.
+                // on the row; the leave handler starts its 2s countdown.
                 let id = preview_next_id();
                 preview_next_id.set(id + 1);
                 my_preview_id.set(Some(id));
@@ -307,7 +307,7 @@ fn SharedDeckSkeleton() -> Element {
             div { class: "sk sk-controls" }
             section { class: "sd-groups",
                 // Ghost card-list groups: like every other skeleton piece,
-                // just big translucent boxes — no chrome, no inner structure.
+                // just big translucent boxes with no chrome or inner structure.
                 for g in 0..3 {
                     div { key: "{g}", class: "sk sk-group" }
                 }
@@ -341,7 +341,7 @@ pub fn SharedDeck(token: String) -> Element {
 
     // Drives the Retry button's transient "Retrying…" state so a click is
     // legible even when the refetch fails again instantly (held for a minimum
-    // beat on click, below — the request itself fires without delay).
+    // beat on click, below; the request itself fires without delay).
     let mut retrying = use_signal(|| false);
 
     rsx! {
@@ -453,8 +453,8 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let mut show_tokens = use_signal(|| false);
     // Budget panel currency, mirroring the app's Budget section chips.
     let mut selected_currency = use_signal(|| "usd");
-    // Collapsed sections, keyed by header label — the app's deck-screen
-    // collapse, mirrored. Card groups default open; the stat panels default
+    // Collapsed sections, keyed by header label, mirroring the app's
+    // deck-screen collapse. Card groups default open; the stat panels default
     // collapsed (headers as a compact strip). Ephemeral per visit.
     let collapsed_groups: Signal<HashSet<String>> = use_signal(|| {
         ["Budget", "Tags", "Distributions", "Mana", "Draw odds"]
@@ -517,7 +517,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         .map(|e| e.deck_card.scryfall_data_id)
         .collect();
     // Starred cards, oldest star first (the vesting clock), for the featured
-    // MVP row — the deck's personality statement.
+    // MVP row, the deck's personality statement.
     let mut mvp_entries: Vec<&DeckEntry> = mainboard
         .iter()
         .copied()
@@ -647,7 +647,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             .map(|c| i64::from(*qty_by_id.get(&c.scryfall_data.id).unwrap_or(&1)))
             .sum();
         // Color groups render as pips with no label, so the title is the bare
-        // count and the collapse key comes from the group itself — two color
+        // count and the collapse key comes from the group itself. Two color
         // groups with equal counts would otherwise share a key and fold together.
         let title = if group.label.is_empty() {
             format!("({qty})")
@@ -662,8 +662,8 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         });
     }
     // Lands as a dedicated section (pulled out of the group-by so it's consistent
-    // across grouping modes), appended last so it closes out the final column —
-    // keeps it connected to the grid instead of an orphan band.
+    // across grouping modes), appended last so it closes out the final column.
+    // That keeps it connected to the grid instead of an orphan band.
     if !lands.is_empty() {
         sections.push(Section::titled(format!("Lands ({land_qty})"), lands));
     }
@@ -683,7 +683,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let metrics = DeckMetrics::from_entries_and_command_zone(&deck.entries, &cz_cards);
     let show_charts = metrics.land_count + metrics.nonland_count > 0;
 
-    // The stat panels (Budget, Tags, Distributions, Mana, Draw odds — the
+    // The stat panels (Budget, Tags, Distributions, Mana, Draw odds: the
     // app's deck-view sections in its order), each as (title, height proxy,
     // body). They flow through the same balanced-columns partition as the
     // card sections so panels pack tightly instead of leaving grid-row gaps.
@@ -978,7 +978,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             }
 
             // Featured row: the command zone and the deck MVPs together on one
-            // line, each card labeled underneath — the deck's identity at a
+            // line, each card labeled underneath: the deck's identity at a
             // glance. Always pinned at the top (the Command zone toggle only
             // governs list inclusion below, like the app).
             if deck.commander.is_some() || deck.partner_commander.is_some()
@@ -1009,7 +1009,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
 
             // The app's deck-view sections (Budget, Tags, Distributions, Mana,
             // Draw odds) as collapsible panels between the featured cards and
-            // the controls — collapsed by default. Independent columns like
+            // the controls, collapsed by default. Independent columns like
             // the card grid (round-robin split), so expanding a panel pushes
             // only its own column down, never its row neighbors.
             // (Warnings stays app-only: a builder tool.)

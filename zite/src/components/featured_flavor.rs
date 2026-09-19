@@ -1,4 +1,4 @@
-//! Featured flavor — the hour's shared flavor card, mirrored from the app.
+//! Featured flavor: the hour's shared flavor card, mirrored from the app.
 //!
 //! Same unauthed endpoint the app home screen reads (`featured_flavor_route`);
 //! the server flips the pick at the top of every UTC hour, so the site shows
@@ -9,7 +9,7 @@
 //!
 //! Tapping the card-name tag requests the full-art overlay via the `overlay`
 //! signal; the HOME PAGE renders the overlay itself at its top level, outside
-//! the `content-enter` content tree — mirroring the shared-deck page. Keeping
+//! the `content-enter` content tree, mirroring the shared-deck page. Keeping
 //! the overlay nested here was the trapped-in-the-page-column bug: an
 //! animated ancestor's transform makes it the containing block for
 //! `position: fixed`.

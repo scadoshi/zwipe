@@ -115,7 +115,7 @@ fn App() -> Element {
 
     // After hydration, adopt the last-used theme from localStorage. Being a
     // post-hydration state change (not the initial render), this re-renders the
-    // picker label too, not just the body class. A brief flash of the default
+    // picker label as well as the body class. A brief flash of the default
     // first is expected until the WASM loads.
     use_effect(move || {
         if let Some(stored) = theme_store::load() {

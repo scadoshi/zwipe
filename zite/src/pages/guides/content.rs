@@ -35,7 +35,7 @@ pub enum Block {
 
 /// Compile-time asset registry for guide screenshots. `asset!()` needs a
 /// literal path, so each shipped image gets one arm here, added when the file
-/// lands (see `context/plans/guide_images.md`). `None` renders nothing — an
+/// lands (see `context/plans/guide_images.md`). `None` renders nothing, so an
 /// [`Block::Image`] without its registry arm is a wiring bug caught by eye.
 pub fn guide_image(file: &str) -> Option<Asset> {
     match file {
@@ -162,7 +162,6 @@ pub struct Guide {
 }
 
 pub static GUIDES: &[Guide] = &[
-    // Start
     Guide {
         slug: "getting-started",
         title: "Getting started with Zwipe",
@@ -213,7 +212,6 @@ pub static GUIDES: &[Guide] = &[
             },
         ],
     },
-    // Build
     Guide {
         slug: "swipe-to-build",
         title: "Build a deck by swiping",
@@ -345,7 +343,6 @@ pub static GUIDES: &[Guide] = &[
             Block::Note("Clearing skips can't be undone, and it only affects the one deck."),
         ],
     },
-    // Cards
     Guide {
         slug: "filtering",
         title: "Filter the card pool",
@@ -491,7 +488,6 @@ pub static GUIDES: &[Guide] = &[
             ),
         ],
     },
-    // Decks
     Guide {
         slug: "commander-and-formats",
         title: "Choose a commander & format",
