@@ -162,8 +162,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 )
                 .await
         });
-    use_effect(move || match original_deck_resource() {
-        Some(Ok(deck)) => {
+    use_effect(move || {
+        if let Some(Ok(deck)) = original_deck_resource() {
             original_deck_name.set(deck.deck_profile.name.to_string());
             deck_name.set(deck.deck_profile.name.to_string());
             original_format.set(deck.deck_profile.format);
@@ -195,7 +195,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             // deck-tag reconcile drops exactly those and keeps manual picks.
             applied_seed.set(seed_oracle_tags(&deck.deck_profile.tags));
         }
-        Some(Err(_)) | None => (),
     });
 
     // ========================================

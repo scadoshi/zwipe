@@ -73,7 +73,9 @@ fn GuideGallery(shots: Vec<(&'static str, &'static str, Option<&'static str>)>) 
     let mut index = use_signal(|| 0usize);
     let total = shots.len();
     let i = index().min(total.saturating_sub(1));
-    let (file, alt, caption) = shots[i];
+    let Some(&(file, alt, caption)) = shots.get(i) else {
+        return rsx! {};
+    };
     let caption_text = caption.unwrap_or(alt);
     let src = content::guide_image(file);
 

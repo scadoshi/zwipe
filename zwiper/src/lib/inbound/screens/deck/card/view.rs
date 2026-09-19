@@ -1224,7 +1224,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
                     }
                     FeaturedCards {
-                        cards: featured_cards.clone(),
+                        cards: featured_cards,
                         on_tap: move |card: Card| {
                             let mut preview = preview_card;
                             preview.set(Some((card.scryfall_data, 0)));

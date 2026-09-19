@@ -219,32 +219,28 @@ pub fn Remove(deck_id: Uuid) -> Element {
     // Effect 1 — mount load (reads `session` reactively)
     use_effect(move || {
         spawn(async move {
-            match authed
+            if let Some(deck) = authed
                 .run(
                     "load_deck",
                     |c, s| async move { c.get_deck(deck_id, &s).await },
                 )
                 .await
             {
-                Some(deck) => {
-                    let all_cards: Vec<Card> =
-                        deck.entries.iter().map(|e| e.card.clone()).collect();
-                    deck_cards_for_filter.set(all_cards);
-                    // Explicit target only — no land toasts unless the user set one.
-                    land_target.set(deck.deck_profile.land_target);
-                    let budget_currency = deck
-                        .deck_profile
-                        .price_target_currency
-                        .unwrap_or(PriceCurrency::Usd);
-                    price_budget.set(deck.deck_profile.price_target);
-                    price_budget_currency.set(budget_currency);
-                    command_zone_cards.set(deck.command_zone_cards);
-                    deck_entries.set(deck.entries);
-                    deck_loaded.set(true);
-                    let current = *filter_reset_counter.peek();
-                    filter_reset_counter.set(current + 1);
-                }
-                None => {}
+                let all_cards: Vec<Card> = deck.entries.iter().map(|e| e.card.clone()).collect();
+                deck_cards_for_filter.set(all_cards);
+                // Explicit target only — no land toasts unless the user set one.
+                land_target.set(deck.deck_profile.land_target);
+                let budget_currency = deck
+                    .deck_profile
+                    .price_target_currency
+                    .unwrap_or(PriceCurrency::Usd);
+                price_budget.set(deck.deck_profile.price_target);
+                price_budget_currency.set(budget_currency);
+                command_zone_cards.set(deck.command_zone_cards);
+                deck_entries.set(deck.entries);
+                deck_loaded.set(true);
+                let current = *filter_reset_counter.peek();
+                filter_reset_counter.set(current + 1);
             }
         });
     });

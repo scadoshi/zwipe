@@ -532,7 +532,7 @@ pub fn DeckList() -> Element {
                                 let mut seen = HashSet::new();
                                 let mut tags: Vec<(String, String)> = deck_profiles
                                     .iter()
-                                    .flat_map(|p| tag_labels(p))
+                                    .flat_map(tag_labels)
                                     .filter(|(key, _)| seen.insert(key.clone()))
                                     .collect();
                                 tags.sort_by_key(|(_, label)| label.clone());

@@ -290,32 +290,29 @@ pub fn CommanderMaybeboard() -> Element {
             .write()
             .retain(|c| c.scryfall_data.oracle_id != Some(oracle_id));
         spawn(async move {
-            match authed
+            if let Some(()) = authed
                 .run("add_commander_maybeboard", |c, s| async move {
                     c.add_commander_maybeboard_card(oracle_id, &s).await
                 })
                 .await
             {
-                Some(()) => {
-                    let name = card.scryfall_data.name.clone();
-                    let already_saved = entries
-                        .peek()
-                        .iter()
-                        .any(|c| c.scryfall_data.oracle_id == Some(oracle_id));
-                    if !already_saved {
-                        entries.write().insert(0, card);
-                    }
-                    // Belt and braces: a silent refetch reconciles to server
-                    // truth (order + preferred printing) behind the
-                    // optimistic insert.
-                    let tick = *reload.peek();
-                    reload.set(tick + 1);
-                    toast.info(
-                        format!("Added {name}"),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
-                    );
+                let name = card.scryfall_data.name.clone();
+                let already_saved = entries
+                    .peek()
+                    .iter()
+                    .any(|c| c.scryfall_data.oracle_id == Some(oracle_id));
+                if !already_saved {
+                    entries.write().insert(0, card);
                 }
-                None => {}
+                // Belt and braces: a silent refetch reconciles to server
+                // truth (order + preferred printing) behind the
+                // optimistic insert.
+                let tick = *reload.peek();
+                reload.set(tick + 1);
+                toast.info(
+                    format!("Added {name}"),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
             }
         });
     };

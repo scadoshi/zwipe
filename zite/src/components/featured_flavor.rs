@@ -79,7 +79,7 @@ pub fn FeaturedFlavor(overlay: Signal<Option<ScryfallData>>) -> Element {
         return rsx! {};
     };
     let name = card.scryfall_data.name.clone();
-    let sd = card.scryfall_data.clone();
+    let sd = card.scryfall_data;
     let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
 
     rsx! {

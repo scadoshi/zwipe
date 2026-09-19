@@ -80,6 +80,7 @@ pub fn clear() {
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
+    #![allow(clippy::expect_used, clippy::unwrap_used)]
     use super::{HttpCrashReport, clear, take_pending, write_report};
     use uuid::Uuid;
     use zwipe_core::domain::auth::models::platform::ClientPlatform;
@@ -162,6 +163,10 @@ mod platform {
     /// Desktop (dev builds): the temp dir is plenty — no user-facing value in
     /// persisting dev crashes across reboots.
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "signature is shared with the android and ios variants, which can fail"
+    )]
     pub fn crash_file() -> Option<PathBuf> {
         Some(std::env::temp_dir().join(CRASH_FILE))
     }

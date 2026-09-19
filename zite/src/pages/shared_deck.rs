@@ -833,7 +833,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                             span { class: "info-row-value", "{metrics.avg_cmc:.1}" }
                         }
                         ManaCurve { mana_curve_bars: metrics.mana_curve_bars() }
-                        ManaFulfillment { rows: balance_rows.clone() }
+                        ManaFulfillment { rows: balance_rows }
                     }
                 },
             ));

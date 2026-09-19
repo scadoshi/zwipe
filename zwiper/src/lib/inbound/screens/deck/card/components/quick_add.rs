@@ -162,26 +162,23 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
 
         let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
         spawn(async move {
-            match authed
+            if let Some(deck_card) = authed
                 .run_at(component::QUICK_ADD, "quick_add_card", |c, s| async move {
                     c.create_deck_card(deck_id, &request, &s).await
                 })
                 .await
             {
-                Some(deck_card) => {
-                    deck_entries.write().push(DeckEntry { card, deck_card });
-                    let current = *filter_reset_counter.peek();
-                    filter_reset_counter.set(current + 1);
-                    undo_log.push(UndoAction::Added {
-                        card_id,
-                        card_name: card_name.clone(),
-                    });
-                    toast.info(
-                        format!("Added {card_name}"),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
-                    );
-                }
-                None => {}
+                deck_entries.write().push(DeckEntry { card, deck_card });
+                let current = *filter_reset_counter.peek();
+                filter_reset_counter.set(current + 1);
+                undo_log.push(UndoAction::Added {
+                    card_id,
+                    card_name: card_name.clone(),
+                });
+                toast.info(
+                    format!("Added {card_name}"),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
             }
         });
     };

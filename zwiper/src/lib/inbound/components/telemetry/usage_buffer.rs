@@ -350,7 +350,7 @@ fn sanitized_decode_message(detail: &str) -> String {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::UsageBuffer;
     use crate::{

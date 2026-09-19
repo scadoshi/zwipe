@@ -440,13 +440,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 .build();
 
                                             spawn(async move {
-                                                match authed
+                                                if authed
                                                     .run("remove_commander", |c, s| async move {
                                                         c.update_deck_profile(deck_id, &request, &s).await
                                                     })
                                                     .await
+                                                    .is_some()
                                                 {
-                                                    Some(_) => {
                                                         let label = if deck_profile_resource().is_some_and(|r| r.as_ref().ok().is_some_and(|p| p.format.as_ref().is_some_and(|f| f.has_signature_spell()))) {
                                                             "Oathbreaker"
                                                         } else {
@@ -460,8 +460,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                         deck_profile_resource.restart();
                                                         deck_resource.restart();
                                                     }
-                                                    None => {}
-                                                }
                                             });
                                         },
                                     }

@@ -424,22 +424,19 @@ pub fn Add(deck_id: Uuid) -> Element {
         let card_name = card.scryfall_data.name.clone();
 
         spawn(async move {
-            match authed
+            if let Some(deck_card) = authed
                 .run("add_maybeboard", |c, s| async move {
                     c.create_deck_card(deck_id, &request, &s).await
                 })
                 .await
             {
-                Some(deck_card) => {
-                    if let Some(oid) = oracle_id {
-                        deck_cards_ids.write().insert(oid);
-                    }
-                    undo_store.push(deck_id, UndoAction::Added { card_id, card_name });
-                    // Keep the maybeboard source in sync so switching to it
-                    // shows this card without a refetch.
-                    mb_entries.write().push(DeckEntry { card, deck_card });
+                if let Some(oid) = oracle_id {
+                    deck_cards_ids.write().insert(oid);
                 }
-                None => {}
+                undo_store.push(deck_id, UndoAction::Added { card_id, card_name });
+                // Keep the maybeboard source in sync so switching to it
+                // shows this card without a refetch.
+                mb_entries.write().push(DeckEntry { card, deck_card });
             }
         });
     };
@@ -687,133 +684,129 @@ pub fn Add(deck_id: Uuid) -> Element {
                     c.get_deck(deck_id, &s).await
                 })
                 .await;
-            match fetched {
-                Some(deck) => {
-                    let mut ids: HashSet<_> = deck
-                        .entries
-                        .iter()
-                        .filter_map(|entry| entry.card.scryfall_data.oracle_id)
-                        .collect();
-                    // Resolve command zone cards to oracle_ids for exclusion
-                    // and collect color identities from commander/partner/background
-                    let mut identity_colors: Vec<Color> = Vec::new();
-                    for cz_id in [
-                        deck.deck_profile.commander_id,
-                        deck.deck_profile.partner_commander_id,
-                        deck.deck_profile.background_id,
-                    ]
-                    .into_iter()
-                    .flatten()
-                    {
-                        if let Ok(card) = client().get_card(cz_id).await
-                            && let Some(oid) = card.scryfall_data.oracle_id
-                        {
-                            ids.insert(oid);
-                            identity_colors
-                                .extend(card.scryfall_data.color_identity.iter().cloned());
-                        }
-                    }
-                    // Signature spell: oracle_id exclusion only (doesn't contribute to color identity)
-                    if let Some(spell_id) = deck.deck_profile.signature_spell_id
-                        && let Ok(card) = client().get_card(spell_id).await
+            if let Some(deck) = fetched {
+                let mut ids: HashSet<_> = deck
+                    .entries
+                    .iter()
+                    .filter_map(|entry| entry.card.scryfall_data.oracle_id)
+                    .collect();
+                // Resolve command zone cards to oracle_ids for exclusion
+                // and collect color identities from commander/partner/background
+                let mut identity_colors: Vec<Color> = Vec::new();
+                for cz_id in [
+                    deck.deck_profile.commander_id,
+                    deck.deck_profile.partner_commander_id,
+                    deck.deck_profile.background_id,
+                ]
+                .into_iter()
+                .flatten()
+                {
+                    if let Ok(card) = client().get_card(cz_id).await
                         && let Some(oid) = card.scryfall_data.oracle_id
                     {
                         ids.insert(oid);
-                    }
-                    deck_cards_ids.set(ids);
-
-                    // Collect maybeboard entries for the maybeboard source mode
-                    let mb: Vec<DeckEntry> = deck
-                        .entries
-                        .iter()
-                        .filter(|e| e.deck_card.board.is_maybeboard())
-                        .cloned()
-                        .collect();
-                    mb_entries.set(mb);
-
-                    deck_has_commander.set(deck.deck_profile.commander_id.is_some());
-                    // Default Synergy ON when the deck has a commander (the
-                    // curated pool); OFF otherwise. Only for a fresh filter —
-                    // a restored one keeps the user's own toggle state.
-                    if !had_restored_filter {
-                        filter_builder
-                            .write()
-                            .set_synergy(deck.deck_profile.commander_id.is_some());
-                    }
-                    deck_loaded.set(true);
-
-                    // Seed the land signal: count mainboard lands (quantity-aware,
-                    // MDFC land faces included via is_land's combined type line),
-                    // and resolve the target from the deck override or the format.
-                    let land_count: i32 = deck
-                        .entries
-                        .iter()
-                        .filter(|e| e.deck_card.board.is_active() && e.card.scryfall_data.is_land())
-                        .map(|e| *e.deck_card.quantity)
-                        .sum();
-                    mainboard_land_count.set(land_count);
-                    // Explicit target only — no land toasts unless the user set one.
-                    land_target.set(deck.deck_profile.land_target);
-                    // If the deck already meets its land target (explicit override
-                    // or the format default), start with lands excluded from the
-                    // swipe pool. The auto-serve reset below re-fetches, so no
-                    // separate counter bump is needed here.
-                    let effective_target = deck.deck_profile.land_target.or_else(|| {
-                        deck.deck_profile
-                            .format
-                            .and_then(|f| f.default_land_target())
-                    });
-                    if let Some(t) = effective_target
-                        && land_count >= t
-                    {
-                        ensure_lands_excluded(filter_builder);
-                    }
-
-                    // Seed the budget signal: running total in the budget
-                    // currency, plus the budget + currency from the profile.
-                    let currency = deck
-                        .deck_profile
-                        .price_target_currency
-                        .unwrap_or(PriceCurrency::Usd);
-                    deck_total_price.set(deck_price(
-                        &deck.entries,
-                        &deck.command_zone_cards,
-                        currency,
-                    ));
-                    price_budget.set(deck.deck_profile.price_target);
-                    price_budget_currency.set(currency);
-
-                    // Pre-populate format filter from deck
-                    if let Some(fmt) = deck.deck_profile.format {
-                        deck_format.set(Some(fmt));
-                        if filter_builder.peek().legalities_contains_any().is_none() {
-                            filter_builder.write().set_legalities_contains_any(vec![
-                                fmt.to_legality_key().to_string(),
-                            ]);
-                        }
-
-                        // Pre-populate color identity filter from commander
-                        if fmt.checks_color_identity() && deck.deck_profile.commander_id.is_some() {
-                            identity_colors.sort();
-                            identity_colors.dedup();
-                            let colors: Colors = identity_colors.into();
-                            deck_color_identity.set(Some(colors.clone()));
-                            if filter_builder.peek().color_identity_within().is_none() {
-                                filter_builder.write().set_color_identity_within(colors);
-                            }
-                        }
-                    }
-
-                    // Auto-serve: with deck context now populated, an empty
-                    // stack can be filled immediately — the deck-aware search
-                    // serves the default filter synergy-ordered, 25 a page.
-                    // A non-empty stack is a preserved session; leave it be.
-                    if stack.peek_is_empty() {
-                        let current = *filter_reset_counter.peek();
-                        filter_reset_counter.set(current + 1);
+                        identity_colors.extend(card.scryfall_data.color_identity.iter().cloned());
                     }
                 }
-                None => {}
+                // Signature spell: oracle_id exclusion only (doesn't contribute to color identity)
+                if let Some(spell_id) = deck.deck_profile.signature_spell_id
+                    && let Ok(card) = client().get_card(spell_id).await
+                    && let Some(oid) = card.scryfall_data.oracle_id
+                {
+                    ids.insert(oid);
+                }
+                deck_cards_ids.set(ids);
+
+                // Collect maybeboard entries for the maybeboard source mode
+                let mb: Vec<DeckEntry> = deck
+                    .entries
+                    .iter()
+                    .filter(|e| e.deck_card.board.is_maybeboard())
+                    .cloned()
+                    .collect();
+                mb_entries.set(mb);
+
+                deck_has_commander.set(deck.deck_profile.commander_id.is_some());
+                // Default Synergy ON when the deck has a commander (the
+                // curated pool); OFF otherwise. Only for a fresh filter —
+                // a restored one keeps the user's own toggle state.
+                if !had_restored_filter {
+                    filter_builder
+                        .write()
+                        .set_synergy(deck.deck_profile.commander_id.is_some());
+                }
+                deck_loaded.set(true);
+
+                // Seed the land signal: count mainboard lands (quantity-aware,
+                // MDFC land faces included via is_land's combined type line),
+                // and resolve the target from the deck override or the format.
+                let land_count: i32 = deck
+                    .entries
+                    .iter()
+                    .filter(|e| e.deck_card.board.is_active() && e.card.scryfall_data.is_land())
+                    .map(|e| *e.deck_card.quantity)
+                    .sum();
+                mainboard_land_count.set(land_count);
+                // Explicit target only — no land toasts unless the user set one.
+                land_target.set(deck.deck_profile.land_target);
+                // If the deck already meets its land target (explicit override
+                // or the format default), start with lands excluded from the
+                // swipe pool. The auto-serve reset below re-fetches, so no
+                // separate counter bump is needed here.
+                let effective_target = deck.deck_profile.land_target.or_else(|| {
+                    deck.deck_profile
+                        .format
+                        .and_then(|f| f.default_land_target())
+                });
+                if let Some(t) = effective_target
+                    && land_count >= t
+                {
+                    ensure_lands_excluded(filter_builder);
+                }
+
+                // Seed the budget signal: running total in the budget
+                // currency, plus the budget + currency from the profile.
+                let currency = deck
+                    .deck_profile
+                    .price_target_currency
+                    .unwrap_or(PriceCurrency::Usd);
+                deck_total_price.set(deck_price(
+                    &deck.entries,
+                    &deck.command_zone_cards,
+                    currency,
+                ));
+                price_budget.set(deck.deck_profile.price_target);
+                price_budget_currency.set(currency);
+
+                // Pre-populate format filter from deck
+                if let Some(fmt) = deck.deck_profile.format {
+                    deck_format.set(Some(fmt));
+                    if filter_builder.peek().legalities_contains_any().is_none() {
+                        filter_builder
+                            .write()
+                            .set_legalities_contains_any(vec![fmt.to_legality_key().to_string()]);
+                    }
+
+                    // Pre-populate color identity filter from commander
+                    if fmt.checks_color_identity() && deck.deck_profile.commander_id.is_some() {
+                        identity_colors.sort();
+                        identity_colors.dedup();
+                        let colors: Colors = identity_colors.into();
+                        deck_color_identity.set(Some(colors.clone()));
+                        if filter_builder.peek().color_identity_within().is_none() {
+                            filter_builder.write().set_color_identity_within(colors);
+                        }
+                    }
+                }
+
+                // Auto-serve: with deck context now populated, an empty
+                // stack can be filled immediately — the deck-aware search
+                // serves the default filter synergy-ordered, 25 a page.
+                // A non-empty stack is a preserved session; leave it be.
+                if stack.peek_is_empty() {
+                    let current = *filter_reset_counter.peek();
+                    filter_reset_counter.set(current + 1);
+                }
             }
         });
     });
