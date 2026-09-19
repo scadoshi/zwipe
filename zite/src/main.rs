@@ -62,6 +62,12 @@ enum Route {
 }
 
 fn main() {
+    // Native only: under `dx serve` this is the server binary and the logo
+    // lands in the terminal, like zwiper's does. The wasm client's stdout
+    // goes nowhere, so it does not carry the art.
+    #[cfg(not(target_arch = "wasm32"))]
+    zwipe_core::domain::logo::Zite::print();
+
     dioxus::LaunchBuilder::new()
         .with_cfg(server_only! {
             {
