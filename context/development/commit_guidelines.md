@@ -27,7 +27,7 @@ cargo +nightly fmt        # NOT `cargo fmt` — stable can't apply the Crate imp
 
 ### 2. Clippy — the exact CI command, warnings are errors
 ```bash
-cargo clippy -p zwipe-core -p zerver --all-targets -- -D warnings
+cargo clippy --workspace --all-targets -- -D warnings
 ```
 
 ### 3. Tests

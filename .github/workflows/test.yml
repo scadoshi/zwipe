@@ -62,4 +62,4 @@ jobs:
       - name: Format
         run: cargo +nightly fmt --check
       - name: Clippy
-        run: cargo clippy -p zwipe-core -p zerver --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets -- -D warnings

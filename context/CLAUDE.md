@@ -35,9 +35,9 @@ ZWIPE is a mobile-first Magic: The Gathering deck builder with swipe-based navig
 cargo run --bin zerver          # Run web server
 cargo run --bin zervice         # Run background sync job (Scryfall updates)
 cargo test --workspace          # Run all tests
-cargo clippy -p zwipe-core -p zerver --all-targets -- -D warnings  # what CI runs
+cargo clippy --workspace --all-targets -- -D warnings  # what CI runs
 ```
-All three workflows run the `-p zwipe-core -p zerver` form. `cargo clippy --workspace --all-targets -- -D warnings` is a stricter local option that also covers the client crates, which the owner sees warnings from on every `dx build`.
+All three workflows lint the whole workspace, so a warning in zwiper or zite blocks the zerver and zite deploys too.
 
 ### Frontend (zwiper)
 ```bash
