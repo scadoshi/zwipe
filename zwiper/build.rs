@@ -5,7 +5,8 @@ const RUST_LOG_KEY: &str = "RUST_LOG";
 const RUST_BACKTRACE_KEY: &str = "RUST_BACKTRACE";
 
 fn main() {
-    dotenvy::dotenv().expect("failed to load .env");
+    // No .env is fine when the variables come from the process env (CI does this).
+    dotenvy::dotenv().ok();
 
     let backend_url = std::env::var(BACKEND_URL_KEY)
         .unwrap_or_else(|_| panic!("{} must be set in .env file", BACKEND_URL_KEY));

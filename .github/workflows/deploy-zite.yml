@@ -51,6 +51,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SQLX_OFFLINE: "true"
+      # zwiper's build.rs bakes these in; placeholders satisfy it for a lint build.
+      BACKEND_URL: https://example.invalid
+      RUST_LOG: info
+      RUST_BACKTRACE: "0"
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@nightly
