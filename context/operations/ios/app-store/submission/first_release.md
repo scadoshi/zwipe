@@ -182,4 +182,4 @@ API key file: `~/.private_keys/AuthKey_<KEY_ID>.p8`
 
 - Update `zwipe.net/download` with the App Store link
 - Update `README.md` status
-- Update `context/progress/todo.md` and `overview.md`
+- Update `context/progress/todo.md` and `context/README.md`

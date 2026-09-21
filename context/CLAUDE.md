@@ -130,7 +130,7 @@ Frontend (`zwiper/.env`): `BACKEND_URL`, `RUST_LOG`, `RUST_BACKTRACE`
 
 ```
 context/
-├── README.md               — start-here orientation (index of this directory)
+├── README.md               — start-here orientation + the running progress log
 ├── CLAUDE.md               — this file
 ├── product/                — what we're building (prd, monetization, premium/ feature catalog)
 ├── architecture/           — why things are built the way they are
@@ -138,6 +138,6 @@ context/
 ├── development/            — coding standards (commits, docs, newtypes, dioxus)
 ├── plans/                  — specs for in-flight work (archive/ holds shipped and abandoned ones)
 ├── marketing/              — promo art templates (html) + plans/ video scripts
-├── progress/               — where we are (overview.md, todo.md, backlog.md)
+├── progress/               — what's next (todo.md, backlog.md, feature_requests.md)
 └── archive/                — no longer active (brain, complete-*, learning framework)
 ```

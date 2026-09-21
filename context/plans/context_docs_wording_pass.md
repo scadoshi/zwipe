@@ -31,10 +31,10 @@ any facts.
 
 ## Order (read-frequency first)
 
-1. `context/README.md`, `README.md`, `context/CLAUDE.md`
+1. `context/README.md` (orientation plus the progress log, so the longest and
+   the most-read), root `README.md`, `context/CLAUDE.md`
 2. `context/architecture/` (structure.md lands separately via its own plan)
-3. `context/progress/` (overview.md especially; it's the longest and the
-   most-read)
+3. `context/progress/` (todo.md, backlog.md, feature_requests.md)
 4. `context/operations/`, `context/development/`, `context/product/`
 5. `context/plans/` active files last; archived plans are historical
    record and stay as written.

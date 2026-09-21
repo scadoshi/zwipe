@@ -1,6 +1,6 @@
 # Progress — Where We Are
 
-The project's running state, split across five files. Each answers a different
+The project's running state, split across four files plus triage. Each answers a different
 question; keeping them distinct is what stops this area from rotting into one
 giant changelog.
 
@@ -13,8 +13,9 @@ giant changelog.
 
 ## The boundary
 
-- **overview** is the story of the project — read it to catch up. When something
-  ships, its outcome lands here as a line or two (the detail lives in git).
+- **[`../README.md`](../README.md)** is the story of the project; read it to
+  catch up. When something ships, its outcome lands there as a line or two and
+  the detail stays in git.
 - **todo** is the live worklist. An item leaves `todo.md` when it's done — it does
   **not** get checked off and kept. Completed work is summarized in `../README.md`
   instead, so `todo.md` always reads as "what's left," never as a history log.
@@ -22,7 +23,7 @@ giant changelog.
   next-up; until then it stays here.
 
 If you find yourself scrolling past a wall of finished `[x]` items to reach the
-live ones, `todo.md` has drifted — flush the done items into `../README.md` and
+live ones, `todo.md` has drifted: flush the done items into `../README.md` and
 trim it back.
 
 > Security notes used to live here (`security.md`). They're parked in
