@@ -55,7 +55,7 @@ mv zwipe-dev-key.pem DevCSR.certSigningRequest ~/certs/
 
 ## 3. Register Your Device
 
-Required for dev provisioning profiles — only registered devices can install debug builds.
+Required for dev provisioning profiles: only registered devices can install debug builds.
 
 1. Plug in your iPhone, open Finder, click on it in the sidebar
 2. Click the device info area until you see the **UDID**: copy it
@@ -89,7 +89,7 @@ Back up:
 cp ~/Downloads/Zwipe_Development.mobileprovision ~/certs/
 ```
 
-**If you regenerate your dev certificate** (step 2), you must also regenerate this profile — edit it on Apple's site, select the new cert, download, and double-click to install.
+**If you regenerate your dev certificate** (step 2), you must also regenerate this profile: edit it on Apple's site, select the new cert, download, and double-click to install.
 
 ---
 
@@ -181,4 +181,4 @@ entitlement in `zwiper/Entitlements.plist`, every cold launch produces:
 Platform secure storage failure: A required entitlement isn't present
 ```
 
-This requires a paid Apple Developer account — free accounts cannot use Keychain Sharing.
+This requires a paid Apple Developer account; free accounts cannot use Keychain Sharing.

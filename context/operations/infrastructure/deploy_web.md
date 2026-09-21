@@ -11,7 +11,7 @@ Manual trigger is also available.
 
 Any push to `main` that touches `zite/**` triggers `.github/workflows/deploy-zite.yml` automatically.
 
-No action needed — just push and the workflow handles the rest.
+No action needed; just push and the workflow handles the rest.
 
 ---
 
@@ -36,7 +36,7 @@ GitHub → Actions tab → **Deploy zite** → Run workflow → Run workflow
 
 ## Verify
 
-Visit `https://zwipe.net` — confirm the latest changes are live.
+Visit `https://zwipe.net` and confirm the latest changes are live.
 
 ---
 

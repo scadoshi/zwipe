@@ -1,6 +1,6 @@
 # Video 11: 4,500 tags know what every card does
 
-**Theme:** The community has tagged what every card actually does — Zwipe puts
+**Theme:** The community has tagged what every card actually does, and Zwipe puts
 that whole vocabulary in your thumb: filter by it, build strategy with it, look
 any of it up.
 **Priority:** P1. The biggest differentiator shipped since launch (1.6.0–1.7.1);

@@ -31,7 +31,7 @@ Documentation should add information that cannot be inferred from well-chosen na
    /// The card's mana value (converted mana cost). Some funny cards have fractional mana costs.
    pub cmc: Option<f64>,
    ```
-   The `f64` type might seem odd—documentation explains why.
+   The `f64` type might seem odd; documentation explains why.
 
 4. **Business logic and constraints**
    ```rust

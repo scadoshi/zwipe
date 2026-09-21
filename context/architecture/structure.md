@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Full-stack Rust application using hexagonal architecture. One language across all crates — shared types via `zwipe-core`, compile-time safety everywhere.
+Full-stack Rust application using hexagonal architecture. One language across all crates: shared types via `zwipe-core`, compile-time safety everywhere.
 
 Every section below describes the code as it stands (last verified against the tree 2026-09-21). The one exception is zort, which is a sketch and says so.
 
@@ -148,7 +148,7 @@ zwipe-core/src/
 
 ## zerver: API Server
 
-Axum REST API with PostgreSQL. Hexagonal architecture — domain is the center, HTTP handlers and database repositories are adapters.
+Axum REST API with PostgreSQL. Hexagonal architecture: domain is the center, HTTP handlers and database repositories are adapters.
 
 **Binaries:**
 - `zerver`: HTTP API server (systemd service in production)
@@ -247,7 +247,7 @@ lifetime counters, events) plus client error and crash reporting.
 
 ## zwiper: Mobile App
 
-Dioxus cross-platform app. Primary target: iOS. Same hexagonal structure — screens are inbound adapters, API client is the outbound adapter. UI building blocks and the theme CSS come from `zwipe-components`; the theme list lives in zwipe-core's preferences.
+Dioxus cross-platform app. Primary target: iOS. Same hexagonal structure: screens are inbound adapters, API client is the outbound adapter. UI building blocks and the theme CSS come from `zwipe-components`; the theme list lives in zwipe-core's preferences.
 
 ```
 zwiper/src/
@@ -370,7 +370,7 @@ zort/                       (future crate)
     └── main.rs             — Subcommands: classify, reclassify, delta, audit
 ```
 
-**Not embedded in zervice** — keeps deterministic sync separate from non-deterministic AI.
+**Not embedded in zervice**: keeps deterministic sync separate from non-deterministic AI.
 
 ---
 

@@ -9,7 +9,7 @@ emulator. First-time machine setup (Android Studio, SDK, NDK) lives in
 
 ## 0. Environment: run once per shell (or add to `~/.zshrc`)
 
-The `JAVA_HOME` line is **mandatory** — Gradle's jlink transform dies on the
+The `JAVA_HOME` line is **mandatory**: Gradle's jlink transform dies on the
 system-default JDK 26 (fails in ~12s). Pointing `PATH` at the SDK lets you call
 `adb` / `emulator` directly.
 
@@ -54,7 +54,7 @@ dx serve --platform android        # builds, installs, launches, hot-reloads on 
 ```
 
 Fastest for iterating on UI. Caveat: it sometimes reuses a stale install instead
-of reinstalling — if changes don't appear, fall back to the manual loop.
+of reinstalling; if changes don't appear, fall back to the manual loop.
 
 ### B. Manual build + install: bulletproof
 
@@ -69,7 +69,7 @@ adb shell am start -n com.scadoshi.zwipe/dev.dioxus.main.MainActivity
 adb shell pidof com.scadoshi.zwipe                         # PID must CHANGE; if it's the same, it didn't reload
 ```
 
-The debug APK is **large (~117 MB)** — unstripped native lib. If `install`
+The debug APK is **large (~117 MB)**: unstripped native lib. If `install`
 returns nothing or fails, see Troubleshooting.
 
 ---
@@ -119,4 +119,4 @@ if true || upgrade_required.required() {   // forces the update screen — REVER
 ```
 
 The gate itself (server-driven `MIN_CLIENT_VERSION`) is documented in
-[`../../README.md`](../../README.md) (see "1.0.5 — Min-Version Gate").
+[`../../README.md`](../../README.md) (see "1.0.5, Min-Version Gate").

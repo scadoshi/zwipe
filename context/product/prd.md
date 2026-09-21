@@ -7,7 +7,7 @@ description of the app today. Zwipe has been live on the App Store since
 `../README.md`. Claims below are annotated where they diverged.
 
 ## Vision
-A mobile-first Magic: The Gathering deck builder with a swipe-based card browsing interface. Built for Commander players who want a fast, enjoyable mobile experience — not another cluttered desktop tool ported to a small screen.
+A mobile-first Magic: The Gathering deck builder with a swipe-based card browsing interface. Built for Commander players who want a fast, enjoyable mobile experience, not another cluttered desktop tool ported to a small screen.
 
 ## Core Problem
 Building MTG decks is tedious on mobile. Existing tools (Moxfield, Archidekt, TappedOut) are desktop-first with awkward mobile UX. Zwipe makes the browsing and selection experience native to how people actually use their phones.

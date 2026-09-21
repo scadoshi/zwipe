@@ -1,6 +1,6 @@
 # Video 10: Swipe to pick your commander
 
-**Theme:** Choosing a commander is its own swipe deck now — candidates ranked by
+**Theme:** Choosing a commander is its own swipe deck now: candidates ranked by
 what players actually build, a fresh hand each day, and partners that pair
 themselves. The "where do I even start" problem, solved by swiping.
 **Priority:** P2. Reinforces the core swipe identity on the *first* decision a

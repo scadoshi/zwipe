@@ -6,11 +6,11 @@ Takes the signed `Zwipe.ipa` from [build.md](build.md) and gets it into review.
 
 ## 1. Upload via Transporter
 
-**Do NOT use `xcrun altool`** — it is deprecated and causes metadata parsing errors
+**Do NOT use `xcrun altool`**: it is deprecated and causes metadata parsing errors
 that can trigger false "beta Xcode" rejections. See [debugging.md](debugging.md)
 for details.
 
-**Do NOT use `xcrun iTMSTransporter`** — it expects `.itmsp` directories, not `.ipa` files.
+**Do NOT use `xcrun iTMSTransporter`**: it expects `.itmsp` directories, not `.ipa` files.
 
 1. Open **Transporter** (Mac App Store, free, by Apple)
 2. Sign in with your Apple ID if prompted

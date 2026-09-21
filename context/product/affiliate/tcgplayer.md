@@ -24,7 +24,7 @@ decisions), *not* "Search/Comparison" (we don't compare prices across vendors).
 
 **Description** (≤1000 chars), plain text, copy the three paragraphs:
 
-Zwipe is a mobile-first Magic: The Gathering deck builder with a swipe-based interface: swipe right to add a card, left to skip. It turns the slow, cluttered desktop deck-building experience into something that fits in one thumb. Built for the 100-card Commander format, players browse 110,000+ cards, build and manage multiple decks, see mana-curve and price stats, and import/export decklists — all synced across devices.
+Zwipe is a mobile-first Magic: The Gathering deck builder with a swipe-based interface: swipe right to add a card, left to skip. It turns the slow, cluttered desktop deck-building experience into something that fits in one thumb. Built for the 100-card Commander format, players browse 110,000+ cards, build and manage multiple decks, see mana-curve and price stats, and import/export decklists, all synced across devices.
 
 Our audience is high-intent Magic players actively assembling decks who then need to buy the cards they've added. Zwipe surfaces one-tap buy links straight from a finished deck, so the path from "I want this card" to checkout is immediate. The app is free with no ads, and our revenue is purchase-driven, which aligns our incentives directly with sending brands ready-to-buy customers.
 

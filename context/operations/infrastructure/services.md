@@ -17,7 +17,7 @@ All three are linked on the `zwipe.net/contribute` page.
 - **Domain**: zwipe.net verified in Resend dashboard
 - **DNS**: DKIM + SPF + DMARC records in Cloudflare, see [cloudflare.md](cloudflare.md)
 
-`RESEND_EMAIL_FROM` must use a real address (not `noreply@`) — Resend flags no-reply
+`RESEND_EMAIL_FROM` must use a real address (not `noreply@`); Resend flags no-reply
 addresses and spam filters penalise them.
 
 ## GitHub

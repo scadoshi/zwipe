@@ -27,7 +27,7 @@ Established during the 2026-05-24 zwiper casing revamp (commits `b1cacaaf`, `4cb
 
 ### Why mobile and web split on button casing
 
-zwiper is a mobile app, and sentence case follows Apple HIG and Material Design conventions and reads more naturally on small screens. zite is a marketing site — Title Case fits the web/marketing genre and matches what Stripe/GitHub/Linear use for CTAs. The split is intentional.
+zwiper is a mobile app, and sentence case follows Apple HIG and Material Design conventions and reads more naturally on small screens. zite is a marketing site, and Title Case fits the web/marketing genre and matches what Stripe/GitHub/Linear use for CTAs. The split is intentional.
 
 ### Backend-sourced text policy
 

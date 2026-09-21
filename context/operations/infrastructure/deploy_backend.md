@@ -1,6 +1,6 @@
 # Deploy: zerver + zervice
 
-Manual deploy process for the backend binaries. Use when CI/CD is unavailable or you need to deploy a specific change by hand. The server builds the binaries itself — no cross-compilation needed.
+Manual deploy process for the backend binaries. Use when CI/CD is unavailable or you need to deploy a specific change by hand. The server builds the binaries itself; no cross-compilation needed.
 
 ---
 
@@ -48,7 +48,7 @@ If `cargo` is not found: `source ~/.cargo/env`
 
 ### 4. Stop zerver
 
-Linux blocks overwriting a running executable — must stop before copying:
+Linux blocks overwriting a running executable, so stop before copying:
 
 ```bash
 sudo systemctl stop zerver

@@ -7,7 +7,7 @@
 > below was deleted in July and replaced by community oracle tags. See
 > `../../progress/backlog.md:62`, where Layers 2-3 are closed as superseded.
 
-**Tier: free (infrastructure).** Not a premium feature itself — the join key
+**Tier: free (infrastructure).** Not a premium feature itself; the join key
 that makes four premium features possible. Likely the next build step
 (noted 2026-06-10).
 
@@ -37,7 +37,7 @@ plan" is computable, per tag, with no AI.
 
 ## Security property
 
-Users **pick tags from a list — they never type free text that reaches a
+Users **pick tags from a list**; they never type free text that reaches a
 model**. The closed vocabulary is what keeps the AI features
 prompt-injection-free (see `ai_analysis.md`). Preserve this: no free-text
 custom tags, at least not any that get forwarded to an LLM.

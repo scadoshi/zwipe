@@ -1,6 +1,6 @@
 # Video 8: Share your deck as a link
 
-**Theme:** Every finished deck is one link anyone can open — no account, no
+**Theme:** Every finished deck is one link anyone can open: no account, no
 export, and it renders as a clean web page with the commander and MVPs up top.
 This is the growth video: the payoff is a link a viewer will actually send.
 **Priority:** P1. The share page is the highest-leverage growth surface (a link
@@ -40,7 +40,7 @@ a clear, enviable hook.
   against a 1.4.0 or dev build (`dx serve`). Until 1.4.0 ships, you can still
   film the *web page* half against a real shared link.
 - Copy for reference: share toast "Share link copied"; the page needs no CTA
-  chrome — the deck itself is the pitch.
+  chrome; the deck itself is the pitch.
 - Growth v2 (not filmable yet, note for later): an "Open in Zwipe" / import CTA
   on the shared page turns viewers into installs.
 

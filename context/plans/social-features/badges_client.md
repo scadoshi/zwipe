@@ -2,7 +2,7 @@
 
 ## 1. API client
 
-`zwiper/src/lib/outbound/client/user/weekly_recap.rs` — `get_weekly_recap()`
+`zwiper/src/lib/outbound/client/user/weekly_recap.rs`: `get_weekly_recap()`
 returning `HttpWeeklyRecap`, mirroring the existing single-GET client
 modules.
 
@@ -28,7 +28,7 @@ modules.
 ## 3. Badge history: profile screen
 
 A "Your weeks" row in the profile screen (`profile/mod.rs` pattern) opening
-a simple list: one row per week from `recap.history` — week dates + badge
+a simple list: one row per week from `recap.history`: week dates + badge
 titles. Empty state: "Badges land every Monday. Go swipe." No pagination
 v1 (history is capped at 12 weeks server-side).
 

@@ -26,7 +26,7 @@
 
 ## Notes
 - Shipped in 1.2.0; the ordering has since gotten smarter (community add/skip
-  signal blends into the synergy order as of 1.3.2) — the on-screen behavior is
+  signal blends into the synergy order as of 1.3.2): the on-screen behavior is
   the same, but "it learns from what players actually keep" is now a true claim
   if a caption wants it.
 - If the cold-cache "warming up" toast appears, either wait it out or cut around

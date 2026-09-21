@@ -1,7 +1,7 @@
 # Rethink the empty-filter warning: maybe just serve all cards
 
 **Source:** self-noted, 2026-06-29.
-**Verdict:** undecided — "consider" item.
+**Verdict:** undecided, a "consider" item.
 
 Today, when the card filter is empty the add-cards screen leaves the swipe stack
 empty and nudges the user to set a filter (so a blank screen doesn't read as "no

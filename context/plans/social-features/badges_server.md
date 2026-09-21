@@ -38,7 +38,7 @@ impl WeekBadge { pub fn title(&self) -> &str; pub fn blurb(&self) -> &str; }
 ```
 
 Exact thresholds tune at build time against real `user_week_signal`
-distributions (read prod read-only first — thresholds should make badges
+distributions (read prod read-only first; thresholds should make badges
 scarce enough to mean something; aim for the top badge hitting <10% of
 active users). Copy: sentence case, no em dashes, playful but crisp.
 
@@ -52,7 +52,7 @@ category, top color, and `history: Vec<(week_start, Vec<WeekBadge>)>`
 After the existing refresh steps in `zerver/src/bin/zervice.rs` (~line 87
 where `refresh_card_signal_rollup` sits): compute badges for **every closed
 ISO week that has `user_week_signal` rows but no `user_week_badges` rows**.
-Idempotent backfill, not a Monday check — zervice runs daily at 4am via
+Idempotent backfill, not a Monday check: zervice runs daily at 4am via
 cron, so a missed run self-heals next morning, and the first deploy
 backfills all history since 2026-07-02.
 
@@ -60,7 +60,7 @@ Rust rule evaluation over one SQL read per week (signal + facet + deck
 count joined per user), then batch insert. Rules: evaluate all, sort by
 priority, take 3, `ShowedUp` if empty. Port surface: new methods on the
 metrics domain (`compute_week_badges(week_start)`,
-`closed_weeks_missing_badges()`) — Repository/Service/Erased/blanket,
+`closed_weeks_missing_badges()`): Repository/Service/Erased/blanket,
 following the existing pattern.
 
 ## 4. Recap endpoint

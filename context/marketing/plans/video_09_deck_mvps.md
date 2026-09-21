@@ -2,9 +2,9 @@
 
 **Theme:** Tell Zwipe which three cards define your deck. They mark the cards
 that matter at a glance, and they headline your shared deck page as full art.
-**Priority:** P2. Pairs naturally with video #8 (share) — MVPs are what make the
+**Priority:** P2. Pairs naturally with video #8 (share): MVPs are what make the
 shared page a personality statement. (The suggestion-steering payoff is a later
-server phase; do **not** claim it yet — this video is about identifying + showing
+server phase; do **not** claim it yet; this video is about identifying + showing
 the MVPs, which is what's shipped.)
 **Hook line:** "Which three cards make this deck yours?"
 

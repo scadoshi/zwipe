@@ -1,7 +1,7 @@
 # IAP infrastructure: the prerequisite for charging anyone
 
-**Tier: n/a — this is the gate.** None of the premium features can ship as
-*premium* until this exists. It's also the real scope of "launch premium" —
+**Tier: n/a, this is the gate.** None of the premium features can ship as
+*premium* until this exists. It's also the real scope of "launch premium",
 the features are mostly smaller than the billing plumbing.
 
 ## Architecture (per ../monetization.md technical path)
@@ -35,5 +35,5 @@ the features are mostly smaller than the billing plumbing.
 
 Android ships before premium (decided 2026-06-10). When premium starts, build
 this first against ONE already-finished feature (price intelligence or AI
-analysis) rather than holding the launch for the full catalog — the catalog
+analysis) rather than holding the launch for the full catalog. The catalog
 grows behind the same 402 gate afterward.

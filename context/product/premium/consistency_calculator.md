@@ -1,6 +1,6 @@
 # Consistency calculator + opening-hand simulator
 
-**Tier: DECIDED 2026-06-10 — split.** Headline consistency score, opening-hand
+**Tier: DECIDED 2026-06-10, split.** Headline consistency score, opening-hand
 simulator, and mana math are **free** (zero cost, screenshot-able,
 acquisition). The **per-tag breakdown** is **premium** (the intelligence
 layer: which parts of your plan are inconsistent). Zero ongoing cost, so it's
@@ -8,7 +8,7 @@ a sweetener/anchor, not the subscription justification.
 
 ## Concept
 
-Score a deck on **consistency, not quality** — honest math, no AI, no
+Score a deck on **consistency, not quality**: honest math, no AI, no
 hallucination risk, defensible to the decimal:
 
 > "Your opening hand has a 71% chance of containing at least one card tagged
@@ -29,7 +29,7 @@ frequency question).
 
 Same engine, sampling instead of closed form: shuffle, deal 7 with real card
 images, London mulligan support, redraw button. Very demo-able and
-screenshot-able — App Store listing material. Trivial to build once the deck
+screenshot-able: App Store listing material. Trivial to build once the deck
 list is on screen.
 
 ## Mana math (adjacent, same file because same engine)

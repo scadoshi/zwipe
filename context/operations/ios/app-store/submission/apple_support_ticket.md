@@ -8,7 +8,7 @@ The original support report is preserved below for reference.
 
 ---
 
-**Subject:** "Unable to Add for Review" — all builds rejected with "beta Xcode" error despite using GM toolchain
+**Subject:** "Unable to Add for Review", all builds rejected with "beta Xcode" error despite using GM toolchain
 
 **Developer:** Scotty Fermo
 **Team ID:** VV74WQ89GD

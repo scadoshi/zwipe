@@ -2,7 +2,7 @@
 
 Raw intake that still needs a decision. Items land here first, get a verdict
 (build / drop / defer), then promote to `../feature_requests.md`,
-`../backlog.md`, or `../todo.md` — or get deleted. Keep one focused file per
+`../backlog.md`, or `../todo.md`, or get deleted. Keep one focused file per
 item; delete the file once it's promoted or rejected.
 
 Distinct from `feature_requests.md` (already-weighted candidates) and `todo.md`

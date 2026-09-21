@@ -9,7 +9,7 @@ Managing simulator devices for screenshots, testing different screen sizes, etc.
 The project default for running and screenshotting is the **6.5" iPhone 11 Pro Max
 on iOS 18.6** (the App Store's required 6.5" size, 1242×2688). `dx serve --ios`
 targets the *active* simulator, so boot this as the sole active sim and dx picks
-it up — no `--device` flag needed:
+it up; no `--device` flag needed:
 
 ```bash
 zcripts/ios/sim.sh   # shuts down others, boots the 6.5" 11 Pro Max, opens Simulator
@@ -105,4 +105,4 @@ xcrun simctl delete all
 | 6.5" | 1242×2688 | iPhone 11 Pro Max, XS Max |
 | 5.5" | 1242×2208 | iPhone 8 Plus, 7 Plus |
 
-App Store Connect requires at least the 6.5" size. Uploading 6.7" screenshots works — they get scaled down automatically.
+App Store Connect requires at least the 6.5" size. Uploading 6.7" screenshots works; they get scaled down automatically.

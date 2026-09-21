@@ -21,7 +21,7 @@ oracle_id: scryfall_data
 `ScryfallData::oracle_id` is `Option<Uuid>`; the wire field is a `String`. So
 `None` ships as `""`, the server parses it with `Uuid::parse_str`, and
 `create_deck_card.rs:59` turns the failure into
-`UnprocessableEntity("invalid oracle id: ...")` — the exact message in the
+`UnprocessableEntity("invalid oracle id: ...")`, the exact message in the
 reports.
 
 Both reported actions go through this one constructor: `add.rs:398` and

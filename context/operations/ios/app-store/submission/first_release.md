@@ -17,14 +17,14 @@ to attach). Apple rejects this. Create a release version:
 cp ~/Developer/zwipe/zwiper/Entitlements.plist ~/Developer/zwipe/zwiper/Entitlements-Release.plist
 ```
 
-Edit `Entitlements-Release.plist` — change `get-task-allow` to `false`:
+Edit `Entitlements-Release.plist`: change `get-task-allow` to `false`:
 
 ```xml
 <key>get-task-allow</key>
 <false/>
 ```
 
-This only needs to be done once — the file is committed to the repo.
+This only needs to be done once; the file is committed to the repo.
 
 ---
 
@@ -141,10 +141,10 @@ If you haven't created one yet:
 
 ### Upload via Transporter (recommended)
 
-**Do NOT use `xcrun altool`** — it is deprecated and causes metadata parsing errors
+**Do NOT use `xcrun altool`**: it is deprecated and causes metadata parsing errors
 that can trigger false "beta Xcode" rejections in App Store Connect.
 
-**Do NOT use `xcrun iTMSTransporter`** — it expects `.itmsp` directories, not `.ipa` files.
+**Do NOT use `xcrun iTMSTransporter`**: it expects `.itmsp` directories, not `.ipa` files.
 
 1. Download **Transporter** from the Mac App Store (free, by Apple)
 2. Open Transporter, sign in with your Apple ID

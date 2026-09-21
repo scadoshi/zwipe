@@ -1,6 +1,6 @@
 # Tips & Gotchas
 
-Operational notes that don't fit neatly into other docs — things that will waste your
+Operational notes that don't fit neatly into other docs: things that will waste your
 time if you forget them.
 
 ---
@@ -23,7 +23,7 @@ TERM=xterm-256color sudo nano /etc/some/file
 TERM=xterm-256color sudo systemctl edit some.service
 ```
 
-**Do not use `xterm-256-color`** (with a hyphen before "color") — that also fails.
+**Do not use `xterm-256-color`** (with a hyphen before "color"), which also fails.
 The correct value is `xterm-256color`.
 
 You only need the prefix for interactive terminal programs. Regular commands (`cp`,

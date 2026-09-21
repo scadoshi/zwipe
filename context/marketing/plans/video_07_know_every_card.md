@@ -26,7 +26,7 @@
 
 ## Notes
 - Core shipped 1.1.0–1.2.1; the dialog restyle (cost in the title, Flip in the
-  footer) is 1.7.1 and the in-dialog tag definitions are 1.7.3 — film against
+  footer) is 1.7.1 and the in-dialog tag definitions are 1.7.3, so film against
   the current store build.
 - Image-less cards now render as a clean text card (1.7.1); a half-beat of that
   can replace the deck-row beat if a good specimen comes up while filming.

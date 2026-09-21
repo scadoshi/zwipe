@@ -2,7 +2,7 @@
 
 **Decided: Ubuntu Server (headless) via Cloudflare Tunnel (2026-03-27)**
 
-Previous host was a Raspberry Pi 5 (4GB RAM). Moved to a proper server — 32GB RAM, repurposed from a desktop build (GPU removed before OS install). Overkill for current load but gives real headroom and removes Pi's memory/aarch64 constraints.
+Previous host was a Raspberry Pi 5 (4GB RAM). Moved to a proper server: 32GB RAM, repurposed from a desktop build (GPU removed before OS install). Overkill for current load but gives real headroom and removes Pi's memory/aarch64 constraints.
 
 ---
 
