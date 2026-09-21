@@ -11,3 +11,6 @@ cache/
 zerver/Cargo.lock
 zwiper/Cargo.lock
 zite/assets/guides/_staging/
+
+# Worktrees created by Claude Code sessions
+.claude/worktrees/
