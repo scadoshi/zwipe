@@ -2,6 +2,8 @@
 
 Full-stack Rust application using hexagonal architecture. One language across all crates — shared types via `zwipe-core`, compile-time safety everywhere.
 
+Every section below describes the code as it stands (last verified against the tree 2026-09-21). The one exception is zort, which is a sketch and says so.
+
 ---
 
 ## The Family
@@ -29,7 +31,7 @@ Full-stack Rust application using hexagonal architecture. One language across al
 | **zwipe-core** | — (library) | Shared domain types, validation, HTTP contracts | serde, uuid, chrono, thiserror |
 | **zerver** | `zerver` | Axum REST API, PostgreSQL, JWT auth | zwipe-core, axum, sqlx, tokio |
 | **zerver** | `zervice` | Background sync (Scryfall card data) | zwipe-core (via zerver lib) |
-| **zwiper** | `zwiper` | Dioxus cross-platform mobile app | zwipe-core, zwipe-components, zerver (feature-gated for ApiError only), dioxus |
+| **zwiper** | `zwiper` | Dioxus cross-platform mobile app | zwipe-core, zwipe-components, zerver (feature-gated: route re-exports, ApiError, Password; retiring per `plans/zerver_feature_gate_teardown.md`), dioxus |
 | **zite** | `zite` | Dioxus static website (zwipe.net) | zwipe-core, zwipe-components, dioxus |
 | **zwipe-components** | — (library) | Shared Dioxus UI components + `themes.css`/`components.css` | zwipe-core, dioxus |
 | **zort** | — (hypothetical) | AI card classification client. Sketched only: no crate, no directory, nothing built | Postgres direct, LLM API |
@@ -44,6 +46,11 @@ Pure Rust library. No feature flags. No server-only dependencies. The single sou
 zwipe-core/src/
 ├── lib.rs
 ├── test_utils.rs
+├── serde_helpers.rs
+├── version.rs                      — semver parsing for the min-client-version gate
+├── content/
+│   └── changelog/                  — the changelog itself, compiled into every surface + served at /api/changelog
+├── legal/                          — legal text shared by app and site
 │
 ├── domain/
 │   ├── auth/
@@ -110,11 +117,15 @@ zwipe-core/src/
 │   ├── user/
 │   │   ├── models/
 │   │   │   ├── username.rs         — Username newtype
-│   │   │   └── preferences.rs      — Theme, dark mode
+│   │   │   ├── email.rs            — Email handling
+│   │   │   ├── hints.rs            — One-time UI hint tracking
+│   │   │   ├── theme.rs            — ThemeConfig
+│   │   │   └── preferences.rs      — Theme (ALLOWED_THEMES, 31), dark mode, franchises
 │   │   └── requests/
 │   │       └── get_user.rs
 │   │
 │   ├── moderation.rs               — Profanity filter
+│   ├── site.rs                     — Base URLs + contact points shared by every surface
 │   └── logo/                       — ASCII art logos
 │
 └── http/
@@ -122,8 +133,11 @@ zwipe-core/src/
     ├── helpers.rs                  — Opdate<T> (partial update semantics)
     └── contracts/
         ├── auth.rs                 — HttpLogin, HttpRegister, etc.
+        ├── changelog.rs            — HttpChangelog, HttpRelease
+        ├── client.rs               — HttpMinClientVersion (force-update gate)
         ├── deck.rs                 — HttpCreateDeckProfile, HttpUpdateDeckProfile
         ├── deck_card.rs            — HttpCreateDeckCard, HttpPatchDeckCard
+        ├── metrics.rs              — HttpCrashReport, ClientErrorReport, usage/signal batches, public metrics
         └── user.rs                 — HttpChangeEmail, HttpChangePassword, etc.
 ```
 
@@ -167,19 +181,24 @@ zerver/src/
     │   │   └── models/         — Server-specific deck models
     │   ├── user/               — User services, ports
     │   ├── email/              — Email dispatch models
-    │   └── health/             — Health check service
+    │   ├── health/             — Health check service
+    │   ├── metrics/            — Usage counters, events, crash/error intake (origin of the erased-service pattern, see decisions.md)
+    │   └── upkeep/             — Nightly maintenance, zervice-only (retention sweeps, expired-session cleanup)
     │
     ├── inbound/                — Entry points
     │   ├── http/
     │   │   ├── routes.rs       — All API route definitions
     │   │   ├── mod.rs          — AppState, ApiError, middleware setup
-    │   │   ├── middleware/      — JWT auth extraction, rate limiting
+    │   │   ├── cache.rs        — TtlSlot serving-layer caches
+    │   │   ├── middleware.rs   — JWT auth extraction, last-active tracking
     │   │   └── handlers/
     │   │       ├── auth/       — Login, register, refresh, verify, reset
     │   │       ├── card/       — Search, get card, filter metadata
     │   │       ├── deck/       — Deck CRUD, get deck with entries
     │   │       ├── deck_card/  — Add/update/delete/import cards
-    │   │       └── user/       — Profile, preferences, delete account
+    │   │       ├── user/       — Profile, preferences, delete account
+    │   │       ├── metrics/    — Usage/event/crash/error intake, public metrics
+    │   │       └── changelog.rs, client.rs, health.rs
     │   └── external/
     │       └── scryfall/       — Scryfall bulk data API client
     │
@@ -193,6 +212,7 @@ zerver/src/
         │   │   ├── models.rs   — DatabaseDeckProfile, DatabaseDeckCard
         │   │   └── helper.rs   — Ownership verification
         │   └── user/           — User repository (preferences, profile)
+        ├── archidekt/          — Fetches public Archidekt decks for import by URL
         └── resend/             — Transactional email via Resend API
 ```
 
@@ -226,16 +246,16 @@ lifetime counters, events) plus client error and crash reporting.
 
 ## zwiper — Mobile App
 
-Dioxus cross-platform app. Primary target: iOS. Same hexagonal structure — screens are inbound adapters, API client is the outbound adapter.
+Dioxus cross-platform app. Primary target: iOS. Same hexagonal structure — screens are inbound adapters, API client is the outbound adapter. UI building blocks and the theme CSS come from `zwipe-components`; the theme list lives in zwipe-core's preferences.
 
 ```
 zwiper/src/
 ├── bin/                        — App entrypoint
 │
 └── lib/
+    ├── config.rs               — Compile-time env config (backend URL etc., baked in by build.rs)
     ├── domain/
     │   ├── error.rs            — Client error types
-    │   ├── theme.rs            — 9-theme system
     │   └── language.rs         — i18n support
     │
     ├── inbound/
@@ -244,10 +264,13 @@ zwiper/src/
     │   │   ├── interactions/
     │   │   │   └── swipe/      — Swipeable component, SwipeState, SwipeConfig, Direction
     │   │   ├── auth/           — Bouncer (auth guard), session upkeep
+    │   │   ├── navigation/     — Back handler, overlay stack
+    │   │   ├── telemetry/      — Usage buffer (batched counters/events to the API)
     │   │   ├── accordion/      — Collapsible sections
     │   │   ├── toast/          — Toast notifications
     │   │   ├── alert_dialog/   — Confirmation dialogs
-    │   │   └── fields/         — Reusable form inputs
+    │   │   ├── fields/         — Reusable form inputs
+    │   │   └── (single files)  — bottom sheet, chips, hint dialogs, catalog cache, update-required gate, …
     │   │
     │   └── screens/
     │       ├── home.rs
@@ -278,6 +301,11 @@ zwiper/src/
     │
     └── outbound/
         ├── session.rs          — JWT + refresh token (keychain storage)
+        ├── keyring_entry.rs    — Keychain/keystore access
+        ├── theme_store.rs      — Persisted theme choice
+        ├── crash_store.rs      — Panic hook writes a crash file; next launch reports it
+        ├── android_fs.rs       — Android app-files dir via JNI
+        ├── open_url.rs         — Open links in the system browser
         ├── buy_links.rs        — TCGplayer, CardKingdom URL builders
         └── client/             — HTTP API client
             ├── auth/           — Login, register, refresh, logout, forgot password
@@ -291,9 +319,11 @@ zwiper/src/
 
 ---
 
-## zite — Static Website
+## zite — Website
 
-Dioxus static site deployed to GitHub Pages at [zwipe.net](https://zwipe.net). Handles marketing pages and auth flows that require a web browser.
+Dioxus site deployed to GitHub Pages at [zwipe.net](https://zwipe.net). Marketing pages, the auth flows that need a browser (verify, reset), and a handful of pages that read the public API: changelog, guides, and the shared-deck viewer. Statically hosted, not entirely static content.
+
+No login, no deck building today. `decisions.md` (2026-04-06) commits zite to growing into the full authenticated deck builder eventually; that surface lives only in zwiper for now, and sharing the client layer first is `plans/zwipe_client_extraction.md`.
 
 ```
 zite/src/
@@ -306,11 +336,23 @@ zite/src/
     ├── ios.rs              — App Store download
     ├── android.rs          — Play Store download
     ├── privacy.rs          — Privacy policy
+    ├── changelog.rs        — Release notes from /api/changelog
+    ├── guides/             — How-to guides
+    ├── shared_deck.rs      — Public deck share viewer (reads /api/share/deck/{token})
+    ├── not_found.rs        — 404
     ├── verify.rs           — Email verification (token from URL)
     └── reset.rs            — Password reset form (shared validation from zwipe-core)
 ```
 
 **Deploy:** Push to main → GitHub Actions → `dx build --release --platform web` → GitHub Pages
+
+---
+
+## zwipe-components — Shared UI
+
+Dioxus component library both clients depend on; the owner's portfolio consumes parts of it too. Ships `themes.css` (31 themes, each with a dark and a light palette) and `components.css`. CSS load order matters: themes first, then components, then app styles.
+
+The source is flat, one file per component: card_details.rs and card_row.rs (shared card rendering), changelog.rs (renders the compiled-in changelog), charts.rs, theme_picker.rs, nav_bar.rs, nav_dropdown.rs, oracle_text.rs, page_meta.rs, and assorted smaller pieces (buttons, chips, banners, panels). The allowed-theme list itself lives in zwipe-core (`ALLOWED_THEMES`); this crate owns the palettes.
 
 ---
 

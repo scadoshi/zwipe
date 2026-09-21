@@ -59,6 +59,6 @@ pub use zwipe_core::domain::user::{models::theme::ThemeConfig, preferences::ALLO
 
 /// The shared component rules, for consumers outside this workspace.
 pub const COMPONENTS_CSS: &str = include_str!("../assets/components.css");
-/// The shared theme palettes (14 themes, dark + light), for consumers outside
+/// The shared theme palettes (31 themes, dark + light), for consumers outside
 /// this workspace.
 pub const THEMES_CSS: &str = include_str!("../assets/themes.css");
