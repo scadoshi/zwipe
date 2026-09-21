@@ -5,7 +5,7 @@ use reqwest::StatusCode;
 use std::future::Future;
 use zwipe_core::{
     domain::auth::models::session::Session,
-    http::{contracts::metrics::HttpUsageBatch, paths::record_usage_route},
+    http::{contracts::metrics::HttpUsageBatch, paths::RECORD_USAGE_ROUTE},
 };
 
 /// Trait for posting a batched usage update.
@@ -25,7 +25,7 @@ impl ClientRecordUsage for ZwipeClient {
         session: &Session,
     ) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&record_usage_route());
+        url.set_path(RECORD_USAGE_ROUTE);
 
         let response = self
             .client

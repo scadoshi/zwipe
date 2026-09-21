@@ -6,7 +6,7 @@ use std::future::Future;
 use tracing::info;
 use zwipe_core::{
     domain::{auth::models::session::Session, user::User},
-    http::{contracts::user::HttpMarkHintShown, paths::mark_hint_shown_route},
+    http::{contracts::user::HttpMarkHintShown, paths::MARK_HINT_SHOWN_ROUTE},
 };
 
 /// Trait for marking a one-time UI hint as shown for the authenticated user.
@@ -22,7 +22,7 @@ pub trait ClientMarkHintShown {
 impl ClientMarkHintShown for ZwipeClient {
     async fn mark_hint_shown(&self, hint: &str, session: &Session) -> Result<User, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&mark_hint_shown_route());
+        url.set_path(MARK_HINT_SHOWN_ROUTE);
         info!("PATCH {}", url);
 
         let body = HttpMarkHintShown {

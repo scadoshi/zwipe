@@ -6,7 +6,7 @@ use std::future::Future;
 use tracing::info;
 use zwipe_core::{
     domain::auth::models::session::Session,
-    http::{contracts::auth::HttpDeleteUser, paths::delete_user_route},
+    http::{contracts::auth::HttpDeleteUser, paths::DELETE_USER_ROUTE},
 };
 
 /// Trait for deleting user accounts.
@@ -26,7 +26,7 @@ impl ClientDeleteUser for ZwipeClient {
         session: &Session,
     ) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&delete_user_route());
+        url.set_path(DELETE_USER_ROUTE);
         info!("DELETE {}", url);
         let response = self
             .client

@@ -6,7 +6,7 @@ use std::future::Future;
 use tracing::info;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::deck_profile::DeckProfile},
-    http::paths::get_deck_profiles_route,
+    http::paths::GET_DECK_PROFILES_ROUTE,
 };
 
 /// Trait for fetching all deck profiles for the authenticated user.
@@ -21,7 +21,7 @@ pub trait ClientGetDeckList {
 impl ClientGetDeckList for ZwipeClient {
     async fn get_deck_profiles(&self, session: &Session) -> Result<Vec<DeckProfile>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_deck_profiles_route());
+        url.set_path(GET_DECK_PROFILES_ROUTE);
         info!("GET {}", url);
 
         let response = self

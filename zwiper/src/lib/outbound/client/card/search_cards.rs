@@ -9,7 +9,7 @@ use zwipe_core::{
         auth::models::session::Session,
         card::{Card, search_card::card_filter::CardQuery},
     },
-    http::paths::search_cards_route,
+    http::paths::SEARCH_CARDS_ROUTE,
 };
 
 /// Trait for searching cards with filter criteria.
@@ -29,7 +29,7 @@ impl ClientSearchCards for ZwipeClient {
         session: &Session,
     ) -> Result<Vec<Card>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&search_cards_route());
+        url.set_path(SEARCH_CARDS_ROUTE);
 
         info!("POST {} filter: {:?}", url, card_filter);
 

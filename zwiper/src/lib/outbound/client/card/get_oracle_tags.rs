@@ -4,7 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe_core::{domain::card::oracle_tag::OracleTag, http::paths::get_oracle_tags_route};
+use zwipe_core::{domain::card::oracle_tag::OracleTag, http::paths::GET_ORACLE_TAGS_ROUTE};
 
 /// Trait for fetching the full oracle tag catalog (slug, label, description, parents).
 #[allow(missing_docs)]
@@ -15,7 +15,7 @@ pub trait ClientGetOracleTags {
 impl ClientGetOracleTags for ZwipeClient {
     async fn get_oracle_tags(&self) -> Result<Vec<OracleTag>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_oracle_tags_route());
+        url.set_path(GET_ORACLE_TAGS_ROUTE);
         info!("GET {}", url);
 
         let response = self.client.get(url).send().await?;

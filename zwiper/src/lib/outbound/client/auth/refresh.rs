@@ -6,7 +6,7 @@ use std::future::Future;
 use tracing::info;
 use zwipe_core::{
     domain::auth::models::session::Session,
-    http::{contracts::auth::HttpRefreshSession, paths::refresh_session_route},
+    http::{contracts::auth::HttpRefreshSession, paths::REFRESH_SESSION_ROUTE},
 };
 
 /// Trait for refreshing access tokens using a refresh token.
@@ -26,7 +26,7 @@ impl ClientRefresh for ZwipeClient {
         request.client_version = Some(env!("CARGO_PKG_VERSION").to_string());
 
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&refresh_session_route());
+        url.set_path(REFRESH_SESSION_ROUTE);
         info!("POST {}", url);
 
         let response = self.client.post(url).json(&request).send().await?;

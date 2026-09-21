@@ -4,7 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::debug;
-use zwipe_core::http::{contracts::changelog::HttpChangelog, paths::changelog_route};
+use zwipe_core::http::{contracts::changelog::HttpChangelog, paths::CHANGELOG_ROUTE};
 
 /// Trait for fetching the changelog.
 ///
@@ -19,7 +19,7 @@ pub trait ClientGetChangelog {
 impl ClientGetChangelog for ZwipeClient {
     async fn get_changelog(&self) -> Result<HttpChangelog, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&changelog_route());
+        url.set_path(CHANGELOG_ROUTE);
         debug!("GET {}", url);
 
         let response = self.client.get(url).send().await?;

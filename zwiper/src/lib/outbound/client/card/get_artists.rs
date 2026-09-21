@@ -4,7 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe_core::http::paths::get_artists_route;
+use zwipe_core::http::paths::GET_ARTISTS_ROUTE;
 
 /// Trait for fetching the list of all unique card artists.
 #[allow(missing_docs)]
@@ -15,7 +15,7 @@ pub trait ClientGetArtists {
 impl ClientGetArtists for ZwipeClient {
     async fn get_artists(&self) -> Result<Vec<String>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_artists_route());
+        url.set_path(GET_ARTISTS_ROUTE);
         info!("GET {}", url);
 
         let response = self.client.get(url).send().await?;

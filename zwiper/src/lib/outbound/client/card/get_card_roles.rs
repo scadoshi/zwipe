@@ -4,7 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe_core::{domain::card::card_role::CardRoleView, http::paths::get_card_roles_route};
+use zwipe_core::{domain::card::card_role::CardRoleView, http::paths::GET_CARD_ROLES_ROUTE};
 
 /// Trait for fetching the full card-role catalog (slug, display name, short name).
 #[allow(missing_docs)]
@@ -16,7 +16,7 @@ pub trait ClientGetCardRoles {
 impl ClientGetCardRoles for ZwipeClient {
     async fn get_card_roles(&self) -> Result<Vec<CardRoleView>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_card_roles_route());
+        url.set_path(GET_CARD_ROLES_ROUTE);
         info!("GET {}", url);
 
         let response = self.client.get(url).send().await?;

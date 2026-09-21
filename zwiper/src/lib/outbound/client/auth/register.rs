@@ -6,7 +6,7 @@ use std::future::Future;
 use tracing::info;
 use zwipe_core::{
     domain::auth::models::{platform::ClientPlatform, session::Session},
-    http::{contracts::auth::HttpRegisterUser, paths::register_route},
+    http::{contracts::auth::HttpRegisterUser, paths::REGISTER_ROUTE},
 };
 
 /// Trait for registering new user accounts.
@@ -25,7 +25,7 @@ impl ClientRegister for ZwipeClient {
         request.client_version = Some(env!("CARGO_PKG_VERSION").to_string());
 
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&register_route());
+        url.set_path(REGISTER_ROUTE);
         info!("POST {}", url);
         let response = self.client.post(url).json(&request).send().await?;
 

@@ -6,7 +6,7 @@ use std::future::Future;
 use tracing::info;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::deck_profile::DeckProfile},
-    http::{contracts::deck::HttpCreateDeckProfile, paths::create_deck_route},
+    http::{contracts::deck::HttpCreateDeckProfile, paths::CREATE_DECK_ROUTE},
 };
 
 /// Trait for creating new deck profiles.
@@ -26,7 +26,7 @@ impl ClientCreateDeck for ZwipeClient {
         session: &Session,
     ) -> Result<DeckProfile, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&create_deck_route());
+        url.set_path(CREATE_DECK_ROUTE);
         info!("POST {} body: {:?}", url, request);
 
         let response = self

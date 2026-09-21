@@ -7,12 +7,12 @@
 
 use crate::API_BASE;
 use dioxus::prelude::*;
-use zwipe_core::http::{contracts::metrics::HttpPublicMetrics, paths::public_metrics_route};
+use zwipe_core::http::{contracts::metrics::HttpPublicMetrics, paths::PUBLIC_METRICS_ROUTE};
 
 #[component]
 pub fn StatsStrip() -> Element {
     let stats: Resource<Option<HttpPublicMetrics>> = use_resource(|| async {
-        let url = format!("{}{}", API_BASE, public_metrics_route());
+        let url = format!("{}{}", API_BASE, PUBLIC_METRICS_ROUTE);
         let res = reqwest::Client::new().get(&url).send().await.ok()?;
         if !res.status().is_success() {
             return None;

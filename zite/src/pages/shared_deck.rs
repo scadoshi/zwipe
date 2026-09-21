@@ -33,7 +33,7 @@ use zwipe_core::{
     },
     http::{
         contracts::deck::HttpSharedDeck,
-        paths::{get_oracle_tags_route, get_shared_deck_route},
+        paths::{GET_ORACLE_TAGS_ROUTE, get_shared_deck_route},
     },
 };
 
@@ -435,7 +435,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let otags: Resource<Vec<OracleTag>> = use_resource(|| async move {
         let client = reqwest::Client::new();
         match client
-            .get(format!("{}{}", API_BASE, get_oracle_tags_route()))
+            .get(format!("{}{}", API_BASE, GET_ORACLE_TAGS_ROUTE))
             .send()
             .await
         {

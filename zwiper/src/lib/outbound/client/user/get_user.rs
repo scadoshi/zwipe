@@ -6,7 +6,7 @@ use std::future::Future;
 use tracing::info;
 use zwipe_core::{
     domain::{auth::models::session::Session, user::User},
-    http::paths::get_user_route,
+    http::paths::GET_USER_ROUTE,
 };
 
 /// Trait for fetching user profile data.
@@ -19,7 +19,7 @@ pub trait ClientGetUser {
 impl ClientGetUser for ZwipeClient {
     async fn get_user(&self, session: &Session) -> Result<User, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_user_route());
+        url.set_path(GET_USER_ROUTE);
         info!("GET {}", url);
 
         let response = self

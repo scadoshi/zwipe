@@ -4,7 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe_core::http::paths::get_keywords_route;
+use zwipe_core::http::paths::GET_KEYWORDS_ROUTE;
 
 /// Trait for fetching the list of all keyword abilities (flying, trample, etc.).
 #[allow(missing_docs)]
@@ -15,7 +15,7 @@ pub trait ClientGetKeywords {
 impl ClientGetKeywords for ZwipeClient {
     async fn get_keywords(&self) -> Result<Vec<String>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_keywords_route());
+        url.set_path(GET_KEYWORDS_ROUTE);
         info!("GET {}", url);
 
         let response = self.client.get(url).send().await?;

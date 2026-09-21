@@ -6,7 +6,7 @@ use std::future::Future;
 use tracing::info;
 use zwipe_core::{
     domain::{auth::models::session::Session, user::User},
-    http::{contracts::auth::HttpChangeEmail, paths::change_email_route},
+    http::{contracts::auth::HttpChangeEmail, paths::CHANGE_EMAIL_ROUTE},
 };
 
 /// Trait for updating user email addresses.
@@ -26,7 +26,7 @@ impl ClientChangeEmail for ZwipeClient {
         session: &Session,
     ) -> Result<User, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&change_email_route());
+        url.set_path(CHANGE_EMAIL_ROUTE);
         info!("PATCH {}", url);
         let response = self
             .client

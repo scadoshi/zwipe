@@ -6,7 +6,7 @@ use std::future::Future;
 use tracing::info;
 use zwipe_core::{
     domain::{auth::models::session::Session, user::User},
-    http::{contracts::auth::HttpChangeUsername, paths::change_username_route},
+    http::{contracts::auth::HttpChangeUsername, paths::CHANGE_USERNAME_ROUTE},
 };
 
 /// Trait for updating usernames.
@@ -26,7 +26,7 @@ impl ClientChangeUsername for ZwipeClient {
         session: &Session,
     ) -> Result<User, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&change_username_route());
+        url.set_path(CHANGE_USERNAME_ROUTE);
         info!("PATCH {}", url);
         let response = self
             .client

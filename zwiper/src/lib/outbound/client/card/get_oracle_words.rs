@@ -4,7 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe_core::http::paths::get_oracle_words_route;
+use zwipe_core::http::paths::GET_ORACLE_WORDS_ROUTE;
 
 /// Trait for fetching the list of all normalized oracle text words.
 #[allow(missing_docs)]
@@ -15,7 +15,7 @@ pub trait ClientGetOracleWords {
 impl ClientGetOracleWords for ZwipeClient {
     async fn get_oracle_words(&self) -> Result<Vec<String>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_oracle_words_route());
+        url.set_path(GET_ORACLE_WORDS_ROUTE);
         info!("GET {}", url);
 
         let response = self.client.get(url).send().await?;

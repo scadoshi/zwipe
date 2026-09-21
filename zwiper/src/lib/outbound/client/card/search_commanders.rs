@@ -14,7 +14,7 @@ use zwipe_core::{
         auth::models::session::Session,
         card::{Card, search_card::card_filter::CardQuery},
     },
-    http::paths::search_commanders_route,
+    http::paths::SEARCH_COMMANDERS_ROUTE,
 };
 
 /// Trait for searching commander candidates.
@@ -34,7 +34,7 @@ impl ClientSearchCommanders for ZwipeClient {
         session: &Session,
     ) -> Result<Vec<Card>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&search_commanders_route());
+        url.set_path(SEARCH_COMMANDERS_ROUTE);
 
         info!("POST {} filter: {:?}", url, card_filter);
 

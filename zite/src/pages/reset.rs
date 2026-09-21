@@ -1,7 +1,7 @@
 use crate::{API_BASE, Nav};
 use dioxus::prelude::*;
 use serde::Serialize;
-use zwipe_core::http::paths::reset_password_route;
+use zwipe_core::http::paths::RESET_PASSWORD_ROUTE;
 
 /// Validate a candidate password against the shared password policy.
 fn validate_password(pw: &str) -> Option<String> {
@@ -56,7 +56,7 @@ pub fn Reset(token: String) -> Element {
         spawn(async move {
             let client = reqwest::Client::new();
             let res = client
-                .post(format!("{}{}", API_BASE, reset_password_route()))
+                .post(format!("{}{}", API_BASE, RESET_PASSWORD_ROUTE))
                 .json(&ResetPasswordRequest {
                     token,
                     new_password: pw,

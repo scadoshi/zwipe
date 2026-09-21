@@ -4,7 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::debug;
-use zwipe_core::http::{contracts::client::HttpMinClientVersion, paths::min_client_version_route};
+use zwipe_core::http::{contracts::client::HttpMinClientVersion, paths::MIN_CLIENT_VERSION_ROUTE};
 
 /// Trait for fetching the server's minimum supported app version.
 ///
@@ -21,7 +21,7 @@ pub trait ClientGetMinClientVersion {
 impl ClientGetMinClientVersion for ZwipeClient {
     async fn get_min_client_version(&self) -> Result<HttpMinClientVersion, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&min_client_version_route());
+        url.set_path(MIN_CLIENT_VERSION_ROUTE);
         debug!("GET {}", url);
 
         let response = self.client.get(url).send().await?;

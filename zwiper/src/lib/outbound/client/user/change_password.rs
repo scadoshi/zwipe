@@ -6,7 +6,7 @@ use std::future::Future;
 use tracing::info;
 use zwipe_core::{
     domain::auth::models::session::Session,
-    http::{contracts::auth::HttpChangePassword, paths::change_password_route},
+    http::{contracts::auth::HttpChangePassword, paths::CHANGE_PASSWORD_ROUTE},
 };
 
 /// Trait for updating user passwords.
@@ -26,7 +26,7 @@ impl ClientChangePassword for ZwipeClient {
         session: &Session,
     ) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&change_password_route());
+        url.set_path(CHANGE_PASSWORD_ROUTE);
         info!("PATCH {}", url);
         let response = self
             .client

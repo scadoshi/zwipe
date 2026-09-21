@@ -1,6 +1,6 @@
 //! Featured flavor: the hour's shared flavor card, mirrored from the app.
 //!
-//! Same unauthed endpoint the app home screen reads (`featured_flavor_route`);
+//! Same unauthed endpoint the app home screen reads (`FEATURED_FLAVOR_ROUTE`);
 //! the server flips the pick at the top of every UTC hour, so the site shows
 //! a living element that matches what app users see at the same moment.
 //! Fetch pattern mirrors `StatsStrip`: hide until live data lands. Debug
@@ -22,7 +22,7 @@ use zwipe_core::{
         Card,
         scryfall_data::{ImageSize, ScryfallData},
     },
-    http::paths::featured_flavor_route,
+    http::paths::FEATURED_FLAVOR_ROUTE,
 };
 
 /// A real card response (Research Assistant, M15) frozen 2026-08-07, decoded as
@@ -59,7 +59,7 @@ pub fn dismiss_flavor_overlay(
 #[component]
 pub fn FeaturedFlavor(overlay: Signal<Option<ScryfallData>>) -> Element {
     let fetched: Resource<Option<Card>> = use_resource(|| async {
-        let url = format!("{}{}", API_BASE, featured_flavor_route());
+        let url = format!("{}{}", API_BASE, FEATURED_FLAVOR_ROUTE);
         let res = reqwest::Client::new().get(&url).send().await.ok()?;
         if !res.status().is_success() {
             return None;

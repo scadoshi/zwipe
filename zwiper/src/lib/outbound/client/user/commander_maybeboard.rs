@@ -8,8 +8,8 @@ use uuid::Uuid;
 use zwipe_core::{
     domain::{auth::models::session::Session, card::Card},
     http::paths::{
-        add_commander_maybeboard_card_route, clear_commander_maybeboard_route,
-        get_commander_maybeboard_route, remove_commander_maybeboard_card_route,
+        CLEAR_COMMANDER_MAYBEBOARD_ROUTE, GET_COMMANDER_MAYBEBOARD_ROUTE,
+        add_commander_maybeboard_card_route, remove_commander_maybeboard_card_route,
     },
 };
 
@@ -42,7 +42,7 @@ pub trait ClientCommanderMaybeboard {
 impl ClientCommanderMaybeboard for ZwipeClient {
     async fn get_commander_maybeboard(&self, session: &Session) -> Result<Vec<Card>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_commander_maybeboard_route());
+        url.set_path(GET_COMMANDER_MAYBEBOARD_ROUTE);
         info!("GET {}", url);
 
         let response = self
@@ -116,7 +116,7 @@ impl ClientCommanderMaybeboard for ZwipeClient {
 
     async fn clear_commander_maybeboard(&self, session: &Session) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&clear_commander_maybeboard_route());
+        url.set_path(CLEAR_COMMANDER_MAYBEBOARD_ROUTE);
         info!("DELETE {}", url);
 
         let response = self

@@ -6,7 +6,7 @@ use std::future::Future;
 use tracing::info;
 use zwipe_core::{
     domain::{auth::models::session::Session, user::preferences::UserPreferences},
-    http::{contracts::user::HttpUpdatePreferences, paths::preferences_route},
+    http::{contracts::user::HttpUpdatePreferences, paths::PREFERENCES_ROUTE},
 };
 
 /// Trait for fetching user display preferences.
@@ -31,7 +31,7 @@ pub trait ClientUpdatePreferences {
 impl ClientGetPreferences for ZwipeClient {
     async fn get_preferences(&self, session: &Session) -> Result<UserPreferences, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&preferences_route());
+        url.set_path(PREFERENCES_ROUTE);
         info!("GET {}", url);
         let response = self
             .client
@@ -62,7 +62,7 @@ impl ClientUpdatePreferences for ZwipeClient {
         session: &Session,
     ) -> Result<UserPreferences, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&preferences_route());
+        url.set_path(PREFERENCES_ROUTE);
         info!("PATCH {} body: {:?}", url, request);
         let response = self
             .client

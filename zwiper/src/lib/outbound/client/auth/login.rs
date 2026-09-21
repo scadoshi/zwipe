@@ -6,7 +6,7 @@ use std::future::Future;
 use tracing::info;
 use zwipe_core::{
     domain::auth::models::{platform::ClientPlatform, session::Session},
-    http::{contracts::auth::HttpAuthenticateUser, paths::login_route},
+    http::{contracts::auth::HttpAuthenticateUser, paths::LOGIN_ROUTE},
 };
 
 /// Trait for authenticating users via the login endpoint.
@@ -28,7 +28,7 @@ impl ClientLogin for ZwipeClient {
         request.client_version = Some(env!("CARGO_PKG_VERSION").to_string());
 
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&login_route());
+        url.set_path(LOGIN_ROUTE);
         info!("POST {}", url);
 
         let response = self.client.post(url).json(&request).send().await?;

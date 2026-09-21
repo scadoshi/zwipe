@@ -6,7 +6,7 @@ use std::future::Future;
 use tracing::info;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::DeckTagView},
-    http::paths::get_deck_tags_route,
+    http::paths::GET_DECK_TAGS_ROUTE,
 };
 
 /// Trait for fetching the full deck-tag catalog (slug, label, description, seed
@@ -23,7 +23,7 @@ pub trait ClientGetDeckTags {
 impl ClientGetDeckTags for ZwipeClient {
     async fn get_deck_tags(&self, session: &Session) -> Result<Vec<DeckTagView>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_deck_tags_route());
+        url.set_path(GET_DECK_TAGS_ROUTE);
         info!("GET {}", url);
 
         let response = self

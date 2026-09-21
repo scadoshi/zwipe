@@ -4,7 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe_core::http::paths::get_card_types_route;
+use zwipe_core::http::paths::GET_CARD_TYPES_ROUTE;
 
 /// Trait for fetching the list of all card types (creature, instant, etc.).
 #[allow(missing_docs)]
@@ -15,7 +15,7 @@ pub trait ClientGetCardTypes {
 impl ClientGetCardTypes for ZwipeClient {
     async fn get_card_types(&self) -> Result<Vec<String>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_card_types_route());
+        url.set_path(GET_CARD_TYPES_ROUTE);
         info!("GET {}", url);
 
         let response = self.client.get(url).send().await?;

@@ -4,7 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe_core::{domain::auth::models::session::Session, http::paths::resend_verification_route};
+use zwipe_core::{domain::auth::models::session::Session, http::paths::RESEND_VERIFICATION_ROUTE};
 
 /// Trait for re-sending the email verification link for the authenticated user.
 #[allow(missing_docs)]
@@ -18,7 +18,7 @@ pub trait ClientResendEmailVerification {
 impl ClientResendEmailVerification for ZwipeClient {
     async fn resend_verification(&self, session: &Session) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&resend_verification_route());
+        url.set_path(RESEND_VERIFICATION_ROUTE);
         info!("POST {}", url);
         let response = self
             .client

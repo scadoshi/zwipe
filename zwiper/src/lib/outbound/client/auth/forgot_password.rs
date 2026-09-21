@@ -4,7 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe_core::http::{contracts::auth::HttpRequestPasswordReset, paths::forgot_password_route};
+use zwipe_core::http::{contracts::auth::HttpRequestPasswordReset, paths::FORGOT_PASSWORD_ROUTE};
 
 /// Trait for initiating a password reset via the forgot-password endpoint.
 #[allow(missing_docs)]
@@ -21,7 +21,7 @@ impl ClientForgotPassword for ZwipeClient {
         request: HttpRequestPasswordReset,
     ) -> Result<(), ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&forgot_password_route());
+        url.set_path(FORGOT_PASSWORD_ROUTE);
         info!("POST {}", url);
 
         let response = self.client.post(url).json(&request).send().await?;

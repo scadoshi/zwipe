@@ -4,7 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::{collections::HashMap, future::Future};
 use tracing::info;
-use zwipe_core::http::paths::get_keyword_reminders_route;
+use zwipe_core::http::paths::GET_KEYWORD_REMINDERS_ROUTE;
 
 /// Trait for fetching the keyword-reminder map. Served so definition fixes
 /// land on deploy instead of waiting for an app-store train; the compiled-in
@@ -19,7 +19,7 @@ pub trait ClientGetKeywordReminders {
 impl ClientGetKeywordReminders for ZwipeClient {
     async fn get_keyword_reminders(&self) -> Result<HashMap<String, String>, ClientError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_keyword_reminders_route());
+        url.set_path(GET_KEYWORD_REMINDERS_ROUTE);
         info!("GET {}", url);
 
         let response = self.client.get(url).send().await?;
