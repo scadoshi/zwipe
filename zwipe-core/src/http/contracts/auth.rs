@@ -180,6 +180,48 @@ mod tests {
     // wire when they're unset. These tests pin that backward-compatibility
     // contract so a future `#[serde(default)]` removal can't slip through.
 
+    /// Every password-bearing body a shipped client sends, pinned as literal
+    /// JSON. `Secret` is `#[serde(transparent)]`, so these read exactly as the
+    /// plain `String` fields they replaced; if that ever stops being true,
+    /// every installed app fails to authenticate.
+    #[test]
+    fn shipped_client_payloads_still_deserialize() {
+        let req: HttpChangePassword =
+            serde_json::from_str(r#"{"current_password":"OldPass1!","new_password":"NewPass1!"}"#)
+                .unwrap();
+        assert_eq!(req.current_password.read(), "OldPass1!");
+        assert_eq!(req.new_password.read(), "NewPass1!");
+
+        let req: HttpChangeEmail =
+            serde_json::from_str(r#"{"email":"a@example.com","password":"pw"}"#).unwrap();
+        assert_eq!(req.email, "a@example.com");
+        assert_eq!(req.password.read(), "pw");
+
+        let req: HttpChangeUsername =
+            serde_json::from_str(r#"{"new_username":"alice","password":"pw"}"#).unwrap();
+        assert_eq!(req.new_username, "alice");
+        assert_eq!(req.password.read(), "pw");
+
+        let req: HttpDeleteUser = serde_json::from_str(r#"{"password":"pw"}"#).unwrap();
+        assert_eq!(req.password.read(), "pw");
+
+        let req: HttpResetPassword =
+            serde_json::from_str(r#"{"token":"abc","new_password":"NewPass1!"}"#).unwrap();
+        assert_eq!(req.token, "abc");
+        assert_eq!(req.new_password.read(), "NewPass1!");
+    }
+
+    /// The other direction: what a client serializes must still be a bare
+    /// string on the wire, not a nested object.
+    #[test]
+    fn password_fields_serialize_as_bare_strings() {
+        let wire = serde_json::to_string(&HttpDeleteUser {
+            password: Secret::new("hunter2"),
+        })
+        .unwrap();
+        assert_eq!(wire, r#"{"password":"hunter2"}"#);
+    }
+
     #[test]
     fn login_deserializes_without_client_version() {
         let json = r#"{"identifier":"alice","password":"pw"}"#;
