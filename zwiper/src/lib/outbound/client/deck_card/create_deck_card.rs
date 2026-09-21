@@ -1,13 +1,11 @@
 //! Add a card to a deck.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use uuid::Uuid;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::deck_card::DeckCard},
-    http::{contracts::deck_card::HttpCreateDeckCard, paths::create_deck_card_route},
+    http::{contracts::deck_card::HttpCreateDeckCard, endpoints::deck::CreateDeckCard},
 };
 
 /// Trait for adding cards to a deck.
@@ -28,27 +26,8 @@ impl ClientCreateDeckCard for ZwipeClient {
         request: &HttpCreateDeckCard,
         session: &Session,
     ) -> Result<DeckCard, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(&create_deck_card_route(deck_id));
-        info!("POST {} body: {:?}", url, request);
-
-        let response = self
-            .client
-            .post(url)
-            .json(request)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::CREATED => {
-                let new: DeckCard = response.json().await?;
-                Ok(new)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        let body = serde_json::to_value(request)?;
+        self.call(CreateDeckCard(deck_id, body), Some(session))
+            .await
     }
 }

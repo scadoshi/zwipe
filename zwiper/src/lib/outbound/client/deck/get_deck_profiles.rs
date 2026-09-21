@@ -1,12 +1,10 @@
 //! Fetch all deck profiles for the current user.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::deck_profile::DeckProfile},
-    http::paths::GET_DECK_PROFILES_ROUTE,
+    http::endpoints::deck::GetDeckProfiles,
 };
 
 /// Trait for fetching all deck profiles for the authenticated user.
@@ -20,26 +18,6 @@ pub trait ClientGetDeckList {
 
 impl ClientGetDeckList for ZwipeClient {
     async fn get_deck_profiles(&self, session: &Session) -> Result<Vec<DeckProfile>, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(GET_DECK_PROFILES_ROUTE);
-        info!("GET {}", url);
-
-        let response = self
-            .client
-            .get(url)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::OK => {
-                let deck_profiles: Vec<DeckProfile> = response.json().await?;
-                Ok(deck_profiles)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        self.call(GetDeckProfiles, Some(session)).await
     }
 }

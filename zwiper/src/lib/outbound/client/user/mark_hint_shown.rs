@@ -1,12 +1,10 @@
 //! Mark one-time UI hint shown endpoint.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use zwipe_core::{
     domain::{auth::models::session::Session, user::User},
-    http::{contracts::user::HttpMarkHintShown, paths::MARK_HINT_SHOWN_ROUTE},
+    http::{contracts::user::HttpMarkHintShown, endpoints::user::MarkHintShown},
 };
 
 /// Trait for marking a one-time UI hint as shown for the authenticated user.
@@ -21,33 +19,9 @@ pub trait ClientMarkHintShown {
 
 impl ClientMarkHintShown for ZwipeClient {
     async fn mark_hint_shown(&self, hint: &str, session: &Session) -> Result<User, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(MARK_HINT_SHOWN_ROUTE);
-        info!("PATCH {}", url);
-
-        let body = HttpMarkHintShown {
+        let body = serde_json::to_value(HttpMarkHintShown {
             hint: hint.to_string(),
-        };
-
-        let response = self
-            .client
-            .patch(url)
-            .bearer_auth(&*session.access_token.value)
-            .json(&body)
-            .send()
-            .await?;
-
-        let status = response.status();
-
-        match status {
-            StatusCode::OK => {
-                let user = response.json().await?;
-                Ok(user)
-            }
-            _ => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        })?;
+        self.call(MarkHintShown(body), Some(session)).await
     }
 }

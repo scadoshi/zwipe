@@ -6,13 +6,11 @@
 //! `context/plans/patch_idempotent_updates.md`.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use uuid::Uuid;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::deck_card::DeckCard},
-    http::{contracts::deck_card::HttpPatchDeckCard, paths::update_deck_card_route},
+    http::{contracts::deck_card::HttpPatchDeckCard, endpoints::deck::UpdateDeckCard},
 };
 
 /// Trait for updating a card in a deck.
@@ -35,27 +33,11 @@ impl ClientUpdateDeckCard for ZwipeClient {
         request: &HttpPatchDeckCard,
         session: &Session,
     ) -> Result<DeckCard, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(&update_deck_card_route(deck_id, scryfall_data_id));
-        info!("PATCH {} body: {:?}", url, request);
-
-        let response = self
-            .client
-            .patch(url)
-            .json(request)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::OK => {
-                let updated: DeckCard = response.json().await?;
-                Ok(updated)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        let body = serde_json::to_value(request)?;
+        self.call(
+            UpdateDeckCard(deck_id, scryfall_data_id, body),
+            Some(session),
+        )
+        .await
     }
 }

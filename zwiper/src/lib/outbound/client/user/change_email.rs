@@ -1,12 +1,10 @@
 //! Change user email endpoint.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use zwipe_core::{
     domain::{auth::models::session::Session, user::User},
-    http::{contracts::auth::HttpChangeEmail, paths::CHANGE_EMAIL_ROUTE},
+    http::{contracts::auth::HttpChangeEmail, endpoints::user::ChangeEmail},
 };
 
 /// Trait for updating user email addresses.
@@ -25,28 +23,7 @@ impl ClientChangeEmail for ZwipeClient {
         request: HttpChangeEmail,
         session: &Session,
     ) -> Result<User, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(CHANGE_EMAIL_ROUTE);
-        info!("PATCH {}", url);
-        let response = self
-            .client
-            .patch(url)
-            .json(&request)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        let status = response.status();
-
-        match status {
-            StatusCode::OK => {
-                let updated: User = response.json().await?;
-                Ok(updated)
-            }
-            _ => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        let body = serde_json::to_value(&request)?;
+        self.call(ChangeEmail(body), Some(session)).await
     }
 }

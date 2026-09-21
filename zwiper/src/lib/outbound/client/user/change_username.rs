@@ -1,12 +1,10 @@
 //! Change username endpoint.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use zwipe_core::{
     domain::{auth::models::session::Session, user::User},
-    http::{contracts::auth::HttpChangeUsername, paths::CHANGE_USERNAME_ROUTE},
+    http::{contracts::auth::HttpChangeUsername, endpoints::user::ChangeUsername},
 };
 
 /// Trait for updating usernames.
@@ -25,28 +23,7 @@ impl ClientChangeUsername for ZwipeClient {
         request: HttpChangeUsername,
         session: &Session,
     ) -> Result<User, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(CHANGE_USERNAME_ROUTE);
-        info!("PATCH {}", url);
-        let response = self
-            .client
-            .patch(url)
-            .json(&request)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        let status = response.status();
-
-        match status {
-            StatusCode::OK => {
-                let updated: User = response.json().await?;
-                Ok(updated)
-            }
-            _ => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        let body = serde_json::to_value(&request)?;
+        self.call(ChangeUsername(body), Some(session)).await
     }
 }

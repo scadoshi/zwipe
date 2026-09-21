@@ -1,15 +1,13 @@
 //! Clone an existing deck.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use uuid::Uuid;
 use zwipe_core::{
     domain::auth::models::session::Session,
     http::{
         contracts::deck::{HttpCloneDeck, HttpClonedDeck},
-        paths::clone_deck_route,
+        endpoints::deck::CloneDeck,
     },
 };
 
@@ -31,24 +29,8 @@ impl ClientCloneDeck for ZwipeClient {
         body: &HttpCloneDeck,
         session: &Session,
     ) -> Result<HttpClonedDeck, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(&clone_deck_route(source_deck_id));
-        info!("POST {} body: {:?}", url, body);
-
-        let response = self
-            .client
-            .post(url)
-            .json(&body)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::CREATED => Ok(response.json::<HttpClonedDeck>().await?),
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        let body = serde_json::to_value(body)?;
+        self.call(CloneDeck(source_deck_id, body), Some(session))
+            .await
     }
 }

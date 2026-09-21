@@ -1,12 +1,10 @@
 //! Create new deck.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::deck_profile::DeckProfile},
-    http::{contracts::deck::HttpCreateDeckProfile, paths::CREATE_DECK_ROUTE},
+    http::{contracts::deck::HttpCreateDeckProfile, endpoints::deck::CreateDeck},
 };
 
 /// Trait for creating new deck profiles.
@@ -25,27 +23,7 @@ impl ClientCreateDeck for ZwipeClient {
         request: &HttpCreateDeckProfile,
         session: &Session,
     ) -> Result<DeckProfile, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(CREATE_DECK_ROUTE);
-        info!("POST {} body: {:?}", url, request);
-
-        let response = self
-            .client
-            .post(url)
-            .json(request)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::CREATED => {
-                let new: DeckProfile = response.json().await?;
-                Ok(new)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        let body = serde_json::to_value(request)?;
+        self.call(CreateDeck(body), Some(session)).await
     }
 }

@@ -1,15 +1,13 @@
 //! Commander maybeboard endpoints (per-user "maybe this commander" list).
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use uuid::Uuid;
 use zwipe_core::{
     domain::{auth::models::session::Session, card::Card},
-    http::paths::{
-        CLEAR_COMMANDER_MAYBEBOARD_ROUTE, GET_COMMANDER_MAYBEBOARD_ROUTE,
-        add_commander_maybeboard_card_route, remove_commander_maybeboard_card_route,
+    http::endpoints::user::{
+        AddCommanderMaybeboardCard, ClearCommanderMaybeboard, GetCommanderMaybeboard,
+        RemoveCommanderMaybeboardCard,
     },
 };
 
@@ -41,27 +39,7 @@ pub trait ClientCommanderMaybeboard {
 
 impl ClientCommanderMaybeboard for ZwipeClient {
     async fn get_commander_maybeboard(&self, session: &Session) -> Result<Vec<Card>, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(GET_COMMANDER_MAYBEBOARD_ROUTE);
-        info!("GET {}", url);
-
-        let response = self
-            .client
-            .get(url)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::OK => {
-                let cards: Vec<Card> = response.json().await?;
-                Ok(cards)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        self.call(GetCommanderMaybeboard, Some(session)).await
     }
 
     async fn add_commander_maybeboard_card(
@@ -69,24 +47,8 @@ impl ClientCommanderMaybeboard for ZwipeClient {
         oracle_id: Uuid,
         session: &Session,
     ) -> Result<(), ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(&add_commander_maybeboard_card_route(oracle_id));
-        info!("POST {}", url);
-
-        let response = self
-            .client
-            .post(url)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::NO_CONTENT => Ok(()),
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        self.call(AddCommanderMaybeboardCard(oracle_id), Some(session))
+            .await
     }
 
     async fn remove_commander_maybeboard_card(
@@ -94,44 +56,11 @@ impl ClientCommanderMaybeboard for ZwipeClient {
         oracle_id: Uuid,
         session: &Session,
     ) -> Result<(), ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(&remove_commander_maybeboard_card_route(oracle_id));
-        info!("DELETE {}", url);
-
-        let response = self
-            .client
-            .delete(url)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::NO_CONTENT => Ok(()),
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        self.call(RemoveCommanderMaybeboardCard(oracle_id), Some(session))
+            .await
     }
 
     async fn clear_commander_maybeboard(&self, session: &Session) -> Result<(), ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(CLEAR_COMMANDER_MAYBEBOARD_ROUTE);
-        info!("DELETE {}", url);
-
-        let response = self
-            .client
-            .delete(url)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::NO_CONTENT => Ok(()),
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        self.call(ClearCommanderMaybeboard, Some(session)).await
     }
 }

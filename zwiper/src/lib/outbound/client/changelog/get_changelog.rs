@@ -1,10 +1,8 @@
 //! Fetch the changelog (release history) from the server.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::debug;
-use zwipe_core::http::{contracts::changelog::HttpChangelog, paths::CHANGELOG_ROUTE};
+use zwipe_core::http::{contracts::changelog::HttpChangelog, endpoints::meta::GetChangelog};
 
 /// Trait for fetching the changelog.
 ///
@@ -18,21 +16,6 @@ pub trait ClientGetChangelog {
 
 impl ClientGetChangelog for ZwipeClient {
     async fn get_changelog(&self) -> Result<HttpChangelog, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(CHANGELOG_ROUTE);
-        debug!("GET {}", url);
-
-        let response = self.client.get(url).send().await?;
-
-        match response.status() {
-            StatusCode::OK => {
-                let result: HttpChangelog = response.json().await?;
-                Ok(result)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        self.call(GetChangelog, None).await
     }
 }

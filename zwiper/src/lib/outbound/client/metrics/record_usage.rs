@@ -1,11 +1,10 @@
 //! Batched usage POST.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
 use zwipe_core::{
     domain::auth::models::session::Session,
-    http::{contracts::metrics::HttpUsageBatch, paths::RECORD_USAGE_ROUTE},
+    http::{contracts::metrics::HttpUsageBatch, endpoints::metrics::RecordUsage},
 };
 
 /// Trait for posting a batched usage update.
@@ -24,23 +23,7 @@ impl ClientRecordUsage for ZwipeClient {
         batch: &HttpUsageBatch,
         session: &Session,
     ) -> Result<(), ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(RECORD_USAGE_ROUTE);
-
-        let response = self
-            .client
-            .post(url)
-            .json(batch)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::NO_CONTENT | StatusCode::OK => Ok(()),
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        let body = serde_json::to_value(batch)?;
+        self.call(RecordUsage(body), Some(session)).await
     }
 }

@@ -1,12 +1,10 @@
 //! New user registration API client.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use zwipe_core::{
-    domain::auth::models::{platform::ClientPlatform, session::Session},
-    http::{contracts::auth::HttpRegisterUser, paths::REGISTER_ROUTE},
+    domain::auth::models::session::Session,
+    http::{contracts::auth::HttpRegisterUser, endpoints::auth::Register},
 };
 
 /// Trait for registering new user accounts.
@@ -20,24 +18,7 @@ pub trait ClientRegister {
 
 impl ClientRegister for ZwipeClient {
     async fn register(&self, request: HttpRegisterUser) -> Result<Session, ClientError> {
-        let mut request = request;
-        request.platform = Some(ClientPlatform::CURRENT);
-        request.client_version = Some(env!("CARGO_PKG_VERSION").to_string());
-
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(REGISTER_ROUTE);
-        info!("POST {}", url);
-        let response = self.client.post(url).json(&request).send().await?;
-
-        match response.status() {
-            StatusCode::CREATED => {
-                let new: Session = response.json().await?;
-                Ok(new)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        let body = serde_json::to_value(&request)?;
+        self.call(Register(body), None).await
     }
 }

@@ -1,13 +1,11 @@
 //! Update deck profile metadata.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use uuid::Uuid;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::deck_profile::DeckProfile},
-    http::{contracts::deck::HttpUpdateDeckProfile, paths::update_deck_route},
+    http::{contracts::deck::HttpUpdateDeckProfile, endpoints::deck::UpdateDeckProfile},
 };
 
 /// Trait for updating deck profile metadata.
@@ -28,27 +26,8 @@ impl ClientUpdateDeckProfile for ZwipeClient {
         body: &HttpUpdateDeckProfile,
         session: &Session,
     ) -> Result<DeckProfile, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(&update_deck_route(deck_id));
-        info!("PATCH {} body: {:?}", url, body);
-
-        let response = self
-            .client
-            .patch(url)
-            .json(&body)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::OK => {
-                let updated: DeckProfile = response.json().await?;
-                Ok(updated)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        let body = serde_json::to_value(body)?;
+        self.call(UpdateDeckProfile(deck_id, body), Some(session))
+            .await
     }
 }

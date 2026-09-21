@@ -1,9 +1,8 @@
 //! Crash report POST (no auth: the launch after a crash may have no session).
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use zwipe_core::http::{contracts::metrics::HttpCrashReport, paths::RECORD_CRASH_ROUTE};
+use zwipe_core::http::{contracts::metrics::HttpCrashReport, endpoints::metrics::RecordCrash};
 
 /// Trait for posting a crash report from the previous run.
 #[allow(missing_docs)]
@@ -16,17 +15,7 @@ pub trait ClientRecordCrash {
 
 impl ClientRecordCrash for ZwipeClient {
     async fn record_crash(&self, report: &HttpCrashReport) -> Result<(), ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(RECORD_CRASH_ROUTE);
-
-        let response = self.client.post(url).json(report).send().await?;
-
-        match response.status() {
-            StatusCode::NO_CONTENT | StatusCode::OK => Ok(()),
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        let body = serde_json::to_value(report)?;
+        self.call(RecordCrash(body), None).await
     }
 }

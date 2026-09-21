@@ -1,16 +1,14 @@
 //! Import an Archidekt deck's cards into an existing deck.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use uuid::Uuid;
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
         deck::{ImportMode, requests::import_deck_cards::ImportDeckCardsResult},
     },
-    http::{contracts::deck::HttpImportArchidektDeck, paths::import_archidekt_deck_route},
+    http::{contracts::deck::HttpImportArchidektDeck, endpoints::deck::ImportArchidektDeck},
 };
 
 /// Trait for importing an Archidekt deck's cards into an existing deck.
@@ -39,33 +37,12 @@ impl ClientImportArchidektDeck for ZwipeClient {
         mode: ImportMode,
         session: &Session,
     ) -> Result<ImportDeckCardsResult, ClientError> {
-        let mut request_url = self.app_config.backend_url.clone();
-        request_url.set_path(&import_archidekt_deck_route(deck_id));
-
-        let body = HttpImportArchidektDeck {
+        let body = serde_json::to_value(HttpImportArchidektDeck {
             url: url.to_string(),
             board: board.map(|b| b.to_string()),
             mode,
-        };
-        info!("POST {} body: {:?}", request_url, body);
-
-        let response = self
-            .client
-            .post(request_url)
-            .json(&body)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::OK => {
-                let result: ImportDeckCardsResult = response.json().await?;
-                Ok(result)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        })?;
+        self.call(ImportArchidektDeck(deck_id, body), Some(session))
+            .await
     }
 }

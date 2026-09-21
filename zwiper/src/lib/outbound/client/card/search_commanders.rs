@@ -6,15 +6,13 @@
 //! wins. (context/archive/commander_select_ordering.md)
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
         card::{Card, search_card::card_filter::CardQuery},
     },
-    http::paths::SEARCH_COMMANDERS_ROUTE,
+    http::endpoints::card::SearchCommanders,
 };
 
 /// Trait for searching commander candidates.
@@ -33,28 +31,7 @@ impl ClientSearchCommanders for ZwipeClient {
         card_filter: &CardQuery,
         session: &Session,
     ) -> Result<Vec<Card>, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(SEARCH_COMMANDERS_ROUTE);
-
-        info!("POST {} filter: {:?}", url, card_filter);
-
-        let response = self
-            .client
-            .post(url)
-            .json(card_filter)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::OK => {
-                let cards: Vec<Card> = response.json().await?;
-                Ok(cards)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        let body = serde_json::to_value(card_filter)?;
+        self.call(SearchCommanders(body), Some(session)).await
     }
 }

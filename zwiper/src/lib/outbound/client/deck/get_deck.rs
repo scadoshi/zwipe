@@ -1,13 +1,11 @@
 //! Fetch a deck with all its cards.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use uuid::Uuid;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::Deck},
-    http::paths::get_deck_route,
+    http::endpoints::deck::GetDeck,
 };
 
 /// Trait for fetching a complete deck with all cards.
@@ -22,26 +20,6 @@ pub trait ClientGetDeck {
 
 impl ClientGetDeck for ZwipeClient {
     async fn get_deck(&self, deck_id: Uuid, session: &Session) -> Result<Deck, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_deck_route(deck_id));
-        info!("GET {}", url);
-
-        let response = self
-            .client
-            .get(url)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::OK => {
-                let deck: Deck = response.json().await?;
-                Ok(deck)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        self.call(GetDeck(deck_id), Some(session)).await
     }
 }

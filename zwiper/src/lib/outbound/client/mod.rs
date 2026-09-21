@@ -5,6 +5,8 @@
 
 /// Authentication endpoints (login, logout, register, refresh).
 pub mod auth;
+/// The one place an API request is built, sent and decoded.
+pub mod call;
 /// Card data endpoints (search, get, types, artists, sets, languages).
 pub mod card;
 /// Changelog endpoint (release history).

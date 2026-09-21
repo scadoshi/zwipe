@@ -1,12 +1,10 @@
 //! User login API client.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use zwipe_core::{
     domain::auth::models::{platform::ClientPlatform, session::Session},
-    http::{contracts::auth::HttpAuthenticateUser, paths::LOGIN_ROUTE},
+    http::{contracts::auth::HttpAuthenticateUser, endpoints::auth::Login},
 };
 
 /// Trait for authenticating users via the login endpoint.
@@ -26,22 +24,7 @@ impl ClientLogin for ZwipeClient {
         let mut request = request;
         request.platform = Some(ClientPlatform::CURRENT);
         request.client_version = Some(env!("CARGO_PKG_VERSION").to_string());
-
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(LOGIN_ROUTE);
-        info!("POST {}", url);
-
-        let response = self.client.post(url).json(&request).send().await?;
-
-        match response.status() {
-            StatusCode::OK => {
-                let new: Session = response.json().await?;
-                Ok(new)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        let body = serde_json::to_value(&request)?;
+        self.call(Login(body), None).await
     }
 }

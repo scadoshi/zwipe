@@ -1,10 +1,8 @@
 //! Fetch all keyword abilities.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
-use zwipe_core::http::paths::GET_KEYWORDS_ROUTE;
+use zwipe_core::http::endpoints::card::GetKeywords;
 
 /// Trait for fetching the list of all keyword abilities (flying, trample, etc.).
 #[allow(missing_docs)]
@@ -14,21 +12,6 @@ pub trait ClientGetKeywords {
 
 impl ClientGetKeywords for ZwipeClient {
     async fn get_keywords(&self) -> Result<Vec<String>, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(GET_KEYWORDS_ROUTE);
-        info!("GET {}", url);
-
-        let response = self.client.get(url).send().await?;
-
-        match response.status() {
-            StatusCode::OK => {
-                let keywords: Vec<String> = response.json().await?;
-                Ok(keywords)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        self.call(GetKeywords, None).await
     }
 }

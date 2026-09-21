@@ -1,12 +1,10 @@
 //! Fetch the deck-tag catalog.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::DeckTagView},
-    http::paths::GET_DECK_TAGS_ROUTE,
+    http::endpoints::deck::GetDeckTags,
 };
 
 /// Trait for fetching the full deck-tag catalog (slug, label, description, seed
@@ -22,26 +20,6 @@ pub trait ClientGetDeckTags {
 
 impl ClientGetDeckTags for ZwipeClient {
     async fn get_deck_tags(&self, session: &Session) -> Result<Vec<DeckTagView>, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(GET_DECK_TAGS_ROUTE);
-        info!("GET {}", url);
-
-        let response = self
-            .client
-            .get(url)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::OK => {
-                let tags: Vec<DeckTagView> = response.json().await?;
-                Ok(tags)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        self.call(GetDeckTags, Some(session)).await
     }
 }

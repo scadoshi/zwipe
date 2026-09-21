@@ -1,12 +1,10 @@
 //! Delete user account endpoint.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use zwipe_core::{
     domain::auth::models::session::Session,
-    http::{contracts::auth::HttpDeleteUser, paths::DELETE_USER_ROUTE},
+    http::{contracts::auth::HttpDeleteUser, endpoints::user::DeleteUser},
 };
 
 /// Trait for deleting user accounts.
@@ -25,25 +23,7 @@ impl ClientDeleteUser for ZwipeClient {
         request: HttpDeleteUser,
         session: &Session,
     ) -> Result<(), ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(DELETE_USER_ROUTE);
-        info!("DELETE {}", url);
-        let response = self
-            .client
-            .delete(url)
-            .json(&request)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        let status = response.status();
-
-        match status {
-            StatusCode::NO_CONTENT => Ok(()),
-            _ => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        let body = serde_json::to_value(&request)?;
+        self.call(DeleteUser(body), Some(session)).await
     }
 }

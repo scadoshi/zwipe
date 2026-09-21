@@ -1,12 +1,13 @@
 //! User preferences API client operations.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use zwipe_core::{
     domain::{auth::models::session::Session, user::preferences::UserPreferences},
-    http::{contracts::user::HttpUpdatePreferences, paths::PREFERENCES_ROUTE},
+    http::{
+        contracts::user::HttpUpdatePreferences,
+        endpoints::user::{GetPreferences, UpdatePreferences},
+    },
 };
 
 /// Trait for fetching user display preferences.
@@ -30,28 +31,7 @@ pub trait ClientUpdatePreferences {
 
 impl ClientGetPreferences for ZwipeClient {
     async fn get_preferences(&self, session: &Session) -> Result<UserPreferences, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(PREFERENCES_ROUTE);
-        info!("GET {}", url);
-        let response = self
-            .client
-            .get(url)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        let status = response.status();
-
-        match status {
-            StatusCode::OK => {
-                let prefs: UserPreferences = response.json().await?;
-                Ok(prefs)
-            }
-            _ => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        self.call(GetPreferences, Some(session)).await
     }
 }
 
@@ -61,28 +41,7 @@ impl ClientUpdatePreferences for ZwipeClient {
         request: HttpUpdatePreferences,
         session: &Session,
     ) -> Result<UserPreferences, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(PREFERENCES_ROUTE);
-        info!("PATCH {} body: {:?}", url, request);
-        let response = self
-            .client
-            .patch(url)
-            .json(&request)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        let status = response.status();
-
-        match status {
-            StatusCode::OK => {
-                let prefs: UserPreferences = response.json().await?;
-                Ok(prefs)
-            }
-            _ => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        let body = serde_json::to_value(&request)?;
+        self.call(UpdatePreferences(body), Some(session)).await
     }
 }

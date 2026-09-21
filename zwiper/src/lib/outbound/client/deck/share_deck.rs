@@ -1,13 +1,14 @@
 //! Share / unshare a deck (public link token management).
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use uuid::Uuid;
 use zwipe_core::{
     domain::auth::models::session::Session,
-    http::{contracts::deck::HttpDeckShareToken, paths::share_deck_route},
+    http::{
+        contracts::deck::HttpDeckShareToken,
+        endpoints::deck::{ShareDeck, UnshareDeck},
+    },
 };
 
 /// Trait for creating and revoking a deck's public share link.
@@ -35,44 +36,10 @@ impl ClientShareDeck for ZwipeClient {
         deck_id: Uuid,
         session: &Session,
     ) -> Result<HttpDeckShareToken, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(&share_deck_route(deck_id));
-        info!("POST {}", url);
-
-        let response = self
-            .client
-            .post(url)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::OK => Ok(response.json::<HttpDeckShareToken>().await?),
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        self.call(ShareDeck(deck_id), Some(session)).await
     }
 
     async fn unshare_deck(&self, deck_id: Uuid, session: &Session) -> Result<(), ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(&share_deck_route(deck_id));
-        info!("DELETE {}", url);
-
-        let response = self
-            .client
-            .delete(url)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::NO_CONTENT => Ok(()),
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        self.call(UnshareDeck(deck_id), Some(session)).await
     }
 }

@@ -1,15 +1,13 @@
 //! Post a single durable skip (and its undo) for a deck.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use uuid::Uuid;
 use zwipe_core::{
     domain::auth::models::session::Session,
     http::{
         contracts::deck::HttpSkipDeckCard,
-        paths::{skip_deck_card_route, unskip_deck_card_route},
+        endpoints::deck::{SkipDeckCard, UnskipDeckCard},
     },
 };
 
@@ -38,25 +36,8 @@ impl ClientSkipDeckCard for ZwipeClient {
         oracle_id: Uuid,
         session: &Session,
     ) -> Result<(), ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(&skip_deck_card_route(deck_id));
-        info!("POST {}", url);
-
-        let response = self
-            .client
-            .post(url)
-            .bearer_auth(&*session.access_token.value)
-            .json(&HttpSkipDeckCard { oracle_id })
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::NO_CONTENT => Ok(()),
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        let body = serde_json::to_value(HttpSkipDeckCard { oracle_id })?;
+        self.call(SkipDeckCard(deck_id, body), Some(session)).await
     }
 
     async fn unskip_deck_card(
@@ -65,23 +46,7 @@ impl ClientSkipDeckCard for ZwipeClient {
         oracle_id: Uuid,
         session: &Session,
     ) -> Result<(), ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(&unskip_deck_card_route(deck_id, oracle_id));
-        info!("DELETE {}", url);
-
-        let response = self
-            .client
-            .delete(url)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::NO_CONTENT => Ok(()),
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        self.call(UnskipDeckCard(deck_id, oracle_id), Some(session))
+            .await
     }
 }

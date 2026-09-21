@@ -5,10 +5,8 @@
 //! flavor plan).
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
-use zwipe_core::{domain::card::Card, http::paths::FEATURED_FLAVOR_ROUTE};
+use zwipe_core::{domain::card::Card, http::endpoints::card::FeaturedFlavor};
 
 /// Trait for fetching the hour's featured flavor card.
 #[allow(missing_docs)]
@@ -18,21 +16,6 @@ pub trait ClientFeaturedFlavor {
 
 impl ClientFeaturedFlavor for ZwipeClient {
     async fn featured_flavor(&self) -> Result<Card, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(FEATURED_FLAVOR_ROUTE);
-        info!("GET {}", url);
-
-        let response = self.client.get(url).send().await?;
-
-        match response.status() {
-            StatusCode::OK => {
-                let card: Card = response.json().await?;
-                Ok(card)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        self.call(FeaturedFlavor, None).await
     }
 }

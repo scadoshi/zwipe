@@ -1,16 +1,14 @@
 //! Import cards into a deck from plain-text decklist.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use reqwest::StatusCode;
 use std::future::Future;
-use tracing::info;
 use uuid::Uuid;
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
         deck::{ImportMode, requests::import_deck_cards::ImportDeckCardsResult},
     },
-    http::{contracts::deck_card::HttpImportDeckCards, paths::import_deck_cards_route},
+    http::{contracts::deck_card::HttpImportDeckCards, endpoints::deck::ImportDeckCards},
 };
 
 /// Trait for importing cards into a deck from plain text.
@@ -35,33 +33,12 @@ impl ClientImportDeckCards for ZwipeClient {
         mode: ImportMode,
         session: &Session,
     ) -> Result<ImportDeckCardsResult, ClientError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(&import_deck_cards_route(deck_id));
-
-        let body = HttpImportDeckCards {
+        let body = serde_json::to_value(HttpImportDeckCards {
             text: text.to_string(),
             board: board.map(|b| b.to_string()),
             mode,
-        };
-        info!("POST {} body: {:?}", url, body);
-
-        let response = self
-            .client
-            .post(url)
-            .json(&body)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
-
-        match response.status() {
-            StatusCode::OK => {
-                let result: ImportDeckCardsResult = response.json().await?;
-                Ok(result)
-            }
-            status => {
-                let message = response.text().await?;
-                Err((status, message).into())
-            }
-        }
+        })?;
+        self.call(ImportDeckCards(deck_id, body), Some(session))
+            .await
     }
 }
