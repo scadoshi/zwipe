@@ -1,4 +1,4 @@
-# Context — Start Here
+# Context: Start Here
 
 Orientation for AI assistants and returning contributors. This `context/` tree is
 the project's living documentation; each subdirectory owns one concern.
@@ -16,11 +16,11 @@ the project's living documentation; each subdirectory owns one concern.
 | [`progress/`](progress/) | Where we are — `overview.md`, `todo.md`, `backlog.md` |
 | [`archive/`](archive/) | No longer active; kept for history |
 
-Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI assistants.
+Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 ## Current focus
 
-**Latest — 2026-08-17: 1.9.2 SUBMITTED to both stores** (iOS build 76 /
+**2026-08-17: 1.9.2 SUBMITTED to both stores** (iOS build 76 /
 Android versionCode 39), and it is the first build carrying a fix for the
 Android `ndk-context` crash that had survived five releases. Root cause was
 never the resume path: `MainActivity` had no `launchMode`, so an explicit
@@ -51,7 +51,7 @@ featured decks, commander shortlist, import printings. The activity report's
 15.3% deck-completion cliff (median 26 cards) points hardest at composition
 targets; fill basics was the other answer to it and was **declined 2026-08-18**
 ([`plans/archive/fill_basics.md`](plans/archive/fill_basics.md)), so do not
-re-propose it. Then **Phase 6** — serve on the matured otag signal (data-gated,
+re-propose it. Then **Phase 6**: serve on the matured otag signal (data-gated,
 months out). Ongoing: short-form marketing videos, review tracking, funnel
 numbers (gate the sign-in-with-Google decision), and draw-odds **Phase 4
 (premium gating)**.
