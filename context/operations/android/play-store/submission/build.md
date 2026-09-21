@@ -7,19 +7,19 @@ in [../../setup.md](../../setup.md).
 
 ---
 
-## ⚠️ Gotchas (read first — these will bite every release)
+## ⚠️ Gotchas (read first: these will bite every release)
 
 1. **dx hardcodes `targetSdk = 34` and `versionCode = 1`** in its generated Gradle
    template, and **regenerates that file on every `dx bundle`**. Google requires
    `targetSdk >= 35`, and every upload needs a **unique, incrementing** `versionCode`.
    → After `dx bundle`, you must **edit the generated `build.gradle.kts` and
    repackage with Gradle directly** (see steps 2–3). Don't re-run `dx bundle`
-   after editing — it wipes the edit.
+   after editing; it wipes the edit.
 2. **dx does not sign Android release builds** (only Apple codesigning exists).
-   The Gradle output `.aab` is **unsigned** — you sign it yourself with the
+   The Gradle output `.aab` is **unsigned**: you sign it yourself with the
    upload key (step 4).
 3. **R8 minification is ON in release** (off in debug). It can strip WebView/JNI
-   classes the app needs — a debug build passing proves nothing about the release.
+   classes the app needs, and a debug build passing proves nothing about the release.
    The owner's on-device release testing covers this before rollout.
 4. **targetSdk 35 enables edge-to-edge enforcement.** Verify the WebView layout
    isn't drawing critical content under the status/nav bars during that testing.
@@ -28,8 +28,8 @@ in [../../setup.md](../../setup.md).
    back-navigation patch after `dx bundle` (step 1c) or back-swipe ships broken.
 6. **dx regenerates `AndroidManifest.xml` as well**, without `launchMode` and
    with a short `configChanges` list. Ship it unpatched and you reship the
-   `ndk-context` crash (an explicit component start — a notification tap, the
-   Play Store's **Open** button after an update — creates a second Activity in
+   `ndk-context` crash (an explicit component start: a notification tap, the
+   Play Store's **Open** button after an update, creates a second Activity in
    the live process and native init runs twice) *and* the bug where a system
    dark/light switch silently closes the app. **This one survived five releases
    because it was a checklist item nobody ran.**
@@ -41,7 +41,7 @@ zcripts/android/patch_bundle.sh     # launcher icons + back handler + manifest
 ```
 
 Then do the Gradle edits (step 2) and repackage. **Add future patches to that
-script, not to this list** — the whole reason it exists is that a list of
+script, not to this list**: the whole reason it exists is that a list of
 things to remember is a list of things to forget.
 
 ---
@@ -51,11 +51,11 @@ things to remember is a list of things to forget.
 - **Upload keystore** at `~/certs/zwipe-upload.jks` (alias `zwipe-upload`, PKCS12).
   Created once with `keytool -genkeypair ... -keystore ~/certs/zwipe-upload.jks
   -alias zwipe-upload -keyalg RSA -keysize 2048 -validity 9125`. The **password
-  lives in the password manager** — never in this repo. `~/certs/` is outside the
+  lives in the password manager**, never in this repo. `~/certs/` is outside the
   repo and covered by the [mac-restore](../../../ios/mac_restore.md) backup.
   *Losing the upload key is recoverable via Play's upload-key reset; losing the
-  password isn't fun — keep it.*
-- **bundletool** (`brew install bundletool`) — manifest checks + the optional emulator install.
+  password isn't fun, so keep it.*
+- **bundletool** (`brew install bundletool`): manifest checks + the optional emulator install.
 - Build env exported (see [../../setup.md](../../setup.md)):
   ```bash
   export ANDROID_HOME="$HOME/Library/Android/sdk"
@@ -84,7 +84,7 @@ dx bundle --release --platform android --package-types aab
 
 `JAVA_HOME` and `ANDROID_HOME` are needed again at step 3, so exporting all
 four here saves re-doing it. This compiles the Rust lib, stages `libmain.so` into the Gradle project's
-`jniLibs/`, and produces an AAB targeting SDK **34** (wrong — fixed next).
+`jniLibs/`, and produces an AAB targeting SDK **34** (wrong, fixed next).
 Generated Gradle project: `target/dx/zwipe/release/android/app/`.
 
 ## 1b–1d. Apply every post-bundle patch (one command)
@@ -97,7 +97,7 @@ must be re-applied after it and before the Gradle repackage. Run them together:
 ```
 
 That is launcher icons + back navigation + manifest, described individually
-below. **Skipping any one ships a broken release quietly** — the manifest patch
+below. **Skipping any one ships a broken release quietly**: the manifest patch
 in particular guards the ndk-context crash that survived five versions because
 this was a checklist rather than a command
 ([`../../../../plans/archive/android_ndk_context_crash.md`](../../../../plans/archive/android_ndk_context_crash.md)).
@@ -116,7 +116,7 @@ Regenerate them from the Zwipe source icon. Like the Gradle edits, this runs
 
 This rewrites the legacy webp at every density and the adaptive foreground (a
 full-bleed `icon-1024.png`) + background (solid `#282828`, the icon's bg). Skip
-it and the build ships the green droid — testers will notice.
+it and the build ships the green droid, and testers will notice.
 
 ## 1c. Patch the back-navigation handler (dx ships a no-op MainActivity)
 
@@ -145,7 +145,7 @@ and a short `configChanges` list. Both are bugs:
   live process. This app is a `NativeActivity`, so native init runs twice and
   `ndk_context` panics on `assert!(previous.is_none())`.
 - Without `uiMode` in `configChanges`, a system dark/light switch recreates the
-  Activity — which reaches `onDestroy`, where the back-handler's process kill
+  Activity, which reaches `onDestroy`, where the back-handler's process kill
   fires, so the app silently vanishes mid-session.
 
 ```bash
@@ -161,7 +161,7 @@ Full evidence: [`../../../../plans/archive/android_ndk_context_crash.md`](../../
 ```bash
 cd ~/Developer/zwipe/target/dx/zwipe/release/android/app
 # targetSdk -> 36 (Play requires targetSdk within a year of the latest Android
-# release; 36 since the 2026-08-31 deadline — bumped for the 1.7.3 build).
+# release; 36 since the 2026-08-31 deadline: bumped for the 1.7.3 build).
 # compileSdk -> 36 (the installed platform here; any compileSdk >= targetSdk
 # works as long as that platform is installed).
 # Also bump versionCode for EVERY upload after the first (1 -> 2 -> 3 ...).
@@ -174,13 +174,13 @@ grep -nE 'compileSdk|targetSdk|versionCode|versionName' app/build.gradle.kts
 > `compileSdk = 36` resolves to the installed `platforms/android-36.1`. If only
 > API 35 is installed, use `compileSdk = 35`. If neither ≥35 is installed, add
 > the platform (Android Studio → SDK Manager, or `sdkmanager "platforms;android-35"`
-> — note this machine has **no `cmdline-tools`**, so the GUI is the easy path).
+> Note this machine has **no `cmdline-tools`**, so the GUI is the easy path).
 
 ## 3. Repackage with Gradle directly (NOT `dx bundle`)
 
 `gradlew` needs both env vars or it fails with an unhelpful message: without
 `JAVA_HOME` it says "Unable to locate a Java Runtime" (macOS ships no system
-JDK — use Android Studio's bundled JBR), and without `ANDROID_HOME` it says
+JDK; use Android Studio's bundled JBR), and without `ANDROID_HOME` it says
 "SDK location not found".
 
 ```bash
@@ -210,7 +210,7 @@ cd ~/Developer/zwipe
   -signedjar zwipe-<VERSION>.aab \
   target/dx/zwipe/release/android/app/app/build/outputs/bundle/release/app-release.aab \
   zwipe-upload
-# enter the keystore password when prompted (or -storepass pass:... — avoid leaving it in history)
+# enter the keystore password when prompted (or -storepass pass:...: avoid leaving it in history)
 "$JAVA_HOME/bin/jarsigner" -verify zwipe-<VERSION>.aab   # -> "jar verified."
 ```
 
