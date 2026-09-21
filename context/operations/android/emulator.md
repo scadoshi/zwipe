@@ -119,4 +119,4 @@ if true || upgrade_required.required() {   // forces the update screen — REVER
 ```
 
 The gate itself (server-driven `MIN_CLIENT_VERSION`) is documented in
-[`../../progress/overview.md`](../../progress/overview.md) (see "1.0.5 — Min-Version Gate").
+[`../../README.md`](../../README.md) (see "1.0.5 — Min-Version Gate").

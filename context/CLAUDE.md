@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ZWIPE is a mobile-first Magic: The Gathering deck builder with swipe-based navigation. Full-stack Rust application with hexagonal architecture.
 
-- **Shared domain (zwipe-core/)**: Pure domain types, validation, and business rules — see rules below
+- **Shared domain (zwipe-core/)**: Pure domain types, validation, and business rules; see the rules below
 - **Backend (zerver/)**: Axum REST API with PostgreSQL, SQLx, JWT auth
 - **Frontend (zwiper/)**: Dioxus cross-platform app (web/iOS/Android)
 - **Website (zite/)**: Dioxus static site
@@ -22,9 +22,9 @@ ZWIPE is a mobile-first Magic: The Gathering deck builder with swipe-based navig
 - **No service-layer errors.** Error types that wrap `anyhow::Error` (database failures, not-found, etc.) stay in zerver.
 - **Only truly shared types.** If only the server needs it, it stays in zerver.
 - **No types with `From` impls in zerver's handlers.** `ApiError` stays in zerver because its `From<DomainError>` impls would violate the orphan rule if both types were in core. See `architecture/decisions.md`.
-- **All domain validation and tests live here.** Zerver re-exports via `pub use zwipe_core::...` — it adds only server-specific behavior.
+- **All domain validation and tests live here.** Zerver re-exports via `pub use zwipe_core::...`; it adds only server-specific behavior.
 
-**Allowed dependencies:** serde, thiserror, uuid, chrono, email_address, once_cell, serde_json, sha2, rand — crates that both frontend and backend legitimately use.
+**Allowed dependencies:** serde, thiserror, uuid, chrono, email_address, once_cell, serde_json, sha2, rand. All of them are crates both frontend and backend legitimately use.
 
 **Database adapter pattern:** Domain types are persisted via `Database*` wrapper structs in zerver's `outbound/sqlx/` layer. Wrappers use primitive fields (`String`, `Vec<String>`, `Json<T>`) that SQLx handles natively, then convert to domain types via `TryFrom`. See `architecture/decisions.md` for full rationale.
 
@@ -61,7 +61,7 @@ cargo sqlx prepare --workspace
 ```
 The workspace-root `.sqlx/` is the ONLY offline-data directory. Never create a
 crate-local `zerver/.sqlx/` (i.e., never run `cargo sqlx prepare` from inside
-`zerver/` without `--workspace`) — the macros prefer it over the root and a stale
+`zerver/` without `--workspace`): the macros prefer it over the root, and a stale
 copy shadows correct data (broke the 2026-07-05 deploy; details in
 `operations/infrastructure/cicd.md`).
 
