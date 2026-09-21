@@ -78,6 +78,29 @@ Note this is runtime at the crate's API boundary, not on the device: an iOS
 bundle ships no `.env` and a browser has no env vars, so the value is still
 baked per build. What changes is which crate bakes it.
 
+If zite ever grows the authed deck builder it will want zwiper's flip switch
+too, for dev testing. It should NOT copy zwiper's panic-if-unset build.rs:
+zite deploys from GitHub Actions, and requiring a `.env` there means handing
+the value to CI for no gain. Use an optional override with the const as
+fallback, resolved in the lib (zite's build.rs can't import zwipe-core, which
+is why it already mirrors one `WEB_BASE` literal):
+
+```rust
+// build.rs: emit only when someone set it
+if let Ok(url) = std::env::var("API_BASE") {
+    println!("cargo:rustc-env=ZITE_API_BASE={url}");
+}
+
+// lib: const fallback, no .env needed for a normal build
+const API_BASE: &str = match option_env!("ZITE_API_BASE") {
+    Some(url) => url,
+    None => zwipe_core::domain::site::API_BASE,
+};
+```
+
+(`match`, not `unwrap_or`: `Option::unwrap_or` isn't const.) Not needed now;
+today's const is fine.
+
 Do not move zwiper's `Config` type; it also carries `rust_log` and
 `rust_backtrace`, which are nothing to do with the client. Pass the `Url`.
 
