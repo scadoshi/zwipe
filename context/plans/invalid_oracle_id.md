@@ -60,6 +60,60 @@ in the same pass.
 
 (`validate_deck.rs:626` has the same call but is a test fixture. Leave it.)
 
+## Investigation: find out which cards, without shipping anything
+
+The reports tell us the failure happened but not what failed. `client_errors`
+carries only the server's message ("invalid oracle id: ..."), so six
+occurrences identify zero cards. Close that first; the fixes are easier to
+choose once we know the population.
+
+**1. Log the printing id server-side (highest leverage, no client release).**
+The 422 path still has a *valid* `scryfall_data_id`: only the oracle id was
+unparseable. `create_deck_card.rs` currently discards it, because
+
+```rust
+let request = CreateDeckCard::new(user.id, &deck_id, &body.scryfall_data_id,
+                                  &body.oracle_id, ...)?;   // `?` drops the body
+```
+
+Replace the bare `?` with a `map_err` that logs `body.scryfall_data_id` (and
+whether `body.oracle_id` was empty versus merely malformed) before converting.
+One deploy, and every subsequent occurrence names its card. Do the same in the
+three sibling handlers that emit this message: `get_printings.rs:15`,
+`commander_maybeboard.rs:36`, `skip_deck_card.rs:32`.
+
+Then resolve any captured id with:
+
+```sql
+SELECT id, name, layout, oracle_id FROM scryfall_data WHERE id = '<captured id>';
+```
+
+**2. Census the catalog (answers it immediately if the hypothesis holds).**
+
+```sql
+SELECT layout, count(*) FROM latest_cards WHERE oracle_id IS NULL GROUP BY layout;
+SELECT name, layout FROM latest_cards WHERE oracle_id IS NULL LIMIT 20;
+-- and the wider table, since latest_cards dedupes per oracle_id and may hide them
+SELECT layout, count(*) FROM scryfall_data WHERE oracle_id IS NULL GROUP BY layout;
+```
+
+If the first query returns nothing but the third does, the matview is already
+filtering them and the failing cards reach the client by some other path,
+which would be worth knowing on its own.
+
+**3. Check what the sync stores.** Whether `zervice` preserves a NULL
+top-level `oracle_id` or could lift it from the faces at ingest. If it can be
+fixed at ingest, options 2 and 3 below both become unnecessary.
+
+**4. Reproduce locally.** Once a name is known, add that card to a deck
+against a dev server. A failing repro also gives the regression test a real
+subject instead of a synthetic `None`.
+
+**5. Client-side breadcrumb (only if the above is not enough).** Report an
+error at construction when `oracle_id` is `None`, carrying name and layout, so
+the card is named without a round trip. Costs a client release, so treat it as
+the fallback rather than the first move.
+
 ## Fix options
 
 1. **Stop sending a broken value.** Make construction fallible
