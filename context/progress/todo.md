@@ -10,6 +10,21 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Next Up
 
+- [ ] **Tooling: get the Android emulator back.** Diagnosed 2026-09-21, nothing is corrupt, the pieces are just uninstalled. The SDK still has `build-tools`, `ndk`, `platform-tools` and `platforms`, but the `emulator` package is gone, `~/.android/avd/` does not exist, and there are no system images. Reinstall and recreate the AVD, then [`../operations/android/emulator.md`](../operations/android/emulator.md) works as written again:
+  ```bash
+  export ANDROID_HOME="$HOME/Library/Android/sdk"
+  "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+    "emulator" "system-images;android-36;google_apis;arm64-v8a"
+  avdmanager create avd -n Pixel_9a -k "system-images;android-36;google_apis;arm64-v8a" -d pixel_9a
+  ```
+  Add the restore steps to that runbook afterwards so the next SDK cleanup is a five-minute fix.
+
+- [ ] **Tooling: why did iOS switch to Device Hub?** Xcode is opening a different simulator surface than it used to, and the classic Simulator window behaved better with the tiling manager. Unexplained change, low urgency, but worth knowing before the 1.10.2 device pass. (The keyboard capture is separate and already understood: I/O → Keyboard → Connect Hardware Keyboard, ⇧⌘K.)
+
+- [ ] **Hands-on pass of the app before 1.10.2.** The 2026-09-21 client refactor shipped one real regression (every endpoint pinned to a single success status; four that answer 204 broke, including `delete_deck_card`). Fixed in `4411dde0` by accepting any 2xx, but the cross-check that missed it shared a bug with the code it was checking, so treat it as discredited and exercise the app by hand. Priority order: add and remove a card, undo both, then **crash reporting and usage telemetry**, which were broken the same way and fail with no visible symptom.
+
+- [ ] **Small fixes queued, each with a plan.** [`filter_cannot_clear.md`](../plans/filter_cannot_clear.md) (can't clear a filter back to default on the add screen, plus two stacked toasts that overlap), [`invalid_oracle_id.md`](../plans/invalid_oracle_id.md) (server-side logging first; it names the failing cards with no client release), [`ios_shake_to_undo.md`](../plans/ios_shake_to_undo.md), [`catalog_cache_retry.md`](../plans/catalog_cache_retry.md). Scope for the release is in [`cut_1_10_2.md`](../plans/cut_1_10_2.md).
+
 - [ ] ~~**CUT 1.9.2**~~, **DONE 2026-08-17: submitted to both stores** (iOS build 76 / Android versionCode 39). Carries the two Android manifest fixes (the ndk-context crash that survived five releases, and the app silently closing on a system theme change), the back-swipe overlay fixes, the deck list restyle with command-zone art, command-zone art URLs on the wire, per-combination color grouping with mana pips, and the zite work (share-page deal-in, guides search, Panel heroes, 36 guide screenshots). The post-bundle patches are now **one command**: `zcripts/android/patch_bundle.sh` (icons + back handler + manifest). Skipping it silently reships the crash; that checklist is exactly how the bug lived five releases. Build steps: [`../operations/android/play-store/submission/build.md`](../operations/android/play-store/submission/build.md).
 
 - [ ] **Phase 6, serve on the matured otag signal (data-gated, months out).** The prerequisite **Phase 5S step-3 cleanup shipped 2026-07-25** (legacy `commander_oracle_id` wire + server fallback + client commander resolution all dropped; deck_id is the sole signal key). Server half deploys on next push; the client half rides the next client build. Re-run the pair-depth readiness queries as the user base grows.
