@@ -8,16 +8,13 @@
 //! the body is a 422 per the RFC 7396 resolution (null clears nullable
 //! fields, errors on required ones); absent means untouched.
 
-#[cfg(feature = "zerver")]
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
-#[cfg(feature = "zerver")]
 use zwipe_core::http::{contracts::deck_card::HttpPatchDeckCard, helpers::Opdate};
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError,
     inbound::http::{
@@ -25,13 +22,11 @@ use crate::{
         middleware::AuthenticatedUser,
     },
 };
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::{
     DeckCard,
     requests::update_deck_card::{InvalidUpdateDeckCard, UpdateDeckCard},
 };
 
-#[cfg(feature = "zerver")]
 impl From<UpdateDeckCardError> for ApiError {
     fn from(value: UpdateDeckCardError) -> Self {
         match value {
@@ -58,7 +53,6 @@ impl From<UpdateDeckCardError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidUpdateDeckCard> for ApiError {
     fn from(value: InvalidUpdateDeckCard) -> Self {
         match value {
@@ -84,7 +78,6 @@ impl From<InvalidUpdateDeckCard> for ApiError {
 /// Flattens a non-clearable field: absent passes through as no-op, a value
 /// passes through as set, and explicit `null` is a 422 (the field always
 /// has a value, so "clear" is meaningless).
-#[cfg(feature = "zerver")]
 pub fn reject_null<T>(field: Opdate<T>, name: &str) -> Result<Option<T>, ApiError> {
     match field {
         Opdate::Unchanged => Ok(None),
@@ -96,7 +89,6 @@ pub fn reject_null<T>(field: Opdate<T>, name: &str) -> Result<Option<T>, ApiErro
 }
 
 /// Sets a card's quantity (absolute), board, printing, and/or MVP star.
-#[cfg(feature = "zerver")]
 pub async fn patch_deck_card(
     user: AuthenticatedUser,
     State(state): State<AppState>,

@@ -1,15 +1,11 @@
-#[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode};
 
-#[cfg(feature = "zerver")]
 use crate::inbound::http::{ApiError, AppState, middleware::AuthenticatedUser};
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::user::requests::get_user::GetUser;
 
 /// Re-sends the email verification link to the authenticated user.
 ///
 /// Returns `422` if the email is already verified.
-#[cfg(feature = "zerver")]
 pub async fn resend_verification(
     user: AuthenticatedUser,
     State(state): State<AppState>,

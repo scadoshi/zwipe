@@ -1,28 +1,24 @@
 //! Mark a one-time UI hint as shown handler.
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::user::models::hints::MarkHintShownError,
     inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::user::{
-    User,
-    models::hints::{InvalidHintKey, MarkHintShown},
+use zwipe_core::{
+    domain::user::{
+        User,
+        models::hints::{InvalidHintKey, MarkHintShown},
+    },
+    http::contracts::user::HttpMarkHintShown,
 };
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::user::HttpMarkHintShown;
 
-#[cfg(feature = "zerver")]
 impl From<InvalidHintKey> for ApiError {
     fn from(value: InvalidHintKey) -> Self {
         Self::UnprocessableEntity(value.to_string())
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<MarkHintShownError> for ApiError {
     fn from(value: MarkHintShownError) -> Self {
         match value {
@@ -36,7 +32,6 @@ impl From<MarkHintShownError> for ApiError {
 ///
 /// Idempotent: marking an already-shown hint is a no-op. Responds with the
 /// updated user so the client can sync its session in place.
-#[cfg(feature = "zerver")]
 pub async fn mark_hint_shown(
     user: AuthenticatedUser,
     State(state): State<AppState>,

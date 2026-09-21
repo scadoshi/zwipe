@@ -1,14 +1,10 @@
-#[cfg(feature = "zerver")]
 use crate::{
     domain::card::requests::get_card_types::GetCardTypesError,
     inbound::http::{ApiError, AppState, To500},
 };
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State};
-#[cfg(feature = "zerver")]
 use reqwest::StatusCode;
 
-#[cfg(feature = "zerver")]
 impl From<GetCardTypesError> for ApiError {
     fn from(value: GetCardTypesError) -> Self {
         match value {
@@ -18,7 +14,6 @@ impl From<GetCardTypesError> for ApiError {
 }
 
 /// Returns distinct card type names.
-#[cfg(feature = "zerver")]
 pub async fn get_card_types(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {

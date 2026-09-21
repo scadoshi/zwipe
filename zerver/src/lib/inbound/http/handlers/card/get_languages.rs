@@ -1,14 +1,10 @@
-#[cfg(feature = "zerver")]
 use crate::{
     domain::card::requests::get_languages::GetLanguagesError,
     inbound::http::{ApiError, AppState, To500},
 };
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State};
-#[cfg(feature = "zerver")]
 use reqwest::StatusCode;
 
-#[cfg(feature = "zerver")]
 impl From<GetLanguagesError> for ApiError {
     fn from(value: GetLanguagesError) -> Self {
         match value {
@@ -18,7 +14,6 @@ impl From<GetLanguagesError> for ApiError {
 }
 
 /// Returns distinct language names.
-#[cfg(feature = "zerver")]
 pub async fn get_languages(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {

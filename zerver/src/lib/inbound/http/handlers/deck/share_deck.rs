@@ -1,23 +1,19 @@
-#[cfg(feature = "zerver")]
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck::share_deck::ShareDeckError,
     inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::deck::HttpDeckShareToken;
+use zwipe_core::{
+    domain::deck::requests::get_deck_profile::GetDeckProfile,
+    http::contracts::deck::HttpDeckShareToken,
+};
 
-#[cfg(feature = "zerver")]
 impl From<ShareDeckError> for ApiError {
     fn from(value: ShareDeckError) -> Self {
         match value {
@@ -30,7 +26,6 @@ impl From<ShareDeckError> for ApiError {
 
 /// Generates (or regenerates) the deck's share token after ownership
 /// verification. Re-sharing rotates the token, so any old link dies.
-#[cfg(feature = "zerver")]
 pub async fn share_deck(
     State(state): State<AppState>,
     Path(deck_id): Path<Uuid>,
@@ -49,7 +44,6 @@ pub async fn share_deck(
 
 /// Revokes the deck's share token after ownership verification. The public
 /// link 404s from here on (modulo a short CF cache window).
-#[cfg(feature = "zerver")]
 pub async fn unshare_deck(
     State(state): State<AppState>,
     Path(deck_id): Path<Uuid>,

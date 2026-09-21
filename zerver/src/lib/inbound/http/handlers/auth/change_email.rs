@@ -1,9 +1,6 @@
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
-#[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::auth::HttpChangeEmail;
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::requests::change_email::{ChangeEmail, ChangeEmailError, InvalidChangeEmail},
@@ -11,10 +8,8 @@ use crate::{
     },
     inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::user::User;
 
-#[cfg(feature = "zerver")]
 impl From<ChangeEmailError> for ApiError {
     fn from(value: ChangeEmailError) -> Self {
         match value {
@@ -29,7 +24,6 @@ impl From<ChangeEmailError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidChangeEmail> for ApiError {
     fn from(value: InvalidChangeEmail) -> Self {
         match value {
@@ -42,7 +36,6 @@ impl From<InvalidChangeEmail> for ApiError {
 }
 
 /// Changes the user's email after verifying the password.
-#[cfg(feature = "zerver")]
 pub async fn change_email(
     user: AuthenticatedUser,
     State(state): State<AppState>,

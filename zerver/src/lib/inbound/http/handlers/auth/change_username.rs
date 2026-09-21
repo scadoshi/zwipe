@@ -1,4 +1,3 @@
-#[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::requests::change_username::{
@@ -8,14 +7,9 @@ use crate::{
     },
     inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::user::User;
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::auth::HttpChangeUsername;
+use zwipe_core::{domain::user::User, http::contracts::auth::HttpChangeUsername};
 
-#[cfg(feature = "zerver")]
 impl From<ChangeUsernameError> for ApiError {
     fn from(value: ChangeUsernameError) -> Self {
         tracing::warn!(event = "change_username_error", error = %value);
@@ -31,7 +25,6 @@ impl From<ChangeUsernameError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidChangeUsername> for ApiError {
     fn from(value: InvalidChangeUsername) -> Self {
         match value {
@@ -44,7 +37,6 @@ impl From<InvalidChangeUsername> for ApiError {
 }
 
 /// Changes the user's username after verifying the password.
-#[cfg(feature = "zerver")]
 pub async fn change_username(
     user: AuthenticatedUser,
     State(state): State<AppState>,

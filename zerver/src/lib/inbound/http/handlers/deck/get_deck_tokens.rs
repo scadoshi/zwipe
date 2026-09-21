@@ -1,22 +1,17 @@
 //! Get tokens produced by a deck's cards.
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck::get_deck_tokens::GetDeckTokensError,
     inbound::http::{ApiError, AppState, middleware::AuthenticatedUser},
 };
-#[cfg(feature = "zerver")]
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::card::Card;
 
-#[cfg(feature = "zerver")]
 impl From<GetDeckTokensError> for ApiError {
     fn from(value: GetDeckTokensError) -> Self {
         match value {
@@ -27,7 +22,6 @@ impl From<GetDeckTokensError> for ApiError {
 }
 
 /// Returns all token cards produced by the cards in a deck.
-#[cfg(feature = "zerver")]
 pub async fn get_deck_tokens(
     user: AuthenticatedUser,
     State(state): State<AppState>,

@@ -1,4 +1,3 @@
-#[cfg(feature = "zerver")]
 use crate::{
     domain::card::requests::{
         get_card::GetCardError,
@@ -7,16 +6,13 @@ use crate::{
     },
     inbound::http::{ApiError, AppState, To500},
 };
-#[cfg(feature = "zerver")]
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::card::Card;
 
-#[cfg(feature = "zerver")]
 impl From<GetCardProfileError> for ApiError {
     fn from(value: GetCardProfileError) -> Self {
         match value {
@@ -27,7 +23,6 @@ impl From<GetCardProfileError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<GetScryfallDataError> for ApiError {
     fn from(value: GetScryfallDataError) -> Self {
         match value {
@@ -37,7 +32,6 @@ impl From<GetScryfallDataError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<GetCardError> for ApiError {
     fn from(value: GetCardError) -> Self {
         match value {
@@ -48,7 +42,6 @@ impl From<GetCardError> for ApiError {
 }
 
 /// Returns a single card by Scryfall data ID.
-#[cfg(feature = "zerver")]
 pub async fn get_card(
     State(state): State<AppState>,
     Path(scryfall_data_id): Path<String>,

@@ -1,25 +1,22 @@
 //! Commander maybeboard handlers (per-user "maybe this commander" list).
 
-#[cfg(feature = "zerver")]
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError,
     inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::card::Card;
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::deck::requests::commander_maybeboard::{
-    CommanderMaybeboardCard, InvalidCommanderMaybeboardCard,
+use zwipe_core::domain::{
+    card::Card,
+    deck::requests::commander_maybeboard::{
+        CommanderMaybeboardCard, InvalidCommanderMaybeboardCard,
+    },
 };
 
-#[cfg(feature = "zerver")]
 impl From<CommanderMaybeboardError> for ApiError {
     fn from(value: CommanderMaybeboardError) -> Self {
         match value {
@@ -32,7 +29,6 @@ impl From<CommanderMaybeboardError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidCommanderMaybeboardCard> for ApiError {
     fn from(value: InvalidCommanderMaybeboardCard) -> Self {
         match value {
@@ -45,7 +41,6 @@ impl From<InvalidCommanderMaybeboardCard> for ApiError {
 
 /// Returns the authenticated user's commander maybeboard, hydrated to full
 /// cards (preferred printing), newest save first.
-#[cfg(feature = "zerver")]
 pub async fn get_commander_maybeboard(
     user: AuthenticatedUser,
     State(state): State<AppState>,
@@ -60,7 +55,6 @@ pub async fn get_commander_maybeboard(
 
 /// Adds a commander to the authenticated user's maybeboard (idempotent;
 /// duplicate = no-op success, over-cap rejected).
-#[cfg(feature = "zerver")]
 pub async fn add_commander_maybeboard_card(
     State(state): State<AppState>,
     Path(oracle_id): Path<String>,
@@ -78,7 +72,6 @@ pub async fn add_commander_maybeboard_card(
 }
 
 /// Deletes the authenticated user's entire commander maybeboard (idempotent).
-#[cfg(feature = "zerver")]
 pub async fn clear_commander_maybeboard(
     State(state): State<AppState>,
     user: AuthenticatedUser,
@@ -93,7 +86,6 @@ pub async fn clear_commander_maybeboard(
 }
 
 /// Removes a commander from the authenticated user's maybeboard (idempotent).
-#[cfg(feature = "zerver")]
 pub async fn remove_commander_maybeboard_card(
     State(state): State<AppState>,
     Path(oracle_id): Path<String>,

@@ -1,14 +1,10 @@
-#[cfg(feature = "zerver")]
 use crate::{
     domain::card::requests::get_keywords::GetKeywordsError,
     inbound::http::{ApiError, AppState, To500},
 };
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State};
-#[cfg(feature = "zerver")]
 use reqwest::StatusCode;
 
-#[cfg(feature = "zerver")]
 impl From<GetKeywordsError> for ApiError {
     fn from(value: GetKeywordsError) -> Self {
         match value {
@@ -18,7 +14,6 @@ impl From<GetKeywordsError> for ApiError {
 }
 
 /// Returns distinct keyword ability names.
-#[cfg(feature = "zerver")]
 pub async fn get_keywords(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {

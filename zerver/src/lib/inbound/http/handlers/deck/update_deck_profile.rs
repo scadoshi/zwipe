@@ -1,4 +1,3 @@
-#[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck::update_deck_profile::UpdateDeckProfileError,
     inbound::http::{
@@ -10,23 +9,20 @@ use crate::{
         middleware::AuthenticatedUser,
     },
 };
-#[cfg(feature = "zerver")]
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::deck::{
-    deck_profile::DeckProfile,
-    requests::update_deck_profile::{InvalidUpdateDeckProfile, UpdateDeckProfile},
+use zwipe_core::{
+    domain::deck::{
+        deck_profile::DeckProfile,
+        requests::update_deck_profile::{InvalidUpdateDeckProfile, UpdateDeckProfile},
+    },
+    http::contracts::deck::HttpUpdateDeckProfile,
 };
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 
-#[cfg(feature = "zerver")]
 impl From<UpdateDeckProfileError> for ApiError {
     fn from(value: UpdateDeckProfileError) -> Self {
         match value {
@@ -44,7 +40,6 @@ impl From<UpdateDeckProfileError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidUpdateDeckProfile> for ApiError {
     fn from(value: InvalidUpdateDeckProfile) -> Self {
         match value {
@@ -80,7 +75,6 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
 }
 
 /// Updates deck metadata with ownership verification.
-#[cfg(feature = "zerver")]
 pub async fn update_deck_profile(
     user: AuthenticatedUser,
     State(state): State<AppState>,

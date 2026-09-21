@@ -1,4 +1,3 @@
-#[cfg(feature = "zerver")]
 use crate::{
     domain::{
         deck::models::deck::{clone_deck::CloneDeckError, get_deck_profile::GetDeckProfileError},
@@ -9,22 +8,20 @@ use crate::{
         middleware::AuthenticatedUser,
     },
 };
-#[cfg(feature = "zerver")]
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::deck::requests::clone_deck::{CloneDeck, InvalidCloneDeck};
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::user::requests::get_user::GetUser;
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::deck::{HttpCloneDeck, HttpClonedDeck};
+use zwipe_core::{
+    domain::{
+        deck::requests::clone_deck::{CloneDeck, InvalidCloneDeck},
+        user::requests::get_user::GetUser,
+    },
+    http::contracts::deck::{HttpCloneDeck, HttpClonedDeck},
+};
 
-#[cfg(feature = "zerver")]
 impl From<CloneDeckError> for ApiError {
     fn from(value: CloneDeckError) -> Self {
         match value {
@@ -56,7 +53,6 @@ impl From<CloneDeckError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidCloneDeck> for ApiError {
     fn from(value: InvalidCloneDeck) -> Self {
         match value {
@@ -72,7 +68,6 @@ impl From<InvalidCloneDeck> for ApiError {
 /// The source deck id is taken from the URL path; the new deck name comes
 /// from the JSON body. The response contains only the new deck's id;
 /// the client navigates to the deck view which loads the full aggregate.
-#[cfg(feature = "zerver")]
 pub async fn clone_deck(
     user: AuthenticatedUser,
     State(state): State<AppState>,

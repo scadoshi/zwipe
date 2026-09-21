@@ -1,9 +1,6 @@
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
-#[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::auth::HttpResetPassword;
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::requests::reset_password::{ResetPassword, ResetPasswordError},
@@ -12,7 +9,6 @@ use crate::{
     inbound::http::{ApiError, AppState, To500},
 };
 
-#[cfg(feature = "zerver")]
 impl From<ResetPasswordError> for ApiError {
     fn from(value: ResetPasswordError) -> Self {
         match value {
@@ -28,7 +24,6 @@ impl From<ResetPasswordError> for ApiError {
 /// Completes the password reset flow using a one-time token.
 ///
 /// Revokes all existing sessions after a successful reset.
-#[cfg(feature = "zerver")]
 pub async fn reset_password(
     State(state): State<AppState>,
     Json(body): Json<HttpResetPassword>,

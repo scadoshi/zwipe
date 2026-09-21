@@ -1,9 +1,17 @@
 # zerver feature-gate teardown
 
-**Status: PLANNED 2026-09-21 (external architecture review, claims verified
-against the code the same day). Four phases, each independently shippable,
-each deletes a bucket of gates. Phases 1 and 2 are mechanical and can run any
-time; 3 and 4 each want a focused pass.**
+**Status: IN PROGRESS. Planned 2026-09-21 (external architecture review,
+claims verified against the code the same day); phase 1 landed the same day.
+Four phases, each independently shippable, each deletes a bucket of gates.
+Phase 2 is mechanical and can run any time; 3 and 4 each want a focused
+pass.**
+
+Note from phase 1: the check commands need `--lib`. The zerver/zervice
+binaries require the feature by design, so a bare `-p zerver
+--no-default-features` fails on the bins, not on anything the flag guards.
+Second find: four gate lines in handlers/mod.rs ended in CRLF; sweep
+patterns need to tolerate trailing `\r` (a few stray CRLF line endings
+exist elsewhere in handlers too).
 
 **One sentence:** retire zerver's `zerver` feature flag by removing the four
 remaining reasons zwiper links the server crate, phase by phase, until zerver
@@ -29,7 +37,7 @@ has one build configuration again.
   because ApiError couldn't move (orphan rule, correct call). A mechanism
   built to share a domain layer now serves one six-variant enum.
 
-## Phase 1: gate the `handlers` module (kills 335)
+## Phase 1: gate the `handlers` module (kills 335) — DONE 2026-09-21
 
 `inbound/http/mod.rs` already shows the pattern: `cache` and `middleware`
 carry one gate on the module declaration and zero inside.
@@ -90,8 +98,8 @@ StatusCode without sharing an enum.
 
 ## Verification, every phase
 
-- `cargo check -p zerver --no-default-features` (until phase 4 deletes that
-  configuration entirely).
+- `cargo check -p zerver --no-default-features --lib` (until phase 4 deletes
+  that configuration entirely).
 - Full CI gate: nightly fmt, clippy `-D warnings`, workspace tests.
 - Client crates warning-free (zwiper, zite, zwipe-components).
 - No runtime testing needed; every phase is behavior-identical by

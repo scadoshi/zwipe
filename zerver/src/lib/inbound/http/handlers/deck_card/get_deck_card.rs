@@ -1,11 +1,8 @@
-#[cfg(feature = "zerver")]
-use crate::inbound::http::To500;
-#[cfg(feature = "zerver")]
 use crate::{
-    domain::deck::models::deck_card::get_deck_card::GetDeckCardError, inbound::http::ApiError,
+    domain::deck::models::deck_card::get_deck_card::GetDeckCardError,
+    inbound::http::{ApiError, To500},
 };
 
-#[cfg(feature = "zerver")]
 impl From<GetDeckCardError> for ApiError {
     fn from(value: GetDeckCardError) -> Self {
         match value {

@@ -1,22 +1,18 @@
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::auth::models::session::Session;
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
+use zwipe_core::{
+    domain::auth::models::session::Session, http::contracts::auth::HttpAuthenticateUser,
+};
 
-#[cfg(feature = "zerver")]
-use crate::domain::auth::requests::authenticate_user::AuthenticateUser;
-#[cfg(feature = "zerver")]
 use crate::{
     domain::{
-        auth::requests::authenticate_user::{AuthenticateUserError, InvalidAuthenticateUser},
+        auth::requests::authenticate_user::{
+            AuthenticateUser, AuthenticateUserError, InvalidAuthenticateUser,
+        },
         metrics::models::kinds::{AuditAction, EventKind},
     },
     inbound::http::{ApiError, AppState, To500},
 };
 
-#[cfg(feature = "zerver")]
 impl From<AuthenticateUserError> for ApiError {
     fn from(value: AuthenticateUserError) -> Self {
         match value {
@@ -35,7 +31,6 @@ impl From<AuthenticateUserError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidAuthenticateUser> for ApiError {
     fn from(value: InvalidAuthenticateUser) -> Self {
         match value {
@@ -47,7 +42,6 @@ impl From<InvalidAuthenticateUser> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl TryFrom<HttpAuthenticateUser> for AuthenticateUser {
     type Error = InvalidAuthenticateUser;
     fn try_from(value: HttpAuthenticateUser) -> Result<Self, Self::Error> {
@@ -56,7 +50,6 @@ impl TryFrom<HttpAuthenticateUser> for AuthenticateUser {
 }
 
 /// Authenticates a user by email or username and returns a session.
-#[cfg(feature = "zerver")]
 pub async fn authenticate_user(
     State(state): State<AppState>,
     Json(body): Json<HttpAuthenticateUser>,

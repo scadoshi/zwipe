@@ -1,16 +1,11 @@
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
-#[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::auth::HttpDeleteUser;
 
-use crate::{domain::auth::requests::delete_user::InvalidDeleteUser, inbound::http::ApiError};
-#[cfg(feature = "zerver")]
 use crate::{
-    domain::auth::requests::delete_user::{DeleteUser, DeleteUserError},
-    inbound::http::{AppState, To500, middleware::AuthenticatedUser},
+    domain::auth::requests::delete_user::{DeleteUser, DeleteUserError, InvalidDeleteUser},
+    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 
-#[cfg(feature = "zerver")]
 impl From<DeleteUserError> for ApiError {
     fn from(value: DeleteUserError) -> Self {
         match value {
@@ -35,7 +30,6 @@ impl From<InvalidDeleteUser> for ApiError {
 }
 
 /// Deletes the user's account and all associated data after password verification.
-#[cfg(feature = "zerver")]
 pub async fn delete_user(
     user: AuthenticatedUser,
     State(state): State<AppState>,

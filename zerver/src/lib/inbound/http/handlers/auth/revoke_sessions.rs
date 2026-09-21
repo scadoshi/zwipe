@@ -1,7 +1,5 @@
-#[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode};
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::requests::revoke_sessions::{RevokeSessions, RevokeSessionsError},
@@ -10,7 +8,6 @@ use crate::{
     inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 
-#[cfg(feature = "zerver")]
 impl From<RevokeSessionsError> for ApiError {
     fn from(value: RevokeSessionsError) -> Self {
         match value {
@@ -20,7 +17,6 @@ impl From<RevokeSessionsError> for ApiError {
 }
 
 /// Revokes all sessions for the authenticated user (logs out all devices).
-#[cfg(feature = "zerver")]
 pub async fn revoke_sessions(
     user: AuthenticatedUser,
     State(state): State<AppState>,

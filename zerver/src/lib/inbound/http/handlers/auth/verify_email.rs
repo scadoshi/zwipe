@@ -1,15 +1,11 @@
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
-#[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::auth::HttpVerifyEmail;
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::auth::requests::verify_email::{VerifyEmail, VerifyEmailError},
     inbound::http::{ApiError, AppState, To500},
 };
 
-#[cfg(feature = "zerver")]
 impl From<VerifyEmailError> for ApiError {
     fn from(value: VerifyEmailError) -> Self {
         match value {
@@ -22,7 +18,6 @@ impl From<VerifyEmailError> for ApiError {
 }
 
 /// Verifies a user's email address using a one-time token.
-#[cfg(feature = "zerver")]
 pub async fn verify_email(
     State(state): State<AppState>,
     Json(body): Json<HttpVerifyEmail>,

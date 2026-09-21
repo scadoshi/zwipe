@@ -1,15 +1,12 @@
-#[cfg(feature = "zerver")]
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::user::requests::get_user::GetUser;
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
+use zwipe_core::{
+    domain::user::requests::get_user::GetUser, http::contracts::deck_card::HttpCreateDeckCard,
+};
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck_card::create_deck_card::CreateDeckCardError,
     inbound::http::{
@@ -17,13 +14,11 @@ use crate::{
         middleware::AuthenticatedUser,
     },
 };
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::{
     DeckCard,
     requests::create_deck_card::{CreateDeckCard, InvalidCreateDeckCard},
 };
 
-#[cfg(feature = "zerver")]
 impl From<CreateDeckCardError> for ApiError {
     fn from(value: CreateDeckCardError) -> Self {
         match value {
@@ -51,7 +46,6 @@ impl From<CreateDeckCardError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidCreateDeckCard> for ApiError {
     fn from(value: InvalidCreateDeckCard) -> Self {
         match value {
@@ -72,7 +66,6 @@ impl From<InvalidCreateDeckCard> for ApiError {
 }
 
 /// Adds a card to a deck with the specified quantity.
-#[cfg(feature = "zerver")]
 pub async fn create_deck_card(
     user: AuthenticatedUser,
     State(state): State<AppState>,

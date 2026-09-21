@@ -1,9 +1,6 @@
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
-#[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::auth::requests::request_password_reset::{
         RequestPasswordReset, RequestPasswordResetError,
@@ -11,7 +8,6 @@ use crate::{
     inbound::http::{ApiError, AppState, To500},
 };
 
-#[cfg(feature = "zerver")]
 impl From<RequestPasswordResetError> for ApiError {
     fn from(value: RequestPasswordResetError) -> Self {
         match value {
@@ -24,7 +20,6 @@ impl From<RequestPasswordResetError> for ApiError {
 ///
 /// Always returns `200 OK` regardless of whether the email is registered,
 /// to prevent email enumeration attacks.
-#[cfg(feature = "zerver")]
 pub async fn request_password_reset(
     State(state): State<AppState>,
     Json(body): Json<HttpRequestPasswordReset>,

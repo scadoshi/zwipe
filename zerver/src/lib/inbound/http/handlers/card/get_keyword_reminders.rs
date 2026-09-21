@@ -6,19 +6,13 @@
 //! precedent). The map covers every keyword the database actually serves,
 //! resolved through the same function clients fall back to when offline.
 
-#[cfg(feature = "zerver")]
 use crate::inbound::http::{ApiError, AppState};
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State};
-#[cfg(feature = "zerver")]
 use reqwest::StatusCode;
-#[cfg(feature = "zerver")]
 use std::collections::HashMap;
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::card::keyword::keyword_reminder;
 
 /// Returns every distinct keyword name mapped to its reminder text.
-#[cfg(feature = "zerver")]
 pub async fn get_keyword_reminders(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<HashMap<String, String>>), ApiError> {

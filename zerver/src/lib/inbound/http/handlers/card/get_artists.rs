@@ -1,14 +1,10 @@
-#[cfg(feature = "zerver")]
 use crate::{
     domain::card::requests::get_artists::GetArtistsError,
     inbound::http::{ApiError, AppState, To500},
 };
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State};
-#[cfg(feature = "zerver")]
 use reqwest::StatusCode;
 
-#[cfg(feature = "zerver")]
 impl From<GetArtistsError> for ApiError {
     fn from(value: GetArtistsError) -> Self {
         match value {
@@ -18,7 +14,6 @@ impl From<GetArtistsError> for ApiError {
 }
 
 /// Returns distinct artist names.
-#[cfg(feature = "zerver")]
 pub async fn get_artists(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {

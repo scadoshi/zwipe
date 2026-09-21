@@ -1,14 +1,10 @@
-#[cfg(feature = "zerver")]
 use crate::{
     domain::card::requests::get_oracle_words::GetOracleWordsError,
     inbound::http::{ApiError, AppState, To500},
 };
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State};
-#[cfg(feature = "zerver")]
 use reqwest::StatusCode;
 
-#[cfg(feature = "zerver")]
 impl From<GetOracleWordsError> for ApiError {
     fn from(value: GetOracleWordsError) -> Self {
         match value {
@@ -18,7 +14,6 @@ impl From<GetOracleWordsError> for ApiError {
 }
 
 /// Returns distinct normalized words extracted from oracle text.
-#[cfg(feature = "zerver")]
 pub async fn get_oracle_words(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {

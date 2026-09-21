@@ -1,22 +1,18 @@
-#[cfg(feature = "zerver")]
-use crate::domain::auth::requests::refresh_session::RefreshSession;
-#[cfg(feature = "zerver")]
 use crate::{
     domain::{
-        auth::requests::refresh_session::{InvalidRefreshSession, RefreshSessionError},
+        auth::requests::refresh_session::{
+            InvalidRefreshSession, RefreshSession, RefreshSessionError,
+        },
         metrics::models::kinds::{AuditAction, EventKind},
         user::models::get_user::GetUserError,
     },
     inbound::http::{ApiError, AppState, To500},
 };
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::auth::models::session::Session;
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::auth::HttpRefreshSession;
+use zwipe_core::{
+    domain::auth::models::session::Session, http::contracts::auth::HttpRefreshSession,
+};
 
-#[cfg(feature = "zerver")]
 impl From<RefreshSessionError> for ApiError {
     fn from(value: RefreshSessionError) -> Self {
         match value {
@@ -48,7 +44,6 @@ impl From<RefreshSessionError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidRefreshSession> for ApiError {
     fn from(value: InvalidRefreshSession) -> Self {
         match value {
@@ -59,7 +54,6 @@ impl From<InvalidRefreshSession> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl TryFrom<HttpRefreshSession> for RefreshSession {
     type Error = InvalidRefreshSession;
     fn try_from(value: HttpRefreshSession) -> Result<Self, Self::Error> {
@@ -70,7 +64,6 @@ impl TryFrom<HttpRefreshSession> for RefreshSession {
 }
 
 /// Rotates a refresh token, consuming the old one and issuing a new session.
-#[cfg(feature = "zerver")]
 pub async fn refresh_session(
     State(state): State<AppState>,
     Json(body): Json<HttpRefreshSession>,

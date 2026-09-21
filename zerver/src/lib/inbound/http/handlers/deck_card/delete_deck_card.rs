@@ -1,10 +1,8 @@
-#[cfg(feature = "zerver")]
 use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck_card::delete_deck_card::DeleteDeckCardError,
     inbound::http::{
@@ -12,10 +10,8 @@ use crate::{
         middleware::AuthenticatedUser,
     },
 };
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::requests::delete_deck_card::{DeleteDeckCard, InvalidDeleteDeckCard};
 
-#[cfg(feature = "zerver")]
 impl From<DeleteDeckCardError> for ApiError {
     fn from(value: DeleteDeckCardError) -> Self {
         match value {
@@ -31,7 +27,6 @@ impl From<DeleteDeckCardError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidDeleteDeckCard> for ApiError {
     fn from(value: InvalidDeleteDeckCard) -> Self {
         match value {
@@ -46,7 +41,6 @@ impl From<InvalidDeleteDeckCard> for ApiError {
 }
 
 /// Removes a card from a deck.
-#[cfg(feature = "zerver")]
 pub async fn delete_deck_card(
     user: AuthenticatedUser,
     State(state): State<AppState>,

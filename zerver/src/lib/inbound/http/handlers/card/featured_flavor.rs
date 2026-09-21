@@ -7,20 +7,15 @@
 //! restart mid-hour re-derives the identical card. Plan:
 //! `context/plans/featured_flavor.md`.
 
-#[cfg(feature = "zerver")]
 use axum::{
     Json,
     extract::State,
     http::{StatusCode, header},
 };
-#[cfg(feature = "zerver")]
 use chrono::Timelike;
-#[cfg(feature = "zerver")]
 use std::time::{Duration, Instant};
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::card::Card;
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::card::requests::get_card::GetCardError,
     inbound::http::{ApiError, AppState},
@@ -33,7 +28,6 @@ use crate::{
 /// caches (Cloudflare fronts prod) expire exactly when the pick flips.
 /// Without it, a CF cache rule edge-cached the response for ~20 hours and the
 /// whole world saw one card all day (2026-08-06).
-#[cfg(feature = "zerver")]
 pub async fn get_featured_flavor(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, [(header::HeaderName, String); 1], Json<Card>), ApiError> {
@@ -62,7 +56,6 @@ pub async fn get_featured_flavor(
 /// Seconds until the top of the next UTC hour: the slot deadline and the
 /// response `max-age` both derive from it, so the in-memory flip and the edge
 /// cache expiry land on the same wall-clock boundary.
-#[cfg(feature = "zerver")]
 fn secs_until_next_utc_hour(now: &chrono::DateTime<chrono::Utc>) -> u64 {
     let secs_into_hour = u64::from(now.minute()) * 60 + u64::from(now.second());
     3600 - secs_into_hour.min(3599)

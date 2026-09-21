@@ -1,9 +1,6 @@
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
-#[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::auth::HttpChangePassword;
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::requests::change_password::{
@@ -14,7 +11,6 @@ use crate::{
     inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
 
-#[cfg(feature = "zerver")]
 impl From<ChangePasswordError> for ApiError {
     fn from(value: ChangePasswordError) -> Self {
         match value {
@@ -27,7 +23,6 @@ impl From<ChangePasswordError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidChangePassword> for ApiError {
     fn from(value: InvalidChangePassword) -> Self {
         match value {
@@ -43,7 +38,6 @@ impl From<InvalidChangePassword> for ApiError {
 }
 
 /// Changes the user's password after verifying the current one.
-#[cfg(feature = "zerver")]
 pub async fn change_password(
     user: AuthenticatedUser,
     State(state): State<AppState>,

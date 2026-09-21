@@ -1,17 +1,14 @@
 //! Import cards into a deck from plain-text decklist.
 
-#[cfg(feature = "zerver")]
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::user::requests::get_user::GetUser;
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::deck_card::HttpImportDeckCards;
+use zwipe_core::{
+    domain::user::requests::get_user::GetUser, http::contracts::deck_card::HttpImportDeckCards,
+};
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsError,
     inbound::http::{
@@ -19,12 +16,10 @@ use crate::{
         middleware::AuthenticatedUser,
     },
 };
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::requests::import_deck_cards::{
     ImportDeckCards, ImportDeckCardsResult,
 };
 
-#[cfg(feature = "zerver")]
 impl From<ImportDeckCardsError> for ApiError {
     fn from(value: ImportDeckCardsError) -> Self {
         match value {
@@ -46,7 +41,6 @@ impl From<ImportDeckCardsError> for ApiError {
 }
 
 /// Imports cards from plain-text decklist into a deck.
-#[cfg(feature = "zerver")]
 pub async fn import_deck_cards(
     user: AuthenticatedUser,
     State(state): State<AppState>,

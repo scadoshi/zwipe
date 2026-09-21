@@ -1,16 +1,11 @@
-#[cfg(feature = "zerver")]
 use crate::{
     domain::card::requests::get_oracle_tags::GetOracleTagsError,
     inbound::http::{ApiError, AppState, To500},
 };
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State};
-#[cfg(feature = "zerver")]
 use reqwest::StatusCode;
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 
-#[cfg(feature = "zerver")]
 impl From<GetOracleTagsError> for ApiError {
     fn from(value: GetOracleTagsError) -> Self {
         match value {
@@ -20,7 +15,6 @@ impl From<GetOracleTagsError> for ApiError {
 }
 
 /// Returns the full oracle tag catalog (slug, label, description, parent slugs).
-#[cfg(feature = "zerver")]
 pub async fn get_oracle_tags(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<Vec<OracleTag>>), ApiError> {

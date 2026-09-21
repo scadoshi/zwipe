@@ -1,20 +1,15 @@
-#[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck::get_deck::GetDeckError,
     inbound::http::{ApiError, AppState, middleware::AuthenticatedUser},
 };
-#[cfg(feature = "zerver")]
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::Deck;
 
-#[cfg(feature = "zerver")]
 impl From<GetDeckError> for ApiError {
     fn from(value: GetDeckError) -> Self {
         match value {
@@ -27,7 +22,6 @@ impl From<GetDeckError> for ApiError {
 }
 
 /// Returns the full deck including all cards (`get_deck_profile` returns only the metadata).
-#[cfg(feature = "zerver")]
 pub async fn get_deck(
     user: AuthenticatedUser,
     State(state): State<AppState>,

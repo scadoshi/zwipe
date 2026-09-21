@@ -1,21 +1,16 @@
-#[cfg(feature = "zerver")]
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck::share_deck::GetSharedDeckError,
     inbound::http::{ApiError, AppState, To500},
 };
-#[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
 
-#[cfg(feature = "zerver")]
 impl From<GetSharedDeckError> for ApiError {
     fn from(value: GetSharedDeckError) -> Self {
         match value {
@@ -35,7 +30,6 @@ impl From<GetSharedDeckError> for ApiError {
 ///
 /// The response strips owner identity: a malformed token is answered exactly
 /// like a revoked one, so the endpoint never confirms what exists.
-#[cfg(feature = "zerver")]
 pub async fn get_shared_deck(
     State(state): State<AppState>,
     Path(token): Path<String>,

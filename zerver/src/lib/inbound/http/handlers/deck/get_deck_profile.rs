@@ -1,22 +1,17 @@
-#[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck::get_deck_profile::GetDeckProfileError,
     inbound::http::{ApiError, AppState, middleware::AuthenticatedUser},
 };
-#[cfg(feature = "zerver")]
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::{
     deck_profile::DeckProfile, requests::get_deck_profile::GetDeckProfile,
 };
 
-#[cfg(feature = "zerver")]
 impl From<GetDeckProfileError> for ApiError {
     fn from(value: GetDeckProfileError) -> Self {
         use crate::inbound::http::To500;
@@ -31,7 +26,6 @@ impl From<GetDeckProfileError> for ApiError {
 }
 
 /// Returns deck metadata with ownership verification.
-#[cfg(feature = "zerver")]
 pub async fn get_deck_profile(
     user: AuthenticatedUser,
     State(state): State<AppState>,

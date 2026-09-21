@@ -1,16 +1,12 @@
 //! Get user preferences handler.
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::user::models::preferences::GetPreferencesError,
     inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::user::preferences::UserPreferences;
 
-#[cfg(feature = "zerver")]
 impl From<GetPreferencesError> for ApiError {
     fn from(value: GetPreferencesError) -> Self {
         match value {
@@ -20,7 +16,6 @@ impl From<GetPreferencesError> for ApiError {
 }
 
 /// Returns the authenticated user's display preferences.
-#[cfg(feature = "zerver")]
 pub async fn get_preferences(
     user: AuthenticatedUser,
     State(state): State<AppState>,

@@ -1,21 +1,18 @@
-#[cfg(feature = "zerver")]
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::deck::models::deck::skip_deck_card::SkipDeckCardError,
     inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::deck::requests::skip_deck_card::{InvalidSkipDeckCard, SkipDeckCard};
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::deck::HttpSkipDeckCard;
+use zwipe_core::{
+    domain::deck::requests::skip_deck_card::{InvalidSkipDeckCard, SkipDeckCard},
+    http::contracts::deck::HttpSkipDeckCard,
+};
 
-#[cfg(feature = "zerver")]
 impl From<SkipDeckCardError> for ApiError {
     fn from(value: SkipDeckCardError) -> Self {
         match value {
@@ -25,7 +22,6 @@ impl From<SkipDeckCardError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidSkipDeckCard> for ApiError {
     fn from(value: InvalidSkipDeckCard) -> Self {
         match value {
@@ -41,7 +37,6 @@ impl From<InvalidSkipDeckCard> for ApiError {
 
 /// Suppresses a single card for a deck (durable skip) after ownership
 /// verification.
-#[cfg(feature = "zerver")]
 pub async fn skip_deck_card(
     State(state): State<AppState>,
     Path(deck_id): Path<String>,
@@ -60,7 +55,6 @@ pub async fn skip_deck_card(
 }
 
 /// Removes a single skip suppression (undo) after ownership verification.
-#[cfg(feature = "zerver")]
 pub async fn unskip_deck_card(
     State(state): State<AppState>,
     Path((deck_id, oracle_id)): Path<(String, String)>,

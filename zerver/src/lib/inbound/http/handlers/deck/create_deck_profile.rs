@@ -1,4 +1,3 @@
-#[cfg(feature = "zerver")]
 use crate::{
     domain::{
         deck::models::deck::create_deck_profile::CreateDeckProfileError,
@@ -6,19 +5,18 @@ use crate::{
     },
     inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
 };
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::deck::{
-    deck_profile::DeckProfile,
-    requests::create_deck_profile::{CreateDeckProfile, InvalidCreateDeckProfile},
+use zwipe_core::{
+    domain::{
+        deck::{
+            deck_profile::DeckProfile,
+            requests::create_deck_profile::{CreateDeckProfile, InvalidCreateDeckProfile},
+        },
+        user::requests::get_user::GetUser,
+    },
+    http::contracts::deck::HttpCreateDeckProfile,
 };
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::user::requests::get_user::GetUser;
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
 
-#[cfg(feature = "zerver")]
 impl From<CreateDeckProfileError> for ApiError {
     fn from(value: CreateDeckProfileError) -> Self {
         match value {
@@ -37,7 +35,6 @@ impl From<CreateDeckProfileError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidCreateDeckProfile> for ApiError {
     fn from(value: InvalidCreateDeckProfile) -> Self {
         match value {
@@ -70,7 +67,6 @@ impl From<InvalidCreateDeckProfile> for ApiError {
 }
 
 /// Creates a new deck for the authenticated user.
-#[cfg(feature = "zerver")]
 pub async fn create_deck_profile(
     user: AuthenticatedUser,
     State(state): State<AppState>,

@@ -1,6 +1,3 @@
-#[cfg(feature = "zerver")]
-use crate::inbound::http::To500;
-#[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::{
@@ -14,16 +11,11 @@ use crate::{
         metrics::models::kinds::EventKind,
         user::models::get_user::GetUserError,
     },
-    inbound::http::{ApiError, AppState},
+    inbound::http::{ApiError, AppState, To500},
 };
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::auth::models::session::Session;
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::auth::HttpRegisterUser;
+use zwipe_core::{domain::auth::models::session::Session, http::contracts::auth::HttpRegisterUser};
 
-#[cfg(feature = "zerver")]
 impl From<EnforceSessionMaximumError> for ApiError {
     fn from(value: EnforceSessionMaximumError) -> Self {
         match value {
@@ -32,7 +24,6 @@ impl From<EnforceSessionMaximumError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidJwt> for ApiError {
     fn from(value: InvalidJwt) -> Self {
         match value {
@@ -43,7 +34,6 @@ impl From<InvalidJwt> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<CreateSessionError> for ApiError {
     fn from(value: CreateSessionError) -> Self {
         match value {
@@ -58,7 +48,6 @@ impl From<CreateSessionError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<RegisterUserError> for ApiError {
     fn from(value: RegisterUserError) -> Self {
         match value {
@@ -73,7 +62,6 @@ impl From<RegisterUserError> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidRegisterUser> for ApiError {
     fn from(value: InvalidRegisterUser) -> Self {
         match value {
@@ -91,7 +79,6 @@ impl From<InvalidRegisterUser> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl TryFrom<HttpRegisterUser> for RegisterUser {
     type Error = InvalidRegisterUser;
     fn try_from(value: HttpRegisterUser) -> Result<Self, Self::Error> {
@@ -100,7 +87,6 @@ impl TryFrom<HttpRegisterUser> for RegisterUser {
 }
 
 /// Registers a new user and returns a session (auto-login).
-#[cfg(feature = "zerver")]
 pub async fn register_user(
     State(state): State<AppState>,
     Json(body): Json<HttpRegisterUser>,

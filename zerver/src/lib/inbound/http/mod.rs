@@ -3,6 +3,7 @@
 #[cfg(feature = "zerver")]
 /// Serving-layer caches (`TtlSlot`, one typed slot per cached value).
 pub mod cache;
+#[cfg(feature = "zerver")]
 /// HTTP request handlers organized by domain.
 pub mod handlers;
 #[cfg(feature = "zerver")]

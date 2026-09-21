@@ -7,23 +7,20 @@
 //! Keeping fetch + parse server-side means the (undocumented) Archidekt shape
 //! can be patched without an app release.
 
-#[cfg(feature = "zerver")]
 use axum::{
     Json,
     extract::{Path, State},
     http::StatusCode,
 };
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
 
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::user::requests::get_user::GetUser;
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::deck::HttpImportArchidektDeck;
+use zwipe_core::{
+    domain::{
+        deck::requests::import_deck_cards::ImportDeckCardsResult, user::requests::get_user::GetUser,
+    },
+    http::contracts::deck::HttpImportArchidektDeck,
+};
 
-#[cfg(feature = "zerver")]
 use crate::{
     inbound::http::{
         ApiError, AppState, To500, handlers::metrics::check_completion::check_deck_completion,
@@ -32,7 +29,6 @@ use crate::{
     outbound::archidekt::{ArchidektClient, ArchidektError},
 };
 
-#[cfg(feature = "zerver")]
 impl From<ArchidektError> for ApiError {
     fn from(value: ArchidektError) -> Self {
         match value {
@@ -51,7 +47,6 @@ impl From<ArchidektError> for ApiError {
 
 /// Imports an Archidekt deck's cards into an existing deck owned by the
 /// authenticated user.
-#[cfg(feature = "zerver")]
 pub async fn import_archidekt_deck(
     user: AuthenticatedUser,
     Path(deck_id): Path<Uuid>,

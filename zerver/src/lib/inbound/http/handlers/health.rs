@@ -1,6 +1,4 @@
-#[cfg(feature = "zerver")]
 use crate::inbound::http::AppState;
-#[cfg(feature = "zerver")]
 use axum::{Json, extract::State};
 use chrono::Utc;
 use serde::Serialize;
@@ -28,7 +26,6 @@ impl RootResponse {
 }
 
 /// Returns package name, version, and status.
-#[cfg(feature = "zerver")]
 pub async fn root() -> Json<Value> {
     Json(json!(RootResponse::new(
         env!("CARGO_PKG_NAME"),
@@ -57,13 +54,11 @@ impl HealthCheckResponse {
 }
 
 /// Returns healthy if the server is reachable.
-#[cfg(feature = "zerver")]
 pub async fn is_server_running() -> Json<Value> {
     Json(json!(HealthCheckResponse::new("healthy")))
 }
 
 /// Pings the database and reports connectivity status.
-#[cfg(feature = "zerver")]
 pub async fn are_server_and_database_running(State(state): State<AppState>) -> Json<Value> {
     let result = match state.health_service.check_database().await {
         Ok(_) => "healthy",
