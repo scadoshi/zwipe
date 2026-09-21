@@ -4,10 +4,9 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::login_route;
 use zwipe_core::{
     domain::auth::models::{platform::ClientPlatform, session::Session},
-    http::contracts::auth::HttpAuthenticateUser,
+    http::{contracts::auth::HttpAuthenticateUser, paths::login_route},
 };
 
 /// Trait for authenticating users via the login endpoint.

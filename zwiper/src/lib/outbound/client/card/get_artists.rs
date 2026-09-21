@@ -4,7 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::get_artists_route;
+use zwipe_core::http::paths::get_artists_route;
 
 /// Trait for fetching the list of all unique card artists.
 #[allow(missing_docs)]

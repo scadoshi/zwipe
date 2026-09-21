@@ -1,10 +1,10 @@
 # zerver feature-gate teardown
 
 **Status: IN PROGRESS. Planned 2026-09-21 (external architecture review,
-claims verified against the code the same day); phase 1 landed the same day.
+claims verified against the code the same day); phases 1 and 2 landed the
+same day.
 Four phases, each independently shippable, each deletes a bucket of gates.
-Phase 2 is mechanical and can run any time; 3 and 4 each want a focused
-pass.**
+Phases 3 and 4 each want a focused pass.**
 
 Note from phase 1: the check commands need `--lib`. The zerver/zervice
 binaries require the feature by design, so a bare `-p zerver
@@ -50,7 +50,12 @@ carry one gate on the module declaration and zero inside.
 Behavior identical by construction: the subtree already compiled to nothing
 under `--no-default-features`.
 
-## Phase 2: repoint the route imports (kills ~20)
+## Phase 2: repoint the route imports (kills ~20) — DONE 2026-09-21
+
+(Landed with a wider slash fix than planned: nine path fns lacked the
+leading `/`, not three. All consumers were `Url::set_path` sites, so
+behavior is unchanged; every path fn now returns an absolute path. The
+`const &str` rider was left for later, it's cosmetic.)
 
 1. zwiper: `use zwipe::inbound::http::routes::X` becomes
    `use zwipe_core::http::paths::X`, 48 sites. Same functions, one hop

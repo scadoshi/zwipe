@@ -4,9 +4,9 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::refresh_session_route;
 use zwipe_core::{
-    domain::auth::models::session::Session, http::contracts::auth::HttpRefreshSession,
+    domain::auth::models::session::Session,
+    http::{contracts::auth::HttpRefreshSession, paths::refresh_session_route},
 };
 
 /// Trait for refreshing access tokens using a refresh token.

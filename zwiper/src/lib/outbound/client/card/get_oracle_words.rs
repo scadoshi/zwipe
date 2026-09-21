@@ -4,7 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::get_oracle_words_route;
+use zwipe_core::http::paths::get_oracle_words_route;
 
 /// Trait for fetching the list of all normalized oracle text words.
 #[allow(missing_docs)]

@@ -10,10 +10,9 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::routes::update_deck_card_route;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::deck_card::DeckCard},
-    http::contracts::deck_card::HttpPatchDeckCard,
+    http::{contracts::deck_card::HttpPatchDeckCard, paths::update_deck_card_route},
 };
 
 /// Trait for updating a card in a deck.

@@ -8,8 +8,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::featured_flavor_route;
-use zwipe_core::domain::card::Card;
+use zwipe_core::{domain::card::Card, http::paths::featured_flavor_route};
 
 /// Trait for fetching the hour's featured flavor card.
 #[allow(missing_docs)]

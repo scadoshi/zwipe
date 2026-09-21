@@ -5,10 +5,9 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::routes::create_deck_card_route;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::deck_card::DeckCard},
-    http::contracts::deck_card::HttpCreateDeckCard,
+    http::{contracts::deck_card::HttpCreateDeckCard, paths::create_deck_card_route},
 };
 
 /// Trait for adding cards to a deck.

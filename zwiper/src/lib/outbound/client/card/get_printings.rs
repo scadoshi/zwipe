@@ -5,8 +5,7 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::routes::get_printings_route;
-use zwipe_core::domain::card::Card;
+use zwipe_core::{domain::card::Card, http::paths::get_printings_route};
 
 /// Trait for fetching all printings of a card by oracle ID.
 #[allow(missing_docs)]

@@ -4,8 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::debug;
-use zwipe::inbound::http::routes::changelog_route;
-use zwipe_core::http::contracts::changelog::HttpChangelog;
+use zwipe_core::http::{contracts::changelog::HttpChangelog, paths::changelog_route};
 
 /// Trait for fetching the changelog.
 ///

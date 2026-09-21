@@ -9,6 +9,7 @@ pub mod handlers;
 #[cfg(feature = "zerver")]
 /// JWT authentication and last-active tracking middleware.
 pub mod middleware;
+#[cfg(feature = "zerver")]
 /// Route definitions mapping paths to handlers.
 pub mod routes;
 

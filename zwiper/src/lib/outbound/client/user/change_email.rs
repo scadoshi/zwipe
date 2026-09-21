@@ -4,10 +4,9 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::change_email_route;
 use zwipe_core::{
     domain::{auth::models::session::Session, user::User},
-    http::contracts::auth::HttpChangeEmail,
+    http::{contracts::auth::HttpChangeEmail, paths::change_email_route},
 };
 
 /// Trait for updating user email addresses.

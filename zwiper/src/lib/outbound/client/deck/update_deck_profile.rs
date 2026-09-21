@@ -5,10 +5,9 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::routes::update_deck_route;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::deck_profile::DeckProfile},
-    http::contracts::deck::HttpUpdateDeckProfile,
+    http::{contracts::deck::HttpUpdateDeckProfile, paths::update_deck_route},
 };
 
 /// Trait for updating deck profile metadata.

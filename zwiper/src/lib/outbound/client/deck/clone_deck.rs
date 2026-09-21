@@ -5,10 +5,12 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::routes::clone_deck_route;
 use zwipe_core::{
     domain::auth::models::session::Session,
-    http::contracts::deck::{HttpCloneDeck, HttpClonedDeck},
+    http::{
+        contracts::deck::{HttpCloneDeck, HttpClonedDeck},
+        paths::clone_deck_route,
+    },
 };
 
 /// Trait for cloning an existing deck into a new one with a caller-chosen name.

@@ -97,39 +97,39 @@ pub fn search_commanders_route() -> String {
 }
 
 pub fn get_artists_route() -> String {
-    "api/card/artists".to_string()
+    "/api/card/artists".to_string()
 }
 
 pub fn get_card_types_route() -> String {
-    "api/card/types".to_string()
+    "/api/card/types".to_string()
 }
 
 pub fn get_keywords_route() -> String {
-    "api/card/keywords".to_string()
+    "/api/card/keywords".to_string()
 }
 
 pub fn get_keyword_reminders_route() -> String {
-    "api/card/keyword-reminders".to_string()
+    "/api/card/keyword-reminders".to_string()
 }
 
 pub fn get_oracle_words_route() -> String {
-    "api/card/oracle-words".to_string()
+    "/api/card/oracle-words".to_string()
 }
 
 pub fn get_card_roles_route() -> String {
-    "api/card/roles".to_string()
+    "/api/card/roles".to_string()
 }
 
 pub fn get_deck_tags_route() -> String {
-    "api/deck/tags".to_string()
+    "/api/deck/tags".to_string()
 }
 
 pub fn get_oracle_tags_route() -> String {
-    "api/card/oracle-tags".to_string()
+    "/api/card/oracle-tags".to_string()
 }
 
 pub fn get_sets_route() -> String {
-    "api/card/sets".to_string()
+    "/api/card/sets".to_string()
 }
 
 pub fn get_languages_route() -> String {

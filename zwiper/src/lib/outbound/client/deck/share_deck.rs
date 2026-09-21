@@ -5,9 +5,9 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::routes::share_deck_route;
 use zwipe_core::{
-    domain::auth::models::session::Session, http::contracts::deck::HttpDeckShareToken,
+    domain::auth::models::session::Session,
+    http::{contracts::deck::HttpDeckShareToken, paths::share_deck_route},
 };
 
 /// Trait for creating and revoking a deck's public share link.

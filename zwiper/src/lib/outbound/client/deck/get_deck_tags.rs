@@ -4,8 +4,10 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::get_deck_tags_route;
-use zwipe_core::domain::{auth::models::session::Session, deck::DeckTagView};
+use zwipe_core::{
+    domain::{auth::models::session::Session, deck::DeckTagView},
+    http::paths::get_deck_tags_route,
+};
 
 /// Trait for fetching the full deck-tag catalog (slug, label, description, seed
 /// otags). Authenticated; it lives under the deck routes; the deck-tag picker

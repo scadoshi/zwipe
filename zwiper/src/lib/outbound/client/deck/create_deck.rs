@@ -4,10 +4,9 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::create_deck_route;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::deck_profile::DeckProfile},
-    http::contracts::deck::HttpCreateDeckProfile,
+    http::{contracts::deck::HttpCreateDeckProfile, paths::create_deck_route},
 };
 
 /// Trait for creating new deck profiles.

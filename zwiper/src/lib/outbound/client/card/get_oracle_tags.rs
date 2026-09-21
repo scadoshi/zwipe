@@ -4,8 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::get_oracle_tags_route;
-use zwipe_core::domain::card::oracle_tag::OracleTag;
+use zwipe_core::{domain::card::oracle_tag::OracleTag, http::paths::get_oracle_tags_route};
 
 /// Trait for fetching the full oracle tag catalog (slug, label, description, parents).
 #[allow(missing_docs)]

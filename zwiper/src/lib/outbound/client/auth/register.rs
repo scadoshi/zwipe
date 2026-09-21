@@ -4,10 +4,9 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::register_route;
 use zwipe_core::{
     domain::auth::models::{platform::ClientPlatform, session::Session},
-    http::contracts::auth::HttpRegisterUser,
+    http::{contracts::auth::HttpRegisterUser, paths::register_route},
 };
 
 /// Trait for registering new user accounts.

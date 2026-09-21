@@ -4,7 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::{collections::HashMap, future::Future};
 use tracing::info;
-use zwipe::inbound::http::routes::get_keyword_reminders_route;
+use zwipe_core::http::paths::get_keyword_reminders_route;
 
 /// Trait for fetching the keyword-reminder map. Served so definition fixes
 /// land on deploy instead of waiting for an app-store train; the compiled-in

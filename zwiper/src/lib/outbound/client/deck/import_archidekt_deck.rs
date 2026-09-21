@@ -5,13 +5,12 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::routes::import_archidekt_deck_route;
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
         deck::{ImportMode, requests::import_deck_cards::ImportDeckCardsResult},
     },
-    http::contracts::deck::HttpImportArchidektDeck,
+    http::{contracts::deck::HttpImportArchidektDeck, paths::import_archidekt_deck_route},
 };
 
 /// Trait for importing an Archidekt deck's cards into an existing deck.

@@ -5,8 +5,10 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::routes::get_deck_route;
-use zwipe_core::domain::{auth::models::session::Session, deck::Deck};
+use zwipe_core::{
+    domain::{auth::models::session::Session, deck::Deck},
+    http::paths::get_deck_route,
+};
 
 /// Trait for fetching a complete deck with all cards.
 #[allow(missing_docs)]

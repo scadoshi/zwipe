@@ -4,8 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::debug;
-use zwipe::inbound::http::routes::min_client_version_route;
-use zwipe_core::http::contracts::client::HttpMinClientVersion;
+use zwipe_core::http::{contracts::client::HttpMinClientVersion, paths::min_client_version_route};
 
 /// Trait for fetching the server's minimum supported app version.
 ///

@@ -4,10 +4,9 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::mark_hint_shown_route;
 use zwipe_core::{
     domain::{auth::models::session::Session, user::User},
-    http::contracts::user::HttpMarkHintShown,
+    http::{contracts::user::HttpMarkHintShown, paths::mark_hint_shown_route},
 };
 
 /// Trait for marking a one-time UI hint as shown for the authenticated user.

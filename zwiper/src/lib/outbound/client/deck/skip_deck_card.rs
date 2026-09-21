@@ -5,8 +5,13 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::routes::{skip_deck_card_route, unskip_deck_card_route};
-use zwipe_core::{domain::auth::models::session::Session, http::contracts::deck::HttpSkipDeckCard};
+use zwipe_core::{
+    domain::auth::models::session::Session,
+    http::{
+        contracts::deck::HttpSkipDeckCard,
+        paths::{skip_deck_card_route, unskip_deck_card_route},
+    },
+};
 
 /// Trait for posting and undoing a single deck-card skip.
 #[allow(missing_docs)]

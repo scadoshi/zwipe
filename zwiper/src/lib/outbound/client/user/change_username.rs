@@ -4,10 +4,9 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::change_username_route;
 use zwipe_core::{
     domain::{auth::models::session::Session, user::User},
-    http::contracts::auth::HttpChangeUsername,
+    http::{contracts::auth::HttpChangeUsername, paths::change_username_route},
 };
 
 /// Trait for updating usernames.

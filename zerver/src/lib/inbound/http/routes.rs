@@ -1,85 +1,79 @@
 //! Route definitions and path constants shared between frontend and backend.
 
-#[cfg(feature = "zerver")]
-use crate::domain::auth::models::access_token::JwtSecret;
-#[cfg(feature = "zerver")]
-use crate::inbound::http::AppState;
-#[cfg(feature = "zerver")]
-use crate::inbound::http::handlers::{
-    auth::{
-        authenticate_user::authenticate_user, change_email::change_email,
-        change_password::change_password, change_username::change_username,
-        delete_user::delete_user, refresh_session::refresh_session, register_user::register_user,
-        request_password_reset::request_password_reset, resend_verification::resend_verification,
-        reset_password::reset_password, revoke_sessions::revoke_sessions,
-        verify_email::verify_email,
-    },
-    card::{
-        featured_flavor::get_featured_flavor, get_artists::get_artists, get_card::get_card,
-        get_card_roles::get_card_roles, get_card_types::get_card_types,
-        get_keyword_reminders::get_keyword_reminders, get_keywords::get_keywords,
-        get_languages::get_languages, get_oracle_tags::get_oracle_tags,
-        get_oracle_words::get_oracle_words, get_printings::get_printings, get_sets::get_sets,
-        search_card::search_cards, search_commanders::search_commanders,
-    },
-    changelog::get_changelog,
-    client::get_min_client_version,
-    deck::{
-        clear_deck_suppressions::clear_deck_suppressions,
-        clone_deck::clone_deck,
-        create_deck_profile::create_deck_profile,
-        delete_deck::delete_deck,
-        get_deck::get_deck,
-        get_deck_profile::get_deck_profile,
-        get_deck_profiles::get_deck_profiles,
-        get_deck_tags::get_deck_tags,
-        get_deck_tokens::get_deck_tokens,
-        get_shared_deck::get_shared_deck,
-        import_archidekt::import_archidekt_deck,
-        search_deck_cards::search_deck_cards,
-        share_deck::{share_deck, unshare_deck},
-        skip_deck_card::{skip_deck_card, unskip_deck_card},
-        update_deck_profile::update_deck_profile,
-    },
-    deck_card::{
-        create_deck_card::create_deck_card, delete_deck_card::delete_deck_card,
-        import_deck_cards::import_deck_cards, patch_deck_card::patch_deck_card,
-    },
-    health::{are_server_and_database_running, is_server_running, root},
-    metrics::{
-        get_my_metrics::get_my_metrics, get_public_metrics::get_public_metrics,
-        record_anonymous_event::record_anonymous_event, record_crash::record_crash,
-        record_usage::record_usage,
-    },
-    user::{
-        commander_maybeboard::{
-            add_commander_maybeboard_card, clear_commander_maybeboard, get_commander_maybeboard,
-            remove_commander_maybeboard_card,
+use crate::{
+    domain::auth::models::access_token::JwtSecret,
+    inbound::http::{
+        AppState,
+        handlers::{
+            auth::{
+                authenticate_user::authenticate_user, change_email::change_email,
+                change_password::change_password, change_username::change_username,
+                delete_user::delete_user, refresh_session::refresh_session,
+                register_user::register_user, request_password_reset::request_password_reset,
+                resend_verification::resend_verification, reset_password::reset_password,
+                revoke_sessions::revoke_sessions, verify_email::verify_email,
+            },
+            card::{
+                featured_flavor::get_featured_flavor, get_artists::get_artists, get_card::get_card,
+                get_card_roles::get_card_roles, get_card_types::get_card_types,
+                get_keyword_reminders::get_keyword_reminders, get_keywords::get_keywords,
+                get_languages::get_languages, get_oracle_tags::get_oracle_tags,
+                get_oracle_words::get_oracle_words, get_printings::get_printings,
+                get_sets::get_sets, search_card::search_cards,
+                search_commanders::search_commanders,
+            },
+            changelog::get_changelog,
+            client::get_min_client_version,
+            deck::{
+                clear_deck_suppressions::clear_deck_suppressions,
+                clone_deck::clone_deck,
+                create_deck_profile::create_deck_profile,
+                delete_deck::delete_deck,
+                get_deck::get_deck,
+                get_deck_profile::get_deck_profile,
+                get_deck_profiles::get_deck_profiles,
+                get_deck_tags::get_deck_tags,
+                get_deck_tokens::get_deck_tokens,
+                get_shared_deck::get_shared_deck,
+                import_archidekt::import_archidekt_deck,
+                search_deck_cards::search_deck_cards,
+                share_deck::{share_deck, unshare_deck},
+                skip_deck_card::{skip_deck_card, unskip_deck_card},
+                update_deck_profile::update_deck_profile,
+            },
+            deck_card::{
+                create_deck_card::create_deck_card, delete_deck_card::delete_deck_card,
+                import_deck_cards::import_deck_cards, patch_deck_card::patch_deck_card,
+            },
+            health::{are_server_and_database_running, is_server_running, root},
+            metrics::{
+                get_my_metrics::get_my_metrics, get_public_metrics::get_public_metrics,
+                record_anonymous_event::record_anonymous_event, record_crash::record_crash,
+                record_usage::record_usage,
+            },
+            user::{
+                commander_maybeboard::{
+                    add_commander_maybeboard_card, clear_commander_maybeboard,
+                    get_commander_maybeboard, remove_commander_maybeboard_card,
+                },
+                get_preferences::get_preferences,
+                get_user::get_user,
+                mark_hint_shown::mark_hint_shown,
+                update_preferences::update_preferences,
+            },
         },
-        get_preferences::get_preferences,
-        get_user::get_user,
-        mark_hint_shown::mark_hint_shown,
-        update_preferences::update_preferences,
+        middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtractor},
     },
 };
-#[cfg(feature = "zerver")]
-use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtractor};
-#[cfg(feature = "zerver")]
-use axum::Router;
-#[cfg(feature = "zerver")]
-use axum::extract::DefaultBodyLimit;
-#[cfg(feature = "zerver")]
-use axum::routing::{delete, get, patch, post};
-#[cfg(feature = "zerver")]
 use axum::{
+    Router,
     body::Body,
+    extract::DefaultBodyLimit,
     http::{HeaderMap, HeaderValue, Response, StatusCode, header},
+    routing::{delete, get, patch, post},
 };
-#[cfg(feature = "zerver")]
 use std::{sync::Arc, time::Duration};
-#[cfg(feature = "zerver")]
 use tower_governor::{GovernorLayer, errors::GovernorError, governor::GovernorConfigBuilder};
-#[cfg(feature = "zerver")]
 use tower_http::set_header::SetResponseHeaderLayer;
 
 /// Rate-limit error handler for the routes keyed by user id
@@ -99,7 +93,6 @@ use tower_http::set_header::SetResponseHeaderLayer;
 ///
 /// Only attached to the user-id-keyed limiters; the public, IP-keyed limiters
 /// can always extract a key and use [`stable_rate_limit`] instead.
-#[cfg(feature = "zerver")]
 fn unauthorized_on_missing_key(error: GovernorError) -> Response<Body> {
     match error {
         GovernorError::UnableToExtractKey => {
@@ -117,7 +110,6 @@ fn unauthorized_on_missing_key(error: GovernorError) -> Response<Body> {
 /// Rate-limit error handler for the public, IP-keyed limiters: the stable 429
 /// body for `TooManyRequests`, library default for everything else (their key
 /// extraction never legitimately fails, so no 401 remap here).
-#[cfg(feature = "zerver")]
 fn stable_rate_limit(error: GovernorError) -> Response<Body> {
     match error {
         GovernorError::TooManyRequests { wait_time, headers } => {
@@ -135,7 +127,6 @@ fn stable_rate_limit(error: GovernorError) -> Response<Body> {
 /// fresh `client_errors` row (field-confirmed 2026-08-05). Bucketed copy keeps
 /// the message stable across an incident; machines that want precision read
 /// the header.
-#[cfg(feature = "zerver")]
 fn too_many_requests_response(wait_time: u64, headers: Option<HeaderMap>) -> Response<Body> {
     let mut response = Response::new(Body::from(rate_limit_copy(wait_time)));
     *response.status_mut() = StatusCode::TOO_MANY_REQUESTS;
@@ -150,7 +141,6 @@ fn too_many_requests_response(wait_time: u64, headers: Option<HeaderMap>) -> Res
 
 /// Human copy for a 429, bucketed so it stays identical for minutes at a time
 /// (long lockouts round up to 5-minute steps).
-#[cfg(feature = "zerver")]
 fn rate_limit_copy(wait_secs: u64) -> String {
     match wait_secs {
         0..=60 => "too many requests, try again in a minute".to_string(),
@@ -174,7 +164,6 @@ pub use zwipe_core::http::paths::*;
 ///
 /// Success-only on purpose: without the guard a 429 or error body would leave
 /// browser-cacheable for an hour.
-#[cfg(feature = "zerver")]
 fn hourly_public_cache(response: &Response<Body>) -> Option<HeaderValue> {
     response
         .status()
@@ -182,10 +171,8 @@ fn hourly_public_cache(response: &Response<Body>) -> Option<HeaderValue> {
         .then(|| HeaderValue::from_static("public, max-age=3600"))
 }
 
-#[cfg(feature = "zerver")]
 type CacheHeaderFn = fn(&Response<Body>) -> Option<HeaderValue>;
 
-#[cfg(feature = "zerver")]
 fn hourly_cache_layer() -> SetResponseHeaderLayer<CacheHeaderFn> {
     SetResponseHeaderLayer::if_not_present(
         header::CACHE_CONTROL,
@@ -194,7 +181,6 @@ fn hourly_cache_layer() -> SetResponseHeaderLayer<CacheHeaderFn> {
 }
 
 /// Routes that don't require authentication.
-#[cfg(feature = "zerver")]
 #[allow(clippy::expect_used)]
 pub fn public_routes() -> Router<AppState> {
     // 5 req / 30s: tight limit, brute-force target
@@ -471,7 +457,6 @@ pub fn public_routes() -> Router<AppState> {
 }
 
 /// Routes that require `AuthenticatedUser` (JWT Bearer token).
-#[cfg(feature = "zerver")]
 #[allow(clippy::expect_used)]
 pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
     // 500 req / 5min (~1.67/s avg): generous for swiping, keyed by user ID

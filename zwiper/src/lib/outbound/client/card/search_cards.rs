@@ -4,10 +4,12 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::search_cards_route;
-use zwipe_core::domain::{
-    auth::models::session::Session,
-    card::{Card, search_card::card_filter::CardQuery},
+use zwipe_core::{
+    domain::{
+        auth::models::session::Session,
+        card::{Card, search_card::card_filter::CardQuery},
+    },
+    http::paths::search_cards_route,
 };
 
 /// Trait for searching cards with filter criteria.

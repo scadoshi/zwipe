@@ -5,9 +5,9 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::routes::clear_deck_suppressions_route;
 use zwipe_core::{
-    domain::auth::models::session::Session, http::contracts::deck::HttpClearedSuppressions,
+    domain::auth::models::session::Session,
+    http::{contracts::deck::HttpClearedSuppressions, paths::clear_deck_suppressions_route},
 };
 
 /// Trait for clearing a deck's suppression set.

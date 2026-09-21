@@ -4,7 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::get_card_types_route;
+use zwipe_core::http::paths::get_card_types_route;
 
 /// Trait for fetching the list of all card types (creature, instant, etc.).
 #[allow(missing_docs)]

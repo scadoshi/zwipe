@@ -4,8 +4,7 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::get_card_roles_route;
-use zwipe_core::domain::card::card_role::CardRoleView;
+use zwipe_core::{domain::card::card_role::CardRoleView, http::paths::get_card_roles_route};
 
 /// Trait for fetching the full card-role catalog (slug, display name, short name).
 #[allow(missing_docs)]

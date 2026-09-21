@@ -5,11 +5,13 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::routes::{
-    add_commander_maybeboard_card_route, clear_commander_maybeboard_route,
-    get_commander_maybeboard_route, remove_commander_maybeboard_card_route,
+use zwipe_core::{
+    domain::{auth::models::session::Session, card::Card},
+    http::paths::{
+        add_commander_maybeboard_card_route, clear_commander_maybeboard_route,
+        get_commander_maybeboard_route, remove_commander_maybeboard_card_route,
+    },
 };
-use zwipe_core::domain::{auth::models::session::Session, card::Card};
 
 /// Trait for reading and mutating the user's commander maybeboard.
 #[allow(missing_docs)]

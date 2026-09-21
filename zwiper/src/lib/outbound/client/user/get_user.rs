@@ -4,8 +4,10 @@ use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::routes::get_user_route;
-use zwipe_core::domain::{auth::models::session::Session, user::User};
+use zwipe_core::{
+    domain::{auth::models::session::Session, user::User},
+    http::paths::get_user_route,
+};
 
 /// Trait for fetching user profile data.
 #[allow(missing_docs)]

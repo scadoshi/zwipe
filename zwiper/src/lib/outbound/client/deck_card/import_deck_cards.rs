@@ -5,13 +5,12 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::routes::import_deck_cards_route;
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
         deck::{ImportMode, requests::import_deck_cards::ImportDeckCardsResult},
     },
-    http::contracts::deck_card::HttpImportDeckCards,
+    http::{contracts::deck_card::HttpImportDeckCards, paths::import_deck_cards_route},
 };
 
 /// Trait for importing cards into a deck from plain text.
