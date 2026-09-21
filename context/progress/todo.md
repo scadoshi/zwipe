@@ -3,7 +3,7 @@
 **Primary goal: grow the user base through marketing and tester-feedback intake.** (iOS App Store: LIVE. Android Play Store: LIVE (production). Full webapp at zwipe.net: in progress.)
 
 Only open, actionable items live here. When something ships, its outcome moves to
-[`overview.md`](overview.md) and leaves this list. Older completed work is archived
+[`../README.md`](../README.md) and leaves this list. Older completed work is archived
 at `context/archive/complete_2026_q1.md`.
 
 ---
@@ -20,7 +20,7 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Bugs
 
-- [ ] **Rotate the prod db password at leisure.** Pre-2026-09-13 zerver logged the full `DATABASE_URL` (password included) into the journal on every startup-connect failure; the error is scrubbed now (`2af14433`) but old journal lines still carry it. Localhost-only listener, so low severity. Rotation touches `postgres` (ALTER ROLE), `~/zwipe/.env` on the server, and a zerver restart. The 09-11 outage this came from is written up in [`overview.md`](overview.md); all other hardening from it is done.
+- [ ] **Rotate the prod db password at leisure.** Pre-2026-09-13 zerver logged the full `DATABASE_URL` (password included) into the journal on every startup-connect failure; the error is scrubbed now (`2af14433`) but old journal lines still carry it. Localhost-only listener, so low severity. Rotation touches `postgres` (ALTER ROLE), `~/zwipe/.env` on the server, and a zerver restart. The 09-11 outage this came from is written up in [`../README.md`](../README.md); all other hardening from it is done.
 
 - [ ] **Store-build eyeball, now against 1.10.1 (live 2026-09-07):** confirm the new error toasts and note chips behave (plus the older deck list restyle and back-swipe, never store-verified), and reinstall Zwipe from the store on the Pixel, which is still on a debug-signed build Play cannot update. Delete this line once both are done. The formal field check **passed 2026-09-06** (see the archived plan); the one stray it found argues for the reinstall: a single 1.9.3-android ndk-context crash on 08-21 whose only plausible source is a debug-signed dev install, since dev builds skip `patch_bundle.sh` and ship the unpatched manifest.
 
@@ -37,7 +37,7 @@ at `context/archive/complete_2026_q1.md`.
 
 - [ ] **App unresponsive after long backgrounding (owner report 2026-07-30, iOS observed).** Leave the app backgrounded for a long time, return: sometimes the ENTIRE screen is unclickable until force-close + relaunch. Investigation leads, none confirmed: (a) a full-screen element left mounted and intercepting taps (modal backdrop, toast container, an overlay whose dismiss never fired); (b) the WebView's JS event bridge dying after OS memory pressure while the rendered page survives (wry/dioxus eval channel); (c) something in the resume path (visibility flusher, session refresh single-flight) wedging the main loop. Repro is intermittent; next occurrence, note which screen it happened on and whether scrolling still works (scroll-works-but-taps-don't points to (b)); the new crash/error reporting won't catch this class (no panic, no error toast).
 
-Recently resolved (outcomes in [`overview.md`](overview.md)):
+Recently resolved (outcomes in [`../README.md`](../README.md)):
 the **Android ndk-context crash** (field-verified 2026-09-06: zero ndk-context
 crashes on store builds for 16 days against ~10/day before the fix, with 8 of 9
 weekly Android users on 1.9.2+; full check recorded in
@@ -63,7 +63,7 @@ Completed fixes are archived to
 - [x] **Deck share page: full app sections, BUILT + owner-reviewed 2026-08-13.** The share page carries all five deck-view sections (Budget with currency chips + price target, Tags incl. oracle tags, Distributions with Avg P/T, Mana with land target + curve + fulfillment, interactive Draw odds) as collapsible panels between the featured cards and the controls, collapsed by default, several per row. Card groups collapse too (shared `SdCollapsibleGroup`, default open). Whole chart family now shared: `zwipe_components::{DeckCharts, ManaCurve, ManaFulfillment, DrawOdds, ChartLabel}` fed by `DeckMetrics` chart methods (bar/balance/draw-odds math hoisted from the app's view, which deduped onto them). `HttpSharedDeck` gained serde-defaulted `land_target`/`price_target`/`price_target_currency`. The server half is deployed (`get_shared_deck` serves `land_target`), so all that's left is eyeballing a deployed share page with targets showing, then deleting this line.
 - [ ] **Import should carry printings, not just card names (owner 2026-08-17).** Text and Archidekt imports currently resolve a name to some printing, so a decklist that specifies a set/collector number loses that choice on the way in. Both formats can express it: Archidekt exports carry set + collector number, and the plain-text convention is `1x Card Name (set) 123` (which the import screen already displays in its own example). Make the importer honor the printing when one is given and fall back to the current behavior when it isn't. Open: what to do when the named printing isn't in `latest_cards` (fall back silently vs surface it in the existing Unresolved list, which already has a per-card reason), and whether export should round-trip printings so a Zwipe export re-imports identically.
 
-- [ ] **Per-UB-release chore: top up `universe.rs` FRANCHISES** when a new Universes Beyond set releases (census query in the module docs). OOU detection is `security_stamp = 'triangle'` plus this hand-maintained set-code list, and some UB sets are stampless (spm/tla/tle), so a missed top-up quietly serves new crossover cards to users who hid them. The in-universe project itself is SHIPPED (1.10.0 LIVE 2026-09-07, outcome in [`overview.md`](overview.md); design in [`../plans/archive/in_universe_filter.md`](../plans/archive/in_universe_filter.md)).
+- [ ] **Per-UB-release chore: top up `universe.rs` FRANCHISES** when a new Universes Beyond set releases (census query in the module docs). OOU detection is `security_stamp = 'triangle'` plus this hand-maintained set-code list, and some UB sets are stampless (spm/tla/tle), so a missed top-up quietly serves new crossover cards to users who hid them. The in-universe project itself is SHIPPED (1.10.0 LIVE 2026-09-07, outcome in [`../README.md`](../README.md); design in [`../plans/archive/in_universe_filter.md`](../plans/archive/in_universe_filter.md)).
 
 - [ ] **Deck composition targets (big, needs MVP scoping).** (owner, Discord, 2026-07-23) Like the land target, but for everything a card can be: set per-deck target counts for a card role (10 ramp), a card type (30 creatures), or cards matching an arbitrary filter, with goal-vs-actual display. Needs functionality + MVP scoping before any build: storage shape (deck_profile vs new table), which axes ship first (roles/types before filter-based), editing UI, and whether targets feed warnings. Skipped for now by owner call.
 - [ ] **Mana pip-count filter (investigate).** (owner idea, Discord, 2026-07-21) Let players filter the card pool by the exact count of colored pips of a given color in the mana cost, e.g. "has 2 blue pips and 1 red pip." Per-color pip counts are derivable from `mana_cost`. Open: UI (per-color count steppers? which colors shown?), match semantics (exact vs min/max), and whether it stacks with the existing color/mana filters. Not specced.
@@ -150,7 +150,7 @@ The cache-first synergy layer shipped, and so did its first two consumers:
 **synergy scores** (the Synergy chip on the add screen, guide: `synergy`) and
 **popularity data** (commanders serve in EDHREC-popularity order; see
 `swipe_select.rs`, and the in-app hint says "Most-played cards come first").
-Outcomes in [`overview.md`](overview.md). What's left:
+Outcomes in [`../README.md`](../README.md). What's left:
 
 - [ ] Salt score, display per card and aggregate per deck, filtering and sorting on card search
 - [ ] Evaluate further data (themes, combos, etc.) as the layer matures

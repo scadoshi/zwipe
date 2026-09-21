@@ -4,7 +4,7 @@
 document, kept as a record of what the MVP was meant to be. It is not a
 description of the app today. Zwipe has been live on the App Store since
 2026-06-06 and in Play production since July 2026; for current state see
-`../progress/overview.md`. Claims below are annotated where they diverged.
+`../README.md`. Claims below are annotated where they diverged.
 
 ## Vision
 A mobile-first Magic: The Gathering deck builder with a swipe-based card browsing interface. Built for Commander players who want a fast, enjoyable mobile experience — not another cluttered desktop tool ported to a small screen.
