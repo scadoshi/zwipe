@@ -39,7 +39,6 @@ impl Endpoint for GetDeckProfiles {
 pub struct CreateDeck(pub Value);
 impl Endpoint for CreateDeck {
     const METHOD: Method = Method::Post;
-    const SUCCESS: u16 = 201;
     type Response = DeckProfile;
     fn path(&self) -> String {
         CREATE_DECK_ROUTE.to_string()
@@ -86,7 +85,6 @@ impl Endpoint for UpdateDeckProfile {
 pub struct DeleteDeck(pub Uuid);
 impl Endpoint for DeleteDeck {
     const METHOD: Method = Method::Delete;
-    const SUCCESS: u16 = 204;
     type Response = ();
     fn path(&self) -> String {
         delete_deck_route(self.0)
@@ -97,7 +95,6 @@ impl Endpoint for DeleteDeck {
 pub struct CloneDeck(pub Uuid, pub Value);
 impl Endpoint for CloneDeck {
     const METHOD: Method = Method::Post;
-    const SUCCESS: u16 = 201;
     type Response = HttpClonedDeck;
     fn path(&self) -> String {
         clone_deck_route(self.0)
@@ -141,7 +138,6 @@ impl Endpoint for ShareDeck {
 pub struct UnshareDeck(pub Uuid);
 impl Endpoint for UnshareDeck {
     const METHOD: Method = Method::Delete;
-    const SUCCESS: u16 = 204;
     type Response = ();
     fn path(&self) -> String {
         share_deck_route(self.0)
@@ -152,7 +148,6 @@ impl Endpoint for UnshareDeck {
 pub struct SkipDeckCard(pub Uuid, pub Value);
 impl Endpoint for SkipDeckCard {
     const METHOD: Method = Method::Post;
-    const SUCCESS: u16 = 204;
     type Response = ();
     fn path(&self) -> String {
         skip_deck_card_route(self.0)
@@ -166,7 +161,6 @@ impl Endpoint for SkipDeckCard {
 pub struct UnskipDeckCard(pub Uuid, pub Uuid);
 impl Endpoint for UnskipDeckCard {
     const METHOD: Method = Method::Delete;
-    const SUCCESS: u16 = 204;
     type Response = ();
     fn path(&self) -> String {
         unskip_deck_card_route(self.0, self.1)
@@ -187,7 +181,6 @@ impl Endpoint for ClearDeckSuppressions {
 pub struct CreateDeckCard(pub Uuid, pub Value);
 impl Endpoint for CreateDeckCard {
     const METHOD: Method = Method::Post;
-    const SUCCESS: u16 = 201;
     type Response = DeckCard;
     fn path(&self) -> String {
         create_deck_card_route(self.0)

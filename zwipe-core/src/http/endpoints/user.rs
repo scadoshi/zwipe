@@ -71,7 +71,6 @@ impl Endpoint for ChangePassword {
 pub struct DeleteUser(pub Value);
 impl Endpoint for DeleteUser {
     const METHOD: Method = Method::Delete;
-    const SUCCESS: u16 = 204;
     type Response = ();
     fn path(&self) -> String {
         DELETE_USER_ROUTE.to_string()
@@ -131,7 +130,6 @@ impl Endpoint for GetCommanderMaybeboard {
 pub struct AddCommanderMaybeboardCard(pub Uuid);
 impl Endpoint for AddCommanderMaybeboardCard {
     const METHOD: Method = Method::Post;
-    const SUCCESS: u16 = 204;
     type Response = ();
     fn path(&self) -> String {
         add_commander_maybeboard_card_route(self.0)
@@ -142,7 +140,6 @@ impl Endpoint for AddCommanderMaybeboardCard {
 pub struct RemoveCommanderMaybeboardCard(pub Uuid);
 impl Endpoint for RemoveCommanderMaybeboardCard {
     const METHOD: Method = Method::Delete;
-    const SUCCESS: u16 = 204;
     type Response = ();
     fn path(&self) -> String {
         remove_commander_maybeboard_card_route(self.0)
@@ -153,7 +150,6 @@ impl Endpoint for RemoveCommanderMaybeboardCard {
 pub struct ClearCommanderMaybeboard;
 impl Endpoint for ClearCommanderMaybeboard {
     const METHOD: Method = Method::Delete;
-    const SUCCESS: u16 = 204;
     type Response = ();
     fn path(&self) -> String {
         CLEAR_COMMANDER_MAYBEBOARD_ROUTE.to_string()

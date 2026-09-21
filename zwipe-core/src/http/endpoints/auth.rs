@@ -30,7 +30,6 @@ impl Endpoint for Login {
 pub struct Register(pub Value);
 impl Endpoint for Register {
     const METHOD: Method = Method::Post;
-    const SUCCESS: u16 = 201;
     const AUTH: bool = false;
     type Response = Session;
     fn path(&self) -> String {

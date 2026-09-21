@@ -49,11 +49,12 @@ impl ZwipeClient {
 }
 
 /// Splits the response into success and failure, and turns a success body into
-/// `E::Response`. An empty body reads as `null` so 204 endpoints can declare
-/// `type Response = ()`.
+/// `E::Response`. Any 2xx is success: several endpoints answer 200 or 204 for
+/// the same call, and no caller branches on which. An empty body reads as
+/// `null` so those can declare `type Response = ()`.
 async fn decode<E: Endpoint>(response: reqwest::Response) -> Result<E::Response, ClientError> {
     let status = response.status();
-    if status.as_u16() != E::SUCCESS {
+    if !status.is_success() {
         let message = response.text().await?;
         return Err((status, message).into());
     }

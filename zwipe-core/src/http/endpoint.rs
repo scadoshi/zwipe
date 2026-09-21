@@ -40,8 +40,6 @@ impl Method {
 pub trait Endpoint {
     /// HTTP method.
     const METHOD: Method;
-    /// Status the server returns on success.
-    const SUCCESS: u16 = 200;
     /// Whether the call carries a bearer token.
     const AUTH: bool = true;
     /// Decoded success body.
