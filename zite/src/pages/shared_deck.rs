@@ -31,7 +31,10 @@ use zwipe_core::{
             deck_tag_label,
         },
     },
-    http::contracts::deck::HttpSharedDeck,
+    http::{
+        contracts::deck::HttpSharedDeck,
+        paths::{get_oracle_tags_route, get_shared_deck_route},
+    },
 };
 
 /// How a shared-deck fetch can fail, from the reader's point of view.
@@ -321,9 +324,14 @@ pub fn SharedDeck(token: String) -> Element {
     let mut result: Resource<Result<HttpSharedDeck, FetchError>> = use_resource(move || {
         let token = token.clone();
         async move {
+            // Share tokens are uuids; a token that can't parse can't ever
+            // resolve, same outcome as the server's 404.
+            let Ok(token) = token.parse::<Uuid>() else {
+                return Err(FetchError::NotShared);
+            };
             let client = reqwest::Client::new();
             let res = client
-                .get(format!("{API_BASE}/api/share/deck/{token}"))
+                .get(format!("{}{}", API_BASE, get_shared_deck_route(token)))
                 .send()
                 .await
                 .map_err(|e| FetchError::Network(e.to_string()))?;
@@ -427,7 +435,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let otags: Resource<Vec<OracleTag>> = use_resource(|| async move {
         let client = reqwest::Client::new();
         match client
-            .get(format!("{API_BASE}/api/card/oracle-tags"))
+            .get(format!("{}{}", API_BASE, get_oracle_tags_route()))
             .send()
             .await
         {

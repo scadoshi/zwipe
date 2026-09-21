@@ -1,6 +1,7 @@
 use crate::{API_BASE, Nav};
 use dioxus::prelude::*;
 use serde::Serialize;
+use zwipe_core::http::paths::verify_email_route;
 
 #[derive(Serialize)]
 struct VerifyEmailRequest {
@@ -18,7 +19,7 @@ pub fn Verify(token: String) -> Element {
 
             let client = reqwest::Client::new();
             let res = client
-                .post(format!("{API_BASE}/api/auth/verify-email"))
+                .post(format!("{}{}", API_BASE, verify_email_route()))
                 .json(&VerifyEmailRequest { token })
                 .send()
                 .await

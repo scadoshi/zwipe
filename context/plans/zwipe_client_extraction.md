@@ -50,11 +50,14 @@ method into scope. Two honest options:
 
 Doing the move without deciding copies the ceremony into the new crate.
 
-## Quick win that shouldn't wait for the crate
+## Quick win that shouldn't wait for the crate — DONE 2026-09-21
 
-zite's four literals can switch to `zwipe_core::http::paths` today. Note the
-leading-slash trap: three path fns lack the `/` prefix (teardown phase 2
-rider fixes them); until then join via `Url::set_path`, not `format!`.
+zite's four literals now go through `zwipe_core::http::paths`, joined
+`format!("{}{}", API_BASE, route())` like the rest of zite. The
+leading-slash trap is gone too: every path fn returns an absolute path
+(teardown phase 2). The shared-deck page parses its URL token to a `Uuid`
+first and treats a non-uuid as NotShared, which is what the server would
+have said anyway.
 
 ## Verification
 
