@@ -6,6 +6,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -20,14 +21,14 @@ async fn register_authed_login_refresh(pool: sqlx::PgPool) {
     assert!(!token.is_empty());
 
     // 2. Authed request with the access token.
-    let (status, me) = app.get("/api/user", Some(&token)).await;
+    let (status, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "GET /api/user: {me}");
     assert_eq!(me["username"], "alice");
 
     // 3. Login with the same credentials.
     let (status, session) = app
         .post(
-            "/api/auth/login",
+            LOGIN_ROUTE,
             serde_json::json!({ "identifier": "alice", "password": "TestPass123!" }),
             None,
         )
@@ -41,7 +42,7 @@ async fn register_authed_login_refresh(pool: sqlx::PgPool) {
     // 4. Refresh — old token rotates into a new session.
     let (status, refreshed) = app
         .post(
-            "/api/auth/refresh",
+            REFRESH_SESSION_ROUTE,
             serde_json::json!({ "user_id": user_id, "refresh_token": refresh }),
             None,
         )
@@ -57,7 +58,7 @@ async fn login_wrong_password_is_401(pool: sqlx::PgPool) {
 
     let (status, _) = app
         .post(
-            "/api/auth/login",
+            LOGIN_ROUTE,
             serde_json::json!({ "identifier": "bob", "password": "WrongPass123!" }),
             None,
         )
@@ -68,6 +69,6 @@ async fn login_wrong_password_is_401(pool: sqlx::PgPool) {
 #[sqlx::test]
 async fn authed_route_without_token_is_401(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
-    let (status, _) = app.get("/api/user", None).await;
+    let (status, _) = app.get(GET_USER_ROUTE, None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }

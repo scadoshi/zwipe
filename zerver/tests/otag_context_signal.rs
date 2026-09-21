@@ -9,6 +9,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -31,7 +32,7 @@ async fn legacy_commander_field_credits_no_otag_rows(pool: sqlx::PgPool) {
     let commander = Uuid::from_u128(0xC0);
     let (status, _) = app
         .post(
-            "/api/metrics/usage",
+            RECORD_USAGE_ROUTE,
             json!({
                 "swipes_right": 2, "swipes_left": 1, "swipes_up": 0, "swipes_down": 0, "searches": 0,
                 "signals": [{
@@ -72,7 +73,7 @@ async fn non_commander_deck_credits_format_and_color_identity(pool: sqlx::PgPool
     // A non-Commander deck: format modern, one red mainboard card → CI "R".
     let (status, deck) = app
         .post(
-            "/api/deck",
+            DECK_ROUTE,
             json!({ "name": "Burn", "format": "modern" }),
             Some(&token),
         )
@@ -95,7 +96,7 @@ async fn non_commander_deck_credits_format_and_color_identity(pool: sqlx::PgPool
     // derives the (format, CI) key. Every serving client sends this shape.
     let (status, _) = app
         .post(
-            "/api/metrics/usage",
+            RECORD_USAGE_ROUTE,
             json!({
                 "swipes_right": 1, "swipes_left": 0, "swipes_up": 0, "swipes_down": 0, "searches": 0,
                 "signals": [{
@@ -150,7 +151,7 @@ async fn commander_deck_derives_commander_from_deck_id(pool: sqlx::PgPool) {
 
     let (status, deck) = app
         .post(
-            "/api/deck",
+            DECK_ROUTE,
             json!({ "name": "Superfriends", "format": "commander" }),
             Some(&token),
         )
@@ -167,7 +168,7 @@ async fn commander_deck_derives_commander_from_deck_id(pool: sqlx::PgPool) {
     // deck_id only — commander_oracle_id is omitted (→ None).
     let (status, _) = app
         .post(
-            "/api/metrics/usage",
+            RECORD_USAGE_ROUTE,
             json!({
                 "swipes_right": 2, "swipes_left": 1, "swipes_up": 0, "swipes_down": 0, "searches": 0,
                 "signals": [{
@@ -226,7 +227,7 @@ async fn deck_id_ownership_is_enforced(pool: sqlx::PgPool) {
 
     let (status, deck) = app
         .post(
-            "/api/deck",
+            DECK_ROUTE,
             json!({ "name": "Burn", "format": "modern" }),
             Some(&owner_token),
         )
@@ -236,7 +237,7 @@ async fn deck_id_ownership_is_enforced(pool: sqlx::PgPool) {
 
     let (status, _) = app
         .post(
-            "/api/metrics/usage",
+            RECORD_USAGE_ROUTE,
             json!({
                 "swipes_right": 1, "swipes_left": 0, "swipes_up": 0, "swipes_down": 0, "searches": 0,
                 "signals": [{
@@ -271,7 +272,7 @@ async fn signal_without_commander_or_deck_credits_no_otag_rows(pool: sqlx::PgPoo
 
     let (status, _) = app
         .post(
-            "/api/metrics/usage",
+            RECORD_USAGE_ROUTE,
             json!({
                 "swipes_right": 1, "swipes_left": 0, "swipes_up": 0, "swipes_down": 0, "searches": 0,
                 "signals": [{
@@ -311,7 +312,7 @@ async fn rollup_refresh_computes_net_and_shown(pool: sqlx::PgPool) {
 
     let (status, deck) = app
         .post(
-            "/api/deck",
+            DECK_ROUTE,
             json!({ "name": "Rollup", "format": "modern" }),
             Some(&token),
         )
@@ -338,7 +339,7 @@ async fn rollup_refresh_computes_net_and_shown(pool: sqlx::PgPool) {
     // added 2, skipped 1, maybed 1, removed 1 → net = 2 + 0.5 - 1 = 1.5, shown = 4.
     let (status, _) = app
         .post(
-            "/api/metrics/usage",
+            RECORD_USAGE_ROUTE,
             json!({
                 "swipes_right": 2, "swipes_left": 1, "swipes_up": 1, "swipes_down": 0, "searches": 0,
                 "signals": [{

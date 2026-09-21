@@ -8,6 +8,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -23,7 +24,7 @@ async fn deck_profile_lifecycle(pool: sqlx::PgPool) {
     // create
     let (status, deck) = app
         .post(
-            "/api/deck",
+            DECK_ROUTE,
             json!({ "name": "My First Deck", "format": "commander" }),
             Some(&token),
         )
@@ -34,15 +35,17 @@ async fn deck_profile_lifecycle(pool: sqlx::PgPool) {
 
     // get profile + full deck
     let (status, prof) = app
-        .get(&format!("/api/deck/profile/{id}"), Some(&token))
+        .get(&get_deck_profile_route(id.parse().unwrap()), Some(&token))
         .await;
     assert_eq!(status, StatusCode::OK, "get profile: {prof}");
     assert_eq!(prof["name"], "My First Deck");
-    let (status, _full) = app.get(&format!("/api/deck/{id}"), Some(&token)).await;
+    let (status, _full) = app
+        .get(&get_deck_route(id.parse().unwrap()), Some(&token))
+        .await;
     assert_eq!(status, StatusCode::OK);
 
     // list contains it
-    let (status, list) = app.get("/api/deck", Some(&token)).await;
+    let (status, list) = app.get(DECK_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK);
     assert!(
         list.as_array()
@@ -55,7 +58,7 @@ async fn deck_profile_lifecycle(pool: sqlx::PgPool) {
     // update the name (clean Opdate wire: absent = unchanged).
     let (status, updated) = app
         .patch(
-            &format!("/api/deck/{id}"),
+            &get_deck_route(id.parse().unwrap()),
             json!({ "name": "Renamed" }),
             Some(&token),
         )
@@ -65,7 +68,7 @@ async fn deck_profile_lifecycle(pool: sqlx::PgPool) {
     // A deck always has a name: explicit null is a 422, not a silent no-op.
     let (status, body) = app
         .patch(
-            &format!("/api/deck/{id}"),
+            &get_deck_route(id.parse().unwrap()),
             json!({ "name": null }),
             Some(&token),
         )
@@ -79,22 +82,24 @@ async fn deck_profile_lifecycle(pool: sqlx::PgPool) {
     // PUT retired with the version gate.
     let (status, _) = app
         .put(
-            &format!("/api/deck/{id}"),
+            &get_deck_route(id.parse().unwrap()),
             json!({ "name": "Renamed Again" }),
             Some(&token),
         )
         .await;
     assert_eq!(status, StatusCode::METHOD_NOT_ALLOWED, "PUT must be gone");
     let (_, prof) = app
-        .get(&format!("/api/deck/profile/{id}"), Some(&token))
+        .get(&get_deck_profile_route(id.parse().unwrap()), Some(&token))
         .await;
     assert_eq!(prof["name"], "Renamed");
 
     // delete => 204, then gone
-    let (status, _) = app.delete(&format!("/api/deck/{id}"), Some(&token)).await;
+    let (status, _) = app
+        .delete(&get_deck_route(id.parse().unwrap()), Some(&token))
+        .await;
     assert_eq!(status, StatusCode::NO_CONTENT, "delete");
     let (status, _) = app
-        .get(&format!("/api/deck/profile/{id}"), Some(&token))
+        .get(&get_deck_profile_route(id.parse().unwrap()), Some(&token))
         .await;
     assert_eq!(status, StatusCode::NOT_FOUND, "profile after delete");
 }
@@ -106,11 +111,11 @@ async fn unverified_deck_cap_then_verify_unlocks(pool: sqlx::PgPool) {
 
     // unverified cap = 1 deck
     let (s1, _) = app
-        .post("/api/deck", json!({ "name": "Deck 1" }), Some(&token))
+        .post(DECK_ROUTE, json!({ "name": "Deck 1" }), Some(&token))
         .await;
     assert_eq!(s1, StatusCode::CREATED);
     let (s2, e) = app
-        .post("/api/deck", json!({ "name": "Deck 2" }), Some(&token))
+        .post(DECK_ROUTE, json!({ "name": "Deck 2" }), Some(&token))
         .await;
     assert_eq!(
         s2,
@@ -121,7 +126,7 @@ async fn unverified_deck_cap_then_verify_unlocks(pool: sqlx::PgPool) {
     // verifying lifts the cap
     app.verify_email(&uid).await;
     let (s3, _) = app
-        .post("/api/deck", json!({ "name": "Deck 2" }), Some(&token))
+        .post(DECK_ROUTE, json!({ "name": "Deck 2" }), Some(&token))
         .await;
     assert_eq!(s3, StatusCode::CREATED, "verified 2nd deck should succeed");
 }
@@ -133,11 +138,11 @@ async fn duplicate_deck_name_rejected(pool: sqlx::PgPool) {
     app.verify_email(&uid).await; // lift the cap so the 2nd create reaches the dup check
 
     let (s1, _) = app
-        .post("/api/deck", json!({ "name": "Twin" }), Some(&token))
+        .post(DECK_ROUTE, json!({ "name": "Twin" }), Some(&token))
         .await;
     assert_eq!(s1, StatusCode::CREATED);
     let (s2, _) = app
-        .post("/api/deck", json!({ "name": "Twin" }), Some(&token))
+        .post(DECK_ROUTE, json!({ "name": "Twin" }), Some(&token))
         .await;
     assert_eq!(
         s2,
@@ -151,22 +156,28 @@ async fn cannot_touch_another_users_deck(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (a_token, _) = app.register("dave").await;
     let (_, deck) = app
-        .post("/api/deck", json!({ "name": "Private" }), Some(&a_token))
+        .post(DECK_ROUTE, json!({ "name": "Private" }), Some(&a_token))
         .await;
     let id = deck["id"].as_str().unwrap().to_string();
 
     // 404 (not 403) — another user's deck must look nonexistent, no existence leak.
     let (b_token, _) = app.register("erin").await;
-    let (status, _) = app.get(&format!("/api/deck/{id}"), Some(&b_token)).await;
+    let (status, _) = app
+        .get(&get_deck_route(id.parse().unwrap()), Some(&b_token))
+        .await;
     assert_eq!(status, StatusCode::NOT_FOUND, "B reading A's deck must 404");
-    let (status, _) = app.delete(&format!("/api/deck/{id}"), Some(&b_token)).await;
+    let (status, _) = app
+        .delete(&get_deck_route(id.parse().unwrap()), Some(&b_token))
+        .await;
     assert_eq!(
         status,
         StatusCode::NOT_FOUND,
         "B deleting A's deck must 404"
     );
     // A's deck still there
-    let (status, _) = app.get(&format!("/api/deck/{id}"), Some(&a_token)).await;
+    let (status, _) = app
+        .get(&get_deck_route(id.parse().unwrap()), Some(&a_token))
+        .await;
     assert_eq!(status, StatusCode::OK, "A's deck should be untouched");
 }
 
@@ -178,7 +189,7 @@ async fn clone_creates_a_new_deck(pool: sqlx::PgPool) {
 
     let (_, deck) = app
         .post(
-            "/api/deck",
+            DECK_ROUTE,
             json!({ "name": "Original", "format": "commander" }),
             Some(&token),
         )
@@ -187,7 +198,7 @@ async fn clone_creates_a_new_deck(pool: sqlx::PgPool) {
 
     let (status, cloned) = app
         .post(
-            &format!("/api/deck/{id}/clone"),
+            &clone_deck_route(id.parse().unwrap()),
             json!({ "new_name": "Original Copy" }),
             Some(&token),
         )
@@ -197,10 +208,13 @@ async fn clone_creates_a_new_deck(pool: sqlx::PgPool) {
     assert_ne!(clone_id, id, "clone must get a new id");
 
     // now two decks exist, and the clone carries the new name
-    let (_, list) = app.get("/api/deck", Some(&token)).await;
+    let (_, list) = app.get(DECK_ROUTE, Some(&token)).await;
     assert_eq!(list.as_array().unwrap().len(), 2);
     let (_, clone_prof) = app
-        .get(&format!("/api/deck/profile/{clone_id}"), Some(&token))
+        .get(
+            &get_deck_profile_route(clone_id.parse().unwrap()),
+            Some(&token),
+        )
         .await;
     assert_eq!(clone_prof["name"], "Original Copy");
 }
@@ -215,7 +229,7 @@ async fn deck_oracle_tags_round_trip(pool: sqlx::PgPool) {
     // create with a duplicate slug -> deduped on the way in
     let (status, deck) = app
         .post(
-            "/api/deck",
+            DECK_ROUTE,
             json!({ "name": "Otag Deck", "oracle_tags": ["spot-removal", "ramp", "spot-removal"] }),
             Some(&token),
         )
@@ -226,7 +240,7 @@ async fn deck_oracle_tags_round_trip(pool: sqlx::PgPool) {
 
     // get profile reads them back
     let (status, prof) = app
-        .get(&format!("/api/deck/profile/{id}"), Some(&token))
+        .get(&get_deck_profile_route(id.parse().unwrap()), Some(&token))
         .await;
     assert_eq!(status, StatusCode::OK, "get: {prof}");
     assert_eq!(prof["oracle_tags"], json!(["spot-removal", "ramp"]));
@@ -240,7 +254,11 @@ async fn deck_oracle_tags_round_trip(pool: sqlx::PgPool) {
     )
     .unwrap();
     let (status, upd) = app
-        .patch(&format!("/api/deck/{id}"), update_body, Some(&token))
+        .patch(
+            &get_deck_route(id.parse().unwrap()),
+            update_body,
+            Some(&token),
+        )
         .await;
     assert_eq!(status, StatusCode::OK, "update: {upd}");
     assert_eq!(upd["oracle_tags"], json!(["lifegain"]));
@@ -253,7 +271,11 @@ async fn deck_oracle_tags_round_trip(pool: sqlx::PgPool) {
     )
     .unwrap();
     let (status, cleared) = app
-        .patch(&format!("/api/deck/{id}"), clear_body, Some(&token))
+        .patch(
+            &get_deck_route(id.parse().unwrap()),
+            clear_body,
+            Some(&token),
+        )
         .await;
     assert_eq!(status, StatusCode::OK, "clear: {cleared}");
     assert_eq!(cleared["oracle_tags"], json!([]));

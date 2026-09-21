@@ -10,6 +10,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -22,7 +23,7 @@ async fn deck_for(app: &TestApp, username: &str) -> (String, String) {
     app.verify_email(&uid).await;
     let (status, deck) = app
         .post(
-            "/api/deck",
+            DECK_ROUTE,
             json!({ "name": "Test Deck", "format": "commander" }),
             Some(&token),
         )
@@ -47,7 +48,7 @@ async fn deck_card_add_bump_remove(pool: sqlx::PgPool) {
     // add one copy
     let (status, dc) = app
         .post(
-            &format!("/api/deck/{did}/card"),
+            &create_deck_card_route(did.parse().unwrap()),
             json!({ "scryfall_data_id": sid.to_string(), "oracle_id": oid.to_string(), "quantity": 1 }),
             Some(&token),
         )
@@ -59,7 +60,7 @@ async fn deck_card_add_bump_remove(pool: sqlx::PgPool) {
     // quantity is absolute: set to 3
     let (status, dc) = app
         .patch(
-            &format!("/api/deck/{did}/card/{sid}"),
+            &update_deck_card_route(did.parse().unwrap(), sid),
             json!({ "quantity": 3 }),
             Some(&token),
         )
@@ -70,7 +71,7 @@ async fn deck_card_add_bump_remove(pool: sqlx::PgPool) {
     // PUT retired with the version gate: the delta route is gone.
     let (status, _) = app
         .put(
-            &format!("/api/deck/{did}/card/{sid}"),
+            &update_deck_card_route(did.parse().unwrap(), sid),
             json!({ "update_quantity": 2 }),
             Some(&token),
         )
@@ -80,7 +81,7 @@ async fn deck_card_add_bump_remove(pool: sqlx::PgPool) {
     // Explicit null on a non-clearable field is a 422, not a silent no-op.
     let (status, body) = app
         .patch(
-            &format!("/api/deck/{did}/card/{sid}"),
+            &update_deck_card_route(did.parse().unwrap(), sid),
             json!({ "quantity": null, "board": "deck" }),
             Some(&token),
         )
@@ -88,7 +89,9 @@ async fn deck_card_add_bump_remove(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "null qty: {body}");
 
     // the full deck reflects the card + quantity
-    let (_, full) = app.get(&format!("/api/deck/{did}"), Some(&token)).await;
+    let (_, full) = app
+        .get(&get_deck_route(did.parse().unwrap()), Some(&token))
+        .await;
     let entries = full["entries"].as_array().unwrap();
     assert_eq!(entries.len(), 1, "one entry expected: {full}");
     assert_eq!(
@@ -99,10 +102,15 @@ async fn deck_card_add_bump_remove(pool: sqlx::PgPool) {
 
     // remove => 204, deck empties
     let (status, _) = app
-        .delete(&format!("/api/deck/{did}/card/{sid}"), Some(&token))
+        .delete(
+            &update_deck_card_route(did.parse().unwrap(), sid),
+            Some(&token),
+        )
         .await;
     assert_eq!(status, StatusCode::NO_CONTENT, "delete card");
-    let (_, full) = app.get(&format!("/api/deck/{did}"), Some(&token)).await;
+    let (_, full) = app
+        .get(&get_deck_route(did.parse().unwrap()), Some(&token))
+        .await;
     assert_eq!(
         full["entries"].as_array().unwrap().len(),
         0,
@@ -122,7 +130,7 @@ async fn deck_card_added_to_maybeboard(pool: sqlx::PgPool) {
 
     let (status, dc) = app
         .post(
-            &format!("/api/deck/{did}/card"),
+            &create_deck_card_route(did.parse().unwrap()),
             json!({
                 "scryfall_data_id": sid.to_string(),
                 "oracle_id": oid.to_string(),
@@ -135,7 +143,9 @@ async fn deck_card_added_to_maybeboard(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::CREATED, "add to maybeboard: {dc}");
     assert_eq!(dc["board"], "maybeboard");
 
-    let (_, full) = app.get(&format!("/api/deck/{did}"), Some(&token)).await;
+    let (_, full) = app
+        .get(&get_deck_route(did.parse().unwrap()), Some(&token))
+        .await;
     let entries = full["entries"].as_array().unwrap();
     assert_eq!(entries.len(), 1);
     assert_eq!(entries[0]["deck_card"]["board"], "maybeboard");
@@ -157,7 +167,7 @@ async fn clone_copies_the_cards(pool: sqlx::PgPool) {
     for (sid, oid, qty) in [(a_sid, a_oid, 1), (b_sid, b_oid, 3)] {
         let (status, _) = app
             .post(
-                &format!("/api/deck/{did}/card"),
+                &create_deck_card_route(did.parse().unwrap()),
                 json!({ "scryfall_data_id": sid.to_string(), "oracle_id": oid.to_string(), "quantity": qty }),
                 Some(&token),
             )
@@ -167,7 +177,7 @@ async fn clone_copies_the_cards(pool: sqlx::PgPool) {
 
     let (status, cloned) = app
         .post(
-            &format!("/api/deck/{did}/clone"),
+            &clone_deck_route(did.parse().unwrap()),
             json!({ "new_name": "Sol Ring Copy" }),
             Some(&token),
         )
@@ -177,7 +187,7 @@ async fn clone_copies_the_cards(pool: sqlx::PgPool) {
 
     // the clone carries both cards with their quantities
     let (_, full) = app
-        .get(&format!("/api/deck/{clone_id}"), Some(&token))
+        .get(&get_deck_route(clone_id.parse().unwrap()), Some(&token))
         .await;
     let entries = full["entries"].as_array().unwrap();
     assert_eq!(entries.len(), 2, "clone should copy both cards: {full}");
@@ -222,7 +232,7 @@ async fn import_resolves_known_cards_and_reports_the_rest(pool: sqlx::PgPool) {
     // one resolvable, one bogus line
     let (status, result) = app
         .post(
-            &format!("/api/deck/{did}/card/import"),
+            &import_deck_cards_route(did.parse().unwrap()),
             json!({ "text": "2 Lightning Bolt\n1 Definitely Not A Real Card" }),
             Some(&token),
         )
@@ -238,7 +248,9 @@ async fn import_resolves_known_cards_and_reports_the_rest(pool: sqlx::PgPool) {
     );
 
     // the imported card really landed in the deck
-    let (_, full) = app.get(&format!("/api/deck/{did}"), Some(&token)).await;
+    let (_, full) = app
+        .get(&get_deck_route(did.parse().unwrap()), Some(&token))
+        .await;
     let names: Vec<&str> = full["entries"]
         .as_array()
         .unwrap()
@@ -277,7 +289,7 @@ async fn get_deck_carries_command_zone_cards(pool: sqlx::PgPool) {
     // absent = unchanged; the legacy tagged dialect is no longer decoded).
     let (status, updated) = app
         .patch(
-            &format!("/api/deck/{did}"),
+            &get_deck_route(did.parse().unwrap()),
             json!({ "commander_id": cmd_sid.to_string() }),
             Some(&token),
         )
@@ -287,14 +299,16 @@ async fn get_deck_carries_command_zone_cards(pool: sqlx::PgPool) {
     // Add the mainboard card.
     let (status, dc) = app
         .post(
-            &format!("/api/deck/{did}/card"),
+            &create_deck_card_route(did.parse().unwrap()),
             json!({ "scryfall_data_id": bolt_sid.to_string(), "oracle_id": bolt_oid.to_string(), "quantity": 1 }),
             Some(&token),
         )
         .await;
     assert_eq!(status, StatusCode::CREATED, "add bolt: {dc}");
 
-    let (status, full) = app.get(&format!("/api/deck/{did}"), Some(&token)).await;
+    let (status, full) = app
+        .get(&get_deck_route(did.parse().unwrap()), Some(&token))
+        .await;
     assert_eq!(status, StatusCode::OK, "get deck: {full}");
 
     // Command zone carries the commander (with its price), separate from entries.

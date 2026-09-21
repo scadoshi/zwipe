@@ -5,6 +5,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -15,7 +16,7 @@ use zwipe_core::content::changelog::{RELEASES, UPCOMING};
 async fn changelog_serves_the_compiled_in_history(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
 
-    let (status, body) = app.get("/api/changelog", None).await;
+    let (status, body) = app.get(CHANGELOG_ROUTE, None).await;
     assert_eq!(status, StatusCode::OK, "GET /api/changelog: {body}");
 
     let releases = body["releases"].as_array().unwrap();

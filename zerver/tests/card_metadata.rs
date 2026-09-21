@@ -7,6 +7,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -47,27 +48,27 @@ async fn metadata_endpoints_return_distinct_values(pool: sqlx::PgPool) {
     )
     .await;
 
-    let artists = list(&app_of(pool.clone()), "/api/card/artists").await;
+    let artists = list(&app_of(pool.clone()), GET_ARTISTS_ROUTE).await;
     assert_eq!(
         artists,
         vec!["Alice Art", "Bob Art"],
         "distinct + sorted, no duplicate Alice"
     );
 
-    let sets = list(&app_of(pool.clone()), "/api/card/sets").await;
+    let sets = list(&app_of(pool.clone()), GET_SETS_ROUTE).await;
     assert!(
         sets.contains(&"Magic 2010".to_string()) && sets.contains(&"Test Set".to_string()),
         "{sets:?}"
     );
 
-    let langs = list(&app_of(pool.clone()), "/api/card/languages").await;
+    let langs = list(&app_of(pool.clone()), GET_LANGUAGES_ROUTE).await;
     assert!(
         langs.contains(&"en".to_string()) && langs.contains(&"ja".to_string()),
         "{langs:?}"
     );
 
     // keywords are lowercased + de-duped across cards
-    let keywords = list(&app_of(pool.clone()), "/api/card/keywords").await;
+    let keywords = list(&app_of(pool.clone()), GET_KEYWORDS_ROUTE).await;
     assert_eq!(
         keywords,
         vec!["flying", "haste", "vigilance"],
@@ -75,7 +76,7 @@ async fn metadata_endpoints_return_distinct_values(pool: sqlx::PgPool) {
     );
 
     // types are tokenized from type_line (stored case); stop words excluded
-    let types = list(&app_of(pool.clone()), "/api/card/types").await;
+    let types = list(&app_of(pool.clone()), GET_CARD_TYPES_ROUTE).await;
     assert!(types.contains(&"Creature".to_string()), "{types:?}");
     assert!(types.contains(&"Instant".to_string()), "{types:?}");
     assert!(
@@ -102,9 +103,7 @@ async fn printings_returns_all_printings_of_an_oracle(pool: sqlx::PgPool) {
     )
     .await;
 
-    let (status, body) = app
-        .get(&format!("/api/card/{shared}/printings"), None)
-        .await;
+    let (status, body) = app.get(&get_printings_route(shared), None).await;
     assert_eq!(status, StatusCode::OK, "printings: {body}");
     let printings = body.as_array().unwrap();
     assert_eq!(printings.len(), 2, "both printings of the shared oracle");

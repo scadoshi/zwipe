@@ -7,6 +7,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -19,7 +20,7 @@ async fn deck_for(app: &TestApp, username: &str) -> (String, String) {
     app.verify_email(&uid).await;
     let (status, deck) = app
         .post(
-            "/api/deck",
+            DECK_ROUTE,
             json!({ "name": "Atomic Deck", "format": "commander" }),
             Some(&token),
         )
@@ -58,7 +59,7 @@ async fn over_limit_import_writes_nothing(pool: sqlx::PgPool) {
 
     let (status, r) = app
         .post(
-            &format!("/api/deck/{did}/card/import"),
+            &import_deck_cards_route(did.parse().unwrap()),
             json!({ "text": "1 Lightning Bolt" }),
             Some(&token),
         )
@@ -67,7 +68,7 @@ async fn over_limit_import_writes_nothing(pool: sqlx::PgPool) {
 
     let (status, r) = app
         .post(
-            &format!("/api/deck/{did}/card/import"),
+            &import_deck_cards_route(did.parse().unwrap()),
             json!({ "text": "600 Island", "mode": "replace" }),
             Some(&token),
         )
@@ -75,7 +76,9 @@ async fn over_limit_import_writes_nothing(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "limit: {r}");
 
     // Nothing changed: Bolt still there, no Islands, total untouched.
-    let (_, full) = app.get(&format!("/api/deck/{did}"), Some(&token)).await;
+    let (_, full) = app
+        .get(&get_deck_route(did.parse().unwrap()), Some(&token))
+        .await;
     let names: Vec<&str> = full["entries"]
         .as_array()
         .unwrap()
@@ -106,7 +109,7 @@ async fn replace_reconciles_only_boards_present_in_the_import(pool: sqlx::PgPool
 
     let (status, r) = app
         .post(
-            &format!("/api/deck/{did}/card/import"),
+            &import_deck_cards_route(did.parse().unwrap()),
             json!({ "text": "1 Lightning Bolt\n1 Shock" }),
             Some(&token),
         )
@@ -116,14 +119,16 @@ async fn replace_reconciles_only_boards_present_in_the_import(pool: sqlx::PgPool
     // Replace the deck board with Opt only: Bolt + Shock must go, Opt stays.
     let (status, r) = app
         .post(
-            &format!("/api/deck/{did}/card/import"),
+            &import_deck_cards_route(did.parse().unwrap()),
             json!({ "text": "1 Opt", "mode": "replace" }),
             Some(&token),
         )
         .await;
     assert_eq!(status, StatusCode::OK, "replace import: {r}");
 
-    let (_, full) = app.get(&format!("/api/deck/{did}"), Some(&token)).await;
+    let (_, full) = app
+        .get(&get_deck_route(did.parse().unwrap()), Some(&token))
+        .await;
     let names: Vec<&str> = full["entries"]
         .as_array()
         .unwrap()
@@ -139,7 +144,7 @@ async fn replace_reconciles_only_boards_present_in_the_import(pool: sqlx::PgPool
     // An import where nothing resolves must not wipe anything.
     let (status, r) = app
         .post(
-            &format!("/api/deck/{did}/card/import"),
+            &import_deck_cards_route(did.parse().unwrap()),
             json!({ "text": "1 Definitely Not A Real Card", "mode": "replace" }),
             Some(&token),
         )
@@ -167,7 +172,7 @@ async fn add_mode_overlap_replaces_quantities(pool: sqlx::PgPool) {
     for qty in [2, 3] {
         let (status, r) = app
             .post(
-                &format!("/api/deck/{did}/card/import"),
+                &import_deck_cards_route(did.parse().unwrap()),
                 json!({ "text": format!("{qty} Lightning Bolt") }),
                 Some(&token),
             )
@@ -199,7 +204,7 @@ async fn foreign_deck_import_is_rejected_and_writes_nothing(pool: sqlx::PgPool) 
     for text in ["1 Lightning Bolt", "1 Definitely Not A Real Card"] {
         let (status, _) = app
             .post(
-                &format!("/api/deck/{did}/card/import"),
+                &import_deck_cards_route(did.parse().unwrap()),
                 json!({ "text": text }),
                 Some(&attacker_token),
             )
@@ -226,7 +231,7 @@ async fn concurrent_imports_cannot_race_past_the_limit(pool: sqlx::PgPool) {
     )
     .await;
 
-    let path = format!("/api/deck/{did}/card/import");
+    let path = import_deck_cards_route(did.parse().unwrap());
     let a = app.post(&path, json!({ "text": "300 Island" }), Some(&token));
     let b = app.post(&path, json!({ "text": "300 Mountain" }), Some(&token));
     let ((status_a, ra), (status_b, rb)) = tokio::join!(a, b);
@@ -268,7 +273,7 @@ async fn importing_a_starred_card_to_another_board_drops_the_star(pool: sqlx::Pg
 
     let (status, r) = app
         .post(
-            &format!("/api/deck/{did}/card/import"),
+            &import_deck_cards_route(did.parse().unwrap()),
             json!({ "text": "1 Lightning Bolt" }),
             Some(&token),
         )
@@ -284,7 +289,7 @@ async fn importing_a_starred_card_to_another_board_drops_the_star(pool: sqlx::Pg
     .unwrap();
     let (status, r) = app
         .patch(
-            &format!("/api/deck/{did}/card/{sd_id}"),
+            &update_deck_card_route(did.parse().unwrap(), sd_id.parse().unwrap()),
             json!({ "mvp": true }),
             Some(&token),
         )
@@ -307,7 +312,7 @@ async fn importing_a_starred_card_to_another_board_drops_the_star(pool: sqlx::Pg
     // the star must not travel with it.
     let (status, r) = app
         .post(
-            &format!("/api/deck/{did}/card/import"),
+            &import_deck_cards_route(did.parse().unwrap()),
             json!({ "text": "1 Lightning Bolt", "board": "maybeboard" }),
             Some(&token),
         )

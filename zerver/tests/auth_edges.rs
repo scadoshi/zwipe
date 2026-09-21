@@ -8,6 +8,7 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -26,7 +27,7 @@ async fn verify_email_via_captured_token(pool: sqlx::PgPool) {
         .expect("verification email with a /verify/ link");
 
     let (status, _) = app
-        .post("/api/auth/verify-email", json!({ "token": raw }), None)
+        .post(VERIFY_EMAIL_ROUTE, json!({ "token": raw }), None)
         .await;
     assert_eq!(
         status,
@@ -35,7 +36,7 @@ async fn verify_email_via_captured_token(pool: sqlx::PgPool) {
     );
 
     // the account now reads as verified
-    let (_, me) = app.get("/api/user", Some(&token)).await;
+    let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
     assert!(
         me["email_verified_at"].is_string(),
         "email_verified_at set: {me}"
@@ -48,7 +49,7 @@ async fn verify_email_rejects_garbage_token(pool: sqlx::PgPool) {
     let _ = app.register("skeptic").await;
     let (status, _) = app
         .post(
-            "/api/auth/verify-email",
+            VERIFY_EMAIL_ROUTE,
             json!({ "token": "deadbeef-not-a-real-token" }),
             None,
         )
@@ -64,7 +65,7 @@ async fn password_reset_via_captured_token(pool: sqlx::PgPool) {
     // request the reset, then read the raw token from the captured email
     let (status, _) = app
         .post(
-            "/api/auth/forgot-password",
+            FORGOT_PASSWORD_ROUTE,
             json!({ "email": "forgetful@test.local" }),
             None,
         )
@@ -77,7 +78,7 @@ async fn password_reset_via_captured_token(pool: sqlx::PgPool) {
 
     let (status, _) = app
         .post(
-            "/api/auth/reset-password",
+            RESET_PASSWORD_ROUTE,
             json!({ "token": raw, "new_password": "Reset456!" }),
             None,
         )
@@ -91,7 +92,7 @@ async fn password_reset_via_captured_token(pool: sqlx::PgPool) {
     // the new password authenticates; the old one does not
     let (status, _) = app
         .post(
-            "/api/auth/login",
+            LOGIN_ROUTE,
             json!({ "identifier": "forgetful", "password": "Reset456!" }),
             None,
         )
@@ -99,7 +100,7 @@ async fn password_reset_via_captured_token(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::OK, "login with the reset password");
     let (status, _) = app
         .post(
-            "/api/auth/login",
+            LOGIN_ROUTE,
             json!({ "identifier": "forgetful", "password": "TestPass123!" }),
             None,
         )
@@ -118,7 +119,7 @@ async fn refresh_token_is_single_use(pool: sqlx::PgPool) {
 
     let (status, session) = app
         .post(
-            "/api/auth/login",
+            LOGIN_ROUTE,
             json!({ "identifier": "roller", "password": "TestPass123!" }),
             None,
         )
@@ -133,7 +134,7 @@ async fn refresh_token_is_single_use(pool: sqlx::PgPool) {
     // first use rotates the token and succeeds
     let (status, rotated) = app
         .post(
-            "/api/auth/refresh",
+            REFRESH_SESSION_ROUTE,
             json!({ "user_id": user_id, "refresh_token": refresh }),
             None,
         )
@@ -143,7 +144,7 @@ async fn refresh_token_is_single_use(pool: sqlx::PgPool) {
     // reusing the now-rotated token must fail
     let (status, _) = app
         .post(
-            "/api/auth/refresh",
+            REFRESH_SESSION_ROUTE,
             json!({ "user_id": user_id, "refresh_token": refresh }),
             None,
         )
@@ -167,7 +168,7 @@ async fn login_rate_limit_locks_out(pool: sqlx::PgPool) {
     for _ in 0..8 {
         let (status, _) = app
             .post(
-                "/api/auth/login",
+                LOGIN_ROUTE,
                 json!({ "identifier": "target", "password": "WrongPass123!" }),
                 None,
             )
@@ -190,7 +191,7 @@ async fn login_rate_limit_locks_out(pool: sqlx::PgPool) {
     // once limited, even the correct credentials are refused (429, not 200)
     let (status, _) = app
         .post(
-            "/api/auth/login",
+            LOGIN_ROUTE,
             json!({ "identifier": "target", "password": "TestPass123!" }),
             None,
         )
@@ -238,7 +239,7 @@ async fn session_insert_prunes_expired_and_caps(pool: sqlx::PgPool) {
     // One login triggers the insert-time prune (no global sweeper involved).
     let (status, _) = app
         .post(
-            "/api/auth/login",
+            LOGIN_ROUTE,
             json!({ "identifier": "hoarder", "password": "TestPass123!" }),
             None,
         )

@@ -6,6 +6,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -20,7 +21,7 @@ async fn serves_reminders_for_database_keywords(pool: sqlx::PgPool) {
     seed_cards(&pool, &[flyer]).await;
 
     // Public: no auth needed.
-    let (status, body) = app.get("/api/card/keyword-reminders", None).await;
+    let (status, body) = app.get(GET_KEYWORD_REMINDERS_ROUTE, None).await;
     assert_eq!(status, StatusCode::OK, "catalog get: {body}");
 
     // Keys are lowercase — the catalog query normalizes names, and the chips

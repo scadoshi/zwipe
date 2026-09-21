@@ -7,6 +7,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -29,7 +30,7 @@ async fn register_stamps_client_version(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (status, session) = app
         .post(
-            "/api/auth/register",
+            REGISTER_ROUTE,
             json!({
                 "username": "ver_reg",
                 "email": "ver_reg@test.local",
@@ -55,7 +56,7 @@ async fn login_stamps_client_version(pool: sqlx::PgPool) {
 
     let (status, session) = app
         .post(
-            "/api/auth/login",
+            LOGIN_ROUTE,
             json!({
                 "identifier": "ver_login",
                 "password": "TestPass123!",
@@ -83,7 +84,7 @@ async fn refresh_overwrites_client_version(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (status, session) = app
         .post(
-            "/api/auth/register",
+            REGISTER_ROUTE,
             json!({
                 "username": "ver_ovr",
                 "email": "ver_ovr@test.local",
@@ -107,7 +108,7 @@ async fn refresh_overwrites_client_version(pool: sqlx::PgPool) {
     // The client updated and now reports a newer version on refresh.
     let (status, rotated) = app
         .post(
-            "/api/auth/refresh",
+            REFRESH_SESSION_ROUTE,
             json!({ "user_id": user_id, "refresh_token": refresh, "client_version": "9.9.9" }),
             None,
         )
@@ -124,7 +125,7 @@ async fn refresh_without_version_carries_forward(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (status, session) = app
         .post(
-            "/api/auth/register",
+            REGISTER_ROUTE,
             json!({
                 "username": "ver_carry",
                 "email": "ver_carry@test.local",
@@ -144,7 +145,7 @@ async fn refresh_without_version_carries_forward(pool: sqlx::PgPool) {
     // Older client omits the field → the stored version survives rotation.
     let (status, rotated) = app
         .post(
-            "/api/auth/refresh",
+            REFRESH_SESSION_ROUTE,
             json!({ "user_id": user_id, "refresh_token": refresh }),
             None,
         )

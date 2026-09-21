@@ -7,6 +7,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -39,7 +40,7 @@ async fn get_card_by_id_round_trips(pool: sqlx::PgPool) {
 
     // Public route, no token. If any NOT NULL column or JSONB shape were wrong
     // the read-path `try_from` would 500 here instead of 200.
-    let (status, c) = app.get(&format!("/api/card/{id}"), None).await;
+    let (status, c) = app.get(&get_card_route(id), None).await;
     assert_eq!(status, StatusCode::OK, "get card: {c}");
     let sd = &c["scryfall_data"];
     assert_eq!(sd["name"], "Goblin Guide");
@@ -55,7 +56,7 @@ async fn get_missing_card_is_404(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     seed_cards(&pool, &[]).await; // populate the (empty) view so queries don't error
     let missing = uuid::Uuid::from_u128(0xDEAD_BEEF);
-    let (status, _) = app.get(&format!("/api/card/{missing}"), None).await;
+    let (status, _) = app.get(&get_card_route(missing), None).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
 
@@ -75,7 +76,7 @@ async fn search_by_name_contains(pool: sqlx::PgPool) {
 
     let (status, results) = app
         .post(
-            "/api/card/search",
+            SEARCH_CARDS_ROUTE,
             json!({ "name_contains": "Goblin" }),
             Some(&token),
         )
@@ -106,7 +107,7 @@ async fn search_by_cmc_range(pool: sqlx::PgPool) {
 
     let (status, results) = app
         .post(
-            "/api/card/search",
+            SEARCH_CARDS_ROUTE,
             json!({ "cmc_range": [2.0, 4.0] }),
             Some(&token),
         )
@@ -137,7 +138,7 @@ async fn search_color_identity_within(pool: sqlx::PgPool) {
     // the green card is excluded.
     let (status, results) = app
         .post(
-            "/api/card/search",
+            SEARCH_CARDS_ROUTE,
             json!({ "color_identity_within": ["R"] }),
             Some(&token),
         )
@@ -157,7 +158,7 @@ async fn search_requires_auth(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     seed_cards(&pool, &[card("Any Card").mono("R")]).await;
     let (status, _) = app
-        .post("/api/card/search", json!({ "name_contains": "Any" }), None)
+        .post(SEARCH_CARDS_ROUTE, json!({ "name_contains": "Any" }), None)
         .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
@@ -210,7 +211,7 @@ async fn deck_selected_otags_lift_matching_cards_end_to_end(pool: sqlx::PgPool) 
 
     let (status, deck) = app
         .post(
-            "/api/deck",
+            DECK_ROUTE,
             json!({ "name": "Otag Deck", "format": "commander" }),
             Some(&token),
         )
@@ -221,7 +222,7 @@ async fn deck_selected_otags_lift_matching_cards_end_to_end(pool: sqlx::PgPool) 
     // Set the commander and the deck's selected oracle tag.
     let (status, updated) = app
         .patch(
-            &format!("/api/deck/{did}"),
+            &get_deck_route(did.parse().unwrap()),
             json!({
                 "commander_id": cmd_sid.to_string(),
                 "oracle_tags": ["spot-removal"]
@@ -234,7 +235,7 @@ async fn deck_selected_otags_lift_matching_cards_end_to_end(pool: sqlx::PgPool) 
     // WITH the selected otag: matching cards reach the first page.
     let (status, body) = app
         .post(
-            &format!("/api/deck/{did}/card/search"),
+            &search_deck_cards_route(did.parse().unwrap()),
             json!({}),
             Some(&token),
         )
@@ -249,7 +250,7 @@ async fn deck_selected_otags_lift_matching_cards_end_to_end(pool: sqlx::PgPool) 
     // Clear the otag: matching cards fall back to band 1, off the first page.
     let (status, cleared) = app
         .patch(
-            &format!("/api/deck/{did}"),
+            &get_deck_route(did.parse().unwrap()),
             json!({ "oracle_tags": [] }),
             Some(&token),
         )
@@ -258,7 +259,7 @@ async fn deck_selected_otags_lift_matching_cards_end_to_end(pool: sqlx::PgPool) 
 
     let (status, body) = app
         .post(
-            &format!("/api/deck/{did}/card/search"),
+            &search_deck_cards_route(did.parse().unwrap()),
             json!({}),
             Some(&token),
         )
@@ -294,7 +295,7 @@ async fn plain_search_honors_universes_beyond_preference(pool: sqlx::PgPool) {
 
     let (status, _) = app
         .patch(
-            "/api/user/preferences",
+            PREFERENCES_ROUTE,
             json!({ "exclude_universes_beyond": true }),
             Some(&token),
         )
@@ -303,7 +304,7 @@ async fn plain_search_honors_universes_beyond_preference(pool: sqlx::PgPool) {
 
     let (status, results) = app
         .post(
-            "/api/card/search",
+            SEARCH_CARDS_ROUTE,
             json!({ "name_contains": "sonic" }),
             Some(&token),
         )
@@ -316,7 +317,7 @@ async fn plain_search_honors_universes_beyond_preference(pool: sqlx::PgPool) {
 
     let (status, _) = app
         .patch(
-            "/api/user/preferences",
+            PREFERENCES_ROUTE,
             json!({ "exclude_universes_beyond": false }),
             Some(&token),
         )
@@ -325,7 +326,7 @@ async fn plain_search_honors_universes_beyond_preference(pool: sqlx::PgPool) {
 
     let (_, results) = app
         .post(
-            "/api/card/search",
+            SEARCH_CARDS_ROUTE,
             json!({ "name_contains": "sonic" }),
             Some(&token),
         )

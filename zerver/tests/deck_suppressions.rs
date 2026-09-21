@@ -7,6 +7,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -18,7 +19,7 @@ use serde_json::json;
 async fn deck_search_names(app: &TestApp, deck_id: &str, token: &str) -> Vec<String> {
     let (status, body) = app
         .post(
-            &format!("/api/deck/{deck_id}/card/search"),
+            &search_deck_cards_route(deck_id.parse().unwrap()),
             json!({}),
             Some(token),
         )
@@ -44,7 +45,7 @@ async fn skipped_card_is_excluded_then_unskip_restores(pool: sqlx::PgPool) {
 
     let (status, deck) = app
         .post(
-            "/api/deck",
+            DECK_ROUTE,
             json!({ "name": "Suppressor", "format": "commander" }),
             Some(&token),
         )
@@ -66,7 +67,7 @@ async fn skipped_card_is_excluded_then_unskip_restores(pool: sqlx::PgPool) {
     // skip the target
     let (status, _) = app
         .post(
-            &format!("/api/deck/{did}/suppressions"),
+            &skip_deck_card_route(did.parse().unwrap()),
             json!({ "oracle_id": skip_oracle.to_string() }),
             Some(&token),
         )
@@ -84,7 +85,7 @@ async fn skipped_card_is_excluded_then_unskip_restores(pool: sqlx::PgPool) {
     // unskip restores it (Clear-skips is the escape hatch)
     let (status, _) = app
         .delete(
-            &format!("/api/deck/{did}/suppressions/{skip_oracle}"),
+            &unskip_deck_card_route(did.parse().unwrap(), skip_oracle),
             Some(&token),
         )
         .await;
@@ -110,7 +111,7 @@ async fn clear_suppressions_restores_all(pool: sqlx::PgPool) {
 
     let (_, deck) = app
         .post(
-            "/api/deck",
+            DECK_ROUTE,
             json!({ "name": "Clearable", "format": "commander" }),
             Some(&token),
         )
@@ -120,7 +121,7 @@ async fn clear_suppressions_restores_all(pool: sqlx::PgPool) {
     for oracle in [a_oracle, b_oracle] {
         let (status, _) = app
             .post(
-                &format!("/api/deck/{did}/suppressions"),
+                &skip_deck_card_route(did.parse().unwrap()),
                 json!({ "oracle_id": oracle.to_string() }),
                 Some(&token),
             )
@@ -134,7 +135,7 @@ async fn clear_suppressions_restores_all(pool: sqlx::PgPool) {
 
     // clear reports the count removed and restores the pool
     let (status, cleared) = app
-        .delete(&format!("/api/deck/{did}/suppressions"), Some(&token))
+        .delete(&skip_deck_card_route(did.parse().unwrap()), Some(&token))
         .await;
     assert_eq!(status, StatusCode::OK, "clear: {cleared}");
     assert_eq!(cleared["cleared"], 2, "two suppressions cleared");

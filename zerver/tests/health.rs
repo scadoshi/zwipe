@@ -5,6 +5,7 @@
 
 #![allow(clippy::unwrap_used)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -13,7 +14,12 @@ use common::TestApp;
 #[sqlx::test]
 async fn health_and_root_ok(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
-    for path in ["/", "/health", "/health/server", "/health/database"] {
+    for path in [
+        "/",
+        HEALTH_ROUTE,
+        SERVER_HEALTH_ROUTE,
+        DATABASE_HEALTH_ROUTE,
+    ] {
         let (status, _) = app.get(path, None).await;
         assert_eq!(status, StatusCode::OK, "GET {path}");
     }

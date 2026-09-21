@@ -9,6 +9,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -41,7 +42,7 @@ async fn oracle_tags_endpoint_is_public_and_returns_catalog(pool: sqlx::PgPool) 
     let app = TestApp::new(pool);
     // `None` = no Authorization header. Public + unauthenticated is required for the
     // Cloudflare cache to serve it.
-    let (status, body) = app.get("/api/card/oracle-tags", None).await;
+    let (status, body) = app.get(GET_ORACLE_TAGS_ROUTE, None).await;
     assert_eq!(
         status,
         StatusCode::OK,

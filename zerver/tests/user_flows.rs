@@ -7,6 +7,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -20,7 +21,7 @@ async fn change_username_updates_profile(pool: sqlx::PgPool) {
 
     let (status, updated) = app
         .patch(
-            "/api/user/change-username",
+            CHANGE_USERNAME_ROUTE,
             json!({ "new_username": "newuser", "password": "TestPass123!" }),
             Some(&token),
         )
@@ -28,7 +29,7 @@ async fn change_username_updates_profile(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::OK, "change username: {updated}");
     assert_eq!(updated["username"], "newuser");
 
-    let (_, me) = app.get("/api/user", Some(&token)).await;
+    let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
     assert_eq!(
         me["username"], "newuser",
         "GET /api/user reflects the new name"
@@ -42,7 +43,7 @@ async fn change_username_wrong_password_rejected(pool: sqlx::PgPool) {
 
     let (status, _) = app
         .patch(
-            "/api/user/change-username",
+            CHANGE_USERNAME_ROUTE,
             json!({ "new_username": "hacker", "password": "WrongPass123!" }),
             Some(&token),
         )
@@ -53,7 +54,7 @@ async fn change_username_wrong_password_rejected(pool: sqlx::PgPool) {
         "wrong password must not change the username"
     );
 
-    let (_, me) = app.get("/api/user", Some(&token)).await;
+    let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
     assert_eq!(me["username"], "stayput");
 }
 
@@ -64,7 +65,7 @@ async fn change_password_then_login_with_new(pool: sqlx::PgPool) {
 
     let (status, _) = app
         .patch(
-            "/api/user/change-password",
+            CHANGE_PASSWORD_ROUTE,
             json!({ "current_password": "TestPass123!", "new_password": "NewPass456!" }),
             Some(&token),
         )
@@ -74,7 +75,7 @@ async fn change_password_then_login_with_new(pool: sqlx::PgPool) {
     // the new password authenticates
     let (status, _) = app
         .post(
-            "/api/auth/login",
+            LOGIN_ROUTE,
             json!({ "identifier": "pwuser", "password": "NewPass456!" }),
             None,
         )
@@ -84,7 +85,7 @@ async fn change_password_then_login_with_new(pool: sqlx::PgPool) {
     // the old one no longer does
     let (status, _) = app
         .post(
-            "/api/auth/login",
+            LOGIN_ROUTE,
             json!({ "identifier": "pwuser", "password": "TestPass123!" }),
             None,
         )
@@ -103,7 +104,7 @@ async fn change_email_updates_profile(pool: sqlx::PgPool) {
 
     let (status, updated) = app
         .patch(
-            "/api/user/change-email",
+            CHANGE_EMAIL_ROUTE,
             json!({ "email": "moved@test.local", "password": "TestPass123!" }),
             Some(&token),
         )
@@ -121,7 +122,7 @@ async fn delete_user_cascades_decks(pool: sqlx::PgPool) {
     // give the user a deck to prove the FK cascade removes it
     let (status, _) = app
         .post(
-            "/api/deck",
+            DECK_ROUTE,
             json!({ "name": "Doomed", "format": "commander" }),
             Some(&token),
         )
@@ -130,7 +131,7 @@ async fn delete_user_cascades_decks(pool: sqlx::PgPool) {
 
     let (status, _) = app
         .delete_json(
-            "/api/user/delete-user",
+            DELETE_USER_ROUTE,
             json!({ "password": "TestPass123!" }),
             Some(&token),
         )
@@ -158,7 +159,7 @@ async fn universes_beyond_preference_round_trips(pool: sqlx::PgPool) {
     let (token, _) = app.register("ubuser").await;
 
     // Defaults: off, empty whitelist.
-    let (status, prefs) = app.get("/api/user/preferences", Some(&token)).await;
+    let (status, prefs) = app.get(PREFERENCES_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "get preferences: {prefs}");
     assert_eq!(prefs["exclude_universes_beyond"], false);
     assert_eq!(prefs["universes_beyond_exceptions"], json!([]));
@@ -166,7 +167,7 @@ async fn universes_beyond_preference_round_trips(pool: sqlx::PgPool) {
     // Set both; the theme fields stay untouched (partial update).
     let (status, updated) = app
         .patch(
-            "/api/user/preferences",
+            PREFERENCES_ROUTE,
             json!({
                 "exclude_universes_beyond": true,
                 "universes_beyond_exceptions": ["middle-earth", "final-fantasy"],
@@ -184,7 +185,7 @@ async fn universes_beyond_preference_round_trips(pool: sqlx::PgPool) {
     // A theme-only update (an old client's payload) must not wipe them.
     let (status, updated) = app
         .patch(
-            "/api/user/preferences",
+            PREFERENCES_ROUTE,
             json!({ "theme": "dracula", "dark_mode": false }),
             Some(&token),
         )
@@ -200,7 +201,7 @@ async fn universes_beyond_preference_round_trips(pool: sqlx::PgPool) {
     // Unknown franchise slugs are rejected.
     let (status, body) = app
         .patch(
-            "/api/user/preferences",
+            PREFERENCES_ROUTE,
             json!({ "universes_beyond_exceptions": ["not-a-franchise"] }),
             Some(&token),
         )

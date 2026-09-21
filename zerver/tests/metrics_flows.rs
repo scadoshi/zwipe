@@ -6,6 +6,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -23,7 +24,7 @@ async fn commander_deck(
 ) -> Uuid {
     let (status, deck) = app
         .post(
-            "/api/deck",
+            DECK_ROUTE,
             json!({ "name": "Signal Deck", "format": "commander" }),
             Some(token),
         )
@@ -54,7 +55,7 @@ async fn usage_batch_folds_into_commander_card_signal(pool: sqlx::PgPool) {
 
     let (status, _) = app
         .post(
-            "/api/metrics/usage",
+            RECORD_USAGE_ROUTE,
             json!({
                 "swipes_right": 3,
                 "swipes_left": 1,
@@ -107,7 +108,7 @@ async fn usage_batch_signal_deltas_accumulate(pool: sqlx::PgPool) {
     });
     for _ in 0..2 {
         let (status, _) = app
-            .post("/api/metrics/usage", batch.clone(), Some(&token))
+            .post(RECORD_USAGE_ROUTE, batch.clone(), Some(&token))
             .await;
         assert_eq!(status, StatusCode::NO_CONTENT);
     }
@@ -140,7 +141,7 @@ async fn legacy_commander_field_is_ignored(pool: sqlx::PgPool) {
     let commander = Uuid::from_u128(0xC0);
     let (status, _) = app
         .post(
-            "/api/metrics/usage",
+            RECORD_USAGE_ROUTE,
             json!({
                 "swipes_right": 1, "swipes_left": 0, "swipes_up": 0, "swipes_down": 0, "searches": 0,
                 "signals": [{
@@ -173,7 +174,7 @@ async fn anonymous_events_accept_the_three_kinds_no_auth(pool: sqlx::PgPool) {
     for kind in ["app_opened", "register_viewed", "register_submitted"] {
         let (status, _) = app
             .post(
-                "/api/metrics/anonymous",
+                RECORD_ANONYMOUS_EVENT_ROUTE,
                 json!({ "session_id": session.to_string(), "kind": kind }),
                 None, // no auth required
             )
@@ -199,7 +200,7 @@ async fn anonymous_event_garbage_kind_rejected(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (status, _) = app
         .post(
-            "/api/metrics/anonymous",
+            RECORD_ANONYMOUS_EVENT_ROUTE,
             json!({ "session_id": Uuid::from_u128(1).to_string(), "kind": "not_a_real_kind" }),
             None,
         )
@@ -237,7 +238,7 @@ async fn usage_batch_client_errors_land_clamped(pool: sqlx::PgPool) {
 
     let (status, body) = app
         .post(
-            "/api/metrics/usage",
+            RECORD_USAGE_ROUTE,
             json!({
                 "swipes_right": 0, "swipes_left": 0, "swipes_up": 0,
                 "swipes_down": 0, "searches": 0,
@@ -274,7 +275,7 @@ async fn usage_batch_without_client_errors_still_accepted(pool: sqlx::PgPool) {
     let (token, _) = app.register("oldtimer").await;
     let (status, body) = app
         .post(
-            "/api/metrics/usage",
+            RECORD_USAGE_ROUTE,
             json!({
                 "swipes_right": 1, "swipes_left": 0, "swipes_up": 0,
                 "swipes_down": 0, "searches": 0
@@ -304,7 +305,7 @@ async fn crash_report_stored_exactly_once_no_auth(pool: sqlx::PgPool) {
     // First post stores; the retry (client never saw the 2xx) is a no-op —
     // both succeed from the client's point of view.
     for attempt in 1..=2 {
-        let (status, body) = app.post("/api/metrics/crash", report.clone(), None).await;
+        let (status, body) = app.post(RECORD_CRASH_ROUTE, report.clone(), None).await;
         assert_eq!(
             status,
             StatusCode::NO_CONTENT,
@@ -342,10 +343,10 @@ async fn crash_route_rate_limits_after_burst(pool: sqlx::PgPool) {
         })
     };
     for n in 1..=2 {
-        let (status, body) = app.post("/api/metrics/crash", report(n), None).await;
+        let (status, body) = app.post(RECORD_CRASH_ROUTE, report(n), None).await;
         assert_eq!(status, StatusCode::NO_CONTENT, "burst post {n}: {body}");
     }
-    let (status, _) = app.post("/api/metrics/crash", report(3), None).await;
+    let (status, _) = app.post(RECORD_CRASH_ROUTE, report(3), None).await;
     assert_eq!(
         status,
         StatusCode::TOO_MANY_REQUESTS,
@@ -360,7 +361,7 @@ async fn crash_route_rejects_oversized_bodies(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (status, _) = app
         .post(
-            "/api/metrics/crash",
+            RECORD_CRASH_ROUTE,
             json!({
                 "crash_id": Uuid::from_u128(0xB16).to_string(),
                 "client_version": "1.8.0",

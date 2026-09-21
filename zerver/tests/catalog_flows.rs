@@ -6,6 +6,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::expect_used)]
 
+use zwipe_core::http::paths::*;
 mod common;
 
 use axum::http::StatusCode;
@@ -16,7 +17,7 @@ use serde_json::json;
 async fn card_roles_catalog_is_public_and_lists_all_roles(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     // Public — no auth token.
-    let (status, body) = app.get("/api/card/roles", None).await;
+    let (status, body) = app.get(GET_CARD_ROLES_ROUTE, None).await;
     assert_eq!(
         status,
         StatusCode::OK,
@@ -41,7 +42,7 @@ async fn deck_tags_catalog_routes_correctly_and_carries_seeds(pool: sqlx::PgPool
 
     // The static `/tags` route must win over `/{deck_id}` (get_deck) — a 200 here
     // proves it isn't shadowed by the param route.
-    let (status, body) = app.get("/api/deck/tags", Some(&token)).await;
+    let (status, body) = app.get(GET_DECK_TAGS_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "deck tags catalog: {body}");
 
     let tags = body.as_array().expect("array of deck tags");
@@ -60,6 +61,6 @@ async fn deck_tags_catalog_routes_correctly_and_carries_seeds(pool: sqlx::PgPool
 async fn deck_tags_catalog_requires_auth(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     // Under the private /deck nest — no token → unauthorized.
-    let (status, _) = app.get("/api/deck/tags", None).await;
+    let (status, _) = app.get(GET_DECK_TAGS_ROUTE, None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED, "deck tags is authed");
 }
