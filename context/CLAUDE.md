@@ -73,10 +73,9 @@ copy shadows correct data (broke the 2026-07-05 deploy; details in
 zwiper ──→ zwipe-core ←── zerver
 zite   ──→ zwipe-core
 zwiper ──→ zwipe-components ←── zite
-zwiper ──→ zerver          (feature-gated; being retired)
 ```
 
-zwipe-core owns all shared domain types, including every `Http*` contract (`zwipe-core/src/http/contracts/`) and the route path constants. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers). zwiper and zite both get their domain and contract types from zwipe-core. Only zwiper depends on zerver; as of 2026-09-21 that edge carries route re-exports, `ApiError`, and the server-side `Password`, and `plans/zerver_feature_gate_teardown.md` is the plan to delete it entirely. zite has no zerver dependency at all. zwipe-components is the shared Dioxus UI crate (components plus `themes.css`/`components.css`) that both clients depend on.
+zwipe-core owns all shared domain types, including every `Http*` contract (`zwipe-core/src/http/contracts/`) and the route path constants. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers). No client depends on zerver: zwiper and zite both take their domain and contract types from zwipe-core, and zerver is the server only. zwipe-components is the shared Dioxus UI crate (components plus `themes.css`/`components.css`) that both clients depend on.
 
 ### Hexagonal (Ports & Adapters) Pattern
 

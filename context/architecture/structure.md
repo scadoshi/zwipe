@@ -31,7 +31,7 @@ Every section below describes the code as it stands (last verified against the t
 | **zwipe-core** | — (library) | Shared domain types, validation, HTTP contracts | serde, uuid, chrono, thiserror |
 | **zerver** | `zerver` | Axum REST API, PostgreSQL, JWT auth | zwipe-core, axum, sqlx, tokio |
 | **zerver** | `zervice` | Background sync (Scryfall card data) | zwipe-core (via zerver lib) |
-| **zwiper** | `zwiper` | Dioxus cross-platform mobile app | zwipe-core, zwipe-components, zerver (feature-gated: route re-exports, ApiError, Password; retiring per `plans/zerver_feature_gate_teardown.md`), dioxus |
+| **zwiper** | `zwiper` | Dioxus cross-platform mobile app | zwipe-core, zwipe-components, dioxus |
 | **zite** | `zite` | Dioxus static website (zwipe.net) | zwipe-core, zwipe-components, dioxus |
 | **zwipe-components** | — (library) | Shared Dioxus UI components + `themes.css`/`components.css` | zwipe-core, dioxus |
 | **zort** | — (hypothetical) | AI card classification client. Sketched only: no crate, no directory, nothing built | Postgres direct, LLM API |
@@ -58,7 +58,8 @@ zwipe-core/src/
 │   │       ├── session.rs          — Session, claims
 │   │       ├── access_token.rs     — AccessToken newtype
 │   │       ├── refresh_token.rs    — RefreshToken newtype
-│   │       └── password.rs         — Password validation rules
+│   │       ├── password.rs         — Password validation rules
+│   │       └── secret.rs           — Secret (plaintext that redacts in Debug/Display)
 │   │
 │   ├── card/
 │   │   ├── models/
