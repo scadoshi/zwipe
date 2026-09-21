@@ -42,9 +42,13 @@
 //! println!("Logged in as: {}", session.user.username);
 //! ```
 
-use crate::domain::auth::requests::{
-    change_email::ChangeEmail, change_password::ChangePassword, change_username::ChangeUsername,
-    create_session::CreateSessionError, delete_user::DeleteUser,
+use crate::domain::auth::{
+    models::secret::Secret,
+    requests::{
+        change_email::ChangeEmail, change_password::ChangePassword,
+        change_username::ChangeUsername, create_session::CreateSessionError,
+        delete_user::DeleteUser,
+    },
 };
 use thiserror::Error;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
@@ -168,7 +172,7 @@ pub struct AuthenticateUser {
     ///
     /// This is verified against the stored Argon2 hash. The plaintext is
     /// only held temporarily during verification and never stored.
-    pub password: String,
+    pub password: Secret,
 
     /// Client platform of the session being created (recorded on the token).
     /// `None` for re-authentication and older clients.
@@ -216,7 +220,7 @@ impl AuthenticateUser {
         }
         Ok(AuthenticateUser {
             identifier: identifier.to_string(),
-            password: password.to_string(),
+            password: Secret::new(password),
             platform: None,
             client_version: None,
         })
@@ -236,7 +240,7 @@ impl From<&ChangePassword> for AuthenticateUser {
     fn from(value: &ChangePassword) -> Self {
         Self {
             identifier: value.user_id.to_string(),
-            password: value.current_password.to_owned(),
+            password: value.current_password.clone(),
             platform: None,
             client_version: None,
         }
@@ -250,7 +254,7 @@ impl From<&ChangeUsername> for AuthenticateUser {
     fn from(value: &ChangeUsername) -> Self {
         Self {
             identifier: value.user_id.to_string(),
-            password: value.password.to_string(),
+            password: value.password.clone(),
             platform: None,
             client_version: None,
         }
@@ -264,7 +268,7 @@ impl From<&ChangeEmail> for AuthenticateUser {
     fn from(value: &ChangeEmail) -> Self {
         Self {
             identifier: value.user_id.to_string(),
-            password: value.password.to_string(),
+            password: value.password.clone(),
             platform: None,
             client_version: None,
         }
@@ -278,7 +282,7 @@ impl From<&DeleteUser> for AuthenticateUser {
     fn from(value: &DeleteUser) -> Self {
         Self {
             identifier: value.user_id.to_string(),
-            password: value.password.to_string(),
+            password: value.password.clone(),
             platform: None,
             client_version: None,
         }
@@ -295,7 +299,7 @@ mod tests {
         assert!(result.is_ok());
         let req = result.unwrap();
         assert_eq!(req.identifier, "alice");
-        assert_eq!(req.password, "SecurePass123!");
+        assert_eq!(req.password.read(), "SecurePass123!");
     }
 
     #[test]
@@ -319,7 +323,7 @@ mod tests {
         // layer, so a weak-but-non-empty password must be accepted here.
         let result = AuthenticateUser::new("alice", "weak");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().password, "weak");
+        assert_eq!(result.unwrap().password.read(), "weak");
     }
 
     #[test]
@@ -339,7 +343,7 @@ mod tests {
         let req = ChangePassword::new(user_id, "OldPass!", "NewSecure123!").unwrap();
         let auth: AuthenticateUser = AuthenticateUser::from(&req);
         assert_eq!(auth.identifier, user_id.to_string());
-        assert_eq!(auth.password, "OldPass!");
+        assert_eq!(auth.password.read(), "OldPass!");
     }
 
     #[test]
@@ -350,7 +354,7 @@ mod tests {
         let req = ChangeUsername::new(user_id, "newname", "SecurePass123!").unwrap();
         let auth: AuthenticateUser = AuthenticateUser::from(&req);
         assert_eq!(auth.identifier, user_id.to_string());
-        assert_eq!(auth.password, "SecurePass123!");
+        assert_eq!(auth.password.read(), "SecurePass123!");
     }
 
     #[test]
@@ -361,7 +365,7 @@ mod tests {
         let req = ChangeEmail::new(user_id, "new@example.com", "SecurePass123!").unwrap();
         let auth: AuthenticateUser = AuthenticateUser::from(&req);
         assert_eq!(auth.identifier, user_id.to_string());
-        assert_eq!(auth.password, "SecurePass123!");
+        assert_eq!(auth.password.read(), "SecurePass123!");
     }
 
     #[test]
@@ -372,6 +376,6 @@ mod tests {
         let req = DeleteUser::new(user_id, "SomePassword!").unwrap();
         let auth: AuthenticateUser = AuthenticateUser::from(&req);
         assert_eq!(auth.identifier, user_id.to_string());
-        assert_eq!(auth.password, "SomePassword!");
+        assert_eq!(auth.password.read(), "SomePassword!");
     }
 }

@@ -28,6 +28,7 @@
 //! )?;
 //! ```
 
+use crate::domain::auth::models::secret::Secret;
 use thiserror::Error;
 use zwipe_core::domain::auth::password::InvalidPassword;
 
@@ -94,7 +95,7 @@ pub struct ChangePassword {
     /// The user whose password should be changed.
     pub user_id: Uuid,
     /// Current password (plaintext) for verification.
-    pub current_password: String,
+    pub current_password: Secret,
     /// New password already hashed with Argon2id + fresh salt.
     pub new_password_hash: HashedPassword,
 }
@@ -145,7 +146,7 @@ impl ChangePassword {
         let new_password = Password::new(new_password).map_err(InvalidChangePassword::Password)?;
         // No validation of current password - allows users with weak passwords to change
         // to stronger ones without being locked out
-        let current_password = current_password.as_ref().to_string();
+        let current_password = Secret::new(current_password);
         let new_password_hash = HashedPassword::generate(new_password)
             .map_err(|e| InvalidChangePassword::FailedPasswordHash(e.into()))?;
 
@@ -169,7 +170,7 @@ mod tests {
         assert!(result.is_ok());
         let req = result.unwrap();
         assert_eq!(req.user_id, user_id);
-        assert_eq!(req.current_password, "OldPass!");
+        assert_eq!(req.current_password.read(), "OldPass!");
     }
 
     #[test]

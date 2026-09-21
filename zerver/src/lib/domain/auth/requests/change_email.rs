@@ -23,6 +23,7 @@
 //! )?;
 //! ```
 
+use crate::domain::auth::models::secret::Secret;
 use thiserror::Error;
 use uuid::Uuid;
 use zwipe_core::domain::{Email, InvalidEmail};
@@ -76,7 +77,7 @@ pub struct ChangeEmail {
     /// The new email address (already validated).
     pub email: Email,
     /// Current password for verification (not validated; verified at the service layer).
-    pub password: String,
+    pub password: Secret,
 }
 
 impl ChangeEmail {
@@ -104,7 +105,7 @@ impl ChangeEmail {
     /// ```
     pub fn new(user_id: Uuid, email: &str, password: &str) -> Result<Self, InvalidChangeEmail> {
         let email = Email::new(email)?;
-        let password = password.to_string();
+        let password = Secret::new(password);
         Ok(Self {
             user_id,
             email,
@@ -142,6 +143,6 @@ mod tests {
         let user_id = Uuid::new_v4();
         let result = ChangeEmail::new(user_id, "newemail@example.com", "weak");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().password, "weak");
+        assert_eq!(result.unwrap().password.read(), "weak");
     }
 }

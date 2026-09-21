@@ -7,11 +7,13 @@
 //!
 //! - [`access_token`]: JWT access token generation and validation
 //! - [`password`]: Password validation, hashing, and verification
+//! - [`secret`]: Unvalidated plaintext held for verification
 //! - [`refresh_token`]: Long-lived refresh token management
 //! - [`session`]: Session entity and constants
 
 pub mod access_token;
 pub mod password;
+pub mod secret;
 
 use crate::domain::auth::models::password::HashedPassword;
 use chrono::{DateTime, Utc};

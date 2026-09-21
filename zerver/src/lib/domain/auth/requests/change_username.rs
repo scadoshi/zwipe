@@ -24,7 +24,9 @@
 //! )?;
 //! ```
 
-use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
+use crate::domain::auth::{
+    models::secret::Secret, requests::authenticate_user::AuthenticateUserError,
+};
 use thiserror::Error;
 use uuid::Uuid;
 use zwipe_core::domain::user::username::{InvalidUsername, Username};
@@ -76,7 +78,7 @@ pub struct ChangeUsername {
     /// The new username (already validated).
     pub new_username: Username,
     /// Current password for verification (not validated; verified at the service layer).
-    pub password: String,
+    pub password: Secret,
 }
 
 impl ChangeUsername {
@@ -108,7 +110,7 @@ impl ChangeUsername {
         password: impl AsRef<str>,
     ) -> Result<Self, InvalidChangeUsername> {
         let new_username = Username::new(new_username)?;
-        let password = password.as_ref().to_string();
+        let password = Secret::new(password);
         Ok(Self {
             user_id,
             new_username,
@@ -146,6 +148,6 @@ mod tests {
         let user_id = Uuid::new_v4();
         let result = ChangeUsername::new(user_id, "newusername", "weak");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().password, "weak");
+        assert_eq!(result.unwrap().password.read(), "weak");
     }
 }

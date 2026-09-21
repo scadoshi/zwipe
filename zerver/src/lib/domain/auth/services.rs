@@ -146,7 +146,7 @@ where
         let user: User = user_with_password_hash.into();
 
         let verified = password_hash
-            .verify(&request.password)
+            .verify(request.password.read())
             .map_err(|e| AuthenticateUserError::FailedToVerify(e.into()))?;
 
         if !verified {
@@ -236,7 +236,7 @@ where
                 // measurably faster to reject (prevents username/email
                 // enumeration via response timing). Result is discarded; it
                 // never matches.
-                let _ = TIMING_EQUALIZER_HASH.verify(&request.password);
+                let _ = TIMING_EQUALIZER_HASH.verify(request.password.read());
                 tracing::warn!(event = "login_failure", reason = "user_not_found", identifier = %request.identifier);
                 return Err(AuthenticateUserError::UserNotFound);
             }
@@ -256,7 +256,7 @@ where
         let user: User = user_with_password_hash.into();
 
         let verified = password_hash
-            .verify(&request.password)
+            .verify(request.password.read())
             .map_err(|e| AuthenticateUserError::FailedToVerify(e.into()))?;
 
         if !verified {

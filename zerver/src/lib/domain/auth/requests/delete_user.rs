@@ -28,7 +28,9 @@
 //! )?;
 //! ```
 
-use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
+use crate::domain::auth::{
+    models::secret::Secret, requests::authenticate_user::AuthenticateUserError,
+};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -77,7 +79,7 @@ pub struct DeleteUser {
     /// The user to delete.
     pub user_id: Uuid,
     /// Password for verification (trimmed, not validated).
-    pub password: String,
+    pub password: Secret,
 }
 
 impl DeleteUser {
@@ -108,7 +110,7 @@ impl DeleteUser {
         let password = password.trim();
         Ok(Self {
             user_id,
-            password: password.to_string(),
+            password: Secret::new(password),
         })
     }
 }
@@ -125,7 +127,7 @@ mod tests {
         assert!(result.is_ok());
         let req = result.unwrap();
         assert_eq!(req.user_id, user_id);
-        assert_eq!(req.password, "AnyPassword!");
+        assert_eq!(req.password.read(), "AnyPassword!");
     }
 
     #[test]
@@ -133,7 +135,7 @@ mod tests {
         let user_id = Uuid::new_v4();
         let result = DeleteUser::new(user_id, "  AnyPassword!  ");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().password, "AnyPassword!");
+        assert_eq!(result.unwrap().password.read(), "AnyPassword!");
     }
 
     #[test]
@@ -150,6 +152,6 @@ mod tests {
         let user_id = Uuid::new_v4();
         let result = DeleteUser::new(user_id, "");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().password, "");
+        assert_eq!(result.unwrap().password.read(), "");
     }
 }
