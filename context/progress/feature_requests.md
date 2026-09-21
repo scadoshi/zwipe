@@ -1,16 +1,16 @@
 # Feature Requests
 
-Raw, user-sourced feature intake — distinct from `backlog.md` (curated/committed work).
+Raw, user-sourced feature intake, distinct from `backlog.md` (curated/committed work).
 Items here are candidates to weight and promote into the backlog once prioritized.
 
 **Weighting legend**
-- **Impact**: High / Med / Low — pull toward retention, the core swipe loop, or conversion.
+- **Impact**: High / Med / Low, pull toward retention, the core swipe loop, or conversion.
 - **Effort**: S (hours) / M (a day or two) / L (multi-day or new subsystem).
-- **Priority**: P1 (do next) / P2 (soon) / P3 (someday) — my suggested call; adjust freely.
+- **Priority**: P1 (do next) / P2 (soon) / P3 (someday): my suggested call; adjust freely.
 
 First source: **Reddit r/mtg launch thread, 2026-06-28** (45K views, ~300 signups). Add later sources as new sections.
 
-Second source: **App Store review, 2026-07-02** (5-star "Awesome app" by Mr.K): "Hoping that new features include saving what cards you've been through between sessions." Maps directly to #11 (swipe memory, built that same day, ships in 1.3.0 after 1.2.3 was withdrawn; skips became per-swipe durable in 1.3.0) — skips and removals persist per deck; adds and maybes were already durable (deck/maybeboard). Independent validation of the P1 call.
+Second source: **App Store review, 2026-07-02** (5-star "Awesome app" by Mr.K): "Hoping that new features include saving what cards you've been through between sessions." Maps directly to #11 (swipe memory, built that same day, ships in 1.3.0 after 1.2.3 was withdrawn; skips became per-swipe durable in 1.3.0): skips and removals persist per deck; adds and maybes were already durable (deck/maybeboard). Independent validation of the P1 call.
 
 ---
 
@@ -18,22 +18,22 @@ Second source: **App Store review, 2026-07-02** (5-star "Awesome app" by Mr.K): 
 
 Marked ✅ in the tables below; numbers kept stable (plans/commits reference them).
 
-- **#8 Card name + oracle/stats detail** — name always shown; a util-bar eye
+- **#8 Card name + oracle/stats detail**: name always shown; a util-bar eye
   button opens a dialog with oracle text (mana/tap/symbol glyphs), type + rarity
   + keyword chips, and P/T or loyalty. Reuses the expanded card-row detail markup.
-- **#5 Land count target** — land-target stepper in the deck form + a one-time
+- **#5 Land count target**: land-target stepper in the deck form + a one-time
   toast when the mainboard crosses the target (1.2.0).
-- **#19 Land-target auto-stop** — lands drop out of the swipe pool once the target
+- **#19 Land-target auto-stop**: lands drop out of the swipe pool once the target
   is met (`ensure_lands_excluded`, 1.2.0).
-- **#17 Per-field validation errors** — inline red outline + message under each
+- **#17 Per-field validation errors**: inline red outline + message under each
   field (register / change-email / change-password / forgot-password).
-- **#15 Browse all tags up front** — tag-picker hint dialog lists every tag with
+- **#15 Browse all tags up front**: tag-picker hint dialog lists every tag with
   a `DeckTag::description()`.
-- **#10 Price threshold filter** — price min/max range in the filter sheet
+- **#10 Price threshold filter**: price min/max range in the filter sheet
   (`filter/price.rs`).
-- **#21 Clone-deck polish** — one-line hint + navigates to the cloned deck on
+- **#21 Clone-deck polish**: one-line hint + navigates to the cloned deck on
   Save (`clone_deck_dialog.rs`).
-- **#14 More theme tags** — covered by ongoing tag expansion (85→117 in 1.2.0);
+- **#14 More theme tags**: covered by ongoing tag expansion (85→117 in 1.2.0);
   add specific tags as they surface.
 
 ---
@@ -102,11 +102,11 @@ Marked ✅ in the tables below; numbers kept stable (plans/commits reference the
 ---
 
 ## Not actionable (logged for completeness)
-- **Rename to "Commandr"** — joke, no action.
-- **Regional/EU availability** — ops, not a feature; tracked via the DSA trader-verification process.
+- **Rename to "Commandr"**: joke, no action.
+- **Regional/EU availability**: ops, not a feature; tracked via the DSA trader-verification process.
 
 ## Suggested next to ship
 (#5, #8, #15, #17, #19 shipped; see "Shipped so far" above.)
-1. ~~**#4 Auto land base**~~ — PARKED by owner 2026-08-18 (see the row above); #6 no longer waits on it.
-2. **#12 Deck stats mid-build** — planned (qol bundle D): util-bar button → stats bottom sheet reusing the deck charts.
-3. **#1 Live drag indicators** — parked on `feat/qol-drag-indicators` pending a visual-style call; revive if it resurfaces.
+1. ~~**#4 Auto land base**~~, PARKED by owner 2026-08-18 (see the row above); #6 no longer waits on it.
+2. **#12 Deck stats mid-build**: planned (qol bundle D): util-bar button → stats bottom sheet reusing the deck charts.
+3. **#1 Live drag indicators**: parked on `feat/qol-drag-indicators` pending a visual-style call; revive if it resurfaces.

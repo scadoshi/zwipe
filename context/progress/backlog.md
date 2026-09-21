@@ -6,10 +6,10 @@ Planned features and improvements for after App Store launch.
 
 ## High Priority
 
-- **Deck Migration — Archidekt SHIPPED (2026-06-10), Moxfield DENIED**: Archidekt URL import landed in 1.0.5 (the plan doc `context/plans/deck_import.md` is gone, with no archived copy). Moxfield support denied API access (2026-06-10) — policy excludes deckbuilding apps. They plan a scoped deck-export endpoint for such services (no ETA, announced via their help pages when live); periodically check their help pages and re-request access then. The text-paste importer covers Moxfield users meanwhile.
-- **recommander.cards integration — gated on a dedicated API key.** https://recommander.cards/ is a third-party card-suggestion engine we'd like Zwipe to consume for recommendation data. **Finding (2026-06-23): the public endpoint's rate limit is far too low to be viable — on the order of ~10 requests/hour.** Two ways it breaks: (1) all Zwipe traffic would funnel through our single backend, exhausting that hourly cap in seconds; (2) if instead clients called it directly, an IP-keyed limit collides for mobile users sharing a Wi-Fi network (same public IP), throttling each other. So the integration is **only viable with a dedicated API key carrying production-grade limits.** Until then, don't build against it (we already have our own recommendation data to fall back on). Outreach is in progress; specifics are kept out of this public repo (local notes only). (noted 2026-06-09; rate-limit constraint added 2026-06-23)
-- **Deck import atomicity (#7) — SHIPPED 2026-07-27** (`b4cc65bb`): `apply_import_batch` runs lock + limit-check + upsert + replace-reconcile in one tx (`FOR UPDATE` closes the concurrent-import TOCTOU; `create_deck_card` got the same fix). 5 new `#[sqlx::test]` cases incl. the race, plus a live E2E pass (real text imports + the real Archidekt Satya deck, set-equality-verified). Plan archived at `context/plans/archive/import_atomicity.md`.
-**Done & removed:** Split `CardFilter` into `CardCriteria` + `CardQuery` + `Cards` — executed 2026-07-02 (`e681e58f`), wire unchanged, on main awaiting the next release. Outcome in `../README.md`; plan doc deleted.
+- **Deck Migration, Archidekt SHIPPED (2026-06-10), Moxfield DENIED**: Archidekt URL import landed in 1.0.5 (the plan doc `context/plans/deck_import.md` is gone, with no archived copy). Moxfield support denied API access (2026-06-10), policy excludes deckbuilding apps. They plan a scoped deck-export endpoint for such services (no ETA, announced via their help pages when live); periodically check their help pages and re-request access then. The text-paste importer covers Moxfield users meanwhile.
+- **recommander.cards integration, gated on a dedicated API key.** https://recommander.cards/ is a third-party card-suggestion engine we'd like Zwipe to consume for recommendation data. **Finding (2026-06-23): the public endpoint's rate limit is far too low to be viable, on the order of ~10 requests/hour.** Two ways it breaks: (1) all Zwipe traffic would funnel through our single backend, exhausting that hourly cap in seconds; (2) if instead clients called it directly, an IP-keyed limit collides for mobile users sharing a Wi-Fi network (same public IP), throttling each other. So the integration is **only viable with a dedicated API key carrying production-grade limits.** Until then, don't build against it (we already have our own recommendation data to fall back on). Outreach is in progress; specifics are kept out of this public repo (local notes only). (noted 2026-06-09; rate-limit constraint added 2026-06-23)
+- **Deck import atomicity (#7): SHIPPED 2026-07-27** (`b4cc65bb`): `apply_import_batch` runs lock + limit-check + upsert + replace-reconcile in one tx (`FOR UPDATE` closes the concurrent-import TOCTOU; `create_deck_card` got the same fix). 5 new `#[sqlx::test]` cases incl. the race, plus a live E2E pass (real text imports + the real Archidekt Satya deck, set-equality-verified). Plan archived at `context/plans/archive/import_atomicity.md`.
+**Done & removed:** Split `CardFilter` into `CardCriteria` + `CardQuery` + `Cards`, executed 2026-07-02 (`e681e58f`), wire unchanged, on main awaiting the next release. Outcome in `../README.md`; plan doc deleted.
 
 ---
 
@@ -23,7 +23,7 @@ these decisions forward; this section stays as the original rationale.**
 active user's week into **1–3 badges** ("Swipe King" volume, "The Controller"
 taste, "Ultimate Indecision" quirk), surfaced as a "Your week" recap on next open
 plus a badge-history/stats page. The recap doubles as a **shareable card**
-(Wrapped-style, terminal aesthetic) — viral value without social infrastructure.
+(Wrapped-style, terminal aesthetic): viral value without social infrastructure.
 
 - **Derive, don't collect.** Almost every badge/stat is a *join*, not new
   collection: per-user card signal × `mechanical_categories` (archetypes), ×
@@ -31,7 +31,7 @@ plus a badge-history/stats page. The recap doubles as a **shareable card**
   (hipster/meta). Lifetime volume badges are computable **today** from
   `user_lifetime_counters` / `user_daily_activity` / `user_events`. Rule: only
   add a counter when a named consumer exists.
-- **Data prerequisite: weekly windowing — ✅ BUILT (2026-07-02, on main).**
+- **Data prerequisite: weekly windowing, ✅ BUILT (2026-07-02, on main).**
   Ingest now bumps `user_week_signal` (directional swipes, searches,
   added/skipped/maybed/removed per ISO week) and `user_week_facet_signal`
   (accepts by mechanical category and color identity). One row per active user
@@ -41,7 +41,7 @@ plus a badge-history/stats page. The recap doubles as a **shareable card**
   activity) into `user_week_badges (user_id, week, badges)`.
 - **Social pairing (later)**: public profiles / leaderboards / seeing others'
   badges is the natural extension, but it's a real subsystem (opt-in
-  visibility, moderation, blocking) and another privacy-posture change — the
+  visibility, moderation, blocking) and another privacy-posture change. The
   private recap + share card ships first and stands alone.
 
 Related: `archive/swipe_memory.md` (the flush-ingest surface all of this rides
@@ -50,16 +50,16 @@ collection.
 
 ---
 
-## Security — Account Enumeration Hardening (deferred, matters at larger scale)
+## Security: Account Enumeration Hardening (deferred, matters at larger scale)
 
 Both are low-risk now, fine to leave; revisit with a bigger user base. Context: login timing was equalized via a dummy-hash verify (commit pending 2026-06-19), so these are the *remaining* enumeration surfaces.
 
-- **`AccountLocked` returns 429 while bad-password returns 401** (`zerver/.../handlers/auth/authenticate_user.rs`): distinguishable status lets an attacker learn an account exists *and* is locked. Kept as-is deliberately — the 429 gives locked-out real users useful "wait and retry" UX. Option if it ever matters: fold `AccountLocked` into the generic 401. (noted 2026-06-19)
-- **Registration enumerates existing accounts**: `register` returns 422 "user with that username or email already exists." Genuinely hard to fully close (can't silently allow a duplicate), and many large apps surface "username taken" too, so likely won't change — logged for completeness. (noted 2026-06-19)
+- **`AccountLocked` returns 429 while bad-password returns 401** (`zerver/.../handlers/auth/authenticate_user.rs`): distinguishable status lets an attacker learn an account exists *and* is locked. Kept as-is deliberately, the 429 gives locked-out real users useful "wait and retry" UX. Option if it ever matters: fold `AccountLocked` into the generic 401. (noted 2026-06-19)
+- **Registration enumerates existing accounts**: `register` returns 422 "user with that username or email already exists." Genuinely hard to fully close (can't silently allow a duplicate), and many large apps surface "username taken" too, so likely won't change, logged for completeness. (noted 2026-06-19)
 
 ---
 
-## AI Card Categorization — Layer 2 & 3 (CLOSED 2026-07-27: superseded by oracle tags)
+## AI Card Categorization: Layer 2 & 3 (CLOSED 2026-07-27: superseded by oracle tags)
 
 Layers 2 (LLM classification client) and 3 (fine-tuned model) were the
 improvement path for the Layer-1 oracle-text heuristic. The whole ladder is
@@ -78,7 +78,7 @@ The full implementation plan (taxonomy + schema) lived at `context/plans/mechani
 ---
 
 ## Production Hardening
-- **Zerver app-role split ("Phase 3" of zervice least privilege, idea 2026-07-29)**: give zerver its own scoped Postgres role — write on user/deck/auth/signal tables, read-only on the card catalog (which zervice + owner alone write after `zcripts/server/sql/zervice_role.sql`). Sound hardening, deliberately deferred: all tables are owned by `zwipe` (an owner can't be restricted by grants), CI sources the same `.env` `DATABASE_URL` for migrations so the split forces two URLs + deploy-pipeline changes, and every future migration needs grant discipline (`ALTER DEFAULT PRIVILEGES` automates most of it) or the serve path 500s — a worse failure mode than a failed nightly sync. Take up deliberately, not as a drive-by.
+- **Zerver app-role split ("Phase 3" of zervice least privilege, idea 2026-07-29)**: give zerver its own scoped Postgres role, write on user/deck/auth/signal tables, read-only on the card catalog (which zervice + owner alone write after `zcripts/server/sql/zervice_role.sql`). Sound hardening, deliberately deferred: all tables are owned by `zwipe` (an owner can't be restricted by grants), CI sources the same `.env` `DATABASE_URL` for migrations so the split forces two URLs + deploy-pipeline changes, and every future migration needs grant discipline (`ALTER DEFAULT PRIVILEGES` automates most of it) or the serve path 500s, a worse failure mode than a failed nightly sync. Take up deliberately, not as a drive-by.
 - **Caching Layer**: Redis for card data and query results
 - **Monitoring**: Structured logging (done), health monitoring dashboard
 - **Database Optimization**: Query performance, indexing strategy
@@ -98,14 +98,14 @@ The full implementation plan (taxonomy + schema) lived at `context/plans/mechani
 The App Store review cycle is 1–3 days per iOS submission. Backend patches ship in
 minutes via CI/CD. That asymmetry shapes everything:
 
-- Keep the iOS client **defensive** — handle unexpected server responses gracefully so
+- Keep the iOS client **defensive**: handle unexpected server responses gracefully so
   the server can be patched without forcing an app update
-- **Never edit existing migration files** — always add a new migration forward
-- **Semantic versioning**: `MAJOR.MINOR.PATCH` — bump PATCH for bug fixes, MINOR for
+- **Never edit existing migration files**: always add a new migration forward
+- **Semantic versioning**: `MAJOR.MINOR.PATCH`: bump PATCH for bug fixes, MINOR for
   new features, MAJOR for breaking changes
 - **Deprecate before removing**: leave old endpoints alive for at least one app version
   cycle before pulling them
-- **API versioning**: don't add `/v2/` preemptively — only version when you have an
+- **API versioning**: don't add `/v2/` preemptively, only version when you have an
   actual breaking change and need both versions live simultaneously
 - **Breaking change checklist**: before removing or changing an endpoint signature,
   check what version of zwiper is in the wild and whether old clients will break

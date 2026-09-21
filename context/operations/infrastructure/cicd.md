@@ -1,4 +1,4 @@
-# CI/CD — GitHub Actions Deploy
+# CI/CD: GitHub Actions Deploy
 
 On every push to `main` that touches backend code, a self-hosted GitHub Actions runner on
 the server checks out the repo, builds `zerver` and `zervice` in place, copies the binaries
@@ -23,16 +23,16 @@ Also has `workflow_dispatch` for manual runs from the GitHub Actions tab.
 ### Tests + lint gate the deploys
 
 The test suite (`postgres:16` service + `cargo test -p zwipe-core -p zerver`, never
-`--workspace` — zwiper's Dioxus/GTK stack won't build headless; `SQLX_OFFLINE=true`
+`--workspace`, since zwiper's Dioxus/GTK stack won't build headless; `SQLX_OFFLINE=true`
 compiles against the committed `.sqlx` while `#[sqlx::test]` migrates a fresh DB per
 test via `DATABASE_URL`) runs in two places:
 
-- **`.github/workflows/test.yml` (`Test`)** — on **pull requests only**, the
+- **`.github/workflows/test.yml` (`Test`)**: on **pull requests only**, the
   pre-merge signal.
-- **A `test` job inside `deploy-zerver.yml` and `deploy-zite.yml`** — the `deploy`
+- **A `test` job inside `deploy-zerver.yml` and `deploy-zite.yml`**: the `deploy`
   (and zite's `build`) job `needs: [test, lint]`, so **a red suite or lint blocks the
   deploy**. This keeps the deploys' path filters (a docs-only push still won't
-  redeploy) while gating — GitHub can't make a `push`-triggered workflow wait on a
+  redeploy) while gating, since GitHub can't make a `push`-triggered workflow wait on a
   *separate* workflow, hence the inline jobs. Push-time testing lives here, so
   `test.yml` stays PR-only (no double-run). `workflow_dispatch` still lets you force
   a deploy (it runs after the gate jobs).
@@ -42,7 +42,7 @@ A parallel **`lint` job** (in all three of `test.yml` / `deploy-zerver.yml` /
 `rustfmt.toml` sets the unstable `imports_granularity = "Crate"`) + `cargo clippy -p
 zwipe-core -p zerver --all-targets -- -D warnings` (same headless-GTK scoping as Test;
 `SQLX_OFFLINE=true`). Added 2026-07-10 after finding fmt had silently drifted. **Note:
-CI rides newest-stable clippy** — a local `rustup update stable` keeps you from being
+CI rides newest-stable clippy**: a local `rustup update stable` keeps you from being
 surprised by new lints (e.g. clippy 1.97 flagged a `useless_borrows_in_formatting` that
 1.94 didn't, and correctly blocked a deploy until fixed).
 
@@ -53,10 +53,10 @@ Plan/design: [`../../archive/integration-tests/`](../../archive/integration-test
 `.github/workflows/audit.yml` (`Security audit`) runs `cargo audit --ignore
 RUSTSEC-2023-0071` (prebuilt binary via `taiki-e/install-action`) **weekly** (Mon 08:00
 UTC), on any `Cargo.toml`/`Cargo.lock` change, and on manual dispatch. It scans
-`Cargo.lock` against the RustSec DB and **fails (→ GitHub emails you) on vulnerabilities**
-— unmaintained/unsound *warnings* (e.g. the GTK3 desktop stack, `anyhow`, `rand 0.7`)
+`Cargo.lock` against the RustSec DB and **fails (→ GitHub emails you) on vulnerabilities**.
+Unmaintained or unsound *warnings* (e.g. the GTK3 desktop stack, `anyhow`, `rand 0.7`)
 don't fail. The one ignore, `RUSTSEC-2023-0071` (rsa Marvin timing sidechannel), is
-intentional: we sign JWTs with HS256/HMAC, never RSA — rsa only rides in as an
+intentional: we sign JWTs with HS256/HMAC, never RSA; rsa only rides in as an
 unexercised code path via jsonwebtoken's `rust_crypto` backend + sqlx's never-compiled
 `mysql` driver. Backstop: turn on **Dependabot alerts** (repo Settings → Code security)
 for the passive GitHub-Advisory feed.
@@ -69,11 +69,11 @@ for the passive GitHub-Advisory feed.
 2. Installs stable Rust toolchain (cached)
 3. Restores cargo cache (fast subsequent builds)
 4. Runs SQLx migrations (`set -a && source ~/zwipe/.env` to export `DATABASE_URL`, then `cargo sqlx migrate run --source zerver/migrations`)
-5. Verifies the committed `.sqlx/` matches the just-migrated schema (`cargo sqlx prepare --workspace --check -- --workspace --exclude zwiper --exclude zite`) — fails fast with "query data is stale" instead of E0308 soup mid-build. The GUI crates are excluded because `--check` compiles crates to find their queries, and zwiper's Linux desktop deps (glib/GTK via pkg-config) don't exist on the headless VPS — this failed the first two verify runs (2026-07-06) before being scoped; only zerver has queries anyway
+5. Verifies the committed `.sqlx/` matches the just-migrated schema (`cargo sqlx prepare --workspace --check -- --workspace --exclude zwiper --exclude zite`): fails fast with "query data is stale" instead of E0308 soup mid-build. The GUI crates are excluded because `--check` compiles crates to find their queries, and zwiper's Linux desktop deps (glib/GTK via pkg-config) don't exist on the headless VPS, this failed the first two verify runs (2026-07-06) before being scoped; only zerver has queries anyway
 6. Builds `zerver` and `zervice` in release mode (`SQLX_OFFLINE=true`)
 7. Stops zerver, copies binaries to `~/zwipe/`, starts zerver
 
-No Tailscale, no SSH keys, no SCP — the runner is already on the server.
+No Tailscale, no SSH keys, no SCP: the runner is already on the server.
 Migrations run before the build so new tables exist before the new binary starts.
 
 ---
@@ -96,32 +96,32 @@ None required for self-hosted runner deployment.
 ## Self-Hosted Runner Setup
 
 The runner is a long-running process on the server that polls GitHub for jobs. It connects
-outbound to GitHub — no inbound ports or tunnels needed. Run this setup once; after that
+outbound to GitHub, so no inbound ports or tunnels are needed. Run this setup once; after that
 deploys are fully automatic.
 
-### Step 1 — Generate a runner token
+### Step 1: Generate a runner token
 
 GitHub → Repository Settings → Actions → Runners → New self-hosted runner → Linux → x64
 
 Copy the token shown on that page (valid for 1 hour).
 
-### Step 2 — Download and configure the runner on the server
+### Step 2: Download and configure the runner on the server
 
 ```bash
 mkdir ~/actions-runner && cd ~/actions-runner
 
-# Download — get the exact URL from the GitHub UI (version may change)
+# Download: get the exact URL from the GitHub UI (version may change)
 curl -o actions-runner-linux-x64.tar.gz -L \
   https://github.com/actions/runner/releases/download/v2.x.x/actions-runner-linux-x64-2.x.x.tar.gz
 
 tar xzf actions-runner-linux-x64.tar.gz
 
-# Configure — paste the token from Step 1 when prompted
+# Configure: paste the token from Step 1 when prompted
 ./config.sh --url https://github.com/scadoshi/zwipe --token YOUR_TOKEN_HERE
 # Accept defaults for runner name and work folder
 ```
 
-### Step 3 — Install as a systemd service
+### Step 3: Install as a systemd service
 
 ```bash
 sudo ./svc.sh install
@@ -132,7 +132,7 @@ sudo ./svc.sh status
 The runner starts automatically on every boot. Check GitHub → Settings → Actions → Runners
 to confirm it shows as **Idle** (green dot).
 
-### Step 4 — Verify passwordless sudo for systemctl
+### Step 4: Verify passwordless sudo for systemctl
 
 The runner needs to restart zerver without a password prompt. This should already be
 configured, but verify:
@@ -143,7 +143,7 @@ sudo cat /etc/sudoers.d/scadoshi
 # scadoshi ALL=(ALL) NOPASSWD: /bin/systemctl stop zerver, /bin/systemctl start zerver, /bin/systemctl restart zerver
 ```
 
-Edit it with `sudo visudo -f /etc/sudoers.d/scadoshi` if it is missing — the drop-in
+Edit it with `sudo visudo -f /etc/sudoers.d/scadoshi` if it is missing; the drop-in
 file, not the main `/etc/sudoers`.
 
 ### Re-registering after a server rebuild
@@ -152,7 +152,7 @@ If the server is rebuilt and the runner is lost:
 
 1. Go to GitHub → Settings → Actions → Runners → find the old runner → Remove
 2. Repeat Steps 1–3 above with a fresh token
-3. The workflow picks it up automatically — no workflow file changes needed
+3. The workflow picks it up automatically, no workflow file changes needed
 
 ---
 
@@ -163,7 +163,7 @@ used for CI/CD deploys (self-hosted runner eliminated that need).
 
 **Current server**: Hetzner VPS `zerver-prod`, since the 2026-06-13 migration. Its Tailscale address is written here as `<server-tailnet-ip>`: tailnet addresses are redacted because this repo is public, the same convention as the `192.168.1.XXX` LAN addresses below. `tailscale status` on any tailnet device lists them, and the owner supplies the value when a session needs it. The old home box was `<old-box-tailnet-ip>` (powered off, kept as rollback). Tailscale IPs are stable and private (not publicly routable).
 
-**Runners (post-migration):** two self-hosted runners live on the VPS — `zerver-prod` (repo `scadoshi/zwipe`, dir `~/actions-runner-zwipe`) and `zynergy-prod` (repo `scadoshi/zynergy`, dir `~/actions-runner-zynergy`), both boot-enabled. The deploy step's `sudo systemctl {stop,start} zerver` works because `/etc/sudoers.d/scadoshi` grants NOPASSWD for exactly those service-restart commands (all other admin = `ssh root@<server-tailnet-ip>`).
+**Runners (post-migration):** two self-hosted runners live on the VPS: `zerver-prod` (repo `scadoshi/zwipe`, dir `~/actions-runner-zwipe`) and `zynergy-prod` (repo `scadoshi/zynergy`, dir `~/actions-runner-zynergy`), both boot-enabled. The deploy step's `sudo systemctl {stop,start} zerver` works because `/etc/sudoers.d/scadoshi` grants NOPASSWD for exactly those service-restart commands (all other admin = `ssh root@<server-tailnet-ip>`).
 
 ### Setup
 
@@ -192,9 +192,9 @@ ssh root@<server-tailnet-ip>            # admin (full sudo) — key-only, tailne
 
 ### Notes
 
-- Server Tailscale IP is stable — never changes even if ISP rotates public IP
+- Server Tailscale IP is stable, never changes even if ISP rotates public IP
 - `sshd` also listens on port 2222 via `/etc/systemd/system/ssh.socket.d/override.conf`
-  (added during Xfinity troubleshooting — not required but harmless to keep)
+  (added during Xfinity troubleshooting, not required but harmless to keep)
 
 ---
 
@@ -213,10 +213,10 @@ git add .sqlx/
 git commit -m "Update sqlx offline cache"
 ```
 
-**One `.sqlx` directory only — the workspace root.** The macros prefer a crate-local
+**One `.sqlx` directory only: the workspace root.** The macros prefer a crate-local
 `zerver/.sqlx/` over the root one if it exists, and `prepare --workspace` never
 refreshes a crate-local copy. A stale `zerver/.sqlx/` (leftover from an early
-per-crate prepare) shadowed the root data and broke the 2026-07-05 deploy — the
+per-crate prepare) shadowed the root data and broke the 2026-07-05 deploy. The
 first release to change an *existing* query's column types in place (daily-activity
 BIGINT). Removed in `2e7fd985`; never run `cargo sqlx prepare` from inside `zerver/`
 without `--workspace`. The verify step (workflow step 5) now catches any
@@ -233,7 +233,7 @@ GitHub → Actions tab → Deploy zerver → Run workflow → Run workflow
 
 ---
 
-# zite — GitHub Pages Deploy
+# zite: GitHub Pages Deploy
 
 `.github/workflows/deploy-zite.yml`
 
@@ -247,7 +247,7 @@ Triggers on push to `main` when files under `zite/**`, `zwipe-core/**`, or
 2. Installs a prebuilt `dioxus-cli@0.7.10` binary via `taiki-e/install-action`, so nothing compiles from source. Keep the pin matched to the workspace dioxus version and to `dx --version` on the build Macs
 3. Runs `dx build --release --platform web --ssg --force-sequential` from `zite/` directory. `--ssg` pre-renders every route from the app's `static_routes` server function; `--force-sequential` is not optional, because without it the parallel client build finishes last and overwrites the SSG'd `public/index.html` with the bare shell
 4. Writes `CNAME` (zwipe.net) into the build output at `zite/target/dx/zite/release/web/public/`
-5. Copies `index.html` → `404.html` in the same directory (SPA routing — GitHub Pages serves 404.html for unknown routes, Dioxus Router takes over)
+5. Copies `index.html` → `404.html` in the same directory (SPA routing, GitHub Pages serves 404.html for unknown routes, Dioxus Router takes over)
 6. Uploads the build output as a GitHub Pages artifact
 7. Deploys to GitHub Pages
 
