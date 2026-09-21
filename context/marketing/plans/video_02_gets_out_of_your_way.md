@@ -1,4 +1,4 @@
-# Video 2 — It gets out of your way
+# Video 2: It gets out of your way
 
 **Theme:** Zwipe respects your choices. Two "genius"-tier wins under one promise:
 swipe memory (durable skips) + per-deck stack memory. Land auto-stop moved to

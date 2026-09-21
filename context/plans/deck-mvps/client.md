@@ -1,14 +1,14 @@
-# Deck MVPs — client changes (zwiper)
+# Deck MVPs: client changes (zwiper)
 
 All in phase 1 (1.4.0). Copy rules: sentence case, no em dashes.
 
-## 1. API client — `zwiper/src/lib/outbound/client/deck_card/update_deck_card.rs`
+## 1. API client: `zwiper/src/lib/outbound/client/deck_card/update_deck_card.rs`
 
 The request body gains the `mvp: Option<bool>` field (comes free once the
 contract updates; extend the call-site helper so screens can send
 `mvp: Some(bool)` without touching quantity/board).
 
-## 2. Star in the main row — `zwiper/src/lib/inbound/screens/deck/card/components/card_row.rs`
+## 2. Star in the main row: `zwiper/src/lib/inbound/screens/deck/card/components/card_row.rs`
 
 - `CardRow` props gain `mvp: bool` and an `on_toggle_mvp: EventHandler<()>`
   (or ride an existing callback bundle if one forms).
@@ -18,7 +18,7 @@ contract updates; extend the call-site helper so screens can send
   press state.
 - Tap toggles; hit target ≥ 44pt.
 
-## 3. Wiring — `zwiper/src/lib/inbound/screens/deck/card/view.rs`
+## 3. Wiring: `zwiper/src/lib/inbound/screens/deck/card/view.rs`
 
 - Deck response now carries `mvp_at` per card; `mvp = mvp_at.is_some()`.
 - Toggle handler: `update_deck_card(deck_id, scryfall_data_id, mvp:

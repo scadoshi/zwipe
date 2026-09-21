@@ -1,4 +1,4 @@
-# AI deck analysis — preset prompts
+# AI deck analysis: preset prompts
 
 **Tier: premium (headline feature).** Real ongoing cost (API calls) — the
 honest core of the subscription.

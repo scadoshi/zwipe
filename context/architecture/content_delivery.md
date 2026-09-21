@@ -23,7 +23,7 @@ Pick a delivery mode by asking two questions about the content:
 
 Then apply the surface's constraint:
 
-- **zerver** compiles all authored content it serves — the compiled copy IS
+- **zerver** compiles all authored content it serves, the compiled copy IS
   the serving source, and a deploy is how it updates. (Changelog consts,
   keyword table, the 17k-line authored otag description overlay that merges
   into the DB at zervice sync.)

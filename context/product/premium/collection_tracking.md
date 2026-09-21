@@ -14,9 +14,9 @@ unlocks:
 - **Shopping list** = deck minus collection → the price-alert engine's input
   (`price_intelligence.md`). This is where collection data converts to
   premium value and affiliate revenue.
-- **"Cards I own" swipe filter** — build only from what I own. **DECIDED
+- **"Cards I own" swipe filter**: build only from what I own. **DECIDED
   2026-06-10: free** — it's a filter, filters are free.
-- **Owned-percentage on decks** — "you own 78% of this deck ($63 to finish)"
+- **Owned-percentage on decks**: "you own 78% of this deck ($63 to finish)"
   blends collection + prices into one motivating number.
 
 ## Implementation notes

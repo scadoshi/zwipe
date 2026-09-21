@@ -1,4 +1,4 @@
-Apple Support Reply — 2026-05-13
+Apple Support Reply: 2026-05-13
 
 STATUS: SENT 2026-05-13. Apple replied 2026-05-22 recommending upgrade to Xcode 26.5 (released 2026-05-11). After upgrading, build 13 cleared "Add for Review" and is now in "Waiting for Review". Case resolved. See debugging.md for full resolution. Now we wait!
 
@@ -6,7 +6,7 @@ Reply to case 102856406657 (Xue) following the request to upload a new build wit
 
 
 Subject (keep the existing thread):
-Re: Case 102856406657 — Build 12 uploaded, "Add for Review" still rejected (API-level evidence attached)
+Re: Case 102856406657, Build 12 uploaded, "Add for Review" still rejected (API-level evidence attached)
 
 
 Hi Xue,
@@ -25,11 +25,11 @@ Per your request, I uploaded build 12 today.
 
 TestFlight shows build 12 as Complete, alongside builds 8 through 11 from earlier attempts. All five recent builds reached the "Complete" state in TestFlight within minutes of upload.
 
-[IMAGE 1: TestFlight screen — Zwipe MTG, TestFlight tab, showing builds 12, 11, 10, 9, 8 all marked "Complete"]
+[IMAGE 1: TestFlight screen: Zwipe MTG, TestFlight tab, showing builds 12, 11, 10, 9, 8 all marked "Complete"]
 
 A short screen recording walking through this flow is also attached for reference.
 
-[VIDEO: screen recording — full flow from TestFlight "Complete" to Distribution "Add for Review" to rejection]
+[VIDEO: screen recording: full flow from TestFlight "Complete" to Distribution "Add for Review" to rejection]
 
 
 2. The "Add for Review" rejection in the UI.
@@ -38,11 +38,11 @@ When I click Add for Review in the Distribution tab, App Store Connect displays 
 
 "Unable to Add for Review. New apps and app updates must be built with the latest public (GM) versions of Xcode, and the iOS, macOS, watchOS, and tvOS SDKs. Apps built with beta versions aren't allowed."
 
-[IMAGE 2: Distribution tab — Zwipe MTG, iOS App Version 1.0, showing the red "Unable to Add for Review" banner]
+[IMAGE 2: Distribution tab: Zwipe MTG, iOS App Version 1.0, showing the red "Unable to Add for Review" banner]
 
 The same backend rejection also surfaces in a second UI path: clicking "Add Draft" produces a "Draft Submissions (1)" toast that auto-deletes within about 2 seconds. The Draft Submission dialog briefly shows "No Items" and "Delete Submission" before closing.
 
-[IMAGE 3: Draft Submission dialog — showing "No Items" and "Delete Submission" right before it auto-closes]
+[IMAGE 3: Draft Submission dialog: showing "No Items" and "Delete Submission" right before it auto-closes]
 
 
 3. The actual API-level error tells a different story.
@@ -56,7 +56,7 @@ I inspected the failing network request in browser DevTools. The user-facing "be
 - Detail: "Build SDK build is not yet supported."
 - Timestamp: Wed, 13 May 2026 23:50:41 GMT
 
-[IMAGE 4: DevTools Network panel — Response tab, showing the JSON 409 error body with BUILD_SDK_NOT_ALLOWED_FOR_APP_STORE_SUBMISSION]
+[IMAGE 4: DevTools Network panel: Response tab, showing the JSON 409 error body with BUILD_SDK_NOT_ALLOWED_FOR_APP_STORE_SUBMISSION]
 
 Apple trace headers from the failed response (for engineering to look up the exact server-side check that fired):
 
@@ -66,7 +66,7 @@ Apple trace headers from the failed response (for engineering to look up the exa
 - apple-originating-system: UnknownOriginatingSystem
 - apple-timing-app: 1296 ms
 
-[IMAGE 5: DevTools Network panel — Headers tab, showing the response headers including the correlation key]
+[IMAGE 5: DevTools Network panel: Headers tab, showing the response headers including the correlation key]
 
 Affected resources:
 
@@ -98,9 +98,9 @@ Scotty
 
 Attachment checklist (notes for Scotty, not part of the email):
 
-1. IMAGE 1 — TestFlight screen, build 12 plus history all "Complete". Source: App Store Connect, TestFlight tab.
-2. IMAGE 2 — Distribution rejection, red "Unable to Add for Review" banner. Source: App Store Connect, Distribution, iOS App Version 1.0.
-3. IMAGE 3 — Draft auto-delete, "No Items" / "Delete Submission" dialog. Source: Distribution, Add Draft, toast appears about 2 seconds then closes.
-4. IMAGE 4 — DevTools Response, 409 JSON body. Source: Firefox/Chrome DevTools, Network, the failing POST, Response tab.
-5. IMAGE 5 — DevTools Headers, response headers with correlation key. Source: same request, Headers tab.
-6. VIDEO — Screen recording, about 30 to 45 seconds, full flow. Source: QuickTime File menu, New Screen Recording, or Cmd+Shift+5.
+1. IMAGE 1, TestFlight screen, build 12 plus history all "Complete". Source: App Store Connect, TestFlight tab.
+2. IMAGE 2, Distribution rejection, red "Unable to Add for Review" banner. Source: App Store Connect, Distribution, iOS App Version 1.0.
+3. IMAGE 3, Draft auto-delete, "No Items" / "Delete Submission" dialog. Source: Distribution, Add Draft, toast appears about 2 seconds then closes.
+4. IMAGE 4, DevTools Response, 409 JSON body. Source: Firefox/Chrome DevTools, Network, the failing POST, Response tab.
+5. IMAGE 5, DevTools Headers, response headers with correlation key. Source: same request, Headers tab.
+6. VIDEO, Screen recording, about 30 to 45 seconds, full flow. Source: QuickTime File menu, New Screen Recording, or Cmd+Shift+5.

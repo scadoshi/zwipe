@@ -7,10 +7,10 @@ Common errors and fixes when building, signing, or submitting Zwipe.
 Dioxus `dx build` generates an incomplete `.app` bundle for App Store submission.
 These patches must be applied **after every release build, before signing**:
 
-1. **CFBundleSupportedPlatforms** — remove iPadOS, keep only iPhoneOS
-2. **UIDeviceFamily** — remove iPad (2), keep only iPhone (1)
-3. **App icons** — compile asset catalog with `actool`
-4. **CFBundleIcons** — add icon references to Info.plist
+1. **CFBundleSupportedPlatforms**: remove iPadOS, keep only iPhoneOS
+2. **UIDeviceFamily**: remove iPad (2), keep only iPhone (1)
+3. **App icons**: compile asset catalog with `actool`
+4. **CFBundleIcons**: add icon references to Info.plist
 
 The following are handled by `[ios.plist]` in `Dioxus.toml` (no manual patching):
 - DTPlatformName, DTPlatformVersion, DTSDKName, DTXcode, DTXcodeBuild, DTCompiler
@@ -127,7 +127,7 @@ CFBundlePackageType = "APPL"
 
 ---
 
-## UIDeviceFamily includes iPad — missing iPad icons
+## UIDeviceFamily includes iPad: missing iPad icons
 
 Dioxus sets `UIDeviceFamily` to `[1, 2]` (iPhone + iPad). If you don't want to support
 iPad, Apple will still require iPad icon sizes (152×152, 167×167, etc.).
@@ -276,7 +276,7 @@ Happens when duplicate certificates are cleaned up from Keychain Access — the 
 **Fix:**
 
 1. Create a new development cert in **Xcode > Settings > Accounts > Manage Certificates > + > Apple Development**
-2. Delete any remaining old/duplicate certs from Keychain Access (keep only the newest one — check the date)
+2. Delete any remaining old/duplicate certs from Keychain Access (keep only the newest one, check the date)
 3. Go to [developer.apple.com/account/resources/profiles](https://developer.apple.com/account/resources/profiles)
 4. Edit (or create) the iOS Development profile for `com.scadoshi.zwipe`
 5. Select the new certificate (Xcode may label it with your Mac hostname, e.g. "scotland2")

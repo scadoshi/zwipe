@@ -1,4 +1,4 @@
-# Price intelligence — tracking, alerts, shopping list
+# Price intelligence: tracking, alerts, shopping list
 
 **Tier: split — refined 2026-06-10: drop alerts go to FREE users too.**
 Current prices, deck totals, and capped automated drop alerts on
@@ -27,29 +27,29 @@ subscription app.
 
 ## Free tier
 
-- Current prices + deck totals (table stakes — Moxfield shows them).
-- **Automated drop alerts on shopping-list cards** — threshold we choose
+- Current prices + deck totals (table stakes, Moxfield shows them).
+- **Automated drop alerts on shopping-list cards**: threshold we choose
   (e.g. "dropped >15%"), capped cadence (weekly digest or max a few
   pushes/week). Every alert carries an affiliate link.
 
-## Premium tier — control and depth
+## Premium tier: control and depth
 
-- **Custom watch thresholds** — "alert me when this is under $5."
+- **Custom watch thresholds**: "alert me when this is under $5."
 - **Arbitrary per-card watches** beyond the shopping list (maybeboard
   auto-watch, speculation watches).
 - **Instant alerts** instead of the free digest cadence.
 - **Price history charts** per card and per deck (deck value over time).
-- **Budget swaps** — "this $40 card has a $4 functional cousin" (pairs with
+- **Budget swaps**: "this $40 card has a $4 functional cousin" (pairs with
   AI analysis or curated swap data).
 
-## Implementation — cheaper than it sounds
+## Implementation: cheaper than it sounds
 
 - **No new API deals.** Scryfall bulk data already carries daily TCGplayer /
   Cardmarket / Cardhoarder prices, and zervice already syncs Scryfall. Price
   *tracking* = snapshotting prices into a history table on the sync we already
   run. Retention policy (e.g. daily for 90 days, weekly beyond) keeps the
   table sane.
-- **Push notifications are the genuinely new infrastructure** — APNs for iOS,
+- **Push notifications are the genuinely new infrastructure**: APNs for iOS,
   FCM when Android lands. One-time build, reused by everything afterward
   (security notices, social features someday).
 - Alert evaluation is a zervice job after each price sync: diff against

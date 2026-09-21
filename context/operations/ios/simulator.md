@@ -4,7 +4,7 @@ Managing simulator devices for screenshots, testing different screen sizes, etc.
 
 ---
 
-## Default device — iPhone 11 Pro Max, iOS 18.6 (6.5")
+## Default device: iPhone 11 Pro Max, iOS 18.6 (6.5")
 
 The project default for running and screenshotting is the **6.5" iPhone 11 Pro Max
 on iOS 18.6** (the App Store's required 6.5" size, 1242×2688). `dx serve --ios`
@@ -78,7 +78,7 @@ xcrun simctl shutdown all
 
 ## Take screenshots
 
-- **In Simulator window**: `Cmd+S` — saves to Desktop
+- **In Simulator window**: `Cmd+S`: saves to Desktop
 - **From CLI**:
   ```bash
   xcrun simctl io booted screenshot ~/Desktop/screenshot.png

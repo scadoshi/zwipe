@@ -82,8 +82,8 @@ This is the standard CSS reset pattern (Tailwind preflight does the same). Witho
 Bare `font-family: monospace` resolves to the OS generic — Menlo on macOS/iOS, Droid Sans Mono on Android, Consolas on Windows. **Never JetBrains Mono.** This was a real bug source: chart labels in `deck_charts.rs` and the import/export textareas were rendering in the OS default for months because they had inline `style="font-family:monospace"`.
 
 **Always** either:
-- `font-family: 'JetBrains Mono', monospace` — named font first, generic as fallback, OR
-- omit `font-family` entirely and rely on body inheritance (preferred — single source of truth)
+- `font-family: 'JetBrains Mono', monospace`: named font first, generic as fallback, OR
+- omit `font-family` entirely and rely on body inheritance (preferred, single source of truth)
 
 If you grep `font-family.*monospace` and find a result without `'JetBrains Mono'` in it, it's a bug.
 
@@ -114,5 +114,5 @@ The canonical copy is `zwipe-components/src/theme_picker.rs:21`, a `match` at th
 3. **Form labels & placeholders** → sentence case ("Email address"), Title Case for single proper nouns ("Email")
 4. **Toasts you author** → sentence case, no trailing period for short status ("Card added"), period for full sentences ("Verify your email to enable password recovery.")
 5. **Toasts derived from `e.to_user_message()` / `e.to_string()`** → pass through, no `.to_lowercase()` wrappers
-6. **Don't add inline `font-family`** — body inheritance handles it (form elements covered by the reset)
-7. **Avoid `style="font-family:monospace"`** — see above
+6. **Don't add inline `font-family`**: body inheritance handles it (form elements covered by the reset)
+7. **Avoid `style="font-family:monospace"`**: see above

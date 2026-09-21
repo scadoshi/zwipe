@@ -19,8 +19,8 @@ pub mode: ImportMode,   // enum { #[default] Add, Replace }
 
 This buys the two-step deploy with no version gate:
 
-1. Deploy server — old clients omit the field, get the old behavior.
-2. Ship client — new clients send the field, get the new behavior.
+1. Deploy server, old clients omit the field, get the old behavior.
+2. Ship client, new clients send the field, get the new behavior.
 
 No "wait for propagation", no flag-day, no cleanup commit later.
 

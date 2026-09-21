@@ -1,6 +1,6 @@
-# Weekly badges — server
+# Weekly badges: server
 
-## 1. Migration — `zerver/migrations/<ts>_create_user_week_badges.sql`
+## 1. Migration: `zerver/migrations/<ts>_create_user_week_badges.sql`
 
 ```sql
 -- Computed week-close artifacts. One row per (user, closed week) with any
@@ -17,7 +17,7 @@ CREATE TABLE user_week_badges (
 `badges` holds the serde keys of the shared enum (below), priority-ordered,
 length 1–3.
 
-## 2. Shared types — `zwipe-core/src/http/contracts/badges.rs`
+## 2. Shared types: `zwipe-core/src/http/contracts/badges.rs`
 
 Pure enum + contracts (same pattern as `AnonymousEventKind`):
 
@@ -47,7 +47,7 @@ counters (swipes by direction, added/skipped/maybed/removed, searches), top
 category, top color, and `history: Vec<(week_start, Vec<WeekBadge>)>`
 (capped 12).
 
-## 3. Badge job — zervice step
+## 3. Badge job: zervice step
 
 After the existing refresh steps in `zerver/src/bin/zervice.rs` (~line 87
 where `refresh_card_signal_rollup` sits): compute badges for **every closed

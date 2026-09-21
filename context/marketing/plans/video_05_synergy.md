@@ -1,4 +1,4 @@
-# Video 5 — Swipe cards that actually work together
+# Video 5: Swipe cards that actually work together
 
 **Theme:** Pick a commander, swipe only what synergizes.
 **Priority:** P2.

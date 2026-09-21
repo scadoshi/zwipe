@@ -1,4 +1,4 @@
-# Deploy — zite
+# Deploy: zite
 
 Deployment for the zite Dioxus web frontend. Hosted on GitHub Pages at `zwipe.net`.
 
@@ -29,7 +29,7 @@ GitHub → Actions tab → **Deploy zite** → Run workflow → Run workflow
 2. Installs a prebuilt `dioxus-cli@0.7.10` binary via `taiki-e/install-action`, so nothing is compiled from source
 3. Runs `dx build --release --platform web --ssg --force-sequential` from `zite/`. Both flags matter: `--ssg` pre-renders the static routes, and dropping `--force-sequential` lets the parallel client build overwrite the SSG output with the bare shell
 4. Writes `CNAME` (`zwipe.net`) into the build output
-5. Copies `index.html` → `404.html` (SPA routing — GitHub Pages serves 404.html for unknown paths, Dioxus Router takes over)
+5. Copies `index.html` → `404.html` (SPA routing, GitHub Pages serves 404.html for unknown paths, Dioxus Router takes over)
 6. Uploads build output as a GitHub Pages artifact and deploys
 
 ---

@@ -8,7 +8,7 @@ provisioning profile).
 
 ---
 
-## Step 1 — Create Release Entitlements
+## Step 1: Create Release Entitlements
 
 The debug `Entitlements.plist` has `get-task-allow` set to `true` (allows debugger
 to attach). Apple rejects this. Create a release version:
@@ -28,7 +28,7 @@ This only needs to be done once — the file is committed to the repo.
 
 ---
 
-## Step 2 — Build Release .app
+## Step 2: Build Release .app
 
 ```bash
 cd ~/Developer/zwipe/zwiper
@@ -51,7 +51,7 @@ vtool -show ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/zwipe
 
 ---
 
-## Step 3 — Sign for Distribution
+## Step 3: Sign for Distribution
 
 ```bash
 # 1. Embed the App Store provisioning profile
@@ -71,7 +71,7 @@ codesign --force --sign "<HASH-OR-NAME>" \
 
 ---
 
-## Step 4 — Package as IPA
+## Step 4: Package as IPA
 
 ```bash
 cd ~/Developer/zwipe
@@ -84,7 +84,7 @@ rm -rf Payload
 
 ---
 
-## Step 5 — App Store Connect Setup (one-time)
+## Step 5: App Store Connect Setup (one-time)
 
 Go to [appstoreconnect.apple.com](https://appstoreconnect.apple.com).
 
@@ -129,7 +129,7 @@ Go to [appstoreconnect.apple.com](https://appstoreconnect.apple.com).
 
 ---
 
-## Step 6 — Upload
+## Step 6: Upload
 
 ### Prerequisites: App Store Connect API key
 
@@ -149,12 +149,12 @@ that can trigger false "beta Xcode" rejections in App Store Connect.
 1. Download **Transporter** from the Mac App Store (free, by Apple)
 2. Open Transporter, sign in with your Apple ID
 3. Drag `~/Developer/zwipe/Zwipe.ipa` into the window
-4. Click **Deliver** — validates and uploads in one step
+4. Click **Deliver**: validates and uploads in one step
 5. Wait for "Upload Successful" confirmation
 
 The build will appear in App Store Connect after 5–10 minutes.
 
-### Fallback: altool (deprecated — use only if Transporter is unavailable)
+### Fallback: altool (deprecated: use only if Transporter is unavailable)
 
 ```bash
 xcrun altool --validate-app -f ~/Developer/zwipe/Zwipe.ipa -t ios \
@@ -168,7 +168,7 @@ API key file: `~/.private_keys/AuthKey_<KEY_ID>.p8`
 
 ---
 
-## Step 7 — Submit for Review
+## Step 7: Submit for Review
 
 1. Back in App Store Connect, the build appears under your app version (may take 5–10 min)
 2. Select the build

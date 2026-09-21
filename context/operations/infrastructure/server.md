@@ -377,7 +377,7 @@ fails loudly (alert email + Healthchecks), exactly what the
 re-run the ledger (`sudo -u postgres psql -d zwipe <
 ~/zwipe-src/zcripts/server/sql/zervice_role.sql`).
 
-**Standard footer for any matview-recreating migration** — makes the rebuild
+**Standard footer for any matview-recreating migration**: it makes the rebuild
 self-healing while keeping grants out of dev/test clusters (conditional on
 the role existing, so the per-cluster principle holds):
 
@@ -393,7 +393,7 @@ END $$;
 ```
 
 (Considered and rejected 2026-08-15: pointing zervice at the main `zwipe`
-role. zervice parses ~1.7GB of untrusted Scryfall JSON nightly — the scoped
+role. zervice parses ~1.7GB of untrusted Scryfall JSON nightly, so the scoped
 role caps that blast radius at card data and can never read session tokens;
 its worst failure mode is this loud, one-command-fix alert.)
 
@@ -401,7 +401,7 @@ its worst failure mode is this loud, one-command-fix alert.)
 
 ## Build
 
-Build directly on the server — no cross-compilation needed:
+Build directly on the server; no cross-compilation needed:
 
 ```bash
 # Install build tools (gcc, make, etc.)
@@ -430,7 +430,7 @@ cp target/release/zerver target/release/zervice ~/zwipe/
 
 ## systemd Service
 
-systemd is Ubuntu's service manager. A unit file tells it how to run zerver — so it starts
+systemd is Ubuntu's service manager. A unit file tells it how to run zerver, so it starts
 automatically on boot and restarts itself if it crashes, instead of you running `./zerver`
 manually in a terminal.
 
@@ -491,15 +491,15 @@ Unit files are versioned at `zcripts/server/systemd/` (`zervice.service`,
 fires on next boot.
 
 **Least privilege (2026-07-29):** `zervice.service` reads
-`/home/scadoshi/zwipe/.env.zervice` — exactly `DATABASE_URL`, `RUST_LOG`,
+`/home/scadoshi/zwipe/.env.zervice`: exactly `DATABASE_URL`, `RUST_LOG`,
 `LOG_DIR`, plus optional `HEALTHCHECK_PING_URL` (the bin's `ZerviceConfig`
 accepts nothing more; it holds no JWT/Resend secrets). The alert unit keeps
 reading the MAIN `.env` because it legitimately needs the Resend creds.
 
-**Scoped Postgres role — the lifecycle.** `.env.zervice`'s `DATABASE_URL`
+**Scoped Postgres role, the lifecycle.** `.env.zervice`'s `DATABASE_URL`
 connects as the `zervice` role; `zcripts/server/sql/zervice_role.sql` is the
 canonical, IDEMPOTENT ledger of everything it may touch (card-sync tables,
-matview ownership, upkeep prunes — incl. the destruction-only session grant:
+matview ownership, upkeep prunes, incl. the destruction-only session grant:
 `DELETE` + column-scoped `SELECT (expires_at)`, so it can dust expired
 sessions but never read them). Grants deliberately do NOT live in migrations
 (roles are per-cluster infrastructure; dev/test DBs differ). The lifecycle is
@@ -526,7 +526,7 @@ exit marks the unit **failed** visibly in `systemctl status zervice`, and
 `systemctl list-timers zervice*` answers last-ran/next-run at a glance.
 
 **Failure alerting:** `zervice.service` carries `OnFailure=zervice-alert.service`
-— on any failed scheduled run, systemd fires the alert unit, which emails the
+On any failed scheduled run, systemd fires the alert unit, which emails the
 last 15 journal lines to `SUPPORT_EMAIL_ADDRESS` via Resend (reuses the
 existing `.env` creds; no new secrets; the script sets a User-Agent because
 Cloudflare 403s python-urllib's default). Tested live 2026-07-29. Note it only
@@ -542,7 +542,7 @@ journalctl -u zervice --since today   # full output
 systemctl list-timers zervice*        # last / next scheduled run
 ```
 
-The old crontab entry is removed — **for real as of 2026-08-05**. Incident
+The old crontab entry is removed, **for real as of 2026-08-05**. Incident
 note: this line originally claimed the removal on 2026-07-29, but the user
 crontab entry survived the migration, so every night ran zervice TWICE
 (cron at 04:00:01 running `~/zwipe/zervice` silently, the timer at 04:00:4x
@@ -562,7 +562,7 @@ are unchanged. Both planned follow-ups shipped: the dead-man's switch
 (`HEALTHCHECK_PING_URL`) and the least-privilege split
 (`context/archive/zervice_least_privilege.md`).
 
-zervice is a run-once binary — it syncs cards from Scryfall, cleans expired sessions,
+zervice is a run-once binary: it syncs cards from Scryfall, cleans expired sessions,
 and exits. Logs are written to `$LOG_DIR/zervice.YYYY-MM-DD.log` (default: `/var/log/zwipe/`).
 
 Run manually first to seed card data:

@@ -1,4 +1,4 @@
-# Video 11 — 4,500 tags know what every card does
+# Video 11: 4,500 tags know what every card does
 
 **Theme:** The community has tagged what every card actually does — Zwipe puts
 that whole vocabulary in your thumb: filter by it, build strategy with it, look
@@ -30,7 +30,7 @@ no competitor surfaces Scryfall's oracle tags as a first-class build axis.
    (exact tag first), one definition on screen long enough to read.
 
 ## Notes
-- Everything shown ships in 1.7.x — film against the current store build.
+- Everything shown ships in 1.7.x, film against the current store build.
 - Say "community tags" on screen, not "Scryfall" (store-copy naming caution
   applies to captions that get reused as post copy).
 - The definition beat is the money shot: pick a tag whose description is short

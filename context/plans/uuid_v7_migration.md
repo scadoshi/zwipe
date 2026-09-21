@@ -14,7 +14,7 @@ insert locality and chronologically sortable keys.
    Full test suite green on 18 before anything else moves. CI's
    `postgres:16` service image bumps in the same pass
    (`.github/workflows/deploy-zerver.yml`).
-2. **Migration: regenerate existing IDs as v7 — everything we mint.** New
+2. **Migration: regenerate existing IDs as v7, everything we mint.** New
    v7 per row, all FK references updated in lockstep.
 3. **Call sites: mint v7 going forward.** App side: the `Uuid::new_v4()`
    sites (~82, majority test helpers) → `Uuid::now_v7()` (uuid crate `v7`
@@ -25,7 +25,7 @@ insert locality and chronologically sortable keys.
 ## Landmines the migration step must handle (the "surely it isn't that
 hard" is mostly these)
 
-- **Scryfall card IDs are EXEMPT — never regenerate.** `cards.id` (and
+- **Scryfall card IDs are EXEMPT, never regenerate.** `cards.id` (and
   oracle ids etc.) are Scryfall's own identifiers; the nightly sync matches
   on them. Rewriting them orphans the whole catalog on the next sync.
   "Everything" = every ID *we* mint, not IDs we mirror from outside.
@@ -48,7 +48,7 @@ hard" is mostly these)
   all pre-migration data. Synthesize each row's v7 from its own
   `created_at` (v7 = 48-bit ms timestamp + random tail) so old rows sort
   where they actually belong.
-- **Timestamp leak — ACCEPTED (owner, explicit, 2026-08-05).** v7 ids
+- **Timestamp leak, ACCEPTED (owner, explicit, 2026-08-05).** v7 ids
   embed creation time; deck ids ride public share URLs, so anyone can
   decode when a deck was made. Owner's call: fine, it's a deck-building
   app — nothing sensitive rides on when a deck was created. Not a
@@ -61,7 +61,7 @@ hard" is mostly these)
 - Migration: row counts + FK integrity (`NOT VALID` constraints validated
   after), spot-check share links (per the alias decision), old client
   session → clean re-login, nightly sync green (proves card ids untouched).
-- Call sites: grep gate — no `new_v4` outside tests once the swap lands
+- Call sites: grep gate, no `new_v4` outside tests once the swap lands
   (test helpers may keep v4; they exercise "any valid uuid").
 
 ## Explicitly out

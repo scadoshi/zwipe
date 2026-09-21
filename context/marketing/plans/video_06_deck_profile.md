@@ -1,4 +1,4 @@
-# Video 6 — Make it yours
+# Video 6: Make it yours
 
 **Theme:** Tag it, bracket it, know exactly what your deck is.
 **Priority:** P3.

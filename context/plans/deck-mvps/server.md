@@ -1,10 +1,10 @@
-# Deck MVPs — server changes
+# Deck MVPs: server changes
 
 File-by-file. Steps 1–7 ship with 1.4.0 (phase 1); 8–9 are server-only
 follow-ups. After any query change: `cargo sqlx prepare --workspace` **from
 the workspace root** (never from `zerver/` — see `operations/infrastructure/cicd.md`).
 
-## 1. Migration — `zerver/migrations/<ts>_add_deck_card_mvp.sql`
+## 1. Migration: `zerver/migrations/<ts>_add_deck_card_mvp.sql`
 
 ```sql
 -- MVP podium: up to 3 starred cards per deck. The timestamp is the vesting
@@ -13,13 +13,13 @@ the workspace root** (never from `zerver/` — see `operations/infrastructure/ci
 ALTER TABLE deck_cards ADD COLUMN mvp_at TIMESTAMPTZ;
 ```
 
-## 2. Core type — `zwipe-core/src/domain/deck/models/deck_card.rs`
+## 2. Core type: `zwipe-core/src/domain/deck/models/deck_card.rs`
 
 `DeckCard` gains `pub mvp_at: Option<DateTime<Utc>>` with `#[serde(default)]`
 (new client ↔ old server parses; old client ignores the new field). chrono is
 an allowed core dependency.
 
-## 3. Contract — `zwipe-core/src/http/contracts/deck_card.rs`
+## 3. Contract: `zwipe-core/src/http/contracts/deck_card.rs`
 
 `HttpUpdateDeckCard` gains:
 
@@ -29,18 +29,18 @@ an allowed core dependency.
 pub mvp: Option<bool>,
 ```
 
-## 4. Domain request — `zerver/src/lib/domain/deck/models/deck_card/update_deck_card.rs`
+## 4. Domain request: `zerver/src/lib/domain/deck/models/deck_card/update_deck_card.rs`
 
 Thread `mvp: Option<bool>` through the request type + constructor, mirroring
 how `board` rides today.
 
-## 5. Handler — `zerver/src/lib/inbound/http/handlers/deck_card/update_deck_card.rs`
+## 5. Handler: `zerver/src/lib/inbound/http/handlers/deck_card/update_deck_card.rs`
 
 Map `body.mvp` into the domain request. New error variant maps to 422 with
 the exact copy **"This deck already has 3 MVPs"** (sentence case, no em
 dashes — client shows it verbatim).
 
-## 6. Repository — `zerver/src/lib/outbound/sqlx/deck/mod.rs`
+## 6. Repository: `zerver/src/lib/outbound/sqlx/deck/mod.rs`
 
 In the update fn's tx:
 
@@ -86,7 +86,7 @@ signal-ordering FROM, numerator term `+ W_MVP * COALESCE(mvp.vested, 0)`
 inside the shrunk rate's numerator; `const W_MVP: f64 = 3.0` next to the
 other dials.
 
-## 9. Deck steering (phase 3, server-only) — BUILT 2026-08-18
+## 9. Deck steering (phase 3, server-only): BUILT 2026-08-18
 
 For the serving deck, boost cards sharing the deck's MVPs' mechanical
 categories: a scalar subquery collects the MVP cards'

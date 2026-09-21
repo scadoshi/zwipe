@@ -1,4 +1,4 @@
-# Video 7 — Know every card
+# Video 7: Know every card
 
 **Theme:** Alt-art, foreign, double-faced. Always know what you're looking at.
 **Priority:** P3.

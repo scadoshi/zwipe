@@ -1,4 +1,4 @@
-# Rethink the empty-filter warning — maybe just serve all cards
+# Rethink the empty-filter warning: maybe just serve all cards
 
 **Source:** self-noted, 2026-06-29.
 **Verdict:** undecided — "consider" item.
@@ -11,7 +11,7 @@ behavior than a warning.
 
 ## To weigh tomorrow
 
-- Behavior change is in `zwiper/.../screens/deck/card/add.rs` — the
+- Behavior change is in `zwiper/.../screens/deck/card/add.rs`: the
   `filter_builder.is_empty()` / `is_empty_ignoring_deck_context_and_auto_lands()`
   branches (`add.rs:710` and `add.rs:1498`; the method was renamed since this was
   written) and the "leave stack empty and nudge to filter" path.
@@ -26,6 +26,6 @@ behavior than a warning.
 
 - App Store 4★ review ("Sick app, needs way to set land amount", Caed_, ~2026-06-28)
   asked for a target land count with a warning as the deck fills up. **That
-  land-count feature has since shipped** — the review predates it. Kept here only
+  land-count feature has since shipped**, so the review predates it. Kept here only
   because it touches the same "warn the user about deck composition" surface as
   this empty-filter question. Not featured as a site testimonial for that reason.

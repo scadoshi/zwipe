@@ -1,4 +1,4 @@
-# Featured decks — owner-curated showcase with MVPs
+# Featured decks: owner-curated showcase with MVPs
 
 **Depends on:** [`deck-share-page`](../../archive/deck-share-page/overview.md)
 (share tokens + the zite deck page these link to) and, for the full effect,
@@ -7,7 +7,7 @@ SHIPPED 2026-07-07**, so this is now buildable: `decks.share_token` exists, the
 public `/deck/:token` zite page is live (and already renders the featured MVP
 row this showcase reuses), and MVP stars are on it.
 
-## 1. Migration — `zerver/migrations/<ts>_add_deck_featured_at.sql`
+## 1. Migration: `zerver/migrations/<ts>_add_deck_featured_at.sql`
 
 ```sql
 -- Owner-curated showcase flag. Only decks with a live share_token are
@@ -18,7 +18,7 @@ CREATE INDEX idx_decks_featured ON decks (featured_at DESC)
     WHERE featured_at IS NOT NULL;
 ```
 
-## 2. Curation — zcript, not endpoint
+## 2. Curation: zcript, not endpoint
 
 No admin API v1. `zcripts/featured/feature-deck.sql` (+ a companion
 unfeature): parameterized `UPDATE decks SET featured_at = now() WHERE id =
@@ -48,7 +48,7 @@ the other public marketing configs):
 
 `.sqlx` prepare from workspace root as always.
 
-## 4. zite — the showcase
+## 4. zite: the showcase
 
 - **Home strip:** a "Featured decks" section on `pages/home.rs` (below the
   demo videos): 3–4 tiles, link to the full page. Empty response → section

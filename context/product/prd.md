@@ -1,4 +1,4 @@
-# Zwipe — Product Requirements Document
+# Zwipe: Product Requirements Document
 
 **Historical MVP PRD, as of 2026-03.** This is the pre-launch scoping
 document, kept as a record of what the MVP was meant to be. It is not a
@@ -19,14 +19,14 @@ Swipe right to add cards, left to skip. Deep filter system for color, type, orac
 
 Freemium. See `context/product/monetization.md`.
 
-- **Free**: All core features — up to 20 decks (1 before email verification), full card database, swipe interface, filters, metrics, synergy scores
+- **Free**: All core features, up to 20 decks (1 before email verification), full card database, swipe interface, filters, metrics, synergy scores
 - **Paid subscription**: AI card suggestions (post-App Store launch). Synergy scores were planned as paid here and shipped free instead; what fills the gap is an open question, see `monetization.md`
 
 ## Target Audience
 
 - **Primary**: Dedicated Commander players who build multiple decks and want a better mobile tool
 - **Secondary**: Competitive and casual players across all formats
-- Solo developer, production-grade app — no "pet project" positioning
+- Solo developer, production-grade app, no "pet project" positioning
 
 ---
 

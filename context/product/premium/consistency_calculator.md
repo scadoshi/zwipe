@@ -19,7 +19,7 @@ mechanical categories include that tag, then closed-form hypergeometric for
 P(≥1 in 7 draws). Extensions: P(by turn N), multivariate ("Ramp AND a draw
 engine in the opener"), aggregate score across all the deck's tags. Examples
 the math covers directly: odds of hitting draw cards, burn reach, sac outlets,
-a land by turn 3 — whatever the deck's tags declare its plan to be.
+a land by turn 3, whatever the deck's tags declare its plan to be.
 
 Explicitly framed as "how often does your deck see its pieces," never "your
 deck is good." Players obsess over exactly this ("do I sack out?" is a
@@ -34,14 +34,14 @@ list is on screen.
 
 ## Mana math (adjacent, same file because same engine)
 
-- Draw-probability calculator: "odds of a land by turn 3" — hypergeometric
+- Draw-probability calculator: "odds of a land by turn 3": hypergeometric
   again.
-- Mana base recommender from pip counts — the deck metrics screen already
+- Mana base recommender from pip counts, the deck metrics screen already
   computes pip balance, so this is half-built.
 
 ## Implementation notes
 
-- The math is a **pure function in zwipe-core** — no deps, fits the purity
+- The math is a **pure function in zwipe-core**: no deps, fits the purity
   rules, shared by server and client.
 - Can run entirely **client-side** on data the deck screen already has: no new
   endpoint, no server load, works offline.

@@ -26,9 +26,9 @@ stateful data not replicated elsewhere — everything else is in GitHub.
 ### 2. Create R2 API Token
 
 1. R2 → Manage R2 API Tokens → Create API Token
-2. Permissions: **Admin Read & Write** (Object Read & Write alone is insufficient — rclone needs bucket list operations)
+2. Permissions: **Admin Read & Write** (Object Read & Write alone is insufficient, rclone needs bucket list operations)
 3. Scope: Apply to all buckets (bucket-scoped tokens may fail with 403 even with correct naming)
-4. Save the **Access Key ID** and **Secret Access Key** — you won't see them again
+4. Save the **Access Key ID** and **Secret Access Key**: you won't see them again
 
 ### 3. Install and Configure rclone
 

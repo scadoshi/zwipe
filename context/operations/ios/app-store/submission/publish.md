@@ -15,12 +15,12 @@ for details.
 1. Open **Transporter** (Mac App Store, free, by Apple)
 2. Sign in with your Apple ID if prompted
 3. Drag `~/Developer/zwipe/Zwipe.ipa` into the window
-4. Click **Deliver** — validates and uploads in one step
+4. Click **Deliver**: validates and uploads in one step
 5. Wait for "Upload Successful" confirmation
 
 The build will appear in App Store Connect after 5–10 minutes.
 
-### Fallback: altool (deprecated — use only if Transporter is unavailable)
+### Fallback: altool (deprecated: use only if Transporter is unavailable)
 
 ```bash
 xcrun altool --validate-app -f ~/Developer/zwipe/Zwipe.ipa -t ios \

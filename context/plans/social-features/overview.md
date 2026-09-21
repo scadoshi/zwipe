@@ -1,4 +1,4 @@
-# Social features — weekly badges + featured decks
+# Social features: weekly badges + featured decks
 
 **Status: PLANNED (2026-07-06). Not started. Two independent legs; badges
 buildable now. The featured-decks prerequisites — the deck share page and Deck
@@ -44,11 +44,11 @@ Share Cards" backlog entry (design decisions carried over).
 
 ## Sequencing
 
-1. **Badges server** — deployable alone; badge history starts accruing
+1. **Badges server**: deployable alone; badge history starts accruing
    silently (backfills every closed week since 2026-07-02 on first run).
-2. **Badges client** — rides the next client release after; recap appears
+2. **Badges client**: rides the next client release after; recap appears
    the first Monday after install.
-3. **Featured decks** — server+zite legs can ship with/after the share
+3. **Featured decks**: server+zite legs can ship with/after the share
    page; the showcase gets real MVP stars once 1.4.0 clients start starring.
 
 ## Later (explicitly out of v1)

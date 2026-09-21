@@ -15,7 +15,7 @@ Point-in-time snapshots of a deck with diffs between them:
 
 ## Implementation sketch
 
-- A `deck_snapshots` table: (deck_id, created_at, note, cards jsonb) — the
+- A `deck_snapshots` table: (deck_id, created_at, note, cards jsonb): the
   full card list per snapshot is a few KB; even hundreds of snapshots per deck
   are negligible. No diff storage needed — diffs are computed on read by
   comparing two snapshots' card lists.

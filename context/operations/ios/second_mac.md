@@ -91,7 +91,7 @@ Nothing else is at risk:
 - **The Mac itself is never registered with Apple.** Only test *iPhones* get
   registered, and only for development profiles. Adding a Mac is not an event
   Apple knows about.
-- **The App Store provisioning profile contains no device UDIDs** — that's what
+- **The App Store provisioning profile contains no device UDIDs**: that's what
   distinguishes an App Store profile from a development one. Copying it changes
   nothing about where it's valid.
 - **The API key and Transporter's Apple ID sign-in** both work from any number of

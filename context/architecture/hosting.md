@@ -9,18 +9,18 @@ Previous host was a Raspberry Pi 5 (4GB RAM). Moved to a proper server — 32GB 
 ## What We're Running
 
 - **Hardware**: Ubuntu Server (headless, no desktop UI), x86_64, 32GB RAM
-- **OS**: Ubuntu Server — no GUI, managed entirely via SSH
+- **OS**: Ubuntu Server, no GUI, managed entirely via SSH
 - **Backend**: `zerver` as a systemd service
-- **Database**: PostgreSQL — `zwipe` DB, `zwipe` user
+- **Database**: PostgreSQL, `zwipe` DB, `zwipe` user
 - **Tunnel**: Cloudflare Tunnel → `api.zwipe.net` routes to `localhost:3000`
 - **Nightly sync**: `zervice` via cron at 4am
 
 ## Why Ubuntu Server (headless)
 
-- 32GB RAM vs Pi's 4GB — real headroom for DB + backend under actual load
-- x86_64 eliminates cross-compilation to aarch64 — `cargo build` on the server itself is viable, or cross-compile Mac → x86_64-unknown-linux-gnu
-- No UI needed — everything managed via SSH. Desktop environment would be wasted RAM on a server
-- Same stack (systemd, PostgreSQL, cloudflared) — migration is a clean reinstall, not a redesign
+- 32GB RAM vs Pi's 4GB, real headroom for DB + backend under actual load
+- x86_64 eliminates cross-compilation to aarch64, `cargo build` on the server itself is viable, or cross-compile Mac → x86_64-unknown-linux-gnu
+- No UI needed, everything managed via SSH. Desktop environment would be wasted RAM on a server
+- Same stack (systemd, PostgreSQL, cloudflared): migration is a clean reinstall, not a redesign
 
 ## Cross-Compilation (Mac → x86_64-unknown-linux-gnu)
 
@@ -33,11 +33,11 @@ ssh <user>@<server-ip> "sudo systemctl restart zerver"
 
 Note: Update `.cargo/config.toml` linker config if it still points at aarch64 toolchain.
 
-## Key Config (carry over from Pi — update IPs/paths as needed)
+## Key Config (carry over from Pi: update IPs/paths as needed)
 
 - Tunnel config: `/etc/cloudflared/config.yml` on server
 - zerver .env: `~/zwipe/.env` on server
-- DATABASE_URL uses `127.0.0.1` (TCP), not `localhost` (socket) — peer auth blocks socket for non-system users
+- DATABASE_URL uses `127.0.0.1` (TCP), not `localhost` (socket): peer auth blocks socket for non-system users
 - `<` and `>` in DB password URL-encoded as `%3C` / `%3E` in connection string
 
 ## Status

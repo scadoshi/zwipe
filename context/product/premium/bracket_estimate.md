@@ -6,7 +6,7 @@ around it paid.
 
 ## Why the badge is free
 
-- **Zero marginal cost** once built — Game Changers list lookup plus
+- **Zero marginal cost** once built, Game Changers list lookup plus
   heuristics. No defensibility as a paid feature (anyone can copy a bracket
   checker).
 - **Most shareable feature we could ship.** "Zwipe says my deck is Bracket 3"
@@ -18,7 +18,7 @@ around it paid.
 
 Inputs, roughly in WotC's own bracket terms:
 
-- **Game Changers list membership** — count of GC cards in the deck.
+- **Game Changers list membership**: count of GC cards in the deck.
 - **Heuristics over mechanical categories** (`deck_tags.md` taxonomy):
   mass land denial, extra turns, tutor density, two-card-combo presence
   (combo detection may eventually want Commander Spellbook data — note, not

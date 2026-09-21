@@ -15,7 +15,7 @@ push to `main` auto-deploys prod.** Each workflow gates its `deploy` job on `tes
 (`.github/workflows/deploy-zerver.yml`). A red check means the deploy is **silently skipped**
 — prod stays on the old build. Reproduce the gate locally first:
 
-### 1. Format with **nightly** — the one that bites
+### 1. Format with **nightly**: the one that bites
 CI runs `cargo +nightly fmt --check`, **nightly and workspace-wide**. `rustfmt.toml` enables
 `imports_granularity = "Crate"`, an *unstable* option, so **stable `cargo fmt` silently skips
 it** — your code passes locally but fails CI and the deploy is skipped. Because the check is
@@ -25,7 +25,7 @@ workspace-wide, *any* crate's bad formatting (even zite/zwiper) blocks the zerve
 cargo +nightly fmt        # NOT `cargo fmt` — stable can't apply the Crate imports rule
 ```
 
-### 2. Clippy — the exact CI command, warnings are errors
+### 2. Clippy: the exact CI command, warnings are errors
 ```bash
 cargo clippy --workspace --all-targets -- -D warnings
 ```

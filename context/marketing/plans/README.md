@@ -12,7 +12,7 @@ add cards, Zwipe commander, import deck). Structure every video the same way:
 - **Caption rules** (on-screen text is user-facing copy): no em dashes, sentence
   case, "Zwipe" capitalized.
 - **Screen-record source**: the real app (`dx serve --platform ios` or a device).
-- **Snappy first.** Fast cuts, no dead air — the whole job is grab-and-hold.
+- **Snappy first.** Fast cuts, no dead air, the whole job is grab-and-hold.
   Because it's this fast, features that group naturally can share one video (a
   beat each) instead of getting their own — combine freely as long as the cut
   stays quick and each beat still reads. The per-video files are the raw
@@ -43,7 +43,7 @@ differentiator since launch and the freshest thing to show. Then #4 (draw odds,
 still a strong P1). #9 (MVPs) is cheap to shoot right after #8 and pairs with it.
 
 **Combine candidates (per the snappy rule):**
-- **#8 + #9 (share + MVPs)** group the tightest — build a deck, star its MVPs,
+- **#8 + #9 (share + MVPs)** group the tightest, build a deck, star its MVPs,
   share the link, MVPs headline the page. One 20s cut can carry both.
 - **#10** already groups two beats (popularity-ranked select + partner autofill).
 - **#11's dictionary beat** can carry its own future video if the flagship runs

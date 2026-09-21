@@ -1,4 +1,4 @@
-# Android emulator — daily dev loop
+# Android emulator: daily dev loop
 
 Copy-paste commands for running, wiping, and serving the app to the `Pixel_9a`
 emulator. First-time machine setup (Android Studio, SDK, NDK) lives in
@@ -7,7 +7,7 @@ emulator. First-time machine setup (Android Studio, SDK, NDK) lives in
 
 ---
 
-## 0. Environment — run once per shell (or add to `~/.zshrc`)
+## 0. Environment: run once per shell (or add to `~/.zshrc`)
 
 The `JAVA_HOME` line is **mandatory** — Gradle's jlink transform dies on the
 system-default JDK 26 (fails in ~12s). Pointing `PATH` at the SDK lets you call
@@ -44,9 +44,9 @@ echo "booted"; adb shell df -h /data | tail -1            # sanity-check free sp
 
 ---
 
-## 2. Put the app on the emulator — two loops
+## 2. Put the app on the emulator: two loops
 
-### A. `dx serve` — hot reload
+### A. `dx serve`: hot reload
 
 ```bash
 cd ~/Developer/zwipe/zwiper
@@ -56,7 +56,7 @@ dx serve --platform android        # builds, installs, launches, hot-reloads on 
 Fastest for iterating on UI. Caveat: it sometimes reuses a stale install instead
 of reinstalling — if changes don't appear, fall back to the manual loop.
 
-### B. Manual build + install — bulletproof
+### B. Manual build + install: bulletproof
 
 ```bash
 cd ~/Developer/zwipe/zwiper

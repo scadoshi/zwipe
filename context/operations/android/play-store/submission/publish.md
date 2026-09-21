@@ -33,7 +33,7 @@ the track, **not** the release page or the bundle. (First hit 2026-07-11.)
 
 ## 2. Recruiting testers (the gotchas)
 
-- Closed testing is **invite-only** — only emails on your tester list (or members
+- Closed testing is **invite-only**: only emails on your tester list (or members
   of an added **Google Group**) can join. A bare public link does nothing for
   someone not on the list.
 - **For social-media recruitment, use a Google Group**, not a hand-typed email

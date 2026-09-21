@@ -8,14 +8,14 @@ they have to find.
 
 Instead of filter-order, rank the stack by "fits this deck":
 
-- **Tag match** — boost cards whose mechanical categories match the deck's
+- **Tag match**: boost cards whose mechanical categories match the deck's
   tags (`deck_tags.md`). Cheapest signal, available first.
-- **Co-occurrence stats** — "decks with your commander also run X," computed
+- **Co-occurrence stats**: "decks with your commander also run X," computed
   from our own deck corpus as it grows.
-- **Recommander integration** — if the recommander.cards integration lands
+- **Recommander integration**: if the recommander.cards integration lands
   (see `progress/backlog.md`), its recommendations become a ranking signal,
   cacheable per commander.
-- **Taste profile** (below) — deprioritize what this user always rejects.
+- **Taste profile** (below): deprioritize what this user always rejects.
 
 ## Taste profile
 
@@ -23,18 +23,18 @@ Instead of filter-order, rank the stack by "fits this deck":
 data is something Moxfield structurally cannot have — it only exists because
 the core loop is swiping.
 
-### Storage design — counters, not history (worked out 2026-06-10)
+### Storage design: counters, not history (worked out 2026-06-10)
 
 The profile needs **running aggregates, not raw swipe history**. Never run a
 big aggregation job; maintain counters incrementally:
 
-- `(user_id, mechanical_category, direction) → count` — incremented per swipe,
+- `(user_id, mechanical_category, direction) → count`: incremented per swipe,
   O(1) write, a few hundred rows per user. The taste profile is a direct read.
   The ~50-category vocabulary is the aggregation bucket (vs 35k cards).
-- `(user_id, oracle_id) → counts` — for card-level "stop showing me Sol Ring,
+- `(user_id, oracle_id) → counts`: for card-level "stop showing me Sol Ring,
   I've rejected it 14 times." Bounded by cards the user has *seen* —
   thousands of rows per active user, not millions.
-- **Global per-card aggregates** — one row per card, rejection/acceptance
+- **Global per-card aggregates**: one row per card, rejection/acceptance
   counts across all users. Trivially small, and valuable independent of the
   taste profile (recommendation-partner feedback signal, own ranking stats).
 

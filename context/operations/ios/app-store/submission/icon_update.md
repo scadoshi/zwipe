@@ -1,6 +1,6 @@
 # Update the App Icon
 
-Short guide for refreshing the iOS app icon without a full Rust rebuild. Use this when only the icon changed — same Rust code, same Info.plist, just new artwork.
+Short guide for refreshing the iOS app icon without a full Rust rebuild. Use this when only the icon changed: same Rust code, same Info.plist, just new artwork.
 
 For a fresh release build (icon + Rust changes), follow [build.md](build.md) and let step 3 swap the icons as part of the normal flow.
 
@@ -8,19 +8,19 @@ For a fresh release build (icon + Rust changes), follow [build.md](build.md) and
 
 ## Pre-flight
 
-You need a single **1024×1024 PNG master** with no rounded corners (iOS rounds at render time) and a solid background. Transparency must be stripped before submission — Apple rejects alpha on the marketing icon.
+You need a single **1024×1024 PNG master** with no rounded corners (iOS rounds at render time) and a solid background. Transparency must be stripped before submission; Apple rejects alpha on the marketing icon.
 
 ### Generating the master (the ASCII Z logo)
 
 The logo is the project's ASCII "Z" colorized and exported via the **asciier**
-tool — https://github.com/scadoshi/asciier.git (open `main.html` in a browser):
+tool: https://github.com/scadoshi/asciier.git (open `main.html` in a browser):
 
 - Pick the matching theme preset (**Gruvbox Dark** → cream `#ebdba2` on `#282828`)
   so the icon matches the app's default theme.
-- Use the **JetBrains Mono** font at **line height 0.9×** — matches the in-app
+- Use the **JetBrains Mono** font at **line height 0.9×**: matches the in-app
   `.logo` rendering (`zwiper/assets/main.css`), so the block glyphs line up the
   same way they do on the home screen.
-- Set the **size scale to 1.6×** — that's the sweet spot for filling the icon
+- Set the **size scale to 1.6×**: that's the sweet spot for filling the icon
   tile. 1.5× sits a touch small, 1.7× a touch large; **build 42 at 1.6× fit best**.
 - Make sure the pasted ASCII has **no leading/trailing blank lines**, or the
   glyph renders off-center (vertically pushed) in the square.
@@ -119,13 +119,13 @@ actool --compile $APP --platform iphoneos --minimum-deployment-target 16.0 \
 
 ## 3. Optional: bump build number
 
-If the `.app` was already signed and uploaded to App Store Connect, bump the build number before re-uploading — Apple rejects duplicate build numbers.
+If the `.app` was already signed and uploaded to App Store Connect, bump the build number before re-uploading; Apple rejects duplicate build numbers.
 
 ```bash
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion <NEW_BUILD_NUMBER>" $APP/Info.plist
 ```
 
-If you're iterating before the first Deliver click, you can stay on the same build number — Transporter happily replaces the staged item.
+If you're iterating before the first Deliver click, you can stay on the same build number; Transporter happily replaces the staged item.
 
 ---
 
@@ -152,7 +152,7 @@ codesign -dvv $APP | grep -E "Authority|Signed Time"
 
 ## 5. Confirm the icon is actually in the bundle
 
-Tools like Transporter render the icon thumbnail at ~70px, which makes chunky pixel-art icons look washed out at that size. Don't trust the preview for color verification — inspect the catalog directly:
+Tools like Transporter render the icon thumbnail at ~70px, which makes chunky pixel-art icons look washed out at that size. Don't trust the preview for color verification; inspect the catalog directly:
 
 ```bash
 xcrun assetutil --info $APP/Assets.car | grep -A 5 -i "AppIcon" | head -40
@@ -170,7 +170,7 @@ open ~/Developer/zwipe/zwiper/assets/favicon/icon-1024.png
 
 ## 6. Upload
 
-Same as [publish.md](publish.md) step 1 — drag `~/Developer/zwipe/Zwipe.ipa` into Transporter and click Deliver.
+Same as [publish.md](publish.md) step 1: drag `~/Developer/zwipe/Zwipe.ipa` into Transporter and click Deliver.
 
 ---
 
