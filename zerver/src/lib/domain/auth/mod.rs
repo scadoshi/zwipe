@@ -19,9 +19,7 @@ pub mod requests;
 pub use requests::*;
 
 /// Port traits (interfaces) for authentication operations.
-#[cfg(feature = "zerver")]
 pub mod ports;
 
 /// Service implementations for authentication business logic.
-#[cfg(feature = "zerver")]
 pub mod services;

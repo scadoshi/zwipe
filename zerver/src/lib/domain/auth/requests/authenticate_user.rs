@@ -42,7 +42,6 @@
 //! println!("Logged in as: {}", session.user.username);
 //! ```
 
-#[cfg(feature = "zerver")]
 use crate::domain::auth::requests::{
     change_email::ChangeEmail, change_password::ChangePassword, change_username::ChangeUsername,
     create_session::CreateSessionError, delete_user::DeleteUser,
@@ -50,7 +49,6 @@ use crate::domain::auth::requests::{
 use thiserror::Error;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
 
-#[cfg(feature = "zerver")]
 /// Errors that can occur during user authentication.
 ///
 /// Authentication involves multiple steps (user lookup, password verification,
@@ -231,7 +229,6 @@ impl AuthenticateUser {
 // require re-authentication with the current password. These conversions allow
 // those requests to be verified using the authentication service.
 
-#[cfg(feature = "zerver")]
 impl From<&ChangePassword> for AuthenticateUser {
     /// Converts a password change request into an authentication request.
     ///
@@ -246,7 +243,6 @@ impl From<&ChangePassword> for AuthenticateUser {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<&ChangeUsername> for AuthenticateUser {
     /// Converts a username change request into an authentication request.
     ///
@@ -261,7 +257,6 @@ impl From<&ChangeUsername> for AuthenticateUser {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<&ChangeEmail> for AuthenticateUser {
     /// Converts an email change request into an authentication request.
     ///
@@ -276,7 +271,6 @@ impl From<&ChangeEmail> for AuthenticateUser {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<&DeleteUser> for AuthenticateUser {
     /// Converts an account deletion request into an authentication request.
     ///
@@ -337,7 +331,6 @@ mod tests {
         ));
     }
 
-    #[cfg(feature = "zerver")]
     #[test]
     fn test_authenticate_user_from_change_password() {
         use crate::domain::auth::requests::change_password::ChangePassword;
@@ -349,7 +342,6 @@ mod tests {
         assert_eq!(auth.password, "OldPass!");
     }
 
-    #[cfg(feature = "zerver")]
     #[test]
     fn test_authenticate_user_from_change_username() {
         use crate::domain::auth::requests::change_username::ChangeUsername;
@@ -361,7 +353,6 @@ mod tests {
         assert_eq!(auth.password, "SecurePass123!");
     }
 
-    #[cfg(feature = "zerver")]
     #[test]
     fn test_authenticate_user_from_change_email() {
         use crate::domain::auth::requests::change_email::ChangeEmail;
@@ -373,7 +364,6 @@ mod tests {
         assert_eq!(auth.password, "SecurePass123!");
     }
 
-    #[cfg(feature = "zerver")]
     #[test]
     fn test_authenticate_user_from_delete_user() {
         use crate::domain::auth::requests::delete_user::DeleteUser;

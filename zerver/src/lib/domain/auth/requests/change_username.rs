@@ -24,7 +24,6 @@
 //! )?;
 //! ```
 
-#[cfg(feature = "zerver")]
 use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
 use thiserror::Error;
 use uuid::Uuid;
@@ -42,7 +41,6 @@ pub enum InvalidChangeUsername {
 }
 
 /// Errors that can occur during username change execution.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum ChangeUsernameError {
     /// User ID doesn't exist in database.

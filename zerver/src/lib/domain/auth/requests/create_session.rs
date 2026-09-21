@@ -26,10 +26,8 @@
 //! println!("New session for user: {}", session.user.username);
 //! ```
 
-#[cfg(feature = "zerver")]
 use std::str::FromStr;
 
-#[cfg(feature = "zerver")]
 use crate::domain::{
     auth::{
         models::access_token::InvalidJwt,
@@ -37,14 +35,10 @@ use crate::domain::{
     },
     user::models::get_user::GetUserError,
 };
-#[cfg(feature = "zerver")]
 use thiserror::Error;
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
 
-#[cfg(feature = "zerver")]
 /// Validation errors when constructing a [`CreateSession`] request.
 ///
 /// Currently only validates that the user ID is a valid UUID.
@@ -55,7 +49,6 @@ pub enum InvalidCreateSession {
     UserId(#[from] uuid::Error),
 }
 
-#[cfg(feature = "zerver")]
 /// Errors that can occur during session creation.
 ///
 /// Session creation involves multiple operations: fetching the user, enforcing
@@ -79,7 +72,6 @@ pub enum CreateSessionError {
     InvalidJwt(#[from] InvalidJwt),
 }
 
-#[cfg(feature = "zerver")]
 impl FromStr for CreateSession {
     type Err = InvalidCreateSession;
 
@@ -99,7 +91,6 @@ impl FromStr for CreateSession {
     }
 }
 
-#[cfg(feature = "zerver")]
 /// Request to create a new session for a user.
 ///
 /// This is typically used after successful authentication or by administrators
@@ -143,7 +134,6 @@ pub struct CreateSession {
     pub client_version: Option<String>,
 }
 
-#[cfg(feature = "zerver")]
 impl From<Uuid> for CreateSession {
     /// Creates a `CreateSession` request from a user ID.
     ///

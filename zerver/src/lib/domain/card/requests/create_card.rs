@@ -3,13 +3,10 @@
 //! Inserts or updates card data (Scryfall data + application metadata).
 //! Used during Scryfall sync to populate the card database.
 
-#[cfg(feature = "zerver")]
 use crate::domain::card::requests::get_scryfall_data::GetScryfallDataError;
-#[cfg(feature = "zerver")]
 use thiserror::Error;
 
 /// Errors that can occur during card creation/upsertion.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum CreateCardError {
     /// Card ID already exists (should use update/upsert instead).
@@ -29,7 +26,6 @@ pub enum CreateCardError {
     GetScryfallData(anyhow::Error),
 }
 
-#[cfg(feature = "zerver")]
 impl From<GetScryfallDataError> for CreateCardError {
     fn from(value: GetScryfallDataError) -> Self {
         Self::GetScryfallData(value.into())

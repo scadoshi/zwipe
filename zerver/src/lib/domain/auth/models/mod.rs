@@ -13,19 +13,14 @@
 pub mod access_token;
 pub mod password;
 
-#[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;
-#[cfg(feature = "zerver")]
 use chrono::{DateTime, Utc};
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::{
     Email,
     user::{User, username::Username},
 };
 
-#[cfg(feature = "zerver")]
 /// User entity with password hash for authentication operations.
 ///
 /// This internal domain type extends the public [`User`] entity with the password hash,
@@ -53,7 +48,6 @@ pub struct UserWithPasswordHash {
     pub hints_shown: std::collections::HashMap<String, bool>,
 }
 
-#[cfg(feature = "zerver")]
 impl From<UserWithPasswordHash> for User {
     fn from(value: UserWithPasswordHash) -> Self {
         Self {

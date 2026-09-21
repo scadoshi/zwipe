@@ -31,7 +31,6 @@
 //! // Client now has fresh access token (24h) and refresh token (14d)
 //! ```
 
-#[cfg(feature = "zerver")]
 use crate::domain::{
     auth::{
         models::access_token::InvalidJwt,
@@ -55,7 +54,6 @@ pub enum InvalidRefreshSession {
     UserId(#[from] uuid::Error),
 }
 
-#[cfg(feature = "zerver")]
 /// Errors that can occur during session refresh.
 ///
 /// The refresh operation validates the refresh token through multiple checks:

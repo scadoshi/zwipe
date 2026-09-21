@@ -1,13 +1,11 @@
 use serde::Deserialize;
-#[cfg(feature = "zerver")]
 use thiserror::Error;
 use uuid::Uuid;
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::card::{card_profile::CardProfile, scryfall_data::ScryfallData};
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::deck::DeckCard;
+use zwipe_core::domain::{
+    card::{card_profile::CardProfile, scryfall_data::ScryfallData},
+    deck::DeckCard,
+};
 
-#[cfg(feature = "zerver")]
 /// Errors that can occur when retrieving Scryfall data.
 #[derive(Debug, Error)]
 pub enum GetScryfallDataError {
@@ -19,7 +17,6 @@ pub enum GetScryfallDataError {
     Database(anyhow::Error),
 }
 
-#[cfg(feature = "zerver")]
 /// Errors that can occur when searching for Scryfall data.
 #[derive(Debug, Error)]
 pub enum SearchScryfallDataError {
@@ -61,21 +58,18 @@ impl<'de> Deserialize<'de> for GetScryfallData {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<&CardProfile> for GetScryfallData {
     fn from(value: &CardProfile) -> Self {
         Self(value.scryfall_data_id)
     }
 }
 
-#[cfg(feature = "zerver")]
 /// Collection of Scryfall data UUIDs for batch operations.
 ///
 /// Used for bulk fetching Scryfall data by IDs.
 /// Derefs to `&[Uuid]` for direct slice operations.
 pub struct ScryfallDataIds(Vec<Uuid>);
 
-#[cfg(feature = "zerver")]
 impl std::ops::Deref for ScryfallDataIds {
     type Target = [Uuid];
     fn deref(&self) -> &Self::Target {
@@ -83,21 +77,18 @@ impl std::ops::Deref for ScryfallDataIds {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<&[DeckCard]> for ScryfallDataIds {
     fn from(value: &[DeckCard]) -> Self {
         value.iter().map(|x| x.scryfall_data_id).collect()
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<&[ScryfallData]> for ScryfallDataIds {
     fn from(value: &[ScryfallData]) -> Self {
         value.iter().map(|x| x.id).collect()
     }
 }
 
-#[cfg(feature = "zerver")]
 impl FromIterator<Uuid> for ScryfallDataIds {
     fn from_iter<T: IntoIterator<Item = Uuid>>(iter: T) -> Self {
         Self(iter.into_iter().collect())

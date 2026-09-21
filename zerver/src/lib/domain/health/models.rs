@@ -1,7 +1,5 @@
-#[cfg(feature = "zerver")]
 use thiserror::Error;
 
-#[cfg(feature = "zerver")]
 /// Error returned when a health check fails.
 ///
 /// Wraps the underlying error (typically database connection failure).

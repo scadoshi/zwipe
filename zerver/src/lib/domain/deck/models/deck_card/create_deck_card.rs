@@ -2,13 +2,10 @@
 //!
 //! Re-exported from `zwipe_core`. Service-layer error type remains here.
 
-#[cfg(feature = "zerver")]
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
-#[cfg(feature = "zerver")]
 use thiserror::Error;
 
 /// Errors that can occur during deck card creation execution.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum CreateDeckCardError {
     /// Card already exists in this deck (use update to change quantity).

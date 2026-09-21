@@ -27,7 +27,6 @@ use thiserror::Error;
 use uuid::Uuid;
 use zwipe_core::domain::{Email, InvalidEmail};
 
-#[cfg(feature = "zerver")]
 use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
 
 /// Errors that can occur while constructing a [`ChangeEmail`] request.
@@ -42,7 +41,6 @@ pub enum InvalidChangeEmail {
 }
 
 /// Errors that can occur during email change execution.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum ChangeEmailError {
     /// User ID doesn't exist in database.

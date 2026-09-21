@@ -1,13 +1,9 @@
-#[cfg(feature = "zerver")]
 use thiserror::Error;
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
 // == errors ==
 
-#[cfg(feature = "zerver")]
 /// Errors that can occur when retrieving a card profile.
 #[derive(Debug, Error)]
 pub enum GetCardProfileError {
@@ -22,7 +18,6 @@ pub enum GetCardProfileError {
     CardProfileFromDb(anyhow::Error),
 }
 
-#[cfg(feature = "zerver")]
 /// Errors that can occur when parsing card profile IDs.
 #[derive(Debug, Error)]
 pub enum InvalidCardProfileIds {
@@ -34,7 +29,6 @@ pub enum InvalidCardProfileIds {
     MissingIds,
 }
 
-#[cfg(feature = "zerver")]
 impl From<uuid::Error> for InvalidCardProfileIds {
     fn from(value: uuid::Error) -> Self {
         Self::Uuid(value)
@@ -43,13 +37,11 @@ impl From<uuid::Error> for InvalidCardProfileIds {
 
 // == requests ==
 
-#[cfg(feature = "zerver")]
 /// Request to get a single card profile by Scryfall ID.
 ///
 /// Wraps a UUID parsed from a string ID.
 pub struct GetCardProfile(Uuid);
 
-#[cfg(feature = "zerver")]
 impl GetCardProfile {
     /// Creates a new GetCardProfile request by parsing a UUID string.
     ///
@@ -60,7 +52,6 @@ impl GetCardProfile {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl std::ops::Deref for GetCardProfile {
     type Target = Uuid;
     fn deref(&self) -> &Self::Target {
@@ -68,7 +59,6 @@ impl std::ops::Deref for GetCardProfile {
     }
 }
 
-#[cfg(feature = "zerver")]
 /// Collection of card profile UUIDs for batch operations.
 ///
 /// Used for bulk fetching card profiles by Scryfall IDs.
@@ -76,7 +66,6 @@ impl std::ops::Deref for GetCardProfile {
 #[derive(Debug)]
 pub struct CardProfileIds(Vec<Uuid>);
 
-#[cfg(feature = "zerver")]
 impl std::ops::Deref for CardProfileIds {
     type Target = [Uuid];
     fn deref(&self) -> &Self::Target {
@@ -84,7 +73,6 @@ impl std::ops::Deref for CardProfileIds {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<&[ScryfallData]> for CardProfileIds {
     fn from(value: &[ScryfallData]) -> Self {
         Self(value.iter().map(|sfd| sfd.id.to_owned()).collect())

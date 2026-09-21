@@ -2,11 +2,9 @@
 //!
 //! Re-exported from `zwipe_core`. Service-layer error type remains here.
 
-#[cfg(feature = "zerver")]
 use thiserror::Error;
 
 #[allow(missing_docs)]
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum GetDeckCardError {
     #[error("deck card not found")]

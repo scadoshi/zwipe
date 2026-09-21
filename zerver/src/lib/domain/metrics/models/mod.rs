@@ -1,7 +1,6 @@
 //! Metrics domain models and error types.
 
 /// Service-layer error types.
-#[cfg(feature = "zerver")]
 pub mod errors;
 /// Sparse event kinds and audit actions written one row at a time.
 pub mod kinds;

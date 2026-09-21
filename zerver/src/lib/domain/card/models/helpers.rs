@@ -1,11 +1,7 @@
-#[cfg(feature = "zerver")]
 use std::collections::HashMap;
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::card::{Card, card_profile::CardProfile, scryfall_data::ScryfallData};
 
-#[cfg(feature = "zerver")]
 /// Extension trait to combine Scryfall data with card profiles into complete Card objects.
 ///
 /// "Sleeving" matches Scryfall data with corresponding card profiles by UUID,
@@ -18,7 +14,6 @@ pub trait SleeveScryfallData {
     fn sleeve(self, card_profiles: Vec<CardProfile>) -> Vec<Card>;
 }
 
-#[cfg(feature = "zerver")]
 impl SleeveScryfallData for Vec<ScryfallData> {
     fn sleeve(self, card_profiles: Vec<CardProfile>) -> Vec<Card> {
         let mut data_map: HashMap<Uuid, ScryfallData> = self
@@ -37,7 +32,6 @@ impl SleeveScryfallData for Vec<ScryfallData> {
     }
 }
 
-#[cfg(feature = "zerver")]
 /// Extension trait to combine card profiles with Scryfall data into complete Card objects.
 ///
 /// "Sleeving" matches card profiles with corresponding Scryfall data by UUID,
@@ -50,7 +44,6 @@ pub trait SleeveCardProfile {
     fn sleeve(self, scryfall_data: Vec<ScryfallData>) -> Vec<Card>;
 }
 
-#[cfg(feature = "zerver")]
 impl SleeveCardProfile for Vec<CardProfile> {
     fn sleeve(self, scryfall_data: Vec<ScryfallData>) -> Vec<Card> {
         // Build map of card profiles keyed by scryfall_data_id

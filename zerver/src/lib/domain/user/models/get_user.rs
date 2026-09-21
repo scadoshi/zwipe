@@ -2,10 +2,8 @@
 //!
 //! Service-layer error type for user fetching. Request type lives in zwipe-core.
 
-#[cfg(feature = "zerver")]
 use thiserror::Error;
 
-#[cfg(feature = "zerver")]
 /// Errors that can occur when fetching a user.
 #[derive(Debug, Error)]
 pub enum GetUserError {

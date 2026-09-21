@@ -34,9 +34,7 @@
 pub mod models;
 
 /// Port traits (interfaces) for health check operations.
-#[cfg(feature = "zerver")]
 pub mod ports;
 
 /// Service implementations for health check logic.
-#[cfg(feature = "zerver")]
 pub mod services;

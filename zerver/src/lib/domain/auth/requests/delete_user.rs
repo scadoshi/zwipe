@@ -28,13 +28,11 @@
 //! )?;
 //! ```
 
-#[cfg(feature = "zerver")]
 use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
 use thiserror::Error;
 use uuid::Uuid;
 
 /// Errors that can occur during user deletion execution.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum DeleteUserError {
     /// User ID doesn't exist in database.

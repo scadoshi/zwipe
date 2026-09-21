@@ -2,13 +2,10 @@
 //!
 //! Re-exported from `zwipe_core`. Service-layer error type remains here.
 
-#[cfg(feature = "zerver")]
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
-#[cfg(feature = "zerver")]
 use thiserror::Error;
 
 /// Errors that can occur during deck card deletion execution.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum DeleteDeckCardError {
     /// Card doesn't exist in this deck.

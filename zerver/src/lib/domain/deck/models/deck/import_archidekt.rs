@@ -6,11 +6,9 @@
 //! same result shape. Card *data* is never taken from Archidekt; only
 //! identity (Scryfall printing id), quantity, and name.
 
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
 
 /// A single card entry from an Archidekt deck.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Clone)]
 pub struct ArchidektCard {
     /// Scryfall printing id (`card.uid`), resolved against `scryfall_data.id`.

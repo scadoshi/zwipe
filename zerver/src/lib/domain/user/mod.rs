@@ -33,9 +33,7 @@
 pub mod models;
 
 /// Port traits (interfaces) for user operations.
-#[cfg(feature = "zerver")]
 pub mod ports;
 
 /// Service implementations for user business logic.
-#[cfg(feature = "zerver")]
 pub mod services;

@@ -2,11 +2,9 @@
 //!
 //! Re-exported from `zwipe_core`. Service-layer error type remains here.
 
-#[cfg(feature = "zerver")]
 use thiserror::Error;
 
 /// Errors that can occur when retrieving a deck profile.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum GetDeckProfileError {
     /// Deck ID doesn't exist in database.

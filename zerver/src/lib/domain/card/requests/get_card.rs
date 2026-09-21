@@ -2,17 +2,14 @@
 //!
 //! Retrieves both Scryfall data and application metadata for cards.
 
-#[cfg(feature = "zerver")]
 use crate::domain::card::requests::{
     get_card_profile::GetCardProfileError, get_scryfall_data::GetScryfallDataError,
 };
-#[cfg(feature = "zerver")]
 use thiserror::Error;
 
 /// Errors that can occur when retrieving card data.
 ///
 /// Combines errors from getting Scryfall data and card profile.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum GetCardError {
     /// Error retrieving Scryfall data (card attributes from Scryfall API).
@@ -24,7 +21,6 @@ pub enum GetCardError {
 }
 
 /// Errors when constructing a batch card retrieval request.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum InvalidGetCards {
     /// One or more provided IDs are not valid UUIDs.
@@ -35,7 +31,6 @@ pub enum InvalidGetCards {
     MissingIds,
 }
 
-#[cfg(feature = "zerver")]
 impl From<uuid::Error> for InvalidGetCards {
     fn from(value: uuid::Error) -> Self {
         Self::Uuid(value)

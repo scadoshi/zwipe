@@ -16,9 +16,8 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe::domain::auth::models::password::Password;
 use zwipe_components::{Button, ButtonVariant};
-use zwipe_core::http::contracts::auth::HttpChangePassword;
+use zwipe_core::{domain::auth::password::validate, http::contracts::auth::HttpChangePassword};
 
 /// Bottom sheet for updating the user's password.
 #[component]
@@ -35,7 +34,7 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut password_touched = use_signal(|| false);
     let mut validate_new_password = move || {
-        if let Err(e) = Password::new(new_password()) {
+        if let Err(e) = validate(&new_password()) {
             password_error.set(Some(e.to_string()));
         } else if new_password().as_str() != confirm_password().as_str() {
             password_error.set(Some("Passwords do not match".to_string()));

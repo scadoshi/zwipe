@@ -17,10 +17,14 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe::domain::auth::models::password::Password;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
-    domain::{Email, auth::models::session::Session, logo, user::username::Username},
+    domain::{
+        Email,
+        auth::{models::session::Session, password::validate},
+        logo,
+        user::username::Username,
+    },
     http::contracts::{auth::HttpRegisterUser, metrics::AnonymousEventKind},
 };
 
@@ -68,7 +72,7 @@ pub fn Register() -> Element {
     };
 
     let mut validate_password = move || {
-        if let Err(e) = Password::new(password()) {
+        if let Err(e) = validate(&password()) {
             password_error.set(Some(e.to_string()))
         } else if password().as_str() != confirm_password().as_str() {
             password_error.set(Some("Passwords do not match".to_string()));

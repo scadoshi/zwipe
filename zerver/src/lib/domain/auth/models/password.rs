@@ -41,7 +41,6 @@
 //! stored_hash.verify(&provided)?; // Returns Ok(()) if matches
 //! ```
 
-#[cfg(feature = "zerver")]
 use argon2::{
     Argon2, PasswordHasher, PasswordVerifier,
     password_hash::{self, SaltString, rand_core::OsRng},
@@ -69,9 +68,9 @@ use zwipe_core::domain::auth::password::InvalidPassword;
 /// # Security
 ///
 /// The password is stored in plaintext within this type for hashing purposes.
-/// It should be:
+/// `Debug` and `Display` redact it, so the only way out is
+/// [`read()`](Self::read). It should be:
 /// - Hashed immediately after validation via [`hash()`](Self::hash)
-/// - Never logged or exposed in error messages
 /// - Cleared from memory as soon as possible after hashing
 ///
 /// # Example
@@ -89,7 +88,7 @@ use zwipe_core::domain::auth::password::InvalidPassword;
 ///     Err(InvalidPassword::TooShort)
 /// ));
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Password(String);
 
 impl Password {
@@ -130,7 +129,6 @@ impl Password {
     /// let hashed = password.hash()?; // Consumes password
     /// // Store `hashed` in database
     /// ```
-    #[cfg(feature = "zerver")]
     pub fn hash(self) -> Result<HashedPassword, password_hash::Error> {
         HashedPassword::generate(self)
     }
@@ -146,13 +144,22 @@ impl Password {
     }
 }
 
-impl Display for Password {
+/// Never derive this: the derive prints the plaintext, and every struct
+/// holding a `Password` inherits that through its own `Debug`.
+/// [`read`](Password::read) is the only way to the secret.
+impl std::fmt::Debug for Password {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        f.write_str("Password(REDACTED)")
     }
 }
 
-#[cfg(feature = "zerver")]
+/// Redacted, as with `Debug` above.
+impl Display for Password {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("REDACTED")
+    }
+}
+
 /// An Argon2id password hash suitable for secure storage.
 ///
 /// This value object wraps a password hash string in PHC (Password Hashing Competition)
@@ -205,7 +212,6 @@ impl Display for Password {
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct HashedPassword(String);
 
-#[cfg(feature = "zerver")]
 impl HashedPassword {
     /// Creates a `HashedPassword` from an existing hash string.
     ///
@@ -291,7 +297,6 @@ impl HashedPassword {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl std::fmt::Display for HashedPassword {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
@@ -301,6 +306,29 @@ impl std::fmt::Display for HashedPassword {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // == redaction ==
+
+    /// Catches a re-derived `Debug` or `Display`, either of which prints the
+    /// plaintext.
+    #[test]
+    fn formatting_a_password_never_reveals_it() {
+        let secret = "TestPassword123!";
+        let password = Password::new(secret).unwrap();
+
+        let debug = format!("{password:?}");
+        let display = format!("{password}");
+
+        assert!(
+            !debug.contains(secret),
+            "Debug leaked the password: {debug}"
+        );
+        assert!(
+            !display.contains(secret),
+            "Display leaked the password: {display}"
+        );
+        assert_eq!(password.read(), secret, "read() is still the way in");
+    }
 
     // == password hashing ==
 

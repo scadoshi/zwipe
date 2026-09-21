@@ -3,15 +3,11 @@
 //! The share token is a capability: an unguessable UUID that makes the deck
 //! readable at a public URL. NULL = private. Server-side types only.
 
-#[cfg(feature = "zerver")]
 use crate::domain::deck::models::deck::get_deck::GetDeckError;
-#[cfg(feature = "zerver")]
 use thiserror::Error;
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::{card::Card, deck::Deck};
 
 /// Errors that can occur while sharing or unsharing a deck.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum ShareDeckError {
     /// Database operation failed.
@@ -26,7 +22,6 @@ pub enum ShareDeckError {
 }
 
 /// Errors that can occur while resolving a public shared-deck read.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum GetSharedDeckError {
     /// Database operation failed.
@@ -42,7 +37,6 @@ pub enum GetSharedDeckError {
 
 /// A deck resolved through its share token, with command zone cards attached
 /// for the public page. The handler strips owner identity before responding.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Clone)]
 pub struct SharedDeck {
     /// The full deck aggregate (profile + entries).

@@ -54,21 +54,17 @@
 //! println!("Welcome, {}!", session.user.username);
 //! ```
 
-#[cfg(feature = "zerver")]
-use crate::domain::auth::models::password::HashedPassword;
-use crate::domain::auth::models::password::Password;
-#[cfg(feature = "zerver")]
-use crate::domain::auth::requests::create_session::CreateSessionError;
+use crate::domain::auth::{
+    models::password::{HashedPassword, Password},
+    requests::create_session::CreateSessionError,
+};
 use thiserror::Error;
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::domain::{
     Email, InvalidEmail,
-    auth::password::InvalidPassword,
+    auth::{models::platform::ClientPlatform, password::InvalidPassword},
     user::username::{InvalidUsername, Username},
 };
 
-#[cfg(feature = "zerver")]
 /// Errors that can occur during user registration.
 ///
 /// Registration involves multiple steps (validation, duplicate checking, user creation,
@@ -214,7 +210,6 @@ impl RawRegisterUser {
     }
 }
 
-#[cfg(feature = "zerver")]
 /// Request to register a new user account.
 ///
 /// This type validates all inputs (username, email, password) and hashes the password
@@ -275,7 +270,6 @@ pub struct RegisterUser {
     pub client_version: Option<String>,
 }
 
-#[cfg(feature = "zerver")]
 impl RegisterUser {
     /// Creates a new registration request with validated and hashed credentials.
     ///
@@ -357,7 +351,6 @@ mod tests {
         assert!(matches!(result, Err(InvalidRawRegisterUser::Password(_))));
     }
 
-    #[cfg(feature = "zerver")]
     #[test]
     fn test_register_user_new_succeeds_with_valid_inputs() {
         let result = RegisterUser::new("alice", "alice@example.com", "SecurePass123!");
@@ -367,7 +360,6 @@ mod tests {
         assert_eq!(req.email.to_string(), "alice@example.com");
     }
 
-    #[cfg(feature = "zerver")]
     #[test]
     fn test_register_user_new_stores_hashed_password() {
         let req = RegisterUser::new("alice", "alice@example.com", "SecurePass123!").unwrap();
@@ -376,21 +368,18 @@ mod tests {
         assert!(req.password_hash.to_string().starts_with("$argon2"));
     }
 
-    #[cfg(feature = "zerver")]
     #[test]
     fn test_register_user_new_rejects_short_username() {
         let result = RegisterUser::new("ab", "alice@example.com", "SecurePass123!");
         assert!(matches!(result, Err(InvalidRegisterUser::Username(_))));
     }
 
-    #[cfg(feature = "zerver")]
     #[test]
     fn test_register_user_new_rejects_invalid_email() {
         let result = RegisterUser::new("alice", "not-an-email", "SecurePass123!");
         assert!(matches!(result, Err(InvalidRegisterUser::Email(_))));
     }
 
-    #[cfg(feature = "zerver")]
     #[test]
     fn test_register_user_new_rejects_invalid_password() {
         let result = RegisterUser::new("alice", "alice@example.com", "short");

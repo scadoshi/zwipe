@@ -2,11 +2,9 @@
 //!
 //! Re-exported from `zwipe_core`. Service-layer error type remains here.
 
-#[cfg(feature = "zerver")]
 use thiserror::Error;
 
 /// Errors that can occur during deck profile creation execution.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum CreateDeckProfileError {
     /// User already has a deck with this name.

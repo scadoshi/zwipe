@@ -27,9 +27,7 @@ pub const MAX_COMMANDER_MAYBEBOARD: i64 = 50;
 pub mod models;
 
 /// Port traits (interfaces) for deck operations.
-#[cfg(feature = "zerver")]
 pub mod ports;
 
 /// Service implementations for deck business logic.
-#[cfg(feature = "zerver")]
 pub mod services;

@@ -31,11 +31,9 @@
 use thiserror::Error;
 use zwipe_core::domain::auth::password::InvalidPassword;
 
-#[cfg(feature = "zerver")]
 use crate::domain::auth::{
     models::password::HashedPassword, requests::authenticate_user::AuthenticateUserError,
 };
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
 
 /// Errors that can occur while constructing a [`ChangePassword`] request.
@@ -53,7 +51,6 @@ pub enum InvalidChangePassword {
 }
 
 /// Errors that can occur during password change execution.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum ChangePasswordError {
     /// User ID doesn't exist in database.
@@ -67,14 +64,12 @@ pub enum ChangePasswordError {
     AuthenticateUserError(AuthenticateUserError),
 }
 
-#[cfg(feature = "zerver")]
 impl From<AuthenticateUserError> for ChangePasswordError {
     fn from(value: AuthenticateUserError) -> Self {
         Self::AuthenticateUserError(value)
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<sqlx::Error> for ChangePasswordError {
     fn from(value: sqlx::Error) -> Self {
         match value {
@@ -94,7 +89,6 @@ impl From<sqlx::Error> for ChangePasswordError {
 /// Current password is intentionally NOT validated against security policy.
 /// This allows users with legacy weak passwords to upgrade to stronger ones
 /// without being locked out of password changes.
-#[cfg(feature = "zerver")]
 #[derive(Debug)]
 pub struct ChangePassword {
     /// The user whose password should be changed.
@@ -104,7 +98,6 @@ pub struct ChangePassword {
     /// New password already hashed with Argon2id + fresh salt.
     pub new_password_hash: HashedPassword,
 }
-#[cfg(feature = "zerver")]
 impl ChangePassword {
     /// Creates a new password change request with validation and hashing.
     ///
@@ -166,12 +159,9 @@ impl ChangePassword {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "zerver")]
     use super::*;
-    #[cfg(feature = "zerver")]
     use uuid::Uuid;
 
-    #[cfg(feature = "zerver")]
     #[test]
     fn test_change_password_new_succeeds_with_valid_inputs() {
         let user_id = Uuid::new_v4();
@@ -182,7 +172,6 @@ mod tests {
         assert_eq!(req.current_password, "OldPass!");
     }
 
-    #[cfg(feature = "zerver")]
     #[test]
     fn test_change_password_new_rejects_invalid_new_password() {
         let user_id = Uuid::new_v4();
@@ -190,7 +179,6 @@ mod tests {
         assert!(matches!(result, Err(InvalidChangePassword::Password(_))));
     }
 
-    #[cfg(feature = "zerver")]
     #[test]
     fn test_change_password_new_accepts_any_current_password() {
         // Current password is NOT validated against security policy
@@ -199,7 +187,6 @@ mod tests {
         assert!(result.is_ok());
     }
 
-    #[cfg(feature = "zerver")]
     #[test]
     fn test_change_password_new_rejects_same_as_current() {
         let user_id = Uuid::new_v4();
@@ -207,7 +194,6 @@ mod tests {
         assert!(matches!(result, Err(InvalidChangePassword::SameAsCurrent)));
     }
 
-    #[cfg(feature = "zerver")]
     #[test]
     fn test_change_password_new_stores_hashed_new_password() {
         let user_id = Uuid::new_v4();

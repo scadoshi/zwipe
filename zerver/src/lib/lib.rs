@@ -24,6 +24,7 @@ pub mod config;
 ///
 /// Contains the heart of the application: cards, decks, users, and authentication.
 /// All validation and business rules are enforced at this layer.
+#[cfg(feature = "zerver")]
 pub mod domain;
 
 /// HTTP API layer for external communication.

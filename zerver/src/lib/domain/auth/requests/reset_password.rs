@@ -14,7 +14,6 @@ pub enum ResetPasswordError {
     Database(#[from] anyhow::Error),
 }
 
-#[cfg(feature = "zerver")]
 /// Request to complete a password reset using a one-time token.
 pub struct ResetPassword {
     /// Raw reset token (64 hex chars) provided by the client.
@@ -23,7 +22,6 @@ pub struct ResetPassword {
     pub new_password_hash: crate::domain::auth::models::password::HashedPassword,
 }
 
-#[cfg(feature = "zerver")]
 impl ResetPassword {
     /// Validates the new password and hashes it.
     ///

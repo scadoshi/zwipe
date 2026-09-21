@@ -9,9 +9,7 @@
 pub mod models;
 
 /// Port traits for metrics persistence.
-#[cfg(feature = "zerver")]
 pub mod ports;
 
 /// Service implementations for metrics business logic.
-#[cfg(feature = "zerver")]
 pub mod services;

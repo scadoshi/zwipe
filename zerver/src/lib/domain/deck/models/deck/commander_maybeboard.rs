@@ -3,12 +3,10 @@
 //! Request types are re-exported from `zwipe_core`. Service-layer error type
 //! remains here.
 
-#[cfg(feature = "zerver")]
 use thiserror::Error;
 
 /// Errors that can occur while reading or mutating a user's commander
 /// maybeboard.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum CommanderMaybeboardError {
     /// Database operation failed.

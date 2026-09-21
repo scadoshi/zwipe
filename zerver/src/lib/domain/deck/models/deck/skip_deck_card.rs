@@ -2,11 +2,9 @@
 //!
 //! Re-exported from `zwipe_core`. Service-layer error type remains here.
 
-#[cfg(feature = "zerver")]
 use thiserror::Error;
 
 /// Errors that can occur while skipping or unskipping a single deck card.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum SkipDeckCardError {
     /// Database operation failed.

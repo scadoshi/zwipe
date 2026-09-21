@@ -16,9 +16,7 @@ pub mod requests;
 pub use requests::*;
 
 /// Port traits (interfaces) for card operations.
-#[cfg(feature = "zerver")]
 pub mod ports;
 
 /// Service implementations for card business logic.
-#[cfg(feature = "zerver")]
 pub mod services;
