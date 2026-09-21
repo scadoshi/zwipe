@@ -14,13 +14,13 @@ add cards, Zwipe commander, import deck). Structure every video the same way:
 - **Screen-record source**: the real app (`dx serve --platform ios` or a device).
 - **Snappy first.** Fast cuts, no dead air, the whole job is grab-and-hold.
   Because it's this fast, features that group naturally can share one video (a
-  beat each) instead of getting their own — combine freely as long as the cut
+  beat each) instead of getting their own; combine freely as long as the cut
   stays quick and each beat still reads. The per-video files are the raw
   material; a shoot can merge them.
 
 ## Slate
 
-(Realigned 2026-07-27 against 1.7.3 — the slate predated oracle tags; #11 is the
+(Realigned 2026-07-27 against 1.7.3: the slate predated oracle tags; #11 is the
 otag flagship, #5/#6/#7 were updated to fold in the tag-era surface.)
 
 | # | File | Theme | Lead features | Status / priority |
@@ -37,8 +37,8 @@ otag flagship, #5/#6/#7 were updated to fold in the tag-era surface.)
 | 10 | [video_10_pick_your_commander.md](video_10_pick_your_commander.md) | Swipe to pick your commander | Popularity-ranked select + partner autofill | P2 |
 | 11 | [video_11_oracle_tags.md](video_11_oracle_tags.md) | 4,500 tags know what every card does | Role→tag drill-down, definitions, Examples, otag filter, dictionary | **P1 (new — the otag flagship)** |
 
-**Ship order:** #8 first — the share page is the growth surface (a link markets
-itself, works with one user). Then **#11 (oracle tags)** — the biggest
+**Ship order:** #8 first, since the share page is the growth surface (a link markets
+itself, works with one user). Then **#11 (oracle tags)**, the biggest
 differentiator since launch and the freshest thing to show. Then #4 (draw odds,
 still a strong P1). #9 (MVPs) is cheap to shoot right after #8 and pairs with it.
 
@@ -47,9 +47,9 @@ still a strong P1). #9 (MVPs) is cheap to shoot right after #8 and pairs with it
   share the link, MVPs headline the page. One 20s cut can carry both.
 - **#10** already groups two beats (popularity-ranked select + partner autofill).
 - **#11's dictionary beat** can carry its own future video if the flagship runs
-  hot; its archetype-seed beat is the same take as #6 beat 5 — film once.
+  hot; its archetype-seed beat is the same take as #6 beat 5; film once.
 
 **Timing note:** every feature on this slate is **live in the 1.7.x store
-builds** — film everything against the current store build (or a dev build for
+builds**: film everything against the current store build (or a dev build for
 clean data). All per-version gating in this slate is obsolete, including #11's
 in-dialog tag definitions during swiping, which shipped in 1.7.3.

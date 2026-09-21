@@ -1,11 +1,11 @@
 # UUID v4 → v7 everywhere
 
-**Status: HORIZON (owner sequencing recorded 2026-08-05). Not scheduled — do
+**Status: HORIZON (owner sequencing recorded 2026-08-05). Not scheduled; do
 when there's time. Prerequisite-ordered: Postgres 18 first, then the data
 migration, then the call sites.**
 
-**One sentence:** move every ID we mint to time-ordered UUIDv7 (RFC 9562) —
-new-row generation AND a one-time rewrite of existing v4 IDs — for b-tree
+**One sentence:** move every ID we mint to time-ordered UUIDv7 (RFC 9562),
+new-row generation AND a one-time rewrite of existing v4 IDs, for b-tree
 insert locality and chronologically sortable keys.
 
 ## Owner's sequencing
@@ -33,14 +33,14 @@ hard" is mostly these)
   cascade the new value through every referencing column (deck_cards,
   refresh_tokens, signal tables, suppressions, audit/events, …). Build the
   full reference inventory from `information_schema` at write time rather
-  than hand-listing — hand lists rot.
+  than hand-listing; hand lists rot.
 - **Deck share links break.** Public share URLs embed `deck_id`; a
   regenerated id 404s every link already posted (Reddit, Discord, texts).
   Decide before running: accept the breakage (announce it), or keep an
   `old_id → new_id` alias table the share endpoint consults. Same question
   for any other id that has ever left the system in a URL.
 - **Mass logout.** Access JWTs and stored sessions carry `user_id` claims;
-  regenerated user ids invalidate every live session at a stroke. Fine —
+  regenerated user ids invalidate every live session at a stroke. Fine,
   but schedule it like the deliberate mass-logout it is (quiet hour,
   release-note line), don't let it surprise as an incident.
 - **Backdate the synthesized v7s.** A v7 minted at migration time stamps
@@ -51,7 +51,7 @@ hard" is mostly these)
 - **Timestamp leak, ACCEPTED (owner, explicit, 2026-08-05).** v7 ids
   embed creation time; deck ids ride public share URLs, so anyone can
   decode when a deck was made. Owner's call: fine, it's a deck-building
-  app — nothing sensitive rides on when a deck was created. Not a
+  app; nothing sensitive rides on when a deck was created. Not a
   revisit-later item.
 
 ## Verification sketch

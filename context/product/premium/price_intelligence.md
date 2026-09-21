@@ -1,13 +1,13 @@
 # Price intelligence: tracking, alerts, shopping list
 
-**Tier: split — refined 2026-06-10: drop alerts go to FREE users too.**
+**Tier: split, refined 2026-06-10: drop alerts go to FREE users too.**
 Current prices, deck totals, and capped automated drop alerts on
 shopping-list cards are **free**. Premium buys **control and depth**: custom
 thresholds, arbitrary watches, instant delivery, history charts, budget swaps.
 
 Rationale for free alerts: the pipeline's recurring cost is near zero (price
 data rides the existing Scryfall sync; alert evaluation is one daily SQL diff;
-**APNs/FCM delivery is free** — no per-message cost, unlike email). Meanwhile
+**APNs/FCM delivery is free**: no per-message cost, unlike email). Meanwhile
 every drop alert is an affiliate-link impression at the moment of purchase
 intent, so free alerts monetize free users AND are the best premium upsell
 surface ("want a custom threshold? →"). Cost was never the real gate; the only
@@ -21,7 +21,7 @@ price-tracking. The headline notification:
 
 > "Rhystic Study on your shopping list dropped 22% this week."
 
-A purchase trigger the user is *grateful* for — it re-engages them on our
+A purchase trigger the user is *grateful* for; it re-engages them on our
 schedule instead of theirs, and notification-driven DAU is the lifeblood of a
 subscription app.
 
@@ -59,7 +59,7 @@ subscription app.
 
 TCGplayer has an affiliate program. Drop alert → tap → buy through our link is
 a **second revenue stream on the same feature**, and since free users get
-alerts too, it monetizes the whole user base. Worth applying for early —
+alerts too, it monetizes the whole user base. Worth applying for early,
 approval can lag. Expectation check: commission is a few percent (a $20
-pickup earns ~$1) — real margin at scale, but gravy; the subscription stays
+pickup earns ~$1): real margin at scale, but gravy; the subscription stays
 the meal.

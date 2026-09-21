@@ -1,8 +1,8 @@
 # Social features: weekly badges + featured decks
 
 **Status: PLANNED (2026-07-06). Not started. Two independent legs; badges
-buildable now. The featured-decks prerequisites — the deck share page and Deck
-MVPs — both SHIPPED 2026-07-07, so that leg is now unblocked too.**
+buildable now. The featured-decks prerequisites, the deck share page and Deck
+MVPs, both SHIPPED 2026-07-07, so that leg is now unblocked too.**
 
 **What this builds, in one sentence:** a weekly "Your week" recap that awards
 each active user 1–3 personality badges computed from the signal already
@@ -11,8 +11,8 @@ where standout decks appear with their MVP cards front and center.
 
 **Why this shape:** at ~865 users there's no density for social
 *infrastructure* (profiles, follows, feeds, moderation). Both legs here are
-social *artifacts* — things a single user can enjoy alone and choose to show
-someone — the same principle that picked the deck share page. Badges are the
+social *artifacts*: things a single user can enjoy alone and choose to show
+someone, the same principle that picked the deck share page. Badges are the
 retention loop (a reason to come back Monday); featured decks are the
 aspiration loop (a reason to build something worth showing, and MVPs'
 first public stage). Absorbs and supersedes the "Weekly Badges + Stats /
@@ -58,4 +58,4 @@ Share Cards" backlog entry (design decisions carried over).
   recap screen + OS share sheet text).
 - Algorithmic/hybrid featuring rotation (needs MVP volume).
 - Badges on shared deck pages / MVP-based badges ("Kingmaker: your MVP got
-  featured") — natural cross-links once both legs exist.
+  featured"): natural cross-links once both legs exist.

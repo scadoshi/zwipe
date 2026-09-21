@@ -16,7 +16,7 @@ list groups into collapsible folder sections (plus an "Uncategorized" group).
 - **One folder per deck** (v1): a folder is a deck's "home." Cross-cutting labels are
   already covered by **deck tags** (`deck_tag` / `deck_other_tag`), so making folders
   many-to-many would just duplicate tags. One-per-deck keeps a clean file-folder model.
-  (If a real need for a deck-in-multiple-folders appears later, revisit — but tags likely
+  (If a real need for a deck-in-multiple-folders appears later, revisit, but tags likely
   already serve it.)
 - **Validation is NOT the hard part.** `DeckName::new`
   (`zwipe-core/.../deck/models/deck_name.rs`) already does ≤64 chars + bad-word filter
@@ -43,7 +43,7 @@ list groups into collapsible folder sections (plus an "Uncategorized" group).
   deck-profile row and a `get_folders(user_id)` query. `cargo sqlx prepare --workspace`.
 - **HTTP** (`zerver/.../inbound/http/handlers/deck/` + `routes.rs`): `POST/GET /api/folder`,
   `PUT/DELETE /api/folder/{id}`, and thread `folder_id` through `update_deck_profile`
-  (additive `Opdate`/`Option` field — see `api_evolution.md`). `Http*` contracts in
+  (additive `Opdate`/`Option` field; see `api_evolution.md`). `Http*` contracts in
   `zwipe-core/src/http/contracts/`.
 - **Tests** (`zerver/tests/`): the new integration harness makes this quick, folder CRUD,
   assign/move a deck, delete-folder-orphans-decks (assert decks survive with `folder_id`
@@ -58,13 +58,13 @@ list groups into collapsible folder sections (plus an "Uncategorized" group).
 - **Folder management sheet**: create / rename / delete a folder, same modal/bottom-sheet
   patterns as the deck forms. Delete confirms ("decks move to Uncategorized").
 - **Move-to-folder**: a simple **select/picker in edit-deck** (or a per-deck "Move to…"
-  action). **Skip drag-and-drop for v1** — much harder in the webview for little gain.
+  action). **Skip drag-and-drop for v1**: much harder in the webview for little gain.
 - Empty states: no folders yet (just the flat list), empty folder.
 
 ## Effort
 
 **~1–1.5 focused days for a solid v1.** Backend is mechanical; client UI is the bulk.
-Nothing exotic — the deck feature's structure means mostly copying established patterns.
+Nothing exotic; the deck feature's structure means mostly copying established patterns.
 
 ## Open decisions (confirm before building)
 

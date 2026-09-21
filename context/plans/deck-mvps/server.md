@@ -2,7 +2,7 @@
 
 File-by-file. Steps 1–7 ship with 1.4.0 (phase 1); 8–9 are server-only
 follow-ups. After any query change: `cargo sqlx prepare --workspace` **from
-the workspace root** (never from `zerver/` — see `operations/infrastructure/cicd.md`).
+the workspace root** (never from `zerver/`; see `operations/infrastructure/cicd.md`).
 
 ## 1. Migration: `zerver/migrations/<ts>_add_deck_card_mvp.sql`
 
@@ -38,7 +38,7 @@ how `board` rides today.
 
 Map `body.mvp` into the domain request. New error variant maps to 422 with
 the exact copy **"This deck already has 3 MVPs"** (sentence case, no em
-dashes — client shows it verbatim).
+dashes; client shows it verbatim).
 
 ## 6. Repository: `zerver/src/lib/outbound/sqlx/deck/mod.rs`
 
@@ -56,14 +56,14 @@ In the update fn's tx:
 
 Grep `scryfall_data_id, oracle_id, quantity, board` in
 `zerver/src/lib/outbound/sqlx/deck/mod.rs` and add `mvp_at` to each column
-list — known sites: create RETURNING (~line 128), import insert (~597),
-**clone bulk-copy (~675: both the INSERT columns and the SELECT — clone
+list. Known sites: create RETURNING (~line 128), import insert (~597),
+**clone bulk-copy (~675: both the INSERT columns and the SELECT), clone
 inherits MVPs)**, plus the get-deck SELECTs. `DatabaseDeckCard` in
 `outbound/sqlx/deck/models.rs` + its `TryFrom` gain the field.
 
 ## 8. Signal weight (phase 2, server-only)
 
-New matview + refresh (mirror `card_signal_rollup` end to end — migration,
+New matview + refresh (mirror `card_signal_rollup` end to end: migration,
 `refresh_deck_mvp_rollup` through the card ports, zervice call):
 
 ```sql
@@ -77,7 +77,7 @@ WHERE dc.mvp_at IS NOT NULL AND dc.mvp_at < now() - interval '3 days'
 GROUP BY lc.oracle_id;
 ```
 
-(Actually group by the *card's* oracle: `dc.oracle_id` — the commander join
+(Actually group by the *card's* oracle: `dc.oracle_id`; the commander join
 is for the future pair-level term; v1 pools per card:
 `SELECT dc.oracle_id AS card_oracle_id, COUNT(*) ... GROUP BY dc.oracle_id`.)
 

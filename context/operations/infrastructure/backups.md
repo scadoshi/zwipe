@@ -1,7 +1,7 @@
 # Database Backups
 
 Nightly PostgreSQL backups to Cloudflare R2 via `rclone`. The database is the only
-stateful data not replicated elsewhere — everything else is in GitHub.
+stateful data not replicated elsewhere; everything else is in GitHub.
 
 ---
 
@@ -90,7 +90,7 @@ echo "backup complete: zwipe-$(date +%Y%m%d).sql.gz"
 in every value (e.g. a future `JWT_SECRET` containing shell-special characters). Pulling
 just the one line we need keeps the script ignorant of every other secret.
 
-**Note:** `pg_dump` must receive the full connection URL as a positional argument — not
+**Note:** `pg_dump` must receive the full connection URL as a positional argument, not
 via `-U`. Using `-U` with a URL causes PostgreSQL to treat the entire URL as a username
 and fail with peer authentication errors.
 
@@ -108,7 +108,7 @@ backup complete: zwipe-YYYYMMDD.sql.gz
 
 Attempt 2 always succeeds and the backup lands correctly in R2. Root cause is rclone
 sending a checksum/multipart variant R2 returns 501 on. `--s3-upload-cutoff 1G` and
-`--s3-disable-checksum` were tried separately and together — neither silenced it.
+`--s3-disable-checksum` were tried separately and together; neither silenced it.
 Likely fix when revisiting: confirm `provider = Cloudflare` is set in the `[r2]` block
 of `~/.config/rclone/rclone.conf`, or pin an older rclone version (`apt-cache madison
 rclone` to list, then `apt install rclone=<version>`).
@@ -143,7 +143,7 @@ Add:
 0 5 * * * /home/<YOUR_USER>/scripts/backup-db.sh >> /var/log/zwipe/backup.log 2>&1
 ```
 
-Runs at 5am daily — one hour after zervice (which runs at 4am).
+Runs at 5am daily, one hour after zervice (which runs at 4am).
 
 Output goes to the same log directory as zerver logs.
 
@@ -151,7 +151,7 @@ Output goes to the same log directory as zerver logs.
 
 ## Restore from Backup
 
-**This is destructive — it drops and recreates all tables.** Stop zerver first so nothing
+**This is destructive: it drops and recreates all tables.** Stop zerver first so nothing
 is writing to the database during restore.
 
 ```bash
@@ -209,7 +209,7 @@ pg_restore --data-only --table=users /tmp/zwipe-20260329.sql | \
 
 **Note:** This only works if the backup was created with `pg_dump --format=custom`.
 The default plain-text format (which our script uses) requires manual editing of the
-`.sql` file to extract specific tables — doable but tedious. For most scenarios, a full
+`.sql` file to extract specific tables, doable but tedious. For most scenarios, a full
 restore is simpler and safer.
 
 ---

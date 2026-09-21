@@ -22,10 +22,10 @@ CREATE INDEX idx_decks_featured ON decks (featured_at DESC)
 
 No admin API v1. `zcripts/featured/feature-deck.sql` (+ a companion
 unfeature): parameterized `UPDATE decks SET featured_at = now() WHERE id =
-:'deck_id' AND share_token IS NOT NULL RETURNING name;` — the
+:'deck_id' AND share_token IS NOT NULL RETURNING name;`, since the
 `share_token IS NOT NULL` guard means you cannot feature an unshared deck
 by accident. **Process rule: ask the deck's builder on Discord before
-featuring** — sharing consents to link-reachability, featuring puts them on
+featuring**: sharing consents to link-reachability, featuring puts them on
 the homepage; that's a bigger ask and it doubles as a delight touchpoint
 ("we want to feature your deck").
 
@@ -40,7 +40,7 @@ the other public marketing configs):
   format, commander card(s) (image URIs for the tile art), color identity,
   card count, `share_token` (to build the `/deck/{token}` link), and
   `mvps: Vec<HttpCard>` (0–3, from `deck_cards.mvp_at IS NOT NULL`, no
-  vesting filter — the showcase is the owner's statement, not signal).
+  vesting filter: the showcase is the owner's statement, not signal).
 - **No user identity**, consistent with `HttpSharedDeck`. Opt-in attribution
   ("built by …") is a later decision, not a v1 default.
 - CF-cacheable ~1h; the showcase changes when you run the zcript, not per
@@ -55,12 +55,12 @@ the other public marketing configs):
   doesn't render (safe to deploy before anything is featured).
 - **Full page:** `#[route("/decks")]` → grid of tiles. Each tile: commander
   art, deck name, format chip, color identity glyphs, card count, and the
-  MVP row — up to three small card thumbnails under a ★ header (this is
+  MVP row: up to three small card thumbnails under a ★ header (this is
   the hook: the three cards the builder swears by). Tile click → the
   existing `/deck/{token}` share page.
 - Terminal aesthetic, crisp, single column on phones / grid on wide
   screens, `overflow-x` contained. `noindex` NOT set here (unlike share
-  pages, the showcase is deliberately public and crawlable — add it to
+  pages, the showcase is deliberately public and crawlable, so add it to
   `zite/build.rs` ROUTES for the sitemap).
 - Copy: sentence case, no em dashes. Footer CTA same as share page
   ("Built with Zwipe").
@@ -78,6 +78,6 @@ the other public marketing configs):
 - Rotation cadence ("featured this week" framing) once there are enough
   candidates to rotate.
 - Algorithm-nominated candidates (vested-MVP density, activity) with owner
-  approval — the hybrid model, deferred until MVP volume exists.
+  approval: the hybrid model, deferred until MVP volume exists.
 - In-app featured surface (the app is for building; the showcase can stay
   web-first until there's a discover surface worth building).

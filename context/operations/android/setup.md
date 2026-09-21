@@ -28,7 +28,7 @@ Find the version with `ls ~/Library/Android/sdk/ndk/`.
 The Android Gradle Plugin's `jlink`/`core-for-system-modules` transform **fails on
 JDK 26** (Temurin 26 is the Homebrew default on this Mac). Symptom: Gradle aborts in
 ~12s with `Could not resolve ... core-for-system-modules.jar` /
-`Execution failed for JdkImageTransform`. It is **not** slow — it never builds.
+`Execution failed for JdkImageTransform`. It is **not** slow; it never builds.
 
 Fix: point the build at Android Studio's bundled JBR 21:
 
@@ -47,14 +47,14 @@ pick a phone (e.g. Pixel 9a) > download a system image > Finish.
 
 ## Running, wiping & serving to it
 
-The day-to-day loop — launch/wipe the emulator, `dx serve` vs build-and-install,
-`adb` helpers, and troubleshooting — lives in **[emulator.md](emulator.md)**,
+The day-to-day loop (launch/wipe the emulator, `dx serve` vs build-and-install,
+`adb` helpers, and troubleshooting) lives in **[emulator.md](emulator.md)**,
 kept separate so this page stays first-time-setup only.
 
 For a **physical device** (USB debugging, installing a test build over the
 Play-signed one, driving the app by screenshot, and the triggers that expose
 lifecycle bugs) see **[device_testing.md](device_testing.md)**. Reach for the
-real device when the bug is lifecycle-shaped — the emulator's WebView is close
+real device when the bug is lifecycle-shaped; the emulator's WebView is close
 but not identical.
 
 ## Notes
@@ -68,6 +68,6 @@ but not identical.
 
 This page is **dev/emulator** setup only. To build a signed release `.aab` and
 submit it, follow [play-store/submission/build.md](play-store/submission/build.md)
-— it covers the dx gotchas (hardcoded `targetSdk = 34` / `versionCode = 1`,
+It covers the dx gotchas (hardcoded `targetSdk = 34` / `versionCode = 1`,
 unsigned release output), signing with the upload key, the R8 + edge-to-edge
 smoke test, and the Console rollout steps. Listing copy: [play-store/submission/form_fields.md](play-store/submission/form_fields.md).

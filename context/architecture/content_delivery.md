@@ -1,8 +1,8 @@
 # Content Delivery: Compiled vs Fetched
 
 **Settled 2026-08-14** (owner + assistant, after the keyword-reminder work).
-The decision matrix for where content lives — compiled into a binary, served
-from zerver, or both — per surface. Written so this doesn't get re-litigated
+The decision matrix for where content lives: compiled into a binary, served
+from zerver, or both, per surface. Written so this doesn't get re-litigated
 each time a new content set appears.
 
 ## The rules
@@ -12,7 +12,7 @@ Pick a delivery mode by asking two questions about the content:
 1. **What cadence does it change on?**
    - *Deploy cadence* (someone edits a file, we ship): eligible to compile.
    - *Sync/user/clock cadence* (nightly Scryfall sync, per-user, per-token,
-     hourly rotation): must be fetched — a compiled copy is stale the moment
+     hourly rotation): must be fetched, since a compiled copy is stale the moment
      it builds.
 2. **How big and how closed is it?**
    - *Small + closed vocabulary* (keyword reminders ~330 entries, changelog):
@@ -64,7 +64,7 @@ Then apply the surface's constraint:
 - **Serve keyword reminders** (2026-08-14, the trigger for this doc). Every
   new set brings new mechanics; before this, definition fixes waited on a
   store train. Now `/api/card/keyword-reminders` maps every DB keyword
-  through the core table on request — a sweep lands on deploy. The map is
+  through the core table on request; a sweep lands on deploy. The map is
   keyed lowercase (the catalog query normalizes); the chips lowercase their
   lookups to match.
 
@@ -75,6 +75,6 @@ compiled copy, silently (a missing catalog isn't a toast-worthy error). A
 name missing from a served map → compiled entry for that name. Failed
 fetches retry on next launch (keyword reminders, changelog: prefetched once)
 or on next consumer screen (`ensure_*` catalogs like otags). Consequence:
-success and fallback are visually identical when the copies agree — verify
+success and fallback are visually identical when the copies agree, so verify
 the served path via the startup `GET` log line, or by shipping a server-side
 text tweak and watching it appear without an app rebuild.

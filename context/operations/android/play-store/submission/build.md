@@ -201,7 +201,7 @@ bundletool dump manifest --bundle=app/build/outputs/bundle/release/app-release.a
 
 ## 4. Sign with the upload key
 
-`jarsigner` is not on `PATH` either — it lives in the same JBR:
+`jarsigner` is not on `PATH` either; it lives in the same JBR:
 
 ```bash
 cd ~/Developer/zwipe
@@ -219,7 +219,7 @@ cd ~/Developer/zwipe
 ## 4a. Verify the patches actually shipped (30 seconds, do not skip)
 
 The post-bundle patches are invisible once the AAB is built, and a missing one
-fails *silently* — the release just quietly carries the old bug. Three greps
+fails *silently*: the release just quietly carries the old bug. Three greps
 against the signed artifact settle it:
 
 ```bash
@@ -236,7 +236,7 @@ All four greps must hit. Anything missing means `patch_bundle.sh` didn't run,
 or ran before a later `dx bundle` wiped it.
 
 **Note on tooling:** an AAB's manifest is protobuf, not binary XML, so
-`aapt2 dump xmltree --file AndroidManifest.xml <aab>` prints nothing — that
+`aapt2 dump xmltree --file AndroidManifest.xml <aab>` prints nothing, that
 form only works on an APK. `strings` on the extracted
 `base/manifest/AndroidManifest.xml` is the reliable check for a bundle. (On an
 APK you can use `aapt2 dump xmltree --file AndroidManifest.xml app.apk` and
@@ -253,7 +253,7 @@ build step" theory in seconds and pointed at the real cause
 ## 4b. Remove old AABs
 
 Once the new AAB is signed and verified, delete the previous versions' artifacts
-from the repo root — they're already uploaded and superseded, and keeping them
+from the repo root; they're already uploaded and superseded, and keeping them
 around just invites uploading the wrong file. Keep only the current one:
 
 ```bash
@@ -265,7 +265,7 @@ ls zwipe-*.aab | grep -v "zwipe-<VERSION>.aab" | xargs rm -v   # remove all but 
 > **If Play rejects with "Version code N has already been used":** a prior
 > upload (even a superseded/internal one) burned that code. Bump `versionCode`
 > in the generated `app/build.gradle.kts` and re-run steps 3–4 (`gradlew
-> :app:bundleRelease` → jarsigner) — no full rebuild, the patched project is
+> :app:bundleRelease` → jarsigner): no full rebuild, since the patched project is
 > still in place. Always bump; never reuse.
 
 ## 5. (Optional) Emulator install of the RELEASE artifact

@@ -7,7 +7,7 @@ track. Listing copy is in [form_fields.md](form_fields.md).
 
 ## 1. Upload to the Play Console
 
-Listing + content forms must be complete (no errors) first — there is **no
+Listing + content forms must be complete (no errors) first; there is **no
 separate "submit listing for review"** step; rolling out a release reviews app +
 listing + content together.
 
@@ -26,7 +26,7 @@ listing + content together.
 
 **Promoting to Production (after the 14-day gate):** create the release under
 **Test and release → Production**. The Production track starts with **no countries
-selected** — the "no countries or regions" error blocks the release until you set
+selected**: the "no countries or regions" error blocks the release until you set
 them at **Test and release → Production → Countries/regions → Add / Select all**.
 This is per-track (closed testing's country list does *not* carry over) and lives on
 the track, **not** the release page or the bundle. (First hit 2026-07-11.)
@@ -39,12 +39,12 @@ the track, **not** the release page or the bundle. (First hit 2026-07-11.)
 - **For social-media recruitment, use a Google Group**, not a hand-typed email
   list: create a public group at groups.google.com ("Anyone can join"), then
   Testers → **Google Groups** → paste the group address → Save. Anyone who joins
-  the group becomes an eligible tester automatically — no per-person adding. Post
+  the group becomes an eligible tester automatically, with no per-person adding. Post
   the group join link + the opt-in URL together.
 - The **"Copy link" stays grayed until the release clears review and is live** on
   the track ("the link will be shown when you publish"). The opt-in URL is
   predictable, though: `https://play.google.com/apps/testing/com.scadoshi.zwipe`
-  — it only works post-publish and only for list/group members.
+  It only works post-publish and only for list/group members.
 - Also fill the **Feedback URL or email** field so testers know where to report.
 
 ---
@@ -52,7 +52,7 @@ the track, **not** the release page or the bundle. (First hit 2026-07-11.)
 ## Native debug symbols (the "upload a symbol file" warning)
 
 Play shows a **non-blocking warning** that the bundle has native code without
-debug symbols. **Ship anyway — it's cosmetic.** AGP's `ndk { debugSymbolLevel }`
+debug symbols. **Ship anyway; it's cosmetic.** AGP's `ndk { debugSymbolLevel }`
 only harvests symbols from libraries *it* builds (CMake/ndk-build); it does
 **not** touch a **prebuilt** `.so`, and dx drops the Rust lib straight into
 `jniLibs/`. So that config is a no-op here and the warning persists regardless.

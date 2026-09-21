@@ -2,7 +2,7 @@
 
 **Decided: Freemium with subscription for AI/intelligence features (2026-03-26)**
 
-**Feature catalog: `premium/` (brainstormed 2026-06-10)** — detailed
+**Feature catalog: `premium/` (brainstormed 2026-06-10)**: detailed
 per-feature docs for everything under consideration for the paid tier, plus
 the free features that feed it (deck tags, collection tracking, bracket
 badge). Start at `premium/README.md`. This file remains the decision record;
@@ -12,7 +12,7 @@ that directory is the living idea catalog.
 
 ## Model
 
-**Free tier** — full core functionality, no paywall:
+**Free tier**: full core functionality, no paywall:
 - Account + persistent sessions
 - Up to 20 decks (1 before email verification)
 - Swipe-to-build interface across the full Scryfall card database
@@ -21,7 +21,7 @@ that directory is the living idea catalog.
 - Import/export (Moxfield, Archidekt formats)
 - Advanced card filtering
 
-**Paid tier** — intelligence layer, subscription only (full catalog in `premium/`):
+**Paid tier**: intelligence layer, subscription only (full catalog in `premium/`):
 - AI deck analysis via preset prompts: cuts, upgrades, win conditions, bracket coaching
 - Smart swipe-stack ordering + taste profile from swipe history
 - Price intelligence: history, watch thresholds, shopping-list drop alerts (current prices stay free)
@@ -33,7 +33,7 @@ that directory is the living idea catalog.
 > decided about what replaces them in the paid tier. Left open deliberately
 > rather than filled in with a guess.
 
-**No ads** — ever. Ads look terrible, tank reviews, and CPMs for a niche hobby audience are lousy.
+**No ads**, ever. Ads look terrible, tank reviews, and CPMs for a niche hobby audience are lousy.
 
 ## Pricing Target
 

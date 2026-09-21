@@ -69,7 +69,7 @@ that the `[ios.plist]` section hasn't been removed.
   ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
 ```
 
-After patching, you **must** re-sign and re-package the IPA — changing the plist
+After patching, you **must** re-sign and re-package the IPA; changing the plist
 invalidates the code signature.
 
 **Version mismatch:** Dioxus generates `CFBundleShortVersionString` from `Cargo.toml`
@@ -135,7 +135,7 @@ iPad, Apple will still require iPad icon sizes (152×152, 167×167, etc.).
 **Error:**
 `Missing required icon file. The bundle does not contain an app icon for iPad of exactly '152x152' pixels...`
 
-**Fix — remove iPad from UIDeviceFamily (after build, before signing):**
+**Fix: remove iPad from UIDeviceFamily (after build, before signing):**
 ```bash
 /usr/libexec/PlistBuddy \
   -c "Delete :UIDeviceFamily" \
@@ -156,7 +156,7 @@ Dioxus doesn't run `actool` to compile app icons into an asset catalog. Without
 **Error:**
 `Missing required icon file. The bundle does not contain an app icon for iPhone / iPod Touch of exactly '120x120' pixels...`
 
-**Fix — compile an asset catalog and embed it:**
+**Fix: compile an asset catalog and embed it:**
 ```bash
 # 1. Create the asset catalog source
 mkdir -p /tmp/Assets.xcassets/AppIcon.appiconset
@@ -256,10 +256,10 @@ Then re-download and install the profile.
 ## Team ID confusion
 
 Xcode's "Manage Certificates" creates certs under the Personal Team, not the paid team.
-The `(NVSWB62C54)` shown by `security find-identity` is the CN display name — the OU
+The `(NVSWB62C54)` shown by `security find-identity` is the CN display name; the OU
 field is the actual team ID.
 
-For App Store submission, use the cert with `(VV74WQ89GD)` — that's the paid team.
+For App Store submission, use the cert with `(VV74WQ89GD)`, which is the paid team.
 
 ```bash
 security find-identity -v -p codesigning
@@ -271,7 +271,7 @@ security find-identity -v -p codesigning
 
 ## Certificate deleted / "identity no longer valid" (0xe8008018) or "valid provisioning profile not found" (0xe8008015)
 
-Happens when duplicate certificates are cleaned up from Keychain Access — the provisioning profile was tied to the deleted cert.
+Happens when duplicate certificates are cleaned up from Keychain Access; the provisioning profile was tied to the deleted cert.
 
 **Fix:**
 
