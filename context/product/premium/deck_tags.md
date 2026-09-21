@@ -1,4 +1,4 @@
-# Deck tags — the foundation everything else consumes
+# Deck tags: the foundation everything else consumes
 
 > **Superseded by oracle tags (2026-07).** Kept for the reasoning, not the
 > plan. Deck tags themselves shipped in 1.1.0/1.2.0. The
@@ -7,7 +7,7 @@
 > below was deleted in July and replaced by community oracle tags. See
 > `../../progress/backlog.md:62`, where Layers 2-3 are closed as superseded.
 
-**Tier: free (infrastructure).** Not a premium feature itself — the join key
+**Tier: free (infrastructure).** Not a premium feature itself; the join key
 that makes four premium features possible. Likely the next build step
 (noted 2026-06-10).
 
@@ -16,10 +16,10 @@ that makes four premium features possible. Likely the next build step
 Two tag layers drawing from **one closed vocabulary** (the mechanical-category
 taxonomy):
 
-- **Card tags** — what a card *does*. Already planned:
+- **Card tags**: what a card *does*. Already planned:
   `card_profiles.mechanical_categories`, Layer 1 oracle-text heuristics
   (~70–80% accuracy), AI classification later (backlog Layers 2–3).
-- **Deck tags** — what a deck *wants to do*. User-declared intent, picked
+- **Deck tags**: what a deck *wants to do*. User-declared intent, picked
   from the same vocabulary via a chip/picker UI on the deck.
 
 The intersection is the product: "cards in this deck that serve this deck's
@@ -37,14 +37,14 @@ plan" is computable, per tag, with no AI.
 
 ## Security property
 
-Users **pick tags from a list — they never type free text that reaches a
+Users **pick tags from a list**; they never type free text that reaches a
 model**. The closed vocabulary is what keeps the AI features
 prompt-injection-free (see `ai_analysis.md`). Preserve this: no free-text
 custom tags, at least not any that get forwarded to an LLM.
 
 ## Implementation sketch
 
-- Schema: additive — a `tags` column (text[] or jsonb) on decks, or a
+- Schema: additive, a `tags` column (text[] or jsonb) on decks, or a
   `deck_tags` join table. New request fields `#[serde(default)]` per
   `development/api_evolution.md`, so old clients are unaffected.
 - Validation: tags validated server-side against the canonical taxonomy enum
@@ -56,5 +56,5 @@ custom tags, at least not any that get forwarded to an LLM.
 
 1. Deck tags schema + picker UI (small, additive).
 2. Layer 1 card heuristics from the mechanical-category plan.
-3. Consumers (consistency calculator first — days, not weeks, once 1–2 exist,
+3. Consumers (consistency calculator first, days, not weeks, once 1–2 exist,
    and it costs zero API calls).

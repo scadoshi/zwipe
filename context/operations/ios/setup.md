@@ -6,7 +6,7 @@ One-time setup for certificates, App ID, and signing infrastructure.
 
 ## Prerequisites
 
-- Paid Apple Developer account ($99/yr) — [developer.apple.com](https://developer.apple.com)
+- Paid Apple Developer account ($99/yr): [developer.apple.com](https://developer.apple.com)
 - Xcode installed (for `codesign`, `security`, `vtool` CLI tools)
 - A `~/certs/` directory for backing up signing materials (NOT in repo)
 
@@ -55,10 +55,10 @@ mv zwipe-dev-key.pem DevCSR.certSigningRequest ~/certs/
 
 ## 3. Register Your Device
 
-Required for dev provisioning profiles — only registered devices can install debug builds.
+Required for dev provisioning profiles: only registered devices can install debug builds.
 
 1. Plug in your iPhone, open Finder, click on it in the sidebar
-2. Click the device info area until you see the **UDID** — copy it
+2. Click the device info area until you see the **UDID**: copy it
 3. developer.apple.com → Certificates, Identifiers & Profiles → Devices → **+**
 4. Name: `scotland-mobile`, UDID: paste from above
 5. Click **Continue** → **Register**
@@ -89,7 +89,7 @@ Back up:
 cp ~/Downloads/Zwipe_Development.mobileprovision ~/certs/
 ```
 
-**If you regenerate your dev certificate** (step 2), you must also regenerate this profile — edit it on Apple's site, select the new cert, download, and double-click to install.
+**If you regenerate your dev certificate** (step 2), you must also regenerate this profile: edit it on Apple's site, select the new cert, download, and double-click to install.
 
 ---
 
@@ -181,4 +181,4 @@ entitlement in `zwiper/Entitlements.plist`, every cold launch produces:
 Platform secure storage failure: A required entitlement isn't present
 ```
 
-This requires a paid Apple Developer account — free accounts cannot use Keychain Sharing.
+This requires a paid Apple Developer account; free accounts cannot use Keychain Sharing.

@@ -8,7 +8,7 @@
 > WiFi/netplan section is home-box-specific.
 
 Repurposed desktop running Ubuntu Server (headless). Intel i5, 32GB RAM, x86_64.
-Backend served via Cloudflare Tunnel — no port forwarding, TLS handled by Cloudflare.
+Backend served via Cloudflare Tunnel: no port forwarding, TLS handled by Cloudflare.
 
 ---
 
@@ -23,23 +23,23 @@ Backend served via Cloudflare Tunnel — no port forwarding, TLS handled by Clou
 - [ ] Install PostgreSQL, create `zwipe` DB + user
 - [ ] Create `/var/log/zwipe/` log directory
 - [ ] Install Rust, clone repo, build binaries
-- [ ] Configure zerver `.env` (must include `DATABASE_URL` — CI/CD sources this for migrations)
+- [ ] Configure zerver `.env` (must include `DATABASE_URL`: CI/CD sources this for migrations)
 - [ ] Install sqlx-cli: `cargo install sqlx-cli --no-default-features --features rustls,postgres`
 - [ ] Run initial migrations: `cargo sqlx migrate run --source zerver/migrations`
 - [ ] Install `cloudflared`, configure tunnel to `api.zwipe.net`
 - [ ] Start `zerver` systemd service
 - [ ] Install the `zervice` systemd units from `zcripts/server/systemd/` (`zervice.service`, `zervice.timer`, `zervice-alert.service`, `zervice-alert.sh`) into `/etc/systemd/system/`, script to `~/zwipe/`. Nightly timer, NOT cron
 - [ ] Place `~/zwipe/.env.zervice` (see the zervice scheduling section below) and run `zcripts/server/sql/zervice_role.sql` to create the scoped Postgres role
-- [ ] Add backup cron (5am daily) — see `backups.md`
+- [ ] Add backup cron (5am daily): see `backups.md`
 - [ ] Run `zervice` once manually to seed Scryfall card data
-- [ ] Install self-hosted GitHub Actions runner (see `cicd.md`) — this is what deploys code, runs migrations, and restarts zerver on every push to main
+- [ ] Install self-hosted GitHub Actions runner (see `cicd.md`): this is what deploys code, runs migrations, and restarts zerver on every push to main
 - [ ] Verify iOS app hits `api.zwipe.net` successfully
 
 ---
 
 ## WiFi (netplan)
 
-The server connects over WiFi. Netplan is built into Ubuntu Server — no extra packages needed.
+The server connects over WiFi. Netplan is built into Ubuntu Server, so no extra packages are needed.
 
 **Find the wireless interface name:**
 ```bash
@@ -71,7 +71,7 @@ ip addr show wlp3s0
 # Should show an inet line with an IP address
 ```
 
-The config is persistent — WiFi reconnects automatically on boot.
+The config is persistent; WiFi reconnects automatically on boot.
 
 **Optional:** Install NetworkManager for the friendlier `nmtui` and `nmcli` tools:
 ```bash
@@ -90,10 +90,10 @@ you can SSH via the Tailscale IP instead of the local network IP.
 curl -fsSL https://tailscale.com/install.sh | sh
 ```
 
-**Authenticate (headless — no browser):**
+**Authenticate (headless, no browser):**
 ```bash
 sudo tailscale up
-# Prints a URL — open it on your Mac/phone to authenticate
+# Prints a URL: open it on your Mac/phone to authenticate
 ```
 
 **Verify:**
@@ -127,9 +127,9 @@ ip addr show | grep 'inet ' | grep -v 127.0.0.1
 # Look for something like: inet 192.168.1.XXX/24
 ```
 
-Or check your router's DHCP client list — the server will appear as a connected device.
+Or check your router's DHCP client list; the server will appear as a connected device.
 
-### First-time access — fix "Permission denied (publickey)"
+### First-time access: fix "Permission denied (publickey)"
 
 Ubuntu Server disables password authentication by default. You'll get this error
 immediately if you just try to `ssh` in cold. Fix it once from the physical console
@@ -159,7 +159,7 @@ ssh-keygen -t ed25519 -C "zwipe-server"
 ssh-copy-id scadoshi@192.168.1.XXX
 ```
 
-**Back on the server — re-disable password auth (security):**
+**Back on the server, re-disable password auth (security):**
 ```bash
 sudo nano /etc/ssh/sshd_config
 # Set back to:
@@ -211,7 +211,7 @@ PGPASSWORD='YOUR_DB_PASSWORD' psql -U zwipe -h 127.0.0.1 -d zwipe -c '\l'
 
 ## Wipe and Rebuild the Database
 
-Use this when you need to reset all data but keep the schema — e.g. clearing test/dev data
+Use this when you need to reset all data but keep the schema, e.g. clearing test/dev data
 from production, or recovering from a corrupt state.
 
 ### Why not `sqlx database reset`?
@@ -227,7 +227,7 @@ postgres superuser instead.
 sudo systemctl stop zerver
 ```
 
-**2. Drop the database** (must be run as two separate commands — postgres won't accept both in one `-c` call):
+**2. Drop the database** (must be run as two separate commands; postgres won't accept both in one `-c` call):
 ```bash
 sudo -u postgres psql -c "DROP DATABASE zwipe;"
 sudo -u postgres psql -c "CREATE DATABASE zwipe OWNER zwipe;"
@@ -239,7 +239,7 @@ cd ~/zwipe-src/zerver
 DATABASE_URL=postgres://zwipe:YOUR_PASSWORD@127.0.0.1/zwipe sqlx migrate run
 ```
 
-Migrations live in `zerver/migrations/` — `zwipe-src` must be cloned and up to date.
+Migrations live in `zerver/migrations/`; `zwipe-src` must be cloned and up to date.
 
 **4. Restart zerver:**
 ```bash
@@ -274,14 +274,14 @@ sudo systemctl status zerver
 ```
 
 URL-encode special characters in `DATABASE_URL` if needed (e.g. `<` → `%3C`).
-No cron or CI changes required — both source the same `.env`.
+No cron or CI changes required; both source the same `.env`.
 
 ---
 
 ## Log Directory
 
 zerver writes rolling daily logs to `/var/log/zwipe/`. The app calls `create_dir_all` on startup
-(idempotent), but `/var/log/` is root-owned — create it once:
+(idempotent), but `/var/log/` is root-owned, so create it once:
 
 ```bash
 sudo mkdir -p /var/log/zwipe
@@ -302,13 +302,13 @@ RUST_LOG=info,sqlx=warn,zwipe=debug,zerver=debug
 RUST_BACKTRACE=1
 RESEND_API_KEY=<from Resend dashboard>
 RESEND_EMAIL_FROM=support@zwipe.net
-# LOG_DIR omitted — defaults to /var/log/zwipe
-# MIN_CLIENT_VERSION=0.0.0 — the default, which DISABLES the client-version
+# LOG_DIR omitted: defaults to /var/log/zwipe
+# MIN_CLIENT_VERSION=0.0.0: the default, which DISABLES the client-version
 # gate. A box rebuilt straight from this template ships with the gate off;
 # set the real floor before it takes traffic.
-# HEALTHCHECK_PING_URL omitted — optional; zervice pings it on a clean run
+# HEALTHCHECK_PING_URL omitted: optional; zervice pings it on a clean run
 # so the monitor can alert on silence. Also belongs in .env.zervice.
-# SUPPORT_EMAIL_ADDRESS + WEB_BASE_URL omitted — default to support@zwipe.net
+# SUPPORT_EMAIL_ADDRESS + WEB_BASE_URL omitted: default to support@zwipe.net
 # and https://zwipe.net. Set both here when switching the public domain.
 ```
 
@@ -336,7 +336,7 @@ Useful tweaks:
 `ALLOWED_ORIGINS` is a comma-separated list of browser origins permitted by the CORS policy.
 
 **The iOS native app is not affected by CORS.** Native apps (Dioxus on iPhone, using `reqwest`)
-do not send an `Origin` header — CORS is a browser security mechanism. The iOS app will always
+do not send an `Origin` header; CORS is a browser security mechanism. The iOS app will always
 reach the API regardless of what is in `ALLOWED_ORIGINS`.
 
 For production:
@@ -350,7 +350,7 @@ add localhost as a second origin:
 ALLOWED_ORIGINS=https://zwipe.net,http://localhost:8080
 ```
 
-The value is parsed as `HeaderValue` — no trailing slashes, no wildcards.
+The value is parsed as `HeaderValue`: no trailing slashes, no wildcards.
 
 ---
 
@@ -372,12 +372,12 @@ DATABASE_URL=postgres://zwipe:YOUR_DB_PASSWORD@127.0.0.1/zwipe sqlx migrate run
 `zervice` role because `REFRESH` requires ownership
 (`zcripts/server/sql/zervice_role.sql`). A migration that drops/recreates one
 of them resets ownership to the migration user (`zwipe`) and the next nightly
-fails loudly (alert email + Healthchecks) — exactly what the
+fails loudly (alert email + Healthchecks), exactly what the
 `latest_cards_prefer_english` rebuild did on the 2026-08-13 deploy. Hand fix:
 re-run the ledger (`sudo -u postgres psql -d zwipe <
 ~/zwipe-src/zcripts/server/sql/zervice_role.sql`).
 
-**Standard footer for any matview-recreating migration** — makes the rebuild
+**Standard footer for any matview-recreating migration**: it makes the rebuild
 self-healing while keeping grants out of dev/test clusters (conditional on
 the role existing, so the per-cluster principle holds):
 
@@ -393,7 +393,7 @@ END $$;
 ```
 
 (Considered and rejected 2026-08-15: pointing zervice at the main `zwipe`
-role. zervice parses ~1.7GB of untrusted Scryfall JSON nightly — the scoped
+role. zervice parses ~1.7GB of untrusted Scryfall JSON nightly, so the scoped
 role caps that blast radius at card data and can never read session tokens;
 its worst failure mode is this loud, one-command-fix alert.)
 
@@ -401,7 +401,7 @@ its worst failure mode is this loud, one-command-fix alert.)
 
 ## Build
 
-Build directly on the server — no cross-compilation needed:
+Build directly on the server; no cross-compilation needed:
 
 ```bash
 # Install build tools (gcc, make, etc.)
@@ -409,7 +409,7 @@ sudo apt install -y build-essential
 
 # The project's .cargo/config.toml specifies linker = "x86_64-unknown-linux-gnu-gcc"
 # for the x86_64 target (needed for cross-compiling from macOS).
-# On the server, gcc is installed but under a different name — bridge the gap with a symlink:
+# On the server, gcc is installed but under a different name: bridge the gap with a symlink:
 sudo ln -s /usr/bin/gcc /usr/local/bin/x86_64-unknown-linux-gnu-gcc
 
 # Install Rust
@@ -421,7 +421,7 @@ git clone <repo-url> ~/zwipe-src
 cd ~/zwipe-src
 cargo build --release --bin zerver --bin zervice
 
-# Deploy binaries — output is in workspace root target/, not zerver/target/
+# Deploy binaries: output is in workspace root target/, not zerver/target/
 mkdir -p ~/zwipe
 cp target/release/zerver target/release/zervice ~/zwipe/
 ```
@@ -430,7 +430,7 @@ cp target/release/zerver target/release/zervice ~/zwipe/
 
 ## systemd Service
 
-systemd is Ubuntu's service manager. A unit file tells it how to run zerver — so it starts
+systemd is Ubuntu's service manager. A unit file tells it how to run zerver, so it starts
 automatically on boot and restarts itself if it crashes, instead of you running `./zerver`
 manually in a terminal.
 
@@ -470,19 +470,19 @@ sudo systemctl status zerver   # verify it's running
 ```
 
 What each command does:
-- `enable` — registers zerver to start on boot
-- `start` — starts it immediately without rebooting
-- `Restart=always` — systemd brings zerver back no matter how it exits. It was
+- `enable`: registers zerver to start on boot
+- `start`: starts it immediately without rebooting
+- `Restart=always`: systemd brings zerver back no matter how it exits. It was
   `on-failure` until 2026-09-13: a startup DB race during an unattended libc
   upgrade made zerver exit cleanly and stay down for 53 hours (the 09-11
   outage), so any exit now restarts. The live server carries this as a drop-in
   at `/etc/systemd/system/zerver.service.d/override.conf`; on a rebuild this
   template already includes it.
-- `status` — shows running state and the last few log lines
+- `status`: shows running state and the last few log lines
 
 ---
 
-## zervice Scheduling (systemd timer — replaced cron 2026-07-29)
+## zervice Scheduling (systemd timer: replaced cron 2026-07-29)
 
 Unit files are versioned at `zcripts/server/systemd/` (`zervice.service`,
 `zervice.timer`, `zervice-alert.service`, `zervice-alert.sh`) and installed to
@@ -491,15 +491,15 @@ Unit files are versioned at `zcripts/server/systemd/` (`zervice.service`,
 fires on next boot.
 
 **Least privilege (2026-07-29):** `zervice.service` reads
-`/home/scadoshi/zwipe/.env.zervice` — exactly `DATABASE_URL`, `RUST_LOG`,
+`/home/scadoshi/zwipe/.env.zervice`: exactly `DATABASE_URL`, `RUST_LOG`,
 `LOG_DIR`, plus optional `HEALTHCHECK_PING_URL` (the bin's `ZerviceConfig`
 accepts nothing more; it holds no JWT/Resend secrets). The alert unit keeps
 reading the MAIN `.env` because it legitimately needs the Resend creds.
 
-**Scoped Postgres role — the lifecycle.** `.env.zervice`'s `DATABASE_URL`
+**Scoped Postgres role, the lifecycle.** `.env.zervice`'s `DATABASE_URL`
 connects as the `zervice` role; `zcripts/server/sql/zervice_role.sql` is the
 canonical, IDEMPOTENT ledger of everything it may touch (card-sync tables,
-matview ownership, upkeep prunes — incl. the destruction-only session grant:
+matview ownership, upkeep prunes, incl. the destruction-only session grant:
 `DELETE` + column-scoped `SELECT (expires_at)`, so it can dust expired
 sessions but never read them). Grants deliberately do NOT live in migrations
 (roles are per-cluster infrastructure; dev/test DBs differ). The lifecycle is
@@ -507,10 +507,10 @@ one command for every case:
 
 ```bash
 # first time, after adding a table zervice touches, or after a migration
-# recreated a matview (ownership resets — next nightly run alerts loudly):
+# recreated a matview (ownership resets: next nightly run alerts loudly):
 sudo -u postgres psql -d zwipe < ~/zwipe-src/zcripts/server/sql/zervice_role.sql
 
-# first time only — set the password (interactive, never in a file):
+# first time only: set the password (interactive, never in a file):
 sudo -u postgres psql -d zwipe -c "\password zervice"
 ```
 
@@ -526,7 +526,7 @@ exit marks the unit **failed** visibly in `systemctl status zervice`, and
 `systemctl list-timers zervice*` answers last-ran/next-run at a glance.
 
 **Failure alerting:** `zervice.service` carries `OnFailure=zervice-alert.service`
-— on any failed scheduled run, systemd fires the alert unit, which emails the
+On any failed scheduled run, systemd fires the alert unit, which emails the
 last 15 journal lines to `SUPPORT_EMAIL_ADDRESS` via Resend (reuses the
 existing `.env` creds; no new secrets; the script sets a User-Agent because
 Cloudflare 403s python-urllib's default). Tested live 2026-07-29. Note it only
@@ -542,7 +542,7 @@ journalctl -u zervice --since today   # full output
 systemctl list-timers zervice*        # last / next scheduled run
 ```
 
-The old crontab entry is removed — **for real as of 2026-08-05**. Incident
+The old crontab entry is removed, **for real as of 2026-08-05**. Incident
 note: this line originally claimed the removal on 2026-07-29, but the user
 crontab entry survived the migration, so every night ran zervice TWICE
 (cron at 04:00:01 running `~/zwipe/zervice` silently, the timer at 04:00:4x
@@ -562,7 +562,7 @@ are unchanged. Both planned follow-ups shipped: the dead-man's switch
 (`HEALTHCHECK_PING_URL`) and the least-privilege split
 (`context/archive/zervice_least_privilege.md`).
 
-zervice is a run-once binary — it syncs cards from Scryfall, cleans expired sessions,
+zervice is a run-once binary: it syncs cards from Scryfall, cleans expired sessions,
 and exits. Logs are written to `$LOG_DIR/zervice.YYYY-MM-DD.log` (default: `/var/log/zwipe/`).
 
 Run manually first to seed card data:

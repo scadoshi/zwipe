@@ -1,4 +1,4 @@
-# Video 4 — Will you hit your land drops?
+# Video 4: Will you hit your land drops?
 
 **Theme:** Real consistency math. The "we're not a toy" flex.
 **Priority:** P1. No swipe competitor has hypergeometric draw odds.

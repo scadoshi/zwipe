@@ -1,10 +1,10 @@
-# Video 9 — Star your deck's MVPs
+# Video 9: Star your deck's MVPs
 
 **Theme:** Tell Zwipe which three cards define your deck. They mark the cards
 that matter at a glance, and they headline your shared deck page as full art.
-**Priority:** P2. Pairs naturally with video #8 (share) — MVPs are what make the
+**Priority:** P2. Pairs naturally with video #8 (share): MVPs are what make the
 shared page a personality statement. (The suggestion-steering payoff is a later
-server phase; do **not** claim it yet — this video is about identifying + showing
+server phase; do **not** claim it yet; this video is about identifying + showing
 the MVPs, which is what's shipped.)
 **Hook line:** "Which three cards make this deck yours?"
 
@@ -22,14 +22,14 @@ the MVPs, which is what's shipped.)
 
 ## Shots to capture
 
-1. **Star a card** — expand a card row in the deck cards screen, tap the Star
+1. **Star a card**: expand a card row in the deck cards screen, tap the Star
    button, the warning-gold ★ lands on the compact row.
-2. **Three ★s in the list** — with three starred, scroll so multiple ★s are
+2. **Three ★s in the list**: with three starred, scroll so multiple ★s are
    visible; they read as "these are the important cards."
-3. **The cap** — tap Star on a fourth card → the "This deck already has 3 MVPs"
+3. **The cap**: tap Star on a fourth card → the "This deck already has 3 MVPs"
    message. Quick beat; it communicates the honesty forcing-function (a podium,
    not a wallet).
-4. **Share-page payoff** — the same deck's `zwipe.net/deck/…` page, featured
+4. **Share-page payoff**: the same deck's `zwipe.net/deck/…` page, featured
    row: commander + the three MVPs as full art, each labeled. The strongest
    frame; hold it.
 

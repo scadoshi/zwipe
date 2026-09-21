@@ -1,13 +1,13 @@
-# Deck MVPs — star the cards that define your deck
+# Deck MVPs: star the cards that define your deck
 
 **Status: Phase 1 BUILT + SHIPPED TO MAIN 2026-07-07 (`e0244c9c`; server
 steps 1–7 + client), API-verified end-to-end on dev and simulator-verified
 (star reworked during the pass: indicator on starred rows only, Star/Unstar
-button in the expanded row — an outline star on every row was 97% noise). Phase 3 (steering) BUILT
+button in the expanded row; an outline star on every row was 97% noise). Phase 3 (steering) BUILT
 2026-08-18 (`W_STEER`, flat role-overlap lift, see
 [`server.md`](server.md) step 9); phase 2 (signal weight) remains a server-only
 follow-up. As-built deltas: export carries NO
-MVP marker (a trailing `*` would corrupt pastes into Archidekt/Moxfield —
+MVP marker (a trailing `*` would corrupt pastes into Archidekt/Moxfield,
 cross-tool safety won; MVPs travel via clone); the star renders inside the
 name cell (the row grid is fixed-width columns); the one-time `deck-mvps`
 hint fires only for users who already saw the deck-cards hint, and new users
@@ -17,7 +17,7 @@ MVPs" verbatim, maybeboard star → 422, re-star preserves the vesting clock,
 board move off mainboard clears the star and frees the cap, unstar clears,
 clone inherits MVPs with original timestamps.**
 
-**What this builds, in one sentence:** each deck gets three MVP slots — the
+**What this builds, in one sentence:** each deck gets three MVP slots:
 user stars the cards that define the deck, the stars show at a glance in the
 deck card list, and vested MVPs both steer that deck's own suggestions and
 feed the strongest per-card signal the system collects.
@@ -31,34 +31,34 @@ feed the strongest per-card signal the system collects.
   so aiming them well benefits the owner directly; the global signal is
   exhaust from people steering their own decks.
 - **Signal quality.** A vested MVP is the loudest per-(commander, card)
-  datapoint available — several times an add's weight.
+  datapoint available, several times an add's weight.
 
 ## Decisions (settled 2026-07-06)
 
 - **Star lives in the deck cards screen, in the main row, visible before
-  expansion** — MVPs identifiable at a glance. Star-in-place among the
+  expansion**: MVPs identifiable at a glance. Star-in-place among the
   categories; no pinned MVP section; list order untouched.
 - **Vesting 3 days, global signal only.** Long enough to outlive an impulse
   star that gets cut, short enough to feel responsive. **Deck steering is
-  immediate** — no honesty risk in steering your own deck, and instant
+  immediate**: no honesty risk in steering your own deck, and instant
   feedback teaches users the feature works.
-- **Deck-list starring only at v1** — no mid-swipe entry point (MVPs are
+- **Deck-list starring only at v1**: no mid-swipe entry point (MVPs are
   recognized after the fact).
-- **Derive, don't collect**: no telemetry counter, no vesting job — vested
+- **Derive, don't collect**: no telemetry counter, no vesting job, vested
   MVPs are computed from live `deck_cards` rows at rollup time; unstar or
   removal self-retracts.
 
 ## Phases
 
-1. **1.4.0 client + schema** — [`server.md`](server.md) steps 1–7 +
+1. **1.4.0 client + schema**: [`server.md`](server.md) steps 1–7 +
    [`client.md`](client.md). Collection starts.
-2. **Signal weight** (server-only, later) — [`server.md`](server.md) step 8.
-3. **Deck steering** (server-only, later) — [`server.md`](server.md) step 9.
-4. **Artifacts** — MVPs on shared deck pages / weekly share cards (pairs
+2. **Signal weight** (server-only, later): [`server.md`](server.md) step 8.
+3. **Deck steering** (server-only, later): [`server.md`](server.md) step 9.
+4. **Artifacts**: MVPs on shared deck pages / weekly share cards (pairs
    with the badges backlog item). **Shipped on the shared deck page 2026-07-07**
    (`e4f5699a` + `63bffd3c`): the payload already carried `mvp_at`, so starred
    cards render the warning-gold ★ inline, and the page opens with a featured
-   row of the commander + the MVPs as full art (each labeled) — the personality
+   row of the commander + the MVPs as full art (each labeled), the personality
    statement this plan envisioned. Weekly share cards remain.
 
 Related: [`../archive/suggestion_signal.md`](../archive/suggestion_signal.md) (the ordering

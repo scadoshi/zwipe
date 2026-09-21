@@ -19,7 +19,7 @@ On the phone: **Settings → About phone →** tap Build number ×7, then
 prompt.
 
 **Diagnosing "no devices found":** `system_profiler SPUSBDataType` returns
-empty on this Mac (a sandbox quirk) — it is NOT evidence the cable is bad. Use
+empty on this Mac (a sandbox quirk); it is NOT evidence the cable is bad. Use
 `ioreg -p IOUSB -w0 | grep -i pixel` instead. If the phone shows there but
 `adb` sees nothing, USB debugging is off. The "Use USB for" mode reverting to
 *No data transfer* is normal and does not block ADB.
@@ -27,7 +27,7 @@ empty on this Mac (a sandbox quirk) — it is NOT evidence the cable is bad. Use
 ## Installing a test build
 
 The store build is Play-signed, so a locally-built APK will not install over it
-(`INSTALL_FAILED_UPDATE_INCOMPATIBLE`) — uninstall first. That wipes local app
+(`INSTALL_FAILED_UPDATE_INCOMPATIBLE`): uninstall first. That wipes local app
 state (session, hints, prefs); decks are server-side and survive a re-login.
 
 Fastest loop that carries **release** native libs in a debug-signed APK:
@@ -51,7 +51,7 @@ Gradle needs both env vars: without `JAVA_HOME` it reports "Unable to locate a
 Java Runtime" (use Android Studio's bundled JBR), and without `ANDROID_HOME`
 it fails with "SDK location not found".
 
-**Verify the patches actually shipped before testing** — this is the check that
+**Verify the patches actually shipped before testing**: this is the check that
 distinguishes "the fix does not work" from "the fix was not in the build":
 
 ```bash
@@ -64,7 +64,7 @@ $AAPT dump xmltree --file AndroidManifest.xml "$APK" | grep -iE 'launchMode|conf
 ## Driving the app
 
 The app is one WebView Activity, so `dumpsys` cannot tell you which *screen*
-is showing — screenshot and look instead.
+is showing; screenshot and look instead.
 
 ```bash
 $ADB exec-out screencap -p > shot.png     # then read the image
@@ -88,7 +88,7 @@ $ADB shell monkey -p com.scadoshi.zwipe -c android.intent.category.LAUNCHER 1
 ```
 
 `am start -n` is an **explicit component start** and behaves differently from
-the launcher intent — that distinction is what exposed the ndk-context crash.
+the launcher intent, and that distinction is what exposed the ndk-context crash.
 `pidof` before and after is the cheapest signal for "did the process die".
 
 ## What this has been used for

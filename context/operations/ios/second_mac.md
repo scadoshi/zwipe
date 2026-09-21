@@ -44,7 +44,7 @@ for Review", not at build time, so the mismatch surfaces late.
 
 ## Import the signing identity
 
-Copying `~/certs/` is not enough on its own — `codesign` reads the keychain, not
+Copying `~/certs/` is not enough on its own: `codesign` reads the keychain, not
 that directory:
 
 ```bash
@@ -60,7 +60,7 @@ security find-identity -v -p codesigning
 # must list: "Apple Distribution: SCOTTY RAY FERMO (VV74WQ89GD)"
 ```
 
-If the Apple Distribution line is missing, the key didn't import — fix that
+If the Apple Distribution line is missing, the key didn't import; fix that
 before building, rather than discovering it at the `codesign` step.
 
 ---
@@ -71,7 +71,7 @@ Two things, both avoidable:
 
 **1. Creating a new distribution certificate.** Apple caps how many Apple
 Distribution certs an account may hold. Hit the cap, and the UI offers to revoke
-an existing one to make room — revoking is what kills the other Mac, because
+an existing one to make room; revoking is what kills the other Mac, because
 every provisioning profile built on that cert dies with it. So on the new
 machine, never click "Create Certificate" on developer.apple.com and never let
 Xcode's *Automatically manage signing* fix a signing error for you. There is no
@@ -91,7 +91,7 @@ Nothing else is at risk:
 - **The Mac itself is never registered with Apple.** Only test *iPhones* get
   registered, and only for development profiles. Adding a Mac is not an event
   Apple knows about.
-- **The App Store provisioning profile contains no device UDIDs** — that's what
+- **The App Store provisioning profile contains no device UDIDs**: that's what
   distinguishes an App Store profile from a development one. Copying it changes
   nothing about where it's valid.
 - **The API key and Transporter's Apple ID sign-in** both work from any number of
@@ -104,7 +104,7 @@ Nothing else is at risk:
 
 `build.md`'s build command ends with `--device "scotland-mobile"`. That reads like
 a requirement, but `dx build` doesn't upload anything, so the flag only steers the
-target to `aarch64-apple-ios` instead of the simulator — the named device does not
+target to `aarch64-apple-ios` instead of the simulator; the named device does not
 have to be present, or even known to that Mac. Release builds on the current
 machine routinely run with the phone unplugged.
 

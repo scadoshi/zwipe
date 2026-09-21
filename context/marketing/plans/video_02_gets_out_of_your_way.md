@@ -1,8 +1,8 @@
-# Video 2 — It gets out of your way
+# Video 2: It gets out of your way
 
 **Theme:** Zwipe respects your choices. Two "genius"-tier wins under one promise:
 swipe memory (durable skips) + per-deck stack memory. Land auto-stop moved to
-video #3, which already owns the targeting story — deck memory is the stronger
+video #3, which already owns the targeting story; deck memory is the stronger
 pairing here.
 **Priority:** P1. Freshest differentiator, answers the loudest launch complaint
 ("closing the app resets the skip pile").
@@ -24,7 +24,7 @@ pairing here.
 
 1. **Left-swipe** on the add-cards screen (Search source), card animates off.
    Skips post to the server per swipe in 1.3.0, so the kill in shot 2 can be
-   immediate — no need to linger before killing.
+   immediate; no need to linger before killing.
 2. **App kill + relaunch** to the same deck (screen-record the full app-switcher
    kill so the "it survived a restart" beat is unambiguous).
 3. **Continued swiping** proving the skipped card does not return.
@@ -32,11 +32,11 @@ pairing here.
    swipe 2–3 cards. Pick a second deck with a visually distinct commander so
    the cut reads instantly.
 5. **Return to deck one**: its add screen resumes on the exact card it was
-   left on. Film shots 4–5 in one take WITHOUT killing the app between them —
+   left on. Film shots 4–5 in one take WITHOUT killing the app between them,
    per-deck resume is in-session memory; a restart starts a fresh (correctly
    skip-filtered) stack instead of resuming mid-stack.
 6. **More sheet → Clear skips → confirmation dialog → confirm** + the
-   "Skips cleared" toast. Three taps in ~2s — rehearse it, or trim the dialog
+   "Skips cleared" toast. Three taps in ~2s, so rehearse it, or trim the dialog
    in the edit and cut straight to the toast.
 
 ## Notes

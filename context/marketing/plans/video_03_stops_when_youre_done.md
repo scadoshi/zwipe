@@ -1,4 +1,4 @@
-# Video 3 — The deck builder that stops when you're done
+# Video 3: The deck builder that stops when you're done
 
 **Theme:** Smart targeting keeps you on-plan without doing the math.
 **Priority:** P2. Video #2 dropped land auto-stop in its 1.3.0 rewrite (it leads

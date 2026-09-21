@@ -16,7 +16,7 @@ set -a && source .env.zervice && set +a
 ./zervice
 ```
 
-zervice is a run-once binary — it syncs cards from Scryfall, cleans expired sessions,
+zervice is a run-once binary: it syncs cards from Scryfall, cleans expired sessions,
 and exits. Useful after dropping/recreating the database to repopulate cards immediately
 instead of waiting for the nightly timer.
 

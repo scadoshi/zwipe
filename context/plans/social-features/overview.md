@@ -1,8 +1,8 @@
-# Social features — weekly badges + featured decks
+# Social features: weekly badges + featured decks
 
 **Status: PLANNED (2026-07-06). Not started. Two independent legs; badges
-buildable now. The featured-decks prerequisites — the deck share page and Deck
-MVPs — both SHIPPED 2026-07-07, so that leg is now unblocked too.**
+buildable now. The featured-decks prerequisites, the deck share page and Deck
+MVPs, both SHIPPED 2026-07-07, so that leg is now unblocked too.**
 
 **What this builds, in one sentence:** a weekly "Your week" recap that awards
 each active user 1–3 personality badges computed from the signal already
@@ -11,8 +11,8 @@ where standout decks appear with their MVP cards front and center.
 
 **Why this shape:** at ~865 users there's no density for social
 *infrastructure* (profiles, follows, feeds, moderation). Both legs here are
-social *artifacts* — things a single user can enjoy alone and choose to show
-someone — the same principle that picked the deck share page. Badges are the
+social *artifacts*: things a single user can enjoy alone and choose to show
+someone, the same principle that picked the deck share page. Badges are the
 retention loop (a reason to come back Monday); featured decks are the
 aspiration loop (a reason to build something worth showing, and MVPs'
 first public stage). Absorbs and supersedes the "Weekly Badges + Stats /
@@ -44,11 +44,11 @@ Share Cards" backlog entry (design decisions carried over).
 
 ## Sequencing
 
-1. **Badges server** — deployable alone; badge history starts accruing
+1. **Badges server**: deployable alone; badge history starts accruing
    silently (backfills every closed week since 2026-07-02 on first run).
-2. **Badges client** — rides the next client release after; recap appears
+2. **Badges client**: rides the next client release after; recap appears
    the first Monday after install.
-3. **Featured decks** — server+zite legs can ship with/after the share
+3. **Featured decks**: server+zite legs can ship with/after the share
    page; the showcase gets real MVP stars once 1.4.0 clients start starring.
 
 ## Later (explicitly out of v1)
@@ -58,4 +58,4 @@ Share Cards" backlog entry (design decisions carried over).
   recap screen + OS share sheet text).
 - Algorithmic/hybrid featuring rotation (needs MVP volume).
 - Badges on shared deck pages / MVP-based badges ("Kingmaker: your MVP got
-  featured") — natural cross-links once both legs exist.
+  featured"): natural cross-links once both legs exist.

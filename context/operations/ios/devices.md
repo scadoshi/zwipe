@@ -8,7 +8,7 @@ Add test devices and create provisioning profiles so you can deploy debug builds
 
 - Connect the iPhone via USB
 - Open **Xcode → Window → Devices and Simulators**
-- Select the device — UDID is shown under "Identifier"
+- Select the device, UDID is shown under "Identifier"
 
 Or from CLI:
 ```bash

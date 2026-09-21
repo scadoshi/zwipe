@@ -6,21 +6,21 @@ Takes the signed `Zwipe.ipa` from [build.md](build.md) and gets it into review.
 
 ## 1. Upload via Transporter
 
-**Do NOT use `xcrun altool`** — it is deprecated and causes metadata parsing errors
+**Do NOT use `xcrun altool`**: it is deprecated and causes metadata parsing errors
 that can trigger false "beta Xcode" rejections. See [debugging.md](debugging.md)
 for details.
 
-**Do NOT use `xcrun iTMSTransporter`** — it expects `.itmsp` directories, not `.ipa` files.
+**Do NOT use `xcrun iTMSTransporter`**: it expects `.itmsp` directories, not `.ipa` files.
 
 1. Open **Transporter** (Mac App Store, free, by Apple)
 2. Sign in with your Apple ID if prompted
 3. Drag `~/Developer/zwipe/Zwipe.ipa` into the window
-4. Click **Deliver** — validates and uploads in one step
+4. Click **Deliver**: validates and uploads in one step
 5. Wait for "Upload Successful" confirmation
 
 The build will appear in App Store Connect after 5–10 minutes.
 
-### Fallback: altool (deprecated — use only if Transporter is unavailable)
+### Fallback: altool (deprecated: use only if Transporter is unavailable)
 
 ```bash
 xcrun altool --validate-app -f ~/Developer/zwipe/Zwipe.ipa -t ios \

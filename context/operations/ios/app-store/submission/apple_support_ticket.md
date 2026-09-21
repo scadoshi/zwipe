@@ -1,6 +1,6 @@
-# Apple Developer Support — Detailed Report
+# Apple Developer Support: Detailed Report
 
-## RESOLVED 2026-05-22 — now we wait!
+## RESOLVED 2026-05-22: now we wait!
 
 Apple's submission allowlist required the very latest Xcode (26.5, released 2026-05-11). Upgrading to Xcode 26.5 build 17F42, rebuilding clean (wiping the cargo iOS device cache to force re-link against SDK 23F77), and patching the Info.plist DT keys to match cleared the "Add for Review" check. Build 13 is in "Waiting for Review" and submitted to App Review. Cases 102856406657 (Xue) and 102855955579 (Liping) both closed. See `debugging.md` for full resolution notes.
 
@@ -8,7 +8,7 @@ The original support report is preserved below for reference.
 
 ---
 
-**Subject:** "Unable to Add for Review" — all builds rejected with "beta Xcode" error despite using GM toolchain
+**Subject:** "Unable to Add for Review", all builds rejected with "beta Xcode" error despite using GM toolchain
 
 **Developer:** Scotty Fermo
 **Team ID:** VV74WQ89GD
@@ -31,9 +31,9 @@ This error appears on both the Distribution tab and when attempting TestFlight e
 
 All software is the latest public GM release, installed through official channels:
 
-- **macOS:** Tahoe 26.4 (Build 25E246) — updated via Software Update
-- **Xcode 26.4:** Build 17E192 — installed from Mac App Store (verified: `kMDItemAppStoreHasReceipt = 1`)
-- **Xcode 26.3:** Build 17C529 — also tested, downloaded from developer.apple.com
+- **macOS:** Tahoe 26.4 (Build 25E246): updated via Software Update
+- **Xcode 26.4:** Build 17E192, installed from Mac App Store (verified: `kMDItemAppStoreHasReceipt = 1`)
+- **Xcode 26.3:** Build 17C529, also tested, downloaded from developer.apple.com
 - **iOS SDK:** 26.4 (ships with Xcode 26.4) and 26.2 (ships with Xcode 26.3)
 - **Distribution certificate:** Apple Distribution, created 2026-03-29, expires 2027-03-29, issued by Apple WWDR CA G3
 - **Provisioning profile:** App Store type, created 2026-03-29, expires 2027-03-29, no beta flags
@@ -109,9 +109,9 @@ Info.plist:
 
 ### Version and app record changes
 
-- Created new app version 1.0.1 to clear any cached validation state — same error
-- Reverted back to version 1.0 — same error
-- Created entirely new app with different bundle ID — same error
+- Created new app version 1.0.1 to clear any cached validation state, same error
+- Reverted back to version 1.0, same error
+- Created entirely new app with different bundle ID, same error
 
 ---
 

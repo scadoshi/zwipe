@@ -4,7 +4,7 @@ What to back up and restore when wiping this Mac to return to stable macOS.
 
 ---
 
-## Before wiping — back up these files
+## Before wiping: back up these files
 
 ### Critical (cannot be recreated without these)
 
@@ -29,7 +29,7 @@ What to back up and restore when wiping this Mac to return to stable macOS.
 
 ---
 
-## Server access — not at risk
+## Server access: not at risk
 
 Prod is a Hetzner VPS as of the 2026-06-13 migration, so there is no keyboard to
 plug in. The way back after losing every SSH key is the provider's rescue
@@ -59,16 +59,16 @@ longer the fallback. The server itself is unaffected by your Mac wipe.
 
 ### GitHub auth
 - You'll need to re-auth with GitHub after restore (`gh auth login` or SSH key)
-- Your repo is public on GitHub — nothing to lose, just need push access back
+- Your repo is public on GitHub, nothing to lose, just need push access back
 
 ### Apple Developer account
-- Not tied to your Mac at all — it's your Apple ID
+- Not tied to your Mac at all, it's your Apple ID
 - Certs and profiles are re-downloadable from developer.apple.com
 - The only thing that can't be re-downloaded is the private key (`zwipe-dist-key.pem`)
 
 ---
 
-## After restore — setup order
+## After restore: setup order
 
 1. Install stable macOS (not beta)
 2. Install Xcode from Mac App Store (GM version)
@@ -79,4 +79,4 @@ longer the fallback. The server itself is unaffected by your Mac wipe.
 7. Set up SSH keys (new or restored) + Tailscale
 8. Create `.env` files for zerver and zwiper
 9. Build and test: `dx serve --platform ios`
-10. Rebuild release, sign, package, upload to App Store — follow `operations/ios/app-store/submission/build.md`
+10. Rebuild release, sign, package, upload to App Store, follow `operations/ios/app-store/submission/build.md`

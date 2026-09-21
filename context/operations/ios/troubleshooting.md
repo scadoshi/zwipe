@@ -7,10 +7,10 @@ Common errors and fixes when building, signing, or submitting Zwipe.
 Dioxus `dx build` generates an incomplete `.app` bundle for App Store submission.
 These patches must be applied **after every release build, before signing**:
 
-1. **CFBundleSupportedPlatforms** — remove iPadOS, keep only iPhoneOS
-2. **UIDeviceFamily** — remove iPad (2), keep only iPhone (1)
-3. **App icons** — compile asset catalog with `actool`
-4. **CFBundleIcons** — add icon references to Info.plist
+1. **CFBundleSupportedPlatforms**: remove iPadOS, keep only iPhoneOS
+2. **UIDeviceFamily**: remove iPad (2), keep only iPhone (1)
+3. **App icons**: compile asset catalog with `actool`
+4. **CFBundleIcons**: add icon references to Info.plist
 
 The following are handled by `[ios.plist]` in `Dioxus.toml` (no manual patching):
 - DTPlatformName, DTPlatformVersion, DTSDKName, DTXcode, DTXcodeBuild, DTCompiler
@@ -69,7 +69,7 @@ that the `[ios.plist]` section hasn't been removed.
   ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
 ```
 
-After patching, you **must** re-sign and re-package the IPA — changing the plist
+After patching, you **must** re-sign and re-package the IPA; changing the plist
 invalidates the code signature.
 
 **Version mismatch:** Dioxus generates `CFBundleShortVersionString` from `Cargo.toml`
@@ -127,7 +127,7 @@ CFBundlePackageType = "APPL"
 
 ---
 
-## UIDeviceFamily includes iPad — missing iPad icons
+## UIDeviceFamily includes iPad: missing iPad icons
 
 Dioxus sets `UIDeviceFamily` to `[1, 2]` (iPhone + iPad). If you don't want to support
 iPad, Apple will still require iPad icon sizes (152×152, 167×167, etc.).
@@ -135,7 +135,7 @@ iPad, Apple will still require iPad icon sizes (152×152, 167×167, etc.).
 **Error:**
 `Missing required icon file. The bundle does not contain an app icon for iPad of exactly '152x152' pixels...`
 
-**Fix — remove iPad from UIDeviceFamily (after build, before signing):**
+**Fix: remove iPad from UIDeviceFamily (after build, before signing):**
 ```bash
 /usr/libexec/PlistBuddy \
   -c "Delete :UIDeviceFamily" \
@@ -156,7 +156,7 @@ Dioxus doesn't run `actool` to compile app icons into an asset catalog. Without
 **Error:**
 `Missing required icon file. The bundle does not contain an app icon for iPhone / iPod Touch of exactly '120x120' pixels...`
 
-**Fix — compile an asset catalog and embed it:**
+**Fix: compile an asset catalog and embed it:**
 ```bash
 # 1. Create the asset catalog source
 mkdir -p /tmp/Assets.xcassets/AppIcon.appiconset
@@ -256,10 +256,10 @@ Then re-download and install the profile.
 ## Team ID confusion
 
 Xcode's "Manage Certificates" creates certs under the Personal Team, not the paid team.
-The `(NVSWB62C54)` shown by `security find-identity` is the CN display name — the OU
+The `(NVSWB62C54)` shown by `security find-identity` is the CN display name; the OU
 field is the actual team ID.
 
-For App Store submission, use the cert with `(VV74WQ89GD)` — that's the paid team.
+For App Store submission, use the cert with `(VV74WQ89GD)`, which is the paid team.
 
 ```bash
 security find-identity -v -p codesigning
@@ -271,12 +271,12 @@ security find-identity -v -p codesigning
 
 ## Certificate deleted / "identity no longer valid" (0xe8008018) or "valid provisioning profile not found" (0xe8008015)
 
-Happens when duplicate certificates are cleaned up from Keychain Access — the provisioning profile was tied to the deleted cert.
+Happens when duplicate certificates are cleaned up from Keychain Access; the provisioning profile was tied to the deleted cert.
 
 **Fix:**
 
 1. Create a new development cert in **Xcode > Settings > Accounts > Manage Certificates > + > Apple Development**
-2. Delete any remaining old/duplicate certs from Keychain Access (keep only the newest one — check the date)
+2. Delete any remaining old/duplicate certs from Keychain Access (keep only the newest one, check the date)
 3. Go to [developer.apple.com/account/resources/profiles](https://developer.apple.com/account/resources/profiles)
 4. Edit (or create) the iOS Development profile for `com.scadoshi.zwipe`
 5. Select the new certificate (Xcode may label it with your Mac hostname, e.g. "scotland2")

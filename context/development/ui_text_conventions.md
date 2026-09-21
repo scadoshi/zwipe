@@ -27,11 +27,11 @@ Established during the 2026-05-24 zwiper casing revamp (commits `b1cacaaf`, `4cb
 
 ### Why mobile and web split on button casing
 
-zwiper is a mobile app — sentence case follows Apple HIG and Material Design conventions and reads more naturally on small screens. zite is a marketing site — Title Case fits the web/marketing genre and matches what Stripe/GitHub/Linear use for CTAs. The split is intentional.
+zwiper is a mobile app, and sentence case follows Apple HIG and Material Design conventions and reads more naturally on small screens. zite is a marketing site, and Title Case fits the web/marketing genre and matches what Stripe/GitHub/Linear use for CTAs. The split is intentional.
 
 ### Backend-sourced text policy
 
-`zwipe-core` produces text in whatever case the underlying `Display` impl, validation error, or API response chose (often lowercase by historical convention). The frontend must **not** transform this text — no `.to_lowercase()`, no `.to_uppercase()`, no `format!("{}", text.chars().next()...)` capitalization. Display it as-is. If a piece of `zwipe-core` text needs to be cased differently, fix it at the source (zwipe-core), not in the frontend.
+`zwipe-core` produces text in whatever case the underlying `Display` impl, validation error, or API response chose (often lowercase by historical convention). The frontend must **not** transform this text: no `.to_lowercase()`, no `.to_uppercase()`, no `format!("{}", text.chars().next()...)` capitalization. Display it as-is. If a piece of `zwipe-core` text needs to be cased differently, fix it at the source (zwipe-core), not in the frontend.
 
 This rule exists because the same backend message may surface in multiple frontends (zerver responses, zwiper toasts, zite forms, future CLI tools). One source of truth.
 
@@ -63,11 +63,11 @@ body {
 }
 ```
 
-Always name the font first with `monospace` as fallback. Never use bare `font-family: monospace` — see below.
+Always name the font first with `monospace` as fallback. Never use bare `font-family: monospace`; see below.
 
 ### Form-element reset (zwiper)
 
-Form elements (`<input>`, `<textarea>`, `<select>`, `<button>`) do NOT inherit `font-family` from body by default — the user-agent stylesheet hard-codes a system sans-serif. To opt them into body inheritance, `main.css` includes:
+Form elements (`<input>`, `<textarea>`, `<select>`, `<button>`) do NOT inherit `font-family` from body by default; the user-agent stylesheet hard-codes a system sans-serif. To opt them into body inheritance, `main.css` includes:
 
 ```css
 input, textarea, select, button {
@@ -79,11 +79,11 @@ This is the standard CSS reset pattern (Tailwind preflight does the same). Witho
 
 ### `font-family: monospace` is a code smell
 
-Bare `font-family: monospace` resolves to the OS generic — Menlo on macOS/iOS, Droid Sans Mono on Android, Consolas on Windows. **Never JetBrains Mono.** This was a real bug source: chart labels in `deck_charts.rs` and the import/export textareas were rendering in the OS default for months because they had inline `style="font-family:monospace"`.
+Bare `font-family: monospace` resolves to the OS generic: Menlo on macOS/iOS, Droid Sans Mono on Android, Consolas on Windows. **Never JetBrains Mono.** This was a real bug source: chart labels in `deck_charts.rs` and the import/export textareas were rendering in the OS default for months because they had inline `style="font-family:monospace"`.
 
 **Always** either:
-- `font-family: 'JetBrains Mono', monospace` — named font first, generic as fallback, OR
-- omit `font-family` entirely and rely on body inheritance (preferred — single source of truth)
+- `font-family: 'JetBrains Mono', monospace`: named font first, generic as fallback, OR
+- omit `font-family` entirely and rely on body inheritance (preferred, single source of truth)
 
 If you grep `font-family.*monospace` and find a result without `'JetBrains Mono'` in it, it's a bug.
 
@@ -103,7 +103,7 @@ Theme slugs (`gruvbox`, `tokyo-night`, `rose-pine`, etc.) are stored as-is in `A
 
 **Special case:** `rose-pine` displays as **"Rosé Pine"** (accent on the first e). Hardcoded in the helper rather than renaming the slug because the slug drives CSS class names + DB stored values for every user with that theme selected. A display-only special-case is cheaper than a SQL migration + CSS rename. Same treatment for `vscode` → "VS Code", `github` → "GitHub", `synthwave-84` → "Synthwave '84", `powershell` → "PowerShell", `docs-rs` → "docs.rs".
 
-The canonical copy is `zwipe-components/src/theme_picker.rs:21`, a `match` at the top of the function — add new overrides there. zite no longer has its own; it renders the shared `ThemePicker`. `zwiper/src/lib/inbound/screens/profile/preferences.rs:27` still holds a duplicate for its preferences sheet, so an override added to only one of the two will disagree across surfaces.
+The canonical copy is `zwipe-components/src/theme_picker.rs:21`, a `match` at the top of the function; add new overrides there. zite no longer has its own; it renders the shared `ThemePicker`. `zwiper/src/lib/inbound/screens/profile/preferences.rs:27` still holds a duplicate for its preferences sheet, so an override added to only one of the two will disagree across surfaces.
 
 ---
 
@@ -114,5 +114,5 @@ The canonical copy is `zwipe-components/src/theme_picker.rs:21`, a `match` at th
 3. **Form labels & placeholders** → sentence case ("Email address"), Title Case for single proper nouns ("Email")
 4. **Toasts you author** → sentence case, no trailing period for short status ("Card added"), period for full sentences ("Verify your email to enable password recovery.")
 5. **Toasts derived from `e.to_user_message()` / `e.to_string()`** → pass through, no `.to_lowercase()` wrappers
-6. **Don't add inline `font-family`** — body inheritance handles it (form elements covered by the reset)
-7. **Avoid `style="font-family:monospace"`** — see above
+6. **Don't add inline `font-family`**: body inheritance handles it (form elements covered by the reset)
+7. **Avoid `style="font-family:monospace"`**: see above

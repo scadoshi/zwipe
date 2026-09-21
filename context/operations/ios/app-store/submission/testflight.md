@@ -9,7 +9,7 @@ send testers.
 
 Zwipe is a swipe-based Magic: The Gathering deck builder for Commander. Browse cards, build decks, and manage your collection from your phone.
 
-This is a beta — things might break. Please report any crashes, bugs, or weird behavior. Feature requests welcome too.
+This is a beta, so things might break. Please report any crashes, bugs, or weird behavior. Feature requests welcome too.
 
 ### What to Test
 
@@ -29,9 +29,9 @@ zwipe@scadoshi.com
 
 ## Invite message (copy + send to testers)
 
-Hey! I just built an app called Zwipe — it's a Magic: The Gathering deck builder for Commander. Would love for you to try it out.
+Hey! I just built an app called Zwipe. It's a Magic: The Gathering deck builder for Commander. Would love for you to try it out.
 
-Install TestFlight from the App Store if you don't have it, then tap the invite link I sent. Create an account, poke around, build a deck — the whole thing is swipe-based so just go with it.
+Install TestFlight from the App Store if you don't have it, then tap the invite link I sent. Create an account, poke around, build a deck. The whole thing is swipe-based so just go with it.
 
 Things to try:
 - Swipe through cards (right to add, left to skip)
@@ -44,4 +44,4 @@ Let me know:
 - Was anything confusing?
 - Any features you wish were there?
 
-No pressure to use it seriously — just kick the tires and tell me what sucks. Thanks!
+No pressure to use it seriously; just kick the tires and tell me what sucks. Thanks!

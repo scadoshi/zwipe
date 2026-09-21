@@ -34,7 +34,9 @@ any facts.
 1. `context/README.md` (orientation plus the progress log, so the longest and
    the most-read), root `README.md`, `context/CLAUDE.md`
 2. `context/architecture/` (structure.md lands separately via its own plan)
-3. `context/progress/` (todo.md, backlog.md, feature_requests.md)
+3. `context/README.md` (it absorbed the progress log 2026-09-21: longest
+   and most-read), then the rest of `context/progress/` (todo.md,
+   backlog.md, feature_requests.md)
 4. `context/operations/`, `context/development/`, `context/product/`
 5. `context/plans/` active files last; archived plans are historical
    record and stay as written.

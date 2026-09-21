@@ -47,7 +47,7 @@ All dark themes must hit these contrast ratios against `--bg-primary`. Ranges ar
 
 Accent contrast varies by theme personality (4x -- 13x range across themes). No strict target, but accents should be legible as text.
 
-Light themes invert the relationship (dark text on light background) but follow the same ratio targets. Prefer each theme's canonical foreground when it lands in band — do not brighten or darken beyond canonical just to hit the aspirational midpoint.
+Light themes invert the relationship (dark text on light background) but follow the same ratio targets. Prefer each theme's canonical foreground when it lands in band; do not brighten or darken beyond canonical just to hit the aspirational midpoint.
 
 ### Shadow conventions
 

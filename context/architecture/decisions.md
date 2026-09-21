@@ -6,9 +6,9 @@ Key technical decisions made during development. Context for why things are buil
 
 ## Frontend Framework: Dioxus (Rust)
 
-**Decided: 2026-03-26 — shipped to real iPhone same day.**
+**Decided: 2026-03-26, shipped to real iPhone same day.**
 
-Single language (Rust) across backend and frontend. Same types, same error handling, same mental model. For a solo developer this eliminates context switching — shared domain types between zerver and zwiper, compile-time safety on both sides.
+Single language (Rust) across backend and frontend. Same types, same error handling, same mental model. For a solo developer this eliminates context switching: shared domain types between zerver and zwiper, compile-time safety on both sides.
 
 - **Framework**: Dioxus 0.7 (`dx` CLI). zwiper pins 0.7.10, zite 0.7.9
 - **Target**: iOS physical device (`aarch64-apple-ios`)
@@ -16,7 +16,7 @@ Single language (Rust) across backend and frontend. Same types, same error handl
 
 ### Critical build flag
 
-Dioxus 0.7 does NOT generate an Xcode project — it produces a `.app` bundle directly. Without `--device`, `dx` targets the simulator and crashes on real hardware:
+Dioxus 0.7 does NOT generate an Xcode project; it produces a `.app` bundle directly. Without `--device`, `dx` targets the simulator and crashes on real hardware:
 
 ```bash
 dx build --platform ios --device "scotland-mobile"
@@ -44,7 +44,7 @@ zite   ──→ zwipe-core
 - No server-only dependencies (sqlx, anyhow, argon2, axum, tokio)
 - Only types genuinely shared between frontend and backend
 - All domain validation and tests live in core; zerver re-exports via `pub use`
-- Service-layer errors (wrapping `anyhow::Error`) stay in zerver — the frontend never sees them
+- Service-layer errors (wrapping `anyhow::Error`) stay in zerver, the frontend never sees them
 
 **What lives in zwipe-core:** domain entities (User, DeckProfile, DeckCard), value objects (Username, DeckName, Quantity, Format, DeckWarning), request types (CreateDeckProfile, UpdateDeckCard, etc.), validation errors, content moderation, password validation.
 
@@ -60,9 +60,9 @@ Zerver files for extracted types become one-liners: `pub use zwipe_core::domain:
 
 `ApiError` is the HTTP error enum that maps domain errors to status codes. It lives in `zerver/src/lib/inbound/http/mod.rs`. It was considered for extraction to zwipe-core but **cannot move** due to Rust's orphan rule.
 
-**Why:** Zerver has 70+ `impl From<DomainError> for ApiError` conversions across its handler files (e.g., `impl From<InvalidCreateDeckProfile> for ApiError`). If `ApiError` moves to zwipe-core, both the error type AND the domain error type become foreign to zerver — Rust's orphan rule forbids implementing a foreign trait (`From`) for two foreign types. Every handler-level error mapping would break.
+**Why:** Zerver has 70+ `impl From<DomainError> for ApiError` conversions across its handler files (e.g., `impl From<InvalidCreateDeckProfile> for ApiError`). If `ApiError` moves to zwipe-core, both the error type AND the domain error type become foreign to zerver, and Rust's orphan rule forbids implementing a foreign trait (`From`) for two foreign types. Every handler-level error mapping would break.
 
-**Consequence:** Zwiper must keep zerver as a dependency (with `default-features = false`) to access `ApiError`. This is acceptable — `ApiError` is an inbound HTTP adapter type, not domain logic. Its `From` impls are handler-level glue that maps domain errors to HTTP status codes, which is exactly where adapter logic belongs.
+**Consequence:** Zwiper must keep zerver as a dependency (with `default-features = false`) to access `ApiError`. This is acceptable: `ApiError` is an inbound HTTP adapter type, not domain logic. Its `From` impls are handler-level glue that maps domain errors to HTTP status codes, which is exactly where adapter logic belongs.
 
 **All server-only code in zerver must be gated with `#[cfg(feature = "zerver")]`** so zwiper's build doesn't pull in axum, sqlx, jsonwebtoken, etc.
 
@@ -72,15 +72,15 @@ Zerver files for extracted types become one-liners: `pub use zwipe_core::domain:
 
 **Decided: 2026-07-05.**
 
-`AppState` holds every service as a trait object (`Arc<dyn ErasedAuthService>`, etc.) instead of being generic over five service traits. Each domain's `ports.rs` defines two service traits: the real one (`XService`, RPITIT-style `-> impl Future<...> + Send` methods) and an object-safe twin (`ErasedXService`, same methods returning `BoxFuture<'a, T>` — the alias in `domain/mod.rs`), plus a blanket `impl<T: XService> ErasedXService for T` whose bodies are one-line `Box::pin(XService::method(self, args))` forwards.
+`AppState` holds every service as a trait object (`Arc<dyn ErasedAuthService>`, etc.) instead of being generic over five service traits. Each domain's `ports.rs` defines two service traits: the real one (`XService`, RPITIT-style `-> impl Future<...> + Send` methods) and an object-safe twin (`ErasedXService`, same methods returning `BoxFuture<'a, T>`, the alias in `domain/mod.rs`), plus a blanket `impl<T: XService> ErasedXService for T` whose bodies are one-line `Box::pin(XService::method(self, args))` forwards.
 
-**Why the twin exists at all:** RPITIT traits are not object-safe — each implementor returns a differently-sized anonymous future, and a vtable needs one fixed signature, so `dyn XService` cannot compile. The twin's boxed-future signatures are uniform (a fat pointer), making it object-safe by construction. The blanket impl performs the erasure at the one point where the concrete type (and thus the future's size) is still known.
+**Why the twin exists at all:** RPITIT traits are not object-safe, since each implementor returns a differently-sized anonymous future, and a vtable needs one fixed signature, so `dyn XService` cannot compile. The twin's boxed-future signatures are uniform (a fat pointer), making it object-safe by construction. The blanket impl performs the erasure at the one point where the concrete type (and thus the future's size) is still known.
 
-**Why erased over generic:** before this, `AppState<AS, US, HS, CS, DS>` threaded five type params through 104 signature sites across ~50 files — every handler carried a 5-line where-clause before its first real line. Now handlers take `State(state): State<AppState>` with zero ceremony. Call sites are unchanged (`state.card_service.search(...)`); mocks still satisfy the fields via the blanket impls.
+**Why erased over generic:** before this, `AppState<AS, US, HS, CS, DS>` threaded five type params through 104 signature sites across ~50 files; every handler carried a 5-line where-clause before its first real line. Now handlers take `State(state): State<AppState>` with zero ceremony. Call sites are unchanged (`state.card_service.search(...)`); mocks still satisfy the fields via the blanket impls.
 
-**The steady-state trade:** a new service method costs one extra write (the twin signature + `Box::pin` forward, compiler-checked, mindless); a new handler costs zero ceremony (was ~12 lines of bounds). Since endpoints usually add one of each, the per-feature cost is a wash — the payoff was the one-time 104-site cleanup and the permanent reading-cost win in handlers. The repo-trait/service-trait split predates and is independent of this (that's the hexagonal seam, not an erasure cost).
+**The steady-state trade:** a new service method costs one extra write (the twin signature + `Box::pin` forward, compiler-checked, mindless); a new handler costs zero ceremony (was ~12 lines of bounds). Since endpoints usually add one of each, the per-feature cost is a wash. The payoff was the one-time 104-site cleanup and the permanent reading-cost win in handlers. The repo-trait/service-trait split predates and is independent of this (that's the hexagonal seam, not an erasure cost).
 
-**Runtime cost:** one heap allocation (`Box::pin`) + one vtable jump per service call — noise next to the Postgres round-trip every call performs.
+**Runtime cost:** one heap allocation (`Box::pin`) + one vtable jump per service call, which is noise next to the Postgres round-trip every call performs.
 
 **When to revisit:** if hand-writing twins ever becomes a real tax (e.g., many service methods that never get handlers), the `dynosaur` crate generates exactly this pattern from the RPITIT trait via proc-macro. Hand-written was chosen for readability and one fewer proc-macro dep. The metrics domain pioneered the pattern (it was added after the original five and erasing it avoided touching every signature); the other five followed on 2026-07-05.
 
@@ -90,13 +90,13 @@ Zerver files for extracted types become one-liners: `pub use zwipe_core::domain:
 
 **Decided: 2026-04-02.**
 
-Domain types must NOT have custom `impl Type<Postgres>`, `impl Encode`, or `impl Decode` — even if the impl code lives in the adapter layer (`outbound/sqlx/`). This is both an architectural choice and a Rust compiler requirement.
+Domain types must NOT have custom `impl Type<Postgres>`, `impl Encode`, or `impl Decode`, even if the impl code lives in the adapter layer (`outbound/sqlx/`). This is both an architectural choice and a Rust compiler requirement.
 
 ### Why
 
-**Rust's orphan rule** prevents implementing a foreign trait (like `sqlx::Type`) on a type from another crate. If `Format` lives in `zwipe-core`, zerver cannot `impl Type<Postgres> for Format` — neither the trait nor the type is local to zerver.
+**Rust's orphan rule** prevents implementing a foreign trait (like `sqlx::Type`) on a type from another crate. If `Format` lives in `zwipe-core`, zerver cannot `impl Type<Postgres> for Format`: neither the trait nor the type is local to zerver.
 
-But even without the orphan rule, custom SQLx impls on domain types are the wrong pattern. Domain types shouldn't know how they're persisted. The database is an adapter — it should handle its own serialization.
+But even without the orphan rule, custom SQLx impls on domain types are the wrong pattern. Domain types shouldn't know how they're persisted. The database is an adapter; it should handle its own serialization.
 
 ### Pattern
 
@@ -128,7 +128,7 @@ For **JSONB types** (Colors, Legalities, Prices, CardFaces): use `sqlx::types::J
 
 - Domain types are portable across crates (no orphan rule conflicts)
 - Database serialization is explicit and visible in the adapter layer
-- Correct hexagonal architecture — the domain doesn't depend on infrastructure
+- Correct hexagonal architecture, the domain doesn't depend on infrastructure
 - Existing `Database*` wrapper types (DatabaseUser, DatabaseDeckProfile, etc.) already followed this pattern; custom SQLx impls were redundant
 
 ---
@@ -137,12 +137,12 @@ For **JSONB types** (Colors, Legalities, Prices, CardFaces): use `sqlx::types::J
 
 **Decided: 2026-04-06.**
 
-Ship the full application as a webapp at `zwipe.net` alongside the existing marketing pages. Zite becomes both the marketing site and the authenticated deck builder — logged-out visitors see landing/about/contribute pages, logged-in users get the full deck building experience.
+Ship the full application as a webapp at `zwipe.net` alongside the existing marketing pages. Zite becomes both the marketing site and the authenticated deck builder: logged-out visitors see landing/about/contribute pages, logged-in users get the full deck building experience.
 
 ### Why
 
 - iOS app is feature complete but App Store submission adds friction and delays reaching users
-- A webapp has zero distribution friction — share a link, someone's using it
+- A webapp has zero distribution friction, share a link, someone's using it
 - The backend (zerver) is already live with all endpoints, auth, rate limiting, and security in place
 - Zite is already deployed to `zwipe.net` via GitHub Pages with existing routes
 
@@ -150,13 +150,13 @@ Ship the full application as a webapp at `zwipe.net` alongside the existing mark
 
 **Single domain (`zwipe.net`)**: No subdomain split (`app.zwipe.net` or `web.zwipe.net`). The product lives at the root domain. Marketing pages and app routes coexist in the same Dioxus app.
 
-**Dual input for card selection**: Swipe gestures for mobile browsers, arrow buttons for desktop. Arrow buttons are the primary desktop interaction — nobody swipes with a mouse.
+**Dual input for card selection**: Swipe gestures for mobile browsers, arrow buttons for desktop. Arrow buttons are the primary desktop interaction; nobody swipes with a mouse.
 
-**CORS**: Already handled — zerver has `ALLOWED_ORIGINS` in its env config. Add `zwipe.net` to the allowed list.
+**CORS**: Already handled. zerver has `ALLOWED_ORIGINS` in its env config. Add `zwipe.net` to the allowed list.
 
 **Security posture unchanged**: Same JWT auth, same rate limiting, same account lockout. The browser is just another client calling the same API. No new endpoints or auth flows needed.
 
-**Ship both**: Webapp ships first for immediate user access. iOS app submits to App Store in parallel — same codebase, two distribution channels.
+**Ship both**: Webapp ships first for immediate user access. iOS app submits to App Store in parallel: same codebase, two distribution channels.
 
 ### What changes in zite
 
@@ -173,14 +173,14 @@ See `architecture/hosting.md`.
 
 ---
 
-## Serving Caches: TtlSlot — Determinism Over Persistence
+## Serving Caches: TtlSlot: Determinism Over Persistence
 
 **Decision (2026-08-05):** server-side caches for shared, parameterless values
-are `TtlSlot<V>` instances (`zerver/src/lib/inbound/http/cache.rs`) — one
+are `TtlSlot<V>` instances (`zerver/src/lib/inbound/http/cache.rs`): one
 **typed field per cached value on `AppState`**, not a keyed cache store.
 
 A `TtlSlot` is a cached *variable*, not a store: one slot holding THE current
-value plus a deadline. No keys, no lookups, no eviction policy —
+value plus a deadline. No keys, no lookups, no eviction policy, since
 overwrite-on-expiry is the whole lifecycle. Deadlines are pinned instants
 (the refresher returns `(value, expires_at)`), so each use case aligns expiry
 to a wall-clock boundary instead of drifting per refresh time. Rebuilds are
@@ -189,30 +189,30 @@ stale value with a WARN rather than a 5xx.
 
 **The pairing rule that makes it safe:** whatever fills a slot must be
 **deterministic for its time bucket** (first consumer: the featured-flavor
-pick, `ORDER BY md5(id || hour_key)`). Then the cache is pure memoization —
+pick, `ORDER BY md5(id || hour_key)`). Then the cache is pure memoization:
 a restart mid-bucket re-derives the identical value on the first request, so
 deploys (which restart zerver) are invisible and nothing ever needs Redis or
 a persisted slot. The database plus the clock is the durable state.
 
 **When NOT to use it:** per-something state ("the X for each user/deck/
-commander") wants a keyed map — see `AppState.last_active_cache`
+commander") wants a keyed map; see `AppState.last_active_cache`
 (`DashMap<Uuid, Instant>`). If a keyed-with-deadline need ever appears, build
 a `TtlMap` beside `TtlSlot`; don't stretch the slot.
 
 ## Command Zone Stays Flat: Contingent Facts Are Not Type-Level Laws
 
 **Decision (2026-08-17):** `DeckProfile` keeps the command zone as flat
-optional fields — `commander_id` / `partner_commander_id` / `background_id` /
+optional fields: `commander_id` / `partner_commander_id` / `background_id` /
 `signature_spell_id`, each with a parallel `*_name` and `*_art_url`. We
 deliberately did NOT introduce a `CommandZone` sum type whose variants
 enumerate the legal slot combinations (`Commander`, `CommanderAndPartner`,
 `CommanderAndBackground`, `Oathbreaker { .. }`).
 
 **The proposal and why it was rejected.** The flat shape can represent states
-Magic doesn't allow — a Commander deck holding a signature spell, an art URL
+Magic doesn't allow: a Commander deck holding a signature spell, an art URL
 with no card, a partner with no commander. The obvious fix is a sum type that
 makes them unrepresentable. The owner's counter-argument is the one that
-decided it: **partner-plus-background is not forbidden by the rules — it just
+decided it: **partner-plus-background is not forbidden by the rules; it just
 hasn't been printed.** Encoding "these slots are mutually exclusive" as an
 enum bakes a fact about Wizards' printing history into the type system. The
 day a card carries both Partner and Choose a Background, the fix isn't a new
@@ -221,7 +221,7 @@ release pressure, for a card that was always legal. Types should encode what
 is *necessarily* true, not what is *currently* true.
 
 **Why the looseness is tolerable.** The invalid states are unreachable in
-practice — verified 2026-08-17: building an Oathbreaker deck and switching it
+practice, verified 2026-08-17: building an Oathbreaker deck and switching it
 to Commander does not persist the oathbreaker or signature spell. The
 construction surface is tiny: `DeckProfile` is built only by the DB `TryFrom`,
 one test helper, and a few optimistic-update sites in `zwiper`'s `edit.rs`
@@ -237,6 +237,6 @@ card from the UI while it still sat in the database.
 
 **Revisit when:** the deck-list restyle (command-zone art rows) actually
 consumes these fields. If rendering from flat fields proves awkward, the
-narrow fix is a per-slot `Option<CommandZoneSlot>` grouping id + name + art —
+narrow fix is a per-slot `Option<CommandZoneSlot>` grouping id + name + art,
 which kills art-without-a-card (a real invariant) while staying agnostic about
 which slots may coexist. Do not reach for the combination enum.

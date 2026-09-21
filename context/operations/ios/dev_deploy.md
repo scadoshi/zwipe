@@ -13,13 +13,13 @@ Paste each as a **single line**. Multi-line `\` continuations get mangled on pas
 zsh (`--device` and the `.app` path split off into their own commands → `command not
 found: --device` / `permission denied: …Zwipe.app`).
 
-**Debug** — outputs to `target/dx/zwipe/debug/ios/`:
+**Debug**: outputs to `target/dx/zwipe/debug/ios/`:
 
 ```bash
 cd ~/Developer/zwipe/zwiper && BACKEND_URL=https://api.zwipe.net dx build --platform ios --device "scotland-mobile" && ios-deploy --bundle ~/Developer/zwipe/target/dx/zwipe/debug/ios/Zwipe.app
 ```
 
-**Release** — outputs to `target/dx/zwipe/release/ios/` (note `release/`, not `debug/`):
+**Release**: outputs to `target/dx/zwipe/release/ios/` (note `release/`, not `debug/`):
 
 ```bash
 cd ~/Developer/zwipe/zwiper && BACKEND_URL=https://api.zwipe.net dx build --release --platform ios --device "scotland-mobile" && ios-deploy --bundle ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app

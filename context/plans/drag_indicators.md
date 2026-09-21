@@ -2,14 +2,14 @@
 
 **Status: PARKED (2026-06). The live-drag cue works on branch
 `feat/qol-drag-indicators`; visual style undecided. Revive the branch if
-users complain — do not rebuild from scratch.** Feature request #1
+users complain; do not rebuild from scratch.** Feature request #1
 (Tenellum, Reddit launch thread); extracted from the retired QOL bundle
 (`../archive/qol_bundle.md`) when the rest of it shipped.
 
 ## Problem
 
 "I kept forgetting which way is which and had to undo." Today the only
-feedback is the post-swipe toast — nothing *while* dragging.
+feedback is the post-swipe toast, nothing *while* dragging.
 
 ## Approach
 
@@ -27,7 +27,7 @@ it's consistent: `--color-success` (right/add), `--color-error` (left/skip),
 
 ## Open question (why it's parked)
 
-Label style — big centered word vs. corner chip — is the unresolved call.
+Label style, big centered word vs. corner chip, is the unresolved call.
 The mechanics on the branch are done; this is purely a visual-taste decision.
 
 ## Files

@@ -20,7 +20,7 @@ copy-paste cleanly into the web form fields.
   install-only testers). We had real engagement, so say so.
 - **Don't overclaim.** Frame it as a broad tester base plus a core of engaged
   testers (hired QA + active community) who filed detailed reports.
-- Disclosing the paid testing provider is correct — Google's Q1 explicitly asks.
+- Disclosing the paid testing provider is correct, Google's Q1 explicitly asks.
 
 ---
 

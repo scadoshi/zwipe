@@ -1,12 +1,12 @@
-# Weekly badges — client (zwiper, 1.4.x batch)
+# Weekly badges: client (zwiper, 1.4.x batch)
 
 ## 1. API client
 
-`zwiper/src/lib/outbound/client/user/weekly_recap.rs` — `get_weekly_recap()`
+`zwiper/src/lib/outbound/client/user/weekly_recap.rs`: `get_weekly_recap()`
 returning `HttpWeeklyRecap`, mirroring the existing single-GET client
 modules.
 
-## 2. "Your week" recap — the Monday moment
+## 2. "Your week" recap: the Monday moment
 
 - **Trigger:** during session upkeep (`session_upkeep.rs`, where the
   funnel/min-version checks already run): fetch the recap; if
@@ -25,10 +25,10 @@ modules.
   zwipe.net). The card itself is designed to screenshot well (safe margins,
   no ephemeral chrome). Rendered-image generation is explicitly deferred.
 
-## 3. Badge history — profile screen
+## 3. Badge history: profile screen
 
 A "Your weeks" row in the profile screen (`profile/mod.rs` pattern) opening
-a simple list: one row per week from `recap.history` — week dates + badge
+a simple list: one row per week from `recap.history`: week dates + badge
 titles. Empty state: "Badges land every Monday. Go swipe." No pagination
 v1 (history is capped at 12 weeks server-side).
 

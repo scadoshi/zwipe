@@ -13,19 +13,19 @@
 Pushing to `main` triggers the deploy workflows (`Deploy zerver`, `Deploy zite`), and **a
 push to `main` auto-deploys prod.** Each workflow gates its `deploy` job on `test` + `lint`
 (`.github/workflows/deploy-zerver.yml`). A red check means the deploy is **silently skipped**
-— prod stays on the old build. Reproduce the gate locally first:
+Prod stays on the old build. Reproduce the gate locally first:
 
-### 1. Format with **nightly** — the one that bites
+### 1. Format with **nightly**: the one that bites
 CI runs `cargo +nightly fmt --check`, **nightly and workspace-wide**. `rustfmt.toml` enables
 `imports_granularity = "Crate"`, an *unstable* option, so **stable `cargo fmt` silently skips
-it** — your code passes locally but fails CI and the deploy is skipped. Because the check is
+it**: your code passes locally but fails CI and the deploy is skipped. Because the check is
 workspace-wide, *any* crate's bad formatting (even zite/zwiper) blocks the zerver deploy.
 
 ```bash
 cargo +nightly fmt        # NOT `cargo fmt` — stable can't apply the Crate imports rule
 ```
 
-### 2. Clippy — the exact CI command, warnings are errors
+### 2. Clippy: the exact CI command, warnings are errors
 ```bash
 cargo clippy --workspace --all-targets -- -D warnings
 ```
@@ -43,9 +43,9 @@ commit from the workspace root:
 ```bash
 cargo sqlx prepare --workspace            # commit the resulting .sqlx/ changes
 ```
-Runtime queries (`sqlx::query`, `QueryBuilder`) don't use `.sqlx` — no prepare needed.
+Runtime queries (`sqlx::query`, `QueryBuilder`) don't use `.sqlx`, so no prepare is needed.
 
 ### Deploy stage
 Once `test` + `lint` pass, `deploy` runs the migrations (`zerver/migrations`) against **prod**
 then builds + ships. So migrations must be additive/forward-only, and **you should confirm
-with the owner before pushing to `main`** — it deploys production.
+with the owner before pushing to `main`**: it deploys production.

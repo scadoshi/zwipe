@@ -136,7 +136,7 @@ method into scope. Two honest options:
 
 Doing the move without deciding copies the ceremony into the new crate.
 
-## Quick win that shouldn't wait for the crate — DONE 2026-09-21
+## Quick win that shouldn't wait for the crate: DONE 2026-09-21
 
 zite's four literals now go through `zwipe_core::http::paths`, joined
 `format!("{}{}", API_BASE, route())` like the rest of zite. The

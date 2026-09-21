@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Full-stack Rust application using hexagonal architecture. One language across all crates — shared types via `zwipe-core`, compile-time safety everywhere.
+Full-stack Rust application using hexagonal architecture. One language across all crates: shared types via `zwipe-core`, compile-time safety everywhere.
 
 Every section below describes the code as it stands (last verified against the tree 2026-09-21). The one exception is zort, which is a sketch and says so.
 
@@ -38,7 +38,7 @@ Every section below describes the code as it stands (last verified against the t
 
 ---
 
-## zwipe-core — Shared Domain
+## zwipe-core: Shared Domain
 
 Pure Rust library. No feature flags. No server-only dependencies. The single source of truth for all types shared across the ecosystem.
 
@@ -146,13 +146,13 @@ zwipe-core/src/
 
 ---
 
-## zerver — API Server
+## zerver: API Server
 
-Axum REST API with PostgreSQL. Hexagonal architecture — domain is the center, HTTP handlers and database repositories are adapters.
+Axum REST API with PostgreSQL. Hexagonal architecture: domain is the center, HTTP handlers and database repositories are adapters.
 
 **Binaries:**
-- `zerver` — HTTP API server (systemd service in production)
-- `zervice` — Run-once nightly job: Scryfall sync, card classification, materialized view refresh, session cleanup
+- `zerver`: HTTP API server (systemd service in production)
+- `zervice`: Run-once nightly job: Scryfall sync, card classification, materialized view refresh, session cleanup
 
 ```
 zerver/src/
@@ -245,9 +245,9 @@ lifetime counters, events) plus client error and crash reporting.
 
 ---
 
-## zwiper — Mobile App
+## zwiper: Mobile App
 
-Dioxus cross-platform app. Primary target: iOS. Same hexagonal structure — screens are inbound adapters, API client is the outbound adapter. UI building blocks and the theme CSS come from `zwipe-components`; the theme list lives in zwipe-core's preferences.
+Dioxus cross-platform app. Primary target: iOS. Same hexagonal structure: screens are inbound adapters, API client is the outbound adapter. UI building blocks and the theme CSS come from `zwipe-components`; the theme list lives in zwipe-core's preferences.
 
 ```
 zwiper/src/
@@ -320,7 +320,7 @@ zwiper/src/
 
 ---
 
-## zite — Website
+## zite: Website
 
 Dioxus site deployed to GitHub Pages at [zwipe.net](https://zwipe.net). Marketing pages, the auth flows that need a browser (verify, reset), and a handful of pages that read the public API: changelog, guides, and the shared-deck viewer. Statically hosted, not entirely static content.
 
@@ -349,7 +349,7 @@ zite/src/
 
 ---
 
-## zwipe-components — Shared UI
+## zwipe-components: Shared UI
 
 Dioxus component library both clients depend on; the owner's portfolio consumes parts of it too. Ships `themes.css` (31 themes, each with a dark and a light palette) and `components.css`. CSS load order matters: themes first, then components, then app styles.
 
@@ -357,7 +357,7 @@ The source is flat, one file per component: card_details.rs and card_row.rs (sha
 
 ---
 
-## zort — AI Classification Client (Hypothetical)
+## zort: AI Classification Client (Hypothetical)
 
 Nothing here exists. No `zort/` directory, no workspace member, no code. The sketch is kept because the shape is still the plan if card-role classification ever moves out of zervice.
 
@@ -370,7 +370,7 @@ zort/                       (future crate)
     └── main.rs             — Subcommands: classify, reclassify, delta, audit
 ```
 
-**Not embedded in zervice** — keeps deterministic sync separate from non-deterministic AI.
+**Not embedded in zervice**: keeps deterministic sync separate from non-deterministic AI.
 
 ---
 

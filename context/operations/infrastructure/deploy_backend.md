@@ -1,6 +1,6 @@
-# Deploy — zerver + zervice
+# Deploy: zerver + zervice
 
-Manual deploy process for the backend binaries. Use when CI/CD is unavailable or you need to deploy a specific change by hand. The server builds the binaries itself — no cross-compilation needed.
+Manual deploy process for the backend binaries. Use when CI/CD is unavailable or you need to deploy a specific change by hand. The server builds the binaries itself; no cross-compilation needed.
 
 ---
 
@@ -48,7 +48,7 @@ If `cargo` is not found: `source ~/.cargo/env`
 
 ### 4. Stop zerver
 
-Linux blocks overwriting a running executable — must stop before copying:
+Linux blocks overwriting a running executable, so stop before copying:
 
 ```bash
 sudo systemctl stop zerver
@@ -80,7 +80,7 @@ curl https://api.zwipe.net/
 
 ## Notes
 
-- `zervice` (the nightly Scryfall sync + session cleanup cron) does **not** need a restart — the
+- `zervice` (the nightly Scryfall sync + session cleanup cron) does **not** need a restart, the
   cron job calls the binary path directly, so the next scheduled run picks up the new binary
   automatically. zervice is a run-once binary that exits after completing its work.
 - To free disk space after deploying: `cd ~ && rm -rf ~/zwipe-src`

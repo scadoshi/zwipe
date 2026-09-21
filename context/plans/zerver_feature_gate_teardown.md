@@ -36,7 +36,7 @@ has one build configuration again.
   because ApiError couldn't move (orphan rule, correct call). A mechanism
   built to share a domain layer now serves one six-variant enum.
 
-## Phase 1: gate the `handlers` module (kills 335) — DONE 2026-09-21
+## Phase 1: gate the `handlers` module (kills 335): DONE 2026-09-21
 
 `inbound/http/mod.rs` already shows the pattern: `cache` and `middleware`
 carry one gate on the module declaration and zero inside.
@@ -49,7 +49,7 @@ carry one gate on the module declaration and zero inside.
 Behavior identical by construction: the subtree already compiled to nothing
 under `--no-default-features`.
 
-## Phase 2: repoint the route imports (kills ~20) — DONE 2026-09-21
+## Phase 2: repoint the route imports (kills ~20): DONE 2026-09-21
 
 (Landed with a wider slash fix than planned: nine path fns lacked the
 leading `/`, not three. All consumers were `Url::set_path` sites, so
@@ -68,7 +68,7 @@ Rider while touching paths.rs: three route fns are missing the leading slash
 server-side registrations. Optional second rider: static paths become
 `const &str` (only the Uuid-taking ones stay functions).
 
-## Phase 3: stop importing the server Password (kills 199) — DONE 2026-09-21
+## Phase 3: stop importing the server Password (kills 199): DONE 2026-09-21
 
 `register.rs:20` and `change_password.rs:19` import zerver's `Password` only
 to validate; `Password::new` delegates to
@@ -78,7 +78,7 @@ everything else in the type is Argon2 hashing a client must never touch.
 1. Call core's `validate` directly at both sites.
 2. Gate `pub mod domain;` and sweep.
 
-## Phase 4: flatten ApiError into ClientError (kills the flag itself) — DONE 2026-09-21
+## Phase 4: flatten ApiError into ClientError (kills the flag itself): DONE 2026-09-21
 
 Verified: zwiper never deserializes an ApiError. It constructs one locally
 from `(StatusCode, String)` (client/error.rs:68) and matches on variants,

@@ -1,4 +1,4 @@
-# Video 6 — Make it yours
+# Video 6: Make it yours
 
 **Theme:** Tag it, bracket it, know exactly what your deck is.
 **Priority:** P3.
@@ -22,7 +22,7 @@
 2. **Power-level picker** (brackets 1–5, single select).
 3. **Other-tags** multi-select chips.
 4. **Archetype → oracle-tag seed**: select an archetype, otag chips appear
-   (overlaps video #11 beat 5 — reuse the same take).
+   (overlaps video #11 beat 5; reuse the same take).
 5. **Theme picker**: 2-3 quick swaps (pick high-contrast themes: Gruvbox →
    Synthwave '84 → a light one), plus the deck list re-skinned.
 
