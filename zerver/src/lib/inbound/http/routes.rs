@@ -152,7 +152,6 @@ fn rate_limit_copy(wait_secs: u64) -> String {
     }
 }
 
-
 /// `Cache-Control: public, max-age=3600` for successful responses on the
 /// public read endpoints (card catalogs, marketing stats, changelog), so the
 /// CF edge (whose cache rules respect origin TTL) holds one copy per hour
