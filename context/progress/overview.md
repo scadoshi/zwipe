@@ -120,7 +120,7 @@ except one. The authoring project that had been running in batches since
   zone's art (commander, both partners, or oathbreaker + signature spell),
   inline in the wrapping row so chips wrap underneath the art. The whole list
   is one container of rows like the card list, and every mode renders as a
-  collapsible group — ungrouped is simply the "All" group, so the layout holds
+  collapsible group. Ungrouped is simply the "All" group, so the layout holds
   whether or not Group by is on. The skeleton is now built from the live
   classes (`card-group`, `card-group-header`, `collapsible`, `card-row`,
   `deck-list-row`) instead of lookalikes, so it can't drift from the real
@@ -132,14 +132,14 @@ except one. The authoring project that had been running in batches since
   safe both directions (serde(default) + no `deny_unknown_fields`), pinned by
   a test. Verified with 11 API tests against a local server, including a
   double-faced commander resolving to its front art.
-- **Command zone stays flat — decision recorded** (`decisions.md`): rejected a
+- **Command zone stays flat, decision recorded** (`decisions.md`): rejected a
   `CommandZone` sum type over legal slot combinations. Partner-plus-background
   isn't forbidden by the rules, it just hasn't been printed, and encoding that
   as an enum would bake printing history into the type system. The warnings
   system also needs to *hold* invalid states to report them.
 - **Card color grouping** (`c08de8ba`): grouping by color now splits each
   color combination into its own group (matching the deck list) instead of one
-  Multicolor bucket, and headers show mana pips instead of color words — on
+  Multicolor bucket, and headers show mana pips instead of color words. On
   the deck's cards, the deck list, and shared deck pages. Identity-pip sizing
   moved to the shared `components.css` so a pip is one size wherever it names
   a color. Deck-list header pips were also mis-sized against their own rows
@@ -161,14 +161,14 @@ except one. The authoring project that had been running in batches since
   dictionary, card roles from otag subtrees, three guides; `card_otags` was
   created *and* renamed to `card_oracle_tags` back in migration
   `20260712010000`). Its only open piece — Phase 6, serving on the matured
-  signal — was already a separate entry, so the HORIZON line was a duplicate.
+  signal, was already a separate entry, so the HORIZON line was a duplicate.
   Plan directory archived to `plans/archive/otags/`. Also closed: **synergy
   scores** (the Synergy chip) and **popularity data** (commanders serve in
   EDHREC-popularity order via `swipe_select.rs`). The three long-running
   verifications (Phase-5 canary, crash-reporting prod check, Android
   resume-crash) were reworded from "wait for 1.7.5" to actionable-now.
 - **Share page featured cards deal in** (`fbc047ee`): the app's
-  `.deck-featured-card` entrance ported to zwipe.net — same easing, tilt and
+  `.deck-featured-card` entrance ported to zwipe.net: same easing, tilt and
   150ms stagger, including the flex-grow ease so a late MVP grows in while its
   siblings cede width. The featured skeleton is gone (ghosting first would
   replace the entrance with a swap); the rest of the page's skeleton stays.
@@ -182,7 +182,7 @@ except one. The authoring project that had been running in batches since
   quietly reshipped the crash.
 - **Back-swipe overlay class fixed and verified on both platforms**
   (`10e564a4` pre-rewrite): back only closed an overlay if that overlay had
-  *registered* with `OverlayBackStack`, and registration was opt-in — so
+  *registered* with `OverlayBackStack`, and registration was opt-in, so
   anything that forgot the hook fell through to `go_back()` and threw the user
   out of the screen. Registering the shared `BottomSheet` fixed five screens at
   once (deck view, deck list, maybeboard, profile, preferences); `format_select`
@@ -217,7 +217,7 @@ except one. The authoring project that had been running in batches since
   resume crash. `MainActivity` had no `launchMode`, so it defaulted to
   `standard` and any *explicit* component start while an instance existed
   (notification tap, another app, an app shortcut, the Play Store's Open button
-  after an update) created a SECOND Activity in the live process — and because
+  after an update) created a SECOND Activity in the live process, and because
   the app is a `NativeActivity`, that re-ran wry/tao's native init and tripped
   `ndk_context`'s `assert!(previous.is_none())`. The 1.7.6 `onDestroy` process
   kill could never have helped: nothing is destroyed in that path. Fixed with
@@ -235,30 +235,30 @@ except one. The authoring project that had been running in batches since
   Still to do: confirm in the field for 7 days after 1.9.2 ships.
 - **Keyword reminder sweep**: every keyword on 4+ database cards now has a
   real definition (26 added for 2026-set/crossover/Arena mechanics — Blight,
-  Prepared, Vivid among them — each grounded in the cards' own reminder
+  Prepared, Vivid among them, each grounded in the cards' own reminder
   text); Start your engines!/Max speed explain how Speed actually rises
   (once per your turn when an opponent loses life); the unknown-keyword
   fallback is now honest about one-off named abilities; Behold matches the
   official Lorwyn Eclipsed template.
 - **Keyword reminders are now SERVED** (`GET /api/card/keyword-reminders`,
-  public card nest, hourly CF cache — the oracle-tag-catalog pattern):
+  public card nest, hourly CF cache, the oracle-tag-catalog pattern):
   future set sweeps land on deploy instead of an app train. The catalog_cache
   slot + a KeywordReminders context feed the shared chips; the compiled
   table stays the offline fallback. The endpoint test caught a real bug
-  (lowercase-keyed map vs capitalized card names — every lookup would have
+  (lowercase-keyed map vs capitalized card names, where every lookup would have
   silently missed). Live on prod: 884 entries verified.
 - **Maybeboard otag fix**: tapping a card-role tag on a commander entry now
   reveals its description + Examples (the screen was missing the
   OtagDescribe/OtagExamplesOpen contexts the row wrapper needs; the details
-  dialog path was never affected — it self-provides).
+  dialog path was never affected; it self-provides).
 - **1.9.1 CUT + SUBMITTED both stores 2026-08-14** (iOS build 75 / Android
-  vc37), superseding 1.9.0's still-in-review build 74 / vc36 — users update
+  vc37), superseding 1.9.0's still-in-review build 74 / vc36. Users update
   1.8.1 → 1.9.1, so the What's New combines both trains. Also rides: the
   unused-mut, deck-list padding, and deck-profile nested-gap riders.
 
 ## 2026-08-13 (commander maybeboard built end-to-end; 1.9.0 cut + submitted both stores; 1.8.1 released)
 
-- **1.8.1 went live on both stores** (fast review — submitted the night of
+- **1.8.1 went live on both stores** (fast review, submitted the night of
   08-12, live before the 08-13 evening 1.9.0 submission). What rode in it:
   - **Collapsible deck cards groups — BUILT 2026-08-12.** Every list section (group-by groups, Tokens, Lands, Maybeboard, Sideboard) gains a tappable header with the card-row disclosure arrow (down open, sideways collapsed); rows stay mounted and hide via CSS so expanded-card state survives. Command-zone single-row headers deliberately stay static. Ephemeral per visit. HR-in-groups fix rode the same day (deck list headers drop border-bottom via `.deck-group-header`).
   - **Deck list + deck cards skeletons — UPDATED 2026-08-12.** Both now mirror the live layouts: deck list gains Group by / Show chip-row ghosts; deck cards gains identity header + tag chips, three featured-card image ghosts, quick add bar, chip rows, and art thumbnails on every row ghost.
@@ -267,7 +267,7 @@ except one. The authoring project that had been running in batches since
   decisions locked at the proposals (More-sheet entry after a same-day
   revision off the action bar, entries persist after deck create, cap 50).
   Server half: `commander_maybeboard` migration + four endpoints
-  (add/remove/list/clear — idempotent, cap enforced under the user row lock,
+  (add/remove/list/clear; idempotent, cap enforced under the user row lock,
   GET hydrates newest-first via latest_cards). Client half grew through the
   owner's live review into a full commander hub: up-swipe saves from any
   commander Zwipe-select (down-swipe undo un-saves), the screen has card
@@ -302,14 +302,14 @@ Three days that closed the whole release train:
 - **1.7.5 released on both stores 2026-08-10** after ~5 days in review. Its
   feature set (quick add, deck identity header, undo, floating results, swipe
   feel pass, PATCH client half) is in `history.md` build 70 / vc32.
-- **1.7.6 cut from the work Mac the same day** (build 71 / vc33) — the
+- **1.7.6 cut from the work Mac the same day** (build 71 / vc33). The
   machine's first-ever release builds, followed by a full Android toolchain
   install (NDK 28.2, platforms 36/36.1) and, next day, the dev-to-phone loop
   (Apple Development cert NVSWB62C54 + Zwipe_Development profile). The repo
   moved `~/Work/zwipe` → `~/Developer/zwipe` so the runbooks read verbatim.
   The cut surfaced a real bug: **keyring 4's v1 wrapper has no iOS arm**
   (compile-error on the store crate's missing `protected` feature, runtime
-  error even past that) — fixed via `outbound/keyring_entry.rs` installing
+  error even past that), fixed via `outbound/keyring_entry.rs` installing
   the protected store into keyring-core on iOS; the generic-password item
   mapping was traced (and then device-proven) to keep 1.7.5 sessions alive
   across the upgrade. Android vc33 published same-day; iOS build 71 passed
@@ -323,7 +323,7 @@ Three days that closed the whole release train:
   First train under the new **any-feature-bumps-minor** convention
   (`development/versioning.md`); deck folders PARKED indefinitely in its
   favor. Quick add's skip fix came from the first real user bug report
-  (Collin, Android) — root-caused to the deck-aware search's suppression
+  (Collin, Android), root-caused to the deck-aware search's suppression
   filter, answered same-day, fixed next release.
 - **`MIN_CLIENT_VERSION=1.7.5` raised 2026-08-12** (owner set env +
   restarted zerver; verified serving uncached). With DAU at 6, the
@@ -336,13 +336,13 @@ Three days that closed the whole release train:
   the PR's audit gate caught it.
 - **First activity report read** (overview.sql, 2026-08-12): 957 lifetime
   users, MAU 161 / WAU 49, activation to deck-built 90% but completion only
-  15.3% (median deck 26 cards) — the finish-a-deck cliff is the top roadmap
+  15.3% (median deck 26 cards). The finish-a-deck cliff is the top roadmap
   signal. Fill basics was the obvious answer to it and the owner declined
   the build 2026-08-18 ([`../plans/archive/fill_basics.md`](../plans/archive/fill_basics.md)),
   so the cliff stands without a chosen fix.
 - **Evening Discord-todo batch (2026-08-12, rides 1.8.1 except the server
   fix):** the Arcane Signet search miss root-caused to `latest_cards`' dedup
-  ignoring language — a newer foreign printing (hoc Dwarvish spoilers, soa
+  ignoring language, so a newer foreign printing (hoc Dwarvish spoilers, soa
   Japanese reprints) shadowed the English one and the `language=en` default
   hid the card from search; 268 cards affected, fixed by migration
   `20260812210000` (English preference in the dedup + deck-reference remap,
@@ -357,7 +357,7 @@ Three days that closed the whole release train:
   the closed-vs-open-vocabulary skeleton rule (static chrome renders real
   from the first frame; all five color pips always). **1.8.1 CUT + SUBMITTED
   both stores same night** (iOS build 73 / Android vc35), superseding
-  1.8.0's still-in-review build 72 / vc34 — users update 1.7.6 → 1.8.1
+  1.8.0's still-in-review build 72 / vc34. Users update 1.7.6 → 1.8.1
   directly, so the store What's New combines both trains' notes.
 
 ## 2026-08-06 (zwipe.net home compressed into bands; the Flopsie caching saga; hourly origin TTLs)
@@ -396,7 +396,7 @@ Three days that closed the whole release train:
   live for incremental batches as Scryfall's tagger grows.
 - **Maintenance sweep, same day**: `oracle_tag_gaps` reminder-text audit found
   187 misroled cards across all four heuristic rules (split second read as
-  Stax, delve/embalm as GraveyardHate) — fixed by stripping parenthesized text
+  Stax, delve/embalm as GraveyardHate), fixed by stripping parenthesized text
   before matching (`616b9b20`). keyring 3→4 migrated (`b04f951f`) with
   Keychain continuity proven by a dual-linked v3-write/v4-read bridge test.
   Zervice dead-man's switch fully armed (`aa831cf8` + healthchecks.io check,
@@ -420,14 +420,14 @@ Three days that closed the whole release train:
   (plan `plans/patch_idempotent_updates.md`): PATCH beside every PUT
   (`a79aa989`), idempotent absolute-quantity deck-card body, and the clean
   Opdate wire form (absent/null/bare-value) with dual-accept legacy decode
-  (`b582f9ce`) — verified live from the dev client (rename, land-target set +
+  (`b582f9ce`), verified live from the dev client (rename, land-target set +
   clear). Client half (`a3aed2fe`) rides 1.7.5. After full rollout: raise
   `MIN_CLIENT_VERSION=1.7.5`, quiet days, then the Phase 5 cleanup (PUT +
   delta types + legacy dialect all die; explicit null on non-clearable fields
   → 422, owner-decided).
 - **Nightly double-run excised (2026-08-05, postmortem `1a3db3a6`)**: a
   crontab entry the 2026-07-29 timer migration claimed to remove was still
-  firing — zervice ran TWICE nightly (cron 04:00:01, timer 04:00:4x) until the
+  firing. zervice ran TWICE nightly (cron 04:00:01, timer 04:00:4x) until the
   two instances' bulk `card_profiles` UPDATEs deadlocked (40P01) on 08-04 and
   tripped the alert. Postgres's deadlock DETAIL + a banner-count grep on the
   shared daily log cracked it; cron line deleted, timer confirmed sole owner.
@@ -438,14 +438,14 @@ Three days that closed the whole release train:
   imported). Both Macs can now cut releases; build-number coordination via the
   history files.
 - **First real crash-reporter catch**: the Android ndk-context resume crash
-  (10 rows, one panic site, one user's app dying on every resume) — triaged in
+  (10 rows, one panic site, one user's app dying on every resume), triaged in
   todo's Bugs, fix targeted at 1.7.6. Queued plans from the arc:
   `plans/global_undo.md` (owner building next), `plans/flavor_rotation.md`,
   `plans/search_bar_clear_buttons.md`.
-- **Review-window fixes (2026-08-05, server/site-side — live on next push)**:
+- **Review-window fixes (2026-08-05, server/site-side, live on next push)**:
   every rate limiter now serves a stable bucketed 429 body with the exact wait
   in `Retry-After` (the live countdown was minting a `client_errors` row per
-  second — field-confirmed; fixes dedupe for already-shipped clients), and the
+  second, field-confirmed; fixes dedupe for already-shipped clients), and the
   zite favicons regenerated on solid `#282828` for the Google SERP icon.
 - **Android resume-crash fix built (2026-08-05, rides 1.7.6 pending on-device
   verify)**: `MainActivity.onDestroy` now kills the process (back_handler.sh
@@ -459,14 +459,14 @@ Three days that closed the whole release train:
 - **Featured flavor BUILT + locally verified (2026-08-05)**: one shared
   flavor card per UTC hour (12-month pool, deterministic pick), served from
   the new **`TtlSlot` serving-cache primitive** (one typed deadline-pinned
-  slot per cached value on AppState — pattern + determinism rule recorded in
+  slot per cached value on AppState; pattern and determinism rule recorded in
   `architecture/decisions.md`). App home renamed "Featured flavor" (rides
   1.7.6); zwipe.net home surfaces the same card, live on next push. The
   contribute page also went live on the shared Panel cards same day.
 
 ## 2026-07-30 (1.7.4 SUBMITTED both stores: error/crash reporting live end to end)
 
-- **1.7.4 submitted 2026-07-30** (iOS build 69, Android vc31 — histories have the
+- **1.7.4 submitted 2026-07-30** (iOS build 69, Android vc31; histories have the
   detail): client error + crash reporting field-verified on a real device before
   submission (422s landed with breadcrumbs + dedupe; a temp panic delivered in 7s
   with file:line, exactly-once across relaunches), the iOS photo-save crash fixed
@@ -476,7 +476,7 @@ Three days that closed the whole release train:
 - **EnvFilter logging bug found live + fixed (2026-07-30, `4b42bf7a`)**: both
   bins attached a separate `EnvFilter` per fmt layer; with per-target directives
   (`info,sqlx=warn,zwipe=debug,...`) tracing silently DROPPED a varying subset of
-  events — ERRORs included — in every sink. One global filter now. The fix
+  events, ERRORs included, in every sink. One global filter now. The fix
   immediately surfaced long-swallowed warnings (orphaned otag-description slugs,
   parked in todo).
 - **Remaining for this arc** (todo has the ordered list): approval-time checks
@@ -490,13 +490,13 @@ Three days that closed the whole release train:
   `archive/zervice_least_privilege.md`): session prune moved into zerver's
   insert path (`prune_users_refresh_tokens`: expired + cap in one statement,
   new integration test), zervice is CardService-only on a minimal
-  `ZerviceConfig` (no dotenvy — it must not slurp the secret `.env`) fed by
+  `ZerviceConfig` (no dotenvy, since it must not slurp the secret `.env`) fed by
   `.env.zervice`, and a scoped `zervice` Postgres role owns the 3 matviews +
   writes only the card catalog (`zcripts/server/sql/zervice_role.sql`).
   Verified live: boundary checks (user tables DENIED) + full sync green as
   the role. Zerver deliberately stays on the `zwipe` owner role (split idea
   → backlog). **Bonus fix** (`0d0e44a8`): bulk card upsert's RETURNING was
-  missing the 2026-07-12 otag columns — every nightly sync since had silently
+  missing the 2026-07-12 otag columns, so every nightly sync since had silently
   degraded to 116k card-by-card inserts; batching restored (card sync now
   ~9s, full run ~47s). Alert emails also de-ANSI'd (`c83891ae`).
 - **Scryfall bulk API break FIXED** (`f6217ac4`): Scryfall retired `download_uri`
@@ -504,7 +504,7 @@ Three days that closed the whole release train:
   sync steps had failed **silently for 2 days** under cron. New line-parsed
   ingest (flate2, shared `amass_jsonl` helper, unit-tested) also kills the old
   whole-array memory spike. E2E-proven locally: full run "all 5 steps ok",
-  116k cards. Unpushed at entry time — deploy heals prod's stale card data.
+  116k cards. Unpushed at entry time; deploy heals prod's stale card data.
 - **zervice moved cron → systemd timer** (`a69359af`, units versioned in
   `zcripts/server/systemd/`, installed on prod): 04:00 UTC + jitter,
   `Persistent=true`, plus **`OnFailure=` Resend email alerting** to support@
@@ -532,7 +532,7 @@ Three days that closed the whole release train:
   only), and zwiper's internal commander resolution deleted (buffer keys on
   `(card, deck)`; remove-screen even loses a per-load `get_card` fetch). Verified
   safe for live 1.7.x clients: they already send `deck_id` + `commander_oracle_id:
-  null`, which serde ignores as an unknown field — regression-tested by new unit +
+  null`, which serde ignores as an unknown field, regression-tested by new unit and
   integration tests (legacy payload → 204, lands nothing). Server half deploys on
   push; client half rides the next build. Not changelogged (internal cleanup).
 
@@ -612,7 +612,7 @@ Three days that closed the whole release train:
   tokens a deck's cards make (`HttpSharedDeck.tokens`); zite's shared-deck page shows
   them behind a Tokens toggle, and its lands moved into a dedicated section too.
 - **Dialogs.** Tap outside any dialog to dismiss it (backdrop-tap, cancel-only, safe even
-  for destructive confirms — one handler on the shared `AlertDialogRoot`). The filter
+  for destructive confirms, one handler on the shared `AlertDialogRoot`). The filter
   sheet gained a **Cancel** button (close without applying). Hint-dialog box-model
   overhaul: body flush to the rule, symmetric edge fade, top/bottom scroll buffer,
   open-at-top.
@@ -623,7 +623,7 @@ Three days that closed the whole release train:
   obvious UI.
 - **Content + fixes.** The **Avatar bending keyword reminders** (Firebending / Waterbend
   / Airbend / Earthbend) were rewritten to describe the real mechanics (verified against
-  WOTC + the live Scryfall keyword catalogs) — they were circular *and* wrong. Deck
+  WOTC + the live Scryfall keyword catalogs). They were circular *and* wrong. Deck
   Tags-section chip/label **clipping** fixed (`.info-row-stacked`; the first attempt was
   silently overridden by source order, fixed with a specificity bump). Home flavor
   buy-row inset so the card-name pill doesn't touch the card border.
@@ -636,7 +636,7 @@ and a dictionary link in the card filter; card-details restyle that opens at the
 back-aware overlays (OS back closes the top overlay first); hidden scrollbars + soft fade
 edges. No server or migration changes.
 
-## 2026-07-16 — todo flush (completed items pulled off the worklist)
+## 2026-07-16: todo flush (completed items pulled off the worklist)
 
 Outcomes trimmed out of `todo.md` (detail lives in git). Shipped/closed:
 
@@ -689,18 +689,18 @@ server-served changelog, non-commander metric capture / Phase 5.)
 - **Phase 5S dual-accept (steps 1+2).** The swipe signal is now **`deck_id`-driven**:
   the server resolves each deck's commander (EDH) or `(format, color-identity)` (non-EDH)
   from `deck_id`, keying `commander_card_signal` / `user_card_signal` / `otag_context_signal`
-  off the deck-derived commander — with a legacy `commander_oracle_id` fallback so live
+  off the deck-derived commander, with a legacy `commander_oracle_id` fallback so live
   1.6.0 clients still land signal (also spoof-proofs the commander tables, ownership-scoped).
   The 1.7.0 client pushes `deck_id` only. **Slice B was already live in 1.6.0**, so non-EDH
   has been collecting since then. Step 3 (drop the legacy wire + fallback) waits on a 1.7.0
   floor. Details: [`../plans/archive/otags/sequencing.md`](../plans/archive/otags/sequencing.md) Phase 5S.
 - **Per-deck card cap raised to 500, counting all boards** (`e0abdb5d`). Was 250
-  mainboard-only (leaving maybe/side uncapped — an abuse gap); now `count_cards_in_deck`
+  mainboard-only (leaving maybe/side uncapped, an abuse gap); now `count_cards_in_deck`
   sums every board against a 500 cap (unverified still 100), with clearer "all boards
   count" error copy. Ships with the server push (looser cap + clearer message reach all
   live clients immediately); answers a Discord request. Existing-client-safe, no wire change.
 - **Per-session client version** recorded on the refresh-token row (additive,
-  `Option`+`#[serde(default)]`) — lets the server see each client's app version.
+  `Option`+`#[serde(default)]`), which lets the server see each client's app version.
 - **Pre-1.6.0 wire-break resolved (2026-07-13 eve).** Old clients strict-parsed the new
   role slugs and showed "connection error" on card/deck screens; fixed by flooring
   `MIN_CLIENT_VERSION=1.6.0` (env-only) so they get "Update required" instead. All live
@@ -710,7 +710,7 @@ server-served changelog, non-commander metric capture / Phase 5.)
 built + signed per the runbooks, live in ~1 day). Discord announcement posted. **Next:**
 once live + adopted, floor `MIN_CLIENT_VERSION` to 1.7.0 → unlocks Phase 5S step-3 cleanup
 (drop the legacy commander wire + fallback). Then **Phase 6** (serving on the matured otag
-signal) — data-gated, months out. Description authoring continues into the low-population
+signal), data-gated, months out. Description authoring continues into the low-population
 tail (runbook).
 
 ---
@@ -733,7 +733,7 @@ tail (runbook).
 - **Oracle-tag description pipeline (F Part 1) shipped.** `zervice` now overlays
   our authored `ORACLE_TAG_DESCRIPTIONS` const into `oracle_tags.description`
   **inside the sync transaction** (ours always wins over Scryfall's, survives the
-  daily nuke+reinsert) — differs from the original serve-merge plan; details in
+  daily nuke+reinsert), which differs from the original serve-merge plan; details in
   [`../plans/archive/otags/tag_descriptions_and_dictionary.md`](../plans/archive/otags/tag_descriptions_and_dictionary.md).
 - **Oracle-tag descriptions: 1,100 authored (was ~29% Scryfall, 1,302/4,494).**
   Bulk-authored highest-card-population first via a repeatable draft → oracle-text-verify
@@ -749,7 +749,7 @@ tail (runbook).
   fight), and the Export screen shows a skeleton instead of a spinner while the
   deck loads.
 - **zite:** fixed the announcement banners overlapping the open hamburger menu on
-  mobile — the slide-out-of-the-way behavior moved into shared `zwipe-components`
+  mobile; the slide-out-of-the-way behavior moved into shared `zwipe-components`
   (both `NavBar` and `Banner` are crate-owned), and the portfolio site's duplicate
   copy was dropped.
 - Planned next: **in-app oracle-tag dictionary page** (renders the 1,100+ authored
@@ -791,14 +791,14 @@ tail (runbook).
   entries resolved. Runs on demand (`-- --ignored`), never in CI.
 - **CI lint gate** (`test.yml` + both deploy workflows): a `lint` job runs
   `cargo +nightly fmt --check` + `cargo clippy … -D warnings`; deploys now
-  `needs: [test, lint]`. Proven live — it caught a real `useless_borrows_in_formatting`
+  `needs: [test, lint]`. Proven live: it caught a real `useless_borrows_in_formatting`
   (a newer CI clippy than local) and blocked the deploy until fixed. Also cleaned
   workspace-wide fmt drift (nightly, `imports_granularity = "Crate"`). See
   [`../operations/infrastructure/cicd.md`](../operations/infrastructure/cicd.md).
 - **Security automation** (`audit.yml`): weekly `cargo audit` against the RustSec DB
   (+ on lockfile change), fails → emails on vulnerabilities. Surfaced and fixed two:
   `crossbeam-epoch` 0.9.18→0.9.20 and `quinn-proto` 0.11.14→0.11.16 (high-sev QUIC
-  DoS). `RUSTSEC-2023-0071` (rsa) documented-ignored — we sign JWTs with HMAC, never
+  DoS). `RUSTSEC-2023-0071` (rsa) documented-ignored, since we sign JWTs with HMAC, never
   RSA (unexercised path via jsonwebtoken + sqlx's unbuilt mysql driver).
 
 ---
@@ -822,7 +822,7 @@ tail (runbook).
   **CI now gates deploys** — a `test` job in each deploy workflow (`needs:`), `Test`
   on PRs; GitHub Actions bumped to Node-24. Server-side security fix along the way:
   another user's deck now returns **404, not 403** (no existence leak). (Completed
-  2026-07-10 — see above.)
+  2026-07-10; see above.)
 
 ---
 
@@ -925,7 +925,7 @@ Prod migrated off the home box to a **Hetzner CPX31 VPS** on 2026-06-13 (see ent
 
 Zwipe is live on the App Store as **Zwipe TCG**: https://apps.apple.com/us/app/zwipe-tcg/id6761341603
 
-Build 15 cleared review after a metadata scrub for Guideline 4.1(a) Copycats — renamed from "Zwipe MTG" to "Zwipe TCG" and stripped MTG/Magic/Commander/EDH/Planeswalker/Scryfall references from the listing copy. In-app behavior unchanged.
+Build 15 cleared review after a metadata scrub for Guideline 4.1(a) Copycats: renamed from "Zwipe MTG" to "Zwipe TCG" and stripped MTG/Magic/Commander/EDH/Planeswalker/Scryfall references from the listing copy. In-app behavior unchanged.
 
 Build 15 shipped over build 14 with: `Email` strict newtype across the workspace (server rejects malformed addresses at construction, matching Resend's accepted shape), fix for resend-verification reading stale email from the JWT instead of the DB profile, and email templates restyled to JetBrains Mono + sentence case.
 
@@ -938,7 +938,7 @@ A full shared-components arc in one day, driven by the portfolio site
 
 - **The crate grew from 3 components to 10**: `OracleText`, `KeywordChips`,
   `CardRow` (one row for the app's deck-cards screen and zite's shared-deck
-  page — every action an `Option` callback, hover hooks for zite's desktop
+  page, with every action an `Option` callback, hover hooks for zite's desktop
   preview; both hosts are thin wrappers, zero call-site churn), `ThemePicker`,
   `NavDropdown` (extracted from the picker, which now consumes it),
   `NavBar` (slotted shell: brand/persistent/links/trailing), and `PageMeta`
@@ -946,7 +946,7 @@ A full shared-components arc in one day, driven by the portfolio site
   dir is gone) and exports `COMPONENTS_CSS`/`THEMES_CSS` consts for
   consumers outside the workspace.
 - **Portfolio consumes via GitHub git dependency** (~760 duplicated lines
-  deleted on their side; crates.io considered and declined — rulings +
+  deleted on their side; crates.io considered and declined; rulings and
   round-2 selector fixes in
   [`../plans/archive/components_portfolio_adoption.md`](../plans/archive/components_portfolio_adoption.md)).
 - **Shared site constants**: `zwipe_core::domain::site` (`WEB_BASE`/`API_BASE`
@@ -966,7 +966,7 @@ CI note: `deploy-zite` now watches `zwipe-components/` (replaced the removed
 
 ---
 
-## 1.4.0 — the feature batch (LIVE on the App Store 2026-07-08; iOS build 61 / Android vc22)
+## 1.4.0, the feature batch (LIVE on the App Store 2026-07-08; iOS build 61 / Android vc22)
 
 The pending client batch left main in one build: **Zwipe-select popularity
 ordering** (client leg of the commander pipeline), **commander-select signal
@@ -974,7 +974,7 @@ ingest**, **partner autofill** (+ edit-load race fix), **Deck MVPs phase 1**
 (star up to three cards), **deck share links** (More sheet → public
 `zwipe.net/deck/{token}` page). Workspace version bumped 1.3.2 → 1.4.0.
 Artifacts: `Zwipe.ipa` (build 61, via Transporter) and `zwipe-1.4.0-vc22.aab`
-(signed, R8/edge-to-edge smoke-tested on Pixel_9a — first smoke test in
+(signed, R8/edge-to-edge smoke-tested on Pixel_9a, the first smoke test in
 several releases). Server halves (three additive migrations) deployed to prod
 first, verified against live 1.3.x clients. Store copy in the two
 `form_fields.md` files. Cleared Apple review and distributed 2026-07-08.
@@ -984,13 +984,13 @@ first, verified against live 1.3.x clients. Store copy in the two
 ## Wildcard slot + commander popularity pipeline (server-only, LIVE 2026-07-07)
 
 Two serve-path features shipped and deployed the day after the band shuffle,
-completing the "fresh serving" arc. Server-only — live for all users now,
+completing the "fresh serving" arc. Server-only, live for all users now,
 except the Zwipe-select client leg which is on main and rides the next store
 build.
 
 - **Wildcard slot** (`fa988aff`): every 25-card hand the default 99-serve
   deals reserves one slot for a card from beyond the reachable horizon
-  (rank > 500, the client stack cap) — least-shown first, walking deeper
+  (rank > 500, the client stack cap): least-shown first, walking deeper
   each page, suppressions/filters respected, spliced to position 17. The
   deep pool was structurally unmeasurable before this (rank 501+ could never
   accrue an impression); users experience it as a spicy off-list card per
@@ -999,7 +999,7 @@ build.
   that the plan's offset math would have skipped one ranked card per page —
   both fixed (as-built notes in [`../archive/wildcard-slot/server.md`](../archive/wildcard-slot/server.md)).
 - **Commander popularity pipeline** (`e970e37b` + zynergy `1.1.0`): measured
-  that `edhrec_rank` is the wrong base for commander select — it ranks decks
+  that `edhrec_rank` is the wrong base for commander select, since it ranks decks
   *containing* a card, so 99-staples (Ragavan, Toski) topped the pool while
   The Ur-Dragon sat behind 281 legends. New `commander_popularity` table
   (decks-*helmed* per commander; worker sweeps weekly, 3,325 commanders live
@@ -1015,15 +1015,15 @@ build.
   fast-follow: [`../archive/commander_select_signal.md`](../archive/commander_select_signal.md).
 - **Partner autofill + edit-load fix** (`fba563e6`, client, rides the next
   build): picking a "Partner with [Name]" commander auto-fills its named mate
-  with a toast — exactly one legal pairing exists, so swiping for it made no
+  with a toast, since exactly one legal pairing exists, so swiping for it made no
   sense (52 of 56 such cards resolve; the joke/choose-any ones correctly fall
   through to manual). Also fixed a pre-existing edit-screen race: the
   commander-change clear effect could wipe a saved partner on entry when the
   partner's load resolved before the commander's (phantom "Save changes" on
-  every open of a partner deck) — the clear now fires only on genuine
+  every open of a partner deck). The clear now fires only on genuine
   commander transitions.
 - **Deck MVPs phase 1** (`e0244c9c`, client + server): each deck gets a
-  3-slot MVP podium — star the cards that define the deck. `deck_cards.mvp_at`
+  3-slot MVP podium: star the cards that define the deck. `deck_cards.mvp_at`
   is the vesting clock (signal counts a star after 3 days, phase 2); cap and
   mainboard rule enforced in the update tx ("This deck already has 3 MVPs"
   toasts verbatim); re-star keeps the original clock; board moves off
@@ -1035,7 +1035,7 @@ build.
 
 ---
 
-## 1.3.2 — adaptive serve ordering: signal + band shuffle (server-only, LIVE 2026-07-06)
+## 1.3.2: adaptive serve ordering: signal + band shuffle (server-only, LIVE 2026-07-06)
 
 The most consequential read-path change since synergy shipped: **what card the
 swipe stack serves next is now shaped by Zwipe's own users**, not just the
@@ -1048,9 +1048,9 @@ served "consistently in the same pattern and sequence" every session).
   order and position *within* a band is purely a (card, deck, day) hash. A
   different opening hand per deck per day; the same deck stays stable within
   a day (parked stacks and undo unaffected); a band-2 card can never lead
-  band 1. The signal term re-ranks by revealed user taste — net-rate =
+  band 1. The signal term re-ranks by revealed user taste; net-rate =
   `(added + 0.5·maybed − removed) / shown`, so skips drag as denominator,
-  maybes count half, removals take credit back — and reads as band
+  maybes count half, removals take credit back, and reads as band
   *migration*: a crowd favorite breaks into the opening hand.
   `BAND_SIZE = 1` + `W_SIGNAL = 0` reverts to pure score order.
 - **The lesson that shaped it**: v1 used score-jitter (`W_JITTER` 0.01 → 0.04
@@ -1075,7 +1075,7 @@ runner lacks glib; see `operations/infrastructure/cicd.md`).
 
 ---
 
-## 1.3.1 — anonymous funnel metrics, service type-erasure (submitted 2026-07-06, in review)
+## 1.3.1: anonymous funnel metrics, service type-erasure (submitted 2026-07-06, in review)
 
 First instrumentation of the **pre-registration funnel** — the question it
 answers: where do people drop between installing and registering?
@@ -1102,7 +1102,7 @@ low-key ("anonymous, PII-free app health signals").
 
 ---
 
-## 1.3.0 — per-swipe skips, per-deck stack memory, CardStack refactor (submitted 2026-07-02)
+## 1.3.0: per-swipe skips, per-deck stack memory, CardStack refactor (submitted 2026-07-02)
 
 **Supersedes 1.2.3, which was withdrawn from both stores before review started**
 — its release notes folded into 1.3.0 (`db474650`). Server (skip/unskip
@@ -1124,7 +1124,7 @@ the filter sheet collapses on close).
   on park), so every deck resumes exactly where its swiping left off.
 - **CardStack refactor (`e27b5063`, `2576b2f0`).** All three swipe stacks
   (search, maybeboard, remove) run through one generic `CardStack<A>` with
-  per-stack action models (`AddAction` field-less — undo reads the card back
+  per-stack action models (`AddAction` field-less, so undo reads the card back
   from the stack; `MaybeboardAction`/`RemoveAction` carry the card their
   commit removes). Fixed the wrong-card undo at end of stack, stale maybeboard
   entries after up-swipe adds, and the stuck empty end-of-stack state (now a
@@ -1136,7 +1136,7 @@ the filter sheet collapses on close).
 
 ---
 
-## 1.2.3 — swipe memory, CardFilter split, deck-list alphabetical default (submitted 2026-07-02, withdrawn pre-review; shipped inside 1.3.0)
+## 1.2.3: swipe memory, CardFilter split, deck-list alphabetical default (submitted 2026-07-02, withdrawn pre-review; shipped inside 1.3.0)
 
 **Server + zite deployed to prod 2026-07-02** (push `1680dbb2`; the zite Pages
 deploy needed one re-run after a transient "Deployment failed, try again later"
@@ -1160,14 +1160,14 @@ copy + displayed description strings).
   `NOT EXISTS` — suppressed cards stop being served the moment the flush lands.
   Skips ride `HttpUsageBatch.deck_skips` (`DeckSkipDelta`, `#[serde(default)]`,
   old clients unaffected); removals are recorded **server-side** in
-  `delete_deck_card` (single-card path only — bulk import deletes don't
+  `delete_deck_card` (single-card path only; bulk import deletes don't
   suppress), and re-adding a card cancels its suppression. Escape hatch:
   `DELETE /api/deck/{id}/suppressions` behind a **"Clear skips"** button in the
   deck view's More sheet (rare action, kept out of the swipe flow). Same
   ingest also starts the per-user analytics
   substrate — **`user_card_signal`** (user × commander × card counters),
   **`user_week_signal`** + **`user_week_facet_signal`** (ISO-week scalars and
-  category/color facets for future weekly badges) — all FK-cascaded on account
+  category/color facets for future weekly badges), all FK-cascaded on account
   deletion, filling from existing 1.2.0+ clients as soon as the server deploys.
   Client half (skip buffering with pre/post-flush undo, flush-before-refresh,
   the Clear button) rides the next app release. Verified end-to-end locally:
@@ -1183,16 +1183,16 @@ copy + displayed description strings).
   `OrderByOption` → **`CardSortKey`** with the shared comparator; builder →
   `CardQueryBuilder` with `build()`/`build_criteria()`; error →
   `InvalidCardCriteria`. **Wire JSON unchanged** (`#[serde(flatten)]`,
-  round-trip tested both directions) — no min-version gate; old clients keep
+  round-trip tested both directions); no min-version gate; old clients keep
   working. The three client `set_limit(10_000)` sentinels are gone; zerver keeps
   `MAX_SEARCH_LIMIT` as defense-in-depth. 510 workspace tests green.
 - **Deck cards screen sorts alphabetically by default** (name ascending) when no
-  sort is chosen — main list, tokens, maybeboard, sideboard. A chosen sort still
+  sort is chosen: main list, tokens, maybeboard, sideboard. A chosen sort still
   overrides; add/swipe screens keep the server's synergy/EDHREC default order.
 
 ---
 
-## 1.2.1 — card rules dialog + launch-flash fix (shipped 2026-07-01)
+## 1.2.1: card rules dialog + launch-flash fix (shipped 2026-07-01)
 
 Client-only (`zwiper`); no server changes. **Android versionCode 16** published to
 the Alpha closed-testing track 2026-07-01. **iOS build 55** built + uploaded to App
@@ -1209,13 +1209,13 @@ is live). CFBundleShortVersionString 1.2.1 / CFBundleVersion 55.
   the default theme color and hides `#main` until the real stylesheet applies, so
   the app no longer flashes white/unstyled HTML on cold start.
 - **Docs.** feature_requests reconciled (#5/#8/#10/#14/#15/#17/#19/#21 shipped or
-  closed, #13 "typal" dropped — sticking with tribal).
+  closed, #13 "typal" dropped; sticking with tribal).
 
 ---
 
-## 1.2.0 — deck analytics, tagging, synergy toggle + PDH/perf fixes (shipped 2026-06-30)
+## 1.2.0: deck analytics, tagging, synergy toggle + PDH/perf fixes (shipped 2026-06-30)
 
-Shipped as **1.2.0 — iOS build 54 / Android versionCode 15** (first minor bump
+Shipped as **1.2.0, iOS build 54 / Android versionCode 15** (first minor bump
 since 1.1.0), both stores, 2026-06-30. Server batch deployed to prod first (the
 additive migrations), then the clients. Predecessor **1.1.4 shipped as iOS build
 53 / Android versionCode 14** — a rebuild over 52/vc12 carrying two fixes: the
@@ -1238,7 +1238,7 @@ synergy_pool_client_sort, privacy_policy, pauper_commander_fix.
 
 **Search — Synergy ON/OFF (server-first):**
 - A `synergy` flag on `CardFilter` makes the deck-aware search **constrain results
-  to the commander's synergy pool** (membership), then sort within it — so sorting
+  to the commander's synergy pool** (membership), then sort within it, so sorting
   by price = "cheapest cards that work" instead of replacing the synergy set. A
   toggle chip on add-cards (default on with a commander); cold cache falls back to
   the full pool, signalled via an `x-synergy-applied` header that drives a subtle
@@ -1278,7 +1278,7 @@ store build cut yet for this batch.
 ## Deck-building tooling, budget tools + suggestion signal (2026-06-29, on `main` — next version)
 
 A large batch (24 commits) of deck-building tooling, budget tools, the
-first-party suggestion signal, and UI polish — all on local `main`, **staged for
+first-party suggestion signal, and UI polish, all on local `main`, **staged for
 the next version build, not yet deployed or in a store build**. Server slices
 deploy first (project rule); three additive nullable migrations are involved
 (`land_target`, `price_target` + `price_target_currency`, and the new
@@ -1297,12 +1297,12 @@ deploy first (project rule); three additive nullable migrations are involved
   Toasts on crossing a higher 50/75/100% band (exact %, re-fires on re-cross);
   over-budget warning; shown in Profile.
 
-**Telemetry — suggestion signal (Phases 1+2):**
-- **`commander_card_signal`** aggregate — added/skipped/maybed/**removed** per
+**Telemetry, suggestion signal (Phases 1+2):**
+- **`commander_card_signal`** aggregate: added/skipped/maybed/**removed** per
   `(commander, card)`, no user_id / no PII. The previously-discarded per-card
   accept/skip signal is now captured. Client buffers it in `UsageBuffer` and
   flushes with the usage batch on a 30s timer **and on app-background**
-  (`visibilitychange`/`pagehide` — so a swipe-to-close no longer loses the last
+  (`visibilitychange`/`pagehide`, so a swipe-to-close no longer loses the last
   window; covers the whole telemetry buffer). Verified collecting end-to-end
   against the local app. Plan: `../plans/archive/suggestion_signal.md` — **Phase 3
   (ranking) remains** (a later server-only read-path change).
@@ -1324,19 +1324,19 @@ deploy first (project rule); three additive nullable migrations are involved
 
 ---
 
-## 1.1.3 — media-day release: card names, deck-form overhaul, in-app privacy (both stores, 2026-06-28)
+## 1.1.3: media-day release: card names, deck-form overhaul, in-app privacy (both stores, 2026-06-28)
 
-Shipped on **media day** — a Reddit launch post (r/mtg, ~45K views) drove **38 → 772 users in ~24h** (665 registrations that day, 738 active; the core swipe loop held clean at ~20x load). **iOS build 51** (Apple review) + **Android versionCode 11** (Play closed-testing track), both version 1.1.3, submitted 2026-06-28. Backward-compatible / server-additive throughout (audited: no `http/contracts` or schema changes). Much of it straight from launch feedback: **card names now show while swiping** so alt-art / non-English printings are identifiable (`card_info.rs`); a **deck-form overhaul** — empty fields read "Not set", tapping a field opens the format/tags picker (the separate Edit buttons are gone), Format reads as a plain input instead of a chip, and the **deck name validates inline** (error under the field, mirroring the auth/profile pattern) rather than as a save-time toast; an **expanded deck-tag set with plain-language definitions** plus **format and power-level pickers**; an **in-app Privacy Policy** reached from Profile, rendered from a single shared `zwipe-core` HTML const so app + web (`zite`) never drift (`mailto` opens via `open_url`, https via the webview); and **under-field validation with red outlines** across sign-in / sign-up / profile forms. Server-side: the auth flows **stopped policy-gating the *current* password** on login + username/email changes — a relaxation so passwords created under older policies aren't wrongly rejected; the stored-hash check is unchanged. Client fix: the register email field now **trims + disables autocorrect** so a stray inserted space no longer reads as "invalid character." **Email outage during the surge:** Resend's daily quota exhausted mid-wave (~150 verification emails 429'd); upgraded to Pro and **backfilled the missed verifications** with a one-off mint+resend (registration already swallowed the send error, so accounts were never blocked). In flight but NOT in this build: draw-odds consistency stats + live swipe drag cues (`feat/draw-odds-core`, `feat/qol-drag-indicators`). What's New copy lives in both `operations/*/.../form_fields.md`; the weighted request queue is `feature_requests.md`.
-
----
-
-## 1.1.1 — in-app help, import/export hints, mailto fix (both stores, 2026-06-26)
-
-Patch release, **iOS build 49** + **Android versionCode 9**, both at version 1.1.1. User-facing: a global **Help button** in every screen header (left `!`, mirroring the right `?` hint) opening a bottom sheet to **report a problem** (mailto, pre-filled with app version + platform) or **join the Discord**; **import/export screen hints**; and the fix that makes "report a problem" actually open the OS mail app on mobile (`outbound/open_url.rs` — Dioxus routes `<a href>` through `webbrowser::open`, which rejects non-`http(s)` URLs on iOS/Android, so the old `mailto:` anchor silently no-op'd; now opens via `UIApplication.openURL` / Android `ACTION_VIEW`). Server-side, the **Archidekt importer now tolerates null JSON fields** (decks that previously failed — e.g. a card with `"categories": null` — import again), and its outbound User-Agent + the email verify/reset links derive from a new `WEB_BASE_URL` config var. Also under the hood: a shared **`ScreenHeader`** component across all 15 screens, a shared **`Chip`** component, and `SUPPORT_EMAIL_ADDRESS`/`WEB_BASE_URL` env config. Android-only: the **launcher icon** was repadded to sit inside the adaptive-icon safe zone (the full-bleed Z was getting clipped by the circular mask — see `operations/android/play-store/submission/history.md`). Logo polish deferred (see `todo.md`). Rolled out to testers to get the new in-app functionality out. **Requires the server to be deployed** for the Archidekt import fix to take effect.
+Shipped on **media day**. A Reddit launch post (r/mtg, ~45K views) drove **38 → 772 users in ~24h** (665 registrations that day, 738 active; the core swipe loop held clean at ~20x load). **iOS build 51** (Apple review) + **Android versionCode 11** (Play closed-testing track), both version 1.1.3, submitted 2026-06-28. Backward-compatible / server-additive throughout (audited: no `http/contracts` or schema changes). Much of it straight from launch feedback: **card names now show while swiping** so alt-art / non-English printings are identifiable (`card_info.rs`); a **deck-form overhaul**: empty fields read "Not set", tapping a field opens the format/tags picker (the separate Edit buttons are gone), Format reads as a plain input instead of a chip, and the **deck name validates inline** (error under the field, mirroring the auth/profile pattern) rather than as a save-time toast; an **expanded deck-tag set with plain-language definitions** plus **format and power-level pickers**; an **in-app Privacy Policy** reached from Profile, rendered from a single shared `zwipe-core` HTML const so app + web (`zite`) never drift (`mailto` opens via `open_url`, https via the webview); and **under-field validation with red outlines** across sign-in / sign-up / profile forms. Server-side: the auth flows **stopped policy-gating the *current* password** on login + username/email changes, a relaxation so passwords created under older policies aren't wrongly rejected; the stored-hash check is unchanged. Client fix: the register email field now **trims + disables autocorrect** so a stray inserted space no longer reads as "invalid character." **Email outage during the surge:** Resend's daily quota exhausted mid-wave (~150 verification emails 429'd); upgraded to Pro and **backfilled the missed verifications** with a one-off mint+resend (registration already swallowed the send error, so accounts were never blocked). In flight but NOT in this build: draw-odds consistency stats + live swipe drag cues (`feat/draw-odds-core`, `feat/qol-drag-indicators`). What's New copy lives in both `operations/*/.../form_fields.md`; the weighted request queue is `feature_requests.md`.
 
 ---
 
-## 1.1.0 — Zwipe-select, deck tags, keyword hinter, card detail (both stores, 2026-06-25)
+## 1.1.1: in-app help, import/export hints, mailto fix (both stores, 2026-06-26)
+
+Patch release, **iOS build 49** + **Android versionCode 9**, both at version 1.1.1. User-facing: a global **Help button** in every screen header (left `!`, mirroring the right `?` hint) opening a bottom sheet to **report a problem** (mailto, pre-filled with app version + platform) or **join the Discord**; **import/export screen hints**; and the fix that makes "report a problem" actually open the OS mail app on mobile (`outbound/open_url.rs`; Dioxus routes `<a href>` through `webbrowser::open`, which rejects non-`http(s)` URLs on iOS/Android, so the old `mailto:` anchor silently no-op'd; now opens via `UIApplication.openURL` / Android `ACTION_VIEW`). Server-side, the **Archidekt importer now tolerates null JSON fields** (decks that previously failed, e.g. a card with `"categories": null`, import again), and its outbound User-Agent + the email verify/reset links derive from a new `WEB_BASE_URL` config var. Also under the hood: a shared **`ScreenHeader`** component across all 15 screens, a shared **`Chip`** component, and `SUPPORT_EMAIL_ADDRESS`/`WEB_BASE_URL` env config. Android-only: the **launcher icon** was repadded to sit inside the adaptive-icon safe zone (the full-bleed Z was getting clipped by the circular mask; see `operations/android/play-store/submission/history.md`). Logo polish deferred (see `todo.md`). Rolled out to testers to get the new in-app functionality out. **Requires the server to be deployed** for the Archidekt import fix to take effect.
+
+---
+
+## 1.1.0: Zwipe-select, deck tags, keyword hinter, card detail (both stores, 2026-06-25)
 
 First **minor** bump (1.0.x → 1.1.0): a batch of user-facing features plus two Android-only fixes. **iOS build 48** (Transporter → Apple review) and **Android versionCode 8** (Alpha closed-testing track), both at version 1.1.0, submitted 2026-06-25. Backward-compatible and server-additive throughout.
 
@@ -1353,24 +1353,24 @@ Android-only fixes:
 
 Other: `Opdate` now defaults to `Unchanged` so older shipped clients (which don't send the new `tags` field) still parse deck-profile updates; SwipeSelect now records the select (right) swipe in usage metrics. Build re-cuts within 1.1.0: iOS 47→48 (mana-pill consistency fix), Android vc7→vc8 (the metrics line). Server redeployed with the deck-tags migration + 65-tag enum.
 
-Marketing: **Day 333** build-in-public posts to X / Reddit / Bluesky (video of the new features). Both sites refreshed — zite demo gallery re-shot (dropped register, added filter) + feature grid surfaces the new features; portfolio's zwipe section updated and its "App Store submission pending" copy corrected to "submitted to both stores".
+Marketing: **Day 333** build-in-public posts to X / Reddit / Bluesky (video of the new features). Both sites refreshed: zite demo gallery re-shot (dropped register, added filter) + feature grid surfaces the new features; portfolio's zwipe section updated and its "App Store submission pending" copy corrected to "submitted to both stores".
 
 ---
 
-## 1.0.10 — update-screen redesign + external-link arrows (both stores, 2026-06-23)
+## 1.0.10: update-screen redesign + external-link arrows (both stores, 2026-06-23)
 
 First **coordinated iOS + Android release run**, both at version 1.0.10:
 **iOS build 44** (Transporter → Apple review) and **Android versionCode 5**
 (Alpha closed-testing track → Google review). Changes: redesigned the min-version
 **"update required"** screen (single bold-red headline, accent/bold message,
-framed empty header + footer bars) and added **↗** to every external link — the
+framed empty header + footer bars) and added **↗** to every external link. The
 store buttons (now routing through `zwipe.net/download/{android,ios}` so the
 destination is site-controlled) and the TCGplayer / Card Kingdom buy links.
 *versionCode churn on the Android side: 4 was burned by an upload attempt, 5 shipped.*
 
-**Same-day 1.0.10 refresh (iOS build 45 / Android versionCode 6) — submitted to
+**Same-day 1.0.10 refresh (iOS build 45 / Android versionCode 6), submitted to
 both stores 2026-06-23** (iOS → Apple review; Android vc6 → Alpha closed-testing
-track). Adds the commander-search **"Searching…"** indicator — the typeahead now
+track). Adds the commander-search **"Searching…"** indicator; the typeahead now
 reveals its dropdown the moment a search starts, so the existing feedback shows
 during the 800ms debounce instead of a blank ~1s that read as "card missing." No
 app-version bump (still 1.0.10); only the iOS build number and Android versionCode
@@ -1378,7 +1378,7 @@ increment.
 
 ---
 
-## Android — first build submitted to Play (2026-06-23)
+## Android: first build submitted to Play (2026-06-23)
 
 The Android port is **in Google's review queue**: `1.0.9`, **versionCode 3**,
 targetSdk 35, signed with a new `zwipe-upload` key (Play App Signing, Google-managed
@@ -1392,19 +1392,19 @@ versionCode, debug-symbols warning): [`../operations/android/play-store/submissi
 
 ---
 
-## 1.0.9 — UI consistency pass + new app icon (build 42 submitted 2026-06-23; server live on prod)
+## 1.0.9: UI consistency pass + new app icon (build 42 submitted 2026-06-23; server live on prod)
 
-iOS **build 42** (version 1.0.9) submitted to review 2026-06-23 with a brand-new app icon (builds 39–41 were app-icon iteration; 42 = the 1.6× keeper). Rides: **new app icon** (the ASCII "Z" mark via the asciier tool — recipe in `operations/ios/app-store/submission/icon_update.md`); **self-hosted JetBrains Mono** (full font bundled, CDN `@import` dropped — fixes the Android-WebView home-screen logo block glyphs, no-op on iOS); **profile rework** (per-field edits → bottom sheets, Delete account behind a `More` sheet, Account/Preferences cards); **deck-view** section subtitles moved inside their carded elements; **deck list** redone as one flowing row with accent stat chips + a warning-yellow card-count chip when a deck is an illegal size; **home flavor card** cached app-wide (1h TTL, stale-while-revalidate); **deck-size rules fixed** for Oathbreaker/Brawl/Historic Brawl/Gladiator; plus "To deck" → "To mainboard", an opaque chart skeleton, and a yellow-leaned Gruvbox text color. Workspace version bumped 1.0.6→1.0.9 (all crates) to keep `CARGO_PKG_VERSION` aligned with the store version for the min-version gate.
+iOS **build 42** (version 1.0.9) submitted to review 2026-06-23 with a brand-new app icon (builds 39–41 were app-icon iteration; 42 = the 1.6× keeper). Rides: **new app icon** (the ASCII "Z" mark via the asciier tool; recipe in `operations/ios/app-store/submission/icon_update.md`); **self-hosted JetBrains Mono** (full font bundled, CDN `@import` dropped, which fixes the Android-WebView home-screen logo block glyphs, no-op on iOS); **profile rework** (per-field edits → bottom sheets, Delete account behind a `More` sheet, Account/Preferences cards); **deck-view** section subtitles moved inside their carded elements; **deck list** redone as one flowing row with accent stat chips + a warning-yellow card-count chip when a deck is an illegal size; **home flavor card** cached app-wide (1h TTL, stale-while-revalidate); **deck-size rules fixed** for Oathbreaker/Brawl/Historic Brawl/Gladiator; plus "To deck" → "To mainboard", an opaque chart skeleton, and a yellow-leaned Gruvbox text color. Workspace version bumped 1.0.6→1.0.9 (all crates) to keep `CARGO_PKG_VERSION` aligned with the store version for the min-version gate.
 
-**Server + web are already live (2026-06-23):** the push redeployed `zerver` to prod (root reports `version: 1.0.9`, `/health` green — corrected deck-size warnings live) and `zite` to zwipe.net (Gruvbox text tweak). The iOS client is the only piece still in review. Per-change detail in `todo.md`. Android emulation (Pixel_9a) verified this code earlier — JDK gotcha in `operations/android/setup.md`.
+**Server + web are already live (2026-06-23):** the push redeployed `zerver` to prod (root reports `version: 1.0.9`, `/health` green, corrected deck-size warnings live) and `zite` to zwipe.net (Gruvbox text tweak). The iOS client is the only piece still in review. Per-change detail in `todo.md`. Android emulation (Pixel_9a) verified this code earlier — JDK gotcha in `operations/android/setup.md`.
 
 > 1.0.6–1.0.8 App Store builds shipped between 1.0.5 and this entry: synergy-ordered suggestions (1.0.6), the mobile look-revamp (1.0.7), and skeleton polish (1.0.8).
 
 ---
 
-## Gated merges — wire-format + refresh hardening (2026-06-18)
+## Gated merges: wire-format and refresh hardening (2026-06-18)
 
-Two server-side changes that needed the propagation wait landed and deployed: **wire-format RFC3339** (server emits `Z` timestamps; the `wire_time` adapter was deleted from zwipe-core) and **refresh-token hardening** (strict single-use rotation — `FOR UPDATE` + delete check; live concurrency check passed: 4 parallel refreshes → one 200, three 401, replay → 401). `MIN_CLIENT_VERSION` armed at **1.0.5** in prod — the lowest guard-capable floor; not set higher by design (every 1.0.5+ client already carries the Z-parsing and single-flight-refresh fixes).
+Two server-side changes that needed the propagation wait landed and deployed: **wire-format RFC3339** (server emits `Z` timestamps; the `wire_time` adapter was deleted from zwipe-core) and **refresh-token hardening** (strict single-use rotation: `FOR UPDATE` plus delete check; live concurrency check passed: 4 parallel refreshes → one 200, three 401, replay → 401). `MIN_CLIENT_VERSION` armed at **1.0.5** in prod, the lowest guard-capable floor; not set higher by design (every 1.0.5+ client already carries the Z-parsing and single-flight-refresh fixes).
 
 ---
 
@@ -1414,29 +1414,29 @@ Prod moved off the home Ubuntu box to a **Hetzner CPX31** (Hillsboro OR, Ubuntu 
 
 ---
 
-## Synergy data layer — cache-first (2026-06-11, build 32)
+## Synergy data layer, cache-first (2026-06-11, build 32)
 
-Per-commander synergy/popularity payloads are computed by a separate least-privilege worker (`zynergy` — own DB role, runner, and systemd unit) and cached in Postgres; zerver only reads, never writes. Deck-aware search (`POST /api/deck/{id}/card/search`) excludes in-deck cards and defaults to synergy ordering when no sort is given; the client add-cards screen consumes it and auto-serves suggestions on open (build 32 / 1.0.6). Plan doc `../plans/synergy_data_layer.md` no longer exists and has no archived copy. *Data-source strategy: check local memory before extending.*
+Per-commander synergy/popularity payloads are computed by a separate least-privilege worker (`zynergy`, with its own DB role, runner, and systemd unit) and cached in Postgres; zerver only reads, never writes. Deck-aware search (`POST /api/deck/{id}/card/search`) excludes in-deck cards and defaults to synergy ordering when no sort is given; the client add-cards screen consumes it and auto-serves suggestions on open (build 32 / 1.0.6). Plan doc `../plans/synergy_data_layer.md` no longer exists and has no archived copy. *Data-source strategy: check local memory before extending.*
 
 ---
 
 ## Post-launch hardening & UX (June 2026, builds 31–34)
 
 - **First-run hints** — `hints_shown` jsonb on users + `PUT /api/user/hint`; six one-time dialogs (login, profile, first deck, deck cards, add/remove swipes) plus a persistent "?" reopener in every screen header.
-- **Security notification emails** on email / username / password changes — notifies the *old* address (the one an attacker doesn't control), user values HTML-escaped, fire-and-forget via Resend.
+- **Security notification emails** on email / username / password changes, notifying the *old* address (the one an attacker doesn't control), user values HTML-escaped, fire-and-forget via Resend.
 - **Resend-verification throttle** — dedicated limiter (burst 1, then 1/60s per user); client grays the button with a matching 60s countdown + a "Check again" that flips the verified badge in place.
 - **Fixes** — missing-auth responses now return 401 (were 500, from the user-keyed rate-limit layer running before the auth extractor); `GET /health` runs the combined server+db check; the "Update required" screen no longer flashes on filter apply (a Dioxus context type-collision, newtyped away).
 
 ---
 
-## 1.0.5 — Archidekt Import + Min-Version Gate (2026-06-10, server deployed, build 31 submitted)
+## 1.0.5: Archidekt Import + Min-Version Gate (2026-06-10, server deployed, build 31 submitted)
 
 **Two features built, merged, and shipped in one day. Server live on prod as v1.0.5; iOS build 31 uploaded via Transporter and submitted as 1.0.5.**
 
-- **Archidekt deck import** (`feat/deck-import-archidekt`) — `POST /api/deck/{deck_id}/import/archidekt` takes a deck URL, fetches Archidekt's open JSON API server-side, resolves every printing by Scryfall UID (`card.uid` == `scryfall_data.id`; name fallback recovers null-oracle reversible printings), and imports into an existing deck with identical semantics to the text importer. Deliberately simplified mid-build: no commander/format sync, no deck creation — just cards onto the selected board. The verified Archidekt `deckFormat` id table was kept in `context/plans/deck_import.md`, which no longer exists and has no archived copy.
+- **Archidekt deck import** (`feat/deck-import-archidekt`): `POST /api/deck/{deck_id}/import/archidekt` takes a deck URL, fetches Archidekt's open JSON API server-side, resolves every printing by Scryfall UID (`card.uid` == `scryfall_data.id`; name fallback recovers null-oracle reversible printings), and imports into an existing deck with identical semantics to the text importer. Deliberately simplified mid-build: no commander/format sync, no deck creation, just cards onto the selected board. The verified Archidekt `deckFormat` id table was kept in `context/plans/deck_import.md`, which no longer exists and has no archived copy.
 - **Add/Replace import modes** — both importers carry `mode: ImportMode` (`#[serde(default)]`, absent = Add, so deployed 1.0.4 clients are unaffected). Replace makes the target board exactly match the imported list (board-scoped; an import where nothing resolves never wipes). Import screen gained pinned From/Mode/Board chip rows with per-combination hint text.
-- **Min-version gate** (`feat/min-version-gate`) — server-driven force-update kill-switch: public `GET /api/client/min-version` reads `MIN_CLIENT_VERSION` env (`0.0.0` = open, live default; malformed value refuses startup), `zwipe_core::version` does x.y.z compare failing open, zwiper polls in the 60s upkeep loop (first tick at launch) and swaps the router for a blocking "Update required" screen linking to the App Store. Every install ≥1.0.5 is force-updatable; builds ≤1.0.4 ignore it forever, so 1.0.5 itself rides the old propagation wait.
-- **API evolution rule documented** (`context/development/api_evolution.md`) — new request fields are always additive + `#[serde(default)]`; server deploys first, client ships second, no gate needed. The min-version gate is reserved for changes that can't be expressed additively.
+- **Min-version gate** (`feat/min-version-gate`): server-driven force-update kill-switch: public `GET /api/client/min-version` reads `MIN_CLIENT_VERSION` env (`0.0.0` = open, live default; malformed value refuses startup), `zwipe_core::version` does x.y.z compare failing open, zwiper polls in the 60s upkeep loop (first tick at launch) and swaps the router for a blocking "Update required" screen linking to the App Store. Every install ≥1.0.5 is force-updatable; builds ≤1.0.4 ignore it forever, so 1.0.5 itself rides the old propagation wait.
+- **API evolution rule documented** (`context/development/api_evolution.md`): new request fields are always additive + `#[serde(default)]`; server deploys first, client ships second, no gate needed. The min-version gate is reserved for changes that can't be expressed additively.
 
 ---
 
@@ -1444,7 +1444,7 @@ Per-commander synergy/popularity payloads are computed by a separate least-privi
 
 **Backend deployed. iOS 1.0.1 / build 17 submitted for Apple review.**
 
-`Kibo, Uktabi Prince` (Jumpstart 2022 — flagged `promo: true`) and `Wear // Tear` (latest printing was MTGA-only `digital: true`) were importable by exact name but invisible to card search, commander search, and in-deck filtering.
+`Kibo, Uktabi Prince` (Jumpstart 2022, flagged `promo: true`) and `Wear // Tear` (latest printing was MTGA-only `digital: true`) were importable by exact name but invisible to card search, commander search, and in-deck filtering.
 
 - Backend: `latest_cards` materialized view rewritten so `DISTINCT ON (oracle_id)` prefers paper, non-promo, non-oversized, non-content-warning printings before falling back to most recent release. Migration `20260606120000_latest_cards_prefer_real_printings.sql` also remaps existing `deck_cards` and `decks` references to the new preferred sibling so users' existing decks switch printings on deploy.
 - Frontend (zwipe-core): `CardFilterBuilder::default()` dropped `promo: Some(false)` → `None`. `digital: false` stays as a default (paper deck builder shouldn't surface MTGA-only Alchemy cards). All other defaults unchanged.
@@ -1460,10 +1460,10 @@ iOS 1.0.1 (build 17) replaces build 16 in the review queue. Apple typically clea
 
 What's in this round:
 
-- **Per-user lifetime counters** (`user_lifetime_counters`) — `swipes_right/left/up/down`, `searches`, `decks_created`, `decks_completed`. Single row per user, hot read path.
-- **Daily rollups** (`user_daily_activity`) — one row per (user, UTC day) with the same swipe + search counters. Trend / DAU data without paying event-log storage.
+- **Per-user lifetime counters** (`user_lifetime_counters`): `swipes_right/left/up/down`, `searches`, `decks_created`, `decks_completed`. Single row per user, hot read path.
+- **Daily rollups** (`user_daily_activity`), one row per (user, UTC day) with the same swipe + search counters. Trend / DAU data without paying event-log storage.
 - **Sparse event log** (`user_events`) — `register` (renamed from `signup` 2026-06-09), `deck_created`, `deck_completed`, `first_swipe`. Rare events only; no per-swipe rows.
-- **Audit log** (`user_audit_log`) — credential changes (username / email / password). Logs *that* a change happened, not the old value — keeps PII surface near zero.
+- **Audit log** (`user_audit_log`): credential changes (username / email / password). Logs *that* a change happened, not the old value, which keeps PII surface near zero.
 - **Endpoints** — `POST /api/metrics/usage` (private, IP+user rate-limited, accepts a `HttpUsageBatch`), `GET /api/user/metrics` (private, returns lifetime counters), `GET /api/marketing/stats` (public, sum-aggregates across all users for zwipe.net). Fire-and-forget metric writes via `tokio::spawn` so user request latency is unchanged.
 - **Deck completion tracking** — after any deck-card mutation (create / update / delete / import / deck-profile update / clone) the handler reloads the deck, runs `validate_deck`, and if it just became valid stamps `decks.first_completed_at` + emits a `DeckCompleted` event. Idempotent: subsequent invalid→valid transitions don't re-fire.
 - **Client-side telemetry buffer** — `zwiper/.../components/telemetry/` keeps four atomic swipe counters + a search counter in memory, flushes every 30s via the existing session upkeeper, drops the batch on HTTP failure (vanity data isn't worth retry plumbing).
@@ -1471,17 +1471,17 @@ What's in this round:
 - **zite stats strip** — three-stat block in the home hero ("Cards swiped · Searches run · Decks created") fetched during SSR via `use_resource`. Hides itself on error. Stats refresh on each GH Pages rebuild (acceptable for vanity; cron rebuild can be added if staleness ever bothers anyone).
 - **UTC pool pin** — `PostgresPoolOptions::default()::after_connect` runs `SET TIME ZONE 'UTC'` on every connection. Backstop so the schema's plain `TIMESTAMP` columns are deterministically UTC regardless of cluster/process TZ. Spotted because `user_daily_activity` initial rows landed on a different `CURRENT_DATE` than the local psql session expected. Full migration to `TIMESTAMPTZ` is complete (phases 1-2, shipped 2026-06).
 
-Build train: builds 21-23 (1.0.2, in review), **build 24 (1.0.2 + telemetry, packaged for Transporter)**. Build 24's user-visible delta over Build 23 is essentially zero — all the work this round is backend / silent telemetry. The "Cards swiped" bullet added to the App Store "What's New" reflects the build-23 latency wins that weren't called out.
+Build train: builds 21-23 (1.0.2, in review), **build 24 (1.0.2 + telemetry, packaged for Transporter)**. Build 24's user-visible delta over Build 23 is essentially zero; all the work this round is backend / silent telemetry. The "Cards swiped" bullet added to the App Store "What's New" reflects the build-23 latency wins that weren't called out.
 
 ---
 
 ## 1.0.2 Latency Pass (2026-06-07, submitted as build 23)
 
-**iOS 1.0.2 build 23 submitted for Apple review. Full latency optimization round: CF edge caching, server-side compression, HTTP/2 client multiplexing, smaller default page size with prefetch.** End-to-end measurements: `POST /api/card/search` went from `~52ms LOCAL / ~250ms PUBLIC` to `~5ms LOCAL / ~130-180ms PUBLIC` — backend is now sub-frame; PUBLIC time is essentially the CF tunnel hop floor.
+**iOS 1.0.2 build 23 submitted for Apple review. Full latency optimization round: CF edge caching, server-side compression, HTTP/2 client multiplexing, smaller default page size with prefetch.** End-to-end measurements: `POST /api/card/search` went from `~52ms LOCAL / ~250ms PUBLIC` to `~5ms LOCAL / ~130-180ms PUBLIC`. Backend is now sub-frame; PUBLIC time is essentially the CF tunnel hop floor.
 
 What's in build 23 (on top of 1.0.2):
 
-- **Cloudflare edge caching for immutable card endpoints** — 8 GET routes (`/api/card/{id}`, `/{oracle_id}/printings`, `sets`, `types`, `keywords`, `oracle-words`, `artists`, `languages`) moved from `private_routes` to `public_routes` in `zerver/src/lib/inbound/http/routes.rs` with IP-keyed rate limit (60/s burst). Handlers' `AuthenticatedUser` extractors removed. zwiper's API client drops `bearer_auth` on those calls so CF's "don't cache authenticated requests" safety rail no longer triggers. CF Cache Rule with `starts_with(http.request.uri.path, "/api/card/")` + 24h Edge TTL. Verified via `zcripts/latency/cf_cache_verify.sh` — converged to 6/6 HIT once POPs warmed. Cache-hit responses skip the tunnel entirely (~5-10ms).
+- **Cloudflare edge caching for immutable card endpoints**: 8 GET routes (`/api/card/{id}`, `/{oracle_id}/printings`, `sets`, `types`, `keywords`, `oracle-words`, `artists`, `languages`) moved from `private_routes` to `public_routes` in `zerver/src/lib/inbound/http/routes.rs` with IP-keyed rate limit (60/s burst). Handlers' `AuthenticatedUser` extractors removed. zwiper's API client drops `bearer_auth` on those calls so CF's "don't cache authenticated requests" safety rail no longer triggers. CF Cache Rule with `starts_with(http.request.uri.path, "/api/card/")` + 24h Edge TTL. Verified via `zcripts/latency/cf_cache_verify.sh`, which converged to 6/6 HIT once POPs warmed. Cache-hit responses skip the tunnel entirely (~5-10ms).
 - **HTTP response compression** — `tower-http`'s `CompressionLayer` added to the Axum stack (`zerver/src/lib/inbound/http/mod.rs`). gzip + brotli via Accept-Encoding negotiation. `/api/card/search` body went 39690b → 16444b on the wire (59% smaller). `/api/deck` body went 3996b → 727b (82% smaller).
 - **HTTP/2 client multiplexing** — workspace reqwest gained the `http2` feature. Reqwest auto-negotiates h2 via ALPN with CF, so the 4 parallel `get_card` calls in `deck/card/view.rs` (commander + partner + background + signature spell) now multiplex over a single connection instead of running sequentially.
 - **Smaller search pages with prefetch** — `CardFilter::default_limit()` and `CardFilterBuilder::default()` lowered from 100 → 25 in zwipe-core. Swipe stack's `pagination_limit` matched at 25 and `load_more_threshold` tightened from 15 → 5 cards. Compounding win on search: DB query returns 4× fewer rows, serialization is 4× cheaper, then gzip on top. Drove LOCAL search from ~52ms to ~5ms.
@@ -1497,7 +1497,7 @@ Build train: build 21 (1.0.2 polish, in review), build 22 (1.0.2 cache routes, r
 
 What's in 1.0.2:
 
-- **In-deck filter fixes** (`filter_cards.rs`) — basic types include/exclude, set include/exclude, "Is commander in <format>", "Is legal in <format>", plus rarity sort tier order (Common < Uncommon < Rare < Mythic < Bonus < Special via derived `Ord`).
+- **In-deck filter fixes** (`filter_cards.rs`): basic types include/exclude, set include/exclude, "Is commander in <format>", "Is legal in <format>", plus rarity sort tier order (Common < Uncommon < Rare < Mythic < Bonus < Special via derived `Ord`).
 - **Card image rendering** — `FlippableCardImage` reworked so card art renders with cleanly rounded corners and bounded sizing across the swipe stack, printing carousel, and image preview. Root cause: wrapper inherited `flex: 1` from `.card-image`/`.carousel-card-image` and stretched in column-flex parents, letterboxing the actual card content and putting the rounded clip on empty space. Fix moves sizing onto the img element (`width: auto; height: auto; max-width/max-height: 100%`, relying on `<img>`'s intrinsic aspect ratio) with per-context max-height caps on the wrapper.
 - **Loading skeletons** — deck list, deck view (profile + stats with bordered info-list rendition matching the real `.info-list`), deck cards list, edit deck form, printing sheet, home flavor text.
 - **Saving / submitting states** — login shows "Logging in...", register shows "Creating...", profile/preferences/deck edit screens show "Saving..." with Back disabled. Fixed pre-existing race in `login.rs`/`register.rs` where `is_loading.set(false)` ran outside the spawn block, so the loading state never actually appeared.
@@ -1513,8 +1513,8 @@ Build train: build 18 (1.0.2 orphan from prior misclick), build 19 (1.0.1, shipp
 
 **Front face rendering + flip control. iOS build 19 packaged as 1.0.1 to replace build 17 in the open review queue (since 1.0.1 hasn't published yet, all build numbers attach to the same train). Build 18 was uploaded as 1.0.2 by mistake and is now an orphan in App Store Connect — harmless, can be ignored.**
 
-Double-faced layouts (transform, modal_dfc) store their image URLs inside `card_faces[].image_uris` rather than the top-level `image_uris` that single-faced cards use. Zwiper had zero `card_faces` references anywhere — so `Delver of Secrets`, `Valki, God of Lies`, and every transform/MDFC card rendered as a blank image surface AND was filtered out of search results by a client-side "must have top-level image" filter.
+Double-faced layouts (transform, modal_dfc) store their image URLs inside `card_faces[].image_uris` rather than the top-level `image_uris` that single-faced cards use. Zwiper had zero `card_faces` references anywhere, so `Delver of Secrets`, `Valki, God of Lies`, and every transform/MDFC card rendered as a blank image surface AND was filtered out of search results by a client-side "must have top-level image" filter.
 
 - **zwipe-core**: `ScryfallData::primary_image_url(ImageSize)` and `face_image_url(idx, size)` fall back to `card_faces[face_index].image_uris` when top-level is `None`. Every render site replaced. `face_count()` reports `card_faces.len()` only when all faces have their own image URIs, so split / adventure layouts (single image, no per-face URIs) stay single-faced for rendering purposes.
-- **zwiper**: new `FlippableCardImage` component owns face-index state and renders the `<img>` plus a "Flip" squircle button when `face_count() > 1`. Wired into swipe stack (top card only — peeking cards stay plain), printing carousel + single-printing view, image preview modal. Wrapper has `aspect-ratio: 5/7` only when flippable so the button hugs the actual card edge regardless of container size.
+- **zwiper**: new `FlippableCardImage` component owns face-index state and renders the `<img>` plus a "Flip" squircle button when `face_count() > 1`. Wired into swipe stack (top card only; peeking cards stay plain), printing carousel + single-printing view, image preview modal. Wrapper has `aspect-ratio: 5/7` only when flippable so the button hugs the actual card edge regardless of container size.
 - **Meld pieces** continue to render correctly via the existing top-level-image path; flipping to the melded back is out of scope.
