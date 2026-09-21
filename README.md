@@ -2,7 +2,7 @@
 
 Mobile-first Magic: The Gathering deck builder with swipe-based navigation.
 
-**Status:** live on the iOS App Store and Google Play; web client at [zwipe.net](https://zwipe.net).
+**Status:** live on the iOS App Store and Google Play. Deck building is in the app; [zwipe.net](https://zwipe.net) is the site.
 
 ![Swiping through cards to add them to a deck](demo/demo.gif)
 
@@ -13,7 +13,7 @@ Full-stack Rust:
 - **zwipe-components**: shared Dioxus UI components and CSS (themes, changelog, card details) consumed by the app, the site, and the owner's portfolio
 - **zerver**: Axum REST API, PostgreSQL, SQLx, JWT auth, Scryfall sync
 - **zwiper**: Dioxus iOS and Android app, swipe gestures, 31 themes, dark mode
-- **zite**: Dioxus web client at [zwipe.net](https://zwipe.net)
+- **zite**: Dioxus site at [zwipe.net](https://zwipe.net) (guides, changelog, shared deck pages, email verification and password reset)
 - **zervice**: background jobs (Scryfall sync, session cleanup)
 
 ```
@@ -40,8 +40,8 @@ cargo run --bin zervice             # scryfall card sync (run once to seed)
 Hexagonal architecture with domain-driven design. `zwipe-core` owns all shared
 domain types; zerver re-exports them and adds server-specific layers (database
 adapters, HTTP handlers, service orchestration). See
-`context/architecture/decisions.md` for key decisions and `context/README.md`
-for the full documentation tree.
+`context/architecture/decisions.md` for the decisions and why they went that
+way, and `context/README.md` for the full documentation tree.
 
 ## License
 

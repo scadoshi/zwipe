@@ -18,44 +18,21 @@ the project's living documentation; each subdirectory owns one concern.
 
 Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
-## Current focus
+## Where things stand
 
-**2026-08-17: 1.9.2 SUBMITTED to both stores** (iOS build 76 /
-Android versionCode 39), and it is the first build carrying a fix for the
-Android `ndk-context` crash that had survived five releases. Root cause was
-never the resume path: `MainActivity` had no `launchMode`, so an explicit
-component start created a *second* Activity in a live process and re-ran
-NativeActivity's native init. A second bug found the same day (`configChanges`
-omitted `uiMode`, so a system theme change tore the Activity down and the
-onDestroy process-kill silently closed the app) is fixed too. Both are applied
-post-bundle by `zcripts/android/patch_bundle.sh`, and skipping that script
-silently reships the crash. 1.9.2 also carries the back-swipe overlay fixes,
-the deck list restyle with command-zone art, per-combination color grouping
-with mana pips, and the zite work (guides search, Panel heroes, 36 guide
-screenshots).
+This section is a pointer, not a second copy. The running log lives in
+[`progress/overview.md`](progress/overview.md), newest entry first, and that is
+the file to update when something ships.
 
-**Then 2026-08-18:** oracle-tag descriptions finished at **4,521 of 4,522**
-(`nanni` deliberately blank), which also evicted the last of Scryfall's copy
-and the markdown cross-links that came with it.
+As of 2026-09-21: 1.10.1 is live on both stores (iOS build 79 / Android
+versionCode 42, live 2026-09-07). Prod survived a 53-hour outage 09-11 → 09-13;
+the hardening that closes it is done, monitoring included. The `zerver` feature
+flag is gone as of 09-21, so no client depends on the server crate any more.
 
-**Watch items:** 1.9.2 clearing review at both stores, then a **field check one
-week after it goes LIVE** (not after submission) confirming the Android crash
-fix held, run against both the crash table *and* Android session volume so a
-drop in crashes can't be mistaken for a fix when it is really a drop in users.
-Also: the Pixel needs a reinstall from Play once 1.9.2 is live, since it is
-currently on a debug-signed build Play cannot update.
+What needs a human, all tracked in [`progress/todo.md`](progress/todo.md):
+re-read the error and crash tables by 2026-10-06, rotate the prod db password,
+reinstall Zwipe from Play on the Pixel, and eyeball a store build against
+1.10.1.
 
-**After this:** next build candidates (owner to choose): the wasm build
-blockers toward the full webapp (the strongest 2.0 anchor), social features /
-featured decks, commander shortlist, import printings. The activity report's
-15.3% deck-completion cliff (median 26 cards) points hardest at composition
-targets; fill basics was the other answer to it and was **declined 2026-08-18**
-([`plans/archive/fill_basics.md`](plans/archive/fill_basics.md)), so do not
-re-propose it. Then **Phase 6**: serve on the matured otag signal (data-gated,
-months out). Ongoing: short-form marketing videos, review tracking, funnel
-numbers (gate the sign-in-with-Google decision), and draw-odds **Phase 4
-(premium gating)**.
-
-See [`progress/overview.md`](progress/overview.md) for the high-level state,
-[`progress/feature_requests.md`](progress/feature_requests.md) for the weighted
-request queue, and [`progress/todo.md`](progress/todo.md) for the ordered task list.
+See [`progress/feature_requests.md`](progress/feature_requests.md) for the
+weighted request queue.
