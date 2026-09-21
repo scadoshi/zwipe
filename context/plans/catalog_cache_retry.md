@@ -37,32 +37,24 @@ single-flight already stops duplicate calls. The `ensure_*` functions are
 idempotent retry entry points that exist today. All that is missing is
 something in the UI that calls one.
 
-## Two shapes, still to choose
+## Shape: one app-level affordance (owner, 2026-09-21)
 
-Because the eight public catalogs are prefetched **together** at launch, a
-failure is normally correlated: offline at startup means every picker is
-empty at once, not one of them.
+The eight public catalogs stay cached together. They also fail together, and
+a failure means something has gone badly wrong (backend unreachable, offline
+at launch), not that one list is missing. So the affordance is one
+app-level thing, not an empty state repeated in up to eight pickers.
 
-**A. Inline empty state per picker** (the 2026-09-05 call). "Couldn't load,
-tap to retry" inside the picker that is empty, calling that catalog's
-`ensure_*`. Closest to where the user is looking, and retries only what is
-missing. Downside: the common case shows the same message in up to eight
-places.
+On whether a toast can carry a retry button: `ToastOptions` supports
+`permanent(bool)`, so a toast can stay until dismissed rather than
+auto-expiring. It does **not** support a custom action; the primitive takes
+title, description, type, duration and permanent, and close is its only
+interactive element (`dioxus-primitives` toast, pinned rev `02801f27`). A
+retry button needs either a small extension to the primitive or a
+toast-shaped element of our own. That is the main build cost here, since the
+retry itself is free.
 
-**B. One toast with a retry action** (owner, 2026-09-21). One affordance for
-a failure that is usually app-wide.
-
-On whether B is possible: `ToastOptions` supports `permanent(bool)`, so a
-toast can stay until dismissed rather than auto-expiring. It does **not**
-support a custom action button; the primitive takes title, description, type,
-duration and permanent, and its only interactive element is close
-(`dioxus-primitives` toast, pinned rev `02801f27`). A retry button therefore
-needs either a small extension to the primitive or a bespoke toast-shaped
-element of our own. Not free, but not large.
-
-A third possibility worth weighing: since the failure is app-wide, the
-affordance could live where the app already reports app-wide state rather
-than in either the pickers or a toast.
+Still open: whether it is a toast or the place the app already reports
+app-wide state. Decide when building.
 
 ## Notes for whoever builds it
 
