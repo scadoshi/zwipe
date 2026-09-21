@@ -30,10 +30,73 @@ already commits it to.
 ## Shape
 
 - New workspace member `zwipe-client`: owns `ClientError` (post-flatten, see
-  teardown phase 4), the reqwest call modules, and base-URL config. No
-  Dioxus, no zerver, no platform code; crash reporting and session storage
-  stay in zwiper.
+  teardown phase 4) and the reqwest call modules. No Dioxus, no zerver, no
+  platform code; crash reporting, session storage and URL config all stay in
+  the apps.
 - zwiper consumes it; zite replaces its literals with typed calls.
+
+## Measured, not guessed (2026-09-21)
+
+The layer turned out to be near-perfectly portable already:
+
+- 61 files, 2,863 lines, and **zero** Dioxus references. No `std::fs`, no
+  keyring, no `target_os`, no Android anything.
+- External deps are reqwest, std, zwipe-core, tracing, uuid, thiserror.
+  That's the whole list.
+- Sessions arrive **as parameters** (`session.access_token.value`, `Session`
+  being a core type), never read from storage. Token persistence and refresh
+  scheduling never cross the boundary. This is the decision that normally
+  sinks an extraction, and it was already made correctly.
+- Coupling to zwiper is two imports in two files: `crate::config::Config` in
+  `mod.rs`, `zwipe::inbound::http::ApiError` in `error.rs`. The other 51
+  files import only `ClientError` and `ZwipeClient`, which travel with them.
+
+Difficulty: a focused day, two with the trait collapse.
+
+## The `Send` bounds (tested, not theorized)
+
+57 trait methods carry `impl Future<Output = ...> + Send`. reqwest's wasm
+futures are `!Send`, so those bounds would break zite's web build. They are
+vestigial: zwiper drives every call through Dioxus's `spawn` (a local
+spawner) and has zero `tokio::spawn` / `thread::spawn`. Stripping all 57 and
+compiling zwiper was clean, verified 2026-09-21. One sed during the move.
+
+## Base URL: taken at construction (owner decision, 2026-09-21)
+
+`ZwipeClient::new(base_url: Url)` takes the URL as a parameter. The crate
+reads no env var and owns no default, so it needs no build.rs and no `.env`
+of its own. Each app keeps sourcing the value the way it already does:
+
+- **zwiper keeps `.env` + `build.rs`** (`env!("BACKEND_URL")`) and passes
+  `config.backend_url` in. Do NOT retire this in favor of core's `API_BASE`:
+  the `.env` is a flip switch for pointing a *debug* build at *prod* (its own
+  comment records exactly that, for PATCH-migration testing), and a
+  `debug_assertions` const cannot express it.
+- **zite keeps `zwipe_core::domain::site::API_BASE`** and passes that in.
+
+Note this is runtime at the crate's API boundary, not on the device: an iOS
+bundle ships no `.env` and a browser has no env vars, so the value is still
+baked per build. What changes is which crate bakes it.
+
+Do not move zwiper's `Config` type; it also carries `rust_log` and
+`rust_backtrace`, which are nothing to do with the client. Pass the `Url`.
+
+## Cargo gotcha
+
+zite's Cargo.toml already records it: the workspace `reqwest` cannot be used
+on wasm32 (rustls-tls fails to compile). The new crate needs the same
+`[target.'cfg(target_arch = "wasm32")']` / `cfg(not(...))` dependency split
+zite has, and must not take `reqwest = { workspace = true }`.
+
+The 48 `tracing` calls compile on wasm but go nowhere without a subscriber in
+zite. Not a blocker; just don't expect logs there.
+
+## Scope: move all of it
+
+zite needs about four endpoints today; the client has 61 files, mostly deck
+and card operations zite won't touch until it becomes the deck builder. Move
+the whole layer anyway. Moving half recreates the two-homes problem the crate
+exists to prevent.
 
 ## The 52-trait question (owner decision, settle before the move)
 
@@ -66,6 +129,8 @@ have said anyway.
   flow (the pages that owned the literals).
 - zwiper smoke on device/sim: login, deck list, search (proves the moved
   client wires up identically).
+- Build zite for **both** targets, wasm and the `server` feature. The wasm
+  build is what proves the `Send` bounds are really gone.
 
 ## Later horizon, explicitly not now
 
