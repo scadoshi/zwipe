@@ -16,7 +16,6 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe::inbound::http::ApiError;
 use zwipe_components::{Button, ButtonVariant};
 use zwipe_core::domain::{
     auth::models::session::Session,
@@ -113,7 +112,7 @@ pub(crate) fn DeckWarnings(
                                                 spawn(async move {
                                                     let result: Result<(), ClientError> = async {
                                                         let session = session()
-                                                            .ok_or_else(|| ClientError::Api(ApiError::Unauthorized("Session expired".to_string())))?;
+                                                            .ok_or_else(|| ClientError::Unauthorized("Session expired".to_string()))?;
                                                         client().delete_deck_card(deck_id, card_id, &session).await
                                                     }.await;
                                                     match result {

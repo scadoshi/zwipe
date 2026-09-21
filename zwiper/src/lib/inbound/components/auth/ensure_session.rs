@@ -15,7 +15,6 @@ use crate::outbound::{
 };
 use dioxus::prelude::*;
 use tokio::sync::{Mutex, oneshot};
-use zwipe::inbound::http::ApiError;
 use zwipe_core::{
     domain::auth::models::session::Session, http::contracts::auth::HttpRefreshSession,
 };
@@ -48,17 +47,13 @@ impl EnsureFresh for Signal<Option<Session>> {
         // Fast path: no lock. peek() rather than session() so resources
         // calling this aren't subscribed to re-run on every refresh.
         let Some(current) = session.peek().clone() else {
-            return Err(ClientError::Api(ApiError::Unauthorized(
-                "not logged in".to_string(),
-            )));
+            return Err(ClientError::Unauthorized("not logged in".to_string()));
         };
         if current.is_expired() {
             tracing::info!("session expired (refresh token dead)");
             current.infallible_delete();
             session.set(None);
-            return Err(ClientError::Api(ApiError::Unauthorized(
-                "session expired".to_string(),
-            )));
+            return Err(ClientError::Unauthorized("session expired".to_string()));
         }
         if !current.access_token.is_expired() {
             return Ok(current);
@@ -69,9 +64,7 @@ impl EnsureFresh for Signal<Option<Session>> {
         let guard = refresh_lock().lock_owned().await;
 
         let Some(current) = session.peek().clone() else {
-            return Err(ClientError::Api(ApiError::Unauthorized(
-                "not logged in".to_string(),
-            )));
+            return Err(ClientError::Unauthorized("not logged in".to_string()));
         };
         if !current.access_token.is_expired() {
             return Ok(current); // a concurrent caller already refreshed
@@ -101,11 +94,9 @@ impl EnsureFresh for Signal<Option<Session>> {
                 }
                 Err(e) => {
                     match &e {
-                        ClientError::Api(
-                            ApiError::Unauthorized(_)
-                            | ApiError::Forbidden(_)
-                            | ApiError::NotFound(_),
-                        ) => {
+                        ClientError::Unauthorized(_)
+                        | ClientError::Forbidden(_)
+                        | ClientError::NotFound(_) => {
                             tracing::warn!("refresh rejected; clearing session: {e}");
                             current.infallible_delete();
                             session.set(None);

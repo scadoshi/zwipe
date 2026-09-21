@@ -1,10 +1,12 @@
 //! Client-side error type: the app's error currency.
 //!
-//! Owns the two translations the server can't see:
-//! - transport/decode failures ([`ClientError::Network`] / [`ClientError::Decode`]),
-//!   these never crossed the wire, so they don't belong in the shared [`ApiError`]
-//!   vocabulary;
-//! - wire responses back into vocabulary via `From<(StatusCode, String)>`.
+//! The status vocabulary is the client's own copy of the protocol, built from
+//! `(status, body)` in `From<(StatusCode, String)>`. The server names the same
+//! statuses in its `ApiError`; neither type crosses the wire, so each side
+//! keeps its own.
+//!
+//! Transport and decode failures ([`ClientError::Network`] /
+//! [`ClientError::Decode`]) never reached the server at all.
 //!
 //! User-facing copy lives here too ([`ClientError::to_user_message`]), the
 //! client owns the client-to-user translation. Server-authored 4xx messages
@@ -12,14 +14,28 @@
 
 use reqwest::StatusCode;
 use thiserror::Error;
-use zwipe::inbound::http::ApiError;
 
 /// Errors surfaced by API client calls.
 #[derive(Debug, Error, Clone)]
 pub enum ClientError {
-    /// The server responded with an error status ([`ApiError`] vocabulary).
+    /// 401: no valid session.
     #[error("{0}")]
-    Api(ApiError),
+    Unauthorized(String),
+    /// 403: authenticated, but not allowed.
+    #[error("{0}")]
+    Forbidden(String),
+    /// 404: no such resource.
+    #[error("{0}")]
+    NotFound(String),
+    /// 422: the request was understood but rejected.
+    #[error("{0}")]
+    UnprocessableEntity(String),
+    /// 429: rate limited.
+    #[error("{0}")]
+    TooManyRequests(String),
+    /// 5xx, and any status without a variant of its own.
+    #[error("{0}")]
+    InternalServerError(String),
     /// The request never completed: connection, TLS, timeout, DNS.
     #[error("network error: {0}")]
     Network(String),
@@ -35,17 +51,11 @@ impl ClientError {
             ClientError::Network(_) => {
                 "connection error, check your network and try again".to_string()
             }
-            ClientError::Decode(_) | ClientError::Api(ApiError::InternalServerError(_)) => {
+            ClientError::Decode(_) | ClientError::InternalServerError(_) => {
                 "something went wrong, please try again".to_string()
             }
-            ClientError::Api(other) => other.to_string(),
+            other => other.to_string(),
         }
-    }
-}
-
-impl From<ApiError> for ClientError {
-    fn from(value: ApiError) -> Self {
-        Self::Api(value)
     }
 }
 
@@ -69,14 +79,14 @@ impl From<(StatusCode, String)> for ClientError {
     fn from(value: (StatusCode, String)) -> Self {
         let (status, message) = value;
         let message = message.to_lowercase();
-        Self::Api(match status {
-            StatusCode::UNAUTHORIZED => ApiError::Unauthorized(message),
-            StatusCode::FORBIDDEN => ApiError::Forbidden(message),
-            StatusCode::NOT_FOUND => ApiError::NotFound(message),
-            StatusCode::UNPROCESSABLE_ENTITY => ApiError::UnprocessableEntity(message),
-            StatusCode::TOO_MANY_REQUESTS => ApiError::TooManyRequests(message),
-            _ => ApiError::InternalServerError(message),
-        })
+        match status {
+            StatusCode::UNAUTHORIZED => Self::Unauthorized(message),
+            StatusCode::FORBIDDEN => Self::Forbidden(message),
+            StatusCode::NOT_FOUND => Self::NotFound(message),
+            StatusCode::UNPROCESSABLE_ENTITY => Self::UnprocessableEntity(message),
+            StatusCode::TOO_MANY_REQUESTS => Self::TooManyRequests(message),
+            _ => Self::InternalServerError(message),
+        }
     }
 }
 
@@ -98,16 +108,14 @@ mod tests {
         ];
         for (status, expected) in cases {
             let error = ClientError::from((status, "Message".to_string()));
-            let ClientError::Api(api) = &error else {
-                panic!("expected Api variant for {status}");
-            };
-            let actual = match api {
-                ApiError::Unauthorized(_) => "unauthorized",
-                ApiError::Forbidden(_) => "forbidden",
-                ApiError::NotFound(_) => "not_found",
-                ApiError::UnprocessableEntity(_) => "unprocessable",
-                ApiError::TooManyRequests(_) => "too_many",
-                ApiError::InternalServerError(_) => "internal",
+            let actual = match error {
+                ClientError::Unauthorized(_) => "unauthorized",
+                ClientError::Forbidden(_) => "forbidden",
+                ClientError::NotFound(_) => "not_found",
+                ClientError::UnprocessableEntity(_) => "unprocessable",
+                ClientError::TooManyRequests(_) => "too_many",
+                ClientError::InternalServerError(_) => "internal",
+                other => panic!("expected a status variant for {status}, got {other:?}"),
             };
             assert_eq!(actual, expected, "wrong variant for {status}");
         }
@@ -123,7 +131,7 @@ mod tests {
     /// generic copy; user-safe 4xx messages pass through.
     #[test]
     fn user_messages_never_expose_internals() {
-        let internal = ClientError::Api(ApiError::InternalServerError("pg pool timeout".into()));
+        let internal = ClientError::InternalServerError("pg pool timeout".into());
         assert_eq!(
             internal.to_user_message(),
             "something went wrong, please try again"
@@ -141,9 +149,7 @@ mod tests {
             "something went wrong, please try again"
         );
 
-        let four_xx = ClientError::Api(ApiError::UnprocessableEntity(
-            "deck name cannot be empty".into(),
-        ));
+        let four_xx = ClientError::UnprocessableEntity("deck name cannot be empty".into());
         assert_eq!(four_xx.to_user_message(), "deck name cannot be empty");
     }
 }

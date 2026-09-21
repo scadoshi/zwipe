@@ -1,33 +1,25 @@
 //! JWT authentication and last-active tracking middleware.
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::auth::models::access_token::{JwtSecret, JwtValidate},
     inbound::http::AppState,
 };
-#[cfg(feature = "zerver")]
-use axum::http::header::AUTHORIZATION;
-#[cfg(feature = "zerver")]
 use axum::{
     extract::{ConnectInfo, FromRequestParts, Request, State},
-    http::{StatusCode, request::Parts},
+    http::{StatusCode, header::AUTHORIZATION, request::Parts},
     middleware::Next,
     response::Response,
 };
-#[cfg(feature = "zerver")]
 use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
-#[cfg(feature = "zerver")]
-use std::net::{IpAddr, SocketAddr};
-#[cfg(feature = "zerver")]
-use std::str::FromStr;
-#[cfg(feature = "zerver")]
-use std::sync::Arc;
-#[cfg(feature = "zerver")]
-use std::time::{Duration, Instant};
-#[cfg(feature = "zerver")]
+use std::{
+    net::{IpAddr, SocketAddr},
+    str::FromStr,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 use tower_governor::{GovernorError, key_extractor::KeyExtractor};
 use uuid::Uuid;
 use zwipe_core::domain::{
@@ -58,13 +50,11 @@ pub struct AuthenticatedUser {
 /// Used on private routes so each user gets their own rate limit bucket
 /// regardless of IP address. Falls back to `UnableToExtractKey` for
 /// missing or invalid tokens; the auth middleware rejects those downstream.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Clone)]
 pub struct UserIdKeyExtractor {
     jwt_secret: JwtSecret,
 }
 
-#[cfg(feature = "zerver")]
 impl UserIdKeyExtractor {
     /// Creates a new extractor with the given JWT secret for token validation.
     pub fn new(jwt_secret: JwtSecret) -> Self {
@@ -72,7 +62,6 @@ impl UserIdKeyExtractor {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl KeyExtractor for UserIdKeyExtractor {
     type Key = Uuid;
     fn extract<T>(
@@ -96,7 +85,6 @@ impl KeyExtractor for UserIdKeyExtractor {
 }
 
 /// Canonical Cloudflare header carrying the true client IP.
-#[cfg(feature = "zerver")]
 const CF_CONNECTING_IP: &str = "cf-connecting-ip";
 
 /// Rate-limit key extractor that keys by the real client IP behind Cloudflare.
@@ -117,11 +105,9 @@ const CF_CONNECTING_IP: &str = "cf-connecting-ip";
 /// Falls back to the socket peer IP when the header is absent, i.e. for
 /// non-Cloudflare paths (localhost health checks, Tailscale admin access),
 /// which are trusted. Real internet traffic always carries the header.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Clone)]
 pub struct CfConnectingIpKeyExtractor;
 
-#[cfg(feature = "zerver")]
 impl KeyExtractor for CfConnectingIpKeyExtractor {
     type Key = IpAddr;
 
@@ -156,7 +142,6 @@ impl From<UserClaims> for AuthenticatedUser {
 
 /// Debounce window for `users.last_active_at` bumps: at most one DB write
 /// per user per window regardless of request volume.
-#[cfg(feature = "zerver")]
 const LAST_ACTIVE_DEBOUNCE: Duration = Duration::from_secs(60);
 
 /// Bumps `users.last_active_at` for authenticated requests, debounced per user.
@@ -166,7 +151,6 @@ const LAST_ACTIVE_DEBOUNCE: Duration = Duration::from_secs(60);
 /// `AuthenticatedUser` extractor. The write is fire-and-forget so it never
 /// adds latency to the request path. The debounce cache is in-memory and
 /// lost on restart, which is fine: the first request after a restart writes.
-#[cfg(feature = "zerver")]
 pub async fn track_last_active(
     State(state): State<AppState>,
     request: Request,
@@ -200,7 +184,6 @@ pub async fn track_last_active(
     next.run(request).await
 }
 
-#[cfg(feature = "zerver")]
 impl FromRequestParts<AppState> for AuthenticatedUser {
     type Rejection = StatusCode;
     async fn from_request_parts(
@@ -220,7 +203,7 @@ impl FromRequestParts<AppState> for AuthenticatedUser {
     }
 }
 
-#[cfg(all(test, feature = "zerver"))]
+#[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::{CF_CONNECTING_IP, CfConnectingIpKeyExtractor};

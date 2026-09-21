@@ -637,7 +637,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
         .layer(GovernorLayer::new(private_config).error_handler(unauthorized_on_missing_key))
 }
 
-#[cfg(all(test, feature = "zerver"))]
+#[cfg(test)]
 mod tests {
     use super::rate_limit_copy;
 

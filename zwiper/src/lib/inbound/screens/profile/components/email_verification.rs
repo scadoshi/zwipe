@@ -15,7 +15,6 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use tokio::time::sleep;
-use zwipe::inbound::http::ApiError;
 use zwipe_components::{Button, ButtonVariant};
 use zwipe_core::domain::auth::models::session::Session;
 
@@ -98,7 +97,7 @@ pub(crate) fn VerificationActions() -> Element {
                         ),
                         // Raced the server window: an email already went
                         // out recently, so keep the countdown running.
-                        Err(ClientError::Api(ApiError::TooManyRequests(_))) => toast.info(
+                        Err(ClientError::TooManyRequests(_)) => toast.info(
                             "Please wait a moment".to_string(),
                             ToastOptions::default().duration(Duration::from_millis(3000)),
                         ),

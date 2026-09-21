@@ -9035,7 +9035,6 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "webbrowser",
- "zerver",
  "zwipe-components",
  "zwipe-core",
 ]

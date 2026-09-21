@@ -1,23 +1,20 @@
 //! HTTP layer: Axum server, error mapping, middleware, and route definitions.
 
-#[cfg(feature = "zerver")]
 /// Serving-layer caches (`TtlSlot`, one typed slot per cached value).
 pub mod cache;
-#[cfg(feature = "zerver")]
 /// HTTP request handlers organized by domain.
 pub mod handlers;
-#[cfg(feature = "zerver")]
 /// JWT authentication and last-active tracking middleware.
 pub mod middleware;
-#[cfg(feature = "zerver")]
 /// Route definitions mapping paths to handlers.
 pub mod routes;
 
-#[cfg(feature = "zerver")]
 use crate::{
     domain::{
-        auth::access_token::JwtSecret,
-        auth::ports::{AuthService, ErasedAuthService},
+        auth::{
+            access_token::JwtSecret,
+            ports::{AuthService, ErasedAuthService},
+        },
         card::ports::{CardService, ErasedCardService},
         deck::ports::{DeckService, ErasedDeckService},
         health::ports::{ErasedHealthService, HealthService},
@@ -26,27 +23,20 @@ use crate::{
     },
     inbound::http::routes::{private_routes, public_routes},
 };
-#[cfg(feature = "zerver")]
 use anyhow::{Context, anyhow};
-#[cfg(feature = "zerver")]
 use axum::{
     extract::Request,
     http::{HeaderValue, Method, StatusCode, header},
     middleware::Next,
     response::{IntoResponse, Response},
 };
-#[cfg(feature = "zerver")]
 use dashmap::DashMap;
-#[cfg(feature = "zerver")]
-use std::sync::Arc;
-#[cfg(feature = "zerver")]
-use std::time::Duration;
-#[cfg(feature = "zerver")]
-use std::time::Instant;
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 use thiserror::Error;
-#[cfg(feature = "zerver")]
 use tokio::net;
-#[cfg(feature = "zerver")]
 use tower_http::{
     catch_panic::CatchPanicLayer,
     compression::CompressionLayer,
@@ -55,7 +45,6 @@ use tower_http::{
     request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer},
     timeout::TimeoutLayer,
 };
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
 
 // == error ==
@@ -98,7 +87,6 @@ impl From<uuid::Error> for ApiError {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl IntoResponse for ApiError {
     fn into_response(self) -> axum::response::Response {
         // Single exit path: every error response is logged here, tiered by fault.
@@ -129,13 +117,11 @@ impl IntoResponse for ApiError {
 /// debug repr and a backtrace into the variant while the concrete type still
 /// exists. No logging happens here; `IntoResponse` is the single exit path
 /// that logs the carried detail before stripping it from the response.
-#[cfg(feature = "zerver")]
 trait To500 {
     /// Capture diagnostics and convert to [`ApiError::InternalServerError`].
     fn to_500(self) -> ApiError;
 }
 
-#[cfg(feature = "zerver")]
 impl<E> To500 for E
 where
     E: std::error::Error,
@@ -152,7 +138,6 @@ where
 /// - `X-Content-Type-Options: nosniff` prevents MIME-type sniffing
 /// - `X-Frame-Options: DENY` prevents clickjacking via iframe embedding
 /// - `Referrer-Policy: strict-origin-when-cross-origin` limits referrer leakage
-#[cfg(feature = "zerver")]
 async fn security_headers(request: Request, next: Next) -> Response {
     let mut response = next.run(request).await;
     let headers = response.headers_mut();
@@ -171,7 +156,6 @@ async fn security_headers(request: Request, next: Next) -> Response {
 // == server ==
 
 /// Bind address and CORS origins for the HTTP server.
-#[cfg(feature = "zerver")]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HttpServerConfig<'a> {
     /// Address to bind the TCP listener to (e.g. `"0.0.0.0:3000"`).
@@ -190,7 +174,6 @@ pub struct HttpServerConfig<'a> {
 /// Services are held as type-erased trait objects (see the `ErasedXService`
 /// twins in each domain's ports) so handlers stay free of generic parameters;
 /// mock implementations still satisfy the fields via the blanket impls.
-#[cfg(feature = "zerver")]
 #[derive(Clone)]
 #[allow(missing_docs)]
 pub struct AppState {
@@ -213,7 +196,6 @@ pub struct AppState {
 }
 
 /// Axum HTTP server with pre-configured routes and middleware.
-#[cfg(feature = "zerver")]
 pub struct HttpServer {
     router: axum::Router,
     listener: net::TcpListener,
@@ -222,7 +204,6 @@ pub struct HttpServer {
 /// Assembles the full Axum router (routes + the middleware stack) from
 /// application state. Split out of `HttpServer::new` so integration tests can
 /// drive the router directly (`tower::ServiceExt::oneshot`) with no socket bind.
-#[cfg(feature = "zerver")]
 pub fn build_router(
     state: AppState,
     jwt_secret: JwtSecret,
@@ -282,7 +263,6 @@ pub fn build_router(
         .with_state(state)
 }
 
-#[cfg(feature = "zerver")]
 impl HttpServer {
     /// Builds routes, applies tracing and CORS middleware, and binds the TCP listener.
     pub async fn new(
@@ -337,7 +317,6 @@ impl HttpServer {
 /// Resolves when the process receives either SIGINT (Ctrl-C, dev) or SIGTERM
 /// (systemd `stop`, container orchestrators). `axum::serve` uses this to stop
 /// accepting connections and drain in-flight requests before exiting.
-#[cfg(feature = "zerver")]
 async fn shutdown_signal() {
     let ctrl_c = async {
         let _ = tokio::signal::ctrl_c().await;
@@ -359,7 +338,7 @@ async fn shutdown_signal() {
     }
 }
 
-#[cfg(all(test, feature = "zerver"))]
+#[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::panic)]
     use super::*;

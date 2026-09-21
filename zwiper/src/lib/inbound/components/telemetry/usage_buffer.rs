@@ -9,7 +9,6 @@ use std::{
 };
 
 use uuid::Uuid;
-use zwipe::inbound::http::ApiError;
 use zwipe_core::{
     domain::auth::models::platform::ClientPlatform,
     http::contracts::metrics::{
@@ -179,7 +178,7 @@ impl UsageBuffer {
                 return;
             }
             ClientError::Decode(detail) => ("decode", sanitized_decode_message(detail)),
-            ClientError::Api(api) => (api_error_kind(api), api.to_string()),
+            api => (api_error_kind(api), api.to_string()),
         };
         let message: String = message
             .chars()
@@ -311,15 +310,18 @@ impl UsageBuffer {
     }
 }
 
-/// Report-kind slug for an [`ApiError`] variant.
-fn api_error_kind(api: &ApiError) -> &'static str {
+/// Report-kind slug for a status-carrying [`ClientError`] variant. The slugs
+/// are stored server-side in `client_errors.kind`, so they are fixed strings.
+fn api_error_kind(api: &ClientError) -> &'static str {
     match api {
-        ApiError::Unauthorized(_) => "api_unauthorized",
-        ApiError::Forbidden(_) => "api_forbidden",
-        ApiError::NotFound(_) => "api_not_found",
-        ApiError::UnprocessableEntity(_) => "api_unprocessable",
-        ApiError::TooManyRequests(_) => "api_too_many_requests",
-        ApiError::InternalServerError(_) => "api_internal",
+        ClientError::Unauthorized(_) => "api_unauthorized",
+        ClientError::Forbidden(_) => "api_forbidden",
+        ClientError::NotFound(_) => "api_not_found",
+        ClientError::UnprocessableEntity(_) => "api_unprocessable",
+        ClientError::TooManyRequests(_) => "api_too_many_requests",
+        ClientError::InternalServerError(_) => "api_internal",
+        // Handled before this is reached.
+        ClientError::Network(_) | ClientError::Decode(_) => "api_internal",
     }
 }
 
@@ -358,7 +360,6 @@ mod tests {
         outbound::client::ClientError,
     };
     use uuid::Uuid;
-    use zwipe::inbound::http::ApiError;
     use zwipe_core::http::contracts::metrics::HttpUsageBatch;
 
     #[test]
@@ -429,9 +430,7 @@ mod tests {
     #[test]
     fn report_error_dedupes_and_caps() {
         let buffer = UsageBuffer::new();
-        let error = ClientError::Api(ApiError::UnprocessableEntity(
-            "deck limit reached".to_string(),
-        ));
+        let error = ClientError::UnprocessableEntity("deck limit reached".to_string());
 
         // The same error three times → one entry, count 3.
         for _ in 0..3 {

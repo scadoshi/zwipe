@@ -1,10 +1,9 @@
 # zerver feature-gate teardown
 
-**Status: IN PROGRESS. Planned 2026-09-21 (external architecture review,
-claims verified against the code the same day); phases 1 and 2 landed the
-same day.
-Four phases, each independently shippable, each deletes a bucket of gates.
-Phases 3 and 4 each want a focused pass.**
+**Status: DONE 2026-09-21. Planned 2026-09-21 (external architecture review,
+claims verified against the code the same day). All four phases landed the
+same day: 598 gates to zero, the `zerver` feature deleted, and zwiper no
+longer depends on the server crate at all.**
 
 Note from phase 1: the check commands need `--lib`. The zerver/zervice
 binaries require the feature by design, so a bare `-p zerver
@@ -69,7 +68,7 @@ Rider while touching paths.rs: three route fns are missing the leading slash
 server-side registrations. Optional second rider: static paths become
 `const &str` (only the Uuid-taking ones stay functions).
 
-## Phase 3: stop importing the server Password (kills 199)
+## Phase 3: stop importing the server Password (kills 199) — DONE 2026-09-21
 
 `register.rs:20` and `change_password.rs:19` import zerver's `Password` only
 to validate; `Password::new` delegates to
@@ -79,7 +78,7 @@ everything else in the type is Argon2 hashing a client must never touch.
 1. Call core's `validate` directly at both sites.
 2. Gate `pub mod domain;` and sweep.
 
-## Phase 4: flatten ApiError into ClientError (kills the flag itself)
+## Phase 4: flatten ApiError into ClientError (kills the flag itself) — DONE 2026-09-21
 
 Verified: zwiper never deserializes an ApiError. It constructs one locally
 from `(StatusCode, String)` (client/error.rs:68) and matches on variants,

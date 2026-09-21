@@ -17,14 +17,12 @@
 /// Application configuration from environment variables.
 ///
 /// Provides [`Config`](config::Config) for loading and validating startup configuration.
-#[cfg(feature = "zerver")]
 pub mod config;
 
 /// Core domain models and business logic.
 ///
 /// Contains the heart of the application: cards, decks, users, and authentication.
 /// All validation and business rules are enforced at this layer.
-#[cfg(feature = "zerver")]
 pub mod domain;
 
 /// HTTP API layer for external communication.
@@ -35,5 +33,4 @@ pub mod inbound;
 /// Database and external service integrations.
 ///
 /// PostgreSQL repositories, Scryfall API client, and data mapping.
-#[cfg(feature = "zerver")]
 pub mod outbound;
