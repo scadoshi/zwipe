@@ -177,7 +177,7 @@ fn render_block(b: &'static Block) -> Element {
 /// and the article's prose. Lowercased, with the `backtick` keyword markers
 /// stripped so a search for "group by" hits `Group by` in the body too.
 ///
-/// Built per keystroke over the compiled [`GUIDES`] array (19 articles, no
+/// Built per keystroke over the compiled [`GUIDES`] array (20 articles, no
 /// index, no network), cheap enough that caching would cost more than it saves.
 fn haystack(g: &Guide) -> String {
     let mut s = String::new();
