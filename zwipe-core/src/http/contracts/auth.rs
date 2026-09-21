@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::auth::models::platform::ClientPlatform;
+use crate::domain::auth::models::{platform::ClientPlatform, secret::Secret};
 
 /// Login request body.
 ///
@@ -13,7 +13,7 @@ use crate::domain::auth::models::platform::ClientPlatform;
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpAuthenticateUser {
     pub identifier: String,
-    pub password: String,
+    pub password: Secret,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub platform: Option<ClientPlatform>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -25,7 +25,7 @@ impl HttpAuthenticateUser {
     pub fn new(identifier: &str, password: &str) -> Self {
         Self {
             identifier: identifier.to_string(),
-            password: password.to_string(),
+            password: Secret::new(password),
             platform: None,
             client_version: None,
         }
@@ -39,7 +39,7 @@ impl HttpAuthenticateUser {
 pub struct HttpRegisterUser {
     pub username: String,
     pub email: String,
-    pub password: String,
+    pub password: Secret,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub platform: Option<ClientPlatform>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -52,7 +52,7 @@ impl HttpRegisterUser {
         Self {
             username: username.to_string(),
             email: email.to_string(),
-            password: password.to_string(),
+            password: Secret::new(password),
             platform: None,
             client_version: None,
         }
@@ -88,16 +88,16 @@ impl HttpRefreshSession {
 /// Password change request body. Requires current password for re-verification.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpChangePassword {
-    pub current_password: String,
-    pub new_password: String,
+    pub current_password: Secret,
+    pub new_password: Secret,
 }
 
 impl HttpChangePassword {
     /// Creates a new password change request.
     pub fn new(current_password: &str, new_password: &str) -> Self {
         Self {
-            current_password: current_password.to_string(),
-            new_password: new_password.to_string(),
+            current_password: Secret::new(current_password),
+            new_password: Secret::new(new_password),
         }
     }
 }
@@ -106,7 +106,7 @@ impl HttpChangePassword {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpChangeUsername {
     pub new_username: String,
-    pub password: String,
+    pub password: Secret,
 }
 
 impl HttpChangeUsername {
@@ -114,7 +114,7 @@ impl HttpChangeUsername {
     pub fn new(new_username: &str, password: &str) -> Self {
         Self {
             new_username: new_username.to_string(),
-            password: password.to_string(),
+            password: Secret::new(password),
         }
     }
 }
@@ -123,7 +123,7 @@ impl HttpChangeUsername {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpChangeEmail {
     pub email: String,
-    pub password: String,
+    pub password: Secret,
 }
 
 impl HttpChangeEmail {
@@ -131,7 +131,7 @@ impl HttpChangeEmail {
     pub fn new(email: &str, password: &str) -> Self {
         Self {
             email: email.to_string(),
-            password: password.to_string(),
+            password: Secret::new(password),
         }
     }
 }
@@ -140,7 +140,7 @@ impl HttpChangeEmail {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HttpDeleteUser {
     /// Current password to confirm deletion.
-    pub password: String,
+    pub password: Secret,
 }
 
 /// Email verification request body.
@@ -168,7 +168,7 @@ impl HttpRequestPasswordReset {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpResetPassword {
     pub token: String,
-    pub new_password: String,
+    pub new_password: Secret,
 }
 
 #[cfg(test)]

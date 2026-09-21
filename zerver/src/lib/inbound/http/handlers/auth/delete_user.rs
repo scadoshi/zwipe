@@ -35,7 +35,7 @@ pub async fn delete_user(
     State(state): State<AppState>,
     Json(body): Json<HttpDeleteUser>,
 ) -> Result<StatusCode, ApiError> {
-    let request = DeleteUser::new(user.id, &body.password)?;
+    let request = DeleteUser::new(user.id, body.password.read())?;
 
     state
         .auth_service

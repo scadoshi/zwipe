@@ -28,9 +28,8 @@
 //! )?;
 //! ```
 
-use crate::domain::auth::models::secret::Secret;
 use thiserror::Error;
-use zwipe_core::domain::auth::password::InvalidPassword;
+use zwipe_core::domain::auth::{models::secret::Secret, password::InvalidPassword};
 
 use crate::domain::auth::{
     models::password::HashedPassword, requests::authenticate_user::AuthenticateUserError,

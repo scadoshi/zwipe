@@ -41,7 +41,7 @@ pub async fn change_email(
     State(state): State<AppState>,
     Json(body): Json<HttpChangeEmail>,
 ) -> Result<(StatusCode, Json<User>), ApiError> {
-    let request = ChangeEmail::new(user.id, &body.email, &body.password)?;
+    let request = ChangeEmail::new(user.id, &body.email, body.password.read())?;
 
     let updated_user = state
         .auth_service

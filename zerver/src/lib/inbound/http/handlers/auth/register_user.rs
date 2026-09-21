@@ -82,7 +82,7 @@ impl From<InvalidRegisterUser> for ApiError {
 impl TryFrom<HttpRegisterUser> for RegisterUser {
     type Error = InvalidRegisterUser;
     fn try_from(value: HttpRegisterUser) -> Result<Self, Self::Error> {
-        RegisterUser::new(&value.username, &value.email, &value.password)
+        RegisterUser::new(&value.username, &value.email, value.password.read())
     }
 }
 
@@ -91,7 +91,7 @@ pub async fn register_user(
     State(state): State<AppState>,
     Json(body): Json<HttpRegisterUser>,
 ) -> Result<(StatusCode, Json<Session>), ApiError> {
-    let mut request = RegisterUser::new(&body.username, &body.email, &body.password)?;
+    let mut request = RegisterUser::new(&body.username, &body.email, body.password.read())?;
     request.platform = body.platform;
     request.client_version = body.client_version;
     tracing::info!(event = "register", username = %body.username);

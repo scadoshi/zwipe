@@ -43,7 +43,11 @@ pub async fn change_password(
     State(state): State<AppState>,
     Json(body): Json<HttpChangePassword>,
 ) -> Result<(StatusCode, Json<()>), ApiError> {
-    let request = ChangePassword::new(user.id, &body.current_password, &body.new_password)?;
+    let request = ChangePassword::new(
+        user.id,
+        body.current_password.read(),
+        body.new_password.read(),
+    )?;
 
     state
         .auth_service

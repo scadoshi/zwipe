@@ -42,7 +42,7 @@ pub async fn change_username(
     State(state): State<AppState>,
     Json(body): Json<HttpChangeUsername>,
 ) -> Result<(StatusCode, Json<User>), ApiError> {
-    let request = ChangeUsername::new(user.id, &body.new_username, &body.password)?;
+    let request = ChangeUsername::new(user.id, &body.new_username, body.password.read())?;
 
     let updated = state
         .auth_service

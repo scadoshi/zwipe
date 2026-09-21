@@ -23,10 +23,9 @@
 //! )?;
 //! ```
 
-use crate::domain::auth::models::secret::Secret;
 use thiserror::Error;
 use uuid::Uuid;
-use zwipe_core::domain::{Email, InvalidEmail};
+use zwipe_core::domain::{Email, InvalidEmail, auth::models::secret::Secret};
 
 use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
 

@@ -28,7 +28,7 @@ pub async fn reset_password(
     State(state): State<AppState>,
     Json(body): Json<HttpResetPassword>,
 ) -> Result<StatusCode, ApiError> {
-    let request = ResetPassword::new(body.token, &body.new_password)?;
+    let request = ResetPassword::new(body.token, body.new_password.read())?;
     let user_id = state
         .auth_service
         .reset_password(&request)

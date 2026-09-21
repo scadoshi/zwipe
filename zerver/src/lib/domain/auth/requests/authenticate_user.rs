@@ -42,16 +42,12 @@
 //! println!("Logged in as: {}", session.user.username);
 //! ```
 
-use crate::domain::auth::{
-    models::secret::Secret,
-    requests::{
-        change_email::ChangeEmail, change_password::ChangePassword,
-        change_username::ChangeUsername, create_session::CreateSessionError,
-        delete_user::DeleteUser,
-    },
+use crate::domain::auth::requests::{
+    change_email::ChangeEmail, change_password::ChangePassword, change_username::ChangeUsername,
+    create_session::CreateSessionError, delete_user::DeleteUser,
 };
 use thiserror::Error;
-use zwipe_core::domain::auth::models::platform::ClientPlatform;
+use zwipe_core::domain::auth::models::{platform::ClientPlatform, secret::Secret};
 
 /// Errors that can occur during user authentication.
 ///

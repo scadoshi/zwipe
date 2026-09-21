@@ -45,7 +45,7 @@ impl From<InvalidAuthenticateUser> for ApiError {
 impl TryFrom<HttpAuthenticateUser> for AuthenticateUser {
     type Error = InvalidAuthenticateUser;
     fn try_from(value: HttpAuthenticateUser) -> Result<Self, Self::Error> {
-        AuthenticateUser::new(&value.identifier, &value.password)
+        AuthenticateUser::new(&value.identifier, value.password.read())
     }
 }
 
@@ -54,7 +54,7 @@ pub async fn authenticate_user(
     State(state): State<AppState>,
     Json(body): Json<HttpAuthenticateUser>,
 ) -> Result<(StatusCode, Json<Session>), ApiError> {
-    let mut request = AuthenticateUser::new(&body.identifier, &body.password)?;
+    let mut request = AuthenticateUser::new(&body.identifier, body.password.read())?;
     request.platform = body.platform;
     request.client_version = body.client_version;
 

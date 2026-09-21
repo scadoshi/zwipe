@@ -12,7 +12,10 @@ use crate::{
 };
 use dioxus::prelude::*;
 use std::time::Duration;
-use zwipe_core::{domain::auth::models::session::Session, http::contracts::auth::HttpDeleteUser};
+use zwipe_core::{
+    domain::auth::models::{secret::Secret, session::Session},
+    http::contracts::auth::HttpDeleteUser,
+};
 
 /// Delete account dialog with 5-second countdown, password confirmation, and deletion logic.
 #[component]
@@ -71,7 +74,7 @@ pub(crate) fn DeleteAccountDialog(mut open: Signal<bool>) -> Element {
                             spawn(async move {
                                 if authed
                                     .run_at(component::DELETE_ACCOUNT_DIALOG, "delete_account", |c, s| async move {
-                                        c.delete_user(HttpDeleteUser { password }, &s).await
+                                        c.delete_user(HttpDeleteUser { password: Secret::new(password) }, &s).await
                                     })
                                     .await
                                     .is_some()
