@@ -254,6 +254,13 @@ cd ~/zwipe && set -a && source .env.zervice && set +a && ./zervice
 
 This re-syncs all 35k+ cards from Scryfall. Takes a few minutes.
 
+`.env.zervice`, not `.env`. The three materialized views are **owned** by the
+`zervice` role, and `REFRESH MATERIALIZED VIEW` requires ownership rather than a
+grant, so sourcing `.env` connects as `zwipe` and step 4 fails on all three with
+`permission denied for materialized view`. The card sync in steps 1 to 3 still
+succeeds, which makes the run look half-broken when the only thing wrong is the
+identity. Hit 2026-09-22.
+
 ---
 
 ## Change Database Password
