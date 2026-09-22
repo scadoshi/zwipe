@@ -17,6 +17,39 @@ at `context/archive/complete_2026_q1.md`.
   [`../operations/android/emulator.md`](../operations/android/emulator.md)
   works as written again.
 
+- [ ] **OWNER: sim test the mutating endpoints, then confirm before cutting
+  1.10.2.** Blocking the cut. The 2026-09-22 typed-request work changed the
+  bytes of every request that carries a body: they used to serialize through
+  `serde_json::Value`, whose map is a BTreeMap, so keys went out
+  alphabetically; a typed `.json()` emits declaration order. Same document,
+  different key order, and
+  `typing_the_body_changes_key_order_but_not_the_document` in `endpoint.rs`
+  pins that. Nothing hashes or signs a raw body.
+
+  Semantically it should be a no-op, which is exactly why it wants a
+  deliberate pass rather than an assumption. Exercise on a sim against a
+  local server: **create a deck, add a card, update a card quantity or board,
+  import from text, import from an Archidekt URL**. Those five carry bodies
+  through the paths that changed most.
+
+  Also worth a look while in there, since they are new this session and
+  untested on a device: the Universes Beyond exceptions picker and the oracle
+  tag picker's default grid, both of which now render server-supplied lists
+  with no compiled fallback.
+
+- [ ] **Finish the reassessment's finding 2 before the cut: bind the router
+  to the shared paths.** Plan stub at
+  [`../plans/router_bound_to_paths.md`](../plans/router_bound_to_paths.md).
+  Test-only, so it touches nothing in the client build and needs no
+  re-testing: promote the 42-element array in `paths.rs` to a public
+  `&[(Method, &str)]`, then oneshot each entry against
+  `common::TestApp.router` in `zerver/tests` and assert the status is not 404
+  or 405. Roughly 30 lines; `card_filter_parity.rs` is the precedent.
+
+  Closes about 21 uncovered path symbols. `routes.rs` currently imports
+  nothing from `zwipe_core` and hardcodes 36 literals, so server and clients
+  agree by coincidence.
+
 - [ ] **Add zwipe-client to the public architecture write-ups.** The crate
   landed 2026-09-22 and both clients call the API through it, but every
   outward-facing description still says five crates.
