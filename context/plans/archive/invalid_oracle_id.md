@@ -1,9 +1,10 @@
 # "invalid oracle id" on add card
 
-**Status: SOLVED 2026-09-22, not yet applied. Root cause confirmed in the code
-and the affected cards identified against the local catalog. The fix is a
-server-side data backfill, so it repairs clients already in the field with no
-release.**
+**Status: SHIPPED 2026-09-22. Migration `20260922120000` and the ingest fix are
+live on prod: zero null oracle ids, zero reversible printings in the search
+view. Fixed without a client release, so installs already in the field stopped
+failing the moment it landed. Outcome recorded in the progress log; this file
+stays for the diagnosis and the measurements behind the sort-key choice.**
 
 **One sentence:** a card whose `oracle_id` is absent is sent to the server as
 an empty string, which the server rejects with a 422 the user sees as a
