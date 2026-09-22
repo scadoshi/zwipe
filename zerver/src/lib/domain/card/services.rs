@@ -89,7 +89,7 @@ impl<R: CardRepository> CardService for Service<R> {
         );
         let mut zervice_metrics = ZerviceMetrics::new();
         let batch_size = batch_size();
-        let scryfall_data: Vec<ScryfallData> = bulk_endpoint.amass().await?;
+        let scryfall_data: Vec<ScryfallData> = bulk_endpoint.fetch_cards().await?;
         zervice_metrics.set_received_count(scryfall_data.len() as i32);
         self.repo
             .batch_delta_upsert(&scryfall_data, batch_size, &mut zervice_metrics)
@@ -157,7 +157,7 @@ impl<R: CardRepository> CardService for Service<R> {
 
     async fn sync_oracle_tags(&self) -> anyhow::Result<(u32, u32)> {
         tracing::info!("performing oracle tags sync");
-        let tags = BulkEndpoint::OracleTags.amass_oracle_tags().await?;
+        let tags = BulkEndpoint::OracleTags.fetch_oracle_tags().await?;
         tracing::info!("fetched {} oracle tags", tags.len());
         let counts = self.repo.sync_oracle_tags(&tags).await?;
         Ok(counts)

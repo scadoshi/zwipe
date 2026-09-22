@@ -60,7 +60,7 @@ impl BulkEndpoint {
     /// gunzip → one parsed `T` per line. Blank lines are skipped; a malformed
     /// line fails the whole fetch (better a loud sync failure than silent
     /// partial data).
-    async fn amass_jsonl<T: DeserializeOwned>(&self, what: &str) -> anyhow::Result<Vec<T>> {
+    async fn fetch_jsonl_gz<T: DeserializeOwned>(&self, what: &str) -> anyhow::Result<Vec<T>> {
         let url = format!("{}{}", SCRYFALL_API_BASE, self.resolve());
         let request = ScryfallRequest::get(Client::new(), &url);
 
@@ -84,22 +84,22 @@ impl BulkEndpoint {
         parse_jsonl_gz(&bytes).with_context(|| format!("failed to parse {what} jsonl"))
     }
 
-    /// Fetches bulk card data (`Vec<ScryfallData>`).
+    /// Downloads and parses the bulk card file (`Vec<ScryfallData>`).
     ///
     /// Reversible cards arrive with no top-level `oracle_id`, so it is lifted
     /// from their faces here, before the delta comparison and the upsert both
     /// see the card.
-    pub async fn amass(&self) -> anyhow::Result<Vec<ScryfallData>> {
-        let mut cards: Vec<ScryfallData> = self.amass_jsonl(&self.to_snake_case()).await?;
+    pub async fn fetch_cards(&self) -> anyhow::Result<Vec<ScryfallData>> {
+        let mut cards: Vec<ScryfallData> = self.fetch_jsonl_gz(&self.to_snake_case()).await?;
         for card in &mut cards {
             card.backfill_oracle_id_from_faces();
         }
         Ok(cards)
     }
 
-    /// Fetches the Oracle Tags bulk file (`Vec<OracleTag>`).
-    pub async fn amass_oracle_tags(&self) -> anyhow::Result<Vec<OracleTag>> {
-        self.amass_jsonl("oracle-tags").await
+    /// Downloads and parses the Oracle Tags bulk file (`Vec<OracleTag>`).
+    pub async fn fetch_oracle_tags(&self) -> anyhow::Result<Vec<OracleTag>> {
+        self.fetch_jsonl_gz("oracle-tags").await
     }
 }
 
