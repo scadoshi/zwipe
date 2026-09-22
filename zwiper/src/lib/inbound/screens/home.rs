@@ -21,7 +21,10 @@ use crate::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
+use std::{
+    sync::atomic::{AtomicBool, Ordering},
+    time::Duration,
+};
 use zwipe_client::ZwipeClient;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
@@ -31,6 +34,11 @@ use zwipe_core::domain::{
     logo,
     user::models::{hints::HINT_FIRST_LOGIN, theme::ThemeConfig},
 };
+
+/// Whether this launch has already greeted. Home remounts on every navigation
+/// back to it, so the greeting needs somewhere to remember itself that
+/// outlives the component.
+static GREETED: AtomicBool = AtomicBool::new(false);
 
 /// Home screen with navigation to main app features.
 #[component]
@@ -59,6 +67,11 @@ pub fn Home() -> Element {
     // Refresh user on mount so email_verified_at is current without re-login,
     // then greet: verified users get "Hello, username!", unverified users get
     // only the verification nudge (no greeting).
+    //
+    // The greeting fires once per launch. Home remounts on every navigation
+    // back to it, so an ungated toast greets you again on each return from a
+    // deck. The verification nudge is deliberately not gated: it is a prompt
+    // to act on, not a welcome, and it stops on its own once verified.
     use_effect(move || {
         let Some(s) = session.peek().clone() else {
             return;
@@ -78,7 +91,7 @@ pub fn Home() -> Element {
                             "Verify your email!".to_string(),
                             ToastOptions::default().duration(Duration::from_millis(1500)),
                         );
-                    } else {
+                    } else if !GREETED.swap(true, Ordering::Relaxed) {
                         toast.info(
                             format!("Hello, {username}!"),
                             ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -91,6 +104,7 @@ pub fn Home() -> Element {
                     // failed refresh still greets verified users.
                     if let Some(session) = session.peek().clone()
                         && session.user.email_verified_at.is_some()
+                        && !GREETED.swap(true, Ordering::Relaxed)
                     {
                         toast.info(
                             format!("Hello, {}!", session.user.username),

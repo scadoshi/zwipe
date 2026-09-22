@@ -34,6 +34,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Shaking the phone no longer opens the system Undo prompt. Undo on the add screen is still a downward swipe.",
         "When the filter lists can't load, the app says so and tries again. They used to come up empty with no explanation until you restarted.",
         "The command zone strip on a deck no longer flashes placeholder shapes before the cards deal in, and it holds its height instead of collapsing and jumping as their images load.",
+        "The welcome message greets you once when the app starts instead of every time you return to the home screen.",
     ],
 }];
 
