@@ -1172,30 +1172,6 @@ button {
     height: 0.65rem;
 }
 
-/* Featured cards strip (command zone + MVPs): three card-shaped ghosts with
-   a name bar and role chip under each, like the real FeaturedCards. */
-.skeleton-featured-strip {
-    display: flex;
-    gap: 0.75rem;
-    width: 100%;
-    margin: 0.5rem 0 0.75rem 0;
-}
-
-.skeleton-featured-card {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-.skeleton-card-image {
-    width: 100%;
-    aspect-ratio: 5 / 7;
-    border-radius: 0.5rem;
-}
-
 /* Row art thumbnail (the real rows lead with a landscape art crop). */
 .skeleton-card-thumb {
     width: 2.6rem;
@@ -3705,24 +3681,24 @@ button {
        (MVPs land after the commander) grows in and its siblings smoothly
        cede width instead of snapping smaller. `backwards` keeps a card
        invisible through its stagger delay. */
-    animation: deck-featured-deal 0.65s cubic-bezier(0.33, 1, 0.68, 1) backwards;
+    animation: deck-featured-deal 0.78s cubic-bezier(0.33, 1, 0.68, 1) backwards;
 }
 
 /* Staggered like a real deal: each card lands a beat after the one before. */
 .deck-featured-card:nth-child(2) {
-    animation-delay: 150ms;
+    animation-delay: 180ms;
 }
 .deck-featured-card:nth-child(3) {
-    animation-delay: 300ms;
+    animation-delay: 360ms;
 }
 .deck-featured-card:nth-child(4) {
-    animation-delay: 450ms;
+    animation-delay: 540ms;
 }
 .deck-featured-card:nth-child(5) {
-    animation-delay: 600ms;
+    animation-delay: 720ms;
 }
 .deck-featured-card:nth-child(6) {
-    animation-delay: 750ms;
+    animation-delay: 900ms;
 }
 
 @keyframes deck-featured-deal {
@@ -3738,8 +3714,12 @@ button {
     }
 }
 
+/* Reserve the card's footprint before the image loads. The img inside starts
+   transparent with height:auto, so without a ratio here the strip collapses to
+   nothing and pops back when the bytes land. */
 .deck-featured-image {
     width: 100%;
+    aspect-ratio: 5 / 7;
 }
 
 .deck-featured-card .deck-featured-image img {

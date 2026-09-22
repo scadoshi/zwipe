@@ -1207,20 +1207,12 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
                     }
 
-                    if !deck_loaded() && featured_cards.is_empty() {
-                        // Featured-cards ghost in place; vanishes on load for
-                        // decks with no command zone or MVPs (unknowable until
-                        // the data lands, same trade as the deck list's pips).
-                        div { class: "skeleton-featured-strip",
-                            for i in 0..3 {
-                                div { key: "{i}", class: "skeleton-featured-card",
-                                    div { class: "skeleton-bar skeleton-card-image" }
-                                    div { class: "skeleton-bar skeleton-card-bar-header" }
-                                    div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
-                                }
-                            }
-                        }
-                    }
+                    // No ghost for the featured strip: it holds anywhere from
+                    // zero to six cards, so any fixed count is wrong most of
+                    // the time and resolving to fewer reads as cards vanishing.
+                    // The cards deal themselves in from above instead, which
+                    // already carries the arrival. The rest of the screen keeps
+                    // its skeleton.
                     FeaturedCards {
                         cards: featured_cards,
                         on_tap: move |card: Card| {
