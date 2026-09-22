@@ -29,9 +29,9 @@ nothing in the schema or the app inspects the version. Rewriting existing
 IDs buys ordering for ~2,500 historical rows, and that is the half whose
 cost is real while its benefit is not.
 
-**Prerequisite 1 is partly done.** Prod runs PostgreSQL 18.6 and native
-`uuidv7()` works (verified by calling it). Still outstanding: CI's service
-image is `postgres:16` and local dev is on **15**.
+**Prerequisite 1 is nearly done.** Prod runs PostgreSQL 18.6 and native
+`uuidv7()` works (verified by calling it). Local dev moved 15 to 18.6 on
+2026-09-22. Still outstanding: CI's service image is `postgres:16`.
 
 **One sentence:** move every ID we mint to time-ordered UUIDv7 (RFC 9562),
 new-row generation AND a one-time rewrite of existing v4 IDs, for b-tree

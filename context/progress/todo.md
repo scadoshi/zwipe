@@ -59,6 +59,19 @@ at `context/archive/complete_2026_q1.md`.
   Both are console work, no build required. Promotional text and the Play
   listing update without a submission; the App Store description does too.
 
+- [ ] **Bump CI's Postgres service image to 18.** All three workflows run
+  `postgres:16`, and `test.yml`'s own comment says it should "match the VPS
+  major version". The VPS went to 18 in June and prod is on 18.6; local dev
+  followed on 2026-09-22. CI is the last one behind, so integration tests
+  gate on a planner neither dev nor prod uses.
+
+  Left undone deliberately: a red check silently skips the prod deploy
+  (`commit_guidelines.md`), and this cannot be rehearsed locally. Low risk,
+  since the suite passes on 18.6 here, but it wants a push someone is
+  watching rather than a drive-by.
+
+  `.github/workflows/{test,deploy-zerver,deploy-zite}.yml`.
+
 - [ ] **Tooling: why did iOS switch to Device Hub?** Xcode is opening a different simulator surface than it used to, and the classic Simulator window behaved better with the tiling manager. Unexplained change, low urgency, but worth knowing before the 1.10.2 device pass. (The keyboard capture is separate and already understood: I/O → Keyboard → Connect Hardware Keyboard, ⇧⌘K.)
 
 - [x] ~~**Hands-on pass of the app before 1.10.2.**~~ DONE 2026-09-22. The

@@ -75,15 +75,17 @@ echo "installing system dependencies..."
 brew install openssl pkg-config
 
 # install postgresql
+# Pinned to 18 to match the prod VPS. A local cluster on an older major runs a
+# different planner than the one the queries actually meet.
 echo "installing postgresql..."
 if ! command -v psql &> /dev/null; then
-    brew install postgresql@15
-    echo 'export PATH="/opt/homebrew/opt/postgresql@15/bin:$PATH"' >> ~/.zprofile
-    export PATH="/opt/homebrew/opt/postgresql@15/bin:$PATH"
+    brew install postgresql@18
+    echo 'export PATH="/opt/homebrew/opt/postgresql@18/bin:$PATH"' >> ~/.zprofile
+    export PATH="/opt/homebrew/opt/postgresql@18/bin:$PATH"
 fi
 
 # start postgresql
-brew services start postgresql@15
+brew services start postgresql@18
 
 # install sqlx-cli
 echo "installing sqlx-cli..."

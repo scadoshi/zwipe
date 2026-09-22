@@ -57,7 +57,7 @@ Beyond the [shared end state](../README.md#shared-end-state), the macOS script:
 - Requires the `iphonesimulator` SDK (exits early with fix steps otherwise).
 - Provisions a **6.5" iPhone 11 Pro Max** Simulator device if one doesn't
   already exist (idempotent — re-running won't create duplicates).
-- Installs Postgres via Homebrew (`postgresql@15`) and starts it as a service.
+- Installs Postgres via Homebrew (`postgresql@18`, matching the prod VPS) and starts it as a service.
 - Uses **peer auth** — the DB is owned by your macOS user, no password.
 
 ## Running on the iOS Simulator
