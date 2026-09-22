@@ -10,20 +10,38 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Next Up
 
-- [ ] **Tooling: get the Android emulator back.** Diagnosed 2026-09-21, nothing is corrupt, the pieces are just uninstalled. The SDK still has `build-tools`, `ndk`, `platform-tools` and `platforms`, but the `emulator` package is gone, `~/.android/avd/` does not exist, and there are no system images. Reinstall and recreate the AVD, then [`../operations/android/emulator.md`](../operations/android/emulator.md) works as written again:
-  ```bash
-  export ANDROID_HOME="$HOME/Library/Android/sdk"
-  "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-    "emulator" "system-images;android-36;google_apis;arm64-v8a"
-  avdmanager create avd -n Pixel_9a -k "system-images;android-36;google_apis;arm64-v8a" -d pixel_9a
-  ```
-  Add the restore steps to that runbook afterwards so the next SDK cleanup is a five-minute fix.
+- [x] ~~**Tooling: get the Android emulator back.**~~ Done 2026-09-22. The
+  `emulator` package and the `android-36` arm64 system image are reinstalled
+  and the `Pixel_9a` AVD exists again. Never booted: the owner asked for the
+  toolchain only, so the first launch is still unproven.
+  [`../operations/android/emulator.md`](../operations/android/emulator.md)
+  works as written again.
 
 - [ ] **Tooling: why did iOS switch to Device Hub?** Xcode is opening a different simulator surface than it used to, and the classic Simulator window behaved better with the tiling manager. Unexplained change, low urgency, but worth knowing before the 1.10.2 device pass. (The keyboard capture is separate and already understood: I/O → Keyboard → Connect Hardware Keyboard, ⇧⌘K.)
 
-- [ ] **Hands-on pass of the app before 1.10.2.** The 2026-09-21 client refactor shipped one real regression (every endpoint pinned to a single success status; four that answer 204 broke, including `delete_deck_card`). Fixed in `4411dde0` by accepting any 2xx, but the cross-check that missed it shared a bug with the code it was checking, so treat it as discredited and exercise the app by hand. Priority order: add and remove a card, undo both, then **crash reporting and usage telemetry**, which were broken the same way and fail with no visible symptom.
+- [ ] **Hands-on pass of the app before 1.10.2, mostly done.** The
+  2026-09-21 client refactor shipped one real regression (every endpoint
+  pinned to a single success status; four that answer 204 broke, including
+  `delete_deck_card`). Fixed in `4411dde0` by accepting any 2xx, but the
+  cross-check that missed it shared a bug with the code it was checking, so
+  it stays discredited and the app gets exercised by hand.
 
-- [ ] **Small fixes queued, each with a plan.** [`filter_cannot_clear.md`](../plans/filter_cannot_clear.md) (can't clear a filter back to default on the add screen, plus two stacked toasts that overlap), [`invalid_oracle_id.md`](../plans/invalid_oracle_id.md) (server-side logging first; it names the failing cards with no client release), [`ios_shake_to_undo.md`](../plans/ios_shake_to_undo.md), [`catalog_cache_retry.md`](../plans/catalog_cache_retry.md). Scope for the release is in [`cut_1_10_2.md`](../plans/cut_1_10_2.md).
+  Covered 2026-09-22 on device against prod, after the `zwipe-client`
+  extraction: login, deck list, card search, adding, removing, cloning, and
+  deck edits. Usage telemetry confirmed server-side (84 `user_card_signal`
+  rows, 5 `user_events`, plus the lifetime counters) and the error path
+  confirmed by a real `api_unprocessable` row for a duplicate clone name.
+
+  **Still owed: crash reporting.** `crash_reports` is empty, which is the
+  right answer but not a test. It needs a deliberate panic, since it fails
+  with no visible symptom.
+
+- [x] ~~**Small fixes queued, each with a plan.**~~ All four shipped
+  2026-09-22 and their plans are archived: the filter that could not be
+  cleared back to default (which also stopped re-fetching when nothing
+  changed), iOS shake-to-undo, a toast when the catalog cache fails, and
+  the reversible-card `oracle_id` bug, fixed server-side so phones already
+  in the field were repaired without an update.
 
 - [ ] ~~**CUT 1.9.2**~~, **DONE 2026-08-17: submitted to both stores** (iOS build 76 / Android versionCode 39). Carries the two Android manifest fixes (the ndk-context crash that survived five releases, and the app silently closing on a system theme change), the back-swipe overlay fixes, the deck list restyle with command-zone art, command-zone art URLs on the wire, per-combination color grouping with mana pips, and the zite work (share-page deal-in, guides search, Panel heroes, 36 guide screenshots). The post-bundle patches are now **one command**: `zcripts/android/patch_bundle.sh` (icons + back handler + manifest). Skipping it silently reships the crash; that checklist is exactly how the bug lived five releases. Build steps: [`../operations/android/play-store/submission/build.md`](../operations/android/play-store/submission/build.md).
 
@@ -118,14 +136,14 @@ Once wasm compiles, build the authenticated experience into zite:
 - [ ] Session storage for web (localStorage or similar; no keyring on web)
 - [ ] Test full auth flow: register, verify email, login, refresh token rotation
 - [ ] Test deck CRUD, card search, card add/remove via both swipe and arrow buttons
-- [ ] Rework `/download` page, still useful for iOS users, but less central
+- [ ] Rework the download pages (now `/download/ios` and `/download/android`), still useful but less central once the app runs in the browser
 
 ### Architecture Notes
 
 - **Single domain**: `zwipe.net`, no subdomain split. Marketing and app coexist.
 - **Security posture unchanged**: Same JWT auth, rate limiting, account lockout. Browser is just another API client.
 - **Ship both**: Webapp ships first for immediate reach. iOS submits to App Store in parallel.
-- **Reuse**: zite already depends on `zwipe-core`. Domain types, validation, and shared CSS (`shared/themes.css`) are ready.
+- **Reuse**: zite already depends on `zwipe-core` and `zwipe-components`, so domain types, validation and `themes.css` are in place. The typed API client is shared too, in `zwipe-client`: zite adds the dependency rather than writing its own calls.
 
 ---
 
