@@ -23,6 +23,31 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 The running log, newest first. Update this when something ships;
 [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-09-22: 1.10.2's client fixes, all four built
+
+Four user-visible fixes, all client-side, all staged in the changelog's
+UPCOMING block:
+
+- **Filters can be cleared again.** Applying an emptied filter was refused as
+  "empty" and then reverted by the close effect, so once a filter was on there
+  was no way off it, and Reset was caught by the same trap. Apply now reads the
+  transition rather than the draft alone. An unedited apply also stops
+  refetching, so opening the sheet to look at the filters keeps your place in
+  the card stack.
+- **iOS shake-to-undo suppressed.** A shake raised the system "Undo Typing"
+  alert over an app whose only text entry is short form fields.
+- **A failed catalog prefetch now says so.** Empty filter pickers read as "no
+  matches" rather than "didn't load". One toast per sheet opening, no retry
+  button: each picker's `ensure_*` refetches a failed cell on mount, so opening
+  the sheet already is the retry.
+- **The command zone strip stopped jumping.** Its ghost placeholder is gone
+  (any fixed count is wrong for a strip holding zero to six, and resolving to
+  fewer read as cards vanishing), the image box reserves its footprint so the
+  strip holds height while bytes land, and the deal-in no longer animates
+  width. Every card is in the DOM from the start, so growing them in sequence
+  reflowed the row on each one and read as a scramble. They now drop in at the
+  size they keep.
+
 ## 2026-09-22: reversible cards were unaddable, fixed for phones already in the field
 
 "invalid oracle id: failed to parse a uuid" had been failing deck adds since
