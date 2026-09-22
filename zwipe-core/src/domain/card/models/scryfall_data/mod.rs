@@ -463,6 +463,32 @@ mod tests {
         assert_eq!(card.oracle_id, Some(oracle_id));
     }
 
+    /// The nightly sync decides what to write with `!existing.contains(x)`, a
+    /// whole-struct equality check against the stored row. Backfilling must
+    /// therefore make the card compare unequal to its stored form, or the
+    /// delta skips it and the rows already in the database stay broken.
+    #[test]
+    fn a_backfilled_card_differs_from_its_stored_form() {
+        use crate::domain::card::scryfall_data::card_faces::CardFaces;
+        let oracle_id = uuid::Uuid::from_u128(0xABCD);
+        let faces: CardFaces = serde_json::from_value(serde_json::json!([
+            { "name": "Blood Crypt", "mana_cost": "", "object": "card_face", "oracle_id": oracle_id },
+        ]))
+        .expect("faces parse");
+
+        let mut stored = make_card("Blood Crypt // Blood Crypt").scryfall_data;
+        stored.oracle_id = None;
+        stored.card_faces = Some(faces);
+
+        let mut incoming = stored.clone();
+        incoming.backfill_oracle_id_from_faces();
+
+        assert_ne!(
+            stored, incoming,
+            "delta would skip the row and never heal it"
+        );
+    }
+
     /// A card that already has one keeps it; the faces never override.
     #[test]
     fn backfill_leaves_an_existing_oracle_id_alone() {
