@@ -121,7 +121,55 @@ and card operations zite won't touch until it becomes the deck builder. Move
 the whole layer anyway. Moving half recreates the two-homes problem the crate
 exists to prevent.
 
-## The 52-trait question (owner decision, settle before the move)
+## STARTED 2026-09-22, reverted to a clean tree mid-way
+
+Owner chose to do the extraction despite the parking note above, and settled
+the trait question: **collapse to inherent impls during the move.**
+
+Phase A (collapse the traits in place, before moving anything) was run and
+then reverted, because it leaves the tree uncompilable until the call sites
+are fixed in the same pass and a context handoff fell in the middle. Nothing
+was committed. Redo it with this, which worked (51 files changed, 52 traits
+removed):
+
+```python
+# for each zwiper/src/lib/outbound/client/*/*.rs
+# 1. delete the trait declaration (doc comments, #[allow], the block)
+re.sub(r'(?:^/// [^\n]*\n)*(?:^#\[allow\([^\]]*\)\]\n)?'
+       r'^pub trait Client\w+ \{\n(?:[^\n]*\n)*?^\}\n\n?', '', s, flags=re.M)
+# 2. impl ClientX for ZwipeClient -> impl ZwipeClient
+re.sub(r'^impl Client\w+ for ZwipeClient \{', 'impl ZwipeClient {', s, flags=re.M)
+# 3. methods become inherent and public
+re.sub(r'^(\s+)async fn (\w+)\(', r'\1pub async fn \2(', s, flags=re.M)
+```
+
+That alone leaves ~39 compile errors: 43 files outside the client directory
+still `use` the deleted traits. Those imports must be deleted in the same pass.
+Beware that `ClientPoint`, `ClientPlatform` and `ClientErrorReport` match a
+naive `Client[A-Z]` grep but are **core types, not traits**. The real list of
+52 names is recoverable by grepping `pub trait Client` before step 1.
+
+Only `user/preferences.rs` declares more than one trait (two); every other
+file has exactly one.
+
+### Wire safety (owner's explicit requirement)
+
+The wire is defined by files this refactor must not touch: the `Endpoint`
+impls in `zwipe-core/src/http/endpoints/`, `paths.rs`, `contracts/`,
+`endpoint.rs`, and `call.rs` (which builds every request; its path moves, its
+content must not). Hash them before starting and re-check after:
+
+```bash
+shasum -a256 zwipe-core/src/http/endpoints/*.rs zwipe-core/src/http/paths.rs \
+             zwipe-core/src/http/contracts/*.rs zwipe-core/src/http/endpoint.rs
+shasum -a256 < <path to call.rs>
+```
+
+Collapsing traits changes only the per-endpoint wrappers, so every one of
+those hashes must be unchanged afterwards. If one moves, the refactor has
+touched the protocol and should be stopped.
+
+## The 52-trait question (SETTLED 2026-09-22: collapse, see above)
 
 `zwiper/src/lib/outbound/client/` has 52 `pub trait ClientX` with exactly 52
 impls, all on `ZwipeClient`. No mocks, no second implementor; screens grab
