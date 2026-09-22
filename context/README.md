@@ -921,7 +921,7 @@ Prod migrated off the home box to a **Hetzner CPX31 VPS** on 2026-06-13 (see ent
 | CI/CD — zerver/zervice auto-deploy | ✅ Live, includes automatic migrations |
 | CI/CD — zite → GitHub Pages | ✅ Live |
 | Tailscale (local SSH access) | ✅ Configured |
-| zervice nightly cron (Scryfall sync) | ✅ On VPS (4am UTC) |
+| zervice nightly sync (Scryfall) | ✅ `zervice.timer` on VPS (4am UTC) |
 | SQLx offline mode (.sqlx/ committed) | ✅ Configured |
 | Database backups (pg_dump → R2, 30-day) | ✅ Nightly cron (5am UTC, on VPS) |
 
@@ -948,20 +948,40 @@ Prod migrated off the home box to a **Hetzner CPX31 VPS** on 2026-06-13 (see ent
 | Transactional email via Resend | ✅ |
 | Rolling daily logs + security audit logs | ✅ |
 | Binary versioning (health endpoint + startup log) | ✅ |
+| Deck sharing: public token, share and revoke | ✅ |
+| Deck cloning | ✅ |
+| Archidekt import (server fetches, parses, resolves printings) | ✅ |
+| Card skips and per-deck suppressions | ✅ |
+| Commander maybeboard (add, remove, clear) | ✅ |
+| Deck tag catalog + oracle tag catalog | ✅ |
+| Commander search with popularity ordering | ✅ |
+| Synergy scoring (zynergy worker, least-priv DB role) | ✅ |
+| Changelog endpoint (public, unauthenticated) | ✅ |
+| Minimum client version endpoint (drives the app's update gate) | ✅ |
+| Metrics intake: usage batches, crash reports, anonymous events | ✅ |
+| One-time hint state per user | ✅ |
 
 ---
 
 ## Web Client (zwipe.net): ✅ Live
 
+All 14 routes below are live. The ones that read the public API
+(`/changelog`, `/guides`, `/deck/:token`) do so unauthenticated.
+
 | Page | Status |
 |------|--------|
 | `/` — landing page | ✅ |
 | `/about` | ✅ |
+| `/changelog` — release history from the API | ✅ |
+| `/guides` and `/guides/:slug` — illustrated how-tos | ✅ |
+| `/deck/:token` — public shared-deck viewer | ✅ |
 | `/contribute` — GitHub Sponsors | ✅ |
-| `/download` — app store pending page | ✅ |
+| `/discord` — invite redirect | ✅ |
+| `/download/ios` and `/download/android` — store links | ✅ |
 | `/privacy` | ✅ |
 | `/verify/:token` — email verification | ✅ |
 | `/reset/:token` — password reset form | ✅ |
+| `/:..segments` — 404 catchall | ✅ |
 | Favicon | ✅ |
 | Entrance animations, sticky nav, ASCII logo | ✅ |
 
@@ -998,6 +1018,19 @@ Prod migrated off the home box to a **Hetzner CPX31 VPS** on 2026-06-13 (see ent
 | Casing revamp (Title Case headings, sentence-case buttons/labels, backend text as-is) | ✅ |
 | Font swap: Cascadia Code → JetBrains Mono @ weight 400 | ✅ |
 | Mana value rename (was CMC) in stats + filter labels | ✅ |
+| Deck share links (More sheet → public `zwipe.net/deck/{token}` page) | ✅ |
+| Deck MVPs: star up to three cards per deck | ✅ |
+| Commander maybeboard (swipe-up while picking, own screen under More) | ✅ |
+| Deck list Group by + Show rows (format, color, tag) | ✅ |
+| Deck tags, other tags, power level | ✅ |
+| Import from Archidekt by URL, alongside plain text | ✅ |
+| In-app changelog screen | ✅ |
+| Oracle tag dictionary + per-tag examples | ✅ |
+| Featured flavor card on the home screen (rotates hourly) | ✅ |
+| Synergy-ordered serving with commander-aware ranking | ✅ |
+| Crash reporting + batched usage telemetry | ✅ |
+| Version gate: blocking update screen below the server minimum | ✅ |
+| One-time hint dialogs with a ? button to bring them back | ✅ |
 
 ---
 
