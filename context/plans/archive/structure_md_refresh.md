@@ -1,9 +1,13 @@
 # structure.md refresh
 
-**Status: EXECUTING 2026-09-21 (same session that wrote this). The
-architecture review found structure.md certifying an April picture of the
-codebase; every drift item below was verified against the code before this
-plan was written.**
+**Status: DONE 2026-09-21 (`dc43200e`).**
+
+Every drift item below was fixed and verified against the tree: the Family
+table, the missing `zwipe-components` section, the `metrics/` and `upkeep/`
+domains, the zwiper and zite trees, and the theme count (31 everywhere,
+including the stale "14 themes" doc comment in zwipe-components). CLAUDE.md's
+graph matched at the same time, and was corrected again on 2026-09-22 once the
+teardown deleted the `zwiper -> zerver` edge entirely.
 
 **One sentence:** make structure.md true again, stamp every section with
 whether it describes something real, removed, or hypothetical, and align
