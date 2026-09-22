@@ -62,10 +62,35 @@ Three things the census settled:
 Re-run the census against prod before applying anything; the local catalog
 may lag.
 
-## The fix: backfill, no client release
+## The fix: three parts, no client release
 
-Because the right value is already in the row, this is repairable server-side,
-which fixes **every client including shipped 1.10.1** without an update:
+Prod census 2026-09-22 (via the owner): **82** rows, all `reversible_card`, all
+82 in `latest_cards`, all 82 with both faces carrying the same id, none null.
+Local showed 81; prod simply has one more card.
+
+Because the correct value is already in the row, this is repairable
+server-side, which fixes **every client including shipped 1.10.1** with no
+release. But the backfill alone is not safe on its own, for the reason below.
+
+### 1. Deprioritize reversible printings in `latest_cards` (do this first)
+
+`latest_cards` is `DISTINCT ON (COALESCE(oracle_id, id))`. Today the affected
+rows have no oracle_id, so each is its own group and survives alone. Give them
+an oracle_id and they merge into the group that already holds every normal
+printing of that card, and the `ORDER BY` picks one winner.
+
+Measured on the local catalog: of the 71 resulting groups, **31 would be won
+by the reversible printing**, whose `name` is the doubled form ("Hallowed
+Fountain // Hallowed Fountain"). Backfilling alone would therefore fix the add
+error and hand 31 popular cards a malformed display name.
+
+Add `(sd.layout = 'reversible_card')` to the `ORDER BY`, in the same
+deprioritizing spirit as the existing `promo` and `oversized` keys. With it,
+**all 71 groups pick a normal printing and zero reversible printings win**;
+every affected card has a normal alternative. New migration, following the
+three that already rewrite this view.
+
+### 2. Backfill the ids
 
 ```sql
 UPDATE scryfall_data
@@ -75,14 +100,16 @@ UPDATE scryfall_data
 ```
 
 Tested inside a transaction against the local catalog on 2026-09-22: 81 rows
-updated, zero left null, rolled back. `latest_cards` must be refreshed after,
-since it is deduplicated per oracle_id.
+updated, zero left null, rolled back. Nothing user-visible changes until
+`latest_cards` is refreshed, so the migration in step 1 can land in the same
+push.
 
-Then stop it regressing on the next sync: the ingest path carries Scryfall's
-`oracle_id` straight through as `Option<Uuid>`
-(`zwipe-core/.../scryfall_data/mod.rs:79` to `outbound/sqlx/card/models.rs`),
-so lift the value from the faces at ingest when the top level is absent.
-Without that, the next `zervice` run reintroduces all 81.
+### 3. Stop it regressing at ingest
+
+The ingest path carries Scryfall's `oracle_id` straight through as
+`Option<Uuid>` (`zwipe-core/.../scryfall_data/mod.rs:79` into
+`outbound/sqlx/card/models.rs`), so lift the value from the faces when the top
+level is absent. Without this the next `zervice` run reintroduces all 82.
 
 ## Second defect, same root, silent
 
