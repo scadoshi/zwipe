@@ -25,21 +25,22 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.10.2",
-    date: "",
-    entries: &[
-        "Clearing a filter on the add screen works. Apply used to refuse an empty filter and put the old one back, so once a filter was on there was no way off it. Reset then Apply works too.",
-        "Opening the filter and applying without changing anything leaves the card stack where it was. Refresh still deals a new one.",
-        "Shaking the phone no longer opens the system Undo prompt. Undo on the add screen is still a downward swipe.",
-        "When the filter lists can't load, the app says so and tries again. They used to come up empty with no explanation until you restarted.",
-        "The command zone strip on a deck no longer flashes placeholder shapes before the cards deal in, and it holds its height instead of collapsing and jumping as their images load.",
-        "The welcome message greets you once when the app starts instead of every time you return to the home screen.",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.10.2",
+        date: "Sep 22, 2026",
+        entries: &[
+            "Clearing a filter on the add screen works. Apply used to refuse an empty filter and put the old one back, so once a filter was on there was no way off it. Reset then Apply works too.",
+            "Opening the filter and applying without changing anything leaves the card stack where it was. Refresh still deals a new one.",
+            "Shaking the phone no longer opens the system Undo prompt. Undo on the add screen is still a downward swipe.",
+            "When the filter lists can't load, the app says so and tries again. They used to come up empty with no explanation until you restarted.",
+            "The command zone strip on a deck no longer flashes placeholder shapes before the cards deal in, and it holds its height instead of collapsing and jumping as their images load.",
+            "The welcome message greets you once when the app starts instead of every time you return to the home screen.",
+        ],
+    },
     Release {
         version: "1.10.1",
         date: "Sep 6, 2026",

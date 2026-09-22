@@ -58,7 +58,10 @@ recorded as submitted, including the ones whose Play wording differed.
 
 ---
 
-## Keywords
+## Keywords (max 100 characters, commas included)
+
+The field counts the separators, so a comma costs as much as a letter. This
+is 96. Do not pad it to the limit: a term added later has to fit.
 
 MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading card,deck building
 
