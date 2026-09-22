@@ -3,18 +3,21 @@
 //! Wraps the shared [`zwipe_components::Changelog`] (the same release history
 //! shown on the website) in the app's screen chrome. Reached from Profile.
 //!
-//! The changelog is fetched once in the background at startup and cached for the
-//! session (see [`crate::inbound::components::auth::session_upkeep`]). This
-//! screen reads that cache: a skeleton while the fetch is still in flight, the
-//! fetched copy once it lands, or the copy compiled into the binary if the fetch
-//! failed, so it always renders and degrades to offline behavior.
+//! The changelog is fetched once in the background at startup and cached for
+//! the session (see [`crate::inbound::components::auth::session_upkeep`]).
+//! This screen reads that cache: a skeleton while the fetch is in flight, the
+//! fetched copy once it lands, and a note when it failed.
+//!
+//! There is deliberately no compiled fallback. Reaching this screen means
+//! opening an app whose every other surface needs the same server, and the
+//! compiled copy is by definition the one that shipped with this build, so it
+//! could never show anything the reader has not already got.
 
 use crate::inbound::components::{
     auth::session_upkeep::ChangelogCache, screen_header::ScreenHeader,
 };
 use dioxus::prelude::*;
 use zwipe_components::{ActionBar, Button, ButtonVariant, Changelog as ChangelogContent};
-use zwipe_core::http::contracts::changelog::HttpChangelog;
 
 /// Full release history, reachable from the Profile screen.
 #[component]
@@ -32,7 +35,7 @@ pub fn Changelog() -> Element {
                         ChangelogCache::Loading => rsx! { ChangelogSkeleton {} },
                         ChangelogCache::Loaded(data) => rsx! { ChangelogContent { data } },
                         ChangelogCache::Failed => rsx! {
-                            ChangelogContent { data: HttpChangelog::current() }
+                            span { class: "chip-note", "Could not load the changelog" }
                         },
                     }
                 }

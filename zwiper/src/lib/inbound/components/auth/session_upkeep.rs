@@ -88,14 +88,15 @@ impl FlavorCard {
 /// Fetched once per launch and held for the session (see [`spawn_upkeeper`]) so
 /// opening the Changelog screen is instant after the first launch. The screen
 /// reads this: `Loading` shows a skeleton, `Loaded` renders the fetched copy,
-/// and `Failed` falls back to the copy compiled into the binary.
+/// and `Failed` says so. No compiled fallback: zwiper renders served data
+/// only (`context/plans/server-driven-catalogs-2/overview.md`).
 #[derive(Clone, PartialEq)]
 pub enum ChangelogCache {
     /// Startup fetch still in flight.
     Loading,
     /// Fetched successfully from the server.
     Loaded(HttpChangelog),
-    /// Fetch finished but failed; consumers use the compiled-in copy.
+    /// Fetch finished but failed; the screen shows a note.
     Failed,
 }
 

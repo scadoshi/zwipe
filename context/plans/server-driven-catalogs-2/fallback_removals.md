@@ -1,6 +1,21 @@
 # Phase 2: drop zwiper's two compiled fallbacks
 
-**Status: PLANNED 2026-09-22. Deletions only, no new endpoints.**
+**Status: DONE 2026-09-22, rides 1.10.2.**
+
+Landed differently from the sketch below in one place, and better for it.
+`KeywordChips` lives in `zwipe-components` and is shared with zite, which
+provides no served catalog and correctly reads the compiled table. Deleting
+the fallback outright would have taken zite's reminders with it.
+
+So the compiled table became opt-out per host instead: provide the
+`KeywordReminders` context and it is the only source consulted; provide
+nothing and the compiled table answers. zwiper provides it, zite does not,
+and both get what the rule wants.
+
+That exposed a second thing. The component assumed every keyword resolves to
+a reminder, so every chip was tappable. A served map missing a name now
+yields an empty string, so chips with nothing to reveal are `disabled`
+rather than opening an empty panel.
 
 Both catalogs are already served and already fetched. Both keep a compiled
 copy for when the fetch fails. That branch goes.
