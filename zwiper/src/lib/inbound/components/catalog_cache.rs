@@ -72,6 +72,11 @@ impl<T> CatalogCell<T> {
         }
     }
 
+    /// Whether the last fetch failed with nothing good to fall back on.
+    pub fn is_failed(&self) -> bool {
+        matches!(self, CatalogCell::Failed)
+    }
+
     /// Whether this is `Loaded` but past its TTL and due for a background refresh.
     fn is_stale(&self) -> bool {
         match self {
@@ -103,6 +108,12 @@ impl<T: Clone + PartialEq + 'static> CatalogSlot<T> {
     /// Reactive handle to the cell: read it with `.read().loaded()`.
     pub fn cell(&self) -> Signal<CatalogCell<T>> {
         self.cell
+    }
+
+    /// Whether this catalog's last fetch failed. Reads reactively, so an
+    /// effect calling it re-runs when the cell flips.
+    pub fn is_failed(&self) -> bool {
+        self.cell.read().is_failed()
     }
 
     /// Kick off a fetch if none is in flight and the data is missing or stale.
@@ -180,6 +191,28 @@ pub struct CatalogCache {
     pub oracle_tags: CatalogSlot<Vec<OracleTag>>,
     /// Deck-tag catalog (`GET /api/deck/tags`): authed; warmed after session.
     pub deck_tags: CatalogSlot<Vec<DeckTagView>>,
+}
+
+impl CatalogCache {
+    /// Whether any of the public catalogs failed to load.
+    ///
+    /// Reads every cell reactively, so an effect calling this re-runs when one
+    /// flips to `Failed`. Deck tags are deliberately excluded: they warm only
+    /// once a session exists, so an unloaded deck-tag catalog is ordinary
+    /// rather than a failure.
+    ///
+    /// The eight public catalogs are prefetched together and so fail together;
+    /// one answer for the set is the honest shape.
+    pub fn any_public_failed(&self) -> bool {
+        self.artists.is_failed()
+            || self.sets.is_failed()
+            || self.keywords.is_failed()
+            || self.keyword_reminders.is_failed()
+            || self.oracle_words.is_failed()
+            || self.card_types.is_failed()
+            || self.card_roles.is_failed()
+            || self.oracle_tags.is_failed()
+    }
 }
 
 /// Creates the cache (call once, in `spawn_upkeeper`, then provide as context).

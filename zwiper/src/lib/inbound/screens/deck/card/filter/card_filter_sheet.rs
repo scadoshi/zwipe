@@ -2,6 +2,7 @@ use crate::{
     inbound::{
         components::{
             accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
+            catalog_cache::CatalogCache,
             hint_dialog::{
                 HintBullet, HintBullets, HintColored, HintDialog, HintKey, open_and_record_hint,
             },
@@ -120,6 +121,26 @@ pub(crate) fn CardFilterSheet(
         if open() && !*hint_fired.peek() {
             hint_fired.set(true);
             open_and_record_hint(HINT_FILTER, session, client, hint_open);
+        }
+    });
+
+    // A failed catalog prefetch leaves every picker empty, which reads as "no
+    // matches" rather than "didn't load". Say so once per opening. No retry
+    // button: each picker's own effect calls its `ensure_*` on mount, and that
+    // refetches a failed cell, so opening the sheet IS the retry.
+    let catalogs: CatalogCache = use_context();
+    let mut catalog_warned = use_signal(|| false);
+    use_effect(move || {
+        if !open() {
+            catalog_warned.set(false);
+            return;
+        }
+        if !*catalog_warned.peek() && catalogs.any_public_failed() {
+            catalog_warned.set(true);
+            toast.warning(
+                "Filter lists didn't load, trying again".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(2500)),
+            );
         }
     });
 
