@@ -1,16 +1,20 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+The rules for working in this repo. Everything here is enforced somewhere:
+by CI, by a reviewer, or by a bug we already shipped once.
 
 ## Project Overview
 
-ZWIPE is a mobile-first Magic: The Gathering deck builder with swipe-based navigation. Full-stack Rust application with hexagonal architecture.
+Zwipe is a mobile-first Magic: The Gathering deck builder with swipe-based
+navigation, live on both stores. Full-stack Rust, hexagonal architecture.
 
-- **Shared domain (zwipe-core/)**: Pure domain types, validation, and business rules; see the rules below
-- **Backend (zerver/)**: Axum REST API with PostgreSQL, SQLx, JWT auth
-- **Frontend (zwiper/)**: Dioxus cross-platform app (web/iOS/Android)
-- **Website (zite/)**: Dioxus static site
-- **Database**: 35k+ MTG cards synced from Scryfall API
+- **zwipe-core/**: pure domain types, validation, business rules, and every HTTP contract; see the purity rules below
+- **zerver/**: Axum REST API with PostgreSQL, SQLx, JWT auth. Also builds `zervice`, the nightly Scryfall sync
+- **zwiper/**: Dioxus app, iOS and Android (web and desktop run for development)
+- **zite/**: Dioxus static site at zwipe.net
+- **zwipe-client/**: the typed API client. zwiper uses it; zite can when it grows the authenticated surface
+- **zwipe-components/**: shared Dioxus UI and the theme CSS
+- **Database**: ~118k Magic cards synced nightly from Scryfall
 
 ## zwipe-core Purity Rules
 
@@ -70,12 +74,12 @@ copy shadows correct data (broke the 2026-07-05 deploy; details in
 ### Crate Dependency Graph
 
 ```
-zwiper ──→ zwipe-core ←── zerver
-zite   ──→ zwipe-core
+zwiper ──→ zwipe-client ──→ zwipe-core ←── zerver
+zite   ──────────────────→ zwipe-core
 zwiper ──→ zwipe-components ←── zite
 ```
 
-zwipe-core owns all shared domain types, including every `Http*` contract (`zwipe-core/src/http/contracts/`) and the route path constants. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers). No client depends on zerver: zwiper and zite both take their domain and contract types from zwipe-core, and zerver is the server only. zwipe-components is the shared Dioxus UI crate (components plus `themes.css`/`components.css`) that both clients depend on.
+zwipe-core owns all shared domain types, including every `Http*` contract (`zwipe-core/src/http/contracts/`) and the route path constants. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers). No client depends on zerver: zwiper and zite both take their domain and contract types from zwipe-core, and zerver is the server only. zwipe-components is the shared Dioxus UI crate (components plus `themes.css`/`components.css`) that both clients depend on. zwipe-client holds the typed API client, depending on zwipe-core and reqwest only, so it carries no Dioxus and no platform code.
 
 ### Hexagonal (Ports & Adapters) Pattern
 
@@ -89,14 +93,19 @@ src/lib/
 ├── inbound/          # Entry points (HTTP handlers, UI screens)
 │   ├── http/         # Backend: Axum handlers, routes, middleware
 │   └── ui/           # Frontend: screens/, components/
-└── outbound/         # External systems (database, APIs, HTTP client)
+└── outbound/         # External systems (database, APIs, platform storage)
     └── sqlx/         # Backend: SQLx repositories (Database* wrappers here)
-    └── client/       # Frontend: API client modules
 ```
+
+The frontend's API client is not in `outbound/` any more: it lives in the
+`zwipe-client` crate, so there is one implementation for zite to adopt
+rather than a second one to write. zwiper's
+`outbound/` keeps what is genuinely platform-bound: session storage, the
+keyring, crash capture, opening URLs.
 
 ### Key Patterns
 
-**Newtypes for type safety**: `Username`, `Quantity`, `DeckName` (core) and `Password` (zerver) - validation enforced at construction. IDs are deliberately raw `Uuid` (e.g. `DeckProfile { id: Uuid, user_id: Uuid }`); there is no `UserId` or `DeckId` wrapper
+**Newtypes for type safety**: `Username`, `Quantity`, `DeckName` (core) and `Password` (zerver) enforce validation at construction. IDs are deliberately raw `Uuid` (e.g. `DeckProfile { id: Uuid, user_id: Uuid }`); there is no `UserId` or `DeckId` wrapper. The full inventory and the rules for adding one are in `development/newtypes.md`
 
 **Module structure**: Uses `module/mod.rs` pattern (not monolithic `module.rs` files)
 
