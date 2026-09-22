@@ -7,6 +7,47 @@ emulator. First-time machine setup (Android Studio, SDK, NDK) lives in
 
 ---
 
+## First time on a machine
+
+A Mac that has built Android release bundles may still have no emulator: the
+release path needs `build-tools`, `ndk`, `platform-tools` and `platforms`, none
+of which include the emulator or any system image. Symptom is
+`$ANDROID_HOME/emulator/emulator: no such file or directory` with an otherwise
+healthy SDK.
+
+Android Studio does not ship `sdkmanager` on the command line, so fetch
+`cmdline-tools` first. Pull the current filename from Google's manifest rather
+than guessing the build number, which changes:
+
+```bash
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+
+# find the current mac zip
+curl -s https://dl.google.com/android/repository/repository2-3.xml \
+  | grep -o 'commandlinetools-mac-[0-9]*_latest.zip' | head -1
+
+curl -L -o /tmp/ct.zip https://dl.google.com/android/repository/<that file>
+unzip -q /tmp/ct.zip -d /tmp/ct
+mkdir -p "$ANDROID_HOME/cmdline-tools"
+mv /tmp/ct/cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
+
+SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+yes | "$SDKM" --licenses > /dev/null
+"$SDKM" "emulator" "system-images;android-36;google_apis;arm64-v8a"
+
+# The AVD is named Pixel_9a because every command below expects that name.
+# There is no `pixel_9a` device profile in cmdline-tools, so it rides pixel_9.
+"$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd \
+  -n Pixel_9a -k "system-images;android-36;google_apis;arm64-v8a" -d pixel_9
+```
+
+Set up on the work Mac 2026-09-22: emulator 37.1.11.0, android-36 google_apis
+arm64-v8a. Both `sdkmanager` and `avdmanager` print a harmless
+`line 173: test: : integer expression expected` on every run; ignore it.
+
+---
+
 ## 0. Environment: run once per shell (or add to `~/.zshrc`)
 
 The `JAVA_HOME` line is **mandatory**: Gradle's jlink transform dies on the
