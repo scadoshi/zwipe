@@ -17,10 +17,11 @@ use zwipe_core::{
 };
 
 impl ZwipeClient {
+    /// Deck-aware card search.
+    ///
     /// Returns `(cards, synergy_warming)`: `synergy_warming` is true when
     /// synergy was requested but the commander's cache was still warming, so the
     /// server served the full pool (signalled via the `x-synergy-applied` header).
-    /// Deck-aware card search.
     pub async fn search_deck_cards(
         &self,
         deck_id: Uuid,
