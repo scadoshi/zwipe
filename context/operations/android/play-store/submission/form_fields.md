@@ -31,6 +31,17 @@ Plus the two declaration checkboxes: Developer Program Policies, and US export l
 
 ---
 
+## Where these live in the console
+
+Not in the release flow. The release wizard only takes the bundle and the
+release notes; everything below is a separate section:
+
+**Left nav → Grow users → Store presence → Main store listing**
+
+"Grow users" sits below "Monitor and improve" and is usually under the fold,
+which is why this is hard to find. Release notes are the exception: they are
+entered in the release flow itself, at the step after the bundle upload.
+
 ## Main store listing
 
 ### App name (max 30)
