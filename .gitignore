@@ -14,3 +14,6 @@ zite/assets/guides/_staging/
 
 # Worktrees created by Claude Code sessions
 .claude/worktrees/
+
+# Scratch drafts, never committed
+_scratch/

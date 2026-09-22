@@ -23,10 +23,63 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 The running log, newest first. Update this when something ships;
 [`progress/todo.md`](progress/todo.md) holds what is still open.
 
-## 2026-09-22: 1.10.2's client fixes, all four built
+## 2026-09-22: 1.10.2 submitted, and the architecture work it carries
 
-Four user-visible fixes, all client-side, all staged in the changelog's
-UPCOMING block:
+iOS build 80 and Android versionCode 43, both in review. Six user-visible
+fixes ride a much larger internal change.
+
+### The client layer moved out of zwiper
+
+`zwipe-client` is a crate now: 61 files, depending on zwipe-core and reqwest
+and nothing else. zite calls it too, which is the whole point. Its four raw
+API literals are gone and the two request structs it had been shadowing are
+deleted, so there is one description of each endpoint instead of two.
+
+The 52 `ClientX` traits went with it. Each had exactly one implementor, no
+mocks, and screens imported them only to bring a method into scope. Collapsing
+them to inherent methods also removed the 57 `Send` bounds for free, since
+those only ever lived on the trait signatures. Those bounds would have broken
+zite's wasm build, which now compiles clean.
+
+`Endpoint` gained a typed `Request`. The trait described responses and left
+bodies as hand-assembled `serde_json::Value`, so a wrong body compiled and
+surfaced as a 422 on a device. That deleted 25 `to_value` calls, 25
+`Value`-carrying endpoints and 18 whole-tree clones. It also changes request
+bytes: `Value` is a `BTreeMap` here, so bodies went out alphabetically and a
+typed `.json()` emits declaration order. Same document, different key order,
+and a test pins that rather than arguing it.
+
+### zwiper stopped reading compiled data
+
+Owner's rule: compile-time tables can stay, but only zite and zerver read
+them, and zwiper gets everything served. The reasoning is that zwiper cannot
+do anything offline, so a compiled fallback renders data nobody can act on,
+and anything compiled in only changes on a store train.
+
+Four tables moved. Universes Beyond franchises got an endpoint. Keyword
+reminders and the changelog lost their fallbacks. Curated oracle tags became
+a `curated` flag on the tag itself rather than a fourth endpoint, which is
+less code than before and removes a workaround: the picker used to filter its
+compiled slugs against the tags the backend still served, and a tag that is
+not served can no longer be marked curated at all.
+
+`ALLOWED_THEMES` stays compiled. The CSS ships in the same binary, so a served
+list would name palettes the app does not have.
+
+### The router is bound to the contract
+
+`routes.rs` imports nothing from zwipe-core and builds its tree from 36 nested
+literals, so the paths clients call and the paths the server serves agreed by
+coincidence. `FIXED_ROUTES` states that contract as data, generated from the
+`Endpoint` impls, and a test walks it against the real router.
+
+The obvious version of that test could not fail. Asserting "not 404" passes
+with a route deleted, because `/api/card/{id}` shadows any unmatched sibling
+and a missing route fails the uuid parse with 422 instead. Keying the
+assertion on `AUTH` fixes it, and three deliberate sabotages confirm it now
+catches a deletion.
+
+### The six fixes users will see
 
 - **Filters can be cleared again.** Applying an emptied filter was refused as
   "empty" and then reverted by the close effect, so once a filter was on there
@@ -47,6 +100,33 @@ UPCOMING block:
   width. Every card is in the DOM from the start, so growing them in sequence
   reflowed the row on each one and read as a scramble. They now drop in at the
   size they keep.
+- **The welcome greets once per launch.** Home remounts on every navigation
+  back to it, so the toast fired again each time you came out of a deck.
+
+### Everything else that moved
+
+The crash reporter was verified end to end by a deliberate panic, since an
+empty `crash_reports` table looks identical whether it works or not. That
+closed the 204 regression completely: all four endpoints broken on 09-21 are
+now proven by hand rather than by a cross-check that shared a bug with its
+subject.
+
+Local Postgres went 15 to 18.6, and CI's service image 16 to 18, so dev, CI
+and prod finally run the same major. rustls picked up RUSTSEC-2026-0285. The
+Fedora dev-env scripts are gone. `sim.sh` had pinned the iOS 18.6 runtime,
+which an Xcode update deleted, so it silently booted nothing.
+
+Xcode 27 ships no `Simulator.app` at all; DeviceHub replaced it. The same
+update left `dx` writing a stale `DTXcode 2640` into Info.plist, which is the
+rejection that arrives disguised as a "beta Xcode" message.
+
+Store release notes now live in `operations/store-submissions/`, one directory
+per version, one text for both stores. Of the 27 releases that went to both,
+only five had ever used identical copy.
+
+The commit history also lost the AI attribution trailers it should never have
+had: 18 commits rewritten, content byte-identical, verified against a backup
+branch before the force push.
 
 ## 2026-09-22: reversible cards were unaddable, fixed for phones already in the field
 
