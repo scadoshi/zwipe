@@ -1,8 +1,39 @@
 # Context docs wording pass
 
-**Status: PLANNED 2026-09-21. Not scheduled; run it as a focused pass when
-there's a quiet stretch, or chip away per-file whenever a doc gets touched
-for another reason (that rule starts now).**
+**Status: LARGELY DONE 2026-09-22, and the scope turned out much smaller
+than this plan assumed. The per-file rule below still stands for anything
+touched from here.**
+
+What the measurement actually showed, so nobody re-runs it:
+
+- The em-dash count is noise. Most are column separators in ASCII trees and
+  tables, not prose punctuation, and the standing rule is not to convert old
+  ones anyway.
+- The `**Label**: explanation` count overstated the problem badly. Of
+  `context/README.md`'s 73, nearly all are dated progress-log entries or
+  status tables, which is the tabular case the humanizer rules allow.
+  Rewriting them would churn a large historical record for no reading gain.
+- Openers and closers, which is where the tell usually lives, were already
+  specific and dated almost everywhere.
+
+The real finds were two always-loaded files whose problem was accuracy, not
+voice:
+
+- `development/newtypes.md` was a 367-line generic hexagonal-architecture
+  tutorial that taught `UserId`/`DeckId` wrappers the codebase deliberately
+  rejects, and named ports that were never built. Rewritten to 124 lines
+  around the newtypes that exist.
+- `CLAUDE.md` claimed 35k cards (prod has 118,680), was missing two crates,
+  and still showed `outbound/client/` in zwiper after the extraction moved
+  it out.
+
+Also done: the status tables in `context/README.md` (the web table listed 9
+pages against zite's 14 routes), `progress/backlog.md` (five content-free
+stubs separated from the real entries), and `progress/todo.md`.
+
+Left, and probably fine as they are: `cloudflare.md`, `services.md` and
+`feature_requests.md`. Their labeled bullets are genuine key-value config
+and numbered request IDs.
 
 **One sentence:** sweep the prose docs for AI-tell wording (the humanizer
 rules) so the owner can actually read them, file by file, without changing

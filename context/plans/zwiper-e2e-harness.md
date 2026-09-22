@@ -1,9 +1,23 @@
 # Plan: zwiper end-to-end harness (real client against real router)
 
-**Status: PARKED / someday-tool (sketched 2026-07-29). Not scheduled; the
-black-box-against-prod habit covers this ground in practice, and the shared
-contract types + zerver's integration suite already catch the drift class
-that matters. Written down so the door stays mapped.**
+**Status: PARKED (sketched 2026-07-29), but the reason for parking it was
+disproven on 2026-09-21. Still not scheduled; the case is now stronger than
+when it was written.**
+
+The original note said the black-box-against-prod habit covered this ground
+and that contract types plus zerver's integration suite caught the drift
+class that mattered. Then the client refactor pinned every endpoint to a
+single success status, which broke the four endpoints answering 204. Three
+failed silently and shipped to main. Nothing in the suite noticed, because
+each side of the wire was tested separately and both sides were individually
+correct.
+
+That is exactly the bug this harness describes catching, named in the goal
+below as "status to `ClientError` mapping against real responses". It was
+eventually caught by a person using the app, and every one of the four had
+to be re-proven by hand afterwards.
+
+Weigh that against the cost before parking it again.
 
 ## Goal
 

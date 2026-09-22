@@ -1,6 +1,6 @@
 # Deck folders: organize the deck list
 
-**Status: PARKED indefinitely (owner 2026-08-11: "might never build it"); the deck-list group/filter rows cover the need. Originally planned 2026-07-11. Not started. Shape agreed: custom folders,
+**Status: ABANDONED. Archived 2026-09-22. Parked indefinitely 2026-08-11 (owner: "might never build it") because the deck-list group/filter rows cover the need, and nothing since has changed that. Originally planned 2026-07-11, never started. Shape agreed: custom folders,
 one folder per deck, collapsible grouped deck list. This doc is the build spec.**
 
 ## One sentence
