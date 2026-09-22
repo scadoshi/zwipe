@@ -33,7 +33,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 ### 3. Tests
 ```bash
 set -a; source zerver/.env; set +a        # integration tests (#[sqlx::test]) need DATABASE_URL
-cargo test -p zwipe-core -p zerver         # what CI runs (postgres:16 service, SQLX_OFFLINE=true)
+cargo test -p zwipe-core -p zerver         # what CI runs (postgres:18 service, SQLX_OFFLINE=true)
 ```
 
 ### 4. SQLx offline data (only if you touched a query macro)

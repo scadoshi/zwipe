@@ -13,7 +13,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16 # match the VPS major version
+        image: postgres:18 # match the VPS major version (prod runs 18.6)
         env:
           POSTGRES_PASSWORD: postgres
         ports: ["5432:5432"]
