@@ -61,22 +61,25 @@ at `context/archive/complete_2026_q1.md`.
 
 - [ ] **Tooling: why did iOS switch to Device Hub?** Xcode is opening a different simulator surface than it used to, and the classic Simulator window behaved better with the tiling manager. Unexplained change, low urgency, but worth knowing before the 1.10.2 device pass. (The keyboard capture is separate and already understood: I/O → Keyboard → Connect Hardware Keyboard, ⇧⌘K.)
 
-- [ ] **Hands-on pass of the app before 1.10.2, mostly done.** The
-  2026-09-21 client refactor shipped one real regression (every endpoint
-  pinned to a single success status; four that answer 204 broke, including
-  `delete_deck_card`). Fixed in `4411dde0` by accepting any 2xx, but the
-  cross-check that missed it shared a bug with the code it was checking, so
-  it stays discredited and the app gets exercised by hand.
+- [x] ~~**Hands-on pass of the app before 1.10.2.**~~ DONE 2026-09-22. The
+  2026-09-21 refactor pinned every endpoint to a single success status,
+  breaking the four that answer 204, three of them silently. Fixed in
+  `4411dde0` by accepting any 2xx, but the cross-check that missed it shared
+  a bug with the code it was checking, so every one was re-proven by hand
+  instead:
 
-  Covered 2026-09-22 on device against prod, after the `zwipe-client`
-  extraction: login, deck list, card search, adding, removing, cloning, and
-  deck edits. Usage telemetry confirmed server-side (84 `user_card_signal`
-  rows, 5 `user_events`, plus the lifetime counters) and the error path
-  confirmed by a real `api_unprocessable` row for a duplicate clone name.
+  - `delete_deck_card`: removing a deck card on device against prod.
+  - `record_usage`: 84 `user_card_signal` rows, 5 `user_events` and the
+    lifetime counters, read back from prod.
+  - the error path: a real `api_unprocessable` row from a duplicate clone
+    name.
+  - `record_crash`: a deliberate panic on the Decks screen, then a relaunch.
+    One row, one `crash_id`, message `zwipe crash-reporter verification
+    2026-09-22`. All four stages proven, including the clear-on-2xx (a
+    failed clear would have re-sent on every later launch).
 
-  **Still owed: crash reporting.** `crash_reports` is empty, which is the
-  right answer but not a test. It needs a deliberate panic, since it fails
-  with no visible symptom.
+  Also covered: login, deck list, card search, adding, cloning and deck
+  edits, after the `zwipe-client` extraction.
 
 - [x] ~~**Small fixes queued, each with a plan.**~~ All four shipped
   2026-09-22 and their plans are archived: the filter that could not be
