@@ -11,15 +11,35 @@ Play caps "What's New" at 500 characters. The App Store allows 4,000. Write
 to Play's limit and both stores take the same text, which is the whole point
 of this directory. Every file states its own character count.
 
-## Where the two stores diverge
+## One text, both stores
 
-Play's listing avoids the trademarked names ("Commander", "Planeswalker",
-"Universes Beyond", "Secret Lair"), so some older releases went out with
-different wording per store. Those are recorded as submitted, both variants,
-because they are the record of what is live rather than a draft to tidy.
+Decided 2026-09-22: every release from 1.10.2 onward ships the same "What's
+New" to the App Store and Play. Write it once, paste it twice.
 
-New releases should avoid those names from the start and ship one text.
-1.10.2 does this: it says "leader" where the app says "command zone".
+History varies, and that is fine. Of the 27 releases that went to both
+stores, only 5 used identical text. Those files keep both variants as
+submitted, because they record what is live rather than what we would write
+today. Nothing there needs fixing.
+
+## Naming cards and features
+
+Use the app's own words, including the trademarked ones, when that is what
+the feature is called. "Command zone", "commander", "Universes Beyond" and
+"Secret Lair" name things a user is looking at; working around them produces
+copy that describes nothing.
+
+Both apps are approved and have cleared review many times with this
+vocabulary in the listing: the iOS subtitle is "Swipe to Build MTG Decks",
+and the keyword field carries MTG, Magic the Gathering, commander, EDH and
+Scryfall.
+
+The one thing that stays generic is the app name. Apple's Guideline 4.1(a)
+rejection was about "Zwipe MTG", which became "Zwipe TCG" and cleared. That
+was the name, not the vocabulary, and the Play package name is permanent
+anyway. Do not put "Magic" in the title.
+
+Some older Play notes avoided these words on the theory that Apple required
+it. Apple did not, and those entries stay as submitted.
 
 ## Writing a new one
 

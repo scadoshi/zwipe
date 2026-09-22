@@ -31,7 +31,7 @@ Suggestions that fit your deck: open the add screen and the cards that suit your
 
 Know what every card does: tap any tag for a plain-language definition, browse the full tag dictionary, and swipe through real example cards that use it.
 
-Built for the 100-card singleton format and the legendary creature that anchors it. Full support for alternate leader rules: partner leaders, special backgrounds, planeswalker-led signature spells, color identity validation, and a maybeboard for cards you haven't decided on yet.
+Built for Commander: 100-card singleton decks built around a legendary creature. Full support for partner commanders, Backgrounds, Oathbreaker signature spells, color identity validation, and a maybeboard for cards you haven't decided on yet.
 
 Other tools:
 - Deck stats at a glance: mana curve, type and color distributions, average power and toughness, and draw odds by turn
@@ -53,8 +53,8 @@ Lives in [`../../../store-submissions/`](../../../store-submissions/), one
 directory per version, because the same text goes to Play. Paste from
 `store-submissions/<version>/whats_new.md`.
 
-Every release through 1.10.1 is recorded there as submitted, including the
-ones whose Play wording differed.
+From 1.10.2 on, both stores get the same text. Releases through 1.10.1 are
+recorded as submitted, including the ones whose Play wording differed.
 
 ---
 

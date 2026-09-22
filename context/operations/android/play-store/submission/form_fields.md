@@ -4,10 +4,16 @@ Text to paste into Google Play Console fields for **Zwipe TCG**. Mirrors the
 iOS [form_fields.md](../../../ios/app-store/submission/form_fields.md); where the two
 stores share copy, this keeps it consistent so the brand reads the same on both.
 
-The public listing stays **generic ("TCG")**: no "Magic", "MTG", "Commander",
-"EDH", "Planeswalker", or "Scryfall" in store-visible copy. That's the same
-positioning that cleared Apple's copycat scrub (Guideline 4.1(a)); Google Play
-enforces equivalent IP/copycat rules, so we don't reintroduce those terms here.
+The **app name** stays generic: "Zwipe TCG", never "Zwipe MTG". That is what
+Apple's Guideline 4.1(a) rejection was about, and the Play package name is
+permanent regardless.
+
+Descriptive copy is a different question, and since 2026-09-22 it uses the
+app's own vocabulary. "Commander", "command zone", "Universes Beyond" and the
+rest name things the user is looking at. Both apps are approved and the iOS
+listing has cleared review many times carrying MTG, Magic the Gathering,
+commander, EDH and Scryfall in its subtitle and keywords. Earlier notes here
+claimed Apple required the scrub to extend that far; it did not.
 
 ---
 
@@ -33,21 +39,28 @@ Zwipe TCG
 
 ### Short description (max 80)
 
-Swipe right to add, left to skip. Build trading-card decks with your thumb.
+Swipe right to add, left to skip. Build Commander decks with your thumb.
 
 ### Full description (max 4000)
 
+Same text as the App Store description.
+
 Swipe through cards. Build decks fast. Zwipe turns the slow, cluttered desktop deck-building experience into something that fits in one thumb.
 
-Swipe right to add a card, left to skip, up to stage it for later. Open a card's image with a tap. Filter by anything that matters: color identity, mana cost, type, oracle text, keywords, artist, set, rarity, mechanical role. The card pool updates as you swipe.
+Swipe right to add a card, left to skip, up to stage it for later. Open a card's image with a tap. Filter by anything that matters: color identity, mana cost, type, oracle text, keywords, artist, set, rarity, price, power and toughness, card roles, and thousands of community oracle tags. The card pool updates as you swipe.
 
-Built for the 100-card singleton format and the legendary creature that anchors it. Full support for alternate leader rules: partner leaders, special backgrounds, planeswalker-led signature spells, color identity validation, and a maybeboard for cards you haven't decided on yet.
+Suggestions that fit your deck: open the add screen and the cards that suit your leader best are already on top, ranked by synergy and sharpened by what the community actually builds.
+
+Know what every card does: tap any tag for a plain-language definition, browse the full tag dictionary, and swipe through real example cards that use it.
+
+Built for Commander: 100-card singleton decks built around a legendary creature. Full support for partner commanders, Backgrounds, Oathbreaker signature spells, color identity validation, and a maybeboard for cards you haven't decided on yet.
 
 Other tools:
-- Multiple decks with card counts, mana curve stats, and price estimates
-- Sideboard support
-- Import and export decklists in standard text format
-- 14 color themes with dark and light modes, including 3 colorblind-accessible options
+- Deck stats at a glance: mana curve, type and color distributions, average power and toughness, and draw odds by turn
+- Set a land target and a price budget, and get warned as you drift
+- Star your deck's MVPs and share any deck with a public link
+- Import and export decklists in standard text format, or import straight from a deck-list URL
+- 31 color themes with dark and light modes, including colorblind-accessible options
 - 110,000+ cards synced nightly
 - Free to use, no ads, no microtransactions
 - Your decks sync across sessions and devices
@@ -164,9 +177,7 @@ directory per version, shared with the App Store. Paste from
 `store-submissions/<version>/whats_new.md`.
 
 That 500-character cap is the binding one, so it is what the shared text is
-written to. Keep the copy generic per the copycat note at the top of this
-file; new releases avoid the trademarked names so one text serves both
-stores.
+written to. From 1.10.2 on, Play and the App Store get the same text.
 
 ---
 
