@@ -1,7 +1,9 @@
 # "invalid oracle id" on add card
 
-**Status: DIAGNOSED 2026-09-21, fix not chosen. Root cause is confirmed in the
-code; which cards trigger it needs one query against prod.**
+**Status: SOLVED 2026-09-22, not yet applied. Root cause confirmed in the code
+and the affected cards identified against the local catalog. The fix is a
+server-side data backfill, so it repairs clients already in the field with no
+release.**
 
 **One sentence:** a card whose `oracle_id` is absent is sent to the server as
 an empty string, which the server rejects with a 422 the user sees as a
@@ -32,23 +34,55 @@ so the same failure is reachable from the remove screen and the card list.
 Note the error names the *oracle* id, not the card id, so the printing id
 parsed fine. Only the oracle id was missing.
 
-## Which cards? (the one open question)
+## Which cards: answered (local catalog, 117,631 rows, 2026-09-22)
 
-Scryfall puts `oracle_id` on the faces rather than at the top level for
-reversible cards, and our own model mirrors that: `CardFace` has its own
-`oracle_id: Option<Uuid>` (`card_faces.rs:47`). That is the likely source, and
-it fits the shape of the reports: rare, real installs, spread across versions.
+**81 cards, every one of layout `reversible_card`.** No other layout is
+affected.
 
-Run against prod to confirm scope before choosing a fix:
-
-```sql
-SELECT layout, count(*) FROM latest_cards WHERE oracle_id IS NULL GROUP BY layout;
-SELECT name, layout FROM latest_cards WHERE oracle_id IS NULL LIMIT 20;
+```
+ layout          | count
+-----------------+-------
+ reversible_card |    81
 ```
 
-Worth noting `latest_cards` is deduplicated *per oracle_id*, so rows with a
-NULL one are already anomalous in that view. The count tells us whether this
-is a handful of cards or a category.
+Three things the census settled:
+
+1. **They are served to users.** All 81 are in `latest_cards`, so they appear
+   in search and are swipeable. This is not a hidden corner of the catalog.
+2. **They are cards people want.** The sample includes Hallowed Fountain,
+   Blood Crypt, Anointed Procession, Anje Falkenrath and Jinnie Fay: shock
+   lands and Commander staples. That is why real installs hit it, and why six
+   reports understates the real rate.
+3. **The correct value is already stored.** Every one of the 81 has
+   `card_faces->0->>'oracle_id'` populated, and in **all 81 cases both faces
+   carry the identical oracle id** (81 same, 0 differ, 0 null). A reversible
+   card is one card printed on both sides, so there is no "which face" policy
+   question to settle. There is exactly one right answer sitting in the row.
+
+Re-run the census against prod before applying anything; the local catalog
+may lag.
+
+## The fix: backfill, no client release
+
+Because the right value is already in the row, this is repairable server-side,
+which fixes **every client including shipped 1.10.1** without an update:
+
+```sql
+UPDATE scryfall_data
+   SET oracle_id = (card_faces->0->>'oracle_id')::uuid
+ WHERE oracle_id IS NULL
+   AND card_faces->0->>'oracle_id' IS NOT NULL;
+```
+
+Tested inside a transaction against the local catalog on 2026-09-22: 81 rows
+updated, zero left null, rolled back. `latest_cards` must be refreshed after,
+since it is deduplicated per oracle_id.
+
+Then stop it regressing on the next sync: the ingest path carries Scryfall's
+`oracle_id` straight through as `Option<Uuid>`
+(`zwipe-core/.../scryfall_data/mod.rs:79` to `outbound/sqlx/card/models.rs`),
+so lift the value from the faces at ingest when the top level is absent.
+Without that, the next `zervice` run reintroduces all 81.
 
 ## Second defect, same root, silent
 
