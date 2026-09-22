@@ -17,6 +17,26 @@ at `context/archive/complete_2026_q1.md`.
   [`../operations/android/emulator.md`](../operations/android/emulator.md)
   works as written again.
 
+- [ ] **Add zwipe-client to the public architecture write-ups.** The crate
+  landed 2026-09-22 and both clients call the API through it, but every
+  outward-facing description still says five crates.
+
+  **zite's /about** (`zite/src/pages/about.rs`) has one `Panel` per crate:
+  zwiper, zite, zerver, zwipe-components, zwipe-core. It needs a sixth for
+  zwipe-client, and the zwiper and zite panels both say "Imports zwipe-core
+  and zwipe-components", which is now short by one. While in there: zite's
+  panel describes the site as "Marketing, landing, password reset, and email
+  verification", written before the changelog, guides and shared-deck pages
+  existed. This is UI work, so it waits for a visual pass before committing.
+
+  **The portfolio** (`~/Developer/portfolio/src/data.rs:98`, separate repo)
+  opens with "Five workspace crates" and then lists them. Six now. That line
+  also links to zwipe.net/about, so do zite first and the link stays honest.
+
+  Worth saying what the crate is for rather than just naming it: one typed
+  client over the shared contracts, so the app and the site cannot drift
+  apart on what an endpoint looks like.
+
 - [ ] **Update the Play listing, then audit the Apple one.** Repo-side copy
   is now correct and shared; neither console has been touched, so the live
   listings are unchanged until someone pastes.
