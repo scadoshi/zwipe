@@ -17,67 +17,26 @@ at `context/archive/complete_2026_q1.md`.
   [`../operations/android/emulator.md`](../operations/android/emulator.md)
   works as written again.
 
-- [ ] **OWNER: sim test the mutating endpoints, then confirm before cutting
-  1.10.2.** Blocking the cut. The 2026-09-22 typed-request work changed the
-  bytes of every request that carries a body: they used to serialize through
-  `serde_json::Value`, whose map is a BTreeMap, so keys went out
-  alphabetically; a typed `.json()` emits declaration order. Same document,
-  different key order, and
-  `typing_the_body_changes_key_order_but_not_the_document` in `endpoint.rs`
-  pins that. Nothing hashes or signs a raw body.
+- [x] ~~**OWNER: sim test the mutating endpoints before cutting 1.10.2.**~~
+  DONE 2026-09-22. Exercised on a simulator against prod: create deck, add
+  card, update card, both import paths, plus the two new server-driven
+  pickers. The typed-request work changed request key ordering and nothing
+  noticed, which is what the test predicted but not what it proved.
 
-  Semantically it should be a no-op, which is exactly why it wants a
-  deliberate pass rather than an assumption. Exercise on a sim against a
-  local server: **create a deck, add a card, update a card quantity or board,
-  import from text, import from an Archidekt URL**. Those five carry bodies
-  through the paths that changed most.
+- [x] ~~**Finding 2: bind the router to the shared paths.**~~ DONE
+  2026-09-22. `FIXED_ROUTES` in `paths.rs` states the contract as data,
+  generated from the `Endpoint` impls, and a zerver test walks it against the
+  real router. The first version could not fail, since `/api/card/{id}`
+  shadows any unmatched sibling and turns a missing route into a 422 rather
+  than a 404; keying the assertion on `AUTH` fixed it. Verified by deleting
+  three real routes and watching it catch each one.
 
-  Also worth a look while in there, since they are new this session and
-  untested on a device: the Universes Beyond exceptions picker and the oracle
-  tag picker's default grid, both of which now render server-supplied lists
-  with no compiled fallback.
-
-- [ ] **Finish the reassessment's finding 2 before the cut: bind the router
-  to the shared paths.** Plan stub at
-  [`../plans/router_bound_to_paths.md`](../plans/router_bound_to_paths.md).
-  Test-only, so it touches nothing in the client build and needs no
-  re-testing: promote the 42-element array in `paths.rs` to a public
-  `&[(Method, &str)]`, then oneshot each entry against
-  `common::TestApp.router` in `zerver/tests` and assert the status is not 404
-  or 405. Roughly 30 lines; `card_filter_parity.rs` is the precedent.
-
-  Closes about 21 uncovered path symbols. `routes.rs` currently imports
-  nothing from `zwipe_core` and hardcodes 36 literals, so server and clients
-  agree by coincidence.
-
-- [x] ~~**Android developer verification, deadline Sep 30 2026.**~~ ALREADY
-  DONE, confirmed 2026-09-22. Play Console → Android developer verification
-  shows `com.scadoshi.zwipe` as **Registered** with 3 keys, last updated
-  Jul 1 2026. The Sep 8 notice was a general reminder rather than a gap.
-
-  The worry about the upload key needing separate registration was unfounded:
-  all three keys are already covered, and nothing ships outside Play anyway,
-  since Play App Signing holds the key that signs what users install.
-
-- [ ] **Add zwipe-client to the public architecture write-ups.** The crate
-  landed 2026-09-22 and both clients call the API through it, but every
-  outward-facing description still says five crates.
-
-  **zite's /about** (`zite/src/pages/about.rs`) has one `Panel` per crate:
-  zwiper, zite, zerver, zwipe-components, zwipe-core. It needs a sixth for
-  zwipe-client, and the zwiper and zite panels both say "Imports zwipe-core
-  and zwipe-components", which is now short by one. While in there: zite's
-  panel describes the site as "Marketing, landing, password reset, and email
-  verification", written before the changelog, guides and shared-deck pages
-  existed. This is UI work, so it waits for a visual pass before committing.
-
-  **The portfolio** (`~/Developer/portfolio/src/data.rs:98`, separate repo)
-  opens with "Five workspace crates" and then lists them. Six now. That line
-  also links to zwipe.net/about, so do zite first and the link stays honest.
-
-  Worth saying what the crate is for rather than just naming it: one typed
-  client over the shared contracts, so the app and the site cannot drift
-  apart on what an endpoint looks like.
+- [x] ~~**Add zwipe-client to the public architecture write-ups.**~~ DONE
+  2026-09-22, both halves pushed. zite's `/about` has a panel for it and both
+  client panels list it; the portfolio says six crates and describes what the
+  shared client buys. Two stale things went with it: zite described itself as
+  marketing and auth pages only, written before guides, the changelog and
+  shared decks existed, and the test count was 694 when it was 736.
 
 - [ ] **Audit the Apple listing.** The Play half is DONE 2026-09-22: the
   description, short description and theme count were pasted during the
