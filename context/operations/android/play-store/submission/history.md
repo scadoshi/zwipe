@@ -2,6 +2,29 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-09-06, `1.10.1`, versionCode `42`** (the authed facade's
+  user-visible half: every failed server call reports through the same brief
+  toast, printing-sheet saves that used to fail 100% silently now report,
+  load-more warns when the swipe pile runs dry, and the deck list plus
+  commander maybeboard render error states as note chips. Under it sits the
+  facade itself, PR #25, about 60 call sites across 22 files onto one error
+  path, net roughly -900 lines, and the crash-hook first-panic fix
+  (`1105c36b`) so a double panic no longer replaces the real cause.
+  **Submitted 2026-09-06, RELEASED 2026-09-07**, iOS build 79 alongside.)
+
+- **2026-09-01, `1.10.0`, versionCode `41`** (the in-universe project: the
+  Universes Beyond preference, Profile's Show/Hide row plus the
+  franchise-exceptions chip sheet with the Secret Lair catch-all, applied
+  server-side at serve time so older clients get it too; printing-aware set
+  filters keyed on per-oracle `printing_set_names`, where include means "has a
+  printing in" and exclude means "every printing excluded", which closed the
+  third printing-shadowing incident; the in-universe pick preference; and the
+  no-results toast. The 09-01 device smoke test caught the deck form's typed
+  commander picker riding the plain search and ignoring the preference, fixed
+  server-side (`bd167f6b`) and re-verified the same night. Design in
+  `context/plans/archive/in_universe_filter.md`. **Submitted 2026-09-01,
+  RELEASED 2026-09-07**, iOS build 78 alongside.)
+
 - **2026-08-18, `1.9.3`, versionCode `40`** (the correctness train, built
   ahead of 1.9.2 clearing review so it could go the moment that slot freed.
   **Submitted to Play 2026-08-18, RELEASED 2026-08-20** (iOS same day, so the
