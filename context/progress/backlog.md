@@ -1,6 +1,7 @@
-# Backlog - Future Development
+# Backlog
 
-Planned features and improvements for after App Store launch.
+What might get built next. The app has been live since June 2026, so
+nothing here is a launch dependency; `todo.md` holds what is actually open.
 
 ---
 
@@ -79,9 +80,6 @@ The full implementation plan (taxonomy + schema) lived at `context/plans/mechani
 
 ## Production Hardening
 - **Zerver app-role split ("Phase 3" of zervice least privilege, idea 2026-07-29)**: give zerver its own scoped Postgres role, write on user/deck/auth/signal tables, read-only on the card catalog (which zervice + owner alone write after `zcripts/server/sql/zervice_role.sql`). Sound hardening, deliberately deferred: all tables are owned by `zwipe` (an owner can't be restricted by grants), CI sources the same `.env` `DATABASE_URL` for migrations so the split forces two URLs + deploy-pipeline changes, and every future migration needs grant discipline (`ALTER DEFAULT PRIVILEGES` automates most of it) or the serve path 500s, a worse failure mode than a failed nightly sync. Take up deliberately, not as a drive-by.
-- **Caching Layer**: Redis for card data and query results
-- **Monitoring**: Structured logging (done), health monitoring dashboard
-- **Database Optimization**: Query performance, indexing strategy
 - **Credential-stuffing defense**: Layer a second governor on `/login`, `/forgot-password`, `/verify-email`, `/reset-password` keyed by the submitted email/username (normalized lowercase) in addition to the existing IP-keyed governor. IP alone doesn't catch a distributed botnet hitting one email across many IPs; account lockout is the strict per-account version of this but kicks in late. Requires a small `KeyExtractor` that peeks at the JSON body (or runs as middleware before governor and stuffs the key into request extensions). See `inbound/http/routes.rs:71-114` for the existing IP-keyed configs to stack against. (Per-user-id keying on authenticated routes is **already done** via `UserIdKeyExtractor` in `middleware.rs`.)
 
 ## Mobile & Deployment
@@ -90,9 +88,23 @@ The full implementation plan (taxonomy + schema) lived at `context/plans/mechani
 
 ## Future Features
 - ~~**Synergy scores**~~: shipped. The Synergy chip, synergy-ordered deck search and community-signal blending are all live and free. Outcome in `../README.md`.
-- **Collection Management**: User card ownership tracking
-- **Social Features**: public deck browser. Deck sharing shipped: zite routes `/deck/:token` and zerver serves it from `handlers/deck/get_shared_deck.rs`.
-- **Multi-Language UI**: i18n for application text (card language infra already complete)
+- **Social Features**: public deck browser. Deck sharing shipped: zite routes `/deck/:token` and zerver serves it from `handlers/deck/get_shared_deck.rs`. The rest is planned in `../plans/social-features/` and is the largest unbuilt feature.
+
+## Named but never examined
+
+These have a title and nothing behind it. None has been costed, scoped, or
+argued for; they are here so the idea is not lost, not because a case has
+been made. Treat any of them as a blank page.
+
+- Collection management: tracking which cards a user owns.
+- Multi-language UI. The card-language infrastructure is already done, so
+  this is about application text only.
+- A Redis cache in front of card data and query results. Nothing has
+  measured whether the current read path needs one.
+- Query and indexing work on the database, same caveat: no measurement yet.
+- A health-monitoring dashboard. Structured logging is done, and zervice
+  failures already email an alert through `zervice-alert.sh` (wired via
+  `OnFailure=` on the unit), so the gap is a dashboard, not alerting.
 
 ## Patch Discipline
 The App Store review cycle is 1–3 days per iOS submission. Backend patches ship in
