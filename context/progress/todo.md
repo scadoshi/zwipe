@@ -50,6 +50,21 @@ at `context/archive/complete_2026_q1.md`.
   nothing from `zwipe_core` and hardcodes 36 literals, so server and clients
   agree by coincidence.
 
+- [ ] **Android developer verification, deadline Sep 30 2026.** Play console
+  notice dated Sep 8. **Apps not registered are removed from Play globally**,
+  and apps distributed outside Play stop being installable on certified
+  Android devices in select countries. That is the whole Android listing, not
+  a feature.
+
+  Eight days out as of 2026-09-22. Register at the Android developer
+  verification page: the Play app itself, any additional signing keys used
+  outside Play, and anything distributed off-store. Zwipe uses Play App
+  Signing with a separate upload key, so check whether the upload key counts
+  as an additional key before assuming one registration covers it.
+
+  Independent of the 1.10.2 cut, and it outranks it: a rejected build costs a
+  review cycle, an unregistered app costs the listing.
+
 - [ ] **Add zwipe-client to the public architecture write-ups.** The crate
   landed 2026-09-22 and both clients call the API through it, but every
   outward-facing description still says five crates.
