@@ -185,6 +185,6 @@ written to. From 1.10.2 on, Play and the App Store get the same text.
 
 - Package name `com.scadoshi.zwipe` is **permanent** on Play, it can never be
   changed after the first publish. It deliberately matches the Apple bundle ID.
-- Public listing copy stays generic per the copycat note at the top of this file.
+- The app name stays "Zwipe TCG" per the note at the top of this file. Listing copy uses the card game's own vocabulary.
 - The server enforces a minimum client version (`MIN_CLIENT_VERSION`, live at
   `0.0.0` = open); ship the Play build at 1.1.0 or later so it isn't gated.

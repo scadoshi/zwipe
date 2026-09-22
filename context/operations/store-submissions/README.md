@@ -23,10 +23,13 @@ today. Nothing there needs fixing.
 
 ## Naming cards and features
 
-Use the app's own words, including the trademarked ones, when that is what
-the feature is called. "Command zone", "commander", "Universes Beyond" and
-"Secret Lair" name things a user is looking at; working around them produces
-copy that describes nothing.
+Use the card game's own words. "Magic: The Gathering", "Commander",
+"Oathbreaker", "command zone", "Universes Beyond", "Secret Lair": these name
+things the user is looking at, and working around them produces copy that
+describes nothing. This covers store listings, release notes and any feature
+description, not just the notes in this directory. Casing follows
+[`../../development/ui_text_conventions.md`](../../development/ui_text_conventions.md),
+which has always spelled these out properly.
 
 Both apps are approved and have cleared review many times with this
 vocabulary in the listing: the iOS subtitle is "Swipe to Build MTG Decks",
