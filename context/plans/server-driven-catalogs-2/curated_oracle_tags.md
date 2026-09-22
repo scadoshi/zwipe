@@ -1,6 +1,6 @@
 # Phase 3: serve which oracle tags are curated
 
-**Status: PLANNED 2026-09-22.**
+**Status: DONE 2026-09-22, rides 1.10.2.**
 
 `CURATED_ORACLE_TAGS` is a hand-picked shortlist of about 24 slugs the otag
 pickers show before the user types anything: the original mechanical

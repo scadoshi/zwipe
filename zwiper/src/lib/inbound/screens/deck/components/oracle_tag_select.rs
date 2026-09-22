@@ -21,7 +21,7 @@ use std::time::Duration;
 use zwipe_client::ZwipeClient;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
-    card::oracle_tag::{CURATED_ORACLE_TAGS, OracleTag, search_oracle_tags},
+    card::oracle_tag::{OracleTag, search_oracle_tags},
     deck::MAX_DECK_ORACLE_TAGS,
 };
 
@@ -92,36 +92,20 @@ pub(crate) fn OracleTagSelect(
     let tags: &[OracleTag] = cell_read.loaded().map(Vec::as_slice).unwrap_or(&[]);
     let sel = selected();
 
-    // Empty search → the curated default grid (entries the backend still serves)
-    // plus any selected slug not already in it, alphabetical. Non-empty search →
+    // Empty search → the server-marked curated grid plus any selected slug
+    // not already in it, alphabetical. Non-empty search →
     // the shared ranked catalog search, capped to the 40 best matches.
     let q = query();
     let results: Vec<OracleTag> = if !open() || tags.is_empty() {
         Vec::new()
     } else if q.trim().is_empty() {
-        let mut slugs: Vec<String> = CURATED_ORACLE_TAGS
+        // The server marks which tags the default grid shows, so retuning it
+        // is a deploy. A tag the backend stopped serving cannot be curated,
+        // which is why this no longer intersects against the served set.
+        let mut curated: Vec<OracleTag> = tags
             .iter()
-            .filter(|s| tags.iter().any(|t| &t.slug == *s))
-            .map(|s| (*s).to_string())
-            .collect();
-        for s in &sel {
-            if !slugs.contains(s) {
-                slugs.push(s.clone());
-            }
-        }
-        let mut curated: Vec<OracleTag> = slugs
-            .iter()
-            .map(|s| {
-                tags.iter()
-                    .find(|t| &t.slug == s)
-                    .cloned()
-                    .unwrap_or_else(|| OracleTag {
-                        slug: s.clone(),
-                        label: s.clone(),
-                        description: None,
-                        parent_slugs: Vec::new(),
-                    })
-            })
+            .filter(|t| t.curated || sel.contains(&t.slug))
+            .cloned()
             .collect();
         curated.sort_by(|a, b| a.slug.cmp(&b.slug));
         curated

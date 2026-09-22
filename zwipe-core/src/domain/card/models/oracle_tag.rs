@@ -20,6 +20,14 @@ pub struct OracleTag {
     pub description: Option<String>,
     /// Slugs of this tag's parents in the tag hierarchy (for grouping/curation).
     pub parent_slugs: Vec<String>,
+    /// Whether pickers surface this tag before the user searches.
+    ///
+    /// Stamped by the server from [`CURATED_ORACLE_TAGS`], so retuning the
+    /// default grid is a deploy rather than a store train. `#[serde(default)]`
+    /// so a client built after this still decodes a response from a server
+    /// that predates it, which matters if a deploy is rolled back.
+    #[serde(default)]
+    pub curated: bool,
 }
 
 /// Curated default oracle tags surfaced up front in any otag picker (card filter
@@ -162,7 +170,7 @@ pub fn search_oracle_tags(tags: &[OracleTag], query: &str) -> Vec<OracleTag> {
 }
 
 #[cfg(test)]
-#[allow(clippy::indexing_slicing)]
+#[allow(clippy::indexing_slicing, clippy::unwrap_used)]
 mod tests {
     use super::*;
 
@@ -172,7 +180,36 @@ mod tests {
             label: label.to_string(),
             description: description.map(str::to_string),
             parent_slugs: Vec::new(),
+            curated: false,
         }
+    }
+
+    /// A response from a server that predates `curated` still decodes. Only
+    /// reachable if a deploy is rolled back under a newer client, which is
+    /// exactly when a decode error would be worst.
+    #[test]
+    fn a_tag_without_curated_decodes_as_not_curated() {
+        let json = r#"{"slug":"ramp","label":"Ramp","description":null,"parent_slugs":[]}"#;
+        let tag: OracleTag = serde_json::from_str(json).unwrap();
+        assert_eq!(tag.slug, "ramp");
+        assert!(!tag.curated);
+    }
+
+    /// The field is additive: a shipped client ignoring it still reads every
+    /// other field, which is what keeps 1.10.1 and earlier working.
+    #[test]
+    fn curated_rides_alongside_the_existing_fields() {
+        let tag = OracleTag {
+            slug: "ramp".into(),
+            label: "Ramp".into(),
+            description: None,
+            parent_slugs: vec!["mana".into()],
+            curated: true,
+        };
+        let json = serde_json::to_string(&tag).unwrap();
+        assert!(json.contains(r#""curated":true"#));
+        assert!(json.contains(r#""slug":"ramp""#));
+        assert!(json.contains(r#""parent_slugs":["mana"]"#));
     }
 
     #[test]

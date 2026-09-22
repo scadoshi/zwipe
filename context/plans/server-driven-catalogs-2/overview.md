@@ -1,8 +1,11 @@
 # Server-driven catalogs, part 2: zwiper reads nothing compiled in
 
-**Status: PLANNED 2026-09-22. Phase 1 part-built and uncommitted, see
-[`ub_franchises.md`](ub_franchises.md). Owner wants all four phases in
-1.10.2.**
+**Status: DONE 2026-09-22, all three phases, riding 1.10.2.**
+
+zwiper reads no compiled catalog. Verified by grep: `selectable_franchises`,
+`FRANCHISES`, `keyword_reminder(`, `HttpChangelog::current` and
+`CURATED_ORACLE_TAGS` all return zero hits in `zwiper/src`. `ALLOWED_THEMES`
+returns one, which is the exception and the point.
 
 Continues [`../archive/server_driven_catalogs.md`](../archive/server_driven_catalogs.md),
 which made card roles and deck tags server-driven in July. That plan solved
@@ -30,11 +33,11 @@ each crate that reads it.
 
 | Table | zwiper today | Phase |
 |---|---|---|
-| `selectable_franchises` (Universes Beyond) | reads compiled | 1 |
-| `keyword_reminder` (343 entries) | served, falls back to compiled | 2 |
-| `HttpChangelog::current` | served, falls back to compiled | 2 |
-| `CURATED_ORACLE_TAGS` (~24 slugs) | reads compiled | 3 |
-| `ALLOWED_THEMES` | reads compiled, and **stays** | none |
+| `selectable_franchises` (Universes Beyond) | served, phase 1 | done |
+| `keyword_reminder` (343 entries) | served, phase 2 | done |
+| `HttpChangelog::current` | served, phase 2 | done |
+| `CURATED_ORACLE_TAGS` (48 slugs) | served as a field, phase 3 | done |
+| `ALLOWED_THEMES` | compiled, and **stays** | n/a |
 
 `ALLOWED_THEMES` is the principled exception. The themes are CSS compiled
 into the binary, so a served list would name palettes the app does not have.
