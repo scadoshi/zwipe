@@ -1,367 +1,125 @@
 ---
-description: Hexagonal architecture and newtype patterns for maintainable, type-safe Rust applications
+description: The newtypes zwipe actually has, what each one guarantees, and when to add another
 alwaysApply: true
 ---
 
-# Hexagonal Architecture & Newtype Patterns
+# Newtypes
 
-## Core Architectural Principles
+Zwipe wraps a handful of primitives in types that guarantee something about
+their contents. This file is the inventory and the rules for adding to it.
+The architecture those types sit inside (hexagonal layering, ports and
+adapters, the database adapter pattern) is described in
+[`../architecture/structure.md`](../architecture/structure.md), and the
+reasoning behind it in
+[`../architecture/decisions.md`](../architecture/decisions.md).
 
-### Hexagonal Architecture Fundamentals
-- **Domain First**: Business logic lives in the center, independent of external concerns
-- **Ports & Adapters**: Define interfaces (ports) and implementations (adapters) for external dependencies
-- **Dependency Inversion**: Core domain depends only on abstractions, never concrete implementations
-- **Clean Boundaries**: Clear separation between HTTP, database, external APIs, and business logic
+## What exists
 
-### When to Apply Hexagonal Architecture
-✅ **USE for:**
-- Applications with complex business logic
-- Systems requiring multiple external integrations
-- Projects expecting long-term maintenance
-- Teams of 3+ developers
-- Applications that will scale or change dependencies
+| Type | Crate | Wraps | Guarantee |
+|------|-------|-------|-----------|
+| `Username` | zwipe-core | `String` | 3-20 chars, no whitespace, no profanity, trimmed |
+| `DeckName` | zwipe-core | `String` | 1-64 chars, no profanity, trimmed |
+| `Quantity` | zwipe-core | `i32` | At least 1 |
+| `Limit` | zwipe-core | `u32` | Clamped to `Limit::MAX`, including on deserialize |
+| `Secret` | zwipe-core | `String` | Never printed by `Debug` or `Display` |
+| `Jwt` | zwipe-core | `String` | Access-token material, distinct from other strings |
+| `Password` | zerver | `String` | Meets the password policy; never printed |
+| `HashedPassword` | zerver | `String` | Argon2 output, not plaintext |
+| `JwtSecret` | zerver | `String` | Signing key, never leaves the server |
 
-❌ **AVOID for:**
-- Simple CRUD applications with minimal business logic
-- High-performance systems where nanoseconds matter
-- Solo developer prototypes with no scaling requirements
+## IDs are bare `Uuid`, deliberately
 
-## Architectural Layers & Responsibilities
+There is no `UserId`, no `DeckId`, no `CardId`. `DeckProfile { id: Uuid,
+user_id: Uuid }` is the intended shape. Adding ID wrappers is a recurring
+suggestion and the answer has been no: the compile-time win never paid for
+the conversion noise at every boundary, and Postgres hands back `Uuid`
+either way.
 
-### 1. Domain Layer (Center of Hexagon)
-**Location**: `src/domain/`
-**Purpose**: Pure business logic, no external dependencies
+Do not propose them. If the tradeoff ever changes, that is a
+`decisions.md` entry, not a refactor someone starts.
 
-```rust
-// Domain models with business rules
-pub struct User {
-    id: UserId,           // Newtype for type safety
-    email: EmailAddress,  // Validated newtype
-    created_at: Timestamp,
-}
+## The validating pattern
 
-// Domain services with business logic
-pub trait UserService {
-    async fn register_user(&self, email: EmailAddress, password: Password) -> Result<User, DomainError>;
-    async fn authenticate(&self, email: EmailAddress, password: Password) -> Result<AuthToken, DomainError>;
-}
-```
-
-**Rules**:
-- No imports from `adapters/` or external crates (except fundamental ones like `serde`, `uuid`)
-- All external data must be converted to domain types at boundaries
-- Use Result types for all fallible operations
-- Define domain errors that map to business scenarios
-
-### 2. Ports Layer (Interfaces)
-**Location**: `src/domain/ports/` or `src/ports/`
-**Purpose**: Define contracts for external dependencies
+`Username` is the worked example. Every validating newtype follows it:
 
 ```rust
-// Repository trait (port)
-#[async_trait]
-pub trait UserRepository {
-    async fn save(&self, user: &User) -> Result<(), RepositoryError>;
-    async fn find_by_email(&self, email: &EmailAddress) -> Result<Option<User>, RepositoryError>;
-}
+pub struct Username(String);
 
-// External service trait (port)
-#[async_trait]
-pub trait EmailService {
-    async fn send_welcome_email(&self, user: &User) -> Result<(), EmailError>;
-}
-```
-
-### 3. Adapters Layer (Implementations)
-**Location**: `src/adapters/`
-**Purpose**: Implement ports, handle external system details
-
-```rust
-// Database adapter
-pub struct PostgresUserRepository {
-    pool: PgPool,
-}
-
-#[async_trait]
-impl UserRepository for PostgresUserRepository {
-    async fn save(&self, user: &User) -> Result<(), RepositoryError> {
-        // Convert domain User to database representation
-        // Handle database-specific errors
-        // Never let SQLx types leak to domain
-    }
-}
-
-// HTTP adapter
-pub struct AxumUserHandlers<S: UserService> {
-    service: Arc<S>,
-}
-
-impl<S: UserService> AxumUserHandlers<S> {
-    pub async fn register(
-        State(handlers): State<Self>,
-        Json(request): Json<RegisterRequest>
-    ) -> Result<Json<UserResponse>, StatusCode> {
-        // Convert HTTP types to domain types
-        // Call domain service
-        // Convert domain response to HTTP types
+impl Username {
+    pub fn new(raw: impl AsRef<str>) -> Result<Self, InvalidUsername> {
+        let trimmed = raw.as_ref().trim();
+        // one check per error variant, cheapest first
+        Ok(Self(trimmed.to_string()))
     }
 }
 ```
 
-## Newtype Patterns for Type Safety
+Four things travel with it. A `new` returning `Result<Self, InvalidX>`,
+where `InvalidX` is a `thiserror` enum with one variant per rule, so the
+caller can tell the user which rule they broke. A private field, so the only
+way in is through `new`. A `Deref` to the inner value for read access
+(`str` for the string types, `i32` for `Quantity`). And a
+`Deserialize` that routes through `new`, written by hand:
 
-### Smart Constructors (Validation at Creation)
 ```rust
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EmailAddress(String);
-
-impl EmailAddress {
-    pub fn new(email: String) -> Result<Self, ValidationError> {
-        if email.contains('@') && email.len() > 5 {
-            Ok(EmailAddress(email.to_lowercase()))
-        } else {
-            Err(ValidationError::InvalidEmail)
-        }
-    }
-    
-    // Only provide read access, no mutation
-    pub fn as_str(&self) -> &str {
-        &self.0
+impl<'de> Deserialize<'de> for Username {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let raw = String::deserialize(d)?;
+        Username::new(raw).map_err(serde::de::Error::custom)
     }
 }
 ```
 
-### ID Types for Domain Safety
+That last part is the one people skip. A derived `Deserialize` on a
+single-field struct is transparent: it takes the inner value straight off
+the wire and never calls `new`, so the type still compiles and still lies.
+
+`Limit` shows the other valid answer. Rather than reject an over-large page
+size it clamps to `Limit::MAX` on deserialize, because a client asking for
+too many rows is not an error worth failing a search over. Reject or clamp
+are both fine. Passing the value through untouched is not.
+
+`DeckName` currently derives it. That is harmless today, because no HTTP
+contract carries a `DeckName` (they carry `String`, and
+`CreateDeckProfile::build` validates), but the two types do not offer the
+same guarantee, and only one of them is safe to put in a contract.
+
+## Secret-bearing types
+
+`Password` and `Secret` hand-write `Debug` and `Display` to print a
+placeholder instead of their contents:
+
 ```rust
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct UserId(Uuid);
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]  
-pub struct DeckId(Uuid);
-
-// Compiler prevents mixing up IDs
-fn get_user_decks(user_id: UserId) -> Vec<DeckId> {
-    // get_user_decks(deck_id) <- COMPILE ERROR!
-}
-```
-
-### Validated Primitives
-```rust
-#[derive(Debug, Clone)]
-pub struct Password(String);
-
-impl Password {
-    pub fn new(raw: String) -> Result<Self, ValidationError> {
-        if raw.len() >= 8 {
-            Ok(Password(raw))
-        } else {
-            Err(ValidationError::PasswordTooShort)
-        }
-    }
-    
-    // Never expose raw password
-    pub fn verify(&self, hash: &str) -> bool {
-        // Use argon2 to verify
+/// Never derive this: the derive prints the plaintext, and every struct
+/// holding a `Password` inherits that through its own `Debug`.
+impl std::fmt::Debug for Password {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Password(REDACTED)")
     }
 }
 ```
 
-## File Organization Pattern
+`read()` is the only way to the value, which makes every access a visible
+call site. Both carry a test that fails if someone re-derives either trait.
 
-```
-src/
-├── domain/                 # Core business logic
-│   ├── models/            # Domain entities with newtypes
-│   ├── services/          # Business logic implementations  
-│   ├── ports/             # Interface definitions
-│   └── errors.rs          # Domain-specific errors
-├── adapters/              # External system implementations
-│   ├── database/          # Database adapters
-│   ├── http/              # HTTP handlers
-│   ├── external/          # Third-party API clients
-│   └── mod.rs
-├── config.rs              # Application configuration
-└── main.rs                # Dependency injection & startup
-```
+`Secret` adds `#[serde(transparent)]`: it must serialize as a bare string,
+because it crosses the wire in request bodies that shipped clients already
+send. Redaction is for logs, not for the protocol.
 
-## Dependency Injection Pattern
+**`HashedPassword` is the exception.** Its `Display` is the database write
+path (`request.password_hash.to_string()` in
+`outbound/sqlx/auth/mod.rs`). Redacting it would write the literal string
+`REDACTED` into the password column for every registration. Leave it alone.
 
-### AppState with Trait Objects
-```rust
-pub struct AppState {
-    pub user_service: Arc<dyn UserService + Send + Sync>,
-    pub deck_service: Arc<dyn DeckService + Send + Sync>,
-}
+## Adding one
 
-impl AppState {
-    pub fn new(
-        user_repo: Arc<dyn UserRepository + Send + Sync>,
-        deck_repo: Arc<dyn DeckRepository + Send + Sync>,
-    ) -> Self {
-        Self {
-            user_service: Arc::new(UserServiceImpl::new(user_repo)),
-            deck_service: Arc::new(DeckServiceImpl::new(deck_repo, user_repo)),
-        }
-    }
-}
-```
+Worth a newtype when a primitive has a rule that must hold everywhere, and
+the cost of it being wrong is real: a name that breaks the UI, a quantity
+that corrupts a deck, a secret in a log.
 
-## Error Handling Strategy
+Not worth one when the rule is local to a single function, when the type
+would exist only to rename `Uuid`, or when it would have to be unwrapped at
+every use.
 
-### Domain Errors (Business Logic)
-```rust
-#[derive(Debug, thiserror::Error)]
-pub enum UserDomainError {
-    #[error("Email already registered")]
-    EmailAlreadyExists,
-    #[error("Invalid credentials")]
-    InvalidCredentials,
-    #[error("User not found")]
-    UserNotFound,
-}
-```
-
-### Adapter Errors (Infrastructure)
-```rust
-#[derive(Debug, thiserror::Error)]
-pub enum RepositoryError {
-    #[error("Database connection failed")]
-    ConnectionFailed,
-    #[error("Constraint violation: {0}")]
-    ConstraintViolation(String),
-    #[error("Unexpected error: {0}")]
-    Unexpected(#[from] sqlx::Error),
-}
-```
-
-### HTTP Error Mapping
-```rust
-impl From<UserDomainError> for StatusCode {
-    fn from(err: UserDomainError) -> Self {
-        match err {
-            UserDomainError::EmailAlreadyExists => StatusCode::CONFLICT,
-            UserDomainError::InvalidCredentials => StatusCode::UNAUTHORIZED,
-            UserDomainError::UserNotFound => StatusCode::NOT_FOUND,
-        }
-    }
-}
-```
-
-## Testing Strategy
-
-### Domain Unit Tests (Pure)
-```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    #[test]
-    fn email_validation_rejects_invalid_format() {
-        let result = EmailAddress::new("invalid".to_string());
-        assert!(result.is_err());
-    }
-    
-    #[tokio::test]
-    async fn user_service_prevents_duplicate_registration() {
-        let mock_repo = MockUserRepository::new();
-        let service = UserServiceImpl::new(Arc::new(mock_repo));
-        
-        // Test business logic without any external dependencies
-    }
-}
-```
-
-### Integration Tests (With Real Adapters)
-```rust
-#[tokio::test]
-async fn user_registration_full_flow() {
-    let pool = test_database().await;
-    let repo = PostgresUserRepository::new(pool);
-    let service = UserServiceImpl::new(Arc::new(repo));
-    
-    // Test with real database
-}
-```
-
-## Learning Application Guidelines
-
-### For User's Current Project (Deck Builder)
-
-1. **Identify Domains**: User management, Card management, Deck management
-2. **Define Ports**: `UserRepository`, `CardRepository`, `DeckRepository`, `ScryfallApiClient`
-3. **Create Newtypes**: `UserId`, `CardId`, `DeckId`, `EmailAddress`, `ManaValue`
-4. **Implement Services**: `UserService`, `DeckService`, `CardSearchService`
-5. **Build Adapters**: PostgreSQL repos, Axum handlers, Scryfall client
-
-### Progressive Implementation Strategy
-
-1. **Start with one domain** (User management is good choice)
-2. **Define domain models with newtypes** for type safety
-3. **Create service trait** with business logic methods
-4. **Implement repository trait** for data persistence
-5. **Build HTTP adapter** that uses service
-6. **Add comprehensive tests** for each layer
-7. **Refactor existing code** to follow patterns
-
-### Teaching Approach Integration
-
-- **Connect to existing knowledge**: Build on solid JWT/auth foundation
-- **Explain architectural WHY**: Help understand benefits of separation
-- **Start simple**: One domain, gradually add complexity
-- **Use type system**: Leverage Rust's strengths for domain modeling
-- **Test-driven**: Write tests to validate understanding
-
-## Common Pitfalls to Avoid
-
-❌ **Don't let external types leak into domain**
-```rust
-// BAD: SQLx types in domain
-pub fn create_user(user: User) -> Result<PgRow, sqlx::Error>
-
-// GOOD: Domain types only
-pub fn create_user(user: User) -> Result<User, DomainError>
-```
-
-❌ **Don't put business logic in adapters**
-```rust
-// BAD: Business rules in HTTP handler
-pub async fn register_user(Json(req): Json<RegisterRequest>) -> Result<Json<UserResponse>, StatusCode> {
-    if req.email.contains("spam") {  // Business logic!
-        return Err(StatusCode::BAD_REQUEST);
-    }
-}
-
-// GOOD: Handler delegates to domain service
-pub async fn register_user(
-    State(service): State<Arc<dyn UserService>>,
-    Json(req): Json<RegisterRequest>
-) -> Result<Json<UserResponse>, StatusCode> {
-    let email = EmailAddress::new(req.email)?;  // Convert to domain type
-    let user = service.register_user(email, req.password).await?;  // Domain handles business logic
-    Ok(Json(UserResponse::from(user)))
-}
-```
-
-❌ **Don't skip validation in newtypes**
-```rust
-// BAD: No validation
-pub struct EmailAddress(pub String);  // Anyone can create invalid email
-
-// GOOD: Smart constructor
-pub struct EmailAddress(String);
-impl EmailAddress {
-    pub fn new(email: String) -> Result<Self, ValidationError> { /* validate */ }
-}
-```
-
-## Success Metrics
-
-- **Testability**: Can test business logic without external dependencies
-- **Maintainability**: Changes to database/HTTP don't affect domain
-- **Type Safety**: Compiler prevents domain modeling errors
-- **Clarity**: Clear separation of concerns, easy to onboard new developers
-- **Flexibility**: Can swap implementations without changing domain
-
----
-
-**Remember**: Hexagonal architecture is about managing complexity, not adding it. Start simple, refactor as you learn, and always prioritize understanding over perfect implementation.
+If you add one, it needs a validating `Deserialize` before it can appear in
+anything under `zwipe-core/src/http/contracts/`.
