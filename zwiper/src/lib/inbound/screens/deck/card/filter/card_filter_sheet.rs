@@ -51,6 +51,46 @@ use zwipe_core::domain::{
 #[derive(Clone, Copy)]
 pub(crate) struct CollapseExpanded(pub(crate) Signal<bool>);
 
+/// What pressing Apply should do.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub(crate) enum ApplyAction {
+    /// Commit the draft. `cleared` distinguishes emptying an applied filter
+    /// from applying one, which is only a difference in wording.
+    Commit { cleared: bool },
+    /// Refuse: the draft filters nothing and neither did what it replaces.
+    RefuseEmpty,
+    /// The draft matches what was already applied. Close without refetching,
+    /// so opening the sheet and changing nothing leaves the card stack where
+    /// the user had it.
+    NoChange,
+}
+
+/// Decides Apply from the draft and the filter that was on when the sheet
+/// opened.
+///
+/// An empty filter searches the whole catalog, so the add screen's search
+/// source refuses one (`validate_before_apply`). Judging the draft alone
+/// would also refuse a deliberate clear, leaving no way back out of a filter
+/// once one is on, so the decision reads the transition instead.
+pub(crate) fn apply_action(
+    validate_before_apply: bool,
+    draft_filters: bool,
+    was_filtered: bool,
+    unchanged: bool,
+) -> ApplyAction {
+    // The refusal is checked first: it explains why an empty filter served
+    // nothing, which is more use than silently closing.
+    if validate_before_apply && !draft_filters && !was_filtered {
+        return ApplyAction::RefuseEmpty;
+    }
+    if unchanged {
+        return ApplyAction::NoChange;
+    }
+    ApplyAction::Commit {
+        cleared: !draft_filters && was_filtered,
+    }
+}
+
 /// Shared bottom-sheet filter accordion used by add, view, and remove card screens.
 ///
 /// Reads `Signal<CardQueryBuilder>` and `Signal<u32>` (filter_reset_counter) from context.
@@ -671,18 +711,60 @@ pub(crate) fn CardFilterSheet(
                             );
                             return;
                         }
-                        if validate_before_apply && !filter_builder.read().has_search_intent() {
-                            toast.warning("Filter is empty, nothing applied".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
-                        } else {
-                            bump_filter();
-                            // Drop the snapshot so closing keeps the committed
-                            // draft; a rejected apply restores like Cancel.
-                            applied_snapshot.set(None);
-                            toast.success(
-                                "Filter applied".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
-                            );
-                        }
+                        // An empty filter searches the whole catalog, so the
+                        // add screen refuses one. Clearing a filter that IS
+                        // applied is a reset, not that: judge the transition,
+                        // not the draft alone, or there is no way back out of
+                        // a filter once one is on.
+                        let draft_filters = filter_builder.read().has_search_intent();
+                        let was_filtered = applied_snapshot
+                            .read()
+                            .as_ref()
+                            .is_some_and(|previous| previous.has_search_intent());
+                        // Nothing edited since the sheet opened: closing must
+                        // not refetch, or a look at the filters throws away the
+                        // user's place in the card stack.
+                        let unchanged = applied_snapshot
+                            .read()
+                            .as_ref()
+                            .is_some_and(|previous| *previous == *filter_builder.read());
+                        let cleared = match apply_action(
+                            validate_before_apply,
+                            draft_filters,
+                            was_filtered,
+                            unchanged,
+                        ) {
+                            ApplyAction::RefuseEmpty => {
+                                toast.warning(
+                                    "Filter is already empty".to_string(),
+                                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                                );
+                                // Return before closing. Closing with the
+                                // snapshot still armed is what made a refusal
+                                // ALSO revert the draft and raise a second
+                                // toast.
+                                return;
+                            }
+                            ApplyAction::NoChange => {
+                                // Silent: the sheet closing is the feedback,
+                                // and Refresh is there if they want new cards.
+                                open.set(false);
+                                return;
+                            }
+                            ApplyAction::Commit { cleared } => cleared,
+                        };
+                        bump_filter();
+                        // Drop the snapshot so closing keeps the committed
+                        // draft; a rejected apply restores like Cancel.
+                        applied_snapshot.set(None);
+                        toast.success(
+                            if cleared {
+                                "Filter cleared".to_string()
+                            } else {
+                                "Filter applied".to_string()
+                            },
+                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                        );
                         // The sheet closing collapses the accordion (see the
                         // open/close effect above), so it reopens tidy.
                         open.set(false);
@@ -739,5 +821,71 @@ pub(crate) fn CardFilterSheet(
         if otag_dict_open() {
             OracleTagDictionary { open: otag_dict_open, on_use: adopt_otag }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ApplyAction, apply_action};
+
+    /// The four states Apply can be pressed in, all with an edited draft. The
+    /// third line is the bug this function exists for: judging the draft alone
+    /// refuses a deliberate clear, so a filter can never be turned off. The
+    /// second is the regression that followed, where every apply over an
+    /// existing filter read as a clear.
+    #[test]
+    fn apply_reads_the_transition_not_just_the_draft() {
+        // draft filters, over an existing filter: an ordinary apply.
+        assert_eq!(
+            apply_action(true, true, true, false),
+            ApplyAction::Commit { cleared: false }
+        );
+        // draft filters, nothing before: an ordinary apply.
+        assert_eq!(
+            apply_action(true, true, false, false),
+            ApplyAction::Commit { cleared: false }
+        );
+        // draft empty, a filter was on: a deliberate clear, so commit it.
+        assert_eq!(
+            apply_action(true, false, true, false),
+            ApplyAction::Commit { cleared: true }
+        );
+        // draft empty, nothing before: the firehose the guard exists for.
+        assert_eq!(
+            apply_action(true, false, false, false),
+            ApplyAction::RefuseEmpty
+        );
+    }
+
+    /// Opening the sheet and applying without editing must not refetch: that
+    /// would throw away the user's place in the card stack for nothing.
+    #[test]
+    fn an_unedited_apply_changes_nothing() {
+        assert_eq!(apply_action(true, true, true, true), ApplyAction::NoChange);
+        assert_eq!(apply_action(false, true, true, true), ApplyAction::NoChange);
+    }
+
+    /// The refusal still wins over the no-change shortcut: an empty filter that
+    /// served nothing is worth explaining, and silently closing would not.
+    #[test]
+    fn refusing_an_empty_filter_beats_the_no_change_shortcut() {
+        assert_eq!(
+            apply_action(true, false, false, true),
+            ApplyAction::RefuseEmpty
+        );
+    }
+
+    /// Screens without the guard (remove, deck cards) always commit an edit,
+    /// including emptying the filter entirely.
+    #[test]
+    fn without_validation_every_edit_commits() {
+        assert_eq!(
+            apply_action(false, false, false, false),
+            ApplyAction::Commit { cleared: false }
+        );
+        assert_eq!(
+            apply_action(false, false, true, false),
+            ApplyAction::Commit { cleared: true }
+        );
     }
 }

@@ -629,7 +629,10 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let mut clear_filters = move || {
         let opts = ToastOptions::default().duration(Duration::from_millis(1500));
-        // Reset stages the screen's default view; Apply commits it. Synergy is
+        // Reset stages the screen's default view; Apply commits it. It still
+        // confirms here: the sheet stays open with its sections collapsed, so
+        // without a toast a working Reset looks like a dead button.
+        // Synergy is
         // a separate mode, not a filter, so it survives the reset (a commander
         // deck lands back in synergy order). A lone sort counts as non-default,
         // so Reset fires (and clears the sort) even when no card filter is set.
