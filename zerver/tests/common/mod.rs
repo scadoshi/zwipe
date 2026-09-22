@@ -151,7 +151,7 @@ impl TestApp {
         }
     }
 
-    async fn send(
+    pub async fn send(
         &self,
         method: Method,
         path: &str,

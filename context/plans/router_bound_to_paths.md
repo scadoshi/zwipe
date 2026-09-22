@@ -1,6 +1,32 @@
 # Bind the router to the shared path constants
 
-**Status: STUB 2026-09-22, from the external reassessment. Not scheduled.**
+**Status: DONE 2026-09-22.**
+
+Landed differently from the sketch, because the sketch's test could not fail.
+
+The plan said to oneshot each path and assert the status is not 404 or 405.
+Built that, then deleted a real route to check it caught it. It did not.
+`/api/card/{id}` shadows any unmatched sibling, so a deleted
+`/api/card/ub-franchises` does not 404: it matches the id route and fails the
+uuid parse with 422. A probe looking for 404 passes happily while the route
+is gone.
+
+What works is keying the assertion on `AUTH`, which the contract already
+carries, so `FIXED_ROUTES` is `&[(Method, &str, bool)]` and generated from
+the `Endpoint` impls rather than hand-written:
+
+- **Authed routes must answer 401** without a token. The middleware decides
+  that in front of the handler, and no shadow can fake it.
+- **Public GETs must answer 200.** They are catalog reads needing no input.
+  The featured card is allowed to 404, since a fresh test database has no
+  cards; deleting its route gives 422, not 404, so the allowance costs
+  nothing.
+- **Public writes must answer 415.** Sent with no body, axum's Json extractor
+  rejects them before any handler runs. An unrouted path answers 404.
+
+Verified by sabotage, three times: removing an authed route (`/logout`) fails
+with 404, removing a public catalog (`/artists`) fails with 422, and removing
+the newest route (`/ub-franchises`) fails too. Restored after each.
 
 **One sentence:** the server agrees with `zwipe-core`'s path constants by
 coincidence; make a test say so out loud.

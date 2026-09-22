@@ -3,8 +3,10 @@
 //! Fixed paths are `const`; only the ones interpolating an id are functions.
 //! Every path is absolute, so both `Url::set_path` and a plain
 //! `format!("{base}{path}")` join produce the same URL.
+
 #![allow(missing_docs)]
 
+use crate::http::endpoint::Method;
 use uuid::Uuid;
 
 // == health ==
@@ -166,6 +168,65 @@ pub fn import_deck_cards_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/card/import")
 }
 
+/// Every fixed API route: the method that reaches it, and whether it needs a
+/// bearer token.
+///
+/// Derived from the `Endpoint` impls, which is what the clients call, so this
+/// is the contract stated as data. `zerver`'s routing test walks it and
+/// asserts each entry behaves the way the contract says, because `routes.rs`
+/// builds its tree from nested literals and would otherwise agree with these
+/// constants only by coincidence.
+///
+/// The auth flag is what makes that test sharp. A path parameter shadows any
+/// unmatched sibling segment (`/api/card/{id}` catches `/api/card/anything`),
+/// so "did this 404" cannot tell a missing route from a shadowed one. Knowing
+/// a route should answer 401 without a token can.
+///
+/// Fixed paths only. The id-carrying routes are functions, so the test builds
+/// those itself. Health routes are absent: they have no `Endpoint`.
+pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
+    (Method::Get, CHANGELOG_ROUTE, false),
+    (Method::Patch, CHANGE_EMAIL_ROUTE, true),
+    (Method::Patch, CHANGE_PASSWORD_ROUTE, true),
+    (Method::Patch, CHANGE_USERNAME_ROUTE, true),
+    (Method::Delete, CLEAR_COMMANDER_MAYBEBOARD_ROUTE, true),
+    (Method::Post, CREATE_DECK_ROUTE, true),
+    (Method::Delete, DELETE_USER_ROUTE, true),
+    (Method::Get, FEATURED_FLAVOR_ROUTE, false),
+    (Method::Post, FORGOT_PASSWORD_ROUTE, false),
+    (Method::Get, GET_ARTISTS_ROUTE, false),
+    (Method::Get, GET_CARD_ROLES_ROUTE, false),
+    (Method::Get, GET_CARD_TYPES_ROUTE, false),
+    (Method::Get, GET_COMMANDER_MAYBEBOARD_ROUTE, true),
+    (Method::Get, GET_DECK_PROFILES_ROUTE, true),
+    (Method::Get, GET_DECK_TAGS_ROUTE, true),
+    (Method::Get, GET_KEYWORDS_ROUTE, false),
+    (Method::Get, GET_KEYWORD_REMINDERS_ROUTE, false),
+    (Method::Get, GET_LANGUAGES_ROUTE, false),
+    (Method::Get, GET_ORACLE_TAGS_ROUTE, false),
+    (Method::Get, GET_ORACLE_WORDS_ROUTE, false),
+    (Method::Get, GET_SETS_ROUTE, false),
+    (Method::Get, GET_UB_FRANCHISES_ROUTE, false),
+    (Method::Get, GET_USER_ROUTE, true),
+    (Method::Post, LOGIN_ROUTE, false),
+    (Method::Post, LOGOUT_ROUTE, true),
+    (Method::Patch, MARK_HINT_SHOWN_ROUTE, true),
+    (Method::Get, MIN_CLIENT_VERSION_ROUTE, false),
+    (Method::Get, PREFERENCES_ROUTE, true),
+    (Method::Patch, PREFERENCES_ROUTE, true),
+    (Method::Get, PUBLIC_METRICS_ROUTE, false),
+    (Method::Post, RECORD_ANONYMOUS_EVENT_ROUTE, false),
+    (Method::Post, RECORD_CRASH_ROUTE, false),
+    (Method::Post, RECORD_USAGE_ROUTE, true),
+    (Method::Post, REFRESH_SESSION_ROUTE, false),
+    (Method::Post, REGISTER_ROUTE, false),
+    (Method::Post, RESEND_VERIFICATION_ROUTE, true),
+    (Method::Post, RESET_PASSWORD_ROUTE, false),
+    (Method::Post, SEARCH_CARDS_ROUTE, true),
+    (Method::Post, SEARCH_COMMANDERS_ROUTE, true),
+    (Method::Post, VERIFY_EMAIL_ROUTE, false),
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -235,52 +296,23 @@ mod tests {
     /// `Url::set_path` agree.
     #[test]
     fn every_fixed_path_starts_with_a_slash() {
-        let fixed = [
-            HEALTH_ROUTE,
-            SERVER_HEALTH_ROUTE,
-            DATABASE_HEALTH_ROUTE,
-            REGISTER_ROUTE,
-            LOGIN_ROUTE,
-            REFRESH_SESSION_ROUTE,
-            LOGOUT_ROUTE,
-            VERIFY_EMAIL_ROUTE,
-            FORGOT_PASSWORD_ROUTE,
-            RESET_PASSWORD_ROUTE,
-            RESEND_VERIFICATION_ROUTE,
-            GET_USER_ROUTE,
-            CHANGE_PASSWORD_ROUTE,
-            CHANGE_USERNAME_ROUTE,
-            CHANGE_EMAIL_ROUTE,
-            DELETE_USER_ROUTE,
-            PREFERENCES_ROUTE,
-            MARK_HINT_SHOWN_ROUTE,
-            GET_MY_METRICS_ROUTE,
-            COMMANDER_MAYBEBOARD_ROUTE,
-            CARD_ROUTE,
-            FEATURED_FLAVOR_ROUTE,
-            SEARCH_CARDS_ROUTE,
-            SEARCH_COMMANDERS_ROUTE,
-            GET_ARTISTS_ROUTE,
-            GET_CARD_TYPES_ROUTE,
-            GET_KEYWORDS_ROUTE,
-            GET_KEYWORD_REMINDERS_ROUTE,
-            GET_ORACLE_WORDS_ROUTE,
-            GET_CARD_ROLES_ROUTE,
-            GET_ORACLE_TAGS_ROUTE,
-            GET_UB_FRANCHISES_ROUTE,
-            GET_SETS_ROUTE,
-            GET_LANGUAGES_ROUTE,
-            DECK_ROUTE,
-            GET_DECK_TAGS_ROUTE,
-            RECORD_USAGE_ROUTE,
-            RECORD_ANONYMOUS_EVENT_ROUTE,
-            RECORD_CRASH_ROUTE,
-            PUBLIC_METRICS_ROUTE,
-            MIN_CLIENT_VERSION_ROUTE,
-            CHANGELOG_ROUTE,
-        ];
-        for path in fixed {
+        for (_, path, _) in FIXED_ROUTES {
             assert!(path.starts_with('/'), "{path} is not absolute");
+        }
+        for path in [HEALTH_ROUTE, SERVER_HEALTH_ROUTE, DATABASE_HEALTH_ROUTE] {
+            assert!(path.starts_with('/'), "{path} is not absolute");
+        }
+    }
+
+    /// The table is hand-extended alongside the consts, so this catches the
+    /// cheapest way to get it wrong: naming the same route twice.
+    #[test]
+    fn the_route_table_has_no_duplicate_pairs() {
+        let mut seen: Vec<(Method, &str)> = Vec::new();
+        for (method, path, _) in FIXED_ROUTES {
+            let pair = (*method, *path);
+            assert!(!seen.contains(&pair), "{method:?} {path} is listed twice");
+            seen.push(pair);
         }
     }
 }
