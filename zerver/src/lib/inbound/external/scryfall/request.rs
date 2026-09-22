@@ -1,9 +1,5 @@
-//! HTTP request builder using MTG-themed naming conventions.
-//!
-//! - **Planeswalker** = HTTP client wrapper with Scryfall API headers
-//! - **untap** = create a new request builder
-//! - **cast** = send the request
-//! - **tutor** = search for a card
+//! Scryfall HTTP requests: a `RequestBuilder` that always carries the
+//! User-Agent and Accept headers Scryfall expects.
 
 use anyhow::Context;
 use reqwest::{
@@ -13,7 +9,7 @@ use reqwest::{
 use serde::Deserialize;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
-// == equip onto scryfall requests ==
+// == request constants ==
 pub(super) const USER_AGENT_VALUE: &str = "zwipe/0.0";
 pub(super) const ACCEPT_VALUE: &str = "*/*";
 pub(super) const SCRYFALL_API_BASE: &str = "https://api.scryfall.com";
@@ -27,13 +23,13 @@ struct ScryfallDataSearchResponse {
 
 // == helpers ==
 
-/// Wraps a `RequestBuilder` with Scryfall API headers (User-Agent, Accept).
+/// A `RequestBuilder` pre-set with the headers Scryfall expects.
 #[derive(Debug)]
-pub(super) struct Planeswalker(RequestBuilder);
+pub(super) struct ScryfallRequest(RequestBuilder);
 
-impl Planeswalker {
-    /// Creates a new GET request builder with Scryfall headers.
-    pub(super) fn untap(client: Client, full_url: &str) -> Self {
+impl ScryfallRequest {
+    /// Builds a GET request carrying the Scryfall headers.
+    pub(super) fn get(client: Client, full_url: &str) -> Self {
         Self(
             client
                 .get(full_url)
@@ -42,26 +38,27 @@ impl Planeswalker {
         )
     }
     /// Sends the request.
-    pub(super) async fn cast(self) -> Result<Response, reqwest::Error> {
+    pub(super) async fn send(self) -> Result<Response, reqwest::Error> {
         self.0.send().await
     }
 
-    fn tutor_for(self, search_str: &str) -> Self {
-        Planeswalker(self.0.query(&[("q", search_str)]))
+    /// Adds the `q=` search parameter.
+    fn with_query(self, search_str: &str) -> Self {
+        ScryfallRequest(self.0.query(&[("q", search_str)]))
     }
 
     /// Searches for a card by name via the Scryfall search endpoint.
     #[allow(dead_code)]
-    pub(super) async fn tutor(
+    pub(super) async fn search_cards(
         client: Client,
         search_str: &str,
     ) -> anyhow::Result<Vec<ScryfallData>> {
         let url = SCRYFALL_API_BASE.to_string() + CARDS_SEARCH_ENDPOINT;
-        let urza = Planeswalker::untap(client, &url);
+        let request = ScryfallRequest::get(client, &url);
 
-        let get_result = urza
-            .tutor_for(search_str)
-            .cast()
+        let get_result = request
+            .with_query(search_str)
+            .send()
             .await
             .context("failed to get on cards search endpoint")?;
         let get_json = get_result
@@ -75,15 +72,15 @@ impl Planeswalker {
     }
 }
 
-/// Extension trait for creating a `Planeswalker` from a reqwest `Client`.
+/// Extension trait for building a [`ScryfallRequest`] from a reqwest `Client`.
 #[allow(dead_code)]
-pub(super) trait CreatePlaneswalker {
-    /// Builds a Planeswalker targeting the given Scryfall endpoint.
-    fn into_planeswalker(self, endpoint: &str) -> Planeswalker;
+pub(super) trait IntoScryfallRequest {
+    /// Builds a request targeting the given Scryfall endpoint.
+    fn into_scryfall_request(self, endpoint: &str) -> ScryfallRequest;
 }
 
-impl CreatePlaneswalker for Client {
-    fn into_planeswalker(self, endpoint: &str) -> Planeswalker {
-        Planeswalker::untap(self, endpoint)
+impl IntoScryfallRequest for Client {
+    fn into_scryfall_request(self, endpoint: &str) -> ScryfallRequest {
+        ScryfallRequest::get(self, endpoint)
     }
 }

@@ -1,6 +1,6 @@
 use crate::inbound::external::scryfall::{
     oracle_tag::OracleTag,
-    planeswalker::{Planeswalker, SCRYFALL_API_BASE},
+    request::{SCRYFALL_API_BASE, ScryfallRequest},
 };
 use anyhow::Context;
 use flate2::read::GzDecoder;
@@ -62,19 +62,19 @@ impl BulkEndpoint {
     /// partial data).
     async fn amass_jsonl<T: DeserializeOwned>(&self, what: &str) -> anyhow::Result<Vec<T>> {
         let url = format!("{}{}", SCRYFALL_API_BASE, self.resolve());
-        let urza = Planeswalker::untap(Client::new(), &url);
+        let request = ScryfallRequest::get(Client::new(), &url);
 
-        let bulk_data_object: BulkDataObject = urza
-            .cast()
+        let bulk_data_object: BulkDataObject = request
+            .send()
             .await
             .with_context(|| format!("failed to get {what} bulk response with planeswalker"))?
             .json()
             .await
             .with_context(|| format!("failed to parse BulkDataObject for {what}"))?;
 
-        let karn = Planeswalker::untap(Client::new(), &bulk_data_object.jsonl_download_uri);
-        let bytes = karn
-            .cast()
+        let request = ScryfallRequest::get(Client::new(), &bulk_data_object.jsonl_download_uri);
+        let bytes = request
+            .send()
             .await
             .with_context(|| format!("failed to get {what} download response with planeswalker"))?
             .bytes()
