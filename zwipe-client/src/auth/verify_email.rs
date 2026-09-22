@@ -9,7 +9,7 @@ impl ZwipeClient {
     /// Unauthenticated: the link opens in a browser with no session. A token
     /// that is unknown, spent or expired answers 4xx.
     pub async fn verify_email(&self, token: String) -> Result<(), ClientError> {
-        let body = serde_json::to_value(HttpVerifyEmail { token })?;
-        self.call(VerifyEmail(body), None).await
+        self.call(VerifyEmail(HttpVerifyEmail { token }), None)
+            .await
     }
 }

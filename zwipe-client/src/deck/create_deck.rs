@@ -13,7 +13,6 @@ impl ZwipeClient {
         request: &HttpCreateDeckProfile,
         session: &Session,
     ) -> Result<DeckProfile, ClientError> {
-        let body = serde_json::to_value(request)?;
-        self.call(CreateDeck(body), Some(session)).await
+        self.call(CreateDeck(request.clone()), Some(session)).await
     }
 }

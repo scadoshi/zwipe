@@ -15,8 +15,7 @@ impl ZwipeClient {
         body: &HttpUpdateDeckProfile,
         session: &Session,
     ) -> Result<DeckProfile, ClientError> {
-        let body = serde_json::to_value(body)?;
-        self.call(UpdateDeckProfile(deck_id, body), Some(session))
+        self.call(UpdateDeckProfile(deck_id, body.clone()), Some(session))
             .await
     }
 }

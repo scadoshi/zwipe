@@ -15,8 +15,7 @@ impl ZwipeClient {
         request: &HttpCreateDeckCard,
         session: &Session,
     ) -> Result<DeckCard, ClientError> {
-        let body = serde_json::to_value(request)?;
-        self.call(CreateDeckCard(deck_id, body), Some(session))
+        self.call(CreateDeckCard(deck_id, request.clone()), Some(session))
             .await
     }
 }

@@ -20,12 +20,17 @@ impl ZwipeClient {
         mode: ImportMode,
         session: &Session,
     ) -> Result<ImportDeckCardsResult, ClientError> {
-        let body = serde_json::to_value(HttpImportDeckCards {
-            text: text.to_string(),
-            board: board.map(|b| b.to_string()),
-            mode,
-        })?;
-        self.call(ImportDeckCards(deck_id, body), Some(session))
-            .await
+        self.call(
+            ImportDeckCards(
+                deck_id,
+                HttpImportDeckCards {
+                    text: text.to_string(),
+                    board: board.map(|b| b.to_string()),
+                    mode,
+                },
+            ),
+            Some(session),
+        )
+        .await
     }
 }

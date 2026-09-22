@@ -15,7 +15,7 @@ impl ZwipeClient {
         let mut request = request;
         request.platform = Some(ClientPlatform::CURRENT);
         request.client_version = Some(env!("CARGO_PKG_VERSION").to_string());
-        let body = serde_json::to_value(&request)?;
-        self.call(Login(body), None).await
+
+        self.call(Login(request), None).await
     }
 }

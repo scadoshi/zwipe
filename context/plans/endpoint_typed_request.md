@@ -1,7 +1,29 @@
 # Type the request half of `Endpoint`
 
-**Status: STUB 2026-09-22, from the external reassessment. Not scheduled; do
-not ride 1.10.2, it touches `call.rs`.**
+**Status: DONE 2026-09-22, riding 1.10.2 at the owner's call.**
+
+Landed as sketched. `type Request` on the trait, contract types in the
+endpoint structs, `.json(req)` in `call`, and `path() -> Cow<'static, str>`.
+
+Counts before and after: 25 `to_value` calls to 0, 25 `pub Value` endpoints
+to 0, 18 `self.0.clone()` tree clones to 0, 30 `to_string()` in the endpoint
+impls to 0.
+
+Four things worth recording:
+
+- **`From<serde_json::Error>` stays.** The reassessment guessed it could go
+  with the request path. It cannot: response decoding still uses `?` on
+  `from_slice` and `from_str` in `call.rs`.
+- **Five contracts needed `Clone`** added: `HttpRefreshSession`,
+  `HttpCreateDeckProfile`, `HttpUpdateDeckProfile`, `HttpCreateDeckCard`,
+  `HttpPatchDeckCard`. Client methods that take `&T` now clone the struct
+  into the endpoint, which is strictly cheaper than the `Value` tree it
+  replaced.
+- **Option 1 was the right call.** Writing `type Request = ();` on the
+  bodyless endpoints is 25 explicit lines plus one inside `public_get!`,
+  which covers 11 at a stroke. A second marker trait would have bought
+  nothing.
+- **The key-order change is now a test**, not an argument. See below.
 
 **One sentence:** give `Endpoint` a `type Request`, so a body is a contract
 type rather than a `serde_json::Value` assembled by hand at each call site.
@@ -55,9 +77,11 @@ via Value: {"alpha":2,"zeta":1}
 ```
 
 JSON object order carries no meaning and serde's derived `Deserialize`
-ignores it, so zerver parses both identically. Confirm before shipping that
-nothing hashes, signs or logs a raw request body expecting a stable
-serialization. Nothing is known to.
+ignores it, so zerver parses both identically.
+`typing_the_body_changes_key_order_but_not_the_document` in `endpoint.rs`
+pins exactly that: the strings differ, the parsed documents do not. Checked
+that nothing hashes, signs or logs a raw request body expecting a stable
+serialization.
 
 ## Rider: `path()` returns `String`
 

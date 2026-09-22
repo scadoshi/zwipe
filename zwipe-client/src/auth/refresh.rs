@@ -9,7 +9,6 @@ use zwipe_core::{
 impl ZwipeClient {
     /// Refreshes access tokens using a refresh token.
     pub async fn refresh(&self, request: &HttpRefreshSession) -> Result<Session, ClientError> {
-        let body = serde_json::to_value(request)?;
-        self.call(Refresh(body), None).await
+        self.call(Refresh(request.clone()), None).await
     }
 }

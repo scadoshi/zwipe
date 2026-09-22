@@ -13,7 +13,6 @@ impl ZwipeClient {
         request: HttpDeleteUser,
         session: &Session,
     ) -> Result<(), ClientError> {
-        let body = serde_json::to_value(&request)?;
-        self.call(DeleteUser(body), Some(session)).await
+        self.call(DeleteUser(request), Some(session)).await
     }
 }

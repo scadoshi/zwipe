@@ -6,7 +6,6 @@ use zwipe_core::http::{contracts::metrics::HttpCrashReport, endpoints::metrics::
 impl ZwipeClient {
     /// Posts a crash report from the previous run.
     pub async fn record_crash(&self, report: &HttpCrashReport) -> Result<(), ClientError> {
-        let body = serde_json::to_value(report)?;
-        self.call(RecordCrash(body), None).await
+        self.call(RecordCrash(report.clone()), None).await
     }
 }

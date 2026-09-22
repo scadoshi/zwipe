@@ -7,7 +7,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 
 /// Add card to deck request body.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HttpCreateDeckCard {
     /// Scryfall data ID of the card to add (selected printing).
     pub scryfall_data_id: String,
@@ -47,7 +47,7 @@ impl HttpCreateDeckCard {
 /// per the RFC 7396 resolution an explicit `null` is a 422, enforced by the
 /// handler; absent means untouched. [`Opdate`] fields keep null and absent
 /// distinguishable on decode. The constructors never emit null.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HttpPatchDeckCard {
     /// Absolute quantity to set (≥ 1). Absent = untouched.
     #[serde(default, skip_serializing_if = "Opdate::is_unchanged")]

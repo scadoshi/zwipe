@@ -13,7 +13,6 @@ impl ZwipeClient {
         request: HttpChangePassword,
         session: &Session,
     ) -> Result<(), ClientError> {
-        let body = serde_json::to_value(&request)?;
-        self.call(ChangePassword(body), Some(session)).await
+        self.call(ChangePassword(request), Some(session)).await
     }
 }

@@ -11,7 +11,6 @@ impl ZwipeClient {
         &self,
         event: &HttpAnonymousEvent,
     ) -> Result<(), ClientError> {
-        let body = serde_json::to_value(event)?;
-        self.call(RecordAnonymousEvent(body), None).await
+        self.call(RecordAnonymousEvent(event.clone()), None).await
     }
 }

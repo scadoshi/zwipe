@@ -13,7 +13,6 @@ impl ZwipeClient {
         batch: &HttpUsageBatch,
         session: &Session,
     ) -> Result<(), ClientError> {
-        let body = serde_json::to_value(batch)?;
-        self.call(RecordUsage(body), Some(session)).await
+        self.call(RecordUsage(batch.clone()), Some(session)).await
     }
 }

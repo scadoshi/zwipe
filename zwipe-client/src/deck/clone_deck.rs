@@ -18,8 +18,7 @@ impl ZwipeClient {
         body: &HttpCloneDeck,
         session: &Session,
     ) -> Result<HttpClonedDeck, ClientError> {
-        let body = serde_json::to_value(body)?;
-        self.call(CloneDeck(source_deck_id, body), Some(session))
+        self.call(CloneDeck(source_deck_id, body.clone()), Some(session))
             .await
     }
 }

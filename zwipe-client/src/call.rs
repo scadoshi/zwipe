@@ -40,7 +40,7 @@ impl ZwipeClient {
         }
 
         if let Some(body) = endpoint.body() {
-            request = request.json(&body);
+            request = request.json(body);
         }
 
         info!("{} {}", E::METHOD.as_str(), url);

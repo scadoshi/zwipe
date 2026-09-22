@@ -13,9 +13,12 @@ impl ZwipeClient {
         hint: &str,
         session: &Session,
     ) -> Result<User, ClientError> {
-        let body = serde_json::to_value(HttpMarkHintShown {
-            hint: hint.to_string(),
-        })?;
-        self.call(MarkHintShown(body), Some(session)).await
+        self.call(
+            MarkHintShown(HttpMarkHintShown {
+                hint: hint.to_string(),
+            }),
+            Some(session),
+        )
+        .await
     }
 }

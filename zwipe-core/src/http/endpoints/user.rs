@@ -6,6 +6,10 @@ use crate::{
         user::{User, models::preferences::UserPreferences},
     },
     http::{
+        contracts::{
+            auth::{HttpChangeEmail, HttpChangePassword, HttpChangeUsername, HttpDeleteUser},
+            user::{HttpMarkHintShown, HttpUpdatePreferences},
+        },
         endpoint::{Endpoint, Method},
         paths::{
             CHANGE_EMAIL_ROUTE, CHANGE_PASSWORD_ROUTE, CHANGE_USERNAME_ROUTE,
@@ -15,81 +19,87 @@ use crate::{
         },
     },
 };
-use serde_json::Value;
+use std::borrow::Cow;
 use uuid::Uuid;
 
 /// The signed-in user's profile.
 pub struct GetUser;
 impl Endpoint for GetUser {
     const METHOD: Method = Method::Get;
+    type Request = ();
     type Response = User;
-    fn path(&self) -> String {
-        GET_USER_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(GET_USER_ROUTE)
     }
 }
 
 /// Change the account email; answers the updated user.
-pub struct ChangeEmail(pub Value);
+pub struct ChangeEmail(pub HttpChangeEmail);
 impl Endpoint for ChangeEmail {
     const METHOD: Method = Method::Patch;
+    type Request = HttpChangeEmail;
     type Response = User;
-    fn path(&self) -> String {
-        CHANGE_EMAIL_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(CHANGE_EMAIL_ROUTE)
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.0.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
     }
 }
 
 /// Change the username; answers the updated user.
-pub struct ChangeUsername(pub Value);
+pub struct ChangeUsername(pub HttpChangeUsername);
 impl Endpoint for ChangeUsername {
     const METHOD: Method = Method::Patch;
+    type Request = HttpChangeUsername;
     type Response = User;
-    fn path(&self) -> String {
-        CHANGE_USERNAME_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(CHANGE_USERNAME_ROUTE)
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.0.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
     }
 }
 
 /// Change the password. Answers no content beyond 200.
-pub struct ChangePassword(pub Value);
+pub struct ChangePassword(pub HttpChangePassword);
 impl Endpoint for ChangePassword {
     const METHOD: Method = Method::Patch;
+    type Request = HttpChangePassword;
     type Response = ();
-    fn path(&self) -> String {
-        CHANGE_PASSWORD_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(CHANGE_PASSWORD_ROUTE)
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.0.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
     }
 }
 
 /// Delete the account. Answers 204.
-pub struct DeleteUser(pub Value);
+pub struct DeleteUser(pub HttpDeleteUser);
 impl Endpoint for DeleteUser {
     const METHOD: Method = Method::Delete;
+    type Request = HttpDeleteUser;
     type Response = ();
-    fn path(&self) -> String {
-        DELETE_USER_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(DELETE_USER_ROUTE)
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.0.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
     }
 }
 
 /// Mark a one-time UI hint as seen; answers the updated user.
-pub struct MarkHintShown(pub Value);
+pub struct MarkHintShown(pub HttpMarkHintShown);
 impl Endpoint for MarkHintShown {
     const METHOD: Method = Method::Patch;
+    type Request = HttpMarkHintShown;
     type Response = User;
-    fn path(&self) -> String {
-        MARK_HINT_SHOWN_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(MARK_HINT_SHOWN_ROUTE)
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.0.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
     }
 }
 
@@ -97,22 +107,24 @@ impl Endpoint for MarkHintShown {
 pub struct GetPreferences;
 impl Endpoint for GetPreferences {
     const METHOD: Method = Method::Get;
+    type Request = ();
     type Response = UserPreferences;
-    fn path(&self) -> String {
-        PREFERENCES_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(PREFERENCES_ROUTE)
     }
 }
 
 /// Update display preferences; answers the stored result.
-pub struct UpdatePreferences(pub Value);
+pub struct UpdatePreferences(pub HttpUpdatePreferences);
 impl Endpoint for UpdatePreferences {
     const METHOD: Method = Method::Patch;
+    type Request = HttpUpdatePreferences;
     type Response = UserPreferences;
-    fn path(&self) -> String {
-        PREFERENCES_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(PREFERENCES_ROUTE)
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.0.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
     }
 }
 
@@ -120,9 +132,10 @@ impl Endpoint for UpdatePreferences {
 pub struct GetCommanderMaybeboard;
 impl Endpoint for GetCommanderMaybeboard {
     const METHOD: Method = Method::Get;
+    type Request = ();
     type Response = Vec<Card>;
-    fn path(&self) -> String {
-        GET_COMMANDER_MAYBEBOARD_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(GET_COMMANDER_MAYBEBOARD_ROUTE)
     }
 }
 
@@ -130,9 +143,10 @@ impl Endpoint for GetCommanderMaybeboard {
 pub struct AddCommanderMaybeboardCard(pub Uuid);
 impl Endpoint for AddCommanderMaybeboardCard {
     const METHOD: Method = Method::Post;
+    type Request = ();
     type Response = ();
-    fn path(&self) -> String {
-        add_commander_maybeboard_card_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(add_commander_maybeboard_card_route(self.0))
     }
 }
 
@@ -140,9 +154,10 @@ impl Endpoint for AddCommanderMaybeboardCard {
 pub struct RemoveCommanderMaybeboardCard(pub Uuid);
 impl Endpoint for RemoveCommanderMaybeboardCard {
     const METHOD: Method = Method::Delete;
+    type Request = ();
     type Response = ();
-    fn path(&self) -> String {
-        remove_commander_maybeboard_card_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(remove_commander_maybeboard_card_route(self.0))
     }
 }
 
@@ -150,8 +165,9 @@ impl Endpoint for RemoveCommanderMaybeboardCard {
 pub struct ClearCommanderMaybeboard;
 impl Endpoint for ClearCommanderMaybeboard {
     const METHOD: Method = Method::Delete;
+    type Request = ();
     type Response = ();
-    fn path(&self) -> String {
-        CLEAR_COMMANDER_MAYBEBOARD_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(CLEAR_COMMANDER_MAYBEBOARD_ROUTE)
     }
 }

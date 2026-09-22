@@ -10,8 +10,13 @@ use crate::{
         },
     },
     http::{
-        contracts::deck::{
-            HttpClearedSuppressions, HttpClonedDeck, HttpDeckShareToken, HttpSharedDeck,
+        contracts::{
+            deck::{
+                HttpClearedSuppressions, HttpCloneDeck, HttpClonedDeck, HttpCreateDeckProfile,
+                HttpDeckShareToken, HttpImportArchidektDeck, HttpSharedDeck, HttpSkipDeckCard,
+                HttpUpdateDeckProfile,
+            },
+            deck_card::{HttpCreateDeckCard, HttpImportDeckCards, HttpPatchDeckCard},
         },
         endpoint::{Endpoint, Method},
         paths::{
@@ -24,29 +29,31 @@ use crate::{
         },
     },
 };
-use serde_json::Value;
+use std::borrow::Cow;
 use uuid::Uuid;
 
 /// Every deck profile the user owns.
 pub struct GetDeckProfiles;
 impl Endpoint for GetDeckProfiles {
     const METHOD: Method = Method::Get;
+    type Request = ();
     type Response = Vec<DeckProfile>;
-    fn path(&self) -> String {
-        GET_DECK_PROFILES_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(GET_DECK_PROFILES_ROUTE)
     }
 }
 
 /// Create a deck. Answers 201.
-pub struct CreateDeck(pub Value);
+pub struct CreateDeck(pub HttpCreateDeckProfile);
 impl Endpoint for CreateDeck {
     const METHOD: Method = Method::Post;
+    type Request = HttpCreateDeckProfile;
     type Response = DeckProfile;
-    fn path(&self) -> String {
-        CREATE_DECK_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(CREATE_DECK_ROUTE)
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.0.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
     }
 }
 
@@ -54,9 +61,10 @@ impl Endpoint for CreateDeck {
 pub struct GetDeck(pub Uuid);
 impl Endpoint for GetDeck {
     const METHOD: Method = Method::Get;
+    type Request = ();
     type Response = Deck;
-    fn path(&self) -> String {
-        get_deck_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(get_deck_route(self.0))
     }
 }
 
@@ -64,22 +72,24 @@ impl Endpoint for GetDeck {
 pub struct GetDeckProfile(pub Uuid);
 impl Endpoint for GetDeckProfile {
     const METHOD: Method = Method::Get;
+    type Request = ();
     type Response = DeckProfile;
-    fn path(&self) -> String {
-        get_deck_profile_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(get_deck_profile_route(self.0))
     }
 }
 
 /// Edit a deck's profile.
-pub struct UpdateDeckProfile(pub Uuid, pub Value);
+pub struct UpdateDeckProfile(pub Uuid, pub HttpUpdateDeckProfile);
 impl Endpoint for UpdateDeckProfile {
     const METHOD: Method = Method::Patch;
+    type Request = HttpUpdateDeckProfile;
     type Response = DeckProfile;
-    fn path(&self) -> String {
-        update_deck_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(update_deck_route(self.0))
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.1.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.1)
     }
 }
 
@@ -87,22 +97,24 @@ impl Endpoint for UpdateDeckProfile {
 pub struct DeleteDeck(pub Uuid);
 impl Endpoint for DeleteDeck {
     const METHOD: Method = Method::Delete;
+    type Request = ();
     type Response = ();
-    fn path(&self) -> String {
-        delete_deck_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(delete_deck_route(self.0))
     }
 }
 
 /// Copy a deck into a new one. Answers 201.
-pub struct CloneDeck(pub Uuid, pub Value);
+pub struct CloneDeck(pub Uuid, pub HttpCloneDeck);
 impl Endpoint for CloneDeck {
     const METHOD: Method = Method::Post;
+    type Request = HttpCloneDeck;
     type Response = HttpClonedDeck;
-    fn path(&self) -> String {
-        clone_deck_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(clone_deck_route(self.0))
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.1.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.1)
     }
 }
 
@@ -110,9 +122,10 @@ impl Endpoint for CloneDeck {
 pub struct GetDeckTokens(pub Uuid);
 impl Endpoint for GetDeckTokens {
     const METHOD: Method = Method::Get;
+    type Request = ();
     type Response = Vec<Card>;
-    fn path(&self) -> String {
-        get_deck_tokens_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(get_deck_tokens_route(self.0))
     }
 }
 
@@ -120,9 +133,10 @@ impl Endpoint for GetDeckTokens {
 pub struct GetDeckTags;
 impl Endpoint for GetDeckTags {
     const METHOD: Method = Method::Get;
+    type Request = ();
     type Response = Vec<DeckTagView>;
-    fn path(&self) -> String {
-        GET_DECK_TAGS_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(GET_DECK_TAGS_ROUTE)
     }
 }
 
@@ -130,9 +144,10 @@ impl Endpoint for GetDeckTags {
 pub struct ShareDeck(pub Uuid);
 impl Endpoint for ShareDeck {
     const METHOD: Method = Method::Post;
+    type Request = ();
     type Response = HttpDeckShareToken;
-    fn path(&self) -> String {
-        share_deck_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(share_deck_route(self.0))
     }
 }
 
@@ -140,22 +155,24 @@ impl Endpoint for ShareDeck {
 pub struct UnshareDeck(pub Uuid);
 impl Endpoint for UnshareDeck {
     const METHOD: Method = Method::Delete;
+    type Request = ();
     type Response = ();
-    fn path(&self) -> String {
-        share_deck_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(share_deck_route(self.0))
     }
 }
 
 /// Suppress one card from a deck's suggestions. Answers 204.
-pub struct SkipDeckCard(pub Uuid, pub Value);
+pub struct SkipDeckCard(pub Uuid, pub HttpSkipDeckCard);
 impl Endpoint for SkipDeckCard {
     const METHOD: Method = Method::Post;
+    type Request = HttpSkipDeckCard;
     type Response = ();
-    fn path(&self) -> String {
-        skip_deck_card_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(skip_deck_card_route(self.0))
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.1.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.1)
     }
 }
 
@@ -163,9 +180,10 @@ impl Endpoint for SkipDeckCard {
 pub struct UnskipDeckCard(pub Uuid, pub Uuid);
 impl Endpoint for UnskipDeckCard {
     const METHOD: Method = Method::Delete;
+    type Request = ();
     type Response = ();
-    fn path(&self) -> String {
-        unskip_deck_card_route(self.0, self.1)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(unskip_deck_card_route(self.0, self.1))
     }
 }
 
@@ -173,35 +191,38 @@ impl Endpoint for UnskipDeckCard {
 pub struct ClearDeckSuppressions(pub Uuid);
 impl Endpoint for ClearDeckSuppressions {
     const METHOD: Method = Method::Delete;
+    type Request = ();
     type Response = HttpClearedSuppressions;
-    fn path(&self) -> String {
-        clear_deck_suppressions_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(clear_deck_suppressions_route(self.0))
     }
 }
 
 /// Add a card to a deck. Answers 201.
-pub struct CreateDeckCard(pub Uuid, pub Value);
+pub struct CreateDeckCard(pub Uuid, pub HttpCreateDeckCard);
 impl Endpoint for CreateDeckCard {
     const METHOD: Method = Method::Post;
+    type Request = HttpCreateDeckCard;
     type Response = DeckCard;
-    fn path(&self) -> String {
-        create_deck_card_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(create_deck_card_route(self.0))
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.1.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.1)
     }
 }
 
 /// Edit one deck card.
-pub struct UpdateDeckCard(pub Uuid, pub Uuid, pub Value);
+pub struct UpdateDeckCard(pub Uuid, pub Uuid, pub HttpPatchDeckCard);
 impl Endpoint for UpdateDeckCard {
     const METHOD: Method = Method::Patch;
+    type Request = HttpPatchDeckCard;
     type Response = DeckCard;
-    fn path(&self) -> String {
-        update_deck_card_route(self.0, self.1)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(update_deck_card_route(self.0, self.1))
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.2.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.2)
     }
 }
 
@@ -209,35 +230,38 @@ impl Endpoint for UpdateDeckCard {
 pub struct DeleteDeckCard(pub Uuid, pub Uuid);
 impl Endpoint for DeleteDeckCard {
     const METHOD: Method = Method::Delete;
+    type Request = ();
     type Response = ();
-    fn path(&self) -> String {
-        delete_deck_card_route(self.0, self.1)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(delete_deck_card_route(self.0, self.1))
     }
 }
 
 /// Import a decklist from pasted text.
-pub struct ImportDeckCards(pub Uuid, pub Value);
+pub struct ImportDeckCards(pub Uuid, pub HttpImportDeckCards);
 impl Endpoint for ImportDeckCards {
     const METHOD: Method = Method::Post;
+    type Request = HttpImportDeckCards;
     type Response = ImportDeckCardsResult;
-    fn path(&self) -> String {
-        import_deck_cards_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(import_deck_cards_route(self.0))
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.1.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.1)
     }
 }
 
 /// Import a public Archidekt deck by URL.
-pub struct ImportArchidektDeck(pub Uuid, pub Value);
+pub struct ImportArchidektDeck(pub Uuid, pub HttpImportArchidektDeck);
 impl Endpoint for ImportArchidektDeck {
     const METHOD: Method = Method::Post;
+    type Request = HttpImportArchidektDeck;
     type Response = ImportDeckCardsResult;
-    fn path(&self) -> String {
-        import_archidekt_deck_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(import_archidekt_deck_route(self.0))
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.1.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.1)
     }
 }
 
@@ -249,8 +273,9 @@ pub struct GetSharedDeck(pub Uuid);
 impl Endpoint for GetSharedDeck {
     const METHOD: Method = Method::Get;
     const AUTH: bool = false;
+    type Request = ();
     type Response = HttpSharedDeck;
-    fn path(&self) -> String {
-        get_shared_deck_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(get_shared_deck_route(self.0))
     }
 }

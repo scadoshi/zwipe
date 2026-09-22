@@ -66,7 +66,7 @@ impl HttpRegisterUser {
 /// it on every refresh so the rotated session reflects the live version rather
 /// than the one it was first created with.
 /// On success the old refresh token is consumed and a new token pair is issued.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HttpRefreshSession {
     pub user_id: String,
     pub refresh_token: String,

@@ -9,7 +9,6 @@ use zwipe_core::{
 impl ZwipeClient {
     /// Registers new user accounts.
     pub async fn register(&self, request: HttpRegisterUser) -> Result<Session, ClientError> {
-        let body = serde_json::to_value(&request)?;
-        self.call(Register(body), None).await
+        self.call(Register(request), None).await
     }
 }

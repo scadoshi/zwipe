@@ -16,7 +16,7 @@ impl ZwipeClient {
         card_filter: &CardQuery,
         session: &Session,
     ) -> Result<Vec<Card>, ClientError> {
-        let body = serde_json::to_value(card_filter)?;
-        self.call(SearchCards(body), Some(session)).await
+        self.call(SearchCards(card_filter.clone()), Some(session))
+            .await
     }
 }

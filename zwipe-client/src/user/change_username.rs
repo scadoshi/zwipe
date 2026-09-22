@@ -13,7 +13,6 @@ impl ZwipeClient {
         request: HttpChangeUsername,
         session: &Session,
     ) -> Result<User, ClientError> {
-        let body = serde_json::to_value(&request)?;
-        self.call(ChangeUsername(body), Some(session)).await
+        self.call(ChangeUsername(request), Some(session)).await
     }
 }

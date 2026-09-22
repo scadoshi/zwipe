@@ -35,7 +35,7 @@ pub struct HttpImportArchidektDeck {
 }
 
 /// Deck creation request body.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HttpCreateDeckProfile {
     /// Deck display name.
     pub name: String,
@@ -211,7 +211,7 @@ impl HttpCreateDeckProfileBuilder {
 /// Opdate contract). `name` is the one non-clearable field: a deck always
 /// has a name, so explicit `null` there is a 422 (RFC 7396 resolution),
 /// enforced by the handler.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HttpUpdateDeckProfile {
     /// New deck name; absent = leave unchanged. Non-clearable: `null` is
     /// rejected by the handler rather than ignored.

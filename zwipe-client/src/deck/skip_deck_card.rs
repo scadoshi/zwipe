@@ -18,8 +18,11 @@ impl ZwipeClient {
         oracle_id: Uuid,
         session: &Session,
     ) -> Result<(), ClientError> {
-        let body = serde_json::to_value(HttpSkipDeckCard { oracle_id })?;
-        self.call(SkipDeckCard(deck_id, body), Some(session)).await
+        self.call(
+            SkipDeckCard(deck_id, HttpSkipDeckCard { oracle_id }),
+            Some(session),
+        )
+        .await
     }
 
     /// Undoes a single deck-card skip.

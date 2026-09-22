@@ -21,7 +21,6 @@ impl ZwipeClient {
         request: HttpUpdatePreferences,
         session: &Session,
     ) -> Result<UserPreferences, ClientError> {
-        let body = serde_json::to_value(&request)?;
-        self.call(UpdatePreferences(body), Some(session)).await
+        self.call(UpdatePreferences(request), Some(session)).await
     }
 }

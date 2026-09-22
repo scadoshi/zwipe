@@ -3,7 +3,7 @@
 use crate::{
     domain::card::{
         Card, card_role::CardRoleView, oracle_tag::OracleTag,
-        scryfall_data::universe::UbFranchiseView,
+        scryfall_data::universe::UbFranchiseView, search_card::card_filter::CardQuery,
     },
     http::{
         endpoint::{Endpoint, Method},
@@ -15,7 +15,7 @@ use crate::{
         },
     },
 };
-use serde_json::Value;
+use std::borrow::Cow;
 use uuid::Uuid;
 
 /// Builds an unauthed GET returning `$resp` from a fixed path.
@@ -26,9 +26,10 @@ macro_rules! public_get {
         impl Endpoint for $name {
             const METHOD: Method = Method::Get;
             const AUTH: bool = false;
+            type Request = ();
             type Response = $resp;
-            fn path(&self) -> String {
-                $path.to_string()
+            fn path(&self) -> Cow<'static, str> {
+                Cow::Borrowed($path)
             }
         }
     };
@@ -80,9 +81,10 @@ pub struct GetCard(pub Uuid);
 impl Endpoint for GetCard {
     const METHOD: Method = Method::Get;
     const AUTH: bool = false;
+    type Request = ();
     type Response = Card;
-    fn path(&self) -> String {
-        get_card_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(get_card_route(self.0))
     }
 }
 
@@ -91,36 +93,39 @@ pub struct GetPrintings(pub Uuid);
 impl Endpoint for GetPrintings {
     const METHOD: Method = Method::Get;
     const AUTH: bool = false;
+    type Request = ();
     type Response = Vec<Card>;
-    fn path(&self) -> String {
-        get_printings_route(self.0)
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(get_printings_route(self.0))
     }
 }
 
 /// Filtered card search. The filter is pre-serialized so this type stays free
 /// of the query builder's generics.
-pub struct SearchCards(pub Value);
+pub struct SearchCards(pub CardQuery);
 impl Endpoint for SearchCards {
     const METHOD: Method = Method::Post;
+    type Request = CardQuery;
     type Response = Vec<Card>;
-    fn path(&self) -> String {
-        SEARCH_CARDS_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(SEARCH_CARDS_ROUTE)
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.0.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
     }
 }
 
 /// Filtered search restricted to commander-eligible cards.
-pub struct SearchCommanders(pub Value);
+pub struct SearchCommanders(pub CardQuery);
 impl Endpoint for SearchCommanders {
     const METHOD: Method = Method::Post;
+    type Request = CardQuery;
     type Response = Vec<Card>;
-    fn path(&self) -> String {
-        SEARCH_COMMANDERS_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(SEARCH_COMMANDERS_ROUTE)
     }
-    fn body(&self) -> Option<Value> {
-        Some(self.0.clone())
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
     }
 }
 

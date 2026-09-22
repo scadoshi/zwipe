@@ -5,15 +5,17 @@ use crate::http::{
     endpoint::{Endpoint, Method},
     paths::{CHANGELOG_ROUTE, MIN_CLIENT_VERSION_ROUTE},
 };
+use std::borrow::Cow;
 
 /// The release history the app and site both render.
 pub struct GetChangelog;
 impl Endpoint for GetChangelog {
     const METHOD: Method = Method::Get;
     const AUTH: bool = false;
+    type Request = ();
     type Response = HttpChangelog;
-    fn path(&self) -> String {
-        CHANGELOG_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(CHANGELOG_ROUTE)
     }
 }
 
@@ -22,8 +24,9 @@ pub struct GetMinClientVersion;
 impl Endpoint for GetMinClientVersion {
     const METHOD: Method = Method::Get;
     const AUTH: bool = false;
+    type Request = ();
     type Response = HttpMinClientVersion;
-    fn path(&self) -> String {
-        MIN_CLIENT_VERSION_ROUTE.to_string()
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(MIN_CLIENT_VERSION_ROUTE)
     }
 }
