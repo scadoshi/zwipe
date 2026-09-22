@@ -91,6 +91,10 @@ fn ThemeWrapper(children: Element) -> Element {
 
 #[component]
 fn App() -> Element {
+    // Not in main(): UIApplication does not exist until the app has launched,
+    // so calling this earlier would silently do nothing.
+    use_hook(zwiper::outbound::shake_to_edit::disable);
+
     let upgrade_required = spawn_upkeeper();
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

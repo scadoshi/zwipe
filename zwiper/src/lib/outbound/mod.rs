@@ -21,5 +21,7 @@ pub mod keyring_entry;
 pub mod open_url;
 /// User session and authentication state management.
 pub mod session;
+/// Turns off iOS's shake-to-undo prompt.
+pub mod shake_to_edit;
 /// Local theme cache so pre-auth screens render in the last-used theme.
 pub mod theme_store;
