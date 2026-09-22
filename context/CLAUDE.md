@@ -12,7 +12,7 @@ navigation, live on both stores. Full-stack Rust, hexagonal architecture.
 - **zerver/**: Axum REST API with PostgreSQL, SQLx, JWT auth. Also builds `zervice`, the nightly Scryfall sync
 - **zwiper/**: Dioxus app, iOS and Android (web and desktop run for development)
 - **zite/**: Dioxus static site at zwipe.net
-- **zwipe-client/**: the typed API client. zwiper uses it; zite can when it grows the authenticated surface
+- **zwipe-client/**: the typed API client. Both zwiper and zite call the API through it
 - **zwipe-components/**: shared Dioxus UI and the theme CSS
 - **Database**: ~118k Magic cards synced nightly from Scryfall
 
@@ -75,11 +75,11 @@ copy shadows correct data (broke the 2026-07-05 deploy; details in
 
 ```
 zwiper ──→ zwipe-client ──→ zwipe-core ←── zerver
-zite   ──────────────────→ zwipe-core
+zite   ──→ zwipe-client
 zwiper ──→ zwipe-components ←── zite
 ```
 
-zwipe-core owns all shared domain types, including every `Http*` contract (`zwipe-core/src/http/contracts/`) and the route path constants. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers). No client depends on zerver: zwiper and zite both take their domain and contract types from zwipe-core, and zerver is the server only. zwipe-components is the shared Dioxus UI crate (components plus `themes.css`/`components.css`) that both clients depend on. zwipe-client holds the typed API client, depending on zwipe-core and reqwest only, so it carries no Dioxus and no platform code.
+zwipe-core owns all shared domain types, including every `Http*` contract (`zwipe-core/src/http/contracts/`) and the route path constants. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers). No client depends on zerver: zwiper and zite both take their domain and contract types from zwipe-core, and zerver is the server only. zwipe-components is the shared Dioxus UI crate (components plus `themes.css`/`components.css`) that both clients depend on. zwipe-client holds the typed API client, depending on zwipe-core and reqwest only, so it carries no Dioxus and no platform code. Both clients use it; neither builds a request by hand.
 
 ### Hexagonal (Ports & Adapters) Pattern
 
@@ -98,8 +98,7 @@ src/lib/
 ```
 
 The frontend's API client is not in `outbound/` any more: it lives in the
-`zwipe-client` crate, so there is one implementation for zite to adopt
-rather than a second one to write. zwiper's
+`zwipe-client` crate, which both clients call. zwiper's
 `outbound/` keeps what is genuinely platform-bound: session storage, the
 keyring, crash capture, opening URLs.
 

@@ -9,34 +9,43 @@ Every section below describes the code as it stands (last verified against the t
 ## The Family
 
 ```
-┌──────────┐     ┌──────────────┐     ┌──────────┐
-│  zwiper  │────→│  zwipe-core  │←────│  zerver  │
-│ (mobile) │     │   (domain)   │     │  (api)   │
-└──┬────┬──┘     └──────────────┘     └────┬─────┘
-   │    │            ↑        ↑            │
-   │    │            │        │      ┌─────┴──────┐
-   │    │            │        │      │  zervice   │
-   │    │     ┌──────┘    ┌───┘      │  (sync)    │
-   │    │     │           │          └────────────┘
-   │    │ ┌───┴──────┐ ┌──┴────┐
-   │    └→│  zwipe-  │ │ zite  │
-   │      │  client  │ │ (web) │
-   │      └──────────┘ └───┬───┘
-   │                       │
-   │  ┌────────────────────┘
-   │  │
-   │ ┌┴─────────────────┐
-   └→│ zwipe-components │  (shared Dioxus UI + themes.css)
-     └──────────────────┘
+   ┌──────────┐              ┌──────────┐
+   │  zwiper  │              │   zite   │
+   │ (mobile) │              │  (web)   │
+   └────┬─────┘              └────┬─────┘
+        │                         │
+        └───────────┬─────────────┘
+                    │  both depend on both
+        ┌───────────┴───────────┐
+        ↓                       ↓
+┌──────────────┐      ┌──────────────────┐
+│ zwipe-client │      │ zwipe-components │
+│  (api calls) │      │ (UI + themes.css)│
+└───────┬──────┘      └─────────┬────────┘
+        └──────────┬────────────┘
+                   ↓
+          ┌──────────────┐        ┌──────────┐
+          │  zwipe-core  │←───────│  zerver  │
+          │   (domain)   │        │  (api)   │
+          └──────────────┘        └────┬─────┘
+                                       │
+                                 ┌─────┴──────┐
+                                 │  zervice   │
+                                 │  (sync)    │
+                                 └────────────┘
 ```
+
+Both clients also depend on `zwipe-core` directly, for the domain types they
+pass around. `zervice` is a second binary in the `zerver` crate, not a crate
+of its own.
 
 | Crate | Binary | Role | Depends on |
 |-------|--------|------|-----------|
 | **zwipe-core** | — (library) | Shared domain types, validation, HTTP contracts | serde, uuid, chrono, thiserror |
 | **zerver** | `zerver` | Axum REST API, PostgreSQL, JWT auth | zwipe-core, axum, sqlx, tokio |
 | **zerver** | `zervice` | Background sync (Scryfall card data) | zwipe-core (via zerver lib) |
-| **zwiper** | `zwiper` | Dioxus cross-platform mobile app | zwipe-core, zwipe-components, dioxus |
-| **zite** | `zite` | Dioxus static website (zwipe.net) | zwipe-core, zwipe-components, dioxus |
+| **zwiper** | `zwiper` | Dioxus cross-platform mobile app | zwipe-core, zwipe-client, zwipe-components, dioxus |
+| **zite** | `zite` | Dioxus static website (zwipe.net) | zwipe-core, zwipe-client, zwipe-components, dioxus |
 | **zwipe-client** | — (library) | Typed API client: one `call` over the core `Endpoint` descriptions | zwipe-core, reqwest |
 | **zwipe-components** | — (library) | Shared Dioxus UI components + `themes.css`/`components.css` | zwipe-core, dioxus |
 | **zort** | — (hypothetical) | AI card classification client. Sketched only: no crate, no directory, nothing built | Postgres direct, LLM API |
@@ -323,10 +332,11 @@ zwiper/src/
 
 Dioxus site deployed to GitHub Pages at [zwipe.net](https://zwipe.net). Marketing pages, the auth flows that need a browser (verify, reset), and a handful of pages that read the public API: changelog, guides, and the shared-deck viewer. Statically hosted, not entirely static content.
 
-No login, no deck building today. `decisions.md` (2026-04-06) commits zite to growing into the full authenticated deck builder eventually; that surface lives only in zwiper for now, but the client layer it needs is already shared: zite adds `zwipe-client` as a dependency and calls it, rather than writing a second copy.
+No login, no deck building today. `decisions.md` (2026-04-06) commits zite to growing into the full authenticated deck builder eventually; that surface lives only in zwiper for now, but the client layer it needs is already wired up: zite's six API calls all go through `zwipe-client`, so the authed endpoints are a method call away rather than a second implementation.
 
 ```
 zite/src/
+├── api.rs              — The shared zwipe-client, pointed at the backend
 ├── main.rs                 — Router, nav bar, footer, API base URL
 └── pages/
     ├── home.rs             — Landing page with feature grid
@@ -350,7 +360,7 @@ zite/src/
 
 ## zwipe-client: API Client
 
-The typed client for the backend, depending on zwipe-core and reqwest and nothing else. No Dioxus, no platform code: crash reporting, session storage and URL config stay in the apps. zwiper uses it today; zite imports it when it grows the authenticated deck builder `decisions.md` commits it to.
+The typed client for the backend, depending on zwipe-core and reqwest and nothing else. No Dioxus, no platform code: crash reporting, session storage and URL config stay in the apps. Both clients use it, and neither builds a request by hand.
 
 `call.rs` is the only transport code. It reads an `Endpoint` from zwipe-core for method, path, auth and body, sends it, and decodes the success body. Every other file is a thin method describing one call:
 
