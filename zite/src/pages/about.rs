@@ -8,6 +8,7 @@ const URL_ZITE: &str = "https://github.com/scadoshi/zwipe/tree/main/zite";
 const URL_ZERVER: &str = "https://github.com/scadoshi/zwipe/tree/main/zerver";
 const URL_ZWIPE_CORE: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-core";
 const URL_ZWIPE_COMPONENTS: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-components";
+const URL_ZWIPE_CLIENT: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-client";
 const URL_DIOXUS: &str = "https://dioxuslabs.com";
 const URL_WASM: &str = "https://webassembly.org";
 const URL_AXUM: &str = "https://github.com/tokio-rs/axum";
@@ -60,7 +61,7 @@ pub fn About() -> Element {
 
             div { class: "section",
                 h2 { "System Architecture" }
-                p { class: "arch-subtitle", "Five Rust crates in one workspace. What each one does, and where it pulls from." }
+                p { class: "arch-subtitle", "Six Rust crates in one workspace. What each one does, and where it pulls from." }
                 div { class: "card-grid",
                     Panel {
                         eyebrow: "Mobile app",
@@ -84,6 +85,8 @@ pub fn About() -> Element {
                             li {
                                 "Imports "
                                 a { href: URL_ZWIPE_CORE, "zwipe-core" }
+                                ", "
+                                a { href: URL_ZWIPE_CLIENT, "zwipe-client" }
                                 " and "
                                 a { href: URL_ZWIPE_COMPONENTS, "zwipe-components" }
                             }
@@ -101,7 +104,7 @@ pub fn About() -> Element {
                             a { class: "tag", href: URL_WASM, "WASM" }
                         }
                         ul { class: "card-bullets",
-                            li { "Marketing, landing, password reset, and email verification" }
+                            li { "Landing and guides, the changelog, shared deck pages, password reset and email verification" }
                             li {
                                 "Talks to "
                                 a { href: URL_ZERVER, "zerver" }
@@ -110,6 +113,8 @@ pub fn About() -> Element {
                             li {
                                 "Imports "
                                 a { href: URL_ZWIPE_CORE, "zwipe-core" }
+                                ", "
+                                a { href: URL_ZWIPE_CLIENT, "zwipe-client" }
                                 " and "
                                 a { href: URL_ZWIPE_COMPONENTS, "zwipe-components" }
                             }
@@ -166,6 +171,26 @@ pub fn About() -> Element {
                         }
                     }
                     Panel {
+                        eyebrow: "Shared API client",
+                        title: "zwipe-client",
+                        actions: rsx! {
+                            a { class: "panel-action", href: URL_ZWIPE_CLIENT, "Source" span { class: "ext", "\u{2197}" } }
+                        },
+                        div { class: "arch-tags",
+                            span { class: "tag", "HTTP" }
+                            span { class: "tag", "Typed" }
+                        }
+                        ul { class: "card-bullets",
+                            li { "Every API call the app and the site make, described once and sent by one function" }
+                            li {
+                                "Each endpoint declares its method, path and response type in "
+                                a { href: URL_ZWIPE_CORE, "zwipe-core" }
+                                ", so a client cannot call it the wrong way"
+                            }
+                            li { "No UI framework and no platform code, so it compiles for phones and the browser alike" }
+                        }
+                    }
+                    Panel {
                         eyebrow: "Shared domain",
                         title: "zwipe-core",
                         actions: rsx! {
@@ -204,7 +229,7 @@ pub fn About() -> Element {
 
                     Panel { eyebrow: "Quality", title: "Testing & lint discipline",
                         p { class: "card-summary",
-                            "694 tests, 406 in "
+                            "736 tests, 430 in "
                             a { href: URL_ZWIPE_CORE, "zwipe-core" }
                             ". Enforced by the compiler."
                         }
