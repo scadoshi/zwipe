@@ -1,10 +1,6 @@
 # Zwipe: Product Requirements Document
 
-**Historical MVP PRD, as of 2026-03.** This is the pre-launch scoping
-document, kept as a record of what the MVP was meant to be. It is not a
-description of the app today. Zwipe has been live on the App Store since
-2026-06-06 and in Play production since July 2026; for current state see
-`../README.md`. Claims below are annotated where they diverged.
+**Historical MVP PRD, as of 2026-03.** This is the pre-launch scoping document, kept as a record of what the MVP was meant to be. It is not a description of the app today. Zwipe has been live on the App Store since 2026-06-06 and in Play production since July 2026; for current state see `../README.md`. Claims below are annotated where they diverged.
 
 ## Vision
 A mobile-first Magic: The Gathering deck builder with a swipe-based card browsing interface. Built for Commander players who want a fast, enjoyable mobile experience, not another cluttered desktop tool ported to a small screen.
@@ -246,4 +242,4 @@ DeckCard
 1. **Android** (can test natively on Linux)
 2. **iOS** (deploy via cloud builds)
 
-This PRD focuses exclusively on proving the core concept: "Can we make deck building fun through swiping?" Everything else is deferred until we validate this fundamental assumption. 
+This PRD focuses exclusively on proving the core concept: "Can we make deck building fun through swiping?" Everything else is deferred until we validate this fundamental assumption.

@@ -80,7 +80,5 @@ curl https://api.zwipe.net/
 
 ## Notes
 
-- `zervice` (the nightly Scryfall sync + session cleanup cron) does **not** need a restart, the
-  cron job calls the binary path directly, so the next scheduled run picks up the new binary
-  automatically. zervice is a run-once binary that exits after completing its work.
+- `zervice` (the nightly Scryfall sync + session cleanup cron) does **not** need a restart, the cron job calls the binary path directly, so the next scheduled run picks up the new binary automatically. zervice is a run-once binary that exits after completing its work.
 - To free disk space after deploying: `cd ~ && rm -rf ~/zwipe-src`

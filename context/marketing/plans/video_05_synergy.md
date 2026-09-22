@@ -1,8 +1,6 @@
 # Video 5: Swipe cards that actually work together
 
-**Theme:** Pick a commander, swipe only what synergizes.
-**Priority:** P2.
-**Hook line:** "Pick your commander. Swipe only what works with it."
+**Theme:** Pick a commander, swipe only what synergizes. **Priority:** P2. **Hook line:** "Pick your commander. Swipe only what works with it."
 
 ## Beats (~20s)
 
@@ -25,12 +23,8 @@
 5. **Right-swipes** adding cards to the deck.
 
 ## Notes
-- Shipped in 1.2.0; the ordering has since gotten smarter (community add/skip
-  signal blends into the synergy order as of 1.3.2): the on-screen behavior is
-  the same, but "it learns from what players actually keep" is now a true claim
-  if a caption wants it.
-- If the cold-cache "warming up" toast appears, either wait it out or cut around
-  it; the clean synergy pool is the point.
+- Shipped in 1.2.0; the ordering has since gotten smarter (community add/skip signal blends into the synergy order as of 1.3.2): the on-screen behavior is the same, but "it learns from what players actually keep" is now a true claim if a caption wants it.
+- If the cold-cache "warming up" toast appears, either wait it out or cut around it; the clean synergy pool is the point.
 
 ## Script (VO + final captions)
 
@@ -46,7 +40,4 @@ First-person dev voice, ~150 wpm.
 | 0:15–0:16 | Three swipes, three keepers. | |
 | 0:16–0:20 | (end card, no VO) | |
 
-Delivery notes: film with Krenko specifically so the VO's card claims are
-checkable on screen (goblin after goblin sells the beat better than any
-caption). If a different commander films better, rewrite the VO around that
-name; never let the audio name a commander the footage doesn't show.
+Delivery notes: film with Krenko specifically so the VO's card claims are checkable on screen (goblin after goblin sells the beat better than any caption). If a different commander films better, rewrite the VO around that name; never let the audio name a commander the footage doesn't show.

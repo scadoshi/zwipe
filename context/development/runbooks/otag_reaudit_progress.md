@@ -1,54 +1,24 @@
 # Oracle-tag description RE-AUDIT — progress & findings
 
-Second-pass QA re-run of `ORACLE_TAG_DESCRIPTIONS` using the **improved two-stage
-workflow** (card-data grounding + skeptical Verify stage, commit `f0f1398d`). Ranks
-1-2000 were originally checked by the *old* single-stage workflow that was blind to
-cost/color/hybrid/rarity and over-generalized cycles; this re-audit re-checks them from
-the top by population to catch what the old pass missed. Companion to the forward-audit
-progress in [`otag_audit_progress.md`](otag_audit_progress.md).
+Second-pass QA re-run of `ORACLE_TAG_DESCRIPTIONS` using the **improved two-stage workflow** (card-data grounding + skeptical Verify stage, commit `f0f1398d`). Ranks 1-2000 were originally checked by the *old* single-stage workflow that was blind to cost/color/hybrid/rarity and over-generalized cycles; this re-audit re-checks them from the top by population to catch what the old pass missed. Companion to the forward-audit progress in [`otag_audit_progress.md`](otag_audit_progress.md).
 
-> **This is the ACTIVE audit task.** Ignore the paused forward sweep in
-> [`otag_audit_progress.md`](otag_audit_progress.md) (do not resume that at 2201). Continue
-> the re-audit here from **rank ~1501+** (ranks 1-1500 done; note 160 slugs in the 1001-1500 batch are audit-only/unverified).
+> **This is the ACTIVE audit task.** Ignore the paused forward sweep in [`otag_audit_progress.md`](otag_audit_progress.md) (do not resume that at 2201). Continue the re-audit here from **rank ~1501+** (ranks 1-1500 done; note 160 slugs in the 1001-1500 batch are audit-only/unverified).
 
-> **APPLIED + fully verified: ranks 1-1500 were applied to `ORACLE_TAG_DESCRIPTIONS` on 2026-07-16.**
-> Ranks 1-1000: 181 fixes. Ranks 1001-1500: 99 fixes. The 28 originally-unverified fixes were later
-> put through the two-stage verify (2026-07-16): **18 upheld** (updated to the verified suggestion),
-> **10 reverted to their original text** (re-audit found them accurate; the first flag was a false
-> positive). **The whole 1-1500 apply is now two-stage verified.** The batches below are the record.
-> **Do not re-apply them.** New batches (rank ~1501+) remain findings-only. Ships
-> [`otag_audit_workflow.js`](otag_audit_workflow.js).
+> **APPLIED + fully verified: ranks 1-1500 were applied to `ORACLE_TAG_DESCRIPTIONS` on 2026-07-16.** Ranks 1-1000: 181 fixes. Ranks 1001-1500: 99 fixes. The 28 originally-unverified fixes were later put through the two-stage verify (2026-07-16): **18 upheld** (updated to the verified suggestion), **10 reverted to their original text** (re-audit found them accurate; the first flag was a false positive). **The whole 1-1500 apply is now two-stage verified.** The batches below are the record. **Do not re-apply them.** New batches (rank ~1501+) remain findings-only. Ships [`otag_audit_workflow.js`](otag_audit_workflow.js).
 
 ## Coverage / resume
-- **Re-audited: 1500 / 4,357** (ranks 1-1000 done; ranks 1001-1500 batch **complete, 500/500**,
-  all findings two-stage verified — the 28 flags from the originally audit-only shard were verified
-  2026-07-16: 18 upheld, 10 reverted). **Next: rank ~1501+.**
-- **Resume (do this to continue):** pull the top-N `(slug, description)` pairs by card
-  population from the DB, **excluding** every slug already in
-  [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt) (this is the re-audit's own tracker,
-  separate from the forward `otag_audited_slugs.txt`), and run them through
-  [`otag_audit_workflow.js`](otag_audit_workflow.js). Then append the returned `audited` slugs
-  to `otag_reaudit_slugs.txt` and log the findings here.
+- **Re-audited: 1500 / 4,357** (ranks 1-1000 done; ranks 1001-1500 batch **complete, 500/500**, all findings two-stage verified — the 28 flags from the originally audit-only shard were verified 2026-07-16: 18 upheld, 10 reverted). **Next: rank ~1501+.**
+- **Resume (do this to continue):** pull the top-N `(slug, description)` pairs by card population from the DB, **excluding** every slug already in [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt) (this is the re-audit's own tracker, separate from the forward `otag_audited_slugs.txt`), and run them through [`otag_audit_workflow.js`](otag_audit_workflow.js). Then append the returned `audited` slugs to `otag_reaudit_slugs.txt` and log the findings here.
 - Run in 2x250 shards concurrently (args payload stays paste-able); ~500/session is comfortable.
-- Resume is self-healing: the tracker lists only confirmed re-audited slugs, so a partial run
-  re-queues whatever didn't finish, no gaps or dupes.
+- Resume is self-healing: the tracker lists only confirmed re-audited slugs, so a partial run re-queues whatever didn't finish, no gaps or dupes.
 
 ## Findings so far
-Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verify overturned 19.
-(Of the 1001-1500 batch, 160 slugs = 4 wrong + 24 suspect are UNVERIFIED — verify stage cut by limits.)
-Per-batch detail below.
+Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verify overturned 19. (Of the 1001-1500 batch, 160 slugs = 4 wrong + 24 suspect are UNVERIFIED — verify stage cut by limits.) Per-batch detail below.
 
 ## Batch: ranks 1-500
 500 re-audited: **416 clean, 81 suspect, 3 wrong**; the Verify stage overturned 6 auditor flags.
 
-**What the old pass missed.** The improved auditor flagged a high rate of
-**over/under-specification** on these terse, high-visibility head tags: singular
-"a creature"/"its target" wording where the tag also covers mass/any-permanent effects,
-"opponent" where it's "each player", "spell" where carriers are permanents, and
-sibling-overlap gaps (instant vs instant-or-sorcery). These are exactly the nuances the
-old single-stage workflow did not surface. Overturn rate 6/90 (~7%), all overturns are
-correct rejections (e.g. `gives-indestructible`: creatures ARE permanents, so "other
-permanents" is a fine superset).
+**What the old pass missed.** The improved auditor flagged a high rate of **over/under-specification** on these terse, high-visibility head tags: singular "a creature"/"its target" wording where the tag also covers mass/any-permanent effects, "opponent" where it's "each player", "spell" where carriers are permanents, and sibling-overlap gaps (instant vs instant-or-sorcery). These are exactly the nuances the old single-stage workflow did not surface. Overturn rate 6/90 (~7%), all overturns are correct rejections (e.g. `gives-indestructible`: creatures ARE permanents, so "other permanents" is a fine superset).
 
 ### Wrong (3) — fix recommended
 
@@ -178,35 +148,35 @@ permanents" is a fine superset).
 ### Wrong (5) — fix recommended
 
 #### `warlord`
-- **current:** 
+- **current:**
 - **issue:** Overspecified to 'creatures you control'; most cards count lands, permanents, or creatures across the whole battlefield
 - **example:** Ashaya, Soul of the Wild: "Ashaya's power and toughness are each equal to the number of lands you control." Also Kithkin Rabble: "power and toughness are each equal to the number of white permanents you control."
 - **suggested fix:** A creature whose power, and often toughness, equals the number of permanents of a certain kind, most often creatures you control.
 - **verify note:** Ashaya counts 'lands you control', Kithkin Rabble 'white permanents', Yavimaya Kavu 'red creatures on the battlefield' — not just creatures you control
 
 #### `creature-ability-noncreature`
-- **current:** 
+- **current:**
 - **issue:** Most tagged cards never become creatures; the tag is about noncreature permanents bearing keywords usually found on creatures, not 'abilities that matter once it becomes a creature'
 - **example:** Darksteel Relic {0} Artifact: "Indestructible" (never becomes a creature); Weapon Rack: "enters with three +1/+1 counters"; Tanglepool Bridge: Indestructible artifact land
 - **suggested fix:** A noncreature permanent that carries a keyword or ability usually found on creatures, like indestructible, flying, or +1/+1 counters.
 - **verify note:** Darksteel Relic (Indestructible), Tanglepool Bridge (Indestructible land), and Weapon Rack (+1/+1 counters) never become creatures; the ability matters while they stay noncreatures
 
 #### `type-errata-viashino`
-- **current:** 
+- **current:**
 - **issue:** Wrong set attribution: the Viashino-to-Lizard errata predates Modern Horizons 3
 - **example:** Kylox, Visionary Inventor is "Legendary Creature — Lizard Artificer" and was printed in The Lost Caverns of Ixalan (Nov 2023), before MH3 (June 2024), showing the Lizard convention already applied
 - **suggested fix:** A Lizard creature that once carried the retired Viashino creature type, since folded into Lizard.
 - **verify note:** Kylox is 'Legendary Creature — Lizard Artificer' (LCI, Nov 2023), already Lizard before MH3 (June 2024); the Viashino type retired in 2023, so the MH3 attribution is wrong
 
 #### `remove-counters-other`
-- **current:** 
+- **current:**
 - **issue:** Restricts to 'opponents' permanents' but most cards remove counters from ANY permanent (yours or theirs)
 - **example:** Heartless Act: "Remove up to three counters from target creature." Clockspinning: "Remove that counter from that permanent or card." Shivan Sand-Mage: "Remove two time counters from target permanent." None are opponent-only.
 - **suggested fix:** Removes counters from a permanent other than itself, or removes a player's counters.
 - **verify note:** Most target ANY permanent: Heartless Act 'Remove up to three counters from target creature', Shivan Sand-Mage 'Remove two time counters from target permanent', Clockspinning 'Remove that counter from that permanent'; not opponent-restricted
 
 #### `deal-with-the-devil`
-- **current:** 
+- **current:**
 - **issue:** Asserts 'black' but pulled members include a white and a red enchantment
 - **example:** Nine Lives: {1}{W}{W}, colors ['W']. Experimental Frenzy: {3}{R}, colors ['R']. Both are non-black.
 - **suggested fix:** An enchantment, usually black, with a powerful effect and a serious, potentially game-losing drawback.
@@ -273,14 +243,14 @@ permanents" is a fine superset).
 ### Wrong (2) — fix recommended
 
 #### `keyword-soup`
-- **current:** 
+- **current:**
 - **issue:** "its set's keyword abilities" is invented; it's a fixed evergreen keyword list, and cards often count/move/reference rather than gain them
 - **example:** Odric, Blood-Cursed: "create X Blood tokens, where X is the number of abilities from among flying, first strike, double strike, deathtouch, haste, hexproof, indestructible, lifelink, menace, reach, trample, and vigilance found among creatures you control"
 - **suggested fix:** References a long list of common keyword abilities like flying, first strike, deathtouch, and trample, often granting or counting them.
 - **verify note:** Odric counts and Kathril moves counters over a fixed evergreen list (flying/first strike/deathtouch/trample), not 'its set's keyword abilities'
 
 #### `harmonic`
-- **current:** 
+- **current:**
 - **issue:** Says 'control both,' but most tagged cards care about artifacts and enchantments separately or via OR, not a joint condition
 - **example:** Starnheim Courser: 'Artifact and enchantment spells you cast cost {1} less to cast.' and Flutterfox: 'As long as you control an artifact or enchantment, this creature has flying.'
 - **suggested fix:** Cares about both artifacts and enchantments, often rewarding you for controlling or casting them.
@@ -521,20 +491,11 @@ permanents" is a fine superset).
 
 **Status: ranks 1-1500 APPLIED 2026-07-16** (1-1000: 181 fixes; 1001-1500: 99 fixes, incl. 28 from the unverified set at owner's request).
 
-_Original note:_ **ranks 1-1000 APPLIED 2026-07-16** (181 fixes: all 10 wrong + 171 suspect). Applied
-programmatically slug-by-slug: each fix was gated for style (quote-free, no em dash, no link,
-terminal period, <=200 chars) and only written when the const's current text still matched the
-audited description (0 mismatches). `nightly fmt` clean. **The change is to the compiled const
-only; the live `oracle_tags.description` column updates on the next `zervice` sync/deploy.** Future
-batches (rank ~1001+) stay findings-only until a similar apply pass.
+_Original note:_ **ranks 1-1000 APPLIED 2026-07-16** (181 fixes: all 10 wrong + 171 suspect). Applied programmatically slug-by-slug: each fix was gated for style (quote-free, no em dash, no link, terminal period, <=200 chars) and only written when the const's current text still matched the audited description (0 mismatches). `nightly fmt` clean. **The change is to the compiled const only; the live `oracle_tags.description` column updates on the next `zervice` sync/deploy.** Future batches (rank ~1001+) stay findings-only until a similar apply pass.
 
-> Watch item: `unique-token` was flagged in both the forward audit and this re-audit with
-> different suggested rewrites. The re-audit's ("A named token creature with its own defined
-> characteristics.") was applied; if the forward audit's `predefined-token` reconciliation
-> matters, eyeball it.
+> Watch item: `unique-token` was flagged in both the forward audit and this re-audit with different suggested rewrites. The re-audit's ("A named token creature with its own defined characteristics.") was applied; if the forward audit's `predefined-token` reconciliation matters, eyeball it.
 
 When applying (future batches):
 - Treat every flag as a *suggestion*, not a mandate. Skip any suggested rewrite you disagree with.
 - Re-verify a flag against Scryfall before applying if anything looks off (the auditor is an LLM).
-- Keep the const's style: one plain sentence, no em dashes, no links, quote-free (the splice style
-  gate rejects double-quotes).
+- Keep the const's style: one plain sentence, no em dashes, no links, quote-free (the splice style gate rejects double-quotes).

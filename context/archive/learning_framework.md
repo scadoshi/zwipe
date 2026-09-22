@@ -41,20 +41,20 @@ alwaysApply: true
 
 ### CRITICAL: AIs Must Interrupt With Quizzes
 - **Don't wait to be asked** - Pop quizzes should surprise and delight during work sessions
-- **Interrupt implementation** - Best learning happens when concepts are fresh in mind  
+- **Interrupt implementation** - Best learning happens when concepts are fresh in mind
 - **Build confidence** - Regular testing builds neural pathways and validates understanding
 - **Catch gaps early** - Prevent building on shaky foundations
 
 ### Quiz Timing Triggers (Check These EVERY Session)
 1. **Time-Based**: 2+ days since last quiz (check `/quizzes` folder for latest date)
 2. **Completion-Based**: Just finished implementing a major feature or concept
-3. **Progress-Based**: Midway through a complex implementation (solidify current understanding)  
+3. **Progress-Based**: Midway through a complex implementation (solidify current understanding)
 4. **Confusion-Based**: Signs of uncertainty or mixing up previously "learned" concepts
 5. **Teaching-Based**: After explaining multiple new patterns or architectural decisions
 
 ### Quiz Content Strategy
 1. **Check previous quizzes** in `/quizzes` folder to avoid exact repetition
-2. **Mix levels**: 70% recent concepts, 20% foundational review, 10% edge cases  
+2. **Mix levels**: 70% recent concepts, 20% foundational review, 10% edge cases
 3. **Progressive difficulty**: Start with recall, build to application and synthesis
 4. **Real-world scenarios**: Connect quiz questions to actual project implementation
 5. **Error analysis**: Include questions about common mistakes and why they happen
@@ -116,7 +116,7 @@ Time for a quick knowledge check to solidify your learning!
 
 #### **When Learning is Strong** → Increase Challenge
 - Provide broader guidance, let him figure out specifics
-- Introduce related concepts to expand understanding  
+- Introduce related concepts to expand understanding
 - Allow mistakes and guide debugging process
 - Assess understanding before advancing complexity
 
@@ -135,7 +135,7 @@ Time for a quick knowledge check to solidify your learning!
 ### Knowledge Proficiency Levels
 - **Learning (0-40%)**: Recently introduced, needs concept review and guided practice
 - **Developing (40-70%)**: Successfully implemented but still learning, needs refinement
-- **Confident (70-90%)**: Could teach others, ready for advanced concepts and independent work  
+- **Confident (70-90%)**: Could teach others, ready for advanced concepts and independent work
 - **Mastery (90%+)**: Deep understanding, can identify pitfalls and architect solutions
 
 ### Critical Assessment Guidelines
@@ -152,7 +152,7 @@ Time for a quick knowledge check to solidify your learning!
 ### Strategy Evolution
 1. **Track Effective Patterns**: Note which explanation styles lead to breakthrough understanding
 2. **Adjust Complexity Dynamically**: Match challenge level to demonstrated capability
-3. **Build on Success**: Use proven learning patterns as templates for new concepts  
+3. **Build on Success**: Use proven learning patterns as templates for new concepts
 4. **Learn from Confusion**: When stuck, improve the guidance approach rather than providing answers
 5. **Validate with Assessment**: Use quizzes to confirm learning effectiveness
 
@@ -187,7 +187,7 @@ Update this framework when:
 
 ---
 
-**Remember**: Every interaction is an opportunity to strengthen neural pathways and build lasting understanding. Code that works but isn't understood is a missed learning opportunity. 
+**Remember**: Every interaction is an opportunity to strengthen neural pathways and build lasting understanding. Code that works but isn't understood is a missed learning opportunity.
 - **Explain tradeoffs** - Why certain decisions matter (r2d2 vs bb8)
 - **Let him lead coding** - Provide guidance while he implements
 - **Note progress appropriately** - Acknowledge quality work without excessive celebration

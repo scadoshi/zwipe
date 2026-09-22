@@ -1,8 +1,6 @@
 # Android Play Store submission
 
-How to produce a **signed release `.aab`** and get it into the Play Console. The
-Android analogue of iOS
-[`app-store/submission/`](../../../ios/app-store/submission/overview.md).
+How to produce a **signed release `.aab`** and get it into the Play Console. The Android analogue of iOS [`app-store/submission/`](../../../ios/app-store/submission/overview.md).
 
 | Part | What it covers |
 |------|----------------|
@@ -12,5 +10,4 @@ Android analogue of iOS
 | [form_fields.md](form_fields.md) | Store listing copy. |
 | [history.md](history.md) | Per-release build log. |
 
-Dev-env setup (JDK 21 gotcha, emulator) lives in [../../setup.md](../../setup.md)
-and [../../emulator.md](../../emulator.md).
+Dev-env setup (JDK 21 gotcha, emulator) lives in [../../setup.md](../../setup.md) and [../../emulator.md](../../emulator.md).

@@ -5,8 +5,7 @@ STATUS: SENT 2026-05-13. Apple replied 2026-05-22 recommending upgrade to Xcode 
 Reply to case 102856406657 (Xue) following the request to upload a new build with a higher build number and provide a video. Includes API-level evidence captured from browser DevTools.
 
 
-Subject (keep the existing thread):
-Re: Case 102856406657, Build 12 uploaded, "Add for Review" still rejected (API-level evidence attached)
+Subject (keep the existing thread): Re: Case 102856406657, Build 12 uploaded, "Add for Review" still rejected (API-level evidence attached)
 
 
 Hi Xue,
@@ -92,8 +91,7 @@ Requests:
 
 App ID: 6761341603, Team ID: VV74WQ89GD.
 
-Thanks,
-Scotty
+Thanks, Scotty
 
 
 Attachment checklist (notes for Scotty, not part of the email):

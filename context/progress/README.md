@@ -1,8 +1,6 @@
 # Progress: Where We Are
 
-The project's running state, split across three files plus triage. Each answers a different
-question; keeping them distinct is what stops this area from rotting into one
-giant changelog.
+The project's running state, split across three files plus triage. Each answers a different question; keeping them distinct is what stops this area from rotting into one giant changelog.
 
 | File | Question it answers | Voice |
 |------|---------------------|-------|
@@ -13,19 +11,10 @@ giant changelog.
 
 ## The boundary
 
-- **[`../README.md`](../README.md)** is the story of the project; read it to
-  catch up. When something ships, its outcome lands there as a line or two and
-  the detail stays in git.
-- **todo** is the live worklist. An item leaves `todo.md` when it's done, it does
-  **not** get checked off and kept. Completed work is summarized in `../README.md`
-  instead, so `todo.md` always reads as "what's left," never as a history log.
-- **backlog** is the holding pen. Promote an item to `todo.md` when it becomes
-  next-up; until then it stays here.
+- **[`../README.md`](../README.md)** is the story of the project; read it to catch up. When something ships, its outcome lands there as a line or two and the detail stays in git.
+- **todo** is the live worklist. An item leaves `todo.md` when it's done, it does **not** get checked off and kept. Completed work is summarized in `../README.md` instead, so `todo.md` always reads as "what's left," never as a history log.
+- **backlog** is the holding pen. Promote an item to `todo.md` when it becomes next-up; until then it stays here.
 
-If you find yourself scrolling past a wall of finished `[x]` items to reach the
-live ones, `todo.md` has drifted: flush the done items into `../README.md` and
-trim it back.
+If you find yourself scrolling past a wall of finished `[x]` items to reach the live ones, `todo.md` has drifted: flush the done items into `../README.md` and trim it back.
 
-> Security notes used to live here (`security.md`). They're parked in
-> [`../archive/security.md`](../archive/security.md) until a dedicated security
-> review brings them back.
+> Security notes used to live here (`security.md`). They're parked in [`../archive/security.md`](../archive/security.md) until a dedicated security review brings them back.

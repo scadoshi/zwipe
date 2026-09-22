@@ -1,57 +1,26 @@
 # Runbook: authoring oracle-tag descriptions (AI-orchestrated)
 
-**Goal:** grow `ORACLE_TAG_DESCRIPTIONS` (our own plain-English text for Scryfall
-oracle tags) in batches, **every description checked against the real cards that
-carry the tag**, until coverage is satisfactory. Part 1 of
-[`../../plans/archive/otags/tag_descriptions_and_dictionary.md`](../../plans/archive/otags/tag_descriptions_and_dictionary.md)
-(**tail finished 2026-08-18 at 4,521 of 4,522** — this runbook stays live for
-future batches as Scryfall's tagger grows, which it does by renaming as well as
-adding).
+**Goal:** grow `ORACLE_TAG_DESCRIPTIONS` (our own plain-English text for Scryfall oracle tags) in batches, **every description checked against the real cards that carry the tag**, until coverage is satisfactory. Part 1 of [`../../plans/archive/otags/tag_descriptions_and_dictionary.md`](../../plans/archive/otags/tag_descriptions_and_dictionary.md) (**tail finished 2026-08-18 at 4,521 of 4,522** — this runbook stays live for future batches as Scryfall's tagger grows, which it does by renaming as well as adding).
 
-This is a **repeatable loop** a fresh AI can run cold. It fans out subagents to
-draft, then adversarially verify against oracle text, then a human-in-the-loop
-(you) validates and splices. It exists because there are ~4,500 tags and reading
-each by hand doesn't scale; the verify stage is what keeps accuracy high at scale.
+This is a **repeatable loop** a fresh AI can run cold. It fans out subagents to draft, then adversarially verify against oracle text, then a human-in-the-loop (you) validates and splices. It exists because there are ~4,500 tags and reading each by hand doesn't scale; the verify stage is what keeps accuracy high at scale.
 
-> **Opt-in required:** the fan-out uses the `Workflow` tool, which the user must
-> explicitly authorize ("use a workflow" / "fan out agents" / "same fanout method").
-> Don't launch it unprompted.
+> **Opt-in required:** the fan-out uses the `Workflow` tool, which the user must explicitly authorize ("use a workflow" / "fan out agents" / "same fanout method"). Don't launch it unprompted.
 
 ---
 
 ## Are these compared against real cards? Yes — two layers
 
-1. **Verify stage (every tag):** each verifier agent pulls the actual `oracle_text`
-   of real cards and judges the drafted description against what those cards
-   literally do. Grounding is **hierarchy-aware**: it passes the tag's parents,
-   its children, and cards sampled from the tag *plus its direct children*. That
-   last part matters more than it sounds. Plenty of tags carry zero cards of
-   their own because they are umbrella nodes (`recursion-land`, `typal-creature`)
-   or cycle roots whose members live on child tags, and an inner join against
-   `card_oracle_tags` returns nothing for those. It is what lets `cycle-fetchland`
-   be written off actual fetchlands instead of guessed from its name. That produces the `accurate` / `minor` /
-   `wrong` verdict and any correction. Nothing ships un-grounded.
-2. **Human spot-check (sample):** after the workflow, hand-verify ~10 of the most
-   obscure/mis-nameable tags per batch against oracle text (query in Step 3) before
-   splicing. This is where slug-name traps get caught (e.g. `tapper-creature` is not
-   a creature; `group-slug` is damage/drain, not a slowdown).
+1. **Verify stage (every tag):** each verifier agent pulls the actual `oracle_text` of real cards and judges the drafted description against what those cards literally do. Grounding is **hierarchy-aware**: it passes the tag's parents, its children, and cards sampled from the tag *plus its direct children*. That last part matters more than it sounds. Plenty of tags carry zero cards of their own because they are umbrella nodes (`recursion-land`, `typal-creature`) or cycle roots whose members live on child tags, and an inner join against `card_oracle_tags` returns nothing for those. It is what lets `cycle-fetchland` be written off actual fetchlands instead of guessed from its name. That produces the `accurate` / `minor` / `wrong` verdict and any correction. Nothing ships un-grounded.
+2. **Human spot-check (sample):** after the workflow, hand-verify ~10 of the most obscure/mis-nameable tags per batch against oracle text (query in Step 3) before splicing. This is where slug-name traps get caught (e.g. `tapper-creature` is not a creature; `group-slug` is damage/drain, not a slowdown).
 
 ---
 
 ## Prerequisites
 
-- **Local Postgres** with the synced catalog. Connection string:
-  `export DATABASE_URL="$(grep '^DATABASE_URL=' zerver/.env | cut -d= -f2-)"`
-- **Tables:** `oracle_tags(slug, label, description, parent_ids)`,
-  `card_oracle_tags(oracle_id, oracle_tag, source)`,
-  `scryfall_data(oracle_id, name, type_line, oracle_text, mana_cost, ...)`.
-- **The const file:**
-  `zerver/src/lib/outbound/sqlx/card/helpers/oracle_tag_descriptions.rs`
-  (`ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)]`). `zervice` overlays it into
-  `oracle_tags.description` every sync (ours always wins). No DB write from this
-  runbook, no migration, no `MIN_CLIENT_VERSION` bump — additive.
-- **The workflow script:** [`otag_authoring_workflow.js`](otag_authoring_workflow.js)
-  (sibling file). Edit its `ENV` constant to your absolute path to `zerver/.env`.
+- **Local Postgres** with the synced catalog. Connection string: `export DATABASE_URL="$(grep '^DATABASE_URL=' zerver/.env | cut -d= -f2-)"`
+- **Tables:** `oracle_tags(slug, label, description, parent_ids)`, `card_oracle_tags(oracle_id, oracle_tag, source)`, `scryfall_data(oracle_id, name, type_line, oracle_text, mana_cost, ...)`.
+- **The const file:** `zerver/src/lib/outbound/sqlx/card/helpers/oracle_tag_descriptions.rs` (`ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)]`). `zervice` overlays it into `oracle_tags.description` every sync (ours always wins). No DB write from this runbook, no migration, no `MIN_CLIENT_VERSION` bump — additive.
+- **The workflow script:** [`otag_authoring_workflow.js`](otag_authoring_workflow.js) (sibling file). Edit its `ENV` constant to your absolute path to `zerver/.env`.
 - A scratch dir for intermediate JSON (use the session scratchpad, not `/tmp`).
 
 ---
@@ -79,33 +48,27 @@ SELECT json_agg(slug) FROM (
 ) t;"
 ```
 
-Read `next.json` to get the slug array. (Don't `echo` it through inline python with
-`$AUTHORED` unquoted — the shell splits it and breaks the script. Read the file.)
+Read `next.json` to get the slug array. (Don't `echo` it through inline python with `$AUTHORED` unquoted — the shell splits it and breaks the script. Read the file.)
 
 ### 2. Run the draft -> verify workflow
 
-Launch [`otag_authoring_workflow.js`](otag_authoring_workflow.js) with the slugs as
-`args`. It chunks the slugs (7/chunk) and pipelines each chunk: **sonnet drafts**
-(reading oracle text), then **opus verifies** (re-reading oracle text, correcting).
+Launch [`otag_authoring_workflow.js`](otag_authoring_workflow.js) with the slugs as `args`. It chunks the slugs (7/chunk) and pipelines each chunk: **sonnet drafts** (reading oracle text), then **opus verifies** (re-reading oracle text, correcting).
 
 ```
 Workflow({ scriptPath: "<path>/otag_authoring_workflow.js", args: { slugs: [...] } })
 ```
 
-Returns `{ total, items: [{ slug, description, verdict, note }] }`. The `description`
-is already the **final, verifier-corrected** text.
+Returns `{ total, items: [{ slug, description, verdict, note }] }`. The `description` is already the **final, verifier-corrected** text.
 
 ### 3. Parse, validate, spot-check
 
-Parse `result.items`, then run the **style gate** and a **DB spot-check** of the
-obscure ones. Style rules any description must pass:
+Parse `result.items`, then run the **style gate** and a **DB spot-check** of the obscure ones. Style rules any description must pass:
 
 - no `"` (double quote), no `\` (backslash) — would break the Rust string literal
 - no em dash (`—`/`–`), no `[label](link)` syntax, no URL, no `&` (write "and")
 - non-blank, unique slug, not already in the const
 
-Spot-check obscure tags against oracle text (pick ~10 keyword-mechanic / archetype /
-errata tags from the batch):
+Spot-check obscure tags against oracle text (pick ~10 keyword-mechanic / archetype / errata tags from the batch):
 
 ```bash
 psql "$DATABASE_URL" -F $'\t' --no-align -P footer=off -c "
@@ -121,9 +84,7 @@ Fix any that don't match the cards (edit the item's `description` before Step 4)
 
 ### 4. Splice into the const
 
-Append the batch before the const's closing `];`. Format each entry to
-**rustfmt-canonical**: one line if `len(slug) + len(desc) + 13 <= 100`, else the
-wrapped 3-line form. Example splicer (Python):
+Append the batch before the const's closing `];`. Format each entry to **rustfmt-canonical**: one line if `len(slug) + len(desc) + 13 <= 100`, else the wrapped 3-line form. Example splicer (Python):
 
 ```python
 lines = []
@@ -136,9 +97,7 @@ start = c.index('= &['); close = c.index('\n];', start)   # the const's own clos
 open(F, 'w').write(c[:close+1] + "\n".join(lines) + "\n" + c[close+1:])
 ```
 
-Then re-validate the whole const: extract every `("slug", "desc")` (regex tolerant of
-one-line and wrapped forms), assert slugs are unique and no description has a
-blank / em dash / link / `&`.
+Then re-validate the whole const: extract every `("slug", "desc")` (regex tolerant of one-line and wrapped forms), assert slugs are unique and no description has a blank / em dash / link / `&`.
 
 ### 5. Format, test, report, commit
 
@@ -149,11 +108,7 @@ cargo test -p zerver --lib oracle_tag_descriptions   # slugs_are_unique + descri
 cargo test -p zerver --test repo_oracle_tags         # sync/overlay integration
 ```
 
-Hand the user a short **report**: counts (`accurate`/`minor`/`wrong`), the `wrong`
-ones with card examples, and the full batch table as a file (they can't read 200
-rows inline). **Commit only when the user asks** (project rule): the const + any test
-fixture change, one-line message, no AI signatures, e.g.
-`feat(otags): author N oracle-tag descriptions`.
+Hand the user a short **report**: counts (`accurate`/`minor`/`wrong`), the `wrong` ones with card examples, and the full batch table as a file (they can't read 200 rows inline). **Commit only when the user asks** (project rule): the const + any test fixture change, one-line message, no AI signatures, e.g. `feat(otags): author N oracle-tag descriptions`.
 
 Ship path from there: user pushes -> next `zervice` overlays all authored text.
 
@@ -161,72 +116,34 @@ Ship path from there: user pushes -> next `zervice` overlays all authored text.
 
 ## Description style rules (what the agents are told, keep in sync with the script)
 
-- ONE short sentence, ideally under ~90 characters. Plain English, present tense,
-  address the player as "you" where natural.
-- Describe what a card with the tag DOES, functionally. If the slug NAME is
-  misleading, **trust the cards, not the name.**
+- ONE short sentence, ideally under ~90 characters. Plain English, present tense, address the player as "you" where natural.
+- Describe what a card with the tag DOES, functionally. If the slug NAME is misleading, **trust the cards, not the name.**
 - Start with a verb ("Deals...", "Grants...", "Removal that...") or "A <noun> that...".
 - No em dashes, no `[label](slug)` cross-links, no URLs, no `&` (write "and").
-- Sibling precision: `gives-X` grants to OTHERS; `gains-X` / `-self` is about ITSELF;
-  `-to-all` hits your whole team; `repeatable-X` can be done again and again;
-  `typal-X` cares about creatures of type X; `synergy-X` / `hate-X` reward / punish X.
-- Many tags are keyword MECHANICS (convoke, threshold, phasing, heroic, bushido,
-  ninjutsu, imprint, strive) — define the mechanic plainly in one sentence.
+- Sibling precision: `gives-X` grants to OTHERS; `gains-X` / `-self` is about ITSELF; `-to-all` hits your whole team; `repeatable-X` can be done again and again; `typal-X` cares about creatures of type X; `synergy-X` / `hate-X` reward / punish X.
+- Many tags are keyword MECHANICS (convoke, threshold, phasing, heroic, bushido, ninjutsu, imprint, strive) — define the mechanic plainly in one sentence.
 
 ---
 
 ## Gotchas / lessons learned
 
-- **`Workflow` args arrive as a JSON string, not an object.** The script guards with
-  `const A = typeof args === 'string' ? JSON.parse(args) : (args || {})`. Without it,
-  `args.slugs` is undefined -> 0 chunks -> 0 agents (a 40ms no-op run).
-- **Test fixture collision.** `repo_oracle_tags.rs` used real slugs (`ramp`) as
-  throwaway "no-description" fixtures and asserted `NULL`. Once you author that slug,
-  the sync overlay fills it and the test fails. Fixtures that assert a NULL
-  description must use a **synthetic slug** (e.g. `test-null-desc`) guaranteed to stay
-  out of `ORACLE_TAG_DESCRIPTIONS`.
-- **`&` in descriptions.** A literal `&` compiles fine in Rust but can bite if the
-  text ever renders in an HTML context (the dictionary page). Write "and".
-- **Concurrent AI safety.** Scope formatting to `cargo +nightly fmt -p zerver`;
-  never run tree-wide git ops; `git add` only your files by explicit path.
-- **No SQLx prepare needed.** The overlay uses runtime `sqlx::query`, not a
-  `query!` macro, so `.sqlx/` offline data is untouched.
-- **Cost.** 7 slugs/chunk for populated tags, 10 for hierarchy-grounded ones
-  (lighter payload per tag). Sonnet draft + opus verify. The 2026-08-18 run was
-  138 tags = 28 agents, ~874k output tokens, ~5 min wall clock. Scale to appetite.
-- **`pop: 0` is normal, not a bug.** An empty card list means the tag is an
-  umbrella or cycle root, not that the tag is meaningless. Read the children list
-  instead. The prompts say this explicitly because a drafter handed nothing will
-  invent.
-- **Priority is population, not the catalog order** — while any populated tag is
-  still unauthored. As of 2026-08-18 none are, so future runs are just whatever
-  the tagger added or renamed.
-- **The grounding query takes ~20s.** That is the recursive subtree expansion over
-  big roots. It is not hung; the prompt tells agents not to kill it.
+- **`Workflow` args arrive as a JSON string, not an object.** The script guards with `const A = typeof args === 'string' ? JSON.parse(args) : (args || {})`. Without it, `args.slugs` is undefined -> 0 chunks -> 0 agents (a 40ms no-op run).
+- **Test fixture collision.** `repo_oracle_tags.rs` used real slugs (`ramp`) as throwaway "no-description" fixtures and asserted `NULL`. Once you author that slug, the sync overlay fills it and the test fails. Fixtures that assert a NULL description must use a **synthetic slug** (e.g. `test-null-desc`) guaranteed to stay out of `ORACLE_TAG_DESCRIPTIONS`.
+- **`&` in descriptions.** A literal `&` compiles fine in Rust but can bite if the text ever renders in an HTML context (the dictionary page). Write "and".
+- **Concurrent AI safety.** Scope formatting to `cargo +nightly fmt -p zerver`; never run tree-wide git ops; `git add` only your files by explicit path.
+- **No SQLx prepare needed.** The overlay uses runtime `sqlx::query`, not a `query!` macro, so `.sqlx/` offline data is untouched.
+- **Cost.** 7 slugs/chunk for populated tags, 10 for hierarchy-grounded ones (lighter payload per tag). Sonnet draft + opus verify. The 2026-08-18 run was 138 tags = 28 agents, ~874k output tokens, ~5 min wall clock. Scale to appetite.
+- **`pop: 0` is normal, not a bug.** An empty card list means the tag is an umbrella or cycle root, not that the tag is meaningless. Read the children list instead. The prompts say this explicitly because a drafter handed nothing will invent.
+- **Priority is population, not the catalog order** — while any populated tag is still unauthored. As of 2026-08-18 none are, so future runs are just whatever the tagger added or renamed.
+- **The grounding query takes ~20s.** That is the recursive subtree expansion over big roots. It is not hung; the prompt tells agents not to kill it.
 
 ## Progress markers (update as you go)
 
-Coverage is `len(ORACLE_TAG_DESCRIPTIONS)` / the live catalog count. Milestones:
-7 (starter) -> 82 (hand) -> 257 -> 500 -> 700 -> 4,357 -> 4,395 (2026-08-06, every
-tag with a real card population) -> **4,521 of 4,522 (2026-08-18), the whole tail
-including unpopulated umbrella and cycle tags**. The one holdout is `nanni`: a
-single card, no parent, no children, nothing to derive a meaning from, so it stays
-blank rather than get invented copy.
+Coverage is `len(ORACLE_TAG_DESCRIPTIONS)` / the live catalog count. Milestones: 7 (starter) -> 82 (hand) -> 257 -> 500 -> 700 -> 4,357 -> 4,395 (2026-08-06, every tag with a real card population) -> **4,521 of 4,522 (2026-08-18), the whole tail including unpopulated umbrella and cycle tags**. The one holdout is `nanni`: a single card, no parent, no children, nothing to derive a meaning from, so it stays blank rather than get invented copy.
 
-Future runs are incremental. Two things move the number, and the second is the one
-that surprises people:
+Future runs are incremental. Two things move the number, and the second is the one that surprises people:
 
 1. **New tags.** The nightly coverage line shows the blank count rising.
-2. **Renames and retirements.** The `ORACLE_TAG_DESCRIPTIONS references unknown
-   oracle-tag slugs` WARN is how this shows up, and a jump in it means the tagger
-   reorganized something rather than that we typo'd. In August 2026 the whole
-   `hand-neutral`/`hand-positive`/`hand-negative` trio was replaced by a
-   `hand-size-*` family that splits on maximum hand size instead of card-advantage
-   direction, so the old text had to be dropped rather than moved. Check for a
-   successor before deleting; check what it actually *means* before reusing the text.
+2. **Renames and retirements.** The `ORACLE_TAG_DESCRIPTIONS references unknown oracle-tag slugs` WARN is how this shows up, and a jump in it means the tagger reorganized something rather than that we typo'd. In August 2026 the whole `hand-neutral`/`hand-positive`/`hand-negative` trio was replaced by a `hand-size-*` family that splits on maximum hand size instead of card-advantage direction, so the old text had to be dropped rather than moved. Check for a successor before deleting; check what it actually *means* before reusing the text.
 
-**Also sweep the non-warn-checked lists when slugs retire.** Only
-`ROLE_TAG_OVERRIDES` gets a warn. `CATEGORY_ROOTS` (`derive_categories.rs`) and
-`NOISE_ORACLE_TAG_SLUGS` (`zwipe-core/.../oracle_tag.rs`) both reference slugs and
-both rot silently: each was holding a dead reference discovered only by grepping
-during the 2026-08-18 cleanup.
+**Also sweep the non-warn-checked lists when slugs retire.** Only `ROLE_TAG_OVERRIDES` gets a warn. `CATEGORY_ROOTS` (`derive_categories.rs`) and `NOISE_ORACLE_TAG_SLUGS` (`zwipe-core/.../oracle_tag.rs`) both reference slugs and both rot silently: each was holding a dead reference discovered only by grepping during the 2026-08-18 cleanup.

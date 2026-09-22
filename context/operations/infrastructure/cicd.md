@@ -1,8 +1,6 @@
 # CI/CD: GitHub Actions Deploy
 
-On every push to `main` that touches backend code, a self-hosted GitHub Actions runner on
-the server checks out the repo, builds `zerver` and `zervice` in place, copies the binaries
-to `~/zwipe/`, and restarts the systemd service. No network tunnels, no deploy keys, no SCP.
+On every push to `main` that touches backend code, a self-hosted GitHub Actions runner on the server checks out the repo, builds `zerver` and `zervice` in place, copies the binaries to `~/zwipe/`, and restarts the systemd service. No network tunnels, no deploy keys, no SCP.
 
 ---
 
@@ -22,44 +20,18 @@ Also has `workflow_dispatch` for manual runs from the GitHub Actions tab.
 
 ### Tests + lint gate the deploys
 
-The test suite (`postgres:16` service + `cargo test -p zwipe-core -p zerver`, never
-`--workspace`, since zwiper's Dioxus/GTK stack won't build headless; `SQLX_OFFLINE=true`
-compiles against the committed `.sqlx` while `#[sqlx::test]` migrates a fresh DB per
-test via `DATABASE_URL`) runs in two places:
+The test suite (`postgres:16` service + `cargo test -p zwipe-core -p zerver`, never `--workspace`, since zwiper's Dioxus/GTK stack won't build headless; `SQLX_OFFLINE=true` compiles against the committed `.sqlx` while `#[sqlx::test]` migrates a fresh DB per test via `DATABASE_URL`) runs in two places:
 
-- **`.github/workflows/test.yml` (`Test`)**: on **pull requests only**, the
-  pre-merge signal.
-- **A `test` job inside `deploy-zerver.yml` and `deploy-zite.yml`**: the `deploy`
-  (and zite's `build`) job `needs: [test, lint]`, so **a red suite or lint blocks the
-  deploy**. This keeps the deploys' path filters (a docs-only push still won't
-  redeploy) while gating, since GitHub can't make a `push`-triggered workflow wait on a
-  *separate* workflow, hence the inline jobs. Push-time testing lives here, so
-  `test.yml` stays PR-only (no double-run). `workflow_dispatch` still lets you force
-  a deploy (it runs after the gate jobs).
+- **`.github/workflows/test.yml` (`Test`)**: on **pull requests only**, the pre-merge signal.
+- **A `test` job inside `deploy-zerver.yml` and `deploy-zite.yml`**: the `deploy` (and zite's `build`) job `needs: [test, lint]`, so **a red suite or lint blocks the deploy**. This keeps the deploys' path filters (a docs-only push still won't redeploy) while gating, since GitHub can't make a `push`-triggered workflow wait on a *separate* workflow, hence the inline jobs. Push-time testing lives here, so `test.yml` stays PR-only (no double-run). `workflow_dispatch` still lets you force a deploy (it runs after the gate jobs).
 
-A parallel **`lint` job** (in all three of `test.yml` / `deploy-zerver.yml` /
-`deploy-zite.yml`) runs `cargo +nightly fmt --check` (workspace-wide; nightly because
-`rustfmt.toml` sets the unstable `imports_granularity = "Crate"`) + `cargo clippy -p
-zwipe-core -p zerver --all-targets -- -D warnings` (same headless-GTK scoping as Test;
-`SQLX_OFFLINE=true`). Added 2026-07-10 after finding fmt had silently drifted. **Note:
-CI rides newest-stable clippy**: a local `rustup update stable` keeps you from being
-surprised by new lints (e.g. clippy 1.97 flagged a `useless_borrows_in_formatting` that
-1.94 didn't, and correctly blocked a deploy until fixed).
+A parallel **`lint` job** (in all three of `test.yml` / `deploy-zerver.yml` / `deploy-zite.yml`) runs `cargo +nightly fmt --check` (workspace-wide; nightly because `rustfmt.toml` sets the unstable `imports_granularity = "Crate"`) + `cargo clippy -p zwipe-core -p zerver --all-targets -- -D warnings` (same headless-GTK scoping as Test; `SQLX_OFFLINE=true`). Added 2026-07-10 after finding fmt had silently drifted. **Note: CI rides newest-stable clippy**: a local `rustup update stable` keeps you from being surprised by new lints (e.g. clippy 1.97 flagged a `useless_borrows_in_formatting` that 1.94 didn't, and correctly blocked a deploy until fixed).
 
 Plan/design: [`../../archive/integration-tests/`](../../archive/integration-tests/overview.md).
 
 ### Security audit
 
-`.github/workflows/audit.yml` (`Security audit`) runs `cargo audit --ignore
-RUSTSEC-2023-0071` (prebuilt binary via `taiki-e/install-action`) **weekly** (Mon 08:00
-UTC), on any `Cargo.toml`/`Cargo.lock` change, and on manual dispatch. It scans
-`Cargo.lock` against the RustSec DB and **fails (→ GitHub emails you) on vulnerabilities**.
-Unmaintained or unsound *warnings* (e.g. the GTK3 desktop stack, `anyhow`, `rand 0.7`)
-don't fail. The one ignore, `RUSTSEC-2023-0071` (rsa Marvin timing sidechannel), is
-intentional: we sign JWTs with HS256/HMAC, never RSA; rsa only rides in as an
-unexercised code path via jsonwebtoken's `rust_crypto` backend + sqlx's never-compiled
-`mysql` driver. Backstop: turn on **Dependabot alerts** (repo Settings → Code security)
-for the passive GitHub-Advisory feed.
+`.github/workflows/audit.yml` (`Security audit`) runs `cargo audit --ignore RUSTSEC-2023-0071` (prebuilt binary via `taiki-e/install-action`) **weekly** (Mon 08:00 UTC), on any `Cargo.toml`/`Cargo.lock` change, and on manual dispatch. It scans `Cargo.lock` against the RustSec DB and **fails (→ GitHub emails you) on vulnerabilities**. Unmaintained or unsound *warnings* (e.g. the GTK3 desktop stack, `anyhow`, `rand 0.7`) don't fail. The one ignore, `RUSTSEC-2023-0071` (rsa Marvin timing sidechannel), is intentional: we sign JWTs with HS256/HMAC, never RSA; rsa only rides in as an unexercised code path via jsonwebtoken's `rust_crypto` backend + sqlx's never-compiled `mysql` driver. Backstop: turn on **Dependabot alerts** (repo Settings → Code security) for the passive GitHub-Advisory feed.
 
 ---
 
@@ -73,8 +45,7 @@ for the passive GitHub-Advisory feed.
 6. Builds `zerver` and `zervice` in release mode (`SQLX_OFFLINE=true`)
 7. Stops zerver, copies binaries to `~/zwipe/`, starts zerver
 
-No Tailscale, no SSH keys, no SCP: the runner is already on the server.
-Migrations run before the build so new tables exist before the new binary starts.
+No Tailscale, no SSH keys, no SCP: the runner is already on the server. Migrations run before the build so new tables exist before the new binary starts.
 
 ---
 
@@ -95,9 +66,7 @@ None required for self-hosted runner deployment.
 
 ## Self-Hosted Runner Setup
 
-The runner is a long-running process on the server that polls GitHub for jobs. It connects
-outbound to GitHub, so no inbound ports or tunnels are needed. Run this setup once; after that
-deploys are fully automatic.
+The runner is a long-running process on the server that polls GitHub for jobs. It connects outbound to GitHub, so no inbound ports or tunnels are needed. Run this setup once; after that deploys are fully automatic.
 
 ### Step 1: Generate a runner token
 
@@ -129,13 +98,11 @@ sudo ./svc.sh start
 sudo ./svc.sh status
 ```
 
-The runner starts automatically on every boot. Check GitHub → Settings → Actions → Runners
-to confirm it shows as **Idle** (green dot).
+The runner starts automatically on every boot. Check GitHub → Settings → Actions → Runners to confirm it shows as **Idle** (green dot).
 
 ### Step 4: Verify passwordless sudo for systemctl
 
-The runner needs to restart zerver without a password prompt. This should already be
-configured, but verify:
+The runner needs to restart zerver without a password prompt. This should already be configured, but verify:
 
 ```bash
 sudo cat /etc/sudoers.d/scadoshi
@@ -143,8 +110,7 @@ sudo cat /etc/sudoers.d/scadoshi
 # scadoshi ALL=(ALL) NOPASSWD: /bin/systemctl stop zerver, /bin/systemctl start zerver, /bin/systemctl restart zerver
 ```
 
-Edit it with `sudo visudo -f /etc/sudoers.d/scadoshi` if it is missing; the drop-in
-file, not the main `/etc/sudoers`.
+Edit it with `sudo visudo -f /etc/sudoers.d/scadoshi` if it is missing; the drop-in file, not the main `/etc/sudoers`.
 
 ### Re-registering after a server rebuild
 
@@ -158,8 +124,7 @@ If the server is rebuilt and the runner is lost:
 
 ## Tailscale (Local SSH Access)
 
-Tailscale is used for SSHing into the server from your Mac or any network. It is **not**
-used for CI/CD deploys (self-hosted runner eliminated that need).
+Tailscale is used for SSHing into the server from your Mac or any network. It is **not** used for CI/CD deploys (self-hosted runner eliminated that need).
 
 **Current server**: Hetzner VPS `zerver-prod`, since the 2026-06-13 migration. Its Tailscale address is written here as `<server-tailnet-ip>`: tailnet addresses are redacted because this repo is public, the same convention as the `192.168.1.XXX` LAN addresses below. `tailscale status` on any tailnet device lists them, and the owner supplies the value when a session needs it. The old home box was `<old-box-tailnet-ip>` (powered off, kept as rollback). Tailscale IPs are stable and private (not publicly routable).
 
@@ -175,8 +140,7 @@ sudo tailscale up
 sudo tailscale set --ssh   # enables Tailscale SSH (no deploy key needed)
 ```
 
-**Mac:**
-Install from the App Store, sign in with the same account.
+**Mac:** Install from the App Store, sign in with the same account.
 
 **SSH into server from anywhere:**
 ```bash
@@ -193,19 +157,15 @@ ssh root@<server-tailnet-ip>            # admin (full sudo) — key-only, tailne
 ### Notes
 
 - Server Tailscale IP is stable, never changes even if ISP rotates public IP
-- `sshd` also listens on port 2222 via `/etc/systemd/system/ssh.socket.d/override.conf`
-  (added during Xfinity troubleshooting, not required but harmless to keep)
+- `sshd` also listens on port 2222 via `/etc/systemd/system/ssh.socket.d/override.conf` (added during Xfinity troubleshooting, not required but harmless to keep)
 
 ---
 
 ## SQLx
 
-**Migrations** run automatically on every deploy (step 4 in the workflow). The runner
-sources `~/zwipe/.env` to get `DATABASE_URL` and runs `cargo sqlx migrate run`. Already-run
-migrations are skipped (idempotent). New migrations land automatically on push.
+**Migrations** run automatically on every deploy (step 4 in the workflow). The runner sources `~/zwipe/.env` to get `DATABASE_URL` and runs `cargo sqlx migrate run`. Already-run migrations are skipped (idempotent). New migrations land automatically on push.
 
-**Builds** still use `SQLX_OFFLINE=true` with the committed `.sqlx/` directory so the
-build step doesn't need a live database connection. After any query change on your Mac:
+**Builds** still use `SQLX_OFFLINE=true` with the committed `.sqlx/` directory so the build step doesn't need a live database connection. After any query change on your Mac:
 
 ```bash
 cargo sqlx prepare --workspace
@@ -213,17 +173,9 @@ git add .sqlx/
 git commit -m "Update sqlx offline cache"
 ```
 
-**One `.sqlx` directory only: the workspace root.** The macros prefer a crate-local
-`zerver/.sqlx/` over the root one if it exists, and `prepare --workspace` never
-refreshes a crate-local copy. A stale `zerver/.sqlx/` (leftover from an early
-per-crate prepare) shadowed the root data and broke the 2026-07-05 deploy. The
-first release to change an *existing* query's column types in place (daily-activity
-BIGINT). Removed in `2e7fd985`; never run `cargo sqlx prepare` from inside `zerver/`
-without `--workspace`. The verify step (workflow step 5) now catches any
-offline-data drift before the build.
+**One `.sqlx` directory only: the workspace root.** The macros prefer a crate-local `zerver/.sqlx/` over the root one if it exists, and `prepare --workspace` never refreshes a crate-local copy. A stale `zerver/.sqlx/` (leftover from an early per-crate prepare) shadowed the root data and broke the 2026-07-05 deploy. The first release to change an *existing* query's column types in place (daily-activity BIGINT). Removed in `2e7fd985`; never run `cargo sqlx prepare` from inside `zerver/` without `--workspace`. The verify step (workflow step 5) now catches any offline-data drift before the build.
 
-**Prerequisite**: `sqlx-cli` must be installed on the server (see `server.md` setup
-checklist).
+**Prerequisite**: `sqlx-cli` must be installed on the server (see `server.md` setup checklist).
 
 ---
 
@@ -237,9 +189,7 @@ GitHub → Actions tab → Deploy zerver → Run workflow → Run workflow
 
 `.github/workflows/deploy-zite.yml`
 
-Triggers on push to `main` when files under `zite/**`, `zwipe-core/**`, or
-`zwipe-components/**` change (or the workflow file itself). Also has
-`workflow_dispatch` for manual runs.
+Triggers on push to `main` when files under `zite/**`, `zwipe-core/**`, or `zwipe-components/**` change (or the workflow file itself). Also has `workflow_dispatch` for manual runs.
 
 ## What the Workflow Does
 

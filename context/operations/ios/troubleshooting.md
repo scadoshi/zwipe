@@ -4,8 +4,7 @@ Common errors and fixes when building, signing, or submitting Zwipe.
 
 ## Dioxus post-build patching checklist
 
-Dioxus `dx build` generates an incomplete `.app` bundle for App Store submission.
-These patches must be applied **after every release build, before signing**:
+Dioxus `dx build` generates an incomplete `.app` bundle for App Store submission. These patches must be applied **after every release build, before signing**:
 
 1. **CFBundleSupportedPlatforms**: remove iPadOS, keep only iPhoneOS
 2. **UIDeviceFamily**: remove iPad (2), keep only iPhone (1)
@@ -23,8 +22,7 @@ See `app-store/submission/build.md` for the full build → patch → sign → pa
 
 ## "Incorrect Platform" rejection on upload
 
-Dioxus issue [#3817](https://github.com/DioxusLabs/dioxus/issues/3817). The binary has
-macOS platform metadata instead of iOS.
+Dioxus issue [#3817](https://github.com/DioxusLabs/dioxus/issues/3817). The binary has macOS platform metadata instead of iOS.
 
 **Diagnose:**
 ```bash
@@ -37,24 +35,19 @@ vtool -show ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/zwipe
 ```bash
 cargo build --release --target aarch64-apple-ios -p zwiper
 ```
-Then assemble the `.app` bundle manually using the `Info.plist` that `dx build` generates,
-copy the binary in, embed the provisioning profile, and sign.
+Then assemble the `.app` bundle manually using the `Info.plist` that `dx build` generates, copy the binary in, embed the provisioning profile, and sign.
 
 ---
 
 ## Missing Info.plist keys (Transporter validation failures)
 
-Dioxus `dx build` doesn't inject the `DT*` (Developer Tools) metadata or `MinimumOSVersion`
-that Apple's Transporter requires. Xcode normally adds these during archiving, but since
-we bypass Xcode, we have to provide them ourselves.
+Dioxus `dx build` doesn't inject the `DT*` (Developer Tools) metadata or `MinimumOSVersion` that Apple's Transporter requires. Xcode normally adds these during archiving, but since we bypass Xcode, we have to provide them ourselves.
 
 **Errors you'll see:**
 - `Missing Info.plist value. A value for the key 'DTPlatformName' in bundle Zwipe.app is required.`
 - `Invalid MinimumOSVersion. Apps that only support 64-bit devices must specify a deployment target of 8.0 or later. MinimumOSVersion in 'Zwipe.app' is ''.`
 
-**Permanent fix:** These keys are now in `zwiper/Dioxus.toml` under `[ios.plist]`, so
-future `dx build` runs include them automatically. If you still hit this error, check
-that the `[ios.plist]` section hasn't been removed.
+**Permanent fix:** These keys are now in `zwiper/Dioxus.toml` under `[ios.plist]`, so future `dx build` runs include them automatically. If you still hit this error, check that the `[ios.plist]` section hasn't been removed.
 
 **Manual fix (if patching an existing build):**
 ```bash
@@ -69,12 +62,9 @@ that the `[ios.plist]` section hasn't been removed.
   ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
 ```
 
-After patching, you **must** re-sign and re-package the IPA; changing the plist
-invalidates the code signature.
+After patching, you **must** re-sign and re-package the IPA; changing the plist invalidates the code signature.
 
-**Version mismatch:** Dioxus generates `CFBundleShortVersionString` from `Cargo.toml`
-(e.g. `0.1.0`), but App Store Connect expects what you set there (e.g. `1.0`). Patch
-if needed:
+**Version mismatch:** Dioxus generates `CFBundleShortVersionString` from `Cargo.toml` (e.g. `0.1.0`), but App Store Connect expects what you set there (e.g. `1.0`). Patch if needed:
 ```bash
 /usr/libexec/PlistBuddy \
   -c "Set :CFBundleShortVersionString 1.0" \
@@ -86,12 +76,9 @@ if needed:
 
 ## CFBundleSupportedPlatforms contains multiple values
 
-Dioxus generates `CFBundleSupportedPlatforms` with both `iPhoneOS` and `iPadOS`. Apple
-requires exactly one value. This cannot be fixed via `Dioxus.toml` (it's an array, not
-a string), so it must be patched after every release build.
+Dioxus generates `CFBundleSupportedPlatforms` with both `iPhoneOS` and `iPadOS`. Apple requires exactly one value. This cannot be fixed via `Dioxus.toml` (it's an array, not a string), so it must be patched after every release build.
 
-**Error:**
-`Invalid CFBundleSupportedPlatforms value ... contains multiple platform values: [iPhoneOS, iPadOS]`
+**Error:** `Invalid CFBundleSupportedPlatforms value ... contains multiple platform values: [iPhoneOS, iPadOS]`
 
 **Fix (after build, before signing):**
 ```bash
@@ -108,11 +95,9 @@ Then re-sign and re-package.
 
 ## CFBundlePackageType missing
 
-Dioxus doesn't set `CFBundlePackageType` which Apple requires to identify the bundle as
-an application.
+Dioxus doesn't set `CFBundlePackageType` which Apple requires to identify the bundle as an application.
 
-**Error:**
-`Invalid Bundle OS Type code. The CFBundlePackageType value ... must be one of the following Bundle OS Type codes: [APPL].`
+**Error:** `Invalid Bundle OS Type code. The CFBundlePackageType value ... must be one of the following Bundle OS Type codes: [APPL].`
 
 **Permanent fix:** Added to `zwiper/Dioxus.toml` under `[ios.plist]`:
 ```toml
@@ -129,11 +114,9 @@ CFBundlePackageType = "APPL"
 
 ## UIDeviceFamily includes iPad: missing iPad icons
 
-Dioxus sets `UIDeviceFamily` to `[1, 2]` (iPhone + iPad). If you don't want to support
-iPad, Apple will still require iPad icon sizes (152×152, 167×167, etc.).
+Dioxus sets `UIDeviceFamily` to `[1, 2]` (iPhone + iPad). If you don't want to support iPad, Apple will still require iPad icon sizes (152×152, 167×167, etc.).
 
-**Error:**
-`Missing required icon file. The bundle does not contain an app icon for iPad of exactly '152x152' pixels...`
+**Error:** `Missing required icon file. The bundle does not contain an app icon for iPad of exactly '152x152' pixels...`
 
 **Fix: remove iPad from UIDeviceFamily (after build, before signing):**
 ```bash
@@ -150,11 +133,9 @@ This cannot be fixed via `Dioxus.toml` (array value). Must be patched after ever
 
 ## Missing app icons (no Assets.car)
 
-Dioxus doesn't run `actool` to compile app icons into an asset catalog. Without
-`Assets.car` in the `.app` bundle, Apple rejects the upload.
+Dioxus doesn't run `actool` to compile app icons into an asset catalog. Without `Assets.car` in the `.app` bundle, Apple rejects the upload.
 
-**Error:**
-`Missing required icon file. The bundle does not contain an app icon for iPhone / iPod Touch of exactly '120x120' pixels...`
+**Error:** `Missing required icon file. The bundle does not contain an app icon for iPhone / iPod Touch of exactly '120x120' pixels...`
 
 **Fix: compile an asset catalog and embed it:**
 ```bash
@@ -200,23 +181,19 @@ actool --compile ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app \
   ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
 ```
 
-This produces `Assets.car` and `AppIcon60x60@2x.png` inside the `.app` bundle.
-Must be done after every release build, before signing.
+This produces `Assets.car` and `AppIcon60x60@2x.png` inside the `.app` bundle. Must be done after every release build, before signing.
 
 ---
 
 ## LaunchScreen.storyboard missing
 
-If the generated `Info.plist` references `UILaunchStoryboardName = LaunchScreen`, verify
-the storyboard file exists in the `.app` bundle. If not, either add one or remove the
-plist key.
+If the generated `Info.plist` references `UILaunchStoryboardName = LaunchScreen`, verify the storyboard file exists in the `.app` bundle. If not, either add one or remove the plist key.
 
 ---
 
 ## "no identity found" when signing
 
-Usually caused by a typo or line break in the identity string. Use the **hash** instead
-of the name:
+Usually caused by a typo or line break in the identity string. Use the **hash** instead of the name:
 
 ```bash
 security find-identity -v -p codesigning
@@ -229,8 +206,7 @@ codesign --force --sign "D398244DC213B1CF..." ...
 
 ## Certificate Assistant fails
 
-Keychain Access → Certificate Assistant consistently fails with "The specified item
-could not be found in the keychain." Always use the CLI instead:
+Keychain Access → Certificate Assistant consistently fails with "The specified item could not be found in the keychain." Always use the CLI instead:
 
 ```bash
 openssl genrsa -out key.pem 2048
@@ -255,9 +231,7 @@ Then re-download and install the profile.
 
 ## Team ID confusion
 
-Xcode's "Manage Certificates" creates certs under the Personal Team, not the paid team.
-The `(NVSWB62C54)` shown by `security find-identity` is the CN display name; the OU
-field is the actual team ID.
+Xcode's "Manage Certificates" creates certs under the Personal Team, not the paid team. The `(NVSWB62C54)` shown by `security find-identity` is the CN display name; the OU field is the actual team ID.
 
 For App Store submission, use the cert with `(VV74WQ89GD)`, which is the paid team.
 

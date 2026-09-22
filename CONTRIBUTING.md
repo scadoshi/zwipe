@@ -36,11 +36,7 @@ The workspace has four crates: `zwipe-core` (shared domain), `zerver` (backend),
 
 ### zwipe-core
 
-The shared domain crate — pure types, validation, and business rules used by every
-other crate. It must stay **pure**: no feature flags, no server-only dependencies
-(SQLx, Axum, tokio, argon2, …), no database derives/annotations. If only the server
-needs a type, it stays in `zerver`. Everyone else (`zerver`, `zwiper`, `zite`)
-depends on `zwipe-core` for domain types.
+The shared domain crate — pure types, validation, and business rules used by every other crate. It must stay **pure**: no feature flags, no server-only dependencies (SQLx, Axum, tokio, argon2, …), no database derives/annotations. If only the server needs a type, it stays in `zerver`. Everyone else (`zerver`, `zwiper`, `zite`) depends on `zwipe-core` for domain types.
 
 ### zerver
 
@@ -92,15 +88,13 @@ Static Dioxus web client hosted on GitHub Pages (`zwipe.net`). Handles email ver
 
 ### If you change a SQL query
 
-SQLx macros (`query!`, `query_scalar!`, `query_as!`) are verified at compile time. After
-modifying any query, regenerate the offline cache from the workspace root:
+SQLx macros (`query!`, `query_scalar!`, `query_as!`) are verified at compile time. After modifying any query, regenerate the offline cache from the workspace root:
 
 ```bash
 cargo sqlx prepare --workspace
 ```
 
-Commit the updated `.sqlx/` directory alongside your changes. CI builds use this cache
-instead of a live database.
+Commit the updated `.sqlx/` directory alongside your changes. CI builds use this cache instead of a live database.
 
 ### Tests
 

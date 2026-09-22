@@ -1,41 +1,18 @@
 # Oracle-tag description audit — progress & findings
 
-Independent second-pass QA of `ORACLE_TAG_DESCRIPTIONS`. Each batch re-checks authored
-descriptions against real card oracle text ([`otag_audit_workflow.js`](otag_audit_workflow.js))
-and flags inaccuracies with a card example and a suggested fix. **Findings are for review; fixes
-are NOT auto-applied.**
+Independent second-pass QA of `ORACLE_TAG_DESCRIPTIONS`. Each batch re-checks authored descriptions against real card oracle text ([`otag_audit_workflow.js`](otag_audit_workflow.js)) and flags inaccuracies with a card example and a suggested fix. **Findings are for review; fixes are NOT auto-applied.**
 
 ## Coverage / resume
 
-> **➡️ ACTIVE TASK IS THE RE-AUDIT. Next AI: resume at rank ~1001, NOT 2201.**
-> The full 0-all **re-audit** (improved two-stage workflow) supersedes this forward sweep.
-> Pick up in [`otag_reaudit_progress.md`](otag_reaudit_progress.md) and continue from rank
-> ~1001+ (using [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt)). Do **not** continue the
-> forward sweep below unless the re-audit is abandoned.
+> **➡️ ACTIVE TASK IS THE RE-AUDIT. Next AI: resume at rank ~1001, NOT 2201.** The full 0-all **re-audit** (improved two-stage workflow) supersedes this forward sweep. Pick up in [`otag_reaudit_progress.md`](otag_reaudit_progress.md) and continue from rank ~1001+ (using [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt)). Do **not** continue the forward sweep below unless the re-audit is abandoned.
 
-- **This forward sweep is PAUSED at 2200 / 4,357.** It used a mix of old and improved workflow
-  passes (ranks 1-2000 old, 2001-2200 improved). Superseded by the re-audit, which re-checks
-  everything with the improved workflow from the top. Its old resume point was rank ~2201; ignore
-  that in favor of the re-audit.
-- **Full re-audit (0-all) IN PROGRESS.** Ranks 1-2000 were audited by the *old* single-stage
-  workflow (no card-data grounding, no Verify stage), which [Batch 6](#batch-6-rank-20012200-improved-two-stage-workflow)
-  proved was blind to cost/color/hybrid/rarity facts. Re-running those ranks through the improved
-  two-stage workflow from the top, tracked separately in
-  [`otag_reaudit_progress.md`](otag_reaudit_progress.md) /
-  [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt). **Done: ranks 1-1000** (178 flags the old
-  pass missed). **Next: rank ~1001+.**
+- **This forward sweep is PAUSED at 2200 / 4,357.** It used a mix of old and improved workflow passes (ranks 1-2000 old, 2001-2200 improved). Superseded by the re-audit, which re-checks everything with the improved workflow from the top. Its old resume point was rank ~2201; ignore that in favor of the re-audit.
+- **Full re-audit (0-all) IN PROGRESS.** Ranks 1-2000 were audited by the *old* single-stage workflow (no card-data grounding, no Verify stage), which [Batch 6](#batch-6-rank-20012200-improved-two-stage-workflow) proved was blind to cost/color/hybrid/rarity facts. Re-running those ranks through the improved two-stage workflow from the top, tracked separately in [`otag_reaudit_progress.md`](otag_reaudit_progress.md) / [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt). **Done: ranks 1-1000** (178 flags the old pass missed). **Next: rank ~1001+.**
 
 ## Findings so far
-Across 2200 audited: **1807 clean, 365 suspect, 27 wrong** (rank 2001-2200 added by
-[Batch 6](#batch-6-rank-20012200-improved-two-stage-workflow); the first 2000 were
-1632 clean / 345 suspect / 23 wrong).
+Across 2200 audited: **1807 clean, 365 suspect, 27 wrong** (rank 2001-2200 added by [Batch 6](#batch-6-rank-20012200-improved-two-stage-workflow); the first 2000 were 1632 clean / 345 suspect / 23 wrong).
 
-**Second-pass on the 23 wrong (separate session, Scryfall-checked, 2026-07-15):** not all
-suggested fixes are shippable. ~16–17 apply-worthy; 3 audit flags were themselves wrong
-(`x-doesn-t-matter`, `cycle-war-hybrid-planeswalker`, `cycle-fdn-draft-signpost` — keep current);
-2 need a different rewrite (`unique-token`, `substance`). Details under
-[Wrong (fix recommended)](#wrong-fix-recommended). **No changes applied to
-`ORACLE_TAG_DESCRIPTIONS`.**
+**Second-pass on the 23 wrong (separate session, Scryfall-checked, 2026-07-15):** not all suggested fixes are shippable. ~16–17 apply-worthy; 3 audit flags were themselves wrong (`x-doesn-t-matter`, `cycle-war-hybrid-planeswalker`, `cycle-fdn-draft-signpost` — keep current); 2 need a different rewrite (`unique-token`, `substance`). Details under [Wrong (fix recommended)](#wrong-fix-recommended). **No changes applied to `ORACLE_TAG_DESCRIPTIONS`.**
 
 ## Batch 6 (rank 2001-2200, improved two-stage workflow)
 
@@ -103,16 +80,12 @@ First batch run with the **card-data grounding + Verify stage** (commit `f0f1398
 
 ## Wrong (fix recommended)
 
-> **Second-pass verification (separate session, 2026-07-15):** Scryfall oracle + `otag:` membership
-> re-check of every entry below. **Do not treat all 23 suggested fixes as ready to ship.**
-> Const (`ORACLE_TAG_DESCRIPTIONS`) was **not** changed by that session or this note update.
+> **Second-pass verification (separate session, 2026-07-15):** Scryfall oracle + `otag:` membership re-check of every entry below. **Do not treat all 23 suggested fixes as ready to ship.** Const (`ORACLE_TAG_DESCRIPTIONS`) was **not** changed by that session or this note update.
 >
-> | Bucket | Slugs |
-> | --- | --- |
-> | **Suggested fix OK** (apply-worthy) | `minigame`, `warlord`, `creature-ability-noncreature`, `hate-wide` (nit), `keyword-soup`, `predefined-token`, `impulse-planeswalker`, `references-keyword`, `sunder`, `counterspell-enchantment`, `gives-wither`, `synergy-protection`, `cycle-mid-r-flashback`, `cycle-mh3-c-draft-signpost`, `cycle-block-rtr-off-color`, `cycle-unf-single-sticker`, `cycle-block-rav-mnn` (example partially wrong), `cycle-mh3-r-m-two-color` (Devoid nit) |
-> | **Do not apply suggested; audit flag wrong — keep current** | `x-doesn-t-matter`, `cycle-war-hybrid-planeswalker`, `cycle-fdn-draft-signpost` |
-> | **Do not apply suggested; needs different rewrite** | `unique-token` (collides with `predefined-token`), `substance` (keyword vs flash package) |
+> 
+> | Bucket | Slugs | | --- | --- | | **Suggested fix OK** (apply-worthy) | `minigame`, `warlord`, `creature-ability-noncreature`, `hate-wide` (nit), `keyword-soup`, `predefined-token`, `impulse-planeswalker`, `references-keyword`, `sunder`, `counterspell-enchantment`, `gives-wither`, `synergy-protection`, `cycle-mid-r-flashback`, `cycle-mh3-c-draft-signpost`, `cycle-block-rtr-off-color`, `cycle-unf-single-sticker`, `cycle-block-rav-mnn` (example partially wrong), `cycle-mh3-r-m-two-color` (Devoid nit) | | **Do not apply suggested; audit flag wrong — keep current** | `x-doesn-t-matter`, `cycle-war-hybrid-planeswalker`, `cycle-fdn-draft-signpost` | | **Do not apply suggested; needs different rewrite** | `unique-token` (collides with `predefined-token`), `substance` (keyword vs flash package) |
 >
+> 
 > Per-entry **second-pass** notes are under each slug. Original audit lines kept for history.
 
 ### `unique-token` — WRONG

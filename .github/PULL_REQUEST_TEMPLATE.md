@@ -1,9 +1,5 @@
 <!--
-Thanks for the change. Keep the summary tight and check the boxes that apply.
-Note: Zwipe is licensed noncommercially (see LICENSE) and is primarily maintained
-by its owner. Large unsolicited changes may not be merged, so open an issue to
-discuss anything substantial first.
--->
+Thanks for the change. Keep the summary tight and check the boxes that apply. Note: Zwipe is licensed noncommercially (see LICENSE) and is primarily maintained by its owner. Large unsolicited changes may not be merged, so open an issue to discuss anything substantial first. -->
 
 ## Summary
 

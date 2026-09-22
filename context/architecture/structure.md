@@ -35,9 +35,7 @@ Every section below describes the code as it stands (last verified against the t
                                  └────────────┘
 ```
 
-Both clients also depend on `zwipe-core` directly, for the domain types they
-pass around. `zervice` is a second binary in the `zerver` crate, not a crate
-of its own.
+Both clients also depend on `zwipe-core` directly, for the domain types they pass around. `zervice` is a second binary in the `zerver` crate, not a crate of its own.
 
 | Crate | Binary | Role | Depends on |
 |-------|--------|------|-----------|
@@ -231,8 +229,7 @@ zerver/src/
         └── resend/             — Transactional email via Resend API
 ```
 
-**Database (PostgreSQL, 30 tables + 3 materialized views):** `zerver/migrations/`
-is the source of truth for the full schema. The ones you touch most:
+**Database (PostgreSQL, 30 tables + 3 materialized views):** `zerver/migrations/` is the source of truth for the full schema. The ones you touch most:
 
 | Table | Purpose |
 |-------|---------|
@@ -248,8 +245,7 @@ is the source of truth for the full schema. The ones you touch most:
 | `password_reset_tokens` | One-time password reset |
 | `zervice_metrics` | Sync job audit trail |
 
-The rest are signal/analytics tables (user and commander signal, weekly facets,
-lifetime counters, events) plus client error and crash reporting.
+The rest are signal/analytics tables (user and commander signal, weekly facets, lifetime counters, events) plus client error and crash reporting.
 
 | Materialized view | Purpose |
 |-------|---------|

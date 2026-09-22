@@ -1,25 +1,14 @@
 # Production access application (Play Console questionnaire)
 
-New personal Play accounts must run closed testing (≥12 testers, 14 continuous
-days) and then **apply for production access** via a questionnaire in the Play
-Console (Test and release → Testing → Closed testing → *Apply for production*).
-The answers below are pasted into that in-console form and reviewed by Google
-(~72h). The 14-day cycle **completed 2026-07-09** (QA partner Teekam Suthar /
-12testers); ~400 testers on the Alpha closed track.
+New personal Play accounts must run closed testing (≥12 testers, 14 continuous days) and then **apply for production access** via a questionnaire in the Play Console (Test and release → Testing → Closed testing → *Apply for production*). The answers below are pasted into that in-console form and reviewed by Google (~72h). The 14-day cycle **completed 2026-07-09** (QA partner Teekam Suthar / 12testers); ~400 testers on the Alpha closed track.
 
-Answers are plain single-paragraph text, **each ≤300 characters**, so they
-copy-paste cleanly into the web form fields.
+Answers are plain single-paragraph text, **each ≤300 characters**, so they copy-paste cleanly into the web form fields.
 
 ## Framing rules (read before pasting)
 
-- Say **"testers" / "testing program"**, never "users," "launch," or "release."
-  Testers joined a closed test; the app was never on the production track.
-- The 400 tester count is a **strength** (broad, active engagement), not a risk.
-  Recruiting testers publicly via a public opt-in group is allowed and is *not*
-  "treating it like live" (that would be distributing via production, or fake/
-  install-only testers). We had real engagement, so say so.
-- **Don't overclaim.** Frame it as a broad tester base plus a core of engaged
-  testers (hired QA + active community) who filed detailed reports.
+- Say **"testers" / "testing program"**, never "users," "launch," or "release." Testers joined a closed test; the app was never on the production track.
+- The 400 tester count is a **strength** (broad, active engagement), not a risk. Recruiting testers publicly via a public opt-in group is allowed and is *not* "treating it like live" (that would be distributing via production, or fake/ install-only testers). We had real engagement, so say so.
+- **Don't overclaim.** Frame it as a broad tester base plus a core of engaged testers (hired QA + active community) who filed detailed reports.
 - Disclosing the paid testing provider is correct, Google's Q1 explicitly asks.
 
 ---

@@ -51,12 +51,9 @@ cp ~/Downloads/*.mobileprovision \
 
 ## 4. First launch on the device
 
-**Developer Mode (iOS 16+):**
-Settings → Privacy & Security → Developer Mode → toggle on → restart
+**Developer Mode (iOS 16+):** Settings → Privacy & Security → Developer Mode → toggle on → restart
 
-**Untrusted Developer prompt:**
-If iOS shows "Untrusted Developer" on first launch:
-Settings → VPN & Device Management → your Apple ID → Trust
+**Untrusted Developer prompt:** If iOS shows "Untrusted Developer" on first launch: Settings → VPN & Device Management → your Apple ID → Trust
 
 ---
 

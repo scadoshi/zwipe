@@ -1,19 +1,12 @@
 # Build the iOS app (release)
 
-Produce a signed `Zwipe.ipa` ready to upload. This is the recurring build for
-version updates; for the one-time account/cert/App-ID setup see
-[first_release.md](first_release.md). To upload + submit the `.ipa` this
-produces, continue to [publish.md](publish.md).
+Produce a signed `Zwipe.ipa` ready to upload. This is the recurring build for version updates; for the one-time account/cert/App-ID setup see [first_release.md](first_release.md). To upload + submit the `.ipa` this produces, continue to [publish.md](publish.md).
 
 ---
 
 ## IMPORTANT: Always use the latest Xcode
 
-Apple's App Store submission allowlist requires the binary to be linked against the
-very latest Xcode/SDK. Older GM versions get rejected at "Add for Review" with a
-misleading "beta Xcode" UI message (actual API error:
-`BUILD_SDK_NOT_ALLOWED_FOR_APP_STORE_SUBMISSION`). See [debugging.md](debugging.md)
-for the full investigation.
+Apple's App Store submission allowlist requires the binary to be linked against the very latest Xcode/SDK. Older GM versions get rejected at "Add for Review" with a misleading "beta Xcode" UI message (actual API error: `BUILD_SDK_NOT_ALLOWED_FOR_APP_STORE_SUBMISSION`). See [debugging.md](debugging.md) for the full investigation.
 
 **Before building, update Xcode via the Mac App Store** and verify:
 
@@ -22,17 +15,14 @@ xcodebuild -version
 # Make sure this matches the most recent Xcode release
 ```
 
-After updating Xcode, also wipe the cargo iOS device cache so the binary actually
-re-links against the new SDK (otherwise Cargo will reuse the previously linked
-object files):
+After updating Xcode, also wipe the cargo iOS device cache so the binary actually re-links against the new SDK (otherwise Cargo will reuse the previously linked object files):
 
 ```bash
 rm -rf ~/Developer/zwipe/target/aarch64-apple-ios
 rm -rf ~/Developer/zwipe/target/dx/zwipe/release/ios
 ```
 
-If you don't have the matching iOS simulator runtime installed, `actool` will fail
-to produce `Assets.car`. Install it once:
+If you don't have the matching iOS simulator runtime installed, `actool` will fail to produce `Assets.car`. Install it once:
 
 ```bash
 xcodebuild -downloadPlatform iOS
@@ -47,9 +37,7 @@ cd ~/Developer/zwipe/zwiper
 BACKEND_URL=https://api.zwipe.net dx build --release --platform ios --device "scotland-mobile"
 ```
 
-From the workspace root instead, add `--package zwiper`; `dx` refuses to guess
-which binary crate to build and lists zerver/zite/zwiper. Same for
-`dx bundle --platform android`.
+From the workspace root instead, add `--package zwiper`; `dx` refuses to guess which binary crate to build and lists zerver/zite/zwiper. Same for `dx bundle --platform android`.
 
 ## 2. Patch Info.plist (Dioxus doesn't generate these correctly)
 

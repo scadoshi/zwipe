@@ -1,19 +1,10 @@
 # Google Play Console Submission
 
-Text to paste into Google Play Console fields for **Zwipe TCG**. Mirrors the
-iOS [form_fields.md](../../../ios/app-store/submission/form_fields.md); where the two
-stores share copy, this keeps it consistent so the brand reads the same on both.
+Text to paste into Google Play Console fields for **Zwipe TCG**. Mirrors the iOS [form_fields.md](../../../ios/app-store/submission/form_fields.md); where the two stores share copy, this keeps it consistent so the brand reads the same on both.
 
-The **app name** stays generic: "Zwipe TCG", never "Zwipe MTG". That is what
-Apple's Guideline 4.1(a) rejection was about, and the Play package name is
-permanent regardless.
+The **app name** stays generic: "Zwipe TCG", never "Zwipe MTG". That is what Apple's Guideline 4.1(a) rejection was about, and the Play package name is permanent regardless.
 
-Descriptive copy is a different question, and since 2026-09-22 it uses the
-app's own vocabulary. "Commander", "command zone", "Universes Beyond" and the
-rest name things the user is looking at. Both apps are approved and the iOS
-listing has cleared review many times carrying MTG, Magic the Gathering,
-commander, EDH and Scryfall in its subtitle and keywords. Earlier notes here
-claimed Apple required the scrub to extend that far; it did not.
+Descriptive copy is a different question, and since 2026-09-22 it uses the app's own vocabulary. "Commander", "command zone", "Universes Beyond" and the rest name things the user is looking at. Both apps are approved and the iOS listing has cleared review many times carrying MTG, Magic the Gathering, commander, EDH and Scryfall in its subtitle and keywords. Earlier notes here claimed Apple required the scrub to extend that far; it did not.
 
 ---
 
@@ -33,14 +24,11 @@ Plus the two declaration checkboxes: Developer Program Policies, and US export l
 
 ## Where these live in the console
 
-Not in the release flow. The release wizard only takes the bundle and the
-release notes; everything below is a separate section:
+Not in the release flow. The release wizard only takes the bundle and the release notes; everything below is a separate section:
 
 **Left nav → Grow users → Store presence → Main store listing**
 
-"Grow users" sits below "Monitor and improve" and is usually under the fold,
-which is why this is hard to find. Release notes are the exception: they are
-entered in the release flow itself, at the step after the bundle upload.
+"Grow users" sits below "Monitor and improve" and is usually under the fold, which is why this is hard to find. Release notes are the exception: they are entered in the release flow itself, at the step after the bundle upload.
 
 ## Main store listing
 
@@ -109,8 +97,7 @@ TODO: confirm/publish (e.g. https://zwipe.net/privacy). Required before release.
 
 ### App access  ⟵ "any other information required to access your app"
 
-Zwipe needs an account to use, so reviewers must sign in. In Play Console choose
-**"All or some functionality is restricted"**, then add one access instruction:
+Zwipe needs an account to use, so reviewers must sign in. In Play Console choose **"All or some functionality is restricted"**, then add one access instruction:
 
 | Field | Value |
 |-------|-------|
@@ -122,18 +109,21 @@ Zwipe needs an account to use, so reviewers must sign in. In Play Console choose
 
 > Zwipe requires a single account to use; there is no separate guest mode, so please sign in with the credentials above to reach full functionality.
 >
+> 
 > To sign in:
 > 1. Launch Zwipe.
 > 2. On the welcome screen, tap "Log in" (not "Sign up").
 > 3. Enter the username and password listed above.
 > 4. Tap "Log in"; this opens straight into the app.
 >
+> 
 > The account uses a standard username + password login only. To be explicit about the restricted-access examples:
 > - No two-step verification and no one-time codes.
 > - No QR codes or barcodes.
 > - No biometric login (no fingerprint or face recognition).
 > - No location-based access, memberships, or paywalls.
 >
+> 
 > An internet connection is required so the app can search and browse the card catalog.
 
 ### Ads
@@ -142,11 +132,7 @@ No, the app does not contain ads.
 
 ### Content rating (IARC questionnaire)
 
-Category: Reference, News, or Educational? No; submit as the matching app/game
-type. Mirror the iOS age-rating answers: infrequent fantasy violence, infrequent
-mild horror/suggestive themes, weapons references in card art; no real-money
-gambling, no user-to-user communication. Email for the questionnaire: developer
-contact above.
+Category: Reference, News, or Educational? No; submit as the matching app/game type. Mirror the iOS age-rating answers: infrequent fantasy violence, infrequent mild horror/suggestive themes, weapons references in card art; no real-money gambling, no user-to-user communication. Email for the questionnaire: developer contact above.
 
 ### Target audience and content
 
@@ -183,19 +169,14 @@ TODO: complete the Data safety form. Starter facts to declare:
 
 ### Release notes (What's new: max 500 chars, store-visible)
 
-Lives in [`../../../store-submissions/`](../../../store-submissions/), one
-directory per version, shared with the App Store. Paste from
-`store-submissions/<version>/whats_new.md`.
+Lives in [`../../../store-submissions/`](../../../store-submissions/), one directory per version, shared with the App Store. Paste from `store-submissions/<version>/whats_new.md`.
 
-That 500-character cap is the binding one, so it is what the shared text is
-written to. From 1.10.2 on, Play and the App Store get the same text.
+That 500-character cap is the binding one, so it is what the shared text is written to. From 1.10.2 on, Play and the App Store get the same text.
 
 ---
 
 ## Notes
 
-- Package name `com.scadoshi.zwipe` is **permanent** on Play, it can never be
-  changed after the first publish. It deliberately matches the Apple bundle ID.
+- Package name `com.scadoshi.zwipe` is **permanent** on Play, it can never be changed after the first publish. It deliberately matches the Apple bundle ID.
 - The app name stays "Zwipe TCG" per the note at the top of this file. Listing copy uses the card game's own vocabulary.
-- The server enforces a minimum client version (`MIN_CLIENT_VERSION`, live at
-  `0.0.0` = open); ship the Play build at 1.1.0 or later so it isn't gated.
+- The server enforces a minimum client version (`MIN_CLIENT_VERSION`, live at `0.0.0` = open); ship the Play build at 1.1.0 or later so it isn't gated.

@@ -1,8 +1,6 @@
 # Video 7: Know every card
 
-**Theme:** Alt-art, foreign, double-faced. Always know what you're looking at.
-**Priority:** P3.
-**Hook line:** "Alt-art, foreign, double-faced. Always know what it does."
+**Theme:** Alt-art, foreign, double-faced. Always know what you're looking at. **Priority:** P3. **Hook line:** "Alt-art, foreign, double-faced. Always know what it does."
 
 ## Beats (~20s)
 
@@ -25,15 +23,10 @@
 5. **Expanded card-row detail** in the deck list.
 
 ## Notes
-- Core shipped 1.1.0–1.2.1; the dialog restyle (cost in the title, Flip in the
-  footer) is 1.7.1 and the in-dialog tag definitions are 1.7.3, so film against
-  the current store build.
-- Image-less cards now render as a clean text card (1.7.1); a half-beat of that
-  can replace the deck-row beat if a good specimen comes up while filming.
-- Pick a visually striking DFC and a flashy alt-art (Secret Lair) for the flip
-  and carousel beats.
-- The tag-definition beat overlaps video #11 beat 2 deliberately: there it's the
-  story, here it's one flex among five. Don't cut it from both.
+- Core shipped 1.1.0–1.2.1; the dialog restyle (cost in the title, Flip in the footer) is 1.7.1 and the in-dialog tag definitions are 1.7.3, so film against the current store build.
+- Image-less cards now render as a clean text card (1.7.1); a half-beat of that can replace the deck-row beat if a good specimen comes up while filming.
+- Pick a visually striking DFC and a flashy alt-art (Secret Lair) for the flip and carousel beats.
+- The tag-definition beat overlaps video #11 beat 2 deliberately: there it's the story, here it's one flex among five. Don't cut it from both.
 
 ## Script (VO + final captions)
 
@@ -49,6 +42,4 @@ First-person dev voice, ~150 wpm.
 | 0:13–0:15 | And every printing, if you'd rather the cheap one. | Every printing, every art. |
 | 0:16–0:20 | (end card, no VO) | |
 
-Delivery notes: open on a textless or foreign printing so "no idea what it
-does" is visibly true. The printings line works because the carousel shows
-prices; make sure a visibly cheaper printing is on screen when it lands.
+Delivery notes: open on a textless or foreign printing so "no idea what it does" is visibly true. The printings line works because the carousel shows prices; make sure a visibly cheaper printing is on screen when it lands.

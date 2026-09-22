@@ -1,30 +1,18 @@
 # Refactor: Extract `SortCards` Trait from Inline Sort Logic
 
-**Status: ARCHIVED - NEVER BUILT. Superseded by `Cards::sorted`
-(`zwipe-core/src/domain/card/models/search_card/cards.rs:77`) and
-`sort_deck_entries` (same file), which cover the need this plan was written
-for. Nothing below matches the current code: there is no `filter_cards.rs`,
-no `SortCards`, no `OrderByOption`, and `CardFilterBuilder` is now
-`CardQueryBuilder`. Kept for history only.**
+**Status: ARCHIVED - NEVER BUILT. Superseded by `Cards::sorted` (`zwipe-core/src/domain/card/models/search_card/cards.rs:77`) and `sort_deck_entries` (same file), which cover the need this plan was written for. Nothing below matches the current code: there is no `filter_cards.rs`, no `SortCards`, no `OrderByOption`, and `CardFilterBuilder` is now `CardQueryBuilder`. Kept for history only.**
 
 ## Problem
 
-`view.rs` and `remove.rs` both contain an identical ~50-line inline sort block
-to handle the case where the user sets a sort order but no other filter criteria.
-This is a workaround for `CardFilterBuilder::is_empty()` treating `order_by` as
-a config field (not a search criterion), which causes `build()` to return `Err`
-and the filter effect to bypass `filter_by` entirely.
+`view.rs` and `remove.rs` both contain an identical ~50-line inline sort block to handle the case where the user sets a sort order but no other filter criteria. This is a workaround for `CardFilterBuilder::is_empty()` treating `order_by` as a config field (not a search criterion), which causes `build()` to return `Err` and the filter effect to bypass `filter_by` entirely.
 
-The workaround works but duplicates the sort logic that already lives in
-`filter_cards.rs`. Any future `OrderByOption` variant addition requires changes
-in three places.
+The workaround works but duplicates the sort logic that already lives in `filter_cards.rs`. Any future `OrderByOption` variant addition requires changes in three places.
 
 ---
 
 ## Proposed Solution
 
-Add a `SortCards` extension trait to the shared domain, alongside the existing
-`FilterCards` trait in `filter_cards.rs`.
+Add a `SortCards` extension trait to the shared domain, alongside the existing `FilterCards` trait in `filter_cards.rs`.
 
 ### Trait Definition
 
@@ -114,8 +102,7 @@ if builder.is_empty() {
 }
 ```
 
-The inline 50-line sort blocks in `view.rs` and `remove.rs` are replaced with
-a single `filtered.sort_by_filter(&builder)` call.
+The inline 50-line sort blocks in `view.rs` and `remove.rs` are replaced with a single `filtered.sort_by_filter(&builder)` call.
 
 ---
 
@@ -131,9 +118,6 @@ a single `filtered.sort_by_filter(&builder)` call.
 
 ## Notes
 
-- The sort logic should NOT be de-duplicated inside `filter_by` itself (i.e., extract
-  a private `sort_vec` helper that both `filter_by` and `sort_by_filter` call) to
-  avoid changing the `filter_by` signature or internal structure unnecessarily.
-- `SortCards` is a no-op when `builder.order_by()` is `None`, making it safe to
-  always call without the `is_empty()` guard.
+- The sort logic should NOT be de-duplicated inside `filter_by` itself (i.e., extract a private `sort_vec` helper that both `filter_by` and `sort_by_filter` call) to avoid changing the `filter_by` signature or internal structure unnecessarily.
+- `SortCards` is a no-op when `builder.order_by()` is `None`, making it safe to always call without the `is_empty()` guard.
 - `OrderByOption` and `CardFilterBuilder` are both already in scope in `filter_cards.rs`.

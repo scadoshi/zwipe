@@ -2,11 +2,7 @@
 
 **Decided: Freemium with subscription for AI/intelligence features (2026-03-26)**
 
-**Feature catalog: `premium/` (brainstormed 2026-06-10)**: detailed
-per-feature docs for everything under consideration for the paid tier, plus
-the free features that feed it (deck tags, collection tracking, bracket
-badge). Start at `premium/README.md`. This file remains the decision record;
-that directory is the living idea catalog.
+**Feature catalog: `premium/` (brainstormed 2026-06-10)**: detailed per-feature docs for everything under consideration for the paid tier, plus the free features that feed it (deck tags, collection tracking, bracket badge). Start at `premium/README.md`. This file remains the decision record; that directory is the living idea catalog.
 
 ---
 
@@ -28,10 +24,7 @@ that directory is the living idea catalog.
 - Synergy integration, theme/archetype suggestions (synergy scores themselves ship free, see below)
 - Note: collection tracking and the bracket badge are deliberately FREE (moat + acquisition, see `premium/`)
 
-> **Open question (2026-08-18):** synergy scores were listed as paid here since
-> the 2026-03 decision, but they shipped free to everyone. Nothing has been
-> decided about what replaces them in the paid tier. Left open deliberately
-> rather than filled in with a guess.
+> **Open question (2026-08-18):** synergy scores were listed as paid here since the 2026-03 decision, but they shipped free to everyone. Nothing has been decided about what replaces them in the paid tier. Left open deliberately rather than filled in with a guess.
 
 **No ads**, ever. Ads look terrible, tank reviews, and CPMs for a niche hobby audience are lousy.
 

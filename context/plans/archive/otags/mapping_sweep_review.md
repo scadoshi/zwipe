@@ -1,12 +1,6 @@
 # Oracle-tag mapping sweep — review
 
-**Status: APPLIED (2026-07-13).** Machine-assisted audit (30 sub-agents, adversarially
-verified against the live 4,492-tag catalog) of the two hand-authored otag mapping
-tables. Populations are real card-counts from `card_oracle_tags`; every proposed slug
-was confirmed to exist. **Applied to source and validated against a local `zervice`
-recompute:** all Track A seed edits, all Track B root/override additions, and the 4
-Track B wrong-inclusions as a new `ROLE_TAG_EXCLUSIONS` mechanism (`firebend-like` kept
-in `ramp` by decision). Still open: the unmapped-archetype coverage gap below.
+**Status: APPLIED (2026-07-13).** Machine-assisted audit (30 sub-agents, adversarially verified against the live 4,492-tag catalog) of the two hand-authored otag mapping tables. Populations are real card-counts from `card_oracle_tags`; every proposed slug was confirmed to exist. **Applied to source and validated against a local `zervice` recompute:** all Track A seed edits, all Track B root/override additions, and the 4 Track B wrong-inclusions as a new `ROLE_TAG_EXCLUSIONS` mechanism (`firebend-like` kept in `ramp` by decision). Still open: the unmapped-archetype coverage gap below.
 
 ## Method
 
@@ -540,8 +534,7 @@ Grouped by archetype; only archetypes with proposed adds. Confidence is the revi
 
 ## Coverage gap — unmapped archetypes
 
-0 of the 117 `DeckTag` variants seed **nothing** today. Some are intentional
-(e.g. `Chaos`); others may be genuine gaps worth authoring later. Not scored by this sweep:
+0 of the 117 `DeckTag` variants seed **nothing** today. Some are intentional (e.g. `Chaos`); others may be genuine gaps worth authoring later. Not scored by this sweep:
 
 
 

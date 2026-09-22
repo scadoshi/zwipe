@@ -1,8 +1,6 @@
 # Video 4: Will you hit your land drops?
 
-**Theme:** Real consistency math. The "we're not a toy" flex.
-**Priority:** P1. No swipe competitor has hypergeometric draw odds.
-**Hook line:** "Will you hit your land drops? Your deck already knows."
+**Theme:** Real consistency math. The "we're not a toy" flex. **Priority:** P1. No swipe competitor has hypergeometric draw odds. **Hook line:** "Will you hit your land drops? Your deck already knows."
 
 ## Beats (~20s)
 
@@ -26,9 +24,7 @@
 - Shipped in 1.2.0. Film against the current store build.
 - Premium-tier candidate: keep the framing "serious tool" not "gimmick."
 - Numbers must be real, straight from the app. Don't mock the percentages.
-- For beat 3 (add lands via swipe), use a deck that is under its land target or
-  has none set. Land auto-stop excludes lands from the swipe pool once the
-  target is met, so a maxed-out deck won't deal you lands to add on camera.
+- For beat 3 (add lands via swipe), use a deck that is under its land target or has none set. Land auto-stop excludes lands from the swipe pool once the target is met, so a maxed-out deck won't deal you lands to add on camera.
 
 ## Script (VO + final captions)
 
@@ -43,6 +39,4 @@ First-person dev voice, ~150 wpm.
 | 0:14–0:16 | Hypergeometric distribution, if you want the word for it. | Real deck math. |
 | 0:16–0:20 | (end card, no VO) | |
 
-Delivery notes: deadpan the last line; it's the flex and the joke at once. The
-odds on screen must be the real ones the VO reacts to, so film beat 4's
-before/after in one continuous session.
+Delivery notes: deadpan the last line; it's the flex and the joke at once. The odds on screen must be the real ones the VO reacts to, so film beat 4's before/after in one continuous session.

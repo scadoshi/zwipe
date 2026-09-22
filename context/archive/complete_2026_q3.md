@@ -1,7 +1,6 @@
 # Completed Work — 2026 Q3
 
-Archived from `context/progress/todo.md`. Everything below is shipped. Kept here so commit
-hashes stay searchable.
+Archived from `context/progress/todo.md`. Everything below is shipped. Kept here so commit hashes stay searchable.
 
 ---
 

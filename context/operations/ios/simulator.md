@@ -6,24 +6,15 @@ Managing simulator devices for screenshots, testing different screen sizes, etc.
 
 ## Simulator.app is gone as of Xcode 27
 
-Xcode 27 ships no `Simulator.app`. `DeviceHub.app` replaced it, at
-`/Applications/Xcode.app/Contents/Applications/DeviceHub.app`, and
-`open -a Simulator` now fails outright. Nothing was misconfigured; Apple
-removed it.
+Xcode 27 ships no `Simulator.app`. `DeviceHub.app` replaced it, at `/Applications/Xcode.app/Contents/Applications/DeviceHub.app`, and `open -a Simulator` now fails outright. Nothing was misconfigured; Apple removed it.
 
-If the old window is wanted back, install Xcode 26 alongside 27 and use its
-`Contents/Developer/Applications/Simulator.app`. Both versions coexist and
-`xcode-select` decides which owns the toolchain. An older Simulator may
-refuse a newer runtime, so pair it with a runtime it knows.
+If the old window is wanted back, install Xcode 26 alongside 27 and use its `Contents/Developer/Applications/Simulator.app`. Both versions coexist and `xcode-select` decides which owns the toolchain. An older Simulator may refuse a newer runtime, so pair it with a runtime it knows.
 
 ## Default device: iPhone 11 Pro Max (6.5")
 
-The project default for running and screenshotting is the **6.5" iPhone 11 Pro
-Max** (the App Store's required 6.5" size, 1242×2688). Screenshot size comes
-from the device model, not the runtime, so any installed iOS runtime will do.
+The project default for running and screenshotting is the **6.5" iPhone 11 Pro Max** (the App Store's required 6.5" size, 1242×2688). Screenshot size comes from the device model, not the runtime, so any installed iOS runtime will do.
 
-`dx serve --platform ios` installs to the *booted* simulator and will **not
-boot one for you**, which is what makes it look like nothing happens:
+`dx serve --platform ios` installs to the *booted* simulator and will **not boot one for you**, which is what makes it look like nothing happens:
 
 ```bash
 zcripts/ios/sim.sh              # shuts others down, boots the 11 Pro Max
@@ -32,10 +23,7 @@ zcripts/ios/sim.sh "iPhone 17"  # or any other created device
 
 Then `cd zwiper && dx serve --platform ios`.
 
-The script takes the newest iOS runtime carrying that device. It used to pin
-iOS 18.6, which broke silently the moment an Xcode update dropped that
-runtime: the lookup failed, nothing booted, and `dx serve` had nothing to
-install to.
+The script takes the newest iOS runtime carrying that device. It used to pin iOS 18.6, which broke silently the moment an Xcode update dropped that runtime: the lookup failed, nothing booted, and `dx serve` had nothing to install to.
 
 ---
 

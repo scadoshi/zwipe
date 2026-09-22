@@ -160,12 +160,7 @@ Use container-level docs for architectural notes:
 pub struct DatabaseDeckProfile { /* primitive fields only */ }
 ```
 
-The note that earns its place here is *why the wrapper exists at all*: `FromRow`
-lives on `DatabaseDeckProfile` in `zerver/src/lib/outbound/sqlx/deck/models.rs`,
-never on `DeckProfile`, because zwipe-core must not know about Postgres. The
-wrapper holds primitives (`String`, `Option<Uuid>`, `serde_json::Value`) and
-converts to the domain type via `TryFrom`, which is where validation runs. Say
-that once on the wrapper rather than on each of its two dozen fields.
+The note that earns its place here is *why the wrapper exists at all*: `FromRow` lives on `DatabaseDeckProfile` in `zerver/src/lib/outbound/sqlx/deck/models.rs`, never on `DeckProfile`, because zwipe-core must not know about Postgres. The wrapper holds primitives (`String`, `Option<Uuid>`, `serde_json::Value`) and converts to the domain type via `TryFrom`, which is where validation runs. Say that once on the wrapper rather than on each of its two dozen fields.
 
 ---
 

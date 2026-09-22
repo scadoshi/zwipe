@@ -1,17 +1,14 @@
 # First App Store Submission
 
-Full walkthrough for the initial App Store submission. For subsequent version
-uploads, see [build.md](build.md).
+Full walkthrough for the initial App Store submission. For subsequent version uploads, see [build.md](build.md).
 
-**Prerequisites:** All steps in [setup.md](../../setup.md) completed (certs, App ID, App Store
-provisioning profile).
+**Prerequisites:** All steps in [setup.md](../../setup.md) completed (certs, App ID, App Store provisioning profile).
 
 ---
 
 ## Step 1: Create Release Entitlements
 
-The debug `Entitlements.plist` has `get-task-allow` set to `true` (allows debugger
-to attach). Apple rejects this. Create a release version:
+The debug `Entitlements.plist` has `get-task-allow` set to `true` (allows debugger to attach). Apple rejects this. Create a release version:
 
 ```bash
 cp ~/Developer/zwipe/zwiper/Entitlements.plist ~/Developer/zwipe/zwiper/Entitlements-Release.plist
@@ -141,8 +138,7 @@ If you haven't created one yet:
 
 ### Upload via Transporter (recommended)
 
-**Do NOT use `xcrun altool`**: it is deprecated and causes metadata parsing errors
-that can trigger false "beta Xcode" rejections in App Store Connect.
+**Do NOT use `xcrun altool`**: it is deprecated and causes metadata parsing errors that can trigger false "beta Xcode" rejections in App Store Connect.
 
 **Do NOT use `xcrun iTMSTransporter`**: it expects `.itmsp` directories, not `.ipa` files.
 

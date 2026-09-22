@@ -6,9 +6,7 @@ Takes the signed `Zwipe.ipa` from [build.md](build.md) and gets it into review.
 
 ## 1. Upload via Transporter
 
-**Do NOT use `xcrun altool`**: it is deprecated and causes metadata parsing errors
-that can trigger false "beta Xcode" rejections. See [debugging.md](debugging.md)
-for details.
+**Do NOT use `xcrun altool`**: it is deprecated and causes metadata parsing errors that can trigger false "beta Xcode" rejections. See [debugging.md](debugging.md) for details.
 
 **Do NOT use `xcrun iTMSTransporter`**: it expects `.itmsp` directories, not `.ipa` files.
 
@@ -42,6 +40,4 @@ API key file: `~/.private_keys/AuthKey_<KEY_ID>.p8`
 
 ---
 
-Listing copy (What's New, description, keywords) lives in
-[form_fields.md](form_fields.md). Beta distribution is in
-[testflight.md](testflight.md).
+Listing copy (What's New, description, keywords) lives in [form_fields.md](form_fields.md). Beta distribution is in [testflight.md](testflight.md).

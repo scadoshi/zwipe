@@ -1,24 +1,17 @@
 # Oracle-tag dictionary — client UX (Part 2)
 
-**Status: PLANNED 2026-07-13. Client-only (zwiper). No new backend.**  
-**Companion:** [`tag_descriptions_and_dictionary.md`](tag_descriptions_and_dictionary.md)
-(Part 1 shipped; Part 2 overview), [`dictionary_backend.md`](dictionary_backend.md)
-(endpoint + CF already ready).
+**Status: PLANNED 2026-07-13. Client-only (zwiper). No new backend.**
+**Companion:** [`tag_descriptions_and_dictionary.md`](tag_descriptions_and_dictionary.md) (Part 1 shipped; Part 2 overview), [`dictionary_backend.md`](dictionary_backend.md) (endpoint + CF already ready).
 
-**One sentence:** an in-app, read-only dictionary of all ~4,500 oracle tags where
-**letter navigation is primary**, optional search is secondary, and only the
-active letter's tags mount in the DOM.
+**One sentence:** an in-app, read-only dictionary of all ~4,500 oracle tags where **letter navigation is primary**, optional search is secondary, and only the active letter's tags mount in the DOM.
 
 ---
 
 ## Goals
 
-- Teach what oracle-tag slugs mean (1,100+ authored descriptions; tail shows
-  "No description yet").
+- Teach what oracle-tag slugs mean (1,100+ authored descriptions; tail shows "No description yet").
 - Keyboard-optional: players can browse without ever focusing a search field.
-- Instant open after cold start once the catalog is session-cached (see
-  [`../catalog_session_cache.md`](../catalog_session_cache.md) — dictionary can
-  ship with a dedicated otag cache first; the general catalog plan unifies it).
+- Instant open after cold start once the catalog is session-cached (see [`../catalog_session_cache.md`](../catalog_session_cache.md) — dictionary can ship with a dedicated otag cache first; the general catalog plan unifies it).
 
 ## Non-goals (MVP)
 
@@ -52,25 +45,18 @@ active letter's tags mount in the DOM.
 - **Top row**, not a left-side index (phone width + existing chip patterns).
 - **Require horizontal scroll** — do **not** wrap 26 chips onto one screen.
 - Each letter is a `zwipe_components::Chip` with `selected` for the active letter.
-- Letters **A–Z** always present so the strip is predictable; optional trailing
-  `#` only if any slug starts with a non-letter.
+- Letters **A–Z** always present so the strip is predictable; optional trailing `#` only if any slug starts with a non-letter.
 - **Default selection:** `A` (or first letter that has tags if we prefer).
-- **Render rule:** `tags.filter(|t| first_letter(t.slug) == selected)` only.
-  Switching letters remounts the list (Changelog-style key with letter prefix so
-  ease-in can replay).
+- **Render rule:** `tags.filter(|t| first_letter(t.slug) == selected)` only. Switching letters remounts the list (Changelog-style key with letter prefix so ease-in can replay).
 - Empty letter → muted copy, e.g. "No tags for S" (fine; rare if catalog is full).
 
-**Grouping key:** first character of **slug** (stable identity; mono display).
-Lowercase; chips may display as `A`…`Z`.
+**Grouping key:** first character of **slug** (stable identity; mono display). Lowercase; chips may display as `A`…`Z`.
 
 ### Search (secondary)
 
 - Optional search field under the header / above the letter rail.
 - When the query is **empty** → letter mode (above).
-- When the query is **non-empty** → search **entire catalog** (override letter):
-  match **slug + label + description** (case-insensitive). Cap results if needed
-  for DOM safety (e.g. first ~100 ranked by slug); letter rail can stay visible
-  but inactive, or clear on letter tap.
+- When the query is **non-empty** → search **entire catalog** (override letter): match **slug + label + description** (case-insensitive). Cap results if needed for DOM safety (e.g. first ~100 ranked by slug); letter rail can stay visible but inactive, or clear on letter tap.
 - Placeholder sentence case, e.g. "Search tags or descriptions".
 - **Do not** auto-focus the field on open — no forced keyboard.
 
@@ -85,15 +71,12 @@ Local markup + CSS (not `Panel`, not `CardRow`, not keyword expand-chips):
 | label | Optional second line if it adds clarity |
 | parent_slugs | Optional muted chips/text; MVP can be display-only |
 
-**Avoid:** picker-style "tap chip → fill def bar" — dictionary rows always show
-the description. **Avoid:** mounting all 4.5k tags at once.
+**Avoid:** picker-style "tap chip → fill def bar" — dictionary rows always show the description. **Avoid:** mounting all 4.5k tags at once.
 
 ### Header / footer
 
 - `ScreenHeader { title, hint }` — `!` and `?` already built; wire hint body only.
-- Hint: short explainer (letter rail primary; search optional; descriptions
-  author-over-time). New key `HINT_ORACLE_TAG_DICTIONARY` in
-  `zwipe-core` hints (shape-only server validation).
+- Hint: short explainer (letter rail primary; search optional; descriptions author-over-time). New key `HINT_ORACLE_TAG_DICTIONARY` in `zwipe-core` hints (shape-only server validation).
 - `ActionBar` + Util **Back**.
 
 ### Loading / error
@@ -114,14 +97,9 @@ the description. **Avoid:** mounting all 4.5k tags at once.
 | Client | Existing `ClientGetOracleTags` — **no** `Authorization` (keeps CF cache) |
 | Wire | `OracleTag { slug, label, description, parent_slugs }` |
 | Cache | Prefer session cache (startup prefetch). Until
-  [`catalog_session_cache.md`](../catalog_session_cache.md) lands as a unified
-  system, implement a dedicated `OracleTagCache` mirror of `ChangelogCache` in
-  `session_upkeep` — same lifecycle. Dictionary + picker + filter otag UI all
-  read it. |
+  [`catalog_session_cache.md`](../catalog_session_cache.md) lands as a unified system, implement a dedicated `OracleTagCache` mirror of `ChangelogCache` in `session_upkeep` — same lifecycle. Dictionary + picker + filter otag UI all read it. |
 
-Picker (`oracle_tag_select.rs`) and card-filter oracle-tags today each
-`use_resource` their own fetch — migrate them to the session cache when the
-cache lands (same PR as dictionary or immediately after).
+Picker (`oracle_tag_select.rs`) and card-filter oracle-tags today each `use_resource` their own fetch — migrate them to the session cache when the cache lands (same PR as dictionary or immediately after).
 
 ---
 
@@ -138,11 +116,9 @@ cache lands (same PR as dictionary or immediately after).
   `.dictionary-list` (vertical, only active set) |
 | Skeleton | Existing `.skeleton-bar` / changelog-skeleton patterns in `main.css` |
 
-**Do not use for rows:** `Panel`, `KeywordChips`, `CardRoleChips`, `CardRow`,
-`CardDetails` (wrong job or too heavy).
+**Do not use for rows:** `Panel`, `KeywordChips`, `CardRoleChips`, `CardRow`, `CardDetails` (wrong job or too heavy).
 
-**Local CSS only for the rail:** existing `.changelog-filter` / `.chip-row`
-**wrap**; dictionary requires **nowrap + horizontal scroll**.
+**Local CSS only for the rail:** existing `.changelog-filter` / `.chip-row` **wrap**; dictionary requires **nowrap + horizontal scroll**.
 
 ---
 
@@ -163,14 +139,11 @@ Not on Profile for MVP (picker + hint is enough); Profile entry is a later nicet
 
 ## Files (expected)
 
-- **New** `zwiper/.../screens/oracle_tag_dictionary.rs` (or under `deck/` if
-  preferred — top-level screen is fine; not zite)
+- **New** `zwiper/.../screens/oracle_tag_dictionary.rs` (or under `deck/` if preferred — top-level screen is fine; not zite)
 - `zwiper/.../router.rs` — route
 - `zwiper/.../screens/mod.rs` — module
-- `zwiper/.../session_upkeep.rs` — `OracleTagCache` + startup fetch (or later
-  fold into unified catalog cache)
-- `zwiper/.../oracle_tag_select.rs` (+ filter otag if present) — read cache;
-  entry button
+- `zwiper/.../session_upkeep.rs` — `OracleTagCache` + startup fetch (or later fold into unified catalog cache)
+- `zwiper/.../oracle_tag_select.rs` (+ filter otag if present) — read cache; entry button
 - `zwiper/assets/main.css` — letter rail + dictionary list/entry
 - `zwipe-core/.../hints.rs` — `HINT_ORACLE_TAG_DICTIONARY`
 - Docs: mark this plan + Part 2 sequencing done when shipped
@@ -179,15 +152,13 @@ Not on Profile for MVP (picker + hint is enough); Profile entry is a later nicet
 
 ## Sequencing
 
-1. Session `OracleTagCache` (or first slice of
-   [`catalog_session_cache.md`](../catalog_session_cache.md) for otags only).
+1. Session `OracleTagCache` (or first slice of [`catalog_session_cache.md`](../catalog_session_cache.md) for otags only).
 2. Dictionary screen (letter rail + optional search + skeleton).
 3. Entry from picker + hint.
 4. Point picker/filter at the cache (drop per-open `use_resource` for otags).
 5. Later: unify other filter catalogs under the same cache plan.
 
-Ship on the next client build (e.g. 1.7.0); additive, no `MIN_CLIENT_VERSION`
-bump, no server deploy required for the UI (endpoint already live).
+Ship on the next client build (e.g. 1.7.0); additive, no `MIN_CLIENT_VERSION` bump, no server deploy required for the UI (endpoint already live).
 
 ---
 

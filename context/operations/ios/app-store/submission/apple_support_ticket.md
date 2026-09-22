@@ -10,10 +10,7 @@ The original support report is preserved below for reference.
 
 **Subject:** "Unable to Add for Review", all builds rejected with "beta Xcode" error despite using GM toolchain
 
-**Developer:** Scotty Fermo
-**Team ID:** VV74WQ89GD
-**Apple ID (app):** 6761341603 (Zwipe MTG, com.scadoshi.zwipe)
-**Second test app:** Zwipe Test (com.scadoshi.zwipetest)
+**Developer:** Scotty Fermo **Team ID:** VV74WQ89GD **Apple ID (app):** 6761341603 (Zwipe MTG, com.scadoshi.zwipe) **Second test app:** Zwipe Test (com.scadoshi.zwipetest)
 
 ---
 

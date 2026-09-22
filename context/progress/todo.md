@@ -2,56 +2,23 @@
 
 **Primary goal: grow the user base through marketing and tester-feedback intake.** (iOS App Store: LIVE. Android Play Store: LIVE (production). Full webapp at zwipe.net: in progress.)
 
-Only open, actionable items live here. When something ships, its outcome moves to
-[`../README.md`](../README.md) and leaves this list. Older completed work is archived
-at `context/archive/complete_2026_q1.md`.
+Only open, actionable items live here. When something ships, its outcome moves to [`../README.md`](../README.md) and leaves this list. Older completed work is archived at `context/archive/complete_2026_q1.md`.
 
 ---
 
 ## Next Up
 
-- [x] ~~**Tooling: get the Android emulator back.**~~ Done 2026-09-22. The
-  `emulator` package and the `android-36` arm64 system image are reinstalled
-  and the `Pixel_9a` AVD exists again. Never booted: the owner asked for the
-  toolchain only, so the first launch is still unproven.
-  [`../operations/android/emulator.md`](../operations/android/emulator.md)
-  works as written again.
+- [x] ~~**Tooling: get the Android emulator back.**~~ Done 2026-09-22. The `emulator` package and the `android-36` arm64 system image are reinstalled and the `Pixel_9a` AVD exists again. Never booted: the owner asked for the toolchain only, so the first launch is still unproven. [`../operations/android/emulator.md`](../operations/android/emulator.md) works as written again.
 
-- [x] ~~**OWNER: sim test the mutating endpoints before cutting 1.10.2.**~~
-  DONE 2026-09-22. Exercised on a simulator against prod: create deck, add
-  card, update card, both import paths, plus the two new server-driven
-  pickers. The typed-request work changed request key ordering and nothing
-  noticed, which is what the test predicted but not what it proved.
+- [x] ~~**OWNER: sim test the mutating endpoints before cutting 1.10.2.**~~ DONE 2026-09-22. Exercised on a simulator against prod: create deck, add card, update card, both import paths, plus the two new server-driven pickers. The typed-request work changed request key ordering and nothing noticed, which is what the test predicted but not what it proved.
 
-- [x] ~~**Finding 2: bind the router to the shared paths.**~~ DONE
-  2026-09-22. `FIXED_ROUTES` in `paths.rs` states the contract as data,
-  generated from the `Endpoint` impls, and a zerver test walks it against the
-  real router. The first version could not fail, since `/api/card/{id}`
-  shadows any unmatched sibling and turns a missing route into a 422 rather
-  than a 404; keying the assertion on `AUTH` fixed it. Verified by deleting
-  three real routes and watching it catch each one.
+- [x] ~~**Finding 2: bind the router to the shared paths.**~~ DONE 2026-09-22. `FIXED_ROUTES` in `paths.rs` states the contract as data, generated from the `Endpoint` impls, and a zerver test walks it against the real router. The first version could not fail, since `/api/card/{id}` shadows any unmatched sibling and turns a missing route into a 422 rather than a 404; keying the assertion on `AUTH` fixed it. Verified by deleting three real routes and watching it catch each one.
 
-- [x] ~~**Add zwipe-client to the public architecture write-ups.**~~ DONE
-  2026-09-22, both halves pushed. zite's `/about` has a panel for it and both
-  client panels list it; the portfolio says six crates and describes what the
-  shared client buys. Two stale things went with it: zite described itself as
-  marketing and auth pages only, written before guides, the changelog and
-  shared decks existed, and the test count was 694 when it was 736.
+- [x] ~~**Add zwipe-client to the public architecture write-ups.**~~ DONE 2026-09-22, both halves pushed. zite's `/about` has a panel for it and both client panels list it; the portfolio says six crates and describes what the shared client buys. Two stale things went with it: zite described itself as marketing and auth pages only, written before guides, the changelog and shared decks existed, and the test count was 694 when it was 736.
 
-- [ ] **Audit the Apple listing.** The Play half is DONE 2026-09-22: the
-  description, short description and theme count were pasted during the
-  1.10.2 submission, so Play is current for the first time in several
-  releases.
+- [ ] **Audit the Apple listing.** The Play half is DONE 2026-09-22: the description, short description and theme count were pasted during the 1.10.2 submission, so Play is current for the first time in several releases.
 
-  Apple still needs a comparison rather than a rewrite. The repo copy is
-  correct, but nobody has checked the live listing against it, and the
-  description now says "Built for Commander" plainly where it used to talk
-  around the name. Compare subtitle, promotional text, description and
-  keywords against
-  [`../operations/ios/app-store/submission/form_fields.md`](../operations/ios/app-store/submission/form_fields.md).
-  Two known gaps: promotional text still advertises 1.10.0's Universes
-  Beyond setting, and the live keyword field was missing MTG and Magic the
-  Gathering (the repo string is 96 of the 100-character limit).
+  Apple still needs a comparison rather than a rewrite. The repo copy is correct, but nobody has checked the live listing against it, and the description now says "Built for Commander" plainly where it used to talk around the name. Compare subtitle, promotional text, description and keywords against [`../operations/ios/app-store/submission/form_fields.md`](../operations/ios/app-store/submission/form_fields.md). Two known gaps: promotional text still advertises 1.10.0's Universes Beyond setting, and the live keyword field was missing MTG and Magic the Gathering (the repo string is 96 of the 100-character limit).
 
 - [ ] ~~**CUT 1.9.2**~~, **DONE 2026-08-17: submitted to both stores** (iOS build 76 / Android versionCode 39). Carries the two Android manifest fixes (the ndk-context crash that survived five releases, and the app silently closing on a system theme change), the back-swipe overlay fixes, the deck list restyle with command-zone art, command-zone art URLs on the wire, per-combination color grouping with mana pips, and the zite work (share-page deal-in, guides search, Panel heroes, 36 guide screenshots). The post-bundle patches are now **one command**: `zcripts/android/patch_bundle.sh` (icons + back handler + manifest). Skipping it silently reships the crash; that checklist is exactly how the bug lived five releases. Build steps: [`../operations/android/play-store/submission/build.md`](../operations/android/play-store/submission/build.md).
 
@@ -78,21 +45,9 @@ at `context/archive/complete_2026_q1.md`.
 
 - [ ] **App unresponsive after long backgrounding (owner report 2026-07-30, iOS observed).** Leave the app backgrounded for a long time, return: sometimes the ENTIRE screen is unclickable until force-close + relaunch. Investigation leads, none confirmed: (a) a full-screen element left mounted and intercepting taps (modal backdrop, toast container, an overlay whose dismiss never fired); (b) the WebView's JS event bridge dying after OS memory pressure while the rendered page survives (wry/dioxus eval channel); (c) something in the resume path (visibility flusher, session refresh single-flight) wedging the main loop. Repro is intermittent; next occurrence, note which screen it happened on and whether scrolling still works (scroll-works-but-taps-don't points to (b)); the new crash/error reporting won't catch this class (no panic, no error toast).
 
-Recently resolved (outcomes in [`../README.md`](../README.md)):
-the **Android ndk-context crash** (field-verified 2026-09-06: zero ndk-context
-crashes on store builds for 16 days against ~10/day before the fix, with 8 of 9
-weekly Android users on 1.9.2+; full check recorded in
-[`../plans/archive/android_ndk_context_crash.md`](../plans/archive/android_ndk_context_crash.md)),
-the **filter-sheet Reset/Cancel commit bug** (fixed 2026-07-22 `10cf0735` with a
-current/staged filter split; Apply is the only commit), the **share-page mana-value
-group ordering** (fixed 2026-07-22 `edd46b2e`, contiguous column partition), the
-**pre-1.6.0 "connection error" wire break** (fixed by flooring `MIN_CLIENT_VERSION=1.6.0`,
-2026-07-13; root cause fully removed 2026-07-14 when the Phase M sunset dropped the
-`mechanical_categories` dual-emit), and **app version in session data** (shipped `d1c874fe`,
-recorded per-session on the refresh-token row).
+Recently resolved (outcomes in [`../README.md`](../README.md)): the **Android ndk-context crash** (field-verified 2026-09-06: zero ndk-context crashes on store builds for 16 days against ~10/day before the fix, with 8 of 9 weekly Android users on 1.9.2+; full check recorded in [`../plans/archive/android_ndk_context_crash.md`](../plans/archive/android_ndk_context_crash.md)), the **filter-sheet Reset/Cancel commit bug** (fixed 2026-07-22 `10cf0735` with a current/staged filter split; Apply is the only commit), the **share-page mana-value group ordering** (fixed 2026-07-22 `edd46b2e`, contiguous column partition), the **pre-1.6.0 "connection error" wire break** (fixed by flooring `MIN_CLIENT_VERSION=1.6.0`, 2026-07-13; root cause fully removed 2026-07-14 when the Phase M sunset dropped the `mechanical_categories` dual-emit), and **app version in session data** (shipped `d1c874fe`, recorded per-session on the refresh-token row).
 
-Completed fixes are archived to
-[`archive/complete_2026_q3.md`](../archive/complete_2026_q3.md) (hashes stay searchable there).
+Completed fixes are archived to [`archive/complete_2026_q3.md`](../archive/complete_2026_q3.md) (hashes stay searchable there).
 
 ---
 
@@ -180,10 +135,7 @@ Once wasm compiles, build the authenticated experience into zite:
 - [ ] **About page (`/about`) visual overhaul, larger redesign wanted.** A partial alignment pass landed 2026-07-21 (`8c873e4e`, `f0fcae6d`, `4990b0a0`): five-crate diagram with `zwipe-components`, the enrichment card rewritten for community oracle tags (roles derived from otag subtrees, not the retired heuristic), refreshed test counts, and the whole thing brought toward the app's tag/chip grammar (colored theme chips cycling accent 1–3 / success / warning / error, single-line wrapping header, tech stacks as chip rows, linkified imports). Owner still wants a fuller visual redesign of this section. Open bits from the pass: single-label subtitles (Scryfall "external service", PostgreSQL "primary datastore", the two foundation bands) → chips for full consistency; and the tagline comma (moot now the tagline is gone).
 - [x] **Favicon with a background color, REGENERATED 2026-08-05, deploys with next push.** All six assets (`favicon.ico` 16/32/48/64, `favicon-16x16/32x32.png`, `icon-180/192/512.png`) recomposited from `zite/assets/favicon-no-background/` onto solid `#282828` (the Android adaptive-launcher bg). Google recrawls favicons on its own schedule; check the "zwipe" SERP icon in ~a week, then delete this line.
 - [x] **Contribute page: mirror the portfolio site's version, DONE 2026-08-05, deploys next push.** zite's `/contribute` rebuilt on the shared `zwipe_components::Panel` cards (the delta vs the portfolio was hand-rolled divs vs Panels, since the three options/URLs already matched), portfolio card copy adopted, Zwipe-specific intro kept. Delete this line after a look at the deployed page.
-- [x] ~~**Tiny, ride along with the next zite change:**~~ Done. The
-  `zite/src/pages/guides/mod.rs` doc comment no longer states a count at all,
-  which is the right fix for a number that goes stale every time a guide
-  lands. The registry holds 21.
+- [x] ~~**Tiny, ride along with the next zite change:**~~ Done. The `zite/src/pages/guides/mod.rs` doc comment no longer states a count at all, which is the right fix for a number that goes stale every time a guide lands. The registry holds 21.
 
 - [ ] **Keep zwipe.net in sync as the app grows.** The guides knowledge base shipped (20 guides under `/guides` carrying 36 screenshots, sitemap + per-guide `Article` JSON-LD landed 2026-07-08). No committed appetite for the demand-first SEO guides ("best mobile MTG deck builder", etc.); leave them optional. The standing task is just to update the site (guides, feature pages, screenshots) as the app becomes more feature-rich. (SEO-guides plan archived at [`../archive/seo_guides.md`](../archive/seo_guides.md).)
 
@@ -191,11 +143,7 @@ Once wasm compiles, build the authenticated experience into zite:
 
 ## Synergy & Popularity Data
 
-The cache-first synergy layer shipped, and so did its first two consumers:
-**synergy scores** (the Synergy chip on the add screen, guide: `synergy`) and
-**popularity data** (commanders serve in EDHREC-popularity order; see
-`swipe_select.rs`, and the in-app hint says "Most-played cards come first").
-Outcomes in [`../README.md`](../README.md). What's left:
+The cache-first synergy layer shipped, and so did its first two consumers: **synergy scores** (the Synergy chip on the add screen, guide: `synergy`) and **popularity data** (commanders serve in EDHREC-popularity order; see `swipe_select.rs`, and the in-app hint says "Most-played cards come first"). Outcomes in [`../README.md`](../README.md). What's left:
 
 - [ ] Salt score, display per card and aggregate per deck, filtering and sorting on card search
 - [ ] Evaluate further data (themes, combos, etc.) as the layer matures
@@ -205,15 +153,9 @@ Outcomes in [`../README.md`](../README.md). What's left:
 ## Maintenance
 
 
-- [x] ~~**Catalog-cache pickers fail silently with no retry**~~ SHIPPED
-  2026-09-22 (rides 1.10.2). A failed catalog load now raises a toast and
-  retries instead of leaving the filter pickers empty for the session. Plan
-  archived at `../plans/archive/catalog_cache_retry.md`.
+- [x] ~~**Catalog-cache pickers fail silently with no retry**~~ SHIPPED 2026-09-22 (rides 1.10.2). A failed catalog load now raises a toast and retries instead of leaving the filter pickers empty for the session. Plan archived at `../plans/archive/catalog_cache_retry.md`.
 
-- [x] ~~**iOS: suppress the shake-to-undo "Undo Typing" prompt**~~ SHIPPED
-  2026-09-22 (rides 1.10.2). `setApplicationSupportsShakeToEdit:NO` at
-  startup. Undo on the add screen is still a downward swipe, unchanged. Plan
-  archived at `../plans/archive/ios_shake_to_undo.md`.
+- [x] ~~**iOS: suppress the shake-to-undo "Undo Typing" prompt**~~ SHIPPED 2026-09-22 (rides 1.10.2). `setApplicationSupportsShakeToEdit:NO` at startup. Undo on the add screen is still a downward swipe, unchanged. Plan archived at `../plans/archive/ios_shake_to_undo.md`.
 
 - [x] **Orphaned otag-description slugs, CLEANED 2026-08-18; confirm on the next nightly, then delete this line.** The WARN had grown 12 → 20 (a tagger rename pass, not new tags): the whole `hand-neutral`/`hand-positive`/`hand-negative` trio was replaced by a `hand-size-*` family that splits on *maximum hand size* rather than card-advantage direction, so that text was dropped rather than moved. All 20 authored entries removed from `ORACLE_TAG_DESCRIPTIONS`; every successor (`untracked-indefinite-effect`, `phasing-matters`, `typal-serpent`, `your-sacrifice-matters`, the `hand-size-*` family) already had authored copy. Verified against the live catalog: all 4,383 remaining authored slugs exist, so the WARN should print nothing. Two silent dead references found in the same sweep, neither of which is warn-checked the way `ROLE_TAG_OVERRIDES` is: `CATEGORY_ROOTS` still listed the retired `hand-positive` under `card_advantage` (a no-op, the umbrella `card-advantage` root already covers it) and `NOISE_ORACLE_TAG_SLUGS` still hid `hand-neutral`. **Behavior change to watch:** `ROLE_TAG_OVERRIDES`' dangling `synergy-sacrifice` was remapped to `your-sacrifice-matters`, which carries 118 cards where the dead slug carried none, so the `sacrifice` role gains cards on the next `zervice` run. Blank descriptions went 75 → 70 in the same change (see below).
 

@@ -1,22 +1,17 @@
 # Latency Scripts
 
-Quick scripts for measuring and verifying API latency without setting up proper
-instrumentation. Use these to decide whether real instrumentation (per-request
-tracing middleware, `pg_stat_statements`) is worth investing in, and to confirm
-that infrastructure changes (CF caching, compression) actually deliver.
+Quick scripts for measuring and verifying API latency without setting up proper instrumentation. Use these to decide whether real instrumentation (per-request tracing middleware, `pg_stat_statements`) is worth investing in, and to confirm that infrastructure changes (CF caching, compression) actually deliver.
 
 ## Setup (one-time)
 
-Both scripts share the same credentials file. Copy the template and fill in
-the real test account password:
+Both scripts share the same credentials file. Copy the template and fill in the real test account password:
 
 ```bash
 cp zcripts/latency/.env.example zcripts/latency/.env
 # Edit and set ZWIPE_TEST_PASS
 ```
 
-`.env` is gitignored — credentials never leave your machine. Already-exported
-shell vars override `.env` if you prefer one-shot usage.
+`.env` is gitignored — credentials never leave your machine. Already-exported shell vars override `.env` if you prefer one-shot usage.
 
 ---
 
@@ -24,9 +19,7 @@ shell vars override `.env` if you prefer one-shot usage.
 
 ### `probe.sh` — measure latency
 
-Times representative endpoints (`/health/server`, `/health/database`,
-`/api/card/search`, `/api/deck`) against localhost (on the server) or the
-public hostname (anywhere). Five samples per endpoint.
+Times representative endpoints (`/health/server`, `/health/database`, `/api/card/search`, `/api/deck`) against localhost (on the server) or the public hostname (anywhere). Five samples per endpoint.
 
 ```bash
 bash zcripts/latency/probe.sh           # both LOCAL and PUBLIC (default)
@@ -51,10 +44,7 @@ bash zcripts/latency/probe.sh public    # public only — run from laptop
 
 ### `cf_cache_verify.sh` — confirm CF edge caching works
 
-Runs each immutable card endpoint twice and asserts the second hit returns
-`cf-cache-status: HIT`. Use after configuring a Cloudflare Cache Rule (see
-`context/ops/cloudflare-edge-caching.md`) to confirm it's actually taking
-effect.
+Runs each immutable card endpoint twice and asserts the second hit returns `cf-cache-status: HIT`. Use after configuring a Cloudflare Cache Rule (see `context/ops/cloudflare-edge-caching.md`) to confirm it's actually taking effect.
 
 ```bash
 bash zcripts/latency/cf_cache_verify.sh   # run from laptop, hits api.zwipe.net
@@ -87,12 +77,6 @@ Exits non-zero if any endpoint fails — chain into CI or git hooks if useful.
 
 ## Why throwaway scripts, not real instrumentation?
 
-These answer "is the problem even in the backend?" in 60 seconds with no code
-changes. If the answer is yes, *then* invest in proper per-request tracing
-middleware in Axum and `pg_stat_statements` for query-level analysis. The
-verify script likewise saves you from clicking into the CF dashboard to read
-analytics — it just tells you yes/no, fast.
+These answer "is the problem even in the backend?" in 60 seconds with no code changes. If the answer is yes, *then* invest in proper per-request tracing middleware in Axum and `pg_stat_statements` for query-level analysis. The verify script likewise saves you from clicking into the CF dashboard to read analytics — it just tells you yes/no, fast.
 
-See `context/ops/latency-optimization.md` for the broader plan these scripts
-support, and `context/ops/cloudflare-edge-caching.md` for the CF rule shape
-that `cf_cache_verify.sh` is validating.
+See `context/ops/latency-optimization.md` for the broader plan these scripts support, and `context/ops/cloudflare-edge-caching.md` for the CF rule shape that `cf_cache_verify.sh` is validating.

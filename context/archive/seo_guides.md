@@ -1,44 +1,25 @@
 # SEO Guides — A Guide for Every Page of Zwipe
 
-**Status: ARCHIVED 2026-07-06 — largely shipped.** The guides knowledge base
-went live on zite (`88504c81`, `406de999`): 12 per-feature guides under
-`/guides` with `PageMeta` per route, covering most of the inventory below.
-Unshipped leftovers are tracked in `progress/todo.md` (Web/Zite Polish):
-guide routes missing from `sitemap.xml`, per-guide Article/HowTo JSON-LD,
-and the demand-first MTG-topic guides. Kept for the topic-guide inventory
-and the per-guide template.
+**Status: ARCHIVED 2026-07-06 — largely shipped.** The guides knowledge base went live on zite (`88504c81`, `406de999`): 12 per-feature guides under `/guides` with `PageMeta` per route, covering most of the inventory below. Unshipped leftovers are tracked in `progress/todo.md` (Web/Zite Polish): guide routes missing from `sitemap.xml`, per-guide Article/HowTo JSON-LD, and the demand-first MTG-topic guides. Kept for the topic-guide inventory and the per-guide template.
 
 ## Goal
 
-Capture organic search and convert it to downloads by publishing long-form,
-indexable guides on `zwipe.net`. Two things at once:
+Capture organic search and convert it to downloads by publishing long-form, indexable guides on `zwipe.net`. Two things at once:
 
-1. **A how-to guide for every user-facing page/feature of the app** — the vision
-   here. Someone searching "how to import an Archidekt deck to mobile" or "MTG
-   card filter by keyword" lands on a Zwipe guide that shows them exactly how,
-   with a download CTA.
-2. **MTG-topic guides** that ride existing search demand ("best mobile MTG deck
-   builder", "how to build a Commander deck on your phone") and funnel to the app.
+1. **A how-to guide for every user-facing page/feature of the app** — the vision here. Someone searching "how to import an Archidekt deck to mobile" or "MTG card filter by keyword" lands on a Zwipe guide that shows them exactly how, with a download CTA.
+2. **MTG-topic guides** that ride existing search demand ("best mobile MTG deck builder", "how to build a Commander deck on your phone") and funnel to the app.
 
-These are static pages prerendered by zite's existing SSG pass, so they inherit
-the per-route `<head>` meta, canonical URLs, and near-zero hosting cost we already
-have. No CMS, no new infra.
+These are static pages prerendered by zite's existing SSG pass, so they inherit the per-route `<head>` meta, canonical URLs, and near-zero hosting cost we already have. No CMS, no new infra.
 
 ## Why this is deferred, not quick
 
-Each guide must be *accurate* — screenshots/clips of the real current UI, correct
-step order, correct button labels. That means walking each screen in `zwiper`
-before writing. Shipping thin or stale guides is worse than none (Google discounts
-low-value content, and wrong steps erode trust). So: read-through first, write
-second, ship in batches.
+Each guide must be *accurate* — screenshots/clips of the real current UI, correct step order, correct button labels. That means walking each screen in `zwiper` before writing. Shipping thin or stale guides is worse than none (Google discounts low-value content, and wrong steps erode trust). So: read-through first, write second, ship in batches.
 
 ---
 
 ## Content inventory — one guide per page
 
-Derived from the app's screen tree (`zwiper/src/lib/inbound/screens/`). Grouped
-by area; each bullet is a candidate guide. Not all need to ship day one — start
-with the high-intent, high-traffic ones (marked ★).
+Derived from the app's screen tree (`zwiper/src/lib/inbound/screens/`). Grouped by area; each bullet is a candidate guide. Not all need to ship day one — start with the high-intent, high-traffic ones (marked ★).
 
 ### Getting started / account
 - ★ Getting started with Zwipe (the swipe model: right add, left skip, up maybe, down undo)
@@ -96,24 +77,12 @@ with the high-intent, high-traffic ones (marked ★).
 
 ## Tech implementation (zite)
 
-- **Routing:** add `#[route("/guides")] Guides {}` (index) and
-  `#[route("/guides/:slug")] Guide { slug: String }` to `zite/src/main.rs`.
-  Dynamic-segment routes are excluded from `Route::static_routes()`, so to get
-  each guide prerendered, either (a) enumerate guide slugs and register them as
-  concrete static routes, or (b) extend the SSG route source to emit each slug.
-  Simplest to start: one component per guide + a static route each.
-- **Content:** guides as Rust/RSX components (like the current pages) or as a
-  small data table (slug → title, description, body sections). Keep bodies in
-  their own module so they don't bloat `pages/`.
-- **Meta:** reuse `PageMeta` — pass a keyword-rich `title`, `description`, and
-  `path: "/guides/<slug>"`. Already produces canonical + OG/Twitter tags.
-- **Structured data:** add `Article` (or `HowTo` for step guides) JSON-LD per
-  guide and `BreadcrumbList` (Home › Guides › <title>), mirroring the
-  `MobileApplication` JSON-LD now on the home page (`pages/home.rs`).
-- **Sitemap:** add each guide path to `ROUTES` in `zite/build.rs` (the generator
-  added in the SEO batch) so they land in `sitemap.xml` automatically.
-- **Media:** reuse the demo clips in `zite/assets/demo/` and add per-step
-  screenshots; lazy-load below the fold.
+- **Routing:** add `#[route("/guides")] Guides {}` (index) and `#[route("/guides/:slug")] Guide { slug: String }` to `zite/src/main.rs`. Dynamic-segment routes are excluded from `Route::static_routes()`, so to get each guide prerendered, either (a) enumerate guide slugs and register them as concrete static routes, or (b) extend the SSG route source to emit each slug. Simplest to start: one component per guide + a static route each.
+- **Content:** guides as Rust/RSX components (like the current pages) or as a small data table (slug → title, description, body sections). Keep bodies in their own module so they don't bloat `pages/`.
+- **Meta:** reuse `PageMeta` — pass a keyword-rich `title`, `description`, and `path: "/guides/<slug>"`. Already produces canonical + OG/Twitter tags.
+- **Structured data:** add `Article` (or `HowTo` for step guides) JSON-LD per guide and `BreadcrumbList` (Home › Guides › <title>), mirroring the `MobileApplication` JSON-LD now on the home page (`pages/home.rs`).
+- **Sitemap:** add each guide path to `ROUTES` in `zite/build.rs` (the generator added in the SEO batch) so they land in `sitemap.xml` automatically.
+- **Media:** reuse the demo clips in `zite/assets/demo/` and add per-step screenshots; lazy-load below the fold.
 
 ## Per-guide structure (template)
 
@@ -126,8 +95,7 @@ with the high-intent, high-traffic ones (marked ★).
 
 ## Cross-linking
 
-- Link the home feature cards ("Swipe to Build", "Filter & Inspect", etc.) to
-  their matching guide.
+- Link the home feature cards ("Swipe to Build", "Filter & Inspect", etc.) to their matching guide.
 - Guides link to each other by area.
 - Footer or nav gets a "Guides" entry once the index exists.
 
@@ -139,9 +107,6 @@ with the high-intent, high-traffic ones (marked ★).
 
 ## Open questions
 
-- Guides as hand-written components vs. a lightweight content-data layer? (Lean
-  data layer if the count grows past ~10.)
-- Do guides live logged-out only, or also surface as in-app help? (Could reuse
-  copy for the in-app report/help surface.)
-- Screenshot maintenance: guides go stale when UI changes — decide a refresh
-  cadence or generate shots from a scripted UI pass.
+- Guides as hand-written components vs. a lightweight content-data layer? (Lean data layer if the count grows past ~10.)
+- Do guides live logged-out only, or also surface as in-app help? (Could reuse copy for the in-app report/help surface.)
+- Screenshot maintenance: guides go stale when UI changes — decide a refresh cadence or generate shots from a scripted UI pass.

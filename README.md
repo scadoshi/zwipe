@@ -37,11 +37,7 @@ cargo run --bin zervice             # scryfall card sync (run once to seed)
 
 ## Architecture
 
-Hexagonal architecture with domain-driven design. `zwipe-core` owns all shared
-domain types; zerver re-exports them and adds server-specific layers (database
-adapters, HTTP handlers, service orchestration). See
-`context/architecture/decisions.md` for the decisions and why they went that
-way, and `context/README.md` for the full documentation tree.
+Hexagonal architecture with domain-driven design. `zwipe-core` owns all shared domain types; zerver re-exports them and adds server-specific layers (database adapters, HTTP handlers, service orchestration). See `context/architecture/decisions.md` for the decisions and why they went that way, and `context/README.md` for the full documentation tree.
 
 ## License
 

@@ -1,10 +1,6 @@
 # iOS build history
 
-Per-release iOS build numbers (`CFBundleVersion`). iOS and Android ship coupled
-from the same `main`, so the fuller per-release detail (features, server halves,
-migrations) lives in the Android
-[`history.md`](../../../android/play-store/submission/history.md); this is the
-iOS-side build-number log.
+Per-release iOS build numbers (`CFBundleVersion`). iOS and Android ship coupled from the same `main`, so the fuller per-release detail (features, server halves, migrations) lives in the Android [`history.md`](../../../android/play-store/submission/history.md); this is the iOS-side build-number log.
 
 | Version | iOS build | Notes |
 |---------|-----------|-------|

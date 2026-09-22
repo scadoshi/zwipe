@@ -1,54 +1,27 @@
 # No-image cards — render a text "identity frame" instead of hiding them
 
-**Status: IMPLEMENTED + design-iterated 2026-07-16. Core feature committed
-(`FlippableCardImage` + serve-filter drop); runtime-verified on the iOS sim via a
-throwaway spoof (see Test scaffolding).**
+**Status: IMPLEMENTED + design-iterated 2026-07-16. Core feature committed (`FlippableCardImage` + serve-filter drop); runtime-verified on the iOS sim via a throwaway spoof (see Test scaffolding).**
 
-**As-built (final look):** `FlippableCardImage` no-image branch renders a
-`.no-image-card` laid out like a real MTG card and iterated on-device against the
-business-card front face:
-- **Title row** — card name (accent-3), an inline **Flip** button (`card-action-btn`,
-  multi-faced only) + **our real mana pips** (`OracleText` / `card-detail-cost`).
+**As-built (final look):** `FlippableCardImage` no-image branch renders a `.no-image-card` laid out like a real MTG card and iterated on-device against the business-card front face:
+- **Title row** — card name (accent-3), an inline **Flip** button (`card-action-btn`, multi-faced only) + **our real mana pips** (`OracleText` / `card-detail-cost`).
 - **Full-bleed `<hr>`** dividers between sections.
 - **Boxed "No image"** marker where the art window sits.
-- **Chips** for type / rarity / set: type = accent-1, rarity = accent-3, set =
-  success-green (own `.nic-chip`, not `detail-chip`).
-- **Oracle + flavor** text box that fills the rest and **scrolls with an edge
-  fade** (`mask-image`, both edges — matches the app's masked scrolls).
+- **Chips** for type / rarity / set: type = accent-1, rarity = accent-3, set = success-green (own `.nic-chip`, not `detail-chip`).
+- **Oracle + flavor** text box that fills the rest and **scrolls with an edge fade** (`mask-image`, both edges — matches the app's masked scrolls).
 - **P/T / loyalty** as an opaque **warning-yellow** corner tab (bottom-right).
-- **Per-face aware** — name/mana/type/oracle/flavor/PT resolve for the *shown*
-  face, so flipping an MDFC (e.g. Valki // Tibalt) shows the back's real data.
+- **Per-face aware** — name/mana/type/oracle/flavor/PT resolve for the *shown* face, so flipping an MDFC (e.g. Valki // Tibalt) shows the back's real data.
 
-CSS in `zwipe-components/assets/components.css` (themed via `color-mix`, no glow).
-Dropped the image clause from every serve filter: examples
-(`oracle_tag_examples.rs`, no client filter left), add (`add.rs` ×3, in-deck/dedup
-kept), swipe_select (`swipe_select.rs` ×2, `!seen` kept); removed the unused
-`ImageSize` imports. The swipe-stack **exit** overlay (`interactions/swipe/stack.rs`)
-now also renders via `FlippableCardImage { flippable: false }`, so image-less cards
-keep their frame through the fly-off. Every swipe surface renders through the one
-component. fmt + clippy clean.
+CSS in `zwipe-components/assets/components.css` (themed via `color-mix`, no glow). Dropped the image clause from every serve filter: examples (`oracle_tag_examples.rs`, no client filter left), add (`add.rs` ×3, in-deck/dedup kept), swipe_select (`swipe_select.rs` ×2, `!seen` kept); removed the unused `ImageSize` imports. The swipe-stack **exit** overlay (`interactions/swipe/stack.rs`) now also renders via `FlippableCardImage { flippable: false }`, so image-less cards keep their frame through the fly-off. Every swipe surface renders through the one component. fmt + clippy clean.
 
 ---
 
-**Original plan below (PLANNED 2026-07-15). Client-only; shared component + examples
-screen.**
-Stop discarding cards that lack art. Render them as a card-shaped **identity
-frame** (name, mana, type, oracle text) so the user can still read the card and
-swipe past it. Lives in the shared `FlippableCardImage`, so every swipe/preview
-surface gets it; the oracle-tag **examples** browse is the first screen to stop
-filtering image-less cards.
+**Original plan below (PLANNED 2026-07-15). Client-only; shared component + examples screen.** Stop discarding cards that lack art. Render them as a card-shaped **identity frame** (name, mana, type, oracle text) so the user can still read the card and swipe past it. Lives in the shared `FlippableCardImage`, so every swipe/preview surface gets it; the oracle-tag **examples** browse is the first screen to stop filtering image-less cards.
 
-**One sentence:** a card's worth on an *examples* browse is its rules text, not
-its art, so where there's no image we draw a text proxy in the card's footprint
-instead of dropping the card (which also deletes the barren-page paging problem
-for examples).
+**One sentence:** a card's worth on an *examples* browse is its rules text, not its art, so where there's no image we draw a text proxy in the card's footprint instead of dropping the card (which also deletes the barren-page paging problem for examples).
 
 **Related:**
 - [`otag_example_cards.md`](otag_example_cards.md) — the browse this unblocks.
-- [`otag_examples_followup.md`](otag_examples_followup.md) — re-scoped: examples no
-  longer needs `fetch_usable_page` (no client filter → no barren pages). The helper
-  stays planned for Add / swipe_select, where the filter drops *common* in-deck /
-  duplicate cards.
+- [`otag_examples_followup.md`](otag_examples_followup.md) — re-scoped: examples no longer needs `fetch_usable_page` (no client filter → no barren pages). The helper stays planned for Add / swipe_select, where the filter drops *common* in-deck / duplicate cards.
 
 **Files:**
 - `zwipe-components/src/flippable_card_image.rs` — add the no-image branch.
@@ -59,77 +32,38 @@ for examples).
 
 ## Why
 
-- **Image-less ≠ unworthy.** In Scryfall data the image-less population is small
-  and deep-tail (brand-new/unspoiled cards awaiting scans, a few obscure printings;
-  tokens are already excluded via `is_token(false)`). But each one still *matches
-  the tag*, and for "what does this tag catch" the oracle text carries the entire
-  lesson. Hiding them teaches less.
-- **The missing thing is art — so use that space for text.** Rather than a bare
-  "No Image" label, fill the card footprint with the card's identity (name, mana,
-  type, text). It reads as a real card, not a broken tile, and gives *more* room
-  for the detail than an art card would.
-- **It deletes a bug class.** The only client-side filter on the examples screen is
-  the image check; that filter is the sole reason a server page can "filter to
-  empty" (the P1 barren-page issue). No filter → no barren pages → no
-  `fetch_usable_page` needed *for examples*.
+- **Image-less ≠ unworthy.** In Scryfall data the image-less population is small and deep-tail (brand-new/unspoiled cards awaiting scans, a few obscure printings; tokens are already excluded via `is_token(false)`). But each one still *matches the tag*, and for "what does this tag catch" the oracle text carries the entire lesson. Hiding them teaches less.
+- **The missing thing is art — so use that space for text.** Rather than a bare "No Image" label, fill the card footprint with the card's identity (name, mana, type, text). It reads as a real card, not a broken tile, and gives *more* room for the detail than an art card would.
+- **It deletes a bug class.** The only client-side filter on the examples screen is the image check; that filter is the sole reason a server page can "filter to empty" (the P1 barren-page issue). No filter → no barren pages → no `fetch_usable_page` needed *for examples*.
 
 ## Decisions (locked with owner)
 
-- **Option B (identity frame), not a bare "No Image" label.** Text proxy in the
-  card's footprint.
-- **No buttons on the card.** The eyeball keeps opening the **dialog** (tried-and-
-  true, clean separation of content vs chrome). The earlier idea of flipping the
-  card into a details overlay with on-card Printings/close buttons is **rejected** —
-  a card is a manipulable content object; buttons on it create swipe/tap ambiguity.
-  The spoof-card styling survives only as the placeholder's look, not as a dialog
-  replacement.
-- **Show image-less cards everywhere** (owner call). Drop the *image* part of the
-  filter on Examples, Add, Remove, and swipe_select. Add / Remove / swipe_select
-  **keep** their in-deck / duplicate filtering — only the image check goes.
+- **Option B (identity frame), not a bare "No Image" label.** Text proxy in the card's footprint.
+- **No buttons on the card.** The eyeball keeps opening the **dialog** (tried-and- true, clean separation of content vs chrome). The earlier idea of flipping the card into a details overlay with on-card Printings/close buttons is **rejected** — a card is a manipulable content object; buttons on it create swipe/tap ambiguity. The spoof-card styling survives only as the placeholder's look, not as a dialog replacement.
+- **Show image-less cards everywhere** (owner call). Drop the *image* part of the filter on Examples, Add, Remove, and swipe_select. Add / Remove / swipe_select **keep** their in-deck / duplicate filtering — only the image check goes.
 
 ## Plan
 
 ### 1. `FlippableCardImage` — no-image branch (shared)
-Today the render is `if let Some(url) = image_url { img { … } }` with **no else**,
-so an image-less card collapses to an empty `.flip-face`. Add an `else` that draws
-the identity frame from the `sd: ReadSignal<ScryfallData>` the component already
-holds:
+Today the render is `if let Some(url) = image_url { img { … } }` with **no else**, so an image-less card collapses to an empty `.flip-face`. Add an `else` that draws the identity frame from the `sd: ReadSignal<ScryfallData>` the component already holds:
 
 - **Name** (`sd.read().name`) — title row.
-- **Mana cost** (`sd.read().mana_cost`) — right of the name; render as plain text
-  (e.g. `{2}{U}{U}`) to keep the shared component free of zwiper-specific symbol
-  assets. A symbol renderer can come later if it's worth it.
+- **Mana cost** (`sd.read().mana_cost`) — right of the name; render as plain text (e.g. `{2}{U}{U}`) to keep the shared component free of zwiper-specific symbol assets. A symbol renderer can come later if it's worth it.
 - **Type line** (`sd.read().type_line`).
 - **Oracle text** (`sd.read().oracle_text`) — the "text box", scroll/clamp if long.
 
-Keep everything else intact: the flip button still renders when `flippable &&
-total > 1` (a DFC with a missing face image is treated single-faced by
-`face_count()` already, so the realistic case is a whole-card text frame). The
-frame is **content only** — no buttons beyond the existing flip control.
+Keep everything else intact: the flip button still renders when `flippable && total > 1` (a DFC with a missing face image is treated single-faced by `face_count()` already, so the realistic case is a whole-card text frame). The frame is **content only** — no buttons beyond the existing flip control.
 
-The placeholder must honor the same aspect/size the image would occupy so the
-swipe stack, peeking cards, and exit animation don't shift layout.
+The placeholder must honor the same aspect/size the image would occupy so the swipe stack, peeking cards, and exit animation don't shift layout.
 
 ### 2. CSS — `.no-image-card`
-A crisp card-aspect frame (MTG ~5:7), matching the app's terminal/grid aesthetic —
-**no glow / haze / soft gradients**. Sections: title row (name + mana), type line,
-a bordered text box for oracle text. Reuse existing card-frame tokens
-(`--border-*`, `--bg-*`) so it themes with light/dark automatically.
+A crisp card-aspect frame (MTG ~5:7), matching the app's terminal/grid aesthetic — **no glow / haze / soft gradients**. Sections: title row (name + mana), type line, a bordered text box for oracle text. Reuse existing card-frame tokens (`--border-*`, `--bg-*`) so it themes with light/dark automatically.
 
 ### 3. Drop the image check from "usable" everywhere
 Image presence is no longer part of whether a card is shown, on any swipe screen:
-- **Examples** (`oracle_tag_examples.rs` `load_more`): remove the
-  `primary_image_url(ImageSize::Large).is_some()` filter; append the server page
-  as-is. Success path simplifies to: server `[]` → `pagination_exhausted = true`;
-  else advance offset + `stack.append(new_cards)`. With **no** client filter,
-  examples can't hit a barren page → **no `fetch_usable_page` needed there.**
-- **Add / Remove / swipe_select:** drop only the image clause from their filters;
-  **keep** the in-deck / duplicate clauses. Because those clauses remain (and drop
-  *common* cards), these screens can still barren-page → `fetch_usable_page` still
-  earns its keep there (its `is_usable` no longer mentions images).
-- **Optional nit (examples):** the placeholder already shows name/type/text, so the
-  `CardInfoDisplay` strip below is partly redundant for an image-less card —
-  optionally hide/trim it. Not required.
+- **Examples** (`oracle_tag_examples.rs` `load_more`): remove the `primary_image_url(ImageSize::Large).is_some()` filter; append the server page as-is. Success path simplifies to: server `[]` → `pagination_exhausted = true`; else advance offset + `stack.append(new_cards)`. With **no** client filter, examples can't hit a barren page → **no `fetch_usable_page` needed there.**
+- **Add / Remove / swipe_select:** drop only the image clause from their filters; **keep** the in-deck / duplicate clauses. Because those clauses remain (and drop *common* cards), these screens can still barren-page → `fetch_usable_page` still earns its keep there (its `is_usable` no longer mentions images).
+- **Optional nit (examples):** the placeholder already shows name/type/text, so the `CardInfoDisplay` strip below is partly redundant for an image-less card — optionally hide/trim it. Not required.
 
 ### 4. Keep (unchanged from the follow-up plan, independent of this)
 - P2 stack cap (`MAX_CARDS_IN_STACK`) on examples `load_more`.
@@ -137,39 +71,25 @@ Image presence is no longer part of whether a card is shown, on any swipe screen
 
 ## Verify
 
-- Image-less card renders the identity frame (name/mana/type/text), not an empty
-  box or broken icon; sits in the same footprint as an art card.
+- Image-less card renders the identity frame (name/mana/type/text), not an empty box or broken icon; sits in the same footprint as an art card.
 - It's swipeable like any card (examples: left = next, down = back; right/up inert).
-- Eyeball still opens the details dialog over it; flip control still works for any
-  true multi-face case.
+- Eyeball still opens the details dialog over it; flip control still works for any true multi-face case.
 - Light + dark both read cleanly; no glow.
-- Examples: a tag whose tail has image-less cards keeps serving them instead of
-  ending early; a truly zero-hit tag still shows the empty copy.
+- Examples: a tag whose tail has image-less cards keeps serving them instead of ending early; a truly zero-hit tag still shows the empty copy.
 - `cargo +nightly fmt` + clippy clean (both `zwipe-components` and `zwiper`).
 
 ## Per-face flip — DONE (2026-07-16), one edge still parked
 
-**Done:** the placeholder now reads the **current face's** fields (name / mana /
-type / oracle / flavor / PT) plus a face-aware `alt`, resolved inline in
-`FlippableCardImage` (`card_faces.get(cur)` → top-level fallback). Flipping an MDFC
-whose back has an image (e.g. Valki // Tibalt) shows the back's real data.
+**Done:** the placeholder now reads the **current face's** fields (name / mana / type / oracle / flavor / PT) plus a face-aware `alt`, resolved inline in `FlippableCardImage` (`card_faces.get(cur)` → top-level fallback). Flipping an MDFC whose back has an image (e.g. Valki // Tibalt) shows the back's real data.
 
-**Still parked:** `ScryfallData::face_count()` uses
-`faces.iter().all(|f| f.image_uris.is_some())`, so a genuinely two-sided card whose
-**back image is missing** is treated single-faced (no Flip button). Changing `all`
-→ `any` would enable flipping to a spoofed back on those (split/adventure stay
-single — they have zero per-face `image_uris`). Rare; do only if a real card hits it.
+**Still parked:** `ScryfallData::face_count()` uses `faces.iter().all(|f| f.image_uris.is_some())`, so a genuinely two-sided card whose **back image is missing** is treated single-faced (no Flip button). Changing `all` → `any` would enable flipping to a spoofed back on those (split/adventure stay single — they have zero per-face `image_uris`). Rare; do only if a real card hits it.
 
 ## Test scaffolding (kept local, NOT committed)
 
-The core feature was committed clean. Three throwaway hacks stay in the working
-tree for on-device preview and are deliberately **not** committed:
-- `SPOOF_NO_IMAGE_FOR_TEST` const + its `image_url.filter(...)` use in
-  `flippable_card_image.rs` — forces the placeholder for every card.
-- home flavor query pinned to Valki (`set_name_contains("Valki")` +
-  `set_type_line_contains("Creature")`) in `home.rs`.
-- home always-renders the flavor card + clickable name (per-face flavor fallback)
-  in `home.rs`, so a no-top-level-flavor MDFC stays clickable.
+The core feature was committed clean. Three throwaway hacks stay in the working tree for on-device preview and are deliberately **not** committed:
+- `SPOOF_NO_IMAGE_FOR_TEST` const + its `image_url.filter(...)` use in `flippable_card_image.rs` — forces the placeholder for every card.
+- home flavor query pinned to Valki (`set_name_contains("Valki")` + `set_type_line_contains("Creature")`) in `home.rs`.
+- home always-renders the flavor card + clickable name (per-face flavor fallback) in `home.rs`, so a no-top-level-flavor MDFC stays clickable.
 
 Delete all three before they ever reach a commit.
 
@@ -177,5 +97,4 @@ Delete all three before they ever reach a commit.
 
 - No on-card buttons / card-as-dialog (rejected).
 - No mana-symbol glyphs in the frame this pass (plain text).
-- `fetch_usable_page` is not built here — it moves to the Add/swipe_select pass
-  (still needed there for in-deck/dup barren pages; image is no longer a factor).
+- `fetch_usable_page` is not built here — it moves to the Add/swipe_select pass (still needed there for in-deck/dup barren pages; image is no longer a factor).

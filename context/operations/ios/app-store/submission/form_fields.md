@@ -2,8 +2,7 @@
 
 Text to paste into App Store Connect fields.
 
-Release-note rule: keep every "What's New" within 500 characters, which is Android's
-limit, so both stores ship the same notes.
+Release-note rule: keep every "What's New" within 500 characters, which is Android's limit, so both stores ship the same notes.
 
 ---
 
@@ -49,19 +48,15 @@ Built for players who want a fast, focused mobile experience, not another clutte
 
 ## What's New in This Version
 
-Lives in [`../../../store-submissions/`](../../../store-submissions/), one
-directory per version, because the same text goes to Play. Paste from
-`store-submissions/<version>/whats_new.md`.
+Lives in [`../../../store-submissions/`](../../../store-submissions/), one directory per version, because the same text goes to Play. Paste from `store-submissions/<version>/whats_new.md`.
 
-From 1.10.2 on, both stores get the same text. Releases through 1.10.1 are
-recorded as submitted, including the ones whose Play wording differed.
+From 1.10.2 on, both stores get the same text. Releases through 1.10.1 are recorded as submitted, including the ones whose Play wording differed.
 
 ---
 
 ## Keywords (max 100 characters, commas included)
 
-The field counts the separators, so a comma costs as much as a letter. This
-is 96. Do not pad it to the limit: a term added later has to fit.
+The field counts the separators, so a comma costs as much as a letter. This is 96. Do not pad it to the limit: a term added later has to fit.
 
 MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading card,deck building
 

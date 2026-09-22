@@ -29,8 +29,7 @@ One-time setup for certificates, App ID, and signing infrastructure.
 
 Used for deploying debug builds to physical devices.
 
-**Do NOT use Keychain Access → Certificate Assistant.** It consistently fails with
-"The specified item could not be found in the keychain." Use the CLI:
+**Do NOT use Keychain Access → Certificate Assistant.** It consistently fails with "The specified item could not be found in the keychain." Use the CLI:
 
 ```bash
 openssl genrsa -out zwipe-dev-key.pem 2048
@@ -168,15 +167,13 @@ security find-identity -v -p codesigning
 | `distribution.cer` | `~/certs/` | Re-downloadable, but keep a copy |
 | `Zwipe_App_Store.mobileprovision` | `~/certs/` | Re-downloadable, but keep a copy |
 
-**Keep `~/certs/` backed up** (Time Machine, iCloud, etc.). Private keys cannot be
-recovered from Apple.
+**Keep `~/certs/` backed up** (Time Machine, iCloud, etc.). Private keys cannot be recovered from Apple.
 
 ---
 
 ## Why Keychain signing is required
 
-The `keyring` crate uses iOS Keychain for session storage. Without the `keychain-access-groups`
-entitlement in `zwiper/Entitlements.plist`, every cold launch produces:
+The `keyring` crate uses iOS Keychain for session storage. Without the `keychain-access-groups` entitlement in `zwiper/Entitlements.plist`, every cold launch produces:
 ```
 Platform secure storage failure: A required entitlement isn't present
 ```

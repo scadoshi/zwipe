@@ -1,7 +1,6 @@
 # Project Development Tracker
 
-> **Dead index.** The `project/` files linked below were removed long ago; this
-> page is kept only as a record of how the docs used to be organized.
+> **Dead index.** The `project/` files linked below were removed long ago; this page is kept only as a record of how the docs used to be organized.
 
 
 Tracks project development status and provides development context for AI assistants.

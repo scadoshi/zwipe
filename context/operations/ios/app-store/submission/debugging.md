@@ -24,8 +24,7 @@ New apps and app updates must be built with the latest public (GM) versions of X
 and the iOS, macOS, watchOS, and tvOS SDKs. Apps built with beta versions aren't allowed.
 ```
 
-This error appears on the **Distribution** tab in App Store Connect.
-The same builds show **"Ready to Submit"** on the **TestFlight** tab with no warnings.
+This error appears on the **Distribution** tab in App Store Connect. The same builds show **"Ready to Submit"** on the **TestFlight** tab with no warnings.
 
 ---
 
@@ -70,9 +69,7 @@ The same builds show **"Ready to Submit"** on the **TestFlight** tab with no war
 11. Binary metadata is identical to a native Xcode-compiled binary (confirmed via Test 1)
 
 ### Conclusion
-**The binary is valid.** Apple's own validation tool confirms it. The "beta Xcode" error
-is stuck on the app record in App Store Connect, likely because the app was first created
-and uploaded from macOS 26.3.1 before Xcode 26.4 went GM on Mar 24.
+**The binary is valid.** Apple's own validation tool confirms it. The "beta Xcode" error is stuck on the app record in App Store Connect, likely because the app was first created and uploaded from macOS 26.3.1 before Xcode 26.4 went GM on Mar 24.
 
 **Next step:** Contact Apple Developer Support; we've exhausted all technical options.
 
@@ -85,8 +82,7 @@ and uploaded from macOS 26.3.1 before Xcode 26.4 went GM on Mar 24.
 - `altool --upload-app` succeeded with ZERO errors
 - App Store Connect **STILL shows the same "beta Xcode" error**
 
-**Conclusion: The error is NOT tied to the app record.** A brand new app with a different
-bundle ID gets the same rejection. This rules out a cached/stuck flag on the original app.
+**Conclusion: The error is NOT tied to the app record.** A brand new app with a different bundle ID gets the same rejection. This rules out a cached/stuck flag on the original app.
 
 ### Updated conclusion (2026-03-29)
 Every technical avenue has been exhausted:
@@ -109,8 +105,7 @@ The error appears to be either:
 - `developer.apple.com/forums/thread/806141`: "Clarification on Mandatory Xcode Version", Xcode 26 requirements discussion
 - `developer.apple.com/forums/thread/725737`: "App created outside Xcode gets 'Xcode Beta'", non-Xcode toolchain flagging
 
-**Key finding: Apple uses a backend flag system.**
-Apple's App Store Connect has a server-side flag that controls which Xcode versions are accepted for Distribution (separate from TestFlight/altool validation). Multiple developers across different Xcode releases report that **this flag lags behind the actual release by days**. This is a known pattern: "this happens every time new tools are released."
+**Key finding: Apple uses a backend flag system.** Apple's App Store Connect has a server-side flag that controls which Xcode versions are accepted for Distribution (separate from TestFlight/altool validation). Multiple developers across different Xcode releases report that **this flag lags behind the actual release by days**. This is a known pattern: "this happens every time new tools are released."
 
 This perfectly explains our situation:
 - Xcode 26.4 released Mar 24 (5 days ago): flag likely not updated yet
@@ -131,13 +126,10 @@ This perfectly explains our situation:
 - Install Xcode 26.3 side-by-side and rebuild, its backend flag should already be active since it's been out longer. Requires downloading from developer.apple.com/download/more.
 
 ### TestFlight also blocked (2026-03-29)
-TestFlight external distribution (Submit for Beta Review) also rejects with the same error.
-Internal testing status shows "Ready to Submit" but cannot actually be submitted.
-Same backend flag blocks both App Store and TestFlight submission paths.
+TestFlight external distribution (Submit for Beta Review) also rejects with the same error. Internal testing status shows "Ready to Submit" but cannot actually be submitted. Same backend flag blocks both App Store and TestFlight submission paths.
 
 ### Attempting Xcode 26.3 workaround (2026-03-29)
-Since Apple's backend flag hasn't whitelisted Xcode 26.4 yet (released Mar 24, 5 days ago),
-rebuilding with Xcode 26.3 (which has been out for months) should bypass the flag.
+Since Apple's backend flag hasn't whitelisted Xcode 26.4 yet (released Mar 24, 5 days ago), rebuilding with Xcode 26.3 (which has been out for months) should bypass the flag.
 
 Steps:
 1. Download Xcode 26.3 from developer.apple.com/download/all
@@ -153,29 +145,21 @@ Steps:
 - This rules out the "backend flag lag" theory, Xcode 26.3 has been out for months
 
 ### Test 1 result: Native Swift binary (completed 2026-03-29)
-Built a minimal Swift iOS app with `xcrun -sdk iphoneos swiftc`, packaged identically
-to our Zwipe builds, uploaded to the Zwipe Test app (com.scadoshi.zwipetest).
+Built a minimal Swift iOS app with `xcrun -sdk iphoneos swiftc`, packaged identically to our Zwipe builds, uploaded to the Zwipe Test app (com.scadoshi.zwipetest).
 
 **Result: SAME "beta Xcode" ERROR.**
 
-**This definitively proves the issue is ACCOUNT-LEVEL, not binary/toolchain-level.**
-A native Swift binary compiled by Apple's own compiler, with Apple's own SDK and linker,
-gets rejected with the same error. Rust, Dioxus, cargo: none of these are the problem.
+**This definitively proves the issue is ACCOUNT-LEVEL, not binary/toolchain-level.** A native Swift binary compiled by Apple's own compiler, with Apple's own SDK and linker, gets rejected with the same error. Rust, Dioxus, cargo: none of these are the problem.
 
 ### Root cause: Account-level issue
 The "beta Xcode" error message is likely **misleading**. Possible actual causes:
-1. **Pending license agreement**: Apple may have updated the Developer Program License Agreement
-   and it hasn't been accepted yet. Check developer.apple.com/account for banners.
-2. **App Store Connect agreements**: paid apps agreement, tax forms, or updated terms
-   may need to be accepted. Check appstoreconnect.apple.com → Business tab.
-3. **Account flag**: the account may have been enrolled or first used while on beta macOS,
-   creating a server-side flag that blocks submission.
-4. **Apple-side bug**: their validation system may be broken for recently created accounts
-   or for accounts using Xcode 26.4.
+1. **Pending license agreement**: Apple may have updated the Developer Program License Agreement and it hasn't been accepted yet. Check developer.apple.com/account for banners.
+2. **App Store Connect agreements**: paid apps agreement, tax forms, or updated terms may need to be accepted. Check appstoreconnect.apple.com → Business tab.
+3. **Account flag**: the account may have been enrolled or first used while on beta macOS, creating a server-side flag that blocks submission.
+4. **Apple-side bug**: their validation system may be broken for recently created accounts or for accounts using Xcode 26.4.
 
 ### Status: Support ticket filed (2026-03-29)
-Filed with Apple Developer Support at developer.apple.com/contact.
-Awaiting response.
+Filed with Apple Developer Support at developer.apple.com/contact. Awaiting response.
 
 **Summary of evidence for Apple Support:**
 - 9 builds uploaded, 2 bundle IDs, 2 Xcode versions (26.3 + 26.4)
@@ -206,21 +190,17 @@ Still waiting on Apple Support. The issue is definitively account-level/server-s
 ### Apple Support response (2026-04-05, case 102855955579)
 Contact: Liping. Apologized for delay due to high volume.
 
-**Key finding: `altool` is deprecated** and can cause metadata parsing errors in App Store
-Connect. This may be the root cause, since altool could be injecting stale upload metadata that
-triggers the "beta Xcode" rejection even though validation passes.
+**Key finding: `altool` is deprecated** and can cause metadata parsing errors in App Store Connect. This may be the root cause, since altool could be injecting stale upload metadata that triggers the "beta Xcode" rejection even though validation passes.
 
 **Apple's recommended steps (in priority order):**
 
 1. **Use Xcode Organizer or Transporter** (most likely fix)
    - `altool` is deprecated and known to cause metadata parsing errors
    - Increment build number and upload via Xcode Organizer or Transporter (Mac App Store)
-   - This contradicts our earlier "Do not use Transporter" guidance, Apple is now
-     explicitly recommending it
+   - This contradicts our earlier "Do not use Transporter" guidance, Apple is now explicitly recommending it
 
 2. **Check third-party frameworks**
-   - If any embedded SDK/framework was compiled with a beta Xcode, it contaminates
-     the entire app submission
+   - If any embedded SDK/framework was compiled with a beta Xcode, it contaminates the entire app submission
    - For Zwipe: check if any linked Rust/Dioxus-generated dylibs carry beta metadata
    - Run: `otool -l <binary> | grep -A 5 LC_BUILD_VERSION` on every binary in the .app
 
@@ -229,12 +209,10 @@ triggers the "beta Xcode" rejection even though validation passes.
    - Since we set these manually via PlistBuddy, verify they're correct AFTER all patching
    - Run: `plutil -p $APP/Info.plist | grep -i DT` as final check before signing
 
-**Apple offered to escalate** to engineering if the issue persists after trying these steps.
-Reference App ID: 6761341603.
+**Apple offered to escalate** to engineering if the issue persists after trying these steps. Reference App ID: 6761341603.
 
 ### Next steps (updated 2026-04-05)
-1. **Try Transporter upload**: download from Mac App Store, increment build number, upload
-   the IPA through Transporter instead of altool
+1. **Try Transporter upload**: download from Mac App Store, increment build number, upload the IPA through Transporter instead of altool
 2. **If Transporter fails**: try Xcode Organizer (requires creating an .xcarchive wrapper)
 3. **If both fail**: reply to the support email requesting escalation to engineering
 4. **Check frameworks**: scan all binaries in .app for beta SDK metadata
@@ -250,9 +228,7 @@ Reference App ID: 6761341603.
 1. `xcrun altool` (builds 1–10)
 2. Transporter.app (build 11)
 
-**Conclusion:** The upload method is NOT the problem. Apple Support's first suggestion
-(switch from altool to Transporter) did not resolve the issue. Need escalation to
-engineering team as offered in case 102855955579.
+**Conclusion:** The upload method is NOT the problem. Apple Support's first suggestion (switch from altool to Transporter) did not resolve the issue. Need escalation to engineering team as offered in case 102855955579.
 
 ### Recommended reply to Apple
 Reply to case 102855955579 with:
@@ -263,30 +239,22 @@ Hi Liping,
 
 Thank you for your response. I followed all three steps:
 
-1. **Uploaded via Transporter**: build 11 uploaded successfully via Transporter.app
-   (not altool). Same "beta Xcode" rejection in App Store Connect.
+1. **Uploaded via Transporter**: build 11 uploaded successfully via Transporter.app (not altool). Same "beta Xcode" rejection in App Store Connect.
 
-2. **No third-party frameworks**: the binary is compiled entirely from source using
-   Apple's public SDK. There are no embedded third-party SDKs or frameworks.
+2. **No third-party frameworks**: the binary is compiled entirely from source using Apple's public SDK. There are no embedded third-party SDKs or frameworks.
 
-3. **Verified Info.plist DT keys**: DTXcode: 2640, DTXcodeBuild: 17E192, matching
-   Xcode 26.4 GM installed from the Mac App Store.
+3. **Verified Info.plist DT keys**: DTXcode: 2640, DTXcodeBuild: 17E192, matching Xcode 26.4 GM installed from the Mac App Store.
 
 Additional context from our earlier investigation:
 - 11 builds uploaded across 2 bundle IDs and 2 Xcode versions (26.3 + 26.4)
-- A native Swift binary compiled with `xcrun -sdk iphoneos swiftc` also receives
-  the same rejection
+- A native Swift binary compiled with `xcrun -sdk iphoneos swiftc` also receives the same rejection
 - `xcrun altool --validate-app` passes with zero errors on all builds
 - TestFlight shows all builds as "Ready to Submit"
 - Only "Add for Review" in App Store Connect rejects
 
-Since all three suggestions have been tried without success, and even a native Swift
-binary gets the same error, this appears to be an account-level or server-side issue.
-Could you please escalate to your engineering team as offered? App ID: 6761341603,
-Team ID: VV74WQ89GD.
+Since all three suggestions have been tried without success, and even a native Swift binary gets the same error, this appears to be an account-level or server-side issue. Could you please escalate to your engineering team as offered? App ID: 6761341603, Team ID: VV74WQ89GD.
 
-Thank you,
-Scotty
+Thank you, Scotty
 
 ---
 
@@ -298,10 +266,7 @@ Scotty
 
 Replied to both today with consolidated evidence and requested case merge.
 
-**New evidence discovered today:** Ran `xcrun altool --validate-app` against build 11 IPA.
-The call failed with HTTP 409 `ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE` (because build 11
-is already uploaded), but the same API response returned the build's current server-side
-state, which is the most important finding of this entire investigation:
+**New evidence discovered today:** Ran `xcrun altool --validate-app` against build 11 IPA. The call failed with HTTP 409 `ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE` (because build 11 is already uploaded), but the same API response returned the build's current server-side state, which is the most important finding of this entire investigation:
 
 ```
 buildBetaDetails:
@@ -313,12 +278,7 @@ appStoreVersions (version 1.0):
   appVersionState  : "PREPARE_FOR_SUBMISSION"
 ```
 
-**Apple's own App Store Connect API reports build 11 as `READY_FOR_BETA_SUBMISSION`** with
-no errors, warnings, or "beta Xcode" flags anywhere in the response. Only the App Store
-Connect *web UI* rejects the build on "Add for Review." This is the cleanest possible
-demonstration that the binary is fine by every Apple-side measurement, and the rejection
-is coming from a web UI layer check (likely an Xcode version whitelist that hasn't been
-updated to recognize 17E192, or a stale account flag).
+**Apple's own App Store Connect API reports build 11 as `READY_FOR_BETA_SUBMISSION`** with no errors, warnings, or "beta Xcode" flags anywhere in the response. Only the App Store Connect *web UI* rejects the build on "Add for Review." This is the cleanest possible demonstration that the binary is fine by every Apple-side measurement, and the rejection is coming from a web UI layer check (likely an Xcode version whitelist that hasn't been updated to recognize 17E192, or a stale account flag).
 
 **Apple-side tracing headers for the failing request** (for internal lookup by engineering):
 - `x-apple-jingle-correlation-key: GJABHNFTU4IOQFHMJ5HQGSH5QE`
@@ -339,27 +299,19 @@ Full raw log saved as `altool_build11_full.log` in this folder.
 3. Trace correlation key `GJABHNFTU4IOQFHMJ5HQGSH5QE` to the exact web UI check that's rejecting
 4. Merge cases 102855955579 and 102856406657 if possible
 
-**Waiting on:** Response from Pacey or Liping. Escalation to engineering was previously
-offered by Liping in case 102855955579; the new API-vs-web-UI evidence is intended to
-strongly motivate that escalation.
+**Waiting on:** Response from Pacey or Liping. Escalation to engineering was previously offered by Liping in case 102855955579; the new API-vs-web-UI evidence is intended to strongly motivate that escalation.
 
 ### Next steps if engineering escalation is slow
-1. **Try Xcode Organizer upload**: wrap .app in an .xcarchive and distribute via
-   Xcode's built-in pipeline (different metadata path than Transporter)
-2. **Strip custom DT plist keys**: let dx build generate plist, only patch required
-   fields (platforms, device family, icons, version), skip DT keys entirely
-3. **Build via Xcode project**: create a minimal Xcode project wrapping the binary,
-   archive and upload entirely through Xcode's tooling
-4. **New Apple Developer account**: nuclear option, fresh $99 enrollment to confirm
-   whether the issue is account-level
+1. **Try Xcode Organizer upload**: wrap .app in an .xcarchive and distribute via Xcode's built-in pipeline (different metadata path than Transporter)
+2. **Strip custom DT plist keys**: let dx build generate plist, only patch required fields (platforms, device family, icons, version), skip DT keys entirely
+3. **Build via Xcode project**: create a minimal Xcode project wrapping the binary, archive and upload entirely through Xcode's tooling
+4. **New Apple Developer account**: nuclear option, fresh $99 enrollment to confirm whether the issue is account-level
 
 ### Key observation
-**TestFlight accepts all builds as "Ready to Submit"** but Distribution rejects them.
-This suggests the error may not be about the binary at all.
+**TestFlight accepts all builds as "Ready to Submit"** but Distribution rejects them. This suggests the error may not be about the binary at all.
 
 ### Test 1 result: Binary comparison (completed 2026-03-29)
-Built a minimal Swift binary with `xcrun -sdk iphoneos swiftc` and compared Mach-O metadata.
-**The Zwipe binary is IDENTICAL to a native Xcode-compiled binary:**
+Built a minimal Swift binary with `xcrun -sdk iphoneos swiftc` and compared Mach-O metadata. **The Zwipe binary is IDENTICAL to a native Xcode-compiled binary:**
 - Both: `LC_BUILD_VERSION platform IOS, minos 16.0, sdk 26.4, tool LD 1266.8`
 - Same framework versions (UIKit 9126.4.27, Foundation 4424.1.101, libSystem 1356.0.0)
 - No `LC_VERSION_MIN_IPHONEOS` in either
@@ -406,8 +358,7 @@ Built a minimal Swift binary with `xcrun -sdk iphoneos swiftc` and compared Mach
 3. Product → Archive → Distribute → App Store Connect
 4. See if it also gets the beta Xcode error
 ```
-**If it fails:** Issue is account/cert/environment, not Rust.
-**If it succeeds:** Issue is something specific to our Rust-built binary.
+**If it fails:** Issue is account/cert/environment, not Rust. **If it succeeds:** Issue is something specific to our Rust-built binary.
 
 ### Test 2: Compare Mach-O metadata between Xcode binary and our binary
 **Purpose:** Find what's different.

@@ -2,8 +2,7 @@
 
 Deployment for the zite Dioxus web frontend. Hosted on GitHub Pages at `zwipe.net`.
 
-The pipeline runs automatically on push to `main` when files under `zite/**` change.
-Manual trigger is also available.
+The pipeline runs automatically on push to `main` when files under `zite/**` change. Manual trigger is also available.
 
 ---
 

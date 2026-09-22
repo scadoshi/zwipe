@@ -1,12 +1,10 @@
 # CLAUDE.md
 
-The rules for working in this repo. Everything here is enforced somewhere:
-by CI, by a reviewer, or by a bug we already shipped once.
+The rules for working in this repo. Everything here is enforced somewhere: by CI, by a reviewer, or by a bug we already shipped once.
 
 ## Project Overview
 
-Zwipe is a mobile-first Magic: The Gathering deck builder with swipe-based
-navigation, live on both stores. Full-stack Rust, hexagonal architecture.
+Zwipe is a mobile-first Magic: The Gathering deck builder with swipe-based navigation, live on both stores. Full-stack Rust, hexagonal architecture.
 
 - **zwipe-core/**: pure domain types, validation, business rules, and every HTTP contract; see the purity rules below
 - **zerver/**: Axum REST API with PostgreSQL, SQLx, JWT auth. Also builds `zervice`, the nightly Scryfall sync
@@ -63,11 +61,7 @@ dx build --release --platform desktop
 cargo sqlx prepare --workspace
 # Commit the generated .sqlx/ directory — CI builds use it instead of a live DB
 ```
-The workspace-root `.sqlx/` is the ONLY offline-data directory. Never create a
-crate-local `zerver/.sqlx/` (i.e., never run `cargo sqlx prepare` from inside
-`zerver/` without `--workspace`): the macros prefer it over the root, and a stale
-copy shadows correct data (broke the 2026-07-05 deploy; details in
-`operations/infrastructure/cicd.md`).
+The workspace-root `.sqlx/` is the ONLY offline-data directory. Never create a crate-local `zerver/.sqlx/` (i.e., never run `cargo sqlx prepare` from inside `zerver/` without `--workspace`): the macros prefer it over the root, and a stale copy shadows correct data (broke the 2026-07-05 deploy; details in `operations/infrastructure/cicd.md`).
 
 ## Architecture
 
@@ -97,10 +91,7 @@ src/lib/
     └── sqlx/         # Backend: SQLx repositories (Database* wrappers here)
 ```
 
-The frontend's API client is not in `outbound/` any more: it lives in the
-`zwipe-client` crate, which both clients call. zwiper's
-`outbound/` keeps what is genuinely platform-bound: session storage, the
-keyring, crash capture, opening URLs.
+The frontend's API client is not in `outbound/` any more: it lives in the `zwipe-client` crate, which both clients call. zwiper's `outbound/` keeps what is genuinely platform-bound: session storage, the keyring, crash capture, opening URLs.
 
 ### Key Patterns
 
@@ -121,8 +112,7 @@ keyring, crash capture, opening URLs.
 
 ## Environment Files
 
-Backend (`zerver/.env`): `DATABASE_URL`, `JWT_SECRET`, `BIND_ADDRESS`, `ALLOWED_ORIGINS`, `RESEND_API_KEY`, `RESEND_EMAIL_FROM`, `LOG_DIR`
-Frontend (`zwiper/.env`): `BACKEND_URL`, `RUST_LOG`, `RUST_BACKTRACE`
+Backend (`zerver/.env`): `DATABASE_URL`, `JWT_SECRET`, `BIND_ADDRESS`, `ALLOWED_ORIGINS`, `RESEND_API_KEY`, `RESEND_EMAIL_FROM`, `LOG_DIR` Frontend (`zwiper/.env`): `BACKEND_URL`, `RUST_LOG`, `RUST_BACKTRACE`
 
 ## Commit Guidelines
 
@@ -133,6 +123,12 @@ Frontend (`zwiper/.env`): `BACKEND_URL`, `RUST_LOG`, `RUST_BACKTRACE`
 - **Never** include AI-agent signatures in your commits.
     - Example: "Written with the help of Claude Opus 4.5"
     - Never commit with something like this in your message.
+
+## Markdown Conventions
+
+- **Do not hard-wrap prose.** One paragraph is one line; one bullet is one line. Let the editor or viewer soft-wrap it. Manual line breaks make every later edit a reflow.
+- Code fences, tables and indented blocks keep their own formatting.
+- No em dashes.
 
 ## Context Directory
 

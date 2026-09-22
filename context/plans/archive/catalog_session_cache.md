@@ -1,21 +1,9 @@
 # Session catalog cache — prefetch filter metadata at app load
 
-**Status: DONE 2026-07-14 (built + tested in prod, archived). Client-only (zwiper). No
-new backend endpoints.** Unified `CatalogCache` in
-`zwiper/.../inbound/components/catalog_cache.rs`, provided in `spawn_upkeeper`; the
-public catalogs prefetch at startup, deck tags warm on session. Consumers migrated:
-`artist`, `set`, `category`, `keywords`, `oracle_words`, `other_types`, deck
-`create`/`edit`. The otag filter/picker (`oracle_tags.rs`, `oracle_tag_select.rs`)
-read the `oracle_tags` member but were left for the dictionary work to migrate.  
-**Related:** [`server_driven_catalogs.md`](server_driven_catalogs.md) (what catalogs
-exist), [`otags/dictionary_client.md`](otags/dictionary_client.md) (first consumer
-of oracle-tags cache), [`otags/dictionary_backend.md`](otags/dictionary_backend.md)
-(CF Rule 1 already edge-caches `/api/card/*` at 24h).
+**Status: DONE 2026-07-14 (built + tested in prod, archived). Client-only (zwiper). No new backend endpoints.** Unified `CatalogCache` in `zwiper/.../inbound/components/catalog_cache.rs`, provided in `spawn_upkeeper`; the public catalogs prefetch at startup, deck tags warm on session. Consumers migrated: `artist`, `set`, `category`, `keywords`, `oracle_words`, `other_types`, deck `create`/`edit`. The otag filter/picker (`oracle_tags.rs`, `oracle_tag_select.rs`) read the `oracle_tags` member but were left for the dictionary work to migrate.
+**Related:** [`server_driven_catalogs.md`](server_driven_catalogs.md) (what catalogs exist), [`otags/dictionary_client.md`](otags/dictionary_client.md) (first consumer of oracle-tags cache), [`otags/dictionary_backend.md`](otags/dictionary_backend.md) (CF Rule 1 already edge-caches `/api/card/*` at 24h).
 
-**One sentence:** fetch slow-changing card/deck **catalog lists once at app
-start** (with a **1-day TTL**), hold them above the router, and have filter
-screens / pickers / the dictionary **read the cache** instead of each firing
-`use_resource` on open.
+**One sentence:** fetch slow-changing card/deck **catalog lists once at app start** (with a **1-day TTL**), hold them above the router, and have filter screens / pickers / the dictionary **read the cache** instead of each firing `use_resource` on open.
 
 ---
 
@@ -34,14 +22,9 @@ open Oracle tags  → GET /api/card/oracle-tags   (picker + filter + soon dictio
 open Deck tags    → GET /api/deck/tags          (create/edit; authed)
 ```
 
-Those lists change when **Scryfall / zervice** refreshes (daily) or when **we
-deploy** catalog consts — not when the user opens the filter sheet. Re-fetching
-on every sheet open is wasteful (latency on mobile, redundant origin/CF work,
-janky skeletons mid-flow).
+Those lists change when **Scryfall / zervice** refreshes (daily) or when **we deploy** catalog consts — not when the user opens the filter sheet. Re-fetching on every sheet open is wasteful (latency on mobile, redundant origin/CF work, janky skeletons mid-flow).
 
-**CF already treats card metadata as 24h-stable** (Rule 1: `/api/card/*`, Edge
-TTL 24h). Client-side TTL of **1 day** matches that product reality and the
-nightly sync cadence.
+**CF already treats card metadata as 24h-stable** (Rule 1: `/api/card/*`, Edge TTL 24h). Client-side TTL of **1 day** matches that product reality and the nightly sync cadence.
 
 Existing precedents in `session_upkeep.rs`:
 
@@ -57,8 +40,7 @@ Existing precedents in `session_upkeep.rs`:
 
 ### In scope (public card catalogs — no auth)
 
-All are `GET /api/card/…`, public routes, **must not** send `Authorization`
-(so CF cache HITs keep working).
+All are `GET /api/card/…`, public routes, **must not** send `Authorization` (so CF cache HITs keep working).
 
 | Catalog | Client trait (today) | Typical consumer |
 |---------|----------------------|------------------|
@@ -71,9 +53,7 @@ All are `GET /api/card/…`, public routes, **must not** send `Authorization`
 | Oracle tags | `ClientGetOracleTags` | picker, filter, **dictionary** |
 | Languages | `ClientGetLanguages` | if/when a filter uses it; include if endpoint is live |
 
-Payload sizes are list-shaped (strings or small view structs). Oracle tags is
-the largest (~4.5k rows, ~0.5–0.7 MB JSON uncompressed / ~100–150 kB gzip) —
-already acceptable in memory for the dictionary plan.
+Payload sizes are list-shaped (strings or small view structs). Oracle tags is the largest (~4.5k rows, ~0.5–0.7 MB JSON uncompressed / ~100–150 kB gzip) — already acceptable in memory for the dictionary plan.
 
 ### In scope (authed, smaller)
 
@@ -120,8 +100,7 @@ Filters stop owning `use_resource(|| client.get_artists())` and instead:
 1. Read the session cache.
 2. If `Loading` → existing skeleton / "Loading…" chip empty state.
 3. If `Loaded` and not expired → use data.
-4. If `Failed` or **expired** → trigger refresh (see below); show last good data
-   if any (stale-while-revalidate) or empty + toast.
+4. If `Failed` or **expired** → trigger refresh (see below); show last good data if any (stale-while-revalidate) or empty + toast.
 
 ### 2. TTL = 1 day
 
@@ -129,18 +108,11 @@ Filters stop owning `use_resource(|| client.get_artists())` and instead:
 const CATALOG_TTL: Duration = Duration::from_secs(24 * 60 * 60);
 ```
 
-- On read: if `now - fetched_at >= CATALOG_TTL`, schedule a background re-fetch
-  for that kind (or all kinds).
-- **Stale-while-revalidate preferred:** keep showing `Loaded` data while a
-  refresh is in flight so filters never blank mid-session after 24h of continuous
-  use (rare for mobile, but cheap).
-- Cold start with empty store: fetch immediately (do not wait for first filter
-  open).
+- On read: if `now - fetched_at >= CATALOG_TTL`, schedule a background re-fetch for that kind (or all kinds).
+- **Stale-while-revalidate preferred:** keep showing `Loaded` data while a refresh is in flight so filters never blank mid-session after 24h of continuous use (rare for mobile, but cheap).
+- Cold start with empty store: fetch immediately (do not wait for first filter open).
 
-**Why 1 day (not "once per launch" only):** a user can leave the app process
-alive for days on iOS/Android; launch-once is not enough. Aligns with CF 24h and
-zervice cadence. **Disk persistence across process death is optional Phase 2**
-(see below) — Phase 1 is in-memory + refetch when expired or process restarts.
+**Why 1 day (not "once per launch" only):** a user can leave the app process alive for days on iOS/Android; launch-once is not enough. Aligns with CF 24h and zervice cadence. **Disk persistence across process death is optional Phase 2** (see below) — Phase 1 is in-memory + refetch when expired or process restarts.
 
 ### 3. When to fetch
 
@@ -151,39 +123,27 @@ zervice cadence. **Disk persistence across process death is optional Phase 2**
 | Consumer finds expired / Failed | Single-flight re-fetch for that kind (dedupe concurrent callers). |
 | Pull-to-refresh | **Not required** for MVP. |
 | Manual "refresh cache" in Profile | **No.** Cold start (app fully quit / process killed) clears
-  session memory and re-prefetches on next launch — enough for users and for
-  owner testing. No Profile system-row; no "cache" language in the UI. Per-screen
-  toast + retry only if a fetch **Failed**, not for "force freshness." |
+  session memory and re-prefetches on next launch — enough for users and for owner testing. No Profile system-row; no "cache" language in the UI. Per-screen toast + retry only if a fetch **Failed**, not for "force freshness." |
 
-Do **not** block first paint of Home on catalog completion — fire-and-forget
-background, same as changelog.
+Do **not** block first paint of Home on catalog completion — fire-and-forget background, same as changelog.
 
 ### 4. Single-flight / no stampede
 
-Multiple filters must not each start a full artists fetch if the cache is empty.
-Pattern: one `fetching: bool` or shared future per kind (mirror
-`EnsureFresh` single-flight spirit). Startup already serializes via one
-`use_future` (or one task with `join_all`).
+Multiple filters must not each start a full artists fetch if the cache is empty. Pattern: one `fetching: bool` or shared future per kind (mirror `EnsureFresh` single-flight spirit). Startup already serializes via one `use_future` (or one task with `join_all`).
 
 ### 5. Auth & CF
 
-- Public catalog client methods **must stay bearer-free** (document in client
-  modules + this plan). Regression = silent CF MISS storm.
+- Public catalog client methods **must stay bearer-free** (document in client modules + this plan). Regression = silent CF MISS storm.
 - Deck tags: only with session; failures do not poison public catalogs.
 
 ### 6. Errors
 
-- Startup failure: log + `Failed`; **toast when a screen that needs the catalog
-  first observes Failed** (ToastProvider sits under the upkeeper — same note as
-  dictionary). Do not toast six times for six failed catalogs; prefer one
-  "Couldn't load card filters" or per-screen first use.
+- Startup failure: log + `Failed`; **toast when a screen that needs the catalog first observes Failed** (ToastProvider sits under the upkeeper — same note as dictionary). Do not toast six times for six failed catalogs; prefer one "Couldn't load card filters" or per-screen first use.
 - Partial success: independent per kind (`artists` Loaded, `sets` Failed is fine).
 
 ### 7. Remove-screen special case
 
-Keywords / oracle words on **remove** (and similar) use `DeckCards` context to
-extract terms from the current deck. Keep that path. Only the **global**
-`client.get_*` branch moves to the session cache (add-card filter path).
+Keywords / oracle words on **remove** (and similar) use `DeckCards` context to extract terms from the current deck. Keep that path. Only the **global** `client.get_*` branch moves to the session cache (add-card filter path).
 
 ---
 
@@ -206,36 +166,27 @@ No `zerver` / migration / `MIN_CLIENT_VERSION` changes.
 
 ### Phase 0 — Oracle tags only (can ship with dictionary)
 
-Dedicated `OracleTagCache` mirroring `ChangelogCache` (Loading / Loaded /
-Failed), fetch once at startup. Unblocks
-[`otags/dictionary_client.md`](otags/dictionary_client.md) without boiling the
-ocean. **No multi-kind TTL machinery yet** if we want the smallest dictionary
-PR — but prefer designing types so Phase 1 extends rather than replaces.
+Dedicated `OracleTagCache` mirroring `ChangelogCache` (Loading / Loaded / Failed), fetch once at startup. Unblocks [`otags/dictionary_client.md`](otags/dictionary_client.md) without boiling the ocean. **No multi-kind TTL machinery yet** if we want the smallest dictionary PR — but prefer designing types so Phase 1 extends rather than replaces.
 
 ### Phase 1 — All public card catalogs + 1-day TTL — **BUILT 2026-07-14**
 
 - Unified store, parallel prefetch, consumers migrated. ✅
 - Deck tags when session present. ✅
-- Drop per-open `use_resource` for global catalogs. ✅ (except the two otag files,
-  left for the dictionary work — they consume the `oracle_tags` member).
-- Single-flight per kind via a `fetching` flag; stale-while-revalidate keeps good
-  data on a failed refresh. Pending formal on-device test.
+- Drop per-open `use_resource` for global catalogs. ✅ (except the two otag files, left for the dictionary work — they consume the `oracle_tags` member).
+- Single-flight per kind via a `fetching` flag; stale-while-revalidate keeps good data on a failed refresh. Pending formal on-device test.
 
 ### Phase 2 — Optional durability (later)
 
-- Persist catalogs to local storage (platform keyring/fs/app data) with
-  `fetched_at`, hydrate on launch → fewer cold-start network hits.
+- Persist catalogs to local storage (platform keyring/fs/app data) with `fetched_at`, hydrate on launch → fewer cold-start network hits.
 - Still revalidate if TTL expired.
 - Only worth it if cold-start payload + flaky network become real pain; memory
   + CF HIT is already strong.
 
 ### Phase 3 — Nice-to-haves (not blocking)
 
-- Join changelog into the same "session remote data" module (different TTL /
-  fallback rules).
+- Join changelog into the same "session remote data" module (different TTL / fallback rules).
 - Metrics: time-to-first-filter-open with warm vs cold cache.
-- Explicit purge hook after rare mid-day catalog deploys (usually wait for TTL;
-  oracle-tag **descriptions** can lag CF 24h already — see dictionary_backend).
+- Explicit purge hook after rare mid-day catalog deploys (usually wait for TTL; oracle-tag **descriptions** can lag CF 24h already — see dictionary_backend).
 
 ---
 
@@ -274,8 +225,7 @@ Recommended order:
 
 ## Success criteria
 
-- Opening Artist / Keywords / Sets / Roles / Oracle tags after warm start does
-  **not** show a network-bound skeleton (data already `Loaded`).
+- Opening Artist / Keywords / Sets / Roles / Oracle tags after warm start does **not** show a network-bound skeleton (data already `Loaded`).
 - A long-lived process older than 24h revalidates without blanking the UI.
 - CF cache status for public catalog GETs remains HIT-capable (no auth header).
 - Dictionary and picker share one oracle-tag copy in memory.

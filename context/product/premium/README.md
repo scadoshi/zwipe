@@ -1,26 +1,14 @@
 # Premium tier: feature ideas
 
-Brainstormed 2026-06-10. This directory details every candidate feature for the
-paid tier (and the free features that exist to feed it). The monetization
-*decision* (freemium, subscription, $3–5/mo, no ads) lives in
-`../monetization.md`; this directory is the feature catalog under it.
+Brainstormed 2026-06-10. This directory details every candidate feature for the paid tier (and the free features that exist to feed it). The monetization *decision* (freemium, subscription, $3–5/mo, no ads) lives in `../monetization.md`; this directory is the feature catalog under it.
 
 ## Guiding principles
 
-- **The core loop is the swipe stack.** The most defensible premium features
-  make the stack itself smarter, not bolt on screens users have to find.
-- **Numbers free, intelligence paid.** Current price free, history + alerts
-  paid. Bracket number free, "why and how to move" paid. The free metric is
-  the acquisition surface; the paid layer explains and acts on it.
-- **Free tier = acquisition + moat.** Import/export, sharing, basic metrics,
-  collection tracking, and the bracket badge stay free, since they drive installs
-  and switching cost. Charging for them strangles growth.
-- **Honest subscription framing.** Features with ongoing cost (AI calls, price
-  polling, push notifications) justify recurring billing. Pure-math features
-  are cheap sweeteners, not the headline.
-- **Deck tags are the join key.** One closed vocabulary (shared with
-  `card_profiles.mechanical_categories`) powers consistency math, AI prompts,
-  stack ranking, and bracket heuristics. Build it once, consume it everywhere.
+- **The core loop is the swipe stack.** The most defensible premium features make the stack itself smarter, not bolt on screens users have to find.
+- **Numbers free, intelligence paid.** Current price free, history + alerts paid. Bracket number free, "why and how to move" paid. The free metric is the acquisition surface; the paid layer explains and acts on it.
+- **Free tier = acquisition + moat.** Import/export, sharing, basic metrics, collection tracking, and the bracket badge stay free, since they drive installs and switching cost. Charging for them strangles growth.
+- **Honest subscription framing.** Features with ongoing cost (AI calls, price polling, push notifications) justify recurring billing. Pure-math features are cheap sweeteners, not the headline.
+- **Deck tags are the join key.** One closed vocabulary (shared with `card_profiles.mechanical_categories`) powers consistency math, AI prompts, stack ranking, and bracket heuristics. Build it once, consume it everywhere.
 
 ## Feature catalog: by decision confidence (sorted 2026-06-10)
 
@@ -50,27 +38,16 @@ paid tier (and the free features that exist to feed it). The monetization
 | Synergy scores (Synergy chip, synergy-ordered search, community-signal blending) | shipped free to everyone | `smart_stack.md` |
 | Import/export, sharing, basic metrics | already free; never paywall migration | — |
 
-**Open question (2026-08-18):** synergy integration sat in the premium table
-from the original 2026-03 decision, but the scores shipped free. What takes its
-place in the paid tier is undecided; leaving the slot empty rather than
-inventing a replacement.
+**Open question (2026-08-18):** synergy integration sat in the premium table from the original 2026-03 decision, but the scores shipped free. What takes its place in the paid tier is undecided; leaving the slot empty rather than inventing a replacement.
 
 ### MAYBE pile: new ideas land here first
 
-Empty as of 2026-06-10; all previous maybes were sorted into the decided
-buckets above. When a new feature idea shows up, put it here with a lean and a
-one-line reason, and only promote it once explicitly decided.
+Empty as of 2026-06-10; all previous maybes were sorted into the decided buckets above. When a new feature idea shows up, put it here with a lean and a one-line reason, and only promote it once explicitly decided.
 
 ## Candidate launch trio
 
-Smart stack ordering, AI analysis with presets, and price intelligence. All
-three are "intelligence," all three have ongoing costs that make the
-subscription feel fair, and all three sit on the deck-tags + collection
-foundations that ship free first.
+Smart stack ordering, AI analysis with presets, and price intelligence. All three are "intelligence," all three have ongoing costs that make the subscription feel fair, and all three sit on the deck-tags + collection foundations that ship free first.
 
 ## Sequencing reality check
 
-Android ships before premium (decided 2026-06-10, see `progress/todo.md`), a
-bigger user surface first, then monetize. The tags/consistency foundation work
-is free-tier and can proceed in parallel; the IAP build is the gate on
-actually charging anyone.
+Android ships before premium (decided 2026-06-10, see `progress/todo.md`), a bigger user surface first, then monetize. The tags/consistency foundation work is free-tier and can proceed in parallel; the IAP build is the gate on actually charging anyone.

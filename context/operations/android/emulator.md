@@ -1,23 +1,14 @@
 # Android emulator: daily dev loop
 
-Copy-paste commands for running, wiping, and serving the app to the `Pixel_9a`
-emulator. First-time machine setup (Android Studio, SDK, NDK) lives in
-[setup.md](setup.md); release/Play builds in
-[play-store/submission/build.md](play-store/submission/build.md).
+Copy-paste commands for running, wiping, and serving the app to the `Pixel_9a` emulator. First-time machine setup (Android Studio, SDK, NDK) lives in [setup.md](setup.md); release/Play builds in [play-store/submission/build.md](play-store/submission/build.md).
 
 ---
 
 ## First time on a machine
 
-A Mac that has built Android release bundles may still have no emulator: the
-release path needs `build-tools`, `ndk`, `platform-tools` and `platforms`, none
-of which include the emulator or any system image. Symptom is
-`$ANDROID_HOME/emulator/emulator: no such file or directory` with an otherwise
-healthy SDK.
+A Mac that has built Android release bundles may still have no emulator: the release path needs `build-tools`, `ndk`, `platform-tools` and `platforms`, none of which include the emulator or any system image. Symptom is `$ANDROID_HOME/emulator/emulator: no such file or directory` with an otherwise healthy SDK.
 
-Android Studio does not ship `sdkmanager` on the command line, so fetch
-`cmdline-tools` first. Pull the current filename from Google's manifest rather
-than guessing the build number, which changes:
+Android Studio does not ship `sdkmanager` on the command line, so fetch `cmdline-tools` first. Pull the current filename from Google's manifest rather than guessing the build number, which changes:
 
 ```bash
 export ANDROID_HOME="$HOME/Library/Android/sdk"
@@ -42,17 +33,13 @@ yes | "$SDKM" --licenses > /dev/null
   -n Pixel_9a -k "system-images;android-36;google_apis;arm64-v8a" -d pixel_9
 ```
 
-Set up on the work Mac 2026-09-22: emulator 37.1.11.0, android-36 google_apis
-arm64-v8a. Both `sdkmanager` and `avdmanager` print a harmless
-`line 173: test: : integer expression expected` on every run; ignore it.
+Set up on the work Mac 2026-09-22: emulator 37.1.11.0, android-36 google_apis arm64-v8a. Both `sdkmanager` and `avdmanager` print a harmless `line 173: test: : integer expression expected` on every run; ignore it.
 
 ---
 
 ## 0. Environment: run once per shell (or add to `~/.zshrc`)
 
-The `JAVA_HOME` line is **mandatory**: Gradle's jlink transform dies on the
-system-default JDK 26 (fails in ~12s). Pointing `PATH` at the SDK lets you call
-`adb` / `emulator` directly.
+The `JAVA_HOME` line is **mandatory**: Gradle's jlink transform dies on the system-default JDK 26 (fails in ~12s). Pointing `PATH` at the SDK lets you call `adb` / `emulator` directly.
 
 ```bash
 export ANDROID_HOME="$HOME/Library/Android/sdk"
@@ -94,8 +81,7 @@ cd ~/Developer/zwipe/zwiper
 dx serve --platform android        # builds, installs, launches, hot-reloads on edits
 ```
 
-Fastest for iterating on UI. Caveat: it sometimes reuses a stale install instead
-of reinstalling; if changes don't appear, fall back to the manual loop.
+Fastest for iterating on UI. Caveat: it sometimes reuses a stale install instead of reinstalling; if changes don't appear, fall back to the manual loop.
 
 ### B. Manual build + install: bulletproof
 
@@ -110,8 +96,7 @@ adb shell am start -n com.scadoshi.zwipe/dev.dioxus.main.MainActivity
 adb shell pidof com.scadoshi.zwipe                         # PID must CHANGE; if it's the same, it didn't reload
 ```
 
-The debug APK is **large (~117 MB)**: unstripped native lib. If `install`
-returns nothing or fails, see Troubleshooting.
+The debug APK is **large (~117 MB)**: unstripped native lib. If `install` returns nothing or fails, see Troubleshooting.
 
 ---
 
@@ -151,13 +136,11 @@ adb shell dumpsys package com.scadoshi.zwipe | grep -E 'versionName|versionCode'
 
 ## 5. View the "Update required" gate screen
 
-The min-version gate only renders when the build is below the server minimum. To
-force it for visual work, temporarily flip `zwiper/src/bin/zwipe.rs`:
+The min-version gate only renders when the build is below the server minimum. To force it for visual work, temporarily flip `zwiper/src/bin/zwipe.rs`:
 
 ```rust
 // if upgrade_required.required() {
 if true || upgrade_required.required() {   // forces the update screen — REVERT before shipping
 ```
 
-The gate itself (server-driven `MIN_CLIENT_VERSION`) is documented in
-[`../../README.md`](../../README.md) (see "1.0.5, Min-Version Gate").
+The gate itself (server-driven `MIN_CLIENT_VERSION`) is documented in [`../../README.md`](../../README.md) (see "1.0.5, Min-Version Gate").

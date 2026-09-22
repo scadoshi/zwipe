@@ -17,8 +17,7 @@ All three are linked on the `zwipe.net/contribute` page.
 - **Domain**: zwipe.net verified in Resend dashboard
 - **DNS**: DKIM + SPF + DMARC records in Cloudflare, see [cloudflare.md](cloudflare.md)
 
-`RESEND_EMAIL_FROM` must use a real address (not `noreply@`); Resend flags no-reply
-addresses and spam filters penalise them.
+`RESEND_EMAIL_FROM` must use a real address (not `noreply@`); Resend flags no-reply addresses and spam filters penalise them.
 
 ## GitHub
 
@@ -28,11 +27,9 @@ addresses and spam filters penalise them.
 
 ## Tailscale
 
-- **Purpose**: private mesh network for SSHing into the server from anywhere, not used
-  for CI/CD (self-hosted runner eliminated that need)
+- **Purpose**: private mesh network for SSHing into the server from anywhere, not used for CI/CD (self-hosted runner eliminated that need)
 - **Tag**: `tag:ci` (used for ACL rules)
-- **OAuth credential**: `github-actions` with `Devices::Core::Write` + `Auth Keys::Write`
-  scopes (kept for reference, not used in current workflow)
+- **OAuth credential**: `github-actions` with `Devices::Core::Write` + `Auth Keys::Write` scopes (kept for reference, not used in current workflow)
 
 ## Cloudflare
 

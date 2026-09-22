@@ -1,7 +1,6 @@
 # Backlog
 
-What might get built next. The app has been live since June 2026, so
-nothing here is a launch dependency; `todo.md` holds what is actually open.
+What might get built next. The app has been live since June 2026, so nothing here is a launch dependency; `todo.md` holds what is actually open.
 
 ---
 
@@ -9,45 +8,22 @@ nothing here is a launch dependency; `todo.md` holds what is actually open.
 
 - **Deck Migration, Archidekt SHIPPED (2026-06-10), Moxfield DENIED**: Archidekt URL import landed in 1.0.5 (the plan doc `context/plans/deck_import.md` is gone, with no archived copy). Moxfield support denied API access (2026-06-10), policy excludes deckbuilding apps. They plan a scoped deck-export endpoint for such services (no ETA, announced via their help pages when live); periodically check their help pages and re-request access then. The text-paste importer covers Moxfield users meanwhile.
 - **recommander.cards integration, gated on a dedicated API key.** https://recommander.cards/ is a third-party card-suggestion engine we'd like Zwipe to consume for recommendation data. **Finding (2026-06-23): the public endpoint's rate limit is far too low to be viable, on the order of ~10 requests/hour.** Two ways it breaks: (1) all Zwipe traffic would funnel through our single backend, exhausting that hourly cap in seconds; (2) if instead clients called it directly, an IP-keyed limit collides for mobile users sharing a Wi-Fi network (same public IP), throttling each other. So the integration is **only viable with a dedicated API key carrying production-grade limits.** Until then, don't build against it (we already have our own recommendation data to fall back on). Outreach is in progress; specifics are kept out of this public repo (local notes only). (noted 2026-06-09; rate-limit constraint added 2026-06-23)
-- **Deck import atomicity (#7): SHIPPED 2026-07-27** (`b4cc65bb`): `apply_import_batch` runs lock + limit-check + upsert + replace-reconcile in one tx (`FOR UPDATE` closes the concurrent-import TOCTOU; `create_deck_card` got the same fix). 5 new `#[sqlx::test]` cases incl. the race, plus a live E2E pass (real text imports + the real Archidekt Satya deck, set-equality-verified). Plan archived at `context/plans/archive/import_atomicity.md`.
-**Done & removed:** Split `CardFilter` into `CardCriteria` + `CardQuery` + `Cards`, executed 2026-07-02 (`e681e58f`), wire unchanged, on main awaiting the next release. Outcome in `../README.md`; plan doc deleted.
+- **Deck import atomicity (#7): SHIPPED 2026-07-27** (`b4cc65bb`): `apply_import_batch` runs lock + limit-check + upsert + replace-reconcile in one tx (`FOR UPDATE` closes the concurrent-import TOCTOU; `create_deck_card` got the same fix). 5 new `#[sqlx::test]` cases incl. the race, plus a live E2E pass (real text imports + the real Archidekt Satya deck, set-equality-verified). Plan archived at `context/plans/archive/import_atomicity.md`. **Done & removed:** Split `CardFilter` into `CardCriteria` + `CardQuery` + `Cards`, executed 2026-07-02 (`e681e58f`), wire unchanged, on main awaiting the next release. Outcome in `../README.md`; plan doc deleted.
 
 ---
 
 ## Weekly Badges + Stats / Share Cards (gamification; pairs with future social)
 
-**Promoted to a full plan 2026-07-06: [`../plans/social-features/`](../plans/social-features/overview.md)
-(weekly badges + owner-curated featured decks with MVPs). The plan carries
-these decisions forward; this section stays as the original rationale.**
+**Promoted to a full plan 2026-07-06: [`../plans/social-features/`](../plans/social-features/overview.md) (weekly badges + owner-curated featured decks with MVPs). The plan carries these decisions forward; this section stays as the original rationale.**
 
-**Backlogged 2026-07-02.** A weekly retention loop: at week close, categorize each
-active user's week into **1–3 badges** ("Swipe King" volume, "The Controller"
-taste, "Ultimate Indecision" quirk), surfaced as a "Your week" recap on next open
-plus a badge-history/stats page. The recap doubles as a **shareable card**
-(Wrapped-style, terminal aesthetic): viral value without social infrastructure.
+**Backlogged 2026-07-02.** A weekly retention loop: at week close, categorize each active user's week into **1–3 badges** ("Swipe King" volume, "The Controller" taste, "Ultimate Indecision" quirk), surfaced as a "Your week" recap on next open plus a badge-history/stats page. The recap doubles as a **shareable card** (Wrapped-style, terminal aesthetic): viral value without social infrastructure.
 
-- **Derive, don't collect.** Almost every badge/stat is a *join*, not new
-  collection: per-user card signal × `mechanical_categories` (archetypes), ×
-  `color_identity`, × `cmc` (curve taste), × `prices` (budget), × `edhrec_rank`
-  (hipster/meta). Lifetime volume badges are computable **today** from
-  `user_lifetime_counters` / `user_daily_activity` / `user_events`. Rule: only
-  add a counter when a named consumer exists.
-- **Data prerequisite: weekly windowing, ✅ BUILT (2026-07-02, on main).**
-  Ingest now bumps `user_week_signal` (directional swipes, searches,
-  added/skipped/maybed/removed per ISO week) and `user_week_facet_signal`
-  (accepts by mechanical category and color identity). One row per active user
-  per week; history accrues from the moment the server deploys.
-- **Badge job**: week-close cron (zervice pattern) computes 1–3 badges per
-  active user (v1: threshold rules + priority order, cap 3, ≥1 for any
-  activity) into `user_week_badges (user_id, week, badges)`.
-- **Social pairing (later)**: public profiles / leaderboards / seeing others'
-  badges is the natural extension, but it's a real subsystem (opt-in
-  visibility, moderation, blocking) and another privacy-posture change. The
-  private recap + share card ships first and stands alone.
+- **Derive, don't collect.** Almost every badge/stat is a *join*, not new collection: per-user card signal × `mechanical_categories` (archetypes), × `color_identity`, × `cmc` (curve taste), × `prices` (budget), × `edhrec_rank` (hipster/meta). Lifetime volume badges are computable **today** from `user_lifetime_counters` / `user_daily_activity` / `user_events`. Rule: only add a counter when a named consumer exists.
+- **Data prerequisite: weekly windowing, ✅ BUILT (2026-07-02, on main).** Ingest now bumps `user_week_signal` (directional swipes, searches, added/skipped/maybed/removed per ISO week) and `user_week_facet_signal` (accepts by mechanical category and color identity). One row per active user per week; history accrues from the moment the server deploys.
+- **Badge job**: week-close cron (zervice pattern) computes 1–3 badges per active user (v1: threshold rules + priority order, cap 3, ≥1 for any activity) into `user_week_badges (user_id, week, badges)`.
+- **Social pairing (later)**: public profiles / leaderboards / seeing others' badges is the natural extension, but it's a real subsystem (opt-in visibility, moderation, blocking) and another privacy-posture change. The private recap + share card ships first and stands alone.
 
-Related: `archive/swipe_memory.md` (the flush-ingest surface all of this rides
-on, executed 2026-07-02) and the now-live per-user `user_card_signal`
-collection.
+Related: `archive/swipe_memory.md` (the flush-ingest surface all of this rides on, executed 2026-07-02) and the now-live per-user `user_card_signal` collection.
 
 ---
 
@@ -62,13 +38,7 @@ Both are low-risk now, fine to leave; revisit with a bigger user base. Context: 
 
 ## AI Card Categorization: Layer 2 & 3 (CLOSED 2026-07-27: superseded by oracle tags)
 
-Layers 2 (LLM classification client) and 3 (fine-tuned model) were the
-improvement path for the Layer-1 oracle-text heuristic. The whole ladder is
-obsolete: Scryfall's community-maintained oracle tags now provide the
-human-accurate tagging these layers were meant to approximate, card roles
-derive from otag subtrees (`classify.rs` deleted 2026-07-13), and the only
-surviving text heuristic is the 4-category `oracle_tag_gaps` fallback. No AI
-categorization is planned; owner call 2026-07-27.
+Layers 2 (LLM classification client) and 3 (fine-tuned model) were the improvement path for the Layer-1 oracle-text heuristic. The whole ladder is obsolete: Scryfall's community-maintained oracle tags now provide the human-accurate tagging these layers were meant to approximate, card roles derive from otag subtrees (`classify.rs` deleted 2026-07-13), and the only surviving text heuristic is the 4-category `oracle_tag_gaps` fallback. No AI categorization is planned; owner call 2026-07-27.
 - Target accuracy: 95-99%
 - Build when: Layer 2 has run multiple cycles and tags have been spot-checked
 
@@ -92,32 +62,20 @@ The full implementation plan (taxonomy + schema) lived at `context/plans/mechani
 
 ## Named but never examined
 
-These have a title and nothing behind it. None has been costed, scoped, or
-argued for; they are here so the idea is not lost, not because a case has
-been made. Treat any of them as a blank page.
+These have a title and nothing behind it. None has been costed, scoped, or argued for; they are here so the idea is not lost, not because a case has been made. Treat any of them as a blank page.
 
 - Collection management: tracking which cards a user owns.
-- Multi-language UI. The card-language infrastructure is already done, so
-  this is about application text only.
-- A Redis cache in front of card data and query results. Nothing has
-  measured whether the current read path needs one.
+- Multi-language UI. The card-language infrastructure is already done, so this is about application text only.
+- A Redis cache in front of card data and query results. Nothing has measured whether the current read path needs one.
 - Query and indexing work on the database, same caveat: no measurement yet.
-- A health-monitoring dashboard. Structured logging is done, and zervice
-  failures already email an alert through `zervice-alert.sh` (wired via
-  `OnFailure=` on the unit), so the gap is a dashboard, not alerting.
+- A health-monitoring dashboard. Structured logging is done, and zervice failures already email an alert through `zervice-alert.sh` (wired via `OnFailure=` on the unit), so the gap is a dashboard, not alerting.
 
 ## Patch Discipline
-The App Store review cycle is 1–3 days per iOS submission. Backend patches ship in
-minutes via CI/CD. That asymmetry shapes everything:
+The App Store review cycle is 1–3 days per iOS submission. Backend patches ship in minutes via CI/CD. That asymmetry shapes everything:
 
-- Keep the iOS client **defensive**: handle unexpected server responses gracefully so
-  the server can be patched without forcing an app update
+- Keep the iOS client **defensive**: handle unexpected server responses gracefully so the server can be patched without forcing an app update
 - **Never edit existing migration files**: always add a new migration forward
-- **Semantic versioning**: `MAJOR.MINOR.PATCH`: bump PATCH for bug fixes, MINOR for
-  new features, MAJOR for breaking changes
-- **Deprecate before removing**: leave old endpoints alive for at least one app version
-  cycle before pulling them
-- **API versioning**: don't add `/v2/` preemptively, only version when you have an
-  actual breaking change and need both versions live simultaneously
-- **Breaking change checklist**: before removing or changing an endpoint signature,
-  check what version of zwiper is in the wild and whether old clients will break
+- **Semantic versioning**: `MAJOR.MINOR.PATCH`: bump PATCH for bug fixes, MINOR for new features, MAJOR for breaking changes
+- **Deprecate before removing**: leave old endpoints alive for at least one app version cycle before pulling them
+- **API versioning**: don't add `/v2/` preemptively, only version when you have an actual breaking change and need both versions live simultaneously
+- **Breaking change checklist**: before removing or changing an endpoint signature, check what version of zwiper is in the wild and whether old clients will break

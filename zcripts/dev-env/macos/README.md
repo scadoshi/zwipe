@@ -1,7 +1,6 @@
 # macOS Dev Environment
 
-Brings a fresh Mac up to "can run zwipe on the iOS Simulator." Apple Silicon
-(`arm64`) is the assumed and tested target.
+Brings a fresh Mac up to "can run zwipe on the iOS Simulator." Apple Silicon (`arm64`) is the assumed and tested target.
 
 ```bash
 ./zcripts/dev-env/macos/setup.sh     # first-time / fresh-machine setup
@@ -10,19 +9,13 @@ Brings a fresh Mac up to "can run zwipe on the iOS Simulator." Apple Silicon
 
 ## Prerequisites: full Xcode (not just Command Line Tools)
 
-zwiper is a mobile app; `dx serve` builds for the iOS Simulator target
-(`aarch64-apple-ios-sim`). That target needs the **full Xcode app** plus the
-iOS Simulator SDK and runtime. The Command Line Tools alone are **not enough** —
-a CLT-only machine builds fine right up until `cc` shells out to `xcrun` and
-fails with:
+zwiper is a mobile app; `dx serve` builds for the iOS Simulator target (`aarch64-apple-ios-sim`). That target needs the **full Xcode app** plus the iOS Simulator SDK and runtime. The Command Line Tools alone are **not enough** — a CLT-only machine builds fine right up until `cc` shells out to `xcrun` and fails with:
 
 ```
 xcrun: error: SDK "iphonesimulator" cannot be located
 ```
 
-`setup.sh` guards against this: it verifies `xcrun --show-sdk-path --sdk
-iphonesimulator` resolves and, if not, exits with the fix steps rather than
-letting the failure surface later inside a Rust build.
+`setup.sh` guards against this: it verifies `xcrun --show-sdk-path --sdk iphonesimulator` resolves and, if not, exits with the fix steps rather than letting the failure surface later inside a Rust build.
 
 ### One-time Xcode setup
 
@@ -46,24 +39,20 @@ xcrun --show-sdk-path --sdk iphonesimulator   # prints a path to an .sdk
 xcrun simctl list runtimes                     # lists an "iOS <n>" runtime
 ```
 
-> If `-downloadPlatform` warns about `CoreSimulator.framework ... no such
-> file`, the first-launch components didn't finish installing — run
-> `sudo xcodebuild -runFirstLaunch` and retry the download.
+> If `-downloadPlatform` warns about `CoreSimulator.framework ... no such file`, the first-launch components didn't finish installing — run `sudo xcodebuild -runFirstLaunch` and retry the download.
 
 ## What setup.sh does (macOS specifics)
 
 Beyond the [shared end state](../README.md#shared-end-state), the macOS script:
 
 - Requires the `iphonesimulator` SDK (exits early with fix steps otherwise).
-- Provisions a **6.5" iPhone 11 Pro Max** Simulator device if one doesn't
-  already exist (idempotent — re-running won't create duplicates).
+- Provisions a **6.5" iPhone 11 Pro Max** Simulator device if one doesn't already exist (idempotent — re-running won't create duplicates).
 - Installs Postgres via Homebrew (`postgresql@18`, matching the prod VPS) and starts it as a service.
 - Uses **peer auth** — the DB is owned by your macOS user, no password.
 
 ## Running on the iOS Simulator
 
-`dx serve --ios` installs into whatever Simulator is **booted**, so boot one
-first:
+`dx serve --ios` installs into whatever Simulator is **booted**, so boot one first:
 
 ```bash
 open -a Simulator                     # boots the default device
@@ -78,8 +67,7 @@ open -a Simulator                     # bring the window forward
 cd zwiper && dx serve --ios
 ```
 
-The Simulator persists across reboots — you only create it once (setup.sh does
-this for you); afterward just `boot` it.
+The Simulator persists across reboots — you only create it once (setup.sh does this for you); afterward just `boot` it.
 
 ### Managing Simulator devices
 
@@ -93,10 +81,7 @@ xcrun simctl shutdown "iPhone 11 Pro Max"  # free resources when done
 
 ## dx / dioxus version pinning
 
-`setup.sh` installs `dioxus-cli` **pinned** to the `dioxus` crate version in
-`zwiper/Cargo.toml` (`DX_VERSION` in the script). An unpinned `cargo install
-dioxus-cli` pulls the newest published version — including prereleases — which
-produces this at serve time:
+`setup.sh` installs `dioxus-cli` **pinned** to the `dioxus` crate version in `zwiper/Cargo.toml` (`DX_VERSION` in the script). An unpinned `cargo install dioxus-cli` pulls the newest published version — including prereleases — which produces this at serve time:
 
 ```
 🚫 dx and dioxus versions are incompatible!
@@ -110,21 +95,13 @@ It still builds, but to align an already-installed `dx`, match it by hand:
 cargo install dioxus-cli --version 0.7.10 --locked --force   # version from Cargo.toml
 ```
 
-> `--locked` is required. Without it, cargo re-resolves dx's transitive deps to
-> newest-compatible and pulls `git2 0.21`, which fails to compile `auth-git2`
-> (`no associated function ... credential_helper`). The `--locked` flag pins the
-> dep set dx was released with. `--force` overwrites an already-installed `dx`
-> of a different version (otherwise cargo aborts with "binary `dx` already
-> exists").
+> `--locked` is required. Without it, cargo re-resolves dx's transitive deps to newest-compatible and pulls `git2 0.21`, which fails to compile `auth-git2` (`no associated function ... credential_helper`). The `--locked` flag pins the dep set dx was released with. `--force` overwrites an already-installed `dx` of a different version (otherwise cargo aborts with "binary `dx` already exists").
 
 When you bump `dioxus` in `Cargo.toml`, bump `DX_VERSION` in `setup.sh` to match.
 
 ## reset.sh
 
-Drops and recreates the `zerver` database, regenerates both `.env` files, and
-re-applies migrations. It does **not** touch Xcode, Homebrew, the Rust
-toolchain, or your Simulators — it's purely a local-database reset. It prompts
-before dropping.
+Drops and recreates the `zerver` database, regenerates both `.env` files, and re-applies migrations. It does **not** touch Xcode, Homebrew, the Rust toolchain, or your Simulators — it's purely a local-database reset. It prompts before dropping.
 
 ## Troubleshooting
 

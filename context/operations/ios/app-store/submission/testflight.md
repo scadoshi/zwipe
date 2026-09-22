@@ -1,7 +1,6 @@
 # TestFlight (beta distribution)
 
-Beta App Description (for App Store Connect → TestFlight) + the invite message to
-send testers.
+Beta App Description (for App Store Connect → TestFlight) + the invite message to send testers.
 
 ---
 

@@ -1,8 +1,6 @@
 # Video 6: Make it yours
 
-**Theme:** Tag it, bracket it, know exactly what your deck is.
-**Priority:** P3.
-**Hook line:** "Tag it. Bracket it. Know exactly what your deck is."
+**Theme:** Tag it, bracket it, know exactly what your deck is. **Priority:** P3. **Hook line:** "Tag it. Bracket it. Know exactly what your deck is."
 
 ## Beats (~20s)
 
@@ -21,17 +19,13 @@
 1. **Tag picker** with type-ahead search + chip selection.
 2. **Power-level picker** (brackets 1–5, single select).
 3. **Other-tags** multi-select chips.
-4. **Archetype → oracle-tag seed**: select an archetype, otag chips appear
-   (overlaps video #11 beat 5; reuse the same take).
-5. **Theme picker**: 2-3 quick swaps (pick high-contrast themes: Gruvbox →
-   Synthwave '84 → a light one), plus the deck list re-skinned.
+4. **Archetype → oracle-tag seed**: select an archetype, otag chips appear (overlaps video #11 beat 5; reuse the same take).
+5. **Theme picker**: 2-3 quick swaps (pick high-contrast themes: Gruvbox → Synthwave '84 → a light one), plus the deck list re-skinned.
 
 ## Notes
-- Core pickers shipped 1.1.0–1.2.0; the otag seeding and 31-theme picker are
-  1.6.0. Film against the current store build.
+- Core pickers shipped 1.1.0–1.2.0; the otag seeding and 31-theme picker are 1.6.0. Film against the current store build.
 - Fast montage of pickers; this is a "personalization" vibe piece, keep it snappy.
-- The format beat was cut for time (format shows in the profile panel anyway);
-  restore it over the theme beat if themes get their own video later.
+- The format beat was cut for time (format shows in the profile panel anyway); restore it over the theme beat if themes get their own video later.
 
 ## Script (VO + final captions)
 
@@ -47,7 +41,4 @@ First-person dev voice, ~150 wpm.
 | 0:14–0:16 | Thirty one themes. This one's Gruvbox. This one hurts. | 31 themes. Yours everywhere. |
 | 0:16–0:20 | (end card, no VO) | |
 
-Delivery notes: "this one hurts" lands over the brightest light theme in the
-swap montage; pick the theme for the joke. The seeded otag chips in beat 5
-should visibly appear on selection, so film archetype-pick and chips in one
-take (same take covers video #11 beat 5).
+Delivery notes: "this one hurts" lands over the brightest light theme in the swap montage; pick the theme for the joke. The seeded otag chips in beat 5 should visibly appear on selection, so film archetype-pick and chips in one take (same take covers video #11 beat 5).

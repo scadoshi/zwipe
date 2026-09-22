@@ -1,7 +1,6 @@
 # Feature Requests
 
-Raw, user-sourced feature intake, distinct from `backlog.md` (curated/committed work).
-Items here are candidates to weight and promote into the backlog once prioritized.
+Raw, user-sourced feature intake, distinct from `backlog.md` (curated/committed work). Items here are candidates to weight and promote into the backlog once prioritized.
 
 **Weighting legend**
 - **Impact**: High / Med / Low, pull toward retention, the core swipe loop, or conversion.
@@ -18,23 +17,15 @@ Second source: **App Store review, 2026-07-02** (5-star "Awesome app" by Mr.K): 
 
 Marked ✅ in the tables below; numbers kept stable (plans/commits reference them).
 
-- **#8 Card name + oracle/stats detail**: name always shown; a util-bar eye
-  button opens a dialog with oracle text (mana/tap/symbol glyphs), type + rarity
+- **#8 Card name + oracle/stats detail**: name always shown; a util-bar eye button opens a dialog with oracle text (mana/tap/symbol glyphs), type + rarity
   + keyword chips, and P/T or loyalty. Reuses the expanded card-row detail markup.
-- **#5 Land count target**: land-target stepper in the deck form + a one-time
-  toast when the mainboard crosses the target (1.2.0).
-- **#19 Land-target auto-stop**: lands drop out of the swipe pool once the target
-  is met (`ensure_lands_excluded`, 1.2.0).
-- **#17 Per-field validation errors**: inline red outline + message under each
-  field (register / change-email / change-password / forgot-password).
-- **#15 Browse all tags up front**: tag-picker hint dialog lists every tag with
-  a `DeckTag::description()`.
-- **#10 Price threshold filter**: price min/max range in the filter sheet
-  (`filter/price.rs`).
-- **#21 Clone-deck polish**: one-line hint + navigates to the cloned deck on
-  Save (`clone_deck_dialog.rs`).
-- **#14 More theme tags**: covered by ongoing tag expansion (85→117 in 1.2.0);
-  add specific tags as they surface.
+- **#5 Land count target**: land-target stepper in the deck form + a one-time toast when the mainboard crosses the target (1.2.0).
+- **#19 Land-target auto-stop**: lands drop out of the swipe pool once the target is met (`ensure_lands_excluded`, 1.2.0).
+- **#17 Per-field validation errors**: inline red outline + message under each field (register / change-email / change-password / forgot-password).
+- **#15 Browse all tags up front**: tag-picker hint dialog lists every tag with a `DeckTag::description()`.
+- **#10 Price threshold filter**: price min/max range in the filter sheet (`filter/price.rs`).
+- **#21 Clone-deck polish**: one-line hint + navigates to the cloned deck on Save (`clone_deck_dialog.rs`).
+- **#14 More theme tags**: covered by ongoing tag expansion (85→117 in 1.2.0); add specific tags as they surface.
 
 ---
 

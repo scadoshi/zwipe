@@ -31,15 +31,12 @@ What to back up and restore when wiping this Mac to return to stable macOS.
 
 ## Server access: not at risk
 
-Prod is a Hetzner VPS as of the 2026-06-13 migration, so there is no keyboard to
-plug in. The way back after losing every SSH key is the provider's rescue
-console:
+Prod is a Hetzner VPS as of the 2026-06-13 migration, so there is no keyboard to plug in. The way back after losing every SSH key is the provider's rescue console:
 1. Hetzner Cloud console → the `zerver-prod` server → **Rescue** / **Console**
 2. Log in as `scadoshi` (or `root`) from the browser console
 3. Add your new SSH public key to `~/.ssh/authorized_keys`
 
-The home box that used to serve prod is retired, so its physical access is no
-longer the fallback. The server itself is unaffected by your Mac wipe.
+The home box that used to serve prod is retired, so its physical access is no longer the fallback. The server itself is unaffected by your Mac wipe.
 
 ---
 

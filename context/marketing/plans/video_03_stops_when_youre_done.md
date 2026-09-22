@@ -1,10 +1,6 @@
 # Video 3: The deck builder that stops when you're done
 
-**Theme:** Smart targeting keeps you on-plan without doing the math.
-**Priority:** P2. Video #2 dropped land auto-stop in its 1.3.0 rewrite (it leads
-on swipe memory now), so this video owns the full targeting story: budget,
-price filter, and land auto-stop together.
-**Hook line:** "Set a budget. It won't let you blow it."
+**Theme:** Smart targeting keeps you on-plan without doing the math. **Priority:** P2. Video #2 dropped land auto-stop in its 1.3.0 rewrite (it leads on swipe memory now), so this video owns the full targeting story: budget, price filter, and land auto-stop together. **Hook line:** "Set a budget. It won't let you blow it."
 
 ## Beats (~20s)
 
@@ -33,8 +29,7 @@ price filter, and land auto-stop together.
 
 ## Script (VO + final captions)
 
-First-person dev voice, ~150 wpm. Read aloud before filming; it should sound
-like showing a friend your phone, not narration.
+First-person dev voice, ~150 wpm. Read aloud before filming; it should sound like showing a friend your phone, not narration.
 
 | Time | VO | Caption |
 |------|----|---------|
@@ -46,6 +41,4 @@ like showing a friend your phone, not narration.
 | 0:15–0:16 | (silence, let the profile panel read) | |
 | 0:16–0:20 | (end card, no VO) | |
 
-Delivery notes: the "watch" before the toast is the whole performance, leave a
-breath there. Use a real deck with a real $40 target so the numbers on screen
-match the VO.
+Delivery notes: the "watch" before the toast is the whole performance, leave a breath there. Use a real deck with a real $40 target so the numbers on screen match the VO.
