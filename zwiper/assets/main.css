@@ -3676,12 +3676,16 @@ button {
     min-width: 0;
     max-width: 11rem;
     text-align: center;
-    /* Cards deal in from above: drop + settle with a slight tilt, while
-       flex-grow (animatable) eases the width share so a card arriving late
-       (MVPs land after the commander) grows in and its siblings smoothly
-       cede width instead of snapping smaller. `backwards` keeps a card
-       invisible through its stagger delay. */
+    /* Cards deal in from above: drop + settle with a slight tilt, at the size
+       they keep. The entrance deliberately does NOT animate width: every card
+       is in the DOM from the start, so growing them in sequence reflowed the
+       whole row on each one and read as a scramble rather than a deal.
+       `backwards` keeps a card invisible through its stagger delay. */
     animation: deck-featured-deal 0.78s cubic-bezier(0.33, 1, 0.68, 1) backwards;
+    /* A card that arrives after the others (MVPs land after the commander) is
+       a layout change, not an entrance, so its siblings ease their width share
+       here instead of snapping. */
+    transition: flex-grow 0.3s ease;
 }
 
 /* Staggered like a real deal: each card lands a beat after the one before. */
@@ -3703,12 +3707,10 @@ button {
 
 @keyframes deck-featured-deal {
     from {
-        flex-grow: 0.0001;
         opacity: 0;
         transform: translateY(-1.5rem) rotate(-3deg);
     }
     to {
-        flex-grow: 1;
         opacity: 1;
         transform: translateY(0) rotate(0deg);
     }
