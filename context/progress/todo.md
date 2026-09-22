@@ -17,6 +17,28 @@ at `context/archive/complete_2026_q1.md`.
   [`../operations/android/emulator.md`](../operations/android/emulator.md)
   works as written again.
 
+- [ ] **Update the Play listing, then audit the Apple one.** Repo-side copy
+  is now correct and shared; neither console has been touched, so the live
+  listings are unchanged until someone pastes.
+
+  Play needs the most: its full description had fallen several releases
+  behind the App Store's (no synergy suggestions, tag dictionary, MVPs,
+  share links, budget or land target) and claimed 14 themes when there are
+  31. Both descriptions now carry the same text, and the short description
+  says "Build Commander decks" instead of "trading-card decks". Paste all
+  three from
+  [`../operations/android/play-store/submission/form_fields.md`](../operations/android/play-store/submission/form_fields.md).
+
+  Apple needs an audit rather than a rewrite. The repo copy is current, but
+  nobody has checked the live listing against it, and the description there
+  now says "Built for Commander" plainly where it used to talk around the
+  name. Compare subtitle, promotional text, description and keywords against
+  [`../operations/ios/app-store/submission/form_fields.md`](../operations/ios/app-store/submission/form_fields.md)
+  and note anything that diverged.
+
+  Both are console work, no build required. Promotional text and the Play
+  listing update without a submission; the App Store description does too.
+
 - [ ] **Tooling: why did iOS switch to Device Hub?** Xcode is opening a different simulator surface than it used to, and the classic Simulator window behaved better with the tiling manager. Unexplained change, low urgency, but worth knowing before the 1.10.2 device pass. (The keyboard capture is separate and already understood: I/O → Keyboard → Connect Hardware Keyboard, ⇧⌘K.)
 
 - [ ] **Hands-on pass of the app before 1.10.2, mostly done.** The
