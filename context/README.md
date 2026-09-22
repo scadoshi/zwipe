@@ -23,6 +23,42 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 The running log, newest first. Update this when something ships;
 [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-09-22: reversible cards were unaddable, fixed for phones already in the field
+
+"invalid oracle id: failed to parse a uuid" had been failing deck adds since
+2026-08-06. Scryfall omits the top-level `oracle_id` on `reversible_card`
+layouts and puts one on each face; nothing filled it in, so the client sent an
+empty string and the server rejected it with a 422. 82 cards on prod, every one
+reversible, all of them live in search, and they were cards people want: Blood
+Crypt, Hallowed Fountain, Anointed Procession.
+
+The correct value was already in each row (both faces carry the same id, 82 of
+82), which made it repairable in the database rather than in the app. **Shipped
+without a client release: every install in the field, 1.10.1 included, could add
+those cards the moment the migration landed.**
+
+Three parts, all live:
+
+- **Migration** (`20260922120000`): backfills the ids, rebuilds `latest_cards`,
+  refreshes, and remaps deck references off any pick that changed.
+- **A new sort key.** Giving those rows an oracle id merges them into the group
+  holding every normal printing, and measured against the catalog 33 groups
+  would then have been won by the reversible printing and shown a doubled name
+  ("Blood Crypt // Blood Crypt"). Deprioritizing `reversible_card` last in the
+  `ORDER BY` takes all 71 affected groups to a normal printing. Caught by running
+  zervice locally before deploying, not by reading the code.
+- **Ingest** (`ScryfallData::backfill_oracle_id_from_faces`): lifts the id from
+  the faces before the delta comparison sees the card, so the next sync cannot
+  reintroduce it.
+
+A smaller bug went with it: the deck-aware search filter keeps null-oracle
+printings ("they can't match a deck's oracle_ids anyway"), so a reversible card
+already in your deck still appeared in search. It is now correctly excluded.
+
+Verified on prod after deploy: zero null ids, zero reversible printings in the
+view, `latest_cards` owned by `zervice` again (the recreate resets it; re-running
+`zcripts/server/sql/zervice_role.sql` is mandatory or the nightly refresh fails).
+
 ## 2026-09-13: the 53-hour outage, and the hardening that closes it
 
 Prod was down 2026-09-11 06:33 → 09-13 11:14 UTC. unattended-upgrades
