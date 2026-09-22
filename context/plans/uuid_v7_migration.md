@@ -1,8 +1,37 @@
 # UUID v4 → v7 everywhere
 
-**Status: HORIZON (owner sequencing recorded 2026-08-05). Not scheduled; do
-when there's time. Prerequisite-ordered: Postgres 18 first, then the data
-migration, then the call sites.**
+**Status: HORIZON, reviewed and left alone 2026-09-22 (owner: "seems like a
+huge lift"). Not scheduled. Read the measurements below before reopening.**
+
+Measured on prod 2026-09-22, because the headline justification is b-tree
+insert locality and that turns out not to apply here.
+
+Only three tables mint UUIDs database-side: `decks` (1,485 rows, 1,968
+lifetime inserts), `users` (986 rows, 1,004 inserts) and `zervice_metrics`.
+That is the entire population the locality argument covers. Random-order
+inserts cost nothing at a few thousand rows.
+
+The tables that are actually large are `card_oracle_tags` (236k rows, 27M
+lifetime inserts), `scryfall_data` (118k, 1.1 GB) and `card_profiles`
+(118k). Every one is Scryfall-owned and exempt, per the first landmine
+below. So the tables that would benefit are exactly the ones that must not
+be touched, and that will not change: what grows here is the mirrored
+catalog, not the IDs we mint.
+
+The costs are undiminished by any of that: every posted share link 404s or
+needs a permanent alias table, all users are logged out at once, and FK
+lockstep plus backdated v7 synthesis still have to be right.
+
+**If it is reopened, split it.** Minting v7 going forward is cheap and
+carries none of those costs: new rows get time-ordered IDs and
+`uuid_extract_timestamp`, and mixed v4/v7 in one column is fine since
+nothing in the schema or the app inspects the version. Rewriting existing
+IDs buys ordering for ~2,500 historical rows, and that is the half whose
+cost is real while its benefit is not.
+
+**Prerequisite 1 is partly done.** Prod runs PostgreSQL 18.6 and native
+`uuidv7()` works (verified by calling it). Still outstanding: CI's service
+image is `postgres:16` and local dev is on **15**.
 
 **One sentence:** move every ID we mint to time-ordered UUIDv7 (RFC 9562),
 new-row generation AND a one-time rewrite of existing v4 IDs, for b-tree
