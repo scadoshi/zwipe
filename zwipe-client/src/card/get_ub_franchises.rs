@@ -2,8 +2,7 @@
 
 use crate::{ClientError, ZwipeClient};
 use zwipe_core::{
-    domain::card::scryfall_data::universe::UbFranchiseView,
-    http::endpoints::card::GetUbFranchises,
+    domain::card::scryfall_data::universe::UbFranchiseView, http::endpoints::card::GetUbFranchises,
 };
 
 impl ZwipeClient {

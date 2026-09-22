@@ -25,10 +25,10 @@ pub mod get_oracle_tags;
 pub mod get_oracle_words;
 /// Fetch all printings of a card by oracle ID.
 pub mod get_printings;
-/// Fetch the Universes Beyond franchise catalog.
-pub mod get_ub_franchises;
 /// Fetch all card sets.
 pub mod get_sets;
+/// Fetch the Universes Beyond franchise catalog.
+pub mod get_ub_franchises;
 /// Search cards with filters.
 pub mod search_cards;
 /// Search commander candidates (popularity-ordered, banded, wildcarded).

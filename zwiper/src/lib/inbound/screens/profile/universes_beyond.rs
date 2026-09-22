@@ -6,6 +6,7 @@
 use crate::inbound::components::{
     auth::authed::use_authed,
     bottom_sheet::BottomSheet,
+    catalog_cache::CatalogCache,
     hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, open_and_record_hint},
     telemetry::vocabulary::{ProfileScreen, Screen},
 };
@@ -16,8 +17,7 @@ use zwipe_client::ZwipeClient;
 use zwipe_components::{Button, ButtonVariant};
 use zwipe_core::{
     domain::{
-        auth::models::session::Session, card::scryfall_data::universe::selectable_franchises,
-        user::models::hints::HINT_UNIVERSES_BEYOND_EXCEPTIONS,
+        auth::models::session::Session, user::models::hints::HINT_UNIVERSES_BEYOND_EXCEPTIONS,
     },
     http::contracts::user::HttpUpdatePreferences,
 };
@@ -37,7 +37,14 @@ pub fn UniversesBeyondExceptionsSheet(
     // (it is not an authed data call).
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
+    let cache: CatalogCache = use_context();
     let toast = use_toast();
+
+    // Server-driven franchise catalog; no compiled fallback. A failed fetch
+    // renders no chips and is reported by the catalog-failure toast, which is
+    // the right outcome: the picker writes a preference, so it needs the
+    // server regardless of what it could render.
+    use_effect(move || cache.ensure_ub_franchises(client));
     let authed = use_authed(Screen::Profile(ProfileScreen::Preferences));
 
     let mut draft: Signal<Vec<String>> = use_signal(Vec::new);
@@ -120,21 +127,28 @@ pub fn UniversesBeyondExceptionsSheet(
 
             div { class: "flex flex-wrap gap-1 flex-center",
                 {
-                    let mut franchises: Vec<_> = selectable_franchises().collect();
-                    franchises.sort_by_key(|f| f.name);
+                    // Served, not compiled: a new crossover release becomes
+                    // selectable on a deploy. Already sorted by the server.
+                    let franchises = cache
+                        .ub_franchises
+                        .cell()
+                        .read()
+                        .loaded()
+                        .cloned()
+                        .unwrap_or_default();
                     rsx! {
                         for franchise in franchises {
                             {
-                                let is_selected = draft().iter().any(|s| s == franchise.slug);
+                                let is_selected = draft().contains(&franchise.slug);
                                 rsx! {
                                     div {
                                         class: if is_selected { "chip selected" } else { "chip" },
                                         onclick: move |_| {
                                             let mut list = draft();
-                                            if let Some(i) = list.iter().position(|s| s == franchise.slug) {
+                                            if let Some(i) = list.iter().position(|s| *s == franchise.slug) {
                                                 list.remove(i);
                                             } else {
-                                                list.push(franchise.slug.to_string());
+                                                list.push(franchise.slug.clone());
                                             }
                                             draft.set(list);
                                         },

@@ -24,9 +24,9 @@ pub mod get_oracle_words;
 pub mod get_printings;
 /// Distinct set names handler.
 pub mod get_sets;
-/// Card search handler.
-pub mod search_card;
 /// Universes Beyond franchise catalog handler.
 pub mod get_ub_franchises;
+/// Card search handler.
+pub mod search_card;
 /// Commander search handler (popularity-ordered, banded, wildcarded).
 pub mod search_commanders;

@@ -1,7 +1,6 @@
 # Phase 1: serve the Universes Beyond franchise list
 
-**Status: PART-BUILT 2026-09-22, uncommitted. Everything below is done
-except the screen swap.**
+**Status: DONE 2026-09-22, rides 1.10.2.**
 
 `GET /api/card/ub-franchises` returns the franchises the exceptions picker
 offers, so a new crossover release becomes selectable on a deploy instead of
@@ -38,19 +37,17 @@ only half still waiting on a client build.
   `ensure_ub_franchises`, and entries in `prefetch_public` and
   `any_public_failed`.
 
-## Left to do
+## Also done
 
-1. `screens/profile/universes_beyond.rs` renders from the cache slot instead
-   of `selectable_franchises()`. The chips already sort server-side, so the
-   local `sort_by_key` goes away with it.
-2. Failure renders no chips. The catalog-failure toast added 2026-09-22
-   already fires for any public catalog, so this needs no second error
-   surface, and inventing one would mean two ways to say the same thing.
-3. The `any_public_failed` doc comment says "eight public catalogs". Nine.
+- `screens/profile/universes_beyond.rs` renders from the cache slot. The
+  local `sort_by_key` went with it, since the server sorts.
+- Failure renders no chips and is reported by the catalog-failure toast,
+  which already covers every public catalog.
+- The `any_public_failed` comment says nine catalogs now.
 
-## Watch for
+## Notes from the build
 
-The slot is fetched but unread until step 1 lands, which is dead code in the
-meantime. Do not commit the phase in that state.
-
-`UbFranchiseView` needed `serde` imported into `universe.rs`, which had none.
+- `universe.rs` had no `serde` import; the view type needed one.
+- `UbFranchiseView` owns its strings where `UbFranchise` used
+  `&'static str`, so the picker's slug comparisons needed adjusting.
+- zwiper has zero reads of `selectable_franchises` or `FRANCHISES` now.

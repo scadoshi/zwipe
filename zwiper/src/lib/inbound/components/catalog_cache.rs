@@ -25,8 +25,7 @@ use zwipe_client::ClientError;
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{
-        card_role::CardRoleView, oracle_tag::OracleTag,
-        scryfall_data::universe::UbFranchiseView,
+        card_role::CardRoleView, oracle_tag::OracleTag, scryfall_data::universe::UbFranchiseView,
     },
     deck::DeckTagView,
 };
@@ -198,7 +197,7 @@ impl CatalogCache {
     /// once a session exists, so an unloaded deck-tag catalog is ordinary
     /// rather than a failure.
     ///
-    /// The eight public catalogs are prefetched together and so fail together;
+    /// The nine public catalogs are prefetched together and so fail together;
     /// one answer for the set is the honest shape.
     pub fn any_public_failed(&self) -> bool {
         self.artists.is_failed()
