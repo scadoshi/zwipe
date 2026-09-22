@@ -8,7 +8,7 @@ use crate::{
         fields::text_input::TextInput,
         telemetry::vocabulary::{ProfileScreen, Screen, component},
     },
-    outbound::client::{ZwipeClient, user::delete_user::ClientDeleteUser},
+    outbound::client::ZwipeClient,
 };
 use dioxus::prelude::*;
 use std::time::Duration;

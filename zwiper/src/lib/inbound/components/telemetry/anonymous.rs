@@ -4,9 +4,7 @@
 //! identifies a funnel attempt, not a person or an install. Posts are
 //! fire-and-forget: a failed send is logged and dropped, never surfaced.
 
-use crate::outbound::client::{
-    ZwipeClient, metrics::record_anonymous_event::ClientRecordAnonymousEvent,
-};
+use crate::outbound::client::ZwipeClient;
 use dioxus::prelude::*;
 use std::sync::LazyLock;
 use uuid::Uuid;

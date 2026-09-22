@@ -28,16 +28,7 @@ use zwipe_core::domain::{
     deck::DeckTagView,
 };
 
-use crate::outbound::client::{
-    ZwipeClient,
-    card::{
-        get_artists::ClientGetArtists, get_card_roles::ClientGetCardRoles,
-        get_card_types::ClientGetCardTypes, get_keyword_reminders::ClientGetKeywordReminders,
-        get_keywords::ClientGetKeywords, get_oracle_tags::ClientGetOracleTags,
-        get_oracle_words::ClientGetOracleWords, get_sets::ClientGetSets,
-    },
-    deck::get_deck_tags::ClientGetDeckTags,
-};
+use crate::outbound::client::ZwipeClient;
 
 /// How long a fetched catalog stays fresh before a read schedules a revalidation.
 /// One day, aligned with the nightly sync and Cloudflare's 24h edge cache.

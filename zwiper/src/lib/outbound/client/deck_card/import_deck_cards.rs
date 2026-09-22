@@ -1,7 +1,6 @@
 //! Import cards into a deck from plain-text decklist.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use std::future::Future;
 use uuid::Uuid;
 use zwipe_core::{
     domain::{
@@ -11,21 +10,9 @@ use zwipe_core::{
     http::{contracts::deck_card::HttpImportDeckCards, endpoints::deck::ImportDeckCards},
 };
 
-/// Trait for importing cards into a deck from plain text.
-#[allow(missing_docs)]
-pub trait ClientImportDeckCards {
-    fn import_deck_cards(
-        &self,
-        deck_id: Uuid,
-        text: &str,
-        board: Option<&str>,
-        mode: ImportMode,
-        session: &Session,
-    ) -> impl Future<Output = Result<ImportDeckCardsResult, ClientError>> + Send;
-}
-
-impl ClientImportDeckCards for ZwipeClient {
-    async fn import_deck_cards(
+impl ZwipeClient {
+    /// Imports cards into a deck from plain text.
+    pub async fn import_deck_cards(
         &self,
         deck_id: Uuid,
         text: &str,

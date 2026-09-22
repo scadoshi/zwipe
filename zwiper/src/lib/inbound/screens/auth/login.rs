@@ -5,10 +5,7 @@ use crate::{
         components::{fields::text_input::TextInput, screen_header::ScreenHeader},
         router::Router,
     },
-    outbound::{
-        client::{ZwipeClient, auth::login::ClientLogin},
-        session::Persist,
-    },
+    outbound::{client::ZwipeClient, session::Persist},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

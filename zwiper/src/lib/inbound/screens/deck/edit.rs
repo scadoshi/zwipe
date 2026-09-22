@@ -22,11 +22,7 @@ use crate::{
         },
         router::Router,
     },
-    outbound::client::{
-        ClientError, ZwipeClient,
-        card::get_card::ClientGetCard,
-        deck::{get_deck::ClientGetDeck, update_deck_profile::ClientUpdateDeckProfile},
-    },
+    outbound::client::{ClientError, ZwipeClient},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

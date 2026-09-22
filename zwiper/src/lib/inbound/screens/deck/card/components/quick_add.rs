@@ -9,17 +9,11 @@
 //! result is a plain, alphabetically-ordered name match.
 
 use super::undo_log::{UndoAction, UndoLog};
-use crate::{
-    inbound::components::{
-        auth::authed::use_authed,
-        telemetry::{
-            usage_buffer::UsageBuffer,
-            vocabulary::{DeckScreen, Screen, component},
-        },
-    },
-    outbound::client::{
-        deck::search_deck_cards::ClientSearchDeckCards,
-        deck_card::create_deck_card::ClientCreateDeckCard,
+use crate::inbound::components::{
+    auth::authed::use_authed,
+    telemetry::{
+        usage_buffer::UsageBuffer,
+        vocabulary::{DeckScreen, Screen, component},
     },
 };
 use dioxus::prelude::*;

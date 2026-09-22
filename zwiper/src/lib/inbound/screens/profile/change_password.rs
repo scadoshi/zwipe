@@ -1,17 +1,14 @@
 //! Change password bottom sheet.
 
-use crate::{
-    inbound::components::{
-        alert_dialog::{
-            AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-            AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
-        },
-        auth::authed::use_authed,
-        bottom_sheet::BottomSheet,
-        fields::text_input::TextInput,
-        telemetry::vocabulary::{ProfileScreen, Screen},
+use crate::inbound::components::{
+    alert_dialog::{
+        AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
+        AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
     },
-    outbound::client::user::change_password::ClientChangePassword,
+    auth::authed::use_authed,
+    bottom_sheet::BottomSheet,
+    fields::text_input::TextInput,
+    telemetry::vocabulary::{ProfileScreen, Screen},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

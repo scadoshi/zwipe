@@ -10,7 +10,7 @@ use crate::{
         navigation::overlay_stack::use_overlay_back_action,
         telemetry::{usage_buffer::UsageBuffer, vocabulary::component},
     },
-    outbound::client::{ZwipeClient, card::get_printings::ClientGetPrintings},
+    outbound::client::ZwipeClient,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

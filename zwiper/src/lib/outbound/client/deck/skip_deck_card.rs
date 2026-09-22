@@ -1,7 +1,6 @@
 //! Post a single durable skip (and its undo) for a deck.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use std::future::Future;
 use uuid::Uuid;
 use zwipe_core::{
     domain::auth::models::session::Session,
@@ -11,26 +10,9 @@ use zwipe_core::{
     },
 };
 
-/// Trait for posting and undoing a single deck-card skip.
-#[allow(missing_docs)]
-pub trait ClientSkipDeckCard {
-    fn skip_deck_card(
-        &self,
-        deck_id: Uuid,
-        oracle_id: Uuid,
-        session: &Session,
-    ) -> impl Future<Output = Result<(), ClientError>> + Send;
-
-    fn unskip_deck_card(
-        &self,
-        deck_id: Uuid,
-        oracle_id: Uuid,
-        session: &Session,
-    ) -> impl Future<Output = Result<(), ClientError>> + Send;
-}
-
-impl ClientSkipDeckCard for ZwipeClient {
-    async fn skip_deck_card(
+impl ZwipeClient {
+    /// Posts and undoing a single deck-card skip.
+    pub async fn skip_deck_card(
         &self,
         deck_id: Uuid,
         oracle_id: Uuid,
@@ -40,7 +22,9 @@ impl ClientSkipDeckCard for ZwipeClient {
         self.call(SkipDeckCard(deck_id, body), Some(session)).await
     }
 
-    async fn unskip_deck_card(
+    /// Posts and undoing a single deck-card skip.
+
+    pub async fn unskip_deck_card(
         &self,
         deck_id: Uuid,
         oracle_id: Uuid,

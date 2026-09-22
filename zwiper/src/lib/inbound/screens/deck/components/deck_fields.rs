@@ -6,7 +6,7 @@ use crate::{
         info_button::InfoButton,
         telemetry::usage_buffer::UsageBuffer,
     },
-    outbound::client::{ZwipeClient, card::search_cards::ClientSearchCards},
+    outbound::client::ZwipeClient,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};

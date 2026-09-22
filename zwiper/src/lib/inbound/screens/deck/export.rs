@@ -11,7 +11,7 @@ use crate::{
         },
         router::Router,
     },
-    outbound::client::{ClientError, deck::get_deck::ClientGetDeck},
+    outbound::client::ClientError,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

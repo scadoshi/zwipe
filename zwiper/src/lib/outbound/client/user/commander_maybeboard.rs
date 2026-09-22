@@ -1,7 +1,6 @@
 //! Commander maybeboard endpoints (per-user "maybe this commander" list).
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use std::future::Future;
 use uuid::Uuid;
 use zwipe_core::{
     domain::{auth::models::session::Session, card::Card},
@@ -11,38 +10,18 @@ use zwipe_core::{
     },
 };
 
-/// Trait for reading and mutating the user's commander maybeboard.
-#[allow(missing_docs)]
-pub trait ClientCommanderMaybeboard {
-    fn get_commander_maybeboard(
+impl ZwipeClient {
+    /// Reads and mutating the user's commander maybeboard.
+    pub async fn get_commander_maybeboard(
         &self,
         session: &Session,
-    ) -> impl Future<Output = Result<Vec<Card>, ClientError>> + Send;
-
-    fn add_commander_maybeboard_card(
-        &self,
-        oracle_id: Uuid,
-        session: &Session,
-    ) -> impl Future<Output = Result<(), ClientError>> + Send;
-
-    fn remove_commander_maybeboard_card(
-        &self,
-        oracle_id: Uuid,
-        session: &Session,
-    ) -> impl Future<Output = Result<(), ClientError>> + Send;
-
-    fn clear_commander_maybeboard(
-        &self,
-        session: &Session,
-    ) -> impl Future<Output = Result<(), ClientError>> + Send;
-}
-
-impl ClientCommanderMaybeboard for ZwipeClient {
-    async fn get_commander_maybeboard(&self, session: &Session) -> Result<Vec<Card>, ClientError> {
+    ) -> Result<Vec<Card>, ClientError> {
         self.call(GetCommanderMaybeboard, Some(session)).await
     }
 
-    async fn add_commander_maybeboard_card(
+    /// Reads and mutating the user's commander maybeboard.
+
+    pub async fn add_commander_maybeboard_card(
         &self,
         oracle_id: Uuid,
         session: &Session,
@@ -51,7 +30,9 @@ impl ClientCommanderMaybeboard for ZwipeClient {
             .await
     }
 
-    async fn remove_commander_maybeboard_card(
+    /// Reads and mutating the user's commander maybeboard.
+
+    pub async fn remove_commander_maybeboard_card(
         &self,
         oracle_id: Uuid,
         session: &Session,
@@ -60,7 +41,9 @@ impl ClientCommanderMaybeboard for ZwipeClient {
             .await
     }
 
-    async fn clear_commander_maybeboard(&self, session: &Session) -> Result<(), ClientError> {
+    /// Reads and mutating the user's commander maybeboard.
+
+    pub async fn clear_commander_maybeboard(&self, session: &Session) -> Result<(), ClientError> {
         self.call(ClearCommanderMaybeboard, Some(session)).await
     }
 }

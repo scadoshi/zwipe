@@ -8,7 +8,6 @@ use crate::{
         fields::text_input::TextInput,
         telemetry::vocabulary::{ProfileScreen, Screen},
     },
-    outbound::client::user::change_email::ClientChangeEmail,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

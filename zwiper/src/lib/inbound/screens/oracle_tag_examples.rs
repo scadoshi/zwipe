@@ -12,24 +12,21 @@
 //! `oracle_tags_contains_any` criterion; the same linear `CardStack` +
 //! `SwipeStack` machinery as the add screen, minus all the deck side effects.
 
-use crate::{
-    inbound::{
-        components::{
-            auth::authed::use_authed,
-            hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, use_one_time_hint},
-            interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
-            navigation::overlay_stack::use_overlay_back,
-            screen_header::ScreenHeader,
-            telemetry::vocabulary::{OracleTagScreen, Screen, screen},
-        },
-        screens::deck::card::components::{
-            action_history::{BrowseAction, MAX_CARDS_IN_STACK},
-            card_info::{CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton},
-            card_stack::use_card_stack,
-            printing_sheet::PrintingSheet,
-        },
+use crate::inbound::{
+    components::{
+        auth::authed::use_authed,
+        hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, use_one_time_hint},
+        interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
+        navigation::overlay_stack::use_overlay_back,
+        screen_header::ScreenHeader,
+        telemetry::vocabulary::{OracleTagScreen, Screen, screen},
     },
-    outbound::client::card::search_cards::ClientSearchCards,
+    screens::deck::card::components::{
+        action_history::{BrowseAction, MAX_CARDS_IN_STACK},
+        card_info::{CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton},
+        card_stack::use_card_stack,
+        printing_sheet::PrintingSheet,
+    },
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

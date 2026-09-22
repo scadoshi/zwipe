@@ -13,10 +13,7 @@ use crate::{
         },
         auth::ensure_session::EnsureFresh,
     },
-    outbound::{
-        client::{ZwipeClient, user::mark_hint_shown::ClientMarkHintShown},
-        session::Persist,
-    },
+    outbound::{client::ZwipeClient, session::Persist},
 };
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;

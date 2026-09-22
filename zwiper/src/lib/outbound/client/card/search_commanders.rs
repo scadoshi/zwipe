@@ -6,7 +6,6 @@
 //! wins. (context/archive/commander_select_ordering.md)
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use std::future::Future;
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
@@ -15,18 +14,9 @@ use zwipe_core::{
     http::endpoints::card::SearchCommanders,
 };
 
-/// Trait for searching commander candidates.
-#[allow(missing_docs)]
-pub trait ClientSearchCommanders {
-    fn search_commanders(
-        &self,
-        card_filter: &CardQuery,
-        session: &Session,
-    ) -> impl Future<Output = Result<Vec<Card>, ClientError>> + Send;
-}
-
-impl ClientSearchCommanders for ZwipeClient {
-    async fn search_commanders(
+impl ZwipeClient {
+    /// Searches commander candidates.
+    pub async fn search_commanders(
         &self,
         card_filter: &CardQuery,
         session: &Session,

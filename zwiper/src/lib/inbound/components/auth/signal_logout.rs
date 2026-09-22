@@ -5,10 +5,7 @@
 
 use crate::{
     inbound::components::auth::ensure_session::EnsureFresh,
-    outbound::{
-        client::{ZwipeClient, auth::logout::ClientLogout},
-        session::Persist,
-    },
+    outbound::{client::ZwipeClient, session::Persist},
 };
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;

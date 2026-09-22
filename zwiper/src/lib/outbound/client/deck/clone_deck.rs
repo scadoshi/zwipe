@@ -1,7 +1,6 @@
 //! Clone an existing deck.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use std::future::Future;
 use uuid::Uuid;
 use zwipe_core::{
     domain::auth::models::session::Session,
@@ -11,19 +10,9 @@ use zwipe_core::{
     },
 };
 
-/// Trait for cloning an existing deck into a new one with a caller-chosen name.
-#[allow(missing_docs)]
-pub trait ClientCloneDeck {
-    fn clone_deck(
-        &self,
-        source_deck_id: Uuid,
-        body: &HttpCloneDeck,
-        session: &Session,
-    ) -> impl Future<Output = Result<HttpClonedDeck, ClientError>> + Send;
-}
-
-impl ClientCloneDeck for ZwipeClient {
-    async fn clone_deck(
+impl ZwipeClient {
+    /// Clones an existing deck into a new one with a caller-chosen name.
+    pub async fn clone_deck(
         &self,
         source_deck_id: Uuid,
         body: &HttpCloneDeck,

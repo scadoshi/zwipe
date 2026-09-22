@@ -26,14 +26,7 @@ use crate::{
             create::CreateDeckCommanderSeed,
         },
     },
-    outbound::{
-        client::{
-            ZwipeClient, changelog::get_changelog::ClientGetChangelog,
-            version::get_min_client_version::ClientGetMinClientVersion,
-        },
-        session::Persist,
-        theme_store::PersistTheme,
-    },
+    outbound::{client::ZwipeClient, session::Persist, theme_store::PersistTheme},
 };
 use chrono::{DateTime, Utc};
 use dioxus::prelude::*;
@@ -273,7 +266,6 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
         // and the server dedupes on crash_id.
         #[cfg(not(target_arch = "wasm32"))]
         if let Some(report) = crate::outbound::crash_store::take_pending() {
-            use crate::outbound::client::metrics::record_crash::ClientRecordCrash;
             let http = client.peek().clone();
             spawn(async move {
                 match http.record_crash(&report).await {

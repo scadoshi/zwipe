@@ -28,16 +28,7 @@ use crate::{
     },
     outbound::{
         buy_links,
-        client::{
-            ClientError, ZwipeClient,
-            card::get_card::ClientGetCard,
-            deck::{
-                delete_deck::ClientDeleteDeck, get_deck::ClientGetDeck,
-                get_deck_profile::ClientGetDeckProfile,
-                update_deck_profile::ClientUpdateDeckProfile,
-            },
-            deck_card::update_deck_card::ClientUpdateDeckCard,
-        },
+        client::{ClientError, ZwipeClient},
     },
 };
 use dioxus::prelude::*;

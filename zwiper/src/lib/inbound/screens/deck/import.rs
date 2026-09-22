@@ -2,22 +2,16 @@
 //! replace mode. Both sources import into the selected board of this deck and
 //! share the same result shape.
 
-use crate::{
-    inbound::{
-        components::{
-            auth::authed::use_authed,
-            chip::Chip,
-            hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
-            screen_header::ScreenHeader,
-            telemetry::vocabulary::{DeckScreen, Screen},
-        },
-        router::Router,
-        screens::deck::card::components::undo_log::UndoStore,
+use crate::inbound::{
+    components::{
+        auth::authed::use_authed,
+        chip::Chip,
+        hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
+        screen_header::ScreenHeader,
+        telemetry::vocabulary::{DeckScreen, Screen},
     },
-    outbound::client::{
-        deck::import_archidekt_deck::ClientImportArchidektDeck,
-        deck_card::import_deck_cards::ClientImportDeckCards,
-    },
+    router::Router,
+    screens::deck::card::components::undo_log::UndoStore,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

@@ -34,18 +34,7 @@ use crate::{
             filter::card_filter_sheet::CardFilterSheet,
         },
     },
-    outbound::client::{
-        ZwipeClient,
-        card::get_card::ClientGetCard,
-        deck::{
-            get_deck::ClientGetDeck, search_deck_cards::ClientSearchDeckCards,
-            skip_deck_card::ClientSkipDeckCard,
-        },
-        deck_card::{
-            create_deck_card::ClientCreateDeckCard, delete_deck_card::ClientDeleteDeckCard,
-            update_deck_card::ClientUpdateDeckCard,
-        },
-    },
+    outbound::client::ZwipeClient,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

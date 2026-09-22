@@ -6,27 +6,15 @@
 //! `context/plans/patch_idempotent_updates.md`.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use std::future::Future;
 use uuid::Uuid;
 use zwipe_core::{
     domain::{auth::models::session::Session, deck::deck_card::DeckCard},
     http::{contracts::deck_card::HttpPatchDeckCard, endpoints::deck::UpdateDeckCard},
 };
 
-/// Trait for updating a card in a deck.
-#[allow(missing_docs)]
-pub trait ClientUpdateDeckCard {
-    fn update_deck_card(
-        &self,
-        deck_id: Uuid,
-        scryfall_data_id: Uuid,
-        request: &HttpPatchDeckCard,
-        session: &Session,
-    ) -> impl Future<Output = Result<DeckCard, ClientError>> + Send;
-}
-
-impl ClientUpdateDeckCard for ZwipeClient {
-    async fn update_deck_card(
+impl ZwipeClient {
+    /// Updates a card in a deck.
+    pub async fn update_deck_card(
         &self,
         deck_id: Uuid,
         scryfall_data_id: Uuid,

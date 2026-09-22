@@ -17,14 +17,7 @@ use crate::{
         router::Router,
         screens::deck::card::components::image_preview::ImagePreview,
     },
-    outbound::{
-        buy_links,
-        client::{
-            ZwipeClient,
-            card::featured_flavor::ClientFeaturedFlavor,
-            user::{get_user::ClientGetUser, preferences::ClientGetPreferences},
-        },
-    },
+    outbound::{buy_links, client::ZwipeClient},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

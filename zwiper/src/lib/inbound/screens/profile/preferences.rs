@@ -1,12 +1,9 @@
 //! User preferences screen for theme and dark mode selection.
 
-use crate::{
-    inbound::components::{
-        auth::authed::use_authed,
-        bottom_sheet::BottomSheet,
-        telemetry::vocabulary::{ProfileScreen, Screen},
-    },
-    outbound::client::user::preferences::ClientUpdatePreferences,
+use crate::inbound::components::{
+    auth::authed::use_authed,
+    bottom_sheet::BottomSheet,
+    telemetry::vocabulary::{ProfileScreen, Screen},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

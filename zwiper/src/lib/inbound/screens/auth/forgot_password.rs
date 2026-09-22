@@ -2,7 +2,7 @@
 
 use crate::{
     inbound::components::{fields::text_input::TextInput, screen_header::ScreenHeader},
-    outbound::client::{ZwipeClient, auth::forgot_password::ClientForgotPassword},
+    outbound::client::ZwipeClient,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

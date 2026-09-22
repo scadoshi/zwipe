@@ -8,9 +8,7 @@ use crate::{
         },
         router::Router,
     },
-    outbound::client::{
-        ClientError, ZwipeClient, deck_card::delete_deck_card::ClientDeleteDeckCard,
-    },
+    outbound::client::{ClientError, ZwipeClient},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

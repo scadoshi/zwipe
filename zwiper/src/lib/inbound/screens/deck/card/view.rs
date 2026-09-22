@@ -33,18 +33,7 @@ use crate::{
             oracle_tag_examples::OracleTagExamples,
         },
     },
-    outbound::client::{
-        ZwipeClient,
-        card::get_card::ClientGetCard,
-        deck::{
-            get_deck::ClientGetDeck, get_deck_profile::ClientGetDeckProfile,
-            get_deck_tokens::ClientGetDeckTokens, update_deck_profile::ClientUpdateDeckProfile,
-        },
-        deck_card::{
-            create_deck_card::ClientCreateDeckCard, delete_deck_card::ClientDeleteDeckCard,
-            update_deck_card::ClientUpdateDeckCard,
-        },
-    },
+    outbound::client::ZwipeClient,
 };
 use dioxus::{core::spawn_forever, prelude::*};
 use dioxus_primitives::toast::{ToastOptions, use_toast};

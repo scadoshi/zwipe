@@ -9,7 +9,7 @@ use crate::{
     inbound::components::{
         auth::ensure_session::EnsureFresh, telemetry::usage_buffer::UsageBuffer,
     },
-    outbound::client::{ZwipeClient, metrics::record_usage::ClientRecordUsage},
+    outbound::client::ZwipeClient,
 };
 use zwipe_core::domain::auth::models::session::Session;
 

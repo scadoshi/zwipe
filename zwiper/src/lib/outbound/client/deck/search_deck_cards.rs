@@ -6,7 +6,6 @@
 
 use crate::outbound::client::{ClientError, ZwipeClient};
 use reqwest::StatusCode;
-use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
 use zwipe_core::{
@@ -17,22 +16,12 @@ use zwipe_core::{
     http::paths::search_deck_cards_route,
 };
 
-/// Trait for deck-aware card search.
-#[allow(missing_docs)]
-pub trait ClientSearchDeckCards {
-    fn search_deck_cards(
-        &self,
-        deck_id: Uuid,
-        card_filter: &CardQuery,
-        session: &Session,
-    ) -> impl Future<Output = Result<(Vec<Card>, bool), ClientError>> + Send;
-}
-
-impl ClientSearchDeckCards for ZwipeClient {
+impl ZwipeClient {
     /// Returns `(cards, synergy_warming)`: `synergy_warming` is true when
     /// synergy was requested but the commander's cache was still warming, so the
     /// server served the full pool (signalled via the `x-synergy-applied` header).
-    async fn search_deck_cards(
+    /// Deck-aware card search.
+    pub async fn search_deck_cards(
         &self,
         deck_id: Uuid,
         card_filter: &CardQuery,

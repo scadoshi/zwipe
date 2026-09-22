@@ -18,7 +18,7 @@ use crate::{
         },
         router::Router,
     },
-    outbound::client::{ZwipeClient, deck::create_deck::ClientCreateDeck},
+    outbound::client::ZwipeClient,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

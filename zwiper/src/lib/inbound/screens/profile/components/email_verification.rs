@@ -6,10 +6,7 @@ use crate::{
             vocabulary::{ProfileScreen, Screen, component, screen},
         },
     },
-    outbound::client::{
-        ClientError, ZwipeClient, auth::resend_verification::ClientResendEmailVerification,
-        user::get_user::ClientGetUser,
-    },
+    outbound::client::{ClientError, ZwipeClient},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

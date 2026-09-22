@@ -1,7 +1,6 @@
 //! User preferences API client operations.
 
 use crate::outbound::client::{ClientError, ZwipeClient};
-use std::future::Future;
 use zwipe_core::{
     domain::{auth::models::session::Session, user::preferences::UserPreferences},
     http::{
@@ -10,33 +9,14 @@ use zwipe_core::{
     },
 };
 
-/// Trait for fetching user display preferences.
-#[allow(missing_docs)]
-pub trait ClientGetPreferences {
-    fn get_preferences(
-        &self,
-        session: &Session,
-    ) -> impl Future<Output = Result<UserPreferences, ClientError>> + Send;
-}
-
-/// Trait for updating user display preferences.
-#[allow(missing_docs)]
-pub trait ClientUpdatePreferences {
-    fn update_preferences(
-        &self,
-        request: HttpUpdatePreferences,
-        session: &Session,
-    ) -> impl Future<Output = Result<UserPreferences, ClientError>> + Send;
-}
-
-impl ClientGetPreferences for ZwipeClient {
-    async fn get_preferences(&self, session: &Session) -> Result<UserPreferences, ClientError> {
+impl ZwipeClient {
+    /// Fetches user display preferences.
+    pub async fn get_preferences(&self, session: &Session) -> Result<UserPreferences, ClientError> {
         self.call(GetPreferences, Some(session)).await
     }
-}
 
-impl ClientUpdatePreferences for ZwipeClient {
-    async fn update_preferences(
+    /// Updates user display preferences.
+    pub async fn update_preferences(
         &self,
         request: HttpUpdatePreferences,
         session: &Session,

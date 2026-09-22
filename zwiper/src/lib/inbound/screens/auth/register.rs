@@ -9,10 +9,7 @@ use crate::{
         },
         router::Router,
     },
-    outbound::{
-        client::{ZwipeClient, auth::register::ClientRegister},
-        session::Persist,
-    },
+    outbound::{client::ZwipeClient, session::Persist},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

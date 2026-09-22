@@ -20,10 +20,7 @@ use crate::{
         router::Router,
         screens::deck::components::skeletons::DeckListSkeleton,
     },
-    outbound::client::{
-        ClientError, ZwipeClient, deck::get_deck_profiles::ClientGetDeckList,
-        user::get_user::ClientGetUser,
-    },
+    outbound::client::{ClientError, ZwipeClient},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

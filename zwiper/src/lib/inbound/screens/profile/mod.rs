@@ -27,16 +27,7 @@ use crate::{
         },
         router::Router,
     },
-    outbound::{
-        client::{
-            ZwipeClient,
-            user::{
-                get_user::ClientGetUser,
-                preferences::{ClientGetPreferences, ClientUpdatePreferences},
-            },
-        },
-        open_url,
-    },
+    outbound::{client::ZwipeClient, open_url},
 };
 use change_email::ChangeEmailSheet;
 use change_password::ChangePasswordSheet;

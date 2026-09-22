@@ -1,13 +1,10 @@
 //! Change username bottom sheet.
 
-use crate::{
-    inbound::components::{
-        auth::authed::use_authed,
-        bottom_sheet::BottomSheet,
-        fields::text_input::TextInput,
-        telemetry::vocabulary::{ProfileScreen, Screen},
-    },
-    outbound::client::user::change_username::ClientChangeUsername,
+use crate::inbound::components::{
+    auth::authed::use_authed,
+    bottom_sheet::BottomSheet,
+    fields::text_input::TextInput,
+    telemetry::vocabulary::{ProfileScreen, Screen},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

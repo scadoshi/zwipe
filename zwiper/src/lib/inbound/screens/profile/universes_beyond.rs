@@ -10,7 +10,7 @@ use crate::{
         hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, open_and_record_hint},
         telemetry::vocabulary::{ProfileScreen, Screen},
     },
-    outbound::client::{ZwipeClient, user::preferences::ClientUpdatePreferences},
+    outbound::client::ZwipeClient,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};

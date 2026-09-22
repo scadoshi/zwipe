@@ -10,7 +10,7 @@
 use std::sync::{Arc, OnceLock};
 
 use crate::outbound::{
-    client::{ClientError, ZwipeClient, auth::refresh::ClientRefresh},
+    client::{ClientError, ZwipeClient},
     session::Persist,
 };
 use dioxus::prelude::*;

@@ -50,11 +50,7 @@ use crate::{
             oracle_tag_examples::OracleTagExamples,
         },
     },
-    outbound::client::{
-        ZwipeClient, card::search_commanders::ClientSearchCommanders,
-        deck::get_deck_profiles::ClientGetDeckList,
-        user::commander_maybeboard::ClientCommanderMaybeboard,
-    },
+    outbound::client::ZwipeClient,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
