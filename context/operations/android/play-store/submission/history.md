@@ -2,6 +2,21 @@
 
 Per-release build log. Build recipe is in [build.md](build.md).
 
+- **2026-09-22, `1.10.2`, versionCode `43`** (the architecture release,
+  targetSdk 36. Under the surface: the API client moved out of zwiper into a
+  `zwipe-client` crate that zite calls too, 52 single-implementor traits
+  collapsed to inherent methods, `Endpoint` gained a typed `Request` so a
+  wrong body stops compiling, and zwiper stopped reading compiled catalogs
+  entirely. Universes Beyond franchises, keyword reminders, the changelog and
+  curated oracle tags are all served now, so retuning any of them is a deploy
+  rather than a store train. A routing test binds the router to the shared
+  path constants, which previously agreed only by coincidence. User-facing:
+  filter clearing works and an unchanged filter no longer refetches, shake no
+  longer opens the system Undo prompt, catalog failures say so and retry, the
+  command zone strip holds its height, and the welcome greets once per launch.
+  All four post-bundle patch greps verified against the signed artifact.
+  **Submitted 2026-09-22**, iOS build 80 alongside.)
+
 - **2026-09-06, `1.10.1`, versionCode `42`** (the authed facade's
   user-visible half: every failed server call reports through the same brief
   toast, printing-sheet saves that used to fail 100% silently now report,

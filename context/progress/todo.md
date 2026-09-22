@@ -85,43 +85,20 @@ at `context/archive/complete_2026_q1.md`.
   client over the shared contracts, so the app and the site cannot drift
   apart on what an endpoint looks like.
 
-- [ ] **Update the Play listing, then audit the Apple one.** Repo-side copy
-  is now correct and shared; neither console has been touched, so the live
-  listings are unchanged until someone pastes.
+- [ ] **Audit the Apple listing.** The Play half is DONE 2026-09-22: the
+  description, short description and theme count were pasted during the
+  1.10.2 submission, so Play is current for the first time in several
+  releases.
 
-  Play needs the most: its full description had fallen several releases
-  behind the App Store's (no synergy suggestions, tag dictionary, MVPs,
-  share links, budget or land target) and claimed 14 themes when there are
-  31. Both descriptions now carry the same text, and the short description
-  says "Build Commander decks" instead of "trading-card decks". Paste all
-  three from
-  [`../operations/android/play-store/submission/form_fields.md`](../operations/android/play-store/submission/form_fields.md).
-
-  Apple needs an audit rather than a rewrite. The repo copy is current, but
-  nobody has checked the live listing against it, and the description there
-  now says "Built for Commander" plainly where it used to talk around the
-  name. Compare subtitle, promotional text, description and keywords against
-  [`../operations/ios/app-store/submission/form_fields.md`](../operations/ios/app-store/submission/form_fields.md)
-  and note anything that diverged.
-
-  Both are console work, no build required. Promotional text and the Play
-  listing update without a submission; the App Store description does too.
-
-- [x] ~~**Bump CI's Postgres service image to 18.**~~ DONE 2026-09-22. All
-  three workflows run `postgres:18` now, so CI, local dev and prod are on the
-  same major for the first time since the VPS moved in June. Verify the first
-  run after the push: a red check silently skips the prod deploy.
-
-- [x] ~~**Tooling: why did iOS switch to Device Hub?**~~ ANSWERED
-  2026-09-22: Xcode 27 ships no `Simulator.app` at all. `DeviceHub.app`
-  replaced it and `open -a Simulator` fails, so nothing was misconfigured.
-  Getting the old window back means installing Xcode 26 alongside and using
-  its bundled Simulator; owner accepted DeviceHub instead.
-
-  Found while fixing the real problem: `zcripts/ios/sim.sh` pinned the iOS
-  18.6 runtime, which an Xcode update deleted, so it booted nothing and
-  `dx serve` had no simulator to install to. It now takes the newest runtime
-  carrying the device.
+  Apple still needs a comparison rather than a rewrite. The repo copy is
+  correct, but nobody has checked the live listing against it, and the
+  description now says "Built for Commander" plainly where it used to talk
+  around the name. Compare subtitle, promotional text, description and
+  keywords against
+  [`../operations/ios/app-store/submission/form_fields.md`](../operations/ios/app-store/submission/form_fields.md).
+  Two known gaps: promotional text still advertises 1.10.0's Universes
+  Beyond setting, and the live keyword field was missing MTG and Magic the
+  Gathering (the repo string is 96 of the 100-character limit).
 
 - [ ] ~~**CUT 1.9.2**~~, **DONE 2026-08-17: submitted to both stores** (iOS build 76 / Android versionCode 39). Carries the two Android manifest fixes (the ndk-context crash that survived five releases, and the app silently closing on a system theme change), the back-swipe overlay fixes, the deck list restyle with command-zone art, command-zone art URLs on the wire, per-combination color grouping with mana pips, and the zite work (share-page deal-in, guides search, Panel heroes, 36 guide screenshots). The post-bundle patches are now **one command**: `zcripts/android/patch_bundle.sh` (icons + back handler + manifest). Skipping it silently reships the crash; that checklist is exactly how the bug lived five releases. Build steps: [`../operations/android/play-store/submission/build.md`](../operations/android/play-store/submission/build.md).
 
