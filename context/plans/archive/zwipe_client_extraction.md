@@ -1,11 +1,36 @@
 # zwipe-client extraction
 
-**Status: PLANNED 2026-09-21 (external architecture review, claims verified
-against the code the same day). Sequenced after
-`zerver_feature_gate_teardown.md` phases 1-3; this move naturally absorbs its
-phase 4. Gets more expensive the longer it waits: the second copy of the
-client layer is the priciest artifact on the review's list, and it hasn't
-been written yet.**
+**Status: DONE 2026-09-22. Planned 2026-09-21 (external architecture review,
+claims verified against the code the same day), executed the next morning
+after `zerver_feature_gate_teardown.md` cleared its phases 1-3.**
+
+The layer moved whole: 61 files into `zwipe-client`, depending on zwipe-core
+and reqwest only. The 52 traits collapsed to inherent methods on the way,
+which took the 57 `Send` bounds with them for free (they lived only on the
+trait method signatures). The crate checks clean for wasm32, so zite can
+import it whenever it grows the authenticated surface.
+
+Wire safety held. Every file that defines the protocol hashes identically to
+before: the `Endpoint` impls, `paths.rs`, `contracts/`, `endpoint.rs`. Two
+lines of `call.rs` changed, the import path and where the base URL is read;
+request building, auth, body and decoding are byte-identical. Nothing a
+shipped 1.10.1 client sends or receives moved.
+
+Three things the plan did not anticipate:
+
+- Grouped imports hid the call sites. `outbound::{client::ZwipeClient, ...}`
+  does not contain the literal `outbound::client`, so both a grep and the
+  first pass of the rewrite missed nine files. Use-tree rewrites need to
+  resolve prefixes, not match substrings.
+- `getrandom` needs `wasm_js` on wasm32, one layer under the reqwest split
+  the plan already flagged. uuid pulls it in.
+- Multi-method traits (share_deck, skip_deck_card, commander_maybeboard) had
+  one doc comment covering several methods. Copying it onto each one reads
+  wrong; those four needed writing by hand.
+
+CI change: `test.yml` now names `-p zwipe-client` alongside core and zerver.
+The deploy workflows deliberately do not, so a client-only failure cannot
+block a zerver or zite deploy. Clippy was already workspace-wide.
 
 **One sentence:** pull zwiper's 61-file typed API client into a new
 `zwipe-client` crate (depends on zwipe-core + reqwest only) so both clients
@@ -121,69 +146,6 @@ and card operations zite won't touch until it becomes the deck builder. Move
 the whole layer anyway. Moving half recreates the two-homes problem the crate
 exists to prevent.
 
-## STARTED 2026-09-22, reverted to a clean tree mid-way
-
-Owner chose to do the extraction despite the parking note above, and settled
-the trait question: **collapse to inherent impls during the move.**
-
-Phase A (collapse the traits in place, before moving anything) was run and
-then reverted, because it leaves the tree uncompilable until the call sites
-are fixed in the same pass and a context handoff fell in the middle. Nothing
-was committed. Redo it with this, which worked (51 files changed, 52 traits
-removed):
-
-```python
-# for each zwiper/src/lib/outbound/client/*/*.rs
-# 1. delete the trait declaration (doc comments, #[allow], the block)
-re.sub(r'(?:^/// [^\n]*\n)*(?:^#\[allow\([^\]]*\)\]\n)?'
-       r'^pub trait Client\w+ \{\n(?:[^\n]*\n)*?^\}\n\n?', '', s, flags=re.M)
-# 2. impl ClientX for ZwipeClient -> impl ZwipeClient
-re.sub(r'^impl Client\w+ for ZwipeClient \{', 'impl ZwipeClient {', s, flags=re.M)
-# 3. methods become inherent and public
-re.sub(r'^(\s+)async fn (\w+)\(', r'\1pub async fn \2(', s, flags=re.M)
-```
-
-That alone leaves ~39 compile errors: 43 files outside the client directory
-still `use` the deleted traits. Those imports must be deleted in the same pass.
-Beware that `ClientPoint`, `ClientPlatform` and `ClientErrorReport` match a
-naive `Client[A-Z]` grep but are **core types, not traits**. The real list of
-52 names is recoverable by grepping `pub trait Client` before step 1.
-
-Only `user/preferences.rs` declares more than one trait (two); every other
-file has exactly one.
-
-### Wire safety (owner's explicit requirement)
-
-The wire is defined by files this refactor must not touch: the `Endpoint`
-impls in `zwipe-core/src/http/endpoints/`, `paths.rs`, `contracts/`,
-`endpoint.rs`, and `call.rs` (which builds every request; its path moves, its
-content must not). Hash them before starting and re-check after:
-
-```bash
-shasum -a256 zwipe-core/src/http/endpoints/*.rs zwipe-core/src/http/paths.rs \
-             zwipe-core/src/http/contracts/*.rs zwipe-core/src/http/endpoint.rs
-shasum -a256 < <path to call.rs>
-```
-
-Collapsing traits changes only the per-endpoint wrappers, so every one of
-those hashes must be unchanged afterwards. If one moves, the refactor has
-touched the protocol and should be stopped.
-
-## The 52-trait question (SETTLED 2026-09-22: collapse, see above)
-
-`zwiper/src/lib/outbound/client/` has 52 `pub trait ClientX` with exactly 52
-impls, all on `ZwipeClient`. No mocks, no second implementor; screens grab
-the concrete type via `use_context` and import the trait only to bring the
-method into scope. Two honest options:
-
-1. **Collapse to inherent `impl ZwipeClient` blocks during the move**
-   (recommended). Deletes a declaration + impl-block per endpoint and every
-   trait import at the call sites. A mock, if ever wanted, can be introduced
-   then, with the shape that test actually needs.
-2. Keep the traits and write the first mock so they pay rent.
-
-Doing the move without deciding copies the ceremony into the new crate.
-
 ## Quick win that shouldn't wait for the crate: DONE 2026-09-21
 
 zite's four literals now go through `zwipe_core::http::paths`, joined
@@ -195,19 +157,21 @@ have said anyway.
 
 ## Verification
 
-- Workspace suite + full CI gate; client crates warning-free.
-- zite manual pass: shared deck page, verify-email flow, reset-password
-  flow (the pages that owned the literals).
-- zwiper smoke on device/sim: login, deck list, search (proves the moved
-  client wires up identically).
-- Build zite for **both** targets, wasm and the `server` feature. The wasm
-  build is what proves the `Send` bounds are really gone.
+Done 2026-09-22:
 
-## Later horizon, explicitly not now
+- Workspace suite green, 736 tests, and `cargo clippy --workspace
+  --all-targets` clean. `cargo +nightly fmt --check` clean, which is the
+  form the CI gate runs.
+- `cargo check -p zwipe-client --target wasm32-unknown-unknown` passes. That
+  is the proof the `Send` bounds are really gone.
+- Wire hashes unchanged on every protocol-defining file.
 
-An `Endpoint` trait in core (`const METHOD`, `fn path()`, `type Req`,
-`type Resp`): collapses the per-endpoint client files into one generic
-`call<E>()` and lets the router assert coverage at compile time. It's the
-endgame of the contract-crate architecture, and it's a big refactor whose
-payoff scales with client count. Revisit if/when zite actually grows the
-full authed surface, not before.
+Still owed, and it needs a device:
+
+- zwiper smoke: login, deck list, search. The moved client should wire up
+  identically, but nothing here has actually talked to the server yet.
+- Fold this into the hands-on pass owed before 1.10.2 anyway, which already
+  has to exercise crash reporting and telemetry by hand.
+
+zite is untouched: it still reaches the API through `zwipe_core::http::paths`
+and does not depend on the new crate yet, so its pages need no re-test.

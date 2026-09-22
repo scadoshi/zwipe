@@ -4,8 +4,8 @@
 //! [`EnsureFresh`] helper, and initializes the app-wide Dioxus context
 //! (session, client, card search state, theme, telemetry buffer).
 
-use crate::config::Config;
 use crate::{
+    config::Config,
     inbound::{
         components::{
             auth::ensure_session::EnsureFresh,

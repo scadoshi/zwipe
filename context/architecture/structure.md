@@ -12,18 +12,22 @@ Every section below describes the code as it stands (last verified against the t
 ┌──────────┐     ┌──────────────┐     ┌──────────┐
 │  zwiper  │────→│  zwipe-core  │←────│  zerver  │
 │ (mobile) │     │   (domain)   │     │  (api)   │
-└────┬─────┘     └──────────────┘     └────┬─────┘
-     │                  ↑                  │
-     │           ┌──────┘            ┌─────┴──────┐
-     │           │                   │  zervice   │
-     │       ┌───┴───┐               │  (sync)    │
-     │       │ zite  │               └────────────┘
-     │       │ (web) │
-     │       └───┬───┘
-     │           │
-     │  ┌────────┴─────────┐
-     └─→│ zwipe-components │  (shared Dioxus UI + themes.css)
-        └──────────────────┘
+└──┬────┬──┘     └──────────────┘     └────┬─────┘
+   │    │            ↑        ↑            │
+   │    │            │        │      ┌─────┴──────┐
+   │    │            │        │      │  zervice   │
+   │    │     ┌──────┘    ┌───┘      │  (sync)    │
+   │    │     │           │          └────────────┘
+   │    │ ┌───┴──────┐ ┌──┴────┐
+   │    └→│  zwipe-  │ │ zite  │
+   │      │  client  │ │ (web) │
+   │      └──────────┘ └───┬───┘
+   │                       │
+   │  ┌────────────────────┘
+   │  │
+   │ ┌┴─────────────────┐
+   └→│ zwipe-components │  (shared Dioxus UI + themes.css)
+     └──────────────────┘
 ```
 
 | Crate | Binary | Role | Depends on |
@@ -33,6 +37,7 @@ Every section below describes the code as it stands (last verified against the t
 | **zerver** | `zervice` | Background sync (Scryfall card data) | zwipe-core (via zerver lib) |
 | **zwiper** | `zwiper` | Dioxus cross-platform mobile app | zwipe-core, zwipe-components, dioxus |
 | **zite** | `zite` | Dioxus static website (zwipe.net) | zwipe-core, zwipe-components, dioxus |
+| **zwipe-client** | — (library) | Typed API client: one `call` over the core `Endpoint` descriptions | zwipe-core, reqwest |
 | **zwipe-components** | — (library) | Shared Dioxus UI components + `themes.css`/`components.css` | zwipe-core, dioxus |
 | **zort** | — (hypothetical) | AI card classification client. Sketched only: no crate, no directory, nothing built | Postgres direct, LLM API |
 
@@ -247,7 +252,7 @@ lifetime counters, events) plus client error and crash reporting.
 
 ## zwiper: Mobile App
 
-Dioxus cross-platform app. Primary target: iOS. Same hexagonal structure: screens are inbound adapters, API client is the outbound adapter. UI building blocks and the theme CSS come from `zwipe-components`; the theme list lives in zwipe-core's preferences.
+Dioxus cross-platform app. Primary target: iOS. Same hexagonal structure: screens are inbound adapters, the API client is the outbound adapter and lives in `zwipe-client`. UI building blocks and the theme CSS come from `zwipe-components`; the theme list lives in zwipe-core's preferences.
 
 ```
 zwiper/src/
@@ -307,13 +312,7 @@ zwiper/src/
         ├── crash_store.rs      — Panic hook writes a crash file; next launch reports it
         ├── android_fs.rs       — Android app-files dir via JNI
         ├── open_url.rs         — Open links in the system browser
-        ├── buy_links.rs        — TCGplayer, CardKingdom URL builders
-        └── client/             — HTTP API client
-            ├── auth/           — Login, register, refresh, logout, forgot password
-            ├── card/           — Search, get card, filter metadata
-            ├── deck/           — CRUD, get tokens, get profile
-            ├── deck_card/      — Add, update, delete, import
-            └── user/           — Profile, preferences, delete
+        └── buy_links.rs        — TCGplayer, CardKingdom URL builders
 ```
 
 **Platforms:** iOS (primary), Android, Web (preview), Desktop
@@ -324,7 +323,7 @@ zwiper/src/
 
 Dioxus site deployed to GitHub Pages at [zwipe.net](https://zwipe.net). Marketing pages, the auth flows that need a browser (verify, reset), and a handful of pages that read the public API: changelog, guides, and the shared-deck viewer. Statically hosted, not entirely static content.
 
-No login, no deck building today. `decisions.md` (2026-04-06) commits zite to growing into the full authenticated deck builder eventually; that surface lives only in zwiper for now, and sharing the client layer first is `plans/zwipe_client_extraction.md`.
+No login, no deck building today. `decisions.md` (2026-04-06) commits zite to growing into the full authenticated deck builder eventually; that surface lives only in zwiper for now, but the client layer it needs is already shared: zite adds `zwipe-client` as a dependency and calls it, rather than writing a second copy.
 
 ```
 zite/src/
@@ -346,6 +345,40 @@ zite/src/
 ```
 
 **Deploy:** Push to main → GitHub Actions → `dx build --release --platform web` → GitHub Pages
+
+---
+
+## zwipe-client: API Client
+
+The typed client for the backend, depending on zwipe-core and reqwest and nothing else. No Dioxus, no platform code: crash reporting, session storage and URL config stay in the apps. zwiper uses it today; zite imports it when it grows the authenticated deck builder `decisions.md` commits it to.
+
+`call.rs` is the only transport code. It reads an `Endpoint` from zwipe-core for method, path, auth and body, sends it, and decodes the success body. Every other file is a thin method describing one call:
+
+```rust
+/// Fetches a complete deck with all cards.
+pub async fn get_deck(&self, deck_id: Uuid, session: &Session) -> Result<Deck, ClientError> {
+    self.call(GetDeck(deck_id), Some(session)).await
+}
+```
+
+```
+zwipe-client/src/
+├── lib.rs          — ZwipeClient (reqwest client + base URL)
+├── call.rs         — The one place a request is built, sent and decoded
+├── error.rs        — ClientError: status vocabulary plus user-facing copy
+├── auth/           — Login, register, refresh, logout, forgot password
+├── card/           — Search, get card, filter metadata
+├── changelog/      — Release history
+├── deck/           — CRUD, tokens, profiles, sharing, skips
+├── deck_card/      — Add, update, delete, import
+├── metrics/        — Usage batches, crash reports, anonymous events
+├── user/           — Profile, preferences, maybeboard
+└── version/        — Minimum supported client version
+```
+
+`ZwipeClient::new` takes the base URL, so the crate reads no environment and owns no default. zwiper passes its build-time config value, which is what lets a debug build point at prod for migration testing.
+
+The wasm target needs reqwest without rustls-tls and getrandom on `wasm_js`, the same split zite's manifest carries. No `Send` bounds anywhere: reqwest's wasm futures are `!Send`, and nothing here needs a work-stealing spawner.
 
 ---
 

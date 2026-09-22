@@ -36,10 +36,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
 
-      # -p zwipe-core -p zerver, never --workspace: on a headless Linux runner,
-      # compiling zwiper pulls Dioxus desktop's GTK stack (glib-sys) and fails.
+      # Named crates, never --workspace: on a headless Linux runner, compiling
+      # zwiper pulls Dioxus desktop's GTK stack (glib-sys) and fails.
+      # zwipe-client is safe to name here: reqwest only, no Dioxus.
       - name: Test
-        run: cargo test -p zwipe-core -p zerver
+        run: cargo test -p zwipe-core -p zerver -p zwipe-client
 
   # Format + lint gate. fmt runs workspace-wide (parse-only, no GTK); clippy is
   # scoped to zwipe-core + zerver for the same headless-GTK reason as Test.
