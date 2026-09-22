@@ -97,34 +97,16 @@ at `context/archive/complete_2026_q1.md`.
   same major for the first time since the VPS moved in June. Verify the first
   run after the push: a red check silently skips the prod deploy.
 
-- [ ] **Tooling: why did iOS switch to Device Hub?** Xcode is opening a different simulator surface than it used to, and the classic Simulator window behaved better with the tiling manager. Unexplained change, low urgency, but worth knowing before the 1.10.2 device pass. (The keyboard capture is separate and already understood: I/O → Keyboard → Connect Hardware Keyboard, ⇧⌘K.)
+- [x] ~~**Tooling: why did iOS switch to Device Hub?**~~ ANSWERED
+  2026-09-22: Xcode 27 ships no `Simulator.app` at all. `DeviceHub.app`
+  replaced it and `open -a Simulator` fails, so nothing was misconfigured.
+  Getting the old window back means installing Xcode 26 alongside and using
+  its bundled Simulator; owner accepted DeviceHub instead.
 
-- [x] ~~**Hands-on pass of the app before 1.10.2.**~~ DONE 2026-09-22. The
-  2026-09-21 refactor pinned every endpoint to a single success status,
-  breaking the four that answer 204, three of them silently. Fixed in
-  `4411dde0` by accepting any 2xx, but the cross-check that missed it shared
-  a bug with the code it was checking, so every one was re-proven by hand
-  instead:
-
-  - `delete_deck_card`: removing a deck card on device against prod.
-  - `record_usage`: 84 `user_card_signal` rows, 5 `user_events` and the
-    lifetime counters, read back from prod.
-  - the error path: a real `api_unprocessable` row from a duplicate clone
-    name.
-  - `record_crash`: a deliberate panic on the Decks screen, then a relaunch.
-    One row, one `crash_id`, message `zwipe crash-reporter verification
-    2026-09-22`. All four stages proven, including the clear-on-2xx (a
-    failed clear would have re-sent on every later launch).
-
-  Also covered: login, deck list, card search, adding, cloning and deck
-  edits, after the `zwipe-client` extraction.
-
-- [x] ~~**Small fixes queued, each with a plan.**~~ All four shipped
-  2026-09-22 and their plans are archived: the filter that could not be
-  cleared back to default (which also stopped re-fetching when nothing
-  changed), iOS shake-to-undo, a toast when the catalog cache fails, and
-  the reversible-card `oracle_id` bug, fixed server-side so phones already
-  in the field were repaired without an update.
+  Found while fixing the real problem: `zcripts/ios/sim.sh` pinned the iOS
+  18.6 runtime, which an Xcode update deleted, so it booted nothing and
+  `dx serve` had no simulator to install to. It now takes the newest runtime
+  carrying the device.
 
 - [ ] ~~**CUT 1.9.2**~~, **DONE 2026-08-17: submitted to both stores** (iOS build 76 / Android versionCode 39). Carries the two Android manifest fixes (the ndk-context crash that survived five releases, and the app silently closing on a system theme change), the back-swipe overlay fixes, the deck list restyle with command-zone art, command-zone art URLs on the wire, per-combination color grouping with mana pips, and the zite work (share-page deal-in, guides search, Panel heroes, 36 guide screenshots). The post-bundle patches are now **one command**: `zcripts/android/patch_bundle.sh` (icons + back handler + manifest). Skipping it silently reships the crash; that checklist is exactly how the bug lived five releases. Build steps: [`../operations/android/play-store/submission/build.md`](../operations/android/play-store/submission/build.md).
 

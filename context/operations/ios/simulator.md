@@ -4,19 +4,38 @@ Managing simulator devices for screenshots, testing different screen sizes, etc.
 
 ---
 
-## Default device: iPhone 11 Pro Max, iOS 18.6 (6.5")
+## Simulator.app is gone as of Xcode 27
 
-The project default for running and screenshotting is the **6.5" iPhone 11 Pro Max
-on iOS 18.6** (the App Store's required 6.5" size, 1242×2688). `dx serve --ios`
-targets the *active* simulator, so boot this as the sole active sim and dx picks
-it up; no `--device` flag needed:
+Xcode 27 ships no `Simulator.app`. `DeviceHub.app` replaced it, at
+`/Applications/Xcode.app/Contents/Applications/DeviceHub.app`, and
+`open -a Simulator` now fails outright. Nothing was misconfigured; Apple
+removed it.
+
+If the old window is wanted back, install Xcode 26 alongside 27 and use its
+`Contents/Developer/Applications/Simulator.app`. Both versions coexist and
+`xcode-select` decides which owns the toolchain. An older Simulator may
+refuse a newer runtime, so pair it with a runtime it knows.
+
+## Default device: iPhone 11 Pro Max (6.5")
+
+The project default for running and screenshotting is the **6.5" iPhone 11 Pro
+Max** (the App Store's required 6.5" size, 1242×2688). Screenshot size comes
+from the device model, not the runtime, so any installed iOS runtime will do.
+
+`dx serve --platform ios` installs to the *booted* simulator and will **not
+boot one for you**, which is what makes it look like nothing happens:
 
 ```bash
-zcripts/ios/sim.sh   # shuts down others, boots the 6.5" 11 Pro Max, opens Simulator
+zcripts/ios/sim.sh              # shuts others down, boots the 11 Pro Max
+zcripts/ios/sim.sh "iPhone 17"  # or any other created device
 ```
 
-Then `dx serve --ios`. There are two "iPhone 11 Pro Max" sims (one on 18.6, one on
-a newer runtime), so the script matches the 18.6 one by runtime, not by name.
+Then `cd zwiper && dx serve --platform ios`.
+
+The script takes the newest iOS runtime carrying that device. It used to pin
+iOS 18.6, which broke silently the moment an Xcode update dropped that
+runtime: the lookup failed, nothing booted, and `dx serve` had nothing to
+install to.
 
 ---
 
