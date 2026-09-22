@@ -26,15 +26,13 @@ use crate::{
         },
         router::Router,
     },
-    outbound::{
-        buy_links,
-        client::{ClientError, ZwipeClient},
-    },
+    outbound::buy_links,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
+use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
     domain::{

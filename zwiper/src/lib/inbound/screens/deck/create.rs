@@ -7,22 +7,20 @@ use super::components::{
     swipe_select::{SwipeMode, SwipeSelect},
     tag_select::TagSelect,
 };
-use crate::{
-    inbound::{
-        components::{
-            auth::authed::use_authed,
-            catalog_cache::CatalogCache,
-            hint_dialog::use_one_time_hint,
-            screen_header::ScreenHeader,
-            telemetry::vocabulary::{DeckScreen, Screen, screen},
-        },
-        router::Router,
+use crate::inbound::{
+    components::{
+        auth::authed::use_authed,
+        catalog_cache::CatalogCache,
+        hint_dialog::use_one_time_hint,
+        screen_header::ScreenHeader,
+        telemetry::vocabulary::{DeckScreen, Screen, screen},
     },
-    outbound::client::ZwipeClient,
+    router::Router,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
+use zwipe_client::ZwipeClient;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
     domain::{

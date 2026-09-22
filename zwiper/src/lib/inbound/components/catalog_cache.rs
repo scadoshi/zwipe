@@ -19,16 +19,16 @@
 //! even logged out and keep Cloudflare cache HITs working: do not add bearer auth
 //! to them. Deck tags are the one authed catalog; they warm once a session exists.
 
-use crate::outbound::client::ClientError;
 use chrono::{DateTime, Utc};
 use dioxus::prelude::*;
+use zwipe_client::ClientError;
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{card_role::CardRoleView, oracle_tag::OracleTag},
     deck::DeckTagView,
 };
 
-use crate::outbound::client::ZwipeClient;
+use zwipe_client::ZwipeClient;
 
 /// How long a fetched catalog stays fresh before a read schedules a revalidation.
 /// One day, aligned with the nightly sync and Cloudflare's 24h edge cache.

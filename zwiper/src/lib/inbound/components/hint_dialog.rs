@@ -13,9 +13,10 @@ use crate::{
         },
         auth::ensure_session::EnsureFresh,
     },
-    outbound::{client::ZwipeClient, session::Persist},
+    outbound::session::Persist,
 };
 use dioxus::prelude::*;
+use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Opens the returned signal once per account for the given hint key, and

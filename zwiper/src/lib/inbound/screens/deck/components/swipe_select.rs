@@ -9,34 +9,30 @@
 //! **down** to undo; **up** saves to the commander maybeboard (commander and
 //! partner modes only: the pile advances and selection continues).
 
-use crate::{
-    inbound::{
-        components::{
-            hint_dialog::{
-                HintBullet, HintBullets, HintColored, HintDialog, HintKey, HintLine,
-                open_and_record_hint,
-            },
-            interactions::swipe::{
-                STACK_DEPTH, SwipeStack, config::SwipeConfig, direction::Direction,
-            },
-            navigation::overlay_stack::use_overlay_back,
-            screen_header::ScreenHeader,
-            telemetry::{usage_buffer::UsageBuffer, vocabulary::component},
+use crate::inbound::{
+    components::{
+        hint_dialog::{
+            HintBullet, HintBullets, HintColored, HintDialog, HintKey, HintLine,
+            open_and_record_hint,
         },
-        screens::deck::card::{
-            components::{
-                card_info::{CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton},
-                printing_sheet::PrintingSheet,
-            },
-            filter::card_filter_sheet::CardFilterSheet,
-        },
+        interactions::swipe::{STACK_DEPTH, SwipeStack, config::SwipeConfig, direction::Direction},
+        navigation::overlay_stack::use_overlay_back,
+        screen_header::ScreenHeader,
+        telemetry::{usage_buffer::UsageBuffer, vocabulary::component},
     },
-    outbound::client::ZwipeClient,
+    screens::deck::card::{
+        components::{
+            card_info::{CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton},
+            printing_sheet::PrintingSheet,
+        },
+        filter::card_filter_sheet::CardFilterSheet,
+    },
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::{collections::HashSet, time::Duration};
 use uuid::Uuid;
+use zwipe_client::ZwipeClient;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
     auth::models::session::Session,

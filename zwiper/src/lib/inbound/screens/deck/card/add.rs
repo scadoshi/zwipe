@@ -2,44 +2,41 @@ use super::components::{
     card_info::{CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton},
     printing_sheet::PrintingSheet,
 };
-use crate::{
-    inbound::{
-        components::{
-            auth::{authed::use_authed, ensure_session::EnsureFresh},
-            chip::Chip,
-            hint_dialog::{
-                HintBullet, HintBullets, HintColored, HintDialog, HintKey, HintLine,
-                use_one_time_hint,
-            },
-            interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
-            screen_header::ScreenHeader,
-            telemetry::{
-                flush_loop::flush_once,
-                usage_buffer::UsageBuffer,
-                vocabulary::{DeckScreen, Screen, component, screen},
-            },
+use crate::inbound::{
+    components::{
+        auth::{authed::use_authed, ensure_session::EnsureFresh},
+        chip::Chip,
+        hint_dialog::{
+            HintBullet, HintBullets, HintColored, HintDialog, HintKey, HintLine, use_one_time_hint,
         },
-        screens::deck::card::{
-            components::{
-                action_history::{
-                    AddAction, CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, MaybeboardAction,
-                    StackAction,
-                },
-                add_stack_cache::{AddStackCache, ParkedStack},
-                card_stack::{CardStack, use_card_stack},
-                filter_store::{FilterScope, FilterStore},
-                flippable_card_image::reset_image_ease,
-                undo_log::{UndoAction, UndoStore},
-            },
-            filter::card_filter_sheet::CardFilterSheet,
+        interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
+        screen_header::ScreenHeader,
+        telemetry::{
+            flush_loop::flush_once,
+            usage_buffer::UsageBuffer,
+            vocabulary::{DeckScreen, Screen, component, screen},
         },
     },
-    outbound::client::ZwipeClient,
+    screens::deck::card::{
+        components::{
+            action_history::{
+                AddAction, CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, MaybeboardAction,
+                StackAction,
+            },
+            add_stack_cache::{AddStackCache, ParkedStack},
+            card_stack::{CardStack, use_card_stack},
+            filter_store::{FilterScope, FilterStore},
+            flippable_card_image::reset_image_ease,
+            undo_log::{UndoAction, UndoStore},
+        },
+        filter::card_filter_sheet::CardFilterSheet,
+    },
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::{collections::HashSet, time::Duration};
 use uuid::Uuid;
+use zwipe_client::ZwipeClient;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
     domain::{

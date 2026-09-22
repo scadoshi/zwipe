@@ -1,14 +1,12 @@
-use crate::{
-    inbound::components::{
-        alert_dialog::{
-            AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-            AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
-        },
-        auth::signal_logout::SignalLogout,
+use crate::inbound::components::{
+    alert_dialog::{
+        AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
+        AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
     },
-    outbound::client::ZwipeClient,
+    auth::signal_logout::SignalLogout,
 };
 use dioxus::prelude::*;
+use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Simple logout confirmation dialog.

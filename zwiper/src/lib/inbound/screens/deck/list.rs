@@ -8,23 +8,21 @@
 //! ephemeral per visit: with the 20-deck cap there is no state worth
 //! persisting.
 
-use crate::{
-    inbound::{
-        components::{
-            auth::authed::use_authed,
-            bottom_sheet::BottomSheet,
-            hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, open_and_record_hint},
-            screen_header::ScreenHeader,
-            telemetry::vocabulary::{DeckScreen, Screen},
-        },
-        router::Router,
-        screens::deck::components::skeletons::DeckListSkeleton,
+use crate::inbound::{
+    components::{
+        auth::authed::use_authed,
+        bottom_sheet::BottomSheet,
+        hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, open_and_record_hint},
+        screen_header::ScreenHeader,
+        telemetry::vocabulary::{DeckScreen, Screen},
     },
-    outbound::client::{ClientError, ZwipeClient},
+    router::Router,
+    screens::deck::components::skeletons::DeckListSkeleton,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::{collections::HashSet, time::Duration};
+use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_components::{ActionBar, Button, ButtonVariant, Chip};
 use zwipe_core::domain::{
     auth::models::session::Session,

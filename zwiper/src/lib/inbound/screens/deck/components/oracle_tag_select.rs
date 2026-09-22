@@ -7,20 +7,18 @@
 //! reveals its definition in the pinned bar. Picking a Deck Tag pre-seeds some of
 //! these (handled by the host screen); here the user tunes the set.
 
-use crate::{
-    inbound::{
-        components::{
-            catalog_cache::CatalogCache, concept_explainers::OracleTagsExplainer,
-            hint_dialog::HintDialog, navigation::overlay_stack::use_overlay_back,
-            screen_header::ScreenHeader,
-        },
-        screens::oracle_tag_dictionary::OracleTagDictionary,
+use crate::inbound::{
+    components::{
+        catalog_cache::CatalogCache, concept_explainers::OracleTagsExplainer,
+        hint_dialog::HintDialog, navigation::overlay_stack::use_overlay_back,
+        screen_header::ScreenHeader,
     },
-    outbound::client::ZwipeClient,
+    screens::oracle_tag_dictionary::OracleTagDictionary,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
+use zwipe_client::ZwipeClient;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
     card::oracle_tag::{CURATED_ORACLE_TAGS, OracleTag, search_oracle_tags},

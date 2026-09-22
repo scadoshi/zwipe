@@ -1,8 +1,9 @@
 //! Card set filter component.
 
 use super::deck_cards::{DeckCards, extract_sets};
-use crate::{inbound::components::catalog_cache::CatalogCache, outbound::client::ZwipeClient};
+use crate::inbound::components::catalog_cache::CatalogCache;
 use dioxus::prelude::*;
+use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 /// Whether the set filter is in include or exclude mode.

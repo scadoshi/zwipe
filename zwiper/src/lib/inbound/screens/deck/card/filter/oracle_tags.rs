@@ -8,8 +8,9 @@
 //! structure of the other multi-select filters.
 
 use super::match_mode::MatchMode;
-use crate::{inbound::components::catalog_cache::CatalogCache, outbound::client::ZwipeClient};
+use crate::inbound::components::catalog_cache::CatalogCache;
 use dioxus::prelude::*;
+use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::{
     oracle_tag::{OracleTag, search_oracle_tags},
     search_card::card_filter::builder::CardQueryBuilder,

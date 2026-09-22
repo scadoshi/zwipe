@@ -17,11 +17,12 @@ use crate::{
         router::Router,
         screens::deck::card::components::image_preview::ImagePreview,
     },
-    outbound::{buy_links, client::ZwipeClient},
+    outbound::buy_links,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
+use zwipe_client::ZwipeClient;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
     auth::models::session::Session,

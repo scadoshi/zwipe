@@ -1,7 +1,6 @@
-//! External service integrations (API client, session management).
+//! External service integrations (session management, platform storage).
 //!
 //! Handles communication with external services from the frontend:
-//! - **Client**: HTTP API client for backend communication
 //! - **Session**: User session and authentication state management
 
 /// Android private-storage path resolution, shared by `session` + `theme_store`.
@@ -9,8 +8,6 @@
 pub mod android_fs;
 /// URL construction for external card retailer bulk-buy tools.
 pub mod buy_links;
-/// HTTP API client for backend communication.
-pub mod client;
 /// Crash capture: panic hook writes to disk, next launch posts + clears.
 pub mod crash_store;
 /// Platform keyring entry (v1 wrapper on desktop, keyring-core + protected

@@ -4,8 +4,9 @@ use super::super::{
     deck_cards::{DeckCards, extract_type_words},
     match_mode::MatchMode,
 };
-use crate::{inbound::components::catalog_cache::CatalogCache, outbound::client::ZwipeClient};
+use crate::inbound::components::catalog_cache::CatalogCache;
 use dioxus::prelude::*;
+use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 fn read_other_types(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {

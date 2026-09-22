@@ -8,11 +8,9 @@
 //! signal updates, so a force-quit can never strand a dead refresh token.
 
 use std::sync::{Arc, OnceLock};
+use zwipe_client::{ClientError, ZwipeClient};
 
-use crate::outbound::{
-    client::{ClientError, ZwipeClient},
-    session::Persist,
-};
+use crate::outbound::session::Persist;
 use dioxus::prelude::*;
 use tokio::sync::{Mutex, oneshot};
 use zwipe_core::{

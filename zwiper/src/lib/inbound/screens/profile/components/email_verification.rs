@@ -1,17 +1,15 @@
-use crate::{
-    inbound::components::{
-        auth::{authed::use_authed, ensure_session::EnsureFresh},
-        telemetry::{
-            usage_buffer::UsageBuffer,
-            vocabulary::{ProfileScreen, Screen, component, screen},
-        },
+use crate::inbound::components::{
+    auth::{authed::use_authed, ensure_session::EnsureFresh},
+    telemetry::{
+        usage_buffer::UsageBuffer,
+        vocabulary::{ProfileScreen, Screen, component, screen},
     },
-    outbound::client::{ClientError, ZwipeClient},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use tokio::time::sleep;
+use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_components::{Button, ButtonVariant};
 use zwipe_core::domain::auth::models::session::Session;
 

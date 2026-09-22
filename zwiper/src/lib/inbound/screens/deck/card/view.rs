@@ -6,34 +6,31 @@ use super::components::{
     quick_add::QuickAdd,
     undo_log::{CommandZoneSlot, UndoAction, UndoLog, UndoStore},
 };
-use crate::{
-    inbound::{
-        components::{
-            auth::authed::use_authed,
-            catalog_cache::CatalogCache,
-            chip::Chip,
-            hint_dialog::{
-                HintBullet, HintBullets, HintColored, HintDialog, HintKey, HintLine,
-                open_and_record_hint,
-            },
-            screen_header::ScreenHeader,
-            telemetry::{
-                usage_buffer::UsageBuffer,
-                vocabulary::{DeckScreen, Screen, screen},
-            },
+use crate::inbound::{
+    components::{
+        auth::authed::use_authed,
+        catalog_cache::CatalogCache,
+        chip::Chip,
+        hint_dialog::{
+            HintBullet, HintBullets, HintColored, HintDialog, HintKey, HintLine,
+            open_and_record_hint,
         },
-        screens::{
-            deck::{
-                card::filter::{
-                    card_filter_sheet::{CardFilterSheet, CollapseExpanded},
-                    deck_cards::DeckCards,
-                },
-                components::{featured_cards::FeaturedCards, skeletons::DeckCardListSkeleton},
-            },
-            oracle_tag_examples::OracleTagExamples,
+        screen_header::ScreenHeader,
+        telemetry::{
+            usage_buffer::UsageBuffer,
+            vocabulary::{DeckScreen, Screen, screen},
         },
     },
-    outbound::client::ZwipeClient,
+    screens::{
+        deck::{
+            card::filter::{
+                card_filter_sheet::{CardFilterSheet, CollapseExpanded},
+                deck_cards::DeckCards,
+            },
+            components::{featured_cards::FeaturedCards, skeletons::DeckCardListSkeleton},
+        },
+        oracle_tag_examples::OracleTagExamples,
+    },
 };
 use dioxus::{core::spawn_forever, prelude::*};
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -43,6 +40,7 @@ use std::{
 };
 use tokio::time::sleep;
 use uuid::Uuid;
+use zwipe_client::ZwipeClient;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
     domain::{

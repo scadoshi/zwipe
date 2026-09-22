@@ -8982,6 +8982,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "zwipe-client"
+version = "1.10.1"
+dependencies = [
+ "getrandom 0.4.3",
+ "reqwest",
+ "serde_json",
+ "thiserror 2.0.19",
+ "tracing",
+ "uuid",
+ "zwipe-core",
+]
+
+[[package]]
 name = "zwipe-components"
 version = "1.10.1"
 dependencies = [
@@ -9035,6 +9048,7 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "webbrowser",
+ "zwipe-client",
  "zwipe-components",
  "zwipe-core",
 ]

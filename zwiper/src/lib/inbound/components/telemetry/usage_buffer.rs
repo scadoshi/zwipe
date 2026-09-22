@@ -7,6 +7,7 @@ use std::{
         atomic::{AtomicU32, Ordering},
     },
 };
+use zwipe_client::ClientError;
 
 use uuid::Uuid;
 use zwipe_core::{
@@ -16,9 +17,7 @@ use zwipe_core::{
     },
 };
 
-use crate::{
-    inbound::components::interactions::swipe::direction::Direction, outbound::client::ClientError,
-};
+use crate::inbound::components::interactions::swipe::direction::Direction;
 
 /// Signal buffer key: `(card oracle id, deck id)`. The deck id rides the wire
 /// as the sole context key: the server derives the commander (EDH) or the
@@ -355,11 +354,9 @@ fn sanitized_decode_message(detail: &str) -> String {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::UsageBuffer;
-    use crate::{
-        inbound::components::interactions::swipe::direction::Direction,
-        outbound::client::ClientError,
-    };
+    use crate::inbound::components::interactions::swipe::direction::Direction;
     use uuid::Uuid;
+    use zwipe_client::ClientError;
     use zwipe_core::http::contracts::metrics::HttpUsageBatch;
 
     #[test]

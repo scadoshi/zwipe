@@ -3,18 +3,16 @@
 //! Show/Hide toggle itself lives on the profile screen; this sheet edits only
 //! the whitelist. The server applies both at serve time.
 
-use crate::{
-    inbound::components::{
-        auth::authed::use_authed,
-        bottom_sheet::BottomSheet,
-        hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, open_and_record_hint},
-        telemetry::vocabulary::{ProfileScreen, Screen},
-    },
-    outbound::client::ZwipeClient,
+use crate::inbound::components::{
+    auth::authed::use_authed,
+    bottom_sheet::BottomSheet,
+    hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, open_and_record_hint},
+    telemetry::vocabulary::{ProfileScreen, Screen},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
+use zwipe_client::ZwipeClient;
 use zwipe_components::{Button, ButtonVariant};
 use zwipe_core::{
     domain::{

@@ -4,10 +4,10 @@
 //! identifies a funnel attempt, not a person or an install. Posts are
 //! fire-and-forget: a failed send is logged and dropped, never surfaced.
 
-use crate::outbound::client::ZwipeClient;
 use dioxus::prelude::*;
 use std::sync::LazyLock;
 use uuid::Uuid;
+use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpAnonymousEvent};
 
 /// Random session id for this launch. Process-global and never persisted:

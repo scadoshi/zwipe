@@ -5,11 +5,12 @@ use crate::{
         components::{fields::text_input::TextInput, screen_header::ScreenHeader},
         router::Router,
     },
-    outbound::{client::ZwipeClient, session::Persist},
+    outbound::session::Persist,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
+use zwipe_client::ZwipeClient;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
     domain::{auth::models::session::Session, logo, user::models::theme::ThemeConfig},

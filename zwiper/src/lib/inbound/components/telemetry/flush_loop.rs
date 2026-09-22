@@ -1,15 +1,13 @@
 //! Background flusher that posts batched usage to the backend.
 
 use std::time::Duration;
+use zwipe_client::ZwipeClient;
 
 use dioxus::prelude::{ReadableExt, Signal, document, spawn};
 use tokio::time::interval;
 
-use crate::{
-    inbound::components::{
-        auth::ensure_session::EnsureFresh, telemetry::usage_buffer::UsageBuffer,
-    },
-    outbound::client::ZwipeClient,
+use crate::inbound::components::{
+    auth::ensure_session::EnsureFresh, telemetry::usage_buffer::UsageBuffer,
 };
 use zwipe_core::domain::auth::models::session::Session;
 

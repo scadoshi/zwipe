@@ -1,26 +1,24 @@
-use crate::{
-    inbound::{
-        components::{
-            alert_dialog::{
-                AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-                AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
-            },
-            auth::authed::use_authed,
-            bottom_sheet::BottomSheet,
-            telemetry::{
-                flush_loop::flush_once,
-                usage_buffer::UsageBuffer,
-                vocabulary::{DeckScreen, Screen, component},
-            },
+use crate::inbound::{
+    components::{
+        alert_dialog::{
+            AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
+            AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
         },
-        router::Router,
+        auth::authed::use_authed,
+        bottom_sheet::BottomSheet,
+        telemetry::{
+            flush_loop::flush_once,
+            usage_buffer::UsageBuffer,
+            vocabulary::{DeckScreen, Screen, component},
+        },
     },
-    outbound::client::ZwipeClient,
+    router::Router,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
+use zwipe_client::ZwipeClient;
 use zwipe_components::Button;
 use zwipe_core::domain::{auth::models::session::Session, site::WEB_BASE};
 

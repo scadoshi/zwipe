@@ -4,18 +4,16 @@ use super::{
     card_info::{CardInfoDisplay, PrintingSheetSkeleton},
     flippable_card_image::FlippableCardImage,
 };
-use crate::{
-    inbound::components::{
-        interactions::carousel::{Carousel, dots::CarouselDots, state::CarouselState},
-        navigation::overlay_stack::use_overlay_back_action,
-        telemetry::{usage_buffer::UsageBuffer, vocabulary::component},
-    },
-    outbound::client::ZwipeClient,
+use crate::inbound::components::{
+    interactions::carousel::{Carousel, dots::CarouselDots, state::CarouselState},
+    navigation::overlay_stack::use_overlay_back_action,
+    telemetry::{usage_buffer::UsageBuffer, vocabulary::component},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
+use zwipe_client::ZwipeClient;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::card::{Card, scryfall_data::ImageSize};
 

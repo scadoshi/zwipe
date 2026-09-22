@@ -3,6 +3,7 @@
 //! Provides the profile overview plus bottom sheets for updating user info.
 
 /// Change email bottom sheet.
+use zwipe_client::ZwipeClient;
 pub mod change_email;
 /// Change password bottom sheet.
 pub mod change_password;
@@ -27,7 +28,7 @@ use crate::{
         },
         router::Router,
     },
-    outbound::{client::ZwipeClient, open_url},
+    outbound::open_url,
 };
 use change_email::ChangeEmailSheet;
 use change_password::ChangePasswordSheet;

@@ -1,22 +1,20 @@
 //! Export deck as plain-text decklist screen.
 
-use crate::{
-    inbound::{
-        components::{
-            auth::authed::use_authed,
-            chip::Chip,
-            hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
-            screen_header::ScreenHeader,
-            telemetry::vocabulary::{DeckScreen, Screen},
-        },
-        router::Router,
+use crate::inbound::{
+    components::{
+        auth::authed::use_authed,
+        chip::Chip,
+        hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
+        screen_header::ScreenHeader,
+        telemetry::vocabulary::{DeckScreen, Screen},
     },
-    outbound::client::ClientError,
+    router::Router,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
+use zwipe_client::ClientError;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{deck::Deck, user::models::hints::HINT_EXPORT};
 

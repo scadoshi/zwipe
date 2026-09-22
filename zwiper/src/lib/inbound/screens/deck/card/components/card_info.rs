@@ -1,14 +1,12 @@
-use crate::{
-    inbound::components::{
-        alert_dialog::{
-            AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
-            AlertDialogRoot, AlertDialogTitle,
-        },
-        catalog_cache::CatalogCache,
+use crate::inbound::components::{
+    alert_dialog::{
+        AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
+        AlertDialogRoot, AlertDialogTitle,
     },
-    outbound::client::ZwipeClient,
+    catalog_cache::CatalogCache,
 };
 use dioxus::prelude::*;
+use zwipe_client::ZwipeClient;
 use zwipe_components::{Button, ButtonVariant, CardDetails, OracleText, card_face_count};
 use zwipe_core::domain::card::Card;
 

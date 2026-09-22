@@ -1,17 +1,15 @@
-use crate::{
-    inbound::components::{
-        alert_dialog::{
-            AlertDialogActions, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-            AlertDialogRoot, AlertDialogTitle,
-        },
-        auth::{authed::use_authed, signal_logout::SignalLogout},
-        fields::text_input::TextInput,
-        telemetry::vocabulary::{ProfileScreen, Screen, component},
+use crate::inbound::components::{
+    alert_dialog::{
+        AlertDialogActions, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+        AlertDialogRoot, AlertDialogTitle,
     },
-    outbound::client::ZwipeClient,
+    auth::{authed::use_authed, signal_logout::SignalLogout},
+    fields::text_input::TextInput,
+    telemetry::vocabulary::{ProfileScreen, Screen, component},
 };
 use dioxus::prelude::*;
 use std::time::Duration;
+use zwipe_client::ZwipeClient;
 use zwipe_core::{
     domain::auth::models::{secret::Secret, session::Session},
     http::contracts::auth::HttpDeleteUser,

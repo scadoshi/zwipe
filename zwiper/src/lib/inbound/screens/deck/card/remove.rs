@@ -3,36 +3,34 @@ use super::components::{
     filter_store::{FilterScope, FilterStore},
     printing_sheet::PrintingSheet,
 };
-use crate::{
-    inbound::{
-        components::{
-            auth::{authed::use_authed, ensure_session::EnsureFresh},
-            chip::Chip,
-            hint_dialog::{
-                HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint,
-            },
-            interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
-            screen_header::ScreenHeader,
-            telemetry::{
-                usage_buffer::UsageBuffer,
-                vocabulary::{DeckScreen, Screen, component, screen},
-            },
+use crate::inbound::{
+    components::{
+        auth::{authed::use_authed, ensure_session::EnsureFresh},
+        chip::Chip,
+        hint_dialog::{
+            HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint,
         },
-        screens::deck::card::{
-            components::{
-                action_history::{RemoveAction, StackAction},
-                card_stack::use_card_stack,
-                undo_log::{UndoAction, UndoStore},
-            },
-            filter::{card_filter_sheet::CardFilterSheet, deck_cards::DeckCards},
+        interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
+        screen_header::ScreenHeader,
+        telemetry::{
+            usage_buffer::UsageBuffer,
+            vocabulary::{DeckScreen, Screen, component, screen},
         },
     },
-    outbound::client::ZwipeClient,
+    screens::deck::card::{
+        components::{
+            action_history::{RemoveAction, StackAction},
+            card_stack::use_card_stack,
+            undo_log::{UndoAction, UndoStore},
+        },
+        filter::{card_filter_sheet::CardFilterSheet, deck_cards::DeckCards},
+    },
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
+use zwipe_client::ZwipeClient;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
     domain::{

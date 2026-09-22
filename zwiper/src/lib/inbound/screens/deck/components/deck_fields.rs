@@ -1,18 +1,16 @@
-use crate::{
-    inbound::components::{
-        fields::text_input::TextInput,
-        hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, HintKey},
-        hint_host::HintTopic,
-        info_button::InfoButton,
-        telemetry::usage_buffer::UsageBuffer,
-    },
-    outbound::client::ZwipeClient,
+use crate::inbound::components::{
+    fields::text_input::TextInput,
+    hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, HintKey},
+    hint_host::HintTopic,
+    info_button::InfoButton,
+    telemetry::usage_buffer::UsageBuffer,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use std::time::Duration;
 use tokio::time::sleep;
 use uuid::Uuid;
+use zwipe_client::ZwipeClient;
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{

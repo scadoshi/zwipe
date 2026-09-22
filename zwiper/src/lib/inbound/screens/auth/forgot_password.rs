@@ -1,12 +1,10 @@
 //! Forgot password screen.
 
-use crate::{
-    inbound::components::{fields::text_input::TextInput, screen_header::ScreenHeader},
-    outbound::client::ZwipeClient,
-};
+use crate::inbound::components::{fields::text_input::TextInput, screen_header::ScreenHeader};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
+use zwipe_client::ZwipeClient;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
     domain::{Email, logo},

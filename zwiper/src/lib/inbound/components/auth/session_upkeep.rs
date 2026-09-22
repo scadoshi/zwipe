@@ -4,6 +4,7 @@
 //! [`EnsureFresh`] helper, and initializes the app-wide Dioxus context
 //! (session, client, card search state, theme, telemetry buffer).
 
+use crate::config::Config;
 use crate::{
     inbound::{
         components::{
@@ -26,12 +27,13 @@ use crate::{
             create::CreateDeckCommanderSeed,
         },
     },
-    outbound::{client::ZwipeClient, session::Persist, theme_store::PersistTheme},
+    outbound::{session::Persist, theme_store::PersistTheme},
 };
 use chrono::{DateTime, Utc};
 use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::interval;
+use zwipe_client::ZwipeClient;
 use zwipe_components::KeywordReminders;
 use zwipe_core::{
     domain::{
@@ -125,7 +127,9 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     let session = use_signal(Session::infallible_load);
     use_context_provider(|| session);
 
-    let client = use_signal(ZwipeClient::new);
+    // The client crate reads no environment: zwiper supplies the base URL from
+    // its build-time config, which is what lets a debug build point at prod.
+    let client = use_signal(|| ZwipeClient::new(Config::from_env().backend_url));
     use_context_provider(|| client);
 
     // Back-aware overlay stack: the OS back gesture closes the top open overlay

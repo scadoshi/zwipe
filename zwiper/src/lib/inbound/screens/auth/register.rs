@@ -9,11 +9,12 @@ use crate::{
         },
         router::Router,
     },
-    outbound::{client::ZwipeClient, session::Persist},
+    outbound::session::Persist,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
+use zwipe_client::ZwipeClient;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
     domain::{

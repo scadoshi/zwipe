@@ -15,48 +15,44 @@
 //! list's Create). **Remove** un-maybes an entry in place.
 
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
-use crate::{
-    inbound::{
-        components::{
-            alert_dialog::{
-                AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-                AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
-            },
-            auth::authed::use_authed,
-            bottom_sheet::BottomSheet,
-            catalog_cache::CatalogCache,
-            hint_dialog::{
-                HintBullet, HintBullets, HintDialog, HintKey, HintLine, use_one_time_hint,
-            },
-            screen_header::ScreenHeader,
-            telemetry::{
-                usage_buffer::UsageBuffer,
-                vocabulary::{Screen, screen},
-            },
+use crate::inbound::{
+    components::{
+        alert_dialog::{
+            AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
+            AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
         },
-        router::Router,
-        screens::{
-            deck::{
-                card::{
-                    components::{
-                        card_row::{CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt},
-                        image_preview::ImagePreview,
-                        printing_sheet::PrintingSheet,
-                    },
-                    filter::card_filter_sheet::CardFilterSheet,
-                },
-                create::CreateDeckCommanderSeed,
-            },
-            oracle_tag_examples::OracleTagExamples,
+        auth::authed::use_authed,
+        bottom_sheet::BottomSheet,
+        catalog_cache::CatalogCache,
+        hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, HintLine, use_one_time_hint},
+        screen_header::ScreenHeader,
+        telemetry::{
+            usage_buffer::UsageBuffer,
+            vocabulary::{Screen, screen},
         },
     },
-    outbound::client::ZwipeClient,
+    router::Router,
+    screens::{
+        deck::{
+            card::{
+                components::{
+                    card_row::{CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt},
+                    image_preview::ImagePreview,
+                    printing_sheet::PrintingSheet,
+                },
+                filter::card_filter_sheet::CardFilterSheet,
+            },
+            create::CreateDeckCommanderSeed,
+        },
+        oracle_tag_examples::OracleTagExamples,
+    },
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::{collections::HashSet, time::Duration};
 use tokio::time::sleep;
 use uuid::Uuid;
+use zwipe_client::ZwipeClient;
 use zwipe_components::{ActionBar, Button, ButtonVariant, Chip};
 use zwipe_core::domain::{
     auth::models::session::Session,

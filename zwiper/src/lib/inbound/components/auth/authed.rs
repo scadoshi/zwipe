@@ -10,20 +10,18 @@
 //! and keep calling `ensure_fresh` directly. The facade is for screens.
 
 use std::time::Duration;
+use zwipe_client::{ClientError, ZwipeClient};
 
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
 
-use crate::{
-    inbound::components::{
-        auth::ensure_session::EnsureFresh,
-        telemetry::{
-            usage_buffer::UsageBuffer,
-            vocabulary::{Screen, component},
-        },
+use crate::inbound::components::{
+    auth::ensure_session::EnsureFresh,
+    telemetry::{
+        usage_buffer::UsageBuffer,
+        vocabulary::{Screen, component},
     },
-    outbound::client::{ZwipeClient, error::ClientError},
 };
 
 /// Everything the ceremony needs, in one Copy handle so closures and spawns

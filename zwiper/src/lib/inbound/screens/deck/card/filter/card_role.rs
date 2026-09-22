@@ -2,8 +2,9 @@
 //! card-role catalog (`GET /api/card/roles`), not a compiled enum, so new roles
 //! appear without a client release. No fallback (same as artists/oracle-tags).
 
-use crate::{inbound::components::catalog_cache::CatalogCache, outbound::client::ZwipeClient};
+use crate::inbound::components::catalog_cache::CatalogCache;
 use dioxus::prelude::*;
+use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::{
     card_role::CardRoleView, search_card::card_filter::builder::CardQueryBuilder,
 };

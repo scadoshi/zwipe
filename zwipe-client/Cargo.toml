@@ -1,0 +1,26 @@
+[package]
+name = "zwipe-client"
+version.workspace = true
+authors = ["scottyrayfermo"]
+edition = "2024"
+
+[lints]
+workspace = true
+
+[dependencies]
+zwipe-core = { path = "../zwipe-core" }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+
+# reqwest is split by target: the workspace copy carries rustls-tls, which does
+# not compile for wasm32. The browser supplies TLS there, so the wasm build
+# takes reqwest without it. zite's manifest carries the same split.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+reqwest = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+reqwest = { version = "0.12", features = ["json"], default-features = false }
+# uuid pulls getrandom, which needs to be told which browser API to use.
+getrandom = { version = "0.4", features = ["wasm_js"] }
