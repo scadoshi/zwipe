@@ -1,7 +1,26 @@
 # Catalog cache fails silently with no retry
 
-**Status: PLANNED 2026-09-21 (found in the 2026-09-05 dead-backend pass).
-Presentation is undecided: see the two options below. Client-only.**
+**Status: DONE 2026-09-22 (`68b4444a`). Rides 1.10.2.**
+
+Shipped as a toast with no button, fired once per sheet opening when any
+public catalog is `Failed`: "Filter lists didn't load, trying again".
+
+No retry button, and no auto-retry loop, because neither was needed. Each
+picker's own effect calls its `ensure_*` on mount and that refetches a failed
+cell, so **opening the sheet already is the retry** and the wording is true at
+the moment it appears. A button would have duplicated what just happened on
+its own.
+
+The check lives in the sheet, not the pickers, so one failure gives one
+message rather than eight. Deck tags are excluded from it: they warm only once
+a session exists, so an unloaded deck-tag catalog is ordinary rather than a
+failure.
+
+Left alone deliberately: `deck/card/view.rs` reads the oracle-tag catalog for
+row note chips with no failure branch. A missing chip is invisible rather than
+wrong, and the user has no action to take, unlike an empty picker that reads as
+a real "no matches" answer. The oracle-tag dictionary already had its own
+failure toast and keeps it.
 
 **One sentence:** when a filter catalog fails to load, the picker shows an
 empty list that is indistinguishable from "no matches", and nothing retries
