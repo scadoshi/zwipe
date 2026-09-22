@@ -11,7 +11,6 @@ your platform:**
 | Platform | Guide |
 |---|---|
 | macOS | [`macos/README.md`](macos/README.md) |
-| Fedora | [`fedora/README.md`](fedora/README.md) |
 | Omarchy (Arch-based) | [`omarchy/README.md`](omarchy/README.md) |
 
 ## setup.sh vs reset.sh
