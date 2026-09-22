@@ -1,8 +1,24 @@
 # The add screen can't clear a filter back to default
 
-**Status: DIAGNOSED 2026-09-21 (owner hit it on the simulator). Pre-existing,
-not from that day's refactors. Fix not written; it's UI, so it waits for a
-visual review anyway.**
+**Status: FIXED 2026-09-22 (`8ff6e790`), owner-tested on device. Ships with
+1.10.2. Pre-existing, not from the 2026-09-21 refactors.**
+
+What landed, beyond the diagnosis below:
+
+- Apply reads the **transition**, not the draft alone: clearing a filter that
+  is on commits, while an empty apply from an already-empty state is still
+  refused. The decision is a pure `apply_action` fn with tests covering all
+  seven states, because the first attempt got it wrong twice (it refused a
+  deliberate clear, then labelled every apply over an existing filter a clear).
+- The refusal returns **before** closing the sheet. Closing with the snapshot
+  still armed was what made a refusal also revert the draft and raise the
+  second toast.
+- An **unedited apply no longer refetches**: opening the sheet, changing
+  nothing and applying leaves the card stack where the user had it (owner
+  request, 2026-09-22).
+- Reset keeps its toast. It was briefly removed as redundant, but the sheet
+  stays open with sections collapsed, so a silent Reset reads as a dead
+  button.
 
 **One sentence:** on the add screen, applying a cleared filter is refused as
 "empty" and then silently reverted, so there is no way back out of a filter
