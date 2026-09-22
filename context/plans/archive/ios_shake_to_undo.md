@@ -1,7 +1,16 @@
 # Suppress the iOS shake-to-undo prompt
 
-**Status: PLANNED 2026-09-21 (owner raised it 2026-09-05). Small, client-only,
-rides the next client build.**
+**Status: DONE 2026-09-22 (`90a85d5c`), owner-tested on device. Rides 1.10.2.**
+
+Landed as planned: `zwiper/src/lib/outbound/shake_to_edit.rs`, called from a
+`use_hook` in `App()`. Two verification notes worth keeping, since neither is
+obvious:
+
+- A plain `cargo check` compiles only the `not(target_os = "ios")` no-op, so it
+  proves nothing. Check `--target aarch64-apple-ios --features mobile`.
+- That check is itself worth falsifying. Breaking the selector on purpose and
+  confirming the build fails is how you know the cfg branch is being compiled
+  rather than skipped.
 
 **One sentence:** set `applicationSupportsShakeToEdit = false` on the shared
 `UIApplication` so shaking the phone stops raising the system "Undo Typing"
