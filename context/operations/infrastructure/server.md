@@ -29,7 +29,7 @@ Backend served via Cloudflare Tunnel: no port forwarding, TLS handled by Cloudfl
 - [ ] Install `cloudflared`, configure tunnel to `api.zwipe.net`
 - [ ] Start `zerver` systemd service
 - [ ] Install the `zervice` systemd units from `zcripts/server/systemd/` (`zervice.service`, `zervice.timer`, `zervice-alert.service`, `zervice-alert.sh`) into `/etc/systemd/system/`, script to `~/zwipe/`. Nightly timer, NOT cron
-- [ ] Place `~/zwipe/.env.zervice` (see the zervice scheduling section below) and run `zcripts/server/sql/zervice_role.sql` to create the scoped Postgres role
+- [ ] Place `~/zwipe/.env.zervice` (see the zervice scheduling section below) and run `zcripts/server/sql/zervice_role.sql` to create the scoped Postgres role. Feed it on **stdin**, never with `-f`: `sudo -u postgres psql zwipe < ~/zwipe-src/zcripts/server/sql/zervice_role.sql`. The `postgres` user cannot traverse `/home/scadoshi`, so `-f` fails with a bare `Permission denied`; the redirect opens the file as you. Same trap applies to any script under the repo, `zcripts/metrics/errors.sql` included
 - [ ] Add backup cron (5am daily): see `backups.md`
 - [ ] Run `zervice` once manually to seed Scryfall card data
 - [ ] Install self-hosted GitHub Actions runner (see `cicd.md`): this is what deploys code, runs migrations, and restarts zerver on every push to main
