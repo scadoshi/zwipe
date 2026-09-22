@@ -212,7 +212,11 @@ Once wasm compiles, build the authenticated experience into zite:
 - [ ] **About page (`/about`) visual overhaul, larger redesign wanted.** A partial alignment pass landed 2026-07-21 (`8c873e4e`, `f0fcae6d`, `4990b0a0`): five-crate diagram with `zwipe-components`, the enrichment card rewritten for community oracle tags (roles derived from otag subtrees, not the retired heuristic), refreshed test counts, and the whole thing brought toward the app's tag/chip grammar (colored theme chips cycling accent 1–3 / success / warning / error, single-line wrapping header, tech stacks as chip rows, linkified imports). Owner still wants a fuller visual redesign of this section. Open bits from the pass: single-label subtitles (Scryfall "external service", PostgreSQL "primary datastore", the two foundation bands) → chips for full consistency; and the tagline comma (moot now the tagline is gone).
 - [x] **Favicon with a background color, REGENERATED 2026-08-05, deploys with next push.** All six assets (`favicon.ico` 16/32/48/64, `favicon-16x16/32x32.png`, `icon-180/192/512.png`) recomposited from `zite/assets/favicon-no-background/` onto solid `#282828` (the Android adaptive-launcher bg). Google recrawls favicons on its own schedule; check the "zwipe" SERP icon in ~a week, then delete this line.
 - [x] **Contribute page: mirror the portfolio site's version, DONE 2026-08-05, deploys next push.** zite's `/contribute` rebuilt on the shared `zwipe_components::Panel` cards (the delta vs the portfolio was hand-rolled divs vs Panels, since the three options/URLs already matched), portfolio card copy adopted, Zwipe-specific intro kept. Delete this line after a look at the deployed page.
-- [ ] **Tiny, ride along with the next zite change:** `zite/src/pages/guides/mod.rs` doc comment still says "19 articles" (the registry holds 21; commander-maybeboard and one more landed since), and the 2026-08 commit note's "36 images across 19 guides" count is equally stale. Comment-only fix.
+- [x] ~~**Tiny, ride along with the next zite change:**~~ Done. The
+  `zite/src/pages/guides/mod.rs` doc comment no longer states a count at all,
+  which is the right fix for a number that goes stale every time a guide
+  lands. The registry holds 21.
+
 - [ ] **Keep zwipe.net in sync as the app grows.** The guides knowledge base shipped (20 guides under `/guides` carrying 36 screenshots, sitemap + per-guide `Article` JSON-LD landed 2026-07-08). No committed appetite for the demand-first SEO guides ("best mobile MTG deck builder", etc.); leave them optional. The standing task is just to update the site (guides, feature pages, screenshots) as the app becomes more feature-rich. (SEO-guides plan archived at [`../archive/seo_guides.md`](../archive/seo_guides.md).)
 
 ---
@@ -233,9 +237,15 @@ Outcomes in [`../README.md`](../README.md). What's left:
 ## Maintenance
 
 
-- [ ] **Catalog-cache pickers fail silently with no retry (found in the 2026-09-05 dead-backend pass).** When the artist/type/otag/card-role catalogs fail to load, the filter pickers sit empty all session with no explanation and no retry. The cache stays outside the authed facade by design; the fix is an inline empty state in the pickers ("couldn't load, tap to retry"), not a toast. Client-only.
+- [x] ~~**Catalog-cache pickers fail silently with no retry**~~ SHIPPED
+  2026-09-22 (rides 1.10.2). A failed catalog load now raises a toast and
+  retries instead of leaving the filter pickers empty for the session. Plan
+  archived at `../plans/archive/catalog_cache_retry.md`.
 
-- [ ] **iOS: suppress the shake-to-undo "Undo Typing" prompt (owner 2026-09-05).** One `#[cfg(target_os = "ios")]` objc call at startup setting `applicationSupportsShakeToEdit = false` on the shared UIApplication (objc2 is already in the tree via wry/tao). Kills shake-undo for text editing app-wide, which is no loss here. Client-only, rides 1.10.1+.
+- [x] ~~**iOS: suppress the shake-to-undo "Undo Typing" prompt**~~ SHIPPED
+  2026-09-22 (rides 1.10.2). `setApplicationSupportsShakeToEdit:NO` at
+  startup. Undo on the add screen is still a downward swipe, unchanged. Plan
+  archived at `../plans/archive/ios_shake_to_undo.md`.
 
 - [x] **Orphaned otag-description slugs, CLEANED 2026-08-18; confirm on the next nightly, then delete this line.** The WARN had grown 12 → 20 (a tagger rename pass, not new tags): the whole `hand-neutral`/`hand-positive`/`hand-negative` trio was replaced by a `hand-size-*` family that splits on *maximum hand size* rather than card-advantage direction, so that text was dropped rather than moved. All 20 authored entries removed from `ORACLE_TAG_DESCRIPTIONS`; every successor (`untracked-indefinite-effect`, `phasing-matters`, `typal-serpent`, `your-sacrifice-matters`, the `hand-size-*` family) already had authored copy. Verified against the live catalog: all 4,383 remaining authored slugs exist, so the WARN should print nothing. Two silent dead references found in the same sweep, neither of which is warn-checked the way `ROLE_TAG_OVERRIDES` is: `CATEGORY_ROOTS` still listed the retired `hand-positive` under `card_advantage` (a no-op, the umbrella `card-advantage` root already covers it) and `NOISE_ORACLE_TAG_SLUGS` still hid `hand-neutral`. **Behavior change to watch:** `ROLE_TAG_OVERRIDES`' dangling `synergy-sacrifice` was remapped to `your-sacrifice-matters`, which carries 118 cards where the dead slug carried none, so the `sacrifice` role gains cards on the next `zervice` run. Blank descriptions went 75 → 70 in the same change (see below).
 
