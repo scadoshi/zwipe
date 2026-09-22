@@ -8907,6 +8907,7 @@ dependencies = [
  "tokio",
  "uuid",
  "web-sys",
+ "zwipe-client",
  "zwipe-components",
  "zwipe-core",
 ]

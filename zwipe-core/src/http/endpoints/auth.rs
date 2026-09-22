@@ -6,7 +6,7 @@ use crate::{
         endpoint::{Endpoint, Method},
         paths::{
             FORGOT_PASSWORD_ROUTE, LOGIN_ROUTE, LOGOUT_ROUTE, REFRESH_SESSION_ROUTE,
-            REGISTER_ROUTE, RESEND_VERIFICATION_ROUTE,
+            REGISTER_ROUTE, RESEND_VERIFICATION_ROUTE, RESET_PASSWORD_ROUTE, VERIFY_EMAIL_ROUTE,
         },
     },
 };
@@ -82,6 +82,38 @@ impl Endpoint for RequestPasswordReset {
     type Response = ();
     fn path(&self) -> String {
         FORGOT_PASSWORD_ROUTE.to_string()
+    }
+    fn body(&self) -> Option<Value> {
+        Some(self.0.clone())
+    }
+}
+
+/// Confirm an email address with the token from the verification link.
+///
+/// Unauthenticated: the link is opened in a browser that has no session.
+pub struct VerifyEmail(pub Value);
+impl Endpoint for VerifyEmail {
+    const METHOD: Method = Method::Post;
+    const AUTH: bool = false;
+    type Response = ();
+    fn path(&self) -> String {
+        VERIFY_EMAIL_ROUTE.to_string()
+    }
+    fn body(&self) -> Option<Value> {
+        Some(self.0.clone())
+    }
+}
+
+/// Finish a password reset with the token from the reset link.
+///
+/// Unauthenticated, for the same reason as [`VerifyEmail`].
+pub struct ResetPassword(pub Value);
+impl Endpoint for ResetPassword {
+    const METHOD: Method = Method::Post;
+    const AUTH: bool = false;
+    type Response = ();
+    fn path(&self) -> String {
+        RESET_PASSWORD_ROUTE.to_string()
     }
     fn body(&self) -> Option<Value> {
         Some(self.0.clone())

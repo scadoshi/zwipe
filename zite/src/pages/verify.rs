@@ -1,12 +1,6 @@
-use crate::{API_BASE, Nav};
+use crate::{Nav, api};
 use dioxus::prelude::*;
-use serde::Serialize;
-use zwipe_core::http::paths::VERIFY_EMAIL_ROUTE;
-
-#[derive(Serialize)]
-struct VerifyEmailRequest {
-    token: String,
-}
+use zwipe_client::ClientError;
 
 #[component]
 pub fn Verify(token: String) -> Element {
@@ -17,19 +11,14 @@ pub fn Verify(token: String) -> Element {
                 return Err("No token found in URL".to_string());
             }
 
-            let client = reqwest::Client::new();
-            let res = client
-                .post(format!("{}{}", API_BASE, VERIFY_EMAIL_ROUTE))
-                .json(&VerifyEmailRequest { token })
-                .send()
+            api::client()
+                .verify_email(token)
                 .await
-                .map_err(|e| e.to_string())?;
-
-            if res.status().is_success() {
-                Ok(())
-            } else {
-                Err("Token not found or expired".to_string())
-            }
+                .map_err(|e| match e {
+                    // A request that never landed is not a bad token; say so.
+                    ClientError::Network(_) | ClientError::Decode(_) => e.to_user_message(),
+                    _ => "Token not found or expired".to_string(),
+                })
         }
     });
 

@@ -1,24 +1,18 @@
 //! Live aggregate stats strip surfaced on the marketing site.
 //!
-//! Fetches `GET {API_BASE}/api/marketing/stats` during SSR. CF caches the
+//! Fetched during SSR. CF caches the
 //! API response at the edge (~2h TTL), GH Pages caches the rendered HTML,
 //! so cost-per-pageview is near zero. On error the strip hides itself;
 //! don't break the marketing page on a metrics outage.
 
-use crate::API_BASE;
+use crate::api;
 use dioxus::prelude::*;
-use zwipe_core::http::{contracts::metrics::HttpPublicMetrics, paths::PUBLIC_METRICS_ROUTE};
+use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
 
 #[component]
 pub fn StatsStrip() -> Element {
-    let stats: Resource<Option<HttpPublicMetrics>> = use_resource(|| async {
-        let url = format!("{}{}", API_BASE, PUBLIC_METRICS_ROUTE);
-        let res = reqwest::Client::new().get(&url).send().await.ok()?;
-        if !res.status().is_success() {
-            return None;
-        }
-        res.json::<HttpPublicMetrics>().await.ok()
-    });
+    let stats: Resource<Option<HttpPublicMetrics>> =
+        use_resource(|| async { api::client().public_metrics().await.ok() });
 
     let value = stats.read();
     let Some(Some(s)) = &*value else {

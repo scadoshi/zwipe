@@ -1,6 +1,6 @@
 //! Authentication API client operations.
 //!
-//! Provides traits and implementations for user authentication:
+//! Methods for user authentication:
 //! login, logout, token refresh, and registration.
 
 /// Forgot password / password reset initiation endpoint.
@@ -15,3 +15,7 @@ pub mod refresh;
 pub mod register;
 /// Resend email verification endpoint.
 pub mod resend_verification;
+/// Password reset completion endpoint.
+pub mod reset_password;
+/// Email verification endpoint.
+pub mod verify_email;

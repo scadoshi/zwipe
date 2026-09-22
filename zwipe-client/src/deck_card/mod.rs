@@ -1,6 +1,6 @@
 //! Deck-card relationship API operations.
 //!
-//! Provides traits and implementations for managing cards within decks:
+//! Methods for managing cards within decks:
 //! adding, removing, and updating card quantities.
 
 /// Add a card to a deck.

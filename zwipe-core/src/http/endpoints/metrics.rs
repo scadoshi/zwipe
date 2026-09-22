@@ -1,8 +1,11 @@
 //! Usage counters, anonymous funnel events and crash reports.
 
 use crate::http::{
+    contracts::metrics::HttpPublicMetrics,
     endpoint::{Endpoint, Method},
-    paths::{RECORD_ANONYMOUS_EVENT_ROUTE, RECORD_CRASH_ROUTE, RECORD_USAGE_ROUTE},
+    paths::{
+        PUBLIC_METRICS_ROUTE, RECORD_ANONYMOUS_EVENT_ROUTE, RECORD_CRASH_ROUTE, RECORD_USAGE_ROUTE,
+    },
 };
 use serde_json::Value;
 
@@ -44,5 +47,18 @@ impl Endpoint for RecordCrash {
     }
     fn body(&self) -> Option<Value> {
         Some(self.0.clone())
+    }
+}
+
+/// Install and deck counts for the site's stats strip.
+///
+/// Unauthenticated: it renders on a public marketing page.
+pub struct PublicMetrics;
+impl Endpoint for PublicMetrics {
+    const METHOD: Method = Method::Get;
+    const AUTH: bool = false;
+    type Response = HttpPublicMetrics;
+    fn path(&self) -> String {
+        PUBLIC_METRICS_ROUTE.to_string()
     }
 }

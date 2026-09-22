@@ -1,6 +1,6 @@
 //! User profile API client operations.
 //!
-//! Provides traits and implementations for user account management:
+//! Methods for user account management:
 //! fetching user data and updating credentials.
 
 /// Change user email endpoint.

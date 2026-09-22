@@ -3,6 +3,7 @@ use zwipe_components::{
     BRAND_RESET_JS, COMPONENTS_CSS, NavBar, THEMES_CSS, ThemeConfig, ThemePicker,
 };
 
+mod api;
 mod components;
 mod pages;
 mod theme_store;

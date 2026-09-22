@@ -14,15 +14,12 @@
 //! animated ancestor's transform makes it the containing block for
 //! `position: fixed`.
 
-use crate::{API_BASE, components::sleep_ms};
+use crate::components::sleep_ms;
 use dioxus::prelude::*;
 use zwipe_components::Panel;
-use zwipe_core::{
-    domain::card::{
-        Card,
-        scryfall_data::{ImageSize, ScryfallData},
-    },
-    http::paths::FEATURED_FLAVOR_ROUTE,
+use zwipe_core::domain::card::{
+    Card,
+    scryfall_data::{ImageSize, ScryfallData},
 };
 
 /// A real card response (Research Assistant, M15) frozen 2026-08-07, decoded as
@@ -58,14 +55,8 @@ pub fn dismiss_flavor_overlay(
 
 #[component]
 pub fn FeaturedFlavor(overlay: Signal<Option<ScryfallData>>) -> Element {
-    let fetched: Resource<Option<Card>> = use_resource(|| async {
-        let url = format!("{}{}", API_BASE, FEATURED_FLAVOR_ROUTE);
-        let res = reqwest::Client::new().get(&url).send().await.ok()?;
-        if !res.status().is_success() {
-            return None;
-        }
-        res.json::<Card>().await.ok()
-    });
+    let fetched: Resource<Option<Card>> =
+        use_resource(|| async { crate::api::client().featured_flavor().await.ok() });
 
     let value = fetched.read();
     let live = match &*value {

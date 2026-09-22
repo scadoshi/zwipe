@@ -1,6 +1,6 @@
 //! Deck API client operations.
 //!
-//! Provides traits and implementations for deck CRUD operations:
+//! Methods for deck CRUD operations:
 //! create, read, update, and delete decks.
 
 /// Clear a deck's suppression set (skipped/removed cards).
@@ -21,6 +21,8 @@ pub mod get_deck_profiles;
 pub mod get_deck_tags;
 /// Fetch tokens produced by a deck's cards.
 pub mod get_deck_tokens;
+/// Public shared-deck read endpoint.
+pub mod get_shared_deck;
 /// Import a deck from an Archidekt URL.
 pub mod import_archidekt_deck;
 /// Deck-aware card search (server-side exclusion + synergy default order).

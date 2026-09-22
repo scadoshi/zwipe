@@ -10,15 +10,17 @@ use crate::{
         },
     },
     http::{
-        contracts::deck::{HttpClearedSuppressions, HttpClonedDeck, HttpDeckShareToken},
+        contracts::deck::{
+            HttpClearedSuppressions, HttpClonedDeck, HttpDeckShareToken, HttpSharedDeck,
+        },
         endpoint::{Endpoint, Method},
         paths::{
             CREATE_DECK_ROUTE, GET_DECK_PROFILES_ROUTE, GET_DECK_TAGS_ROUTE,
             clear_deck_suppressions_route, clone_deck_route, create_deck_card_route,
             delete_deck_card_route, delete_deck_route, get_deck_profile_route, get_deck_route,
-            get_deck_tokens_route, import_archidekt_deck_route, import_deck_cards_route,
-            share_deck_route, skip_deck_card_route, unskip_deck_card_route, update_deck_card_route,
-            update_deck_route,
+            get_deck_tokens_route, get_shared_deck_route, import_archidekt_deck_route,
+            import_deck_cards_route, share_deck_route, skip_deck_card_route,
+            unskip_deck_card_route, update_deck_card_route, update_deck_route,
         },
     },
 };
@@ -236,5 +238,19 @@ impl Endpoint for ImportArchidektDeck {
     }
     fn body(&self) -> Option<Value> {
         Some(self.1.clone())
+    }
+}
+
+/// Read a deck through its public share token.
+///
+/// Unauthenticated: the share link is meant to open for anyone, including
+/// people with no account. A revoked or unknown token answers 404.
+pub struct GetSharedDeck(pub Uuid);
+impl Endpoint for GetSharedDeck {
+    const METHOD: Method = Method::Get;
+    const AUTH: bool = false;
+    type Response = HttpSharedDeck;
+    fn path(&self) -> String {
+        get_shared_deck_route(self.0)
     }
 }

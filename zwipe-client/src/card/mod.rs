@@ -1,6 +1,6 @@
 //! Card data API client operations.
 //!
-//! Provides traits and implementations for fetching MTG card data:
+//! Methods for fetching MTG card data:
 //! card search, individual card retrieval, and metadata lookups.
 
 /// Fetch the featured flavor card (one shared pick per UTC hour).

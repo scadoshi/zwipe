@@ -1,10 +1,11 @@
 use crate::{
-    API_BASE, Footer, Nav,
+    Footer, Nav, api,
     components::{PageMeta, sleep_ms},
 };
 use dioxus::prelude::*;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
+use zwipe_client::ClientError;
 use zwipe_components::{
     CardRow as SharedCardRow, Chip, DeckCharts, DrawOdds, FlippableCardImage, ManaCurve,
     ManaFulfillment, Panel,
@@ -31,10 +32,7 @@ use zwipe_core::{
             deck_tag_label,
         },
     },
-    http::{
-        contracts::deck::HttpSharedDeck,
-        paths::{GET_ORACLE_TAGS_ROUTE, get_shared_deck_route},
-    },
+    http::contracts::deck::HttpSharedDeck,
 };
 
 /// How a shared-deck fetch can fail, from the reader's point of view.
@@ -329,21 +327,14 @@ pub fn SharedDeck(token: String) -> Element {
             let Ok(token) = token.parse::<Uuid>() else {
                 return Err(FetchError::NotShared);
             };
-            let client = reqwest::Client::new();
-            let res = client
-                .get(format!("{}{}", API_BASE, get_shared_deck_route(token)))
-                .send()
+            api::client()
+                .get_shared_deck(token)
                 .await
-                .map_err(|e| FetchError::Network(e.to_string()))?;
-            if res.status() == reqwest::StatusCode::NOT_FOUND {
-                return Err(FetchError::NotShared);
-            }
-            if !res.status().is_success() {
-                return Err(FetchError::Network(format!("status {}", res.status())));
-            }
-            res.json::<HttpSharedDeck>()
-                .await
-                .map_err(|e| FetchError::Network(e.to_string()))
+                .map_err(|e| match e {
+                    // A revoked or unknown token is not an outage.
+                    ClientError::NotFound(_) => FetchError::NotShared,
+                    other => FetchError::Network(other.to_string()),
+                })
         }
     });
 
@@ -432,19 +423,8 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     // in browser memory (the endpoint is public, no auth). On failure it stays
     // empty and exposed tags read "No description yet". No examples browse on the
     // web, so tags reveal their definition only (no "Examples" button).
-    let otags: Resource<Vec<OracleTag>> = use_resource(|| async move {
-        let client = reqwest::Client::new();
-        match client
-            .get(format!("{}{}", API_BASE, GET_ORACLE_TAGS_ROUTE))
-            .send()
-            .await
-        {
-            Ok(res) if res.status().is_success() => {
-                res.json::<Vec<OracleTag>>().await.unwrap_or_default()
-            }
-            _ => Vec::new(),
-        }
-    });
+    let otags: Resource<Vec<OracleTag>> =
+        use_resource(|| async move { api::client().get_oracle_tags().await.unwrap_or_default() });
     let describe_tag = use_callback(move |slug: String| {
         otags.read().as_ref().and_then(|tags| {
             tags.iter()

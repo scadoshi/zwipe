@@ -1,19 +1,13 @@
-use crate::{API_BASE, Nav};
+use crate::{Nav, api};
 use dioxus::prelude::*;
-use serde::Serialize;
-use zwipe_core::http::paths::RESET_PASSWORD_ROUTE;
+use zwipe_client::ClientError;
+use zwipe_core::domain::auth::models::secret::Secret;
 
 /// Validate a candidate password against the shared password policy.
 fn validate_password(pw: &str) -> Option<String> {
     zwipe_core::domain::auth::password::validate(pw)
         .err()
         .map(|e| e.to_string())
-}
-
-#[derive(Serialize)]
-struct ResetPasswordRequest {
-    token: String,
-    new_password: String,
 }
 
 #[derive(Clone, PartialEq)]
@@ -54,20 +48,13 @@ pub fn Reset(token: String) -> Element {
         state.set(ResetState::Loading);
 
         spawn(async move {
-            let client = reqwest::Client::new();
-            let res = client
-                .post(format!("{}{}", API_BASE, RESET_PASSWORD_ROUTE))
-                .json(&ResetPasswordRequest {
-                    token,
-                    new_password: pw,
-                })
-                .send()
-                .await;
-
-            match res {
-                Ok(r) if r.status().is_success() => state.set(ResetState::Success),
-                Ok(_) => state.set(ResetState::Error("Token not found or expired".to_string())),
-                Err(e) => state.set(ResetState::Error(e.to_string())),
+            match api::client().reset_password(token, Secret::new(pw)).await {
+                Ok(()) => state.set(ResetState::Success),
+                // A request that never landed is not a bad token; say so.
+                Err(e @ (ClientError::Network(_) | ClientError::Decode(_))) => {
+                    state.set(ResetState::Error(e.to_user_message()))
+                }
+                Err(_) => state.set(ResetState::Error("Token not found or expired".to_string())),
             }
         });
     };
