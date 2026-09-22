@@ -1,8 +1,35 @@
 # Move the synergy-warming flag out of the response header
 
-**Status: PLANNED 2026-09-21, deliberately not scheduled. Owner wants the flag
-in the body; the migration needs a forced-update cycle, so it waits for one
-that is happening anyway.**
+**Status: STEP 1 DONE 2026-09-22, riding 1.10.2. Steps 2-4 wait on that
+release reaching both stores.**
+
+The client now decodes either shape, so the server is free to move whenever
+the floor allows it. Nothing on the wire changed: the request is untouched
+and the server still answers a bare array plus the header.
+
+Where this stands once devices are on 1.10.2:
+
+- Every 1.10.2 install can already read the envelope. Older installs cannot,
+  which is what step 2 exists to rule out.
+- **The gate is store availability, not the build.** Both stores have to be
+  serving 1.10.2 and the field has to have moved onto it before
+  `MIN_CLIENT_VERSION` can be raised to it, or the floor force-updates people
+  to a version they cannot download yet.
+- Step 3 stays a server one-liner. `HttpDeckCardSearch` was added to
+  `zwipe-core/src/http/contracts/deck.rs` in step 1 rather than waiting, so
+  the handler only has to build it and drop the header.
+- Step 4 is the cleanup that pays for the whole thing: the array fallback and
+  the header read come out, and `search_deck_cards` folds back into the
+  `Endpoint` trait as an ordinary `type Response = HttpDeckCardSearch`. It is
+  the one endpoint of 56 still carrying hand-written transport.
+
+What step 1 actually shipped, in `zwipe-client/src/deck/search_deck_cards.rs`:
+an untagged `SearchPayload` enum trying the envelope first and the bare array
+second. The two shapes are disjoint, since an array cannot satisfy a struct
+with named fields and an object cannot satisfy a `Vec`, and a test pins that
+plus the malformed case. When the envelope is present its flag wins over the
+header, because the body describes the cards it arrived with and a browser
+cannot read the header at all.
 
 **One sentence:** `search_deck_cards` should answer
 `{ cards: [...], synergy_applied: bool }` instead of a bare card array plus an
@@ -40,10 +67,8 @@ The force-update gate (`MIN_CLIENT_VERSION`, served at
 `/api/client/min-version`, enforced by zwiper's update-required screen) is
 what makes this safe: it can guarantee a version floor.
 
-1. **Ship a tolerant reader.** A client release whose search decodes either
-   shape: envelope if the payload is an object, bare array if it is an array.
-   Server unchanged. Keep reading the header in this release, since the
-   server is still sending it.
+1. ~~**Ship a tolerant reader.**~~ DONE 2026-09-22, rides 1.10.2. Decodes
+   either shape; keeps reading the header, since the server still sends it.
 2. **Raise the floor.** Set `MIN_CLIENT_VERSION` to that release once it is
    live on both stores. Older clients are force-updated, so no installed
    client parses a bare array any more.

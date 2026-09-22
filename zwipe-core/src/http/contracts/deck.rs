@@ -495,6 +495,26 @@ pub struct HttpSharedDeck {
     pub price_target_currency: Option<PriceCurrency>,
 }
 
+/// Deck-aware card search response.
+///
+/// The result carries one fact about itself beyond the cards: whether synergy
+/// ordering was actually applied. A cold commander cache serves the full pool
+/// in default order instead, and the app says so.
+///
+/// Not yet what the server sends. `search_deck_cards` still answers a bare
+/// `Vec<Card>` plus an `x-synergy-applied` header, and every shipped client
+/// decodes that array. The client reads either shape, so the server can move
+/// to this envelope once the version floor rules out the old decoders. See
+/// `context/plans/synergy_flag_into_body.md`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HttpDeckCardSearch {
+    /// The cards, in serve order.
+    pub cards: Vec<Card>,
+    /// False when synergy was requested but the commander's cache was still
+    /// warming, so these are the full pool rather than a synergy ordering.
+    pub synergy_applied: bool,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -8988,6 +8988,7 @@ version = "1.10.1"
 dependencies = [
  "getrandom 0.4.3",
  "reqwest",
+ "serde",
  "serde_json",
  "thiserror 2.0.19",
  "tracing",
