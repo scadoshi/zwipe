@@ -24,7 +24,10 @@ use dioxus::prelude::*;
 use zwipe_client::ClientError;
 use zwipe_core::domain::{
     auth::models::session::Session,
-    card::{card_role::CardRoleView, oracle_tag::OracleTag},
+    card::{
+        card_role::CardRoleView, oracle_tag::OracleTag,
+        scryfall_data::universe::UbFranchiseView,
+    },
     deck::DeckTagView,
 };
 
@@ -180,6 +183,9 @@ pub struct CatalogCache {
     pub card_roles: CatalogSlot<Vec<CardRoleView>>,
     /// Oracle-tag catalog (`GET /api/card/oracle-tags`): picker, filter, dictionary.
     pub oracle_tags: CatalogSlot<Vec<OracleTag>>,
+    /// Universes Beyond franchises (`GET /api/card/ub-franchises`): the
+    /// exceptions picker. Served, with no compiled fallback.
+    pub ub_franchises: CatalogSlot<Vec<UbFranchiseView>>,
     /// Deck-tag catalog (`GET /api/deck/tags`): authed; warmed after session.
     pub deck_tags: CatalogSlot<Vec<DeckTagView>>,
 }
@@ -202,6 +208,7 @@ impl CatalogCache {
             || self.oracle_words.is_failed()
             || self.card_types.is_failed()
             || self.card_roles.is_failed()
+            || self.ub_franchises.is_failed()
             || self.oracle_tags.is_failed()
     }
 }
@@ -218,6 +225,7 @@ pub fn use_catalog_cache() -> CatalogCache {
         oracle_words: use_catalog_slot(),
         card_types: use_catalog_slot(),
         card_roles: use_catalog_slot(),
+        ub_franchises: use_catalog_slot(),
         oracle_tags: use_catalog_slot(),
         deck_tags: use_catalog_slot(),
     }
@@ -244,6 +252,7 @@ impl CatalogCache {
         self.ensure_card_types(client);
         self.ensure_card_roles(client);
         self.ensure_oracle_tags(client);
+        self.ensure_ub_franchises(client);
     }
 
     /// Ensure the artist catalog is warm/fresh (public).
@@ -299,6 +308,14 @@ impl CatalogCache {
         self.card_roles.refresh(move || async move {
             let http = client.peek().clone();
             http.get_card_roles().await
+        });
+    }
+
+    /// Ensure the Universes Beyond franchise catalog is warm/fresh (public).
+    pub fn ensure_ub_franchises(self, client: Signal<ZwipeClient>) {
+        self.ub_franchises.refresh(move || async move {
+            let http = client.peek().clone();
+            http.get_ub_franchises().await
         });
     }
 

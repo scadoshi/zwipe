@@ -1,13 +1,17 @@
 //! Card catalog, search and metadata endpoints.
 
 use crate::{
-    domain::card::{Card, card_role::CardRoleView, oracle_tag::OracleTag},
+    domain::card::{
+        Card, card_role::CardRoleView, oracle_tag::OracleTag,
+        scryfall_data::universe::UbFranchiseView,
+    },
     http::{
         endpoint::{Endpoint, Method},
         paths::{
             FEATURED_FLAVOR_ROUTE, GET_ARTISTS_ROUTE, GET_CARD_ROLES_ROUTE, GET_CARD_TYPES_ROUTE,
             GET_KEYWORD_REMINDERS_ROUTE, GET_KEYWORDS_ROUTE, GET_LANGUAGES_ROUTE,
-            GET_ORACLE_TAGS_ROUTE, GET_ORACLE_WORDS_ROUTE, GET_SETS_ROUTE, SEARCH_CARDS_ROUTE,
+            GET_ORACLE_TAGS_ROUTE, GET_ORACLE_WORDS_ROUTE, GET_SETS_ROUTE, GET_UB_FRANCHISES_ROUTE,
+            SEARCH_CARDS_ROUTE,
             SEARCH_COMMANDERS_ROUTE, get_card_route, get_printings_route,
         },
     },
@@ -120,3 +124,8 @@ impl Endpoint for SearchCommanders {
         Some(self.0.clone())
     }
 }
+
+public_get!(
+    /// Franchises the Universes Beyond exceptions picker offers.
+    GetUbFranchises => GET_UB_FRANCHISES_ROUTE, Vec<UbFranchiseView>
+);

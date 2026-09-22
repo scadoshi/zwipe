@@ -26,5 +26,7 @@ pub mod get_printings;
 pub mod get_sets;
 /// Card search handler.
 pub mod search_card;
+/// Universes Beyond franchise catalog handler.
+pub mod get_ub_franchises;
 /// Commander search handler (popularity-ordered, banded, wildcarded).
 pub mod search_commanders;

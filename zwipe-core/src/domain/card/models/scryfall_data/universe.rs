@@ -30,6 +30,8 @@
 //! ORDER BY 4;
 //! ```
 
+use serde::{Deserialize, Serialize};
+
 /// One Universes Beyond franchise: the unit users except from the exclude-UB
 /// preference.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -222,6 +224,37 @@ pub fn all_set_codes() -> impl Iterator<Item = &'static str> {
 /// plus the exception-only mixed sets.
 pub fn selectable_franchises() -> impl Iterator<Item = &'static UbFranchise> {
     FRANCHISES.iter().chain(MIXED_SET_FRANCHISES.iter())
+}
+
+/// Wire view of a franchise for the server-delivered exceptions catalog
+/// (`GET /api/card/ub-franchises`). Carries only what the picker renders:
+/// the set lists behind each franchise are a server concern and never leave
+/// it. Served rather than compiled into the app so a new crossover set
+/// becomes selectable on a deploy instead of a store train.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UbFranchiseView {
+    /// Stable identifier stored in user preferences. Never rename.
+    pub slug: String,
+    /// Display name for the exceptions checkboxes.
+    pub name: String,
+}
+
+impl UbFranchise {
+    /// This franchise as a wire view (slug + label).
+    pub fn view(&self) -> UbFranchiseView {
+        UbFranchiseView {
+            slug: self.slug.to_string(),
+            name: self.name.to_string(),
+        }
+    }
+}
+
+/// Every franchise the exceptions picker offers, as wire views, sorted by
+/// display name so the server decides the order once.
+pub fn selectable_franchise_views() -> Vec<UbFranchiseView> {
+    let mut views: Vec<UbFranchiseView> = selectable_franchises().map(|f| f.view()).collect();
+    views.sort_by(|a, b| a.name.cmp(&b.name));
+    views
 }
 
 /// Looks up a franchise by its stored slug, exception-only entries included.

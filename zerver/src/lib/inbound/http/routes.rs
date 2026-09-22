@@ -16,6 +16,7 @@ use crate::{
             card::{
                 featured_flavor::get_featured_flavor, get_artists::get_artists, get_card::get_card,
                 get_card_roles::get_card_roles, get_card_types::get_card_types,
+                get_ub_franchises::get_ub_franchises,
                 get_keyword_reminders::get_keyword_reminders, get_keywords::get_keywords,
                 get_languages::get_languages, get_oracle_tags::get_oracle_tags,
                 get_oracle_words::get_oracle_words, get_printings::get_printings,
@@ -380,6 +381,7 @@ pub fn public_routes() -> Router<AppState> {
                         .route("/keywords", get(get_keywords))
                         .route("/keyword-reminders", get(get_keyword_reminders))
                         .route("/roles", get(get_card_roles))
+                        .route("/ub-franchises", get(get_ub_franchises))
                         .route("/oracle-tags", get(get_oracle_tags))
                         .route("/oracle-words", get(get_oracle_words))
                         .route("/languages", get(get_languages))

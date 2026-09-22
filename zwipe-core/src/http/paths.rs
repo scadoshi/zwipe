@@ -55,6 +55,8 @@ pub const GET_KEYWORD_REMINDERS_ROUTE: &str = "/api/card/keyword-reminders";
 pub const GET_ORACLE_WORDS_ROUTE: &str = "/api/card/oracle-words";
 pub const GET_CARD_ROLES_ROUTE: &str = "/api/card/roles";
 pub const GET_ORACLE_TAGS_ROUTE: &str = "/api/card/oracle-tags";
+/// Universes Beyond franchises offered as exclude-preference exceptions.
+pub const GET_UB_FRANCHISES_ROUTE: &str = "/api/card/ub-franchises";
 pub const GET_SETS_ROUTE: &str = "/api/card/sets";
 pub const GET_LANGUAGES_ROUTE: &str = "/api/card/languages";
 
@@ -265,6 +267,7 @@ mod tests {
             GET_ORACLE_WORDS_ROUTE,
             GET_CARD_ROLES_ROUTE,
             GET_ORACLE_TAGS_ROUTE,
+            GET_UB_FRANCHISES_ROUTE,
             GET_SETS_ROUTE,
             GET_LANGUAGES_ROUTE,
             DECK_ROUTE,
