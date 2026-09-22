@@ -1,10 +1,14 @@
 # Live swipe drag indicators
 
-**Status: PARKED (2026-06). The live-drag cue works on branch
-`feat/qol-drag-indicators`; visual style undecided. Revive the branch if
-users complain; do not rebuild from scratch.** Feature request #1
+**Status: PARKED (2026-06), and the prototype is gone (2026-09-22).** The
+live-drag cue was working on `feat/qol-drag-indicators` with the visual
+style undecided; that branch was deleted, so building this means starting
+from the approach below rather than reviving anything. Feature request #1
 (Tenellum, Reddit launch thread); extracted from the retired QOL bundle
 (`../archive/qol_bundle.md`) when the rest of it shipped.
+
+The approach is written down in enough detail to rebuild from, which is why
+losing the branch costs a day of work rather than the design.
 
 ## Problem
 
