@@ -85,8 +85,16 @@ impl BulkEndpoint {
     }
 
     /// Fetches bulk card data (`Vec<ScryfallData>`).
+    ///
+    /// Reversible cards arrive with no top-level `oracle_id`, so it is lifted
+    /// from their faces here, before the delta comparison and the upsert both
+    /// see the card.
     pub async fn amass(&self) -> anyhow::Result<Vec<ScryfallData>> {
-        self.amass_jsonl(&self.to_snake_case()).await
+        let mut cards: Vec<ScryfallData> = self.amass_jsonl(&self.to_snake_case()).await?;
+        for card in &mut cards {
+            card.backfill_oracle_id_from_faces();
+        }
+        Ok(cards)
     }
 
     /// Fetches the Oracle Tags bulk file (`Vec<OracleTag>`).

@@ -310,6 +310,26 @@ pub struct ScryfallData {
 }
 
 impl ScryfallData {
+    /// Fills a missing top-level `oracle_id` from the card's faces.
+    ///
+    /// Scryfall omits `oracle_id` at the top level on `reversible_card`
+    /// layouts and puts one on each face instead. A reversible card is one
+    /// card printed on both sides, so the faces carry the same id and either
+    /// serves. Without this the card reaches clients with no oracle id, and
+    /// adding it to a deck fails a uuid parse server-side.
+    ///
+    /// No-op when the top-level id is already present.
+    pub fn backfill_oracle_id_from_faces(&mut self) {
+        if self.oracle_id.is_some() {
+            return;
+        }
+        self.oracle_id = self
+            .card_faces
+            .as_ref()
+            .and_then(|faces| faces.first())
+            .and_then(|face| face.oracle_id);
+    }
+
     /// Returns `true` if this card is a basic land (e.g. Forest, Island, Mountain,
     /// or a snow basic like Snow-Covered Plains, whose type line is "Basic Snow Land — Plains").
     pub fn is_basic_land(&self) -> bool {
@@ -416,7 +436,52 @@ where
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use crate::test_utils::make_card;
+
+    /// Reversible cards (Secret Lair double-sided printings) arrive from
+    /// Scryfall with no top-level `oracle_id` and one on each face. A card
+    /// without it fails a uuid parse server-side when added to a deck.
+    #[test]
+    fn reversible_cards_take_their_oracle_id_from_a_face() {
+        use crate::domain::card::scryfall_data::card_faces::CardFaces;
+        let oracle_id = uuid::Uuid::from_u128(0xABCD);
+
+        // Shaped like the real feed: both faces carry the same id.
+        let faces: CardFaces = serde_json::from_value(serde_json::json!([
+            { "name": "Hallowed Fountain", "mana_cost": "", "object": "card_face", "oracle_id": oracle_id },
+            { "name": "Hallowed Fountain", "mana_cost": "", "object": "card_face", "oracle_id": oracle_id },
+        ]))
+        .expect("faces parse");
+
+        let mut card = make_card("Hallowed Fountain // Hallowed Fountain").scryfall_data;
+        card.layout = "reversible_card".to_string();
+        card.oracle_id = None;
+        card.card_faces = Some(faces);
+
+        card.backfill_oracle_id_from_faces();
+        assert_eq!(card.oracle_id, Some(oracle_id));
+    }
+
+    /// A card that already has one keeps it; the faces never override.
+    #[test]
+    fn backfill_leaves_an_existing_oracle_id_alone() {
+        let real = uuid::Uuid::from_u128(1);
+        let mut card = make_card("normal").scryfall_data;
+        card.oracle_id = Some(real);
+        card.backfill_oracle_id_from_faces();
+        assert_eq!(card.oracle_id, Some(real));
+    }
+
+    /// No faces and no id stays None rather than panicking.
+    #[test]
+    fn backfill_tolerates_a_card_with_no_faces() {
+        let mut card = make_card("faceless").scryfall_data;
+        card.oracle_id = None;
+        card.card_faces = None;
+        card.backfill_oracle_id_from_faces();
+        assert_eq!(card.oracle_id, None);
+    }
 
     fn is_basic_land(type_line: Option<&str>) -> bool {
         let mut card = make_card("test");
