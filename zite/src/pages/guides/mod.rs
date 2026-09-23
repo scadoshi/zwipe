@@ -2,9 +2,10 @@
 //! articles stay uniform and easy to iterate on. `GUIDES` is the article set;
 //! `Guides` is the index and `GuidePage` renders one article by slug.
 //!
-//! Content lives in `content.rs`. Routing for `/guides/:slug` is dynamic for
-//! now (client-hydrated); SSG prerender per guide is a later step (see
-//! `context/plans/seo_guides.md`).
+//! Content lives in `content.rs`. `/guides/:slug` is one dynamic route, and
+//! [`slugs`] feeds the SSG pass so each article is prerendered as its own
+//! page: a dynamic route is excluded from `Route::static_routes()`, and an
+//! unprerendered path is served by `404.html` with a 404 status.
 
 mod content;
 
@@ -12,6 +13,14 @@ use crate::{Footer, Nav, Route, WEB_BASE, components::PageMeta};
 use content::{Block, GUIDES, Guide};
 use dioxus::prelude::*;
 use zwipe_components::Panel;
+
+/// Every guide slug, for the SSG prerender list in `main.rs`. Reads `GUIDES`
+/// so the prerendered set, the rendered articles and `build.rs`'s sitemap all
+/// resolve to one source; `build.rs` asserts its own copy against it.
+#[cfg(feature = "server")]
+pub(crate) fn slugs() -> impl Iterator<Item = &'static str> {
+    GUIDES.iter().map(|g| g.slug)
+}
 
 /// Maps a swipe direction to the app's gesture color class (shared with the
 /// home hero), so guide swipe legends match the in-app hint coloring.

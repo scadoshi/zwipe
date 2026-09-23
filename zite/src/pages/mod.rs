@@ -18,6 +18,9 @@ pub use changelog::Changelog;
 pub use contribute::Contribute;
 pub use discord::Discord;
 pub use guides::{GuidePage, Guides};
+// SSG prerender list only, which `#[server]` compiles under this feature.
+#[cfg(feature = "server")]
+pub(crate) use guides::slugs as guide_slugs;
 pub use home::Home;
 pub use ios::Ios;
 pub use not_found::NotFound;

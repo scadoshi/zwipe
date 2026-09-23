@@ -99,13 +99,24 @@ fn main() {
 
 /// Endpoint hit by `dx build --ssg` to enumerate routes to prerender.
 /// `Route::static_routes()` returns every route with no dynamic segments,
-/// so `/verify/:token` and `/reset/:token` are excluded automatically.
+/// so `/verify/:token`, `/reset/:token` and `/deck/:token` are excluded
+/// automatically, which is right: their content is per-token.
+///
+/// The guides are the exception. `/guides/:slug` is one dynamic route over a
+/// fixed set of articles, so `static_routes()` drops all of them and the
+/// deploy has nothing to serve: every `/guides/<slug>` fell back to
+/// `404.html`, answering a 404 to crawlers while still hydrating fine for
+/// anyone reading it. Appending them here prerenders each article at its own
+/// path. Slugs come from `GUIDES`, the same source `build.rs` checks its
+/// sitemap list against.
 #[server(endpoint = "static_routes")]
 async fn static_routes() -> ServerFnResult<Vec<String>> {
-    Ok(Route::static_routes()
+    let mut routes: Vec<String> = Route::static_routes()
         .iter()
         .map(ToString::to_string)
-        .collect())
+        .collect();
+    routes.extend(pages::guide_slugs().map(|slug| format!("/guides/{slug}")));
+    Ok(routes)
 }
 
 #[component]
