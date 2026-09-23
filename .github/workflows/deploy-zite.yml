@@ -73,6 +73,12 @@ jobs:
         run: cargo +nightly fmt --check
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Clippy (zite server feature)
+        # `--workspace` lints default features, which for zite is `web`. The
+        # `server` feature is what `dx build --ssg` compiles to enumerate and
+        # prerender routes, and nothing else lints it, so a warning there is
+        # invisible until someone runs this by hand.
+        run: cargo clippy -p zite --all-targets --features server -- -D warnings
 
   build:
     needs: [test, lint] # blocked if tests or lints fail

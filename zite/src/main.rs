@@ -109,6 +109,8 @@ fn main() {
 /// anyone reading it. Appending them here prerenders each article at its own
 /// path. Slugs come from `GUIDES`, the same source `build.rs` checks its
 /// sitemap list against.
+// `#[server]` requires an async fn; this one has nothing to await.
+#[allow(clippy::unused_async)]
 #[server(endpoint = "static_routes")]
 async fn static_routes() -> ServerFnResult<Vec<String>> {
     let mut routes: Vec<String> = Route::static_routes()
