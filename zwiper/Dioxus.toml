@@ -20,12 +20,18 @@ CFBundlePackageType = "APPL"
 NSPhotoLibraryAddUsageDescription = "Zwipe saves card images you choose to your photo library."
 MinimumOSVersion = "16.0"
 DTPlatformName = "iphoneos"
-DTPlatformVersion = "26.4"
-DTSDKName = "iphoneos26.4"
-DTXcode = "2640"
-DTXcodeBuild = "17E192"
+DTPlatformVersion = "27.0"
+DTSDKName = "iphoneos27.0"
+DTXcode = "2700"
+DTXcodeBuild = "27A266a"
 DTCompiler = "com.apple.compilers.llvm.clang.1_0"
 UISupportedInterfaceOrientations = ["UIInterfaceOrientationPortrait"]
 "UISupportedInterfaceOrientations~ipad" = ["UIInterfaceOrientationPortrait"]
+
+# iOS 27 traps at launch on any app that has not adopted the UIScene lifecycle.
+# UIKit decides adoption from this key alone, so it has to be in the bundle;
+# tao registers TaoSceneDelegate and hands UIKit the configuration at runtime.
+[ios.plist.UIApplicationSceneManifest]
+UIApplicationSupportsMultipleScenes = false
 
 [web.resource.dev]

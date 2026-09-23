@@ -8,6 +8,8 @@ Only open, actionable items live here. When something ships, its outcome moves t
 
 ## Next Up
 
+- [ ] **OWNER: resubmit iOS 1.10.2 as build 81.** Apple rejected build 80 on 2026-09-23 under Guideline 2.1(a): iOS 27 traps at launch on any app that has not adopted the UIScene lifecycle, and their review devices run 27.0 while ours runs 26.6. The fix is in the tree (scene manifest in the plist, `tao` 0.37 vendored at `vendor/tao` because dioxus pins `^0.34`) and verified as far as this machine allows: the app launches and draws under a real `UIWindowScene` on the iOS 27 simulator. The trap itself cannot be reproduced here, so updating the test iPhone to iOS 27 and running a release build on it is the last cheap check before uploading. Detail in [`../plans/ios27_scene_lifecycle.md`](../plans/ios27_scene_lifecycle.md).
+
 - [x] ~~**Tooling: get the Android emulator back.**~~ Done 2026-09-22. The `emulator` package and the `android-36` arm64 system image are reinstalled and the `Pixel_9a` AVD exists again. Never booted: the owner asked for the toolchain only, so the first launch is still unproven. [`../operations/android/emulator.md`](../operations/android/emulator.md) works as written again.
 
 - [x] ~~**OWNER: sim test the mutating endpoints before cutting 1.10.2.**~~ DONE 2026-09-22. Exercised on a simulator against prod: create deck, add card, update card, both import paths, plus the two new server-driven pickers. The typed-request work changed request key ordering and nothing noticed, which is what the test predicted but not what it proved.

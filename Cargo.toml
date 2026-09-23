@@ -85,3 +85,7 @@ inherits = "dev"
 [profile.wasm-dev]
 opt-level = 1
 inherits = "dev"
+
+# tao 0.37.0 vendored as 0.34.9. See vendor/tao/VENDOR.md.
+[patch.crates-io]
+tao = { path = "vendor/tao" }
