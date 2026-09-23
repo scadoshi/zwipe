@@ -152,14 +152,19 @@ jobs:
         # Keyed on the dx version because the tool versions are pinned by dx,
         # so bumping dioxus-cli above must invalidate this.
         #
-        # Caches ~/.dx rather than ~/.dx/tools: the tools path is confirmed on
-        # macOS, and the parent covers it if the Linux layout differs. Check
-        # this step's log after a change here. "Cache saved with key" and a
-        # non-trivial size means it is working; a path-validation warning means
-        # dx put the tools somewhere else and this is a no-op.
+        # dx uses ~/.dx/tools on macOS, but on the Linux runner that path does
+        # not exist after a build (verified: run 35877063911 saved nothing and
+        # warned "Path Validation Error"), so the candidates below cover the
+        # layouts it might use instead. actions/cache saves whichever exist.
+        # "Locate dx tools" prints the real one; once a run confirms it, narrow
+        # this list to that path and drop the diagnostic step.
         uses: actions/cache@v4
         with:
-          path: ~/.dx
+          path: |
+            ~/.dx
+            ~/.dioxus
+            ~/.local/share/dioxus
+            ~/.cache/dioxus
           key: dx-tools-${{ runner.os }}-dioxus-cli-0.7.10
 
       - name: Build (SSG)
@@ -179,6 +184,14 @@ jobs:
 
       - name: Add CNAME
         run: echo "zwipe.net" > target/dx/zite/release/web/public/CNAME
+
+      - name: Locate dx tools
+        # Diagnostic for the cache step above: prints where dx actually put the
+        # wasm-opt it downloads, so the cache path can be narrowed to it.
+        # Remove once the path is pinned. `|| true` so this never fails a deploy.
+        run: |
+          find "$HOME" -maxdepth 6 -name 'wasm-opt' -type f 2>/dev/null | head -5 || true
+          ls -d "$HOME"/.dx "$HOME"/.dioxus "$HOME"/.local/share/dioxus "$HOME"/.cache/dioxus 2>/dev/null || true
 
       - name: Add 404.html for SPA routing
         run: cp target/dx/zite/release/web/public/index.html target/dx/zite/release/web/public/404.html
