@@ -31,7 +31,7 @@ The data stays in core for the same reason as above, and zite's static changelog
 1. Delete the fallback branch at both keyword-reminder call sites.
 2. Delete the changelog fallback in `session_upkeep.rs`, including the `Failed` arm's compiled-copy path and the comment describing it.
 3. Check whether the surrounding state enums still need their `Failed` variants, or whether removing the fallback collapses a three-state enum into something simpler.
-4. Re-read the doc comments in `catalog_cache.rs` and `session_upkeep.rs`: several describe the fallback behaviour and become wrong.
+4. Re-read the doc comments in `catalog_cache.rs` and `session_upkeep.rs`: several describe the fallback behavior and become wrong.
 
 ## Verification
 

@@ -4,7 +4,7 @@
 
 What landed, beyond the diagnosis below:
 
-- Apply reads the **transition**, not the draft alone: clearing a filter that is on commits, while an empty apply from an already-empty state is still refused. The decision is a pure `apply_action` fn with tests covering all seven states, because the first attempt got it wrong twice (it refused a deliberate clear, then labelled every apply over an existing filter a clear).
+- Apply reads the **transition**, not the draft alone: clearing a filter that is on commits, while an empty apply from an already-empty state is still refused. The decision is a pure `apply_action` fn with tests covering all seven states, because the first attempt got it wrong twice (it refused a deliberate clear, then labeled every apply over an existing filter a clear).
 - The refusal returns **before** closing the sheet. Closing with the snapshot still armed was what made a refusal also revert the draft and raise the second toast.
 - An **unedited apply no longer refetches**: opening the sheet, changing nothing and applying leaves the card stack where the user had it (owner request, 2026-09-22).
 - Reset keeps its toast. It was briefly removed as redundant, but the sheet stays open with sections collapsed, so a silent Reset reads as a dead button.

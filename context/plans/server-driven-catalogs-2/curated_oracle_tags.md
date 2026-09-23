@@ -52,5 +52,5 @@ Adding a field is safe in both directions here.
 ## Verification
 
 - A tag marked curated server-side appears in the picker's default grid without a client build. Easiest check: flip one entry, deploy, reopen the picker.
-- Selected-but-not-curated slugs still pin to the grid, which is existing behaviour worth not regressing.
+- Selected-but-not-curated slugs still pin to the grid, which is existing behavior worth not regressing.
 - An old client keeps its compiled grid and shows no change at all.

@@ -14,7 +14,7 @@ echo "warning: this will drop and recreate the zerver database"
 read -p "continue? (y/N): " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "cancelled"
+    echo "canceled"
     exit 0
 fi
 

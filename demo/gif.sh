@@ -7,7 +7,7 @@
 # GitHub strips <video> from READMEs, so an inline demo has to be a GIF. Two
 # passes: generate a palette, then map to it.
 #
-# Card art is full-colour illustration, which GIF handles far worse than terminal
+# Card art is full-color illustration, which GIF handles far worse than terminal
 # text. Trimming to the seconds that actually move is the biggest lever: a static
 # card on screen costs about as much as a swipe.
 #
