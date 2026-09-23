@@ -12,6 +12,8 @@ pub mod oracle_tag;
 pub mod scryfall_data;
 /// Card search and filtering.
 pub mod search_card;
+/// Commander synergy cache payload, shared with the synergy worker.
+pub mod synergy;
 
 use card_profile::CardProfile;
 use scryfall_data::ScryfallData;

@@ -1,61 +1,21 @@
 //! Reduced commander-synergy payload (`commander_synergy.payload`) and its
 //! reduction to a name → score map for ordering card searches.
 //!
-//! Written by the synergy worker, read here. Shape contract:
-//! `context/plans/synergy_data_layer.md`. Parsing is deliberately lenient
-//! (unknown fields ignored, missing scores tolerated); shape drift upstream
-//! must degrade to "no signal", never to a failed search.
+//! The type itself lives in `zwipe-core` because the synergy worker writes
+//! this payload and zerver reads it: one shared definition means a field
+//! rename is a build failure on both sides instead of a silent outage here.
+//! Parsing is deliberately lenient (unknown fields ignored, missing scores
+//! tolerated); shape drift must degrade to "no signal", never to a failed
+//! search. Shape contract: `context/plans/synergy_data_layer.md`.
+//!
+//! Re-exported at this path so every call site keeps its existing import.
 
-use serde::Deserialize;
-use std::collections::HashMap;
-
-/// Top-level cached payload: a set of named card lists.
-#[derive(Debug, Deserialize)]
-pub struct SynergyPayload {
-    /// Card lists keyed by machine tag (high synergy, top cards, per-type...).
-    #[serde(default)]
-    pub lists: Vec<SynergyList>,
-}
-
-/// One list of cards within the payload.
-#[derive(Debug, Deserialize)]
-pub struct SynergyList {
-    /// Cards in this list.
-    #[serde(default)]
-    pub cards: Vec<SynergyCard>,
-}
-
-/// One card entry. Only the fields ordering needs.
-#[derive(Debug, Deserialize)]
-pub struct SynergyCard {
-    /// Exact card name, resolved against `scryfall_data.name`.
-    pub name: String,
-    /// Synergy score (roughly −1..1); absent/null for some lists.
-    #[serde(default)]
-    pub synergy: Option<f64>,
-}
-
-impl SynergyPayload {
-    /// Flattens to a lowercased-name → score map, keeping the highest score
-    /// when a card appears in multiple lists. Scoreless entries get a small
-    /// floor score: still boosted above cards with no signal at all, but
-    /// below anything actually scored.
-    pub fn into_scores(self) -> HashMap<String, f64> {
-        const SCORELESS_FLOOR: f64 = -10.0;
-        let mut scores: HashMap<String, f64> = HashMap::new();
-        for card in self.lists.into_iter().flat_map(|l| l.cards) {
-            let score = card.synergy.unwrap_or(SCORELESS_FLOOR);
-            scores
-                .entry(card.name.to_lowercase())
-                .and_modify(|s| *s = s.max(score))
-                .or_insert(score);
-        }
-        scores
-    }
-}
+pub use zwipe_core::domain::card::models::synergy::{SynergyCard, SynergyList, SynergyPayload};
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use super::*;
 
     // A parse failure yields an empty map, which fails the score assertions.
