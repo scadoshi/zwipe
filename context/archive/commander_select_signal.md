@@ -2,18 +2,18 @@
 
 **Status: §1-3 SHIPPED TO MAIN 2026-07-07 (`7f8519f2` feat + `ddbe6e45` docs; archived 2026-07-07). §4 Consumer B (first-party popularity term) remains deliberately unbuilt: a data-gated retune, weight 0 until select coverage is real — this doc is its spec. Server-first: the migration/ingest ride the next server deploy; the client instrumentation (select-screen tallies in `UsageBuffer`) rides the 1.4.0 store build alongside the select-serve client leg, so collection starts the day the new serve reaches users. Consumer A ships dormant (empty table COALESCEs to the shuffle-only baseline). §4 Consumer B remains deliberately unbuilt — a later retune gated on coverage. Fast-follow to [`commander_select_ordering.md`](../archive/commander_select_ordering.md): the select branch must be live first (its §3 client change shipped) so commanders actually get served through it and impressions accrue. Entirely zwipe-side — client instrumentation + a zerver store + a zerver read. Unlike `commander_popularity`, the synergy worker is not involved.**
 
-**What this builds, in one sentence:** a pooled, PII-free count of which commanders Zwipe users are *shown* and which they *select*, so the select serve can (1) weight its wildcard deep-slice toward least-shown commanders and (2) carry a mild first-party popularity term on top of the EDHREC base.
+**What this builds, in one sentence:** a pooled, PII-free count of which commanders Zwipe users are *shown* and which they *select*, so the select serve can (1) weight its wildcard deep-slice toward least-shown commanders and (2) carry a mild first-party popularity term on top of the popularity base.
 
 **Why now:** the select ordering ([`commander_select_ordering.md`](../archive/commander_select_ordering.md)) and its wildcard both work today, but the wildcard deep-slice falls back to the (deck, day) shuffle alone — there is no select-impression signal to weight by. Every existing signal table (`commander_card_signal`, `user_card_signal`, `card_signal_rollup`) keys on the **99-serve's** commander+card pairs; none of them records commander *selection*. This is the missing measurement, and it was noted as the "Later" item in the ordering plan.
 
 ## Framing — a refinement layer, never the base
 
-The decks-helmed EDHREC popularity (`commander_popularity`) stays the dominant ordering base. First-party select counts are a mild term on top, for the same two reasons that plan gave for not deriving the base from our own data:
+The decks-helmed popularity base (`commander_popularity`) stays the dominant ordering base. First-party select counts are a mild term on top, for the same two reasons that plan gave for not deriving the base from our own data:
 
 - **Cold-start.** The table begins empty and stays sparse for a while. It cannot rank the pool on its own.
 - **Circularity.** Users pick from the ordering we served them, so a selection signal reinforces whatever we already showed. Left unchecked it becomes a feedback loop that just amplifies band 1.
 
-Two structural guards, both already in the serve: EDHREC popularity stays the base (the first-party term is small and centered, like `W_SIGNAL` for synergy), and the **wildcard slot is what breaks the loop** — it forces deep, rarely-shown commanders into view so they can earn impressions the band ordering would never give them. That is exactly the exposure the least-shown weighting below consumes.
+Two structural guards, both already in the serve: the decks-helmed popularity stays the base (the first-party term is small and centered, like `W_SIGNAL` for synergy), and the **wildcard slot is what breaks the loop** — it forces deep, rarely-shown commanders into view so they can earn impressions the band ordering would never give them. That is exactly the exposure the least-shown weighting below consumes.
 
 ## 1. Data — `commander_select_signal` table (owned here)
 
@@ -73,9 +73,9 @@ The deep-slice `ORDER BY pool_shown ASC, shuffle` then serves genuinely least-sh
 
 ## 4. Consumer B — first-party popularity term (optional, later, gated)
 
-A small term on the ordering base, parallel to synergy's `W_SIGNAL`: shift a commander by its shrunk, globally-centered select-rate (`selected / shown`), so a commander our users pick more than their EDHREC rank predicts drifts up. This is where circularity bites hardest, so:
+A small term on the ordering base, parallel to synergy's `W_SIGNAL`: shift a commander by its shrunk, globally-centered select-rate (`selected / shown`), so a commander our users pick more than their popularity rank predicts drifts up. This is where circularity bites hardest, so:
 
-- **Default weight 0** (pure EDHREC base) — the revert lever, same as `W_SIGNAL = 0` reproduces the pre-signal synergy order.
+- **Default weight 0** (pure popularity base) — the revert lever, same as `W_SIGNAL = 0` reproduces the pre-signal synergy order.
 - Shrink toward and center on the global select-rate (a commander with no impressions contributes exactly zero), same shrinkage math as the synergy signal (`SHRINK_K`).
 - Turn it on only once the table has broad coverage and the wildcard has been feeding the deep pool long enough that the rate is not purely a reflection of what band 1 already showed.
 
@@ -104,4 +104,4 @@ Entirely this repo: migration, ingest endpoint, client instrumentation, and both
 
 - Confirm the select screen's gesture set before pinning columns (does select have a "maybe"?).
 - Recency: raw lifetime counts drift stale as the meta moves; a windowed or decayed variant could come later (schema gains a column, math unchanged).
-- Surprise scoring for commanders — the wildcard-slot follow-on ("center the signal on a rank-bucket expectation") applies here too once select impressions exist: a deep commander that overperforms its EDHREC rank when shown is a promotion candidate. See [`wildcard-slot/overview.md`](../archive/wildcard-slot/overview.md).
+- Surprise scoring for commanders — the wildcard-slot follow-on ("center the signal on a rank-bucket expectation") applies here too once select impressions exist: a deep commander that overperforms its popularity rank when shown is a promotion candidate. See [`wildcard-slot/overview.md`](../archive/wildcard-slot/overview.md).
