@@ -13,6 +13,17 @@ pub fn is_valid_commander(card: &Card, format: &Format) -> bool {
     let type_line = sd.type_line.as_deref().unwrap_or("");
     let oracle_text = sd.oracle_text.as_deref().unwrap_or("");
 
+    // A token's type line carries the real card's words, so "Token Legendary
+    // Creature" satisfies every check below. Tokens and emblems are never
+    // commanders, and the synergy worker keys on the real card's oracle_id, so
+    // one offered here would never resolve upstream.
+    if matches!(
+        sd.layout.as_str(),
+        "token" | "double_faced_token" | "emblem"
+    ) {
+        return false;
+    }
+
     match format {
         // Legendary creature, legendary vehicle/spacecraft with P/T,
         // or "can be your commander" oracle text
@@ -181,6 +192,30 @@ pub fn is_signature_spell_in_color_identity(spell: &Card, oathbreaker: &Card) ->
 mod tests {
     use super::*;
     use crate::{domain::card::scryfall_data::rarity::Rarity, test_utils::make_card};
+
+    #[test]
+    fn legendary_token_is_not_a_commander() {
+        // The type line reads like the real card, so only the layout tells them
+        // apart. zynergy gates its queue on this, and a token has no upstream page.
+        let mut card = make_card("Urza, Planeswalker");
+        card.scryfall_data.type_line = Some("Token Legendary Creature \u{2014} Urza".to_string());
+        card.scryfall_data.power = Some("4".to_string());
+        card.scryfall_data.toughness = Some("4".to_string());
+        card.scryfall_data.layout = "token".to_string();
+
+        assert!(!is_valid_commander(&card, &Format::Commander));
+        assert!(!is_valid_commander(&card, &Format::Brawl));
+    }
+
+    #[test]
+    fn emblem_is_not_a_commander() {
+        let mut card = make_card("Urza, Lord High Artificer Emblem");
+        card.scryfall_data.type_line = Some("Emblem \u{2014} Urza".to_string());
+        card.scryfall_data.oracle_text = Some("can be your commander".to_string());
+        card.scryfall_data.layout = "emblem".to_string();
+
+        assert!(!is_valid_commander(&card, &Format::Commander));
+    }
 
     #[test]
     fn legendary_creature_passes_commander() {
