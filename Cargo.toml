@@ -89,7 +89,7 @@ inherits = "dev"
 # dx builds web wasm under this profile. Without it the dioxus-cli default
 # keeps debug info, and wasm-opt aborts inside binaryen's DWARF emitter
 # (SIGABRT, DWARFEmitter.cpp:201). dx logs that as ERROR and still exits 0, so
-# the build stays green and ships an unoptimized binary. Cargo only honours
+# the build stays green and ships an unoptimized binary. Cargo only honors
 # profiles in the workspace root, so this cannot live in zite/Cargo.toml.
 [profile.wasm-release]
 inherits = "release"

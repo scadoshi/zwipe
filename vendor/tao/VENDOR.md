@@ -15,7 +15,7 @@ tao gained scene support in 0.35.0 (`src/platform_impl/ios/scene.rs`, `TaoSceneD
 
 ## Why the version is rewritten
 
-`dioxus-desktop` 0.7.10 depends on `tao ^0.34.0`, so cargo will not accept a 0.35+ patch: it resolves the patch against that requirement and silently ignores anything outside it. Labelling the crate 0.34.9 is what lets the patch apply. `dioxus-desktop` 0.7.10 and `wry` 0.53.5 both compile against tao 0.37's API unchanged, so nothing else had to move.
+`dioxus-desktop` 0.7.10 depends on `tao ^0.34.0`, so cargo will not accept a 0.35+ patch: it resolves the patch against that requirement and silently ignores anything outside it. Labeling the crate 0.34.9 is what lets the patch apply. `dioxus-desktop` 0.7.10 and `wry` 0.53.5 both compile against tao 0.37's API unchanged, so nothing else had to move.
 
 ## When to delete this
 
