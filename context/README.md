@@ -21,6 +21,38 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-09-23: iOS 27 rejection, and two silent failures on zite
+
+Android 1.10.2 went live the day it was submitted. iOS build 80 was rejected, and the day went to that plus two things on zite that had been broken behind green builds.
+
+### iOS 27 made the UIScene lifecycle mandatory
+
+Apple rejected build 80 under Guideline 2.1(a): the app died about 100ms into launch on their review devices, both on 27.0. Frame 0 is UIKit's `_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`, raised from `workspace:didCreateScene:`. None of our code ran, and no crash reporter of ours could have caught it. iOS 26 only warns, the owner's device is on 26.6, and the iOS 27 simulator does not enforce it either, so the only machine that shows the failure is a physical device on 27.0.
+
+Surviving it takes two things and neither works alone. `UIApplicationSceneManifest` has to be in the bundle, because UIKit decides adoption from that key and a runtime delegate is too late. And tao has to serve its window from a `UISceneDelegate`, or UIKit connects a scene the window is never attached to and the app draws nothing: the crash trades for a black screen.
+
+tao gained scene support in 0.35 and fixed it in 0.37, but `dioxus-desktop` 0.7.10 pins `tao ^0.34` and is the newest release, so no version of dioxus can reach it. tao 0.37.0 is vendored at `vendor/tao`, byte-identical to the published crate except that `version` reads 0.34.9, which is what lets `[patch.crates-io]` apply. It also pulls `dbus` on Linux, so `libdbus-1-dev` went into all three workflows. Build 81 carries the fix and is in review.
+
+### Tokens are not commanders
+
+zynergy's queue was full of oracle ids that can never resolve upstream, because discovery enqueues whatever `decks.commander_id` points at and users can turn commander filtering off on purpose. `is_valid_commander` had no layout handling, so a token's type line, which carries the real card's words, satisfied every check. It now rejects `token`, `double_faced_token` and `emblem` before anything else. The commander picker already excluded them in SQL, but that guard is serving-side only, so anything reading the decks table directly still saw them. zynergy gates its queue on this function.
+
+### zite shipped an unoptimized wasm for several deploys
+
+`dx` builds web wasm under an injected `wasm-release` profile. At the dioxus-cli default it keeps debug info, so `wasm-opt` aborted inside binaryen's DWARF emitter instead of optimizing. `dx` logs that as ERROR and exits 0, so the build stayed green and shipped the unoptimized binary. Defining the profile in the workspace root, which is the only place cargo honors one, took the live binary from 4.11 MB to 2.48 MB and 1.12 MB to 0.96 MB gzipped. Stripping accounts for 1.36 MB of that and `wasm-opt` for the rest.
+
+The apt binaryen in `deploy-zite.yml` turned out to be dead weight: dx never consults PATH, it downloads its own pinned binaryen 129. Caching that download was tried and abandoned, since on the Linux runner nothing named wasm-opt exists under `$HOME` after a build and the fetch only costs 2.4s.
+
+### Every guide page was answering 404
+
+`/guides/:slug` is one dynamic route, so `Route::static_routes()` dropped all 20 articles and SSG prerendered nine pages: the static routes only. GitHub Pages served `404.html` for the rest, which hydrates into the right page, so nobody reading the site noticed. Crawlers got a 404 on 20 of the sitemap's 29 URLs. `static_routes()` now appends them from `GUIDES`, the source `build.rs` already checks its sitemap list against, so there is no fourth copy of that list. Prerendered pages went 9 to 29 and every sitemap URL returns 200.
+
+Also found: `cargo clippy --features server` fails on zite and always had, because `--workspace` lints default features and nothing ever linted that target. CI lints it now.
+
+### Docs
+
+Markdown across 209 files no longer hard-wraps; one paragraph is one line and the viewer wraps it.
+
 ## 2026-09-22: 1.10.2 submitted, and the architecture work it carries
 
 iOS build 80 and Android versionCode 43, both in review. Six user-visible fixes ride a much larger internal change.

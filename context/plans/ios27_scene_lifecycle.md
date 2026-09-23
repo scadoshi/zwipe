@@ -1,6 +1,6 @@
 # iOS 27 requires the UIScene lifecycle
 
-**Status: FIX IN THE TREE 2026-09-23, not yet resubmitted.**
+**Status: SUBMITTED 2026-09-23 as build 81, awaiting review.**
 
 Apple rejected 1.10.2 build 80 on 2026-09-23 under Guideline 2.1(a). The app crashed on launch on their review devices, an iPad Air 11-inch (M3) and an iPhone 17 Pro, both on 27.0. Submission ID `6c408160-5c4a-4ee7-bde4-3d282166fd73`.
 
@@ -43,7 +43,7 @@ The cheap way to close that gap before resubmitting is to update the test iPhone
 
 ## Before resubmitting
 
-- `CFBundleVersion` must increment to 81. Apple rejected build 80, and a rejected build number cannot be reused.
+- `CFBundleVersion` incremented to 81, since a rejected build number cannot be reused. Verified inside the packaged IPA along with the scene manifest, `TaoSceneDelegate` in the binary, an arm64 device slice and SDK 27.
 - The version stays 1.10.2 and the changelog entry stays as shipped. Nothing user-facing changed.
 - The DT keys in `zwiper/Dioxus.toml` now read Xcode 27.0 (`DTXcode 2700`, `DTXcodeBuild 27A266a`, `DTSDKName iphoneos27.0`). The build runbook overwrites these anyway, but they no longer claim 26.4.
 - Android is unaffected. 1.10.2 on Play needs nothing.

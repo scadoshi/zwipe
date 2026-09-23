@@ -24,7 +24,7 @@ GitHub → Actions tab → **Deploy zite** → Run workflow → Run workflow
 
 ## What the Workflow Does
 
-1. Installs `build-essential` (needed for proc-macro crates targeting WASM) and `binaryen`, which supplies the `wasm-opt` dx would otherwise download from GitHub releases mid-build
+1. Installs `build-essential` (needed for proc-macro crates targeting WASM). dx downloads its own pinned `wasm-opt` regardless of PATH, so no binaryen is installed here (see [`cicd.md`](cicd.md))
 2. Installs a prebuilt `dioxus-cli@0.7.10` binary via `taiki-e/install-action`, so nothing is compiled from source
 3. Runs `dx build --release --platform web --ssg --force-sequential` from `zite/`. Both flags matter: `--ssg` pre-renders the static routes, and dropping `--force-sequential` lets the parallel client build overwrite the SSG output with the bare shell
 4. Writes `CNAME` (`zwipe.net`) into the build output

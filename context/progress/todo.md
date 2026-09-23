@@ -8,7 +8,14 @@ Only open, actionable items live here. When something ships, its outcome moves t
 
 ## Next Up
 
-- [x] ~~**OWNER: upload iOS 1.10.2 build 81 via Transporter.**~~ DONE 2026-09-23, submitted and awaiting review. The signed IPA is built and verified at `Zwipe.ipa` (scene manifest present, `TaoSceneDelegate` in the binary, device arm64, SDK 27, Apple Distribution signed). Background: Apple rejected build 80 on 2026-09-23 under Guideline 2.1(a): iOS 27 traps at launch on any app that has not adopted the UIScene lifecycle, and their review devices run 27.0 while ours runs 26.6. The fix is in the tree (scene manifest in the plist, `tao` 0.37 vendored at `vendor/tao` because dioxus pins `^0.34`) and verified as far as this machine allows: the app launches and draws under a real `UIWindowScene` on the iOS 27 simulator. The trap itself cannot be reproduced here, so updating the test iPhone to iOS 27 and running a release build on it is the last cheap check before uploading. Detail in [`../plans/ios27_scene_lifecycle.md`](../plans/ios27_scene_lifecycle.md).
+- [ ] **Wait on Apple's review of iOS 1.10.2 build 81.** Build 80 was rejected 2026-09-23 for the iOS 27 UIScene trap; 81 carries the fix and was submitted the same day. On approval: record LIVE in [`../README.md`](../README.md), archive [`../plans/cut_1_10_2.md`](../plans/cut_1_10_2.md), and raise `MIN_CLIENT_VERSION` to 1.10.2, which unblocks steps 2 to 4 of [`../plans/synergy_flag_into_body.md`](../plans/synergy_flag_into_body.md).
+
+- [ ] **Ship the parked `zwipe-1.10.2-44.aab` with the next real Android change.** Built and signed 2026-09-23 but deliberately not submitted: its only difference from the live build is the vendored tao bump, which does nothing on Android, and R8 minification means an untested release build over a working one buys nothing. Needs a device pass when it does go.
+
+- [ ] **Drop `vendor/tao` when a released `dioxus-desktop` depends on tao 0.35 or newer.** Then remove `[patch.crates-io]` from the workspace `Cargo.toml` and delete the directory; the `Info.plist` scene manifest stays regardless. `cargo tree -i tao` shows which version is really in the graph, since a patch that does not apply is a warning rather than an error. Full reasoning in [`../../vendor/tao/VENDOR.md`](../../vendor/tao/VENDOR.md).
+
+- [ ] **Flush the 19 completed `[x]` items out of this file.** They span 2026-07 to 2026-09 and are exactly the drift this list's own [`README.md`](README.md) warns about: outcomes belong in [`../README.md`](../README.md), not here. Four of them carry a real pending action ("confirm on the next nightly, then delete"), so this is a read-and-decide pass rather than a delete.
+
 
 - [x] ~~**Tooling: get the Android emulator back.**~~ Done 2026-09-22. The `emulator` package and the `android-36` arm64 system image are reinstalled and the `Pixel_9a` AVD exists again. Never booted: the owner asked for the toolchain only, so the first launch is still unproven. [`../operations/android/emulator.md`](../operations/android/emulator.md) works as written again.
 

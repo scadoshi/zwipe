@@ -193,7 +193,7 @@ Triggers on push to `main` when files under `zite/**`, `zwipe-core/**`, or `zwip
 
 ## What the Workflow Does
 
-1. Installs `build-essential` (Rust compiles proc-macro crates for the host target even when targeting WASM) and `binaryen`, which provides `wasm-opt`. dx uses a copy already on PATH and only falls back to downloading binaryen from GitHub releases when there is none; that fetch failed three deploys running during the 2026-08-12 GitHub degradation
+1. Installs `build-essential` (Rust compiles proc-macro crates for the host target even when targeting WASM). `binaryen` was installed here until 2026-09-23 on the belief that dx would use a PATH copy of `wasm-opt`; it does not. dx 0.7.10 downloads its own pinned binaryen 129 and runs that, so the apt package was never read. Caching the download instead was tried and abandoned: on the Linux runner nothing named `wasm-opt` exists under `$HOME` after a build, and the fetch costs 2.4s
 2. Installs a prebuilt `dioxus-cli@0.7.10` binary via `taiki-e/install-action`, so nothing compiles from source. Keep the pin matched to the workspace dioxus version and to `dx --version` on the build Macs
 3. Runs `dx build --release --platform web --ssg --force-sequential` from `zite/` directory. `--ssg` pre-renders every route from the app's `static_routes` server function; `--force-sequential` is not optional, because without it the parallel client build finishes last and overwrites the SSG'd `public/index.html` with the bare shell
 4. Writes `CNAME` (zwipe.net) into the build output at `zite/target/dx/zite/release/web/public/`
