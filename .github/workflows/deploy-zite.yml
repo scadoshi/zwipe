@@ -107,10 +107,15 @@ jobs:
         # build-essential provides the gcc linker the wasm and native builds use.
         #
         # binaryen is deliberately NOT installed here. dx 0.7.10 never consults
-        # PATH for wasm-opt: it downloads a pinned binaryen (129) into
-        # ~/.dx/tools and runs that, so an apt binaryen (108 on noble) is dead
-        # weight. The "Cache dx tools" step below is what actually removes the
-        # dependency on that GitHub fetch.
+        # PATH for wasm-opt: it downloads its own pinned binaryen (129) and runs
+        # that, so an apt binaryen (108 on noble) was only ever dead weight.
+        #
+        # Caching that download was tried and abandoned (runs 35877063911,
+        # 35878341108). dx keeps the tool at ~/.dx/tools on macOS, but on the
+        # Linux runner a post-build `find $HOME -maxdepth 6 -name wasm-opt`
+        # returns nothing, so there is no directory to cache. The fetch costs
+        # 2.4s, so this is only worth revisiting if GitHub refuses it again the
+        # way it did on 2026-08-12.
         #
         # apt is the only step here that talks to a network mirror, and it is
         # the one that wedges: on 2026-08-18 it sat for 26 minutes with GitHub
@@ -142,31 +147,6 @@ jobs:
         with:
           tool: dioxus-cli@0.7.10
 
-      - name: Cache dx tools
-        # dx downloads its own pinned wasm-opt (binaryen 129) and wasm-bindgen
-        # into ~/.dx/tools on first use. That fetch got refused three deploys
-        # running during the 2026-08-12 GitHub degradation. Caching the
-        # directory means it happens once per dx version instead of every run,
-        # which also takes ~2s off a normal build.
-        #
-        # Keyed on the dx version because the tool versions are pinned by dx,
-        # so bumping dioxus-cli above must invalidate this.
-        #
-        # dx uses ~/.dx/tools on macOS, but on the Linux runner that path does
-        # not exist after a build (verified: run 35877063911 saved nothing and
-        # warned "Path Validation Error"), so the candidates below cover the
-        # layouts it might use instead. actions/cache saves whichever exist.
-        # "Locate dx tools" prints the real one; once a run confirms it, narrow
-        # this list to that path and drop the diagnostic step.
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.dx
-            ~/.dioxus
-            ~/.local/share/dioxus
-            ~/.cache/dioxus
-          key: dx-tools-${{ runner.os }}-dioxus-cli-0.7.10
-
       - name: Build (SSG)
         working-directory: zite
         env:
@@ -184,14 +164,6 @@ jobs:
 
       - name: Add CNAME
         run: echo "zwipe.net" > target/dx/zite/release/web/public/CNAME
-
-      - name: Locate dx tools
-        # Diagnostic for the cache step above: prints where dx actually put the
-        # wasm-opt it downloads, so the cache path can be narrowed to it.
-        # Remove once the path is pinned. `|| true` so this never fails a deploy.
-        run: |
-          find "$HOME" -maxdepth 6 -name 'wasm-opt' -type f 2>/dev/null | head -5 || true
-          ls -d "$HOME"/.dx "$HOME"/.dioxus "$HOME"/.local/share/dioxus "$HOME"/.cache/dioxus 2>/dev/null || true
 
       - name: Add 404.html for SPA routing
         run: cp target/dx/zite/release/web/public/index.html target/dx/zite/release/web/public/404.html
