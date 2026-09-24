@@ -8,8 +8,7 @@ use crate::inbound::components::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
-use zwipe_components::{Button, ButtonVariant};
+use zwipe_components::{Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::{
     domain::{auth::models::session::Session, user::username::Username},
     http::contracts::auth::HttpChangeUsername,
@@ -94,7 +93,7 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
                     }
                     toast.success(
                         format!("Username changed to {}", new_name),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                        ToastOptions::default().duration(TOAST_QUICK),
                     );
                     clear_inputs();
                     submit_attempted.set(false);

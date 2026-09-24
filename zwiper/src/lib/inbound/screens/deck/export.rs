@@ -12,10 +12,9 @@ use crate::inbound::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use uuid::Uuid;
 use zwipe_client::ClientError;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::domain::{deck::Deck, user::models::hints::HINT_EXPORT};
 
 #[component]
@@ -239,7 +238,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                 document::eval(&js);
                                 toast.info(
                                     "Copied to clipboard".to_string(),
-                                    ToastOptions::default().duration(Duration::from_millis(2000)),
+                                    ToastOptions::default().duration(TOAST_QUICK),
                                 );
                             }
                         },

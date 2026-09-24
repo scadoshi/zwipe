@@ -10,7 +10,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use tokio::time::sleep;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_components::{Button, ButtonVariant};
+use zwipe_components::{Button, ButtonVariant, TOAST_LONG, TOAST_NORMAL};
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Seconds before another resend is allowed. Mirrors the server's dedicated
@@ -78,7 +78,7 @@ pub(crate) fn VerificationActions() -> Element {
                             usage_buffer.peek().report_error(screen::PROFILE, component::EMAIL_VERIFICATION, "resend_verification", &e);
                             toast.error(
                                 e.to_user_message(),
-                                ToastOptions::default().duration(Duration::from_millis(5000)),
+                                ToastOptions::default().duration(TOAST_LONG),
                             );
                             cooldown.set(0);
                             is_resending.set(false);
@@ -88,19 +88,19 @@ pub(crate) fn VerificationActions() -> Element {
                     match client().resend_verification(&s).await {
                         Ok(()) => toast.success(
                             "Verification email sent".to_string(),
-                            ToastOptions::default().duration(Duration::from_millis(3000)),
+                            ToastOptions::default().duration(TOAST_NORMAL),
                         ),
                         // Raced the server window: an email already went
                         // out recently, so keep the countdown running.
                         Err(ClientError::TooManyRequests(_)) => toast.info(
                             "Please wait a moment".to_string(),
-                            ToastOptions::default().duration(Duration::from_millis(3000)),
+                            ToastOptions::default().duration(TOAST_NORMAL),
                         ),
                         Err(e) => {
                             usage_buffer.peek().report_error(screen::PROFILE, component::EMAIL_VERIFICATION, "resend_verification", &e);
                             toast.error(
                                 e.to_user_message(),
-                                ToastOptions::default().duration(Duration::from_millis(5000)),
+                                ToastOptions::default().duration(TOAST_LONG),
                             );
                             // The send didn't happen: don't strand the
                             // user behind a timer.
@@ -151,12 +151,12 @@ pub(crate) fn VerificationActions() -> Element {
                         if verified {
                             toast.success(
                                 "Email verified".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(3000)),
+                                ToastOptions::default().duration(TOAST_NORMAL),
                             );
                         } else {
                             toast.info(
                                 "Not verified yet. Check your inbox".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(3000)),
+                                ToastOptions::default().duration(TOAST_NORMAL),
                             );
                         }
                     }

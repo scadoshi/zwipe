@@ -17,9 +17,8 @@ use crate::inbound::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::domain::{
     card::oracle_tag::{OracleTag, search_oracle_tags},
     deck::MAX_DECK_ORACLE_TAGS,
@@ -51,19 +50,19 @@ pub(crate) fn OracleTagSelect(
         if current.contains(&slug) {
             toast.info(
                 "Tag already added".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(2000)),
+                ToastOptions::default().duration(TOAST_QUICK),
             );
         } else if current.len() < MAX_DECK_ORACLE_TAGS {
             current.push(slug);
             selected.set(current);
             toast.success(
                 "Tag added to deck".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(2000)),
+                ToastOptions::default().duration(TOAST_QUICK),
             );
         } else {
             toast.warning(
                 format!("You may only choose up to {MAX_DECK_ORACLE_TAGS} oracle tags"),
-                ToastOptions::default().duration(Duration::from_millis(2000)),
+                ToastOptions::default().duration(TOAST_QUICK),
             );
         }
     };
@@ -198,7 +197,7 @@ pub(crate) fn OracleTagSelect(
                                                 } else {
                                                     toast.warning(
                                                         format!("You may only choose up to {MAX_DECK_ORACLE_TAGS} oracle tags"),
-                                                        ToastOptions::default().duration(Duration::from_millis(2000)),
+                                                        ToastOptions::default().duration(TOAST_QUICK),
                                                     );
                                                 }
                                             },

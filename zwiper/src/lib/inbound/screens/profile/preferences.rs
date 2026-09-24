@@ -7,8 +7,7 @@ use crate::inbound::components::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
-use zwipe_components::{Button, ButtonVariant};
+use zwipe_components::{Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::{
     domain::user::{models::theme::ThemeConfig, preferences::ALLOWED_THEMES},
     http::contracts::user::HttpUpdatePreferences,
@@ -119,7 +118,7 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
                 theme_config.set(ThemeConfig::from(&prefs));
                 toast.success(
                     "Theme saved".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
         });

@@ -28,10 +28,9 @@ use crate::inbound::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
@@ -170,7 +169,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
         {
             toast.warning(
                 format!("Below land target ({target})"),
-                ToastOptions::default().duration(Duration::from_millis(2500)),
+                ToastOptions::default().duration(TOAST_NORMAL),
             );
         }
     };
@@ -198,7 +197,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
             let pct = after / budget * 100.0;
             let amount = price_budget_currency().format_amount(budget);
             let msg = format!("Deck at {pct:.2}% of your {amount} budget");
-            let opts = ToastOptions::default().duration(Duration::from_millis(2500));
+            let opts = ToastOptions::default().duration(TOAST_NORMAL);
             if after >= budget {
                 toast.warning(msg, opts);
             } else {
@@ -392,7 +391,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
                 toast.info(
                     "Undid keep".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
             RemoveAction::Remove { card } => {
@@ -418,7 +417,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     stack.cancel_entering();
                     toast.info(
                         "Already changed".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                        ToastOptions::default().duration(TOAST_QUICK),
                     );
                     return;
                 }
@@ -455,7 +454,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             deck_entries.write().push(DeckEntry { card, deck_card });
                             toast.success(
                                 "Undid remove".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                                ToastOptions::default().duration(TOAST_QUICK),
                             );
                         }
                         Err(e) => {
@@ -490,7 +489,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     stack.cancel_entering();
                     toast.info(
                         "Already changed".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                        ToastOptions::default().duration(TOAST_QUICK),
                     );
                     return;
                 }
@@ -536,7 +535,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             }
                             toast.success(
                                 "Undid move".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                                ToastOptions::default().duration(TOAST_QUICK),
                             );
                         }
                         Err(e) => {
@@ -588,7 +587,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 stack.record(RemoveAction::Keep);
                                 toast.info(
                                     "Kept".to_string(),
-                                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                                    ToastOptions::default().duration(TOAST_QUICK),
                                 );
                                 // Skip: advance circularly within the stack
                                 stack.advance_wrapping();
@@ -601,7 +600,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 delete_card_from_deck();
                                 toast.success(
                                     "Removed from deck".to_string(),
-                                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                                    ToastOptions::default().duration(TOAST_QUICK),
                                 );
                                 let before = main_land_count();
                                 let before_price = total_price();
@@ -623,7 +622,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 stack.record(RemoveAction::MoveBoard { card: Box::new(card), from, to });
                                 move_card_to_board(to);
                                 let message = if to.is_maybeboard() { "Moved to maybeboard" } else { "Moved to main" };
-                                toast.info(message.to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                toast.info(message.to_string(), ToastOptions::default().duration(TOAST_QUICK));
                                 let before = main_land_count();
                                 let before_price = total_price();
                                 move_current_card_locally(to);
@@ -675,7 +674,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         }
                         toast.info(
                             "Stack refreshed".to_string(),
-                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                            ToastOptions::default().duration(TOAST_QUICK),
                         );
                     },
                     "Refresh"

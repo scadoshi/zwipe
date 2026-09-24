@@ -16,10 +16,9 @@ use crate::inbound::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::Button;
+use zwipe_components::{Button, TOAST_QUICK};
 use zwipe_core::domain::{auth::models::session::Session, site::WEB_BASE};
 
 #[component]
@@ -56,7 +55,7 @@ pub(crate) fn MoreButtons(
         document::eval(&js);
         toast.info(
             "Share link copied".to_string(),
-            ToastOptions::default().duration(Duration::from_millis(2000)),
+            ToastOptions::default().duration(TOAST_QUICK),
         );
     };
 
@@ -86,7 +85,7 @@ pub(crate) fn MoreButtons(
                 share_token.set(None);
                 toast.info(
                     "Link disabled".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
         });
@@ -108,7 +107,7 @@ pub(crate) fn MoreButtons(
             {
                 toast.info(
                     "Skips cleared".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
         });

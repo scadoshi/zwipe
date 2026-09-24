@@ -11,8 +11,8 @@ use crate::inbound::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use uuid::Uuid;
+use zwipe_components::TOAST_QUICK;
 use zwipe_core::http::contracts::deck::HttpCloneDeck;
 
 /// Clone deck dialog: prompts for a new name, calls the clone endpoint,
@@ -85,7 +85,7 @@ pub(crate) fn CloneDeckDialog(
                                         open.set(false);
                                         toast.info(
                                             format!("Cloned as \"{name}\""),
-                                            ToastOptions::default().duration(Duration::from_millis(2000)),
+                                            ToastOptions::default().duration(TOAST_QUICK),
                                         );
                                         navigator.push(Router::ViewDeck { deck_id: cloned.deck_id });
                                     }

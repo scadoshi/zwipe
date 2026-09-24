@@ -3,9 +3,8 @@
 use crate::inbound::components::{fields::text_input::TextInput, screen_header::ScreenHeader};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
 use zwipe_core::{
     domain::{Email, logo},
     http::contracts::auth::HttpRequestPasswordReset,
@@ -47,7 +46,7 @@ pub fn ForgotPassword() -> Element {
                         tracing::warn!("password reset request failed: {e}");
                         toast.error(
                             e.to_user_message(),
-                            ToastOptions::default().duration(Duration::from_millis(3000)),
+                            ToastOptions::default().duration(TOAST_NORMAL),
                         );
                     }
                 }

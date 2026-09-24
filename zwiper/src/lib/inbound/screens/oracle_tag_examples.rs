@@ -30,8 +30,7 @@ use crate::inbound::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::domain::{
     card::{
         Card,
@@ -162,7 +161,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
         let Some(action) = stack.pop_action() else {
             toast.info(
                 "Already at the first card".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(1500)),
+                ToastOptions::default().duration(TOAST_QUICK),
             );
             return;
         };

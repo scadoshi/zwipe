@@ -11,10 +11,9 @@ use crate::inbound::components::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
 use zwipe_core::domain::card::{Card, scryfall_data::ImageSize};
 
 /// Bottom sheet for browsing all printings of a card and selecting one.
@@ -104,7 +103,7 @@ pub(crate) fn PrintingSheet(
                     );
                     toast.error(
                         e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                        ToastOptions::default().duration(TOAST_NORMAL),
                     );
                 }
             }
@@ -125,7 +124,7 @@ pub(crate) fn PrintingSheet(
         if !read_only && has_changed {
             toast.warning(
                 "Printing discarded".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(1500)),
+                ToastOptions::default().duration(TOAST_QUICK),
             );
         }
         open.set(false);
@@ -140,7 +139,7 @@ pub(crate) fn PrintingSheet(
                 if !read_only && has_changed {
                     toast.warning(
                         "Printing discarded".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                        ToastOptions::default().duration(TOAST_QUICK),
                     );
                 }
                 open.set(false);
@@ -207,7 +206,7 @@ pub(crate) fn PrintingSheet(
                         if !read_only && has_changed {
                             toast.info(
                                 "Printing discarded".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                                ToastOptions::default().duration(TOAST_QUICK),
                             );
                         }
                         open.set(false);
@@ -225,7 +224,7 @@ pub(crate) fn PrintingSheet(
                                         on_save(new_card.clone());
                                         toast.info(
                                             saved_message.to_string(),
-                                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                                            ToastOptions::default().duration(TOAST_QUICK),
                                         );
                                         open.set(false);
                                     },

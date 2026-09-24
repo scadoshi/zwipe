@@ -1,6 +1,6 @@
-//! Frontend UI layer (Leptos components and routing).
+//! Frontend UI layer (Dioxus components and routing).
 //!
-//! Contains the Leptos WASM frontend application structure:
+//! Contains the Dioxus frontend application structure:
 //! - **Components**: Reusable UI components
 //! - **Router**: Client-side routing configuration
 //! - **Screens**: Top-level page components

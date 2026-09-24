@@ -11,8 +11,7 @@ use crate::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
-use zwipe_components::{Button, ButtonVariant};
+use zwipe_components::{Button, ButtonVariant, TOAST_NORMAL};
 use zwipe_core::{
     domain::{Email, auth::models::session::Session},
     http::contracts::auth::HttpChangeEmail,
@@ -100,7 +99,7 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
                     }
                     toast.success(
                         format!("Email changed to {new_email}. Verify it to restore full access."),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                        ToastOptions::default().duration(TOAST_NORMAL),
                     );
                     clear_inputs();
                     submit_attempted.set(false);

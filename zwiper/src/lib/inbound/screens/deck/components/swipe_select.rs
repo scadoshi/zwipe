@@ -33,7 +33,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::{collections::HashSet, time::Duration};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{
@@ -343,7 +343,7 @@ pub(crate) fn SwipeSelect(
                         Ok(()) => {
                             toast.info(
                                 "Removed from your commander maybeboard".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                                ToastOptions::default().duration(TOAST_QUICK),
                             );
                         }
                         Err(e) => {
@@ -362,7 +362,7 @@ pub(crate) fn SwipeSelect(
             _ => {
                 toast.info(
                     "Undid skip".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
         }
@@ -380,7 +380,7 @@ pub(crate) fn SwipeSelect(
         filter_reset_counter.set(filter_reset_counter() + 1);
         toast.info(
             "Stack refreshed".to_string(),
-            ToastOptions::default().duration(Duration::from_millis(1500)),
+            ToastOptions::default().duration(TOAST_QUICK),
         );
     };
 
@@ -435,7 +435,7 @@ pub(crate) fn SwipeSelect(
                                 advance();
                                 toast.info(
                                     "Skipped".to_string(),
-                                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                                    ToastOptions::default().duration(TOAST_QUICK),
                                 );
                             },
                             on_swipe_right: move |card: Card| {
@@ -448,7 +448,7 @@ pub(crate) fn SwipeSelect(
                                 }
                                 toast.success(
                                     format!("{label} selected"),
-                                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                                    ToastOptions::default().duration(TOAST_QUICK),
                                 );
                                 on_select.call(card);
                             },

@@ -15,8 +15,7 @@ use crate::inbound::components::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
 
 /// In-place tag picker. Toggled by `open`; mutates `selected_tags` (slugs) directly.
@@ -141,7 +140,7 @@ pub(crate) fn TagSelect(
                                                 } else {
                                                     toast.warning(
                                                         format!("You may only choose up to {MAX_DECK_TAGS} tags"),
-                                                        ToastOptions::default().duration(Duration::from_millis(2000)),
+                                                        ToastOptions::default().duration(TOAST_QUICK),
                                                     );
                                                 }
                                             },

@@ -11,6 +11,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
+use zwipe_components::TOAST_NORMAL;
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{
@@ -101,7 +102,7 @@ pub(crate) fn autofill_named_partner(
                 partner_commander.set(Some(found));
                 toast.info(
                     format!("Partner found and selected: {name}"),
-                    ToastOptions::default().duration(Duration::from_millis(2500)),
+                    ToastOptions::default().duration(TOAST_NORMAL),
                 );
             }
             Err(e) => tracing::warn!("partner autofill search failed: {e}"),

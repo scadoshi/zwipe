@@ -3,17 +3,29 @@
  * `class:` prop spread through its `#[props(extends = GlobalAttributes)]` attributes.
  * Inner DOM is owned by the library: <div.toast-container> > <ol> > <li> > <div role="alertdialog" data-type="...">.
  * `data-type` is part of ToastProvider's documented stable contract. */
+/* Top left, below the page header, stacking downwards. They used to sit
+   above the util-bar, which is where the buttons are, so a toast landed on
+   the control being reached for at the moment it fired. The safe-area inset
+   matters here in a way it did not at the bottom: without it the first toast
+   tucks under the status bar on a notched device. */
 .toast-container {
     position: fixed;
     z-index: 9999;
-    right: 1rem;
-    bottom: 7rem;
+    left: 1rem;
+    top: calc(env(safe-area-inset-top, 0px) + 4rem);
     max-width: 16rem;
 }
 
+/* The library renders newest first, so a plain column puts the newest at the
+   top and older ones below it.
+ *
+ * Two layouts. Collapsed is the default: the older toasts slide up behind the
+ * newest and show only a sliver, so the stack costs roughly one toast of
+ * screen no matter how many are up. Expanded lays them out in full. Tapping
+ * any toast switches between them, which is what `.toast-tap` is for. */
 .toast-container ol {
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: column;
     padding: 0;
     margin: 0;
     gap: 0;
@@ -22,21 +34,50 @@
 
 .toast-container li {
     display: flex;
-    margin-top: -2.5rem;
-    transition: all 0.2s ease;
+    /* Pulls each toast up behind the one before it, leaving a sliver showing.
+       Tuned against a one-line toast; a taller one shows a little more. */
+    margin-top: -2.75rem;
     position: relative;
 }
 
-.toast-container li:last-child {
+/* Only a tap animates. An arriving toast takes over as `:first-child`, which
+   pushes the previous one into the -2.75rem rule above, and transitioning that
+   made the stack expand to full height for 200ms and drop back every time one
+   landed. CSS cannot tell that reflow apart from a tap, so `zwipe.rs` sets
+   `.animating` for the length of the toggle and nothing else ever has it. */
+.toast-container.animating li {
+    transition: margin-top 0.2s ease;
+}
+
+.toast-container.animating ol {
+    transition: gap 0.2s ease;
+}
+
+.toast-container li:first-child {
     margin-top: 0;
 }
 
-/* Newer toasts (first in DOM with column-reverse) get higher z-index */
-.toast-container li:first-child { z-index: 5; }
+/* Newest is first in the DOM and has to paint over the ones behind it. */
+.toast-container li:nth-child(1) { z-index: 5; }
 .toast-container li:nth-child(2) { z-index: 4; }
 .toast-container li:nth-child(3) { z-index: 3; }
 .toast-container li:nth-child(4) { z-index: 2; }
 .toast-container li:nth-child(5) { z-index: 1; }
+
+/* Expanded: no overlap, a real gap, and the z-index ladder stops mattering. */
+.toast-container.expanded ol {
+    gap: 0.5rem;
+}
+
+.toast-container.expanded li {
+    margin-top: 0;
+}
+
+/* The tap target wraps each toast. `contents` generates no box, so it changes
+   nothing about layout while still letting the click bubble out of the toast. */
+.toast-tap {
+    display: contents;
+}
 
 /* Toast */
 .toast-container [role="alertdialog"] {
@@ -55,21 +96,26 @@
     font-family: 'JetBrains Mono', monospace;
     font-weight: 400;
     box-shadow: var(--shadow-sm);
-    transition:
-        opacity 0.2s ease,
-        transform 0.2s ease;
-    animation: toast-slide-in 0.2s ease-out;
+    /* `both` holds the `from` state before the first frame paints, so the
+       toast never flashes at its final position first. No `transition` on
+       opacity or transform here: a transition on the same properties the
+       animation drives fights it, which read as the toast arriving from the
+       wrong direction. */
+    animation: toast-drop-in 0.22s ease-out both;
 }
 
-@keyframes toast-slide-in {
+/* Drops in from above, matching the direction the stack grows. The slight
+   scale gives the motion a direction the eye reads even when the travel is
+   short. */
+@keyframes toast-drop-in {
     from {
         opacity: 0;
-        transform: translateY(1rem);
+        transform: translateY(-1.5rem) scale(0.96);
     }
 
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
     }
 }
 

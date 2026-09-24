@@ -35,9 +35,8 @@ use crate::inbound::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::search_card::card_filter::{builder::CardQueryBuilder, error::InvalidCardCriteria},
@@ -137,7 +136,7 @@ pub(crate) fn CardFilterSheet(
             catalog_warned.set(true);
             toast.warning(
                 "Filter lists didn't load, trying again".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(2500)),
+                ToastOptions::default().duration(TOAST_NORMAL),
             );
         }
     });
@@ -157,7 +156,7 @@ pub(crate) fn CardFilterSheet(
                 filter_builder.set(previous);
                 toast.info(
                     "Filter changes discarded".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
         }
@@ -195,7 +194,7 @@ pub(crate) fn CardFilterSheet(
         if already {
             toast.info(
                 "Already in filter".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(2000)),
+                ToastOptions::default().duration(TOAST_QUICK),
             );
             return;
         }
@@ -210,7 +209,7 @@ pub(crate) fn CardFilterSheet(
         }
         toast.success(
             "Added to filter".to_string(),
-            ToastOptions::default().duration(Duration::from_millis(2000)),
+            ToastOptions::default().duration(TOAST_QUICK),
         );
     };
 
@@ -726,7 +725,7 @@ pub(crate) fn CardFilterSheet(
                         {
                             toast.warning(
                                 format!("Filter can't both include and exclude {field}"),
-                                ToastOptions::default().duration(Duration::from_millis(2500)),
+                                ToastOptions::default().duration(TOAST_NORMAL),
                             );
                             return;
                         }
@@ -756,7 +755,7 @@ pub(crate) fn CardFilterSheet(
                             ApplyAction::RefuseEmpty => {
                                 toast.warning(
                                     "Filter is already empty".to_string(),
-                                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                                    ToastOptions::default().duration(TOAST_QUICK),
                                 );
                                 // Return before closing. Closing with the
                                 // snapshot still armed is what made a refusal
@@ -782,7 +781,7 @@ pub(crate) fn CardFilterSheet(
                             } else {
                                 "Filter applied".to_string()
                             },
-                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                            ToastOptions::default().duration(TOAST_QUICK),
                         );
                         // The sheet closing collapses the accordion (see the
                         // open/close effect above), so it reopens tidy.
@@ -800,7 +799,7 @@ pub(crate) fn CardFilterSheet(
                             filter_builder.write().clear();
                             toast.info(
                                 "Filter reset".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                                ToastOptions::default().duration(TOAST_QUICK),
                             );
                         }
                     },

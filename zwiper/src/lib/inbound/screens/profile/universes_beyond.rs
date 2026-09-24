@@ -12,9 +12,8 @@ use crate::inbound::components::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{Button, ButtonVariant};
+use zwipe_components::{Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::{
     domain::{
         auth::models::session::Session, user::models::hints::HINT_UNIVERSES_BEYOND_EXCEPTIONS,
@@ -84,7 +83,7 @@ pub fn UniversesBeyondExceptionsSheet(
                 exceptions.set(prefs.universes_beyond_exceptions);
                 toast.success(
                     "Exceptions saved".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
         });

@@ -15,9 +15,8 @@ use crate::inbound::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use uuid::Uuid;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
 use zwipe_core::domain::{
     deck::{ImportMode, requests::import_deck_cards::ImportDeckCardsResult},
     user::models::hints::HINT_IMPORT,
@@ -84,7 +83,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     if imported > 0 {
                         undo_store.clear(deck_id);
                     }
-                    let opts = ToastOptions::default().duration(Duration::from_millis(1500));
+                    let opts = ToastOptions::default().duration(TOAST_QUICK);
                     match (imported, unresolved) {
                         (0, 0) => toast.info("No cards found".to_string(), opts),
                         (0, _) => toast.error(
@@ -92,7 +91,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                 "{unresolved} card{} unresolved",
                                 if unresolved == 1 { "" } else { "s" }
                             ),
-                            ToastOptions::default().duration(Duration::from_millis(3000)),
+                            ToastOptions::default().duration(TOAST_NORMAL),
                         ),
                         (_, 0) => toast.success(
                             format!(

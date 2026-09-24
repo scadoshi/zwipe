@@ -9,9 +9,8 @@ use crate::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
 use zwipe_core::{
     domain::{auth::models::session::Session, logo, user::models::theme::ThemeConfig},
     http::contracts::auth::HttpAuthenticateUser,
@@ -46,7 +45,7 @@ pub fn Login() -> Element {
         if !inputs_are_present() {
             toast.error(
                 "Enter your username or email and password".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(3000)),
+                ToastOptions::default().duration(TOAST_NORMAL),
             );
             return;
         }
@@ -67,7 +66,7 @@ pub fn Login() -> Element {
                     tracing::warn!("login failed: {e}");
                     toast.error(
                         e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                        ToastOptions::default().duration(TOAST_NORMAL),
                     );
                     is_loading.set(false);
                 }

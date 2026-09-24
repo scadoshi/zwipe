@@ -30,10 +30,9 @@ use crate::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
 use zwipe_core::{
     domain::{
         card::Card,
@@ -112,7 +111,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             );
             toast.error(
                 e.to_user_message(),
-                ToastOptions::default().duration(Duration::from_millis(3000)),
+                ToastOptions::default().duration(TOAST_NORMAL),
             );
         }
         Some(Ok(None)) | None => (),
@@ -416,7 +415,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 {
                                                     toast.info(
                                                         format!("Quantity set to {target_qty}"),
-                                                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                                                        ToastOptions::default().duration(TOAST_QUICK),
                                                     );
                                                     deck_resource.restart();
                                                 }
@@ -442,7 +441,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                         };
                                                         toast.info(
                                                             format!("{label} cleared"),
-                                                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                                                            ToastOptions::default().duration(TOAST_QUICK),
                                                         );
                                                         commander.set(None);
                                                         deck_profile_resource.restart();

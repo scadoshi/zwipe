@@ -19,9 +19,8 @@ use crate::inbound::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
@@ -332,7 +331,7 @@ pub fn CreateDeck() -> Element {
                     if added {
                         toast.info(
                             "Oracle tags derived from your deck tags".to_string(),
-                            ToastOptions::default().duration(Duration::from_millis(2500)),
+                            ToastOptions::default().duration(TOAST_NORMAL),
                         );
                     }
                 },

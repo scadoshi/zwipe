@@ -41,7 +41,7 @@ use std::{
 use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
@@ -473,7 +473,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     if !filter_builder.peek().is_empty() {
                         toast.warning(
                             "Filter is active".to_string(),
-                            ToastOptions::default().duration(Duration::from_millis(2000)),
+                            ToastOptions::default().duration(TOAST_QUICK),
                         );
                     }
 
@@ -591,12 +591,12 @@ pub fn View(deck_id: Uuid) -> Element {
             if before >= target && after < target {
                 toast.warning(
                     format!("Below land target ({target})"),
-                    ToastOptions::default().duration(Duration::from_millis(2500)),
+                    ToastOptions::default().duration(TOAST_NORMAL),
                 );
             } else if before < target && after >= target {
                 toast.info(
                     format!("Land target reached ({target})"),
-                    ToastOptions::default().duration(Duration::from_millis(2500)),
+                    ToastOptions::default().duration(TOAST_NORMAL),
                 );
             }
         }
@@ -624,7 +624,7 @@ pub fn View(deck_id: Uuid) -> Element {
             let pct = after / budget * 100.0;
             let amount = price_budget_currency().format_amount(budget);
             let msg = format!("Deck at {pct:.2}% of your {amount} budget");
-            let opts = ToastOptions::default().duration(Duration::from_millis(2500));
+            let opts = ToastOptions::default().duration(TOAST_NORMAL);
             if after >= budget {
                 toast.warning(msg, opts);
             } else {
@@ -683,7 +683,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
                 toast.info(
                     "Card removed".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_QUICK),
                 );
             } else {
                 // Optimistic: update quantity in entries
@@ -846,7 +846,7 @@ pub fn View(deck_id: Uuid) -> Element {
         if record {
             toast.info(
                 format!("Moved to {}", target.display_name()),
-                ToastOptions::default().duration(Duration::from_millis(1500)),
+                ToastOptions::default().duration(TOAST_QUICK),
             );
         }
     };
@@ -924,10 +924,10 @@ pub fn View(deck_id: Uuid) -> Element {
         let stale = move || {
             toast.info(
                 "Already changed".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(1500)),
+                ToastOptions::default().duration(TOAST_QUICK),
             );
         };
-        let short = ToastOptions::default().duration(Duration::from_millis(1500));
+        let short = ToastOptions::default().duration(TOAST_QUICK);
 
         match action {
             UndoAction::Added { card_id, card_name } => {
@@ -1676,7 +1676,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             filter_reset_counter.set(current + 1);
                             toast.info(
                                 "Filter reset".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                                ToastOptions::default().duration(TOAST_QUICK),
                             );
                         },
                         "Reset filter"

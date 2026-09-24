@@ -2,7 +2,7 @@
 
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
+use zwipe_components::TOAST_QUICK;
 use zwipe_core::domain::card::search_card::card_filter::{
     builder::CardQueryBuilder, price_currency::PriceCurrency,
 };
@@ -40,7 +40,7 @@ pub(crate) fn PriceFilter() -> Element {
         } else {
             toast.error(
                 "Invalid price".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(2000)),
+                ToastOptions::default().duration(TOAST_QUICK),
             );
         }
     };
@@ -57,7 +57,7 @@ pub(crate) fn PriceFilter() -> Element {
         } else {
             toast.error(
                 "Invalid price".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(2000)),
+                ToastOptions::default().duration(TOAST_QUICK),
             );
         }
     };

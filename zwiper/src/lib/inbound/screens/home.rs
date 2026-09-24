@@ -21,12 +21,9 @@ use crate::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::{
-    sync::atomic::{AtomicBool, Ordering},
-    time::Duration,
-};
+use std::sync::atomic::{AtomicBool, Ordering};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{scryfall_data::ScryfallData, search_card::card_filter::price_currency::PriceCurrency},
@@ -89,12 +86,12 @@ pub fn Home() -> Element {
                     if needs_verification {
                         toast.warning(
                             "Verify your email!".to_string(),
-                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                            ToastOptions::default().duration(TOAST_QUICK),
                         );
                     } else if !GREETED.swap(true, Ordering::Relaxed) {
                         toast.info(
                             format!("Hello, {username}!"),
-                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                            ToastOptions::default().duration(TOAST_QUICK),
                         );
                     }
                 }
@@ -108,7 +105,7 @@ pub fn Home() -> Element {
                     {
                         toast.info(
                             format!("Hello, {}!", session.user.username),
-                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                            ToastOptions::default().duration(TOAST_QUICK),
                         );
                     }
                 }

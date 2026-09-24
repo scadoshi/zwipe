@@ -34,10 +34,10 @@ use crate::inbound::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::{collections::HashSet, time::Duration};
+use std::collections::HashSet;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
@@ -208,7 +208,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         if warming && !was {
             toast.info(
                 "Synergy warming up; showing all cards for now".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(3500)),
+                ToastOptions::default().duration(TOAST_NORMAL),
             );
         }
     });
@@ -266,7 +266,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         if current_card_count >= MAX_CARDS_IN_STACK {
             toast.warning(
                 "Card stack limit reached, please refresh your search to continue".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(3000)),
+                ToastOptions::default().duration(TOAST_NORMAL),
             );
             return;
         }
@@ -367,7 +367,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         {
             toast.info(
                 "Approaching the card stack limit, refresh your search to continue".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(2000)),
+                ToastOptions::default().duration(TOAST_QUICK),
             );
         }
         if stack.index() >= total && pagination_exhausted() {
@@ -464,7 +464,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
                 toast.info(
                     "Undid skip".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
             AddAction::Add => {
@@ -490,7 +490,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 if taken.is_none() && !still_in_deck {
                     toast.success(
                         "Undid add".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                        ToastOptions::default().duration(TOAST_QUICK),
                     );
                     return;
                 }
@@ -529,7 +529,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             deck_total_price.set((deck_total_price() - was_price).max(0.0));
                             toast.success(
                                 "Undid add".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                                ToastOptions::default().duration(TOAST_QUICK),
                             );
                         }
                         Err(e) => {
@@ -559,7 +559,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 if taken.is_none() && !still_in_deck {
                     toast.success(
                         "Undid maybeboard".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                        ToastOptions::default().duration(TOAST_QUICK),
                     );
                     return;
                 }
@@ -596,7 +596,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 .retain(|e| e.card.scryfall_data.id != card_id);
                             toast.success(
                                 "Undid maybeboard".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                                ToastOptions::default().duration(TOAST_QUICK),
                             );
                         }
                         Err(e) => {
@@ -614,7 +614,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     };
 
     let mut clear_filters = move || {
-        let opts = ToastOptions::default().duration(Duration::from_millis(1500));
+        let opts = ToastOptions::default().duration(TOAST_QUICK);
         // Reset stages the screen's default view; Apply commits it. It still
         // confirms here: the sheet stays open with its sections collapsed, so
         // without a toast a working Reset looks like a dead button.
@@ -860,7 +860,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             if !serve {
                 toast.warning(
                     "Try a filter to start swiping".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(2500)),
+                    ToastOptions::default().duration(TOAST_NORMAL),
                 );
                 return;
             }
@@ -917,10 +917,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 "; tap Synergy to turn it off"
                             });
                         }
-                        toast.warning(
-                            message,
-                            ToastOptions::default().duration(Duration::from_millis(3500)),
-                        );
+                        toast.warning(message, ToastOptions::default().duration(TOAST_NORMAL));
                     }
                     stack.replace(served);
                     // Record the filter that produced these results.
@@ -1018,7 +1015,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
                 toast.info(
                     "Undid skip".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
             MaybeboardAction::Promote { card } => {
@@ -1047,7 +1044,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     mb_stack.cancel_entering();
                     toast.info(
                         "Already changed".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                        ToastOptions::default().duration(TOAST_QUICK),
                     );
                     return;
                 }
@@ -1098,7 +1095,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             });
                             toast.success(
                                 "Undid move to deck".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                                ToastOptions::default().duration(TOAST_QUICK),
                             );
                         }
                         Err(e) => {
@@ -1235,7 +1232,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                         });
                                     }
                                     stack.record(AddAction::Skip);
-                                    toast.info("Skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    toast.info("Skipped".to_string(), ToastOptions::default().duration(TOAST_QUICK));
                                     advance_after_commit();
                                 },
                                 on_swipe_right: move |card: Card| {
@@ -1245,7 +1242,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     let added_land = card.scryfall_data.is_land();
                                     let added_price = card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
                                     add_card_to_deck(card);
-                                    toast.success("Added to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    toast.success("Added to deck".to_string(), ToastOptions::default().duration(TOAST_QUICK));
                                     if added_land {
                                         let prev = mainboard_land_count();
                                         let now = prev + 1;
@@ -1257,7 +1254,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                         {
                                             toast.info(
                                                 format!("Land target reached ({target})"),
-                                                ToastOptions::default().duration(Duration::from_millis(2500)),
+                                                ToastOptions::default().duration(TOAST_NORMAL),
                                             );
                                             // We don't touch the filter mid-session: a
                                             // refetch here would reset the swipe stack and
@@ -1276,7 +1273,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                             let pct = after / budget * 100.0;
                                             let amount = price_budget_currency().format_amount(budget);
                                             let msg = format!("Deck at {pct:.2}% of your {amount} budget");
-                                            let opts = ToastOptions::default().duration(Duration::from_millis(2500));
+                                            let opts = ToastOptions::default().duration(TOAST_NORMAL);
                                             if after >= budget {
                                                 toast.warning(msg, opts);
                                             } else {
@@ -1291,7 +1288,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     usage_buffer().record_signal(deck_id, card.scryfall_data.oracle_id, Direction::Up);
                                     stack.record(AddAction::Maybe);
                                     add_card_to_maybeboard(card);
-                                    toast.info("Added to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    toast.info("Added to maybeboard".to_string(), ToastOptions::default().duration(TOAST_QUICK));
                                     advance_after_commit();
                                 },
                                 on_swipe_down: move |_card: Card| {
@@ -1368,18 +1365,18 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 on_swipe_left: move |_card: Card| {
                                     usage_buffer().record_swipe(Direction::Left);
                                     mb_stack.record(MaybeboardAction::Skip);
-                                    toast.info("Skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    toast.info("Skipped".to_string(), ToastOptions::default().duration(TOAST_QUICK));
                                     mb_stack.advance_wrapping();
                                 },
                                 on_swipe_right: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Right);
                                     mb_stack.record(MaybeboardAction::Promote { card: Box::new(card.clone()) });
                                     mb_promote_to_deck(card);
-                                    toast.success("Moved to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    toast.success("Moved to deck".to_string(), ToastOptions::default().duration(TOAST_QUICK));
                                 },
                                 on_swipe_up: move |_card: Card| {
                                     usage_buffer().record_swipe(Direction::Up);
-                                    toast.info("Already on maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    toast.info("Already on maybeboard".to_string(), ToastOptions::default().duration(TOAST_QUICK));
                                 },
                                 on_swipe_down: move |_card: Card| {
                                     usage_buffer().record_swipe(Direction::Down);
@@ -1438,7 +1435,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             });
                             toast.info(
                                 "Maybeboard refreshed".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                                ToastOptions::default().duration(TOAST_QUICK),
                             );
                         } else {
                             // Search mode: re-fetch from API
@@ -1450,7 +1447,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             let Ok(filter) = builder.build() else {
                                 toast.warning(
                                     "Filter is empty".to_string(),
-                                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                                    ToastOptions::default().duration(TOAST_QUICK),
                                 );
                                 return;
                             };
@@ -1499,7 +1496,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                             toast.info(
                                 "Stack refreshed".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                                ToastOptions::default().duration(TOAST_QUICK),
                             );
                         }
                     },

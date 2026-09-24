@@ -9,10 +9,9 @@ use crate::inbound::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_components::{Button, ButtonVariant};
+use zwipe_components::{Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
 use zwipe_core::domain::{
     auth::models::session::Session,
     deck::deck_warning::{DeckWarning, WarningAction},
@@ -115,13 +114,13 @@ pub(crate) fn DeckWarnings(
                                                         Ok(()) => {
                                                             toast.info(
                                                                 "Card removed".to_string(),
-                                                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                                                                ToastOptions::default().duration(TOAST_QUICK),
                                                             );
                                                             on_remove(());
                                                         }
                                                         Err(e) => {
                                                             usage_buffer.peek().report_error(screen::DECK_VIEW, component::DECK_WARNINGS, "remove_flagged_card", &e);
-                                                            toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                                                            toast.error(e.to_user_message(), ToastOptions::default().duration(TOAST_NORMAL));
                                                         }
                                                     }
                                                 });

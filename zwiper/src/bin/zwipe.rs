@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_primitives::toast::ToastProvider;
+use dioxus_primitives::toast::{Toast, ToastPropsWithOwner, ToastProvider};
 use tracing_subscriber::EnvFilter;
 use zwipe_core::domain::{logo, user::models::theme::ThemeConfig};
 use zwiper::{
@@ -96,6 +96,16 @@ fn App() -> Element {
     use_hook(zwiper::outbound::shake_to_edit::disable);
 
     let upgrade_required = spawn_upkeeper();
+    // Toasts collapse into a stack and expand on tap, the way grouped
+    // notifications do. Expanded, three of them cover a lot of a phone screen,
+    // and this app's screens are dense where a counter list is not.
+    let mut toasts_expanded = use_signal(|| false);
+    // Set only for the length of a tap-driven toggle. The collapse offset is a
+    // margin, and an arriving toast changes that same margin by taking over as
+    // `:first-child`, so a permanent transition animated the stack expanding to
+    // full height and dropping back every time one landed. CSS cannot tell the
+    // two apart; this can, because only the tap sets it.
+    let mut toasts_animating = use_signal(|| false);
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Style {
@@ -124,7 +134,34 @@ fn App() -> Element {
             } else {
                 ToastProvider {
                     max_toasts: 3_usize,
-                    class: "toast-container",
+                    // Governs the calls that pass no ToastOptions. Without it
+                    // they sit on the library's own 5s, which nobody chose.
+                    default_duration: Some(zwipe_components::TOAST_NORMAL),
+                    class: match (toasts_expanded(), toasts_animating()) {
+                        (true, true) => "toast-container expanded animating",
+                        (true, false) => "toast-container expanded",
+                        (false, true) => "toast-container animating",
+                        (false, false) => "toast-container",
+                    },
+                    // The library owns the container and list DOM and does not
+                    // pass event handlers through `attributes`, so the tap
+                    // target has to be the toast itself. `display: contents`
+                    // keeps this wrapper out of the layout.
+                    render_toast: move |props: ToastPropsWithOwner| rsx! {
+                        div {
+                            class: "toast-tap",
+                            onclick: move |_| {
+                                toasts_expanded.toggle();
+                                toasts_animating.set(true);
+                                spawn(async move {
+                                    // Outlasts the 0.2s transition in toast.css.
+                                    tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+                                    toasts_animating.set(false);
+                                });
+                            },
+                            Toast { ..props }
+                        }
+                    },
                     Router::<Router> {}
                     // App-root receiver for on-demand "?" hints, rendered beside
                     // the router so its dialog escapes every screen's containing

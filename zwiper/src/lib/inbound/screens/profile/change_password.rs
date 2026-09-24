@@ -12,8 +12,7 @@ use crate::inbound::components::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
-use zwipe_components::{Button, ButtonVariant};
+use zwipe_components::{Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::{domain::auth::password::validate, http::contracts::auth::HttpChangePassword};
 
 /// Bottom sheet for updating the user's password.
@@ -86,7 +85,7 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                 {
                     toast.success(
                         "Password change successful".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                        ToastOptions::default().duration(TOAST_QUICK),
                     );
                     clear_inputs();
                     submit_attempted.set(false);

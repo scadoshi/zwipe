@@ -21,6 +21,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use tokio::time::sleep;
 use uuid::Uuid;
+use zwipe_components::TOAST_QUICK;
 use zwipe_core::{
     domain::{
         card::{
@@ -171,7 +172,7 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
                 });
                 toast.info(
                     format!("Added {card_name}"),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
         });

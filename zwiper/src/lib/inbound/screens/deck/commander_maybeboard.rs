@@ -53,7 +53,7 @@ use std::{collections::HashSet, time::Duration};
 use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, Chip};
+use zwipe_components::{ActionBar, Button, ButtonVariant, Chip, TOAST_LONG, TOAST_QUICK};
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{
@@ -303,7 +303,7 @@ pub fn CommanderMaybeboard() -> Element {
                 reload.set(tick + 1);
                 toast.info(
                     format!("Added {name}"),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
         });
@@ -337,7 +337,7 @@ pub fn CommanderMaybeboard() -> Element {
         if at_deck_limit() {
             toast.warning(
                 "Verify your email to create more than 1 deck".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(4000)),
+                ToastOptions::default().duration(TOAST_LONG),
             );
         } else {
             let mut slot = seed.0;
@@ -360,7 +360,7 @@ pub fn CommanderMaybeboard() -> Element {
                 entries.set(Vec::new());
                 toast.info(
                     "Maybeboard cleared".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
         });
@@ -380,7 +380,7 @@ pub fn CommanderMaybeboard() -> Element {
                     .retain(|c| c.scryfall_data.oracle_id != Some(oracle_id));
                 toast.info(
                     "Removed".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                    ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
         });

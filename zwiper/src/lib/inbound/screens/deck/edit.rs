@@ -23,10 +23,9 @@ use crate::inbound::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
@@ -221,7 +220,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             );
             toast.error(
                 e.to_user_message(),
-                ToastOptions::default().duration(Duration::from_millis(3000)),
+                ToastOptions::default().duration(TOAST_NORMAL),
             );
         }
     });
@@ -258,7 +257,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             );
             toast.error(
                 e.to_user_message(),
-                ToastOptions::default().duration(Duration::from_millis(3000)),
+                ToastOptions::default().duration(TOAST_NORMAL),
             );
         }
     });
@@ -295,7 +294,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             );
             toast.error(
                 e.to_user_message(),
-                ToastOptions::default().duration(Duration::from_millis(3000)),
+                ToastOptions::default().duration(TOAST_NORMAL),
             );
         }
     });
@@ -332,7 +331,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             );
             toast.error(
                 e.to_user_message(),
-                ToastOptions::default().duration(Duration::from_millis(3000)),
+                ToastOptions::default().duration(TOAST_NORMAL),
             );
         }
     });
@@ -476,7 +475,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             if !has_made_changes() {
                 toast.error(
                     InvalidUpdateDeckProfile::NoUpdates.to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(3000)),
+                    ToastOptions::default().duration(TOAST_NORMAL),
                 );
                 is_saving.set(false);
                 return;
@@ -671,7 +670,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     if added {
                         toast.info(
                             "Oracle tags derived from your deck tags".to_string(),
-                            ToastOptions::default().duration(Duration::from_millis(2500)),
+                            ToastOptions::default().duration(TOAST_NORMAL),
                         );
                     }
                 },

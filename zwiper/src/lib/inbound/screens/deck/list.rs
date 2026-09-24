@@ -21,9 +21,9 @@ use crate::inbound::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::{collections::HashSet, time::Duration};
+use std::collections::HashSet;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_components::{ActionBar, Button, ButtonVariant, Chip};
+use zwipe_components::{ActionBar, Button, ButtonVariant, Chip, TOAST_LONG};
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::scryfall_data::colors::Color,
@@ -669,7 +669,7 @@ pub fn DeckList() -> Element {
                         if at_limit {
                             toast.warning(
                                 "Verify your email to create more than 1 deck".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(4000)),
+                                ToastOptions::default().duration(TOAST_LONG),
                             );
                         } else {
                             navigator.push(Router::CreateDeck);

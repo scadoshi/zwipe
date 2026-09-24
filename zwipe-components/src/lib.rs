@@ -35,6 +35,7 @@ mod oracle_text;
 mod page_meta;
 mod panel;
 mod theme_picker;
+mod toast_timing;
 
 pub use action_bar::ActionBar;
 pub use banner::{Banner, BannerStatus};
@@ -53,6 +54,7 @@ pub use oracle_text::OracleText;
 pub use page_meta::{PageMeta, SiteMeta};
 pub use panel::Panel;
 pub use theme_picker::ThemePicker;
+pub use toast_timing::{TOAST_LONG, TOAST_NORMAL, TOAST_QUICK};
 // The theme domain types live in zwipe-core (user preferences persist them
 // server-side); re-exported here so UI consumers have one import path.
 pub use zwipe_core::domain::user::{models::theme::ThemeConfig, preferences::ALLOWED_THEMES};

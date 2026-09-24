@@ -23,9 +23,8 @@ use crate::inbound::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
 use zwipe_core::domain::{
     card::oracle_tag::{OracleTag, search_oracle_tags},
     user::models::hints::HINT_ORACLE_TAG_DICTIONARY,
@@ -77,7 +76,7 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
         if matches!(&*cell.read(), CatalogCell::Failed) {
             toast.error(
                 "Couldn't load the oracle-tag dictionary".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(3000)),
+                ToastOptions::default().duration(TOAST_NORMAL),
             );
         }
     });
