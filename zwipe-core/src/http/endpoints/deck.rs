@@ -2,7 +2,7 @@
 
 use crate::{
     domain::{
-        card::Card,
+        card::{Card, search_card::card_filter::CardQuery},
         deck::{
             Deck,
             models::{deck_card::DeckCard, deck_profile::DeckProfile, deck_tag::DeckTagView},
@@ -13,8 +13,8 @@ use crate::{
         contracts::{
             deck::{
                 HttpClearedSuppressions, HttpCloneDeck, HttpClonedDeck, HttpCreateDeckProfile,
-                HttpDeckShareToken, HttpImportArchidektDeck, HttpSharedDeck, HttpSkipDeckCard,
-                HttpUpdateDeckProfile,
+                HttpDeckCardSearch, HttpDeckShareToken, HttpImportArchidektDeck, HttpSharedDeck,
+                HttpSkipDeckCard, HttpUpdateDeckProfile,
             },
             deck_card::{HttpCreateDeckCard, HttpImportDeckCards, HttpPatchDeckCard},
         },
@@ -24,8 +24,9 @@ use crate::{
             clear_deck_suppressions_route, clone_deck_route, create_deck_card_route,
             delete_deck_card_route, delete_deck_route, get_deck_profile_route, get_deck_route,
             get_deck_tokens_route, get_shared_deck_route, import_archidekt_deck_route,
-            import_deck_cards_route, share_deck_route, skip_deck_card_route,
-            unskip_deck_card_route, update_deck_card_route, update_deck_route,
+            import_deck_cards_route, search_deck_cards_route, share_deck_route,
+            skip_deck_card_route, unskip_deck_card_route, update_deck_card_route,
+            update_deck_route,
         },
     },
 };
@@ -112,6 +113,21 @@ impl Endpoint for CloneDeck {
     type Response = HttpClonedDeck;
     fn path(&self) -> Cow<'static, str> {
         Cow::Owned(clone_deck_route(self.0))
+    }
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.1)
+    }
+}
+
+/// Deck-aware card search. Scoped to a deck, so cards already in it are
+/// excluded and results default to synergy ordering.
+pub struct SearchDeckCards(pub Uuid, pub CardQuery);
+impl Endpoint for SearchDeckCards {
+    const METHOD: Method = Method::Post;
+    type Request = CardQuery;
+    type Response = HttpDeckCardSearch;
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(search_deck_cards_route(self.0))
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.1)

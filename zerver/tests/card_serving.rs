@@ -15,6 +15,18 @@ use common::{TestApp, card, seed_cards};
 use serde_json::json;
 
 /// Reads the `name` off every card in a search result (a `Vec<Card>`).
+/// Deck-aware search answers `{ cards, synergy_applied }`, unlike the plain
+/// search's bare array. Asserting both keys here is what pins that contract:
+/// the client folds this endpoint through the `Endpoint` trait and would
+/// decode an empty result rather than fail if `cards` were renamed.
+fn deck_search_names(body: &serde_json::Value) -> Vec<String> {
+    assert!(
+        body.get("synergy_applied").is_some_and(|v| v.is_boolean()),
+        "deck search must carry synergy_applied: {body}"
+    );
+    names(body.get("cards").unwrap())
+}
+
 fn names(results: &serde_json::Value) -> Vec<String> {
     results
         .as_array()
@@ -241,7 +253,10 @@ async fn deck_selected_otags_lift_matching_cards_end_to_end(pool: sqlx::PgPool) 
         )
         .await;
     assert_eq!(status, StatusCode::OK, "serve: {body}");
-    let with_zzz = names(&body).iter().filter(|n| n.starts_with("Zzz")).count();
+    let with_zzz = deck_search_names(&body)
+        .iter()
+        .filter(|n| n.starts_with("Zzz"))
+        .count();
     assert!(
         with_zzz >= 1,
         "with the deck's selected otag, matching cards reach the first page (got {with_zzz})"
@@ -265,7 +280,10 @@ async fn deck_selected_otags_lift_matching_cards_end_to_end(pool: sqlx::PgPool) 
         )
         .await;
     assert_eq!(status, StatusCode::OK, "serve (no otags): {body}");
-    let without_zzz = names(&body).iter().filter(|n| n.starts_with("Zzz")).count();
+    let without_zzz = deck_search_names(&body)
+        .iter()
+        .filter(|n| n.starts_with("Zzz"))
+        .count();
     assert_eq!(
         without_zzz, 0,
         "no selected otags => matching cards stay in band 1, off the first page"
