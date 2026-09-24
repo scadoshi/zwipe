@@ -25,7 +25,15 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.10.3",
+    date: "",
+    entries: &[
+        "Messages now appear at the top left instead of the bottom right, where they sat over the buttons on any screen that has them.",
+        "Several messages at once collapse into a stack rather than filling the screen. Tap it to open them, tap again to close.",
+        "Messages stay up longer, so there is time to read one or open the stack before it goes.",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
