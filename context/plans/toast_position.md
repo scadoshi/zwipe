@@ -50,7 +50,7 @@ Clearing the header entirely is the other option: an offset that puts the toast 
 
 ## Traps
 
-`components/toast/component.rs` is a wrapper around the library provider that nothing uses. `zwipe.rs` imports `dioxus_primitives::toast::ToastProvider` directly. That wrapper forwards `default_duration`, `max_toasts`, `render_toast` and `children`, and drops `attributes`, so anyone who switches the mount to it loses the class and every rule in `toast.css` silently stops matching. Either delete the wrapper or make it forward `..props.attributes`. It is unrelated to this change but it is a loaded gun sitting next to it.
+`components/toast/` held a wrapper around the library provider that nothing used, and it dropped `attributes`. Switching the mount to it would have lost the class and stopped every rule in `toast.css` from matching, silently. Deleted 2026-09-24, before this plan starts, so the only `ToastProvider` in reach is the library's. Its siblings `accordion` and `alert_dialog` are real and stay.
 
 Toasts are `z-index: 9999` and the highest thing in `main.css` is 230, so they float above modals and the bottom sheet. At the top left they will overlay the top of a bottom sheet rather than its buttons. Probably fine, worth seeing.
 
