@@ -8,6 +8,8 @@ Only open, actionable items live here. When something ships, its outcome moves t
 
 ## Next Up
 
+- [ ] **Move toasts to the top left.** Scoped 2026-09-24 in [`../plans/toast_position.md`](../plans/toast_position.md). They sit bottom right at 7rem today, which is on top of the `util-bar` buttons on every screen that has one. Almost entirely CSS in `zwiper/assets/toast.css`: no Rust change and none of the 152 call sites move. Ships on a store build, and the one real decision (top left covers the header's corner button on 23 screens) wants a device look before it goes.
+
 - [ ] **Wait on Apple's review of iOS 1.10.2 build 81.** Build 80 was rejected 2026-09-23 for the iOS 27 UIScene trap; 81 carries the fix and was submitted the same day. On approval: record LIVE in [`../README.md`](../README.md), archive [`../plans/cut_1_10_2.md`](../plans/cut_1_10_2.md), and raise `MIN_CLIENT_VERSION` to 1.10.2, which unblocks steps 2 to 4 of [`../plans/synergy_flag_into_body.md`](../plans/synergy_flag_into_body.md).
 
 - [ ] **Ship the parked `zwipe-1.10.2-44.aab` with the next real Android change.** Built and signed 2026-09-23 but deliberately not submitted: its only difference from the live build is the vendored tao bump, which does nothing on Android, and R8 minification means an untested release build over a working one buys nothing. Needs a device pass when it does go.
