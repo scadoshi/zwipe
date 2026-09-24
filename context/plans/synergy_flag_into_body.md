@@ -1,8 +1,10 @@
 # Move the synergy-warming flag out of the response header
 
-**Status: STEP 1 DONE 2026-09-22, riding 1.10.2. Steps 2-4 wait on that release reaching both stores.**
+**Status: STEPS 3 AND 4 BUILT 2026-09-24 on `feat/synergy-flag-into-body`, held until step 2. Step 1 shipped in 1.10.2.**
 
-The client now decodes either shape, so the server is free to move whenever the floor allows it. Nothing on the wire changed: the request is untouched and the server still answers a bare array plus the header.
+1.10.2 is live on both stores (Android 2026-09-23, iOS 2026-09-24), so step 2 is now possible, but the floor has deliberately not been raised yet: the owner is giving installs a day or two to update before force-updating anyone. **Do not merge this branch before `MIN_CLIENT_VERSION` is 1.10.2.** The server now answers an envelope, and an older client decodes that as an empty result, so merging early serves no cards to anyone still on 1.10.1.
+
+On `main` the server still answers a bare array plus the header, and 1.10.2 clients read either shape. On this branch the server answers the envelope and the client's tolerant decode is gone, which is why the two have to land together and only after the floor moves.
 
 Where this stands once devices are on 1.10.2:
 
@@ -36,8 +38,8 @@ The force-update gate (`MIN_CLIENT_VERSION`, served at `/api/client/min-version`
 
 1. ~~**Ship a tolerant reader.**~~ DONE 2026-09-22, rides 1.10.2. Decodes either shape; keeps reading the header, since the server still sends it.
 2. **Raise the floor.** Set `MIN_CLIENT_VERSION` to that release once it is live on both stores. Older clients are force-updated, so no installed client parses a bare array any more.
-3. **Flip the server.** `search_deck_cards` returns the new contract type (add `HttpDeckCardSearch { cards, synergy_applied }` to `zwipe-core/src/http/contracts/deck.rs`) and stops setting the header.
-4. **Clean up.** Drop the array fallback from the client, drop the header read, and fold the endpoint back into the `Endpoint` trait: it becomes an ordinary `type Response = HttpDeckCardSearch`, and `zwiper/.../client/deck/search_deck_cards.rs` loses its hand-written transport like the other 55.
+3. ~~**Flip the server.**~~ BUILT.  `search_deck_cards` returns the new contract type (add `HttpDeckCardSearch { cards, synergy_applied }` to `zwipe-core/src/http/contracts/deck.rs`) and stops setting the header.
+4. ~~**Clean up.**~~ BUILT.  Drop the array fallback from the client, drop the header read, and fold the endpoint back into the `Endpoint` trait: it becomes an ordinary `type Response = HttpDeckCardSearch`, and `zwiper/.../client/deck/search_deck_cards.rs` loses its hand-written transport like the other 55.
 
 Steps 1 and 2 ride a release that is happening for other reasons. Only step 3 is a server deploy, and it is a one-liner once the floor is set.
 

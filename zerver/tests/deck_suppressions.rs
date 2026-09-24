@@ -25,7 +25,12 @@ async fn deck_search_names(app: &TestApp, deck_id: &str, token: &str) -> Vec<Str
         )
         .await;
     assert_eq!(status, StatusCode::OK, "deck search: {body}");
-    body.as_array()
+    assert!(
+        body.get("synergy_applied").is_some_and(|v| v.is_boolean()),
+        "deck search must carry synergy_applied: {body}"
+    );
+    body.get("cards")
+        .and_then(|c| c.as_array())
         .unwrap()
         .iter()
         .map(|c| c["scryfall_data"]["name"].as_str().unwrap().to_string())
