@@ -8,6 +8,15 @@ use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
 
+/// Newest shipped version, for the release banner. Reads `RELEASES`, never
+/// `UPCOMING`: an unreleased version must not be announced as shipped. Falls
+/// back to the crate version if the list is ever empty.
+fn latest_release() -> &'static str {
+    zwipe_core::content::changelog::RELEASES
+        .first()
+        .map_or(env!("CARGO_PKG_VERSION"), |release| release.version)
+}
+
 /// App Store listing: canonical download + review source.
 const APP_STORE_URL: &str = "https://apps.apple.com/us/app/zwipe-tcg/id6761341603";
 
@@ -128,6 +137,7 @@ const DEMO_PROFILE: Asset = asset!("/assets/demo/12_profile.mp4");
 
 #[component]
 pub fn Home() -> Element {
+    let latest = latest_release();
     // Ordered as the build flow: start a deck, fill it, refine it, read it.
     let demos: Vec<(Asset, &'static str, &'static str)> = vec![
         (
@@ -213,7 +223,7 @@ pub fn Home() -> Element {
                 category: "Release",
                 status: BannerStatus::Done,
                 status_label: "New",
-                "Version 1.10.1 just shipped. "
+                "Version {latest} just shipped. "
                 Link { to: Route::Changelog {}, "See what's new" }
             }
         }
