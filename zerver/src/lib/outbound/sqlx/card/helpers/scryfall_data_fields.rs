@@ -1,6 +1,6 @@
 //! Scryfall data field helpers for SQL query building.
 //!
-//! Provides utilities for binding all 88 Scryfall card fields to SQLx query builders,
+//! Provides utilities for binding all 87 Scryfall card fields to SQLx query builders,
 //! enabling efficient bulk insert/update operations.
 
 use sqlx::{Postgres, QueryBuilder, types::Json};

@@ -42,7 +42,7 @@ const POSTGRESQL_PARAMETER_HARD_LIMIT: usize = 65_535;
 /// # Formula
 /// `batch_size = (POSTGRESQL_PARAM_LIMIT / 2) / scryfall_data_field_count()`
 ///
-/// With ~100 fields per card and 65k param limit, this yields ~327 cards per batch.
+/// With 87 fields per card and the 65,535 param limit, this yields 376 cards per batch.
 fn batch_size() -> usize {
     POSTGRESQL_PARAMETER_HARD_LIMIT / 2 / scryfall_data_field_count()
 }
@@ -57,7 +57,7 @@ fn batch_size() -> usize {
 ///
 /// # Performance
 /// Bulk operations use batch processing to avoid PostgreSQL parameter limits.
-/// Batch size is auto-calculated based on ScryfallData field count (~327 cards/batch).
+/// Batch size is auto-calculated based on ScryfallData field count (376 cards/batch).
 #[derive(Debug, Clone)]
 pub struct Service<R>
 where
