@@ -3,16 +3,18 @@
  * `class:` prop spread through its `#[props(extends = GlobalAttributes)]` attributes.
  * Inner DOM is owned by the library: <div.toast-container> > <ol> > <li> > <div role="alertdialog" data-type="...">.
  * `data-type` is part of ToastProvider's documented stable contract. */
-/* Top left, below the page header, stacking downwards. They used to sit
+/* Top left, over the page header, stacking downwards. They used to sit
    above the util-bar, which is where the buttons are, so a toast landed on
-   the control being reached for at the moment it fired. The safe-area inset
-   matters here in a way it did not at the bottom: without it the first toast
-   tucks under the status bar on a notched device. */
+   the control being reached for at the moment it fired. Over the header
+   rather than under it: the header is the one strip with nothing to read,
+   so covering it costs nothing and leaves the content below clear. The
+   safe-area inset matters here in a way it did not at the bottom: without
+   it the first toast tucks under the status bar on a notched device. */
 .toast-container {
     position: fixed;
     z-index: 9999;
     left: 1rem;
-    top: calc(env(safe-area-inset-top, 0px) + 4rem);
+    top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
     max-width: 16rem;
 }
 
