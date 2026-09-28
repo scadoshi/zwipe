@@ -8,24 +8,30 @@ Build and install on a connected iPhone. **Debug** is the daily workflow; **rele
 
 ## Build and deploy
 
-Paste each as a **single line**. Multi-line `\` continuations get mangled on paste into zsh (`--device` and the `.app` path split off into their own commands → `command not found: --device` / `permission denied: …Zwipe.app`).
-
-**Debug**: outputs to `target/dx/zwipe/debug/ios/`:
+One script per profile, because the profile picks the output directory as well as the compiler flags:
 
 ```bash
-cd ~/Developer/zwipe/zwiper && BACKEND_URL=https://api.zwipe.net dx build --platform ios --device "scotland-mobile" && ios-deploy --bundle ~/Developer/zwipe/target/dx/zwipe/debug/ios/Zwipe.app
+zcripts/ios/deploy_debug.sh      # the daily one
+zcripts/ios/deploy_release.sh    # optimized, what the store will run
 ```
 
-**Release**: outputs to `target/dx/zwipe/release/ios/` (note `release/`, not `debug/`):
+Both build against `https://api.zwipe.net` unless `BACKEND_URL` is set in the environment, find the iPhone on the cable, and install to it by UDID. With two phones plugged in and no `--device`, they list both and stop rather than guessing: `--device matthew` picks one by any part of its name. A phone this Mac has paired before but is not plugged in does not count.
+
+Both are thin wrappers over `zcripts/ios/deploy.sh`, which takes `--release` if you prefer one entry point.
+
+No backup step, unlike cairn: every deck lives on the server, so a reinstall has nothing on the phone to lose.
+
+### Doing it by hand
+
+Paste as a **single line**. Multi-line `\` continuations get mangled on paste into zsh.
 
 ```bash
-cd ~/Developer/zwipe/zwiper && BACKEND_URL=https://api.zwipe.net dx build --release --platform ios --device "scotland-mobile" && ios-deploy --bundle ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app
+cd ~/Developer/zwipe/zwiper && BACKEND_URL=https://api.zwipe.net dx build --platform ios --device true && ios-deploy --bundle ~/Developer/zwipe/target/dx/zwipe/debug/ios/Zwipe.app
 ```
 
-> A `--release` build lands in `release/ios/`. Deploying the `debug/ios/` path after a release build installs the stale/unsigned debug app and fails with `Error 0xe8008014: The executable contains an invalid signature`.
+The bundle path has to match the profile: `--release` writes to `target/dx/zwipe/release/ios/`, debug to `target/dx/zwipe/debug/ios/`. Build one and install the other and the build succeeds, the install succeeds, and the phone runs whatever was last built the other way (or fails with `Error 0xe8008014: The executable contains an invalid signature`). That reads exactly like a build that ignored your changes, and it is why the scripts exist.
 
-That's it. The app is installed and ready to open.
-
+Bare `ios-deploy` with no `--id` picks a phone on its own when two are attached, which is how a build lands on the wrong one.
 
 ---
 
