@@ -32,6 +32,12 @@ pub const UPCOMING: &[Release] = &[Release {
         "Messages now appear at the top left instead of the bottom right, where they sat over the buttons on any screen that has them.",
         "Several messages at once collapse into a stack rather than filling the screen. Tap it to open them, tap again to close.",
         "Messages stay up longer, so there is time to read one or open the stack before it goes.",
+        "Messages sit over the title bar instead of under it, so they cover nothing you are reading.",
+        "On the Themes, Exceptions, Deck tags, Oracle tags, Format, Filter and Printing sheets, Save is greyed out until you change something. Back puts things back how they were and says so.",
+        "Swiping back out of the Oracle tags picker now drops your edits, the same as Back. It used to keep them.",
+        "Dark mode and Universes Beyond say what they switched to when you tap them.",
+        "Every field on the deck form and most rows on Profile have their own ? that explains just that one. The screen-level ? is shorter to match.",
+        "Hints across the app are shorter and only say what you can't tell by looking.",
     ],
 }];
 
