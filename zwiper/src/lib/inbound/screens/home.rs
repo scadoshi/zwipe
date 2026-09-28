@@ -231,22 +231,9 @@ pub fn Home() -> Element {
                 open: first_login_hint_open,
                 title: "Welcome to Zwipe",
                 HintBullets {
-                    HintBullet {
-                        "Tap "
-                        HintKey { color: "--accent-primary", "Decks" }
-                        " to create and build your decks"
-                    }
-                    HintBullet {
-                        "Tap "
-                        HintKey { color: "--accent-secondary", "Profile" }
-                        " to manage your account or change your theme"
-                    }
-                    HintBullet {
-                        HintColored { color: "--color-warning", "Verify your email" }
-                        " in "
-                        HintKey { color: "--accent-secondary", "Profile" }
-                        " to unlock full deck and card limits"
-                    }
+                    HintBullet { HintKey { color: "--accent-primary", "Decks" } " holds your decks" }
+                    HintBullet { HintKey { color: "--accent-secondary", "Profile" } " is your account and theme" }
+                    HintBullet { HintColored { color: "--color-warning", "Verify your email" } " in Profile for full deck and card limits" }
                 }
             }
 

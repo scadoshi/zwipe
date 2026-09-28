@@ -1533,36 +1533,13 @@ pub fn Add(deck_id: Uuid) -> Element {
                 open: swipe_hint_open,
                 title: "Swipe to build",
                 HintBullets {
-                    HintBullet {
-                        "Swipe "
-                        HintColored { color: "--color-success", "right" }
-                        " to add a card to your deck."
-                    }
-                    HintBullet {
-                        "Swipe "
-                        HintColored { color: "--color-error", "left" }
-                        " to skip it."
-                    }
-                    HintBullet {
-                        "Swipe "
-                        HintColored { color: "--color-warning", "up" }
-                        " to send it to your maybeboard."
-                    }
-                    HintBullet {
-                        "Swipe "
-                        HintColored { color: "--accent-tertiary", "down" }
-                        " to undo your last swipe."
-                    }
-                    HintBullet {
-                        HintKey { color: "--accent-primary", "Synergy" }
-                        " on keeps the stack to cards that work with your commander; turn it off to browse every legal card."
-                    }
+                    HintBullet { "Swipe " HintColored { color: "--color-success", "right" } " adds the card" }
+                    HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " skips it" }
+                    HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " sends it to the maybeboard" }
+                    HintBullet { "Swipe " HintColored { color: "--accent-tertiary", "down" } " undoes the last swipe" }
+                    HintBullet { HintKey { color: "--accent-primary", "Synergy" } " on keeps the stack to cards that work with your commander. Off shows every legal card" }
                 }
-                HintLine {
-                    "Sorting reorders whichever set you're viewing. It never changes which cards show. "
-                    HintKey { color: "--accent-secondary", "Filter" }
-                    " or sort anytime."
-                }
+                HintLine { "Sort only reorders. It never hides cards" }
             }
 
             CardFilterSheet {

@@ -1695,34 +1695,13 @@ pub fn View(deck_id: Uuid) -> Element {
             HintDialog {
                 open: deck_cards_hint_open,
                 title: "Browsing your deck",
-                HintLine {
-                    "Tap a card's row to expand it for its details, quantity, printings, and more."
-                }
+                HintLine { "Tap a row for details, quantity and printings" }
                 HintBullets {
-                    HintBullet {
-                        HintColored { color: "--accent-primary", "Keywords" }
-                        " are chips. Tap one for a reminder of what it does."
-                    }
-                    HintBullet {
-                        HintColored { color: "--accent-secondary", "Card roles" }
-                        " show what a card does; tap one for its oracle tags."
-                    }
-                    HintBullet {
-                        HintKey { color: "--color-success", "Group by" }
-                        " arranges your cards by type, mana value, color, or card role."
-                    }
-                    HintBullet {
-                        HintKey { color: "--accent-primary", "Boards" }
-                        " chooses which boards are listed: main, maybe, or side."
-                    }
-                    HintBullet {
-                        HintKey { color: "--accent-tertiary", "Show" }
-                        " toggles tokens, the command zone, and row art."
-                    }
-                    HintBullet {
-                        HintKey { color: "--color-warning", "Star" }
-                        " marks a deck MVP: up to three mainboard cards that define this deck. Suggestions lean toward cards that share their roles."
-                    }
+                    HintBullet { "Tap a " HintColored { color: "--accent-primary", "keyword" } " chip for what it does, or a " HintColored { color: "--accent-secondary", "role" } " chip for its oracle tags" }
+                    HintBullet { HintKey { color: "--color-success", "Group by" } " sorts by type, mana value, color or role" }
+                    HintBullet { HintKey { color: "--accent-primary", "Boards" } " picks main, maybe or side" }
+                    HintBullet { HintKey { color: "--accent-tertiary", "Show" } " toggles tokens, the command zone and row art" }
+                    HintBullet { HintKey { color: "--color-warning", "Star" } " marks up to three MVPs. Suggestions lean toward cards that share their roles" }
                 }
             }
 

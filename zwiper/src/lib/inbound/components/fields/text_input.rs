@@ -1,5 +1,8 @@
+use crate::inbound::components::{hint_host::HintTopic, info_button::InfoButton};
 use dioxus::prelude::*;
 
+/// Labeled text input. `hint` puts a "?" right of the label that opens that
+/// topic's explainer.
 #[component]
 pub fn TextInput(
     value: Signal<String>,
@@ -8,6 +11,7 @@ pub fn TextInput(
     placeholder: Option<String>,
     input_type: Option<String>,
     error: Option<String>,
+    hint: Option<HintTopic>,
 ) -> Element {
     let id = id.unwrap_or_default();
     let placeholder = placeholder.unwrap_or_default();
@@ -24,7 +28,18 @@ pub fn TextInput(
 
     rsx! {
         if let Some(label) = label {
-            label { class: "label", r#for : "{id}", "{label}" }
+            if let Some(topic) = hint {
+                // The label keeps its own spacing below; this row only pairs
+                // it with the "?", which stands a little taller than the text.
+                // Centered, because the form centers its labels and a flex
+                // row would otherwise pull this one to the left edge.
+                div { style: "display:flex;align-items:center;justify-content:center;",
+                    label { class: "label", r#for : "{id}", "{label}" }
+                    InfoButton { topic }
+                }
+            } else {
+                label { class: "label", r#for : "{id}", "{label}" }
+            }
         }
 
         if is_password {

@@ -480,18 +480,9 @@ pub fn DeckList() -> Element {
                     open: decks_hint_open,
                     title: "Your decks",
                     HintBullets {
-                        HintBullet { "Scroll through your decks and tap one to open it" }
-                        HintBullet {
-                            HintKey { color: "--color-success", "Group by" }
-                            " folds the list into sections, and "
-                            HintKey { color: "--accent-secondary", "Show" }
-                            " narrows it by color or tag"
-                        }
-                        HintBullet {
-                            "Tap "
-                            HintKey { "Create" }
-                            " to start a new deck"
-                        }
+                        HintBullet { "Tap a deck to open it" }
+                        HintBullet { HintKey { color: "--color-success", "Group by" } " folds the list into sections, " HintKey { color: "--accent-secondary", "Show" } " narrows it by color or tag" }
+                        HintBullet { HintKey { color: "--accent-tertiary", "Create" } " starts a new deck" }
                     }
                 }
 

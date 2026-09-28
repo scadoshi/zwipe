@@ -7,7 +7,7 @@ use crate::inbound::components::{
     auth::authed::use_authed,
     bottom_sheet::BottomSheet,
     catalog_cache::CatalogCache,
-    hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, open_and_record_hint},
+    hint_dialog::{HintDialog, HintLine, open_and_record_hint},
     telemetry::vocabulary::{ProfileScreen, Screen},
 };
 use dioxus::prelude::*;
@@ -164,15 +164,7 @@ pub fn UniversesBeyondExceptionsSheet(
         HintDialog {
             open: hint_open,
             title: "Franchise exceptions",
-            HintBullets {
-                HintBullet {
-                    "While Universes Beyond is hidden, cards from a selected franchise still show up in searches and commander picks"
-                }
-                HintBullet {
-                    "Tap a franchise to select it, tap again to drop it, then "
-                    HintKey { color: "--color-success", "Save" }
-                }
-            }
+            HintLine { "Picked franchises still show while Universes Beyond is hidden" }
         }
     }
 }

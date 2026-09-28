@@ -131,16 +131,8 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     open: export_hint,
                     title: "Exporting your deck",
                     HintBullets {
-                        HintBullet {
-                            "Choose which boards to include under "
-                            HintKey { color: "--accent-primary", "Export" }
-                        }
-                        HintBullet {
-                            "Tap "
-                            HintKey { color: "--color-success", "Copy" }
-                            " to copy the decklist to your clipboard"
-                        }
-                        HintBullet { "Paste it anywhere or share your deck with friends" }
+                        HintBullet { HintKey { color: "--accent-primary", "Export" } " picks which boards to include" }
+                        HintBullet { HintKey { color: "--color-success", "Copy" } " puts the decklist on your clipboard" }
                     }
                 }
 

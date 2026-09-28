@@ -812,25 +812,10 @@ pub(crate) fn CardFilterSheet(
             open: hint_open,
             title: "Filters",
             HintBullets {
-                HintBullet {
-                    "Filters decide which cards you see: the new cards served to "
-                    HintColored { color: "--accent-primary", "swipe" }
-                    ", or which of your deck's cards show."
-                }
-                HintBullet {
-                    "Open any section to set an attribute like name, mana, type, color, or "
-                    HintColored { color: "--accent-tertiary", "Oracle tags" }
-                    ". Stack as many as you like."
-                }
-                HintBullet {
-                    "Tap "
-                    HintKey { color: "--color-success", "Apply" }
-                    " to use it or "
-                    HintKey { color: "--color-warning", "Reset" }
-                    " then "
-                    HintKey { color: "--color-success", "Apply" }
-                    " to return to this screen's default view. Each screen keeps its own filter for the session."
-                }
+                HintBullet { "Picks which cards show: the ones served to " HintColored { color: "--accent-primary", "swipe" } ", or which of the deck's cards list" }
+                HintBullet { "Open a section to set name, mana, type, color, " HintColored { color: "--accent-tertiary", "Oracle tags" } " and more. Stack as many as you want" }
+                HintBullet { HintKey { color: "--color-success", "Apply" } " uses it. " HintKey { color: "--color-warning", "Reset" } " then " HintKey { color: "--color-success", "Apply" } " goes back to the default view" }
+                HintBullet { "Each screen keeps its own filter" }
             }
         }
 

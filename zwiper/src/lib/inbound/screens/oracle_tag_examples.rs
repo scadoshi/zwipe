@@ -179,23 +179,8 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                 open: examples_hint_open,
                 title: "Example cards",
                 HintBullets {
-                    HintBullet {
-                        "Swipe "
-                        HintColored { color: "--color-success", "left" }
-                        " for the next card."
-                    }
-                    HintBullet {
-                        "Swipe "
-                        HintColored { color: "--accent-secondary", "down" }
-                        " to go back a card."
-                    }
-                    HintBullet {
-                        "Swipe "
-                        HintColored { color: "--text-muted", "up" }
-                        " or "
-                        HintColored { color: "--text-muted", "right" }
-                        " do nothing here."
-                    }
+                    HintBullet { "Swipe " HintColored { color: "--color-success", "left" } " for the next card" }
+                    HintBullet { "Swipe " HintColored { color: "--accent-secondary", "down" } " to go back one" }
                 }
             }
 

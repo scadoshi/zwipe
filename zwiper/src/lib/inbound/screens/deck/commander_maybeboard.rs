@@ -24,7 +24,9 @@ use crate::inbound::{
         auth::authed::use_authed,
         bottom_sheet::BottomSheet,
         catalog_cache::CatalogCache,
-        hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, HintLine, use_one_time_hint},
+        hint_dialog::{
+            HintBullet, HintBullets, HintColored, HintDialog, HintKey, HintLine, use_one_time_hint,
+        },
         screen_header::ScreenHeader,
         telemetry::{
             usage_buffer::UsageBuffer,
@@ -444,28 +446,13 @@ pub fn CommanderMaybeboard() -> Element {
             HintDialog {
                 open: hint_open,
                 title: "Commander maybeboard",
-                HintLine {
-                    "Commanders you save land here. Swipe "
-                    HintKey { color: "--color-warning", "up" }
-                    " while picking a commander to add one."
-                }
+                HintLine { "Commanders you save land here" }
                 HintBullets {
-                    HintBullet {
-                        HintKey { color: "--accent-secondary", "Swipe" }
-                        " deals commanders right here: right starts a deck, up saves it"
-                    }
-                    HintBullet {
-                        HintKey { "Quick add" }
-                        " searches commanders by name; tap a result to save it"
-                    }
-                    HintBullet {
-                        HintKey { color: "--color-success", "Create deck" }
-                        " on an entry starts a new deck with that commander"
-                    }
-                    HintBullet {
-                        HintKey { color: "--color-error", "Remove" }
-                        " takes it off the list"
-                    }
+                    HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " while picking a commander saves it here" }
+                    HintBullet { HintKey { color: "--accent-secondary", "Swipe" } " deals commanders: right starts a deck, up saves one" }
+                    HintBullet { HintKey { color: "--accent-primary", "Quick add" } " searches by name" }
+                    HintBullet { HintKey { color: "--color-success", "Create deck" } " starts a deck with that commander" }
+                    HintBullet { HintKey { color: "--color-error", "Remove" } " takes it off the list" }
                 }
             }
 

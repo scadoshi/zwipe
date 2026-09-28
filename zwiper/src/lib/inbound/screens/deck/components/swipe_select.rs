@@ -575,34 +575,12 @@ pub(crate) fn SwipeSelect(
                     open: hint_open,
                     title: "Swipe select",
                     HintBullets {
-                        HintBullet {
-                            "Swipe "
-                            HintColored { color: "--color-success", "right" }
-                            " to choose that {noun}."
-                        }
-                        HintBullet {
-                            "Swipe "
-                            HintColored { color: "--color-error", "left" }
-                            " to skip it."
-                        }
-                        if maybe_enabled {
-                            HintBullet {
-                                "Swipe "
-                                HintColored { color: "--color-warning", "up" }
-                                " to save it to your commander maybeboard."
-                            }
-                        }
-                        HintBullet {
-                            "Swipe "
-                            HintColored { color: "--accent-tertiary", "down" }
-                            " to undo your last swipe."
-                        }
+                        HintBullet { "Swipe " HintColored { color: "--color-success", "right" } " picks that {noun}" }
+                        HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " skips it" }
+                        HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " saves it to your commander maybeboard" }
+                        HintBullet { "Swipe " HintColored { color: "--accent-tertiary", "down" } " undoes the last swipe" }
                     }
-                    HintLine {
-                        "Most-played cards come first. Tap "
-                        HintKey { color: "--accent-secondary", "Filter" }
-                        " to narrow by color or anything else."
-                    }
+                    HintLine { "Most-played first. " HintKey { color: "--accent-secondary", "Filter" } " narrows by color or anything else" }
                 }
             }
         }

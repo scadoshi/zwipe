@@ -22,6 +22,8 @@ use crate::{
             auth::authed::use_authed,
             bottom_sheet::BottomSheet,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
+            hint_host::HintTopic,
+            info_button::InfoButton,
             logout_dialog::LogoutDialog,
             screen_header::ScreenHeader,
             telemetry::vocabulary::{ProfileScreen, Screen},
@@ -198,32 +200,8 @@ pub fn Profile() -> Element {
                     open: profile_hint_open,
                     title: "Your profile",
                     HintBullets {
-                        HintBullet {
-                            "Tap "
-                            HintKey { color: "--accent-primary", "Change" }
-                            " to update your username, email or password"
-                        }
-                        HintBullet {
-                            "Toggle "
-                            HintKey { color: "--accent-secondary", "Dark mode" }
-                            " right here, or tap "
-                            HintKey { color: "--accent-primary", "Change" }
-                            " on Theme to pick a palette"
-                        }
-                        HintBullet {
-                            "Set "
-                            HintKey { color: "--accent-secondary", "Universes Beyond" }
-                            " to Hide to keep crossover cards out of searches and commander picks"
-                        }
-                        HintBullet {
-                            HintKey { color: "--accent-secondary", "Exceptions" }
-                            " picks franchises that still show up while hidden"
-                        }
-                        HintBullet {
-                            "Tap "
-                            HintKey { color: "--accent-tertiary", "More" }
-                            " to delete your account"
-                        }
+                        HintBullet { "Tap a row's " HintKey { color: "--accent-primary", "?" } " for what it does" }
+                        HintBullet { HintKey { color: "--accent-tertiary", "More" } " deletes your account" }
                     }
                 }
 
@@ -252,7 +230,10 @@ pub fn Profile() -> Element {
 
                                 div {
                                     class: "profile-row",
-                                    span { class: "profile-row-label", "Email" }
+                                    span { style: "display:flex;align-items:center;",
+                                        span { class: "profile-row-label", "Email" }
+                                        InfoButton { topic: HintTopic::Email }
+                                    }
                                     div { class: "profile-row-value",
                                         EmailVerification {
                                             email: s.user.email.to_string(),
@@ -293,8 +274,13 @@ pub fn Profile() -> Element {
                                 }
 
                                 div {
+                                        InfoButton { topic: HintTopic::Verification }
+                                    }
                                     class: "profile-row",
-                                    span { class: "profile-row-label", "Theme" }
+                                    span { style: "display:flex;align-items:center;",
+                                        span { class: "profile-row-label", "Theme" }
+                                        InfoButton { topic: HintTopic::Theme }
+                                    }
                                     div { class: "profile-row-value",
                                         span { { display_theme_name(&theme_config().name) } }
                                         Button {
@@ -307,7 +293,10 @@ pub fn Profile() -> Element {
 
                                 div {
                                     class: "profile-row",
-                                    span { class: "profile-row-label", "Dark mode" }
+                                    span { style: "display:flex;align-items:center;",
+                                        span { class: "profile-row-label", "Dark mode" }
+                                        InfoButton { topic: HintTopic::DarkMode }
+                                    }
                                     div { class: "profile-row-value",
                                         Button {
                                             variant: ButtonVariant::Util,
@@ -319,7 +308,10 @@ pub fn Profile() -> Element {
 
                                 div {
                                     class: "profile-row",
-                                    span { class: "profile-row-label", "Universes Beyond" }
+                                    span { style: "display:flex;align-items:center;",
+                                        span { class: "profile-row-label", "Universes Beyond" }
+                                        InfoButton { topic: HintTopic::UniversesBeyond }
+                                    }
                                     div { class: "profile-row-value",
                                         Button {
                                             variant: ButtonVariant::Util,
@@ -332,7 +324,8 @@ pub fn Profile() -> Element {
 
                                 div {
                                     class: if ub_hide() { "profile-row ub-exceptions-row" } else { "profile-row ub-exceptions-row ub-chips-disabled" },
-                                    span { style: "display:flex;align-items:center;gap:0.35rem;",
+                                    span { style: "display:flex;align-items:center;",
+                                        span { class: "profile-row-label", "Exceptions" }
                                         button {
                                             class: "info-button",
                                             r#type: "button",
@@ -342,7 +335,6 @@ pub fn Profile() -> Element {
                                             },
                                             "?"
                                         }
-                                        span { class: "profile-row-label", "Exceptions" }
                                     }
                                     div { class: "profile-row-value",
                                         Button {
@@ -380,7 +372,10 @@ pub fn Profile() -> Element {
 
                                 div {
                                     class: "profile-row",
-                                    span { class: "profile-row-label", "Website" }
+                                    span { style: "display:flex;align-items:center;",
+                                        span { class: "profile-row-label", "Website" }
+                                        InfoButton { topic: HintTopic::Website }
+                                    }
                                     div { class: "profile-row-value",
                                         Button {
                                             variant: ButtonVariant::Util,
@@ -406,7 +401,10 @@ pub fn Profile() -> Element {
 
                                 div {
                                     class: "profile-row",
-                                    span { class: "profile-row-label", "Version" }
+                                    span { style: "display:flex;align-items:center;",
+                                        span { class: "profile-row-label", "Version" }
+                                        InfoButton { topic: HintTopic::Version }
+                                    }
                                     div { class: "profile-row-value",
                                         span { "v{APP_VERSION}" }
                                         Button {

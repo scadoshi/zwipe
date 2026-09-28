@@ -543,36 +543,12 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 open: first_deck_hint_open,
                 title: "Welcome to your deck",
                 HintBullets {
-                    HintBullet {
-                        "Tap "
-                        HintKey { color: "--accent-primary", "Cards" }
-                        " to browse your deck's cards, and to add or remove cards"
-                    }
-                    HintBullet {
-                        "Tap "
-                        HintKey { color: "--accent-secondary", "Edit" }
-                        " to change name, format, command zone, tags, land target, or price target"
-                    }
-                    HintBullet {
-                        "Tap "
-                        HintKey { "More" }
-                        " to import, export, clone, buy, share, or delete the deck"
-                    }
-                    HintBullet {
-                        "Cards you skip or remove stay out of the add stack for this deck. "
-                        HintKey { "More" }
-                        " then Clear skips brings them back"
-                    }
-                    HintBullet {
-                        "Stats appear as the deck grows, tap a section like "
-                        HintKey { color: "--color-success", "Budget" }
-                        " or "
-                        HintKey { color: "--color-warning", "Mana" }
-                        " to expand it"
-                    }
-                    HintBullet {
-                        "Warnings call out rule problems and offer one-tap fixes"
-                    }
+                    HintBullet { HintKey { color: "--accent-primary", "Cards" } " browses, adds and removes cards" }
+                    HintBullet { HintKey { color: "--accent-secondary", "Edit" } " changes the name, format, command zone, tags and targets" }
+                    HintBullet { HintKey { color: "--accent-tertiary", "More" } " imports, exports, clones, shares or deletes the deck" }
+                    HintBullet { "Skipped and removed cards stay out of the add stack. " HintKey { color: "--accent-tertiary", "More" } " then Clear skips brings them back" }
+                    HintBullet { "Stats fill in as the deck grows. Tap a section to expand it" }
+                    HintBullet { "Warnings flag rule problems, each with a one-tap fix" }
                 }
             }
 

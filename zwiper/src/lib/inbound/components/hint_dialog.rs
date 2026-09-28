@@ -169,7 +169,10 @@ pub fn HintKey(
 ) -> Element {
     rsx! {
         span {
-            style: "border: 1px solid var({color}); color: var({color}); border-radius: 0.5rem; padding: 0.05rem 0.45rem; font-size: 0.8rem; white-space: nowrap; pointer-events: none;",
+            // line-height: 1 keeps the bordered box the height of the text it sits
+            // in; without it the padding grows the line box and pushes the line
+            // above it up, so a hint with a key in it sits unevenly.
+            style: "border: 1px solid var({color}); color: var({color}); border-radius: 0.5rem; padding: 0.05rem 0.45rem; font-size: 0.8rem; line-height: 1; white-space: nowrap; pointer-events: none;",
             {children}
         }
     }

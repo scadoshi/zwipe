@@ -174,9 +174,7 @@ pub(crate) fn TagSelect(
                     title: "Deck tags",
                     DeckTagsExplainer {}
                     HintBullets {
-                        HintBullet {
-                            "Tap a tag to add or remove it; tapping shows its definition in the bar up top. Search by name to jump to one."
-                        }
+                        HintBullet { "Tap a tag to add or remove it. The bar up top shows what it means" }
                     }
                 }
             }

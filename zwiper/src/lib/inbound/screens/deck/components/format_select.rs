@@ -7,7 +7,7 @@
 //! command-zone cascade (clearing commander and signature spell on a change).
 
 use crate::inbound::components::{
-    hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog},
+    hint_dialog::{HintBullet, HintBullets, HintDialog},
     navigation::overlay_stack::use_overlay_back_action,
     screen_header::ScreenHeader,
 };
@@ -173,17 +173,8 @@ pub(crate) fn FormatSelect(
                     open: hint_open,
                     title: "Format",
                     HintBullets {
-                        HintBullet {
-                            "Tap a format to "
-                            HintColored { color: "--accent-secondary", "select" }
-                            " it; tap it again to clear. A deck has one format."
-                        }
-                        HintBullet {
-                            "Tapping a format shows its pool, deck size, and command zone up top."
-                        }
-                        HintBullet {
-                            "Changing the format clears your commander and signature spell."
-                        }
+                        HintBullet { "Tap the picked format again to clear it" }
+                        HintBullet { "Changing the format clears the commander and signature spell" }
                     }
                 }
             }

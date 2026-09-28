@@ -478,6 +478,7 @@ pub(crate) fn DeckFields(
         // Deck name
         TextInput {
             label: "Deck name",
+            hint: HintTopic::DeckName,
             value: deck_name,
             id: "deck_name",
             placeholder: "Not set",
@@ -488,6 +489,7 @@ pub(crate) fn DeckFields(
         div {
             div { class: "label-row",
                 label { class: "label", "Format" }
+                InfoButton { topic: HintTopic::Format }
                 if selected_format().is_some() {
                     button {
                         class: "clear-btn",
@@ -515,6 +517,7 @@ pub(crate) fn DeckFields(
             div {
                 div { class: "label-row",
                     label { class: "label", "{commander_label}" }
+                InfoButton { topic: HintTopic::Commander }
                     div {
                         class: if cmd_filter_on() { "chip-xs selected" } else { "chip-xs" },
                         onclick: move |_| {
@@ -619,6 +622,7 @@ pub(crate) fn DeckFields(
             div {
                 div { class: "label-row",
                     label { class: "label", "Partner" }
+                InfoButton { topic: HintTopic::Partner }
                     div {
                         class: if partner_filter_on() { "chip-xs selected" } else { "chip-xs" },
                         onclick: move |_| {
@@ -714,6 +718,7 @@ pub(crate) fn DeckFields(
             div {
                 div { class: "label-row",
                     label { class: "label", "Background" }
+                InfoButton { topic: HintTopic::Background }
                     div {
                         class: if bg_filter_on() { "chip-xs selected" } else { "chip-xs" },
                         onclick: move |_| {
@@ -809,6 +814,7 @@ pub(crate) fn DeckFields(
             div {
                 div { class: "label-row",
                     label { class: "label", "Signature spell" }
+                InfoButton { topic: HintTopic::SignatureSpell }
                     div {
                         class: if spell_filter_on() { "chip-xs selected" } else { "chip-xs" },
                         onclick: move |_| {
@@ -903,6 +909,7 @@ pub(crate) fn DeckFields(
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
                 label { class: "label", "Power level" }
+                InfoButton { topic: HintTopic::PowerLevel }
                 if power_level().is_some() {
                     button {
                         class: "clear-btn",
@@ -938,6 +945,7 @@ pub(crate) fn DeckFields(
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
                 label { class: "label", "Land target" }
+                InfoButton { topic: HintTopic::LandTarget }
                 if land_target().is_some() {
                     button {
                         class: "clear-btn",
@@ -982,6 +990,7 @@ pub(crate) fn DeckFields(
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
                 label { class: "label", "Price target" }
+                InfoButton { topic: HintTopic::PriceTarget }
                 if !price_target().is_empty() {
                     button {
                         class: "clear-btn",
@@ -1027,8 +1036,8 @@ pub(crate) fn DeckFields(
         // Deck tags (open the full-screen picker to choose)
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
-                InfoButton { topic: HintTopic::DeckTags }
                 label { class: "label", "Deck tags" }
+                InfoButton { topic: HintTopic::DeckTags }
                 span { class: "field-count", "{selected_tags().len()}/{MAX_DECK_TAGS}" }
                 if !selected_tags().is_empty() {
                     button {
@@ -1068,8 +1077,8 @@ pub(crate) fn DeckFields(
         // Oracle tags (granular strategy; deck tags seed these)
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
-                InfoButton { topic: HintTopic::OracleTags }
                 label { class: "label", "Oracle tags" }
+                InfoButton { topic: HintTopic::OracleTags }
                 span { class: "field-count", "{oracle_tags().len()}/{MAX_DECK_ORACLE_TAGS}" }
                 if !oracle_tags().is_empty() {
                     button {
@@ -1111,6 +1120,7 @@ pub(crate) fn DeckFields(
         div { style: "margin-top: 1rem;",
             div { class: "label-row",
                 label { class: "label", "Other tags" }
+                InfoButton { topic: HintTopic::OtherTags }
                 if !other_tags().is_empty() {
                     button {
                         class: "clear-btn",
@@ -1151,36 +1161,9 @@ pub(crate) fn DeckFieldsHint(open: Signal<bool>) -> Element {
             open,
             title: "Building a deck",
             HintBullets {
-                HintBullet {
-                    HintColored { color: "--accent-primary", "Profile" }
-                    " covers your deck's name, format, commander, and power level. "
-                    HintColored { color: "--accent-secondary", "Budget" }
-                    " covers price and land targets."
-                }
-                HintBullet {
-                    "In "
-                    HintColored { color: "--accent-tertiary", "Tags" }
-                    ", tell us what your deck does. Deck tags seed matching oracle tags, and both shape which cards we suggest."
-                }
-                HintBullet {
-                    "Command-zone fields are dynamic: "
-                    HintColored { color: "--accent-primary", "Partner" }
-                    ", "
-                    HintColored { color: "--accent-secondary", "Background" }
-                    ", and "
-                    HintColored { color: "--accent-tertiary", "Signature spell" }
-                    " appear only when your commander or format needs them."
-                }
-                HintBullet {
-                    "Commander search auto-limits to legal commanders. Tap "
-                    HintKey { color: "--color-warning", "Filter" }
-                    " to search any card instead."
-                }
-                HintBullet {
-                    "Tap "
-                    HintKey { color: "--accent-primary", "Swipe" }
-                    " on a field to swipe-pick."
-                }
+                HintBullet { HintColored { color: "--accent-primary", "Profile" } " is what the deck is, " HintColored { color: "--accent-secondary", "Budget" } " what it may cost, " HintColored { color: "--accent-tertiary", "Tags" } " what it does" }
+                HintBullet { "Tags shape which cards we suggest" }
+                HintBullet { "Tap a field's " HintKey { color: "--accent-primary", "?" } " for what it does" }
             }
         }
     }

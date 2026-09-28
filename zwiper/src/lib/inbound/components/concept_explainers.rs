@@ -14,21 +14,9 @@ use zwipe_core::domain::deck::MAX_DECK_TAGS;
 pub fn DeckTagsExplainer() -> Element {
     rsx! {
         HintBullets {
-            HintBullet {
-                "Pick the "
-                HintColored { color: "--accent-secondary", "archetype" }
-                "(s) your deck is built around, like Aristocrats or Voltron."
-            }
-            HintBullet {
-                "Picking one auto-selects the "
-                HintColored { color: "--accent-tertiary", "oracle tags" }
-                " that define it, which sharpens the cards we suggest."
-            }
-            HintBullet {
-                "Add up to "
-                HintColored { color: "--accent-primary", "{MAX_DECK_TAGS} tags" }
-                "."
-            }
+            HintBullet { "The " HintColored { color: "--accent-secondary", "archetypes" } " the deck is built around, like Aristocrats or Voltron" }
+            HintBullet { "Picking one pre-selects the " HintColored { color: "--accent-tertiary", "oracle tags" } " that define it" }
+            HintBullet { "Up to " HintColored { color: "--accent-primary", "{MAX_DECK_TAGS}" } }
         }
     }
 }
@@ -38,21 +26,9 @@ pub fn DeckTagsExplainer() -> Element {
 pub fn OracleTagsExplainer() -> Element {
     rsx! {
         HintBullets {
-            HintBullet {
-                "The "
-                HintColored { color: "--accent-tertiary", "specific" }
-                " things your deck does, like spot removal, ramp, or reanimation."
-            }
-            HintBullet {
-                "Selecting them "
-                HintColored { color: "--accent-secondary", "sharpens which cards we suggest" }
-                "."
-            }
-            HintBullet {
-                "Your "
-                HintColored { color: "--accent-primary", "deck tags" }
-                " pre-pick a starter set from the ~4,500 available. Leave them if you're not sure."
-            }
+            HintBullet { "The " HintColored { color: "--accent-tertiary", "specific" } " things the deck does, like spot removal, ramp or reanimation" }
+            HintBullet { "They " HintColored { color: "--accent-secondary", "shape which cards we suggest" } }
+            HintBullet { "Your " HintColored { color: "--accent-primary", "deck tags" } " pre-pick a starter set from about 4,500. Fine to leave as is" }
         }
     }
 }

@@ -701,28 +701,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 open: swipe_hint_open,
                 title: "Swipe to trim",
                 HintBullets {
-                    HintBullet {
-                        "Swipe "
-                        HintColored { color: "--color-success", "right" }
-                        " to remove a card from your deck."
-                    }
-                    HintBullet {
-                        "Swipe "
-                        HintColored { color: "--color-error", "left" }
-                        " to keep it."
-                    }
-                    HintBullet {
-                        "Swipe "
-                        HintColored { color: "--color-warning", "up" }
-                        " to move a card to your maybeboard, or a maybeboard card into main."
-                    }
-                    HintBullet {
-                        "Swipe "
-                        HintColored { color: "--accent-tertiary", "down" }
-                        " to undo your last swipe."
-                    }
+                    HintBullet { "Swipe " HintColored { color: "--color-success", "right" } " removes the card" }
+                    HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " keeps it" }
+                    HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " moves it between main and maybeboard" }
+                    HintBullet { "Swipe " HintColored { color: "--accent-tertiary", "down" } " undoes the last swipe" }
                 }
-                HintLine { "The board chips at the top choose which board you are trimming." }
+                HintLine { "The board chips up top pick which board you are trimming" }
             }
 
             CardFilterSheet {

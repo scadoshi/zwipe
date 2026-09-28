@@ -220,31 +220,13 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
             }
 
             HintDialog { open: hint, title: "Oracle tags",
-                HintBullets {
-                    HintBullet {
-                        "Tap a "
-                        HintKey { color: "--accent-tertiary", "letter" }
-                        " to browse tags, or "
-                        HintColored { color: "--accent-secondary", "search" }
-                        " by name or description."
-                    }
-                    HintBullet {
-                        "Tap "
-                        HintKey { color: "--accent-primary", "Examples" }
-                        " to see real cards that carry a tag."
-                    }
-                    HintBullet {
-                        "Tap "
-                        HintKey { color: "--color-success", "Use" }
-                        " to add a tag where you came from."
-                    }
-                    HintBullet {
-                        "Descriptions are written by hand over time, so some tags still show "
-                        HintColored { color: "--text-muted", "\u{201c}No description yet\u{201d}" }
-                        "."
-                    }
-                }
+            HintBullets {
+                HintBullet { "Tap a " HintKey { color: "--accent-tertiary", "letter" } " to browse, or " HintColored { color: "--accent-secondary", "search" } " by name or description" }
+                HintBullet { HintKey { color: "--accent-primary", "Examples" } " shows real cards with that tag" }
+                HintBullet { HintKey { color: "--color-success", "Use" } " adds the tag where you came from" }
+                HintBullet { "Some tags have no description yet" }
             }
+        }
 
             if examples_open() {
                 OracleTagExamples { open: examples_open, slug: examples_slug() }

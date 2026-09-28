@@ -26,8 +26,8 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
             if !deck_profile.tags.is_empty() {
                 div { class: "info-row info-row-stacked",
                     span { style: "display:flex;align-items:center;gap:0.35rem;",
-                        InfoButton { topic: HintTopic::DeckTags }
                         span { class: "info-row-label", "Deck tags" }
+                        InfoButton { topic: HintTopic::DeckTags }
                     }
                     span { class: "info-row-value info-row-tags",
                         for tag in deck_profile.tags.iter() {
@@ -39,8 +39,8 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
             if !deck_profile.oracle_tags.is_empty() {
                 div { class: "info-row info-row-stacked",
                     span { style: "display:flex;align-items:center;gap:0.35rem;",
-                        InfoButton { topic: HintTopic::OracleTags }
                         span { class: "info-row-label", "Oracle tags" }
+                        InfoButton { topic: HintTopic::OracleTags }
                     }
                     span { class: "info-row-value info-row-tags",
                         for slug in deck_profile.oracle_tags.iter() {
