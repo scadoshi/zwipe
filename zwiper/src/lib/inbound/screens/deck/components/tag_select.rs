@@ -18,8 +18,18 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
 
-/// In-place tag picker. Toggled by `open`; mutates `selected_tags` (slugs) directly.
-/// `on_close` returns to the form. Options come from the server-delivered
+/// Whether two slug lists pick the same tags, ignoring tap order.
+fn same_set(a: &[String], b: &[String]) -> bool {
+    let mut a: Vec<&str> = a.iter().map(String::as_str).collect();
+    let mut b: Vec<&str> = b.iter().map(String::as_str).collect();
+    a.sort_unstable();
+    b.sort_unstable();
+    a == b
+}
+
+/// In-place tag picker. Toggled by `open`; mutates `selected_tags` (slugs)
+/// directly, with Save greyed until the set differs from the one it opened
+/// on and Back reverting to it. `on_close` returns to the form. Options come from the server-delivered
 /// `catalog` (`GET /api/deck/tags`), so a new deck tag is selectable without a
 /// client release.
 #[component]
@@ -42,14 +52,21 @@ pub(crate) fn TagSelect(
     });
 
     // OS back gesture closes this picker before the router sees it, and maps to
-    // Cancel rather than Done: it reverts to the snapshot then closes, the same
-    // as the Cancel button below.
-    let cancel = use_callback(move |_: ()| {
+    // Back rather than Save: it reverts to the snapshot then closes, the same
+    // as the Back button below, saying so when there was something to revert.
+    let back = use_callback(move |_: ()| {
         let mut selected_tags = selected_tags;
+        if !same_set(&selected_tags.peek(), &snapshot.peek()) {
+            toast.info(
+                "Deck tags unchanged".to_string(),
+                ToastOptions::default().duration(TOAST_QUICK),
+            );
+        }
         selected_tags.set(snapshot());
         on_close.call(());
     });
-    use_overlay_back_action(open.into(), cancel);
+    use_overlay_back_action(open.into(), back);
+    let unchanged = same_set(&selected_tags(), &snapshot());
 
     let screen_class = if open() {
         "screen swipe-select-screen show"
@@ -156,16 +173,14 @@ pub(crate) fn TagSelect(
                 ActionBar {
                     Button {
                         variant: ButtonVariant::Util,
-                        onclick: move |_| {
-                            selected_tags.set(snapshot());
-                            on_close.call(());
-                        },
-                        "Cancel"
+                        onclick: move |_| back.call(()),
+                        "Back"
                     }
                     Button {
                         variant: ButtonVariant::Util,
+                        disabled: unchanged,
                         onclick: move |_| on_close.call(()),
-                        "Done"
+                        "Save"
                     }
                 }
 

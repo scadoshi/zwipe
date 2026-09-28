@@ -21,6 +21,16 @@ use zwipe_core::{
     http::contracts::user::HttpUpdatePreferences,
 };
 
+/// Whether two slug lists pick the same franchises. Order is tap order and
+/// means nothing, so a re-tap of the same chips is not a change.
+fn same_set(a: &[String], b: &[String]) -> bool {
+    let mut a: Vec<&str> = a.iter().map(String::as_str).collect();
+    let mut b: Vec<&str> = b.iter().map(String::as_str).collect();
+    a.sort_unstable();
+    b.sort_unstable();
+    a == b
+}
+
 /// Bottom sheet editing the exceptions whitelist. `exceptions` is the parent's
 /// saved list: the sheet copies it into a draft on open and writes it back on
 /// a successful Save; Back and the backdrop discard the draft. `hint_open` is
@@ -64,6 +74,15 @@ pub fn UniversesBeyondExceptionsSheet(
         }
     });
 
+    let discard = use_callback(move |()| {
+        if !same_set(&draft.peek(), &exceptions.peek()) {
+            toast.info(
+                "Exceptions unchanged".to_string(),
+                ToastOptions::default().duration(TOAST_QUICK),
+            );
+        }
+    });
+
     let mut save = move || {
         let list = draft();
         let request = HttpUpdatePreferences {
@@ -89,19 +108,26 @@ pub fn UniversesBeyondExceptionsSheet(
         });
     };
 
+    let unchanged = same_set(&draft(), &exceptions());
+
     rsx! {
         BottomSheet {
             open,
             title: "Exceptions".to_string(),
             hint: hint_open,
+            on_dismiss: move |_| discard.call(()),
             footer: rsx! {
                 Button {
                     variant: ButtonVariant::Util,
-                    onclick: move |_| open.set(false),
+                    onclick: move |_| {
+                        discard.call(());
+                        open.set(false);
+                    },
                     "Back"
                 }
                 Button {
                     variant: ButtonVariant::Util,
+                    disabled: unchanged,
                     onclick: move |_| save(),
                     "Save"
                 }

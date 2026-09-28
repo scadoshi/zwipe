@@ -123,7 +123,7 @@ pub(crate) fn PrintingSheet(
         let mut open = open;
         if !read_only && has_changed {
             toast.warning(
-                "Printing discarded".to_string(),
+                "Printing unchanged".to_string(),
                 ToastOptions::default().duration(TOAST_QUICK),
             );
         }
@@ -138,7 +138,7 @@ pub(crate) fn PrintingSheet(
             onclick: move |_| {
                 if !read_only && has_changed {
                     toast.warning(
-                        "Printing discarded".to_string(),
+                        "Printing unchanged".to_string(),
                         ToastOptions::default().duration(TOAST_QUICK),
                     );
                 }
@@ -205,33 +205,34 @@ pub(crate) fn PrintingSheet(
                     onclick: move |_| {
                         if !read_only && has_changed {
                             toast.info(
-                                "Printing discarded".to_string(),
+                                "Printing unchanged".to_string(),
                                 ToastOptions::default().duration(TOAST_QUICK),
                             );
                         }
                         open.set(false);
                     },
-                    "Close"
+                    "Back"
                 }
 
-                if !read_only && has_changed {
-                    if let Some(new_card) = visible_card {
-                        {
-                            rsx! {
-                                Button {
-                                    variant: ButtonVariant::Util,
-                                    onclick: move |_| {
-                                        on_save(new_card.clone());
-                                        toast.info(
-                                            saved_message.to_string(),
-                                            ToastOptions::default().duration(TOAST_QUICK),
-                                        );
-                                        open.set(false);
-                                    },
-                                    "Save"
-                                }
+                // Always there when saving is possible at all, greyed until
+                // the carousel has moved off the printing it opened on. It
+                // used to appear only once changed, which read as a button
+                // arriving from nowhere.
+                if !read_only {
+                    Button {
+                        variant: ButtonVariant::Util,
+                        disabled: !has_changed || visible_card.is_none(),
+                        onclick: move |_| {
+                            if let Some(new_card) = visible_card.clone() {
+                                on_save(new_card);
+                                toast.info(
+                                    saved_message.to_string(),
+                                    ToastOptions::default().duration(TOAST_QUICK),
+                                );
+                                open.set(false);
                             }
-                        }
+                        },
+                        "Save"
                     }
                 }
             }

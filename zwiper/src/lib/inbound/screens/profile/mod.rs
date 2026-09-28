@@ -43,7 +43,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use preferences::PreferencesSheet;
 use universes_beyond::UniversesBeyondExceptionsSheet;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
@@ -68,6 +68,18 @@ pub fn Profile() -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let mut theme_config: Signal<ThemeConfig> = use_context();
     let authed = use_authed(Screen::Profile(ProfileScreen::Main));
+    let toast = use_toast();
+
+    // Every toggle on this screen says what it did, in one voice: a setting
+    // that changes something you cannot see from here (which cards get
+    // served) is otherwise a button that looks like it did nothing. Sheets
+    // raise their own on Save, since they carry the value that was committed.
+    let said = use_callback(move |what: &'static str| {
+        toast.success(
+            what.to_string(),
+            ToastOptions::default().duration(TOAST_NORMAL),
+        );
+    });
 
     let mut show_logout_dialog = use_signal(|| false);
     let mut show_delete_dialog = use_signal(|| false);
@@ -153,7 +165,14 @@ pub fn Profile() -> Element {
                 })
                 .await
             {
-                Ok(prefs) => ub_hide.set(prefs.exclude_universes_beyond),
+                Ok(prefs) => {
+                    ub_hide.set(prefs.exclude_universes_beyond);
+                    said.call(if prefs.exclude_universes_beyond {
+                        "Universes Beyond hidden"
+                    } else {
+                        "Universes Beyond shown"
+                    });
+                }
                 Err(_) => ub_hide.set(prev),
             }
         });
@@ -186,7 +205,14 @@ pub fn Profile() -> Element {
                 })
                 .await
             {
-                Ok(prefs) => theme_config.set(ThemeConfig::from(&prefs)),
+                Ok(prefs) => {
+                    theme_config.set(ThemeConfig::from(&prefs));
+                    said.call(if prefs.dark_mode {
+                        "Dark mode on"
+                    } else {
+                        "Dark mode off"
+                    });
+                }
                 Err(_) => theme_config.set(prev),
             }
         });
@@ -246,7 +272,10 @@ pub fn Profile() -> Element {
                                 if s.user.email_verified_at.is_none() {
                                     div {
                                         class: "profile-row",
+                                        span { style: "display:flex;align-items:center;",
                                         span { class: "profile-row-label", "Verification" }
+                                        InfoButton { topic: HintTopic::Verification }
+                                    }
                                         div { class: "profile-row-value",
                                             VerificationActions {}
                                         }
@@ -274,8 +303,6 @@ pub fn Profile() -> Element {
                                 }
 
                                 div {
-                                        InfoButton { topic: HintTopic::Verification }
-                                    }
                                     class: "profile-row",
                                     span { style: "display:flex;align-items:center;",
                                         span { class: "profile-row-label", "Theme" }

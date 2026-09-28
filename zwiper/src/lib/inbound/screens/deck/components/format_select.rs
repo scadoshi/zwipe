@@ -12,7 +12,8 @@ use crate::inbound::components::{
     screen_header::ScreenHeader,
 };
 use dioxus::prelude::*;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::domain::deck::format::Format;
 
 /// Deck size summary, e.g. "100 cards, singleton" or "60+ cards, up to 4 copies".
@@ -49,9 +50,11 @@ fn command_zone_text(fmt: Format) -> &'static str {
 }
 
 /// In-place format picker. Toggled by `open`. `on_select` fires with the chosen
-/// format, `on_clear` clears the current pick, `on_close` commits (Done),
-/// `on_cancel` reverts (the parent restores the format + its command-zone cascade
-/// snapshot). Single-select with a live cascade, so cancel is parent-owned.
+/// format, `on_clear` clears the current pick, `on_close` commits (Save, greyed
+/// until the pick differs from the one it opened on), `on_cancel` reverts (the
+/// parent restores the format + its command-zone cascade snapshot). Single-select
+/// with a live cascade, so the revert is parent-owned; this picker only knows
+/// whether there was something to revert, and says so.
 #[component]
 pub(crate) fn FormatSelect(
     open: Signal<bool>,
@@ -61,13 +64,32 @@ pub(crate) fn FormatSelect(
     on_close: EventHandler<()>,
     on_cancel: EventHandler<()>,
 ) -> Element {
-    // OS back gesture closes this overlay before touching the router. Back maps
-    // to Cancel, not Done: leaving a picker should abandon the pick, and the
+    let toast = use_toast();
+    // The pick the picker opened on, so Save can grey out while nothing has
+    // moved and Back can tell whether it is throwing anything away.
+    let mut snapshot = use_signal(|| Option::<Format>::None);
+    use_effect(move || {
+        if open() {
+            snapshot.set(*selected_format.peek());
+        }
+    });
+    let unchanged = selected_format() == snapshot();
+
+    // OS back gesture closes this overlay before touching the router. It maps
+    // to Back, not Save: leaving a picker should abandon the pick, and the
     // parent's on_cancel restores the format + command-zone snapshot and closes.
     // Without this the back swipe fell through to the router and left the whole
     // edit screen (owner report 2026-08-17).
-    let cancel = use_callback(move |_: ()| on_cancel.call(()));
-    use_overlay_back_action(open.into(), cancel);
+    let back = use_callback(move |_: ()| {
+        if *selected_format.peek() != *snapshot.peek() {
+            toast.info(
+                "Format unchanged".to_string(),
+                ToastOptions::default().duration(TOAST_QUICK),
+            );
+        }
+        on_cancel.call(());
+    });
+    use_overlay_back_action(open.into(), back);
 
     let mut query = use_signal(String::new);
     let mut focused = use_signal(|| Option::<Format>::None);
@@ -159,13 +181,14 @@ pub(crate) fn FormatSelect(
                 ActionBar {
                     Button {
                         variant: ButtonVariant::Util,
-                        onclick: move |_| on_cancel.call(()),
-                        "Cancel"
+                        onclick: move |_| back.call(()),
+                        "Back"
                     }
                     Button {
                         variant: ButtonVariant::Util,
+                        disabled: unchanged,
                         onclick: move |_| on_close.call(()),
-                        "Done"
+                        "Save"
                     }
                 }
 

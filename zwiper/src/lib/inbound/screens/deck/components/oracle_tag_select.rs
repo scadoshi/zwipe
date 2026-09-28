@@ -10,7 +10,7 @@
 use crate::inbound::{
     components::{
         catalog_cache::CatalogCache, concept_explainers::OracleTagsExplainer,
-        hint_dialog::HintDialog, navigation::overlay_stack::use_overlay_back,
+        hint_dialog::HintDialog, navigation::overlay_stack::use_overlay_back_action,
         screen_header::ScreenHeader,
     },
     screens::oracle_tag_dictionary::OracleTagDictionary,
@@ -24,16 +24,24 @@ use zwipe_core::domain::{
     deck::MAX_DECK_ORACLE_TAGS,
 };
 
+/// Whether two slug lists pick the same tags, ignoring tap order.
+fn same_set(a: &[String], b: &[String]) -> bool {
+    let mut a: Vec<&str> = a.iter().map(String::as_str).collect();
+    let mut b: Vec<&str> = b.iter().map(String::as_str).collect();
+    a.sort_unstable();
+    b.sort_unstable();
+    a == b
+}
+
 /// In-place oracle-tag picker. Toggled by `open`; mutates `selected` (slugs)
-/// directly. `on_close` returns to the form.
+/// directly, with Save greyed until the set differs from the one it opened
+/// on and Back reverting to it. `on_close` returns to the form.
 #[component]
 pub(crate) fn OracleTagSelect(
     open: Signal<bool>,
     mut selected: Signal<Vec<String>>,
     on_close: EventHandler<()>,
 ) -> Element {
-    // OS back gesture closes this overlay before touching the router.
-    use_overlay_back(open);
     let client: Signal<ZwipeClient> = use_context();
     let cache: CatalogCache = use_context();
     let toast = use_toast();
@@ -66,13 +74,30 @@ pub(crate) fn OracleTagSelect(
             );
         }
     };
-    // Snapshot the selection when the picker opens, so Cancel can revert to it.
+    // Snapshot the selection when the picker opens, so Back can revert to it.
     let mut snapshot = use_signal(Vec::<String>::new);
     use_effect(move || {
         if open() {
             snapshot.set(selected.peek().clone());
         }
     });
+
+    // Back, and the OS back gesture, revert to the snapshot and say so when
+    // there was something to revert. The gesture used to just close, which
+    // kept the edits: the one exit that behaved like Save without saying so.
+    let back = use_callback(move |_: ()| {
+        let mut selected = selected;
+        if !same_set(&selected.peek(), &snapshot.peek()) {
+            toast.info(
+                "Oracle tags unchanged".to_string(),
+                ToastOptions::default().duration(TOAST_QUICK),
+            );
+        }
+        selected.set(snapshot());
+        on_close.call(());
+    });
+    use_overlay_back_action(open.into(), back);
+    let unchanged = same_set(&selected(), &snapshot());
 
     // Read the shared app-wide oracle-tag catalog (prefetched at startup), warming
     // / revalidating it on open. One copy is shared with the dictionary + filter.
@@ -213,16 +238,14 @@ pub(crate) fn OracleTagSelect(
                 ActionBar {
                     Button {
                         variant: ButtonVariant::Util,
-                        onclick: move |_| {
-                            selected.set(snapshot());
-                            on_close.call(());
-                        },
-                        "Cancel"
+                        onclick: move |_| back.call(()),
+                        "Back"
                     }
                     Button {
                         variant: ButtonVariant::Util,
+                        disabled: unchanged,
                         onclick: move |_| on_close.call(()),
-                        "Done"
+                        "Save"
                     }
                 }
 

@@ -57,7 +57,8 @@ fn ThemeRow(
 }
 
 /// Bottom sheet for selecting theme and light/dark mode. Selections live-preview
-/// against the whole app; Save persists and drops the sheet, Back/backdrop
+/// against the whole app; Save persists and drops the sheet, and is greyed
+/// until the pick differs from what the sheet opened on. Back/backdrop
 /// restores the theme that was active when the sheet opened.
 #[component]
 pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
@@ -77,6 +78,23 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
             original_theme.set(current.clone());
             selected_theme.set(current.name.clone());
             selected_dark.set(current.is_dark);
+        }
+    });
+
+    // Back and the backdrop are the same act, so they say the same thing,
+    // and only when there was a change to throw away: the picked theme is
+    // still on screen as the sheet slides off, and otherwise looks like it
+    // took.
+    let discard = use_callback(move |()| {
+        let original = original_theme.peek().clone();
+        let changed =
+            *selected_theme.peek() != original.name || *selected_dark.peek() != original.is_dark;
+        theme_config.set(original);
+        if changed {
+            toast.info(
+                "Theme unchanged".to_string(),
+                ToastOptions::default().duration(TOAST_QUICK),
+            );
         }
     });
 
@@ -104,6 +122,8 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
         });
     };
 
+    let unchanged =
+        selected_theme() == original_theme().name && selected_dark() == original_theme().is_dark;
     let mode = (if selected_dark() { "dark" } else { "light" }).to_string();
     let regular_themes = ALLOWED_THEMES
         .iter()
@@ -118,18 +138,19 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
         BottomSheet {
             open,
             title: "Themes".to_string(),
-            on_dismiss: move |_| { theme_config.set(original_theme()); },
+            on_dismiss: move |_| discard.call(()),
             footer: rsx! {
                 Button {
                     variant: ButtonVariant::Util,
                     onclick: move |_| {
-                        theme_config.set(original_theme());
+                        discard.call(());
                         open.set(false);
                     },
                     "Back"
                 }
                 Button {
                     variant: ButtonVariant::Util,
+                    disabled: unchanged,
                     onclick: move |_| save(),
                     "Save"
                 }

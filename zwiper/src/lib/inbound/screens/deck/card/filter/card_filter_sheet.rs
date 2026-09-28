@@ -155,7 +155,7 @@ pub(crate) fn CardFilterSheet(
             if *filter_builder.peek() != previous {
                 filter_builder.set(previous);
                 toast.info(
-                    "Filter changes discarded".to_string(),
+                    "Filter unchanged".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
@@ -293,6 +293,15 @@ pub(crate) fn CardFilterSheet(
             false, false, false,
         )
     };
+
+    // Nothing edited since the sheet opened: Apply has nothing to do, so it
+    // greys out rather than closing silently. The same check is repeated
+    // inside Apply, which still has to hold for a tap that lands before this
+    // render catches up.
+    let unchanged = applied_snapshot
+        .read()
+        .as_ref()
+        .is_some_and(|previous| *previous == *filter_builder.read());
 
     // Track accordion item index: shifts when format filter is included
     let mut idx = 0usize;
@@ -710,12 +719,14 @@ pub(crate) fn CardFilterSheet(
                 Button {
                     variant: ButtonVariant::Util,
                     // Close without applying: the same escape as the backdrop.
-                    // Closing restores the open-snapshot, discarding draft edits.
+                    // Closing restores the open-snapshot, discarding draft edits,
+                    // and the close effect says so.
                     onclick: move |_| open.set(false),
-                    "Cancel"
+                    "Back"
                 }
                 Button {
                     variant: ButtonVariant::Util,
+                    disabled: unchanged,
                     onclick: move |_| {
                         // Block contradictory filters (a value/term both included
                         // and excluded matches zero cards). Keep the sheet open so
