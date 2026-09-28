@@ -42,6 +42,33 @@ pub const ALLOWED_THEMES: &[&str] = &[
     "zenburn",
 ];
 
+/// Human-readable label for a theme slug: title-cased words, with the
+/// accents and brand casings that title-casing cannot produce special-cased.
+/// One copy here, beside the list it labels, so zwiper and the site cannot
+/// drift on how a theme is spelled.
+#[must_use]
+pub fn display_theme_name(slug: &str) -> String {
+    match slug {
+        "rose-pine" => return "Rosé Pine".to_string(),
+        "vscode" => return "VS Code".to_string(),
+        "github" => return "GitHub".to_string(),
+        "synthwave-84" => return "Synthwave '84".to_string(),
+        "powershell" => return "PowerShell".to_string(),
+        "docs-rs" => return "docs.rs".to_string(),
+        _ => {}
+    }
+    slug.split('-')
+        .map(|word| {
+            let mut chars = word.chars();
+            match chars.next() {
+                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 /// User display preferences.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UserPreferences {
@@ -137,6 +164,22 @@ mod tests {
     use super::*;
 
     // == default ==
+
+    #[test]
+    fn theme_names_title_case_and_keep_brand_spellings() {
+        assert_eq!(display_theme_name("tokyo-night"), "Tokyo Night");
+        assert_eq!(display_theme_name("gruvbox"), "Gruvbox");
+        assert_eq!(display_theme_name("rose-pine"), "Rosé Pine");
+        assert_eq!(display_theme_name("vscode"), "VS Code");
+        assert_eq!(display_theme_name("docs-rs"), "docs.rs");
+    }
+
+    #[test]
+    fn every_allowed_theme_has_a_non_empty_label() {
+        for slug in ALLOWED_THEMES {
+            assert!(!display_theme_name(slug).is_empty(), "{slug}");
+        }
+    }
 
     #[test]
     fn default_is_gruvbox_dark() {

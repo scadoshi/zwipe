@@ -9,32 +9,12 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_components::{Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::{
-    domain::user::{models::theme::ThemeConfig, preferences::ALLOWED_THEMES},
+    domain::user::{
+        models::theme::ThemeConfig,
+        preferences::{ALLOWED_THEMES, display_theme_name},
+    },
     http::contracts::user::HttpUpdatePreferences,
 };
-
-/// Capitalize each word of a theme slug for display ("tokyo-night" → "Tokyo Night").
-pub(crate) fn display_theme_name(slug: &str) -> String {
-    match slug {
-        "rose-pine" => return "Rosé Pine".to_string(),
-        "vscode" => return "VS Code".to_string(),
-        "github" => return "GitHub".to_string(),
-        "synthwave-84" => return "Synthwave '84".to_string(),
-        "powershell" => return "PowerShell".to_string(),
-        "docs-rs" => return "docs.rs".to_string(),
-        _ => {}
-    }
-    slug.split('-')
-        .map(|w| {
-            let mut chars = w.chars();
-            match chars.next() {
-                Some(c) => c.to_uppercase().collect::<String>() + chars.as_str(),
-                None => String::new(),
-            }
-        })
-        .collect::<Vec<_>>()
-        .join(" ")
-}
 
 /// Themes with adjusted palettes for color-vision deficiency: grouped at the
 /// bottom of the picker.

@@ -38,7 +38,8 @@ use components::{
     email_verification::{EmailVerification, VerificationActions},
 };
 use dioxus::prelude::*;
-use preferences::{PreferencesSheet, display_theme_name};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
+use preferences::PreferencesSheet;
 use universes_beyond::UniversesBeyondExceptionsSheet;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
@@ -46,7 +47,10 @@ use zwipe_core::{
         auth::models::session::Session,
         card::scryfall_data::universe::franchise_by_slug,
         site::WEB_BASE,
-        user::models::{hints::HINT_PROFILE, theme::ThemeConfig},
+        user::{
+            models::{hints::HINT_PROFILE, theme::ThemeConfig},
+            preferences::display_theme_name,
+        },
     },
     http::contracts::user::HttpUpdatePreferences,
 };
