@@ -18,6 +18,8 @@ use crate::{
             },
             auth::authed::use_authed,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
+            hint_host::HintTopic,
+            info_button::InfoButton,
             screen_header::ScreenHeader,
             telemetry::{
                 usage_buffer::UsageBuffer,
@@ -337,6 +339,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                         type_bars: type_bars.clone(),
                                                         category_bars: category_bars.clone(),
                                                         color_bars: color_bars.clone(),
+                                                        type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
+                                                        role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
+                                                        color_hint: rsx! { InfoButton { topic: HintTopic::ColorChart } },
                                                     }
                                                 }
                                             }
@@ -367,10 +372,16 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                     }
                                                 }
                                                 if let Some(mana_curve_bars) = mana_curve_bars.as_ref() {
-                                                    ManaCurve { mana_curve_bars: *mana_curve_bars }
+                                                    ManaCurve {
+                                                        mana_curve_bars: *mana_curve_bars,
+                                                        hint: rsx! { InfoButton { topic: HintTopic::ManaCurve } },
+                                                    }
                                                 }
                                                 if let Some(rows) = mana_balance_rows {
-                                                    ManaFulfillment { rows: rows }
+                                                    ManaFulfillment {
+                                                        rows: rows,
+                                                        hint: rsx! { InfoButton { topic: HintTopic::ManaFulfillment } },
+                                                    }
                                                 }
                                             }
 
@@ -378,7 +389,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 CollapsibleSection {
                                                     title: "Draw odds",
                                                     open_section: open_section,
-                                                    DrawOdds { deck_size: deck_size, buckets: buckets }
+                                                    DrawOdds {
+                                                        deck_size: deck_size,
+                                                        buckets: buckets,
+                                                        hint: rsx! { InfoButton { topic: HintTopic::DrawOdds } },
+                                                    }
                                                 }
                                             }
                                           }

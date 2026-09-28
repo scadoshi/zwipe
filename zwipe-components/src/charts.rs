@@ -11,11 +11,16 @@ use dioxus::prelude::*;
 use zwipe_core::domain::deck::{deck_metrics::ManaBalanceRow, draw_odds::p_at_least_one};
 
 /// Sentence-case accent sub-heading shown above each flattened chart block.
+///
+/// `hint` is whatever the host wants right of the text, in practice the app's
+/// "?" button. It is an `Element` rather than a topic because the hint system
+/// lives in the app and this crate is shared with the site, which has none.
 #[component]
-pub fn ChartLabel(text: &'static str) -> Element {
+pub fn ChartLabel(text: &'static str, hint: Option<Element>) -> Element {
     rsx! {
-        span { style: "font-size:0.75rem;font-weight:600;color:var(--accent-primary);",
+        span { style: "display:inline-flex;align-items:center;font-size:0.75rem;font-weight:600;color:var(--accent-primary);",
             "{text}"
+            if let Some(h) = hint { {h} }
         }
     }
 }
@@ -27,11 +32,15 @@ pub fn DeckCharts(
     type_bars: Option<Vec<(&'static str, usize, u32)>>,
     category_bars: Option<Vec<(&'static str, usize, u32)>>,
     color_bars: Option<Vec<(&'static str, usize, u32)>>,
+    /// "?" beside each label; the site passes none.
+    type_hint: Option<Element>,
+    role_hint: Option<Element>,
+    color_hint: Option<Element>,
 ) -> Element {
     rsx! {
         if let Some(type_bars) = type_bars.as_ref() {
             div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
-                ChartLabel { text: "Type distribution" }
+                ChartLabel { text: "Type distribution", hint: type_hint }
                 div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
                     for (_label, count, pct) in type_bars.iter() {
                         div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
@@ -53,7 +62,7 @@ pub fn DeckCharts(
         if let Some(cat_bars) = category_bars.as_ref() {
             if !cat_bars.is_empty() {
                 div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
-                    ChartLabel { text: "Role distribution" }
+                    ChartLabel { text: "Role distribution", hint: role_hint }
                     for (label, count, pct) in cat_bars.iter() {
                         div { style: "display:flex;align-items:center;gap:0.5rem;",
                             span { style: "width:5ch;font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;text-transform:uppercase;",
@@ -77,7 +86,7 @@ pub fn DeckCharts(
 
         if let Some(color_bars) = color_bars.as_ref() {
             div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
-                ChartLabel { text: "Color distribution" }
+                ChartLabel { text: "Color distribution", hint: color_hint }
                 div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
                     for (_label, count, pct) in color_bars.iter() {
                         div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
@@ -101,10 +110,10 @@ pub fn DeckCharts(
 
 /// Mana curve (nonland CMC histogram), rendered flat.
 #[component]
-pub fn ManaCurve(mana_curve_bars: [(usize, u32); 7]) -> Element {
+pub fn ManaCurve(mana_curve_bars: [(usize, u32); 7], hint: Option<Element>) -> Element {
     rsx! {
         div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
-            ChartLabel { text: "Mana curve" }
+            ChartLabel { text: "Mana curve", hint }
             div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
                 for (count, pct) in mana_curve_bars.iter() {
                     div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
@@ -129,7 +138,11 @@ pub fn ManaCurve(mana_curve_bars: [(usize, u32); 7]) -> Element {
 /// `draws = 7 + turn` (opening hand = turn 0). `buckets` is `(label, count K)`;
 /// probabilities recompute live for the selected turn from the deck's engine.
 #[component]
-pub fn DrawOdds(deck_size: u32, buckets: Vec<(&'static str, u32)>) -> Element {
+pub fn DrawOdds(
+    deck_size: u32,
+    buckets: Vec<(&'static str, u32)>,
+    hint: Option<Element>,
+) -> Element {
     const MAX_TURN: u32 = 20;
     let mut turn = use_signal(|| 0u32);
     let draws = 7 + turn();
@@ -159,7 +172,10 @@ pub fn DrawOdds(deck_size: u32, buckets: Vec<(&'static str, u32)>) -> Element {
                     onclick: move |_| { let t = turn(); if t > 0 { turn.set(t - 1); } },
                     "-"
                 }
-                span { style: "font-size:0.75rem;font-weight:600;color:var(--accent-primary);", "{heading}" }
+                span { style: "display:inline-flex;align-items:center;font-size:0.75rem;font-weight:600;color:var(--accent-primary);",
+                    "{heading}"
+                    if let Some(h) = hint { {h} }
+                }
                 button {
                     class: "stepper-btn",
                     onclick: move |_| { let t = turn(); if t < MAX_TURN { turn.set(t + 1); } },
@@ -190,13 +206,13 @@ pub fn DrawOdds(deck_size: u32, buckets: Vec<(&'static str, u32)>) -> Element {
 
 /// Per-color mana cost fulfillment, rendered flat.
 #[component]
-pub fn ManaFulfillment(rows: Vec<ManaBalanceRow>) -> Element {
+pub fn ManaFulfillment(rows: Vec<ManaBalanceRow>, hint: Option<Element>) -> Element {
     if rows.is_empty() {
         return rsx! {};
     }
     rsx! {
         div { style: "display:flex;flex-direction:column;gap:0.4rem;padding:0 0.75rem;",
-            ChartLabel { text: "Mana cost fulfillment" }
+            ChartLabel { text: "Mana cost fulfillment", hint }
             for ManaBalanceRow { label: color_label, consumed, produced, fill_pct, is_surplus } in rows.iter() {
                 div { style: "display:flex;align-items:center;gap:0.5rem;",
                     span { style: "width:1ch;font-size:0.75rem;color:var(--text-primary);opacity:0.85;", "{color_label}" }

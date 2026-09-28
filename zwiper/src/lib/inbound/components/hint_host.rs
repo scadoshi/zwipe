@@ -63,6 +63,18 @@ pub enum HintTopic {
     Website,
     /// Profile: version row, with the changelog button.
     Version,
+    /// Deck view: type distribution chart.
+    TypeChart,
+    /// Deck view: role distribution chart.
+    RoleChart,
+    /// Deck view: color distribution chart.
+    ColorChart,
+    /// Deck view: mana curve chart.
+    ManaCurve,
+    /// Deck view: per-color mana fulfillment chart.
+    ManaFulfillment,
+    /// Deck view: draw odds chart.
+    DrawOdds,
 }
 
 impl HintTopic {
@@ -88,6 +100,12 @@ impl HintTopic {
             Self::UniversesBeyond => "Universes Beyond",
             Self::Website => "Website",
             Self::Version => "Version",
+            Self::TypeChart => "Type distribution",
+            Self::RoleChart => "Role distribution",
+            Self::ColorChart => "Color distribution",
+            Self::ManaCurve => "Mana curve",
+            Self::ManaFulfillment => "Mana cost fulfillment",
+            Self::DrawOdds => "Draw odds",
         }
     }
 
@@ -161,6 +179,30 @@ impl HintTopic {
             },
             Self::Version => rsx! {
                 HintLine { "The build you are on. " HintKey { color: "--accent-primary", "Changelog" } " lists what changed in each release" }
+            },
+            Self::TypeChart => rsx! {
+                HintLine { "Mainboard cards by type" }
+            },
+            Self::RoleChart => rsx! {
+                HintLine { "Mainboard cards by role, like ramp or removal. Cards with no role are left out" }
+            },
+            Self::ColorChart => rsx! {
+                HintLine { "Mainboard cards by color" }
+            },
+            Self::ManaCurve => rsx! {
+                HintLine { "Nonland mainboard cards by mana value" }
+            },
+            Self::ManaFulfillment => rsx! {
+                HintBullets {
+                    HintBullet { "Per color, the pips your lands and sources make against the pips your spells need" }
+                    HintBullet { "A check means you make at least as much as you need" }
+                }
+            },
+            Self::DrawOdds => rsx! {
+                HintBullets {
+                    HintBullet { "Chance of at least one card from each group in the opening hand, or by a turn. " HintKey { color: "--accent-primary", "-" } " and " HintKey { color: "--accent-primary", "+" } " step the turn" }
+                    HintBullet { "Random draw only. Mulligans, tutors and card draw are not counted" }
+                }
             },
         }
     }
