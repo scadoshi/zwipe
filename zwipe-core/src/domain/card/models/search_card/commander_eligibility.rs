@@ -7,10 +7,28 @@ use crate::domain::{card::Card, deck::Format};
 
 // == Commander Eligibility ==
 
+/// The front face of a type line.
+///
+/// Scryfall joins both faces into one `type_line` with `" // "`, and commander
+/// legality is decided by the front face alone. Testing the whole string makes
+/// a card eligible for what its back face is: Westvale Abbey is a Land that
+/// transforms into a legendary creature, and it is not a legal commander.
+///
+/// Single-faced type lines have no separator and come back whole.
+fn front_face(type_line: &str) -> &str {
+    type_line
+        .split_once(" // ")
+        .map_or(type_line, |(front, _)| front)
+}
+
 /// Checks whether a card is a valid commander for the given format.
 pub fn is_valid_commander(card: &Card, format: &Format) -> bool {
     let sd = &card.scryfall_data;
-    let type_line = sd.type_line.as_deref().unwrap_or("");
+    // Front face only, for every type test below. `oracle_text` stays whole:
+    // no card carries "can be your commander" on a back face while its front
+    // face cannot lead, so splitting it would buy nothing and could drop a
+    // card whose text Scryfall stores combined.
+    let type_line = front_face(sd.type_line.as_deref().unwrap_or(""));
     let oracle_text = sd.oracle_text.as_deref().unwrap_or("");
 
     // A token's type line carries the real card's words, so "Token Legendary
@@ -309,6 +327,125 @@ mod tests {
             Some("Legendary Creature — Phyrexian Angel Horror".to_string());
         assert!(!is_valid_commander(&card, &Format::Standard));
         assert!(!is_valid_commander(&card, &Format::Modern));
+    }
+
+    // == Front-Face Tests ==
+    //
+    // Scryfall stores both faces in one type line, so a card whose BACK face is
+    // a legendary creature reads as eligible unless only the front is tested.
+    // These are real cards; the local pool holds 29 that the Commander arm
+    // accepted before the split.
+
+    /// Builds a double-faced card with no top-level P/T, the way Scryfall
+    /// stores one (per-face values live in `card_faces`).
+    fn make_dfc(name: &str, type_line: &str) -> Card {
+        let mut card = make_card(name);
+        card.scryfall_data.type_line = Some(type_line.to_string());
+        card
+    }
+
+    #[test]
+    fn land_front_face_is_not_a_commander() {
+        let card = make_dfc(
+            "Westvale Abbey // Ormendahl, Profane Prince",
+            "Land // Legendary Creature \u{2014} Demon",
+        );
+        assert!(!is_valid_commander(&card, &Format::Commander));
+    }
+
+    #[test]
+    fn battle_front_face_is_not_a_commander() {
+        let card = make_dfc(
+            "Invasion of Ikoria // Zilortha, Apex of Ikoria",
+            "Battle \u{2014} Siege // Legendary Creature \u{2014} Dinosaur",
+        );
+        assert!(!is_valid_commander(&card, &Format::Commander));
+    }
+
+    #[test]
+    fn saga_front_face_is_not_a_commander() {
+        let card = make_dfc(
+            "The Legend of Kyoshi // Avatar Kyoshi",
+            "Enchantment \u{2014} Saga // Legendary Creature \u{2014} Avatar",
+        );
+        assert!(!is_valid_commander(&card, &Format::Commander));
+    }
+
+    #[test]
+    fn non_legendary_front_face_is_not_a_commander() {
+        // The Kamigawa flip creatures, the largest group of the 29.
+        let card = make_dfc(
+            "Budoka Gardener // Dokai, Weaver of Life",
+            "Creature \u{2014} Human Monk // Legendary Creature \u{2014} Human Monk",
+        );
+        assert!(!is_valid_commander(&card, &Format::Commander));
+    }
+
+    #[test]
+    fn legendary_creature_on_both_faces_stays_a_commander() {
+        // Must not regress: eligible because the FRONT face qualifies, and the
+        // whole point of the split is that this still passes.
+        let card = make_dfc(
+            "Avatar Aang // Aang, Master of Elements",
+            "Legendary Creature \u{2014} Avatar // Legendary Creature \u{2014} Avatar",
+        );
+        assert!(is_valid_commander(&card, &Format::Commander));
+    }
+
+    #[test]
+    fn adventure_creature_stays_a_commander() {
+        // Front face is the creature, back half is an Adventure spell.
+        let card = make_dfc(
+            "Kellan, the Fae-Blooded // Birthright Boon",
+            "Legendary Creature \u{2014} Human Faerie // Sorcery \u{2014} Adventure",
+        );
+        assert!(is_valid_commander(&card, &Format::Commander));
+    }
+
+    #[test]
+    fn brawl_reads_the_front_face_too() {
+        let creature = make_dfc(
+            "Invasion of Fiora // Marchesa, Resolute Monarch",
+            "Battle \u{2014} Siege // Legendary Creature \u{2014} Human Noble",
+        );
+        assert!(!is_valid_commander(&creature, &Format::Brawl));
+
+        let mut walker = make_dfc(
+            "Some Land // Some Planeswalker",
+            "Land // Legendary Planeswalker \u{2014} Nissa",
+        );
+        walker.scryfall_data.layout = "transform".to_string();
+        assert!(!is_valid_commander(&walker, &Format::HistoricBrawl));
+    }
+
+    #[test]
+    fn pauper_commander_reads_the_front_face_too() {
+        let mut card = make_dfc(
+            "Some Battle // Some Creature",
+            "Battle \u{2014} Siege // Creature \u{2014} Dinosaur",
+        );
+        card.scryfall_data.rarity = Rarity::Uncommon;
+        assert!(!is_valid_commander(&card, &Format::PauperCommander));
+    }
+
+    #[test]
+    fn oathbreaker_reads_the_front_face_too() {
+        let card = make_dfc(
+            "Some Land // Some Planeswalker",
+            "Land // Legendary Planeswalker \u{2014} Nissa",
+        );
+        assert!(!is_valid_commander(&card, &Format::Oathbreaker));
+    }
+
+    #[test]
+    fn single_faced_type_lines_are_unchanged_by_the_split() {
+        // No separator: front_face returns the whole line, so every
+        // single-faced card behaves exactly as before.
+        let mut card = make_card("Atraxa, Praetors' Voice");
+        card.scryfall_data.type_line =
+            Some("Legendary Creature \u{2014} Phyrexian Angel Horror".to_string());
+        assert!(is_valid_commander(&card, &Format::Commander));
+        assert!(is_valid_commander(&card, &Format::Brawl));
     }
 
     // == Partner Tests ==
