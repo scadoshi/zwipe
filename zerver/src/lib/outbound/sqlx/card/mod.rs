@@ -969,6 +969,24 @@ impl CardRepository for MyPostgres {
         }
 
         if let Some(format) = criteria.is_commander_in_format() {
+            // A meld result (Brisela, Titania Gaea Incarnate) is its own card
+            // object with a legendary creature type line and no " // " to
+            // split, so the front-face rule below cannot see it. It can never
+            // be a commander: it exists only by melding two cards already on
+            // the battlefield. Its two parts share `layout = 'meld'` and are
+            // often legal commanders, so the layout alone cannot separate
+            // them; each meld card names its own role in `all_parts`.
+            //
+            // Applied before the match because it holds for every format.
+            // `all_parts` is nullable and `jsonb_array_elements` over NULL
+            // yields no rows, so a null column leaves the card alone.
+            sep.push(
+                "NOT (latest_cards.layout = 'meld' AND EXISTS (\
+                 SELECT 1 FROM jsonb_array_elements(latest_cards.all_parts) mp \
+                 WHERE mp->>'component' = 'meld_result' \
+                   AND mp->>'name' = latest_cards.name))",
+            );
+
             // Mirrors `zwipe_core::domain::card::is_valid_commander`. Every type
             // test reads the FRONT face: Scryfall joins both faces into one
             // `type_line` with " // ", so matching the whole string makes a card

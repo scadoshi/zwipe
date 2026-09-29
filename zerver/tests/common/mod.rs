@@ -274,6 +274,7 @@ pub struct CardFixture {
     oracle_id: Option<Uuid>,
     name: String,
     layout: String,
+    all_parts: Option<serde_json::Value>,
     cmc: Option<f64>,
     colors: Vec<String>,
     color_identity: Vec<String>,
@@ -314,6 +315,7 @@ pub fn card(name: &str) -> CardFixture {
         oracle_id: Some(Uuid::from_u128(ORACLE_NS | n)),
         name: name.to_string(),
         layout: "normal".to_string(),
+        all_parts: None,
         cmc: Some(0.0),
         colors: Vec::new(),
         color_identity: Vec::new(),
@@ -381,6 +383,23 @@ impl CardFixture {
     }
     pub fn layout(mut self, layout: &str) -> Self {
         self.layout = layout.to_string();
+        self
+    }
+    /// Marks this card as one half of a meld, or as the melded result.
+    ///
+    /// `role` is the card's own `component` entry: "meld_result" for the
+    /// melded permanent, "meld_part" for a component. Both sides carry
+    /// `layout = "meld"`, so this entry is the only thing separating them.
+    pub fn meld(mut self, role: &str) -> Self {
+        self.layout = "meld".to_string();
+        self.all_parts = Some(json!([{
+            "id": Uuid::nil(),
+            "object": "related_card",
+            "component": role,
+            "name": self.name,
+            "type_line": self.type_line,
+            "uri": "https://api.scryfall.com/cards/0",
+        }]));
         self
     }
     pub fn cmc(mut self, cmc: f64) -> Self {
@@ -527,7 +546,8 @@ pub async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
              border_color, booster, collector_number, digital, finishes, frame, full_art, \
              highres_image, image_status, oversized, prices, promo, rarity, related_uris, \
              released_at, reprint, scryfall_set_uri, set_name, set_search_uri, set_type, \
-             set_uri, set, set_id, story_spotlight, textless, variation, security_stamp) ",
+             set_uri, set, set_id, story_spotlight, textless, variation, security_stamp, \
+             all_parts) ",
         );
         qb.push_values(cards.iter(), |mut b, c| {
             let prices = json!({ "usd": c.usd });
@@ -590,7 +610,8 @@ pub async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
                 .push_bind(false) // story_spotlight
                 .push_bind(false) // textless
                 .push_bind(false) // variation
-                .push_bind(c.security_stamp.clone());
+                .push_bind(c.security_stamp.clone())
+                .push_bind(c.all_parts.clone());
         });
         qb.build().execute(pool).await.unwrap();
 

@@ -124,6 +124,28 @@ async fn sql_and_predicate_agree_on_every_criterion(pool: sqlx::PgPool) {
             .toughness("3")
             .rarity("mythic")
             .legal("commander"),
+        // Meld. Both carry layout = "meld" and a legendary creature type
+        // line with no " // " to split, so only the all_parts role separates
+        // them. The result can never be a commander (it exists solely by
+        // melding two cards already in play); the part is a legal one.
+        card("Titania, Gaea Incarnate")
+            .mono("G")
+            .cmc(7.0)
+            .type_line("Legendary Creature — Elemental Avatar")
+            .power("7")
+            .toughness("7")
+            .rarity("mythic")
+            .meld("meld_result")
+            .legal("commander"),
+        card("Titania, Voice of Gaea")
+            .mono("G")
+            .cmc(3.0)
+            .type_line("Legendary Creature — Elemental")
+            .power("3")
+            .toughness("4")
+            .rarity("rare")
+            .meld("meld_part")
+            .legal("commander"),
         card("Island")
             .color_identity("")
             .cmc(0.0)
