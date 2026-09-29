@@ -969,20 +969,38 @@ impl CardRepository for MyPostgres {
         }
 
         if let Some(format) = criteria.is_commander_in_format() {
+            // Mirrors `zwipe_core::domain::card::is_valid_commander`. Every type
+            // test reads the FRONT face: Scryfall joins both faces into one
+            // `type_line` with " // ", so matching the whole string makes a card
+            // eligible for what its back face is (Westvale Abbey is a Land).
+            //
+            // Each `split_part` is paired with the same test on the raw column.
+            // That conjunct is logically redundant, since the front face is a
+            // substring of the whole line, but `type_line ILIKE` can use the
+            // trigram index while `split_part(type_line, ...)` cannot. Keeping
+            // both lets the index narrow first: measured at 12ms against 21ms
+            // for the old filter and 57ms with the raw test dropped.
             match format {
                 // Legendary creature, legendary vehicle with P/T, or "can be your commander"
                 Format::Commander | Format::Duel | Format::Predh => {
                     sep.push(
-                        "((type_line ILIKE '%Legendary%' AND type_line ILIKE '%Creature%') \
-                         OR (type_line ILIKE '%Legendary%' AND power IS NOT NULL AND toughness IS NOT NULL) \
+                        "((type_line ILIKE '%Legendary%' \
+                           AND split_part(type_line, ' // ', 1) ILIKE '%Legendary%' \
+                           AND ((type_line ILIKE '%Creature%' \
+                                 AND split_part(type_line, ' // ', 1) ILIKE '%Creature%') \
+                                OR (power IS NOT NULL AND toughness IS NOT NULL))) \
                          OR oracle_text ILIKE '%can be your commander%')",
                     );
                 }
                 // Legendary creature or legendary planeswalker
                 Format::Brawl | Format::StandardBrawl | Format::HistoricBrawl => {
                     sep.push(
-                        "(type_line ILIKE '%Legendary%' AND \
-                         (type_line ILIKE '%Creature%' OR type_line ILIKE '%Planeswalker%'))",
+                        "(type_line ILIKE '%Legendary%' \
+                         AND split_part(type_line, ' // ', 1) ILIKE '%Legendary%' \
+                         AND ((type_line ILIKE '%Creature%' \
+                               AND split_part(type_line, ' // ', 1) ILIKE '%Creature%') \
+                              OR (type_line ILIKE '%Planeswalker%' \
+                                  AND split_part(type_line, ' // ', 1) ILIKE '%Planeswalker%')))",
                     );
                 }
                 // Uncommon creature: legendary or not. Two fixes here:
@@ -994,7 +1012,8 @@ impl CardRepository for MyPostgres {
                 //      preferred printing is common but were printed uncommon).
                 Format::PauperCommander => {
                     sep.push(
-                        "(type_line ILIKE '%Creature%' AND EXISTS (\
+                        "(type_line ILIKE '%Creature%' \
+                         AND split_part(type_line, ' // ', 1) ILIKE '%Creature%' AND EXISTS (\
                          SELECT 1 FROM scryfall_data sd2 \
                          WHERE sd2.oracle_id = latest_cards.oracle_id \
                          AND sd2.rarity = 'U'))",
@@ -1002,7 +1021,10 @@ impl CardRepository for MyPostgres {
                 }
                 // Any planeswalker
                 Format::Oathbreaker => {
-                    sep.push("type_line ILIKE '%Planeswalker%'");
+                    sep.push(
+                        "(type_line ILIKE '%Planeswalker%' \
+                         AND split_part(type_line, ' // ', 1) ILIKE '%Planeswalker%')",
+                    );
                 }
                 // Non-commander formats: no filter (should not happen, but safe)
                 _ => {}

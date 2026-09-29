@@ -106,6 +106,24 @@ async fn sql_and_predicate_agree_on_every_criterion(pool: sqlx::PgPool) {
             .toughness("3")
             .rarity("mythic")
             .legal("commander"),
+        // Double-faced. Scryfall joins both faces into one type line, so these
+        // two differ only in their FRONT face and must land on opposite sides
+        // of every commander filter. Without the split, the Abbey reads as a
+        // legendary creature and both the SQL and the predicate accept it.
+        card("Westvale Abbey // Ormendahl, Profane Prince")
+            .color_identity("")
+            .cmc(0.0)
+            .type_line("Land // Legendary Creature — Demon")
+            .rarity("rare")
+            .legal("commander"),
+        card("Avatar Aang // Aang, Master of Elements")
+            .mono("W")
+            .cmc(3.0)
+            .type_line("Legendary Creature — Avatar // Legendary Creature — Avatar")
+            .power("2")
+            .toughness("3")
+            .rarity("mythic")
+            .legal("commander"),
         card("Island")
             .color_identity("")
             .cmc(0.0)
