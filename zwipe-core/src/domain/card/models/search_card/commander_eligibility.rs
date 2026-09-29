@@ -190,9 +190,28 @@ pub fn is_background_card(card: &Card) -> bool {
 // == Signature Spell Eligibility ==
 
 /// Whether a card is a valid signature spell type (instant or sorcery).
+///
+/// Oathbreaker asks for an instant or sorcery *card*. An Adventure creature is
+/// a creature card that happens to carry an instant or sorcery half, and the
+/// format's FAQ rejects it by name: "the card itself is a creature card; the
+/// creature card, even though it has an Adventure, cannot be used as a
+/// Signature Spell." The same holds for `prepare` creatures and for any
+/// transforming card whose front face is not the spell.
+///
+/// Split cards are the one exception. Outside the stack a split card has the
+/// characteristics of both halves at once (CR 709.4), so either half being an
+/// instant or sorcery is enough. Every other multi-face card is only its front
+/// face outside the stack (CR 712.4a), which is why the rest go through
+/// [`front_face`].
 pub fn is_valid_signature_spell_type(card: &Card) -> bool {
-    let type_line = card.scryfall_data.type_line.as_deref().unwrap_or("");
-    type_line.contains("Instant") || type_line.contains("Sorcery")
+    let sd = &card.scryfall_data;
+    let type_line = sd.type_line.as_deref().unwrap_or("");
+    let considered = if sd.layout == "split" {
+        type_line
+    } else {
+        front_face(type_line)
+    };
+    considered.contains("Instant") || considered.contains("Sorcery")
 }
 
 /// Whether a signature spell is within the oathbreaker's color identity.
@@ -591,6 +610,70 @@ mod tests {
     fn creature_is_not_valid_signature_spell() {
         let mut card = make_card("Llanowar Elves");
         card.scryfall_data.type_line = Some("Creature — Elf Druid".to_string());
+        assert!(!is_valid_signature_spell_type(&card));
+    }
+
+    #[test]
+    fn adventure_creature_is_not_a_signature_spell() {
+        // The Oathbreaker FAQ rejects these by name: the card is a creature
+        // card, the Adventure half only becomes a spell on the stack. 169
+        // Adventure cards were passing.
+        let mut card = make_card("Beluna Grandsquall // Seek Thrills");
+        card.scryfall_data.type_line = Some(
+            "Legendary Creature \u{2014} Giant Noble // Instant \u{2014} Adventure".to_string(),
+        );
+        card.scryfall_data.layout = "adventure".to_string();
+        assert!(!is_valid_signature_spell_type(&card));
+    }
+
+    #[test]
+    fn prepare_creature_is_not_a_signature_spell() {
+        // Same shape as Adventure, different keyword: a creature card whose
+        // back half is a sorcery. 70 of these were passing.
+        let mut card = make_card("Adventurous Eater // Have a Bite");
+        card.scryfall_data.type_line =
+            Some("Creature \u{2014} Human Warlock // Sorcery".to_string());
+        card.scryfall_data.layout = "prepare".to_string();
+        assert!(!is_valid_signature_spell_type(&card));
+    }
+
+    #[test]
+    fn land_front_face_is_not_a_signature_spell() {
+        let mut card = make_card("Midgar, City of Mako // Reactor Raid");
+        card.scryfall_data.type_line =
+            Some("Land \u{2014} Town // Sorcery \u{2014} Adventure".to_string());
+        card.scryfall_data.layout = "adventure".to_string();
+        assert!(!is_valid_signature_spell_type(&card));
+    }
+
+    #[test]
+    fn spell_front_face_is_still_a_signature_spell() {
+        // Modal double-faced: the sorcery is the front face, the land is the
+        // back, so the card is a sorcery card.
+        let mut card = make_card("Hagra Mauling // Hagra Broodpit");
+        card.scryfall_data.type_line = Some("Instant // Land".to_string());
+        card.scryfall_data.layout = "modal_dfc".to_string();
+        assert!(is_valid_signature_spell_type(&card));
+    }
+
+    #[test]
+    fn split_card_counts_both_halves() {
+        // CR 709.4: outside the stack a split card is both halves at once, so
+        // it is not reduced to its front face like the others.
+        let mut card = make_card("Fire // Ice");
+        card.scryfall_data.type_line = Some("Instant // Instant".to_string());
+        card.scryfall_data.layout = "split".to_string();
+        assert!(is_valid_signature_spell_type(&card));
+    }
+
+    #[test]
+    fn room_enchantment_is_not_a_signature_spell() {
+        // Rooms are split-layout but enchantments on both halves, so the
+        // split exception must not let them through.
+        let mut card = make_card("Cramped Vents // Access Maze");
+        card.scryfall_data.type_line =
+            Some("Enchantment \u{2014} Room // Enchantment \u{2014} Room".to_string());
+        card.scryfall_data.layout = "split".to_string();
         assert!(!is_valid_signature_spell_type(&card));
     }
 
