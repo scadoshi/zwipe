@@ -1050,7 +1050,20 @@ impl CardRepository for MyPostgres {
         }
 
         if let Some(true) = criteria.is_signature_spell() {
-            sep.push("(type_line ILIKE '%Instant%' OR type_line ILIKE '%Sorcery%')");
+            // Mirrors `zwipe_core::domain::card::is_valid_signature_spell_type`.
+            // Oathbreaker wants an instant or sorcery CARD, so an Adventure or
+            // `prepare` creature does not qualify however its back half reads.
+            // Split cards are both halves at once (CR 709.4) and keep the whole
+            // line; everything else is judged on its front face (CR 712.4a).
+            //
+            // The raw ILIKE pair stays in front for the trigram index, as in the
+            // commander filter above.
+            sep.push(
+                "((type_line ILIKE '%Instant%' OR type_line ILIKE '%Sorcery%') \
+                 AND (layout = 'split' \
+                      OR split_part(type_line, ' // ', 1) ILIKE '%Instant%' \
+                      OR split_part(type_line, ' // ', 1) ILIKE '%Sorcery%'))",
+            );
         }
 
         // mechanical category filters
