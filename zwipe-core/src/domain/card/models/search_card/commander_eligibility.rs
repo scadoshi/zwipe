@@ -21,6 +21,27 @@ fn front_face(type_line: &str) -> &str {
         .map_or(type_line, |(front, _)| front)
 }
 
+/// Whether this card is the result of a meld, rather than one of its parts.
+///
+/// A meld result (Brisela, Titania Gaea Incarnate) is its own card object with
+/// its own legendary creature type line and no `" // "` in it, so
+/// [`front_face`] cannot see it. It is never a commander: it exists only by
+/// melding two cards already on the battlefield and can never be put in a deck.
+///
+/// Both the result and its two parts carry `layout = "meld"`, and the parts are
+/// often legal commanders (Titania, Voice of Gaea is one), so the layout alone
+/// cannot separate them. Each meld card names its own role in `all_parts`, so
+/// that is what this reads.
+fn is_meld_result(card: &Card) -> bool {
+    let sd = &card.scryfall_data;
+    sd.layout == "meld"
+        && sd.all_parts.as_deref().is_some_and(|parts| {
+            parts
+                .iter()
+                .any(|part| part.component == "meld_result" && part.name == sd.name)
+        })
+}
+
 /// Checks whether a card is a valid commander for the given format.
 pub fn is_valid_commander(card: &Card, format: &Format) -> bool {
     let sd = &card.scryfall_data;
@@ -39,6 +60,13 @@ pub fn is_valid_commander(card: &Card, format: &Format) -> bool {
         sd.layout.as_str(),
         "token" | "double_faced_token" | "emblem"
     ) {
+        return false;
+    }
+
+    // Same shape of problem as a token: a real type line on something that
+    // cannot be a commander. Checked here rather than per format, because a
+    // meld result is ineligible in every one of them.
+    if is_meld_result(card) {
         return false;
     }
 
@@ -346,6 +374,81 @@ mod tests {
             Some("Legendary Creature — Phyrexian Angel Horror".to_string());
         assert!(!is_valid_commander(&card, &Format::Standard));
         assert!(!is_valid_commander(&card, &Format::Modern));
+    }
+
+    // == Meld Tests ==
+    //
+    // A meld result has a legendary creature type line and no " // " in it, so
+    // the front-face rule cannot reach it. Its parts share the same layout and
+    // are often legal commanders, so the layout alone cannot separate them.
+
+    /// Builds a meld card. `role` is this card's own entry in `all_parts`:
+    /// "meld_result" for the melded permanent, "meld_part" for a component.
+    fn make_meld(name: &str, type_line: &str, role: &str) -> Card {
+        let mut card = make_card(name);
+        card.scryfall_data.type_line = Some(type_line.to_string());
+        card.scryfall_data.layout = "meld".to_string();
+        // Real rows list all three cards; only the entry naming this card
+        // decides its role, so the other two are noise and left out.
+        let parts = serde_json::json!([{
+            "id": uuid::Uuid::nil(),
+            "object": "related_card",
+            "component": role,
+            "name": name,
+            "type_line": type_line,
+            "uri": "https://api.scryfall.com/cards/0",
+        }]);
+        card.scryfall_data.all_parts = Some(serde_json::from_value(parts).unwrap());
+        card
+    }
+
+    #[test]
+    fn meld_result_is_not_a_commander() {
+        // Five of these pass the type-line test today. You cannot put one in a
+        // deck: it only exists by melding two cards already on the battlefield.
+        let card = make_meld(
+            "Titania, Gaea Incarnate",
+            "Legendary Creature \u{2014} Elemental Avatar",
+            "meld_result",
+        );
+        assert!(!is_valid_commander(&card, &Format::Commander));
+        assert!(!is_valid_commander(&card, &Format::Brawl));
+        assert!(!is_valid_commander(&card, &Format::Duel));
+    }
+
+    #[test]
+    fn meld_result_planeswalker_is_not_an_oathbreaker() {
+        let card = make_meld(
+            "Urza, Planeswalker",
+            "Legendary Planeswalker \u{2014} Urza",
+            "meld_result",
+        );
+        assert!(!is_valid_commander(&card, &Format::Oathbreaker));
+        assert!(!is_valid_commander(&card, &Format::HistoricBrawl));
+    }
+
+    #[test]
+    fn meld_part_is_still_a_commander() {
+        // Must not regress: Titania, Voice of Gaea is one half of the meld and
+        // a perfectly legal commander. Same layout as the result above, so
+        // only the all_parts role tells them apart.
+        let card = make_meld(
+            "Titania, Voice of Gaea",
+            "Legendary Creature \u{2014} Elemental",
+            "meld_part",
+        );
+        assert!(is_valid_commander(&card, &Format::Commander));
+    }
+
+    #[test]
+    fn meld_layout_without_all_parts_is_left_alone() {
+        // all_parts is nullable in the database. With nothing to read, the
+        // card is judged on its type line rather than being dropped.
+        let mut card = make_card("Titania, Voice of Gaea");
+        card.scryfall_data.type_line = Some("Legendary Creature \u{2014} Elemental".to_string());
+        card.scryfall_data.layout = "meld".to_string();
+        card.scryfall_data.all_parts = None;
+        assert!(is_valid_commander(&card, &Format::Commander));
     }
 
     // == Front-Face Tests ==
