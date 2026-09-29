@@ -39,6 +39,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Every field on the deck form and most rows on Profile have their own ? that explains just that one. The screen-level ? is shorter to match.",
         "Hints across the app are shorter and only say what you can't tell by looking.",
         "Commander select no longer offers cards that are only a legendary creature on their back face. Westvale Abbey, the Kamigawa flip creatures, the Battles and the Avatar Sagas were all being listed as commanders, 29 cards in all. If you already picked one, the deck now warns that it can't be your commander.",
+        "Oathbreaker signature spell select no longer offers Adventure creatures like Beluna Grandsquall. The card is a creature, only its Adventure half is a spell, and the format's rules say it can't be your signature spell. 250 cards were being offered. Split cards like Fire // Ice still qualify.",
     ],
 }];
 
