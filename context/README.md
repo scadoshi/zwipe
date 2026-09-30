@@ -21,6 +21,14 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-09-30: 1.10.3 built, and the chips got a rule
+
+1.10.3 is built for both stores and waiting on upload: iOS build 82 (`Zwipe.ipa`) and Android versionCode 45 (`zwipe-1.10.3.aab`), both signed and verified, notes in [`operations/store-submissions/1.10.3/whats_new.md`](operations/store-submissions/1.10.3/whats_new.md) at 477 characters.
+
+Chips now follow one rule across zwiper, zite, cairn and the portfolio: a chip that only informs is square (0.25rem, the status pill's radius), and anything you press is round (0.6rem). The skeleton ghosts match what they stand in for. The changelog was rewritten under a new rule, [`development/changelog_guidelines.md`](development/changelog_guidelines.md): every entry is a phrase with no period and no examples, and three tests in `zwipe-core` fail the build on a period, an example phrasing, or an em dash. The log dropped from 456 lines to about 330 without losing a claim.
+
+`Panel` gained a `title_trailing` slot so the portfolio can put a project's tags in the heading; nothing here uses it yet.
+
 ## 2026-09-23: iOS 27 rejection, and two silent failures on zite
 
 Android 1.10.2 went live the day it was submitted. iOS build 80 was rejected, and the day went to that plus two things on zite that had been broken behind green builds.
