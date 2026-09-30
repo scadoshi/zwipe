@@ -687,7 +687,7 @@ code {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     padding: 0.625rem 1.75rem;
-    border-radius: 0.4rem;
+    border-radius: 0.6rem;
     box-shadow: var(--shadow-sm);
     text-decoration: none;
     font-size: 0.9rem;
@@ -1005,7 +1005,7 @@ code {
     color: var(--accent-primary);
     background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
-    border-radius: 0.6rem;
+    border-radius: 0.25rem;
 }
 
 .ff-name-link {
@@ -1072,7 +1072,7 @@ code {
     background-color: var(--bg-primary);
     text-decoration: none;
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: 0.6rem;
     padding: 0 0.8rem;
     font-family: inherit;
     font-size: 0.8rem;
@@ -1103,7 +1103,7 @@ code {
 
 .tag {
     border: 1px solid;
-    border-radius: 0.4rem;
+    border-radius: 0.25rem;
     padding: 0.2rem 0.7rem;
     font-size: 0.78rem;
     letter-spacing: 0.02em;
@@ -1387,7 +1387,7 @@ code {
     color: var(--color-error);
     padding: 0.3rem 0.5rem;
     border: 1px solid currentColor;
-    border-radius: 0.4rem;
+    border-radius: 0.6rem;
     background-color: var(--bg-primary);
     transition: all 0.2s ease;
 }
@@ -1549,7 +1549,7 @@ code {
     align-items: center;
     padding: 0.4rem 0.9rem;
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: 0.6rem;
     background-color: var(--bg-primary);
     box-shadow: var(--shadow-sm);
     color: var(--accent-primary);
@@ -1606,7 +1606,7 @@ code {
 
 .guide-kw {
     padding: 0.03rem 0.32rem;
-    border-radius: 0.6rem;
+    border-radius: 0.25rem;
     background-color: color-mix(in srgb, var(--text-primary) 9%, transparent);
     border: 1px solid color-mix(in srgb, var(--text-primary) 16%, transparent);
     color: var(--text-primary);
@@ -1710,7 +1710,7 @@ footer {
    so the interactive `.chip` in the shared components.css doesn't collide. */
 .hero-chip {
     padding: 0.2rem 0.6rem;
-    border-radius: 0.6rem;
+    border-radius: 0.25rem;
     font-family: "JetBrains Mono", monospace;
     font-size: 0.8rem;
     border: 1px solid;
@@ -1911,7 +1911,7 @@ footer {
     color: var(--color-success);
     background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
-    border-radius: 0.6rem;
+    border-radius: 0.25rem;
     white-space: nowrap;
 }
 
@@ -1956,7 +1956,7 @@ footer {
 .sk-chip {
     width: 5rem;
     height: 1.5rem;
-    border-radius: 0.4rem;
+    border-radius: 0.25rem;
 }
 
 /* Vary the widths so the skeleton reads like real deck tags, not uniform pills. */
@@ -2133,7 +2133,7 @@ footer {
 .info-row-tags .stat-chip {
     display: inline-block;
     padding: 0.2rem 0.55rem;
-    border-radius: 0.6rem;
+    border-radius: 0.25rem;
     font-size: 0.75rem;
     color: var(--accent-primary);
     background-color: color-mix(
@@ -2322,7 +2322,7 @@ footer {
     padding: 0.15rem 0.5rem;
     font-size: 0.68rem;
     border: 1px solid transparent;
-    border-radius: 0.6rem;
+    border-radius: 0.25rem;
 }
 
 .sd-cz-role-zone {
@@ -2364,7 +2364,7 @@ footer {
 
 .sd-chip {
     border: 1px solid var(--border-primary);
-    border-radius: 0.6rem;
+    border-radius: 0.25rem;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     font-family: "JetBrains Mono", monospace;
@@ -2694,7 +2694,7 @@ footer {
 
 .sd-retry {
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: 0.6rem;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     font-family: "JetBrains Mono", monospace;

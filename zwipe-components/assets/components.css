@@ -75,7 +75,7 @@
 .btn-xs {
     padding: 0.4rem 0.8rem;
     font-size: 0.75rem;
-    border-radius: 0.5rem;
+    border-radius: 0.6rem;
     margin-bottom: 0.5rem;
     width: auto;
     background: none;
@@ -97,7 +97,7 @@
 .util-btn {
     padding: 0.4rem 0.8rem;
     font-size: 0.8rem;
-    border-radius: 0.5rem;
+    border-radius: 0.6rem;
     width: auto;
     margin: 0;
     background-color: var(--bg-primary);
@@ -172,7 +172,7 @@
 .keyword-chip {
     padding: 0.15rem 0.5rem;
     border: 1px solid var(--accent-primary);
-    border-radius: 0.4rem;
+    border-radius: 0.6rem;
     font-size: 0.75rem;
     color: var(--accent-primary);
     background-color: var(--bg-primary);
@@ -350,7 +350,7 @@
     flex: 0 0 auto;
     padding: 0.1rem 0.4rem;
     border: 1px solid transparent;
-    border-radius: 0.4rem;
+    border-radius: 0.25rem;
     font-size: 0.7rem;
     white-space: nowrap;
 }
@@ -658,7 +658,7 @@ i.ms.ms-cost.ms-gp {
     display: inline-block;
     padding: 0.15rem 0.5rem;
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: 0.25rem;
     font-size: 0.75rem;
     color: var(--text-muted);
     background-color: var(--bg-primary);
@@ -703,7 +703,7 @@ i.ms.ms-cost.ms-gp {
     padding: 0.2rem 0.6rem;
     font-family: inherit;
     font-size: 0.85rem;
-    border-radius: 0.4rem;
+    border-radius: 0.6rem;
     border: 1px solid var(--border-primary);
     background-color: var(--bg-primary);
     color: var(--text-primary);
@@ -779,7 +779,7 @@ i.ms.ms-cost.ms-gp {
 .otag-examples-btn {
     padding: 0.1rem 0.55rem;
     border: 1px solid var(--accent-secondary);
-    border-radius: 0.4rem;
+    border-radius: 0.6rem;
     font-size: 0.72rem;
     color: var(--accent-secondary);
     background-color: var(--bg-primary);
@@ -923,7 +923,7 @@ i.ms.ms-cost.ms-gp {
     display: inline-block;
     padding: 0.2rem 0.5rem;
     border: 1px solid var(--border-primary);
-    border-radius: 0.35rem;
+    border-radius: 0.25rem;
     background-color: var(--bg-primary);
     font-size: 0.7rem;
     line-height: 1.25;
@@ -1877,7 +1877,7 @@ a.nav-dropdown-item.active:visited {
 .stepper-btn {
     padding: 0.3rem 0.6rem;
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: 0.6rem;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     cursor: pointer;

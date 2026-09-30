@@ -717,7 +717,7 @@ button {
     margin-left: 0.35rem;
     padding: 0;
     border: 1px solid var(--border-primary);
-    border-radius: 0.5rem;
+    border-radius: 0.6rem;
     background: var(--bg-primary);
     color: var(--text-muted);
     font-size: 0.75rem;
@@ -978,7 +978,7 @@ button {
 .stat-chip {
     display: inline-block;
     padding: 0.2rem 0.55rem;
-    border-radius: 0.6rem;
+    border-radius: 0.25rem;
     font-size: 0.75rem;
     /* Cap the pill at the row width and wrap long labels (e.g. "French vanilla
        equipment") onto a second line, centered — instead of overflowing the
@@ -2156,7 +2156,7 @@ button {
     display: inline-block;
     padding: 0.15rem 0.5rem;
     border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    border-radius: 0.6rem;
     font-size: 0.7rem;
     color: var(--text-primary);
     cursor: pointer;
@@ -2196,7 +2196,7 @@ button {
     padding: 0.3rem 0.6rem;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-muted);
-    border-radius: 0.6rem;
+    border-radius: 0.25rem;
     font-size: 0.75rem;
     color: var(--text-muted);
     box-shadow: var(--shadow-sm);
@@ -2640,7 +2640,7 @@ button {
     padding: 0.2rem 0.45rem;
     margin-left: 0.25rem;
     border: 1px solid var(--color-error);
-    border-radius: 0.4rem;
+    border-radius: 0.6rem;
     /* Opaque fill so the page grid doesn't show through the button. */
     background-color: var(--bg-primary);
     transition: all 0.2s ease;
@@ -3123,7 +3123,7 @@ button {
     padding: 0.15rem 0.4rem;
     border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
     background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
-    border-radius: 0.4rem;
+    border-radius: 0.25rem;
     font-size: 0.7rem;
     color: var(--color-success);
     white-space: nowrap;
@@ -3135,7 +3135,7 @@ button {
     padding: 0.15rem 0.4rem;
     border: 1px solid color-mix(in srgb, var(--color-error) 35%, transparent);
     background-color: color-mix(in srgb, var(--color-error) 12%, transparent);
-    border-radius: 0.4rem;
+    border-radius: 0.25rem;
     font-size: 0.7rem;
     color: var(--color-error);
     white-space: nowrap;
@@ -3302,7 +3302,7 @@ button {
     display: inline-block;
     padding: 0.3rem 0.6rem;
     border: 1px solid var(--border-muted);
-    border-radius: 0.6rem;
+    border-radius: 0.25rem;
     font-size: 0.75rem;
     color: var(--text-muted);
     background-color: var(--bg-primary);
