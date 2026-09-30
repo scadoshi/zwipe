@@ -23,7 +23,7 @@ The running log, newest first. Update this when something ships; [`progress/todo
 
 ## 2026-09-30: 1.10.3 built, and the chips got a rule
 
-1.10.3 is built for both stores and waiting on upload: iOS build 82 (`Zwipe.ipa`) and Android versionCode 45 (`zwipe-1.10.3.aab`), both signed and verified, notes in [`operations/store-submissions/1.10.3/whats_new.md`](operations/store-submissions/1.10.3/whats_new.md) at 477 characters.
+1.10.3 is built for both stores and waiting on upload: iOS build 83 (`Zwipe.ipa`; 82 was delivered before the chip revert and never submitted) and Android versionCode 45 (`zwipe-1.10.3.aab`), both signed and verified, notes in [`operations/store-submissions/1.10.3/whats_new.md`](operations/store-submissions/1.10.3/whats_new.md) at 477 characters.
 
 Chips tried a rule for an afternoon: information square, buttons round, across zwiper, zite, cairn and the portfolio. It looked boxy on a phone and was reverted the same day, before anything shipped; every radius is back where it was. What stayed is the changelog rewrite under [`development/changelog_guidelines.md`](development/changelog_guidelines.md): every entry is a phrase with no period and no examples, and three tests in `zwipe-core` fail the build on a period, an example phrasing, or an em dash. The log dropped from 456 lines to about 330 without losing a claim.
 
