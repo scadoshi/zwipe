@@ -1227,10 +1227,11 @@ button {
     margin-bottom: 1.5rem;
 }
 
+/* Stands in for the version filter chips, which are buttons. */
 .changelog-skeleton-chip {
     width: 2.75rem;
     height: 1.5rem;
-    border-radius: 0.5rem;
+    border-radius: 0.6rem;
 }
 
 .changelog-skeleton-row {
@@ -1481,10 +1482,11 @@ button {
     margin-bottom: 0.5rem;
 }
 
+/* The button radius: most skeleton chips stand in for pickers and filters. */
 .skeleton-chip {
     width: 3rem;
     height: 1.7rem;
-    border-radius: 0.5rem;
+    border-radius: 0.6rem;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -1492,6 +1494,12 @@ button {
 
 .skeleton-chip-active {
     border-color: var(--accent-primary);
+}
+
+/* Stands in for an information chip (a deck's tags, its identity row), which
+   is square. */
+.skeleton-tag {
+    border-radius: 0.25rem;
 }
 
 /* Home screen flavor text skeleton */
