@@ -124,6 +124,10 @@ Backend (`zerver/.env`): `DATABASE_URL`, `JWT_SECRET`, `BIND_ADDRESS`, `ALLOWED_
     - Example: "Written with the help of Claude Opus 4.5"
     - Never commit with something like this in your message.
 
+## Changelog Entries
+
+One phrase per entry saying what changed: no period at the end, no examples, no second sentence explaining why. The full rule is `development/changelog_guidelines.md`, and tests in `zwipe-core/src/content/changelog/mod.rs` fail the build on a period or an example.
+
 ## Markdown Conventions
 
 - **Do not hard-wrap prose.** One paragraph is one line; one bullet is one line. Let the editor or viewer soft-wrap it. Manual line breaks make every later edit a reflow.
@@ -139,7 +143,7 @@ context/
 ├── product/                — what we're building (prd, monetization, premium/ feature catalog)
 ├── architecture/           — why things are built the way they are
 ├── operations/             — how to build, deploy & ship (infrastructure/, ios/, android/)
-├── development/            — coding standards (commits, docs, newtypes, dioxus)
+├── development/            — coding standards (commits, changelog, docs, newtypes, dioxus)
 ├── plans/                  — specs for in-flight work (archive/ holds shipped and abandoned ones)
 ├── marketing/              — promo art templates (html) + plans/ video scripts
 ├── progress/               — what's next (todo.md, backlog.md, feature_requests.md)
