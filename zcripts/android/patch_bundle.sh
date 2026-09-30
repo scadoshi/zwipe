@@ -11,6 +11,9 @@
 #   manifest.sh        missing -> the ndk-context double-init crash returns,
 #                                 and a system theme change closes the app
 #                                 (context/plans/archive/android_ndk_context_crash.md)
+#   wry_activity.sh    missing -> UnsatisfiedLinkError in onCreate on every
+#                                 device: the stock activity calls tao 0.34's
+#                                 native names and the vendored tao is 0.37
 #
 # The manifest bug survived five releases partly because this was a checklist.
 # Call this one script instead; add new patches here rather than to the docs.
@@ -28,6 +31,9 @@ echo "== back navigation =="
 
 echo "== manifest (launchMode + configChanges) =="
 "$HERE/manifest.sh"
+
+echo "== WryActivity (tao 0.37 entry points) =="
+"$HERE/wry_activity.sh"
 
 echo
 echo "All post-bundle patches applied. Next: edit build.gradle.kts (targetSdk /"

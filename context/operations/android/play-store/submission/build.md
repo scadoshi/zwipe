@@ -13,10 +13,12 @@ Produce a **signed release `.aab`** ready for the Play Console. To upload it, co
 5. **dx regenerates `MainActivity.kt` too** (bare `class MainActivity : WryActivity()`), which closes the app on the OS back gesture. Re-apply the back-navigation patch after `dx bundle` (step 1c) or back-swipe ships broken.
 6. **dx regenerates `AndroidManifest.xml` as well**, without `launchMode` and with a short `configChanges` list. Ship it unpatched and you reship the `ndk-context` crash (an explicit component start: a notification tap, the Play Store's **Open** button after an update, creates a second Activity in the live process and native init runs twice) *and* the bug where a system dark/light switch silently closes the app. **This one survived five releases because it was a checklist item nobody ran.**
 
-**→ Because of 1, 5 and 6, run one command after every `dx bundle`:**
+7. **dx's `WryActivity.kt` is written for tao 0.34, and the vendored tao is 0.37** (`vendor/tao/VENDOR.md`). Its native entry points have different names (`onCreate`, `onStart`, … instead of `create`, `start`, …), so the stock activity throws `UnsatisfiedLinkError` in `onCreate` and the app dies on launch on every device. Play's pre-launch lab reported it on 1.10.3 vc46 as a "16 KB page size" failure, which it is not. `wry_activity.sh` rewrites the file and adds R8 keep rules, since tao also reaches `getId()` through JNI and R8 stripped it (a second launch crash, `NoSuchMethodError`, found on the emulator). It goes away with the vendored tao.
+
+**→ Because of 1, 5, 6 and 7, run one command after every `dx bundle`:**
 
 ```bash
-zcripts/android/patch_bundle.sh     # launcher icons + back handler + manifest
+zcripts/android/patch_bundle.sh     # launcher icons + back handler + manifest + WryActivity
 ```
 
 Then do the Gradle edits (step 2) and repackage. **Add future patches to that script, not to this list**: the whole reason it exists is that a list of things to remember is a list of things to forget.
@@ -152,6 +154,8 @@ cd ~/Developer/zwipe
 
 ## 4a. Verify the patches actually shipped (30 seconds, do not skip)
 
+The lab in step 5 is now part of the standard flow while tao is vendored: the two 1.10.3 crashes (`UnsatisfiedLinkError`, then `NoSuchMethodError: getId`) were both launch crashes on every device that no grep could catch. Install the universal APK on the emulator with a throwaway keystore and watch it reach Login before signing with the real key.
+
 The post-bundle patches are invisible once the AAB is built, and a missing one fails *silently*: the release just quietly carries the old bug. Three greps against the signed artifact settle it:
 
 ```bash
@@ -162,9 +166,11 @@ strings /tmp/aabchk/base/dex/*.dex | grep -c "zwipe:back"    # back handler -> >
 strings /tmp/aabchk/base/dex/*.dex | grep -c '^killProcess$' # onDestroy kill -> 1
 strings /tmp/aabchk/base/manifest/AndroidManifest.xml \
   | grep -E "singleTask|uiMode"                              # manifest -> both
+strings /tmp/aabchk/base/dex/*.dex | grep -c "^onFirstActivityCreate$"  # tao 0.37 activity -> 1
+strings /tmp/aabchk/base/dex/*.dex | grep -c "^getId$"                  # kept from R8 -> >=1
 ```
 
-All four greps must hit. Anything missing means `patch_bundle.sh` didn't run, or ran before a later `dx bundle` wiped it.
+All six greps must hit. Anything missing means `patch_bundle.sh` didn't run, or ran before a later `dx bundle` wiped it.
 
 **Note on tooling:** an AAB's manifest is protobuf, not binary XML, so `aapt2 dump xmltree --file AndroidManifest.xml <aab>` prints nothing, that form only works on an APK. `strings` on the extracted `base/manifest/AndroidManifest.xml` is the reliable check for a bundle. (On an APK you can use `aapt2 dump xmltree --file AndroidManifest.xml app.apk` and expect `launchMode(0x0101001d)=2` plus a `configChanges` value including `uiMode`, e.g. `0x400017a4`.)
 

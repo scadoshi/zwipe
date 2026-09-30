@@ -17,9 +17,13 @@ tao gained scene support in 0.35.0 (`src/platform_impl/ios/scene.rs`, `TaoSceneD
 
 `dioxus-desktop` 0.7.10 depends on `tao ^0.34.0`, so cargo will not accept a 0.35+ patch: it resolves the patch against that requirement and silently ignores anything outside it. Labeling the crate 0.34.9 is what lets the patch apply. `dioxus-desktop` 0.7.10 and `wry` 0.53.5 both compile against tao 0.37's API unchanged, so nothing else had to move.
 
+## Android needs a matching activity
+
+tao 0.37 renamed its JNI entry points (`onCreate`, `onStart`, `onResume`, `onPause`, `onStop`, `onDestroy`, `onWindowFocusChanged`, `onLowMemory`, `onNewIntent`, `onFirstActivityCreate`) and reads the activity's `id`. dx 0.7.10 generates wry 0.53.5's `WryActivity.kt`, which calls the 0.34 names, so the app throws `UnsatisfiedLinkError` in `onCreate`. `zcripts/android/wry_activity.sh`, run by `patch_bundle.sh`, rewrites the activity after every `dx bundle`. Found by Play's pre-launch lab on 1.10.3 vc46, 2026-09-30.
+
 ## When to delete this
 
-The moment a released `dioxus-desktop` depends on tao 0.35 or newer. At that point: drop `[patch.crates-io]` from the workspace `Cargo.toml`, delete this directory, and keep the `Info.plist` key, which is needed regardless of tao version. `cargo tree -i tao` shows which version is actually in the graph; a patch that does not apply is a warning, not an error, so check rather than assume.
+The moment a released `dioxus-desktop` depends on tao 0.35 or newer. At that point: drop `[patch.crates-io]` from the workspace `Cargo.toml`, delete this directory and `zcripts/android/wry_activity.sh` (with its line in `patch_bundle.sh`), and keep the `Info.plist` key, which is needed regardless of tao version. `cargo tree -i tao` shows which version is actually in the graph; a patch that does not apply is a warning, not an error, so check rather than assume.
 
 ## Verifying a change here
 
