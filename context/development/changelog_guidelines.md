@@ -24,6 +24,10 @@ The changelog lives in `zwipe-core/src/content/changelog/mod.rs` and is rendered
 - `Commander select no longer offers melded cards like Brisela or Titania, Gaea Incarnate.` (examples)
 - `Oathbreaker signature spell select no longer offers Adventure creatures. The card is a creature, only its Adventure half is a spell, and the format's rules say it can't be your signature spell.` (a second sentence explaining the rule)
 
+## Store notes
+
+The "What's New" text in `operations/store-submissions/<version>/whats_new.md` is written from these entries and follows the same rules, compressed to Play's 500 characters.
+
 ## Mechanics
 
 New work goes under `UPCOMING`. At cut time the entry moves to the top of `RELEASES` with the App Store's "Ready for Distribution" date, and the version bumps per `versioning.md`.

@@ -24,7 +24,7 @@ Some older Play notes avoided these words on the theory that Apple required it. 
 
 ## Writing a new one
 
-Start from the `UPCOMING` block in `zwipe-core/src/content/changelog/mod.rs`, which is the in-app changelog and already in the right voice. Compress to fit 500, name the actual controls, and skip anything a user cannot see. Server-side work does not belong here.
+Start from the `UPCOMING` block in `zwipe-core/src/content/changelog/mod.rs`, which is the in-app changelog and already in the right voice. Compress to fit 500, name the actual controls, and skip anything a user cannot see. Server-side work does not belong here. The same rule as the changelog applies, [`../../development/changelog_guidelines.md`](../../development/changelog_guidelines.md): each line is a phrase, no period at the end, no examples. Releases through 1.10.2 predate the rule and stay as submitted.
 
 Then paste the same text into App Store Connect and Play Console. Field positions and the rest of the listing copy live in [`../ios/app-store/submission/form_fields.md`](../ios/app-store/submission/form_fields.md) and [`../android/play-store/submission/form_fields.md`](../android/play-store/submission/form_fields.md).
 
@@ -32,7 +32,7 @@ Then paste the same text into App Store Connect and Play Console. Field position
 
 | Version | Shape | Characters |
 |---------|-------|-----------|
-| [1.10.3](1.10.3/whats_new.md) | shared | 428 |
+| [1.10.3](1.10.3/whats_new.md) | shared | 423 |
 | [1.10.2](1.10.2/whats_new.md) | shared | 496 |
 | [1.10.1](1.10.1/whats_new.md) | per store | 331 |
 | [1.10.0](1.10.0/whats_new.md) | per store | 418 |
