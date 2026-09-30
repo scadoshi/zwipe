@@ -29,6 +29,10 @@ pub fn Panel(
     /// Cards and in-page panels leave this off.
     #[props(default = false)]
     title_h1: bool,
+    /// Rendered inside the heading after the title text, so it wraps with
+    /// the title. For chips that describe the panel, such as a project's tags.
+    #[props(default)]
+    title_trailing: Option<Element>,
     /// Optional status pill shown beside the eyebrow.
     #[props(default)]
     status: Option<BannerStatus>,
@@ -62,9 +66,9 @@ pub fn Panel(
                     }
                     if let Some(title) = title {
                         if title_h1 {
-                            h1 { class: "panel-title", "{title}" }
+                            h1 { class: "panel-title", "{title}" {title_trailing} }
                         } else {
-                            h3 { class: "panel-title", "{title}" }
+                            h3 { class: "panel-title", "{title}" {title_trailing} }
                         }
                     }
                 }
