@@ -26,26 +26,27 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.10.3",
-    date: "",
-    entries: &[
-        "Messages appear at the top left, over the title bar, clear of the buttons",
-        "Several messages at once stack; tap to open, tap again to close",
-        "Messages stay up longer",
-        "Save on the Themes, Exceptions, Deck tags, Oracle tags, Format, Filter and Printing sheets is greyed out until something changes; Back puts things back",
-        "Swiping back out of the Oracle tags picker drops your edits, the same as Back",
-        "Dark mode and Universes Beyond say what they switched to",
-        "Every deck form field and most Profile rows have their own ?",
-        "Shorter hints across the app",
-        "Commander select no longer offers cards that are only a legendary creature on their back face, or melded cards; a deck that already has one warns",
-        "Oathbreaker signature spell select no longer offers Adventure creatures; split cards still qualify",
-        "Chips that only tell you something are squarer; anything you can tap is rounder",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.10.3",
+        date: "Sep 30, 2026",
+        entries: &[
+            "Messages appear at the top left, over the title bar, clear of the buttons",
+            "Several messages at once stack; tap to open, tap again to close",
+            "Messages stay up longer",
+            "Save on the Themes, Exceptions, Deck tags, Oracle tags, Format, Filter and Printing sheets is greyed out until something changes; Back puts things back",
+            "Swiping back out of the Oracle tags picker drops your edits, the same as Back",
+            "Dark mode and Universes Beyond say what they switched to",
+            "Every deck form field and most Profile rows have their own ?",
+            "Shorter hints across the app",
+            "Commander select no longer offers cards that are only a legendary creature on their back face, or melded cards; a deck that already has one warns",
+            "Oathbreaker signature spell select no longer offers Adventure creatures; split cards still qualify",
+            "Chips that only tell you something are squarer; anything you can tap is rounder",
+        ],
+    },
     Release {
         version: "1.10.2",
         date: "Sep 22, 2026",
