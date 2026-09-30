@@ -1188,9 +1188,9 @@ pub fn View(deck_id: Uuid) -> Element {
                         // they're static chrome, not data).
                         div { class: "deck-cards-header",
                             div { class: "skeleton-bar skeleton-deck-list-title" }
-                            div { class: "skeleton-bar skeleton-chip skeleton-tag skeleton-chip-sm" }
-                            div { class: "skeleton-bar skeleton-chip skeleton-tag skeleton-chip-md" }
-                            div { class: "skeleton-bar skeleton-chip skeleton-tag skeleton-chip-sm" }
+                            div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                            div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                            div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
                         }
                     }
 

@@ -44,7 +44,6 @@ pub const RELEASES: &[Release] = &[
             "Shorter hints across the app",
             "Commander select no longer offers cards that are only a legendary creature on their back face, or melded cards; a deck that already has one warns",
             "Oathbreaker signature spell select no longer offers Adventure creatures; split cards still qualify",
-            "Chips that only tell you something are squarer; anything you can tap is rounder",
         ],
     },
     Release {

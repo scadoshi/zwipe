@@ -174,7 +174,7 @@ pub(crate) fn DeckListSkeleton() -> Element {
                                 div { class: "skeleton-bar skeleton-deck-list-art" }
                                 div { class: "skeleton-bar skeleton-deck-list-title" }
                                 for (j , size) in chips.iter().enumerate() {
-                                    div { key: "{j}", class: "skeleton-bar skeleton-chip skeleton-tag skeleton-chip-{size}" }
+                                    div { key: "{j}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
                                 }
                             }
                         }

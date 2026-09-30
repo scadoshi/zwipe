@@ -717,7 +717,7 @@ button {
     margin-left: 0.35rem;
     padding: 0;
     border: 1px solid var(--border-primary);
-    border-radius: 0.6rem;
+    border-radius: 0.5rem;
     background: var(--bg-primary);
     color: var(--text-muted);
     font-size: 0.75rem;
@@ -978,7 +978,7 @@ button {
 .stat-chip {
     display: inline-block;
     padding: 0.2rem 0.55rem;
-    border-radius: 0.25rem;
+    border-radius: 0.6rem;
     font-size: 0.75rem;
     /* Cap the pill at the row width and wrap long labels (e.g. "French vanilla
        equipment") onto a second line, centered — instead of overflowing the
@@ -1227,11 +1227,10 @@ button {
     margin-bottom: 1.5rem;
 }
 
-/* Stands in for the version filter chips, which are buttons. */
 .changelog-skeleton-chip {
     width: 2.75rem;
     height: 1.5rem;
-    border-radius: 0.6rem;
+    border-radius: 0.5rem;
 }
 
 .changelog-skeleton-row {
@@ -1482,11 +1481,10 @@ button {
     margin-bottom: 0.5rem;
 }
 
-/* The button radius: most skeleton chips stand in for pickers and filters. */
 .skeleton-chip {
     width: 3rem;
     height: 1.7rem;
-    border-radius: 0.6rem;
+    border-radius: 0.5rem;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -1494,12 +1492,6 @@ button {
 
 .skeleton-chip-active {
     border-color: var(--accent-primary);
-}
-
-/* Stands in for an information chip (a deck's tags, its identity row), which
-   is square. */
-.skeleton-tag {
-    border-radius: 0.25rem;
 }
 
 /* Home screen flavor text skeleton */
@@ -2164,7 +2156,7 @@ button {
     display: inline-block;
     padding: 0.15rem 0.5rem;
     border: 1px solid var(--border-primary);
-    border-radius: 0.6rem;
+    border-radius: 0.4rem;
     font-size: 0.7rem;
     color: var(--text-primary);
     cursor: pointer;
@@ -2204,7 +2196,7 @@ button {
     padding: 0.3rem 0.6rem;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-muted);
-    border-radius: 0.25rem;
+    border-radius: 0.6rem;
     font-size: 0.75rem;
     color: var(--text-muted);
     box-shadow: var(--shadow-sm);
@@ -2648,7 +2640,7 @@ button {
     padding: 0.2rem 0.45rem;
     margin-left: 0.25rem;
     border: 1px solid var(--color-error);
-    border-radius: 0.6rem;
+    border-radius: 0.4rem;
     /* Opaque fill so the page grid doesn't show through the button. */
     background-color: var(--bg-primary);
     transition: all 0.2s ease;
@@ -3131,7 +3123,7 @@ button {
     padding: 0.15rem 0.4rem;
     border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
     background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
-    border-radius: 0.25rem;
+    border-radius: 0.4rem;
     font-size: 0.7rem;
     color: var(--color-success);
     white-space: nowrap;
@@ -3143,7 +3135,7 @@ button {
     padding: 0.15rem 0.4rem;
     border: 1px solid color-mix(in srgb, var(--color-error) 35%, transparent);
     background-color: color-mix(in srgb, var(--color-error) 12%, transparent);
-    border-radius: 0.25rem;
+    border-radius: 0.4rem;
     font-size: 0.7rem;
     color: var(--color-error);
     white-space: nowrap;
@@ -3310,7 +3302,7 @@ button {
     display: inline-block;
     padding: 0.3rem 0.6rem;
     border: 1px solid var(--border-muted);
-    border-radius: 0.25rem;
+    border-radius: 0.6rem;
     font-size: 0.75rem;
     color: var(--text-muted);
     background-color: var(--bg-primary);
