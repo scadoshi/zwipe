@@ -215,6 +215,17 @@ body .reveal-pending.reveal-in {
         transform: translateY(-2px);
     }
 
+    /* The shared deck's color buttons are plain buttons, not Chips, so they
+       take the same lift and accent here. */
+    .sd-chip:not(.active):hover {
+        border-color: var(--accent-primary);
+        color: var(--accent-primary);
+    }
+
+    .sd-chip:hover {
+        transform: translateY(-2px);
+    }
+
     /* Changelog cards keep the panel hover on the web (the app's WebView
        never loads this sheet, so taps can't stick there). body-prefixed for
        the same cascade reason as the panel rules above. */
@@ -267,6 +278,7 @@ body .reveal-pending.reveal-in {
     body .changelog-card:hover,
     .hero-card:hover,
     .chip:hover,
+    .sd-chip:hover,
     a:hover .ext {
         transform: none;
     }
