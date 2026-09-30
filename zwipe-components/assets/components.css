@@ -1670,7 +1670,7 @@ a.nav-dropdown-item.active:visited {
     letter-spacing: 0.05em;
     padding: 0.05rem 0.4rem;
     border: 1px solid transparent;
-    border-radius: 0.25rem;
+    border-radius: 0.6rem;
     vertical-align: middle;
     text-transform: none;
 }
