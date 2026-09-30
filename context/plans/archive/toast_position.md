@@ -1,6 +1,6 @@
 # Move toasts to the top left
 
-**Status: SCOPED 2026-09-24, not started. Ships on a store build, so it rides whatever release is next rather than going out on its own.**
+**Status: DONE 2026-09-30 (`0093615c`, `20545886`). Rides 1.10.3.**
 
 Toasts currently sit bottom right, 7rem up from the bottom, which puts them directly over the `util-bar` on any screen that has one. That bar is where the buttons live, so a toast lands on the controls someone is most likely reaching for at the moment it fires. Cairn hit the same thing and moved to the top left; `~/Developer/cairn/assets/toast.css` carries the reasoning in a comment.
 
