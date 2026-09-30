@@ -2259,39 +2259,41 @@ footer {
     min-width: 0;
     max-width: 13rem;
     text-align: center;
-    /* Cards deal in from above: drop + settle with a slight tilt, while
-       flex-grow (animatable) eases the width share so a card arriving late
-       grows in and its siblings smoothly cede width instead of snapping
-       smaller. `backwards` keeps a card invisible through its stagger delay.
-       Ported from the app's .deck-featured-card so both entrances match. */
-    animation: sd-featured-deal 0.65s cubic-bezier(0.33, 1, 0.68, 1) backwards;
+    /* Cards deal in from above: drop + settle with a slight tilt, at the size
+       they keep. Width is not animated: every card is in the DOM from the
+       start, so growing them in sequence reflows the row on each one and
+       reads as a scramble rather than a deal. `backwards` keeps a card
+       invisible through its stagger delay. Same rule as the app's
+       .deck-featured-card so both entrances match. */
+    animation: sd-featured-deal 0.78s cubic-bezier(0.33, 1, 0.68, 1) backwards;
+    /* A card that arrives after the others is a layout change, not an
+       entrance, so its siblings ease their width share instead of snapping. */
+    transition: flex-grow 0.3s ease;
 }
 
 /* Staggered like a real deal: each card lands a beat after the one before. */
 .sd-cz-card:nth-child(2) {
-    animation-delay: 150ms;
+    animation-delay: 180ms;
 }
 .sd-cz-card:nth-child(3) {
-    animation-delay: 300ms;
+    animation-delay: 360ms;
 }
 .sd-cz-card:nth-child(4) {
-    animation-delay: 450ms;
+    animation-delay: 540ms;
 }
 .sd-cz-card:nth-child(5) {
-    animation-delay: 600ms;
+    animation-delay: 720ms;
 }
 .sd-cz-card:nth-child(6) {
-    animation-delay: 750ms;
+    animation-delay: 900ms;
 }
 
 @keyframes sd-featured-deal {
     from {
-        flex-grow: 0.0001;
         opacity: 0;
         transform: translateY(-1.5rem) rotate(-3deg);
     }
     to {
-        flex-grow: 1;
         opacity: 1;
         transform: translateY(0) rotate(0deg);
     }
@@ -2310,6 +2312,9 @@ footer {
    base regardless of stylesheet order. */
 .sd-cz-image {
     width: 100%;
+    /* Reserves the card's footprint before the image loads, so the row deals
+       at its final size instead of collapsing and popping back. */
+    aspect-ratio: 5 / 7;
 }
 
 .sd-cz-card .sd-cz-image img {
