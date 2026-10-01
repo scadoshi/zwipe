@@ -454,13 +454,20 @@ body .reveal-pending.reveal-in {
     margin: -0.25rem 0 1rem;
 }
 
-/* The crate diagram sits in a panel-shaped frame above the crate cards. */
+/* The crate diagram sits in a panel-shaped frame above the crate cards, at
+   four fifths of the frame so it reads as a figure rather than filling it.
+   body-prefixed to outrank the shared sheet's own .diagram width. */
 .arch-diagram {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.6rem;
     padding: 1rem;
     margin-bottom: 1.5rem;
+}
+
+body .arch-diagram .diagram {
+    width: 80%;
+    margin-inline: auto;
 }
 
 /* Tech chips inside an architecture panel, above the prose. */
