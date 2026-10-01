@@ -454,6 +454,15 @@ body .reveal-pending.reveal-in {
     margin: -0.25rem 0 1rem;
 }
 
+/* The crate diagram sits in a panel-shaped frame above the crate cards. */
+.arch-diagram {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
 /* Tech chips inside an architecture panel, above the prose. */
 .arch-tags {
     display: flex;
