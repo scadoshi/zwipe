@@ -1839,6 +1839,7 @@ button {
     text-align: left;
     padding: 1rem;
     margin: 1rem;
+    color: var(--logo);
     animation: logo-enter 0.5s ease-out backwards;
 }
 

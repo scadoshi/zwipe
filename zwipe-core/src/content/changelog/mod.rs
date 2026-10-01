@@ -31,6 +31,7 @@ pub const UPCOMING: &[Release] = &[Release {
     date: "",
     entries: &[
         "Deck cards: the commander and MVP row waits for every card image, then opens and deals the cards in",
+        "Light themes draw the logo in the theme's primary accent",
     ],
 }];
 

@@ -12,6 +12,18 @@
 
 /* ---- Chip (zwipe_components::Chip) ---- */
 
+/* The ASCII logo's color: the text color on a dark theme, the primary accent
+   on a light one, where the block letters in plain text look like a smudge.
+   Set on the themed element so every logo under it follows. */
+:root,
+[class*="theme-"][class*="-dark"] {
+    --logo: var(--text-primary);
+}
+
+[class*="theme-"][class*="-light"] {
+    --logo: var(--accent-primary);
+}
+
 .chip {
     display: inline-block;
     padding: 0.3rem 0.6rem;

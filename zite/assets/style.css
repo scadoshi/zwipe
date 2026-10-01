@@ -546,6 +546,7 @@ code {
     white-space: pre;
     text-align: left;
     display: inline-block;
+    color: var(--logo);
     animation: logo-enter 0.6s ease-out backwards;
 }
 
