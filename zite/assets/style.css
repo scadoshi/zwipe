@@ -2259,6 +2259,12 @@ footer {
     grid-template-rows: 1fr;
 }
 
+/* The clip is only for the height transition. Once the row is open the cards
+   drop in from above its edge and must not be cut off by it. */
+.sd-featured.ready .sd-featured-row {
+    overflow: visible;
+}
+
 /* nowrap with the cards sharing the width so they shrink together instead of
    wrapping. */
 .sd-featured-row {
@@ -2291,25 +2297,25 @@ footer {
    Same motion as the app's .deck-featured-card. */
 .sd-featured.ready .sd-cz-card {
     animation: sd-featured-deal 0.78s cubic-bezier(0.33, 1, 0.68, 1) both;
-    /* Starts as the height transition above settles. */
-    animation-delay: 0.6s;
+    /* Starts once the height transition above has finished. */
+    animation-delay: 0.8s;
 }
 
 /* Staggered like a real deal: each card lands a beat after the one before. */
 .sd-featured.ready .sd-cz-card:nth-child(2) {
-    animation-delay: calc(0.6s + 180ms);
+    animation-delay: calc(0.8s + 180ms);
 }
 .sd-featured.ready .sd-cz-card:nth-child(3) {
-    animation-delay: calc(0.6s + 360ms);
+    animation-delay: calc(0.8s + 360ms);
 }
 .sd-featured.ready .sd-cz-card:nth-child(4) {
-    animation-delay: calc(0.6s + 540ms);
+    animation-delay: calc(0.8s + 540ms);
 }
 .sd-featured.ready .sd-cz-card:nth-child(5) {
-    animation-delay: calc(0.6s + 720ms);
+    animation-delay: calc(0.8s + 720ms);
 }
 .sd-featured.ready .sd-cz-card:nth-child(6) {
-    animation-delay: calc(0.6s + 900ms);
+    animation-delay: calc(0.8s + 900ms);
 }
 
 @keyframes sd-featured-deal {
