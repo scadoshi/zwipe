@@ -126,7 +126,7 @@ Backend (`zerver/.env`): `DATABASE_URL`, `JWT_SECRET`, `BIND_ADDRESS`, `ALLOWED_
 
 ## Changelog Entries
 
-One phrase per entry saying what changed: no period at the end, no examples, no second sentence explaining why. The full rule is `development/changelog_guidelines.md`, and tests in `zwipe-core/src/content/changelog/mod.rs` fail the build on a period or an example.
+One phrase per entry saying what changed: no period at the end, no examples, no second sentence explaining why. The full rule is `development/changelog_guidelines.md`, and tests in `zwipe-core/src/content/changelog/mod.rs` fail the build on a period or an example. The store text, the Discord post and the reviewer notes are written from those entries per `development/release_notes_guidelines.md`.
 
 ## Comments
 
@@ -147,7 +147,7 @@ context/
 ├── product/                — what we're building (prd, monetization, premium/ feature catalog)
 ├── architecture/           — why things are built the way they are
 ├── operations/             — how to build, deploy & ship (infrastructure/, ios/, android/)
-├── development/            — coding standards (commits, comments, changelog, docs, newtypes, dioxus)
+├── development/            — coding standards (commits, comments, changelog, release notes, docs, newtypes, dioxus)
 ├── plans/                  — specs for in-flight work (archive/ holds shipped and abandoned ones)
 ├── marketing/              — promo art templates (html) + plans/ video scripts
 ├── progress/               — what's next (todo.md, backlog.md, feature_requests.md)
