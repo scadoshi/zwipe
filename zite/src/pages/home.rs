@@ -3,7 +3,7 @@ use crate::{
     components::{FeaturedFlavor, PageMeta, StatsStrip, dismiss_flavor_overlay},
 };
 use dioxus::prelude::*;
-use zwipe_components::{Banner, BannerStatus, FlippableCardImage, Panel};
+use zwipe_components::{Banner, FlippableCardImage, Panel};
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
@@ -220,10 +220,7 @@ pub fn Home() -> Element {
         Nav {}
         div { class: "banner-stack",
             Banner {
-                category: "Release",
-                status: BannerStatus::Done,
-                status_label: "New",
-                "Version {latest} just shipped. "
+                "{latest} is out. "
                 Link { to: Route::Changelog {}, "See what's new" }
             }
         }

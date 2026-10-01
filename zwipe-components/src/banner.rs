@@ -59,15 +59,15 @@ impl BannerState {
 
 /// A dismissible announcement toast.
 ///
-/// `category` is the eyebrow label, `status` the colored pill (`status_label`
-/// overrides its text). The message and its call-to-action link go in
-/// `children`. The `.banner-progress` bar auto-dismisses after
+/// The message and its call-to-action link go in `children`. A header row with
+/// an eyebrow label and a colored pill appears only when `category` or `status`
+/// is given; `status_label` overrides the pill's text. The `.banner-progress` bar auto-dismisses after
 /// `auto_dismiss_secs` (pauses on hover); the `✕` button dismisses immediately.
 /// Wrap one or more in a `div.banner-stack`.
 #[component]
 pub fn Banner(
-    category: String,
-    status: BannerStatus,
+    #[props(default)] category: Option<String>,
+    #[props(default)] status: Option<BannerStatus>,
     #[props(default)] status_label: Option<String>,
     #[props(default = 10)] auto_dismiss_secs: u32,
     children: Element,
@@ -78,7 +78,10 @@ pub fn Banner(
     if state() == BannerState::Dismissed {
         return rsx! {};
     }
-    let label = status_label.unwrap_or_else(|| status.default_label().to_string());
+    let pill = status.map(|status| {
+        let label = status_label.unwrap_or_else(|| status.default_label().to_string());
+        (status.class(), label)
+    });
 
     rsx! {
         div {
@@ -88,9 +91,15 @@ pub fn Banner(
                     state.set(BannerState::Dismissed);
                 }
             },
-            div { class: "banner-header",
-                span { class: "banner-category", "{category}" }
-                span { class: status.class(), "{label}" }
+            if category.is_some() || pill.is_some() {
+                div { class: "banner-header",
+                    if let Some(category) = category {
+                        span { class: "banner-category", "{category}" }
+                    }
+                    if let Some((class, label)) = pill {
+                        span { class: "{class}", "{label}" }
+                    }
+                }
             }
             span { class: "banner-text", {children} }
             button {
