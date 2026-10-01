@@ -3666,7 +3666,7 @@ button {
 .deck-featured {
     display: grid;
     grid-template-rows: 0fr;
-    transition: grid-template-rows 0.45s ease;
+    transition: grid-template-rows 0.8s cubic-bezier(0.33, 1, 0.68, 1);
     /* Breathing room before the group-by controls below. */
     margin-bottom: 1rem;
 }
@@ -3680,6 +3680,8 @@ button {
     display: flex;
     flex-wrap: nowrap;
     justify-content: center;
+    /* Layout inside the row stays inside it while the height moves. */
+    contain: layout;
     gap: 0.5rem;
     min-height: 0;
     overflow: hidden;
@@ -3703,25 +3705,25 @@ button {
    deal. `both` holds a card invisible through its delay and visible after. */
 .deck-featured.ready .deck-featured-card {
     animation: deck-featured-deal 0.78s cubic-bezier(0.33, 1, 0.68, 1) both;
-    /* Starts as the height transition above ends. */
-    animation-delay: 0.4s;
+    /* Starts as the height transition above settles. */
+    animation-delay: 0.6s;
 }
 
 /* Staggered like a real deal: each card lands a beat after the one before. */
 .deck-featured.ready .deck-featured-card:nth-child(2) {
-    animation-delay: calc(0.4s + 180ms);
+    animation-delay: calc(0.6s + 180ms);
 }
 .deck-featured.ready .deck-featured-card:nth-child(3) {
-    animation-delay: calc(0.4s + 360ms);
+    animation-delay: calc(0.6s + 360ms);
 }
 .deck-featured.ready .deck-featured-card:nth-child(4) {
-    animation-delay: calc(0.4s + 540ms);
+    animation-delay: calc(0.6s + 540ms);
 }
 .deck-featured.ready .deck-featured-card:nth-child(5) {
-    animation-delay: calc(0.4s + 720ms);
+    animation-delay: calc(0.6s + 720ms);
 }
 .deck-featured.ready .deck-featured-card:nth-child(6) {
-    animation-delay: calc(0.4s + 900ms);
+    animation-delay: calc(0.6s + 900ms);
 }
 
 @keyframes deck-featured-deal {
