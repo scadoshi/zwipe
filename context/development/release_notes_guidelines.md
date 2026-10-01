@@ -1,6 +1,6 @@
 # Release Notes Guidelines
 
-A release has three pieces of outward text, all written from the version's block in `zwipe-core/src/content/changelog/mod.rs` after it moves to `RELEASES`. None of them says anything the changelog does not.
+A release has two pieces of outward text, both written from the version's block in `zwipe-core/src/content/changelog/mod.rs` after it moves to `RELEASES`. Neither says anything the changelog does not.
 
 ## The store text
 
@@ -21,10 +21,6 @@ One message in the release channel, the day the build is submitted.
 - Then the changelog entries as bullets, verbatim from `RELEASES`, not the store compression.
 - One closing line in Scott's voice. No roadmap, no apologies, no "stay tuned".
 - Edited, not reposted, when the stores approve.
-
-## App Store review notes
-
-The reviewer's box, when a release needs one: what changed that a reviewer could trip on (a new permission, a changed login flow, a scene lifecycle fix) and the test account. Two sentences. Nothing when there is nothing to say.
 
 ## What never goes in any of them
 
