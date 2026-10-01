@@ -1202,6 +1202,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     // its skeleton.
                     FeaturedCards {
                         cards: featured_cards,
+                        loaded: deck_loaded(),
                         on_tap: move |card: Card| {
                             let mut preview = preview_card;
                             preview.set(Some((card.scryfall_data, 0)));
