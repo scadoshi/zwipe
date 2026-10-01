@@ -1977,6 +1977,4 @@ a.nav-dropdown-item.active:visited {
 .diagram-group text {
     fill: var(--text-muted);
     font-size: 11px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
 }
