@@ -21,6 +21,12 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-01: the featured row waits for its images
+
+The commander and MVP row in the app and on the share page used to deal its cards in as soon as the data existed, so the cards dropped in as empty frames and the images faded in afterward; in the app the commander and the MVPs also landed at different times and the row reflowed once. Now `FlippableCardImage` has an `on_load` prop (fires on the image's load or error, at once for a URL already seen this session or a card with no art), and the row holds zero height until every card has reported or 4 s pass, opens over 0.8 s on an ease-out curve, and deals once it is open. The open state latches, so starring a card later joins the row without a re-deal. Same CSS shape in both places: the section is a `grid-template-rows` 0fr to 1fr reveal, the inner row is the old flex row, clipping only while closed. In the changelog under `UPCOMING` as 1.10.4; the release device bundle is built and on the owner's phone.
+
+Smaller: `Banner` renders its eyebrow and status pill only when a caller passes them, and neither zite nor the portfolio does now (zite's reads "1.10.3 is out. See what's new"). The share page's color filter buttons hover like the chips beside them. Every active repo got `comment_guidelines.md` (this one at [`development/comment_guidelines.md`](development/comment_guidelines.md)): present tense, no history, no restating the code.
+
 ## 2026-09-30: 1.10.3 built, and the chips got a rule
 
 1.10.3 is submitted to both stores (2026-09-30), Android rolled out the same day as versionCode 47: iOS build 84 (`Zwipe.ipa`; 82 was delivered before the chip revert, 83 submitted then pulled for the status pill) and Android versionCode 47 (`zwipe-1.10.3.aab`; 45 and 46 were pulled). Play's lab flagged 45 and 46 as "may not support 16 KB page sizes"; the real cause was a launch crash on every device, since dx generates a `WryActivity.kt` for tao 0.34 and the vendored tao is 0.37 (different JNI names), and once that was fixed R8 stripped `getId()`, which tao reaches through JNI. Both are fixed by `zcripts/android/wry_activity.sh`, run from `patch_bundle.sh`, and verified on the emulator from the release bundle, both signed and verified, notes in [`operations/store-submissions/1.10.3/whats_new.md`](operations/store-submissions/1.10.3/whats_new.md) at 477 characters.
