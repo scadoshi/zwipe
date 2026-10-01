@@ -220,7 +220,7 @@ pub fn Home() -> Element {
         Nav {}
         div { class: "banner-stack",
             Banner {
-                "{latest} is out. "
+                "{latest} just dropped. "
                 Link { to: Route::Changelog {}, "See what's new" }
             }
         }
