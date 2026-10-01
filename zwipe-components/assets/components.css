@@ -1887,3 +1887,84 @@ a.nav-dropdown-item.active:visited {
     font-family: "JetBrains Mono", monospace;
     transition: all 0.2s ease;
 }
+
+/* ==============================
+   diagram: boxes and arrows in an inline svg
+   ============================== */
+
+.diagram {
+    display: block;
+    width: 100%;
+    height: auto;
+    font-family: inherit;
+}
+
+.diagram-node rect {
+    fill: color-mix(in srgb, var(--bg-primary), #000 10%);
+    stroke-width: 1.5;
+}
+
+.diagram-muted rect {
+    stroke: var(--text-muted);
+}
+
+.diagram-primary rect {
+    stroke: var(--accent-primary);
+}
+
+.diagram-secondary rect {
+    stroke: var(--accent-secondary);
+}
+
+.diagram-tertiary rect {
+    stroke: var(--accent-tertiary);
+}
+
+.diagram-success rect {
+    stroke: var(--color-success);
+}
+
+.diagram-title {
+    fill: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.diagram-sub,
+.diagram-arrow text {
+    fill: var(--text-muted);
+    font-size: 11px;
+}
+
+/* A halo in the page's color so a label stays readable where it crosses its
+   own arrow. */
+.diagram-arrow text {
+    paint-order: stroke;
+    stroke: var(--bg-primary);
+    stroke-width: 5px;
+    stroke-linejoin: round;
+}
+
+.diagram-arrow line {
+    stroke: var(--text-muted);
+    stroke-width: 1.5;
+}
+
+#diagram-head path {
+    fill: var(--text-muted);
+}
+
+/* A dashed frame around boxes that belong together. */
+.diagram-group rect {
+    fill: none;
+    stroke: var(--border-primary);
+    stroke-width: 1;
+    stroke-dasharray: 4 4;
+}
+
+.diagram-group text {
+    fill: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
