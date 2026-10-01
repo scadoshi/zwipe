@@ -59,8 +59,21 @@ pub fn FlippableCardImage(
     /// side (e.g. open its image overlay on the face being viewed).
     #[props(default)]
     on_face_change: Option<EventHandler<usize>>,
+    /// Fires once, when the first face shown has its bytes (or failed, or has
+    /// no art), so a host can hold an entrance until every image is real.
+    #[props(default)]
+    on_load: Option<EventHandler<()>>,
 ) -> Element {
     let mut face_idx: Signal<usize> = use_signal(move || initial_face);
+    let mut announced: Signal<bool> = use_signal(|| false);
+    let mut announce = move || {
+        if !announced() {
+            announced.set(true);
+            if let Some(handler) = on_load {
+                handler.call(());
+            }
+        }
+    };
     // Bumped by the img's load event so the seen-URL check below re-runs.
     let mut load_nudge: Signal<u32> = use_signal(|| 0);
     let _ = load_nudge();
@@ -123,6 +136,14 @@ pub fn FlippableCardImage(
             .unwrap_or(false)
     });
 
+    // A cached image or a no-art card is settled before any load event.
+    let settled = already_loaded || is_no_image;
+    use_effect(use_reactive!(|settled| {
+        if settled {
+            announce();
+        }
+    }));
+
     let flippable_class = if flippable && total > 1 {
         " flippable"
     } else {
@@ -146,7 +167,9 @@ pub fn FlippableCardImage(
                                 seen.insert(url.clone());
                             }
                             load_nudge += 1;
+                            announce();
                         },
+                        onerror: move |_| announce(),
                     }
                 } else {
                     // No art: draw a card-shaped text proxy (name, mana, type,
