@@ -2244,14 +2244,30 @@ footer {
     );
 }
 
-/* Featured row: command zone + MVPs on one line, each labeled. nowrap with the
-   cards sharing the width so they shrink together instead of wrapping. */
+/* Featured row: command zone + MVPs on one line, each labeled. The section
+   holds zero height until every card's image has loaded (`.ready`), then
+   opens to the row's height, and the cards deal in after it. 0fr to 1fr
+   animates to whatever height the card count gives without measuring. */
 .sd-featured {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.45s ease;
+    margin-bottom: 1.75rem;
+}
+
+.sd-featured.ready {
+    grid-template-rows: 1fr;
+}
+
+/* nowrap with the cards sharing the width so they shrink together instead of
+   wrapping. */
+.sd-featured-row {
     display: flex;
     flex-wrap: nowrap;
     justify-content: center;
     gap: 1.25rem;
-    margin-bottom: 1.75rem;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .sd-cz-card {
@@ -2259,33 +2275,39 @@ footer {
     min-width: 0;
     max-width: 13rem;
     text-align: center;
-    /* Cards deal in from above: drop + settle with a slight tilt, at the size
-       they keep. Width is not animated: every card is in the DOM from the
-       start, so growing them in sequence reflows the row on each one and
-       reads as a scramble rather than a deal. `backwards` keeps a card
-       invisible through its stagger delay. Same rule as the app's
-       .deck-featured-card so both entrances match. */
-    animation: sd-featured-deal 0.78s cubic-bezier(0.33, 1, 0.68, 1) backwards;
+    /* Invisible until the row is ready; the deal below brings it in. */
+    opacity: 0;
     /* A card that arrives after the others is a layout change, not an
        entrance, so its siblings ease their width share instead of snapping. */
     transition: flex-grow 0.3s ease;
 }
 
+/* Cards deal in from above once the row has opened: drop + settle with a
+   slight tilt, at the size they keep. Width is not animated: growing cards in
+   sequence reflows the row on each one and reads as a scramble rather than a
+   deal. `both` holds a card invisible through its delay and visible after.
+   Same motion as the app's .deck-featured-card. */
+.sd-featured.ready .sd-cz-card {
+    animation: sd-featured-deal 0.78s cubic-bezier(0.33, 1, 0.68, 1) both;
+    /* Starts as the height transition above ends. */
+    animation-delay: 0.4s;
+}
+
 /* Staggered like a real deal: each card lands a beat after the one before. */
-.sd-cz-card:nth-child(2) {
-    animation-delay: 180ms;
+.sd-featured.ready .sd-cz-card:nth-child(2) {
+    animation-delay: calc(0.4s + 180ms);
 }
-.sd-cz-card:nth-child(3) {
-    animation-delay: 360ms;
+.sd-featured.ready .sd-cz-card:nth-child(3) {
+    animation-delay: calc(0.4s + 360ms);
 }
-.sd-cz-card:nth-child(4) {
-    animation-delay: 540ms;
+.sd-featured.ready .sd-cz-card:nth-child(4) {
+    animation-delay: calc(0.4s + 540ms);
 }
-.sd-cz-card:nth-child(5) {
-    animation-delay: 720ms;
+.sd-featured.ready .sd-cz-card:nth-child(5) {
+    animation-delay: calc(0.4s + 720ms);
 }
-.sd-cz-card:nth-child(6) {
-    animation-delay: 900ms;
+.sd-featured.ready .sd-cz-card:nth-child(6) {
+    animation-delay: calc(0.4s + 900ms);
 }
 
 @keyframes sd-featured-deal {
@@ -2299,10 +2321,16 @@ footer {
     }
 }
 
-/* Reduced motion: cards are simply there, no deal. The page already honors
-   this for the testimonials marquee. */
+/* Reduced motion: the row is open and the cards are simply there, no deal.
+   The page already honors this for the testimonials marquee. */
 @media (prefers-reduced-motion: reduce) {
-    .sd-cz-card {
+    .sd-featured {
+        grid-template-rows: 1fr;
+        transition: none;
+    }
+    .sd-cz-card,
+    .sd-featured.ready .sd-cz-card {
+        opacity: 1;
         animation: none;
     }
 }

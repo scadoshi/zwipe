@@ -137,10 +137,17 @@ fn CommandZoneCard(
     card: Card,
     role: String,
     mut overlay_card: Signal<Option<(ScryfallData, usize)>>,
+    /// Fires once the card's image has its bytes, or at once when it has none.
+    on_load: EventHandler<()>,
 ) -> Element {
     let name = card.scryfall_data.name.clone();
     let sd = card.scryfall_data;
     let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
+    use_effect(use_reactive!(|has_image| {
+        if !has_image {
+            on_load.call(());
+        }
+    }));
     // Which face the flip control is showing, so the overlay opens on it.
     let mut current_face = use_signal(|| 0usize);
     let sd_overlay = sd.clone();
@@ -162,6 +169,7 @@ fn CommandZoneCard(
                         class: "sd-cz-image".to_string(),
                         draggable: false,
                         on_face_change: move |face: usize| current_face.set(face),
+                        on_load: move |_| on_load.call(()),
                     }
                 }
             }
@@ -439,6 +447,14 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let mut selected_colors = use_signal(Vec::<Color>::new);
     let mut show_command_zone = use_signal(|| true);
     let mut show_tokens = use_signal(|| false);
+    // Featured cards with their image bytes in hand. The row stays collapsed
+    // until every card reports in, or 4 s pass, then opens and deals.
+    let mut featured_loaded = use_signal(|| 0usize);
+    let mut featured_timed_out = use_signal(|| false);
+    use_future(move || async move {
+        sleep_ms(4000).await;
+        featured_timed_out.set(true);
+    });
     // Budget panel currency, mirroring the app's Budget section chips.
     let mut selected_currency = use_signal(|| "usd");
     // Collapsed sections, keyed by header label, mirroring the app's
@@ -513,6 +529,23 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         .collect();
     mvp_entries.sort_by_key(|e| e.deck_card.mvp_at);
     let mvp_cards: Vec<Card> = mvp_entries.iter().map(|e| e.card.clone()).collect();
+    let featured_total = [
+        deck.commander.is_some(),
+        deck.partner_commander.is_some(),
+        deck.background.is_some(),
+        deck.signature_spell.is_some(),
+    ]
+    .iter()
+    .filter(|present| **present)
+    .count()
+        + mvp_cards.len();
+    let featured_ready = featured_timed_out() || featured_loaded() >= featured_total;
+    let featured_class = if featured_ready {
+        "sd-featured ready"
+    } else {
+        "sd-featured"
+    };
+    let on_featured_load = move |_| featured_loaded += 1;
     // A format with a signature spell is Oathbreaker: the "commander" is the
     // oathbreaker planeswalker.
     let is_oathbreaker = deck
@@ -972,25 +1005,28 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             if deck.commander.is_some() || deck.partner_commander.is_some()
                 || deck.background.is_some() || deck.signature_spell.is_some()
                 || !mvp_cards.is_empty() {
-                section { class: "sd-featured",
-                    if let Some(card) = deck.commander.clone() {
-                        CommandZoneCard {
-                            card,
-                            role: if is_oathbreaker { "Oathbreaker".to_string() } else { "Commander".to_string() },
-                            overlay_card,
+                section { class: "{featured_class}",
+                    div { class: "sd-featured-row",
+                        if let Some(card) = deck.commander.clone() {
+                            CommandZoneCard {
+                                card,
+                                role: if is_oathbreaker { "Oathbreaker".to_string() } else { "Commander".to_string() },
+                                overlay_card,
+                                on_load: on_featured_load,
+                            }
                         }
-                    }
-                    if let Some(card) = deck.partner_commander.clone() {
-                        CommandZoneCard { card, role: "Partner".to_string(), overlay_card }
-                    }
-                    if let Some(card) = deck.background.clone() {
-                        CommandZoneCard { card, role: "Background".to_string(), overlay_card }
-                    }
-                    if let Some(card) = deck.signature_spell.clone() {
-                        CommandZoneCard { card, role: "Signature spell".to_string(), overlay_card }
-                    }
-                    for card in mvp_cards.iter().cloned() {
-                        CommandZoneCard { card, role: "MVP".to_string(), overlay_card }
+                        if let Some(card) = deck.partner_commander.clone() {
+                            CommandZoneCard { card, role: "Partner".to_string(), overlay_card, on_load: on_featured_load }
+                        }
+                        if let Some(card) = deck.background.clone() {
+                            CommandZoneCard { card, role: "Background".to_string(), overlay_card, on_load: on_featured_load }
+                        }
+                        if let Some(card) = deck.signature_spell.clone() {
+                            CommandZoneCard { card, role: "Signature spell".to_string(), overlay_card, on_load: on_featured_load }
+                        }
+                        for card in mvp_cards.iter().cloned() {
+                            CommandZoneCard { card, role: "MVP".to_string(), overlay_card, on_load: on_featured_load }
+                        }
                     }
                 }
             }
