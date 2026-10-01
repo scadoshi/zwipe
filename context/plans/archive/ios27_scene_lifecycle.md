@@ -1,6 +1,6 @@
 # iOS 27 requires the UIScene lifecycle
 
-**Status: SUBMITTED 2026-09-23 as build 81, awaiting review.**
+**Status: DONE. The fix shipped in 1.10.3 build 84, approved 2026-09-30; build 81 was superseded in review and 1.10.2 never reached the iOS store.**
 
 Apple rejected 1.10.2 build 80 on 2026-09-23 under Guideline 2.1(a). The app crashed on launch on their review devices, an iPad Air 11-inch (M3) and an iPhone 17 Pro, both on 27.0. Submission ID `6c408160-5c4a-4ee7-bde4-3d282166fd73`.
 

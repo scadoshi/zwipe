@@ -1,6 +1,6 @@
 # Move the synergy-warming flag out of the response header
 
-**Status: STEP 1 DONE 2026-09-22, riding 1.10.2. Steps 2-4 wait on that release reaching both stores.**
+**Status: STEP 1 DONE 2026-09-22, riding 1.10.2. Both stores serve 1.10.3 as of 2026-09-30, so the gate for step 2 is met; the floor is deliberately not raised yet. Checked 2026-10-01: 27 of 45 live users were on 1.10.1 and active that day, so the recheck in `progress/todo.md` decides when.**
 
 The client now decodes either shape, so the server is free to move whenever the floor allows it. Nothing on the wire changed: the request is untouched and the server still answers a bare array plus the header.
 

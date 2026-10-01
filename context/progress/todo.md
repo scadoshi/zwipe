@@ -10,7 +10,13 @@ Only open, actionable items live here. When something ships, its outcome moves t
 
 - [x] ~~**Move toasts to the top left.**~~ SHIPPED 2026-09-30 (rides 1.10.3, `0093615c` and `20545886`): top left over the title bar, several collapse into a stack, longer hold. Plan archived at [`../plans/archive/toast_position.md`](../plans/archive/toast_position.md). Was scoped 2026-09-24. They sit bottom right at 7rem today, which is on top of the `util-bar` buttons on every screen that has one. Almost entirely CSS in `zwiper/assets/toast.css`: no Rust change and none of the 152 call sites move. Ships on a store build, and the one real decision (top left covers the header's corner button on 23 screens) wants a device look before it goes.
 
-- [ ] **Wait on Apple's review of iOS 1.10.2 build 81.** Build 80 was rejected 2026-09-23 for the iOS 27 UIScene trap; 81 carries the fix and was submitted the same day. On approval: record LIVE in [`../README.md`](../README.md), archive [`../plans/cut_1_10_2.md`](../plans/cut_1_10_2.md), and raise `MIN_CLIENT_VERSION` to 1.10.2, which unblocks steps 2 to 4 of [`../plans/synergy_flag_into_body.md`](../plans/synergy_flag_into_body.md).
+- [ ] **Recheck the client-version floor on or after 2026-10-08, then raise it.** 1.10.3 is live on both stores (iOS build 84 approved 2026-09-30, Android vc47), which is the gate for steps 2 to 4 of [`../plans/synergy_flag_into_body.md`](../plans/synergy_flag_into_body.md). Checked 2026-10-01: 27 of 45 live users were on 1.10.1 and active that day, so raising `MIN_CLIENT_VERSION` to 1.10.2 waited. Rerun the count (one row per user at their newest live token; the `-` row is zite and does not count):
+
+  ```
+  ssh zerver 'set -a; . ~/zwipe/.env; set +a; psql "$DATABASE_URL" -c "WITH latest AS (SELECT DISTINCT ON (user_id) user_id, client_version, created_at FROM refresh_tokens WHERE NOT revoked AND expires_at > NOW() ORDER BY user_id, created_at DESC) SELECT coalesce(client_version, chr(45)) AS v, count(*) AS users, max(created_at)::date AS last_seen FROM latest GROUP BY 1 ORDER BY 1"'
+  ```
+
+  When the below-1.10.2 count is single digits: set `MIN_CLIENT_VERSION=1.10.2` in `~/zwipe/.env` on zerver, restart `zerver`, confirm `/api/client/min-version`, then deploy step 3 (the handler returns `HttpDeckCardSearch` and drops the header). Step 4 rides the next app cut.
 
 - [ ] **Ship the parked `zwipe-1.10.2-44.aab` with the next real Android change.** Built and signed 2026-09-23 but deliberately not submitted: its only difference from the live build is the vendored tao bump, which does nothing on Android, and R8 minification means an untested release build over a working one buys nothing. Needs a device pass when it does go.
 
