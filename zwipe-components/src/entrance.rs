@@ -24,12 +24,13 @@ fn use_replay() -> Signal<u32> {
 }
 
 /// Whether the viewer has asked for less motion. Asked of the page, so it
-/// holds in the app's WebView too; `false` when nothing answers.
+/// holds in the app's WebView too, through the `dioxus.send` channel the app
+/// reads its other measurements over; `false` when nothing answers.
 async fn reduced_motion() -> bool {
-    document::eval("return matchMedia('(prefers-reduced-motion: reduce)').matches;")
-        .join::<bool>()
-        .await
-        .unwrap_or(false)
+    let mut eval = document::eval(
+        "dioxus.send(window.matchMedia('(prefers-reduced-motion: reduce)').matches);",
+    );
+    eval.recv::<bool>().await.unwrap_or(false)
 }
 
 /// Browser `setTimeout` as a future on the web, tokio's timer elsewhere.
