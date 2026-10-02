@@ -19,7 +19,12 @@
              page shows its settled, prerendered self. -->
         <script>
             (function () {
-                document.documentElement.classList.add("js");
+                var root = document.documentElement;
+                root.classList.add("js");
+                // The app marks hydrated itself; if the wasm is slow, blocked
+                // or broken, this does it instead, so the hero is never held
+                // for longer than three seconds.
+                setTimeout(function () { root.classList.add("hydrated"); }, 3000);
                 try {
                     var stored = JSON.parse(localStorage.getItem("zwipe.theme"));
                     if (stored && stored.name) {

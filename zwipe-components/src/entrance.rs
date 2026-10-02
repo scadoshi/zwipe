@@ -7,6 +7,7 @@
 //!
 //! Everything is prerendered settled, so the page reads right before any
 //! script runs, and the motion only ever starts from what is already there.
+//! A viewer who asks for less motion gets the settled value at once.
 
 use dioxus::prelude::*;
 
@@ -20,6 +21,15 @@ pub struct Replay(pub Signal<u32>);
 fn use_replay() -> Signal<u32> {
     let own = use_signal(|| 0u32);
     try_consume_context::<Replay>().map_or(own, |replay| replay.0)
+}
+
+/// Whether the viewer has asked for less motion. Asked of the page, so it
+/// holds in the app's WebView too; `false` when nothing answers.
+async fn reduced_motion() -> bool {
+    document::eval("return matchMedia('(prefers-reduced-motion: reduce)').matches;")
+        .join::<bool>()
+        .await
+        .unwrap_or(false)
 }
 
 /// Browser `setTimeout` as a future on the web, tokio's timer elsewhere.
@@ -46,6 +56,10 @@ pub fn CountUp(value: u64) -> Element {
     use_effect(move || {
         let run = replay();
         spawn(async move {
+            if reduced_motion().await {
+                shown.set(*target.peek());
+                return;
+            }
             let frames = (COUNT_MS / f64::from(COUNT_TICK_MS)).ceil();
             let mut frame = 0.0;
             while frame < frames {
@@ -107,6 +121,10 @@ pub fn Decode(text: &'static str) -> Element {
     use_effect(move || {
         let run = replay();
         spawn(async move {
+            if reduced_motion().await {
+                shown.set(text.to_string());
+                return;
+            }
             let frames = DECODE_MS.div_ceil(u64::from(DECODE_TICK_MS));
             // The columns resolve on a front that runs across the art.
             let columns = text
