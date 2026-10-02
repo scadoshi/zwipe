@@ -26,26 +26,26 @@
                 // for longer than three seconds.
                 setTimeout(function () { root.classList.add("hydrated"); }, 3000);
 
-                // The figures roll rather than sit blank while the app loads,
-                // each keeping the digit count it was prerendered with so the
-                // row does not jump. If the app never arrives the real values
-                // go back, which is what the timeout above is for.
-                var nums = [].slice.call(document.querySelectorAll(".stat-num"));
-                var real = nums.map(function (el) { return el.textContent; });
-                var digits = real.map(function (t) { return (t.replace(/\D/g, "") || "1234").length; });
-                var roll = setInterval(function () {
-                    if (root.classList.contains("hydrated")) {
-                        clearInterval(roll);
-                        nums.forEach(function (el, i) { el.textContent = real[i]; });
-                        return;
-                    }
-                    nums.forEach(function (el, i) {
-                        var n = "";
-                        for (var d = 0; d < digits[i]; d++) n += Math.floor(Math.random() * 10);
-                        n = n.replace(/^0+(?=\d)/, "");
-                        el.textContent = n.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                    });
-                }, 70);
+                // Nothing rolls or decodes without the app, so say so rather
+                // than leave a page that looks finished but is not.
+                setTimeout(function () {
+                    if (root.classList.contains("ready")) return;
+                    var stack = document.createElement("div");
+                    stack.className = "boot-toast";
+                    var toast = document.createElement("div");
+                    toast.className = "announcement-banner";
+                    var text = document.createElement("span");
+                    text.className = "banner-text";
+                    text.textContent = "Loading timed out, so the page is as far as it got. Nothing here is going to move.";
+                    var close = document.createElement("button");
+                    close.className = "banner-dismiss";
+                    close.textContent = "\u2715";
+                    close.onclick = function () { stack.remove(); };
+                    toast.appendChild(text);
+                    toast.appendChild(close);
+                    stack.appendChild(toast);
+                    document.body.appendChild(stack);
+                }, 3000);
                 try {
                     var stored = JSON.parse(localStorage.getItem("zwipe.theme"));
                     if (stored && stored.name) {

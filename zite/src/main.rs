@@ -1,6 +1,6 @@
 use dioxus::{document::eval, prelude::*};
 use zwipe_components::{
-    BRAND_RESET_JS, COMPONENTS_CSS, NavBar, Replay, THEMES_CSS, ThemeConfig, ThemePicker,
+    BRAND_RESET_JS, COMPONENTS_CSS, Decode, NavBar, Replay, THEMES_CSS, ThemeConfig, ThemePicker,
 };
 
 mod api;
@@ -146,7 +146,7 @@ fn App() -> Element {
         }
         loaded.set(true);
         spawn(async {
-            let _ = eval("document.documentElement.classList.add('hydrated');").await;
+            let _ = eval("document.documentElement.classList.add('hydrated', 'ready');").await;
         });
     });
 
@@ -215,6 +215,7 @@ pub fn Nav() -> Element {
     let theme: Signal<ThemeConfig> = use_context();
     let mut open = use_signal(|| false);
     let mut replay = use_context::<Replay>().0;
+    let mut hovering = use_signal(|| false);
     rsx! {
         NavBar {
             open,
@@ -230,7 +231,12 @@ pub fn Nav() -> Element {
                             let _ = eval(BRAND_RESET_JS).await;
                         });
                     },
-                    span { class: "nav-logo", "{Z_LOGO}" }
+                    span {
+                        class: "nav-logo",
+                        onmouseenter: move |_| hovering.set(true),
+                        onmouseleave: move |_| hovering.set(false),
+                        Decode { text: Z_LOGO, hover: hovering }
+                    }
                 }
             },
             persistent: rsx! {

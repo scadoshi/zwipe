@@ -144,8 +144,12 @@ const NOISE: [char; 5] = ['░', '▒', '▓', '▎', '▍'];
 /// Block-glyph art that resolves left to right from noise. Spaces stay
 /// spaces throughout, so the shape is there from the first frame and only
 /// the texture changes.
+///
+/// `hover` is a signal the caller sets from the element around this one.
+/// While it is true the art keeps resolving, pass after pass, and settles on
+/// the pass that finishes after it goes false.
 #[component]
-pub fn Decode(text: &'static str) -> Element {
+pub fn Decode(text: &'static str, #[props(default)] hover: Option<Signal<bool>>) -> Element {
     let replay = use_replay();
     let mut shown = use_signal(|| text.to_string());
     use_effect(move || {
@@ -155,26 +159,47 @@ pub fn Decode(text: &'static str) -> Element {
                 shown.set(text.to_string());
                 return;
             }
-            let frames = DECODE_MS.div_ceil(u64::from(DECODE_TICK_MS));
-            // The columns resolve on a front that runs across the art.
-            let columns = text
-                .lines()
-                .map(|line| line.chars().count())
-                .max()
-                .unwrap_or(0);
-            for frame in 1..=frames {
-                sleep_ms(DECODE_TICK_MS).await;
-                if replay.peek().ne(&run) {
-                    return;
-                }
-                let front = usize::try_from(frame).unwrap_or(usize::MAX) * (columns + OVERRUN)
-                    / usize::try_from(frames).unwrap_or(1);
-                shown.set(decoded(text, front, frame));
+            resolve(text, shown, || replay.peek().ne(&run)).await;
+        });
+    });
+    // A pass per turn under the pointer, until the pointer leaves.
+    use_effect(move || {
+        if !hover.is_some_and(|hover| hover()) {
+            return;
+        }
+        spawn(async move {
+            if reduced_motion().await {
+                return;
+            }
+            while hover.is_some_and(|hover| *hover.peek()) {
+                resolve(text, shown, || !hover.is_some_and(|hover| *hover.peek())).await;
             }
             shown.set(text.to_string());
         });
     });
     rsx! { "{shown()}" }
+}
+
+/// One pass of the front across `text`, writing each frame into `shown`.
+/// Stops early when `give_up` says someone else owns the art now.
+async fn resolve(text: &'static str, mut shown: Signal<String>, give_up: impl Fn() -> bool) {
+    let frames = DECODE_MS.div_ceil(u64::from(DECODE_TICK_MS));
+    // The columns resolve on a front that runs across the art.
+    let columns = text
+        .lines()
+        .map(|line| line.chars().count())
+        .max()
+        .unwrap_or(0);
+    for frame in 1..=frames {
+        sleep_ms(DECODE_TICK_MS).await;
+        if give_up() {
+            return;
+        }
+        let front = usize::try_from(frame).unwrap_or(usize::MAX) * (columns + OVERRUN)
+            / usize::try_from(frames).unwrap_or(1);
+        shown.set(decoded(text, front, frame));
+    }
+    shown.set(text.to_string());
 }
 
 /// `text` with every glyph right of `front` swapped for noise. The noise
