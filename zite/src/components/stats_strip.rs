@@ -61,10 +61,19 @@ pub fn StatsStrip() -> Element {
             // Where the numbers come from, as chips under the strip.
             div { class: "tag-row stats-source",
                 Link { class: "tag", to: Route::About {}, "counted by zerver" }
-                if live.is_some() {
-                    span { class: "tag", "live" }
-                } else if let Some(day) = as_of {
-                    span { class: "tag", "as of {day}" }
+                // Keyed on its text, so the live chip arrives with the ease
+                // rather than the as-of chip changing its words in place.
+                {
+                    let label = match (live.is_some(), as_of) {
+                        (true, _) => Some("live".to_string()),
+                        (false, Some(day)) => Some(format!("as of {day}")),
+                        (false, None) => None,
+                    };
+                    rsx! {
+                        if let Some(label) = label {
+                            span { key: "{label}", class: "tag tag-swap", "{label}" }
+                        }
+                    }
                 }
             }
         }
