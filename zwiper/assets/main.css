@@ -1868,6 +1868,9 @@ button {
 }
 
 .home-hero .logo {
+    /* A tenth under the plain mark's size, so the panel and a sign-in form
+       share one screen. */
+    font-size: clamp(0.45rem, 2.25vw, 1.26rem);
     padding: 0;
     margin: 0;
 }
