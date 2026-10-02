@@ -23,7 +23,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::sync::atomic::{AtomicBool, Ordering};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK};
+use zwipe_components::{ActionBar, Button, ButtonVariant, Decode, TOAST_QUICK};
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{scryfall_data::ScryfallData, search_card::card_filter::price_currency::PriceCurrency},
@@ -175,7 +175,7 @@ pub fn Home() -> Element {
             div { class: "screen",
                 ScreenHeader { title: "Home" }
                 div { class: "screen-content centered",
-                div { class : "logo", "{logo}" }
+                div { class: "logo", Decode { text: logo } }
 
                 // Display random flavor text
                 div { class: "container-sm text-center flex-col home-flavor content-enter-delayed",
