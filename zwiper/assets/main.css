@@ -3278,6 +3278,28 @@ button {
     width: 100%;
 }
 
+/* The chips ease in one after another rather than landing all at once. */
+.ub-exception-chip {
+    animation: chip-in 0.3s ease-out both;
+}
+
+@keyframes chip-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.35rem);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ub-exception-chip {
+        animation: none;
+    }
+}
+
 .pref-note {
     font-size: 0.75rem;
     color: var(--text-muted);

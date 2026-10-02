@@ -381,8 +381,14 @@ pub fn Profile() -> Element {
                                                     .collect();
                                                 names.sort_unstable();
                                                 rsx! {
-                                                    for name in names {
-                                                        span { class: "stat-chip stat-chip-tag", { name } }
+                                                    // Each chip eases in a beat after the one before it.
+                                                    for (i, name) in names.into_iter().enumerate() {
+                                                        span {
+                                                            key: "{name}",
+                                                            class: "stat-chip stat-chip-tag ub-exception-chip",
+                                                            style: "animation-delay: {i * 45}ms",
+                                                            { name }
+                                                        }
                                                     }
                                                 }
                                             }
