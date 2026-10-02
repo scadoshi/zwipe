@@ -230,10 +230,16 @@ pub fn Home() -> Element {
             h1 { class: "sr-only", "Zwipe, the Magic: The Gathering deck builder built for mobile" }
             // Keyed on the replay count so the spacing animation runs again
             // with the decode.
-            for run in [use_context::<Replay>().0()] {
-                div { key: "logo{run}", class: "logo", Decode { text: LOGO_ASCII } }
-            }
             div { class: "hero-card",
+                // The mark, then the numbers it stands for, then the sentence
+                // under both.
+                div { class: "hero-head",
+                    for run in [use_context::<Replay>().0()] {
+                        div { key: "logo{run}", class: "logo", Decode { text: LOGO_ASCII } }
+                    }
+                    StatsStrip {}
+                }
+                hr { class: "hero-rule" }
                 p { class: "tagline",
                     "The "
                     a { href: "https://magic.wizards.com/en", "Magic: The Gathering" }
@@ -253,7 +259,6 @@ pub fn Home() -> Element {
                     span { class: "hero-chip chip-plat", "iOS" }
                     span { class: "hero-chip chip-plat", "Android" }
                 }
-                StatsStrip {}
             }
         }
         // Tap-to-open full-art overlay for the featured flavor card, copied

@@ -21,7 +21,6 @@ pub fn StatsStrip() -> Element {
     };
 
     rsx! {
-        hr { class: "hero-rule" }
         section { class: "stats-strip",
             div { class: "stat",
                 span { class: "stat-num", CountUp { value: u64::try_from(s.cards_swiped).unwrap_or(0) } }
