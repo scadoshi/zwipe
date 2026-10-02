@@ -11,6 +11,7 @@ use crate::{
             hint_dialog::{
                 HintBullet, HintBullets, HintColored, HintDialog, HintKey, use_one_time_hint,
             },
+            home_hero::HomeHero,
             logout_dialog::LogoutDialog,
             screen_header::ScreenHeader,
         },
@@ -23,18 +24,12 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::sync::atomic::{AtomicBool, Ordering};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, CountUp, Decode, Panel, TOAST_QUICK};
-use zwipe_core::{
-    domain::{
-        auth::models::session::Session,
-        card::{
-            scryfall_data::ScryfallData, search_card::card_filter::price_currency::PriceCurrency,
-        },
-        deck::deck_metrics::card_price,
-        logo,
-        user::models::{hints::HINT_FIRST_LOGIN, theme::ThemeConfig},
-    },
-    http::contracts::metrics::HttpPublicMetrics,
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK};
+use zwipe_core::domain::{
+    auth::models::session::Session,
+    card::{scryfall_data::ScryfallData, search_card::card_filter::price_currency::PriceCurrency},
+    deck::deck_metrics::card_price,
+    user::models::{hints::HINT_FIRST_LOGIN, theme::ThemeConfig},
 };
 
 /// Whether this launch has already greeted. Home remounts on every navigation
@@ -55,21 +50,6 @@ pub fn Home() -> Element {
 
     // First-login welcome: auto-opens once per account.
     let first_login_hint_open = use_one_time_hint(HINT_FIRST_LOGIN);
-
-    let logo = logo::ZWIPE;
-
-    // The public counts beside the mark, the same three the site shows.
-    // Unauthenticated; the figures roll until they arrive, and a failed ask
-    // says so the way every other failed ask here does.
-    let mut metrics: Signal<Option<HttpPublicMetrics>> = use_signal(|| None);
-    use_effect(move || {
-        spawn(async move {
-            match client().public_metrics().await {
-                Ok(m) => metrics.set(Some(m)),
-                Err(e) => toast.error(e.to_string(), ToastOptions::default()),
-            }
-        });
-    });
 
     let mut theme_config: Signal<ThemeConfig> = use_context();
 
@@ -193,41 +173,7 @@ pub fn Home() -> Element {
             div { class: "screen",
                 ScreenHeader { title: "Home" }
                 div { class: "screen-content centered",
-                div { class: "home-hero",
-                    Panel {
-                        div { class: "hero-head",
-                            div { class: "logo", Decode { text: logo } }
-                            {
-                                let value = metrics.read();
-                                let figures = value.as_ref();
-                                let count = |n: i64| u64::try_from(n).unwrap_or(0);
-                                rsx! {
-                                    section { class: "stats-strip",
-                                        div { class: "stat",
-                                            span { class: "stat-num", CountUp { value: figures.map(|m| count(m.cards_swiped)) } }
-                                            span { class: "stat-label", "Cards swiped" }
-                                        }
-                                        div { class: "stat",
-                                            span { class: "stat-num", CountUp { value: figures.map(|m| count(m.searches)) } }
-                                            span { class: "stat-label", "Searches run" }
-                                        }
-                                        div { class: "stat",
-                                            span { class: "stat-num", CountUp { value: figures.map(|m| count(m.decks_created)) } }
-                                            span { class: "stat-label", "Decks created" }
-                                        }
-                                    }
-                                    // Where the numbers come from, as chips under the strip.
-                                    div { class: "home-source",
-                                        span { class: "stat-chip", "counted by zerver" }
-                                        if figures.is_some() {
-                                            span { class: "stat-chip", "live" }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                HomeHero {}
 
                 // Display random flavor text
                 div { class: "container-sm text-center flex-col home-flavor content-enter-delayed",

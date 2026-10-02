@@ -4,7 +4,7 @@ use crate::{
     domain::error::UserFacing,
     inbound::{
         components::{
-            fields::text_input::TextInput, screen_header::ScreenHeader,
+            fields::text_input::TextInput, home_hero::HomeHero, screen_header::ScreenHeader,
             telemetry::anonymous::record_anonymous_event,
         },
         router::Router,
@@ -14,12 +14,11 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, Decode, TOAST_NORMAL};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
 use zwipe_core::{
     domain::{
         Email,
         auth::{models::session::Session, password::validate},
-        logo,
         user::username::Username,
     },
     http::contracts::{auth::HttpRegisterUser, metrics::AnonymousEventKind},
@@ -36,8 +35,6 @@ pub fn Register() -> Element {
     // Funnel: register screen reached (once per mount; distinct-session
     // counting on the server dedupes revisits).
     use_hook(|| record_anonymous_event(auth_client, AnonymousEventKind::RegisterViewed));
-
-    let logo = logo::ZWIPE;
 
     let username = use_signal(String::new);
     let email = use_signal(String::new);
@@ -162,7 +159,7 @@ pub fn Register() -> Element {
         div { class: "screen",
             ScreenHeader { title: "Create profile" }
             div { class: "screen-content centered content-enter",
-            div { class: "logo", Decode { text: logo } }
+            HomeHero {}
             div { class : "container-sm text-center",
                 form { class: "flex-col",
                     TextInput {

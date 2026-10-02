@@ -22,6 +22,8 @@ pub mod fields;
 pub mod hint_dialog;
 /// App-root receiver that renders on-demand "?" hint dialogs (sender/receiver).
 pub mod hint_host;
+/// The mark with the public counters, on home and the auth screens.
+pub mod home_hero;
 /// Persistent, on-demand "?" help button (not one-time, no session dependency).
 pub mod info_button;
 /// Interactive components (buttons, links, etc.).

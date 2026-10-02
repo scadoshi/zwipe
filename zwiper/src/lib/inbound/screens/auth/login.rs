@@ -2,7 +2,9 @@
 
 use crate::{
     inbound::{
-        components::{fields::text_input::TextInput, screen_header::ScreenHeader},
+        components::{
+            fields::text_input::TextInput, home_hero::HomeHero, screen_header::ScreenHeader,
+        },
         router::Router,
     },
     outbound::session::Persist,
@@ -10,9 +12,9 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, Decode, TOAST_NORMAL};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
 use zwipe_core::{
-    domain::{auth::models::session::Session, logo, user::models::theme::ThemeConfig},
+    domain::{auth::models::session::Session, user::models::theme::ThemeConfig},
     http::contracts::auth::HttpAuthenticateUser,
 };
 
@@ -23,8 +25,6 @@ pub fn Login() -> Element {
 
     let mut session: Signal<Option<Session>> = use_context();
     let auth_client: Signal<ZwipeClient> = use_context();
-
-    let logo = logo::ZWIPE;
 
     let username_or_email = use_signal(String::new);
     let password = use_signal(String::new);
@@ -78,7 +78,7 @@ pub fn Login() -> Element {
         div { class: "screen",
             ScreenHeader { title: "Login" }
             div { class: "screen-content centered content-enter",
-            div { class: "logo", Decode { text: logo } }
+            HomeHero {}
             div { class : "container-sm text-center",
                 form { class: "flex-col",
                     TextInput {
