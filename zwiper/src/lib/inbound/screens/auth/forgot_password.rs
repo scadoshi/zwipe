@@ -4,7 +4,7 @@ use crate::inbound::components::{fields::text_input::TextInput, screen_header::S
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
+use zwipe_components::{ActionBar, Button, ButtonVariant, Decode, TOAST_NORMAL};
 use zwipe_core::{
     domain::{Email, logo},
     http::contracts::auth::HttpRequestPasswordReset,
@@ -69,7 +69,7 @@ pub fn ForgotPassword() -> Element {
         div { class: "screen",
             ScreenHeader { title: "Reset password" }
             div { class: "screen-content centered content-enter",
-                div { class: "logo", "{logo}" }
+                div { class: "logo", Decode { text: logo } }
                 div { class: "container-sm text-center",
                     if submission_success() {
                         div { class: "message-success",

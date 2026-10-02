@@ -3,7 +3,7 @@ use crate::{
     components::{FeaturedFlavor, PageMeta, StatsStrip, dismiss_flavor_overlay},
 };
 use dioxus::prelude::*;
-use zwipe_components::{Banner, FlippableCardImage, Panel};
+use zwipe_components::{Banner, Decode, FlippableCardImage, Panel, Replay};
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
@@ -228,7 +228,11 @@ pub fn Home() -> Element {
             // Semantic page heading for crawlers and screen readers; the ASCII
             // logo is the visual title, so this is visually hidden.
             h1 { class: "sr-only", "Zwipe, the Magic: The Gathering deck builder built for mobile" }
-            div { class: "logo", "{LOGO_ASCII}" }
+            // Keyed on the replay count so the spacing animation runs again
+            // with the decode.
+            for run in [use_context::<Replay>().0()] {
+                div { key: "logo{run}", class: "logo", Decode { text: LOGO_ASCII } }
+            }
             div { class: "hero-card",
                 p { class: "tagline",
                     "The "

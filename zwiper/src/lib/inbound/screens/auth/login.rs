@@ -10,7 +10,7 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
+use zwipe_components::{ActionBar, Button, ButtonVariant, Decode, TOAST_NORMAL};
 use zwipe_core::{
     domain::{auth::models::session::Session, logo, user::models::theme::ThemeConfig},
     http::contracts::auth::HttpAuthenticateUser,
@@ -78,7 +78,7 @@ pub fn Login() -> Element {
         div { class: "screen",
             ScreenHeader { title: "Login" }
             div { class: "screen-content centered content-enter",
-            div { class: "logo",  "{logo}" }
+            div { class: "logo", Decode { text: logo } }
             div { class : "container-sm text-center",
                 form { class: "flex-col",
                     TextInput {

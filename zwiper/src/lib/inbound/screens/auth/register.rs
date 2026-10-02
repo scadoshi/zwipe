@@ -14,7 +14,7 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
+use zwipe_components::{ActionBar, Button, ButtonVariant, Decode, TOAST_NORMAL};
 use zwipe_core::{
     domain::{
         Email,
@@ -162,7 +162,7 @@ pub fn Register() -> Element {
         div { class: "screen",
             ScreenHeader { title: "Create profile" }
             div { class: "screen-content centered content-enter",
-            div { class: "logo",  "{logo}" }
+            div { class: "logo", Decode { text: logo } }
             div { class : "container-sm text-center",
                 form { class: "flex-col",
                     TextInput {

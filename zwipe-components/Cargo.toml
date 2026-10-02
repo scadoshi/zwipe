@@ -16,3 +16,11 @@ path = "src/lib.rs"
 dioxus = { version = "0.7.9" }
 uuid.workspace = true
 zwipe-core = { path = "../zwipe-core" }
+
+# The entrance module waits between frames: the browser's timer on the web,
+# tokio's everywhere else (the app's WebView runs on tokio already).
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+gloo-timers = { version = "0.4", features = ["futures"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio.workspace = true
