@@ -555,7 +555,6 @@ code {
     text-align: left;
     display: inline-block;
     color: var(--logo);
-    animation: logo-enter 0.6s ease-out backwards;
 }
 
 /* The hero's entrance waits for the app. The shell's script marks the
@@ -566,23 +565,6 @@ code {
 html.js:not(.hydrated) .logo,
 html.js:not(.hydrated) .stat-num {
     visibility: hidden;
-}
-
-html.js:not(.hydrated) .logo {
-    animation-play-state: paused;
-}
-
-@keyframes logo-enter {
-    from {
-        letter-spacing: 0.625rem;
-        opacity: 0;
-        transform: translateY(-0.75rem);
-    }
-    to {
-        letter-spacing: 0;
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 /* ==================
