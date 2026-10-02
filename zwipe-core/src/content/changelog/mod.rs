@@ -29,7 +29,10 @@ pub struct Release {
 pub const UPCOMING: &[Release] = &[Release {
     version: "1.10.5",
     date: "",
-    entries: &["The logo resolves in place, without the letters drawing together first"],
+    entries: &[
+        "The logo resolves in place, without the letters drawing together first",
+        "Home shows the mark in a card with the cards swiped, searches run and decks created across everyone",
+    ],
 }];
 
 /// Shipped releases, newest first.

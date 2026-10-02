@@ -1846,6 +1846,69 @@ button {
   specific - home screen
  ======================== */
 
+/* The mark and the three public counters share one panel, the mark above the
+   tiles. The tiles are the ones zwipe.net and cairn use: a sunk box with the
+   number in the accent over its label. The panel is not a link, so it keeps
+   its resting border under a finger. */
+.home-hero {
+    width: 100%;
+    max-width: 26rem;
+    padding: 0 1rem;
+}
+
+.home-hero .panel-card:hover {
+    border-color: var(--border-secondary);
+}
+
+.home-hero .hero-head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.home-hero .logo {
+    padding: 0;
+    margin: 0;
+}
+
+.home-hero .stats-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    width: 100%;
+    margin: 0;
+}
+
+.home-hero .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    min-width: 0;
+    padding: 0.6rem 0.25rem 0.5rem;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.8rem;
+    background-color: var(--bg-sink);
+    box-shadow: var(--shadow-sm);
+}
+
+.home-hero .stat-num {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+
+.home-hero .stat-label {
+    font-size: 0.65rem;
+    color: var(--text-primary);
+    letter-spacing: 0.04em;
+    opacity: 0.7;
+    text-align: center;
+}
+
 .home-screen {
     display: flex;
     flex-direction: column;
@@ -2653,6 +2716,10 @@ button {
 }
 
 .home-flavor {
+    /* As wide as the hero panel above it, with a gap between the two. */
+    width: calc(100% - 2rem);
+    max-width: 24rem;
+    margin-top: 1.25rem;
     min-height: 9rem;
     display: flex;
     flex-direction: column;

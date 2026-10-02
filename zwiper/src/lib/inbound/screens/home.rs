@@ -23,7 +23,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::sync::atomic::{AtomicBool, Ordering};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, Decode, TOAST_QUICK};
+use zwipe_components::{ActionBar, Button, ButtonVariant, CountUp, Decode, Panel, TOAST_QUICK};
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{scryfall_data::ScryfallData, search_card::card_filter::price_currency::PriceCurrency},
@@ -52,6 +52,10 @@ pub fn Home() -> Element {
     let first_login_hint_open = use_one_time_hint(HINT_FIRST_LOGIN);
 
     let logo = logo::ZWIPE;
+
+    // The public counts beside the mark, the same three the site shows.
+    // Unauthenticated; the figures roll until they arrive.
+    let metrics = use_resource(move || async move { client().public_metrics().await.ok() });
 
     let mut theme_config: Signal<ThemeConfig> = use_context();
 
@@ -175,7 +179,34 @@ pub fn Home() -> Element {
             div { class: "screen",
                 ScreenHeader { title: "Home" }
                 div { class: "screen-content centered",
-                div { class: "logo", Decode { text: logo } }
+                div { class: "home-hero",
+                    Panel {
+                        div { class: "hero-head",
+                            div { class: "logo", Decode { text: logo } }
+                            {
+                                let value = metrics.read();
+                                let figures = value.as_ref().and_then(|m| m.as_ref());
+                                let count = |n: i64| u64::try_from(n).unwrap_or(0);
+                                rsx! {
+                                    section { class: "stats-strip",
+                                        div { class: "stat",
+                                            span { class: "stat-num", CountUp { value: figures.map(|m| count(m.cards_swiped)) } }
+                                            span { class: "stat-label", "Cards swiped" }
+                                        }
+                                        div { class: "stat",
+                                            span { class: "stat-num", CountUp { value: figures.map(|m| count(m.searches)) } }
+                                            span { class: "stat-label", "Searches run" }
+                                        }
+                                        div { class: "stat",
+                                            span { class: "stat-num", CountUp { value: figures.map(|m| count(m.decks_created)) } }
+                                            span { class: "stat-label", "Decks created" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 
                 // Display random flavor text
                 div { class: "container-sm text-center flex-col home-flavor content-enter-delayed",
