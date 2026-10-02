@@ -11,6 +11,7 @@ use crate::{
             auth::ensure_session::EnsureFresh,
             catalog_cache::use_catalog_cache,
             hint_host::HintTopic,
+            home_hero::CachedCounts,
             navigation::overlay_stack::use_overlay_back_stack,
             telemetry::{
                 anonymous::record_anonymous_event,
@@ -177,6 +178,11 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // Home flavor card: cached above the router with a TTL (see FlavorCard).
     let flavor_card: Signal<Option<FlavorCard>> = use_signal(|| None);
     use_context_provider(|| flavor_card);
+
+    // The hero panel's counters: cached above the router for a minute (see
+    // CachedCounts), so hopping between screens does not ask zerver each time.
+    let cached_counts: Signal<Option<CachedCounts>> = use_signal(|| None);
+    use_context_provider(|| cached_counts);
 
     // Changelog: fetched once in the background at startup and cached above the
     // router for the session, so opening the Changelog screen is instant. The
