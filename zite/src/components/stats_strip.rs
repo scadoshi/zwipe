@@ -16,22 +16,22 @@ pub fn StatsStrip() -> Element {
         use_resource(|| async { api::client().public_metrics().await.ok() });
 
     let value = stats.read();
-    let Some(Some(s)) = &*value else {
-        return rsx! {};
-    };
+    // Rolling figures while the fetch is out, and for as long as it never
+    // answers: an empty hero reads as broken, a rolling one reads as busy.
+    let figures = value.as_ref().and_then(|stats| stats.as_ref());
 
     rsx! {
         section { class: "stats-strip",
             div { class: "stat",
-                span { class: "stat-num", CountUp { value: u64::try_from(s.cards_swiped).unwrap_or(0) } }
+                span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.cards_swiped).unwrap_or(0)) } }
                 span { class: "stat-label", "Cards swiped" }
             }
             div { class: "stat",
-                span { class: "stat-num", CountUp { value: u64::try_from(s.searches).unwrap_or(0) } }
+                span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.searches).unwrap_or(0)) } }
                 span { class: "stat-label", "Searches run" }
             }
             div { class: "stat",
-                span { class: "stat-num", CountUp { value: u64::try_from(s.decks_created).unwrap_or(0) } }
+                span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.decks_created).unwrap_or(0)) } }
                 span { class: "stat-label", "Decks created" }
             }
         }

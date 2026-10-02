@@ -10,6 +10,7 @@
 //! A viewer who asks for less motion gets the settled value at once.
 
 use dioxus::prelude::*;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// How many times the page has been asked to run its entrance again. The nav
 /// logo bumps it; every `CountUp` and `Decode` under it starts over.
@@ -47,12 +48,21 @@ const COUNT_TICK_MS: u32 = 16;
 
 /// A number that rolls to its value: random digits inside a window that
 /// narrows to nothing, printed with thousands separators. It never shows a
-/// blank or a climb from zero, so it picks up where a loading page's own
-/// rolling digits left off. A value that changes mid-roll, a live figure
-/// arriving, becomes the new target.
+/// blank or a climb from zero.
+///
+/// `None` is a figure that has not arrived. It rolls on, for as long as that
+/// takes, and lands when the value turns up; a value that changes mid-roll
+/// becomes the new target the same way.
 #[component]
-pub fn CountUp(value: u64) -> Element {
+pub fn CountUp(value: Option<u64>) -> Element {
     let replay = use_replay();
+    // Its own seed, so three figures waiting side by side do not roll the
+    // same digits in step.
+    let seed = use_hook(|| {
+        SEEDS
+            .fetch_add(1, Ordering::Relaxed)
+            .wrapping_mul(2_654_435_761)
+    });
     let mut target = use_signal(|| value);
     let mut shown = use_signal(|| value);
     use_effect(use_reactive!(|value| target.set(value)));
@@ -62,6 +72,16 @@ pub fn CountUp(value: u64) -> Element {
             if reduced_motion().await {
                 shown.set(*target.peek());
                 return;
+            }
+            // Nothing to land on yet: roll at a fixed width until there is.
+            let mut tick = 0u64;
+            while target.peek().is_none() {
+                sleep_ms(COUNT_TICK_MS).await;
+                if replay.peek().ne(&run) {
+                    return;
+                }
+                tick = tick.wrapping_add(1);
+                shown.set(Some(waiting(noise(seed.wrapping_add(tick)))));
             }
             let frames = (COUNT_MS / f64::from(COUNT_TICK_MS)).ceil();
             let mut frame = 0.0;
@@ -73,13 +93,32 @@ pub fn CountUp(value: u64) -> Element {
                 }
                 frame += 1.0;
                 let t = (frame / frames).min(1.0);
-                shown.set(rolling(*target.peek(), t, frame as u64));
+                let Some(value) = *target.peek() else {
+                    // It went back to waiting; the next effect run picks it up.
+                    return;
+                };
+                shown.set(Some(rolling(value, t, frame as u64)));
             }
             shown.set(*target.peek());
         });
     });
-    rsx! { "{with_separators(shown())}" }
+    rsx! {
+        match shown() {
+            Some(number) => rsx! { "{with_separators(number)}" },
+            // Before any frame runs there is nothing honest to print.
+            None => rsx! { "\u{2007}\u{2007}\u{2007}\u{2007}" },
+        }
+    }
 }
+
+/// Digits for a figure that has not arrived: four of them, so the width holds
+/// still while it waits.
+fn waiting(seed: u64) -> u64 {
+    1_000 + seed % 9_000
+}
+
+/// Hands each `CountUp` its own starting seed.
+static SEEDS: AtomicU64 = AtomicU64::new(1);
 
 /// `value` with a random offset that shrinks to nothing as `fraction` reaches
 /// 1, held inside the digit count `value` prints at so the row never widens
@@ -138,6 +177,10 @@ const DECODE_MS: u64 = 700;
 const DECODE_TICK_MS: u32 = 40;
 /// Columns the front runs past the end, so the last ones get their wobble.
 const OVERRUN: usize = 4;
+/// The shimmer: how many columns the travelling band covers, and how far it
+/// moves each frame.
+const SHIMMER_SPAN: usize = 10;
+const SHIMMER_STEP: usize = 2;
 /// The glyphs a column shows before it resolves.
 const NOISE: [char; 5] = ['░', '▒', '▓', '▎', '▍'];
 
@@ -162,7 +205,8 @@ pub fn Decode(text: &'static str, #[props(default)] hover: Option<Signal<bool>>)
             resolve(text, shown, || replay.peek().ne(&run)).await;
         });
     });
-    // A pass per turn under the pointer, until the pointer leaves.
+    // Under the pointer a band of noise travels across the art, over and over,
+    // so it shimmers rather than dissolving and resolving in turns.
     use_effect(move || {
         if !hover.is_some_and(|hover| hover()) {
             return;
@@ -171,8 +215,13 @@ pub fn Decode(text: &'static str, #[props(default)] hover: Option<Signal<bool>>)
             if reduced_motion().await {
                 return;
             }
+            let columns = columns_of(text);
+            let lap = columns + SHIMMER_SPAN;
+            let mut center = 0;
             while hover.is_some_and(|hover| *hover.peek()) {
-                resolve(text, shown, || !hover.is_some_and(|hover| *hover.peek())).await;
+                sleep_ms(DECODE_TICK_MS).await;
+                center = (center + SHIMMER_STEP) % lap.max(1);
+                shown.set(shimmered(text, center, u64::try_from(center).unwrap_or(0)));
             }
             shown.set(text.to_string());
         });
@@ -185,11 +234,7 @@ pub fn Decode(text: &'static str, #[props(default)] hover: Option<Signal<bool>>)
 async fn resolve(text: &'static str, mut shown: Signal<String>, give_up: impl Fn() -> bool) {
     let frames = DECODE_MS.div_ceil(u64::from(DECODE_TICK_MS));
     // The columns resolve on a front that runs across the art.
-    let columns = text
-        .lines()
-        .map(|line| line.chars().count())
-        .max()
-        .unwrap_or(0);
+    let columns = columns_of(text);
     for frame in 1..=frames {
         sleep_ms(DECODE_TICK_MS).await;
         if give_up() {
@@ -200,6 +245,35 @@ async fn resolve(text: &'static str, mut shown: Signal<String>, give_up: impl Fn
         shown.set(decoded(text, front, frame));
     }
     shown.set(text.to_string());
+}
+
+/// The widest line in `text`, in characters.
+fn columns_of(text: &str) -> usize {
+    text.lines()
+        .map(|line| line.chars().count())
+        .max()
+        .unwrap_or(0)
+}
+
+/// `text` with the band of columns ending at `center` swapped for noise, and
+/// everything else as it is.
+fn shimmered(text: &str, center: usize, seed: u64) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut state = seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1;
+    for line in text.lines() {
+        for (column, glyph) in line.chars().enumerate() {
+            let inside = column <= center && column + SHIMMER_SPAN >= center;
+            if glyph == ' ' || !inside {
+                out.push(glyph);
+                continue;
+            }
+            state = noise(state);
+            let pick = usize::try_from(state % 5).unwrap_or(0);
+            out.push(NOISE.get(pick).copied().unwrap_or('░'));
+        }
+        out.push('\n');
+    }
+    out
 }
 
 /// `text` with every glyph right of `front` swapped for noise. The noise
