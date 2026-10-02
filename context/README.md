@@ -21,6 +21,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-02: 1.10.4 built
+
+Version bumped, the three-entry block moved from `UPCOMING` to `RELEASES` dated Oct 2, and both artifacts built the same afternoon: iOS build 85 (`Zwipe.ipa`, Xcode 27.0, signed and verified) and Android versionCode 48 (`zwipe-1.10.4.aab`, signed, all six patch greps hit, and the emulator lab from the signed bundle reaches Login and survives the singleTask re-open). Release notes at [`operations/store-submissions/1.10.4/whats_new.md`](operations/store-submissions/1.10.4/whats_new.md), 232 characters, one text for both stores. Both await upload. The fix that made the cut worth it: the sign-in and home logos were not decoding in the app because `eval(...).join()` on a returned value never resolves in the WebView; the answer now comes over `dioxus.send`, which the app already uses, and was watched mid-decode on the simulator before the build.
+
 ## 2026-10-02: the entrance, shared
 
 zwipe-components has an `entrance` module: `Replay`, a counter a page provides and its nav logo bumps; `CountUp`, a number that counts from zero over a second with an ease-out and takes a new target mid-count; and `Decode`, block-glyph art that resolves from `░▒▓` noise on a ragged front left to right over 0.7 s. Both run on mount and again on every bump, and a page with no `Replay` gets them once. Sleeping is the browser timer on wasm and tokio elsewhere, so the same code runs in the app's WebView. zite's hero numbers count up and its Zwipe mark decodes, with the nav Z replaying both; the app's sign-in, register and forgot-password logos decode (in the changelog under 1.10.4). The portfolio's hero uses the same three and re-pinned, as did cairn and zynergy.
