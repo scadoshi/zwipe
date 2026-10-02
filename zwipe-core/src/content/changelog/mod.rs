@@ -32,6 +32,8 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "The logo resolves in place, without the letters drawing together first",
         "Home shows the mark in a card with the cards swiped, searches run and decks created across everyone",
+        "Home says where those counts come from, and says so if they cannot be fetched",
+        "The Universes Beyond exceptions on Profile ease in one at a time",
     ],
 }];
 

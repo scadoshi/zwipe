@@ -1901,6 +1901,14 @@ button {
     font-variant-numeric: tabular-nums;
 }
 
+.home-hero .home-source {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+}
+
 .home-hero .stat-label {
     font-size: 0.65rem;
     color: var(--text-primary);

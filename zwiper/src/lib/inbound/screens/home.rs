@@ -24,12 +24,17 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::sync::atomic::{AtomicBool, Ordering};
 use zwipe_client::ZwipeClient;
 use zwipe_components::{ActionBar, Button, ButtonVariant, CountUp, Decode, Panel, TOAST_QUICK};
-use zwipe_core::domain::{
-    auth::models::session::Session,
-    card::{scryfall_data::ScryfallData, search_card::card_filter::price_currency::PriceCurrency},
-    deck::deck_metrics::card_price,
-    logo,
-    user::models::{hints::HINT_FIRST_LOGIN, theme::ThemeConfig},
+use zwipe_core::{
+    domain::{
+        auth::models::session::Session,
+        card::{
+            scryfall_data::ScryfallData, search_card::card_filter::price_currency::PriceCurrency,
+        },
+        deck::deck_metrics::card_price,
+        logo,
+        user::models::{hints::HINT_FIRST_LOGIN, theme::ThemeConfig},
+    },
+    http::contracts::metrics::HttpPublicMetrics,
 };
 
 /// Whether this launch has already greeted. Home remounts on every navigation
@@ -54,8 +59,17 @@ pub fn Home() -> Element {
     let logo = logo::ZWIPE;
 
     // The public counts beside the mark, the same three the site shows.
-    // Unauthenticated; the figures roll until they arrive.
-    let metrics = use_resource(move || async move { client().public_metrics().await.ok() });
+    // Unauthenticated; the figures roll until they arrive, and a failed ask
+    // says so the way every other failed ask here does.
+    let mut metrics: Signal<Option<HttpPublicMetrics>> = use_signal(|| None);
+    use_effect(move || {
+        spawn(async move {
+            match client().public_metrics().await {
+                Ok(m) => metrics.set(Some(m)),
+                Err(e) => toast.error(e.to_string(), ToastOptions::default()),
+            }
+        });
+    });
 
     let mut theme_config: Signal<ThemeConfig> = use_context();
 
@@ -185,7 +199,7 @@ pub fn Home() -> Element {
                             div { class: "logo", Decode { text: logo } }
                             {
                                 let value = metrics.read();
-                                let figures = value.as_ref().and_then(|m| m.as_ref());
+                                let figures = value.as_ref();
                                 let count = |n: i64| u64::try_from(n).unwrap_or(0);
                                 rsx! {
                                     section { class: "stats-strip",
@@ -200,6 +214,13 @@ pub fn Home() -> Element {
                                         div { class: "stat",
                                             span { class: "stat-num", CountUp { value: figures.map(|m| count(m.decks_created)) } }
                                             span { class: "stat-label", "Decks created" }
+                                        }
+                                    }
+                                    // Where the numbers come from, as chips under the strip.
+                                    div { class: "home-source",
+                                        span { class: "stat-chip", "counted by zerver" }
+                                        if figures.is_some() {
+                                            span { class: "stat-chip", "live" }
                                         }
                                     }
                                 }
