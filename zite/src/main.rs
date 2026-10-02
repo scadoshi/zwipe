@@ -131,6 +131,7 @@ fn App() -> Element {
     // adopt the stored theme just after mount (below).
     let mut theme = use_signal(ThemeConfig::default);
     use_context_provider(|| theme);
+    use_context_provider(|| components::Replay(Signal::new(0u32)));
     let mut loaded = use_signal(|| false);
 
     // After hydration, adopt the last-used theme from localStorage. Being a
@@ -208,6 +209,7 @@ fn App() -> Element {
 pub fn Nav() -> Element {
     let theme: Signal<ThemeConfig> = use_context();
     let mut open = use_signal(|| false);
+    let mut replay = use_context::<components::Replay>().0;
     rsx! {
         NavBar {
             open,
@@ -217,6 +219,8 @@ pub fn Nav() -> Element {
                     class: "nav-brand",
                     onclick: move |_| {
                         open.set(false);
+                        // On the home page this counts the numbers up again.
+                        replay += 1;
                         spawn(async {
                             let _ = eval(BRAND_RESET_JS).await;
                         });

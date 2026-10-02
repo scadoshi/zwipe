@@ -1,6 +1,8 @@
+mod count_up;
 mod featured_flavor;
 mod page_meta;
 mod stats_strip;
+pub use count_up::{CountUp, Replay};
 pub use featured_flavor::{FeaturedFlavor, dismiss_flavor_overlay};
 pub use page_meta::PageMeta;
 pub use stats_strip::StatsStrip;
