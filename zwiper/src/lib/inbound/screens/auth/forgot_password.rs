@@ -1,21 +1,19 @@
 //! Forgot password screen.
 
-use crate::inbound::components::{fields::text_input::TextInput, screen_header::ScreenHeader};
+use crate::inbound::components::{
+    fields::text_input::TextInput, home_hero::HomeHero, screen_header::ScreenHeader,
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, Decode, TOAST_NORMAL};
-use zwipe_core::{
-    domain::{Email, logo},
-    http::contracts::auth::HttpRequestPasswordReset,
-};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
+use zwipe_core::{domain::Email, http::contracts::auth::HttpRequestPasswordReset};
 
 /// Forgot password screen for initiating a password reset.
 #[component]
 pub fn ForgotPassword() -> Element {
     let navigator = use_navigator();
     let auth_client: Signal<ZwipeClient> = use_context();
-    let logo = logo::ZWIPE;
 
     let email = use_signal(String::new);
     let mut submit_attempted = use_signal(|| false);
@@ -69,7 +67,7 @@ pub fn ForgotPassword() -> Element {
         div { class: "screen",
             ScreenHeader { title: "Reset password" }
             div { class: "screen-content centered content-enter",
-                div { class: "logo", Decode { text: logo } }
+                HomeHero {}
                 div { class: "container-sm text-center",
                     if submission_success() {
                         div { class: "message-success",
