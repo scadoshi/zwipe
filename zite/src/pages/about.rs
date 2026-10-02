@@ -342,6 +342,7 @@ pub fn About() -> Element {
 fn Architecture() -> Element {
     rsx! {
         div { class: "arch-diagram",
+            div { class: "diagram-scroll",
             svg {
                 class: "diagram",
                 view_box: "0 0 720 312",
@@ -369,6 +370,7 @@ fn Architecture() -> Element {
                 DiagramArrow { x1: 360.0, y1: 68.0, x2: 360.0, y2: 226.0, label: "imports" }
                 DiagramArrow { x1: 200.0, y1: 252.0, x2: 275.0, y2: 252.0 }
                 DiagramArrow { x1: 520.0, y1: 252.0, x2: 445.0, y2: 252.0 }
+            }
             }
         }
     }

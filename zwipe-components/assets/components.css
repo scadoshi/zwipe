@@ -1907,8 +1907,18 @@ a.nav-dropdown-item.active:visited {
 .diagram {
     display: block;
     width: 100%;
+    /* Never narrower than a readable figure: on a phone the wrapper below
+       scrolls sideways instead of the boxes shrinking to a smear. */
+    min-width: 40rem;
     height: auto;
     font-family: inherit;
+}
+
+/* Wraps a .diagram so one wider than the screen scrolls sideways. */
+.diagram-scroll {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
 }
 
 .diagram-node rect {
