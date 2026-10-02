@@ -628,9 +628,12 @@ code {
 
 .hero {
     text-align: center;
-    /* Bottom padding gives the hero-card's drop shadow room to render inside the
-       hero's overflow:hidden box; the gallery's small top margin keeps it tight. */
-    padding: 1.5rem 1.5rem 1.25rem;
+    /* Pulls up under the nav's 3rem bottom margin so the card sits close
+       beneath it; only this page has it. The paddings give the hero-card's
+       drop shadow room to render inside the hero's overflow:hidden box; the
+       gallery's small top margin keeps it tight. */
+    margin-top: -2.5rem;
+    padding: 0.5rem 1.5rem 1.25rem;
     overflow: hidden;
 }
 
