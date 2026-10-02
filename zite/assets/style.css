@@ -664,10 +664,25 @@ code {
     flex-shrink: 0;
 }
 
-.hero-head .stats-strip {
+.hero-head .hero-figures {
     flex: 1;
     min-width: 0;
 }
+
+/* The source chips sit under the strip, centered with it, all in the primary
+   accent. */
+.hero-figures .stats-source {
+    justify-content: center;
+    margin: 1rem 0 0;
+}
+
+.hero-figures .stats-source .tag {
+    color: var(--accent-primary);
+    border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
+    background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+    text-decoration: none;
+}
+
 
 @media (max-width: 62rem) {
     .hero-head {

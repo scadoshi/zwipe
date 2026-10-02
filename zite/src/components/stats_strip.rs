@@ -5,7 +5,7 @@
 //! so cost-per-pageview is near zero. On error the strip hides itself;
 //! don't break the marketing page on a metrics outage.
 
-use crate::api;
+use crate::{Route, api};
 use dioxus::prelude::*;
 use zwipe_components::CountUp;
 use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
@@ -21,18 +21,27 @@ pub fn StatsStrip() -> Element {
     let figures = value.as_ref().and_then(|stats| stats.as_ref());
 
     rsx! {
-        section { class: "stats-strip",
-            div { class: "stat",
-                span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.cards_swiped).unwrap_or(0)) } }
-                span { class: "stat-label", "Cards swiped" }
+        div { class: "hero-figures",
+            section { class: "stats-strip",
+                div { class: "stat",
+                    span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.cards_swiped).unwrap_or(0)) } }
+                    span { class: "stat-label", "Cards swiped" }
+                }
+                div { class: "stat",
+                    span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.searches).unwrap_or(0)) } }
+                    span { class: "stat-label", "Searches run" }
+                }
+                div { class: "stat",
+                    span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.decks_created).unwrap_or(0)) } }
+                    span { class: "stat-label", "Decks created" }
+                }
             }
-            div { class: "stat",
-                span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.searches).unwrap_or(0)) } }
-                span { class: "stat-label", "Searches run" }
-            }
-            div { class: "stat",
-                span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.decks_created).unwrap_or(0)) } }
-                span { class: "stat-label", "Decks created" }
+            // Where the numbers come from, as chips under the strip.
+            div { class: "tag-row stats-source",
+                Link { class: "tag", to: Route::About {}, "counted by zerver" }
+                if figures.is_some() {
+                    span { class: "tag", "live" }
+                }
             }
         }
     }
