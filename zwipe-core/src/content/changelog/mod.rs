@@ -26,18 +26,19 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.10.4",
-    date: "",
-    entries: &[
-        "Deck cards: the commander and MVP row waits for every card image, then opens and deals the cards in",
-        "Light themes draw the logo in the theme's primary accent",
-        "The logo on the home and sign-in screens resolves from static as the screen opens",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.10.4",
+        date: "Oct 2, 2026",
+        entries: &[
+            "Deck cards: the commander and MVP row waits for every card image, then opens and deals the cards in",
+            "Light themes draw the logo in the theme's primary accent",
+            "The logo on the home and sign-in screens resolves from static as the screen opens",
+        ],
+    },
     Release {
         version: "1.10.3",
         date: "Sep 30, 2026",
