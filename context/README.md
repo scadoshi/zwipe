@@ -21,6 +21,12 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-02: the entrance, shared
+
+zwipe-components has an `entrance` module: `Replay`, a counter a page provides and its nav logo bumps; `CountUp`, a number that counts from zero over a second with an ease-out and takes a new target mid-count; and `Decode`, block-glyph art that resolves from `░▒▓` noise on a ragged front left to right over 0.7 s. Both run on mount and again on every bump, and a page with no `Replay` gets them once. Sleeping is the browser timer on wasm and tokio elsewhere, so the same code runs in the app's WebView. zite's hero numbers count up and its Zwipe mark decodes, with the nav Z replaying both; the app's sign-in, register and forgot-password logos decode (in the changelog under 1.10.4). The portfolio's hero uses the same three and re-pinned, as did cairn and zynergy.
+
+zite also got a dx shell (`zite/index.html`) with a script at the end of the body that runs before first paint: it puts the body on the theme stored in localStorage, so the default never flashes, and marks the document `js`; the stylesheet hides the logo and the numbers until the app marks `hydrated` on mount and the entrance runs as one. Without script the prerender shows settled. The architecture diagram on the About page keeps a readable width on a phone and scrolls sideways (`.diagram-scroll` in the shared sheet, with a 40rem floor on `.diagram`).
+
 ## 2026-10-01: the featured row waits for its images
 
 The commander and MVP row in the app and on the share page used to deal its cards in as soon as the data existed, so the cards dropped in as empty frames and the images faded in afterward; in the app the commander and the MVPs also landed at different times and the row reflowed once. Now `FlippableCardImage` has an `on_load` prop (fires on the image's load or error, at once for a URL already seen this session or a card with no art), and the row holds zero height until every card has reported or 4 s pass, opens over 0.8 s on an ease-out curve, and deals once it is open. The open state latches, so starring a card later joins the row without a re-deal. Same CSS shape in both places: the section is a `grid-template-rows` 0fr to 1fr reveal, the inner row is the old flex row, clipping only while closed. In the changelog under `UPCOMING` as 1.10.4; the release device bundle is built and on the owner's phone.
