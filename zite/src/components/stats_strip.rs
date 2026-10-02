@@ -1,24 +1,46 @@
-//! Live aggregate stats strip surfaced on the marketing site.
+//! The three public counters in the hero.
 //!
-//! Fetched during SSR. CF caches the
-//! API response at the edge (~2h TTL), GH Pages caches the rendered HTML,
-//! so cost-per-pageview is near zero. On error the strip hides itself;
-//! don't break the marketing page on a metrics outage.
+//! `metrics.json` is zerver's answer as of the last deploy, refreshed by the
+//! deploy workflow before each build and baked into the prerender, so the page
+//! carries real numbers before any script runs. After load the browser asks
+//! zerver once and swaps the live answer in; the chip under the strip says
+//! which one is showing.
 
 use crate::{Route, api};
 use dioxus::prelude::*;
+use serde::Deserialize;
+use std::sync::LazyLock;
 use zwipe_components::CountUp;
 use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
 
+/// What the deploy workflow writes: when it asked, and what zerver said.
+#[derive(Deserialize)]
+struct Baked {
+    fetched_at: String,
+    metrics: HttpPublicMetrics,
+}
+
+/// The last deploy's answer. `None` only if the file does not parse, and the
+/// figures then roll until the live answer arrives.
+static BAKED: LazyLock<Option<Baked>> =
+    LazyLock::new(|| serde_json::from_str(include_str!("../metrics.json")).ok());
+
 #[component]
 pub fn StatsStrip() -> Element {
-    let stats: Resource<Option<HttpPublicMetrics>> =
-        use_resource(|| async { api::client().public_metrics().await.ok() });
+    // Only the browser asks; the prerender shows the baked copy and says so.
+    let stats: Resource<Option<HttpPublicMetrics>> = use_resource(|| async {
+        if !cfg!(target_arch = "wasm32") {
+            return None;
+        }
+        api::client().public_metrics().await.ok()
+    });
 
     let value = stats.read();
-    // Rolling figures while the fetch is out, and for as long as it never
-    // answers: an empty hero reads as broken, a rolling one reads as busy.
-    let figures = value.as_ref().and_then(|stats| stats.as_ref());
+    let live = value.as_ref().and_then(|stats| stats.as_ref());
+    let baked = BAKED.as_ref();
+    // The live answer, else the baked one; with neither the figures roll.
+    let figures = live.or_else(|| baked.map(|baked| &baked.metrics));
+    let as_of = baked.map(|baked| baked.fetched_at.get(..10).unwrap_or(&baked.fetched_at));
 
     rsx! {
         div { class: "hero-figures",
@@ -39,8 +61,10 @@ pub fn StatsStrip() -> Element {
             // Where the numbers come from, as chips under the strip.
             div { class: "tag-row stats-source",
                 Link { class: "tag", to: Route::About {}, "counted by zerver" }
-                if figures.is_some() {
+                if live.is_some() {
                     span { class: "tag", "live" }
+                } else if let Some(day) = as_of {
+                    span { class: "tag", "as of {day}" }
                 }
             }
         }

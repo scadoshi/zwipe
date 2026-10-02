@@ -147,6 +147,21 @@ jobs:
         with:
           tool: dioxus-cli@0.7.10
 
+      - name: Refresh the public counters from zerver
+        # zite/src/metrics.json is committed, so the build has numbers whatever
+        # happens here. The new answer replaces it only when all three counts
+        # came back as numbers.
+        run: |
+          if curl -fsS --max-time 20 https://api.zwipe.net/api/marketing/stats -o metrics.new \
+            && jq -e '(.cards_swiped|numbers) and (.searches|numbers) and (.decks_created|numbers)' metrics.new > /dev/null; then
+            jq -n --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --slurpfile m metrics.new '{fetched_at:$at, metrics:$m[0]}' > zite/src/metrics.json
+            rm metrics.new
+            echo "refreshed: $(jq -c .metrics zite/src/metrics.json)"
+          else
+            rm -f metrics.new
+            echo "::warning::zerver gave no complete answer; building with the committed snapshot"
+          fi
+
       - name: Build (SSG)
         working-directory: zite
         env:
