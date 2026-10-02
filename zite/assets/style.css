@@ -341,7 +341,8 @@ body .reveal-pending.reveal-in {
     display: block;
     letter-spacing: 0;
     transition: letter-spacing 0.15s;
-    color: var(--text-primary);
+    /* The shared token: text on dark themes, the primary accent on light. */
+    color: var(--logo);
 }
 
 @media (hover: hover) {
