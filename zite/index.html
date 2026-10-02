@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<!-- Custom dx shell: copy of dioxus-cli's prod.index.html plus lang="en" on
+     the html tag and the script at the end of the body. dx injects assets and
+     scripts and fills the title placeholder at build. -->
+<html lang="en">
+    <head>
+        <title>{app_title}</title>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="UTF-8">
+    </head>
+    <body>
+        <div id="main"></div>
+        <!-- Runs before first paint, after the prerendered page is parsed.
+             Puts the body on the stored theme so the page never flashes the
+             default, and marks the document `js` so the stylesheet can hold
+             the hero's entrance until the app has hydrated and runs it (the
+             app adds `hydrated`). Without script neither class lands and the
+             page shows its settled, prerendered self. -->
+        <script>
+            (function () {
+                document.documentElement.classList.add("js");
+                try {
+                    var stored = JSON.parse(localStorage.getItem("zwipe.theme"));
+                    if (stored && stored.name) {
+                        document.body.className = "theme-" + stored.name + "-" + (stored.is_dark ? "dark" : "light");
+                    }
+                } catch (e) {}
+            })();
+        </script>
+    </body>
+</html>

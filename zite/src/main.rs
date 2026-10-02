@@ -136,13 +136,18 @@ fn App() -> Element {
 
     // After hydration, adopt the last-used theme from localStorage. Being a
     // post-hydration state change (not the initial render), this re-renders the
-    // picker label as well as the body class. A brief flash of the default
-    // first is expected until the WASM loads.
+    // picker label as well as the body class. The shell's script already put
+    // the body on the stored theme, so nothing visible changes. `hydrated` on
+    // the document releases the hero's entrance, which the stylesheet holds
+    // until the app can run it.
     use_effect(move || {
         if let Some(stored) = theme_store::load() {
             theme.set(stored);
         }
         loaded.set(true);
+        spawn(async {
+            let _ = eval("document.documentElement.classList.add('hydrated');").await;
+        });
     });
 
     // Track the sticky nav's real height into --nav-height so sticky content

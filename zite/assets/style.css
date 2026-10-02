@@ -558,6 +558,20 @@ code {
     animation: logo-enter 0.6s ease-out backwards;
 }
 
+/* The hero's entrance waits for the app. The shell's script marks the
+   document `js` before first paint and the app marks it `hydrated` once it
+   can count and decode, so the logo and the numbers stay out of sight in
+   between and the entrance runs as one once the app is up. Without script
+   neither class lands and the prerendered page shows settled. */
+html.js:not(.hydrated) .logo,
+html.js:not(.hydrated) .stat-num {
+    visibility: hidden;
+}
+
+html.js:not(.hydrated) .logo {
+    animation-play-state: paused;
+}
+
 @keyframes logo-enter {
     from {
         letter-spacing: 0.625rem;
