@@ -563,8 +563,7 @@ code {
    can count and decode, so the logo and the numbers stay out of sight in
    between and the entrance runs as one once the app is up. Without script
    neither class lands and the prerendered page shows settled. */
-html.js:not(.hydrated) .logo,
-html.js:not(.hydrated) .stat-num {
+html.js:not(.hydrated) .logo {
     visibility: hidden;
 }
 

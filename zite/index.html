@@ -25,6 +25,27 @@
                 // or broken, this does it instead, so the hero is never held
                 // for longer than three seconds.
                 setTimeout(function () { root.classList.add("hydrated"); }, 3000);
+
+                // The figures roll rather than sit blank while the app loads,
+                // each keeping the digit count it was prerendered with so the
+                // row does not jump. If the app never arrives the real values
+                // go back, which is what the timeout above is for.
+                var nums = [].slice.call(document.querySelectorAll(".stat-num"));
+                var real = nums.map(function (el) { return el.textContent; });
+                var digits = real.map(function (t) { return (t.replace(/\D/g, "") || "1234").length; });
+                var roll = setInterval(function () {
+                    if (root.classList.contains("hydrated")) {
+                        clearInterval(roll);
+                        nums.forEach(function (el, i) { el.textContent = real[i]; });
+                        return;
+                    }
+                    nums.forEach(function (el, i) {
+                        var n = "";
+                        for (var d = 0; d < digits[i]; d++) n += Math.floor(Math.random() * 10);
+                        n = n.replace(/^0+(?=\d)/, "");
+                        el.textContent = n.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    });
+                }, 70);
                 try {
                     var stored = JSON.parse(localStorage.getItem("zwipe.theme"));
                     if (stored && stored.name) {

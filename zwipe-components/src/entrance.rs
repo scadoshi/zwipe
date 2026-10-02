@@ -45,9 +45,11 @@ async fn sleep_ms(ms: u32) {
 const COUNT_MS: f64 = 1000.0;
 const COUNT_TICK_MS: u32 = 16;
 
-/// A number that counts up from zero, easing out so the last digits settle,
-/// printed with thousands separators. A value that changes mid-count, a live
-/// figure arriving, becomes the new target.
+/// A number that rolls to its value: random digits inside a window that
+/// narrows to nothing, printed with thousands separators. It never shows a
+/// blank or a climb from zero, so it picks up where a loading page's own
+/// rolling digits left off. A value that changes mid-roll, a live figure
+/// arriving, becomes the new target.
 #[component]
 pub fn CountUp(value: u64) -> Element {
     let replay = use_replay();
@@ -71,8 +73,7 @@ pub fn CountUp(value: u64) -> Element {
                 }
                 frame += 1.0;
                 let t = (frame / frames).min(1.0);
-                let eased = 1.0 - (1.0 - t).powi(3);
-                shown.set(scaled(*target.peek(), eased));
+                shown.set(rolling(*target.peek(), t, frame as u64));
             }
             shown.set(*target.peek());
         });
@@ -80,15 +81,43 @@ pub fn CountUp(value: u64) -> Element {
     rsx! { "{with_separators(shown())}" }
 }
 
-/// `value` at `fraction` of the way up, never past it. Counts are far below
-/// 2^53, so the float conversion is exact.
+/// `value` with a random offset that shrinks to nothing as `fraction` reaches
+/// 1, held inside the digit count `value` prints at so the row never widens
+/// mid-roll. Counts are far below 2^53, so the float conversion is exact.
 #[allow(
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss
 )]
-fn scaled(value: u64, fraction: f64) -> u64 {
-    ((value as f64) * fraction.clamp(0.0, 1.0)).round() as u64
+fn rolling(value: u64, fraction: f64, seed: u64) -> u64 {
+    let fraction = fraction.clamp(0.0, 1.0);
+    if fraction >= 1.0 || value == 0 {
+        return value;
+    }
+    // Squared, so the digits are wild early and barely move at the end.
+    let spread = (1.0 - fraction).powi(2);
+    // -1.0 to 1.0 from the same xorshift the decode uses.
+    let swing = (noise(seed) % 2001) as f64 / 1000.0 - 1.0;
+    let rolled = (value as f64) + (value as f64) * spread * swing;
+    (rolled.max(0.0).round() as u64).min(digit_ceiling(value))
+}
+
+/// The largest number of the same digit count: 72 gives 99, 3,960 gives 9,999.
+fn digit_ceiling(value: u64) -> u64 {
+    let mut ceiling = 9;
+    while ceiling < value {
+        ceiling = ceiling.saturating_mul(10).saturating_add(9);
+    }
+    ceiling
+}
+
+/// One xorshift round, enough randomness for digits that flicker.
+fn noise(seed: u64) -> u64 {
+    let mut state = seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1;
+    state ^= state << 13;
+    state ^= state >> 7;
+    state ^= state << 17;
+    state
 }
 
 /// 12345 -> "12,345"
@@ -185,11 +214,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_number_rises_to_its_value_and_no_further() {
-        assert_eq!(scaled(3_657, 0.0), 0);
-        assert_eq!(scaled(3_657, 0.5), 1_829);
-        assert_eq!(scaled(3_657, 1.0), 3_657);
-        assert_eq!(scaled(3_657, 1.5), 3_657);
+    fn the_roll_lands_on_its_value_and_stays_the_same_width() {
+        assert_eq!(rolling(3_657, 1.0, 7), 3_657, "the end is the value");
+        assert_eq!(rolling(3_657, 1.5, 7), 3_657);
+        assert_eq!(rolling(0, 0.0, 7), 0, "nothing to roll");
+        for frame in 1..200u64 {
+            let shown = rolling(
+                3_657,
+                f64::from(u32::try_from(frame).unwrap()) / 200.0,
+                frame,
+            );
+            assert!(shown <= 9_999, "{shown} keeps four digits");
+        }
+    }
+
+    #[test]
+    fn the_ceiling_is_the_largest_number_of_the_same_width() {
+        assert_eq!(digit_ceiling(7), 9);
+        assert_eq!(digit_ceiling(72), 99);
+        assert_eq!(digit_ceiling(3_960), 9_999);
+        assert_eq!(digit_ceiling(0), 9);
     }
 
     #[test]
