@@ -46,6 +46,56 @@
                     stack.appendChild(toast);
                     document.body.appendChild(stack);
                 }, 3000);
+
+                // Before the app is up, the figures roll and the mark shimmers,
+                // written into the text nodes the prerender gave them. The app
+                // hydrates onto those same nodes and takes over from wherever
+                // the roll is; the first write that is not ours ends ours.
+                if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                    var entries = [];
+                    document.querySelectorAll(".stat-num, .logo").forEach(function (el) {
+                        // The text sits after the comment the prerender marks it with.
+                        var t = null;
+                        el.childNodes.forEach(function (n) { if (!t && n.nodeType === 3 && n.data.trim()) t = n; });
+                        if (!t) return;
+                        entries.push({ node: t, real: t.data, last: t.data, logo: el.classList.contains("logo") });
+                    });
+                    var glyphs = "\u2591\u2592\u2593\u258e\u258d";
+                    var rolled = function (real) {
+                        var count = (real.replace(/\D/g, "") || "1234").length, n = "";
+                        for (var d = 0; d < count; d++) n += Math.floor(Math.random() * 10);
+                        n = n.replace(/^0+(?=\d)/, "");
+                        return n.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    };
+                    var shimmer = function (real, tick) {
+                        var lines = real.split("\n"), width = 0;
+                        lines.forEach(function (l) { if (l.length > width) width = l.length; });
+                        var front = (tick * 3) % (width + 12);
+                        return lines.map(function (line) {
+                            var out = "";
+                            for (var c = 0; c < line.length; c++) {
+                                var ch = line[c];
+                                out += (ch === " " || c < front) ? ch : glyphs[(c * 7 + tick * 3) % glyphs.length];
+                            }
+                            return out;
+                        }).join("\n");
+                    };
+                    var tick = 0;
+                    var timer = setInterval(function () {
+                        tick++;
+                        var over = root.classList.contains("hydrated");
+                        var live = 0;
+                        entries.forEach(function (e) {
+                            if (e.done) return;
+                            if (e.node.data !== e.last) { e.done = true; return; }
+                            if (over) { e.node.data = e.real; e.done = true; return; }
+                            e.last = e.logo ? shimmer(e.real, tick) : rolled(e.real);
+                            e.node.data = e.last;
+                            live++;
+                        });
+                        if (!live) clearInterval(timer);
+                    }, 50);
+                }
                 try {
                     var stored = JSON.parse(localStorage.getItem("zwipe.theme"));
                     if (stored && stored.name) {
