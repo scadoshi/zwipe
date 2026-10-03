@@ -26,22 +26,23 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.10.5",
-    date: "",
-    entries: &[
-        "The logo resolves in place, without the letters drawing together first",
-        "Home shows the mark in a card with the cards swiped, searches run and decks created across everyone",
-        "Home says where those counts come from, and says so if they cannot be fetched",
-        "Those counts are fetched once a minute at most, however many screens show them",
-        "Counts past ten thousand read as 28.0k or 1.2m, so they fit their boxes",
-        "Sign in, register and forgot password open on the same card",
-        "The Universes Beyond exceptions on Profile ease in one at a time",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.10.5",
+        date: "Oct 3, 2026",
+        entries: &[
+            "The logo resolves in place, without the letters drawing together first",
+            "Home shows the mark in a card with the cards swiped, searches run and decks created across everyone",
+            "Home says where those counts come from, and says so if they cannot be fetched",
+            "Those counts are fetched once a minute at most, however many screens show them",
+            "Counts past ten thousand read as 28.0k or 1.2m, so they fit their boxes",
+            "Sign in, register and forgot password open on the same card",
+            "The Universes Beyond exceptions on Profile ease in one at a time",
+        ],
+    },
     Release {
         version: "1.10.4",
         date: "Oct 2, 2026",
