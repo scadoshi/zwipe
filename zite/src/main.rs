@@ -146,7 +146,7 @@ fn App() -> Element {
         }
         loaded.set(true);
         spawn(async {
-            let _ = eval("document.documentElement.classList.add('hydrated', 'ready');").await;
+            let _ = eval("document.documentElement.classList.add('hydrated');").await;
         });
     });
 

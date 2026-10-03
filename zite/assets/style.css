@@ -570,18 +570,6 @@ code {
    between and the entrance runs as one once the app is up. Without script
    neither class lands and the prerendered page shows settled. */
 
-/* The shell's own toast, shown when the app never loads. It borrows the
-   banner look from the shared sheet and sits bottom left, clear of the stack
-   the app puts its own banners in. */
-.boot-toast {
-    position: fixed;
-    bottom: 1.5rem;
-    left: 1.5rem;
-    z-index: 100;
-    max-width: min(420px, calc(100vw - 3rem));
-}
-
-
 /* ==================
         content-enter
  ==================== */

@@ -26,27 +26,6 @@
                 // for longer than three seconds.
                 setTimeout(function () { root.classList.add("hydrated"); }, 3000);
 
-                // Nothing rolls or decodes without the app, so say so rather
-                // than leave a page that looks finished but is not.
-                setTimeout(function () {
-                    if (root.classList.contains("ready")) return;
-                    var stack = document.createElement("div");
-                    stack.className = "boot-toast";
-                    var toast = document.createElement("div");
-                    toast.className = "announcement-banner";
-                    var text = document.createElement("span");
-                    text.className = "banner-text";
-                    text.textContent = "Loading timed out, so the page is as far as it got. Nothing here is going to move.";
-                    var close = document.createElement("button");
-                    close.className = "banner-dismiss";
-                    close.textContent = "\u2715";
-                    close.onclick = function () { stack.remove(); };
-                    toast.appendChild(text);
-                    toast.appendChild(close);
-                    stack.appendChild(toast);
-                    document.body.appendChild(stack);
-                }, 3000);
-
                 // Before the app is up, the figures roll and the mark shimmers,
                 // written into the text nodes the prerender gave them. The app
                 // hydrates onto those same nodes and takes over from wherever
