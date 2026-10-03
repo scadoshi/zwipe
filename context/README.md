@@ -21,6 +21,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-03: 1.10.5 built
+
+Version bumped, the seven-entry block moved from `UPCOMING` to `RELEASES` dated Oct 3, and both artifacts built the same morning: iOS build 86 (`Zwipe.ipa`, Xcode 27.0, signed and verified) and Android versionCode 49 (`zwipe-1.10.5.aab`, signed, all six patch greps hit, emulator lab from the signed bundle reaches Login and survives the singleTask re-open). Release notes at [`operations/store-submissions/1.10.5/whats_new.md`](operations/store-submissions/1.10.5/whats_new.md), 394 characters, one text for both stores. Both await upload. The release is the hero panel: home and the three auth screens share one `HomeHero` with the mark and the three public counters, cached above the router for a minute so screen hopping asks zerver once, printed short past ten thousand so they fit a phone's tiles.
+
 ## 2026-10-02: 1.10.4 built
 
 Version bumped, the three-entry block moved from `UPCOMING` to `RELEASES` dated Oct 2, and both artifacts built the same afternoon: iOS build 85 (`Zwipe.ipa`, Xcode 27.0, signed and verified) and Android versionCode 48 (`zwipe-1.10.4.aab`, signed, all six patch greps hit, and the emulator lab from the signed bundle reaches Login and survives the singleTask re-open). Release notes at [`operations/store-submissions/1.10.4/whats_new.md`](operations/store-submissions/1.10.4/whats_new.md), 232 characters, one text for both stores. Both submitted the same afternoon: Android vc48 passed Play's checks and is live on Production as of 2026-10-02; iOS build 85 is in App Store review. The fix that made the cut worth it: the sign-in and home logos were not decoding in the app because `eval(...).join()` on a returned value never resolves in the WebView; the answer now comes over `dioxus.send`, which the app already uses, and was watched mid-decode on the simulator before the build.
