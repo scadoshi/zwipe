@@ -1,7 +1,8 @@
 //! The entrance: how a page's headline pieces arrive.
 //!
-//! A number counts up from zero ([`CountUp`]), block-glyph art resolves from
-//! noise left to right ([`Decode`]), and both run again whenever the page's
+//! A number counts up from zero ([`CountUp`]), a formatted figure rolls its
+//! digits into place ([`Figure`]), block-glyph art resolves from noise left to
+//! right ([`Decode`]), and all of them run again whenever the page's
 //! [`Replay`] counter is bumped, which the nav logo does on a click. A page
 //! that provides no counter gets each piece once, on mount.
 //!
@@ -196,6 +197,89 @@ pub fn short(n: u64) -> String {
     with_separators(n)
 }
 
+/// A figure the caller has already formatted (`12.3k`, `1,234.6`, `87%`,
+/// `+606`) whose digits roll into place: every digit flickers through random
+/// ones and settles over `COUNT_MS`, while the separators, the sign, the unit
+/// and anything else stay put, so the width never moves. Rolls on mount, on
+/// every replay, and again whenever `text` changes, which is what makes a tap
+/// on a counter visibly move its figure.
+///
+/// `start` holds the roll until it reads true: a card below the fold passes
+/// the signal its reveal flips, so its numbers roll as it scrolls into view
+/// rather than unseen at mount. A viewer who asks for less motion gets the
+/// settled text at once.
+#[component]
+pub fn Figure(text: String, #[props(default)] start: Option<Signal<bool>>) -> Element {
+    let replay = use_replay();
+    let seed = use_hook(|| {
+        SEEDS
+            .fetch_add(1, Ordering::Relaxed)
+            .wrapping_mul(2_654_435_761)
+    });
+    let mut target = use_signal(|| text.clone());
+    let mut shown = use_signal(|| text.clone());
+    use_effect(use_reactive!(|text| target.set(text)));
+    use_effect(move || {
+        let run = replay();
+        let goal = target();
+        // Reading it here subscribes the effect, so the flip to true runs it.
+        let go = start.is_none_or(|start| start());
+        if !go {
+            return;
+        }
+        spawn(async move {
+            if reduced_motion().await {
+                shown.set(goal);
+                return;
+            }
+            let frames = (COUNT_MS / f64::from(COUNT_TICK_MS)).ceil();
+            let mut frame = 0.0;
+            while frame < frames {
+                sleep_ms(COUNT_TICK_MS).await;
+                if replay.peek().ne(&run) || target.peek().ne(&goal) {
+                    // A newer roll owns the figure now.
+                    return;
+                }
+                frame += 1.0;
+                let t = (frame / frames).min(1.0);
+                shown.set(scrambled(&goal, t, seed.wrapping_add(frame as u64)));
+            }
+            shown.set(goal);
+        });
+    });
+    rsx! { "{shown()}" }
+}
+
+/// `text` with each digit replaced by a random one with a probability that
+/// falls to zero as `fraction` reaches 1, squared so the figure is wild early
+/// and barely moves at the end. Everything that is not a digit is left alone.
+#[allow(
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss
+)]
+fn scrambled(text: &str, fraction: f64, seed: u64) -> String {
+    let fraction = fraction.clamp(0.0, 1.0);
+    if fraction >= 1.0 {
+        return text.to_string();
+    }
+    let spread = (1.0 - fraction).powi(2);
+    text.chars()
+        .enumerate()
+        .map(|(i, c)| {
+            if !c.is_ascii_digit() {
+                return c;
+            }
+            let roll = noise(seed.wrapping_add(i as u64 * 7919));
+            if (roll % 1000) as f64 / 1000.0 < spread {
+                char::from(b'0' + (roll / 1000 % 10) as u8)
+            } else {
+                c
+            }
+        })
+        .collect()
+}
+
 /// How long the glyphs take to settle, and the tick between frames.
 const DECODE_MS: u64 = 700;
 const DECODE_TICK_MS: u32 = 40;
@@ -335,6 +419,29 @@ fn decoded(text: &str, front: usize, seed: u64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scrambled_keeps_everything_but_the_digits_and_lands_on_the_text() {
+        assert_eq!(scrambled("12.3k", 1.0, 7), "12.3k");
+        for frame in 1..60u64 {
+            let out = scrambled(
+                "1,234.6/day",
+                f64::from(u32::try_from(frame).unwrap()) / 60.0,
+                frame,
+            );
+            assert_eq!(out.len(), "1,234.6/day".len());
+            for (a, b) in out.chars().zip("1,234.6/day".chars()) {
+                if b.is_ascii_digit() {
+                    assert!(a.is_ascii_digit(), "{out}");
+                } else {
+                    assert_eq!(a, b, "{out}");
+                }
+            }
+        }
+        assert_eq!(scrambled("goal met", 0.1, 3), "goal met");
+        // Early on, something moves.
+        assert_ne!(scrambled("123,456,789", 0.05, 11), "123,456,789");
+    }
 
     #[test]
     fn short_keeps_small_numbers_whole_and_shortens_the_rest() {

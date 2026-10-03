@@ -49,7 +49,7 @@ pub use changelog::Changelog;
 pub use charts::{ChartLabel, DeckCharts, DrawOdds, ManaCurve, ManaFulfillment};
 pub use chip::Chip;
 pub use diagram::{DIAGRAM_NODE_HEIGHT, DiagramArrow, DiagramDefs, DiagramNode, DiagramTone};
-pub use entrance::{CountUp, Decode, Replay, with_separators};
+pub use entrance::{CountUp, Decode, Figure, Replay, with_separators};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use nav_bar::{BRAND_RESET_JS, NavBar};
