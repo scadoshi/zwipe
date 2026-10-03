@@ -62,6 +62,14 @@
     box-sizing: border-box;
 }
 
+/* iOS Safari inflates text it takes for body copy on a phone, which is why
+   a figure that fits on a narrow desktop window can spill out of its tile on
+   the device. Text keeps the size the sheet gives it. */
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
 html,
 body {
     background-color: var(--bg-primary);
@@ -771,7 +779,9 @@ code {
 }
 
 .stats-strip .stat-num {
-    font-size: 1.5rem;
+    /* Scales with the viewport so three seven-digit figures share a phone's
+       panel, and tops out at the desktop size. */
+    font-size: clamp(0.9rem, 3.8vw, 1.5rem);
     font-weight: 600;
     color: var(--accent-primary);
     line-height: 1.1;
@@ -779,7 +789,7 @@ code {
 }
 
 .stats-strip .stat-label {
-    font-size: 0.75rem;
+    font-size: clamp(0.6rem, 2.4vw, 0.75rem);
     color: var(--text-primary);
     letter-spacing: 0.06em;
     opacity: 0.7;
