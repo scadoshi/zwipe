@@ -66,16 +66,16 @@ pub fn HomeHero() -> Element {
                     div { class: "logo", Decode { text: logo::ZWIPE } }
                     section { class: "stats-strip",
                         div { class: "stat",
-                            span { class: "stat-num", CountUp { value: figures.map(|m| count(m.cards_swiped)) } }
-                            span { class: "stat-label", "Cards swiped" }
+                            span { class: "stat-num", CountUp { value: figures.map(|m| count(m.decks_created)), compact: true } }
+                            span { class: "stat-label", "Decks created" }
                         }
                         div { class: "stat",
-                            span { class: "stat-num", CountUp { value: figures.map(|m| count(m.searches)) } }
+                            span { class: "stat-num", CountUp { value: figures.map(|m| count(m.searches)), compact: true } }
                             span { class: "stat-label", "Searches run" }
                         }
                         div { class: "stat",
-                            span { class: "stat-num", CountUp { value: figures.map(|m| count(m.decks_created)) } }
-                            span { class: "stat-label", "Decks created" }
+                            span { class: "stat-num", CountUp { value: figures.map(|m| count(m.cards_swiped)), compact: true } }
+                            span { class: "stat-label", "Cards swiped" }
                         }
                     }
                     // Where the numbers come from, as chips under the strip.

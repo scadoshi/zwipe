@@ -46,16 +46,16 @@ pub fn StatsStrip() -> Element {
         div { class: "hero-figures",
             section { class: "stats-strip",
                 div { class: "stat",
-                    span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.cards_swiped).unwrap_or(0)) } }
-                    span { class: "stat-label", "Cards swiped" }
+                    span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.decks_created).unwrap_or(0)) } }
+                    span { class: "stat-label", "Decks created" }
                 }
                 div { class: "stat",
                     span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.searches).unwrap_or(0)) } }
                     span { class: "stat-label", "Searches run" }
                 }
                 div { class: "stat",
-                    span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.decks_created).unwrap_or(0)) } }
-                    span { class: "stat-label", "Decks created" }
+                    span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.cards_swiped).unwrap_or(0)) } }
+                    span { class: "stat-label", "Cards swiped" }
                 }
             }
             // Where the numbers come from, as chips under the strip.

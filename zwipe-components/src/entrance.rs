@@ -54,7 +54,13 @@ const COUNT_TICK_MS: u32 = 16;
 /// takes, and lands when the value turns up; a value that changes mid-roll
 /// becomes the new target the same way.
 #[component]
-pub fn CountUp(value: Option<u64>) -> Element {
+pub fn CountUp(
+    value: Option<u64>,
+    /// Print `28.0k` and `1.2m` rather than every digit, for a figure in a
+    /// box too narrow for all of them. Below ten thousand it prints in full.
+    #[props(default)]
+    compact: bool,
+) -> Element {
     let replay = use_replay();
     // Its own seed, so three figures waiting side by side do not roll the
     // same digits in step.
@@ -102,9 +108,10 @@ pub fn CountUp(value: Option<u64>) -> Element {
             shown.set(*target.peek());
         });
     });
+    let print = if compact { short } else { with_separators };
     rsx! {
         match shown() {
-            Some(number) => rsx! { "{with_separators(number)}" },
+            Some(number) => rsx! { "{print(number)}" },
             // Before any frame runs there is nothing honest to print.
             None => rsx! { "\u{2007}\u{2007}\u{2007}\u{2007}" },
         }
@@ -170,6 +177,23 @@ pub fn with_separators(n: u64) -> String {
         out.push(ch);
     }
     out.chars().rev().collect()
+}
+
+/// `n` to one decimal with a magnitude letter from ten thousand up: `28.0k`,
+/// `1.2m`, `3.4b`. Under that, [`with_separators`]. Truncated, not rounded,
+/// so a figure never reads past what it is.
+pub fn short(n: u64) -> String {
+    const STEPS: [(u64, char); 3] = [(1_000_000_000, 'b'), (1_000_000, 'm'), (1_000, 'k')];
+    if n < 10_000 {
+        return with_separators(n);
+    }
+    for (unit, letter) in STEPS {
+        if n >= unit {
+            let tenths = n * 10 / unit;
+            return format!("{}.{}{letter}", tenths / 10, tenths % 10);
+        }
+    }
+    with_separators(n)
 }
 
 /// How long the glyphs take to settle, and the tick between frames.
@@ -311,6 +335,20 @@ fn decoded(text: &str, front: usize, seed: u64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn short_keeps_small_numbers_whole_and_shortens_the_rest() {
+        assert_eq!(short(2_065), "2,065");
+        assert_eq!(short(9_999), "9,999");
+        assert_eq!(short(10_000), "10.0k");
+        assert_eq!(short(28_018), "28.0k");
+        assert_eq!(short(123_456), "123.4k");
+        assert_eq!(short(244_855), "244.8k");
+        assert_eq!(short(999_999), "999.9k");
+        assert_eq!(short(1_234_567), "1.2m");
+        assert_eq!(short(123_456_789), "123.4m");
+        assert_eq!(short(2_500_000_000), "2.5b");
+    }
 
     #[test]
     fn the_roll_lands_on_its_value_and_stays_the_same_width() {
