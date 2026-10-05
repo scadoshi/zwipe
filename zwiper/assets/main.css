@@ -2436,6 +2436,13 @@ button {
     transition: none;
 }
 
+/* Pulled off screen with no slide, so a theme wipe's new snapshot is taken
+   without the sheet. */
+.bottom-sheet.snap,
+.modal-backdrop.snap {
+    transition: none;
+}
+
 .bottom-sheet .util-bar {
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
 }

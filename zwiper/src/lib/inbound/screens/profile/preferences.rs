@@ -7,7 +7,7 @@ use crate::inbound::components::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{Button, ButtonVariant, TOAST_QUICK};
+use zwipe_components::{Button, ButtonVariant, TOAST_QUICK, ThemeFollow};
 use zwipe_core::{
     domain::user::{
         models::theme::ThemeConfig,
@@ -59,10 +59,13 @@ fn ThemeRow(
 /// Bottom sheet for selecting theme and light/dark mode. Selections live-preview
 /// against the whole app; Save persists and drops the sheet, and is greyed
 /// until the pick differs from what the sheet opened on. Back/backdrop
-/// restores the theme that was active when the sheet opened.
+/// restores the theme that was active when the sheet opened: the sheet holds
+/// still while that theme wipes back in, leaves inside the wipe, and the toast
+/// lands once the sweep is done.
 #[component]
 pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
     let mut theme_config: Signal<ThemeConfig> = use_context();
+    let follow: ThemeFollow = use_context();
     let toast = use_toast();
     let authed = use_authed(Screen::Profile(ProfileScreen::Preferences));
 
@@ -81,16 +84,31 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
         }
     });
 
-    // Back and the backdrop are the same act, so they say the same thing,
-    // and only when there was a change to throw away: the picked theme is
-    // still on screen as the sheet slides off, and otherwise looks like it
-    // took.
+    // Back and the backdrop are the same act. With nothing to throw away the
+    // sheet just slides off. With a pick on screen, the original wipes back
+    // in and the sheet waits for it: sliding down under a wipe stutters, and
+    // the old theme would otherwise look like it took.
+    let mut restoring = use_signal(|| false);
     let discard = use_callback(move |()| {
         let original = original_theme.peek().clone();
         let changed =
             *selected_theme.peek() != original.name || *selected_dark.peek() != original.is_dark;
-        theme_config.set(original);
         if changed {
+            restoring.set(true);
+            theme_config.set(original);
+        } else {
+            open.set(false);
+        }
+    });
+
+    // Once the shell shows the original again the wipe has taken its new
+    // snapshot's contents, so the sheet is pulled from the page here and the
+    // sweep reveals the screen without it. The toast waits for the sweep.
+    let hidden = use_memo(move || restoring() && *follow.shown.read() == *original_theme.read());
+    use_effect(move || {
+        if restoring() && hidden() && !follow.wiping() {
+            open.set(false);
+            restoring.set(false);
             toast.info(
                 "Theme unchanged".to_string(),
                 ToastOptions::default().duration(TOAST_QUICK),
@@ -139,13 +157,11 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
             open,
             title: "Themes".to_string(),
             on_dismiss: move |_| discard.call(()),
+            hidden: hidden(),
             footer: rsx! {
                 Button {
                     variant: ButtonVariant::Util,
-                    onclick: move |_| {
-                        discard.call(());
-                        open.set(false);
-                    },
+                    onclick: move |_| discard.call(()),
                     "Back"
                 }
                 Button {

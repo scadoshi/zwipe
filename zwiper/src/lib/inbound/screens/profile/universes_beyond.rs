@@ -81,6 +81,7 @@ pub fn UniversesBeyondExceptionsSheet(
                 ToastOptions::default().duration(TOAST_QUICK),
             );
         }
+        open.set(false);
     });
 
     let mut save = move || {
@@ -119,10 +120,7 @@ pub fn UniversesBeyondExceptionsSheet(
             footer: rsx! {
                 Button {
                     variant: ButtonVariant::Util,
-                    onclick: move |_| {
-                        discard.call(());
-                        open.set(false);
-                    },
+                    onclick: move |_| discard.call(()),
                     "Back"
                 }
                 Button {

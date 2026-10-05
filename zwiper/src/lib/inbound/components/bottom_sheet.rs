@@ -10,7 +10,11 @@ use crate::inbound::components::navigation::overlay_stack::use_overlay_back_acti
 /// A slide-up bottom sheet with backdrop, title, content slot, and footer.
 ///
 /// `footer` overrides the default single "Close" button (e.g. a Back/Save pair).
-/// `on_dismiss` fires when the backdrop is tapped, before the sheet closes.
+/// `on_dismiss` fires when the backdrop is tapped or the OS back gesture lands,
+/// and owns the close: a sheet that sets it closes itself, which lets the
+/// Themes sheet hold still through the wipe that restores a discarded pick.
+/// `hidden` drops the sheet and backdrop with no slide, for a sheet that leaves
+/// inside that wipe so the new snapshot is taken without it.
 /// `hint` renders a grayed "?" at the header's right edge that opens the given
 /// dialog signal, mirroring `ScreenHeader`'s affordance.
 #[component]
@@ -20,19 +24,19 @@ pub fn BottomSheet(
     children: Element,
     footer: Option<Element>,
     on_dismiss: Option<EventHandler<()>>,
+    #[props(default)] hidden: bool,
     hint: Option<Signal<bool>>,
 ) -> Element {
     // The OS back gesture closes the sheet before the router sees it, exactly
-    // as tapping the backdrop does, `on_dismiss` first (preferences relies on
-    // it to revert an unsaved theme), then close. Registered here rather than
-    // per-screen so every sheet in the app inherits it; a sheet that has to
-    // remember its own hook is a sheet that eventually forgets.
+    // as tapping the backdrop does. Registered here rather than per-screen so
+    // every sheet in the app inherits it; a sheet that has to remember its own
+    // hook is a sheet that eventually forgets.
     let dismiss = use_callback(move |_: ()| {
         let mut open = open;
-        if let Some(h) = on_dismiss {
-            h.call(());
+        match on_dismiss {
+            Some(h) => h.call(()),
+            None => open.set(false),
         }
-        open.set(false);
     });
     use_overlay_back_action(open.into(), dismiss);
 
@@ -57,11 +61,14 @@ pub fn BottomSheet(
 
     rsx! {
         div {
-            class: if open() { "modal-backdrop show" } else { "modal-backdrop" },
-            onclick: move |_| {
-                if let Some(h) = on_dismiss { h.call(()); }
-                open.set(false);
+            class: if hidden {
+                "modal-backdrop snap"
+            } else if open() {
+                "modal-backdrop show"
+            } else {
+                "modal-backdrop"
             },
+            onclick: move |_| dismiss.call(()),
         }
         div {
             // Before mount, add `bottom-sheet-premount` (CSS `transition: none`)
@@ -70,7 +77,9 @@ pub fn BottomSheet(
             // This is a class, not an inline style, because clearing an inline
             // `transition: none` back to empty doesn't reliably take in this
             // WebView: the rule lingers and kills every sheet's animation.
-            class: if open() {
+            class: if hidden {
+                "bottom-sheet snap"
+            } else if open() {
                 "bottom-sheet show"
             } else if mounted() {
                 "bottom-sheet"

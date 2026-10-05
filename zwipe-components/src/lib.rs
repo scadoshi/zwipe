@@ -59,7 +59,7 @@ pub use oracle_text::OracleText;
 pub use page_meta::{PageMeta, SiteMeta};
 pub use panel::Panel;
 pub use theme_picker::ThemePicker;
-pub use theme_wipe::{use_theme_follow, use_theme_wipe};
+pub use theme_wipe::{ThemeFollow, use_theme_follow, use_theme_wipe};
 pub use toast_timing::{TOAST_LONG, TOAST_NORMAL, TOAST_QUICK};
 // The theme domain types live in zwipe-core (user preferences persist them
 // server-side); re-exported here so UI consumers have one import path.

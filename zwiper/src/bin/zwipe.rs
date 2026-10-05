@@ -82,9 +82,12 @@ fn launch_app() {
 fn ThemeWrapper(children: Element) -> Element {
     // Whatever sets the theme (the Themes sheet, the dark-mode toggle, a
     // session's preferences), the shell wipes over to it.
-    let theme =
+    let follow =
         zwipe_components::use_theme_follow(use_context::<Signal<ThemeConfig>>(), ".app-shell");
-    let class = theme.read().css_class();
+    // The Themes sheet reads it to leave inside the wipe that restores a
+    // discarded pick.
+    use_context_provider(|| follow);
+    let class = follow.shown.read().css_class();
     rsx! {
         div { class: "app-shell {class}",
             {children}

@@ -142,21 +142,45 @@ pub fn use_theme_wipe(
     (picked, shown)
 }
 
+/// What a host displays while its theme changes, from [`use_theme_follow`].
+///
+/// `shown` is the theme to render the host's theme class from; it takes each
+/// change inside the transition. [`ThemeFollow::wiping`] says whether a sweep
+/// is on screen, for anything that wants to leave inside one or wait for it
+/// to end, as the app's Themes sheet does on Back.
+#[derive(Clone, Copy, PartialEq)]
+pub struct ThemeFollow {
+    /// The theme the host currently shows.
+    pub shown: Signal<ThemeConfig>,
+    running: Signal<u32>,
+}
+
+impl ThemeFollow {
+    /// True while at least one wipe is still sweeping.
+    pub fn wiping(&self) -> bool {
+        *self.running.read() > 0
+    }
+}
+
 /// The theme to display, following `theme` through a wipe.
 ///
 /// `target` is the selector of the element that carries the theme class
 /// (`".app-shell"`). Every change to `theme` after mount wipes in, and the
-/// returned signal takes it inside the transition, so a host renders its theme
-/// class from it and lets anything set `theme`. A change superseded before its
-/// wipe commits is dropped for the later one.
-pub fn use_theme_follow(theme: Signal<ThemeConfig>, target: &'static str) -> Signal<ThemeConfig> {
+/// returned `shown` takes it inside the transition, so a host renders its
+/// theme class from it and lets anything set `theme`. A change superseded
+/// before its wipe commits is dropped for the later one.
+pub fn use_theme_follow(theme: Signal<ThemeConfig>, target: &'static str) -> ThemeFollow {
     let mut shown = use_signal(|| theme.peek().clone());
+    let mut running = use_signal(|| 0u32);
 
     use_effect(move || {
         let next = theme.read().clone();
-        if *shown.peek() == next {
+        // Going back to the shown theme still wipes while another sweep is on
+        // screen: that sweep has already swapped the page onto its theme.
+        if *shown.peek() == next && *running.peek() == 0 {
             return;
         }
+        running += 1;
         spawn(async move {
             let mut js = document::eval(WIPE_JS);
             let _ = js.send((target, next.css_class()));
@@ -166,8 +190,9 @@ pub fn use_theme_follow(theme: Signal<ThemeConfig>, target: &'static str) -> Sig
             }
             let _ = js.send(true);
             let _ = js.recv::<bool>().await;
+            running -= 1;
         });
     });
 
-    shown
+    ThemeFollow { shown, running }
 }
