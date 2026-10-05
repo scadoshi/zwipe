@@ -23,7 +23,7 @@ The running log, newest first. Update this when something ships; [`progress/todo
 
 ## 2026-10-05: 1.10.6 rebuilt as iOS build 88 and Android vc51
 
-A casualty of fast shipping, caught on the phone right after the submissions: Back on the Themes sheet with a pick on screen slid the sheet down while the original theme wiped back in, and the two animations stuttered against each other. Now `use_theme_follow` returns a `ThemeFollow` with the shown theme and a `wiping` flag, the Themes sheet holds still until the shell shows the original, drops out with no slide inside the transition so the new snapshot has no sheet, and toasts once the sweep ends. `BottomSheet` gained a `hidden` prop and `on_dismiss` now owns the close. Both artifacts rebuilt the same evening with the fix and verified, and Android vc51 submitted to Production and in review that night; cairn took the same change and the new pin.
+A casualty of fast shipping, caught on the phone right after the submissions: Back on the Themes sheet with a pick on screen slid the sheet down while the original theme wiped back in, and the two animations stuttered against each other. Now `use_theme_follow` returns a `ThemeFollow` with the shown theme and a `wiping` flag, the Themes sheet holds still until the shell shows the original, drops out with no slide inside the transition so the new snapshot has no sheet, and toasts once the sweep ends. `BottomSheet` gained a `hidden` prop and `on_dismiss` now owns the close. Both artifacts rebuilt the same evening with the fix and verified, and both submitted that night, iOS build 88 replacing 87 in App Store review and Android vc51 to Production; cairn took the same change and the new pin.
 
 ## 2026-10-05: 1.10.6 built
 
