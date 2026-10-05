@@ -23,7 +23,7 @@ The running log, newest first. Update this when something ships; [`progress/todo
 
 ## 2026-10-05: 1.10.6 built
 
-Version bumped, the one-entry block moved from `UPCOMING` to `RELEASES` dated Oct 5, and both artifacts built the same evening: iOS build 87 (`Zwipe.ipa`, Xcode 27.0, signed and verified) and Android versionCode 50 (`zwipe-1.10.6.aab`, signed, all patch greps hit, emulator lab skipped at the owner's call). Release notes at [`operations/store-submissions/1.10.6/whats_new.md`](operations/store-submissions/1.10.6/whats_new.md), 56 characters, one text for both stores. Both await upload. The release is the theme wipe: `use_theme_follow` in zwipe-components gives the shell a displayed theme that follows the picked one through a view transition, so every setter wipes, and zite, the portfolio and cairn took the same sweep from the shared crate the same day.
+Version bumped, the one-entry block moved from `UPCOMING` to `RELEASES` dated Oct 5, and both artifacts built the same evening: iOS build 87 (`Zwipe.ipa`, Xcode 27.0, signed and verified) and Android versionCode 50 (`zwipe-1.10.6.aab`, signed, all patch greps hit, emulator lab skipped at the owner's call). Release notes at [`operations/store-submissions/1.10.6/whats_new.md`](operations/store-submissions/1.10.6/whats_new.md), 56 characters, one text for both stores. Both submitted the same evening: iOS build 87 to App Store review, Android vc50 rolled out to Production and in Play's checks. The release is the theme wipe: `use_theme_follow` in zwipe-components gives the shell a displayed theme that follows the picked one through a view transition, so every setter wipes, and zite, the portfolio and cairn took the same sweep from the shared crate the same day.
 
 ## 2026-10-03: 1.10.5 built
 
