@@ -21,11 +21,20 @@ const COLORBLIND_THEMES: &[&str] = &["protanopia", "deuteranopia", "tritanopia",
 /// Theme dropdown + dark/light toggle. Every theme has both modes, so the
 /// toggle is always shown.
 #[component]
-pub fn ThemePicker(theme: Signal<ThemeConfig>) -> Element {
+pub fn ThemePicker(
+    theme: Signal<ThemeConfig>,
+    /// What the picker shows as current (its label, the active row, the mode
+    /// toggle) when that should lag behind `theme`, as during a wipe. Defaults
+    /// to `theme`.
+    #[props(default)]
+    shown: Option<Signal<ThemeConfig>>,
+) -> Element {
     let mut theme = theme;
     let mut open = use_signal(|| false);
-    let current = theme.read().name.clone();
-    let is_dark = theme.read().is_dark;
+    let shown = shown.unwrap_or(theme);
+    let current = shown.read().name.clone();
+    let is_dark = shown.read().is_dark;
+    let mode = if is_dark { "dark" } else { "light" };
     // ALLOWED_THEMES is already alphabetical; filtering preserves that order
     // for the main group and pulls the color-blind themes into a bottom section.
     let regular_themes = ALLOWED_THEMES
@@ -54,7 +63,8 @@ pub fn ThemePicker(theme: Signal<ThemeConfig>) -> Element {
                             });
                             open.set(false);
                         },
-                        "{display_theme_name(name)}"
+                        span { "{display_theme_name(name)}" }
+                        ThemeDots { name, mode }
                     }
                 }
                 div { class: "nav-dropdown-label", "Color blind" }
@@ -69,7 +79,8 @@ pub fn ThemePicker(theme: Signal<ThemeConfig>) -> Element {
                             });
                             open.set(false);
                         },
-                        "{display_theme_name(name)}"
+                        span { "{display_theme_name(name)}" }
+                        ThemeDots { name, mode }
                     }
                 }
             }
@@ -84,6 +95,23 @@ pub fn ThemePicker(theme: Signal<ThemeConfig>) -> Element {
                 },
                 if is_dark { "light" } else { "dark" }
             }
+        }
+    }
+}
+
+/// A theme's colors as a strip of dots: background, text, the three accents
+/// and the error color. The strip carries the theme's own class, so the dots
+/// read its CSS variables and the colors stay defined only in themes.css.
+#[component]
+fn ThemeDots(name: &'static str, mode: &'static str) -> Element {
+    rsx! {
+        span { class: "theme-swatches theme-{name}-{mode}",
+            span { class: "theme-dot", style: "background:var(--bg-primary)" }
+            span { class: "theme-dot", style: "background:var(--text-primary)" }
+            span { class: "theme-dot", style: "background:var(--accent-primary)" }
+            span { class: "theme-dot", style: "background:var(--accent-secondary)" }
+            span { class: "theme-dot", style: "background:var(--accent-tertiary)" }
+            span { class: "theme-dot", style: "background:var(--color-error)" }
         }
     }
 }

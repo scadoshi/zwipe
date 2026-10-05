@@ -1478,6 +1478,38 @@ a.nav-dropdown-item.active:visited {
     color: var(--accent-secondary);
 }
 
+/* The theme menu is as wide as its widest row, so names stay on one line and
+   nothing scrolls sideways, but never wider than the screen. */
+.theme-switcher .nav-dropdown-content {
+    width: max-content;
+    max-width: calc(100vw - 2rem);
+    overflow-x: hidden;
+}
+
+/* Theme picker rows: the name on the left, the theme's color dots on the
+   right. Scoped to the picker so the app's own .theme-dot rules stay apart. */
+.theme-switcher .nav-dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    white-space: nowrap;
+}
+
+.theme-switcher .theme-swatches {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    flex-shrink: 0;
+}
+
+.theme-switcher .theme-dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 0.2rem;
+    flex-shrink: 0;
+}
+
 /* Section subtitles ("Themes" / "Color blind") that group the picker. The
    gap above each later section carries the separation (no divider line). */
 .nav-dropdown-label {
@@ -1987,4 +2019,71 @@ a.nav-dropdown-item.active:visited {
 .diagram-group text {
     fill: var(--text-muted);
     font-size: 11px;
+}
+
+/* ---- Theme wipe (zwipe_components::use_theme_wipe) ----
+   A picked theme sweeps across the page: the new page's snapshot is unclipped
+   over the old one, left to right except from light to dark, which runs right
+   to left, as the root's data-wipe says. These are the only view transitions
+   on any host, so they style the root snapshot directly. */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+    animation: theme-wipe 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+html[data-wipe="left"]::view-transition-new(root) {
+    animation-name: theme-wipe-left;
+}
+
+@keyframes theme-wipe {
+    from {
+        clip-path: inset(0 100% 0 0);
+    }
+    to {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@keyframes theme-wipe-left {
+    from {
+        clip-path: inset(0 0 0 100%);
+    }
+    to {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+/* At hamburger widths the wipe runs down the screen instead, and light to
+   dark runs back up it. */
+@media (max-width: 60rem) {
+    ::view-transition-new(root) {
+        animation-name: theme-wipe-down;
+    }
+
+    html[data-wipe="left"]::view-transition-new(root) {
+        animation-name: theme-wipe-up;
+    }
+}
+
+@keyframes theme-wipe-down {
+    from {
+        clip-path: inset(0 0 100% 0);
+    }
+    to {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@keyframes theme-wipe-up {
+    from {
+        clip-path: inset(100% 0 0 0);
+    }
+    to {
+        clip-path: inset(0 0 0 0);
+    }
 }
