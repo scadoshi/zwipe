@@ -1,6 +1,7 @@
 use dioxus::{document::eval, prelude::*};
 use zwipe_components::{
     BRAND_RESET_JS, COMPONENTS_CSS, Decode, NavBar, Replay, THEMES_CSS, ThemeConfig, ThemePicker,
+    use_theme_wipe,
 };
 
 mod api;
@@ -24,6 +25,7 @@ const FAVICON_32: Asset = asset!("/assets/favicon-32x32.png");
 const APPLE_TOUCH_ICON: Asset = asset!("/assets/icon-180.png");
 const MANIFEST: Asset = asset!("/assets/site.webmanifest");
 const REVEAL_JS: Asset = asset!("/assets/reveal.js");
+const NAV_GLIDE_JS: Asset = asset!("/assets/nav-glide.js");
 const Z_LOGO: &str = zwipe_core::domain::logo::Z;
 
 #[derive(Routable, Clone, PartialEq)]
@@ -180,7 +182,11 @@ fn App() -> Element {
         }
         let class = cfg.css_class();
         spawn(async move {
-            let _ = eval(&format!("document.body.className = '{class}';")).await;
+            // Swap only the theme class, leaving any other class on the body.
+            let _ = eval(&format!(
+                "Array.from(document.body.classList).forEach(c => /^theme-.+-(dark|light)$/.test(c) && document.body.classList.remove(c)); document.body.classList.add('{class}');"
+            ))
+            .await;
         });
     });
 
@@ -206,13 +212,15 @@ fn App() -> Element {
         // Scroll reveal for panels below the fold; deferred, and everything
         // it does is progressive.
         document::Script { defer: true, src: REVEAL_JS }
+        // Nav items pushed by a wider theme label slide over instead of jumping.
+        document::Script { defer: true, src: NAV_GLIDE_JS }
         Router::<Route> {}
     }
 }
 
 #[component]
 pub fn Nav() -> Element {
-    let theme: Signal<ThemeConfig> = use_context();
+    let (theme, shown) = use_theme_wipe(use_context::<Signal<ThemeConfig>>(), "body");
     let mut open = use_signal(|| false);
     let mut replay = use_context::<Replay>().0;
     let mut hovering = use_signal(|| false);
@@ -287,7 +295,7 @@ pub fn Nav() -> Element {
                 }
             },
             trailing: rsx! {
-                ThemePicker { theme }
+                ThemePicker { theme, shown }
             },
         }
     }
