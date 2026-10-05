@@ -21,6 +21,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-05: 1.10.6 rebuilt as iOS build 88 and Android vc51
+
+A casualty of fast shipping, caught on the phone right after the submissions: Back on the Themes sheet with a pick on screen slid the sheet down while the original theme wiped back in, and the two animations stuttered against each other. Now `use_theme_follow` returns a `ThemeFollow` with the shown theme and a `wiping` flag, the Themes sheet holds still until the shell shows the original, drops out with no slide inside the transition so the new snapshot has no sheet, and toasts once the sweep ends. `BottomSheet` gained a `hidden` prop and `on_dismiss` now owns the close. Both artifacts rebuilt the same evening with the fix and verified; cairn took the same change and the new pin.
+
 ## 2026-10-05: 1.10.6 built
 
 Version bumped, the one-entry block moved from `UPCOMING` to `RELEASES` dated Oct 5, and both artifacts built the same evening: iOS build 87 (`Zwipe.ipa`, Xcode 27.0, signed and verified) and Android versionCode 50 (`zwipe-1.10.6.aab`, signed, all patch greps hit, emulator lab skipped at the owner's call). Release notes at [`operations/store-submissions/1.10.6/whats_new.md`](operations/store-submissions/1.10.6/whats_new.md), 56 characters, one text for both stores. Both submitted the same evening: iOS build 87 to App Store review, Android vc50 rolled out to Production and in Play's checks. The release is the theme wipe: `use_theme_follow` in zwipe-components gives the shell a displayed theme that follows the picked one through a view transition, so every setter wipes, and zite, the portfolio and cairn took the same sweep from the shared crate the same day.
