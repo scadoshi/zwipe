@@ -12,12 +12,12 @@ description: |
 
 Two failure layers, both obvious to readers: sentence-level tells (word choice, rhythm, punctuation) and discourse-level tells (structure, how much gets explained, whether everything resolves). Fix both or it still smells generated.
 
-## House rules (non-negotiable, override everything)
+## House rules (these win over any general writing guidance)
 
 - No em or en dashes anywhere in user-facing copy. Recast with comma, colon, period, or parentheses.
 - Sentence case. "Zwipe" capitalized. Features are not branded "Zwipe X".
 - No glow words: seamless, effortless, elevate, unleash, supercharge, stunning, beautiful, magical, powerful, game-changing.
-- Store-listing copy stays generic where the copycat rules demand it (the Android listing says "tags," not "Scryfall" or MTG-specific terms).
+- Store listings use the card game's own vocabulary ("Magic: The Gathering", "Commander", "Scryfall"); only the app name stays generic. The reasoning is in `context/operations/store-submissions/README.md`.
 - Post copy in files: one paragraph per line, no hard wraps.
 
 ## Sentence-level tells (the humanizer core, marketing cut)

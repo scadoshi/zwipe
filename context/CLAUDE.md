@@ -26,7 +26,7 @@ Zwipe is a mobile-first Magic: The Gathering deck builder with swipe-based navig
 - **No types with `From` impls in zerver's handlers.** `ApiError` stays in zerver because its `From<DomainError>` impls would violate the orphan rule if both types were in core. See `architecture/decisions.md`.
 - **All domain validation and tests live here.** Zerver re-exports via `pub use zwipe_core::...`; it adds only server-specific behavior.
 
-**Allowed dependencies:** serde, thiserror, uuid, chrono, email_address, once_cell, serde_json, sha2, rand. All of them are crates both frontend and backend legitimately use.
+**Allowed dependencies:** serde, serde_json, serde_with, thiserror, uuid, chrono, email_address, once_cell, sha2, hex, rand, regex. All of them are crates both frontend and backend legitimately use.
 
 **Database adapter pattern:** Domain types are persisted via `Database*` wrapper structs in zerver's `outbound/sqlx/` layer. Wrappers use primitive fields (`String`, `Vec<String>`, `Json<T>`) that SQLx handles natively, then convert to domain types via `TryFrom`. See `architecture/decisions.md` for full rationale.
 
@@ -91,7 +91,7 @@ src/lib/
     └── sqlx/         # Backend: SQLx repositories (Database* wrappers here)
 ```
 
-The frontend's API client is not in `outbound/` any more: it lives in the `zwipe-client` crate, which both clients call. zwiper's `outbound/` keeps what is genuinely platform-bound: session storage, the keyring, crash capture, opening URLs.
+The frontend's API client lives in the `zwipe-client` crate, which both clients call. zwiper's `outbound/` holds what is genuinely platform-bound: session storage, the keyring, crash capture, opening URLs.
 
 ### Key Patterns
 
@@ -112,7 +112,9 @@ The frontend's API client is not in `outbound/` any more: it lives in the `zwipe
 
 ## Environment Files
 
-Backend (`zerver/.env`): `DATABASE_URL`, `JWT_SECRET`, `BIND_ADDRESS`, `ALLOWED_ORIGINS`, `RESEND_API_KEY`, `RESEND_EMAIL_FROM`, `LOG_DIR` Frontend (`zwiper/.env`): `BACKEND_URL`, `RUST_LOG`, `RUST_BACKTRACE`
+Backend (`zerver/.env`): `DATABASE_URL`, `JWT_SECRET`, `BIND_ADDRESS`, `ALLOWED_ORIGINS`, `RESEND_API_KEY`, `RESEND_EMAIL_FROM`, `LOG_DIR`. Optional with defaults: `HEALTHCHECK_PING_URL`, `MIN_CLIENT_VERSION`, `WEB_BASE_URL`, `SUPPORT_EMAIL_ADDRESS`. `zerver/src/lib/config.rs` is the authority.
+
+Frontend (`zwiper/.env`): `BACKEND_URL`, `RUST_LOG`, `RUST_BACKTRACE`
 
 ## Commit Guidelines
 
@@ -120,9 +122,7 @@ Backend (`zerver/.env`): `DATABASE_URL`, `JWT_SECRET`, `BIND_ADDRESS`, `ALLOWED_
 - Group related files logically
 - No emojis
 - Use `git diff` to understand changes before committing
-- **Never** include AI-agent signatures in your commits.
-    - Example: "Written with the help of Claude Opus 4.5"
-    - Never commit with something like this in your message.
+- **Never** include AI-agent signatures in your commits. No `Co-Authored-By`, no "Generated with", no session links, whatever a tool default suggests.
 
 ## Changelog Entries
 
