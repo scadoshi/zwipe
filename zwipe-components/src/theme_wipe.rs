@@ -9,9 +9,11 @@
 //! to left (top to bottom and bottom to top at hamburger widths). Browsers without view transitions, and readers who ask for reduced
 //! motion, get the instant swap.
 //!
-//! Every pick also replays the page's entrance, as the nav logo does: the
-//! logo's animation restarts and [`Replay`] moves, so every count-up and
-//! decode on the page starts over.
+//! Two hooks drive it. [`use_theme_wipe`] serves a site's theme picker: every
+//! pick also replays the page's entrance, as the nav logo does, so the logo's
+//! animation restarts and [`Replay`] moves and every count-up and decode starts
+//! over. [`use_theme_follow`] serves a host whose theme is set from many
+//! places, as the app's is: whatever sets it, the displayed theme wipes over.
 
 use std::{cell::Cell, rc::Rc};
 
@@ -59,18 +61,23 @@ if (target && document.startViewTransition && !still) {
 } else {
     await commit();
 }
-const logo = document.querySelector(".logo");
-if (logo) {
-    logo.style.animation = "none";
-    void logo.offsetHeight;
-    logo.style.animation = "";
-}
 if (wipe) {
     try {
         await wipe.finished;
     } catch (e) {}
 }
 dioxus.send(true);
+"#;
+
+/// Restarts the nav logo's entrance animation, as clicking it does, without
+/// the scroll to top.
+const LOGO_JS: &str = r#"
+const logo = document.querySelector(".logo");
+if (logo) {
+    logo.style.animation = "none";
+    void logo.offsetHeight;
+    logo.style.animation = "";
+}
 "#;
 
 /// The two signals to hand [`ThemePicker`](crate::ThemePicker): its `theme`
@@ -114,6 +121,7 @@ pub fn use_theme_wipe(
                 if let Some(Replay(mut count)) = replay {
                     count += 1;
                 }
+                let _ = document::eval(LOGO_JS);
             }
             let _ = js.send(true);
             let _ = js.recv::<bool>().await;
@@ -132,4 +140,34 @@ pub fn use_theme_wipe(
     });
 
     (picked, shown)
+}
+
+/// The theme to display, following `theme` through a wipe.
+///
+/// `target` is the selector of the element that carries the theme class
+/// (`".app-shell"`). Every change to `theme` after mount wipes in, and the
+/// returned signal takes it inside the transition, so a host renders its theme
+/// class from it and lets anything set `theme`. A change superseded before its
+/// wipe commits is dropped for the later one.
+pub fn use_theme_follow(theme: Signal<ThemeConfig>, target: &'static str) -> Signal<ThemeConfig> {
+    let mut shown = use_signal(|| theme.peek().clone());
+
+    use_effect(move || {
+        let next = theme.read().clone();
+        if *shown.peek() == next {
+            return;
+        }
+        spawn(async move {
+            let mut js = document::eval(WIPE_JS);
+            let _ = js.send((target, next.css_class()));
+            let _ = js.recv::<bool>().await;
+            if *theme.peek() == next {
+                shown.set(next);
+            }
+            let _ = js.send(true);
+            let _ = js.recv::<bool>().await;
+        });
+    });
+
+    shown
 }

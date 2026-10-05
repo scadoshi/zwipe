@@ -80,7 +80,10 @@ fn launch_app() {
 
 #[component]
 fn ThemeWrapper(children: Element) -> Element {
-    let theme: Signal<ThemeConfig> = use_context();
+    // Whatever sets the theme (the Themes sheet, the dark-mode toggle, a
+    // session's preferences), the shell wipes over to it.
+    let theme =
+        zwipe_components::use_theme_follow(use_context::<Signal<ThemeConfig>>(), ".app-shell");
     let class = theme.read().css_class();
     rsx! {
         div { class: "app-shell {class}",
