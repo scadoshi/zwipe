@@ -16,5 +16,6 @@ Server provisioning, CI/CD, deployments, backups, and external services.
 ## Reference
 
 - **[backups.md](backups.md)**: Nightly PostgreSQL backups to Cloudflare R2, restore procedures
+- **[../observability/](../observability/README.md)**: How we know things are running: health checks, alerts (push and email), logs, metrics, error and crash reports, and the known gaps
 - **[manual_run.md](manual_run.md)**: Running zerver/zervice manually on the server
 - **[tips.md](tips.md)**: Gotchas and one-off fixes
