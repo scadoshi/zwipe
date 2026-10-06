@@ -91,11 +91,21 @@ pg_dump "$DATABASE_URL" | gzip > "$BACKUP_FILE"
 rclone copy "$BACKUP_FILE" r2:zwipe-backups/
 rm "$BACKUP_FILE"
 
+# Keep the newest $KEEP dumps in R2 (one a day, so ~30 days). Prune only after a
+# successful upload, so a run of failed nights can never delete the last good copies.
+KEEP=30
+mapfile -t OLD < <(rclone lsf r2:zwipe-backups/ --files-only 2>/dev/null | grep -E '^zwipe-[0-9]{8}\.sql\.gz$' | sort | head -n -"$KEEP" || true)
+for f in "${OLD[@]}"; do
+  [ -n "$f" ] && { rclone deletefile "r2:zwipe-backups/$f" || echo "prune: could not delete $f"; }
+done
+
 echo "backup complete: zwipe-$(date +%Y%m%d).sql.gz"
 
 # Ping Healthchecks.io only after a successful upload (set -e stops earlier on failure).
 [ -n "$BACKUP_HEALTHCHECK_URL" ] && curl -fsS -m 10 --retry 3 "$BACKUP_HEALTHCHECK_URL" > /dev/null || true
 ```
+
+**Retention:** the newest 30 dumps are kept (about 30 days at one a day, roughly 3.3 GB) and older ones are deleted, but only after a new upload succeeds. That is deliberate: an R2 lifecycle rule ("delete after 30 days") would keep deleting through an outage like the 2026 one and could empty the bucket.
 
 **Alerting:** the last line pings the Healthchecks.io check "Zwipe Backups" (cron `0 5 * * *` UTC, 1 hour grace, email). `set -e` means it is only reached when the dump and the upload both succeeded, so a missing ping is the alert. The ping URL lives in the server's `.env` as `BACKUP_HEALTHCHECK_URL`, never in the repo. On a failed run the dump stays in `/tmp` (the `rm` is never reached), which is a useful last copy until the next reboot.
 
