@@ -1,6 +1,6 @@
 # Why tao is vendored
 
-This is tao 0.37.0 exactly as published on crates.io, with one edit: `version` in `Cargo.toml` reads `0.34.9` instead of `0.37.0`. Nothing else differs from upstream.
+This is tao 0.37.0 as published on crates.io, with two edits: `version` in `Cargo.toml` reads `0.34.9` instead of `0.37.0` (below), and the iOS event loop keeps running while a scroll is moving (see "The iOS event loop runs mid-scroll"). Nothing else differs from upstream.
 
 ## The problem
 
@@ -21,9 +21,13 @@ tao gained scene support in 0.35.0 (`src/platform_impl/ios/scene.rs`, `TaoSceneD
 
 tao 0.37 renamed its JNI entry points (`onCreate`, `onStart`, `onResume`, `onPause`, `onStop`, `onDestroy`, `onWindowFocusChanged`, `onLowMemory`, `onNewIntent`, `onFirstActivityCreate`) and reads the activity's `id`. dx 0.7.10 generates wry 0.53.5's `WryActivity.kt`, which calls the 0.34 names, so the app throws `UnsatisfiedLinkError` in `onCreate`. `zcripts/android/wry_activity.sh`, run by `patch_bundle.sh`, rewrites the activity after every `dx bundle`. Found by Play's pre-launch lab on 1.10.3 vc46, 2026-09-30.
 
+## The iOS event loop runs mid-scroll
+
+`src/platform_impl/ios/event_loop.rs` registers its three run-loop observers (`begin_observer`, `main_end_observer`, `end_observer`) in `kCFRunLoopCommonModes`, where upstream uses `kCFRunLoopDefaultMode`, and its begin handler ignores `kCFRunLoopEntry` instead of hitting `unimplemented!()`. Those observers are what hand the app its queued events: the proxy's run-loop source only wakes the loop. While a finger drags or a list glides, UIKit runs the main loop in `UITrackingRunLoopMode`, so upstream's observers never fire and every queued event waits for the scroll to end. On Dioxus that held everything Rust sends the page (DOM edits, `eval`), so a tap mid-scroll did its work only once momentum stopped. Common modes include the tracking mode, so the loop now drains during a scroll; entering that mode is what fires `kCFRunLoopEntry`. tao's own macOS backend already registers the same observers in common modes. Measured on an iPhone 16 (iOS 26.6), 2026-10-06: a mid-glide tap's DOM update went from landing about 1.2s late, when the scroll stopped, to landing while the list was still moving.
+
 ## When to delete this
 
-The moment a released `dioxus-desktop` depends on tao 0.35 or newer. At that point: drop `[patch.crates-io]` from the workspace `Cargo.toml`, delete this directory and `zcripts/android/wry_activity.sh` (with its line in `patch_bundle.sh`), and keep the `Info.plist` key, which is needed regardless of tao version. `cargo tree -i tao` shows which version is actually in the graph; a patch that does not apply is a warning, not an error, so check rather than assume.
+The moment a released `dioxus-desktop` depends on tao 0.35 or newer, and the tao it takes registers the iOS observers in common modes (upstream tao 0.37.0 and winit 0.30 both still use the default mode). If dioxus moves first, keep vendoring the newer tao with the observer edit, under its real version number, and drop only the version rewrite. Once both hold: drop `[patch.crates-io]` from the workspace `Cargo.toml`, delete this directory and `zcripts/android/wry_activity.sh` (with its line in `patch_bundle.sh`), and keep the `Info.plist` key, which is needed regardless of tao version. `cargo tree -i tao` shows which version is actually in the graph; a patch that does not apply is a warning, not an error, so check rather than assume.
 
 ## Verifying a change here
 

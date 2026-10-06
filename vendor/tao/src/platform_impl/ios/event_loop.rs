@@ -25,7 +25,7 @@ use crate::platform_impl::platform::{
   app_state,
   ffi::{
     id, kCFRunLoopAfterWaiting, kCFRunLoopBeforeWaiting, kCFRunLoopCommonModes,
-    kCFRunLoopDefaultMode, kCFRunLoopEntry, kCFRunLoopExit, nil, CFIndex, CFRelease,
+    kCFRunLoopEntry, kCFRunLoopExit, nil, CFIndex, CFRelease,
     CFRunLoopActivity, CFRunLoopAddObserver, CFRunLoopAddSource, CFRunLoopGetMain,
     CFRunLoopObserverCreate, CFRunLoopObserverRef, CFRunLoopSourceContext, CFRunLoopSourceCreate,
     CFRunLoopSourceInvalidate, CFRunLoopSourceRef, CFRunLoopSourceSignal, CFRunLoopWakeUp,
@@ -253,7 +253,7 @@ fn setup_control_flow_observers() {
         #[allow(non_upper_case_globals)]
         match activity {
           kCFRunLoopAfterWaiting => app_state::handle_wakeup_transition(),
-          kCFRunLoopEntry => unimplemented!(), // not expected to ever happen
+          kCFRunLoopEntry => (), // the loop entering a mode, e.g. `UITrackingRunLoopMode`
           _ => unreachable!(),
         }
       }
@@ -311,7 +311,7 @@ fn setup_control_flow_observers() {
       control_flow_begin_handler,
       ptr::null_mut(),
     );
-    CFRunLoopAddObserver(main_loop, begin_observer, kCFRunLoopDefaultMode);
+    CFRunLoopAddObserver(main_loop, begin_observer, kCFRunLoopCommonModes);
 
     let main_end_observer = CFRunLoopObserverCreate(
       ptr::null_mut(),
@@ -321,7 +321,7 @@ fn setup_control_flow_observers() {
       control_flow_main_end_handler,
       ptr::null_mut(),
     );
-    CFRunLoopAddObserver(main_loop, main_end_observer, kCFRunLoopDefaultMode);
+    CFRunLoopAddObserver(main_loop, main_end_observer, kCFRunLoopCommonModes);
 
     let end_observer = CFRunLoopObserverCreate(
       ptr::null_mut(),
@@ -331,7 +331,7 @@ fn setup_control_flow_observers() {
       control_flow_end_handler,
       ptr::null_mut(),
     );
-    CFRunLoopAddObserver(main_loop, end_observer, kCFRunLoopDefaultMode);
+    CFRunLoopAddObserver(main_loop, end_observer, kCFRunLoopCommonModes);
   }
 }
 

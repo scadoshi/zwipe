@@ -26,7 +26,14 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.10.7",
+    date: "",
+    entries: &[
+        "iOS: buttons respond while a list is still scrolling",
+        "iOS: swiping back from the screen edge works while a list is still scrolling",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[

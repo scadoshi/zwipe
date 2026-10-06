@@ -88,7 +88,7 @@ mod ios {
     use objc2::{
         AnyThread, DefinedClass, MainThreadMarker, class, define_class, msg_send,
         rc::{Allocated, Retained},
-        runtime::{AnyObject, NSObject},
+        runtime::{AnyObject, Bool, NSObject},
         sel,
     };
     use tokio::sync::mpsc::UnboundedSender;
@@ -121,6 +121,16 @@ mod ios {
                     let _ = self.ivars().tx.send(());
                 }
             }
+
+            /// Delegate: lets the edge pan run alongside another pan. A gliding
+            /// list's scroll view claims the next touch at once to catch the
+            /// scroll, and one recognizer winning would cancel the edge swipe.
+            #[unsafe(method(gestureRecognizer:shouldRecognizeSimultaneouslyWithGestureRecognizer:))]
+            fn should_recognize_simultaneously(&self, _edge: &AnyObject, other: &AnyObject) -> Bool {
+                // SAFETY: `isKindOfClass:` is a valid selector on every NSObject.
+                let is_pan: Bool = unsafe { msg_send![other, isKindOfClass: class!(UIPanGestureRecognizer)] };
+                is_pan
+            }
         }
     );
 
@@ -149,6 +159,7 @@ mod ios {
             let recognizer: Retained<AnyObject> =
                 msg_send![alloc, initWithTarget: &*target, action: sel!(handleEdgePan:)];
             let _: () = msg_send![&*recognizer, setEdges: EDGE_LEFT];
+            let _: () = msg_send![&*recognizer, setDelegate: &*target];
             let _: () = msg_send![&*webview, addGestureRecognizer: &*recognizer];
         }
         // A gesture recognizer keeps only a weak reference to its target; leak
