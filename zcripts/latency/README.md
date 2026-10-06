@@ -44,7 +44,7 @@ bash zcripts/latency/probe.sh public    # public only — run from laptop
 
 ### `cf_cache_verify.sh` — confirm CF edge caching works
 
-Runs each immutable card endpoint twice and asserts the second hit returns `cf-cache-status: HIT`. Use after configuring a Cloudflare Cache Rule (see `context/ops/cloudflare-edge-caching.md`) to confirm it's actually taking effect.
+Runs each immutable card endpoint twice and asserts the second hit returns `cf-cache-status: HIT`. Use after configuring a Cloudflare Cache Rule (see the Cache Rules section of `context/operations/infrastructure/cloudflare.md`) to confirm it's actually taking effect.
 
 ```bash
 bash zcripts/latency/cf_cache_verify.sh   # run from laptop, hits api.zwipe.net
@@ -79,4 +79,4 @@ Exits non-zero if any endpoint fails — chain into CI or git hooks if useful.
 
 These answer "is the problem even in the backend?" in 60 seconds with no code changes. If the answer is yes, *then* invest in proper per-request tracing middleware in Axum and `pg_stat_statements` for query-level analysis. The verify script likewise saves you from clicking into the CF dashboard to read analytics — it just tells you yes/no, fast.
 
-See `context/ops/latency-optimization.md` for the broader plan these scripts support, and `context/ops/cloudflare-edge-caching.md` for the CF rule shape that `cf_cache_verify.sh` is validating.
+See `context/archive/latency_optimization.md` for the broader plan these scripts supported, and the Cache Rules section of `context/operations/infrastructure/cloudflare.md` for the CF rule shape that `cf_cache_verify.sh` is validating.

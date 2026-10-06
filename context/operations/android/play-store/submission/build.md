@@ -57,13 +57,13 @@ dx bundle --release --platform android --package-types aab
 
 ## 1b–1d. Apply every post-bundle patch (one command)
 
-`dx bundle` regenerates the whole android/ tree each time, so three patches must be re-applied after it and before the Gradle repackage. Run them together:
+`dx bundle` regenerates the whole android/ tree each time, so four patches must be re-applied after it and before the Gradle repackage. Run them together:
 
 ```bash
 ~/Developer/zwipe/zcripts/android/patch_bundle.sh
 ```
 
-That is launcher icons + back navigation + manifest, described individually below. **Skipping any one ships a broken release quietly**: the manifest patch in particular guards the ndk-context crash that survived five versions because this was a checklist rather than a command ([`../../../../plans/archive/android_ndk_context_crash.md`](../../../../plans/archive/android_ndk_context_crash.md)). Add future patches to that script, not to this list.
+That is launcher icons + back navigation + manifest + WryActivity; the first three are described individually below and WryActivity is gotcha 7. **Skipping any one ships a broken release quietly**: the manifest patch in particular guards the ndk-context crash that survived five versions because this was a checklist rather than a command ([`../../../../plans/archive/android_ndk_context_crash.md`](../../../../plans/archive/android_ndk_context_crash.md)). Add future patches to that script, not to this list.
 
 ## 1b. Regenerate launcher icons (dx ships its default droid)
 

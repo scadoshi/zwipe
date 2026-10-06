@@ -2,13 +2,13 @@
 
 Deployment for the zite Dioxus web frontend. Hosted on GitHub Pages at `zwipe.net`.
 
-The pipeline runs automatically on push to `main` when files under `zite/**` change. Manual trigger is also available.
+The pipeline runs automatically on push to `main` when files under `zite/**`, `zwipe-core/**` or `zwipe-components/**` change (or the workflow file itself). Manual trigger is also available.
 
 ---
 
 ## Automatic Deploy (push to main)
 
-Any push to `main` that touches `zite/**` triggers `.github/workflows/deploy-zite.yml` automatically.
+Any push to `main` that touches `zite/**`, `zwipe-core/**`, `zwipe-components/**` or the workflow file triggers `.github/workflows/deploy-zite.yml` automatically.
 
 No action needed; just push and the workflow handles the rest.
 

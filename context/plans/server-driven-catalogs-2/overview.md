@@ -40,7 +40,7 @@ That also means the app binary does not shrink. The win is latency and one less 
 
 1. **[Universes Beyond franchises](ub_franchises.md)** — new endpoint. Most of it is built already.
 2. **[Drop the two fallbacks](fallback_removals.md)** — keyword reminders and the changelog. Deletions only, no new endpoints.
-3. **[Curated oracle tags](curated_oracle_tags.md)** — new endpoint, same shape as phase 1.
+3. **[Curated oracle tags](curated_oracle_tags.md)** — a `curated` field on the served oracle-tag catalog, not a new endpoint.
 
 Order matters only in that phase 1 establishes the shape the others copy. Phases 2 and 3 are independent of each other.
 
@@ -53,4 +53,4 @@ Order matters only in that phase 1 establishes the shape the others copy. Phases
 
 ## Wire safety
 
-Every phase is additive on the server: new endpoints, no changed responses. Shipped clients keep reading their compiled copies and never call the new routes. Nothing here needs a `MIN_CLIENT_VERSION` bump.
+Every phase is additive on the server: one new endpoint and one new `#[serde(default)]` field, no breaking response changes. Shipped clients keep reading their compiled copies and never call the new routes. Nothing here needs a `MIN_CLIENT_VERSION` bump.

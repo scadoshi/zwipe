@@ -13,7 +13,7 @@ Previous host was a Raspberry Pi 5 (4GB RAM). Moved to a proper server: 32GB RAM
 - **Backend**: `zerver` as a systemd service
 - **Database**: PostgreSQL, `zwipe` DB, `zwipe` user
 - **Tunnel**: Cloudflare Tunnel → `api.zwipe.net` routes to `localhost:3000`
-- **Nightly sync**: `zervice` via cron at 4am
+- **Nightly sync**: `zervice` via systemd timer at 04:00 UTC
 
 ## Why Ubuntu Server (headless)
 

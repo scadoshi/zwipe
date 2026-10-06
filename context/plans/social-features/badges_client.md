@@ -2,7 +2,7 @@
 
 ## 1. API client
 
-`zwiper/src/lib/outbound/client/user/weekly_recap.rs`: `get_weekly_recap()` returning `HttpWeeklyRecap`, mirroring the existing single-GET client modules.
+`zwipe-client/src/user/weekly_recap.rs`: `get_weekly_recap()` returning `HttpWeeklyRecap`, mirroring the existing single-GET client modules.
 
 ## 2. "Your week" recap: the Monday moment
 

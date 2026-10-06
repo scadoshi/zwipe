@@ -4,7 +4,7 @@
 
 - Rust (stable)
 - PostgreSQL
-- [Dioxus CLI](https://dioxuslabs.com/learn/0.7/getting_started) (`cargo install dioxus-cli`) — project is on Dioxus 0.7
+- [Dioxus CLI](https://dioxuslabs.com/learn/0.7/getting_started) (`cargo install dioxus-cli --version 0.7.10 --locked`) — project is on Dioxus 0.7
 - iOS: Xcode + `ios-deploy` (`brew install ios-deploy`)
 - Android: Android Studio (SDK + NDK) — see `context/operations/android/setup.md` (note the JDK 21 `JAVA_HOME` gotcha)
 
@@ -32,7 +32,7 @@ Copy `.env.example` if present, or refer to `context/operations/infrastructure/s
 
 ## Project Structure
 
-The workspace has four crates: `zwipe-core` (shared domain), `zerver` (backend), `zwiper` (mobile/iOS/Android), and `zite` (web client).
+The workspace has six crates: `zwipe-core` (shared domain), `zerver` (backend), `zwiper` (mobile/iOS/Android), `zite` (web client), `zwipe-client` (typed API client), and `zwipe-components` (shared Dioxus UI).
 
 ### zwipe-core
 
@@ -45,8 +45,8 @@ Axum REST API and background sync job. Hexagonal architecture — domain is the 
 ```
 zerver/src/
 ├── bin/
-│   ├── zerver/         — HTTP server entrypoint
-│   └── zervice/        — Scryfall background sync job
+│   ├── zerver.rs       — HTTP server entrypoint
+│   └── zervice.rs      — Scryfall background sync job
 └── lib/
     ├── domain/         — Pure business logic, newtypes, service traits
     │   ├── auth/       — Sessions, JWT, password hashing, email verification
@@ -62,7 +62,7 @@ zerver/src/
         └── resend/     — Email delivery via Resend API
 ```
 
-**Key pattern**: shared domain types live in `zwipe-core`, not `zerver`. `zerver` re-exports them (`pub use zwipe_core::…`) and layers server-only concerns on top (ports, services, SQLx adapters, HTTP handlers). `zwiper` and `zite` depend on `zwipe-core` directly for domain types, and on `zerver` only for HTTP-contract types (routes, `ApiError`, `Http*` structs).
+**Key pattern**: shared domain types live in `zwipe-core`, not `zerver`. `zerver` re-exports them (`pub use zwipe_core::…`) and layers server-only concerns on top (ports, services, SQLx adapters, HTTP handlers). `zwiper` and `zite` depend on `zwipe-core` directly for domain types, including the HTTP contracts and route paths; neither depends on `zerver`.
 
 ### zwiper
 
@@ -75,9 +75,9 @@ zwiper/src/
     ├── inbound/
     │   ├── screens/    — Top-level app screens (auth, deck list, card swipe, profile)
     │   │   └── deck/card/filter/  — Card filter screens (color, type, mana, etc.)
-    │   └── components/ — Reusable UI (swipe gesture, accordion, toast, alert_dialog, fields)
+    │   └── components/ — Reusable UI (swipe gesture, accordion, alert_dialog, fields)
     └── outbound/
-        └── client/     — HTTP client modules for each domain (auth, card, deck, deck_card, user)
+        └── (platform-bound only: session, keyring, crash store, open URL; the HTTP client is the zwipe-client crate)
 ```
 
 ### zite

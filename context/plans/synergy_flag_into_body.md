@@ -36,8 +36,8 @@ The force-update gate (`MIN_CLIENT_VERSION`, served at `/api/client/min-version`
 
 1. ~~**Ship a tolerant reader.**~~ DONE 2026-09-22, rides 1.10.2. Decodes either shape; keeps reading the header, since the server still sends it.
 2. **Raise the floor.** Set `MIN_CLIENT_VERSION` to that release once it is live on both stores. Older clients are force-updated, so no installed client parses a bare array any more.
-3. **Flip the server.** `search_deck_cards` returns the new contract type (add `HttpDeckCardSearch { cards, synergy_applied }` to `zwipe-core/src/http/contracts/deck.rs`) and stops setting the header.
-4. **Clean up.** Drop the array fallback from the client, drop the header read, and fold the endpoint back into the `Endpoint` trait: it becomes an ordinary `type Response = HttpDeckCardSearch`, and `zwiper/.../client/deck/search_deck_cards.rs` loses its hand-written transport like the other 55.
+3. **Flip the server.** `search_deck_cards` returns the new contract type (`HttpDeckCardSearch { cards, synergy_applied }`, already in `zwipe-core/src/http/contracts/deck.rs`) and stops setting the header.
+4. **Clean up.** Drop the array fallback from the client, drop the header read, and fold the endpoint back into the `Endpoint` trait: it becomes an ordinary `type Response = HttpDeckCardSearch`, and `zwipe-client/src/deck/search_deck_cards.rs` loses its hand-written transport like the other 55.
 
 Steps 1 and 2 ride a release that is happening for other reasons. Only step 3 is a server deploy, and it is a one-liner once the floor is set.
 

@@ -103,7 +103,7 @@ Theme slugs (`gruvbox`, `tokyo-night`, `rose-pine`, etc.) are stored as-is in `A
 
 **Special case:** `rose-pine` displays as **"Rosé Pine"** (accent on the first e). Hardcoded in the helper rather than renaming the slug because the slug drives CSS class names + DB stored values for every user with that theme selected. A display-only special-case is cheaper than a SQL migration + CSS rename. Same treatment for `vscode` → "VS Code", `github` → "GitHub", `synthwave-84` → "Synthwave '84", `powershell` → "PowerShell", `docs-rs` → "docs.rs".
 
-The canonical copy is `zwipe-components/src/theme_picker.rs:21`, a `match` at the top of the function; add new overrides there. zite no longer has its own; it renders the shared `ThemePicker`. `zwiper/src/lib/inbound/screens/profile/preferences.rs:27` still holds a duplicate for its preferences sheet, so an override added to only one of the two will disagree across surfaces.
+The canonical copy is `display_theme_name` in `zwipe-core/src/domain/user/models/preferences.rs`, beside `ALLOWED_THEMES`; add new overrides there. zite renders the shared `ThemePicker`, and both it and zwiper's preferences sheet import that one function, so there is no duplicate to keep in sync.
 
 ---
 

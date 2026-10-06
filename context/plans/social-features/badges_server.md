@@ -42,7 +42,7 @@ Exact thresholds tune at build time against real `user_week_signal` distribution
 
 ## 3. Badge job: zervice step
 
-After the existing refresh steps in `zerver/src/bin/zervice.rs` (~line 87 where `refresh_card_signal_rollup` sits): compute badges for **every closed ISO week that has `user_week_signal` rows but no `user_week_badges` rows**. Idempotent backfill, not a Monday check: zervice runs daily at 4am via cron, so a missed run self-heals next morning, and the first deploy backfills all history since 2026-07-02.
+After the existing refresh steps in `zerver/src/bin/zervice.rs` (~line 118 where `refresh_card_signal_rollup` sits): compute badges for **every closed ISO week that has `user_week_signal` rows but no `user_week_badges` rows**. Idempotent backfill, not a Monday check: zervice runs daily at 4am via cron, so a missed run self-heals next morning, and the first deploy backfills all history since 2026-07-02.
 
 Rust rule evaluation over one SQL read per week (signal + facet + deck count joined per user), then batch insert. Rules: evaluate all, sort by priority, take 3, `ShowedUp` if empty. Port surface: new methods on the metrics domain (`compute_week_badges(week_start)`, `closed_weeks_missing_badges()`): Repository/Service/Erased/blanket, following the existing pattern.
 

@@ -2,7 +2,7 @@
 
 **Status: DONE 2026-09-22, rides 1.10.2.**
 
-`CURATED_ORACLE_TAGS` is a hand-picked shortlist of about 24 slugs the otag pickers show before the user types anything: the original mechanical categories mapped to their best-populated real slug, plus functional fills. Its own doc says "tuned over time", and every tune currently costs a store train.
+`CURATED_ORACLE_TAGS` is a hand-picked shortlist of 48 slugs the otag pickers show before the user types anything: the original mechanical categories mapped to their best-populated real slug, plus functional fills. Its own doc says "tuned over time", and every tune currently costs a store train.
 
 Read in exactly one place, `screens/deck/components/oracle_tag_select.rs`, which is shared by deck create and deck edit.
 

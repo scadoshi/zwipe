@@ -36,7 +36,7 @@ Then paste the same text into App Store Connect and Play Console. Field position
 | [1.10.5](1.10.5/whats_new.md) | shared | 394 |
 | [1.10.4](1.10.4/whats_new.md) | shared | 232 |
 | [1.10.3](1.10.3/whats_new.md) | shared | 423 |
-| [1.10.2](1.10.2/whats_new.md) | shared | 496 |
+| [1.10.2](1.10.2/whats_new.md) | shared | 485 |
 | [1.10.1](1.10.1/whats_new.md) | per store | 331 |
 | [1.10.0](1.10.0/whats_new.md) | per store | 418 |
 | [1.9.3](1.9.3/whats_new.md) | shared | 388 |

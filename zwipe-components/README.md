@@ -4,7 +4,7 @@ Shared Dioxus UI components and CSS for Zwipe, consumed by the app (`zwiper`), t
 
 ## Components
 
-`ActionBar`, `Banner`, `Button`, `CardDetails`, `CardRoleChips`, `CardRow`, `Changelog`, `Chip`, `FlippableCardImage`, `KeywordChips`, `NavBar`, `NavDropdown`, `OracleText`, `PageMeta`, `Panel`, `ThemePicker`.
+`ActionBar`, `Banner`, `Button`, `CardDetails`, `CardRoleChips`, `CardRow`, `Changelog`, `Chip`, `FlippableCardImage`, `KeywordChips`, `NavBar`, `NavDropdown`, `OracleText`, `PageMeta`, `Panel`, `ThemePicker`; the deck chart family (`DeckCharts`, `ManaCurve`, `ManaFulfillment`, `DrawOdds`, `ChartLabel`); the diagram pieces (`DiagramNode`, `DiagramArrow`, `DiagramDefs`); and the entrance figures (`CountUp`, `Decode`, `Figure`).
 
 ## CSS exports
 

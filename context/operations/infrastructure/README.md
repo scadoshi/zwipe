@@ -6,7 +6,7 @@ Server provisioning, CI/CD, deployments, backups, and external services.
 
 ## Rebuild Order (from scratch)
 
-1. **[server.md](server.md)**: Provision the Ubuntu machine (SSH, PostgreSQL, .env, systemd, zervice cron)
+1. **[server.md](server.md)**: Provision the Ubuntu machine (SSH, PostgreSQL, .env, systemd, zervice timer)
 2. **[cloudflare.md](cloudflare.md)**: Cloudflare Tunnel, DNS records, domain config, Cache Rules
 3. **[cicd.md](cicd.md)**: Self-hosted GitHub Actions runner, SQLx offline mode
 4. **[deploy_backend.md](deploy_backend.md)**: Manual backend deploy (verify before relying on CI)

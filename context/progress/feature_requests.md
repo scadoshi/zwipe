@@ -33,7 +33,7 @@ Marked ✅ in the tables below; numbers kept stable (plans/commits reference the
 
 | # | Feature | Impact | Effort | Priority | Notes |
 |---|---------|--------|--------|----------|-------|
-| 1 | Live drag indicators — screen edge glows red (left) / green (right), text hint past threshold; extend to undo + maybe | High | S | **P1** (parked) | Cheapest high-delight win. Cue works on `feat/qol-drag-indicators`; visual style undecided, parked pending complaints. Plan: [`../plans/drag_indicators.md`](../plans/drag_indicators.md). Fixes "I kept forgetting which way and had to undo." |
+| 1 | Live drag indicators — screen edge glows red (left) / green (right), text hint past threshold; extend to undo + maybe | High | S | **P1** (parked) | Cheapest high-delight win. Cue was prototyped on `feat/qol-drag-indicators`, since deleted; visual style undecided, parked pending complaints. Plan: [`../plans/drag_indicators.md`](../plans/drag_indicators.md). Fixes "I kept forgetting which way and had to undo." |
 | 2 | "Just inspire me" mode — swipe with no commander/tags set, pure discovery | High | M | P2 | Most on-brand with the "Tinder" framing. |
 | 3 | Head-to-head "which is better" — pick 1 of 2 same-category cards (two ramp pieces, etc.) | Med | M | P3 | A distinct mode, not a replacement for the one-at-a-time flow. |
 
@@ -100,4 +100,4 @@ Marked ✅ in the tables below; numbers kept stable (plans/commits reference the
 (#5, #8, #15, #17, #19 shipped; see "Shipped so far" above.)
 1. ~~**#4 Auto land base**~~, PARKED by owner 2026-08-18 (see the row above); #6 no longer waits on it.
 2. **#12 Deck stats mid-build**: planned (qol bundle D): util-bar button → stats bottom sheet reusing the deck charts.
-3. **#1 Live drag indicators**: parked on `feat/qol-drag-indicators` pending a visual-style call; revive if it resurfaces.
+3. **#1 Live drag indicators**: parked pending a visual-style call; the branch is deleted, so reviving means rebuilding from [`../plans/drag_indicators.md`](../plans/drag_indicators.md).

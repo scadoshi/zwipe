@@ -20,12 +20,12 @@ Also has `workflow_dispatch` for manual runs from the GitHub Actions tab.
 
 ### Tests + lint gate the deploys
 
-The test suite (`postgres:16` service + `cargo test -p zwipe-core -p zerver`, never `--workspace`, since zwiper's Dioxus/GTK stack won't build headless; `SQLX_OFFLINE=true` compiles against the committed `.sqlx` while `#[sqlx::test]` migrates a fresh DB per test via `DATABASE_URL`) runs in two places:
+The test suite (`postgres:18` service + `cargo test -p zwipe-core -p zerver`, never `--workspace`, since zwiper's Dioxus/GTK stack won't build headless; `SQLX_OFFLINE=true` compiles against the committed `.sqlx` while `#[sqlx::test]` migrates a fresh DB per test via `DATABASE_URL`) runs in two places:
 
 - **`.github/workflows/test.yml` (`Test`)**: on **pull requests only**, the pre-merge signal.
 - **A `test` job inside `deploy-zerver.yml` and `deploy-zite.yml`**: the `deploy` (and zite's `build`) job `needs: [test, lint]`, so **a red suite or lint blocks the deploy**. This keeps the deploys' path filters (a docs-only push still won't redeploy) while gating, since GitHub can't make a `push`-triggered workflow wait on a *separate* workflow, hence the inline jobs. Push-time testing lives here, so `test.yml` stays PR-only (no double-run). `workflow_dispatch` still lets you force a deploy (it runs after the gate jobs).
 
-A parallel **`lint` job** (in all three of `test.yml` / `deploy-zerver.yml` / `deploy-zite.yml`) runs `cargo +nightly fmt --check` (workspace-wide; nightly because `rustfmt.toml` sets the unstable `imports_granularity = "Crate"`) + `cargo clippy -p zwipe-core -p zerver --all-targets -- -D warnings` (same headless-GTK scoping as Test; `SQLX_OFFLINE=true`). Added 2026-07-10 after finding fmt had silently drifted. **Note: CI rides newest-stable clippy**: a local `rustup update stable` keeps you from being surprised by new lints (e.g. clippy 1.97 flagged a `useless_borrows_in_formatting` that 1.94 didn't, and correctly blocked a deploy until fixed).
+A parallel **`lint` job** (in all three of `test.yml` / `deploy-zerver.yml` / `deploy-zite.yml`) runs `cargo +nightly fmt --check` (workspace-wide; nightly because `rustfmt.toml` sets the unstable `imports_granularity = "Crate"`) + `cargo clippy --workspace --all-targets -- -D warnings` (the lint job installs the WebKitGTK libraries so zwiper compiles; `SQLX_OFFLINE=true`; deploy-zite.yml also lints zite with `--features server`). Added 2026-07-10 after finding fmt had silently drifted. **Note: CI rides newest-stable clippy**: a local `rustup update stable` keeps you from being surprised by new lints (e.g. clippy 1.97 flagged a `useless_borrows_in_formatting` that 1.94 didn't, and correctly blocked a deploy until fixed).
 
 Plan/design: [`../../archive/integration-tests/`](../../archive/integration-tests/overview.md).
 
@@ -196,7 +196,7 @@ Triggers on push to `main` when files under `zite/**`, `zwipe-core/**`, or `zwip
 1. Installs `build-essential` (Rust compiles proc-macro crates for the host target even when targeting WASM). `binaryen` was installed here until 2026-09-23 on the belief that dx would use a PATH copy of `wasm-opt`; it does not. dx 0.7.10 downloads its own pinned binaryen 129 and runs that, so the apt package was never read. Caching the download instead was tried and abandoned: on the Linux runner nothing named `wasm-opt` exists under `$HOME` after a build, and the fetch costs 2.4s
 2. Installs a prebuilt `dioxus-cli@0.7.10` binary via `taiki-e/install-action`, so nothing compiles from source. Keep the pin matched to the workspace dioxus version and to `dx --version` on the build Macs
 3. Runs `dx build --release --platform web --ssg --force-sequential` from `zite/` directory. `--ssg` pre-renders every route from the app's `static_routes` server function; `--force-sequential` is not optional, because without it the parallel client build finishes last and overwrites the SSG'd `public/index.html` with the bare shell
-4. Writes `CNAME` (zwipe.net) into the build output at `zite/target/dx/zite/release/web/public/`
+4. Writes `CNAME` (zwipe.net) into the build output at `target/dx/zite/release/web/public/` (workspace root)
 5. Copies `index.html` → `404.html` in the same directory (SPA routing, GitHub Pages serves 404.html for unknown routes, Dioxus Router takes over)
 6. Uploads the build output as a GitHub Pages artifact
 7. Deploys to GitHub Pages

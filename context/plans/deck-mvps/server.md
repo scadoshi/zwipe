@@ -17,7 +17,7 @@ ALTER TABLE deck_cards ADD COLUMN mvp_at TIMESTAMPTZ;
 
 ## 3. Contract: `zwipe-core/src/http/contracts/deck_card.rs`
 
-`HttpUpdateDeckCard` gains:
+`HttpPatchDeckCard` gains:
 
 ```rust
 /// Star (true) or unstar (false) this card as a deck MVP. Absent = untouched.
@@ -29,7 +29,7 @@ pub mvp: Option<bool>,
 
 Thread `mvp: Option<bool>` through the request type + constructor, mirroring how `board` rides today.
 
-## 5. Handler: `zerver/src/lib/inbound/http/handlers/deck_card/update_deck_card.rs`
+## 5. Handler: `zerver/src/lib/inbound/http/handlers/deck_card/patch_deck_card.rs`
 
 Map `body.mvp` into the domain request. New error variant maps to 422 with the exact copy **"This deck already has 3 MVPs"** (sentence case, no em dashes; client shows it verbatim).
 

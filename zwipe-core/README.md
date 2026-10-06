@@ -7,7 +7,7 @@ Shared domain types, validation, business rules, and HTTP contracts for the Zwip
 | Module | Purpose |
 |--------|---------|
 | `domain::auth` | Session, AccessToken, Jwt, RefreshToken, password validation |
-| `domain::card` | Card, CardProfile, ScryfallData (Colors, Rarity, Legalities, Prices, ImageUris, CardFaces, AllParts), CardRole, CardFilter, search/group/filter logic |
+| `domain::card` | Card, CardProfile, ScryfallData (Colors, Rarity, Legalities, Prices, ImageUris, CardFaces, AllParts), CardRole, CardCriteria + CardQuery, search/group/filter logic |
 | `domain::deck` | Deck, DeckProfile, DeckCard, DeckEntry, DeckWarning, Format, DeckMetrics, validate_deck(), all deck request types |
 | `domain::user` | User, UserPreferences, Username |
 | `domain::moderation` | Content moderation (profanity filtering) |

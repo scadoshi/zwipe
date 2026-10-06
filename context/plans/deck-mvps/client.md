@@ -2,7 +2,7 @@
 
 All in phase 1 (1.4.0). Copy rules: sentence case, no em dashes.
 
-## 1. API client: `zwiper/src/lib/outbound/client/deck_card/update_deck_card.rs`
+## 1. API client: `zwipe-client/src/deck_card/update_deck_card.rs`
 
 The request body gains the `mvp: Option<bool>` field (comes free once the contract updates; extend the call-site helper so screens can send `mvp: Some(bool)` without touching quantity/board).
 

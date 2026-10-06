@@ -127,7 +127,7 @@ sudo systemctl status cloudflared
 
 ```bash
 curl https://api.zwipe.net/
-# {"message":"zerver","status":"ready","version":"0.1.0"}
+# {"message":"zerver","status":"ready","version":"<workspace version>"}
 ```
 
 ---
@@ -177,7 +177,7 @@ Each rule's shape is the same: a path match (prefix or exact) → "Eligible for 
 - **Action**: Eligible for cache · Ignore origin Cache-Control · Edge TTL **2 hours**
 - **Why**: `/api/changelog` serves the release history (compiled into the server binary, `zwipe_core::content::changelog`), public and identical for every user, fetched once per app launch. Edge caching keeps origin cold; the payload is tiny.
 - **Freshness caveat**: the changelog changes on **our deploys** (edit the const + ship `zerver`), not a sync. With the 2h edge TTL a freshly deployed entry can lag up to 2h. Default: accept it. To push it live now, purge the one URL after deploy: `https://api.zwipe.net/api/changelog` (Custom Purge → URL, or the API call below).
-- **Compat requirement**: same as Rule 1, the request must NOT carry `Authorization: Bearer` (CF bypasses cache for authenticated requests). The zwiper `get_changelog` client sends none, and the route is in `public_routes()`.
+- **Compat requirement**: same as Rule 1, the request must NOT carry `Authorization: Bearer` (CF bypasses cache for authenticated requests). zwipe-client's `get_changelog` sends none, and the route is in `public_routes()`.
 - **Client fallback**: if the fetch ever misses, zwiper falls back to the copy compiled into its own binary, so a stale or unreachable edge never blanks the changelog screen.
 
 ### Adding a new cache rule

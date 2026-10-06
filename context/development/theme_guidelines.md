@@ -108,12 +108,12 @@ for name, color in pairs.items():
 | `zwipe-components/src/lib.rs` | `THEMES_CSS` / `COMPONENTS_CSS` — the CSS files `include_str!`'d as string constants |
 | `zwipe-core/src/domain/user/models/theme.rs` | `ThemeConfig` (default theme + css class) |
 | `zwipe-core/src/domain/user/models/preferences.rs` | `ALLOWED_THEMES` registry + `UserPreferences` default |
-| `zwipe-components/src/theme_picker.rs` | `ThemePicker` and the canonical `display_theme_name(slug)` — capitalizes hyphen-split words; special-cases (`rose-pine` → "Rosé Pine", `vscode` → "VS Code", etc.) go here, not in the slug |
+| `zwipe-components/src/theme_picker.rs` | `ThemePicker`; labels come from `display_theme_name(slug)` in `zwipe-core/src/domain/user/models/preferences.rs`, which capitalizes hyphen-split words; special-cases (`rose-pine` → "Rosé Pine", `vscode` → "VS Code", etc.) go there, not in the slug |
 
-**How the CSS reaches the apps:** neither build.rs copies it. `zwiper/build.rs` only bakes `.env` values into the binary, and `zite/build.rs` only writes `public/sitemap.xml`. The crate exports both stylesheets as `&'static str` constants (`include_str!`), and each app inlines them with `document::Style` at the top of its root component: `zwiper/src/bin/zwipe.rs:104` and `zite/src/main.rs:171`. Cascade order matters: `THEMES_CSS` first, then `COMPONENTS_CSS`, then the app's own stylesheet.
+**How the CSS reaches the apps:** neither build.rs copies it. `zwiper/build.rs` only bakes `.env` values into the binary, and `zite/build.rs` only writes `public/sitemap.xml`. The crate exports both stylesheets as `&'static str` constants (`include_str!`), and each app inlines them with `document::Style` at the top of its root component: `zwiper/src/bin/zwipe.rs:124` and `zite/src/main.rs:209`. Cascade order matters: `THEMES_CSS` first, then `COMPONENTS_CSS`, then the app's own stylesheet.
 
 Edit `zwipe-components/assets/themes.css` only. There is no `shared/` directory.
 
-`zwiper/src/lib/inbound/screens/profile/preferences.rs:27` still carries its own copy of `display_theme_name` for the preferences sheet. Keep the two in sync when adding an override, or fold zwiper onto the shared one.
+`zwiper/src/lib/inbound/screens/profile/preferences.rs` imports the same `display_theme_name` from zwipe-core, so one override covers every surface.
 
 For text/casing/font rules across the app see `context/development/ui_text_conventions.md`.

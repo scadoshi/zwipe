@@ -24,7 +24,7 @@ Fastest loop that carries **release** native libs in a debug-signed APK:
 
 ```bash
 dx bundle --release --platform android --package-types aab --package zwiper
-zcripts/android/patch_bundle.sh          # icons + back handler + manifest
+zcripts/android/patch_bundle.sh          # icons + back handler + manifest + WryActivity
 # dx regenerates build.gradle.kts too — re-apply, and bump versionCode above
 # whatever is installed or the install is rejected as a downgrade
 perl -i -pe 's/compileSdk = 34/compileSdk = 36/; s/targetSdk = 34/targetSdk = 36/;

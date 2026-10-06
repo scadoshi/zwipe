@@ -12,15 +12,15 @@ The costs are undiminished by any of that: every posted share link 404s or needs
 
 **If it is reopened, split it.** Minting v7 going forward is cheap and carries none of those costs: new rows get time-ordered IDs and `uuid_extract_timestamp`, and mixed v4/v7 in one column is fine since nothing in the schema or the app inspects the version. Rewriting existing IDs buys ordering for ~2,500 historical rows, and that is the half whose cost is real while its benefit is not.
 
-**Prerequisite 1 is nearly done.** Prod runs PostgreSQL 18.6 and native `uuidv7()` works (verified by calling it). Local dev moved 15 to 18.6 and CI's service image moved to `postgres:18`, both on 2026-09-22, so prerequisite 1 is complete.
+**Prerequisite 1 is done.** Prod runs PostgreSQL 18.6 and native `uuidv7()` works (verified by calling it). Local dev moved 15 to 18.6 and CI's service image moved to `postgres:18`, both on 2026-09-22, so prerequisite 1 is complete.
 
 **One sentence:** move every ID we mint to time-ordered UUIDv7 (RFC 9562), new-row generation AND a one-time rewrite of existing v4 IDs, for b-tree insert locality and chronologically sortable keys.
 
 ## Owner's sequencing
 
-1. **Upgrade prod + dev Postgres 16 → 18** (native `uuidv7()` lands in 18). Full test suite green on 18 before anything else moves. CI's `postgres:16` service image bumps in the same pass (`.github/workflows/deploy-zerver.yml`).
+1. ~~**Upgrade prod + dev Postgres to 18**~~ DONE 2026-09-22. Prod runs 18.6, local dev moved to 18.6, and CI's service image is `postgres:18` in `test.yml`, `deploy-zerver.yml` and `deploy-zite.yml`.
 2. **Migration: regenerate existing IDs as v7, everything we mint.** New v7 per row, all FK references updated in lockstep.
-3. **Call sites: mint v7 going forward.** App side: the `Uuid::new_v4()` sites (~82, majority test helpers) → `Uuid::now_v7()` (uuid crate `v7` feature; allowed in zwipe-core). DB side: the three `DEFAULT gen_random_uuid()` tables (`users`, `decks`, sync metrics) → `DEFAULT uuidv7()`.
+3. **Call sites: mint v7 going forward.** App side: the `Uuid::new_v4()` sites (~89, majority test helpers) → `Uuid::now_v7()` (uuid crate `v7` feature; allowed in zwipe-core). DB side: the three `DEFAULT gen_random_uuid()` tables (`users`, `decks`, sync metrics) → `DEFAULT uuidv7()`.
 
 ## Landmines the migration step must handle (the "surely it isn't that
 hard" is mostly these)

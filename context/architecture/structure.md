@@ -229,7 +229,7 @@ zerver/src/
         └── resend/             — Transactional email via Resend API
 ```
 
-**Database (PostgreSQL, 30 tables + 3 materialized views):** `zerver/migrations/` is the source of truth for the full schema. The ones you touch most:
+**Database (PostgreSQL, 31 tables + 3 materialized views):** `zerver/migrations/` is the source of truth for the full schema. The ones you touch most:
 
 | Table | Purpose |
 |-------|---------|
@@ -239,7 +239,7 @@ zerver/src/
 | `card_profiles` | Internal card metadata (is_token, card_roles) |
 | `decks` | Deck profiles (name, format, commander_id, partner_commander_id, background_id, signature_spell_id) |
 | `deck_cards` | Deck-card join (quantity, board, mvp_at) |
-| `otags` / `card_otags` | Oracle tag catalog and card-to-tag join |
+| `oracle_tags` / `card_oracle_tags` | Oracle tag catalog and card-to-tag join |
 | `refresh_tokens` | Rotating refresh tokens (SHA-256 hashed, max 5/user) |
 | `email_verification_tokens` | One-time email verification |
 | `password_reset_tokens` | One-time password reset |
@@ -278,7 +278,6 @@ zwiper/src/
     │   │   ├── navigation/     — Back handler, overlay stack
     │   │   ├── telemetry/      — Usage buffer (batched counters/events to the API)
     │   │   ├── accordion/      — Collapsible sections
-    │   │   ├── toast/          — Toast notifications
     │   │   ├── alert_dialog/   — Confirmation dialogs
     │   │   ├── fields/         — Reusable form inputs
     │   │   └── (single files)  — bottom sheet, chips, hint dialogs, catalog cache, update-required gate, …
@@ -326,7 +325,7 @@ zwiper/src/
 
 ## zite: Website
 
-Dioxus site deployed to GitHub Pages at [zwipe.net](https://zwipe.net). Marketing pages, the auth flows that need a browser (verify, reset), and a handful of pages that read the public API: changelog, guides, and the shared-deck viewer. Statically hosted, not entirely static content.
+Dioxus site deployed to GitHub Pages at [zwipe.net](https://zwipe.net). Marketing pages, the auth flows that need a browser (verify, reset), and a handful of pages that read the public API: the shared-deck viewer and the home page's featured flavor and stats strip. Statically hosted, not entirely static content.
 
 No login, no deck building today. `decisions.md` (2026-04-06) commits zite to growing into the full authenticated deck builder eventually; that surface lives only in zwiper for now, but the client layer it needs is already wired up: zite's six API calls all go through `zwipe-client`, so the authed endpoints are a method call away rather than a second implementation.
 
@@ -342,7 +341,7 @@ zite/src/
     ├── ios.rs              — App Store download
     ├── android.rs          — Play Store download
     ├── privacy.rs          — Privacy policy
-    ├── changelog.rs        — Release notes from /api/changelog
+    ├── changelog.rs        — Release notes, compiled in via zwipe-components' `Changelog`
     ├── guides/             — How-to guides
     ├── shared_deck.rs      — Public deck share viewer (reads /api/share/deck/{token})
     ├── not_found.rs        — 404
@@ -350,7 +349,7 @@ zite/src/
     └── reset.rs            — Password reset form (shared validation from zwipe-core)
 ```
 
-**Deploy:** Push to main → GitHub Actions → `dx build --release --platform web` → GitHub Pages
+**Deploy:** Push to main → GitHub Actions → `dx build --release --platform web --ssg --force-sequential` → GitHub Pages
 
 ---
 

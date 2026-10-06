@@ -73,12 +73,12 @@ Confirm it shows `active (running)` with no errors in the last few log lines.
 
 ```bash
 curl https://api.zwipe.net/
-# {"message":"zerver","status":"ready","version":"0.1.0"}
+# {"message":"zerver","status":"ready","version":"<workspace version>"}
 ```
 
 ---
 
 ## Notes
 
-- `zervice` (the nightly Scryfall sync + session cleanup cron) does **not** need a restart, the cron job calls the binary path directly, so the next scheduled run picks up the new binary automatically. zervice is a run-once binary that exits after completing its work.
+- `zervice` (the nightly Scryfall sync + session cleanup, run by `zervice.timer`) does **not** need a restart, its systemd unit calls the binary path directly, so the next scheduled run picks up the new binary automatically. zervice is a run-once binary that exits after completing its work.
 - To free disk space after deploying: `cd ~ && rm -rf ~/zwipe-src`

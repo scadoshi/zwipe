@@ -260,7 +260,7 @@ sudo systemctl restart zerver
 sudo systemctl status zerver
 ```
 
-URL-encode special characters in `DATABASE_URL` if needed (e.g. `<` → `%3C`). No cron or CI changes required; both source the same `.env`.
+URL-encode special characters in `DATABASE_URL` if needed (e.g. `<` → `%3C`). No CI changes required; the deploy workflow sources the same `.env` for migrations.
 
 ---
 
@@ -481,7 +481,7 @@ zervice is a run-once binary: it syncs cards from Scryfall, cleans expired sessi
 Run manually first to seed card data:
 ```bash
 cd ~/zwipe
-set -a && source .env && set +a
+set -a && source .env.zervice && set +a
 ./zervice
 ```
 
@@ -497,6 +497,6 @@ See [cloudflare.md](cloudflare.md) for full tunnel setup, DNS records, and domai
 
 ```bash
 curl https://api.zwipe.net/
-# {"message":"zerver","status":"ready","version":"0.1.0"}
+# {"message":"zerver","status":"ready","version":"<workspace version>"}
 ```
 

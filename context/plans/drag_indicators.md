@@ -19,11 +19,11 @@ Reuse the color vocabulary already established in the swipe hint dialog so it's 
 
 ## Open question (why it's parked)
 
-Label style, big centered word vs. corner chip, is the unresolved call. The mechanics on the branch are done; this is purely a visual-taste decision.
+Label style, big centered word vs. corner chip, is the unresolved call. The mechanics were proven on the deleted branch; this is purely a visual-taste decision.
 
 ## Files
 
-`swipe/stack.rs`, `swipe/state.rs`, `assets/main.css` (all changes live on the branch already).
+`swipe/stack.rs`, `swipe/state.rs`, `assets/main.css` (the branch is gone; rebuild from the approach above).
 
 ## Ship
 
