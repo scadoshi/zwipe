@@ -21,6 +21,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-06: 1.10.6 live, 1.10.7 submitted
+
+1.10.6 (iOS build 88) went live on the App Store on 2026-10-06, and the maintenance host's App Store watcher pinged the change. 1.10.7 was cut earlier that day (Android vc52 already on Production) with its changelog held under `UPCOMING` until 1.10.6 cleared; now that it has, the two entries moved to `RELEASES` dated Oct 6 and iOS build 89 went to App Review. The release is the mid-scroll fix: buttons respond while a list is still scrolling, and the edge back-swipe works mid-scroll, both iOS-only. Detail in the todo item and [`vendor/tao/VENDOR.md`](../vendor/tao/VENDOR.md); notes at [`operations/store-submissions/1.10.7/whats_new.md`](operations/store-submissions/1.10.7/whats_new.md).
+
 ## 2026-10-06: backups had been failing silently for 73 days
 
 Wiring a Healthchecks.io ping into the nightly backup turned up that every upload to R2 had failed with `AccessDenied (403)` since 2026-07-26, and the `zwipe-backups` bucket was empty. Nothing alerted because the backup script had no check of its own. Fixed the same day: a new bucket-scoped Object Read & Write token, `no_check_bucket = true` on the rclone remote (a bucket-scoped token can't do rclone's bucket check, so uploads 403 even while listing works), and a "Zwipe Backups" Healthchecks.io check pinged only after a successful upload. The dumps still in the server's `/tmp` from 2026-09-27 on were uploaded, so R2 history restarts there; a checksum-verified copy of 10-06 also sits on the maintenance host. Runbook: [`operations/infrastructure/backups.md`](operations/infrastructure/backups.md); every alert channel: [`operations/observability/`](operations/observability/README.md).
