@@ -2163,10 +2163,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Has an effect that changes based on the card type of what gets discarded.",
     ),
     (
-        "mana-fix",
-        "Lets your lands tap for additional colors of mana.",
-    ),
-    (
         "conjure-to-battlefield",
         "Creates a new card from outside the game and puts it directly onto the battlefield.",
     ),
@@ -7005,10 +7001,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Has outlast and grants a keyword ability to your creatures with +1/+1 counters.",
     ),
     (
-        "opponent-sacrifices",
-        "Forces an opponent to sacrifice a permanent of their choice.",
-    ),
-    (
         "typal-thopter",
         "Cares about or boosts the Thopter artifact creature type.",
     ),
@@ -8686,10 +8678,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "cycle-cns-pp-counter-recycler",
         "Enters with +1/+1 counters set by a game-state count, then removes one for a repeatable effect.",
-    ),
-    (
-        "bible-reference",
-        "A card whose name or effect is a direct reference to a passage from the Bible.",
     ),
     (
         "cycle-con-basic-landcycling",
@@ -12849,10 +12837,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "A creature that creates a swarm of 1/1 Insect tokens when it dies.",
     ),
     (
-        "cycle-phyrexian-er",
-        "A creature with an ability that triggers when damage is dealt to it.",
-    ),
-    (
         "cycle-plc-split-vertical",
         "A split card giving you a choice between two related spells on one card.",
     ),
@@ -13075,10 +13059,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "hate-typal-mercenary",
         "Punishes or interacts specifically with Mercenary creatures.",
-    ),
-    (
-        "hate-typal-non-demon",
-        "Punishes or destroys creatures that aren't Demons.",
     ),
     (
         "hate-typal-robot",
@@ -13311,10 +13291,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "theft-mana",
         "Forces another player to tap their lands for mana that you take or spend instead.",
-    ),
-    (
-        "theft-noncreature",
-        "Lets you take control of another player's noncreature permanent.",
     ),
     (
         "third-spell-matters",
@@ -14927,16 +14903,8 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "A legendary creature built as the face commander of a Commander Legends precon deck.",
     ),
     (
-        "hate-typal-non-elemental",
-        "Damages, bounces, or otherwise punishes creatures that aren't Elementals.",
-    ),
-    (
         "hate-library-cast",
         "Stops players from casting spells directly out of a library.",
-    ),
-    (
-        "hate-typal-non-giant",
-        "Damages, destroys, or otherwise punishes creatures that aren't Giants.",
     ),
     (
         "off-turn-attack",
@@ -14963,10 +14931,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "A legendary creature offered as an alternate commander choice in a themed cycle.",
     ),
     (
-        "hate-typal-non-gorgon",
-        "Forces an opponent to sacrifice or lose a creature that isn't a Gorgon.",
-    ),
-    (
         "gives-devoid",
         "Grants devoid to your creatures, making them colorless no matter their mana cost.",
     ),
@@ -14975,36 +14939,8 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Isn't typed legendary but still prevents multiple copies of it from being in play at once.",
     ),
     (
-        "hate-typal-non-kraken",
-        "Bounces every creature except Krakens, Leviathans, and similar sea creatures.",
-    ),
-    (
         "punchcard",
         "A tracking permanent that marks off steps or boxes instead of using ordinary counters.",
-    ),
-    (
-        "hate-typal-non-leviathan",
-        "Bounces, destroys, or damages creatures that aren't Leviathans.",
-    ),
-    (
-        "hate-typal-non-merfolk",
-        "Bounces, destroys, or damages creatures that aren't Merfolk.",
-    ),
-    (
-        "hate-typal-non-octopus",
-        "Bounces, destroys, or damages creatures that aren't Octopuses.",
-    ),
-    (
-        "hate-typal-non-pirate",
-        "Bounces, destroys, or damages creatures that aren't Pirates.",
-    ),
-    (
-        "hate-typal-non-rat",
-        "Bounces, destroys, or damages creatures that aren't Rats.",
-    ),
-    (
-        "hate-typal-non-serpent",
-        "Bounces, destroys, or damages creatures that aren't Serpents.",
     ),
     (
         "cycle-drc-face-commander",
@@ -15328,48 +15264,8 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Destroys or removes a target Ninja creature.",
     ),
     (
-        "hate-typal-non-assassin",
-        "Targets or exiles a creature that isn't an Assassin.",
-    ),
-    (
-        "hate-typal-non-cat",
-        "Restricts creatures that aren't Cats, such as limiting which ones can block.",
-    ),
-    (
-        "hate-typal-non-devil",
-        "Destroys creatures that aren't Demons, Devils, or Imps.",
-    ),
-    (
-        "hate-typal-non-faerie",
-        "Counters a spell that isn't a Faerie spell.",
-    ),
-    (
         "hate-typal-non-god",
         "Forces sacrifice or removal of creatures that aren't Gods.",
-    ),
-    (
-        "hate-typal-non-imp",
-        "Destroys creatures that aren't Demons, Devils, or Imps.",
-    ),
-    (
-        "hate-typal-non-rogue",
-        "Restricts creatures that aren't Rogues, such as preventing them from blocking.",
-    ),
-    (
-        "hate-typal-non-soldier",
-        "Punishes or restricts creatures that aren't Soldiers, such as preventing their combat damage.",
-    ),
-    (
-        "hate-typal-non-vampire",
-        "Punishes or restricts creatures that aren't Vampires, such as forcing them to be sacrificed.",
-    ),
-    (
-        "hate-typal-non-villain",
-        "Punishes or restricts creatures that aren't Villains, such as dealing damage to them.",
-    ),
-    (
-        "hate-typal-non-werewolf",
-        "Punishes or restricts creatures that aren't Werewolves.",
     ),
     (
         "hate-typal-phyrexian",
@@ -15556,16 +15452,8 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Keeps your tokens safe, such as granting them indestructible.",
     ),
     (
-        "protects-vehicle",
-        "Grants a Vehicle indestructible or otherwise shields it from removal.",
-    ),
-    (
         "pseudo-ante",
         "Exchanges ownership of cards between players, an ante-style effect.",
-    ),
-    (
-        "pseudo-vehicle",
-        "A creature that needs another creature tapped to attack or block, like a Vehicle needing crew.",
     ),
     (
         "reanimate-instant-sorcery",
@@ -16554,10 +16442,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Costs 1 less to cast for each Town you control.",
     ),
     (
-        "artifact-matters",
-        "A card that cares about the artifacts you control.",
-    ),
-    (
         "boltland",
         "A land you can pay 3 life or take 3 damage to make enter untapped.",
     ),
@@ -16940,10 +16824,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "hate-planeswalker-jace",
         "Counters a blue spell, then scries 2 if it was a Jace planeswalker.",
     ),
-    (
-        "hate-plot",
-        "Can send an opponent's face-up plotted card to their graveyard.",
-    ),
     ("hate-room", "Removal aimed at Room permanents."),
     (
         "hate-saga",
@@ -17165,10 +17045,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "mono-red-value",
         "A red card that generates repeatable value or card advantage, which red usually lacks.",
-    ),
-    (
-        "synergy-noflying",
-        "Cares about creatures that don't have flying.",
     ),
     (
         "cycle-hob-bear-vertical",
@@ -17751,6 +17627,235 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "sacrifice-outlet-universal",
         "Sacrifices permanents of any type, not just creatures, whether as a cost or a forced effect.",
+    ),
+    (
+        "additional-cost",
+        "A spell that requires or allows an extra cost, such as kicker, entwine, sacrificing, or exiling cards.",
+    ),
+    (
+        "alternative-cost",
+        "A spell you can cast by paying a cost other than its mana cost, like flashback, miracle, or bestow.",
+    ),
+    (
+        "artifact-count-matters",
+        "A card whose effect scales with or depends on how many artifacts you control.",
+    ),
+    (
+        "chromatic-lantern",
+        "Lets lands tap for extra colors of mana, sometimes by giving them additional land types.",
+    ),
+    (
+        "counter-lord",
+        "Grants an ability or bonus to each creature you control that has a +1/+1 counter on it.",
+    ),
+    (
+        "creature-engine",
+        "Gives you extra cards whenever you cast creatures or they enter the battlefield.",
+    ),
+    (
+        "cycle-fra-ally-hoser",
+        "A cycle of cheap spells that hit creatures, planeswalkers, or spells of their color's two allied colors.",
+    ),
+    (
+        "cycle-fra-annex",
+        "A cycle of two-color lands that enter tapped unless you control a planeswalker.",
+    ),
+    (
+        "cycle-fra-c-hybrid",
+        "A cycle of cards with hybrid mana costs, including creatures with sorcery halves.",
+    ),
+    (
+        "cycle-fra-charm",
+        "A cycle of two-color instant charms that let you choose one of three modes.",
+    ),
+    (
+        "cycle-sos-draft-signpost",
+        "A cycle of two-color gold cards, each built around its color pair's theme.",
+    ),
+    (
+        "cycle-turbulent-land",
+        "A cycle of dual lands that enter tapped unless your opponents control eight or more lands.",
+    ),
+    (
+        "egg-token",
+        "Creates creature tokens that are Eggs, including changeling tokens that count as every type.",
+    ),
+    (
+        "exile-with-counter",
+        "Exiles a card and puts a counter on it to track it or let you use it later.",
+    ),
+    (
+        "gives-loyalty-ability",
+        "Grants extra loyalty abilities to planeswalkers.",
+    ),
+    (
+        "gives-squad",
+        "Grants squad to certain spells you cast, letting you pay extra to make token copies.",
+    ),
+    (
+        "hate-typal-villain",
+        "Rewards you when a Villain dies, such as by drawing you a card.",
+    ),
+    (
+        "lose-unspent-mana",
+        "Makes a player lose all their unspent mana, often after tapping their lands.",
+    ),
+    (
+        "mass-regrowth",
+        "Returns many cards, or every card of a kind, from graveyards to their owners' hands.",
+    ),
+    (
+        "opponent-land-count-matters",
+        "Has an effect that depends on how many lands your opponents control.",
+    ),
+    (
+        "quest",
+        "An enchantment that builds up quest counters over time, then pays off once it has enough.",
+    ),
+    (
+        "repeatable-scry",
+        "A card that lets you scry again and again, such as on a trigger or each turn.",
+    ),
+    (
+        "repeatable-surveil",
+        "A card that lets you surveil again and again, such as on a trigger or each turn.",
+    ),
+    (
+        "single-minded-color-hate",
+        "A card that only matters against opponents playing a specific color or colors.",
+    ),
+    (
+        "single-minded-graveyard-hate",
+        "Exiles graveyard cards or shuts off graveyards, and does nothing else.",
+    ),
+    (
+        "single-minded-hate",
+        "A hate card that does nothing useful unless you face the exact matchup it targets.",
+    ),
+    (
+        "single-minded-typal-hate",
+        "A card that only matters against a specific creature type, such as Walls or Spirits.",
+    ),
+    (
+        "static-from-graveyard",
+        "A card with a static ability that works while it sits in your graveyard.",
+    ),
+    (
+        "supercycle-mmmm-enrager",
+        "A cycle of Horrors costing four mana of one color, each reacting to damage dealt to it.",
+    ),
+    (
+        "synergy-no-flying",
+        "A card that rewards or helps creatures without flying, often by granting them flying or counters.",
+    ),
+    (
+        "synergy-pw-specific",
+        "Rewards you for controlling or using a planeswalker of a specific type, like Chandra or Jace.",
+    ),
+    (
+        "that-s-how-the-game-works",
+        "Has an ability that sounds like it just restates a basic rule of the game.",
+    ),
+    (
+        "theft-legendary",
+        "Steals a legendary permanent card from an opponent and puts it onto the battlefield under your control.",
+    ),
+    (
+        "theft-saga",
+        "Steals a Saga card from an opponent and puts it onto the battlefield under your control.",
+    ),
+    (
+        "trigger-once-each-turn",
+        "A triggered ability that can only happen once each turn.",
+    ),
+    (
+        "triome",
+        "A cycle of three-color lands that enter tapped, have three basic land types, and can cycle.",
+    ),
+    (
+        "tutor-creature-specific",
+        "Searches your library for a creature card with a specific name.",
+    ),
+    (
+        "tutor-creature-sphinx",
+        "Searches your library for a Sphinx creature card and puts it onto the battlefield.",
+    ),
+    (
+        "typal-clamfolk",
+        "A card that cares about or rewards creatures of the Clamfolk type.",
+    ),
+    (
+        "typal-crocodile",
+        "A card that cares about or rewards creatures of the Crocodile type.",
+    ),
+    (
+        "cycle-fra-commons",
+        "A cycle of common enemy-color dual lands that enter tapped unless you control a planeswalker.",
+    ),
+    (
+        "cycle-fra-draft-signpost",
+        "A cycle of uncommon two-color cards that show off each color pair's draft strategy.",
+    ),
+    (
+        "cycle-fra-elder-sphinx",
+        "A cycle of legendary flying Elder Sphinx creatures, one for each allied color pair.",
+    ),
+    (
+        "cycle-fra-landcycler",
+        "A cycle of cards with basic landcycling, letting you discard them to fetch a basic land.",
+    ),
+    (
+        "cycle-fra-lorwyn-five",
+        "A cycle of cards featuring the five original Lorwyn planeswalkers, some in new colors.",
+    ),
+    (
+        "cycle-fra-r-two-color",
+        "A cycle of rare two-color cards, one for each color pair.",
+    ),
+    (
+        "cycle-fra-u-hybrid",
+        "A cycle of uncommon hybrid creatures that can prepare a sorcery and cast copies of it.",
+    ),
+    (
+        "cycle-fra-walkerland",
+        "A cycle of dual lands that enter tapped unless you control a planeswalker.",
+    ),
+    (
+        "cycle-fra-way-of-the",
+        "A cycle of legendary enchantments that empower Jace when they enter and support your planeswalkers.",
+    ),
+    (
+        "cycle-fra-wedge-pair",
+        "Pairs of legendary creatures sharing a character name whose combined colors form a wedge.",
+    ),
+    (
+        "typal-exclusion",
+        "Cares about creatures that are not a certain type, like non-Human or non-Borg creatures.",
+    ),
+    (
+        "typal-jellyfish",
+        "Cares about creatures of the Jellyfish type.",
+    ),
+    (
+        "typal-non-borg",
+        "Counts or rewards creatures you control that are not Borg.",
+    ),
+    ("typal-oyster", "Cares about creatures of the Oyster type."),
+    ("typal-shrimp", "Cares about creatures of the Shrimp type."),
+    ("typal-sponge", "Cares about creatures of the Sponge type."),
+    ("typal-squid", "Cares about creatures of the Squid type."),
+    ("typal-walrus", "Cares about creatures of the Walrus type."),
+    (
+        "type-errata-obsolete",
+        "A creature whose original creature type was retired and replaced through errata.",
+    ),
+    (
+        "unspent-mana-matters",
+        "Cares about how much unspent mana you have, or changes what happens to it.",
+    ),
+    (
+        "wordle",
+        "A trivia tag tied to the Wordle word game that says nothing about what the card does.",
     ),
 ];
 
