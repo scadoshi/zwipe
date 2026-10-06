@@ -22,14 +22,16 @@ A set of cron jobs on the owner's home server watches the repos and pushes to a 
 
 | Job | Schedule (UTC) | Pings when |
 |---|---|---|
+| probe | every 5 minutes | `https://api.zwipe.net/health` fails three checks in a row (a second opinion to UptimeRobot, from a different network). Also pings a Healthchecks.io heartbeat, so the maintenance host going down, or its ntfy, reaches email within about 20 minutes |
 | repo-sync | hourly | A clean repo that is behind fails to fast-forward |
 | ci-watch | every 30 minutes | A workflow's latest run fails. A run cancelled by a GitHub outage is rerun once, automatically, when GitHub reports Actions healthy |
 | zervice-check | daily 05:15 | A local zervice run (against a local Postgres 18) shows retired or renamed oracle-tag slugs, a new tag without our description, or fails |
 | ub-census | Mondays 06:00 | A new set appears that isn't in `universe.rs` FRANCHISES, a set outside FRANCHISES gains triangle-stamped printings, or a watched set first lists cards |
 | reminders | daily 08:00 | A dated follow-up comes due |
 | digest | Mondays 08:30 | Always: a weekly summary of repo state, the last zervice result, what's due in two weeks, and any job that has gone quiet |
+| doc-drift | 1st of the month, 07:00 | Always: a model checks each repo's docs against its code. Fixes the repo itself proves (a moved path, a 1:1 rename, a value matching its source file) are committed and pushed; the rest is a review list. Docs inside deploy paths (`zerver/`, `zite/`, `zwipe-core/`, `zwipe-components/`) are never auto-edited, so a docs fix never deploys |
 
-The jobs alert; they don't commit. Fixes happen in a working session, following the runbooks (for tag churn, [`../../development/runbooks/otag_description_authoring.md`](../../development/runbooks/otag_description_authoring.md)).
+The jobs alert; only doc-drift commits, and only fixes the repo proves. Fixes happen in a working session, following the runbooks (for tag churn, [`../../development/runbooks/otag_description_authoring.md`](../../development/runbooks/otag_description_authoring.md)).
 
 ## Gaps
 
