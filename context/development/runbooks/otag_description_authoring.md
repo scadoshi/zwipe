@@ -1,6 +1,6 @@
 # Runbook: authoring oracle-tag descriptions (AI-orchestrated)
 
-**Goal:** grow `ORACLE_TAG_DESCRIPTIONS` (our own plain-English text for Scryfall oracle tags) in batches, **every description checked against the real cards that carry the tag**, until coverage is satisfactory. Part 1 of [`../../plans/archive/otags/tag_descriptions_and_dictionary.md`](../../plans/archive/otags/tag_descriptions_and_dictionary.md) (**tail finished 2026-08-18 at 4,521 of 4,522** — this runbook stays live for future batches as Scryfall's tagger grows, which it does by renaming as well as adding).
+**Goal:** grow `ORACLE_TAG_DESCRIPTIONS` (our own plain-English text for Scryfall oracle tags) in batches, **every description checked against the real cards that carry the tag**, until coverage is satisfactory. Part 1 of [`../../plans/archive/otags/tag_descriptions_and_dictionary.md`](../../plans/archive/otags/tag_descriptions_and_dictionary.md) (**tail finished 2026-08-18 at 4,521 of 4,522**; this runbook stays live for future batches as Scryfall's tagger grows, which it does by renaming as well as adding).
 
 This is a **repeatable loop** a fresh AI can run cold. It fans out subagents to draft, then adversarially verify against oracle text, then a human-in-the-loop (you) validates and splices. It exists because there are ~4,500 tags and reading each by hand doesn't scale; the verify stage is what keeps accuracy high at scale.
 
@@ -8,7 +8,7 @@ This is a **repeatable loop** a fresh AI can run cold. It fans out subagents to 
 
 ---
 
-## Are these compared against real cards? Yes — two layers
+## Are these compared against real cards? Yes: two layers
 
 1. **Verify stage (every tag):** each verifier agent pulls the actual `oracle_text` of real cards and judges the drafted description against what those cards literally do. Grounding is **hierarchy-aware**: it passes the tag's parents, its children, and cards sampled from the tag *plus its direct children*. That last part matters more than it sounds. Plenty of tags carry zero cards of their own because they are umbrella nodes (`recursion-land`, `typal-creature`) or cycle roots whose members live on child tags, and an inner join against `card_oracle_tags` returns nothing for those. It is what lets `cycle-fetchland` be written off actual fetchlands instead of guessed from its name. That produces the `accurate` / `minor` / `wrong` verdict and any correction. Nothing ships un-grounded.
 2. **Human spot-check (sample):** after the workflow, hand-verify ~10 of the most obscure/mis-nameable tags per batch against oracle text (query in Step 3) before splicing. This is where slug-name traps get caught (e.g. `tapper-creature` is not a creature; `group-slug` is damage/drain, not a slowdown).
@@ -19,7 +19,7 @@ This is a **repeatable loop** a fresh AI can run cold. It fans out subagents to 
 
 - **Local Postgres** with the synced catalog. Connection string: `export DATABASE_URL="$(grep '^DATABASE_URL=' zerver/.env | cut -d= -f2-)"`
 - **Tables:** `oracle_tags(slug, label, description, parent_ids)`, `card_oracle_tags(oracle_id, oracle_tag, source)`, `scryfall_data(oracle_id, name, type_line, oracle_text, mana_cost, ...)`.
-- **The const file:** `zerver/src/lib/outbound/sqlx/card/helpers/oracle_tag_descriptions.rs` (`ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)]`). `zervice` overlays it into `oracle_tags.description` every sync (ours always wins). No DB write from this runbook, no migration, no `MIN_CLIENT_VERSION` bump — additive.
+- **The const file:** `zerver/src/lib/outbound/sqlx/card/helpers/oracle_tag_descriptions.rs` (`ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)]`). `zervice` overlays it into `oracle_tags.description` every sync (ours always wins). No DB write from this runbook, no migration, no `MIN_CLIENT_VERSION` bump: additive.
 - **The workflow script:** [`otag_authoring_workflow.js`](otag_authoring_workflow.js) (sibling file). Edit its `ENV` constant to your absolute path to `zerver/.env`.
 - A scratch dir for intermediate JSON (use the session scratchpad, not `/tmp`).
 
@@ -48,7 +48,7 @@ SELECT json_agg(slug) FROM (
 ) t;"
 ```
 
-Read `next.json` to get the slug array. (Don't `echo` it through inline python with `$AUTHORED` unquoted — the shell splits it and breaks the script. Read the file.)
+Read `next.json` to get the slug array. (Don't `echo` it through inline python with `$AUTHORED` unquoted; the shell splits it and breaks the script. Read the file.)
 
 ### 2. Run the draft -> verify workflow
 
@@ -64,7 +64,7 @@ Returns `{ total, items: [{ slug, description, verdict, note }] }`. The `descrip
 
 Parse `result.items`, then run the **style gate** and a **DB spot-check** of the obscure ones. Style rules any description must pass:
 
-- no `"` (double quote), no `\` (backslash) — would break the Rust string literal
+- no `"` (double quote), no `\` (backslash), which would break the Rust string literal
 - no em dash (`—`/`–`), no `[label](link)` syntax, no URL, no `&` (write "and")
 - non-blank, unique slug, not already in the const
 
@@ -121,7 +121,7 @@ Ship path from there: user pushes -> next `zervice` overlays all authored text.
 - Start with a verb ("Deals...", "Grants...", "Removal that...") or "A <noun> that...".
 - No em dashes, no `[label](slug)` cross-links, no URLs, no `&` (write "and").
 - Sibling precision: `gives-X` grants to OTHERS; `gains-X` / `-self` is about ITSELF; `-to-all` hits your whole team; `repeatable-X` can be done again and again; `typal-X` cares about creatures of type X; `synergy-X` / `hate-X` reward / punish X.
-- Many tags are keyword MECHANICS (convoke, threshold, phasing, heroic, bushido, ninjutsu, imprint, strive) — define the mechanic plainly in one sentence.
+- Many tags are keyword MECHANICS (convoke, threshold, phasing, heroic, bushido, ninjutsu, imprint, strive); define the mechanic plainly in one sentence.
 
 ---
 
@@ -134,7 +134,7 @@ Ship path from there: user pushes -> next `zervice` overlays all authored text.
 - **No SQLx prepare needed.** The overlay uses runtime `sqlx::query`, not a `query!` macro, so `.sqlx/` offline data is untouched.
 - **Cost.** 7 slugs/chunk for populated tags, 10 for hierarchy-grounded ones (lighter payload per tag). Sonnet draft + opus verify. The 2026-08-18 run was 138 tags = 28 agents, ~874k output tokens, ~5 min wall clock. Scale to appetite.
 - **`pop: 0` is normal, not a bug.** An empty card list means the tag is an umbrella or cycle root, not that the tag is meaningless. Read the children list instead. The prompts say this explicitly because a drafter handed nothing will invent.
-- **Priority is population, not the catalog order** — while any populated tag is still unauthored. As of 2026-08-18 none are, so future runs are just whatever the tagger added or renamed.
+- **Priority is population, not the catalog order**, while any populated tag is still unauthored. As of 2026-08-18 none are, so future runs are just whatever the tagger added or renamed.
 - **The grounding query takes ~20s.** That is the recursive subtree expansion over big roots. It is not hung; the prompt tells agents not to kill it.
 
 ## Progress markers (update as you go)

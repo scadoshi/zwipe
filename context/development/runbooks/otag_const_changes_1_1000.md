@@ -1,8 +1,8 @@
-# Oracle-tag const changes — re-audit ranks 1–1000 (applied 2026-07-16)
+# Oracle-tag const changes: re-audit ranks 1–1000 (applied 2026-07-16)
 
 181 descriptions updated: **10 wrong** (material fixes) + **171 suspect** (precision tightening).
 
-## Wrong (10) — material fixes
+## Wrong (10): material fixes
 
 | # | slug | batch | old | new |
 | --- | --- | --- | --- | --- |
@@ -17,7 +17,7 @@
 | 9 | `keyword-soup` | 701-1000 | A card that gains or lists most of its set's keyword abilities. | References a long list of common keyword abilities like flying, first strike, deathtouch, and trample, often granting or counting them. |
 | 10 | `harmonic` | 701-1000 | Gets a bonus if you control both an artifact and an enchantment. | Cares about both artifacts and enchantments, often rewarding you for controlling or casting them. |
 
-## Suspect (171) — precision tightening
+## Suspect (171): precision tightening
 
 | # | slug | batch | old | new |
 | --- | --- | --- | --- | --- |

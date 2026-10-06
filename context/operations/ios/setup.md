@@ -162,8 +162,8 @@ security find-identity -v -p codesigning
 
 | File | Where | Why |
 |------|-------|-----|
-| `zwipe-dev-key.pem` | `~/certs/` | Dev cert private key — lose it and you revoke + recreate |
-| `zwipe-dist-key.pem` | `~/certs/` | Dist cert private key — same |
+| `zwipe-dev-key.pem` | `~/certs/` | Dev cert private key; lose it and you revoke + recreate |
+| `zwipe-dist-key.pem` | `~/certs/` | Dist cert private key (same) |
 | `distribution.cer` | `~/certs/` | Re-downloadable, but keep a copy |
 | `Zwipe_App_Store.mobileprovision` | `~/certs/` | Re-downloadable, but keep a copy |
 

@@ -4,9 +4,9 @@
 
 - Rust (stable)
 - PostgreSQL
-- [Dioxus CLI](https://dioxuslabs.com/learn/0.7/getting_started) (`cargo install dioxus-cli --version 0.7.10 --locked`) — project is on Dioxus 0.7
+- [Dioxus CLI](https://dioxuslabs.com/learn/0.7/getting_started) (`cargo install dioxus-cli --version 0.7.10 --locked`); project is on Dioxus 0.7
 - iOS: Xcode + `ios-deploy` (`brew install ios-deploy`)
-- Android: Android Studio (SDK + NDK) — see `context/operations/android/setup.md` (note the JDK 21 `JAVA_HOME` gotcha)
+- Android: Android Studio (SDK + NDK); see `context/operations/android/setup.md` (note the JDK 21 `JAVA_HOME` gotcha)
 
 ## Setup
 
@@ -24,8 +24,8 @@ cd zwiper && dx serve
 ## Environment
 
 ```
-zerver/.env   — DATABASE_URL, JWT_SECRET, BIND_ADDRESS, ALLOWED_ORIGINS, RESEND_API_KEY, RESEND_EMAIL_FROM, LOG_DIR
-zwiper/.env   — BACKEND_URL, RUST_LOG, RUST_BACKTRACE
+zerver/.env   # DATABASE_URL, JWT_SECRET, BIND_ADDRESS, ALLOWED_ORIGINS, RESEND_API_KEY, RESEND_EMAIL_FROM, LOG_DIR
+zwiper/.env   # BACKEND_URL, RUST_LOG, RUST_BACKTRACE
 ```
 
 Copy `.env.example` if present, or refer to `context/operations/infrastructure/server.md`.
@@ -36,30 +36,30 @@ The workspace has six crates: `zwipe-core` (shared domain), `zerver` (backend), 
 
 ### zwipe-core
 
-The shared domain crate — pure types, validation, and business rules used by every other crate. It must stay **pure**: no feature flags, no server-only dependencies (SQLx, Axum, tokio, argon2, …), no database derives/annotations. If only the server needs a type, it stays in `zerver`. Everyone else (`zerver`, `zwiper`, `zite`) depends on `zwipe-core` for domain types.
+The shared domain crate: pure types, validation, and business rules used by every other crate. It must stay **pure**: no feature flags, no server-only dependencies (SQLx, Axum, tokio, argon2, …), no database derives/annotations. If only the server needs a type, it stays in `zerver`. Everyone else (`zerver`, `zwiper`, `zite`) depends on `zwipe-core` for domain types.
 
 ### zerver
 
-Axum REST API and background sync job. Hexagonal architecture — domain is the center, inbound/outbound are adapters.
+Axum REST API and background sync job. Hexagonal architecture: domain is the center, inbound/outbound are adapters.
 
 ```
 zerver/src/
 ├── bin/
-│   ├── zerver.rs       — HTTP server entrypoint
-│   └── zervice.rs      — Scryfall background sync job
+│   ├── zerver.rs       # HTTP server entrypoint
+│   └── zervice.rs      # Scryfall background sync job
 └── lib/
-    ├── domain/         — Pure business logic, newtypes, service traits
-    │   ├── auth/       — Sessions, JWT, password hashing, email verification
-    │   ├── card/       — Card profiles, search filters, Scryfall data models
-    │   ├── deck/       — Deck and deck_card models, limits
-    │   ├── user/       — User profile models
-    │   └── email/      — Email dispatch models
+    ├── domain/         # Pure business logic, newtypes, service traits
+    │   ├── auth/       # Sessions, JWT, password hashing, email verification
+    │   ├── card/       # Card profiles, search filters, Scryfall data models
+    │   ├── deck/       # Deck and deck_card models, limits
+    │   ├── user/       # User profile models
+    │   └── email/      # Email dispatch models
     ├── inbound/
-    │   ├── http/       — Axum routes and handlers (auth, card, deck, deck_card, user)
-    │   └── external/   — Scryfall API client (inbound data source)
+    │   ├── http/       # Axum routes and handlers (auth, card, deck, deck_card, user)
+    │   └── external/   # Scryfall API client (inbound data source)
     └── outbound/
-        ├── sqlx/       — PostgreSQL repositories (auth, card, deck, user)
-        └── resend/     — Email delivery via Resend API
+        ├── sqlx/       # PostgreSQL repositories (auth, card, deck, user)
+        └── resend/     # Email delivery via Resend API
 ```
 
 **Key pattern**: shared domain types live in `zwipe-core`, not `zerver`. `zerver` re-exports them (`pub use zwipe_core::…`) and layers server-only concerns on top (ports, services, SQLx adapters, HTTP handlers). `zwiper` and `zite` depend on `zwipe-core` directly for domain types, including the HTTP contracts and route paths; neither depends on `zerver`.
@@ -70,12 +70,12 @@ Dioxus cross-platform app (iOS, Android, web preview). Same hexagonal structure 
 
 ```
 zwiper/src/
-├── bin/                — App entrypoint
+├── bin/                # App entrypoint
 └── lib/
     ├── inbound/
-    │   ├── screens/    — Top-level app screens (auth, deck list, card swipe, profile)
-    │   │   └── deck/card/filter/  — Card filter screens (color, type, mana, etc.)
-    │   └── components/ — Reusable UI (swipe gesture, accordion, alert_dialog, fields)
+    │   ├── screens/    # Top-level app screens (auth, deck list, card swipe, profile)
+    │   │   └── deck/card/filter/  # Card filter screens (color, type, mana, etc.)
+    │   └── components/ # Reusable UI (swipe gesture, accordion, alert_dialog, fields)
     └── outbound/
         └── (platform-bound only: session, keyring, crash store, open URL; the HTTP client is the zwipe-client crate)
 ```

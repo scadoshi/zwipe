@@ -59,7 +59,7 @@ dx build --release --platform desktop
 ```bash
 # Run from workspace root whenever you add/modify a query_scalar!, query!, or query_as!
 cargo sqlx prepare --workspace
-# Commit the generated .sqlx/ directory — CI builds use it instead of a live DB
+# Commit the generated .sqlx/ directory; CI builds use it instead of a live DB
 ```
 The workspace-root `.sqlx/` is the ONLY offline-data directory. Never create a crate-local `zerver/.sqlx/` (i.e., never run `cargo sqlx prepare` from inside `zerver/` without `--workspace`): the macros prefer it over the root, and a stale copy shadows correct data (broke the 2026-07-05 deploy; details in `operations/infrastructure/cicd.md`).
 
@@ -142,14 +142,14 @@ A comment says what the code does, in the present tense, and only when the code 
 
 ```
 context/
-├── README.md               — start-here orientation + the running progress log
-├── CLAUDE.md               — this file
-├── product/                — what we're building (prd, monetization, premium/ feature catalog)
-├── architecture/           — why things are built the way they are
-├── operations/             — how to build, deploy & ship (infrastructure/, ios/, android/)
-├── development/            — coding standards (commits, comments, changelog, release notes, docs, newtypes, dioxus)
-├── plans/                  — specs for in-flight work (archive/ holds shipped and abandoned ones)
-├── marketing/              — promo art templates (html) + plans/ video scripts
-├── progress/               — what's next (todo.md, backlog.md, feature_requests.md)
-└── archive/                — no longer active (brain, complete-*, learning framework)
+├── README.md               # start-here orientation + the running progress log
+├── CLAUDE.md               # this file
+├── product/                # what we're building (prd, monetization, premium/ feature catalog)
+├── architecture/           # why things are built the way they are
+├── operations/             # how to build, deploy & ship (infrastructure/, ios/, android/)
+├── development/            # coding standards (commits, comments, changelog, release notes, docs, newtypes, dioxus)
+├── plans/                  # specs for in-flight work (archive/ holds shipped and abandoned ones)
+├── marketing/              # promo art templates (html) + plans/ video scripts
+├── progress/               # what's next (todo.md, backlog.md, feature_requests.md)
+└── archive/                # no longer active (brain, complete-*, learning framework)
 ```

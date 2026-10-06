@@ -65,7 +65,7 @@ APP=~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app
   -c "Set :CFBundleVersion <BUILD_NUMBER>" \
   $APP/Info.plist
 # <MARKETING_VERSION> = the release version, e.g. 1.7.0 (matches Cargo.toml + the
-# App Store Connect version). Do NOT leave it at 1.0 — Transporter/App Store Connect
+# App Store Connect version). Do NOT leave it at 1.0; Transporter/App Store Connect
 # then show "1.0 (build)" which reads as the wrong release.
 # <BUILD_NUMBER> increments every upload (65, 66, ...) and must be unique.
 

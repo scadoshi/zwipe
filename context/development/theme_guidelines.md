@@ -105,7 +105,7 @@ for name, color in pairs.items():
 | File | Role |
 |------|------|
 | `zwipe-components/assets/themes.css` | Single source of truth for all theme CSS variables |
-| `zwipe-components/src/lib.rs` | `THEMES_CSS` / `COMPONENTS_CSS` — the CSS files `include_str!`'d as string constants |
+| `zwipe-components/src/lib.rs` | `THEMES_CSS` / `COMPONENTS_CSS`: the CSS files `include_str!`'d as string constants |
 | `zwipe-core/src/domain/user/models/theme.rs` | `ThemeConfig` (default theme + css class) |
 | `zwipe-core/src/domain/user/models/preferences.rs` | `ALLOWED_THEMES` registry + `UserPreferences` default |
 | `zwipe-components/src/theme_picker.rs` | `ThemePicker`; labels come from `display_theme_name(slug)` in `zwipe-core/src/domain/user/models/preferences.rs`, which capitalizes hyphen-split words; special-cases (`rose-pine` → "Rosé Pine", `vscode` → "VS Code", etc.) go there, not in the slug |

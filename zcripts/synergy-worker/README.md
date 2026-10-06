@@ -10,7 +10,7 @@
 ./setup_role.sh zerver          # or whatever your dev db is named
 ```
 
-It prints the worker's `DATABASE_URL` once — copy it into the worker's `.env`. Re-running is safe: regenerates the password and reconverges the grants.
+It prints the worker's `DATABASE_URL` once; copy it into the worker's `.env`. Re-running is safe: regenerates the password and reconverges the grants.
 
 ## What the role can and cannot do
 
@@ -20,6 +20,6 @@ It prints the worker's `DATABASE_URL` once — copy it into the worker's `.env`.
 | `commander_synergy` | SELECT, INSERT, UPDATE | the cache it fills (upsert); no delete |
 | `decks` | SELECT | demand discovery |
 | `scryfall_data` | SELECT | commander identity resolution |
-| everything else | — | denied, including CREATE on the schema |
+| everything else | None | denied, including CREATE on the schema |
 
 Verified by test (2026-06-11, dev): all four allowed paths work; reads on `users`, writes on `decks`, deletes on `commander_synergy`, and `CREATE TABLE` all fail with permission errors.

@@ -15,15 +15,15 @@ Established during the 2026-05-24 zwiper casing revamp (commits `b1cacaaf`, `4cb
 | **Button labels & action CTAs (zite web)** | **Title Case** (marketing-page convention) | "Download on the App Store", "Set New Password" |
 | Body text, descriptions, helper text, placeholders, captions | **Sentence case** | "Enter your email address.", "Choose a new password." |
 | Form input labels | **Sentence case** ("Email address", "New password"); single proper nouns get Title Case ("Email", "Password") |
-| **Backend-sourced text** (errors from `zwipe-core`, toasts derived from API responses, `Display` impls on newtypes) | **Display as-is — do NOT transform** | Whatever case the source produces is what's shown. Remove `.to_lowercase()` wrappers but do NOT re-case the source. |
+| **Backend-sourced text** (errors from `zwipe-core`, toasts derived from API responses, `Display` impls on newtypes) | **Display as-is, do NOT transform** | Whatever case the source produces is what's shown. Remove `.to_lowercase()` wrappers but do NOT re-case the source. |
 | Frontend-authored toast/status text | **Sentence case** | "Card added to deck", "Saved" |
 | Crate names | **lowercase preserved** | zerver, zwiper, zite, zwipe-core, zervice |
 | Brand handles, URLs, code identifiers, CLI flags | **lowercase preserved** | scadoshi, scottyfermo.com, `UserId`, `sqlx` |
 | Proper nouns | **Always capitalize** | Magic: The Gathering, Commander, Oathbreaker, Scryfall, Moxfield, Archidekt, iOS, Android, GitHub, PostgreSQL, Discord, Stripe, Resend |
 | Hashtags / tag chips | **lowercase** (Twitter convention) | `#rust`, `#full-stack` |
-| MTG card names | **preserve Scryfall casing** | "Sol Ring", "Lightning Bolt" — already cased correctly from the API |
+| MTG card names | **preserve Scryfall casing** | "Sol Ring", "Lightning Bolt", already cased correctly from the API |
 | MTG format names | **Title Case** | "Standard", "Commander", "Oathbreaker" |
-| Mana value | Use the words **"Mana value"** (or **"MV"** as a column abbreviation), never "CMC" — Wizards renamed it. The struct field is still `avg_cmc`/`cmc` (don't churn identifiers), only display strings change. |
+| Mana value | Use the words **"Mana value"** (or **"MV"** as a column abbreviation), never "CMC"; Wizards renamed it. The struct field is still `avg_cmc`/`cmc` (don't churn identifiers), only display strings change. |
 
 ### Why mobile and web split on button casing
 

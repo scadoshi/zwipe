@@ -1,4 +1,4 @@
-# Oracle-tag description RE-AUDIT — progress & findings
+# Oracle-tag description RE-AUDIT: progress & findings
 
 Second-pass QA re-run of `ORACLE_TAG_DESCRIPTIONS` using the **improved two-stage workflow** (card-data grounding + skeptical Verify stage, commit `f0f1398d`). Ranks 1-2000 were originally checked by the *old* single-stage workflow that was blind to cost/color/hybrid/rarity and over-generalized cycles; this re-audit re-checks them from the top by population to catch what the old pass missed. Companion to the forward-audit progress in [`otag_audit_progress.md`](otag_audit_progress.md).
 
@@ -7,20 +7,20 @@ Second-pass QA re-run of `ORACLE_TAG_DESCRIPTIONS` using the **improved two-stag
 > **APPLIED + fully verified: ranks 1-1500 were applied to `ORACLE_TAG_DESCRIPTIONS` on 2026-07-16.** Ranks 1-1000: 181 fixes. Ranks 1001-1500: 99 fixes. The 28 originally-unverified fixes were later put through the two-stage verify (2026-07-16): **18 upheld** (updated to the verified suggestion), **10 reverted to their original text** (re-audit found them accurate; the first flag was a false positive). **The whole 1-1500 apply is now two-stage verified.** The batches below are the record. **Do not re-apply them.** New batches (rank ~1501+) remain findings-only. Ships [`otag_audit_workflow.js`](otag_audit_workflow.js).
 
 ## Coverage / resume
-- **Re-audited: 1500 / 4,357** (ranks 1-1000 done; ranks 1001-1500 batch **complete, 500/500**, all findings two-stage verified — the 28 flags from the originally audit-only shard were verified 2026-07-16: 18 upheld, 10 reverted). **Next: rank ~1501+.**
+- **Re-audited: 1500 / 4,357** (ranks 1-1000 done; ranks 1001-1500 batch **complete, 500/500**, all findings two-stage verified; the 28 flags from the originally audit-only shard were verified 2026-07-16: 18 upheld, 10 reverted). **Next: rank ~1501+.**
 - **Resume (do this to continue):** pull the top-N `(slug, description)` pairs by card population from the DB, **excluding** every slug already in [`otag_reaudit_slugs.txt`](otag_reaudit_slugs.txt) (this is the re-audit's own tracker, separate from the forward `otag_audited_slugs.txt`), and run them through [`otag_audit_workflow.js`](otag_audit_workflow.js). Then append the returned `audited` slugs to `otag_reaudit_slugs.txt` and log the findings here.
 - Run in 2x250 shards concurrently (args payload stays paste-able); ~500/session is comfortable.
 - Resume is self-healing: the tracker lists only confirmed re-audited slugs, so a partial run re-queues whatever didn't finish, no gaps or dupes.
 
 ## Findings so far
-Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verify overturned 19. (Of the 1001-1500 batch, 160 slugs = 4 wrong + 24 suspect are UNVERIFIED — verify stage cut by limits.) Per-batch detail below.
+Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verify overturned 19. (Of the 1001-1500 batch, 160 slugs = 4 wrong + 24 suspect are UNVERIFIED; verify stage cut by limits.) Per-batch detail below.
 
 ## Batch: ranks 1-500
 500 re-audited: **416 clean, 81 suspect, 3 wrong**; the Verify stage overturned 6 auditor flags.
 
 **What the old pass missed.** The improved auditor flagged a high rate of **over/under-specification** on these terse, high-visibility head tags: singular "a creature"/"its target" wording where the tag also covers mass/any-permanent effects, "opponent" where it's "each player", "spell" where carriers are permanents, and sibling-overlap gaps (instant vs instant-or-sorcery). These are exactly the nuances the old single-stage workflow did not surface. Overturn rate 6/90 (~7%), all overturns are correct rejections (e.g. `gives-indestructible`: creatures ARE permanents, so "other permanents" is a fine superset).
 
-### Wrong (3) — fix recommended
+### Wrong (3): fix recommended
 
 #### `unique-token`
 - **current:** A specific token variant that only one card creates.
@@ -43,7 +43,7 @@ Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verif
 - **suggested fix:** Returns an instant or sorcery card from your graveyard to your hand.
 - **verify note:** Relearn, Flood of Recollection, Scribe of the Mindful all return 'instant or sorcery', not just sorcery
 
-### Suspect (81) — minor imprecision, review before applying
+### Suspect (81): minor imprecision, review before applying
 
 | slug | issue | suggested fix |
 | --- | --- | --- |
@@ -129,13 +129,13 @@ Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verif
 | `regrowth-instant` | Underspecified: nearly every card returns an instant OR sorcery, not just an instant | Returns an instant or sorcery card from your graveyard to your hand. |
 | `clone` | Not only creatures copying creatures: non-creature permanents (Equipment, lands) and copies of artifacts also carry the tag | Lets a permanent enter the battlefield as a copy of another permanent, most often a creature copying another creature. |
 
-### Overturned by Verify (6) — flag rejected, keep current
-- `repeatable-crime` — auditor: underspecified: a crime also covers cards in an opponent's graveyard, and the description reads as if the ability always aims at opponents when many tagged abilities are buffs (any creature) that merely CAN target opponent permanents | verifier: Coeurl/Walking Sponge/Wyluli Wolf are repeatable targeted abilities; current conditional wording is accurate and no pulled card shows graveyard targeting (incompleteness, not inaccuracy)
-- `lifegain` — auditor: Says 'you' but some cards give the life to another player (creature's owner), not necessarily you | verifier: 10 of 12 pulled cards gain YOU life; only Misfortune's Gain 'Its owner gains 4 life' routes it elsewhere, a rare drawback-removal outlier
-- `self-replacement-effect` — auditor: technically correct but opaque jargon ('replaces its own resolution') a player won't parse; the cards are 'instead' clauses gated on a condition | verifier: Every card is a genuine self-replacement effect (Colossal Growth/Overload 'if kicked... instead', Shower of Coals threshold 'instead', Deny the Divine 'exile it instead'); the flag itself concedes the wording is technically correct, so no accuracy defect.
-- `gives-indestructible` — auditor: Says "permanents" but every card grants indestructible to creatures specifically | verifier: Creatures are permanents, so 'other permanents' is a correct superset (Rootborn Defenses 'Creatures you control gain indestructible', etc.), not inaccurate; only 12 of 282 seen, cannot prove creatures-only
-- `mixed-subtypes` — auditor: Core claim is correct, but the illustrative example ('creature type on a land') is the rarest pattern in the tag; most members are Saga creatures or Equipment creatures, so the example under-represents what the tag actually holds. | verifier: Jasconian Isle is genuinely 'Land Creature — Island Fish', so 'creature type on a land' is a real, accurate member of the tag; flag is about representativeness, not accuracy
-- `man-o-war` — auditor: Overspecified: not all are creatures with an enter trigger, and several bounce any nonland permanent rather than a creature | verifier: 11 of 12 pulled (Mist Raven, Roaming Ghostlight, etc.) are creatures that bounce a creature on enter; only Inscription of Insight deviates
+### Overturned by Verify (6): flag rejected, keep current
+- `repeatable-crime`, auditor: underspecified: a crime also covers cards in an opponent's graveyard, and the description reads as if the ability always aims at opponents when many tagged abilities are buffs (any creature) that merely CAN target opponent permanents | verifier: Coeurl/Walking Sponge/Wyluli Wolf are repeatable targeted abilities; current conditional wording is accurate and no pulled card shows graveyard targeting (incompleteness, not inaccuracy)
+- `lifegain`, auditor: Says 'you' but some cards give the life to another player (creature's owner), not necessarily you | verifier: 10 of 12 pulled cards gain YOU life; only Misfortune's Gain 'Its owner gains 4 life' routes it elsewhere, a rare drawback-removal outlier
+- `self-replacement-effect`, auditor: technically correct but opaque jargon ('replaces its own resolution') a player won't parse; the cards are 'instead' clauses gated on a condition | verifier: Every card is a genuine self-replacement effect (Colossal Growth/Overload 'if kicked... instead', Shower of Coals threshold 'instead', Deny the Divine 'exile it instead'); the flag itself concedes the wording is technically correct, so no accuracy defect.
+- `gives-indestructible`, auditor: Says "permanents" but every card grants indestructible to creatures specifically | verifier: Creatures are permanents, so 'other permanents' is a correct superset (Rootborn Defenses 'Creatures you control gain indestructible', etc.), not inaccurate; only 12 of 282 seen, cannot prove creatures-only
+- `mixed-subtypes`, auditor: Core claim is correct, but the illustrative example ('creature type on a land') is the rarest pattern in the tag; most members are Saga creatures or Equipment creatures, so the example under-represents what the tag actually holds. | verifier: Jasconian Isle is genuinely 'Land Creature — Island Fish', so 'creature type on a land' is a real, accurate member of the tag; flag is about representativeness, not accuracy
+- `man-o-war`, auditor: Overspecified: not all are creatures with an enter trigger, and several bounce any nonland permanent rather than a creature | verifier: 11 of 12 pulled (Mist Raven, Roaming Ghostlight, etc.) are creatures that bounce a creature on enter; only Inscription of Insight deviates
 
 ---
 
@@ -145,14 +145,14 @@ Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verif
 
 > **Findings only, not applied.** `ORACLE_TAG_DESCRIPTIONS` unchanged.
 
-### Wrong (5) — fix recommended
+### Wrong (5): fix recommended
 
 #### `warlord`
 - **current:**
 - **issue:** Overspecified to 'creatures you control'; most cards count lands, permanents, or creatures across the whole battlefield
 - **example:** Ashaya, Soul of the Wild: "Ashaya's power and toughness are each equal to the number of lands you control." Also Kithkin Rabble: "power and toughness are each equal to the number of white permanents you control."
 - **suggested fix:** A creature whose power, and often toughness, equals the number of permanents of a certain kind, most often creatures you control.
-- **verify note:** Ashaya counts 'lands you control', Kithkin Rabble 'white permanents', Yavimaya Kavu 'red creatures on the battlefield' — not just creatures you control
+- **verify note:** Ashaya counts 'lands you control', Kithkin Rabble 'white permanents', Yavimaya Kavu 'red creatures on the battlefield', not just creatures you control
 
 #### `creature-ability-noncreature`
 - **current:**
@@ -182,7 +182,7 @@ Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verif
 - **suggested fix:** An enchantment, usually black, with a powerful effect and a serious, potentially game-losing drawback.
 - **verify note:** Nine Lives is colors ['W'] ({1}{W}{W}) and Experimental Frenzy is colors ['R'] ({3}{R}), so the blanket 'black' is inaccurate
 
-### Suspect (39) — minor imprecision, review before applying
+### Suspect (39): minor imprecision, review before applying
 
 | slug | issue | suggested fix |
 | --- | --- | --- |
@@ -226,11 +226,11 @@ Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verif
 | `bushido` | Overspecified as +X/+X; the tag also includes block/blocked triggers that shift stats differently | Whenever this creature blocks or becomes blocked, its power and toughness change until end of turn, usually a Bushido +X/+X boost. |
 | `impulse-artifact` | Says "into your hand" but several members put the artifacts onto the battlefield | Digs through the top cards of your library for artifacts, putting them into your hand or onto the battlefield. |
 
-### Overturned by Verify (4) — flag rejected, keep current
-- `tuck-self` — auditor: "instead of another zone" is vague filler; the defining trait is simply that the card returns itself to its library (top or shuffled in) | verifier: All members (Sensei's Divining Top on top, Elixir of Immortality/Black Sun's Zenith shuffled in) put themselves back to library; 'instead of another zone' is filler but not inaccurate
-- `synergy-tapped` — auditor: "you control" overspecifies; some members care about tapped creatures generally, not just yours | verifier: ~10 of 12 (Lydia Frye, Oak Street Innkeeper, all web-slinging, etc.) specify 'tapped creatures you control'; Split Up is a minority exception
-- `untapper-artifact` — auditor: 'a target artifact' excludes cards that untap all your artifacts | verifier: Common case is a single target: Voltaic Key '{1}, {T}: Untap target artifact', Manifold Key 'Untap another target artifact'; Unwinding Clock's untap-all is a lone outlier among 48
-- `impact-effect` — auditor: 'a creature you control enters' is overspecified; the marquee card triggers on ANY creature entering | verifier: 11 of 12 read 'a creature/Zombie/Dragon you control enters' (Witty Roastmaster, Ayara, Corpse Knight, etc.); Pandemonium's any-creature trigger is a single outlier, so the 'you control' common case stands
+### Overturned by Verify (4): flag rejected, keep current
+- `tuck-self`, auditor: "instead of another zone" is vague filler; the defining trait is simply that the card returns itself to its library (top or shuffled in) | verifier: All members (Sensei's Divining Top on top, Elixir of Immortality/Black Sun's Zenith shuffled in) put themselves back to library; 'instead of another zone' is filler but not inaccurate
+- `synergy-tapped`, auditor: "you control" overspecifies; some members care about tapped creatures generally, not just yours | verifier: ~10 of 12 (Lydia Frye, Oak Street Innkeeper, all web-slinging, etc.) specify 'tapped creatures you control'; Split Up is a minority exception
+- `untapper-artifact`, auditor: 'a target artifact' excludes cards that untap all your artifacts | verifier: Common case is a single target: Voltaic Key '{1}, {T}: Untap target artifact', Manifold Key 'Untap another target artifact'; Unwinding Clock's untap-all is a lone outlier among 48
+- `impact-effect`, auditor: 'a creature you control enters' is overspecified; the marquee card triggers on ANY creature entering | verifier: 11 of 12 read 'a creature/Zombie/Dragon you control enters' (Witty Roastmaster, Ayara, Corpse Knight, etc.); Pandemonium's any-creature trigger is a single outlier, so the 'you control' common case stands
 
 ---
 
@@ -240,7 +240,7 @@ Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verif
 
 > **Findings only, not applied.** `ORACLE_TAG_DESCRIPTIONS` unchanged.
 
-### Wrong (2) — fix recommended
+### Wrong (2): fix recommended
 
 #### `keyword-soup`
 - **current:**
@@ -256,7 +256,7 @@ Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verif
 - **suggested fix:** Cares about both artifacts and enchantments, often rewarding you for controlling or casting them.
 - **verify note:** Flutterfox 'artifact or enchantment', Nezumi Bladeblesser and Shinechaser treat them separately, not a joint both-condition
 
-### Suspect (51) — minor imprecision, review before applying
+### Suspect (51): minor imprecision, review before applying
 
 | slug | issue | suggested fix |
 | --- | --- | --- |
@@ -312,13 +312,13 @@ Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verif
 | `bounceable-aura` | Not always to hand; some return themselves to the library instead | An Aura with a way to return itself to its owner's hand or library. |
 | `absorb` | "set amount" is misleading; several prevent a variable amount (X) or all-but-1, and some reduce rather than prevent | Prevents or reduces some of the damage that would be dealt to a permanent or player. |
 
-### Overturned by Verify (6) — flag rejected, keep current
-- `extract` — auditor: 'removing them from the game' is imprecise (exile is a real zone, not out of the game), and the discard contrast is odd; otherwise the exile-from-library idea is right | verifier: Cards do exile from a library (Extract, Mana Severance); 'removing from the game' is a rules-technicality quibble, not a proven factual error
-- `blood-artist-ability` — auditor: Says 'an opponent' but the namesake and many carriers say 'target player' (any player) or 'each opponent', not a single opponent | verifier: 10 of 12 read 'each opponent'/'target opponent' loses life; only Blood Artist and Falkenrath Noble say 'target player', so 'an opponent' fairly describes the dominant case
-- `ingest` — auditor: the damaged player exiles from their own library, and ingest exiles just the top card, not "cards" | verifier: Tag includes multi-card exilers (Raven Guild Master top ten, Kotis top X, Bismuth until nonland), so 'cards' plural is correct; damaged player is functionally the opponent attacked
-- `sth-storyline-in-cards` — auditor: Overspecifies the mechanism as flavor text; it is a meta tag for cards tied to the Stronghold set's story, and the narrative link is not necessarily flavor text | verifier: Pulled data has only oracle text, no flavor text, so it cannot disprove the current 'flavor text is part of a storyline'; the auditor's objection is speculative and unproven
-- `wind-drake-with-set-s-mechanic` — auditor: overspecifies exact 2/2 P/T (unverifiable in data) and 'flyer'; several members aren't 2/2 flying creatures at all | verifier: no P/T in data so '2/2' cannot be disproven (auditor admits it's unverifiable), and most pulled cards are 3-mana flyers matching the archetype; Cloudform is one outlier
-- `devour` — auditor: "for each one" understates devour 2 and 3, which give twice or three times that many counters per sacrifice | verifier: Current 'gain +1/+1 counters for each one' fixes no ratio; devour 2/3 (Preyseizer, Gigantotherium) still gain counters for each creature sacrificed, so it is not clearly inaccurate.
+### Overturned by Verify (6): flag rejected, keep current
+- `extract`, auditor: 'removing them from the game' is imprecise (exile is a real zone, not out of the game), and the discard contrast is odd; otherwise the exile-from-library idea is right | verifier: Cards do exile from a library (Extract, Mana Severance); 'removing from the game' is a rules-technicality quibble, not a proven factual error
+- `blood-artist-ability`, auditor: Says 'an opponent' but the namesake and many carriers say 'target player' (any player) or 'each opponent', not a single opponent | verifier: 10 of 12 read 'each opponent'/'target opponent' loses life; only Blood Artist and Falkenrath Noble say 'target player', so 'an opponent' fairly describes the dominant case
+- `ingest`, auditor: the damaged player exiles from their own library, and ingest exiles just the top card, not "cards" | verifier: Tag includes multi-card exilers (Raven Guild Master top ten, Kotis top X, Bismuth until nonland), so 'cards' plural is correct; damaged player is functionally the opponent attacked
+- `sth-storyline-in-cards`, auditor: Overspecifies the mechanism as flavor text; it is a meta tag for cards tied to the Stronghold set's story, and the narrative link is not necessarily flavor text | verifier: Pulled data has only oracle text, no flavor text, so it cannot disprove the current 'flavor text is part of a storyline'; the auditor's objection is speculative and unproven
+- `wind-drake-with-set-s-mechanic`, auditor: overspecifies exact 2/2 P/T (unverifiable in data) and 'flyer'; several members aren't 2/2 flying creatures at all | verifier: no P/T in data so '2/2' cannot be disproven (auditor admits it's unverifiable), and most pulled cards are 3-mana flyers matching the archetype; Cloudform is one outlier
+- `devour`, auditor: "for each one" understates devour 2 and 3, which give twice or three times that many counters per sacrifice | verifier: Current 'gain +1/+1 counters for each one' fixes no ratio; devour 2/3 (Preyseizer, Gigantotherium) still gain counters for each creature sacrificed, so it is not clearly inaccurate.
 
 ---
 
@@ -326,7 +326,7 @@ Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verif
 
 **499/500 audited** (1 slug unreached; session limits hit repeatedly 2026-07-16). Of these, **339 are fully two-stage verified**; **160 are audit-only / UNVERIFIED** (their verify stage was killed by the limit). Combined: 401 clean, 88 suspect, 10 wrong, 3 overturned. **Const untouched (findings-only).** The UNVERIFIED flags below should get a skeptic pass before being applied.
 
-### Wrong — verified (6)
+### Wrong: verified (6)
 
 #### `cycle-2xm-r-two-color`
 - **current:** Belongs to a two-color rare cycle reprinted in Double Masters.
@@ -358,7 +358,7 @@ Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verif
 - **issue:** Not all members create a token; many (including the namesake) enter or become a copy of an enchantment instead
 - **suggested fix:** Copies an enchantment, either as a token copy or by entering the battlefield or becoming a copy of one.
 
-### Suspect — verified (65)
+### Suspect: verified (65)
 
 | slug | issue | suggested fix |
 | --- | --- | --- |
@@ -429,7 +429,7 @@ Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verif
 
 | `copy-nonland` | too narrow: many copy a nonland card/spell (cast the copy) or become a copy, not just create a token | Copies a nonland permanent or card. |
 
-### Wrong — UNVERIFIED, re-verify before applying (4)
+### Wrong: UNVERIFIED, re-verify before applying (4)
 
 #### `cycle-zodiac-creature`
 - **current:** One of a cycle of animal creatures, each with landwalk tied to its type.
@@ -451,7 +451,7 @@ Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verif
 - **issue:** Not all are zero-cost, and not all are named 'Mox' (over/under-specified)
 - **suggested fix:** A Mox artifact that taps for mana, usually costing nothing to cast.
 
-### Suspect — UNVERIFIED, re-verify before applying (24)
+### Suspect: UNVERIFIED, re-verify before applying (24)
 
 | slug | issue | suggested fix |
 | --- | --- | --- |
@@ -481,9 +481,9 @@ Cumulative across 1498 re-audited: **~1215 clean, 259 suspect, 20 wrong**; Verif
 | `morphling` | 'mana abilities' is a rules misnomer (these are activated pump abilities that cost mana, not mana abilities); and not every carrier is a Shapeshifter creature (Pemmin's Aura is an Aura enchantment) | A creature or aura with repeatable abilities that pay mana to shift its power and toughness or grant it keywords at instant speed. |
 
 ### Overturned by Verify (3)
-- `un-keyword` — All shown carriers have joke keywords (Denimwalk, Last strike, Super haste, sticker kicker); the pulled data has no set field, so the provenance claim cannot be proven false
-- `typal-mercenary` — Tutors fetch 'Mercenary permanent card' / 'Mercenary card', but every Mercenary in the pool (and historically) is a creature, so 'creatures of the Mercenary type' remains accurate.
-- `titan-immortality` — 10 of 12 (Dread, Alabaster Dragon, Progenitus, etc.) shuffle themselves; only Kozilek/Emrakul reshuffle whole graveyard
+- `un-keyword`: All shown carriers have joke keywords (Denimwalk, Last strike, Super haste, sticker kicker); the pulled data has no set field, so the provenance claim cannot be proven false
+- `typal-mercenary`: Tutors fetch 'Mercenary permanent card' / 'Mercenary card', but every Mercenary in the pool (and historically) is a creature, so 'creatures of the Mercenary type' remains accurate.
+- `titan-immortality`: 10 of 12 (Dread, Alabaster Dragon, Progenitus, etc.) shuffle themselves; only Kozilek/Emrakul reshuffle whole graveyard
 
 ---
 

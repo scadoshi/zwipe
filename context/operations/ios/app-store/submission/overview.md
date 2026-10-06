@@ -4,7 +4,7 @@ The parts of shipping a Zwipe build to the App Store, in order. Mirrors the Andr
 
 | Part | What it covers |
 |------|----------------|
-| [build.md](build.md) | Build the release `.ipa` — dx build, Info.plist patches, icons, sign, package. **The recurring runbook.** |
+| [build.md](build.md) | Build the release `.ipa`: dx build, Info.plist patches, icons, sign, package. **The recurring runbook.** |
 | [publish.md](publish.md) | Upload via Transporter + submit for review. |
 | [first_release.md](first_release.md) | One-time account / certificate / App-ID setup for the very first submission. |
 | [form_fields.md](form_fields.md) | Store listing copy (name, subtitle, description, keywords, What's New). |

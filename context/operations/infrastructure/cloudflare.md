@@ -38,9 +38,9 @@ All DNS is managed through Cloudflare. The API is exposed via Cloudflare Tunnel 
 
 | Type | Name | Purpose |
 |------|------|---------|
-| TXT | `resend._domainkey` | DKIM — Resend signs outgoing mail |
-| TXT | `@` (contains `v=spf1 include:amazonses.com`) | SPF — authorizes Resend's servers |
-| TXT | `_dmarc` | DMARC — required by Gmail/Yahoo/Microsoft |
+| TXT | `resend._domainkey` | DKIM: Resend signs outgoing mail |
+| TXT | `@` (contains `v=spf1 include:amazonses.com`) | SPF: authorizes Resend's servers |
+| TXT | `_dmarc` | DMARC: required by Gmail/Yahoo/Microsoft |
 
 DMARC record value: `v=DMARC1; p=none; rua=mailto:<support address>`
 
@@ -91,7 +91,7 @@ credentials-file: /home/<user>/.cloudflared/<tunnel-uuid>.json
 
 ingress:
   - hostname: api.zwipe.net
-    service: http://127.0.0.1:3000   # NOT localhost — see warning below
+    service: http://127.0.0.1:3000   # NOT localhost; see warning below
   - service: http_status:404
 ```
 

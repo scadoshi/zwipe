@@ -17,8 +17,8 @@ The intersection is the product: "cards in this deck that serve this deck's plan
 
 | Consumer | How |
 |---|---|
-| Consistency calculator | P(opening hand contains a card matching each deck tag) — pure hypergeometric |
-| AI analysis | Tags constrain preset prompts ("this is a Treasure/sacrifice deck — suggest cuts that don't serve that") |
+| Consistency calculator | P(opening hand contains a card matching each deck tag); pure hypergeometric |
+| AI analysis | Tags constrain preset prompts ("this is a Treasure/sacrifice deck; suggest cuts that don't serve that") |
 | Smart stack ordering | Boost cards whose categories match the deck's tags |
 | Bracket estimate | Some categories (mass land denial, extra turns, tutors) map straight onto bracket criteria |
 | Taste profile | Aggregation bucket: ~50 categories instead of 35k cards |

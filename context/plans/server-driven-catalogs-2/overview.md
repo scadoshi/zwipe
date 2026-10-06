@@ -38,9 +38,9 @@ That also means the app binary does not shrink. The win is latency and one less 
 
 ## Phases
 
-1. **[Universes Beyond franchises](ub_franchises.md)** — new endpoint. Most of it is built already.
-2. **[Drop the two fallbacks](fallback_removals.md)** — keyword reminders and the changelog. Deletions only, no new endpoints.
-3. **[Curated oracle tags](curated_oracle_tags.md)** — a `curated` field on the served oracle-tag catalog, not a new endpoint.
+1. **[Universes Beyond franchises](ub_franchises.md)**: new endpoint. Most of it is built already.
+2. **[Drop the two fallbacks](fallback_removals.md)**: keyword reminders and the changelog. Deletions only, no new endpoints.
+3. **[Curated oracle tags](curated_oracle_tags.md)**: a `curated` field on the served oracle-tag catalog, not a new endpoint.
 
 Order matters only in that phase 1 establishes the shape the others copy. Phases 2 and 3 are independent of each other.
 

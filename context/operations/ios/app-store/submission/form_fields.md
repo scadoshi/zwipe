@@ -81,7 +81,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 | Field | Value |
 |-------|-------|
 | Username | applereview |
-| Password | (do not commit — enter manually in App Store Connect) |
+| Password | (do not commit; enter manually in App Store Connect) |
 
 ### Notes
 
@@ -96,7 +96,7 @@ This is a Magic: The Gathering deck builder. Use the provided test account to lo
 | Category | Games → Strategy |
 | Secondary Category | Entertainment |
 | Age Rating | Horror/Fear Themes: Infrequent, Mature/Suggestive Themes: Infrequent, Cartoon/Fantasy Violence: Infrequent, Guns/Weapons: Infrequent, all others: None |
-| Content Rights | Yes — third-party content (card images), necessary rights held |
+| Content Rights | Yes: third-party content (card images), necessary rights held |
 | Pricing | Free |
 | App Store Version Release | Automatically release |
 

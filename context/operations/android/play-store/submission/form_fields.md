@@ -13,10 +13,10 @@ Descriptive copy is a different question, and since 2026-09-22 it uses the app's
 | Field | Value |
 |-------|-------|
 | App name | Zwipe TCG |
-| Default language | English (United States) – en-US |
+| Default language | English (United States), en-US |
 | App or game | App |
 | Free or paid | Free |
-| Package name (permanent — never changes) | `com.scadoshi.zwipe` (matches the Apple bundle ID) |
+| Package name (permanent, never changes) | `com.scadoshi.zwipe` (matches the Apple bundle ID) |
 
 Plus the two declaration checkboxes: Developer Program Policies, and US export laws.
 
@@ -84,7 +84,7 @@ Built for players who want a fast, focused mobile experience, not another clutte
 |-------|-------|
 | App category | Entertainment (we selected "App", not "Game"; if switched to Game, use Card / Strategy) |
 | Tags | deck builder, trading card game, cards |
-| Email address (public) | TODO — confirm support address shown on the listing |
+| Email address (public) | TODO: confirm support address shown on the listing |
 | Phone / Website | Website: https://zwipe.net (phone optional) |
 
 ---
@@ -103,7 +103,7 @@ Zwipe needs an account to use, so reviewers must sign in. In Play Console choose
 |-------|-------|
 | Name | Reviewer login |
 | Username | applereview |
-| Password | (do not commit — enter manually in Play Console) |
+| Password | (do not commit; enter manually in Play Console) |
 
 **Any other information** (paste into the free-text box):
 

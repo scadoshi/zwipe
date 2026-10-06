@@ -25,11 +25,11 @@ Then apply the surface's constraint:
 |---|---|---|---|---|
 | Keyword reminders | compiled (serves `/api/card/keyword-reminders`) | compiled | served, catalog-cache prefetch | compiled table (full) |
 | Changelog | compiled (serves `/api/changelog`) | compiled | served at startup | compiled copy (full) |
-| Otag descriptions | compiled overlay → DB at sync (serves `/api/card/oracle-tags`) | fetched (share page, lazy) | served, catalog-cache | none — reveal absent, retried per screen |
-| Filter catalogs (artists, sets, keyword names, oracle words, card types) | DB-derived | n/a | served | none — open vocabularies, impossible to compile |
+| Otag descriptions | compiled overlay → DB at sync (serves `/api/card/oracle-tags`) | fetched (share page, lazy) | served, catalog-cache | none: reveal absent, retried per screen |
+| Filter catalogs (artists, sets, keyword names, oracle words, card types) | DB-derived | n/a | served | none: open vocabularies, impossible to compile |
 | Deck tags catalog | DB + authored | n/a | served (authed) | none |
-| Hints, guides, UI copy, themes, format/color vocab | n/a | compiled (its own copy) | compiled | n/a — describes compiled features; never hot-patched **(owner call: hints stay compiled, period)** |
-| Featured flavor, marketing stats, share payloads | DB-derived | fetched | fetched | none — clock/token/user data |
+| Hints, guides, UI copy, themes, format/color vocab | n/a | compiled (its own copy) | compiled | n/a: describes compiled features; never hot-patched **(owner call: hints stay compiled, period)** |
+| Featured flavor, marketing stats, share payloads | DB-derived | fetched | fetched | none: clock/token/user data |
 
 ## Decisions already litigated (don't reopen without new facts)
 

@@ -16,8 +16,8 @@ Short-form vertical videos (TikTok / Reels / Shorts). One file per video, each a
 
 | # | File | Theme | Lead features | Status / priority |
 |---|------|-------|---------------|-------------------|
-| 1 | (done, external) | Basic functionality | Add cards, Zwipe commander, import deck | **shipped — did well** (first stint; the general overview) |
-| 2 | [video_02_gets_out_of_your_way.md](video_02_gets_out_of_your_way.md) | It gets out of your way | Swipe memory + per-deck stack resume | **posted — underperforming** (fine, not everything blows up) |
+| 1 | (done, external) | Basic functionality | Add cards, Zwipe commander, import deck | **shipped, did well** (first stint; the general overview) |
+| 2 | [video_02_gets_out_of_your_way.md](video_02_gets_out_of_your_way.md) | It gets out of your way | Swipe memory + per-deck stack resume | **posted, underperforming** (fine, not everything blows up) |
 | 3 | [video_03_stops_when_youre_done.md](video_03_stops_when_youre_done.md) | Smart targeting | Land target, budget target, price filter | P2 |
 | 4 | [video_04_draw_odds.md](video_04_draw_odds.md) | Consistency math | Turn-by-turn draw odds | **P1** |
 | 5 | [video_05_synergy.md](video_05_synergy.md) | Synergy-aware swipes | Synergy ON/OFF toggle (now community-signal blended) | P2 |
@@ -26,7 +26,7 @@ Short-form vertical videos (TikTok / Reels / Shorts). One file per video, each a
 | 8 | [video_08_share_your_deck.md](video_08_share_your_deck.md) | Share your deck as a link | Public `/deck/:token` page, web render, MVP headline | **P1** |
 | 9 | [video_09_deck_mvps.md](video_09_deck_mvps.md) | Star your MVPs | 3 MVP slots, ★ in list, share-page headline | P2 |
 | 10 | [video_10_pick_your_commander.md](video_10_pick_your_commander.md) | Swipe to pick your commander | Popularity-ranked select + partner autofill | P2 |
-| 11 | [video_11_oracle_tags.md](video_11_oracle_tags.md) | 4,500 tags know what every card does | Role→tag drill-down, definitions, Examples, otag filter, dictionary | **P1 (new — the otag flagship)** |
+| 11 | [video_11_oracle_tags.md](video_11_oracle_tags.md) | 4,500 tags know what every card does | Role→tag drill-down, definitions, Examples, otag filter, dictionary | **P1 (new: the otag flagship)** |
 
 **Ship order:** #8 first, since the share page is the growth surface (a link markets itself, works with one user). Then **#11 (oracle tags)**, the biggest differentiator since launch and the freshest thing to show. Then #4 (draw odds, still a strong P1). #9 (MVPs) is cheap to shoot right after #8 and pairs with it.
 

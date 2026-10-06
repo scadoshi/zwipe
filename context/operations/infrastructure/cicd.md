@@ -145,7 +145,7 @@ sudo tailscale set --ssh   # enables Tailscale SSH (no deploy key needed)
 **SSH into server from anywhere:**
 ```bash
 ssh scadoshi@<server-tailnet-ip>        # service user (limited sudo)
-ssh root@<server-tailnet-ip>            # admin (full sudo) — key-only, tailnet
+ssh root@<server-tailnet-ip>            # admin (full sudo), key-only, tailnet
 ```
 
 ### Tailscale Admin Configuration

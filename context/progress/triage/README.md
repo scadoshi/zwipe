@@ -6,8 +6,8 @@ Distinct from `feature_requests.md` (already-weighted candidates) and `todo.md` 
 
 | Item | Source | Verdict |
 |------|--------|---------|
-| [price_target_field_size](price_target_field_size.md) | Self-noted | **Decided — build** (small) |
-| [empty_filter_warning](empty_filter_warning.md) | Self-noted | Undecided — consider |
+| [price_target_field_size](price_target_field_size.md) | Self-noted | **Decided: build** (small) |
+| [empty_filter_warning](empty_filter_warning.md) | Self-noted | Undecided: consider |
 
 Logged 2026-06-29; to be built out / triaged the following day. **Still pending as of 2026-08-18**: neither item moved. `price_target_field_size` reads "Decided, build" but is unbuilt: `deck_fields.rs:1047` still renders the full-width input.
 

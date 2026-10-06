@@ -16,7 +16,7 @@ Pushing to `main` triggers the deploy workflows (`Deploy zerver`, `Deploy zite`)
 CI runs `cargo +nightly fmt --check`, **nightly and workspace-wide**. `rustfmt.toml` enables `imports_granularity = "Crate"`, an *unstable* option, so **stable `cargo fmt` silently skips it**: your code passes locally but fails CI and the deploy is skipped. Because the check is workspace-wide, *any* crate's bad formatting (even zite/zwiper) blocks the zerver deploy.
 
 ```bash
-cargo +nightly fmt        # NOT `cargo fmt` — stable can't apply the Crate imports rule
+cargo +nightly fmt        # NOT `cargo fmt`; stable can't apply the Crate imports rule
 ```
 
 ### 2. Clippy: the exact CI command, warnings are errors

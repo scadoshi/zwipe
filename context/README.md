@@ -6,10 +6,10 @@ Orientation for AI assistants and returning contributors. This `context/` tree i
 
 | Directory | What's in it |
 |-----------|--------------|
-| [`product/`](product/) | What we're building — PRD, monetization, `premium/` feature catalog |
-| [`architecture/`](architecture/) | Why the app is built this way — structure, decisions, hosting, content delivery (compiled vs fetched) |
-| [`development/`](development/) | How to write code here — commit/doc standards, newtypes, Dioxus, UI-text conventions |
-| [`operations/`](operations/) | How to build, deploy & ship — `infrastructure/`, `ios/`, `android/` |
+| [`product/`](product/) | What we're building: PRD, monetization, `premium/` feature catalog |
+| [`architecture/`](architecture/) | Why the app is built this way: structure, decisions, hosting, content delivery (compiled vs fetched) |
+| [`development/`](development/) | How to write code here: commit/doc standards, newtypes, Dioxus, UI-text conventions |
+| [`operations/`](operations/) | How to build, deploy & ship: `infrastructure/`, `ios/`, `android/` |
 | [`marketing/`](marketing/) | Marketing material + tooling (business card, etc.) |
 | [`plans/`](plans/) | Implementation plans for upcoming / in-flight work |
 | [`progress/`](progress/) | What's next: `todo.md`, `backlog.md`, `feature_requests.md` |
@@ -380,14 +380,14 @@ Prod migrated off the home box to a **Hetzner CPX31 VPS** on 2026-06-13 (see ent
 
 | Area | Status |
 |------|--------|
-| Prod host — Hetzner CPX31 VPS (Ubuntu 26.04, PG 18) | ✅ Live (home box retired, kept as rollback) |
+| Prod host: Hetzner CPX31 VPS (Ubuntu 26.04, PG 18) | ✅ Live (home box retired, kept as rollback) |
 | PostgreSQL + zwipe DB | ✅ Live |
 | zerver systemd service | ✅ Live, auto-restarts on failure |
 | zynergy synergy worker (least-priv DB role) | ✅ Live |
 | Cloudflare Tunnel → `api.zwipe.net` | ✅ Live, TLS handled by Cloudflare |
 | Self-hosted GitHub Actions runners (on VPS) | ✅ Live, deploy on push to main |
-| CI/CD — zerver/zervice auto-deploy | ✅ Live, includes automatic migrations |
-| CI/CD — zite → GitHub Pages | ✅ Live |
+| CI/CD: zerver/zervice auto-deploy | ✅ Live, includes automatic migrations |
+| CI/CD: zite → GitHub Pages | ✅ Live |
 | Tailscale (local SSH access) | ✅ Configured |
 | zervice nightly sync (Scryfall) | ✅ `zervice.timer` on VPS (4am UTC) |
 | SQLx offline mode (.sqlx/ committed) | ✅ Configured |
@@ -437,18 +437,18 @@ All 14 routes below are live. The ones that read the public API (`/changelog`, `
 
 | Page | Status |
 |------|--------|
-| `/` — landing page | ✅ |
+| `/`: landing page | ✅ |
 | `/about` | ✅ |
-| `/changelog` — release history from the API | ✅ |
-| `/guides` and `/guides/:slug` — illustrated how-tos | ✅ |
-| `/deck/:token` — public shared-deck viewer | ✅ |
-| `/contribute` — GitHub Sponsors | ✅ |
-| `/discord` — invite redirect | ✅ |
-| `/download/ios` and `/download/android` — store links | ✅ |
+| `/changelog`: release history from the API | ✅ |
+| `/guides` and `/guides/:slug`: illustrated how-tos | ✅ |
+| `/deck/:token`: public shared-deck viewer | ✅ |
+| `/contribute`: GitHub Sponsors | ✅ |
+| `/discord`: invite redirect | ✅ |
+| `/download/ios` and `/download/android`: store links | ✅ |
 | `/privacy` | ✅ |
-| `/verify/:token` — email verification | ✅ |
-| `/reset/:token` — password reset form | ✅ |
-| `/:..segments` — 404 catchall | ✅ |
+| `/verify/:token`: email verification | ✅ |
+| `/reset/:token`: password reset form | ✅ |
+| `/:..segments`: 404 catchall | ✅ |
 | Favicon | ✅ |
 | Entrance animations, sticky nav, ASCII logo | ✅ |
 

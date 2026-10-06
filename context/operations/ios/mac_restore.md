@@ -10,7 +10,7 @@ What to back up and restore when wiping this Mac to return to stable macOS.
 
 | What | Where | Why |
 |------|-------|-----|
-| `~/certs/` | Copy to USB/iCloud | Distribution cert private key (`zwipe-dist-key.pem`) — if lost, must revoke and recreate the cert on developer.apple.com. Also holds `zwipe-upload.jks` (see below) |
+| `~/certs/` | Copy to USB/iCloud | Distribution cert private key (`zwipe-dist-key.pem`); if lost, must revoke and recreate the cert on developer.apple.com. Also holds `zwipe-upload.jks` (see below) |
 | `~/certs/zwipe-upload.jks` | Rides along with `~/certs/` | Android **upload keystore**. Not re-creatable: losing it means a Play Console key-reset request before you can ship another Android update. Called out separately because it lives in a directory whose name reads iOS-only |
 | `~/.private_keys/AuthKey_<KEY_ID>.p8` | Copy to USB | App Store Connect API key, **one-time download**. Only the deprecated `altool` fallback in [publish.md](app-store/submission/publish.md) uses it, but if lost the key must be revoked and re-issued |
 | `~/.ssh/` | Copy to USB | SSH keys for server access. Can be regenerated with physical server access, but saves time |
@@ -20,12 +20,12 @@ What to back up and restore when wiping this Mac to return to stable macOS.
 
 | What | How to recreate |
 |------|----------------|
-| `zerver/.env` | Copy from server: `ssh scadoshi@zerver cat ~/zwipe/.env` — or recreate with the values in the server's `.env` |
+| `zerver/.env` | Copy from server: `ssh scadoshi@zerver cat ~/zwipe/.env`, or recreate with the values in the server's `.env` |
 | `zwiper/.env` | Just `BACKEND_URL=https://api.zwipe.net` and `RUST_LOG=info` |
 | Apple signing certs in Keychain | Re-import `~/certs/zwipe-dist-key.pem` + re-download `.cer` from developer.apple.com |
 | Provisioning profiles | Re-download from developer.apple.com → Profiles |
-| Homebrew, Rust, Xcode | Reinstall from scratch — `zcripts/dev-env/macos/setup.sh` covers most of it |
-| Tailscale | Reinstall + re-auth — server access via `ssh scadoshi@zerver` |
+| Homebrew, Rust, Xcode | Reinstall from scratch; `zcripts/dev-env/macos/setup.sh` covers most of it |
+| Tailscale | Reinstall + re-auth; server access via `ssh scadoshi@zerver` |
 
 ---
 

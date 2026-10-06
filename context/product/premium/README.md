@@ -19,10 +19,10 @@ Brainstormed 2026-06-10. This directory details every candidate feature for the 
 | AI deck analysis (preset prompts, incl. bracket coaching) | API calls | `ai_analysis.md` |
 | Price intelligence: history charts, custom thresholds, instant alerts | storage (cheap) | `price_intelligence.md` |
 | Smart stack ordering + taste profile | storage/compute, partner API | `smart_stack.md` |
-| Consistency per-tag breakdown (headline score stays free) | none — intelligence framing | `consistency_calculator.md` |
+| Consistency per-tag breakdown (headline score stays free) | none (intelligence framing) | `consistency_calculator.md` |
 | Deck snapshots / version history with diffs | storage (cheap) | `deck_snapshots.md` |
 | Budget swaps ("$4 cousin of this $40 card") | rides price data + AI | `price_intelligence.md` |
-| Cosmetics (themes, icons, card backs) — sweetener, build last | none | (too small for a file) |
+| Cosmetics (themes, icons, card backs): sweetener, build last | none | (too small for a file) |
 
 ### DECIDED: free: acquisition, moat, or table stakes
 
@@ -32,11 +32,11 @@ Brainstormed 2026-06-10. This directory details every candidate feature for the 
 | Bracket badge (the number + factors) | most shareable feature; acquisition | `bracket_estimate.md` |
 | Current prices + deck totals | table stakes (Moxfield has them) | `price_intelligence.md` |
 | Capped drop alerts on shopping-list cards (refined 2026-06-10) | push is free (APNs/FCM); affiliate impressions + upsell surface | `price_intelligence.md` |
-| Consistency headline score, opening-hand simulator, mana math | zero cost; very screenshot-able — acquisition | `consistency_calculator.md` |
+| Consistency headline score, opening-hand simulator, mana math | zero cost; very screenshot-able; acquisition | `consistency_calculator.md` |
 | "Cards I own" swipe filter | it's a filter; filters are free | `collection_tracking.md` |
 | Deck tags (foundation infrastructure) | everything consumes it | `deck_tags.md` |
 | Synergy scores (Synergy chip, synergy-ordered search, community-signal blending) | shipped free to everyone | `smart_stack.md` |
-| Import/export, sharing, basic metrics | already free; never paywall migration | — |
+| Import/export, sharing, basic metrics | already free; never paywall migration | (none) |
 
 **Open question (2026-08-18):** synergy integration sat in the premium table from the original 2026-03 decision, but the scores shipped free. What takes its place in the paid tier is undecided; leaving the slot empty rather than inventing a replacement.
 

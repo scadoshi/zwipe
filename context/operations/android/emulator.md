@@ -60,7 +60,7 @@ emulator -list-avds
 # Normal boot (keeps existing state/storage)
 emulator -avd Pixel_9a -netdelay none -netspeed full &
 
-# Fresh WIPE (clears /data — use when installs fail with INSUFFICIENT_STORAGE)
+# Fresh WIPE (clears /data; use when installs fail with INSUFFICIENT_STORAGE)
 adb emu kill 2>/dev/null                                   # kill the running one first
 emulator -avd Pixel_9a -wipe-data -netdelay none -netspeed full &
 
@@ -127,10 +127,10 @@ adb shell dumpsys package com.scadoshi.zwipe | grep -E 'versionName|versionCode'
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `INSTALL_FAILED_INSUFFICIENT_STORAGE` / install returns blank | `/data` is full — the 117 MB debug APK extracts a ~425 MB `.so` | **Wipe the emulator** (§1). `df -h /data` to confirm. |
+| `INSTALL_FAILED_INSUFFICIENT_STORAGE` / install returns blank | `/data` is full; the 117 MB debug APK extracts a ~425 MB `.so` | **Wipe the emulator** (§1). `df -h /data` to confirm. |
 | Rebuilt but app shows old code; **PID unchanged** | `install -r` + `am start` resumed the running process | `adb shell am force-stop …` before `am start` (or `adb uninstall` + clean `adb install`) |
 | Gradle aborts in ~12s (`JdkImageTransform` / `core-for-system-modules`) | Wrong JDK (system default 26) | Set `JAVA_HOME` to the Android Studio JBR 21 (§0) |
-| Home-screen ASCII logo glyphs garbled | (historical) CDN font lacked block glyphs | Already fixed — full JetBrains Mono is self-hosted/bundled |
+| Home-screen ASCII logo glyphs garbled | (historical) CDN font lacked block glyphs | Already fixed: full JetBrains Mono is self-hosted/bundled |
 
 ---
 
@@ -140,7 +140,7 @@ The min-version gate only renders when the build is below the server minimum. To
 
 ```rust
 // if upgrade_required.required() {
-if true || upgrade_required.required() {   // forces the update screen — REVERT before shipping
+if true || upgrade_required.required() {   // forces the update screen; REVERT before shipping
 ```
 
 The gate itself (server-driven `MIN_CLIENT_VERSION`) is documented in [`../../README.md`](../../README.md) (see "1.0.5, Min-Version Gate").

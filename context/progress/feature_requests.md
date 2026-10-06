@@ -33,19 +33,19 @@ Marked ✅ in the tables below; numbers kept stable (plans/commits reference the
 
 | # | Feature | Impact | Effort | Priority | Notes |
 |---|---------|--------|--------|----------|-------|
-| 1 | Live drag indicators — screen edge glows red (left) / green (right), text hint past threshold; extend to undo + maybe | High | S | **P1** (parked) | Cheapest high-delight win. Cue was prototyped on `feat/qol-drag-indicators`, since deleted; visual style undecided, parked pending complaints. Plan: [`../plans/drag_indicators.md`](../plans/drag_indicators.md). Fixes "I kept forgetting which way and had to undo." |
-| 2 | "Just inspire me" mode — swipe with no commander/tags set, pure discovery | High | M | P2 | Most on-brand with the "Tinder" framing. |
-| 3 | Head-to-head "which is better" — pick 1 of 2 same-category cards (two ramp pieces, etc.) | Med | M | P3 | A distinct mode, not a replacement for the one-at-a-time flow. |
+| 1 | Live drag indicators: screen edge glows red (left) / green (right), text hint past threshold; extend to undo + maybe | High | S | **P1** (parked) | Cheapest high-delight win. Cue was prototyped on `feat/qol-drag-indicators`, since deleted; visual style undecided, parked pending complaints. Plan: [`../plans/drag_indicators.md`](../plans/drag_indicators.md). Fixes "I kept forgetting which way and had to undo." |
+| 2 | "Just inspire me" mode: swipe with no commander/tags set, pure discovery | High | M | P2 | Most on-brand with the "Tinder" framing. |
+| 3 | Head-to-head "which is better": pick 1 of 2 same-category cards (two ramp pieces, etc.) | Med | M | P3 | A distinct mode, not a replacement for the one-at-a-time flow. |
 
 ## Deck-building intelligence (differentiator)
 
 | # | Feature | Impact | Effort | Priority | Notes |
 |---|---------|--------|--------|----------|-------|
-| 4 | Auto land base from color-pip ratio as you build | High | M | **PARKED** | Declined by owner 2026-08-18 — not building it now, and not to be re-proposed as next work. Spec preserved at [`../plans/archive/fill_basics.md`](../plans/archive/fill_basics.md). Was P1 on impact alone; revisit only if the owner raises it. |
+| 4 | Auto land base from color-pip ratio as you build | High | M | **PARKED** | Declined by owner 2026-08-18; not building it now, and not to be re-proposed as next work. Spec preserved at [`../plans/archive/fill_basics.md`](../plans/archive/fill_basics.md). Was P1 on impact alone; revisit only if the owner raises it. |
 | 5 | Land count target / cap so you don't over/under-run | Med | S | ✅ Shipped | Land-target stepper in deck form + crossing toast (1.2.0). Pairs with #4/#19. |
 | 6 | Mana-value-aware suggestion weighting (surface lower MV as curve fills) | High | M | P2 | Makes the recommender feel smart. Manual MV-range filter already exists as a stopgap. |
 | 7 | Embeddings-based auto-build / decklist analysis (assemble ~80% of a deck, swipe the rest) | High | L | P3 | North-star; aligns with the synergy/recommender roadmap. |
-| 20 | Companion support — recognize the 10 companions and let the deck declare one, since the companion dictates deck composition (constraints filter the swipe pool) | Med | M | P3 | User feedback (2026-06-29). Low priority but **fully programmable**: companion set is tiny and WotC has effectively stopped adding new ones, so it's a fixed, hard-codable rule set. |
+| 20 | Companion support: recognize the 10 companions and let the deck declare one, since the companion dictates deck composition (constraints filter the swipe pool) | Med | M | P3 | User feedback (2026-06-29). Low priority but **fully programmable**: companion set is tiny and WotC has effectively stopped adding new ones, so it's a fixed, hard-codable rule set. |
 
 ## Card data & display
 
@@ -53,14 +53,14 @@ Marked ✅ in the tables below; numbers kept stable (plans/commits reference the
 |---|---------|--------|--------|----------|-------|
 | 8 | Always show card name + a detail view (esp. foreign/alt-art printings) | High | S–M | ✅ Shipped | Name always shown + util-bar eye → oracle/stats dialog. Kills the unidentifiable-card complaint. |
 | 9 | Prefer original / English printing in the swipe stack | Med | M | P2 | Overlaps with #8; printing-selection logic. |
-| 18 | Printing/art display settings — toggle: only original printing, most-recent printing, exclude Secret Lair art | Med | M | P2 | User-facing superset of #9; printing-selection preferences in settings. |
+| 18 | Printing/art display settings (toggle: only original printing, most-recent printing, exclude Secret Lair art) | Med | M | P2 | User-facing superset of #9; printing-selection preferences in settings. |
 
 ## Filtering & budget
 
 | # | Feature | Impact | Effort | Priority | Notes |
 |---|---------|--------|--------|----------|-------|
 | 10 | Price threshold filter (hard budget cap, EUR/USD) | Med | M | ✅ Shipped | Price min/max range in the filter sheet (`filter/price.rs`). |
-| 19 | Land-target auto-stop — when the land count target is hit, the land filter should **stop serving lands automatically** rather than continuing to surface them | High | S | ✅ Shipped | Lands excluded from the swipe pool once the target is met (1.2.0). User feedback (2026-06-29): "absolutely genius." |
+| 19 | Land-target auto-stop: when the land count target is hit, the land filter should **stop serving lands automatically** rather than continuing to surface them | High | S | ✅ Shipped | Lands excluded from the swipe pool once the target is met (1.2.0). User feedback (2026-06-29): "absolutely genius." |
 
 ## Persistence & in-build visibility
 
@@ -88,7 +88,7 @@ Marked ✅ in the tables below; numbers kept stable (plans/commits reference the
 | # | Feature | Impact | Effort | Priority | Notes |
 |---|---------|--------|--------|----------|-------|
 | 17 | Password rule errors placed under the password field (not floating up top) | Low | S | ✅ Shipped | Per-field inline validation (red outline + message) across auth forms. |
-| 21 | Clone-deck UX polish — (a) trim the hint text down to one line, e.g. "Make an exact copy of your deck"; (b) on Save, navigate straight to the newly cloned deck | Low | S | ✅ Shipped | One-line hint + navigates to the cloned deck on Save (`clone_deck_dialog.rs`). |
+| 21 | Clone-deck UX polish: (a) trim the hint text down to one line, e.g. "Make an exact copy of your deck"; (b) on Save, navigate straight to the newly cloned deck | Low | S | ✅ Shipped | One-line hint + navigates to the cloned deck on Save (`clone_deck_dialog.rs`). |
 
 ---
 

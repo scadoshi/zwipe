@@ -103,7 +103,7 @@ But even without the orphan rule, custom SQLx impls on domain types are the wron
 Use intermediate `Database*` structs with primitive fields that SQLx understands natively, then convert at the boundary:
 
 ```rust
-// outbound/sqlx/deck/models.rs — the adapter layer
+// outbound/sqlx/deck/models.rs: the adapter layer
 #[derive(FromRow)]
 struct DatabaseDeckProfile {
     pub format: Option<String>,   // ← primitive, SQLx handles natively

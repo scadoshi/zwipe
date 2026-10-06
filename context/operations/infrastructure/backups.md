@@ -40,7 +40,7 @@ Interactive prompts:
 ```
 n       (new remote)
 r2      (name)
-s3      (type — pick "Amazon S3 Compliant")
+s3      (type: pick "Amazon S3 Compliant")
 Cloudflare (provider)
         (paste Access Key ID)
         (paste Secret Access Key)
@@ -71,7 +71,7 @@ Create `~/scripts/backup-db.sh`:
 #!/bin/bash
 set -euo pipefail
 
-# Pull DATABASE_URL from zerver's .env (grep, not source — we don't want to
+# Pull DATABASE_URL from zerver's .env (grep, not source; we don't want to
 # eval other secrets like JWT_SECRET in this shell, and `source` would expand
 # any $/backtick in their values).
 ENV_FILE="/home/scadoshi/zwipe/.env"

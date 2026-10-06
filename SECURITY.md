@@ -7,7 +7,7 @@ Zwipe ships as a live service: a hosted backend plus mobile and web clients. Onl
 | Component | Supported |
 |-----------|-----------|
 | Latest released app (iOS / Android / web) | Yes |
-| Backend (`zerver`) — current deploy | Yes |
+| Backend (`zerver`), current deploy | Yes |
 | Older client builds below the version floor | No |
 
 ## Reporting a vulnerability

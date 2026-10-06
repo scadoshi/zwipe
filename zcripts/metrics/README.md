@@ -1,6 +1,6 @@
 # Metrics Scripts
 
-Read-only usage reports you run against the production database, then paste the output back to Claude for analysis. No instrumentation, no dashboards — one big overview plus small single-topic scripts for quick checks.
+Read-only usage reports you run against the production database, then paste the output back to Claude for analysis. No instrumentation, no dashboards: one big overview plus small single-topic scripts for quick checks.
 
 ## What we capture
 
@@ -8,7 +8,7 @@ Read-only usage reports you run against the production database, then paste the 
 |---|---|
 | `users` | registrations, email verification, lockouts, `last_active_at`, `first_swiped_at` |
 | `decks` (`first_completed_at`) | decks built + whether they reached a valid state |
-| `deck_cards` (`board`) | card contents per deck — deck / maybeboard / sideboard |
+| `deck_cards` (`board`) | card contents per deck: deck / maybeboard / sideboard |
 | `user_lifetime_counters` | per-user totals: swipes (R/L/U/D), searches, decks; `updated_at` = last counter write (use `users.last_active_at` for last-active) |
 | `user_daily_activity` | per-user, per-day swipe + search counts (drives DAU/WAU/MAU) |
 | `user_events` | sparse log: `register`, `login`, `refresh`, `logout`, `deck_created`, `deck_completed`, `first_swipe` |
@@ -18,8 +18,8 @@ Read-only usage reports you run against the production database, then paste the 
 | `user_card_signal` | per-user mirror of the commander signal |
 | `user_week_signal` / `user_week_facet_signal` | per-user weekly counters + adds by category / color (Monday UTC weeks) |
 | `deck_card_suppressions` | durable per-deck skips (`skip` / `removal` provenance, 5,000 cap per deck) |
-| `client_errors` | handled errors shown to users (1.7.4+): screen/component/action breadcrumbs, kind, message, dedupe count — anonymous, 90-day retention |
-| `crash_reports` | panics (1.7.4+): one row per crash_id, panic message with file:line — anonymous, 90-day retention |
+| `client_errors` | handled errors shown to users (1.7.4+): screen/component/action breadcrumbs, kind, message, dedupe count; anonymous, 90-day retention |
+| `crash_reports` | panics (1.7.4+): one row per crash_id, panic message with file:line; anonymous, 90-day retention |
 
 ## The scripts
 
@@ -34,7 +34,7 @@ Read-only usage reports you run against the production database, then paste the 
 | `swipe-memory.sql` | Are durable skips used? Any deck near the 5k cap? | Occasional |
 | `errors.sql` | What's breaking for users in the field? Any contract drift? | After each release, then weekly |
 
-All of them are **read-only** — no writes, no locks — and print `── header ──` sections so the output is self-describing. Run any of them the same way:
+All of them are **read-only** (no writes, no locks) and print `── header ──` sections so the output is self-describing. Run any of them the same way:
 
 ```bash
 # On the server (simplest):
@@ -51,39 +51,39 @@ sudo -u postgres psql zwipe -f zcripts/metrics/pulse.sql > /tmp/zwipe-pulse.txt
 
 1. Run the script that matches your question (`pulse.sql` if you just want a heartbeat).
 2. Paste the full output back to Claude.
-3. Claude reads it section-by-section and tells you what people are actually doing — then we decide what to dig into with a follow-up query.
+3. Claude reads it section-by-section and tells you what people are actually doing, then we decide what to dig into with a follow-up query.
 
 ## Script details
 
-### `pulse.sql` — the heartbeat
+### `pulse.sql`: the heartbeat
 
 Today vs yesterday, the last 7 days (registrations, actives, volume), the last 10 registrations with what each account did since, the event log over 48h, and a 48h glance at the pre-auth funnel. Small enough to run every morning.
 
-### `overview.sql` — one-shot usage report
+### `overview.sql`: one-shot usage report
 
 Sixteen labeled sections in one run: snapshot, registrations, activation funnel, DAU/WAU/MAU, recency, daily volume, swipe-direction mix, engagement distribution, top users, deck counts/completion/size, format popularity, top commanders, top cards, board usage, and account activity.
 
-### `retention.sql` — repeat deck-builders
+### `retention.sql`: repeat deck-builders
 
 "Retention" = did a builder come back on a *later day* to build again. Derived purely from `decks.created_at` (distinct UTC build days per user), so it's real for every user regardless of app build. **Re-run weekly** and watch the `repeat_builders` / `repeat_pct` numbers move. Shows a per-builder timeline and a return-gap distribution.
 
-### `swipes.sql` — the shape of swipe activity
+### `swipes.sql`: the shape of swipe activity
 
-Session depth (swipes per active user-day, median/p90 + buckets), weekly add-rate trend (right / decisive swipes — falling means pickier users or a serve running dry), undo rate per day vs the lifetime baseline (spikes after a release = accidental-swipe regression), per-user selectivity distribution (collectors vs curators, min 20 decisive swipes), consecutive-day streaks (longest-ever distribution + live streaks), and swipes per completed deck (effort-to-value; falling across cohorts = suggestion quality improving).
+Session depth (swipes per active user-day, median/p90 + buckets), weekly add-rate trend (right / decisive swipes; falling means pickier users or a serve running dry), undo rate per day vs the lifetime baseline (spikes after a release = accidental-swipe regression), per-user selectivity distribution (collectors vs curators, min 20 decisive swipes), consecutive-day streaks (longest-ever distribution + live streaks), and swipes per completed deck (effort-to-value; falling across cohorts = suggestion quality improving).
 
-### `funnel.sql` — pre-auth registration funnel
+### `funnel.sql`: pre-auth registration funnel
 
-App opened → register viewed → register submitted (distinct anonymous sessions), with registrations from `users` as the final leg — sessions carry no identity, so the last step is counted alongside, never joined. Also: open-to-submit time (median / p90) and submit-retry distribution (form friction). Empty until the `anonymous_events` migration and an instrumented client build are both live.
+App opened → register viewed → register submitted (distinct anonymous sessions), with registrations from `users` as the final leg. Sessions carry no identity, so the last step is counted alongside, never joined. Also: open-to-submit time (median / p90) and submit-retry distribution (form friction). Empty until the `anonymous_events` migration and an instrumented client build are both live.
 
-### `signal.sql` — suggestion-signal health
+### `signal.sql`: suggestion-signal health
 
 Substrate size (pairs, commanders, impression totals), commanders with the most signal, strongest keeps and strongest passes (min 5 impressions), weekly signal volume, and facet adds by category / color. Run before starting suggestion-signal **Phase 3 (ranking)** to judge whether there's enough data.
 
-### `errors.sql` — field diagnostics
+### `errors.sql`: field diagnostics
 
-Client errors + crashes from the 1.7.4+ reporting pipeline: snapshot, daily shape (version × screen × kind), top signatures by real occurrence count, the contract-drift alarm (decode / api_internal by version — a decode spike on one build means its wire shape disagrees with the server), crashes grouped by panic site (file:line), and a raw tail of the latest of each. Everything is anonymous and ages out at 90 days via the zervice upkeep prune.
+Client errors + crashes from the 1.7.4+ reporting pipeline: snapshot, daily shape (version × screen × kind), top signatures by real occurrence count, the contract-drift alarm (decode / api_internal by version; a decode spike on one build means its wire shape disagrees with the server), crashes grouped by panic site (file:line), and a raw tail of the latest of each. Everything is anonymous and ages out at 90 days via the zervice upkeep prune.
 
-### `swipe-memory.sql` — durable skips
+### `swipe-memory.sql`: durable skips
 
 Suppression totals with the skip/removal split, adoption among decks active in the last 30 days, per-deck depth distribution (flags anyone near the 5,000 cap), the 10 largest skip lists, and daily write volume.
 
