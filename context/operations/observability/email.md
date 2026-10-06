@@ -7,7 +7,7 @@ Two kinds of email matter: alerts that come to the owner, and transactional mail
 | From | Means |
 |---|---|
 | UptimeRobot | `api.zwipe.net/health` is failing (it also pushes to the UptimeRobot app) |
-| Healthchecks.io | The nightly zervice run never finished: no ping within the grace window |
+| Healthchecks.io | The nightly zervice run or the nightly backup never completed: no ping within the grace window |
 | zervice-alert (via Resend) | A scheduled zervice run failed; the email says which |
 | GitHub | A workflow on `main` failed |
 

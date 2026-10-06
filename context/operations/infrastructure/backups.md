@@ -25,9 +25,9 @@ Nightly PostgreSQL backups to Cloudflare R2 via `rclone`. The database is the on
 ### 2. Create R2 API Token
 
 1. R2 → Manage R2 API Tokens → Create API Token
-2. Permissions: **Admin Read & Write** (Object Read & Write alone is insufficient, rclone needs bucket list operations)
-3. Scope: Apply to all buckets (bucket-scoped tokens may fail with 403 even with correct naming)
-4. Save the **Access Key ID** and **Secret Access Key**: you won't see them again
+2. Permissions: **Object Read & Write**, applied to the `zwipe-backups` bucket only. TTL: Forever (or put the expiry date somewhere you'll see it).
+3. Save the **Access Key ID** and **Secret Access Key**: you won't see them again.
+4. A bucket-scoped token can't create or inspect buckets, so rclone must not try: set `no_check_bucket = true` on the remote (step 3). Without it, every upload fails with `AccessDenied (403)` even though listing works.
 
 ### 3. Install and Configure rclone
 
@@ -49,6 +49,14 @@ Cloudflare (provider)
 ```
 
 Your Cloudflare Account ID is on the R2 overview page in the dashboard.
+
+Then turn off rclone's bucket check, which the bucket-scoped token isn't allowed to do:
+
+```bash
+rclone config update r2 no_check_bucket true
+```
+
+Replacing a token later is the same two values: `rclone config update r2 access_key_id <ID> secret_access_key <SECRET>`.
 
 ### 4. Test the Connection
 
@@ -76,6 +84,7 @@ set -euo pipefail
 # any $/backtick in their values).
 ENV_FILE="/home/scadoshi/zwipe/.env"
 DATABASE_URL=$(grep -E '^DATABASE_URL=' "$ENV_FILE" | cut -d= -f2-)
+BACKUP_HEALTHCHECK_URL=$(grep -E '^BACKUP_HEALTHCHECK_URL=' "$ENV_FILE" | cut -d= -f2- || true)
 
 BACKUP_FILE="/tmp/zwipe-$(date +%Y%m%d).sql.gz"
 pg_dump "$DATABASE_URL" | gzip > "$BACKUP_FILE"
@@ -83,7 +92,12 @@ rclone copy "$BACKUP_FILE" r2:zwipe-backups/
 rm "$BACKUP_FILE"
 
 echo "backup complete: zwipe-$(date +%Y%m%d).sql.gz"
+
+# Ping Healthchecks.io only after a successful upload (set -e stops earlier on failure).
+[ -n "$BACKUP_HEALTHCHECK_URL" ] && curl -fsS -m 10 --retry 3 "$BACKUP_HEALTHCHECK_URL" > /dev/null || true
 ```
+
+**Alerting:** the last line pings the Healthchecks.io check "Zwipe Backups" (cron `0 5 * * *` UTC, 1 hour grace, email). `set -e` means it is only reached when the dump and the upload both succeeded, so a missing ping is the alert. The ping URL lives in the server's `.env` as `BACKUP_HEALTHCHECK_URL`, never in the repo. On a failed run the dump stays in `/tmp` (the `rm` is never reached), which is a useful last copy until the next reboot.
 
 **Why `grep`, not `source`:** sourcing the whole `.env` would expand `$` and backticks in every value (e.g. a future `JWT_SECRET` containing shell-special characters). Pulling just the one line we need keeps the script ignorant of every other secret.
 
@@ -211,6 +225,10 @@ rclone ls r2:zwipe-backups/
 # Check cron is scheduled
 crontab -l | grep backup
 ```
+
+Healthchecks.io's "Zwipe Backups" check shows the last successful run at a glance.
+
+**Incident, 2026-07-26 to 2026-10-06:** every nightly upload failed with `AccessDenied (403)` for 73 days and nothing noticed, because the script had no alert; the bucket was found empty. Fixed 2026-10-06 with a new bucket-scoped token, `no_check_bucket = true`, and the Healthchecks.io ping above. The dumps still in the server's `/tmp` (2026-09-27 onward) were uploaded, so history restarts there.
 
 ---
 

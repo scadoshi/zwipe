@@ -21,6 +21,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-06: backups had been failing silently for 73 days
+
+Wiring a Healthchecks.io ping into the nightly backup turned up that every upload to R2 had failed with `AccessDenied (403)` since 2026-07-26, and the `zwipe-backups` bucket was empty. Nothing alerted because the backup script had no check of its own. Fixed the same day: a new bucket-scoped Object Read & Write token, `no_check_bucket = true` on the rclone remote (a bucket-scoped token can't do rclone's bucket check, so uploads 403 even while listing works), and a "Zwipe Backups" Healthchecks.io check pinged only after a successful upload. The dumps still in the server's `/tmp` from 2026-09-27 on were uploaded, so R2 history restarts there; a checksum-verified copy of 10-06 also sits on the maintenance host. Runbook: [`operations/infrastructure/backups.md`](operations/infrastructure/backups.md); every alert channel: [`operations/observability/`](operations/observability/README.md).
+
 ## 2026-10-05: 1.10.6 rebuilt as iOS build 88 and Android vc51
 
 A casualty of fast shipping, caught on the phone right after the submissions: Back on the Themes sheet with a pick on screen slid the sheet down while the original theme wiped back in, and the two animations stuttered against each other. Now `use_theme_follow` returns a `ThemeFollow` with the shown theme and a `wiping` flag, the Themes sheet holds still until the shell shows the original, drops out with no slide inside the transition so the new snapshot has no sheet, and toasts once the sweep ends. `BottomSheet` gained a `hidden` prop and `on_dismiss` now owns the close. Both artifacts rebuilt the same evening with the fix and verified, and both submitted that night, iOS build 88 replacing 87 in App Store review and Android vc51 to Production; cairn took the same change and the new pin.

@@ -15,9 +15,9 @@ How we know zwipe is running well: every signal, where it comes from, and where 
 | In-app errors and crashes | Apps report handled errors and panics to `client_errors` and `crash_reports` (90-day retention) | `zcripts/metrics/errors.sql` | No: read on a schedule in [`../../progress/todo.md`](../../progress/todo.md) |
 | Usage | Counters and events in the database | `zcripts/metrics/` scripts ([`README`](../../../zcripts/metrics/README.md)) | No |
 | Email | Resend sends; alerts arrive by email | [`email.md`](email.md) | Partly |
-| Backups | Nightly `pg_dump` to object storage | [`../infrastructure/backups.md`](../infrastructure/backups.md) | No (a known gap) |
+| Backups | Nightly `pg_dump` to R2, pinging Healthchecks.io on success | Healthchecks.io, [`../infrastructure/backups.md`](../infrastructure/backups.md) | Yes: email when the ping is missed |
 
 ## In this folder
 
-- [`alerts.md`](alerts.md): every alert channel in detail, the maintenance host's jobs, and the known gaps.
+- [`alerts.md`](alerts.md): every alert channel in detail, the maintenance host's jobs, and the remaining gaps.
 - [`email.md`](email.md): alerts that arrive by email, and how to check transactional mail.

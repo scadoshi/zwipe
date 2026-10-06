@@ -7,13 +7,14 @@ Every channel that can tell the owner something is wrong, what it watches, and w
 | Channel | Watches | Fires when | Lands as |
 |---|---|---|---|
 | UptimeRobot | `https://api.zwipe.net/health`, every 5 minutes | The endpoint fails or times out | Email and app push |
-| Healthchecks.io dead-man check ("Zervice Nightly") | zervice pings it after a run where every step succeeded | No ping within the grace window after 04:00 UTC (zervice never ran or never finished) | Email |
+| Healthchecks.io dead-man check ("Zervice") | zervice pings it after a run where every step succeeded | No ping within the grace window after 04:00 UTC (zervice never ran or never finished) | Email |
 | `zervice-alert.service` | `zervice.service` via `OnFailure=` | A scheduled zervice run exits non-zero | Email, sent through Resend with the server's existing credentials |
+| Healthchecks.io dead-man check ("Zwipe Backups") | `backup-db.sh` pings it after the dump and the R2 upload both succeed | No ping within an hour after 05:00 UTC | Email |
 | GitHub Actions | Deploy and test workflows on every push to `main` | A workflow fails | GitHub's own notification email |
 
 `/health` is the probe on purpose: it is uncached and goes straight through to zerver, so it fails when zerver does, unlike cached routes that keep answering during an outage.
 
-UptimeRobot and Healthchecks.io cover different failures: one says the API is down, the other says the nightly sync didn't happen. `zervice-alert` covers the third case: it ran and failed.
+UptimeRobot and Healthchecks.io cover different failures: one says the API is down, the others say the nightly sync or the nightly backup didn't complete. `zervice-alert` covers zervice's third case: it ran and failed. The backup check was added 2026-10-06, after uploads had failed silently for 73 days (see [`../infrastructure/backups.md`](../infrastructure/backups.md)).
 
 ## Maintenance host (the owner's always-on box)
 
@@ -32,5 +33,4 @@ The jobs alert; they don't commit. Fixes happen in a working session, following 
 
 ## Gaps
 
-- **Database backups have no alert.** A failed nightly backup to object storage (see [`../infrastructure/backups.md`](../infrastructure/backups.md)) is silent. A Healthchecks.io check pinged at the end of a successful backup would close it the same way the zervice check does.
 - **In-app error and crash reports** are recorded server-side but alert nobody; they are read by hand on a schedule kept in [`../../progress/todo.md`](../../progress/todo.md).
