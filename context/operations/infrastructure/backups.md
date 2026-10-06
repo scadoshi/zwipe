@@ -20,7 +20,7 @@ Nightly PostgreSQL backups to Cloudflare R2 via `rclone`. The database is the on
 2. R2 Object Storage → Create Bucket
 3. Name: `zwipe-backups`
 4. Region: auto (or nearest)
-5. Set lifecycle rule: delete objects after 30 days (keeps retention automatic)
+5. No lifecycle rule: `backup-db.sh` prunes to the newest 30 itself (see Retention below)
 
 ### 2. Create R2 API Token
 
@@ -244,4 +244,4 @@ Healthchecks.io's "Zwipe Backups" check shows the last successful run at a glanc
 
 ## Cost
 
-R2: $0.015/GB/month, zero egress. A compressed Postgres dump of 35k cards + users is ~5-10MB. Monthly cost rounds to $0.00.
+R2: $0.015/GB/month, zero egress. A compressed dump is about 110MB (30 of them come to roughly 3.3GB), inside R2's 10GB free tier, so the monthly cost is $0.00.
