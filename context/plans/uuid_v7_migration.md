@@ -34,7 +34,7 @@ hard" is mostly these)
 
 ## Verification sketch
 
-- Postgres 18: full workspace suite + a prod-parity restore test before the prod upgrade itself.
+- Postgres 18: done; prod has run 18 since June 2026 and CI gates on `postgres:18`, so nothing is left to verify here.
 - Migration: row counts + FK integrity (`NOT VALID` constraints validated after), spot-check share links (per the alias decision), old client session → clean re-login, nightly sync green (proves card ids untouched).
 - Call sites: grep gate, no `new_v4` outside tests once the swap lands (test helpers may keep v4; they exercise "any valid uuid").
 
