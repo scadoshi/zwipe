@@ -39,20 +39,15 @@ This rule exists because the same backend message may surface in multiple fronte
 
 ## Font: JetBrains Mono
 
-The whole product (zwiper + zite) uses [JetBrains Mono](https://www.jetbrains.com/lp/mono/) at weight 400. Was previously Cascadia Code at weight 300. The two apps load it differently.
+The whole product (zwiper + zite) uses [JetBrains Mono](https://www.jetbrains.com/lp/mono/) at weight 400. Was previously Cascadia Code at weight 300. Both apps self-host it, each in its own way.
 
 ### zwiper: self-hosted
 
 The woff2 files live in `zwiper/assets/fonts/` (400, 500, 700), are registered with `asset!()` so they ship inside the app bundle, and the `@font-face` rules are injected from `zwiper/src/bin/zwipe.rs`. No CDN: an app that has to work offline can't wait on jsdelivr, and the full font carries the U+2580-U+259F block elements the ASCII logo needs at the monospace advance width, which fontsource's subsets drop. `zwiper/assets/main.css:3` documents this at the top of the file.
 
-### zite: CDN
+### zite: self-hosted
 
-`zite/assets/style.css` still imports from the `@fontsource/jetbrains-mono` CDN (top of file):
-
-```css
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/400.css");
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/700.css");
-```
+The latin and latin-ext woff2 subsets from `@fontsource/jetbrains-mono` (400 and 700) live in `zite/public/fonts/` and are served verbatim, with `@font-face` rules at the top of `zite/assets/style.css` and `font-display: swap` so fallback mono shows at once. `zite/src/main.rs` preloads the two latin weights so the fetches start before the stylesheet asks. This replaced the unpinned jsdelivr `@import`s, which delayed the whole stylesheet on a cold cache. The `mana-font` import still comes from the CDN.
 
 ### Body declaration
 

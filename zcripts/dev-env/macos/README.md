@@ -55,15 +55,14 @@ Beyond the [shared end state](../README.md#shared-end-state), the macOS script:
 `dx serve --ios` installs into whatever Simulator is **booted**, so boot one first:
 
 ```bash
-open -a Simulator                     # boots the default device
+./zcripts/ios/sim.sh                  # boots the default device (iPhone 11 Pro Max)
 cd zwiper && dx serve --ios
 ```
 
-To target the 6.5" device specifically:
+To boot a different device instead:
 
 ```bash
-xcrun simctl boot "iPhone 11 Pro Max"
-open -a Simulator                     # bring the window forward
+xcrun simctl boot "<device name>"     # a non-default device; sim.sh only boots the default
 cd zwiper && dx serve --ios
 ```
 
@@ -109,6 +108,6 @@ Drops and recreates the `zerver` database, regenerates both `.env` files, and re
 |---|---|
 | `SDK "iphonesimulator" cannot be located` | CLT-only, no full Xcode; see [one-time Xcode setup](#one-time-xcode-setup). |
 | `No iOS sdks installed` | Simulator runtime missing: `xcodebuild -downloadPlatform iOS`. |
-| `No devices are booted` (exit 148) | Boot a sim first: `open -a Simulator`. |
+| `No devices are booted` (exit 148) | Boot a sim first: `./zcripts/ios/sim.sh`. |
 | `CoreSimulator.framework ... no such file` | Run `sudo xcodebuild -runFirstLaunch`, then retry. |
 | `dx and dioxus versions are incompatible` | Pin `dx`; see [version pinning](#dx--dioxus-version-pinning). |
