@@ -8,6 +8,7 @@ Each platform lives in its own directory with its own README covering the OS-spe
 |---|---|
 | macOS | [`macos/README.md`](macos/README.md) |
 | Omarchy (Arch-based) | [`omarchy/README.md`](omarchy/README.md) |
+| Ubuntu | [`ubuntu/README.md`](ubuntu/README.md) |
 
 ## setup.sh vs reset.sh
 
@@ -18,7 +19,7 @@ Every platform ships the same two scripts:
 
 ## Shared end state
 
-The three `setup.sh` scripts differ only in package-manager calls (brew vs dnf vs pacman) and platform build deps. They all converge on the same result:
+The three `setup.sh` scripts differ only in package-manager calls (brew vs apt vs pacman) and platform build deps. They all converge on the same result:
 
 1. **Cargo tools** — `dioxus-cli` (pinned to the `dioxus` crate version in `zwiper/Cargo.toml`) and `sqlx-cli`
 2. **Postgres** — installed and started as a service
