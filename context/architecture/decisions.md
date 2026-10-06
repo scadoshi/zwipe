@@ -62,9 +62,7 @@ Zerver files for extracted types become one-liners: `pub use zwipe_core::domain:
 
 **Why:** Zerver has 70+ `impl From<DomainError> for ApiError` conversions across its handler files (e.g., `impl From<InvalidCreateDeckProfile> for ApiError`). If `ApiError` moves to zwipe-core, both the error type AND the domain error type become foreign to zerver, and Rust's orphan rule forbids implementing a foreign trait (`From`) for two foreign types. Every handler-level error mapping would break.
 
-**Consequence:** Zwiper must keep zerver as a dependency (with `default-features = false`) to access `ApiError`. This is acceptable: `ApiError` is an inbound HTTP adapter type, not domain logic. Its `From` impls are handler-level glue that maps domain errors to HTTP status codes, which is exactly where adapter logic belongs.
-
-**All server-only code in zerver must be gated with `#[cfg(feature = "zerver")]`** so zwiper's build doesn't pull in axum, sqlx, jsonwebtoken, etc.
+**Consequence:** `ApiError` stays server-side, where it implements `IntoResponse`. Clients never see the type: `zwipe-client`'s `ClientError` owns the status vocabulary and builds the same variants from the response's status and body. So neither zwiper nor zite depends on zerver (zwiper dropped it on 2026-09-21, `c84c9841`), and zerver has no feature flag gating server-only code. The contract between the two sides is `zwipe-core`'s HTTP types and route paths, which both compile against.
 
 ---
 
