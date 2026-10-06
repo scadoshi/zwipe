@@ -1,49 +1,30 @@
-# Hosting Decision
+# Hosting
 
-**Decided: Ubuntu Server (headless) via Cloudflare Tunnel (2026-03-27)**
+**Current: a Hetzner VPS running Ubuntu Server, reached through a Cloudflare Tunnel (since 2026-06-13).**
 
-Previous host was a Raspberry Pi 5 (4GB RAM). Moved to a proper server: 32GB RAM, repurposed from a desktop build (GPU removed before OS install). Overkill for current load but gives real headroom and removes Pi's memory/aarch64 constraints.
+## What runs there
 
----
+- **zerver**: the Axum API, a systemd service, serving `api.zwipe.net` through the tunnel.
+- **zervice**: the nightly sync (Scryfall cards, oracle tags, derived categories, materialized views, upkeep), run by a systemd timer at 04:00 UTC with a dead-man's-switch check so a missed run is noticed.
+- **PostgreSQL 18**: on the same box, listening locally only. zervice connects as a scoped role that can touch the card catalog and nothing else.
+- **A self-hosted GitHub Actions runner**: pushes to `main` that pass test and lint build the release binaries on the server, apply migrations and restart zerver (see [`../operations/infrastructure/cicd.md`](../operations/infrastructure/cicd.md)).
+- **Nightly database backups** to object storage off the box ([`../operations/infrastructure/backups.md`](../operations/infrastructure/backups.md)).
 
-## What We're Running
+The site (zite) is not here; it is static and served by GitHub Pages.
 
-- **Hardware**: Ubuntu Server (headless, no desktop UI), x86_64, 32GB RAM
-- **OS**: Ubuntu Server, no GUI, managed entirely via SSH
-- **Backend**: `zerver` as a systemd service
-- **Database**: PostgreSQL, `zwipe` DB, `zwipe` user
-- **Tunnel**: Cloudflare Tunnel → `api.zwipe.net` routes to `localhost:3000`
-- **Nightly sync**: `zervice` via systemd timer at 04:00 UTC
+## Why this shape
 
-## Why Ubuntu Server (headless)
+- **No open inbound ports.** The tunnel dials out to Cloudflare, so there is nothing to port-forward and TLS terminates at Cloudflare. The tunnel targets `127.0.0.1`, not `localhost`, which resolves to IPv6 on this host (see [`../operations/infrastructure/cloudflare.md`](../operations/infrastructure/cloudflare.md)).
+- **Admin access stays private.** SSH goes over a private network, never the public internet.
+- **One box is enough.** Load is small; the database, the API and the sync fit comfortably together, and a single host keeps operations simple. The scoped zervice role and the local-only listener keep the pieces apart.
+- **Same stack everywhere.** Ubuntu, systemd, PostgreSQL and cloudflared on every host it has had, so each move was a reinstall from the runbooks, not a redesign.
 
-- 32GB RAM vs Pi's 4GB, real headroom for DB + backend under actual load
-- x86_64 eliminates cross-compilation to aarch64, `cargo build` on the server itself is viable, or cross-compile Mac → x86_64-unknown-linux-gnu
-- No UI needed, everything managed via SSH. Desktop environment would be wasted RAM on a server
-- Same stack (systemd, PostgreSQL, cloudflared): migration is a clean reinstall, not a redesign
+## History
 
-## Cross-Compilation (Mac → x86_64-unknown-linux-gnu)
+- **Raspberry Pi 5** at first, until its memory and aarch64 cross-compiling got in the way.
+- **A repurposed desktop at home (2026-03-27)** running the same stack.
+- **Hetzner VPS (2026-06-13)**: off home power and home internet, with real uptime. The home box was powered off but kept intact as a cold rollback.
 
-```bash
-rustup target add x86_64-unknown-linux-gnu
-cargo zigbuild --release --bin zerver --bin zervice --target x86_64-unknown-linux-gnu
-scp target/x86_64-unknown-linux-gnu/release/zerver zervice <user>@<server-ip>:~/zwipe/
-ssh <user>@<server-ip> "sudo systemctl restart zerver"
-```
+## Runbooks
 
-Note: Update `.cargo/config.toml` linker config if it still points at aarch64 toolchain.
-
-## Key Config (carry over from Pi: update IPs/paths as needed)
-
-- Tunnel config: `/etc/cloudflared/config.yml` on server
-- zerver .env: `~/zwipe/.env` on server
-- DATABASE_URL uses `127.0.0.1` (TCP), not `localhost` (socket): peer auth blocks socket for non-system users
-- `<` and `>` in DB password URL-encoded as `%3C` / `%3E` in connection string
-
-## Status
-
-Migration complete (2026-03-27). Server built, PostgreSQL and cloudflared installed, `zerver` running under systemd with `zervice` on cron, logs in `/var/log/zwipe/`, card data seeded, and the apps hitting `api.zwipe.net`.
-
-## Full Step-by-Step Reference
-
-See `context/operations/infrastructure/` for the deploy and server runbooks.
+Setup, deploys, the tunnel, backups and the zervice units are in [`../operations/infrastructure/`](../operations/infrastructure/).
