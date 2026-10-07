@@ -455,10 +455,9 @@ body .reveal-pending.reveal-in {
     margin-bottom: 0.75rem;
 }
 
-.arch-subtitle {
-    color: var(--text-subtle);
-    font-size: 0.85rem;
-    margin: -0.25rem 0 1rem;
+/* A section's heading panel, one panel gap above the section's content. */
+.section-head {
+    margin-bottom: 1.5rem;
 }
 
 /* The architecture carousel (zwipe_components::ZwipeArchitecture) sits above

@@ -60,8 +60,11 @@ pub fn About() -> Element {
             }
 
             div { class: "section",
-                h2 { "System Architecture" }
-                p { class: "arch-subtitle", "Six Rust crates in one workspace. What each one does, and where it pulls from." }
+                div { class: "section-head",
+                    Panel { eyebrow: "Section", title: "System Architecture",
+                        p { class: "card-summary", "Six Rust crates in one workspace. What each one does, and where it pulls from." }
+                    }
+                }
                 div { class: "arch-figure", ZwipeArchitecture {} }
                 div { class: "card-grid",
                     Panel {
@@ -210,8 +213,11 @@ pub fn About() -> Element {
             }
 
             div { class: "section",
-                h2 { "Under the Hood" }
-                p { class: "arch-subtitle", "The engineering discipline behind it." }
+                div { class: "section-head",
+                    Panel { eyebrow: "Section", title: "Under the Hood",
+                        p { class: "card-summary", "The engineering discipline behind it." }
+                    }
+                }
                 div { class: "card-grid",
                     Panel { eyebrow: "Design", title: "Hexagonal architecture",
                         p { class: "card-summary",
