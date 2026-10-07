@@ -1959,9 +1959,9 @@ a.nav-dropdown-item.active:visited {
    ============================== */
 
 /* The fade widths follow the scroll position: none on the left at the start,
-   none on the right at the end, both in between. A browser without scroll
-   timelines, or a box that does not overflow, keeps both at zero and shows
-   hard edges. */
+   none on the right at the end, both in between. A box that does not
+   overflow keeps both at zero. A browser without scroll timelines (Firefox)
+   gets the same widths from SCROLL_FADE_JS on the sites, hard edges elsewhere. */
 @property --fade-left {
     syntax: "<length>";
     inherits: false;

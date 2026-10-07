@@ -1,7 +1,7 @@
 use dioxus::{document::eval, prelude::*};
 use zwipe_components::{
-    BRAND_RESET_JS, COMPONENTS_CSS, Decode, NAV_GLIDE_JS, NavBar, REVEAL_JS, Replay, SITE_CSS,
-    THEMES_CSS, ThemeConfig, ThemePicker, use_theme_wipe,
+    BRAND_RESET_JS, COMPONENTS_CSS, Decode, NAV_GLIDE_JS, NavBar, REVEAL_JS, Replay,
+    SCROLL_FADE_JS, SITE_CSS, THEMES_CSS, ThemeConfig, ThemePicker, use_theme_wipe,
 };
 
 mod api;
@@ -195,6 +195,8 @@ fn App() -> Element {
         document::Script { {REVEAL_JS} }
         // Nav items pushed by a wider theme label slide over instead of jumping.
         document::Script { {NAV_GLIDE_JS} }
+        // Edge fades on sideways scrollers where CSS can't drive them.
+        document::Script { {SCROLL_FADE_JS} }
         Router::<Route> {}
     }
 }

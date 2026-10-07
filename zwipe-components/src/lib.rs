@@ -15,7 +15,7 @@
 //! overlay back stack and, behind the `toast` feature, `ToastStack`) is for
 //! the apps and styled by the opt-in [`APP_CSS`]. The site kit
 //! ([`use_persisted_theme`], [`StatsStrip`], [`GalleryFrame`], [`REVEAL_JS`],
-//! [`NAV_GLIDE_JS`]) is for the websites, with the gallery base in the opt-in
+//! [`NAV_GLIDE_JS`], [`SCROLL_FADE_JS`]) is for the websites, with the gallery base in the opt-in
 //! [`SITE_CSS`].
 //!
 //! **CSS cascade order matters:** load themes first, then components, then the
@@ -117,6 +117,11 @@ pub const REVEAL_JS: &str = include_str!("../assets/reveal.js");
 /// their new places when a neighbor changes width. Inline it with
 /// `document::Script`.
 pub const NAV_GLIDE_JS: &str = include_str!("../assets/nav-glide.js");
+/// The sites' scroll fade for browsers without scroll timelines (Firefox):
+/// sets the edge fades on every `.scroll-fade-x` and `.diagram-scroll` from
+/// the scroll position, which [`COMPONENTS_CSS`] animates where it can, and
+/// does nothing elsewhere. Inline it with `document::Script`.
+pub const SCROLL_FADE_JS: &str = include_str!("../assets/scroll-fade.js");
 /// The sites' shared base for the gallery ([`GalleryFrame`],
 /// [`GalleryFooter`]), for the websites only. Load it after
 /// [`COMPONENTS_CSS`] and before the site's own stylesheet.
