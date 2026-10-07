@@ -1052,7 +1052,8 @@ i.ms.ms-cost.ms-gp {
        the menus' stacking context, so their own z-index cannot lift them. */
     z-index: 101;
     background-color: var(--bg-primary);
-    margin-bottom: 3rem;
+    /* 1rem to the first panel, the gap the apps leave under their header. */
+    margin-bottom: 1rem;
     border-bottom: 1px solid var(--border-primary);
     box-shadow: var(--shadow-sm);
 }
