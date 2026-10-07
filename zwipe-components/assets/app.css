@@ -1,0 +1,342 @@
+/* App shell styles, for the apps only (zwiper and cairn).
+ *
+ * Opt-in through the crate's APP_CSS constant, loaded after COMPONENTS_CSS
+ * and before the app's own stylesheet: themes, then components, then this,
+ * then the app. The website and the portfolio never load it; zite defines
+ * .page-header, .info-button and .stat-chip itself, differently.
+ *
+ * Holds the rules both apps had word for word, plus the base the shared app
+ * components need (BottomSheet, PageHeader, ThemeSheet, the hint pieces).
+ * Where the apps differ, the base here is what they share and each app keeps
+ * its own difference in its own stylesheet, which wins by loading later. */
+
+/* ---- Screen ---- */
+
+.screen-content {
+    flex: 1;
+    overflow-x: hidden;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    min-height: 0;
+    padding-top: 1rem;
+    background-color: var(--bg-sink);
+    background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+}
+
+.screen-content.centered {
+    justify-content: center;
+}
+
+.flex-col {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ---- Page header (zwipe_components::PageHeader) ---- */
+
+.page-header {
+    position: relative;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border-secondary);
+    background-color: var(--bg-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+/* Direct child only: a dialog mounted inside the header would otherwise
+   restyle its own h2 title. */
+.page-header > h2 {
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    margin: 0;
+    color: var(--accent-primary);
+}
+
+/* The corner buttons: the app's own on the left, the hint "?" on the right.
+   Both are util buttons made smaller and faded; this sheet loads after
+   components.css, so the padding here wins over .util-btn's. */
+.page-header-support,
+.page-header-corner {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.7rem;
+    opacity: 0.55;
+    padding: 0.2rem 0.6rem;
+}
+
+.page-header-support {
+    left: 1rem;
+}
+
+.page-header-corner {
+    right: 1rem;
+}
+
+/* ---- Hints (zwipe_components::InfoButton, HintLine, HintBullets, HintKey) ---- */
+
+/* The "?" beside a label, faded like the header corners but sized for a
+   label row. */
+.info-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+    margin-left: 0.35rem;
+    padding: 0;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    background: var(--bg-primary);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.hint-line {
+    margin: 0 0 0.5rem 0;
+    text-align: left;
+}
+
+.hint-bullets {
+    margin: 0 0 0.5rem 0;
+    padding-left: 1.2rem;
+    text-align: left;
+}
+
+.hint-bullets li {
+    margin-bottom: 0.4rem;
+}
+
+/* Colored by HintKey's inline style. The line height keeps the bordered box
+   the height of the text it sits in, so its padding spills over the line
+   rather than pushing the line above it up. */
+.hint-key {
+    border: 1px solid var(--accent-tertiary);
+    color: var(--accent-tertiary);
+    border-radius: 0.5rem;
+    padding: 0.05rem 0.45rem;
+    font-size: 0.8rem;
+    line-height: 1;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* ---- Inputs and chips ---- */
+
+.input {
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1rem;
+    font-weight: 400;
+    transition: all 0.2s ease;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.input:focus {
+    outline: none;
+    background-color: var(--border-muted);
+    color: var(--text-primary);
+    border-color: var(--accent-primary);
+}
+
+.input::placeholder {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+/* Capped at the row width, so a long label wraps onto a second line,
+   centered, instead of overflowing the border. */
+.stat-chip {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    max-width: 100%;
+    text-align: center;
+    color: var(--accent-primary);
+    background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
+}
+
+/* ---- Bottom sheet (zwipe_components::BottomSheet) ---- */
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0);
+    pointer-events: none;
+    transition: background 0.3s ease;
+    z-index: 200;
+}
+
+.modal-backdrop.show {
+    background: var(--bg-overlay);
+    pointer-events: auto;
+}
+
+.bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 85vh;
+    background: var(--bg-primary);
+    border-radius: 1rem 1rem 0 0;
+    box-shadow: var(--shadow-md);
+    transform: translateY(100%);
+    visibility: hidden;
+    transition: transform 0.3s ease, visibility 0s linear 0.3s;
+    display: flex;
+    flex-direction: column;
+    z-index: 201;
+}
+
+.bottom-sheet.show {
+    transform: translateY(0);
+    visibility: visible;
+    transition: transform 0.3s ease;
+}
+
+/* The first render, before the slide is allowed to animate. */
+.bottom-sheet.bottom-sheet-premount {
+    transition: none;
+}
+
+/* Pulled off screen with no slide, so a theme wipe's new snapshot is taken
+   without the sheet. */
+.bottom-sheet.snap,
+.modal-backdrop.snap {
+    transition: none;
+}
+
+.bottom-sheet .util-bar {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-secondary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Relative so the corner "?" parks inside the header rather than against
+   the sheet. */
+.bottom-sheet .modal-header {
+    position: relative;
+}
+
+.modal-title {
+    font-size: 1rem;
+    color: var(--accent-tertiary);
+}
+
+.modal-content {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+/* ---- Settings rows and the theme sheet (zwipe_components::ThemeSheet) ---- */
+
+.profile-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+    gap: 0.75rem;
+}
+
+.profile-row:last-child {
+    border-bottom: none;
+}
+
+.profile-row-label {
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    opacity: 0.5;
+    flex-shrink: 0;
+}
+
+.pref-row {
+    display: block;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    color: var(--text-muted);
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 400;
+    font-size: 0.85rem;
+    text-align: left;
+    cursor: pointer;
+    transition:
+        border-color 0.15s,
+        color 0.15s;
+}
+
+.pref-row.selected {
+    border-color: var(--accent-secondary);
+    color: var(--text-primary);
+}
+
+.pref-row-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.theme-swatches {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    flex-shrink: 0;
+}
+
+.theme-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 0.22rem;
+    flex-shrink: 0;
+}
+
+.pref-section-label {
+    font-size: 1rem;
+    color: var(--accent-primary);
+    letter-spacing: 0.1em;
+    text-align: center;
+    margin: 0.75rem 0 0.4rem;
+}
