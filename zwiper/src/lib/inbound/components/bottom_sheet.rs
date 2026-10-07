@@ -3,9 +3,7 @@
 use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::sleep;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
-
-use crate::inbound::components::navigation::overlay_stack::use_overlay_back_action;
+use zwipe_components::{ActionBar, Button, ButtonVariant, use_overlay_back_action};
 
 /// A slide-up bottom sheet with backdrop, title, content slot, and footer.
 ///

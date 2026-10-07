@@ -8,12 +8,11 @@
 
 use crate::inbound::components::{
     hint_dialog::{HintBullet, HintBullets, HintDialog},
-    navigation::overlay_stack::use_overlay_back_action,
     screen_header::ScreenHeader,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK, use_overlay_back_action};
 use zwipe_core::domain::deck::format::Format;
 
 /// Deck size summary, e.g. "100 cards, singleton" or "60+ cards, up to 4 copies".

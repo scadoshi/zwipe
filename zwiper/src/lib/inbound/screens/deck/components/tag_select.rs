@@ -10,12 +10,11 @@
 use crate::inbound::components::{
     concept_explainers::DeckTagsExplainer,
     hint_dialog::{HintBullet, HintBullets, HintDialog},
-    navigation::overlay_stack::use_overlay_back_action,
     screen_header::ScreenHeader,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK, use_overlay_back_action};
 use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
 
 /// Whether two slug lists pick the same tags, ignoring tap order.

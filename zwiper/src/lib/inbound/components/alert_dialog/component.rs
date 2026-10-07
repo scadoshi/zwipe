@@ -5,8 +5,7 @@ use dioxus_primitives::alert_dialog::{
     self, AlertDialogActionsProps, AlertDialogCancelProps, AlertDialogContentProps,
     AlertDialogDescriptionProps, AlertDialogRootProps, AlertDialogTitleProps,
 };
-
-use crate::inbound::components::navigation::overlay_stack::use_overlay_back_action;
+use zwipe_components::use_overlay_back_action;
 
 /// Root container for alert dialogs, managing open/closed state.
 ///

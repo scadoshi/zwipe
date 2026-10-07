@@ -16,7 +16,6 @@ use crate::inbound::{
             open_and_record_hint,
         },
         interactions::swipe::{STACK_DEPTH, SwipeStack, config::SwipeConfig, direction::Direction},
-        navigation::overlay_stack::use_overlay_back,
         screen_header::ScreenHeader,
         telemetry::{usage_buffer::UsageBuffer, vocabulary::component},
     },
@@ -33,7 +32,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::{collections::HashSet, time::Duration};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK};
+use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK, use_overlay_back};
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{
