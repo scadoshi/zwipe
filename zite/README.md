@@ -12,7 +12,7 @@ Dioxus website for Zwipe at [zwipe.net](https://zwipe.net). Statically rendered 
 - Shared deck pages (`/deck/:token`)
 - Email verification and password reset (`/verify/:token`, `/reset/:token`, shared validation from `zwipe-core`)
 
-Shared UI and CSS (nav, changelog, theme picker, card details) come from `zwipe-components`; the changelog and card rendering stay identical to the app.
+Shared UI and CSS (nav, changelog, theme picker, card details) come from `zwipe-components`; the changelog and card rendering stay identical to the app. The site kit zite shares with the portfolio comes from there too: the remembered theme (`use_persisted_theme`), the hero's `StatsStrip`, the demo and guide galleries (`GalleryFrame`, `GalleryFooter`, with `SITE_CSS`), and the scroll reveal and nav glide scripts (`REVEAL_JS`, `NAV_GLIDE_JS`), inlined in the head.
 
 ## Build
 
