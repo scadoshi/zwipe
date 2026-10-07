@@ -41,7 +41,8 @@ pub fn StatsStrip() -> Element {
     let figures = live.or_else(|| baked.map(|baked| &baked.metrics));
     let as_of = baked.map(|baked| baked.fetched_at.get(..10).unwrap_or(&baked.fetched_at));
 
-    let count = |pick: fn(&HttpPublicMetrics) -> i64| figures.map(|s| u64::try_from(pick(s)).unwrap_or(0));
+    let count =
+        |pick: fn(&HttpPublicMetrics) -> i64| figures.map(|s| u64::try_from(pick(s)).unwrap_or(0));
     // Keyed on its text, so the live chip arrives with the ease rather than
     // the as-of chip changing its words in place.
     let label = match (live.is_some(), as_of) {

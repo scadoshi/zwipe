@@ -12,7 +12,7 @@ mod content;
 use crate::{Footer, Nav, Route, WEB_BASE, components::PageMeta};
 use content::{Block, GUIDES, Guide};
 use dioxus::prelude::*;
-use zwipe_components::Panel;
+use zwipe_components::{GalleryFooter, GalleryFrame, Panel};
 
 /// Every guide slug, for the SSG prerender list in `main.rs`. Reads `GUIDES`
 /// so the prerendered set, the rendered articles and `build.rs`'s sitemap all
@@ -79,7 +79,7 @@ fn render_text(blocks: &'static [Block]) -> Element {
 /// gallery's prev/next chrome, caption from the shot's own text.
 #[component]
 fn GuideGallery(shots: Vec<(&'static str, &'static str, Option<&'static str>)>) -> Element {
-    let mut index = use_signal(|| 0usize);
+    let index = use_signal(|| 0usize);
     let total = shots.len();
     let i = index().min(total.saturating_sub(1));
     let Some(&(file, alt, caption)) = shots.get(i) else {
@@ -89,7 +89,7 @@ fn GuideGallery(shots: Vec<(&'static str, &'static str, Option<&'static str>)>) 
     let src = content::guide_image(file);
 
     rsx! {
-        div { class: "gallery-body guide-gallery-body",
+        GalleryFrame { index, total, noun: "screenshot", class: "guide-gallery-body",
             if let Some(src) = src {
                 img {
                     key: "{i}",
@@ -100,34 +100,9 @@ fn GuideGallery(shots: Vec<(&'static str, &'static str, Option<&'static str>)>) 
                     draggable: false,
                 }
             }
-            if total > 1 {
-                button {
-                    class: "gallery-nav gallery-prev",
-                    aria_label: "Previous screenshot",
-                    onclick: move |_| {
-                        let i = index();
-                        index.set(if i == 0 { total - 1 } else { i - 1 });
-                    },
-                    "←"
-                }
-                button {
-                    class: "gallery-nav gallery-next",
-                    aria_label: "Next screenshot",
-                    onclick: move |_| {
-                        let i = index();
-                        index.set((i + 1) % total);
-                    },
-                    "→"
-                }
-            }
         }
         hr { class: "gallery-rule" }
-        div { class: "gallery-footer",
-            span { key: "{i}", class: "gallery-caption", "{caption_text}" }
-            if total > 1 {
-                span { class: "gallery-counter", "{i + 1} / {total}" }
-            }
-        }
+        GalleryFooter { index: i, total, caption: caption_text.to_string() }
     }
 }
 

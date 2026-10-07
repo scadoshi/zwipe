@@ -1,7 +1,7 @@
 use dioxus::{document::eval, prelude::*};
 use zwipe_components::{
-    BRAND_RESET_JS, COMPONENTS_CSS, Decode, NAV_GLIDE_JS, NavBar, REVEAL_JS, Replay, THEMES_CSS,
-    ThemeConfig, ThemePicker, use_theme_wipe,
+    BRAND_RESET_JS, COMPONENTS_CSS, Decode, NAV_GLIDE_JS, NavBar, REVEAL_JS, Replay, SITE_CSS,
+    THEMES_CSS, ThemeConfig, ThemePicker, use_theme_wipe,
 };
 
 mod api;
@@ -188,6 +188,7 @@ fn App() -> Element {
         document::Link { rel: "preload", href: "/fonts/jetbrains-mono-latin-700-normal.woff2", r#as: "font", r#type: "font/woff2", crossorigin: "anonymous" }
         document::Style { {THEMES_CSS} }
         document::Style { {COMPONENTS_CSS} }
+        document::Style { {SITE_CSS} }
         document::Stylesheet { href: STYLE }
         // Scroll reveal for panels below the fold; everything it does is
         // progressive.
