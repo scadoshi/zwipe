@@ -40,6 +40,7 @@ mod overlay_stack;
 mod page_header;
 mod page_meta;
 mod panel;
+mod stats_strip;
 mod theme_picker;
 mod theme_sheet;
 mod theme_store;
@@ -72,6 +73,7 @@ pub use overlay_stack::{
 pub use page_header::PageHeader;
 pub use page_meta::{PageMeta, SiteMeta};
 pub use panel::Panel;
+pub use stats_strip::StatsStrip;
 pub use theme_picker::ThemePicker;
 pub use theme_sheet::ThemeSheet;
 pub use theme_store::use_persisted_theme;
