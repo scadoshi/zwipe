@@ -6,123 +6,27 @@ use crate::inbound::components::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{BottomSheet, Button, ButtonVariant, TOAST_QUICK, ThemeFollow};
+use zwipe_components::{TOAST_QUICK, ThemeSheet};
 use zwipe_core::{
-    domain::user::{
-        models::theme::ThemeConfig,
-        preferences::{ALLOWED_THEMES, display_theme_name},
-    },
-    http::contracts::user::HttpUpdatePreferences,
+    domain::user::models::theme::ThemeConfig, http::contracts::user::HttpUpdatePreferences,
 };
 
-/// Themes with adjusted palettes for color-vision deficiency: grouped at the
-/// bottom of the picker.
-const COLORBLIND_THEMES: &[&str] = &["protanopia", "deuteranopia", "tritanopia", "achromatopsia"];
-
-/// One selectable theme row: name on the left, color-swatch dots on the right.
-/// The dots pull their colors from the theme's own CSS variables by applying
-/// that theme's class to the swatch strip, so colors stay defined only in
-/// themes.css.
+/// The shared theme sheet, saving a kept pick to the account. Selections
+/// live-preview against the whole app; Save persists the pick and toasts once
+/// the server answers, and a discarded pick toasts once it has wiped back out.
 #[component]
-fn ThemeRow(
-    theme: String,
-    mode: String,
-    mut selected_theme: Signal<String>,
-    mut theme_config: Signal<ThemeConfig>,
-    selected_dark: Signal<bool>,
-) -> Element {
-    let is_selected = selected_theme() == theme;
-    let click_theme = theme.clone();
-    rsx! {
-        button {
-            class: if is_selected { "pref-row selected" } else { "pref-row" },
-            onclick: move |_| {
-                selected_theme.set(click_theme.clone());
-                theme_config.set(ThemeConfig { name: click_theme.clone(), is_dark: selected_dark() });
-            },
-            div { class: "pref-row-inner",
-                span { "{display_theme_name(&theme)}" }
-                div { class: "theme-swatches theme-{theme}-{mode}",
-                    span { class: "theme-dot", style: "background:var(--bg-primary)" }
-                    span { class: "theme-dot", style: "background:var(--text-primary)" }
-                    span { class: "theme-dot", style: "background:var(--accent-primary)" }
-                    span { class: "theme-dot", style: "background:var(--accent-secondary)" }
-                    span { class: "theme-dot", style: "background:var(--accent-tertiary)" }
-                    span { class: "theme-dot", style: "background:var(--color-error)" }
-                }
-            }
-        }
-    }
-}
-
-/// Bottom sheet for selecting theme and light/dark mode. Selections live-preview
-/// against the whole app; Save persists and drops the sheet, and is greyed
-/// until the pick differs from what the sheet opened on. Back/backdrop
-/// restores the theme that was active when the sheet opened: the sheet holds
-/// still while that theme wipes back in, leaves inside the wipe, and the toast
-/// lands once the sweep is done.
-#[component]
-pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
+pub fn PreferencesSheet(open: Signal<bool>) -> Element {
     let mut theme_config: Signal<ThemeConfig> = use_context();
-    let follow: ThemeFollow = use_context();
     let toast = use_toast();
     let authed = use_authed(Screen::Profile(ProfileScreen::Preferences));
 
-    let mut original_theme = use_signal(|| theme_config.peek().clone());
-    let mut selected_theme = use_signal(|| theme_config.peek().name.clone());
-    let mut selected_dark = use_signal(|| theme_config.peek().is_dark);
-
-    // Snapshot the active theme each time the sheet opens and sync the selection
-    // to it, so every open starts from the live theme.
-    use_effect(move || {
-        if open() {
-            let current = theme_config.peek().clone();
-            original_theme.set(current.clone());
-            selected_theme.set(current.name.clone());
-            selected_dark.set(current.is_dark);
-        }
-    });
-
-    // Back and the backdrop are the same act. With nothing to throw away the
-    // sheet just slides off. With a pick on screen, the original wipes back
-    // in and the sheet waits for it: sliding down under a wipe stutters, and
-    // the old theme would otherwise look like it took.
-    let mut restoring = use_signal(|| false);
-    let discard = use_callback(move |()| {
-        let original = original_theme.peek().clone();
-        let changed =
-            *selected_theme.peek() != original.name || *selected_dark.peek() != original.is_dark;
-        if changed {
-            restoring.set(true);
-            theme_config.set(original);
-        } else {
-            open.set(false);
-        }
-    });
-
-    // Once the shell shows the original again the wipe has taken its new
-    // snapshot's contents, so the sheet is pulled from the page here and the
-    // sweep reveals the screen without it. The toast waits for the sweep.
-    let hidden = use_memo(move || restoring() && *follow.shown.read() == *original_theme.read());
-    use_effect(move || {
-        if restoring() && hidden() && !follow.wiping() {
-            open.set(false);
-            restoring.set(false);
-            toast.info(
-                "Theme unchanged".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-        }
-    });
-
-    let mut save = move || {
+    let save = move |picked: ThemeConfig| {
         let request = HttpUpdatePreferences {
-            theme: Some(selected_theme()),
-            dark_mode: Some(selected_dark()),
+            theme: Some(picked.name),
+            dark_mode: Some(picked.is_dark),
             exclude_universes_beyond: None,
             universes_beyond_exceptions: None,
         };
-        open.set(false);
         spawn(async move {
             if let Some(prefs) = authed
                 .run("update_preferences", |c, s| async move {
@@ -139,59 +43,17 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
         });
     };
 
-    let unchanged =
-        selected_theme() == original_theme().name && selected_dark() == original_theme().is_dark;
-    let mode = (if selected_dark() { "dark" } else { "light" }).to_string();
-    let regular_themes = ALLOWED_THEMES
-        .iter()
-        .copied()
-        .filter(|t| !COLORBLIND_THEMES.contains(t));
-    let colorblind_themes = ALLOWED_THEMES
-        .iter()
-        .copied()
-        .filter(|t| COLORBLIND_THEMES.contains(t));
-
     rsx! {
-        BottomSheet {
+        ThemeSheet {
             open,
-            title: "Themes".to_string(),
-            on_dismiss: move |_| discard.call(()),
-            hidden: hidden(),
-            footer: rsx! {
-                Button {
-                    variant: ButtonVariant::Util,
-                    onclick: move |_| discard.call(()),
-                    "Back"
-                }
-                Button {
-                    variant: ButtonVariant::Util,
-                    disabled: unchanged,
-                    onclick: move |_| save(),
-                    "Save"
-                }
+            theme: theme_config,
+            on_save: save,
+            on_unchanged: move |()| {
+                toast.info(
+                    "Theme unchanged".to_string(),
+                    ToastOptions::default().duration(TOAST_QUICK),
+                );
             },
-
-            for theme in regular_themes {
-                ThemeRow {
-                    theme: theme.to_string(),
-                    mode: mode.clone(),
-                    selected_theme,
-                    theme_config,
-                    selected_dark,
-                }
-            }
-
-            div { class: "pref-section-label", "Color blind" }
-
-            for theme in colorblind_themes {
-                ThemeRow {
-                    theme: theme.to_string(),
-                    mode: mode.clone(),
-                    selected_theme,
-                    theme_config,
-                    selected_dark,
-                }
-            }
         }
     }
 }
