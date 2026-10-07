@@ -123,6 +123,7 @@ fn App() -> Element {
         }
         document::Style { {zwipe_components::THEMES_CSS} }
         document::Style { {zwipe_components::COMPONENTS_CSS} }
+        document::Style { {zwipe_components::APP_CSS} }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: ACCORDION_CSS }
         document::Link { rel: "stylesheet", href: ALERT_DIALOG_CSS }

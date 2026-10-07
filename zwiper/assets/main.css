@@ -87,23 +87,6 @@ button {
     --bg-sink: color-mix(in srgb, var(--bg-primary), #fff 35%);
 }
 
-.screen-content {
-    flex: 1;
-    overflow-x: hidden;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    min-height: 0;
-    padding-top: 1rem;
-    background-color: var(--bg-sink);
-    background-image:
-        linear-gradient(var(--grid-line) 1px, transparent 1px),
-        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-    background-size: var(--grid-size) var(--grid-size);
-}
-
 /* Scrollbars hidden everywhere. On the iOS WebView the bar is a non-interactive
    overlay indicator (you scroll by dragging content, not the bar), and the app
    already signals scrollability with edge fades, so hiding it is purely cosmetic. */
@@ -116,10 +99,6 @@ button {
 * {
     scrollbar-width: none;
     -ms-overflow-style: none;
-}
-
-.screen-content.centered {
-    justify-content: center;
 }
 
 /* Width wrapper for the shared changelog (screen-content centers full-width
@@ -142,11 +121,6 @@ button {
 
 .flex {
     display: flex;
-}
-
-.flex-col {
-    display: flex;
-    flex-direction: column;
 }
 
 .flex-row {
@@ -497,29 +471,6 @@ button {
   utilities - page header
   ======================== */
 
-.page-header {
-    position: relative;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--border-secondary);
-    background-color: var(--bg-primary);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding-top: 1rem;
-    padding-bottom: 1rem;
-}
-
-/* Direct child only: the support dialog mounts inside the header, and a
-   descendant selector would restyle its `.alert-dialog-title` h2 (wrong color,
-   and it clipped the title). */
-.page-header > h2 {
-    font-size: 1rem;
-    font-weight: 400;
-    letter-spacing: 0.1em;
-    margin: 0;
-    color: var(--accent-primary);
-}
-
 /* Pinned controls strip below the page header (e.g. import source/mode
      selectors) — stays put while the screen content scrolls. */
 .pinned-controls {
@@ -665,8 +616,9 @@ button {
     width: 48%;
 }
 
-/* .util-btn (Button Util) moved to the shared components.css. Its modifiers
-   (.util-btn-eye, .util-btn-clear, .page-header-*) stay here. */
+/* .util-btn (Button Util) is in the shared components.css and the header
+   corners in the shared app.css. The other modifiers (.util-btn-eye,
+   .util-btn-clear) stay here. */
 .filter-dot {
     width: 6px;
     height: 6px;
@@ -679,50 +631,6 @@ button {
 
 .util-btn .filter-dot {
     margin-left: 0.3rem;
-}
-
-/* Header corner buttons: help "!" (left) and hint "?" (right). Both are
-   util-btn-based but smaller and faded, and identical in size. Defined AFTER
-   .util-btn so this shared padding override wins over it. */
-.page-header-support,
-.page-header-corner {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 1.7rem;
-    opacity: 0.55;
-    padding: 0.2rem 0.6rem;
-}
-
-.page-header-support {
-    left: 1rem;
-}
-
-.page-header-corner {
-    right: 1rem;
-}
-
-/* Inline "?" help button beside a field/section label, opened on demand
-   (InfoButton). Faded like the header corner triggers but sized for a label
-   row rather than the page header. */
-.info-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.5rem;
-    min-height: 1.5rem;
-    margin-left: 0.35rem;
-    padding: 0;
-    border: 1px solid var(--border-primary);
-    border-radius: 0.5rem;
-    background: var(--bg-primary);
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    line-height: 1;
-    flex-shrink: 0;
 }
 
 /* Eye icon for the card-rules util-bar button. Inherits the button's color via
@@ -764,34 +672,6 @@ button {
 /* ===========================
   common components - inputs
  ============================= */
-
-.input {
-    width: 100%;
-    text-align: left;
-    padding: 0.75rem 1rem;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
-    color: var(--text-primary);
-    font-family: "JetBrains Mono", monospace;
-    font-size: 1rem;
-    font-weight: 400;
-    transition: all 0.2s ease;
-    margin-bottom: 1rem;
-    box-shadow: var(--shadow-sm);
-}
-
-.input:focus {
-    outline: none;
-    background-color: var(--border-muted);
-    color: var(--text-primary);
-    border-color: var(--accent-primary);
-}
-
-.input::placeholder {
-    color: var(--text-muted);
-    font-weight: 400;
-}
 
 .input-placeholder {
     color: var(--text-muted);
@@ -973,21 +853,6 @@ button {
     margin-right: 0.25rem;
     overflow-wrap: anywhere;
     word-break: break-word;
-}
-
-.stat-chip {
-    display: inline-block;
-    padding: 0.2rem 0.55rem;
-    border-radius: 0.6rem;
-    font-size: 0.75rem;
-    /* Cap the pill at the row width and wrap long labels (e.g. "French vanilla
-       equipment") onto a second line, centered — instead of overflowing the
-       border. Short labels stay single-line. */
-    max-width: 100%;
-    text-align: center;
-    color: var(--accent-primary);
-    background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
 }
 
 .stat-chip-bad {
@@ -2337,27 +2202,6 @@ button {
 }
 
 /* ================================
-  specific - modal (bottom sheet)
-================================== */
-
-.modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0);
-    pointer-events: none;
-    transition: background 0.3s ease;
-    z-index: 200;
-}
-
-.modal-backdrop.show {
-    background: var(--bg-overlay);
-    pointer-events: auto;
-}
-
-/* ================================
   specific - card image preview
 ================================== */
 
@@ -2409,56 +2253,13 @@ button {
     animation: image-drop-out 0.2s ease-in both;
 }
 
-.bottom-sheet {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    max-height: 85vh;
-    background: var(--bg-primary);
-    border-radius: 1rem 1rem 0 0;
-    box-shadow: var(--shadow-md);
-    transform: translateY(100%);
-    visibility: hidden;
-    transition: transform 0.3s ease, visibility 0s linear 0.3s;
-    display: flex;
-    flex-direction: column;
-    z-index: 201;
-}
-
-.bottom-sheet.show {
-    transform: translateY(0);
-    visibility: visible;
-    transition: transform 0.3s ease;
-}
-
-.bottom-sheet.bottom-sheet-premount {
-    transition: none;
-}
-
-/* Pulled off screen with no slide, so a theme wipe's new snapshot is taken
-   without the sheet. */
-.bottom-sheet.snap,
-.modal-backdrop.snap {
-    transition: none;
-}
-
-.bottom-sheet .util-bar {
-    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
-}
-
 .bottom-sheet .carousel-card-image {
     max-height: 38vh;
 }
 
+/* On top of the shared app.css .modal-header. */
 .modal-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid var(--border-secondary);
-    display: flex;
-    justify-content: center;
-    align-items: center;
     gap: 0.75rem;
-    flex-shrink: 0;
 }
 
 .bottom-sheet .modal-content {
@@ -2467,15 +2268,6 @@ button {
         linear-gradient(var(--grid-line) 1px, transparent 1px),
         linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
     background-size: var(--grid-size) var(--grid-size);
-}
-
-.modal-content {
-    padding: 1.5rem;
-    overflow-y: auto;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
 }
 
 .modal-content.no-pad-x {
@@ -3152,28 +2944,6 @@ button {
     align-self: stretch;
 }
 
-.profile-row {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-secondary);
-    gap: 0.75rem;
-}
-
-.profile-row:last-child {
-    border-bottom: none;
-}
-
-.profile-row-label {
-    font-size: 1rem;
-    font-weight: 400;
-    letter-spacing: 0.1em;
-    opacity: 0.5;
-    flex-shrink: 0;
-}
-
 .profile-row-value {
     display: flex;
     flex-direction: row;
@@ -3217,58 +2987,9 @@ button {
   specific - preferences
 =========================== */
 
+/* On top of the shared app.css .pref-row. */
 .pref-row {
-    display: block;
-    width: 100%;
-    padding: 0.6rem 1rem;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
-    color: var(--text-muted);
-    font-family: "JetBrains Mono", monospace;
-    font-weight: 400;
-    font-size: 0.85rem;
-    text-align: left;
     margin-bottom: 0.4rem;
-    cursor: pointer;
-    transition:
-        border-color 0.15s,
-        color 0.15s;
-}
-
-.pref-row.selected {
-    border-color: var(--accent-secondary);
-    color: var(--text-primary);
-}
-
-.pref-row-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    width: 100%;
-}
-
-.theme-swatches {
-    display: flex;
-    align-items: center;
-    gap: 0.2rem;
-    flex-shrink: 0;
-}
-
-.theme-dot {
-    width: 0.7rem;
-    height: 0.7rem;
-    border-radius: 0.22rem;
-    flex-shrink: 0;
-}
-
-.pref-section-label {
-    font-size: 1rem;
-    color: var(--accent-primary);
-    letter-spacing: 0.1em;
-    text-align: center;
-    margin: 0.75rem 0 0.4rem;
 }
 
 /* Universes Beyond sheet: grayed franchise chips until the hide toggle is on,
