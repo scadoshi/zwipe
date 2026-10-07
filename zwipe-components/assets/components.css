@@ -1090,7 +1090,7 @@ i.ms.ms-cost.ms-gp {
     display: none;
     flex-direction: column;
     justify-content: center;
-    gap: 0.3rem;
+    gap: 0.4rem;
     width: 2.25rem;
     height: 2.25rem;
     padding: 0.5rem;
@@ -1108,21 +1108,20 @@ i.ms.ms-cost.ms-gp {
 .nav-toggle-bar {
     display: block;
     width: 100%;
-    height: 1px;
+    height: 2px;
     background: var(--text-primary);
     transition:
         transform 0.2s,
         opacity 0.2s;
 }
 
+/* Open, the two bars meet in the middle as an X: each moves half the
+   center-to-center distance (the gap plus one bar). */
 .nav-toggle-open .nav-toggle-bar:nth-child(1) {
-    transform: translateY(0.4rem) rotate(45deg);
+    transform: translateY(calc(0.2rem + 1px)) rotate(45deg);
 }
 .nav-toggle-open .nav-toggle-bar:nth-child(2) {
-    opacity: 0;
-}
-.nav-toggle-open .nav-toggle-bar:nth-child(3) {
-    transform: translateY(-0.4rem) rotate(-45deg);
+    transform: translateY(calc(-0.2rem - 1px)) rotate(-45deg);
 }
 
 .nav-brand {
@@ -1396,6 +1395,17 @@ i.ms.ms-cost.ms-gp {
     user-select: none;
     position: relative;
     z-index: 200;
+}
+
+/* Click-away layer for the open hamburger panel: under the nav (101), over the
+   page. The pointer cursor is what makes iOS Safari send taps on a plain div
+   to the delegated click handler. */
+.nav-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: transparent;
+    cursor: pointer;
 }
 
 .nav-dropdown-backdrop {

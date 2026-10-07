@@ -5,7 +5,7 @@
 //! CSS; the host owns the content via slots: its brand link, its `li` link
 //! items, and an optional trailing panel item (typically [`ThemePicker`]).
 //! The host also owns the `open` signal so link `onclick`s can close the
-//! panel after navigating.
+//! panel after navigating. A click outside the nav closes it too.
 //!
 //! [`ThemePicker`]: crate::ThemePicker
 
@@ -54,6 +54,11 @@ pub fn NavBar(
     };
 
     rsx! {
+        // A tap anywhere outside the nav closes the open panel. It sits under
+        // the nav, so the panel's own links and the toggle still take clicks.
+        if open() {
+            div { class: "nav-backdrop", onclick: move |_| open.set(false) }
+        }
         div { class: "nav-wrapper",
             nav {
                 {brand}
@@ -68,7 +73,6 @@ pub fn NavBar(
                         let next = !open();
                         open.set(next);
                     },
-                    span { class: "nav-toggle-bar" }
                     span { class: "nav-toggle-bar" }
                     span { class: "nav-toggle-bar" }
                 }
