@@ -1732,6 +1732,12 @@ button {
     gap: 1rem;
 }
 
+/* Lets the strip and its source row sit in .hero-head's column as if they
+   were its own children, gap and all. */
+.home-hero .hero-figures {
+    display: contents;
+}
+
 .home-hero .logo {
     /* A tenth under the plain mark's size, so the panel and a sign-in form
        share one screen. */
@@ -1769,7 +1775,7 @@ button {
     font-variant-numeric: tabular-nums;
 }
 
-.home-hero .home-source {
+.home-hero .stats-source {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;

@@ -5,7 +5,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::{Duration, Instant};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{CountUp, Decode, Panel};
+use zwipe_components::{Decode, Panel, StatsStrip};
 use zwipe_core::{domain::logo, http::contracts::metrics::HttpPublicMetrics};
 
 /// How long a fetched set of counters serves before the next screen asks
@@ -57,33 +57,29 @@ pub fn HomeHero() -> Element {
     });
 
     let value = cache.read();
-    let figures = value.as_ref().map(|c| &c.metrics);
-    let count = |n: i64| u64::try_from(n).unwrap_or(0);
+    let metrics = value.as_ref().map(|c| &c.metrics);
+    let count = |n: Option<i64>| n.map(|n| u64::try_from(n).unwrap_or(0));
+    let figures = vec![
+        (count(metrics.map(|m| m.decks_created)), "Decks created"),
+        (count(metrics.map(|m| m.searches)), "Searches run"),
+        (count(metrics.map(|m| m.cards_swiped)), "Cards swiped"),
+    ];
+    let live = metrics.is_some();
     rsx! {
         div { class: "home-hero",
             Panel {
                 div { class: "hero-head",
                     div { class: "logo", Decode { text: logo::ZWIPE } }
-                    section { class: "stats-strip",
-                        div { class: "stat",
-                            span { class: "stat-num", CountUp { value: figures.map(|m| count(m.decks_created)), compact: true } }
-                            span { class: "stat-label", "Decks created" }
-                        }
-                        div { class: "stat",
-                            span { class: "stat-num", CountUp { value: figures.map(|m| count(m.searches)), compact: true } }
-                            span { class: "stat-label", "Searches run" }
-                        }
-                        div { class: "stat",
-                            span { class: "stat-num", CountUp { value: figures.map(|m| count(m.cards_swiped)), compact: true } }
-                            span { class: "stat-label", "Cards swiped" }
-                        }
-                    }
-                    // Where the numbers come from, as chips under the strip.
-                    div { class: "home-source",
-                        span { class: "stat-chip", "counted by zerver" }
-                        if figures.is_some() {
-                            span { class: "stat-chip", "live" }
-                        }
+                    StatsStrip {
+                        figures,
+                        compact: true,
+                        // Where the numbers come from, as chips under the strip.
+                        source: rsx! {
+                            span { class: "stat-chip", "counted by zerver" }
+                            if live {
+                                span { class: "stat-chip", "live" }
+                            }
+                        },
                     }
                 }
             }
