@@ -36,7 +36,7 @@ async fn reduced_motion() -> bool {
 }
 
 /// Browser `setTimeout` as a future on the web, tokio's timer elsewhere.
-async fn sleep_ms(ms: u32) {
+pub(crate) async fn sleep_ms(ms: u32) {
     #[cfg(target_arch = "wasm32")]
     gloo_timers::future::TimeoutFuture::new(ms).await;
     #[cfg(not(target_arch = "wasm32"))]

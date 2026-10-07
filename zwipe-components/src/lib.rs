@@ -20,6 +20,7 @@
 
 mod action_bar;
 mod banner;
+mod bottom_sheet;
 mod button;
 mod card_details;
 mod card_role_chips;
@@ -34,6 +35,7 @@ mod keyword_chips;
 mod nav_bar;
 mod nav_dropdown;
 mod oracle_text;
+mod overlay_stack;
 mod page_meta;
 mod panel;
 mod theme_picker;
@@ -42,6 +44,7 @@ mod toast_timing;
 
 pub use action_bar::ActionBar;
 pub use banner::{Banner, BannerStatus};
+pub use bottom_sheet::BottomSheet;
 pub use button::{Button, ButtonVariant};
 pub use card_details::{CardDetails, card_face_count};
 pub use card_role_chips::CardRoleChips;
@@ -56,6 +59,9 @@ pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use nav_bar::{BRAND_RESET_JS, NavBar};
 pub use nav_dropdown::NavDropdown;
 pub use oracle_text::OracleText;
+pub use overlay_stack::{
+    OverlayBackStack, use_overlay_back, use_overlay_back_action, use_overlay_back_stack,
+};
 pub use page_meta::{PageMeta, SiteMeta};
 pub use panel::Panel;
 pub use theme_picker::ThemePicker;
