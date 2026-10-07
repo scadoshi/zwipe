@@ -10,7 +10,6 @@ use crate::{Route, api};
 use dioxus::prelude::*;
 use serde::Deserialize;
 use std::sync::LazyLock;
-use zwipe_components::CountUp;
 use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
 
 /// What the deploy workflow writes: when it asked, and what zerver said.
@@ -42,40 +41,29 @@ pub fn StatsStrip() -> Element {
     let figures = live.or_else(|| baked.map(|baked| &baked.metrics));
     let as_of = baked.map(|baked| baked.fetched_at.get(..10).unwrap_or(&baked.fetched_at));
 
+    let count = |pick: fn(&HttpPublicMetrics) -> i64| figures.map(|s| u64::try_from(pick(s)).unwrap_or(0));
+    // Keyed on its text, so the live chip arrives with the ease rather than
+    // the as-of chip changing its words in place.
+    let label = match (live.is_some(), as_of) {
+        (true, _) => Some("live".to_string()),
+        (false, Some(day)) => Some(format!("as of {day}")),
+        (false, None) => None,
+    };
+
     rsx! {
-        div { class: "hero-figures",
-            section { class: "stats-strip",
-                div { class: "stat",
-                    span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.decks_created).unwrap_or(0)) } }
-                    span { class: "stat-label", "Decks created" }
-                }
-                div { class: "stat",
-                    span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.searches).unwrap_or(0)) } }
-                    span { class: "stat-label", "Searches run" }
-                }
-                div { class: "stat",
-                    span { class: "stat-num", CountUp { value: figures.map(|s| u64::try_from(s.cards_swiped).unwrap_or(0)) } }
-                    span { class: "stat-label", "Cards swiped" }
-                }
-            }
+        zwipe_components::StatsStrip {
+            figures: vec![
+                (count(|s| s.decks_created), "Decks created"),
+                (count(|s| s.searches), "Searches run"),
+                (count(|s| s.cards_swiped), "Cards swiped"),
+            ],
             // Where the numbers come from, as chips under the strip.
-            div { class: "tag-row stats-source",
+            source: rsx! {
                 Link { class: "tag", to: Route::About {}, "counted by zerver" }
-                // Keyed on its text, so the live chip arrives with the ease
-                // rather than the as-of chip changing its words in place.
-                {
-                    let label = match (live.is_some(), as_of) {
-                        (true, _) => Some("live".to_string()),
-                        (false, Some(day)) => Some(format!("as of {day}")),
-                        (false, None) => None,
-                    };
-                    rsx! {
-                        if let Some(label) = label {
-                            span { key: "{label}", class: "tag tag-swap", "{label}" }
-                        }
-                    }
+                if let Some(label) = label {
+                    span { key: "{label}", class: "tag tag-swap", "{label}" }
                 }
-            }
+            },
         }
     }
 }
