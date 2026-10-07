@@ -75,6 +75,7 @@ pub fn NavBar(
                     },
                     span { class: "nav-toggle-bar" }
                     span { class: "nav-toggle-bar" }
+                    span { class: "nav-toggle-bar" }
                 }
                 div { class: "{panel_class}",
                     div { class: "nav-panel-inner",

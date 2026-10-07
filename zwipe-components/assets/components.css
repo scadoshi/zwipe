@@ -1090,7 +1090,7 @@ i.ms.ms-cost.ms-gp {
     display: none;
     flex-direction: column;
     justify-content: center;
-    gap: 0.4rem;
+    gap: 0.3rem;
     width: 2.25rem;
     height: 2.25rem;
     padding: 0.5rem;
@@ -1115,13 +1115,14 @@ i.ms.ms-cost.ms-gp {
         opacity 0.2s;
 }
 
-/* Open, the two bars meet in the middle as an X: each moves half the
-   center-to-center distance (the gap plus one bar). */
 .nav-toggle-open .nav-toggle-bar:nth-child(1) {
-    transform: translateY(calc(0.2rem + 0.5px)) rotate(45deg);
+    transform: translateY(0.4rem) rotate(45deg);
 }
 .nav-toggle-open .nav-toggle-bar:nth-child(2) {
-    transform: translateY(calc(-0.2rem - 0.5px)) rotate(-45deg);
+    opacity: 0;
+}
+.nav-toggle-open .nav-toggle-bar:nth-child(3) {
+    transform: translateY(-0.4rem) rotate(-45deg);
 }
 
 .nav-brand {
