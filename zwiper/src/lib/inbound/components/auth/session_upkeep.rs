@@ -12,7 +12,6 @@ use crate::{
             catalog_cache::use_catalog_cache,
             hint_host::HintTopic,
             home_hero::CachedCounts,
-            navigation::overlay_stack::use_overlay_back_stack,
             telemetry::{
                 anonymous::record_anonymous_event,
                 flush_loop::{spawn_usage_flusher, spawn_visibility_flusher},
@@ -35,7 +34,7 @@ use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::interval;
 use zwipe_client::ZwipeClient;
-use zwipe_components::KeywordReminders;
+use zwipe_components::{KeywordReminders, use_overlay_back_stack};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
@@ -135,7 +134,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     use_context_provider(|| client);
 
     // Back-aware overlay stack: the OS back gesture closes the top open overlay
-    // before falling through to the router (see navigation::overlay_stack).
+    // before falling through to the router (see zwipe_components::OverlayBackStack).
     let overlay_back_stack = use_overlay_back_stack();
     use_context_provider(|| overlay_back_stack);
 

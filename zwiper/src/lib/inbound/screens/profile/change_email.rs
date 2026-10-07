@@ -4,14 +4,13 @@ use crate::{
     domain::error::UserFacing,
     inbound::components::{
         auth::authed::use_authed,
-        bottom_sheet::BottomSheet,
         fields::text_input::TextInput,
         telemetry::vocabulary::{ProfileScreen, Screen},
     },
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{Button, ButtonVariant, TOAST_NORMAL};
+use zwipe_components::{BottomSheet, Button, ButtonVariant, TOAST_NORMAL};
 use zwipe_core::{
     domain::{Email, auth::models::session::Session},
     http::contracts::auth::HttpChangeEmail,

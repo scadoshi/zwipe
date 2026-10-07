@@ -77,7 +77,8 @@ pub fn open_and_record_hint(
 
 /// Hint dialog shell: title, body content, and a single "Got it" button, with a
 /// rule under the title and above the button.
-/// Compose the body from [`HintLine`]s, with [`HintKey`]s for button names.
+/// Compose the body from [`HintLine`](zwipe_components::HintLine)s, with
+/// [`HintKey`](zwipe_components::HintKey)s for button names.
 ///
 /// `actions` adds extra buttons alongside "Got it" in the footer action bar (e.g.
 /// a "Browse the full dictionary" link), keeping call-to-actions out of the body.
@@ -123,57 +124,11 @@ pub fn HintDialog(
     }
 }
 
-/// One body line of a hint dialog.
-#[component]
-pub fn HintLine(children: Element) -> Element {
-    rsx! {
-        p { style: "margin: 0 0 0.5rem 0; text-align: left;", {children} }
-    }
-}
-
-/// Bulleted list of hint lines.
-#[component]
-pub fn HintBullets(children: Element) -> Element {
-    rsx! {
-        ul { style: "margin: 0 0 0.5rem 0; padding-left: 1.2rem; text-align: left;",
-            {children}
-        }
-    }
-}
-
-/// One bullet within [`HintBullets`].
-#[component]
-pub fn HintBullet(children: Element) -> Element {
-    rsx! {
-        li { style: "margin-bottom: 0.4rem;", {children} }
-    }
-}
-
 /// A color-coded word inside a hint (e.g. a swipe direction). `color` is a
 /// CSS variable name like `--color-success`.
 #[component]
 pub fn HintColored(color: String, children: Element) -> Element {
     rsx! {
         span { style: "color: var({color}); font-weight: 600;", {children} }
-    }
-}
-
-/// An inert reference to an on-screen button: styled like one (util-btn look,
-/// accent color) so users recognize what to press, deliberately not tappable
-/// since the hint is pointing at the real button, not replacing it. `color` is a
-/// CSS variable name (defaults to `--accent-tertiary`) for per-key variation.
-#[component]
-pub fn HintKey(
-    #[props(default = "--accent-tertiary".to_string())] color: String,
-    children: Element,
-) -> Element {
-    rsx! {
-        span {
-            // line-height: 1 keeps the bordered box the height of the text it sits
-            // in; without it the padding grows the line box and pushes the line
-            // above it up, so a hint with a key in it sits unevenly.
-            style: "border: 1px solid var({color}); color: var({color}); border-radius: 0.5rem; padding: 0.05rem 0.45rem; font-size: 0.8rem; line-height: 1; white-space: nowrap; pointer-events: none;",
-            {children}
-        }
     }
 }

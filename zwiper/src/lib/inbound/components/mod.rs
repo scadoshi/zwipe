@@ -8,12 +8,8 @@ pub mod accordion;
 pub mod alert_dialog;
 /// Authentication-related components (login form, register form).
 pub mod auth;
-/// Slide-up bottom sheet overlay component.
-pub mod bottom_sheet;
 /// App-wide cache of slow-changing filter catalogs (artists, sets, oracle tags…).
 pub mod catalog_cache;
-/// Selectable chip button (shared `.chip` styling).
-pub mod chip;
 /// Canonical concept explainers (Deck tags, Oracle tags, Card roles).
 pub mod concept_explainers;
 /// Form field components (text input, password input, etc.).
@@ -38,7 +34,6 @@ pub mod screen_header;
 pub mod support;
 /// Usage telemetry buffer + flush loop.
 pub mod telemetry;
-/// Toast notification component.
 /// Three-state toggle component (true/false/any).
 #[allow(unpredictable_function_pointer_comparisons)]
 pub mod tri_toggle;

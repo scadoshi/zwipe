@@ -8,6 +8,7 @@
 //! A single `Option` also means only one hint shows at a time.
 
 use dioxus::prelude::*;
+use zwipe_components::{HintBullet, HintBullets, HintKey, HintLine};
 
 use crate::inbound::components::{
     alert_dialog::{
@@ -15,7 +16,6 @@ use crate::inbound::components::{
         AlertDialogRoot, AlertDialogTitle,
     },
     concept_explainers::{DeckTagsExplainer, OracleTagsExplainer},
-    hint_dialog::{HintBullet, HintBullets, HintKey, HintLine},
 };
 
 /// A concept a "?" button can explain. Cheap `Copy` message on the hint channel.

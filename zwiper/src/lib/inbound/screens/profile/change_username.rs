@@ -2,13 +2,12 @@
 
 use crate::inbound::components::{
     auth::authed::use_authed,
-    bottom_sheet::BottomSheet,
     fields::text_input::TextInput,
     telemetry::vocabulary::{ProfileScreen, Screen},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{Button, ButtonVariant, TOAST_QUICK};
+use zwipe_components::{BottomSheet, Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::{
     domain::{auth::models::session::Session, user::username::Username},
     http::contracts::auth::HttpChangeUsername,

@@ -6,14 +6,15 @@ use super::{
 };
 use crate::inbound::components::{
     interactions::carousel::{Carousel, dots::CarouselDots, state::CarouselState},
-    navigation::overlay_stack::use_overlay_back_action,
     telemetry::{usage_buffer::UsageBuffer, vocabulary::component},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
+use zwipe_components::{
+    ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK, use_overlay_back_action,
+};
 use zwipe_core::domain::card::{Card, scryfall_data::ImageSize};
 
 /// Bottom sheet for browsing all printings of a card and selecting one.

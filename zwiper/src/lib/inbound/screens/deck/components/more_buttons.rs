@@ -5,7 +5,6 @@ use crate::inbound::{
             AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
         },
         auth::authed::use_authed,
-        bottom_sheet::BottomSheet,
         telemetry::{
             flush_loop::flush_once,
             usage_buffer::UsageBuffer,
@@ -18,7 +17,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{Button, TOAST_QUICK};
+use zwipe_components::{BottomSheet, Button, TOAST_QUICK};
 use zwipe_core::domain::{auth::models::session::Session, site::WEB_BASE};
 
 #[component]

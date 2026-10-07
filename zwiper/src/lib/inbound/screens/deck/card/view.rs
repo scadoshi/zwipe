@@ -10,11 +10,7 @@ use crate::inbound::{
     components::{
         auth::authed::use_authed,
         catalog_cache::CatalogCache,
-        chip::Chip,
-        hint_dialog::{
-            HintBullet, HintBullets, HintColored, HintDialog, HintKey, HintLine,
-            open_and_record_hint,
-        },
+        hint_dialog::{HintColored, HintDialog, open_and_record_hint},
         screen_header::ScreenHeader,
         telemetry::{
             usage_buffer::UsageBuffer,
@@ -41,7 +37,10 @@ use std::{
 use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
+use zwipe_components::{
+    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey, HintLine,
+    TOAST_NORMAL, TOAST_QUICK,
+};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,

@@ -11,8 +11,7 @@
 use crate::inbound::{
     components::{
         auth::authed::use_authed,
-        bottom_sheet::BottomSheet,
-        hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, open_and_record_hint},
+        hint_dialog::{HintDialog, open_and_record_hint},
         screen_header::ScreenHeader,
         telemetry::vocabulary::{DeckScreen, Screen},
     },
@@ -23,7 +22,10 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashSet;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_components::{ActionBar, Button, ButtonVariant, Chip, TOAST_LONG};
+use zwipe_components::{
+    ActionBar, BottomSheet, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey,
+    TOAST_LONG,
+};
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::scryfall_data::colors::Color,

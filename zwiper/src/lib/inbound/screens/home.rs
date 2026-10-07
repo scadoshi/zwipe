@@ -8,9 +8,7 @@ use crate::{
                 AlertDialogRoot, AlertDialogTitle,
             },
             auth::session_upkeep::FlavorCard,
-            hint_dialog::{
-                HintBullet, HintBullets, HintColored, HintDialog, HintKey, use_one_time_hint,
-            },
+            hint_dialog::{HintColored, HintDialog, use_one_time_hint},
             home_hero::HomeHero,
             logout_dialog::LogoutDialog,
             screen_header::ScreenHeader,
@@ -24,7 +22,9 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::sync::atomic::{AtomicBool, Ordering};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK};
+use zwipe_components::{
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintKey, TOAST_QUICK,
+};
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{scryfall_data::ScryfallData, search_card::card_filter::price_currency::PriceCurrency},
