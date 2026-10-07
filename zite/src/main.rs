@@ -7,7 +7,6 @@ use zwipe_components::{
 mod api;
 mod components;
 mod pages;
-mod theme_store;
 use pages::{
     About, Android, Changelog, Contribute, Discord, GuidePage, Guides, Home, Ios, NotFound,
     Privacy, Reset, SharedDeck, Verify,
@@ -125,28 +124,17 @@ async fn static_routes() -> ServerFnResult<Vec<String>> {
 
 #[component]
 fn App() -> Element {
-    // Start at the default so the client's first render matches the server's
-    // (localStorage is client-only). Seeding the signal from storage here would
-    // desync SSR and hydration: hydration keeps the server DOM (e.g. the theme
-    // picker's "Gruvbox" label) and won't reconcile the mismatch, leaving the
-    // label stuck on the default while the body themed correctly. Instead we
-    // adopt the stored theme just after mount (below).
-    let mut theme = use_signal(ThemeConfig::default);
+    // The picked theme, remembered in localStorage. It starts at the default
+    // so the browser's first render matches the prerender, and adopts the
+    // stored theme just after mount; the shell's script already put the body
+    // on it, so nothing visible changes.
+    let theme = zwipe_components::use_persisted_theme("zwipe.theme");
     use_context_provider(|| theme);
     use_context_provider(|| Replay(Signal::new(0u32)));
-    let mut loaded = use_signal(|| false);
 
-    // After hydration, adopt the last-used theme from localStorage. Being a
-    // post-hydration state change (not the initial render), this re-renders the
-    // picker label as well as the body class. The shell's script already put
-    // the body on the stored theme, so nothing visible changes. `hydrated` on
-    // the document releases the hero's entrance, which the stylesheet holds
-    // until the app can run it.
+    // `hydrated` on the document releases the hero's entrance, which the
+    // stylesheet holds until the app can run it.
     use_effect(move || {
-        if let Some(stored) = theme_store::load() {
-            theme.set(stored);
-        }
-        loaded.set(true);
         spawn(async {
             let _ = eval("document.documentElement.classList.add('hydrated');").await;
         });
@@ -172,15 +160,9 @@ fn App() -> Element {
     });
 
     // Apply the theme class to <body> so CSS variable lookups (e.g.
-    // body { background-color: var(--bg-primary) }) resolve, and persist the
-    // choice for next visit. The `loaded` guard keeps the pre-load default
-    // render from clobbering the stored theme before we've read it.
+    // body { background-color: var(--bg-primary) }) resolve.
     use_effect(move || {
-        let cfg = theme.read().clone();
-        if loaded() {
-            theme_store::save(&cfg);
-        }
-        let class = cfg.css_class();
+        let class = theme.read().css_class();
         spawn(async move {
             // Swap only the theme class, leaving any other class on the body.
             let _ = eval(&format!(
