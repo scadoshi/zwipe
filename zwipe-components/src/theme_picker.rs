@@ -43,7 +43,8 @@ pub fn ThemePicker(
         .filter(|t| COLORBLIND_THEMES.contains(t));
 
     rsx! {
-        div { class: "theme-switcher",
+        // Its children glide aside when the label changes width (NAV_GLIDE_JS).
+        div { class: "theme-switcher", "data-nav-glide": "true",
             NavDropdown {
                 open,
                 label: display_theme_name(&current),

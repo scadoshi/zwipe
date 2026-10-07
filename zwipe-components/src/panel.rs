@@ -48,7 +48,8 @@ pub fn Panel(
     let has_header = eyebrow.is_some() || title.is_some() || status.is_some();
 
     rsx! {
-        div { class: "panel-card",
+        // Marked for the sites' scroll reveal (REVEAL_JS); inert elsewhere.
+        div { class: "panel-card", "data-reveal": "true",
             if has_header {
                 div { class: "panel-head",
                     if eyebrow.is_some() || status.is_some() {

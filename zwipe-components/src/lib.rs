@@ -91,6 +91,16 @@ pub const COMPONENTS_CSS: &str = include_str!("../assets/components.css");
 /// The shared theme palettes (31 themes, dark + light), for consumers outside
 /// this workspace.
 pub const THEMES_CSS: &str = include_str!("../assets/themes.css");
+/// The sites' scroll reveal: elements marked `data-reveal` (every [`Panel`])
+/// that start below the fold fade up as they scroll in. Inline it with
+/// `document::Script`; the host's stylesheet styles `.reveal-pending` and
+/// `.reveal-in`.
+pub const REVEAL_JS: &str = include_str!("../assets/reveal.js");
+/// The sites' nav glide: the children of every element marked
+/// `data-nav-glide` (the [`NavBar`] links and the [`ThemePicker`]) slide to
+/// their new places when a neighbor changes width. Inline it with
+/// `document::Script`.
+pub const NAV_GLIDE_JS: &str = include_str!("../assets/nav-glide.js");
 /// The app shell's rules (screen, page header, bottom sheet, settings rows,
 /// hints), for the apps only. Load it after [`COMPONENTS_CSS`] and before the
 /// app's own stylesheet. Sites leave it out: they style these class names
