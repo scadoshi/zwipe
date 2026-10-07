@@ -1,0 +1,257 @@
+/* The toast stack (zwipe_components::ToastStack), behind the crate's
+ * `toast` feature and exported as TOAST_CSS.
+ *
+ * ToastStack puts .toast-container on dioxus_primitives' ToastProvider.
+ * Inner DOM is owned by the library: <div.toast-container> > <ol> > <li> >
+ * <div role="alertdialog" data-type="...">. `data-type` is part of
+ * ToastProvider's documented stable contract. */
+
+/* Top left, over the page header, stacking downwards. Below, they land on
+   the buttons being reached for at the moment they fire. The header is the
+   one strip with nothing to read, so covering it costs nothing. The
+   safe-area inset keeps the first toast out from under the status bar on a
+   notched device. */
+.toast-container {
+    position: fixed;
+    z-index: 9999;
+    left: 1rem;
+    top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+    max-width: 16rem;
+}
+
+/* The library renders newest first, so a plain column puts the newest at the
+   top and older ones below it.
+ *
+ * Two layouts. Collapsed is the default: the older toasts slide up behind the
+ * newest and show only a sliver, so the stack costs roughly one toast of
+ * screen no matter how many are up. Expanded lays them out in full. Tapping
+ * any toast switches between them, which is what `.toast-tap` is for. */
+.toast-container ol {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+    gap: 0;
+    list-style: none;
+}
+
+.toast-container li {
+    display: flex;
+    /* Pulls each toast up behind the one before it, leaving a sliver showing.
+       Tuned against a one-line toast; a taller one shows a little more. */
+    margin-top: -2.75rem;
+    position: relative;
+}
+
+/* Only a tap animates. An arriving toast takes over as `:first-child`, which
+   pushes the previous one into the -2.75rem rule above, and transitioning that
+   made the stack expand to full height for 200ms and drop back every time one
+   landed. CSS cannot tell that reflow apart from a tap, so ToastStack sets
+   `.animating` for the length of the toggle and nothing else ever has it. */
+.toast-container.animating li {
+    transition: margin-top 0.2s ease;
+}
+
+.toast-container.animating ol {
+    transition: gap 0.2s ease;
+}
+
+.toast-container li:first-child {
+    margin-top: 0;
+}
+
+/* Newest is first in the DOM and has to paint over the ones behind it. */
+.toast-container li:nth-child(1) { z-index: 5; }
+.toast-container li:nth-child(2) { z-index: 4; }
+.toast-container li:nth-child(3) { z-index: 3; }
+.toast-container li:nth-child(4) { z-index: 2; }
+.toast-container li:nth-child(5) { z-index: 1; }
+
+/* Expanded: no overlap, a real gap, and the z-index ladder stops mattering. */
+.toast-container.expanded ol {
+    gap: 0.5rem;
+}
+
+.toast-container.expanded li {
+    margin-top: 0;
+}
+
+/* The tap target wraps each toast. `contents` generates no box, so it changes
+   nothing about layout while still letting the click bubble out of the toast. */
+.toast-tap {
+    display: contents;
+}
+
+/* Toast */
+.toast-container [role="alertdialog"] {
+    display: flex;
+    /* Hug the content (capped by the container's max-width) so short messages
+       don't sit in a fixed-width box with a big gap before the close button. */
+    width: fit-content;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 1rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 400;
+    box-shadow: var(--shadow-sm);
+    /* `both` holds the `from` state before the first frame paints, so the
+       toast never flashes at its final position first. No `transition` on
+       opacity or transform here: a transition on the same properties the
+       animation drives fights it, which read as the toast arriving from the
+       wrong direction. */
+    animation: toast-drop-in 0.22s ease-out both;
+}
+
+/* Drops in from above, matching the direction the stack grows. The slight
+   scale gives the motion a direction the eye reads even when the travel is
+   short. */
+@keyframes toast-drop-in {
+    from {
+        opacity: 0;
+        transform: translateY(-1.5rem) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Toast types: data-type is documented stable contract per ToastProvider docs */
+.toast-container [data-type="success"] {
+    border-color: var(--border-success);
+}
+
+.toast-container [data-type="error"] {
+    border-color: var(--border-error);
+}
+
+.toast-container [data-type="warning"] {
+    border-color: var(--border-warning);
+}
+
+.toast-container [data-type="info"] {
+    border-color: var(--border-primary);
+}
+
+/* Toast content: dioxus_primitives ToastContent renders a plain div; descendant selector targets it */
+.toast-container [role="alertdialog"] > div:first-child {
+    flex: 0 1 auto;
+    margin-right: 0.5rem;
+}
+
+.toast-container [role="alertdialog"] [id$="-label"] {
+    margin-bottom: 0.25rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    overflow-wrap: break-word;
+    /* Center so any ragged trailing space on wrapped lines is symmetric,
+       not dumped on the right edge next to the close button. */
+    text-align: center;
+}
+
+.toast-container [role="alertdialog"] [id$="-description"] {
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+/* Toast close button: ToastCloseButton renders a <button> */
+.toast-container [role="alertdialog"] button {
+    padding: 0;
+    border: none;
+    margin: 0;
+    background: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+/* ---- Timed fade (ToastStack's `timed_fade`) ----
+ *
+ * Toasts are removed from the DOM outright, with no closing state to hook,
+ * so a fade out has to happen before removal, and the stylesheet has to know
+ * how long each toast lives. It reads that off data-type: info lives 3s
+ * (TOAST_QUICK), the rest 5s (TOAST_NORMAL, and the library's own default).
+ * A host that opts in calls its toasts on those durations, or a toast pops
+ * out while still opaque or sits invisible waiting its turn.
+ *
+ * Keyframe percentages are relative to the animation's duration, so one
+ * keyframe cannot serve both lives: the stops that give a 3s toast a 200ms
+ * fade give a 5s toast a 330ms one. Hence a keyframe per life, worked back
+ * from the same wall-clock feel, about 200ms in and 250ms out either way. */
+
+.toast-container.timed-fade [role="alertdialog"] {
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
+}
+
+@keyframes toast-life-3000 {
+    0% {
+        opacity: 0;
+        transform: translateY(-0.6rem);
+    }
+
+    /* 200ms */
+    7% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* 2750ms, so the fade out takes the last 250ms */
+    92% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-0.3rem);
+    }
+}
+
+@keyframes toast-life-5000 {
+    0% {
+        opacity: 0;
+        transform: translateY(-0.6rem);
+    }
+
+    /* 200ms */
+    4% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* 4750ms */
+    95% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-0.3rem);
+    }
+}
+
+.toast-container.timed-fade [data-type="info"] {
+    animation: toast-life-3000 3000ms ease both;
+}
+
+.toast-container.timed-fade [data-type="success"],
+.toast-container.timed-fade [data-type="warning"],
+.toast-container.timed-fade [data-type="error"] {
+    animation: toast-life-5000 5000ms ease both;
+}

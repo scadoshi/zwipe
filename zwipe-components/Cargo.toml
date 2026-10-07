@@ -16,6 +16,13 @@ path = "src/lib.rs"
 dioxus = { version = "0.7.9" }
 uuid.workspace = true
 zwipe-core = { path = "../zwipe-core" }
+# The toast stack, behind the `toast` feature so the sites never build it.
+# The same pinned build the apps use.
+dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "02801f27e4b3e30606e5c77e435c9d955c708eb3", version = "0.0.1", default-features = false, optional = true }
+
+[features]
+# ToastStack and TOAST_CSS, for the apps.
+toast = ["dep:dioxus-primitives"]
 
 # The entrance module waits between frames: the browser's timer on the web,
 # tokio's everywhere else (the app's WebView runs on tokio already).

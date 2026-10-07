@@ -43,6 +43,8 @@ mod panel;
 mod theme_picker;
 mod theme_sheet;
 mod theme_wipe;
+#[cfg(feature = "toast")]
+mod toast_stack;
 mod toast_timing;
 
 pub use action_bar::ActionBar;
@@ -72,6 +74,8 @@ pub use panel::Panel;
 pub use theme_picker::ThemePicker;
 pub use theme_sheet::ThemeSheet;
 pub use theme_wipe::{ThemeFollow, use_theme_follow, use_theme_wipe};
+#[cfg(feature = "toast")]
+pub use toast_stack::ToastStack;
 pub use toast_timing::{TOAST_LONG, TOAST_NORMAL, TOAST_QUICK};
 // The theme domain types live in zwipe-core (user preferences persist them
 // server-side); re-exported here so UI consumers have one import path.
@@ -90,3 +94,7 @@ pub const THEMES_CSS: &str = include_str!("../assets/themes.css");
 /// app's own stylesheet. Sites leave it out: they style these class names
 /// their own way.
 pub const APP_CSS: &str = include_str!("../assets/app.css");
+/// The toast stack's rules, for [`ToastStack`]. Load it after the app's own
+/// stylesheet, as the apps load their toast sheet today.
+#[cfg(feature = "toast")]
+pub const TOAST_CSS: &str = include_str!("../assets/toast.css");

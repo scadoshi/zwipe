@@ -9171,6 +9171,7 @@ name = "zwipe-components"
 version = "1.10.7"
 dependencies = [
  "dioxus",
+ "dioxus-primitives",
  "gloo-timers 0.4.0",
  "tokio",
  "uuid",
