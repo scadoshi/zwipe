@@ -257,7 +257,7 @@ The rest are signal/analytics tables (user and commander signal, weekly facets, 
 
 ## zwiper: Mobile App
 
-Dioxus cross-platform app. Primary target: iOS. Same hexagonal structure: screens are inbound adapters, the API client is the outbound adapter and lives in `zwipe-client`. UI building blocks and the theme CSS come from `zwipe-components`; the theme list lives in zwipe-core's preferences.
+Dioxus cross-platform app. Primary target: iOS. Same hexagonal structure: screens are inbound adapters, the API client is the outbound adapter and lives in `zwipe-client`. UI building blocks and the theme CSS come from `zwipe-components`, including its app kit (bottom sheet, page header, theme sheet, hint pieces, overlay back stack, toast stack) and the `APP_CSS` and `TOAST_CSS` sheets; the theme list lives in zwipe-core's preferences.
 
 ```
 zwiper/src/
@@ -275,12 +275,12 @@ zwiper/src/
     │   │   ├── interactions/
     │   │   │   └── swipe/      # Swipeable component, SwipeState, SwipeConfig, Direction
     │   │   ├── auth/           # Bouncer (auth guard), session upkeep
-    │   │   ├── navigation/     # Back handler, overlay stack
+    │   │   ├── navigation/     # Back handler (the overlay stack is zwipe-components')
     │   │   ├── telemetry/      # Usage buffer (batched counters/events to the API)
     │   │   ├── accordion/      # Collapsible sections
     │   │   ├── alert_dialog/   # Confirmation dialogs
     │   │   ├── fields/         # Reusable form inputs
-    │   │   └── (single files)  # bottom sheet, chips, hint dialogs, catalog cache, update-required gate, …
+    │   │   └── (single files)  # screen header, info button, hint dialogs, home hero, catalog cache, update-required gate, …
     │   │
     │   └── screens/
     │       ├── home.rs
