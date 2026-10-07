@@ -41,6 +41,7 @@ mod page_header;
 mod page_meta;
 mod panel;
 mod theme_picker;
+mod theme_sheet;
 mod theme_wipe;
 mod toast_timing;
 
@@ -69,6 +70,7 @@ pub use page_header::PageHeader;
 pub use page_meta::{PageMeta, SiteMeta};
 pub use panel::Panel;
 pub use theme_picker::ThemePicker;
+pub use theme_sheet::ThemeSheet;
 pub use theme_wipe::{ThemeFollow, use_theme_follow, use_theme_wipe};
 pub use toast_timing::{TOAST_LONG, TOAST_NORMAL, TOAST_QUICK};
 // The theme domain types live in zwipe-core (user preferences persist them
@@ -83,3 +85,8 @@ pub const COMPONENTS_CSS: &str = include_str!("../assets/components.css");
 /// The shared theme palettes (31 themes, dark + light), for consumers outside
 /// this workspace.
 pub const THEMES_CSS: &str = include_str!("../assets/themes.css");
+/// The app shell's rules (screen, page header, bottom sheet, settings rows,
+/// hints), for the apps only. Load it after [`COMPONENTS_CSS`] and before the
+/// app's own stylesheet. Sites leave it out: they style these class names
+/// their own way.
+pub const APP_CSS: &str = include_str!("../assets/app.css");
