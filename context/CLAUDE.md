@@ -71,9 +71,10 @@ The workspace-root `.sqlx/` is the ONLY offline-data directory. Never create a c
 zwiper ──→ zwipe-client ──→ zwipe-core ←── zerver
 zite   ──→ zwipe-client
 zwiper ──→ zwipe-components ←── zite
+portfolio, cairn ──(git)──→ zwipe-components
 ```
 
-zwipe-core owns all shared domain types, including every `Http*` contract (`zwipe-core/src/http/contracts/`) and the route path constants. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers). No client depends on zerver: zwiper and zite both take their domain and contract types from zwipe-core, and zerver is the server only. zwipe-components is the shared Dioxus UI crate (components plus `themes.css`/`components.css`) that both clients depend on. zwipe-client holds the typed API client, depending on zwipe-core and reqwest only, so it carries no Dioxus and no platform code. Both clients use it; neither builds a request by hand.
+zwipe-core owns all shared domain types, including every `Http*` contract (`zwipe-core/src/http/contracts/`) and the route path constants. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers). No client depends on zerver: zwiper and zite both take their domain and contract types from zwipe-core, and zerver is the server only. zwipe-components is the shared Dioxus UI crate (components plus `themes.css`/`components.css`) that both clients depend on; the portfolio site and cairn (the counter app) take it as a git dependency, so a change to it reaches them on their next `cargo update -p zwipe-components`. zwipe-client holds the typed API client, depending on zwipe-core and reqwest only, so it carries no Dioxus and no platform code. Both clients use it; neither builds a request by hand.
 
 ### Hexagonal (Ports & Adapters) Pattern
 

@@ -389,9 +389,9 @@ The wasm target needs reqwest without rustls-tls and getrandom on `wasm_js`, the
 
 ## zwipe-components: Shared UI
 
-Dioxus component library both clients depend on; the owner's portfolio consumes parts of it too. Ships `themes.css` (31 themes, each with a dark and a light palette) and `components.css`. CSS load order matters: themes first, then components, then app styles.
+Dioxus component library both clients depend on; the owner's portfolio and cairn consume it too, as a git dependency. Ships `themes.css` (31 themes, each with a dark and a light palette) and `components.css` for every consumer, plus three opt-in sheets: `app.css` (the app shell, for zwiper and cairn), `site.css` (the gallery base, for zite and the portfolio) and `toast.css` (behind the `toast` feature). CSS load order matters: themes first, then components, then the opt-in sheet, then app styles.
 
-The source is flat, one file per component: card_details.rs and card_row.rs (shared card rendering), changelog.rs (renders the compiled-in changelog), charts.rs, theme_picker.rs, nav_bar.rs, nav_dropdown.rs, oracle_text.rs, page_meta.rs, and assorted smaller pieces (buttons, chips, banners, panels). The allowed-theme list itself lives in zwipe-core (`ALLOWED_THEMES`); this crate owns the palettes.
+The source is flat, one file per component: card_details.rs and card_row.rs (shared card rendering), changelog.rs (renders the compiled-in changelog), charts.rs, theme_picker.rs, nav_bar.rs, nav_dropdown.rs, oracle_text.rs, page_meta.rs, and assorted smaller pieces (buttons, chips, banners, panels). The app kit is overlay_stack.rs (the OS back stack), bottom_sheet.rs, page_header.rs, theme_sheet.rs, hint.rs and, behind the `toast` feature, toast_stack.rs. The site kit is theme_store.rs (`use_persisted_theme`), stats_strip.rs, gallery.rs and the `REVEAL_JS`/`NAV_GLIDE_JS` scripts in `assets/`. chart_math.rs holds the pure chart helpers. The allowed-theme list itself lives in zwipe-core (`ALLOWED_THEMES`, `COLORBLIND_THEMES`); this crate owns the palettes.
 
 ---
 

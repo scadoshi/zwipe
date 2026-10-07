@@ -1,22 +1,32 @@
 //! Shared Dioxus UI components for the Zwipe surfaces.
 //!
 //! `zwiper` (the app) and `zite` (the marketing/site) both depend on this crate
-//! so buttons, chips, and action bars look and behave identically across them.
+//! so buttons, chips, and action bars look and behave identically across them;
+//! the portfolio site and cairn (a counter app) take it as a git dependency.
 //! Styling ships alongside: `assets/components.css` (the components' rules) and
 //! `assets/themes.css` (the theme palettes those rules resolve against). The
 //! workspace apps copy both into their own asset bundles at build time;
-//! external consumers (e.g. the portfolio site, via a git dependency) can't
-//! reach the crate's files by path, so the same CSS is also exported as the
-//! [`COMPONENTS_CSS`] / [`THEMES_CSS`] string constants to inline via
-//! `document::Style`.
+//! external consumers can't reach the crate's files by path, so the same CSS
+//! is also exported as the [`COMPONENTS_CSS`] / [`THEMES_CSS`] string
+//! constants to inline via `document::Style`.
+//!
+//! Two kits sit beside the components every surface uses. The app kit
+//! ([`BottomSheet`], [`PageHeader`], [`ThemeSheet`], the hint pieces, the
+//! overlay back stack and, behind the `toast` feature, `ToastStack`) is for
+//! the apps and styled by the opt-in [`APP_CSS`]. The site kit
+//! ([`use_persisted_theme`], [`StatsStrip`], [`GalleryFrame`], [`REVEAL_JS`],
+//! [`NAV_GLIDE_JS`]) is for the websites, with the gallery base in the opt-in
+//! [`SITE_CSS`].
 //!
 //! **CSS cascade order matters:** load themes first, then components, then the
-//! site's own stylesheet (`THEMES_CSS`, then `COMPONENTS_CSS`, then site CSS) so
-//! component rules resolve theme variables and site rules can override
-//! component defaults at equal specificity.
+//! opt-in sheet, then the host's own stylesheet (`THEMES_CSS`, then
+//! `COMPONENTS_CSS`, then `APP_CSS` or `SITE_CSS`, then host CSS) so component
+//! rules resolve theme variables and host rules can override shared defaults at
+//! equal specificity.
 //!
 //! These components deliberately depend only on base `dioxus` (no platform
-//! features) and `zwipe-core`, so any Dioxus target can consume them.
+//! features) and `zwipe-core`, so any Dioxus target can consume them. The
+//! `toast` feature adds `dioxus-primitives`.
 
 mod action_bar;
 mod banner;
