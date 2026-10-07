@@ -1,0 +1,66 @@
+/* Site styles, for the websites only (zite and the portfolio).
+ *
+ * Opt-in through the crate's SITE_CSS constant, loaded after COMPONENTS_CSS
+ * and before the site's own stylesheet. Holds the base both sites share for
+ * the gallery (zwipe_components::GalleryFrame, GalleryFooter); each site
+ * keeps its own colors, hover, sizes and entrance, which win by loading
+ * later. */
+
+/* ---- Gallery ---- */
+
+.gallery-body {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Holds its size while the media swaps. */
+    min-height: 70vh;
+}
+
+/* The round prev/next buttons, centered on the media's edges. */
+.gallery-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 50%;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    font-family: monospace;
+}
+
+.gallery-prev {
+    left: 0;
+}
+
+.gallery-next {
+    right: 0;
+}
+
+.gallery-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.gallery-caption {
+    margin: 0;
+    font-style: italic;
+}
+
+.gallery-counter {
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+}

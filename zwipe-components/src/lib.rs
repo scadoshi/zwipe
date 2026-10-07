@@ -31,6 +31,7 @@ mod chip;
 mod diagram;
 mod entrance;
 mod flippable_card_image;
+mod gallery;
 mod hint;
 mod keyword_chips;
 mod nav_bar;
@@ -62,6 +63,7 @@ pub use chip::Chip;
 pub use diagram::{DIAGRAM_NODE_HEIGHT, DiagramArrow, DiagramDefs, DiagramNode, DiagramTone};
 pub use entrance::{CountUp, Decode, Figure, Replay, with_separators};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
+pub use gallery::{GalleryFooter, GalleryFrame};
 pub use hint::{HintBullet, HintBullets, HintKey, HintLine, InfoButton};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use nav_bar::{BRAND_RESET_JS, NavBar};
@@ -103,6 +105,10 @@ pub const REVEAL_JS: &str = include_str!("../assets/reveal.js");
 /// their new places when a neighbor changes width. Inline it with
 /// `document::Script`.
 pub const NAV_GLIDE_JS: &str = include_str!("../assets/nav-glide.js");
+/// The sites' shared base for the gallery ([`GalleryFrame`],
+/// [`GalleryFooter`]), for the websites only. Load it after
+/// [`COMPONENTS_CSS`] and before the site's own stylesheet.
+pub const SITE_CSS: &str = include_str!("../assets/site.css");
 /// The app shell's rules (screen, page header, bottom sheet, settings rows,
 /// hints), for the apps only. Load it after [`COMPONENTS_CSS`] and before the
 /// app's own stylesheet. Sites leave it out: they style these class names
