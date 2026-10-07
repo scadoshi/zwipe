@@ -1,13 +1,12 @@
 use dioxus::{document::eval, prelude::*};
 use zwipe_components::{
-    BRAND_RESET_JS, COMPONENTS_CSS, Decode, NavBar, Replay, THEMES_CSS, ThemeConfig, ThemePicker,
-    use_theme_wipe,
+    BRAND_RESET_JS, COMPONENTS_CSS, Decode, NAV_GLIDE_JS, NavBar, REVEAL_JS, Replay, SITE_CSS,
+    THEMES_CSS, ThemeConfig, ThemePicker, use_theme_wipe,
 };
 
 mod api;
 mod components;
 mod pages;
-mod theme_store;
 use pages::{
     About, Android, Changelog, Contribute, Discord, GuidePage, Guides, Home, Ios, NotFound,
     Privacy, Reset, SharedDeck, Verify,
@@ -24,8 +23,6 @@ const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
 const FAVICON_32: Asset = asset!("/assets/favicon-32x32.png");
 const APPLE_TOUCH_ICON: Asset = asset!("/assets/icon-180.png");
 const MANIFEST: Asset = asset!("/assets/site.webmanifest");
-const REVEAL_JS: Asset = asset!("/assets/reveal.js");
-const NAV_GLIDE_JS: Asset = asset!("/assets/nav-glide.js");
 const Z_LOGO: &str = zwipe_core::domain::logo::Z;
 
 #[derive(Routable, Clone, PartialEq)]
@@ -125,28 +122,17 @@ async fn static_routes() -> ServerFnResult<Vec<String>> {
 
 #[component]
 fn App() -> Element {
-    // Start at the default so the client's first render matches the server's
-    // (localStorage is client-only). Seeding the signal from storage here would
-    // desync SSR and hydration: hydration keeps the server DOM (e.g. the theme
-    // picker's "Gruvbox" label) and won't reconcile the mismatch, leaving the
-    // label stuck on the default while the body themed correctly. Instead we
-    // adopt the stored theme just after mount (below).
-    let mut theme = use_signal(ThemeConfig::default);
+    // The picked theme, remembered in localStorage. It starts at the default
+    // so the browser's first render matches the prerender, and adopts the
+    // stored theme just after mount; the shell's script already put the body
+    // on it, so nothing visible changes.
+    let theme = zwipe_components::use_persisted_theme("zwipe.theme");
     use_context_provider(|| theme);
     use_context_provider(|| Replay(Signal::new(0u32)));
-    let mut loaded = use_signal(|| false);
 
-    // After hydration, adopt the last-used theme from localStorage. Being a
-    // post-hydration state change (not the initial render), this re-renders the
-    // picker label as well as the body class. The shell's script already put
-    // the body on the stored theme, so nothing visible changes. `hydrated` on
-    // the document releases the hero's entrance, which the stylesheet holds
-    // until the app can run it.
+    // `hydrated` on the document releases the hero's entrance, which the
+    // stylesheet holds until the app can run it.
     use_effect(move || {
-        if let Some(stored) = theme_store::load() {
-            theme.set(stored);
-        }
-        loaded.set(true);
         spawn(async {
             let _ = eval("document.documentElement.classList.add('hydrated');").await;
         });
@@ -172,15 +158,9 @@ fn App() -> Element {
     });
 
     // Apply the theme class to <body> so CSS variable lookups (e.g.
-    // body { background-color: var(--bg-primary) }) resolve, and persist the
-    // choice for next visit. The `loaded` guard keeps the pre-load default
-    // render from clobbering the stored theme before we've read it.
+    // body { background-color: var(--bg-primary) }) resolve.
     use_effect(move || {
-        let cfg = theme.read().clone();
-        if loaded() {
-            theme_store::save(&cfg);
-        }
-        let class = cfg.css_class();
+        let class = theme.read().css_class();
         spawn(async move {
             // Swap only the theme class, leaving any other class on the body.
             let _ = eval(&format!(
@@ -208,12 +188,13 @@ fn App() -> Element {
         document::Link { rel: "preload", href: "/fonts/jetbrains-mono-latin-700-normal.woff2", r#as: "font", r#type: "font/woff2", crossorigin: "anonymous" }
         document::Style { {THEMES_CSS} }
         document::Style { {COMPONENTS_CSS} }
+        document::Style { {SITE_CSS} }
         document::Stylesheet { href: STYLE }
-        // Scroll reveal for panels below the fold; deferred, and everything
-        // it does is progressive.
-        document::Script { defer: true, src: REVEAL_JS }
+        // Scroll reveal for panels below the fold; everything it does is
+        // progressive.
+        document::Script { {REVEAL_JS} }
         // Nav items pushed by a wider theme label slide over instead of jumping.
-        document::Script { defer: true, src: NAV_GLIDE_JS }
+        document::Script { {NAV_GLIDE_JS} }
         Router::<Route> {}
     }
 }
@@ -248,7 +229,7 @@ pub fn Nav() -> Element {
                 }
             },
             persistent: rsx! {
-                div { class: "nav-stores-persistent",
+                div { class: "nav-stores-persistent", "data-nav-glide": "true",
                     a {
                         class: "store-link",
                         href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",

@@ -349,6 +349,8 @@ zite/src/
     └── reset.rs            # Password reset form (shared validation from zwipe-core)
 ```
 
+The remembered theme, the hero's stats strip, the demo and guide galleries and the scroll reveal and nav glide scripts come from zwipe-components' site kit; zite keeps the data behind them, the body theme class and its own colors, sizes and entrances in `assets/style.css`.
+
 **Deploy:** Push to main → GitHub Actions → `dx build --release --platform web --ssg --force-sequential` → GitHub Pages
 
 ---

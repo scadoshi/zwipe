@@ -3,7 +3,9 @@ use crate::{
     components::{FeaturedFlavor, PageMeta, StatsStrip, dismiss_flavor_overlay},
 };
 use dioxus::prelude::*;
-use zwipe_components::{Banner, Decode, FlippableCardImage, Panel, Replay};
+use zwipe_components::{
+    Banner, Decode, FlippableCardImage, GalleryFooter, GalleryFrame, Panel, Replay,
+};
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
@@ -198,7 +200,7 @@ pub fn Home() -> Element {
         ),
     ];
     let total = demos.len();
-    let mut index = use_signal(|| 0usize);
+    let index = use_signal(|| 0usize);
     #[allow(clippy::indexing_slicing)]
     let (current_src, current_caption, current_label) = demos[index()];
 
@@ -291,7 +293,7 @@ pub fn Home() -> Element {
                     // Same Panel grammar as the rest of the band; the per-clip
                     // caption under the video does the describing.
                     Panel { eyebrow: "Demo", title: "Watch it work",
-                        div { class: "gallery-body",
+                        GalleryFrame { index, total, noun: "demo",
                             video {
                                 // key forces a remount when index changes so autoplay re-fires
                                 // for the new src instead of the browser keeping the old video.
@@ -306,34 +308,9 @@ pub fn Home() -> Element {
                                 controls: true,
                                 preload: "metadata",
                             }
-                            if total > 1 {
-                                button {
-                                    class: "gallery-nav gallery-prev",
-                                    aria_label: "Previous demo",
-                                    onclick: move |_| {
-                                        let i = index();
-                                        index.set(if i == 0 { total - 1 } else { i - 1 });
-                                    },
-                                    "←"
-                                }
-                                button {
-                                    class: "gallery-nav gallery-next",
-                                    aria_label: "Next demo",
-                                    onclick: move |_| {
-                                        let i = index();
-                                        index.set((i + 1) % total);
-                                    },
-                                    "→"
-                                }
-                            }
                         }
                         hr { class: "gallery-rule" }
-                        div { class: "gallery-footer",
-                            span { key: "{index()}", class: "gallery-caption", "{current_caption}" }
-                            if total > 1 {
-                                span { class: "gallery-counter", "{index() + 1} / {total}" }
-                            }
-                        }
+                        GalleryFooter { index: index(), total, caption: current_caption.to_string() }
                     }
                     FeaturedFlavor { overlay: flavor_overlay }
                 }
