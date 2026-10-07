@@ -6,13 +6,13 @@
 use crate::inbound::components::{
     auth::authed::use_authed,
     catalog_cache::CatalogCache,
-    hint_dialog::{HintDialog, HintLine, open_and_record_hint},
+    hint_dialog::{HintDialog, open_and_record_hint},
     telemetry::vocabulary::{ProfileScreen, Screen},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{BottomSheet, Button, ButtonVariant, TOAST_QUICK};
+use zwipe_components::{BottomSheet, Button, ButtonVariant, HintLine, TOAST_QUICK};
 use zwipe_core::{
     domain::{
         auth::models::session::Session, user::models::hints::HINT_UNIVERSES_BEYOND_EXCEPTIONS,

@@ -17,7 +17,7 @@ use crate::{
                 AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
             },
             auth::authed::use_authed,
-            hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
+            hint_dialog::{HintDialog, use_one_time_hint},
             hint_host::HintTopic,
             info_button::InfoButton,
             screen_header::ScreenHeader,
@@ -34,7 +34,9 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
+use zwipe_components::{
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintKey, TOAST_NORMAL, TOAST_QUICK,
+};
 use zwipe_core::{
     domain::{
         card::Card,

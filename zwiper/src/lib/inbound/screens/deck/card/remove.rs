@@ -6,9 +6,7 @@ use super::components::{
 use crate::inbound::{
     components::{
         auth::{authed::use_authed, ensure_session::EnsureFresh},
-        hint_dialog::{
-            HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint,
-        },
+        hint_dialog::{HintColored, HintDialog, use_one_time_hint},
         interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
         screen_header::ScreenHeader,
         telemetry::{
@@ -29,7 +27,10 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, Chip, TOAST_NORMAL, TOAST_QUICK};
+use zwipe_components::{
+    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintLine, TOAST_NORMAL,
+    TOAST_QUICK,
+};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,

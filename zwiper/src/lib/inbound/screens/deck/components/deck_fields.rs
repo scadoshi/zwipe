@@ -1,6 +1,6 @@
 use crate::inbound::components::{
     fields::text_input::TextInput,
-    hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, HintKey},
+    hint_dialog::{HintColored, HintDialog},
     hint_host::HintTopic,
     info_button::InfoButton,
     telemetry::usage_buffer::UsageBuffer,
@@ -11,7 +11,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::TOAST_NORMAL;
+use zwipe_components::{HintBullet, HintBullets, HintKey, TOAST_NORMAL};
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{

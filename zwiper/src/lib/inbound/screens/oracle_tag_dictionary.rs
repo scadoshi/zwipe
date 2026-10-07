@@ -13,9 +13,7 @@
 use crate::inbound::{
     components::{
         catalog_cache::{CatalogCache, CatalogCell},
-        hint_dialog::{
-            HintBullet, HintBullets, HintColored, HintDialog, HintKey, use_one_time_hint,
-        },
+        hint_dialog::{HintColored, HintDialog, use_one_time_hint},
         screen_header::ScreenHeader,
     },
     screens::oracle_tag_examples::OracleTagExamples,
@@ -23,7 +21,10 @@ use crate::inbound::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, use_overlay_back};
+use zwipe_components::{
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintKey, TOAST_NORMAL,
+    use_overlay_back,
+};
 use zwipe_core::domain::{
     card::oracle_tag::{OracleTag, search_oracle_tags},
     user::models::hints::HINT_ORACLE_TAG_DICTIONARY,

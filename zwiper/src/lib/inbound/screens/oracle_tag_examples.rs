@@ -15,7 +15,7 @@
 use crate::inbound::{
     components::{
         auth::authed::use_authed,
-        hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, use_one_time_hint},
+        hint_dialog::{HintColored, HintDialog, use_one_time_hint},
         interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
         screen_header::ScreenHeader,
         telemetry::vocabulary::{OracleTagScreen, Screen, screen},
@@ -29,7 +29,9 @@ use crate::inbound::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK, use_overlay_back};
+use zwipe_components::{
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, TOAST_QUICK, use_overlay_back,
+};
 use zwipe_core::domain::{
     card::{
         Card,

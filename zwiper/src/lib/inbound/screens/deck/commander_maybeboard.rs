@@ -23,9 +23,7 @@ use crate::inbound::{
         },
         auth::authed::use_authed,
         catalog_cache::CatalogCache,
-        hint_dialog::{
-            HintBullet, HintBullets, HintColored, HintDialog, HintKey, HintLine, use_one_time_hint,
-        },
+        hint_dialog::{HintColored, HintDialog, use_one_time_hint},
         screen_header::ScreenHeader,
         telemetry::{
             usage_buffer::UsageBuffer,
@@ -55,7 +53,8 @@ use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_components::{
-    ActionBar, BottomSheet, Button, ButtonVariant, Chip, TOAST_LONG, TOAST_QUICK,
+    ActionBar, BottomSheet, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey,
+    HintLine, TOAST_LONG, TOAST_QUICK,
 };
 use zwipe_core::domain::{
     auth::models::session::Session,

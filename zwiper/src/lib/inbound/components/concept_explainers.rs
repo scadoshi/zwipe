@@ -5,8 +5,9 @@
 //! returns only the body (a `HintBullets`), so callers supply their own
 //! `HintDialog` shell and title.
 
-use crate::inbound::components::hint_dialog::{HintBullet, HintBullets, HintColored};
+use crate::inbound::components::hint_dialog::HintColored;
 use dioxus::prelude::*;
+use zwipe_components::{HintBullet, HintBullets};
 use zwipe_core::domain::deck::MAX_DECK_TAGS;
 
 /// Deck tags: the archetype(s) you pick that seed oracle tags.
