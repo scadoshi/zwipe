@@ -34,7 +34,6 @@ pub mod screen_header;
 pub mod support;
 /// Usage telemetry buffer + flush loop.
 pub mod telemetry;
-/// Toast notification component.
 /// Three-state toggle component (true/false/any).
 #[allow(unpredictable_function_pointer_comparisons)]
 pub mod tri_toggle;
