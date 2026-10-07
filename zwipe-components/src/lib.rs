@@ -29,6 +29,7 @@
 //! `toast` feature adds `dioxus-primitives`.
 
 mod action_bar;
+mod architecture;
 mod banner;
 mod bottom_sheet;
 mod button;
@@ -62,6 +63,7 @@ mod toast_stack;
 mod toast_timing;
 
 pub use action_bar::ActionBar;
+pub use architecture::ZwipeArchitecture;
 pub use banner::{Banner, BannerStatus};
 pub use bottom_sheet::BottomSheet;
 pub use button::{Button, ButtonVariant};

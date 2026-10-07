@@ -17,6 +17,18 @@
     min-height: 70vh;
 }
 
+/* ZwipeArchitecture reuses the frame for short, wide diagrams: no video-height
+   floor, and room at the sides so prev and next sit beside a diagram rather
+   than on it. */
+.gallery-body.arch-carousel {
+    min-height: 0;
+    padding: 0 3rem;
+}
+
+.arch-slide {
+    width: 100%;
+}
+
 /* The round prev/next buttons, centered on the media's edges. */
 .gallery-nav {
     position: absolute;

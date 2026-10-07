@@ -1,6 +1,6 @@
 use crate::{Footer, Nav, components::PageMeta};
 use dioxus::prelude::*;
-use zwipe_components::{DiagramArrow, DiagramDefs, DiagramNode, DiagramTone, Panel};
+use zwipe_components::{Panel, ZwipeArchitecture};
 
 // Source-material links, used inside the architecture diagram (Wikipedia-style refs).
 const URL_ZWIPER: &str = "https://github.com/scadoshi/zwipe/tree/main/zwiper";
@@ -62,7 +62,7 @@ pub fn About() -> Element {
             div { class: "section",
                 h2 { "System Architecture" }
                 p { class: "arch-subtitle", "Six Rust crates in one workspace. What each one does, and where it pulls from." }
-                Architecture {}
+                div { class: "arch-figure", ZwipeArchitecture {} }
                 div { class: "card-grid",
                     Panel {
                         eyebrow: "Mobile app",
@@ -332,46 +332,5 @@ pub fn About() -> Element {
             }
         }
         Footer {}
-    }
-}
-
-/// The six crates and what feeds them: both clients call zerver and import the
-/// three shared crates, zerver imports zwipe-core and keeps the catalog in
-/// PostgreSQL from a nightly Scryfall pull. Inline so the boxes take the theme.
-#[component]
-fn Architecture() -> Element {
-    rsx! {
-        div { class: "arch-diagram",
-            div { class: "diagram-scroll",
-            svg {
-                class: "diagram",
-                view_box: "0 0 720 312",
-                role: "img",
-                "aria-label": "zwiper and zite call zerver over HTTPS and import zwipe-client, zwipe-core and zwipe-components; zerver imports zwipe-core, reads and writes PostgreSQL, and pulls the card catalog from Scryfall nightly",
-                DiagramDefs {}
-                DiagramNode { x: 10.0, y: 16.0, title: "Scryfall", sub: "the card catalog", tone: DiagramTone::Muted }
-                DiagramNode { x: 285.0, y: 16.0, title: "zerver", sub: "Axum, the REST API", tone: DiagramTone::Tertiary }
-                DiagramNode { x: 560.0, y: 16.0, title: "PostgreSQL", sub: "SQLx", tone: DiagramTone::Muted }
-                DiagramNode { x: 100.0, y: 118.0, title: "zwiper", sub: "iOS and Android", tone: DiagramTone::Primary }
-                DiagramNode { x: 470.0, y: 118.0, title: "zite", sub: "zwipe.net", tone: DiagramTone::Primary }
-                g { class: "diagram-group",
-                    rect { x: "10", y: "212", width: "700", height: "92", rx: "10" }
-                    text { x: "360", y: "300", text_anchor: "middle", "shared crates, imported by both clients" }
-                }
-                DiagramNode { x: 30.0, y: 226.0, w: 170.0, title: "zwipe-client", sub: "typed API calls", tone: DiagramTone::Secondary }
-                DiagramNode { x: 275.0, y: 226.0, w: 170.0, title: "zwipe-core", sub: "models, filters, traits", tone: DiagramTone::Success }
-                DiagramNode { x: 520.0, y: 226.0, w: 170.0, title: "zwipe-components", sub: "shared Dioxus UI", tone: DiagramTone::Secondary }
-                DiagramArrow { x1: 160.0, y1: 42.0, x2: 285.0, y2: 42.0, label: "nightly" }
-                DiagramArrow { x1: 435.0, y1: 42.0, x2: 560.0, y2: 42.0, label: "reads and writes" }
-                DiagramArrow { x1: 175.0, y1: 118.0, x2: 330.0, y2: 68.0, label: "HTTPS" }
-                DiagramArrow { x1: 545.0, y1: 118.0, x2: 390.0, y2: 68.0, label: "HTTPS" }
-                DiagramArrow { x1: 175.0, y1: 170.0, x2: 175.0, y2: 212.0, label: "imports" }
-                DiagramArrow { x1: 545.0, y1: 170.0, x2: 545.0, y2: 212.0, label: "imports" }
-                DiagramArrow { x1: 360.0, y1: 68.0, x2: 360.0, y2: 226.0, label: "imports" }
-                DiagramArrow { x1: 200.0, y1: 252.0, x2: 275.0, y2: 252.0 }
-                DiagramArrow { x1: 520.0, y1: 252.0, x2: 445.0, y2: 252.0 }
-            }
-            }
-        }
     }
 }
