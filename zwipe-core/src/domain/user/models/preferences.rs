@@ -42,6 +42,12 @@ pub const ALLOWED_THEMES: &[&str] = &[
     "zenburn",
 ];
 
+/// The themes with palettes adjusted for color-vision deficiency. Every theme
+/// picker groups these in their own section at the bottom, so the list lives
+/// here once.
+pub const COLORBLIND_THEMES: &[&str] =
+    &["protanopia", "deuteranopia", "tritanopia", "achromatopsia"];
+
 /// Human-readable label for a theme slug: title-cased words, with the
 /// accents and brand casings that title-casing cannot produce special-cased.
 /// One copy here, beside the list it labels, so zwiper and the site cannot
@@ -172,6 +178,57 @@ mod tests {
         assert_eq!(display_theme_name("rose-pine"), "Rosé Pine");
         assert_eq!(display_theme_name("vscode"), "VS Code");
         assert_eq!(display_theme_name("docs-rs"), "docs.rs");
+    }
+
+    #[test]
+    fn every_colorblind_theme_is_allowed() {
+        for slug in COLORBLIND_THEMES {
+            assert!(ALLOWED_THEMES.contains(slug), "{slug}");
+        }
+    }
+
+    #[test]
+    fn every_allowed_theme_has_its_label() {
+        let labels: Vec<String> = ALLOWED_THEMES
+            .iter()
+            .map(|t| display_theme_name(t))
+            .collect();
+        assert_eq!(
+            labels,
+            [
+                "Achromatopsia",
+                "Ayu",
+                "Catppuccin",
+                "Deuteranopia",
+                "docs.rs",
+                "Dracula",
+                "Ethereal",
+                "Everforest",
+                "GitHub",
+                "Gruvbox",
+                "Hackerman",
+                "Kanagawa",
+                "Matte Black",
+                "Miasma",
+                "Monokai",
+                "Night Owl",
+                "Nord",
+                "One Dark",
+                "Osaka Jade",
+                "PowerShell",
+                "Protanopia",
+                "Ristretto",
+                "Rosé Pine",
+                "Rustbox",
+                "Solarized",
+                "Synthwave '84",
+                "Tokyo Night",
+                "Tritanopia",
+                "Vantablack",
+                "VS Code",
+                "Zenburn",
+            ]
+        );
     }
 
     #[test]

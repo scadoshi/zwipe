@@ -63,7 +63,10 @@ pub use theme_wipe::{ThemeFollow, use_theme_follow, use_theme_wipe};
 pub use toast_timing::{TOAST_LONG, TOAST_NORMAL, TOAST_QUICK};
 // The theme domain types live in zwipe-core (user preferences persist them
 // server-side); re-exported here so UI consumers have one import path.
-pub use zwipe_core::domain::user::{models::theme::ThemeConfig, preferences::ALLOWED_THEMES};
+pub use zwipe_core::domain::user::{
+    models::theme::ThemeConfig,
+    preferences::{ALLOWED_THEMES, COLORBLIND_THEMES, display_theme_name},
+};
 
 /// The shared component rules, for consumers outside this workspace.
 pub const COMPONENTS_CSS: &str = include_str!("../assets/components.css");

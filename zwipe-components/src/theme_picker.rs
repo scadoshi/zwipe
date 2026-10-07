@@ -9,14 +9,10 @@
 use dioxus::prelude::*;
 use zwipe_core::domain::user::{
     models::theme::ThemeConfig,
-    preferences::{ALLOWED_THEMES, display_theme_name},
+    preferences::{ALLOWED_THEMES, COLORBLIND_THEMES, display_theme_name},
 };
 
 use crate::NavDropdown;
-
-/// Themes shown in their own bottom section of the picker. Mirrors the app's
-/// preferences sheet (zwiper) so every surface groups these identically.
-const COLORBLIND_THEMES: &[&str] = &["protanopia", "deuteranopia", "tritanopia", "achromatopsia"];
 
 /// Theme dropdown + dark/light toggle. Every theme has both modes, so the
 /// toggle is always shown.
