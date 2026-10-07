@@ -8,8 +8,6 @@ pub mod accordion;
 pub mod alert_dialog;
 /// Authentication-related components (login form, register form).
 pub mod auth;
-/// Slide-up bottom sheet overlay component.
-pub mod bottom_sheet;
 /// App-wide cache of slow-changing filter catalogs (artists, sets, oracle tags…).
 pub mod catalog_cache;
 /// Canonical concept explainers (Deck tags, Oracle tags, Card roles).

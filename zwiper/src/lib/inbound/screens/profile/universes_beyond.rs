@@ -5,7 +5,6 @@
 
 use crate::inbound::components::{
     auth::authed::use_authed,
-    bottom_sheet::BottomSheet,
     catalog_cache::CatalogCache,
     hint_dialog::{HintDialog, HintLine, open_and_record_hint},
     telemetry::vocabulary::{ProfileScreen, Screen},
@@ -13,7 +12,7 @@ use crate::inbound::components::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{Button, ButtonVariant, TOAST_QUICK};
+use zwipe_components::{BottomSheet, Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::{
     domain::{
         auth::models::session::Session, user::models::hints::HINT_UNIVERSES_BEYOND_EXCEPTIONS,

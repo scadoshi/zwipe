@@ -2,12 +2,11 @@
 
 use crate::inbound::components::{
     auth::authed::use_authed,
-    bottom_sheet::BottomSheet,
     telemetry::vocabulary::{ProfileScreen, Screen},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{Button, ButtonVariant, TOAST_QUICK, ThemeFollow};
+use zwipe_components::{BottomSheet, Button, ButtonVariant, TOAST_QUICK, ThemeFollow};
 use zwipe_core::{
     domain::user::{
         models::theme::ThemeConfig,

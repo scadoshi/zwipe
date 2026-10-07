@@ -6,13 +6,12 @@ use crate::inbound::components::{
         AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
     },
     auth::authed::use_authed,
-    bottom_sheet::BottomSheet,
     fields::text_input::TextInput,
     telemetry::vocabulary::{ProfileScreen, Screen},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{Button, ButtonVariant, TOAST_QUICK};
+use zwipe_components::{BottomSheet, Button, ButtonVariant, TOAST_QUICK};
 use zwipe_core::{domain::auth::password::validate, http::contracts::auth::HttpChangePassword};
 
 /// Bottom sheet for updating the user's password.

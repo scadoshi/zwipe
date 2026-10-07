@@ -20,7 +20,6 @@ use crate::{
     inbound::{
         components::{
             auth::authed::use_authed,
-            bottom_sheet::BottomSheet,
             hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
             hint_host::HintTopic,
             info_button::InfoButton,
@@ -43,7 +42,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use preferences::PreferencesSheet;
 use universes_beyond::UniversesBeyondExceptionsSheet;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
+use zwipe_components::{ActionBar, BottomSheet, Button, ButtonVariant, TOAST_NORMAL};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,

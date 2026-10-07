@@ -22,7 +22,6 @@ use crate::inbound::{
             AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
         },
         auth::authed::use_authed,
-        bottom_sheet::BottomSheet,
         catalog_cache::CatalogCache,
         hint_dialog::{
             HintBullet, HintBullets, HintColored, HintDialog, HintKey, HintLine, use_one_time_hint,
@@ -55,7 +54,9 @@ use std::{collections::HashSet, time::Duration};
 use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, Chip, TOAST_LONG, TOAST_QUICK};
+use zwipe_components::{
+    ActionBar, BottomSheet, Button, ButtonVariant, Chip, TOAST_LONG, TOAST_QUICK,
+};
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{
