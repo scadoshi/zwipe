@@ -5,7 +5,6 @@ use super::components::{
 use crate::inbound::{
     components::{
         auth::{authed::use_authed, ensure_session::EnsureFresh},
-        chip::Chip,
         hint_dialog::{
             HintBullet, HintBullets, HintColored, HintDialog, HintKey, HintLine, use_one_time_hint,
         },
@@ -37,7 +36,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashSet;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
+use zwipe_components::{ActionBar, Button, ButtonVariant, Chip, TOAST_NORMAL, TOAST_QUICK};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,

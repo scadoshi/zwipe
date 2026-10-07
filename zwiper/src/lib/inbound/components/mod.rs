@@ -12,8 +12,6 @@ pub mod auth;
 pub mod bottom_sheet;
 /// App-wide cache of slow-changing filter catalogs (artists, sets, oracle tags…).
 pub mod catalog_cache;
-/// Selectable chip button (shared `.chip` styling).
-pub mod chip;
 /// Canonical concept explainers (Deck tags, Oracle tags, Card roles).
 pub mod concept_explainers;
 /// Form field components (text input, password input, etc.).

@@ -5,7 +5,6 @@
 use crate::inbound::{
     components::{
         auth::authed::use_authed,
-        chip::Chip,
         hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
         screen_header::ScreenHeader,
         telemetry::vocabulary::{DeckScreen, Screen},
@@ -16,7 +15,7 @@ use crate::inbound::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
+use zwipe_components::{ActionBar, Button, ButtonVariant, Chip, TOAST_NORMAL, TOAST_QUICK};
 use zwipe_core::domain::{
     deck::{ImportMode, requests::import_deck_cards::ImportDeckCardsResult},
     user::models::hints::HINT_IMPORT,

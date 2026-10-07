@@ -3,7 +3,6 @@
 use crate::inbound::{
     components::{
         auth::authed::use_authed,
-        chip::Chip,
         hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
         screen_header::ScreenHeader,
         telemetry::vocabulary::{DeckScreen, Screen},
@@ -14,7 +13,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ClientError;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK};
+use zwipe_components::{ActionBar, Button, ButtonVariant, Chip, TOAST_QUICK};
 use zwipe_core::domain::{deck::Deck, user::models::hints::HINT_EXPORT};
 
 #[component]
