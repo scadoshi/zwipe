@@ -24,9 +24,16 @@ pub fn ThemePicker(
     /// to `theme`.
     #[props(default)]
     shown: Option<Signal<ThemeConfig>>,
+    /// The menu's open state, when the host wants it: a nav with menus of its
+    /// own passes one so it can keep a single menu open at a time. Defaults to
+    /// the picker's own.
+    #[props(default)]
+    open: Option<Signal<bool>>,
 ) -> Element {
     let mut theme = theme;
-    let mut open = use_signal(|| false);
+    // Always taken, so the hook order holds whether or not the host passes one.
+    let own_open = use_signal(|| false);
+    let mut open = open.unwrap_or(own_open);
     let shown = shown.unwrap_or(theme);
     let current = shown.read().name.clone();
     let is_dark = shown.read().is_dark;

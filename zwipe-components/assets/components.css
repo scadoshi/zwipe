@@ -1047,7 +1047,10 @@ i.ms.ms-cost.ms-gp {
 .nav-wrapper {
     position: sticky;
     top: 0;
-    z-index: 100;
+    /* One above the fixed .banner-stack (100). At a tie the banner, later in
+       the page, won, and every nav menu opened underneath it: the sticky nav is
+       the menus' stacking context, so their own z-index cannot lift them. */
+    z-index: 101;
     background-color: var(--bg-primary);
     margin-bottom: 3rem;
     border-bottom: 1px solid var(--border-primary);
@@ -1423,7 +1426,9 @@ i.ms.ms-cost.ms-gp {
     border-radius: 0.4rem;
     min-width: 11rem;
     padding: 0.5rem 0;
-    z-index: 200;
+    /* One above the triggers (200). In the hamburger panel a menu drops over
+       the stacked triggers below its own, which won the tie and covered it. */
+    z-index: 201;
     flex-direction: column;
     max-height: 70vh;
     overflow-y: auto;
@@ -1683,7 +1688,7 @@ a.nav-dropdown-item.active:visited {
 }
 
 /* Below the nav breakpoint the hamburger panel expands into the header region,
-   over the fixed banner stack (both sit at z-index 100). Slide the banners out
+   over the fixed banner stack (the nav sits one above it). Slide the banners out
    of the opening menu's way. Both selectors are crate-owned (.nav-panel-open
    from NavBar, .banner-stack from Banner) and the offsets track the shared
    .banner-stack geometry above, so this interaction belongs here rather than in
