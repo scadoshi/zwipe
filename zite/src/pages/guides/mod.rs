@@ -162,7 +162,11 @@ fn render_block(b: &'static Block) -> Element {
             }
         },
         Block::Note(t) => rsx! { aside { class: "guide-note", {inline(t)} } },
-        Block::Diagram(t) => rsx! { pre { class: "guide-diagram", "{t}" } },
+        Block::Diagram(t) => rsx! {
+            div { class: "guide-diagram",
+                pre { class: "scroll-fade-x", "{t}" }
+            }
+        },
         Block::Image { file, alt, caption } => rsx! {
             if let Some(src) = content::guide_image(file) {
                 figure { class: "guide-figure",

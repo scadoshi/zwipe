@@ -1953,6 +1953,61 @@ a.nav-dropdown-item.active:visited {
     -webkit-overflow-scrolling: touch;
 }
 
+/* ==============================
+   scroll fade: a sideways scroller fades out at the edge that has more
+   content past it, instead of cutting it off
+   ============================== */
+
+/* The fade widths follow the scroll position: none on the left at the start,
+   none on the right at the end, both in between. A browser without scroll
+   timelines, or a box that does not overflow, keeps both at zero and shows
+   hard edges. */
+@property --fade-left {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+
+@property --fade-right {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+
+.diagram-scroll,
+.scroll-fade-x {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
+}
+
+@supports (animation-timeline: scroll()) {
+    .diagram-scroll,
+    .scroll-fade-x {
+        animation: scroll-fade-x linear both;
+        animation-timeline: scroll(self inline);
+    }
+}
+
+@keyframes scroll-fade-x {
+    from {
+        --fade-left: 0px;
+        --fade-right: 1.5rem;
+    }
+
+    8% {
+        --fade-left: 1.5rem;
+    }
+
+    92% {
+        --fade-right: 1.5rem;
+    }
+
+    to {
+        --fade-left: 1.5rem;
+        --fade-right: 0px;
+    }
+}
+
 .diagram-node rect {
     fill: color-mix(in srgb, var(--bg-primary), #000 10%);
     stroke-width: 1.5;
