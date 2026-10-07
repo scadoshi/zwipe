@@ -42,6 +42,7 @@ mod page_meta;
 mod panel;
 mod theme_picker;
 mod theme_sheet;
+mod theme_store;
 mod theme_wipe;
 #[cfg(feature = "toast")]
 mod toast_stack;
@@ -73,6 +74,7 @@ pub use page_meta::{PageMeta, SiteMeta};
 pub use panel::Panel;
 pub use theme_picker::ThemePicker;
 pub use theme_sheet::ThemeSheet;
+pub use theme_store::use_persisted_theme;
 pub use theme_wipe::{ThemeFollow, use_theme_follow, use_theme_wipe};
 #[cfg(feature = "toast")]
 pub use toast_stack::ToastStack;

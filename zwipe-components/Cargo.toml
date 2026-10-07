@@ -28,6 +28,9 @@ toast = ["dep:dioxus-primitives"]
 # tokio's everywhere else (the app's WebView runs on tokio already).
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 gloo-timers = { version = "0.4", features = ["futures"] }
+# use_persisted_theme keeps the picked theme in the browser's localStorage.
+serde_json.workspace = true
+web-sys = { version = "0.3", features = ["Window", "Storage"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio.workspace = true
