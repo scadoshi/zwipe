@@ -1,7 +1,7 @@
 use dioxus::{document::eval, prelude::*};
 use zwipe_components::{
-    BRAND_RESET_JS, COMPONENTS_CSS, Decode, NavBar, Replay, THEMES_CSS, ThemeConfig, ThemePicker,
-    use_theme_wipe,
+    BRAND_RESET_JS, COMPONENTS_CSS, Decode, NAV_GLIDE_JS, NavBar, REVEAL_JS, Replay, THEMES_CSS,
+    ThemeConfig, ThemePicker, use_theme_wipe,
 };
 
 mod api;
@@ -23,8 +23,6 @@ const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
 const FAVICON_32: Asset = asset!("/assets/favicon-32x32.png");
 const APPLE_TOUCH_ICON: Asset = asset!("/assets/icon-180.png");
 const MANIFEST: Asset = asset!("/assets/site.webmanifest");
-const REVEAL_JS: Asset = asset!("/assets/reveal.js");
-const NAV_GLIDE_JS: Asset = asset!("/assets/nav-glide.js");
 const Z_LOGO: &str = zwipe_core::domain::logo::Z;
 
 #[derive(Routable, Clone, PartialEq)]
@@ -191,11 +189,11 @@ fn App() -> Element {
         document::Style { {THEMES_CSS} }
         document::Style { {COMPONENTS_CSS} }
         document::Stylesheet { href: STYLE }
-        // Scroll reveal for panels below the fold; deferred, and everything
-        // it does is progressive.
-        document::Script { defer: true, src: REVEAL_JS }
+        // Scroll reveal for panels below the fold; everything it does is
+        // progressive.
+        document::Script { {REVEAL_JS} }
         // Nav items pushed by a wider theme label slide over instead of jumping.
-        document::Script { defer: true, src: NAV_GLIDE_JS }
+        document::Script { {NAV_GLIDE_JS} }
         Router::<Route> {}
     }
 }
@@ -230,7 +228,7 @@ pub fn Nav() -> Element {
                 }
             },
             persistent: rsx! {
-                div { class: "nav-stores-persistent",
+                div { class: "nav-stores-persistent", "data-nav-glide": "true",
                     a {
                         class: "store-link",
                         href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",

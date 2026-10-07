@@ -174,7 +174,7 @@ a {
     transition: transform 0.25s ease;
 }
 
-/* Scroll reveal (assets/reveal.js): panels start sunk and faded, then ease
+/* Scroll reveal (zwipe-components' REVEAL_JS): panels start sunk and faded, then ease
    up when the observer flags them on screen. The body prefix outranks the
    crate's .panel-card transition on the same elements while the reveal runs
    (components.css is inlined after this sheet); the script strips both
