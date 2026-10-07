@@ -908,7 +908,8 @@ code {
 
 /* The demo lives in a shared Panel (eyebrow + title) like the rest of the
    band, its body the shared GalleryFrame and GalleryFooter. Their base is
-   site.css (SITE_CSS); these add the video window, zite's prev/next colors
+   site.css (SITE_CSS, inlined after this sheet, so an override of one of
+   its properties needs a more specific selector); these add the video window, zite's prev/next colors
    and hover, the caption's ease and the full-width rule between them. */
 
 /* Breaks out of the panel-card's 1.5rem padding. */
@@ -1005,8 +1006,9 @@ code {
     /* Phone-scale demo: drop the desktop 70vh reservation (the clips share
        one aspect ratio, so there's no swap jump to guard against at this
        width) and cap the video so the autoplaying block doesn't swallow the
-       screen. */
-    .gallery-body {
+       screen. The panel-body prefix outranks site.css's 70vh, which is
+       inlined after this sheet. */
+    .panel-body .gallery-body {
         min-height: 0;
     }
 
@@ -2856,8 +2858,9 @@ footer {
 }
 
 /* Guide captures are shorter than the home demo reel; size the body to the
-   image instead of reserving the home gallery's 70vh. */
-.guide-gallery-body {
+   image instead of reserving the home gallery's 70vh. The panel-body prefix
+   outranks site.css's 70vh, which is inlined after this sheet. */
+.panel-body .guide-gallery-body {
     min-height: 24rem;
 }
 
