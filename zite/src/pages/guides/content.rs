@@ -246,7 +246,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Synergy"),
             Block::P(
-                "On a commander deck, the Synergy chip keeps the stack to cards that fit your commander, best fits first in hands of 25. Off, you browse every legal card. It's on by default and re-deals the stack when toggled.",
+                "On a commander deck, the Synergy chip keeps the stack to cards that fit your commander, best fits first, 25 at a time. Off, you browse every legal card. It's on by default, and toggling it reloads the stack.",
             ),
             Block::Note(
                 "If synergy is still warming up, Zwipe shows the full pool and tells you once.",
@@ -468,7 +468,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Where and how"),
             Block::P(
-                "The Synergy chip sits on the \"From:\" row of the Add Deck Cards screen whenever the source is Search and your deck has a commander. On, the stack is limited to fitting cards, served best-first in hands of 25 and shuffled within each hand per deck per day, so the same commander doesn't deal an identical stack twice; off, you browse everything legal. It's on by default and re-deals when toggled.",
+                "The Synergy chip sits on the \"From:\" row of the Add Deck Cards screen whenever the source is Search and your deck has a commander. On, the stack is limited to fitting cards, served best-first, 25 at a time, and shuffled within each batch per deck per day, so the same commander doesn't show an identical stack twice; off, you browse everything legal. It's on by default, and toggling it reloads the stack.",
             ),
             Block::Image {
                 file: "synergy/01-synergy-on.webp",
