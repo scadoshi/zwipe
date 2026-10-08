@@ -986,9 +986,10 @@ code {
     gap: 1.5rem;
 }
 
-/* Equal-height panels spanning the gallery's full height together. */
+/* The feature panels keep their own height against the taller demo column,
+   and the column ends early, as on the portfolio's home page. */
 .features-stack .panel-card {
-    flex: 1;
+    flex: 0 0 auto;
 }
 
 @media (max-width: 56rem) {
