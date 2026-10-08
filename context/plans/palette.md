@@ -1,6 +1,6 @@
 # Palette: six decorative color slots per theme
 
-**Status: PLANNED 2026-10-08. Nothing built yet.**
+**Status: phase 1 built 2026-10-08 (slots, gate test, swatch tooling). Phases 2 to 4 pending.**
 
 **One sentence:** every theme gets six decorative colors (`--palette-1` to `--palette-6`) so the apps stop borrowing the status colors for variety, with a test that keeps each theme's six legible and distinct without flattening the theme's own contrast.
 
