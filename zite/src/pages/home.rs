@@ -312,7 +312,6 @@ pub fn Home() -> Element {
                         hr { class: "gallery-rule" }
                         GalleryFooter { index: index(), total, caption: current_caption.to_string() }
                     }
-                    FeaturedFlavor { overlay: flavor_overlay }
                 }
                 // The three core sells: swiping, synergy-ordered serving,
                 // and tags. Hosting basics (accounts, sync, import) are
@@ -342,6 +341,7 @@ pub fn Home() -> Element {
                             li { "Community-maintained, so the labels stay current" }
                         }
                     }
+                    FeaturedFlavor { overlay: flavor_overlay }
                 }
             }
             Testimonials {}
