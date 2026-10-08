@@ -7,6 +7,7 @@ use crate::inbound::components::{
     },
     auth::authed::use_authed,
     fields::text_input::TextInput,
+    hint_host::HintTopic,
     telemetry::vocabulary::{ProfileScreen, Screen},
 };
 use dioxus::prelude::*;
@@ -149,6 +150,7 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                     placeholder: "New password",
                     input_type: "password",
                     error: password_error(),
+                    hint: HintTopic::Password,
                 }
 
                 TextInput {

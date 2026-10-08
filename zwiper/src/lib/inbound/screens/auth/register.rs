@@ -4,8 +4,8 @@ use crate::{
     domain::error::UserFacing,
     inbound::{
         components::{
-            fields::text_input::TextInput, home_hero::HomeHero, screen_header::ScreenHeader,
-            telemetry::anonymous::record_anonymous_event,
+            fields::text_input::TextInput, hint_host::HintTopic, home_hero::HomeHero,
+            screen_header::ScreenHeader, telemetry::anonymous::record_anonymous_event,
         },
         router::Router,
     },
@@ -184,6 +184,7 @@ pub fn Register() -> Element {
                         placeholder: "Password",
                         input_type: "password",
                         error: password_error(),
+                        hint: HintTopic::Password,
                     }
                     TextInput {
                         value: confirm_password,

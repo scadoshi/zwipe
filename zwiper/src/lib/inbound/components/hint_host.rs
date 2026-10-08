@@ -9,6 +9,7 @@
 
 use dioxus::prelude::*;
 use zwipe_components::{HintBullet, HintBullets, HintKey, HintLine};
+use zwipe_core::domain::auth::password::requirements;
 
 use crate::inbound::components::{
     alert_dialog::{
@@ -49,6 +50,8 @@ pub enum HintTopic {
     PriceTarget,
     /// Non-gameplay deck labels.
     OtherTags,
+    /// A new password's field: the policy it has to meet.
+    Password,
     /// Profile: email row.
     Email,
     /// Profile: email verification row.
@@ -93,6 +96,7 @@ impl HintTopic {
             Self::LandTarget => "Land target",
             Self::PriceTarget => "Price target",
             Self::OtherTags => "Other tags",
+            Self::Password => "Password",
             Self::Email => "Email",
             Self::Verification => "Verification",
             Self::Theme => "Theme",
@@ -152,6 +156,13 @@ impl HintTopic {
             },
             Self::OtherTags => rsx! {
                 HintLine { "Labels that do not change suggestions, like Budget or Jank" }
+            },
+            Self::Password => rsx! {
+                HintBullets {
+                    for line in requirements() {
+                        HintBullet { "{line}" }
+                    }
+                }
             },
             Self::Email => rsx! {
                 HintLine { "Where password resets and verification go" }
