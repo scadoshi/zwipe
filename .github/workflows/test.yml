@@ -73,3 +73,5 @@ jobs:
         run: cargo +nightly fmt --check
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: UI tests
+        run: cargo test -p zwipe-components -p zite -p zwiper
