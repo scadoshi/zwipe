@@ -28,11 +28,11 @@ use thiserror::Error;
 #[derive(Debug, Clone, Error)]
 pub enum InvalidPassword {
     /// Password is shorter than 8 characters.
-    #[error("must be at least 8 characters long")]
+    #[error("must be at least {MIN_LENGTH} characters long")]
     TooShort,
 
     /// Password exceeds 128 characters.
-    #[error("must not exceed 128 characters")]
+    #[error("must not exceed {MAX_LENGTH} characters")]
     TooLong,
 
     /// Password lacks uppercase letters (A-Z).
@@ -98,6 +98,34 @@ pub struct TooFewUniqueChars(u8);
 /// At least one of these characters must be present in every password.
 pub const SYMBOLS: &str = r#"~!@#$%^&*()_+=[]{}\/?|:;<>,."#;
 
+/// Fewest characters a password may have.
+pub const MIN_LENGTH: usize = 8;
+
+/// Most characters a password may have.
+pub const MAX_LENGTH: usize = 128;
+
+/// Fewest distinct characters a password may have.
+pub const MIN_UNIQUE_CHARS: u8 = 6;
+
+/// Most times one character may repeat in a row.
+pub const MAX_REPEATS: u8 = 3;
+
+/// The policy as lines a client can show before the user types, one per rule
+/// [`validate`] checks, in the order it checks them. Built from the same
+/// constants, so the list cannot drift from what is enforced.
+pub fn requirements() -> Vec<String> {
+    vec![
+        format!("{MIN_LENGTH} to {MAX_LENGTH} characters"),
+        "At least one uppercase letter".to_string(),
+        "At least one lowercase letter".to_string(),
+        "At least one number".to_string(),
+        format!("At least one symbol from {SYMBOLS}"),
+        "No spaces".to_string(),
+        format!("At least {MIN_UNIQUE_CHARS} different characters"),
+        format!("No character more than {MAX_REPEATS} times in a row"),
+    ]
+}
+
 // == validation ==
 
 /// Validates a password against the full password policy.
@@ -114,10 +142,10 @@ pub const SYMBOLS: &str = r#"~!@#$%^&*()_+=[]{}\/?|:;<>,."#;
 /// assert!(matches!(validate("weak"), Err(InvalidPassword::TooShort)));
 /// ```
 pub fn validate(password: &str) -> Result<(), InvalidPassword> {
-    if password.len() < 8 {
+    if password.len() < MIN_LENGTH {
         return Err(InvalidPassword::TooShort);
     }
-    if password.len() > 128 {
+    if password.len() > MAX_LENGTH {
         return Err(InvalidPassword::TooLong);
     }
     if !password.chars().any(|x| x.is_uppercase()) {
@@ -137,8 +165,8 @@ pub fn validate(password: &str) -> Result<(), InvalidPassword> {
     }
 
     let unique_chars: HashSet<char> = password.chars().collect();
-    if unique_chars.len() < 6 {
-        return Err(TooFewUniqueChars(6).into());
+    if unique_chars.len() < usize::from(MIN_UNIQUE_CHARS) {
+        return Err(TooFewUniqueChars(MIN_UNIQUE_CHARS).into());
     }
 
     let mut repeat_count: u8 = 1;
@@ -151,8 +179,8 @@ pub fn validate(password: &str) -> Result<(), InvalidPassword> {
         if let Some(last_char) = last_char_opt {
             if ch == last_char {
                 repeat_count += 1;
-                if repeat_count > 3 {
-                    return Err(TooManyRepeats(3).into());
+                if repeat_count > MAX_REPEATS {
+                    return Err(TooManyRepeats(MAX_REPEATS).into());
                 }
             } else {
                 repeat_count = 1;
@@ -167,6 +195,46 @@ pub fn validate(password: &str) -> Result<(), InvalidPassword> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn requirements_name_every_rule_validate_checks() {
+        let lines = requirements();
+        // One line per check in validate: length, upper, lower, number,
+        // symbol, whitespace, unique, repeats.
+        assert_eq!(lines.len(), 8);
+        let all = lines.join("\n");
+        assert!(all.contains(&format!("{MIN_LENGTH} to {MAX_LENGTH}")));
+        assert!(all.contains(SYMBOLS));
+        assert!(all.contains(&format!("{MIN_UNIQUE_CHARS} different")));
+        assert!(all.contains(&format!("{MAX_REPEATS} times")));
+    }
+
+    #[test]
+    fn requirements_match_the_enforced_bounds() {
+        let base = "Abcdef1!";
+        assert_eq!(base.len(), MIN_LENGTH);
+        assert!(validate(base).is_ok());
+        let short = "Abcde1!";
+        assert_eq!(short.len(), MIN_LENGTH - 1);
+        assert!(matches!(validate(short), Err(InvalidPassword::TooShort)));
+        let pad: String = "wxyz"
+            .chars()
+            .cycle()
+            .take(MAX_LENGTH - MIN_LENGTH)
+            .collect();
+        let max = format!("{base}{pad}");
+        assert!(validate(&max).is_ok());
+        assert!(matches!(
+            validate(&format!("{max}y")),
+            Err(InvalidPassword::TooLong)
+        ));
+        let repeats = format!("Ab1!{}", "z".repeat(usize::from(MAX_REPEATS)));
+        assert!(validate(&format!("{repeats}xy")).is_ok());
+        assert!(matches!(
+            validate(&format!("{repeats}zxy")),
+            Err(InvalidPassword::TooManyRepeats(_))
+        ));
+    }
 
     #[test]
     fn test_valid_password() {
