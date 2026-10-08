@@ -29,7 +29,10 @@ pub struct Release {
 pub const UPCOMING: &[Release] = &[Release {
     version: "1.10.8",
     date: "",
-    entries: &["A ? beside the new password field lists the password rules"],
+    entries: &[
+        "A ? beside the new password field lists the password rules",
+        "Privacy policy says where data is stored and how to request a copy",
+    ],
 }];
 
 /// Shipped releases, newest first.

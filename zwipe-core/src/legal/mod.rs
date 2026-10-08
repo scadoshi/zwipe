@@ -12,7 +12,7 @@
 //! its own contact line. Inline `https://` links work in both apps for free.
 
 /// When the privacy policy was last revised, shown in each app's header.
-pub const PRIVACY_LAST_UPDATED: &str = "July 2026";
+pub const PRIVACY_LAST_UPDATED: &str = "October 2026";
 
 /// The privacy policy body as an HTML fragment: headings, paragraphs, lists, and
 /// inline `https://` links. Rendered via `dangerous_inner_html` in both apps. The
@@ -46,10 +46,14 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>
 <li><strong><a href="https://scryfall.com" target="_blank" rel="noopener noreferrer">Scryfall</a></strong>: card data (names, images, oracle text) is sourced from the Scryfall API and stored on our servers. Your account data is never shared with Scryfall.</li>
 <li><strong><a href="https://resend.com" target="_blank" rel="noopener noreferrer">Resend</a></strong>: transactional email delivery (verification and password reset emails). Your email address is passed to Resend solely to deliver these messages.</li>
 <li><strong><a href="https://archidekt.com" target="_blank" rel="noopener noreferrer">Archidekt</a></strong>: when you import a deck from Archidekt, we request that deck's public card data from the Archidekt API. This only happens when you use the import feature, and no account data is shared with Archidekt.</li>
+<li><strong><a href="https://www.cloudflare.com" target="_blank" rel="noopener noreferrer">Cloudflare</a></strong>: all traffic between the app and our server passes through Cloudflare's network, which forwards requests to our server.</li>
 </ul>
 
 <h2>Data Retention</h2>
-<p>Your data is retained as long as your account exists. You can delete your account at any time from within the app, which permanently removes all associated data. Anonymous diagnostic reports are deleted automatically after 90 days.</p>
+<p>Your data is retained as long as your account exists. You can delete your account at any time from within the app, which permanently removes all associated data. Anonymous diagnostic reports are deleted automatically after 90 days. If you want a copy of your data, or can't reach the app to delete your account, contact support and we will do it for you.</p>
+
+<h2>Where Your Data Lives</h2>
+<p>Zwipe's server and database run on a virtual server rented from Hetzner in Hillsboro, Oregon, in the United States.</p>
 
 <h2>Security</h2>
 <p>Passwords are hashed with argon2. Refresh tokens are SHA-256 hashed before storage. All traffic is encrypted in transit via HTTPS. We do not have access to your plaintext password.</p>
