@@ -34,6 +34,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "Privacy policy says where data is stored and how to request a copy",
         "Numbers, names and links each have their own color in every theme",
         "Titles, selections and labels use the colors each theme's own editor scheme gives them",
+        "Theme picker swatches show each theme's six palette colors",
+        "Verification and password reset emails show their link as plain text",
         "The chip under the home counters says all users",
         "Screen titles use one capitalization style",
     ],
