@@ -416,12 +416,12 @@ pub static GUIDES: &[Guide] = &[
     Guide {
         slug: "organize-and-browse",
         title: "Group, filter, and browse your lists",
-        summary: "The deck list and card lists share one chip grammar: Group by folds into sections, Show narrows, and headers collapse.",
+        summary: "The deck list and card lists use the same controls: Group by sorts into sections, Show narrows the list, and headers collapse.",
         tags: &["Deck building", "Cards"],
         related: &["filtering", "deck-tags", "swipe-to-build"],
         blocks: &[
             Block::Lead(
-                "Two screens carry chip consoles that reshape what you see: your deck list, and each deck's card list. The grammar is the same on both, so learn it once.",
+                "Two screens have controls that change what you see: your deck list, and each deck's card list. They work the same way on both.",
             ),
             Block::H2("The deck list"),
             Block::P(
