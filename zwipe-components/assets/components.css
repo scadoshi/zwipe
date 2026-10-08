@@ -1699,18 +1699,28 @@ a.nav-dropdown-item.active:visited {
     }
 }
 
-/* Below the nav breakpoint the hamburger panel expands into the header region,
-   over the fixed banner stack (the nav sits one above it). Slide the banners out
-   of the opening menu's way. Both selectors are crate-owned (.nav-panel-open
-   from NavBar, .banner-stack from Banner) and the offsets track the shared
-   .banner-stack geometry above, so this interaction belongs here rather than in
-   any one consumer's stylesheet. */
+/* Below the nav breakpoint the stack sits at the bottom of the screen: at the
+   top it lands on the page's first content, and the hamburger panel opens over
+   it there. */
 @media (max-width: 60rem) {
-    body:has(.nav-panel-open) .banner-stack {
-        /* down to the bottom edge (top/bottom auto-flips can't transition,
-           transform can); 7.5rem = the 6rem top offset + a 1.5rem bottom margin */
-        transform: translateY(calc(100vh - 100% - 7.5rem));
-        transform: translateY(calc(100dvh - 100% - 7.5rem));
+    .banner-stack {
+        top: auto;
+        bottom: 1.5rem;
+    }
+
+    .announcement-banner {
+        animation-name: banner-rise-in;
+    }
+}
+
+@keyframes banner-rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(80px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 
