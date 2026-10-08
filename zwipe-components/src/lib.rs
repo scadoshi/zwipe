@@ -52,6 +52,7 @@ mod oracle_text;
 mod overlay_stack;
 mod page_header;
 mod page_meta;
+mod palette_guard;
 mod panel;
 mod stats_strip;
 mod theme_picker;
@@ -88,6 +89,7 @@ pub use overlay_stack::{
 };
 pub use page_header::PageHeader;
 pub use page_meta::{PageMeta, SiteMeta};
+pub use palette_guard::{StatusUse, status_uses};
 pub use panel::Panel;
 pub use stats_strip::StatsStrip;
 pub use theme_picker::ThemePicker;
