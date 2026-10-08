@@ -1,8 +1,9 @@
 use crate::{Nav, api};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
-use zwipe_components::Panel;
+use zwipe_components::{InfoButton, Panel};
 use zwipe_core::domain::auth::models::secret::Secret;
+use zwipe_core::domain::auth::password::requirements;
 
 /// Validate a candidate password against the shared password policy.
 fn validate_password(pw: &str) -> Option<String> {
@@ -24,6 +25,7 @@ pub fn Reset(token: String) -> Element {
     let mut password = use_signal(String::new);
     let mut confirm = use_signal(String::new);
     let mut state = use_signal(|| ResetState::Form);
+    let mut rules_open = use_signal(|| false);
 
     let on_submit = move |e: FormEvent| {
         e.prevent_default();
@@ -69,6 +71,32 @@ pub fn Reset(token: String) -> Element {
 
     rsx! {
         Nav {}
+        // The password policy, from the same list the app's hint shows. A tap
+        // on the backdrop or Got it closes it.
+        if rules_open() {
+            div { class: "sd-image-overlay-backdrop" }
+            div { class: "hint-overlay", onclick: move |_| rules_open.set(false),
+                div { class: "hint-dialog", onclick: move |e| e.stop_propagation(),
+                    Panel {
+                        eyebrow: "Account",
+                        title: "Password",
+                        actions: rsx! {
+                            button {
+                                class: "panel-action",
+                                r#type: "button",
+                                onclick: move |_| rules_open.set(false),
+                                "Got it"
+                            }
+                        },
+                        ul { class: "card-bullets",
+                            for line in requirements() {
+                                li { "{line}" }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         div { class: "form-page content-enter",
             match current_state {
                 ResetState::Success => rsx! {
@@ -83,7 +111,10 @@ pub fn Reset(token: String) -> Element {
 
                     form { onsubmit: on_submit,
                         div { class: "form-group",
-                            label { "New password" }
+                            div { class: "label-row",
+                                label { "New password" }
+                                InfoButton { onclick: move |_| rules_open.set(true) }
+                            }
                             input {
                                 r#type: "password",
                                 placeholder: "New password",
