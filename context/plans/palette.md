@@ -1,6 +1,6 @@
 # Palette: six decorative color slots per theme
 
-**Status: phases 1 to 4 built 2026-10-08 for zwipe (slots, gate test, swatch tooling, the remap in zwipe-components, zite and zwiper, the status-color guard). Portfolio and cairn remapped; their guards pending.**
+**Status: DONE 2026-10-08. All four phases built across zwipe-components, zite, zwiper, portfolio and cairn: six slots per theme with sources, the theme gate test, the swatch tooling, every decorative use moved to a slot, and a status-color allowlist test in each repo (zwipe's run from CI's lint job). Light palettes approved provisionally; the owner calls out changes from use.**
 
 **One sentence:** every theme gets six decorative colors (`--palette-1` to `--palette-6`) so the apps stop borrowing the status colors for variety, with a test that keeps each theme's six legible and distinct without flattening the theme's own contrast.
 
