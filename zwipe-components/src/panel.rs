@@ -29,9 +29,9 @@ pub fn Panel(
     /// Cards and in-page panels leave this off.
     #[props(default = false)]
     title_h1: bool,
-    /// Center the title, body and action row, as the apps' dialogs do. For a
-    /// panel used as a dialog. A centered panel carries no eyebrow: centered,
-    /// it reads as a second subtitle.
+    /// Center the title and action row, as the apps' dialogs do; the body
+    /// stays left-aligned to read. For a panel used as a dialog. A centered
+    /// panel carries no eyebrow: centered, it reads as a second subtitle.
     #[props(default = false)]
     centered: bool,
     /// Rendered inside the heading after the title text, so it wraps with

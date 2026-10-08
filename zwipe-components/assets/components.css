@@ -1894,14 +1894,14 @@ a.nav-dropdown-item.active:visited {
     gap: 0.75rem;
 }
 
-/* A dialog-style panel: everything centered, as the apps' dialogs are. */
+/* A dialog-style panel: title and actions centered, body left to read, as the
+   apps' hint dialogs are. */
 .panel-centered .panel-eyebrow-row,
 .panel-centered .panel-actions {
     justify-content: center;
 }
 
-.panel-centered .panel-title,
-.panel-centered .panel-body {
+.panel-centered .panel-title {
     text-align: center;
 }
 
