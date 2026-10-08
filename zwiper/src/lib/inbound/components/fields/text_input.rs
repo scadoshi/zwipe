@@ -29,13 +29,13 @@ pub fn TextInput(
     rsx! {
         if let Some(label) = label {
             if let Some(topic) = hint {
-                // The label keeps its own spacing below; this row only pairs
-                // it with the "?", which stands a little taller than the text.
-                // Centered, because the form centers its labels and a flex
-                // row would otherwise pull this one to the left edge.
-                div { style: "display:flex;align-items:center;justify-content:center;",
-                    label { class: "label", r#for : "{id}", "{label}" }
-                    InfoButton { topic }
+                // The label alone is centered, like the labels without a "?";
+                // the "?" hangs off its right edge.
+                div { class: "label-hint",
+                    span { class: "label-hint-anchor",
+                        label { class: "label", r#for : "{id}", "{label}" }
+                        InfoButton { topic }
+                    }
                 }
             } else {
                 label { class: "label", r#for : "{id}", "{label}" }

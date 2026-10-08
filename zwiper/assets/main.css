@@ -2471,6 +2471,25 @@ button {
     }
 }
 
+/* A label with a "?": the label is centered on its own and the "?" hangs
+   off its right edge, so the text lines up with the labels above and below. */
+.label-hint {
+    display: flex;
+    justify-content: center;
+}
+
+.label-hint-anchor {
+    position: relative;
+}
+
+/* Centered on the label's text, above the label's bottom margin. */
+.label-hint-anchor .info-button {
+    position: absolute;
+    left: 100%;
+    top: calc(50% - 0.125rem);
+    transform: translateY(-50%);
+}
+
 /* =========================
   label row with clear button
 =========================== */
