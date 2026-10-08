@@ -7,7 +7,7 @@ pub fn Changelog() -> Element {
     rsx! {
         PageMeta {
             title: "Changelog",
-            description: "Every Zwipe release, newest first. See what's new across versions of the mobile Magic: The Gathering deck builder.",
+            description: "Every Zwipe release, newest first: what changed in each version of the app.",
             path: "/changelog",
         }
         Nav {}
