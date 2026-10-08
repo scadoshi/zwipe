@@ -741,7 +741,7 @@ pub static GUIDES: &[Guide] = &[
                 caption: None,
             },
             Block::Note(
-                "Deck tags are the easy on-ramp; oracle tags are the specific dial. See Deck tags, card roles & oracle tags: how they fit for how all three connect.",
+                "Deck tags are the quick start; oracle tags let you fine-tune. See Deck tags, card roles & oracle tags: how they fit for how all three connect.",
             ),
         ],
     },
@@ -827,11 +827,11 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Deck tags: the archetype you pick"),
             Block::P(
-                "Deck tags label your deck's game plan, Aggro, Tokens, Reanimator, and so on. Picking one auto-selects the oracle tags that define it. This is the easy on-ramp: pick an archetype and the rest follows.",
+                "Deck tags label your deck's game plan, Aggro, Tokens, Reanimator, and so on. Picking one auto-selects the oracle tags that define it, so one pick sets up the rest.",
             ),
             Block::H2("Oracle tags: the specific things your deck does"),
             Block::P(
-                "Oracle tags are granular and functional: `spot-removal`, `ramp`, `sacrifice-outlet`. Deck tags seed a starter set, but you can add or remove them directly if you want to dial things in further. Selected oracle tags are what sharpen which cards Zwipe suggests.",
+                "Oracle tags are granular and functional: `spot-removal`, `ramp`, `sacrifice-outlet`. Deck tags seed a starter set, but you can add or remove them directly to fine-tune. Selected oracle tags are what sharpen which cards Zwipe suggests.",
             ),
             Block::H2("Card roles: the summary"),
             Block::P(
