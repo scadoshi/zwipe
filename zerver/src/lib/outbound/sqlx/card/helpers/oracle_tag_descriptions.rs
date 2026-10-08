@@ -13723,7 +13723,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "gives-tantrum",
-        "Grants tantrum, letting a blocking creature assign excess damage like trample.",
+        "Grants tantrum, so a blocking creature deals its excess combat damage to the attacking player.",
     ),
     (
         "hate-typal-ox",
