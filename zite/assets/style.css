@@ -374,7 +374,7 @@ body .reveal-pending.reveal-in {
     box-sizing: border-box;
     height: 1.85rem;
     text-decoration: none;
-    color: var(--color-warning);
+    color: var(--palette-5);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
@@ -394,8 +394,8 @@ body .reveal-pending.reveal-in {
 @media (hover: hover) {
     .store-link:hover,
     .nav-links a.store-link:hover {
-        color: var(--color-warning);
-        border-color: var(--color-warning);
+        color: var(--palette-5);
+        border-color: var(--palette-5);
     }
 }
 
@@ -1162,39 +1162,39 @@ code {
 }
 
 .tag:nth-child(6n + 1) {
-    color: var(--accent-primary);
-    border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
-    background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+    color: var(--palette-1);
+    border-color: color-mix(in srgb, var(--palette-1) 35%, transparent);
+    background: color-mix(in srgb, var(--palette-1) 12%, transparent);
 }
 
 .tag:nth-child(6n + 2) {
-    color: var(--accent-secondary);
-    border-color: color-mix(in srgb, var(--accent-secondary) 35%, transparent);
-    background: color-mix(in srgb, var(--accent-secondary) 12%, transparent);
+    color: var(--palette-2);
+    border-color: color-mix(in srgb, var(--palette-2) 35%, transparent);
+    background: color-mix(in srgb, var(--palette-2) 12%, transparent);
 }
 
 .tag:nth-child(6n + 3) {
-    color: var(--accent-tertiary);
-    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, transparent);
-    background: color-mix(in srgb, var(--accent-tertiary) 12%, transparent);
+    color: var(--palette-3);
+    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
+    background: color-mix(in srgb, var(--palette-3) 12%, transparent);
 }
 
 .tag:nth-child(6n + 4) {
-    color: var(--color-success);
-    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
-    background: color-mix(in srgb, var(--color-success) 12%, transparent);
+    color: var(--palette-4);
+    border-color: color-mix(in srgb, var(--palette-4) 35%, transparent);
+    background: color-mix(in srgb, var(--palette-4) 12%, transparent);
 }
 
 .tag:nth-child(6n + 5) {
-    color: var(--color-warning);
-    border-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
-    background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+    color: var(--palette-5);
+    border-color: color-mix(in srgb, var(--palette-5) 35%, transparent);
+    background: color-mix(in srgb, var(--palette-5) 12%, transparent);
 }
 
 .tag:nth-child(6n + 6) {
-    color: var(--color-error);
-    border-color: color-mix(in srgb, var(--color-error) 35%, transparent);
-    background: color-mix(in srgb, var(--color-error) 12%, transparent);
+    color: var(--palette-6);
+    border-color: color-mix(in srgb, var(--palette-6) 35%, transparent);
+    background: color-mix(in srgb, var(--palette-6) 12%, transparent);
 }
 
 
@@ -1449,7 +1449,7 @@ code {
     font-family: inherit;
     font-size: 0.85rem;
     line-height: 1;
-    color: var(--color-error);
+    color: var(--text-muted);
     padding: 0.3rem 0.5rem;
     border: 1px solid currentColor;
     border-radius: 0.4rem;
@@ -1500,39 +1500,39 @@ code {
 }
 
 .tag.tag-c1 {
-    color: var(--accent-primary);
-    border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
-    background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+    color: var(--palette-1);
+    border-color: color-mix(in srgb, var(--palette-1) 35%, transparent);
+    background: color-mix(in srgb, var(--palette-1) 12%, transparent);
 }
 
 .tag.tag-c2 {
-    color: var(--accent-secondary);
-    border-color: color-mix(in srgb, var(--accent-secondary) 35%, transparent);
-    background: color-mix(in srgb, var(--accent-secondary) 12%, transparent);
+    color: var(--palette-2);
+    border-color: color-mix(in srgb, var(--palette-2) 35%, transparent);
+    background: color-mix(in srgb, var(--palette-2) 12%, transparent);
 }
 
 .tag.tag-c3 {
-    color: var(--accent-tertiary);
-    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, transparent);
-    background: color-mix(in srgb, var(--accent-tertiary) 12%, transparent);
+    color: var(--palette-3);
+    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
+    background: color-mix(in srgb, var(--palette-3) 12%, transparent);
 }
 
 .tag.tag-c4 {
-    color: var(--color-success);
-    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
-    background: color-mix(in srgb, var(--color-success) 12%, transparent);
+    color: var(--palette-4);
+    border-color: color-mix(in srgb, var(--palette-4) 35%, transparent);
+    background: color-mix(in srgb, var(--palette-4) 12%, transparent);
 }
 
 .tag.tag-c5 {
-    color: var(--color-warning);
-    border-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
-    background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+    color: var(--palette-5);
+    border-color: color-mix(in srgb, var(--palette-5) 35%, transparent);
+    background: color-mix(in srgb, var(--palette-5) 12%, transparent);
 }
 
 .tag.tag-c6 {
-    color: var(--color-error);
-    border-color: color-mix(in srgb, var(--color-error) 35%, transparent);
-    background: color-mix(in srgb, var(--color-error) 12%, transparent);
+    color: var(--palette-6);
+    border-color: color-mix(in srgb, var(--palette-6) 35%, transparent);
+    background: color-mix(in srgb, var(--palette-6) 12%, transparent);
 }
 
 /* The Link is the click target; the Panel inside is the visual card. Flex so the
@@ -1827,21 +1827,21 @@ footer {
     padding: 0.28rem 0.8rem;
     font-size: 0.8rem;
     text-decoration: none;
-    color: var(--color-warning);
-    background-color: color-mix(in srgb, var(--color-warning) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--color-warning) 35%, transparent);
+    color: var(--palette-5);
+    background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--palette-5) 35%, transparent);
     border-radius: 0.6rem;
     transition: all 0.2s ease;
 }
 
 .rating-tag .rating-score {
-    color: var(--color-warning);
+    color: var(--palette-5);
 }
 
 @media (hover: hover) {
     .rating-tag:hover {
         transform: scale(1.06);
-        color: var(--color-warning);
+        color: var(--palette-5);
     }
 }
 
@@ -1872,7 +1872,7 @@ footer {
 }
 
 .rating-stars {
-    color: var(--color-warning);
+    color: var(--palette-5);
     letter-spacing: 0.1em;
 }
 
@@ -2233,15 +2233,15 @@ footer {
 
 .sd-header-meta .stat-chip-power,
 .info-row-tags .stat-chip-power {
-    color: var(--color-success);
+    color: var(--palette-3);
     background-color: color-mix(
         in srgb,
-        var(--color-success) 12%,
+        var(--palette-3) 12%,
         var(--bg-primary)
     );
     border-color: color-mix(
         in srgb,
-        var(--color-success) 35%,
+        var(--palette-3) 35%,
         var(--bg-primary)
     );
 }
@@ -2290,15 +2290,15 @@ footer {
 /* Price chip: money reads green in every theme. */
 .sd-header-meta .stat-chip-price,
 .info-row-tags .stat-chip-price {
-    color: var(--color-success);
+    color: var(--palette-3);
     background-color: color-mix(
         in srgb,
-        var(--color-success) 12%,
+        var(--palette-3) 12%,
         var(--bg-primary)
     );
     border-color: color-mix(
         in srgb,
-        var(--color-success) 35%,
+        var(--palette-3) 35%,
         var(--bg-primary)
     );
 }

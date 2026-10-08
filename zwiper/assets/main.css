@@ -880,11 +880,11 @@ button {
     border-color: color-mix(in srgb, var(--text-muted) 30%, transparent);
 }
 
-/* Power level (WotC bracket) — a rating, so a distinct accent. */
+/* Power level (WotC bracket): a rating, so a palette color rather than an outcome. */
 .stat-chip-power {
-    color: var(--color-success);
-    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
-    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+    color: var(--palette-3);
+    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
 }
 
 /* Other tags (Budget/Jank/…) — colored so they read apart from archetype tags. */
@@ -2721,12 +2721,12 @@ button {
     border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
 }
 
-/* USD price, styled as a green (success) money tag; opens the buy dialog. */
+/* USD price, styled as a green money tag from the palette; opens the buy dialog. */
 .flavor-price {
     flex-shrink: 0;
-    color: var(--color-success);
-    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
+    color: var(--palette-3);
+    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--palette-3) 35%, transparent);
     font-variant-numeric: tabular-nums;
 }
 
