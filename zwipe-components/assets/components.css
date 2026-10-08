@@ -1513,11 +1513,17 @@ a.nav-dropdown-item.active:visited {
     white-space: nowrap;
 }
 
+/* A miniature of the theme: its background as the chip, its muted text as the
+   border, and the six palette slots inside. */
 .theme-switcher .theme-swatches {
     display: flex;
     align-items: center;
     gap: 0.2rem;
     flex-shrink: 0;
+    padding: 0.2rem 0.25rem;
+    border-radius: 0.35rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--text-muted);
 }
 
 .theme-switcher .theme-dot {

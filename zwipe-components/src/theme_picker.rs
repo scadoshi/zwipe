@@ -110,12 +110,12 @@ pub fn ThemePicker(
 fn ThemeDots(name: &'static str, mode: &'static str) -> Element {
     rsx! {
         span { class: "theme-swatches theme-{name}-{mode}",
-            span { class: "theme-dot", style: "background:var(--bg-primary)" }
-            span { class: "theme-dot", style: "background:var(--text-primary)" }
-            span { class: "theme-dot", style: "background:var(--accent-primary)" }
-            span { class: "theme-dot", style: "background:var(--accent-secondary)" }
-            span { class: "theme-dot", style: "background:var(--accent-tertiary)" }
             span { class: "theme-dot", style: "background:var(--palette-1)" }
+            span { class: "theme-dot", style: "background:var(--palette-2)" }
+            span { class: "theme-dot", style: "background:var(--palette-3)" }
+            span { class: "theme-dot", style: "background:var(--palette-4)" }
+            span { class: "theme-dot", style: "background:var(--palette-5)" }
+            span { class: "theme-dot", style: "background:var(--palette-6)" }
         }
     }
 }
