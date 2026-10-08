@@ -96,4 +96,4 @@ Each repo's CI gets a grep that fails when a `--color-(success|warning|error)` r
 - Six slots and the name `--palette-N`: confirmed 2026-10-08.
 - Palette may equal status values: confirmed 2026-10-08 (the owner wants every theme hue visible in normal use).
 - Distinctness: reported only, colors stay as published. Decided 2026-10-08.
-- Custom themes' palettes (Miasma, Rustbox, PowerShell, docs.rs): picked by the agent, reviewed by the owner on the swatch page.
+- Palettes reviewed 2026-10-08 on the live portfolio home under every theme: all 26 dark themes approved; all 26 light themes approved provisionally, with the owner calling out changes from use.
