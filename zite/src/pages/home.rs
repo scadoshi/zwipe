@@ -245,7 +245,7 @@ pub fn Home() -> Element {
                 p { class: "tagline",
                     "The "
                     a { href: "https://magic.wizards.com/en", "Magic: The Gathering" }
-                    " deck builder built for mobile. Pick a commander and swipe through the cards that fit it, best synergy first."
+                    " deck builder built for mobile. Swipe through cards for any format, and pick a commander to get the best synergy first."
                 }
                 div { class: "hero-chips",
                     span { class: "hero-chip chip-value", "Free" }
