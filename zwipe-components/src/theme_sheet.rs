@@ -43,7 +43,7 @@ fn ThemeRow(
                     span { class: "theme-dot", style: "background:var(--accent-primary)" }
                     span { class: "theme-dot", style: "background:var(--accent-secondary)" }
                     span { class: "theme-dot", style: "background:var(--accent-tertiary)" }
-                    span { class: "theme-dot", style: "background:var(--color-error)" }
+                    span { class: "theme-dot", style: "background:var(--palette-1)" }
                 }
             }
         }

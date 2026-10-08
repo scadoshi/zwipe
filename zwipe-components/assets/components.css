@@ -340,7 +340,7 @@
 
 .card-row-mvp {
     display: inline-block;
-    color: var(--color-warning);
+    color: var(--palette-5);
     font-size: 1.1rem;
     margin-right: 0.3rem;
     line-height: 1;
@@ -370,9 +370,9 @@
 /* Price reads as money: green (success). */
 .card-row-price {
     font-variant-numeric: tabular-nums;
-    color: var(--color-success);
-    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
-    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+    color: var(--palette-3);
+    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
 }
 
 /* P/T (creatures) and loyalty (planeswalkers): neutral accent stat. */
@@ -691,15 +691,15 @@ i.ms.ms-cost.ms-gp {
 }
 
 .detail-chip-set {
-    color: var(--color-success);
-    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
-    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+    color: var(--palette-3);
+    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
 }
 
 .detail-chip-pt {
-    color: var(--color-warning);
-    background-color: color-mix(in srgb, var(--color-warning) 15%, transparent);
-    border-color: color-mix(in srgb, var(--color-warning) 40%, transparent);
+    color: var(--palette-5);
+    background-color: color-mix(in srgb, var(--palette-5) 15%, transparent);
+    border-color: color-mix(in srgb, var(--palette-5) 40%, transparent);
     font-weight: 700;
 }
 
@@ -956,9 +956,9 @@ i.ms.ms-cost.ms-gp {
 }
 
 .nic-chip-set {
-    color: var(--color-success);
-    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
-    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+    color: var(--palette-3);
+    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
 }
 
 /* Power/toughness (or loyalty) tab pinned to the card's bottom-right corner. Warm
@@ -969,9 +969,9 @@ i.ms.ms-cost.ms-gp {
     right: 0.6rem;
     bottom: 0.6rem;
     font-weight: 700;
-    color: var(--color-warning);
-    background-color: color-mix(in srgb, var(--color-warning) 18%, var(--bg-primary));
-    border-color: color-mix(in srgb, var(--color-warning) 40%, var(--border-primary));
+    color: var(--palette-5);
+    background-color: color-mix(in srgb, var(--palette-5) 18%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--palette-5) 40%, var(--border-primary));
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
 }
 
@@ -1587,7 +1587,7 @@ a.nav-dropdown-item.active:visited {
 
 .banner-category {
     font-size: 0.7rem;
-    color: var(--border-success);
+    color: var(--accent-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.08em;
 }
@@ -2043,7 +2043,7 @@ a.nav-dropdown-item.active:visited {
 }
 
 .diagram-success rect {
-    stroke: var(--color-success);
+    stroke: var(--palette-3);
 }
 
 .diagram-title {
