@@ -38,6 +38,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Verification and password reset emails show their link as plain text",
         "The chip under the home counters says all users",
         "Screen titles use one capitalization style",
+        "Panels sit the same distance apart on every screen",
     ],
 }];
 
