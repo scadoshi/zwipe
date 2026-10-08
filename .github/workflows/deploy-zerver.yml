@@ -66,6 +66,9 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
+  # Runs as the `runner` user on the VPS. Its sudo covers stopping and starting
+  # zerver, installing the two binaries from /home/runner/deploy, and reading
+  # zerver's last log lines. /etc/zwipe/migrate.env holds only DATABASE_URL.
   deploy:
     needs: [test, lint] # blocked if tests or lints fail
     runs-on: self-hosted
@@ -88,7 +91,7 @@ jobs:
       - name: Run migrations
         run: |
           set -a
-          source ~/zwipe/.env
+          source /etc/zwipe/migrate.env
           set +a
           cargo sqlx migrate run --source zerver/migrations
 
@@ -100,7 +103,7 @@ jobs:
       - name: Verify offline query data
         run: |
           set -a
-          source ~/zwipe/.env
+          source /etc/zwipe/migrate.env
           set +a
           cargo sqlx prepare --workspace --check -- --workspace --exclude zwiper --exclude zite
 
@@ -109,8 +112,29 @@ jobs:
           SQLX_OFFLINE: true
         run: cargo build --release --bin zerver --bin zervice
 
+      # The old binaries are kept, and put back if zerver does not answer /health.
       - name: Deploy
         run: |
+          set -euo pipefail
+          D=/home/runner/deploy
+          for b in zerver zervice; do
+            cp "target/release/$b" "$D/$b"
+            cp "/usr/local/bin/$b" "$D/$b.previous"
+          done
           sudo systemctl stop zerver
-          cp target/release/zerver target/release/zervice ~/zwipe/
+          sudo install -m 755 /home/runner/deploy/zerver /usr/local/bin/zerver
+          sudo install -m 755 /home/runner/deploy/zervice /usr/local/bin/zervice
           sudo systemctl start zerver
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:3000/health >/dev/null 2>&1 && break; sleep 1; done
+          if curl -fsS http://127.0.0.1:3000/health; then
+            echo; echo "zerver is serving"
+          else
+            echo "::error::zerver did not answer /health; putting the previous binaries back"
+            sudo journalctl -u zerver -n 50 --no-pager || true
+            sudo systemctl stop zerver
+            for b in zerver zervice; do cp "$D/$b.previous" "$D/$b"; done
+            sudo install -m 755 /home/runner/deploy/zerver /usr/local/bin/zerver
+            sudo install -m 755 /home/runner/deploy/zervice /usr/local/bin/zervice
+            sudo systemctl start zerver
+            exit 1
+          fi
