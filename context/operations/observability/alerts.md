@@ -10,7 +10,7 @@ Every channel that can tell the owner something is wrong, what it watches, and w
 | Healthchecks.io dead-man check ("Zervice") | zervice pings it after a run where every step succeeded | No ping within the grace window after 04:00 UTC (zervice never ran or never finished) | Email |
 | `zervice-alert.service` | `zervice.service` via `OnFailure=` | A scheduled zervice run exits non-zero | Email, sent through Resend with the server's existing credentials |
 | Healthchecks.io dead-man check ("Zwipe Backups") | `backup-db.sh` pings it after the dump and the R2 upload both succeed | No ping within an hour after 05:00 UTC | Email |
-| GitHub Actions | Deploy and test workflows on every push to `main` | A workflow fails | GitHub's own notification email |
+| GitHub Actions | Deploys on pushes to `main` that touch their paths; tests on pull requests | A workflow fails | GitHub's own notification email |
 
 `/health` is the probe on purpose: it is uncached and goes straight through to zerver, so it fails when zerver does, unlike cached routes that keep answering during an outage.
 

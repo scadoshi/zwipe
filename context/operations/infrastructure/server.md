@@ -1,6 +1,6 @@
 # Ubuntu Server Setup
 
-> **NOTE (2026-06-13): Prod no longer runs here.** Production migrated to a Hetzner VPS (`zerver-prod`, tailnet `<server-tailnet-ip>`, admin `ssh root@…`). (The old `context/plans/vps_migration.md` write-up no longer exists.) This home box is powered off but kept intact as the rollback. The checklist below remains the general rebuild/setup reference (it's what the VPS was built from); only the WiFi/netplan section is home-box-specific.
+> **NOTE (2026-06-13): Prod no longer runs here.** Production migrated to a Hetzner VPS (`zerver-prod`, tailnet `<server-tailnet-ip>`, admin `ssh scadoshi@…`; root does not log in). (The old `context/plans/vps_migration.md` write-up no longer exists.) This home box was later rebuilt as scotland-server, Scotty's always-on maintenance box, so it is no longer a rollback. The checklist below remains the general rebuild/setup reference (it's what the VPS was built from); only the WiFi/netplan section is home-box-specific.
 
 Repurposed desktop running Ubuntu Server (headless). Intel i5, 32GB RAM, x86_64. Backend served via Cloudflare Tunnel: no port forwarding, TLS handled by Cloudflare.
 
@@ -11,7 +11,7 @@ Repurposed desktop running Ubuntu Server (headless). Intel i5, 32GB RAM, x86_64.
 - [ ] Boot with Ubuntu Server USB installer (headless install)
 - [ ] Configure WiFi via netplan (see WiFi section below)
 - [ ] Verify SSH is enabled on boot: `sudo systemctl enable ssh`
-- [ ] SSH in from Mac, set up key auth
+- [ ] SSH in from Mac as `scadoshi`, then lock SSH down (see SSH Access below)
 - [ ] Install NetworkManager for `nmtui`/`nmcli`: `sudo apt install network-manager`
 - [ ] Install Tailscale for stable SSH access (see Tailscale section below)
 - [ ] Install PostgreSQL, create `zwipe` DB + user
@@ -104,73 +104,69 @@ ssh scadoshi@<tailscale-ip>
 
 Tailscale runs as a systemd service (`tailscaled`) and starts automatically on boot.
 
+**After an Ubuntu release upgrade**, check `/etc/apt/sources.list.d/tailscale.list`. The upgrade comments out third-party sources it cannot migrate, and Tailscale then never updates. Put the line back with the new release's codename (`deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/ubuntu <codename> main`) and run `sudo apt-get update && sudo apt-get install --only-upgrade tailscale`. Run the upgrade detached (`sudo systemd-run --collect sh -c "..."`) when you are connected over the tailnet, since restarting `tailscaled` drops the session.
+
 ---
 
 ## SSH Access
 
-Everything below is done over SSH. Get onto the server first.
+The server is administered as `scadoshi` over the tailnet. `scadoshi` has full sudo with a password; root does not log in. zerver, heron and scotland-server all follow the same rules.
 
-### Find the server's IP (from the server directly on first boot)
+### First login and the admin user
 
-The Ubuntu Server installer leaves you at a login prompt with the IP shown on screen. If you miss it or need it later:
+On a Hetzner VPS, add your Mac's public key when you create the server; it goes into root's `authorized_keys`, and `ssh root@<public-ip>` works once. On a home box, use the console. Either way, create the admin user first:
 
 ```bash
-ip addr show | grep 'inet ' | grep -v 127.0.0.1
-# Look for something like: inet 192.168.1.XXX/24
+adduser scadoshi                         # asks for the sudo password
+usermod -aG sudo,systemd-journal scadoshi
+install -d -m 700 -o scadoshi -g scadoshi /home/scadoshi/.ssh
+install -m 600 -o scadoshi -g scadoshi /root/.ssh/authorized_keys /home/scadoshi/.ssh/authorized_keys
 ```
 
-Or check your router's DHCP client list; the server will appear as a connected device.
+Each key in `authorized_keys` ends with a label naming its device (`scotland-halo`, `scotland-laptop`, `phone-termius`, `scotland-server`). Add one when you add a key, so an unknown key stands out.
 
-### First-time access: fix "Permission denied (publickey)"
+Install Tailscale (section above), then log in from your Mac as `scadoshi@<server-tailnet-ip>` and check `sudo -v` before the next step.
 
-Ubuntu Server disables password authentication by default. You'll get this error immediately if you just try to `ssh` in cold. Fix it once from the physical console (plug in a keyboard/monitor briefly, or use the server's existing display):
+### Lock it down
 
-**On the server (physically):**
-```bash
-sudo nano /etc/ssh/sshd_config
-# Find and change (or add) these two lines:
-#   PasswordAuthentication yes
-#   KbdInteractiveAuthentication yes
-# Save: Ctrl+O, Enter, Ctrl+X
+`/etc/ssh/sshd_config.d/10-hardening.conf`, the same file on all three boxes:
 
-sudo systemctl restart ssh
+```
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+X11Forwarding no
+
+Match Address 100.64.0.0/10,fd7a:115c:a1e0::/48
+    PasswordAuthentication yes
+
+Match all
 ```
 
-Now SSH with your password works from your Mac. Set up key auth immediately so you never need the console again:
+Keys work from anywhere the box is reachable; passwords from the tailnet only. Leave the main `sshd_config` alone: the drop-in is read first and wins. Check and apply:
 
-**On your Mac:**
 ```bash
-# Generate a key if you don't have one
-ssh-keygen -t ed25519 -C "zwipe-server"
-# Accept defaults
-
-# Copy the public key to the server (enter your server password once)
-ssh-copy-id scadoshi@192.168.1.XXX
+sudo sshd -t && sudo systemctl reload ssh
 ```
 
-**Back on the server, re-disable password auth (security):**
-```bash
-sudo nano /etc/ssh/sshd_config
-# Set back to:
-#   PasswordAuthentication no
-#   KbdInteractiveAuthentication no
+Then the firewall, which lets in nothing but the tailnet:
 
-sudo systemctl restart ssh
+```bash
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow in on tailscale0
+sudo ufw enable
 ```
 
-From now on `ssh scadoshi@192.168.1.XXX` works without a password and password-based login is blocked.
+Your session survives both. If the tailnet is ever down, Hetzner's web console (root's password) is the way back in.
 
-### SSH in from your Mac
+### Alias
 
-```bash
-ssh scadoshi@192.168.1.XXX
+In `~/.ssh/config` on your Mac:
 ```
-
-### Add a friendly alias (optional, saves typing)
-
-In `~/.zshrc` on your Mac:
-```bash
-alias zwipe-server='ssh scadoshi@192.168.1.XXX'
+Host zerver
+    HostName <server-tailnet-ip>
+    User scadoshi
 ```
 
 ---

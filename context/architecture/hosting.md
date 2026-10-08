@@ -23,7 +23,7 @@ The site (zite) is not here; it is static and served by GitHub Pages.
 
 - **Raspberry Pi 5** at first, until its memory and aarch64 cross-compiling got in the way.
 - **A repurposed desktop at home (2026-03-27)** running the same stack.
-- **Hetzner VPS (2026-06-13)**: off home power and home internet, with real uptime. The home box was powered off but kept intact as a cold rollback.
+- **Hetzner VPS (2026-06-13)**: off home power and home internet, with real uptime. The home box was kept as a cold rollback until the VPS settled, then rebuilt as scotland-server, the always-on maintenance box.
 
 ## Runbooks
 

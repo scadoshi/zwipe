@@ -77,7 +77,7 @@ Copy the token shown on that page (valid for 1 hour).
 ### Step 2: Download and configure the runner on the server
 
 ```bash
-mkdir ~/actions-runner && cd ~/actions-runner
+mkdir ~/actions-runner-zwipe && cd ~/actions-runner-zwipe
 
 # Download: get the exact URL from the GitHub UI (version may change)
 curl -o actions-runner-linux-x64.tar.gz -L \
@@ -87,7 +87,7 @@ tar xzf actions-runner-linux-x64.tar.gz
 
 # Configure: paste the token from Step 1 when prompted
 ./config.sh --url https://github.com/scadoshi/zwipe --token YOUR_TOKEN_HERE
-# Accept defaults for runner name and work folder
+# Name it zerver-prod; accept the default work folder
 ```
 
 ### Step 3: Install as a systemd service
@@ -102,12 +102,12 @@ The runner starts automatically on every boot. Check GitHub → Settings → Act
 
 ### Step 4: Verify passwordless sudo for systemctl
 
-The runner needs to restart zerver without a password prompt. This should already be configured, but verify:
+The runner runs as `scadoshi` and needs to restart zerver without a password prompt. Everything else `scadoshi` does with sudo asks for the password. Verify:
 
 ```bash
 sudo cat /etc/sudoers.d/scadoshi
-# Confirm this line exists:
-# scadoshi ALL=(ALL) NOPASSWD: /bin/systemctl stop zerver, /bin/systemctl start zerver, /bin/systemctl restart zerver
+# Confirm this line exists (one line; zynergy's runner shares the file):
+# scadoshi ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop zerver, /usr/bin/systemctl start zerver, /usr/bin/systemctl restart zerver, /usr/bin/systemctl stop zynergy, /usr/bin/systemctl start zynergy, /usr/bin/systemctl restart zynergy
 ```
 
 Edit it with `sudo visudo -f /etc/sudoers.d/scadoshi` if it is missing; the drop-in file, not the main `/etc/sudoers`.
@@ -124,11 +124,11 @@ If the server is rebuilt and the runner is lost:
 
 ## Tailscale (Local SSH Access)
 
-Tailscale is used for SSHing into the server from your Mac or any network. It is **not** used for CI/CD deploys (self-hosted runner eliminated that need).
+Tailscale is the only way to SSH into the server: ufw allows nothing but `tailscale0`. It is **not** used for CI/CD deploys (self-hosted runner eliminated that need).
 
-**Current server**: Hetzner VPS `zerver-prod`, since the 2026-06-13 migration. Its Tailscale address is written here as `<server-tailnet-ip>`: tailnet addresses are redacted because this repo is public, the same convention as the `192.168.1.XXX` LAN addresses below. `tailscale status` on any tailnet device lists them, and the owner supplies the value when a session needs it. The old home box was `<old-box-tailnet-ip>` (powered off, kept as rollback). Tailscale IPs are stable and private (not publicly routable).
+**Current server**: Hetzner VPS `zerver-prod`, since the 2026-06-13 migration. Its Tailscale address is written here as `<server-tailnet-ip>`: tailnet addresses are redacted because this repo is public, the same convention as the `192.168.1.XXX` LAN addresses below. `tailscale status` on any tailnet device lists them, and the owner supplies the value when a session needs it. The old home box was rebuilt as scotland-server and is no longer a rollback. Tailscale IPs are stable and private (not publicly routable).
 
-**Runners (post-migration):** two self-hosted runners live on the VPS: `zerver-prod` (repo `scadoshi/zwipe`, dir `~/actions-runner-zwipe`) and `zynergy-prod` (repo `scadoshi/zynergy`, dir `~/actions-runner-zynergy`), both boot-enabled. The deploy step's `sudo systemctl {stop,start} zerver` works because `/etc/sudoers.d/scadoshi` grants NOPASSWD for exactly those service-restart commands (all other admin = `ssh root@<server-tailnet-ip>`).
+**Runners (post-migration):** two self-hosted runners live on the VPS: `zerver-prod` (repo `scadoshi/zwipe`, dir `~/actions-runner-zwipe`) and `zynergy-prod` (repo `scadoshi/zynergy`, dir `~/actions-runner-zynergy`), both boot-enabled. The deploy step's `sudo systemctl {stop,start} zerver` works because `/etc/sudoers.d/scadoshi` grants NOPASSWD for exactly those service-restart commands. All other admin is `ssh scadoshi@<server-tailnet-ip>` with sudo and its password; root does not log in.
 
 ### Setup
 
@@ -137,15 +137,13 @@ Tailscale is used for SSHing into the server from your Mac or any network. It is
 curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up
 # Follow the auth URL printed to authenticate
-sudo tailscale set --ssh   # enables Tailscale SSH (no deploy key needed)
 ```
 
 **Mac:** Install from the App Store, sign in with the same account.
 
 **SSH into server from anywhere:**
 ```bash
-ssh scadoshi@<server-tailnet-ip>        # service user (limited sudo)
-ssh root@<server-tailnet-ip>            # admin (full sudo), key-only, tailnet
+ssh scadoshi@<server-tailnet-ip>        # admin: full sudo with a password
 ```
 
 ### Tailscale Admin Configuration
@@ -157,7 +155,8 @@ ssh root@<server-tailnet-ip>            # admin (full sudo), key-only, tailnet
 ### Notes
 
 - Server Tailscale IP is stable, never changes even if ISP rotates public IP
-- `sshd` also listens on port 2222 via `/etc/systemd/system/ssh.socket.d/override.conf` (added during Xfinity troubleshooting, not required but harmless to keep)
+- SSH settings are `/etc/ssh/sshd_config.d/10-hardening.conf`: no root login, keys from anywhere, passwords from the tailnet only. `server.md` (SSH Access) has the file
+- Tailscale SSH is off; plain `sshd` over the tailnet is what answers
 
 ---
 

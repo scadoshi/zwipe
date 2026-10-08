@@ -21,6 +21,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-08: zerver's SSH locked down to match heron and scotland-server
+
+Root no longer logs in to zerver; admin is `scadoshi` over the tailnet with sudo and its password, which is what `cicd.md` and `server.md` used to get wrong (both said `ssh root@`). Password logins are allowed from the tailnet only, through `/etc/ssh/sshd_config.d/10-hardening.conf`, the same file heron and scotland-server carry; `server.md` (SSH Access) has it and the rebuild steps. ufw was already tailnet-only. The runners' passwordless sudo is unchanged: stop, start and restart of zerver and zynergy, in `/etc/sudoers.d/scadoshi`. Every key in `authorized_keys` now names its device.
+
 ## 2026-10-06: 1.10.6 live, 1.10.7 submitted
 
 1.10.6 (iOS build 88) went live on the App Store on 2026-10-06, and the maintenance host's App Store watcher pinged the change. 1.10.7 was cut earlier that day (Android vc52 already on Production) with its changelog held under `UPCOMING` until 1.10.6 cleared; now that it has, the two entries moved to `RELEASES` dated Oct 6 and iOS build 89 went to App Review. The release is the mid-scroll fix: buttons respond while a list is still scrolling, and the edge back-swipe works mid-scroll, both iOS-only. Detail in the todo item and [`vendor/tao/VENDOR.md`](../vendor/tao/VENDOR.md); notes at [`operations/store-submissions/1.10.7/whats_new.md`](operations/store-submissions/1.10.7/whats_new.md).
@@ -388,7 +392,7 @@ Prod migrated off the home box to a **Hetzner CPX31 VPS** on 2026-06-13 (see ent
 
 | Area | Status |
 |------|--------|
-| Prod host: Hetzner CPX31 VPS (Ubuntu 26.04, PG 18) | ✅ Live (home box retired, kept as rollback) |
+| Prod host: Hetzner CPX31 VPS (Ubuntu 26.04, PG 18) | ✅ Live (home box rebuilt as scotland-server; rollback window closed) |
 | PostgreSQL + zwipe DB | ✅ Live |
 | zerver systemd service | ✅ Live, auto-restarts on failure |
 | zynergy synergy worker (least-priv DB role) | ✅ Live |

@@ -97,7 +97,7 @@ ingress:
 
 > **Use `127.0.0.1`, not `localhost`.** On an IPv6-enabled host (e.g. the Hetzner VPS), `localhost` resolves to `::1`. zerver binds `0.0.0.0` (IPv4 only), so cloudflared intermittently dials `::1` → connection refused → **~20% of requests 502**. Forcing IPv4 fixes it. (The old home box had no IPv6, so it never surfaced; discovered during the 2026-06-13 VPS cutover.)
 
-**Current tunnels:** `zwipe-vps` (UUID `<tunnel-uuid>`, on the Hetzner VPS) serves `api.zwipe.net` as of the 2026-06-13 cutover. The old home tunnel `zwipe` (`<old-tunnel-uuid>`) is retained for rollback until home is decommissioned. (Both real UUIDs live in the password manager; this repo is public.)
+**Current tunnels:** `zwipe-vps` (UUID `<tunnel-uuid>`, on the Hetzner VPS) serves `api.zwipe.net` as of the 2026-06-13 cutover. The old home tunnel `zwipe` was removed when the rollback window closed. (The real UUID lives in the password manager; this repo is public.)
 
 ### Add DNS record
 
