@@ -421,7 +421,7 @@ pub fn Profile() -> Element {
 
                                 div {
                                     class: "profile-row",
-                                    span { class: "profile-row-label", "Privacy Policy" }
+                                    span { class: "profile-row-label", "Privacy policy" }
                                     div { class: "profile-row-value",
                                         Button {
                                             variant: ButtonVariant::Util,

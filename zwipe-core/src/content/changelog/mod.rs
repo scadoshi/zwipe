@@ -32,6 +32,7 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "A ? beside the new password field lists the password rules",
         "Privacy policy says where data is stored and how to request a copy",
+        "Screen titles use one capitalization style",
     ],
 }];
 

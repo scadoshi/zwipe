@@ -34,7 +34,7 @@ pub fn PrivacyPolicy() -> Element {
 
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: "Privacy Policy" }
+            ScreenHeader { title: "Privacy policy" }
 
             div { class: "screen-content content-enter",
                 div { class: "privacy-content",

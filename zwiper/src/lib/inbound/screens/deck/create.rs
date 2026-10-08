@@ -193,7 +193,7 @@ pub fn CreateDeck() -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: "Create Deck", hint: create_hint }
+                ScreenHeader { title: "Create deck", hint: create_hint }
 
                 div { class: "screen-content content-enter",
                 div { class : "container-sm",

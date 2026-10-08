@@ -554,7 +554,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: "Remove Deck Cards", hint: swipe_hint_open }
+                ScreenHeader { title: "Remove deck cards", hint: swipe_hint_open }
 
                 div { class: "screen-content card-swipe content-enter",
 

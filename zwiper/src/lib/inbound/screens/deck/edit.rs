@@ -520,7 +520,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: "Edit Deck", hint: edit_hint }
+                ScreenHeader { title: "Edit deck", hint: edit_hint }
 
                 div { class: "screen-content content-enter",
                 div { class : "container-sm",

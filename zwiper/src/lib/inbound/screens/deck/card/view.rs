@@ -1157,7 +1157,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: "Deck Cards", hint: deck_cards_hint_open }
+                ScreenHeader { title: "Deck cards", hint: deck_cards_hint_open }
 
                 div { class: "screen-content",
 
