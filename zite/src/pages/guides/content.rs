@@ -874,11 +874,11 @@ pub static GUIDES: &[Guide] = &[
             },
             Block::H2("Three per deck"),
             Block::P(
-                "Each deck holds three MVP slots. Once three are starred, Zwipe turns down a fourth (\"This deck already has 3 MVPs\"), so promoting a new one means unstarring one first. The cap is the point: it keeps your MVPs to the cards that truly define the deck, not a wish list.",
+                "Each deck holds three MVP slots. Once three are starred, Zwipe turns down a fourth (\"This deck already has 3 MVPs\"), so promoting a new one means unstarring one first. Three keeps MVPs to the cards that define the deck.",
             ),
             Block::H2("What a star does"),
             Block::P(
-                "Beyond marking the card in the list, your MVPs tell Zwipe what this deck is about, so it leans this deck's suggestions toward them. Stars are per deck, so what defines one deck never colors another.",
+                "Beyond marking the card in the list, your MVPs tell Zwipe what this deck is about, so it leans this deck's suggestions toward them. Stars are per deck, so one deck's MVPs never affect another's.",
             ),
             Block::H2("Removing and cloning"),
             Block::P(
