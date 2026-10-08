@@ -14,7 +14,7 @@ pub fn Contribute() -> Element {
     rsx! {
         PageMeta {
             title: "Contribute",
-            description: "Support Zwipe via Stripe, Buy Me a Coffee, or GitHub Sponsors. Funds keep the app free and the servers running.",
+            description: "Support Zwipe via Stripe, Buy Me a Coffee, or GitHub Sponsors. It goes to server costs and development.",
             path: "/contribute",
         }
         Nav {}
@@ -22,9 +22,8 @@ pub fn Contribute() -> Element {
             div { class: "section",
                 Panel { eyebrow: "Support", title: "Contribute", title_h1: true,
                     p {
-                        "Zwipe is a solo indie project: designed, built, and shipped by one person.
-                        If you're enjoying it, any support goes directly toward server costs and
-                        keeping development moving."
+                        "Zwipe is made by one person. If you're enjoying it, support goes straight
+                        to server costs and keeps development moving."
                     }
                 }
             }
