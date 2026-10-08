@@ -1,3 +1,6 @@
+# zervice, the nightly sync. Started by zervice.timer; a failed run fires
+# zervice-alert.service. Its environment holds only what it needs.
+
 [Unit]
 Description=Zwipe nightly sync (Scryfall, otags, rollups)
 Wants=network-online.target
@@ -6,7 +9,24 @@ OnFailure=zervice-alert.service
 
 [Service]
 Type=oneshot
-User=scadoshi
-WorkingDirectory=/home/scadoshi/zwipe
-EnvironmentFile=/home/scadoshi/zwipe/.env.zervice
-ExecStart=/home/scadoshi/zwipe/zervice
+User=zervice
+Group=zervice
+SupplementaryGroups=zwipe
+EnvironmentFile=/etc/zwipe/zervice.env
+ExecStart=/usr/local/bin/zervice
+
+UMask=0002
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/zwipe
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX

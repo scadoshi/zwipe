@@ -1,7 +1,10 @@
+# Emails the last journal lines when a scheduled zervice run fails. Runs as
+# root so it can read the journal; its environment is the three Resend values.
+
 [Unit]
-Description=Discord alert for a failed zervice run
+Description=Email alert for a failed zervice run
 
 [Service]
 Type=oneshot
-EnvironmentFile=/home/scadoshi/zwipe/.env
-ExecStart=/home/scadoshi/zwipe/zervice-alert.sh
+EnvironmentFile=/etc/zwipe/alert.env
+ExecStart=/usr/local/bin/zervice-alert

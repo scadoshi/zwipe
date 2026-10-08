@@ -1,0 +1,40 @@
+# zerver, the zwipe API. Runs as its own login-less user; the binary is
+# installed by the deploy runner, the environment lives in /etc/zwipe.
+
+[Unit]
+Description=zerver, the zwipe API
+Wants=network-online.target
+After=network-online.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=zerver
+Group=zerver
+SupplementaryGroups=zwipe
+EnvironmentFile=/etc/zwipe/zerver.env
+ExecStart=/usr/local/bin/zerver
+
+# Any exit restarts it, a clean one included (the 2026-09-11 outage).
+Restart=always
+RestartSec=5
+
+# Logs go to /var/log/zwipe, shared with zervice through the zwipe group.
+UMask=0002
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/zwipe
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target
