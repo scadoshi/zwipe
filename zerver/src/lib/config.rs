@@ -165,7 +165,7 @@ impl Config {
 ///
 /// Zervice only talks to Postgres and writes logs; it must not require (or
 /// even be offered) JWT/Resend/email secrets. Keep this to exactly what the
-/// sync pipeline needs; the systemd unit feeds it a matching `.env.zervice`.
+/// sync pipeline needs; the systemd unit feeds it `/etc/zwipe/zervice.env`.
 pub struct ZerviceConfig {
     /// PostgreSQL connection URL (e.g., "postgres://user:pass@host/db").
     pub database_url: String,
@@ -186,10 +186,10 @@ pub struct ZerviceConfig {
 impl ZerviceConfig {
     /// Loads zervice configuration from environment variables.
     ///
-    /// Deliberately no `dotenvy` auto-load: on the server the working directory
-    /// holds the full-secret `.env`, and slurping it would hand zervice every
-    /// secret anyway. Systemd supplies the env via `EnvironmentFile=`; local
-    /// runs source `.env.zervice` (or export the three vars) explicitly.
+    /// Deliberately no `dotenvy` auto-load: it reads whatever `.env` sits in
+    /// the working directory, which in a checkout is zerver's full-secret one.
+    /// Systemd supplies the env via `EnvironmentFile=`; local runs export the
+    /// vars explicitly.
     ///
     /// # Errors
     ///
