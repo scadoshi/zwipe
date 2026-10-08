@@ -794,7 +794,7 @@ pub static GUIDES: &[Guide] = &[
         related: &["oracle-tags", "filtering"],
         blocks: &[
             Block::Lead(
-                "Card roles are the read-side view of a card's oracle tags: coarse chips like Removal, Ramp, or Card advantage that tell you what a card does at a glance.",
+                "Card roles sum up a card's oracle tags in a few broad labels, like Removal, Ramp, or Card advantage, that tell you what a card does at a glance.",
             ),
             Block::H2("The chips"),
             Block::P(
@@ -823,7 +823,7 @@ pub static GUIDES: &[Guide] = &[
         related: &["deck-tags", "card-roles", "oracle-tags"],
         blocks: &[
             Block::Lead(
-                "Zwipe has three related tagging concepts, and they're easy to mix up. Here's how they fit together: deck tags seed oracle tags, oracle tags sharpen suggestions, and card roles are the read-side view of a card's oracle tags.",
+                "Zwipe has three related tagging concepts, and they're easy to mix up. Here's how they fit together: deck tags seed oracle tags, oracle tags sharpen suggestions, and card roles sum up what a card's oracle tags say.",
             ),
             Block::H2("Deck tags: the archetype you pick"),
             Block::P(
@@ -833,7 +833,7 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Oracle tags are granular and functional: `spot-removal`, `ramp`, `sacrifice-outlet`. Deck tags seed a starter set, but you can add or remove them directly if you want to dial things in further. Selected oracle tags are what sharpen which cards Zwipe suggests.",
             ),
-            Block::H2("Card roles: the read-side view"),
+            Block::H2("Card roles: the summary"),
             Block::P(
                 "Card roles are different from the other two: you never assign them, they're computed from a card's oracle tags. Those tags roll up into a small set of coarse roles, Removal, Ramp, Card advantage, shown as chips when you expand a card's row or open its rules. Tap a role to see the oracle tags underneath it. You can still filter the stack by role.",
             ),
