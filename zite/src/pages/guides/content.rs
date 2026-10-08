@@ -434,7 +434,7 @@ pub static GUIDES: &[Guide] = &[
             },
             Block::H2("A deck's card list"),
             Block::P(
-                "Group by sections the cards by Type, Mana value, Color, or Card role, and None leaves them in one list; grouping by Color makes a group per exact color combination, headed by its mana pips. Boards is three independent toggles, Main, Maybe, and Side, so you can read two boards at once; turn the last one off and Main snaps back on. Show toggles Tokens, the Command zone, and Art, which eases the row artwork in and out for denser reading.",
+                "Group by sections the cards by Type, Mana value, Color, or Card role, and None leaves them in one list; grouping by Color makes a group per exact color combination, headed by its mana pips. Boards is three independent toggles, Main, Maybe, and Side, so you can read two boards at once; turn the last one off and Main snaps back on. Show toggles Tokens, the Command zone, and Art, which shows or hides card art.",
             ),
             Block::H2("Collapse what you're done with"),
             Block::P(
@@ -551,7 +551,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Two maybeboards, one word"),
             Block::P(
-                "Every deck has its own maybeboard for cards you might add to that deck. The commander maybeboard is different: it belongs to your account, not any deck, and it holds commanders only. Same gesture, same idea, wider scope.",
+                "Every deck has its own maybeboard for cards you might add to that deck. The commander maybeboard is different: it belongs to your account, not any deck, and it holds commanders only.",
             ),
             Block::H2("Save a commander"),
             Block::P(
@@ -601,7 +601,7 @@ pub static GUIDES: &[Guide] = &[
             },
             Block::H2("Swipe right from the list"),
             Block::P(
-                "The Swipe button deals commanders right on this screen, with your saves left out of the pile so every card is a fresh idea. A right swipe starts a new deck with the pick; up saves it for later, like everywhere else.",
+                "The Swipe button deals commanders right on this screen, with your saves left out, so you only see commanders you haven't saved. A right swipe starts a new deck with the pick; up saves it for later, like everywhere else.",
             ),
             Block::Note(
                 "Clear the whole list from More, then Clear maybeboard. It asks first, because there's no undo.",
@@ -652,7 +652,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Set the target"),
             Block::P(
-                "The Land target stepper starts at \"Not set.\" The first tap seeds a sensible default (about 37 for 100-card formats, 17 for 60-card), then you adjust.",
+                "The Land target stepper starts at \"Not set.\" The first tap sets a default (about 37 for 100-card formats, 17 for 60-card), then you adjust.",
             ),
             Block::H2("Feedback"),
             Block::P(
@@ -947,7 +947,7 @@ pub static GUIDES: &[Guide] = &[
         related: &["budgeting", "land-targets", "import-export"],
         blocks: &[
             Block::Lead(
-                "Open a deck and its stats build themselves. Everything reflects your mainboard; sideboard and maybeboard cards are excluded.",
+                "Open a deck and its stats update as you build. Everything reflects your mainboard; sideboard and maybeboard cards are excluded.",
             ),
             Block::H2("Profile, Budget & Tags"),
             Block::P(
