@@ -123,7 +123,7 @@ install -d -m 700 -o scadoshi -g scadoshi /home/scadoshi/.ssh
 install -m 600 -o scadoshi -g scadoshi /root/.ssh/authorized_keys /home/scadoshi/.ssh/authorized_keys
 ```
 
-Each key in `authorized_keys` ends with a label naming its device (`scotland-halo`, `scotland-laptop`, `phone-termius`, `scotland-server`). Add one when you add a key, so an unknown key stands out.
+Each key in `authorized_keys` ends with a label naming its device. Add one when you add a key, so an unknown key stands out.
 
 Install Tailscale (section above), then log in from your Mac as `scadoshi@<server-tailnet-ip>` and check `sudo -v` before the next step.
 
