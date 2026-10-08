@@ -1,6 +1,6 @@
 # Palette roles: one job per hue
 
-**Status: PLANNED 2026-10-08. Phase 1 (roles) is next; phase 2 (accent survey) follows once roles are reviewed. Builds on `palette.md`, which is done.**
+**Status: PHASE 1 SHIPPED 2026-10-08 (zwipe `c9dd0408`, consumers re-pinned). Phase 2 (accent survey) follows once the roles are reviewed on device. Builds on `palette.md`, which is done.**
 
 **One sentence:** give every colored thing in the app and the sites a role (title, label, number, name, link, action, glyph, selected), pin each role to one variable, and let each theme decide which of its hues fills each variable, the way a syntax theme gives "keyword" and "string" fixed roles and lets Gruvbox make them red and green while Hackerman makes them blue and cyan.
 
@@ -69,5 +69,5 @@ Published colors still never change; only which published hue sits in which vari
 
 ## Open decisions
 
-- Phase 1 map: proposed 2026-10-08, awaiting the owner's read of this plan.
+- Phase 1 map: shipped 2026-10-08 as proposed, with two additions found in the pass: the MVP badge (`.card-row-mvp`, `.deck-featured-role-mvp`, zite `.sd-cz-role-mvp`) is a glyph (slot 6), and hint keys that name a danger or warning button keep their status color.
 - Phase 2 per-theme accents: to be rated on renders after phase 1 ships.
