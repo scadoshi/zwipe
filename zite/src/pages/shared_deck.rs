@@ -375,7 +375,6 @@ pub fn SharedDeck(token: String) -> Element {
                 // right there for anyone who wants to explore).
                 div { class: "dead-end content-enter",
                     Panel {
-                        eyebrow: "Shared deck",
                         title: "Deck not shared",
                         title_h1: true,
                         p { class: "subtitle",
@@ -392,7 +391,6 @@ pub fn SharedDeck(token: String) -> Element {
                 }
                 div { class: "dead-end content-enter",
                     Panel {
-                        eyebrow: "Shared deck",
                         title: "Could not load this deck",
                         title_h1: true,
                         // Retry rides the panel's own action row.

@@ -90,7 +90,7 @@ fn Testimonials() -> Element {
             // One Reviews Panel holding everything: the live App Store rating
             // as a clickable share-screen-style tag, then the auto-scrolling
             // review track nested inside its body.
-            Panel { eyebrow: "Reviews", title: "Deck builder testimonials",
+            Panel { title: "Deck builder testimonials",
                 a {
                     class: "rating-tag",
                     href: APP_STORE_URL,
@@ -292,7 +292,7 @@ pub fn Home() -> Element {
                 div { class: "demo-col",
                     // Same Panel grammar as the rest of the band; the per-clip
                     // caption under the video does the describing.
-                    Panel { eyebrow: "Demo", title: "Watch it work",
+                    Panel { title: "Watch it work",
                         GalleryFrame { index, total, noun: "demo",
                             video {
                                 // key forces a remount when index changes so autoplay re-fires
@@ -317,7 +317,7 @@ pub fn Home() -> Element {
                 // and tags. Hosting basics (accounts, sync, import) are
                 // assumed service table stakes, not pitched.
                 div { class: "features-stack",
-                    Panel { eyebrow: "Build", title: "Swipe to build",
+                    Panel { title: "Swipe to build",
                         ul { class: "card-bullets",
                             li { "Right to add a card" }
                             li { "Left to skip it" }
@@ -327,14 +327,14 @@ pub fn Home() -> Element {
                             li { "Swipe-pick your commander, partner, background, or signature spell" }
                         }
                     }
-                    Panel { eyebrow: "Synergy", title: "Served in synergy order",
+                    Panel { title: "Served in synergy order",
                         ul { class: "card-bullets",
                             li { "Most synergistic cards show first based on your selected commander" }
                             li { "The order learns from swipes: crowd favorites rise as players build" }
                             li { "Only cards legal in your format and colors" }
                         }
                     }
-                    Panel { eyebrow: "Tags", title: "Know what every card does",
+                    Panel { title: "Know what every card does",
                         ul { class: "card-bullets",
                             li { "Every card labeled by role: ramp, removal, counterspell, tokens, and more" }
                             li { "Filter your feed by what a card does" }

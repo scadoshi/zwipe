@@ -20,7 +20,7 @@ pub fn Contribute() -> Element {
         Nav {}
         div { class: "page content-enter",
             div { class: "section",
-                Panel { eyebrow: "Support", title: "Contribute", title_h1: true,
+                Panel { title: "Contribute", title_h1: true,
                     p {
                         "Zwipe is made by one person. If you're enjoying it, support goes straight
                         to server costs and keeps development moving."

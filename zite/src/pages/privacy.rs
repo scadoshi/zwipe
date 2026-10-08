@@ -27,7 +27,7 @@ pub fn Privacy() -> Element {
         Nav {}
         div { class: "page content-enter",
             div { class: "section",
-                Panel { eyebrow: "Legal", title: "Privacy Policy", title_h1: true,
+                Panel { title: "Privacy Policy", title_h1: true,
                     p { "Last updated: {PRIVACY_LAST_UPDATED}" }
                 }
             }

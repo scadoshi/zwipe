@@ -75,7 +75,7 @@ pub fn FeaturedFlavor(overlay: Signal<Option<ScryfallData>>) -> Element {
 
     rsx! {
         section { class: "featured-flavor",
-            Panel { eyebrow: "Flavor", title: "Featured flavor",
+            Panel { title: "Featured flavor",
                 div { class: "ff-quote", "{flavor_text}" }
                 div { class: "ff-name-row",
                     span {

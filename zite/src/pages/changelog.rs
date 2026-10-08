@@ -13,7 +13,7 @@ pub fn Changelog() -> Element {
         Nav {}
         div { class: "page content-enter",
             div { class: "page-header",
-                Panel { eyebrow: "Releases", title: "Changelog", title_h1: true,
+                Panel { title: "Changelog", title_h1: true,
                     p { class: "tagline", "Every release, newest first." }
                 }
             }

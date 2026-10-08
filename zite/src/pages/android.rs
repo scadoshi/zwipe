@@ -30,7 +30,7 @@ pub fn Android() -> Element {
         Nav {}
         div { class: "page content-enter",
             div { class: "section",
-                Panel { eyebrow: "Download", title: "Opening Google Play…", title_h1: true,
+                Panel { title: "Opening Google Play…", title_h1: true,
                     p {
                         "If you're not redirected automatically, "
                         a {

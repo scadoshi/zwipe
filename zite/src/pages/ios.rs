@@ -30,7 +30,7 @@ pub fn Ios() -> Element {
         Nav {}
         div { class: "page content-enter",
             div { class: "section",
-                Panel { eyebrow: "Download", title: "Opening the App Store…", title_h1: true,
+                Panel { title: "Opening the App Store…", title_h1: true,
                     p {
                         "If you're not redirected automatically, "
                         a {

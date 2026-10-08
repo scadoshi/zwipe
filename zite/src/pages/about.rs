@@ -48,7 +48,7 @@ pub fn About() -> Element {
 
             div { class: "section",
                 div { class: "section-head",
-                    Panel { eyebrow: "Section", title: "System Architecture",
+                    Panel { title: "System Architecture",
                         p { class: "card-summary", "Six Rust crates in one workspace. What each one does, and where it pulls from." }
                     }
                 }
@@ -201,12 +201,12 @@ pub fn About() -> Element {
 
             div { class: "section",
                 div { class: "section-head",
-                    Panel { eyebrow: "Section", title: "Under the Hood",
+                    Panel { title: "Under the Hood",
                         p { class: "card-summary", "The engineering discipline behind it." }
                     }
                 }
                 div { class: "card-grid",
-                    Panel { eyebrow: "Design", title: "Hexagonal architecture",
+                    Panel { title: "Hexagonal architecture",
                         p { class: "card-summary",
                             "Ports and adapters, in practice."
                         }
@@ -221,7 +221,7 @@ pub fn About() -> Element {
                         }
                     }
 
-                    Panel { eyebrow: "Quality", title: "Testing & lint discipline",
+                    Panel { title: "Testing & lint discipline",
                         p { class: "card-summary",
                             "750+ tests, 450+ in "
                             a { href: URL_ZWIPE_CORE, "zwipe-core" }
@@ -250,7 +250,7 @@ pub fn About() -> Element {
                         }
                     }
 
-                    Panel { eyebrow: "Process", title: "How AI is used",
+                    Panel { title: "How AI is used",
                         p { class: "card-summary",
                             "I learn the approach before a model writes any code."
                         }
@@ -262,7 +262,7 @@ pub fn About() -> Element {
                         }
                     }
 
-                    Panel { eyebrow: "Auth", title: "Authentication",
+                    Panel { title: "Authentication",
                         p { class: "card-summary",
                             "Built in-house rather than from an auth service."
                         }
@@ -280,7 +280,7 @@ pub fn About() -> Element {
                         }
                     }
 
-                    Panel { eyebrow: "Types", title: "Type safety",
+                    Panel { title: "Type safety",
                         p { class: "card-summary",
                             "User input becomes a validated type before anything trusts it."
                         }
@@ -302,7 +302,7 @@ pub fn About() -> Element {
                         }
                     }
 
-                    Panel { eyebrow: "Sync", title: "Card data pipeline",
+                    Panel { title: "Card data pipeline",
                         p { class: "card-summary",
                             "115k+ printings synced nightly from "
                             a { href: URL_SCRYFALL, "Scryfall" }

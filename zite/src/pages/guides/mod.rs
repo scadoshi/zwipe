@@ -257,7 +257,7 @@ pub fn Guides() -> Element {
         Nav {}
         div { class: "page content-enter",
             div { class: "page-header",
-                Panel { eyebrow: "Explore", title: "Guides", title_h1: true,
+                Panel { title: "Guides", title_h1: true,
                     p { class: "tagline", "How Zwipe works, one feature at a time." }
                 }
             }
@@ -359,7 +359,7 @@ pub fn GuidePage(slug: String) -> Element {
             Nav {}
             div { class: "page content-enter",
                 div { class: "section",
-                    Panel { eyebrow: "Guides", title: "Guide not found", title_h1: true,
+                    Panel { title: "Guide not found", title_h1: true,
                         p { class: "guide-p",
                             "That guide doesn't exist. "
                             Link { to: Route::Guides {}, "Back to all guides" }
@@ -425,7 +425,7 @@ pub fn GuidePage(slug: String) -> Element {
                     rsx! {
                         div { class: "guide-with-gallery",
                             div { class: "guide-gallery-col",
-                                Panel { eyebrow: "Screens", title: "In the app",
+                                Panel { title: "In the app",
                                     GuideGallery { shots }
                                 }
                             }

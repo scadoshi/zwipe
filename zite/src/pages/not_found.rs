@@ -26,7 +26,6 @@ pub fn NotFound(segments: Vec<String>) -> Element {
         Nav {}
         div { class: "dead-end content-enter",
             Panel {
-                eyebrow: "404",
                 title: "Page not found",
                 title_h1: true,
                 p { class: "subtitle",

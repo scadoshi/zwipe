@@ -13,7 +13,7 @@ pub fn Community() -> Element {
         Nav {}
         div { class: "page content-enter",
             div { class: "section",
-                Panel { eyebrow: "Community", title: "Community", title_h1: true,
+                Panel { title: "Community", title_h1: true,
                     p { "Get help, report bugs, suggest features, and follow updates." }
                 }
             }
