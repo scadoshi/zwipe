@@ -841,9 +841,7 @@ pub static GUIDES: &[Guide] = &[
             Block::Diagram(
                 "You configure\n  Deck tags\n     │ seed\n     ▼\n  Oracle tags  (refine freely)\n     │ match\n     ▼\nZwipe serves\n  cards that fit your deck",
             ),
-            Block::P(
-                "The more you set up a deck, the better its suggestions.",
-            ),
+            Block::P("The more you set up a deck, the better its suggestions."),
             Block::H2("The one-liner"),
             Block::P(
                 "Tell Zwipe what your deck does, and it suggests cards that fit. Deck tags and oracle tags are how you tell Zwipe; card roles are how Zwipe shows you what any given card brings to the table.",
