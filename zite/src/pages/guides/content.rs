@@ -930,7 +930,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Stop sharing"),
             Block::P(
-                "Same dialog, Stop share. The link dies immediately. Sharing again later mints a fresh link, so the old one stays dead wherever you posted it.",
+                "Same dialog, Stop share. The link stops working right away. Sharing again later makes a new link, so the old one stays broken wherever you posted it.",
             ),
             Block::Image {
                 file: "share-your-deck/03-stop-share.webp",
