@@ -20,7 +20,7 @@ pub const PRIVACY_LAST_UPDATED: &str = "October 2026";
 pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>
 <p>Zwipe is a <a href="https://magic.wizards.com/en" target="_blank" rel="noopener noreferrer">Magic: The Gathering</a> deck builder for mobile. This policy describes what data we collect, how we use it, and your rights.</p>
 
-<h2>Data We Collect</h2>
+<h2>Data we collect</h2>
 <ul>
 <li><strong>Account data</strong>: email address, username, and a hashed password (never stored in plaintext).</li>
 <li><strong>Deck data</strong>: the decks and card selections you create within the app, including cards you skip or remove per deck so they stop being suggested for that deck (you can clear this anytime from the deck's More menu).</li>
@@ -30,7 +30,7 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>
 </ul>
 <p>We do not collect location data or device identifiers, or any data beyond what is required to operate and improve the app.</p>
 
-<h2>How We Use Your Data</h2>
+<h2>How we use your data</h2>
 <ul>
 <li>To authenticate your account and maintain sessions.</li>
 <li>To store and sync your decks across devices.</li>
@@ -41,7 +41,7 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>
 </ul>
 <p>We do not sell, share, or use your data for advertising.</p>
 
-<h2>Third-Party Services</h2>
+<h2>Third-party services</h2>
 <ul>
 <li><strong><a href="https://scryfall.com" target="_blank" rel="noopener noreferrer">Scryfall</a></strong>: card data (names, images, oracle text) is sourced from the Scryfall API and stored on our servers. Your account data is never shared with Scryfall.</li>
 <li><strong><a href="https://resend.com" target="_blank" rel="noopener noreferrer">Resend</a></strong>: transactional email delivery (verification and password reset emails). Your email address is passed to Resend solely to deliver these messages.</li>
@@ -49,10 +49,10 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>
 <li><strong><a href="https://www.cloudflare.com" target="_blank" rel="noopener noreferrer">Cloudflare</a></strong>: all traffic between the app and our server passes through Cloudflare's network, which forwards requests to our server.</li>
 </ul>
 
-<h2>Data Retention</h2>
+<h2>Data retention</h2>
 <p>Your data is retained as long as your account exists. You can delete your account at any time from within the app, which permanently removes all associated data. Anonymous diagnostic reports are deleted automatically after 90 days. If you want a copy of your data, or can't reach the app to delete your account, contact support and we will do it for you.</p>
 
-<h2>Where Your Data Lives</h2>
+<h2>Where your data lives</h2>
 <p>Zwipe's server and database run on a virtual server rented from Hetzner in Hillsboro, Oregon, in the United States.</p>
 
 <h2>Security</h2>
@@ -61,5 +61,5 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>
 <h2>Children</h2>
 <p>Zwipe is not directed at children under 13. We do not knowingly collect data from children under 13.</p>
 
-<h2>Fan Content</h2>
+<h2>Fan content</h2>
 <p>Zwipe is unofficial Fan Content permitted under the <a href="https://company.wizards.com/en/legal/fancontentpolicy" target="_blank" rel="noopener noreferrer">Fan Content Policy</a>. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.</p>"#;

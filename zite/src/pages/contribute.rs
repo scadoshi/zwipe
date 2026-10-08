@@ -31,7 +31,7 @@ pub fn Contribute() -> Element {
             div { class: "section",
                 div { class: "card-grid",
                     Panel {
-                        eyebrow: "One-Time",
+                        eyebrow: "One-time",
                         title: "Stripe",
                         actions: rsx! {
                             a {
@@ -43,7 +43,7 @@ pub fn Contribute() -> Element {
                         p { class: "card-summary", "Pay what you want. No account required." }
                     }
                     Panel {
-                        eyebrow: "One-Time",
+                        eyebrow: "One-time",
                         title: "Buy Me a Coffee",
                         actions: rsx! {
                             a {

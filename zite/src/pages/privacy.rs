@@ -20,14 +20,14 @@ fn privacy_sections() -> Vec<String> {
 pub fn Privacy() -> Element {
     rsx! {
         PageMeta {
-            title: "Privacy Policy",
+            title: "Privacy policy",
             description: "Zwipe privacy policy: what data is collected, how it's used, and your rights.",
             path: "/privacy",
         }
         Nav {}
         div { class: "page content-enter",
             div { class: "section",
-                Panel { title: "Privacy Policy", title_h1: true,
+                Panel { title: "Privacy policy", title_h1: true,
                     p { "Last updated: {PRIVACY_LAST_UPDATED}" }
                 }
             }

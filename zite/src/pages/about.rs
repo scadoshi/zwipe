@@ -48,7 +48,7 @@ pub fn About() -> Element {
 
             div { class: "section",
                 div { class: "section-head",
-                    Panel { title: "System Architecture",
+                    Panel { title: "System architecture",
                         p { class: "card-summary", "Six Rust crates in one workspace. What each one does, and where it pulls from." }
                     }
                 }
@@ -201,7 +201,7 @@ pub fn About() -> Element {
 
             div { class: "section",
                 div { class: "section-head",
-                    Panel { title: "Under the Hood",
+                    Panel { title: "Under the hood",
                         p { class: "card-summary", "The engineering discipline behind it." }
                     }
                 }

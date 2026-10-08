@@ -290,7 +290,7 @@ pub fn Footer() -> Element {
     rsx! {
         footer {
             p { "© 2026 Zwipe | "
-                Link { to: Route::Privacy {}, "Privacy Policy" }
+                Link { to: Route::Privacy {}, "Privacy policy" }
                 " | "
                 Link { to: Route::Community {}, "Community" }
             }
