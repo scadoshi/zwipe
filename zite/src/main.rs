@@ -289,8 +289,15 @@ pub fn Nav() -> Element {
 pub fn Footer() -> Element {
     rsx! {
         footer {
-            p { "© 2026 scadoshi | "
+            p { "© 2026 Zwipe | "
                 Link { to: Route::Privacy {}, "Privacy Policy" }
+                " | "
+                Link { to: Route::Community {}, "Community" }
+            }
+            p { class: "fan-content-notice",
+                "Card data and images from "
+                a { href: "https://scryfall.com", "Scryfall" }
+                "."
             }
             p { class: "fan-content-notice",
                 "Zwipe is unofficial Fan Content permitted under the "
