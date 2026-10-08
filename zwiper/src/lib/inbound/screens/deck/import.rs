@@ -124,9 +124,9 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     open: import_hint,
                     title: "Importing cards",
                     HintBullets {
-                        HintBullet { "Paste a decklist, or switch " HintKey { color: "--accent-primary", "From" } " to an Archidekt deck link" }
-                        HintBullet { HintKey { color: "--color-success", "Add" } " keeps your current cards. " HintKey { color: "--color-warning", "Replace" } " swaps the board's contents" }
-                        HintBullet { HintKey { color: "--accent-secondary", "Board" } " picks where the cards go" }
+                        HintBullet { "Paste a decklist, or switch " HintKey { "From" } " to an Archidekt deck link" }
+                        HintBullet { HintKey { "Add" } " keeps your current cards. " HintKey { color: "--color-warning", "Replace" } " swaps the board's contents" }
+                        HintBullet { HintKey { "Board" } " picks where the cards go" }
                         HintBullet { "Importing clears the deck's undo history" }
                     }
                 }

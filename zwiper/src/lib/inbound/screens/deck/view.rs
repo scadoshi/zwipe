@@ -560,10 +560,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 open: first_deck_hint_open,
                 title: "Welcome to your deck",
                 HintBullets {
-                    HintBullet { HintKey { color: "--accent-primary", "Cards" } " browses, adds and removes cards" }
-                    HintBullet { HintKey { color: "--accent-secondary", "Edit" } " changes the name, format, command zone, tags and targets" }
-                    HintBullet { HintKey { color: "--accent-tertiary", "More" } " imports, exports, clones, shares or deletes the deck" }
-                    HintBullet { "Skipped and removed cards stay out of the add stack. " HintKey { color: "--accent-tertiary", "More" } " then Clear skips brings them back" }
+                    HintBullet { HintKey { "Cards" } " browses, adds and removes cards" }
+                    HintBullet { HintKey { "Edit" } " changes the name, format, command zone, tags and targets" }
+                    HintBullet { HintKey { "More" } " imports, exports, clones, shares or deletes the deck" }
+                    HintBullet { "Skipped and removed cards stay out of the add stack. " HintKey { "More" } " then Clear skips brings them back" }
                     HintBullet { "Stats fill in as the deck grows. Tap a section to expand it" }
                     HintBullet { "Warnings flag rule problems, each with a one-tap fix" }
                 }

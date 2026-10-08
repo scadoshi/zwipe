@@ -1163,7 +1163,7 @@ pub(crate) fn DeckFieldsHint(open: Signal<bool>) -> Element {
             HintBullets {
                 HintBullet { HintColored { color: "--accent-primary", "Profile" } " is what the deck is, " HintColored { color: "--accent-secondary", "Budget" } " what it may cost, " HintColored { color: "--accent-tertiary", "Tags" } " what it does" }
                 HintBullet { "Tags shape which cards we suggest" }
-                HintBullet { "Tap a field's " HintKey { color: "--accent-primary", "?" } " for what it does" }
+                HintBullet { "Tap a field's " HintKey { color: "--palette-6", "?" } " for what it does" }
             }
         }
     }

@@ -1537,7 +1537,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " skips it" }
                     HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " sends it to the maybeboard" }
                     HintBullet { "Swipe " HintColored { color: "--accent-tertiary", "down" } " undoes the last swipe" }
-                    HintBullet { HintKey { color: "--accent-primary", "Synergy" } " on keeps the stack to cards that work with your commander. Off shows every legal card" }
+                    HintBullet { HintKey { "Synergy" } " on keeps the stack to cards that work with your commander. Off shows every legal card" }
                 }
                 HintLine { "Sort only reorders. It never hides cards" }
             }

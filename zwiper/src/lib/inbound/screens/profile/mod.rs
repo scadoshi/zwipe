@@ -227,8 +227,8 @@ pub fn Profile() -> Element {
                     open: profile_hint_open,
                     title: "Your profile",
                     HintBullets {
-                        HintBullet { "Tap a row's " HintKey { color: "--accent-primary", "?" } " for what it does" }
-                        HintBullet { HintKey { color: "--accent-tertiary", "More" } " deletes your account" }
+                        HintBullet { "Tap a row's " HintKey { color: "--palette-6", "?" } " for what it does" }
+                        HintBullet { HintKey { "More" } " deletes your account" }
                     }
                 }
 

@@ -579,7 +579,7 @@ pub(crate) fn SwipeSelect(
                         HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " saves it to your commander maybeboard" }
                         HintBullet { "Swipe " HintColored { color: "--accent-tertiary", "down" } " undoes the last swipe" }
                     }
-                    HintLine { "Most-played first. " HintKey { color: "--accent-secondary", "Filter" } " narrows by color or anything else" }
+                    HintLine { "Most-played first. " HintKey { "Filter" } " narrows by color or anything else" }
                 }
             }
         }

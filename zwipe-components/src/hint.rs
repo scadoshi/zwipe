@@ -55,7 +55,7 @@ pub fn HintBullet(children: Element) -> Element {
 /// variable name.
 #[component]
 pub fn HintKey(
-    #[props(default = "--accent-tertiary".to_string())] color: String,
+    #[props(default = "--palette-2".to_string())] color: String,
     children: Element,
 ) -> Element {
     rsx! {

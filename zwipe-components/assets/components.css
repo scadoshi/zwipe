@@ -91,8 +91,8 @@
     margin-bottom: 0.5rem;
     width: auto;
     background: none;
-    border: 1px solid var(--accent-secondary);
-    color: var(--accent-secondary);
+    border: 1px solid var(--palette-2);
+    color: var(--palette-2);
     font-family: "JetBrains Mono", monospace;
     font-weight: 400;
     cursor: pointer;
@@ -183,10 +183,10 @@
    plain info chips. */
 .keyword-chip {
     padding: 0.15rem 0.5rem;
-    border: 1px solid var(--accent-primary);
+    border: 1px solid var(--palette-1);
     border-radius: 0.4rem;
     font-size: 0.75rem;
-    color: var(--accent-primary);
+    color: var(--palette-1);
     background-color: var(--bg-primary);
     cursor: pointer;
     transition:
@@ -205,7 +205,7 @@
 
 .keyword-chip.active {
     color: var(--bg-primary);
-    background-color: var(--accent-primary);
+    background-color: var(--accent-secondary);
 }
 
 /* Inline reminder reveal below the chip row — eases open via the grid-rows
@@ -340,7 +340,7 @@
 
 .card-row-mvp {
     display: inline-block;
-    color: var(--palette-5);
+    color: var(--palette-6);
     font-size: 1.1rem;
     margin-right: 0.3rem;
     line-height: 1;
@@ -367,19 +367,19 @@
     white-space: nowrap;
 }
 
-/* Price reads as money: green (success). */
+/* Price is a number: slot 5. */
 .card-row-price {
     font-variant-numeric: tabular-nums;
-    color: var(--palette-3);
-    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
+    color: var(--palette-5);
+    background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-5) 35%, transparent);
 }
 
-/* P/T (creatures) and loyalty (planeswalkers): neutral accent stat. */
+/* P/T (creatures) and loyalty (planeswalkers): a number, slot 5. */
 .card-row-stat {
-    color: var(--accent-primary);
-    background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
-    border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
+    color: var(--palette-5);
+    background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-5) 35%, transparent);
 }
 
 .card-row-colors {
@@ -479,7 +479,7 @@
 .card-detail-name {
     margin: 0;
     font-size: 0.9rem;
-    color: var(--accent-primary);
+    color: var(--palette-3);
     word-break: break-word;
     white-space: normal;
 }
@@ -679,15 +679,15 @@ i.ms.ms-cost.ms-gp {
 /* Color-coded meta chips, consistent with the no-image card: type = accent-1,
    rarity = accent-3, set = success-green, P/T-or-loyalty = warning-yellow. */
 .detail-chip-type {
-    color: var(--accent-primary);
-    background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
-    border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
+    color: var(--palette-1);
+    background-color: color-mix(in srgb, var(--palette-1) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-1) 35%, transparent);
 }
 
 .detail-chip-rarity {
-    color: var(--accent-tertiary);
-    background-color: color-mix(in srgb, var(--accent-tertiary) 12%, transparent);
-    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, transparent);
+    color: var(--palette-4);
+    background-color: color-mix(in srgb, var(--palette-4) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-4) 35%, transparent);
 }
 
 .detail-chip-set {
@@ -728,8 +728,8 @@ i.ms.ms-cost.ms-gp {
 
 @media (hover: hover) {
     .card-action-btn:hover {
-        border-color: var(--accent-primary);
-        color: var(--accent-primary);
+        border-color: var(--palette-2);
+        color: var(--palette-2);
     }
 }
 
@@ -744,8 +744,8 @@ i.ms.ms-cost.ms-gp {
 }
 
 .card-detail-otags .detail-chip {
-    border-color: var(--accent-tertiary);
-    color: var(--accent-tertiary);
+    border-color: var(--palette-1);
+    color: var(--palette-1);
 }
 
 /* Block-quote frame for a role's exposed otags, echoing .keyword-reveal-text. */
@@ -790,10 +790,10 @@ i.ms.ms-cost.ms-gp {
 
 .otag-examples-btn {
     padding: 0.1rem 0.55rem;
-    border: 1px solid var(--accent-secondary);
+    border: 1px solid var(--palette-2);
     border-radius: 0.4rem;
     font-size: 0.72rem;
-    color: var(--accent-secondary);
+    color: var(--palette-2);
     background-color: var(--bg-primary);
     cursor: pointer;
 }
@@ -806,7 +806,7 @@ i.ms.ms-cost.ms-gp {
     display: block;
     margin-bottom: 0.25rem;
     font-size: 0.7rem;
-    color: var(--accent-primary);
+    color: var(--accent-tertiary);
 }
 
 /* ---- FlippableCardImage (zwipe_components::FlippableCardImage) ----
@@ -894,7 +894,7 @@ i.ms.ms-cost.ms-gp {
     line-height: 1.25;
     letter-spacing: 0.3px;
     word-break: break-word;
-    color: var(--accent-tertiary);
+    color: var(--palette-3);
 }
 
 /* Hairline divider between card sections, full-bleed to the card edges (negative
@@ -944,15 +944,15 @@ i.ms.ms-cost.ms-gp {
 
 /* Type / rarity / set chips, each tinted with its own accent. */
 .nic-chip-type {
-    color: var(--accent-primary);
-    background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
-    border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
+    color: var(--palette-1);
+    background-color: color-mix(in srgb, var(--palette-1) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-1) 35%, transparent);
 }
 
 .nic-chip-rarity {
-    color: var(--accent-tertiary);
-    background-color: color-mix(in srgb, var(--accent-tertiary) 12%, transparent);
-    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, transparent);
+    color: var(--palette-4);
+    background-color: color-mix(in srgb, var(--palette-4) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-4) 35%, transparent);
 }
 
 .nic-chip-set {
@@ -2188,7 +2188,7 @@ html[data-wipe="left"]::view-transition-new(root) {
 
 .stats-strip .stat-num {
     font-weight: 600;
-    color: var(--accent-primary);
+    color: var(--palette-5);
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
 }

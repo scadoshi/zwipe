@@ -221,9 +221,9 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
 
             HintDialog { open: hint, title: "Oracle tags",
             HintBullets {
-                HintBullet { "Tap a " HintKey { color: "--accent-tertiary", "letter" } " to browse, or " HintColored { color: "--accent-secondary", "search" } " by name or description" }
-                HintBullet { HintKey { color: "--accent-primary", "Examples" } " shows real cards with that tag" }
-                HintBullet { HintKey { color: "--color-success", "Use" } " adds the tag where you came from" }
+                HintBullet { "Tap a " HintKey { color: "--palette-1", "letter" } " to browse, or " HintColored { color: "--accent-secondary", "search" } " by name or description" }
+                HintBullet { HintKey { "Examples" } " shows real cards with that tag" }
+                HintBullet { HintKey { "Use" } " adds the tag where you came from" }
                 HintBullet { "Some tags have no description yet" }
             }
         }

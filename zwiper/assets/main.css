@@ -623,7 +623,7 @@ button {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background-color: var(--accent-secondary);
+    background-color: var(--palette-6);
     flex-shrink: 0;
     display: inline-block;
     align-self: center;
@@ -712,7 +712,7 @@ button {
 }
 
 .password-toggle-btn:hover {
-    color: var(--accent-primary);
+    color: var(--palette-1);
 }
 
 .input-sm {
@@ -744,7 +744,7 @@ button {
     font-size: 1rem;
     font-weight: 400;
     letter-spacing: 0.1em;
-    color: var(--accent-primary);
+    color: var(--accent-tertiary);
     margin-bottom: 0.4rem;
 }
 
@@ -752,7 +752,7 @@ button {
     font-size: 1rem;
     letter-spacing: 0.1em;
     margin-bottom: 0.25rem;
-    color: var(--accent-primary);
+    color: var(--accent-tertiary);
 }
 
 /* ============================
@@ -862,15 +862,15 @@ button {
 }
 
 .stat-chip-format {
-    color: var(--accent-secondary);
-    background-color: color-mix(in srgb, var(--accent-secondary) 12%, transparent);
-    border-color: color-mix(in srgb, var(--accent-secondary) 35%, transparent);
+    color: var(--palette-3);
+    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
 }
 
 .stat-chip-zone {
-    color: var(--accent-tertiary);
-    background-color: color-mix(in srgb, var(--accent-tertiary) 12%, transparent);
-    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, transparent);
+    color: var(--palette-3);
+    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
 }
 
 /* Deck archetype tags — muted/neutral so they read as labels, not stats. */
@@ -882,16 +882,16 @@ button {
 
 /* Power level (WotC bracket): a rating, so a palette color rather than an outcome. */
 .stat-chip-power {
-    color: var(--palette-3);
-    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
+    color: var(--palette-5);
+    background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-5) 35%, transparent);
 }
 
 /* Other tags (Budget/Jank/…) — colored so they read apart from archetype tags. */
 .stat-chip-other {
-    color: var(--accent-primary);
-    background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
-    border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
+    color: var(--palette-5);
+    background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-5) 35%, transparent);
 }
 
 /* Small count hint beside the Tags label (e.g. "2/5"). */
@@ -1356,7 +1356,7 @@ button {
 }
 
 .skeleton-chip-active {
-    border-color: var(--accent-primary);
+    border-color: var(--palette-6);
 }
 
 /* Home screen flavor text skeleton */
@@ -1689,7 +1689,7 @@ button {
 
 .carousel-dot.active {
     opacity: 1;
-    background: var(--accent-primary);
+    background: var(--accent-secondary);
 }
 
 /* ===============
@@ -1770,7 +1770,7 @@ button {
 .home-hero .stat-num {
     font-size: 1.25rem;
     font-weight: 600;
-    color: var(--accent-primary);
+    color: var(--palette-5);
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
 }
@@ -1870,7 +1870,7 @@ button {
 }
 
 .toggle-track.on {
-    background-color: var(--accent-primary);
+    background-color: var(--accent-secondary);
 }
 
 .toggle-track.off {
@@ -1988,14 +1988,14 @@ button {
     font-size: 0.75rem;
     font-weight: 500;
     line-height: 1.25;
-    color: var(--accent-primary);
+    color: var(--palette-5);
     padding: 0.5rem 1rem;
     align-self: flex-start;
 }
 
 .card-info-name {
     font-weight: 700;
-    color: var(--accent-tertiary);
+    color: var(--palette-3);
     max-width: calc(100vw - 4rem);
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -2102,8 +2102,8 @@ button {
 }
 
 .chip-xs.chip-primary {
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
+    border-color: var(--palette-2);
+    color: var(--palette-2);
 }
 
 .chip-unselected {
@@ -2368,7 +2368,7 @@ button {
 .label-xs {
     font-size: 0.875rem;
     margin-bottom: 0.25rem;
-    color: var(--accent-primary);
+    color: var(--accent-tertiary);
     font-weight: 400;
     letter-spacing: 0.1em;
     text-align: center;
@@ -2675,7 +2675,7 @@ button {
 }
 
 .flavor-source {
-    color: var(--accent-primary);
+    color: var(--accent-tertiary);
 }
 
 /* Card name + price tag, centered on their own line below the quote. Wraps
@@ -2717,16 +2717,16 @@ button {
     line-height: 1.3;
     white-space: normal;
     text-align: center;
-    background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
+    background-color: color-mix(in srgb, var(--palette-1) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--palette-1) 35%, transparent);
 }
 
 /* USD price, styled as a green money tag from the palette; opens the buy dialog. */
 .flavor-price {
     flex-shrink: 0;
-    color: var(--palette-3);
-    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--palette-3) 35%, transparent);
+    color: var(--palette-5);
+    background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--palette-5) 35%, transparent);
     font-variant-numeric: tabular-nums;
 }
 
@@ -2939,7 +2939,7 @@ button {
 .card-title {
     font-size: 1rem;
     letter-spacing: 0.1em;
-    color: var(--accent-tertiary);
+    color: var(--accent-primary);
 }
 
 /* Full-bleed divider under a subtitle inside a padded box (e.g. charts). */
@@ -3098,7 +3098,7 @@ button {
 }
 
 .field-count {
-    color: var(--accent-tertiary);
+    color: var(--palette-5);
     font-size: 0.85rem;
 }
 
@@ -3152,13 +3152,13 @@ button {
 }
 
 .tag-count {
-    color: var(--accent-tertiary);
+    color: var(--palette-5);
     font-size: 0.9rem;
     margin-left: auto;
 }
 
 .tag-search-label {
-    color: var(--accent-primary);
+    color: var(--accent-tertiary);
     font-size: 1rem;
     letter-spacing: 0.1em;
 }
@@ -3191,7 +3191,7 @@ button {
 }
 
 .tag-def-name {
-    color: var(--accent-tertiary);
+    color: var(--palette-3);
     font-weight: 600;
     margin-bottom: 0.15rem;
 }
@@ -3332,7 +3332,7 @@ button {
 }
 
 .dict-slug {
-    color: var(--accent-tertiary);
+    color: var(--palette-3);
     font-weight: 600;
     word-break: break-word;
 }
@@ -3444,7 +3444,7 @@ button {
 .privacy-content h2 {
     font-size: 1rem;
     letter-spacing: 0.1em;
-    color: var(--accent-tertiary);
+    color: var(--accent-primary);
 }
 
 .privacy-section hr {
@@ -3469,7 +3469,7 @@ button {
 
 .privacy-content a,
 .privacy-content .privacy-link {
-    color: var(--accent-primary);
+    color: var(--palette-1);
     text-decoration: underline;
     cursor: pointer;
 }
@@ -3616,15 +3616,15 @@ button {
 }
 
 .deck-featured-role-zone {
-    color: var(--accent-secondary);
-    background-color: color-mix(in srgb, var(--accent-secondary) 12%, var(--bg-primary));
-    border-color: color-mix(in srgb, var(--accent-secondary) 35%, var(--bg-primary));
+    color: var(--palette-3);
+    background-color: color-mix(in srgb, var(--palette-3) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--palette-3) 35%, var(--bg-primary));
 }
 
 .deck-featured-role-mvp {
-    color: var(--accent-tertiary);
-    background-color: color-mix(in srgb, var(--accent-tertiary) 12%, var(--bg-primary));
-    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, var(--bg-primary));
+    color: var(--palette-6);
+    background-color: color-mix(in srgb, var(--palette-6) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--palette-6) 35%, var(--bg-primary));
 }
 
 /* ── Commander maybeboard ─────────────────────────────────────────────── */

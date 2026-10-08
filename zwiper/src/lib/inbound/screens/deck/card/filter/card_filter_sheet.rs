@@ -322,7 +322,7 @@ pub(crate) fn CardFilterSheet(
             class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
 
             div { class: "modal-header", style: "position: relative;",
-                span { style: "font-size: 1rem; color: var(--accent-tertiary);", "Filter" }
+                span { style: "font-size: 1rem; color: var(--accent-primary);", "Filter" }
                 Button {
                     variant: ButtonVariant::Util,
                     style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
@@ -825,7 +825,7 @@ pub(crate) fn CardFilterSheet(
             HintBullets {
                 HintBullet { "Picks which cards show: the ones served to " HintColored { color: "--accent-primary", "swipe" } ", or which of the deck's cards list" }
                 HintBullet { "Open a section to set name, mana, type, color, " HintColored { color: "--accent-tertiary", "Oracle tags" } " and more. Stack as many as you want" }
-                HintBullet { HintKey { color: "--color-success", "Apply" } " uses it. " HintKey { color: "--color-warning", "Reset" } " then " HintKey { color: "--color-success", "Apply" } " goes back to the default view" }
+                HintBullet { HintKey { "Apply" } " uses it. " HintKey { color: "--color-warning", "Reset" } " then " HintKey { "Apply" } " goes back to the default view" }
                 HintBullet { "Each screen keeps its own filter" }
             }
         }

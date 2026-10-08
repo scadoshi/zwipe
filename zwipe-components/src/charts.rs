@@ -18,7 +18,7 @@ use zwipe_core::domain::deck::{deck_metrics::ManaBalanceRow, draw_odds::p_at_lea
 #[component]
 pub fn ChartLabel(text: &'static str, hint: Option<Element>) -> Element {
     rsx! {
-        span { style: "display:inline-flex;align-items:center;font-size:0.75rem;font-weight:600;color:var(--accent-primary);",
+        span { style: "display:inline-flex;align-items:center;font-size:0.75rem;font-weight:600;color:var(--accent-tertiary);",
             "{text}"
             if let Some(h) = hint { {h} }
         }
@@ -172,7 +172,7 @@ pub fn DrawOdds(
                     onclick: move |_| { let t = turn(); if t > 0 { turn.set(t - 1); } },
                     "-"
                 }
-                span { style: "display:inline-flex;align-items:center;font-size:0.75rem;font-weight:600;color:var(--accent-primary);",
+                span { style: "display:inline-flex;align-items:center;font-size:0.75rem;font-weight:600;color:var(--accent-tertiary);",
                     "{heading}"
                     if let Some(h) = hint { {h} }
                 }

@@ -130,7 +130,7 @@ impl HintTopic {
             Self::Commander => rsx! {
                 HintBullets {
                     HintBullet { "Search only shows cards that can lead this format. " HintKey { color: "--color-warning", "Filter" } " searches any card" }
-                    HintBullet { HintKey { color: "--accent-primary", "Swipe" } " picks one by swiping" }
+                    HintBullet { HintKey { "Swipe" } " picks one by swiping" }
                 }
             },
             Self::Partner => rsx! {
@@ -168,7 +168,7 @@ impl HintTopic {
                 HintLine { "Where password resets and verification go" }
             },
             Self::Verification => rsx! {
-                HintLine { "Confirms the email is yours. " HintKey { color: "--accent-primary", "Resend" } " if it never came" }
+                HintLine { "Confirms the email is yours. " HintKey { "Resend" } " if it never came" }
             },
             Self::Theme => rsx! {
                 HintBullets {
@@ -181,7 +181,7 @@ impl HintTopic {
             },
             Self::UniversesBeyond => rsx! {
                 HintBullets {
-                    HintBullet { HintKey { color: "--accent-secondary", "Hide" } " keeps crossover cards out of searches and commander picks" }
+                    HintBullet { HintKey { "Hide" } " keeps crossover cards out of searches and commander picks" }
                     HintBullet { "Exceptions keeps chosen franchises showing" }
                 }
             },
@@ -189,7 +189,7 @@ impl HintTopic {
                 HintLine { "Guides, the changelog and news, in your browser" }
             },
             Self::Version => rsx! {
-                HintLine { "The build you are on. " HintKey { color: "--accent-primary", "Changelog" } " lists what changed in each release" }
+                HintLine { "The build you are on. " HintKey { "Changelog" } " lists what changed in each release" }
             },
             Self::TypeChart => rsx! {
                 HintLine { "Mainboard cards by type" }
@@ -211,7 +211,7 @@ impl HintTopic {
             },
             Self::DrawOdds => rsx! {
                 HintBullets {
-                    HintBullet { "Chance of at least one card from each group in the opening hand, or by a turn. " HintKey { color: "--accent-primary", "-" } " and " HintKey { color: "--accent-primary", "+" } " step the turn" }
+                    HintBullet { "Chance of at least one card from each group in the opening hand, or by a turn. " HintKey { "-" } " and " HintKey { "+" } " step the turn" }
                     HintBullet { "Random draw only. Mulligans, tutors and card draw are not counted" }
                 }
             },

@@ -449,9 +449,9 @@ pub fn CommanderMaybeboard() -> Element {
                 HintLine { "Commanders you save land here" }
                 HintBullets {
                     HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " while picking a commander saves it here" }
-                    HintBullet { HintKey { color: "--accent-secondary", "Swipe" } " deals commanders: right starts a deck, up saves one" }
-                    HintBullet { HintKey { color: "--accent-primary", "Quick add" } " searches by name" }
-                    HintBullet { HintKey { color: "--color-success", "Create deck" } " starts a deck with that commander" }
+                    HintBullet { HintKey { "Swipe" } " deals commanders: right starts a deck, up saves one" }
+                    HintBullet { HintKey { "Quick add" } " searches by name" }
+                    HintBullet { HintKey { "Create deck" } " starts a deck with that commander" }
                     HintBullet { HintKey { color: "--color-error", "Remove" } " takes it off the list" }
                 }
             }

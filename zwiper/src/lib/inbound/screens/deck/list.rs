@@ -483,8 +483,8 @@ pub fn DeckList() -> Element {
                     title: "Your decks",
                     HintBullets {
                         HintBullet { "Tap a deck to open it" }
-                        HintBullet { HintKey { color: "--color-success", "Group by" } " folds the list into sections, " HintKey { color: "--accent-secondary", "Show" } " narrows it by color or tag" }
-                        HintBullet { HintKey { color: "--accent-tertiary", "Create" } " starts a new deck" }
+                        HintBullet { HintKey { "Group by" } " folds the list into sections, " HintKey { "Show" } " narrows it by color or tag" }
+                        HintBullet { HintKey { "Create" } " starts a new deck" }
                     }
                 }
 

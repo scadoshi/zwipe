@@ -38,7 +38,7 @@ pub fn UpdateRequired() -> Element {
                         hr { class: "box-rule", style: "margin-left: -1rem; margin-right: -1rem;" }
                         p { class: "text-muted",
                             "This version of "
-                            strong { style: "color: var(--accent-tertiary);", "Zwipe" }
+                            strong { style: "color: var(--palette-3);", "Zwipe" }
                             " is no longer supported. "
                             strong { style: "color: var(--accent-primary);", "Update to keep building." }
                         }

@@ -1697,10 +1697,10 @@ pub fn View(deck_id: Uuid) -> Element {
                 title: "Browsing your deck",
                 HintLine { "Tap a row for details, quantity and printings" }
                 HintBullets {
-                    HintBullet { "Tap a " HintColored { color: "--accent-primary", "keyword" } " chip for what it does, or a " HintColored { color: "--accent-secondary", "role" } " chip for its oracle tags" }
-                    HintBullet { HintKey { color: "--color-success", "Group by" } " sorts by type, mana value, color or role" }
-                    HintBullet { HintKey { color: "--accent-primary", "Boards" } " picks main, maybe or side" }
-                    HintBullet { HintKey { color: "--accent-tertiary", "Show" } " toggles tokens, the command zone and row art" }
+                    HintBullet { "Tap a " HintColored { color: "--palette-1", "keyword" } " chip for what it does, or a " HintColored { color: "--palette-1", "role" } " chip for its oracle tags" }
+                    HintBullet { HintKey { "Group by" } " sorts by type, mana value, color or role" }
+                    HintBullet { HintKey { "Boards" } " picks main, maybe or side" }
+                    HintBullet { HintKey { "Show" } " toggles tokens, the command zone and row art" }
                     HintBullet { HintKey { color: "--color-warning", "Star" } " marks up to three MVPs. Suggestions lean toward cards that share their roles" }
                 }
             }
