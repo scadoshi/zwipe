@@ -31,14 +31,14 @@ Slot order is fixed across themes so a given element has the same temperature ev
 | 5 | the theme's yellow | `#fabd2f` |
 | 6 | the theme's cyan or aqua | `#8ec07c` |
 
-A palette slot may hold the same value as a status color. Measured 2026-10-08: in 34 of 62 blocks the theme's only green and yellow are its success and warning colors, so excluding them would leave four slots and hide a theme's best hues from everyday use. The reservation is on the variable, not the color: `--color-success` means an outcome and ships with its context (a toast, a check, an error box), while `--palette-3` means nothing. The guard below enforces the variable. Where a theme has fewer than six hues (Nord, Vantablack, Miasma), slots repeat a hue at a different lightness.
+A palette slot may hold the same value as a status color. Measured 2026-10-08: in 34 of 62 blocks the theme's only green and yellow are its success and warning colors, so excluding them would leave four slots and hide a theme's best hues from everyday use. The reservation is on the variable, not the color: `--color-success` means an outcome and ships with its context (a toast, a check, an error box), while `--palette-3` means nothing. The guard below enforces the variable. Where a theme has fewer than six hues (Nord, Vantablack, Miasma), slots repeat the theme's own published shades; nothing is invented.
 
 ## Contrast: floors, not a target
 
 Earlier themes were tuned to one contrast level. That is dropped: a theme's contrast is part of its identity (Solarized is soft on purpose, Vantablack is harsh on purpose). The test enforces floors only:
 
 1. **Legible on the surface.** Each slot against `--bg-primary` at 3:1 or better, which is the mark and chip threshold. Text never wears a palette color; labels stay in `--text-*`.
-2. **Distinct from each other.** Every pair of the six at OKLab distance 8 or better under normal vision (all pairs, since tags sit side by side in any order), with 15 reported as the target. Measured 2026-10-08: a hard 15 fails 26 of 30 published palettes (Gruvbox green and aqua sit at 8), and the low-variety themes (Miasma, Hackerman, Matte Black, Osaka Jade, Ristretto, Zenburn, Vantablack) clear 8 only by spreading lightness within a hue, which is how their six are built.
+2. **Distinct from each other: reported, never enforced.** The test prints every pair of the six under OKLab distance 15 so a close pair is visible, and fails nothing. Published values are never nudged, not even in the low-variety themes (Miasma, Hackerman, Matte Black, Osaka Jade, Ristretto, Zenburn, Vantablack) where two slots sit close: a theme's colors stay true to the theme. Decided 2026-10-08.
 3. **Distinct under color-vision deficiency, as a warning.** Adjacent pairs at OKLab distance 6 or better under simulated protanopia and deuteranopia. A warning, not a failure, because every palette use in the apps carries a label (a tag's text, a chart's legend), which is the secondary encoding the method requires.
 4. **Lightness band and chroma floor are reported, not enforced.** They are the parts of the validator that would push every theme toward the same contrast.
 
@@ -95,5 +95,5 @@ Each repo's CI gets a grep that fails when a `--color-(success|warning|error)` r
 
 - Six slots and the name `--palette-N`: confirmed 2026-10-08.
 - Palette may equal status values: confirmed 2026-10-08 (the owner wants every theme hue visible in normal use).
-- Distinctness floor 8 enforced, 15 reported: proposed 2026-10-08, pending the owner.
+- Distinctness: reported only, colors stay as published. Decided 2026-10-08.
 - Custom themes' palettes (Miasma, Rustbox, PowerShell, docs.rs): picked by the agent, reviewed by the owner on the swatch page.
