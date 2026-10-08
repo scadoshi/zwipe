@@ -1774,6 +1774,12 @@ footer {
     color: var(--text-muted);
     background-color: color-mix(in srgb, var(--text-muted) 12%, transparent);
     border-color: color-mix(in srgb, var(--text-muted) 30%, transparent);
+    text-decoration: none;
+}
+
+.chip-plat:hover {
+    color: var(--text-primary);
+    border-color: var(--text-muted);
 }
 
 /* ==================

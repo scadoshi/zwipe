@@ -250,8 +250,16 @@ pub fn Home() -> Element {
                 div { class: "hero-chips",
                     span { class: "hero-chip chip-value", "Free" }
                     span { class: "hero-chip chip-value", "No ads" }
-                    span { class: "hero-chip chip-plat", "iOS" }
-                    span { class: "hero-chip chip-plat", "Android" }
+                    a {
+                        class: "hero-chip chip-plat",
+                        href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
+                        "iOS ↗"
+                    }
+                    a {
+                        class: "hero-chip chip-plat",
+                        href: "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe",
+                        "Android ↗"
+                    }
                 }
             }
         }
