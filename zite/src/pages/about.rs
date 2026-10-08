@@ -252,19 +252,19 @@ pub fn About() -> Element {
 
                     Panel { eyebrow: "Process", title: "How AI is used",
                         p { class: "card-summary",
-                            "The learning comes first. The typing comes last."
+                            "I learn the approach before a model writes any code."
                         }
                         ul { class: "card-bullets",
                             li { "It starts with research: teaching myself, cross-referencing with a model, learning the approaches before picking one" }
                             li { "Security checked at every stop, implementations validated against other models, everything tested" }
-                            li { "Only once I could build it myself does the model take over the typing, and I read the code. That's where the speed comes from" }
+                            li { "Only once I could build it myself does the model write it, and I read every line" }
                             li { "All of it is open source. Read it; criticism is welcome" }
                         }
                     }
 
                     Panel { eyebrow: "Auth", title: "Authentication",
                         p { class: "card-summary",
-                            "Hand-rolled, stricter than a deckbuilder needs."
+                            "Built in-house rather than from an auth service."
                         }
                         ul { class: "card-bullets",
                             li { "Argon2id, with length, character-class and repetition rules" }
@@ -304,9 +304,9 @@ pub fn About() -> Element {
 
                     Panel { eyebrow: "Sync", title: "Card data pipeline",
                         p { class: "card-summary",
-                            "110k+ printings nightly from "
+                            "115k+ printings synced nightly from "
                             a { href: URL_SCRYFALL, "Scryfall" }
-                            ". The hard part isn't the cron."
+                            "."
                         }
                         ul { class: "card-bullets",
                             li { "Five-strategy upsert: batch, then per-row on conflict" }
