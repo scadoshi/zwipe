@@ -139,7 +139,7 @@ Ship path from there: user pushes -> next `zervice` overlays all authored text.
 
 ## Progress markers (update as you go)
 
-Coverage is `len(ORACLE_TAG_DESCRIPTIONS)` / the live catalog count. Milestones: 7 (starter) -> 82 (hand) -> 257 -> 500 -> 700 -> 4,357 -> 4,395 (2026-08-06, every tag with a real card population) -> **4,521 of 4,522 (2026-08-18), the whole tail including unpopulated umbrella and cycle tags**. The one holdout is `nanni`: a single card, no parent, no children, nothing to derive a meaning from, so it stays blank rather than get invented copy.
+Coverage is `len(ORACLE_TAG_DESCRIPTIONS)` / the live catalog count. Milestones: 7 (starter) -> 82 (hand) -> 257 -> 500 -> 700 -> 4,357 -> 4,395 (2026-08-06, every tag with a real card population) -> **4,521 of 4,522 (2026-08-18), the whole tail including unpopulated umbrella and cycle tags**. The one holdout is `nanni`: a single card, no parent, no children, nothing to derive a meaning from, so it stays blank rather than get invented copy. **4,568 of 4,570 (2026-10-08)** after a catch-up: 15 new `gains-<keyword>` tags (mostly Sliver and lord grants), and two renames dropped (`counter-lord` became `outlast-mentor`, `egg-token` became `typal-egg`, both already described). `double` joined `nanni` as a deliberate blank: no cards, label text, parents or children. The maintenance host's `zervice-check` allows both.
 
 Future runs are incremental. Two things move the number, and the second is the one that surprises people:
 

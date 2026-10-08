@@ -17645,10 +17645,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Lets lands tap for extra colors of mana, sometimes by giving them additional land types.",
     ),
     (
-        "counter-lord",
-        "Grants an ability or bonus to each creature you control that has a +1/+1 counter on it.",
-    ),
-    (
         "creature-engine",
         "Gives you extra cards whenever you cast creatures or they enter the battlefield.",
     ),
@@ -17675,10 +17671,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "cycle-turbulent-land",
         "A cycle of dual lands that enter tapped unless your opponents control eight or more lands.",
-    ),
-    (
-        "egg-token",
-        "Creates creature tokens that are Eggs, including changeling tokens that count as every type.",
     ),
     (
         "exile-with-counter",
@@ -17856,6 +17848,66 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "wordle",
         "A trivia tag tied to the Wordle word game that says nothing about what the card does.",
+    ),
+    (
+        "gains-skulk",
+        "A creature gains skulk, so it can't be blocked by creatures with greater power.",
+    ),
+    (
+        "gains-devoid",
+        "Creatures gain devoid, making them colorless.",
+    ),
+    (
+        "gains-poisonous",
+        "Creatures gain poisonous, so their combat damage to a player also gives poison counters.",
+    ),
+    (
+        "gains-flanking",
+        "Creatures gain flanking, so a blocker without flanking gets -1/-1 until end of turn.",
+    ),
+    (
+        "gains-afflict",
+        "Creatures gain afflict, so the defending player loses life whenever one becomes blocked.",
+    ),
+    (
+        "gains-exalted",
+        "A creature gains exalted, pumping any creature of yours that attacks alone.",
+    ),
+    (
+        "gains-melee",
+        "Creatures gain melee, getting +1/+1 when attacking for each opponent you attacked.",
+    ),
+    (
+        "gains-absorb",
+        "Creatures gain absorb, preventing some of the damage dealt to each of them.",
+    ),
+    (
+        "gains-changeling",
+        "Creatures gain changeling, counting as every creature type.",
+    ),
+    (
+        "gains-renown",
+        "Creatures gain renown, getting +1/+1 counters the first time each deals combat damage to a player.",
+    ),
+    (
+        "gains-ingest",
+        "Creatures gain ingest, so a player they deal combat damage to exiles their top card.",
+    ),
+    (
+        "gains-daunt",
+        "A creature gains daunt, so creatures with power 2 or less can't block it.",
+    ),
+    (
+        "gains-tantrum",
+        "Your creatures gain tantrum whenever a creature you control already has it.",
+    ),
+    (
+        "gains-horsemanship",
+        "Creatures gain horsemanship, so only creatures with horsemanship can block them.",
+    ),
+    (
+        "gains-frenzy",
+        "Creatures gain frenzy, getting +X/+0 whenever they attack and aren't blocked.",
     ),
 ];
 
