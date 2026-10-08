@@ -1598,11 +1598,6 @@ code {
 }
 
 /* "Related guides" block at the foot of a guide: pill links to sibling guides. */
-.guide-related-heading {
-    font-size: 1rem;
-    margin-bottom: 1rem;
-}
-
 .guide-related-list {
     display: flex;
     flex-wrap: wrap;

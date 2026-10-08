@@ -435,15 +435,16 @@ pub fn GuidePage(slug: String) -> Element {
                 }
             }
             if !g.related.is_empty() {
-                div { class: "guide-related section panel",
-                    h2 { class: "guide-related-heading", "Related guides" }
-                    div { class: "guide-related-list",
-                        for rel in g.related.iter().copied() {
-                            if let Some(rg) = GUIDES.iter().find(|x| x.slug == rel) {
-                                Link {
-                                    to: Route::GuidePage { slug: rg.slug.to_string() },
-                                    class: "guide-related-link",
-                                    "{rg.title}"
+                div { class: "guide-related section",
+                    Panel { title: "Related guides",
+                        div { class: "guide-related-list",
+                            for rel in g.related.iter().copied() {
+                                if let Some(rg) = GUIDES.iter().find(|x| x.slug == rel) {
+                                    Link {
+                                        to: Route::GuidePage { slug: rg.slug.to_string() },
+                                        class: "guide-related-link",
+                                        "{rg.title}"
+                                    }
                                 }
                             }
                         }
