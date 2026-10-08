@@ -75,7 +75,7 @@ pub fn HomeHero() -> Element {
                         compact: true,
                         // Where the numbers come from, as chips under the strip.
                         source: rsx! {
-                            span { class: "stat-chip", "counted by zerver" }
+                            span { class: "stat-chip", "all users" }
                             if live {
                                 span { class: "stat-chip", "live" }
                             }
