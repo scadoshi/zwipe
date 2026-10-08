@@ -839,14 +839,14 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("How it flows"),
             Block::Diagram(
-                "You configure\n  Deck tags\n     │ seed\n     ▼\n  Oracle tags  (refine freely)\n     │ match\n     ▼\nZwipe serves\n  cards that fit your deck\n     │ you swipe\n     ▼\n  better data over time\n     │ sharpens\n     ▼\n  smarter serving",
+                "You configure\n  Deck tags\n     │ seed\n     ▼\n  Oracle tags  (refine freely)\n     │ match\n     ▼\nZwipe serves\n  cards that fit your deck",
             ),
             Block::P(
-                "It's a flywheel: the more you configure a deck, the better the cards Zwipe suggests, and the better Zwipe gets at serving them over time.",
+                "The more you set up a deck, the better its suggestions.",
             ),
             Block::H2("The one-liner"),
             Block::P(
-                "Tell us what your deck does, and we'll suggest cards that fit. Deck tags and oracle tags are how you tell Zwipe; card roles are how Zwipe shows you what any given card brings to the table.",
+                "Tell Zwipe what your deck does, and it suggests cards that fit. Deck tags and oracle tags are how you tell Zwipe; card roles are how Zwipe shows you what any given card brings to the table.",
             ),
             Block::Note(
                 "For the full detail on each piece, see Tag decks by archetype, Sharpen suggestions with oracle tags, and Read a card at a glance.",
