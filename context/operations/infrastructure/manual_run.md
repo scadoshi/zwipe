@@ -1,15 +1,14 @@
 # Running Binaries Manually on the Server
 
-`zerver` needs environment variables from `~/zwipe/.env` (JWT_SECRET, DATABASE_URL, etc.). `zervice` reads the much smaller `~/zwipe/.env.zervice` instead. Its systemd unit points `EnvironmentFile=` at that file, and sourcing the full `.env` for a manual run would hand the sync binary every secret it was deliberately cut off from. The systemd units handle this automatically; manual runs source the right file first.
+Both binaries run as their own users (`zerver`, `zervice`) with env files in `/etc/zwipe` that `scadoshi` cannot read: `zerver.env` (JWT_SECRET, DATABASE_URL, etc.) and the much smaller `zervice.env`. Running through systemd keeps each binary on its own user, file and sandbox, so prefer it. A hand run under `sudo -u` is for debugging only.
 
 ---
 
 ## Run zervice manually (Scryfall sync + session cleanup)
 
 ```bash
-cd ~/zwipe
-set -a && source .env.zervice && set +a
-./zervice
+sudo systemctl start zervice
+journalctl -u zervice -f
 ```
 
 zervice is a run-once binary: it syncs cards from Scryfall, cleans expired sessions, and exits. Useful after dropping/recreating the database to repopulate cards immediately instead of waiting for the nightly timer.
@@ -24,9 +23,7 @@ Normally runs via systemd. Only use this for debugging:
 # Stop the service first to avoid port conflicts
 sudo systemctl stop zerver
 
-cd ~/zwipe
-set -a && source .env && set +a
-./zerver
+sudo -u zerver bash -c 'set -a; . /etc/zwipe/zerver.env; set +a; exec /usr/local/bin/zerver'
 
 # When done, restart the service
 sudo systemctl start zerver
@@ -36,4 +33,4 @@ sudo systemctl start zerver
 
 ## Why `set -a` is needed
 
-The `.env` file uses `KEY=VALUE` format without `export`. `set -a` tells bash to automatically export every variable that gets assigned, making them visible to child processes. `set +a` turns it back off.
+The env files use `KEY=VALUE` format without `export`. `set -a` tells bash to automatically export every variable that gets assigned, making them visible to child processes. `set +a` turns it back off.

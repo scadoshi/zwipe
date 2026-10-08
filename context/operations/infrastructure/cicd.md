@@ -1,6 +1,6 @@
 # CI/CD: GitHub Actions Deploy
 
-On every push to `main` that touches backend code, a self-hosted GitHub Actions runner on the server checks out the repo, builds `zerver` and `zervice` in place, copies the binaries to `~/zwipe/`, and restarts the systemd service. No network tunnels, no deploy keys, no SCP.
+On every push to `main` that touches backend code, a self-hosted GitHub Actions runner on the server checks out the repo, builds `zerver` and `zervice` in place, installs them to `/usr/local/bin`, and restarts zerver, putting the old binaries back if the new zerver does not answer `/health`. The runner runs as its own `runner` user, not as `scadoshi`. No network tunnels, no deploy keys, no SCP.
 
 ---
 
@@ -40,10 +40,10 @@ Plan/design: [`../../archive/integration-tests/`](../../archive/integration-test
 1. Checks out the repo
 2. Installs stable Rust toolchain (cached)
 3. Restores cargo cache (fast subsequent builds)
-4. Runs SQLx migrations (`set -a && source ~/zwipe/.env` to export `DATABASE_URL`, then `cargo sqlx migrate run --source zerver/migrations`)
+4. Runs SQLx migrations (`source /etc/zwipe/migrate.env` to export `DATABASE_URL`, then `cargo sqlx migrate run --source zerver/migrations`)
 5. Verifies the committed `.sqlx/` matches the just-migrated schema (`cargo sqlx prepare --workspace --check -- --workspace --exclude zwiper --exclude zite`): fails fast with "query data is stale" instead of E0308 soup mid-build. The GUI crates are excluded because `--check` compiles crates to find their queries, and zwiper's Linux desktop deps (glib/GTK via pkg-config) don't exist on the headless VPS, this failed the first two verify runs (2026-07-06) before being scoped; only zerver has queries anyway
 6. Builds `zerver` and `zervice` in release mode (`SQLX_OFFLINE=true`)
-7. Stops zerver, copies binaries to `~/zwipe/`, starts zerver
+7. Copies the binaries to `/home/runner/deploy` (keeping the installed ones as `*.previous`), stops zerver, installs both to `/usr/local/bin`, starts zerver, and waits up to 20 seconds for `/health`. If it never answers, it prints zerver's last 50 journal lines, reinstalls the previous binaries, restarts, and fails the run
 
 No Tailscale, no SSH keys, no SCP: the runner is already on the server. Migrations run before the build so new tables exist before the new binary starts.
 
@@ -72,11 +72,17 @@ The runner is a long-running process on the server that polls GitHub for jobs. I
 
 GitHub → Repository Settings → Actions → Runners → New self-hosted runner → Linux → x64
 
-Copy the token shown on that page (valid for 1 hour).
+Copy the token shown on that page (valid for 1 hour). With `gh` on your Mac, `gh api -X POST repos/scadoshi/zwipe/actions/runners/registration-token --jq .token` prints one.
 
 ### Step 2: Download and configure the runner on the server
 
+The runner lives in the `runner` user's home (see `server.md`, Service Users), with its own Rust toolchain and sqlx-cli for the migration steps:
+
 ```bash
+sudo -iu runner
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+~/.cargo/bin/cargo install sqlx-cli --no-default-features --features rustls,postgres
+
 mkdir ~/actions-runner-zwipe && cd ~/actions-runner-zwipe
 
 # Download: get the exact URL from the GitHub UI (version may change)
@@ -88,36 +94,47 @@ tar xzf actions-runner-linux-x64.tar.gz
 # Configure: paste the token from Step 1 when prompted
 ./config.sh --url https://github.com/scadoshi/zwipe --token YOUR_TOKEN_HERE
 # Name it zerver-prod; accept the default work folder
+exit
 ```
 
 ### Step 3: Install as a systemd service
 
+Back as `scadoshi`:
+
 ```bash
-sudo ./svc.sh install
+cd /home/runner/actions-runner-zwipe
+sudo ./svc.sh install runner
 sudo ./svc.sh start
 sudo ./svc.sh status
 ```
 
 The runner starts automatically on every boot. Check GitHub → Settings → Actions → Runners to confirm it shows as **Idle** (green dot).
 
-### Step 4: Verify passwordless sudo for systemctl
+### Step 4: The runner's sudo rule
 
-The runner runs as `scadoshi` and needs to restart zerver without a password prompt. Everything else `scadoshi` does with sudo asks for the password. Verify:
+The runner needs a few root commands without a password prompt, and nothing else. They live in `/etc/sudoers.d/runner`, shared with zynergy's runner: stop, start and restart of each service, `install` of each binary from `/home/runner/deploy` to `/usr/local/bin`, and reading the service's last 50 journal lines. For zwipe, that is:
 
-```bash
-sudo cat /etc/sudoers.d/scadoshi
-# Confirm this line exists (one line; zynergy's runner shares the file):
-# scadoshi ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop zerver, /usr/bin/systemctl start zerver, /usr/bin/systemctl restart zerver, /usr/bin/systemctl stop zynergy, /usr/bin/systemctl start zynergy, /usr/bin/systemctl restart zynergy
+```
+runner ALL=(root) NOPASSWD: /usr/bin/systemctl stop zerver, /usr/bin/systemctl start zerver, /usr/bin/systemctl restart zerver, /usr/bin/install -m 755 /home/runner/deploy/zerver /usr/local/bin/zerver, /usr/bin/install -m 755 /home/runner/deploy/zervice /usr/local/bin/zervice, /usr/bin/journalctl -u zerver -n 50 --no-pager
 ```
 
-Edit it with `sudo visudo -f /etc/sudoers.d/scadoshi` if it is missing; the drop-in file, not the main `/etc/sudoers`.
+Write it non-interactively and check it before it takes effect, since a broken sudoers file locks sudo out:
+
+```bash
+sudo tee /tmp/runner.sudoers >/dev/null    # paste the rule, then Ctrl-D
+sudo visudo -cf /tmp/runner.sudoers && sudo install -m 440 /tmp/runner.sudoers /etc/sudoers.d/runner
+```
+
+A deploy step that calls sudo for anything else fails with `sudo: a password is required`. Change the rule and the workflow together. The runner reads `DATABASE_URL` from `/etc/zwipe/migrate.env`, the only env file it can open.
+
+`scadoshi` has no passwordless sudo at all.
 
 ### Re-registering after a server rebuild
 
 If the server is rebuilt and the runner is lost:
 
 1. Go to GitHub → Settings → Actions → Runners → find the old runner → Remove
-2. Repeat Steps 1–3 above with a fresh token
+2. Repeat Steps 1–4 above with a fresh token
 3. The workflow picks it up automatically, no workflow file changes needed
 
 ---
@@ -128,7 +145,7 @@ Tailscale is the only way to SSH into the server: ufw allows nothing but `tailsc
 
 **Current server**: Hetzner VPS `zerver-prod`, since the 2026-06-13 migration. Its Tailscale address is written here as `<server-tailnet-ip>`: tailnet addresses are redacted because this repo is public, the same convention as the `192.168.1.XXX` LAN addresses below. `tailscale status` on any tailnet device lists them, and the owner supplies the value when a session needs it. The old home box was rebuilt as scotland-server and is no longer a rollback. Tailscale IPs are stable and private (not publicly routable).
 
-**Runners (post-migration):** two self-hosted runners live on the VPS: `zerver-prod` (repo `scadoshi/zwipe`, dir `~/actions-runner-zwipe`) and `zynergy-prod` (repo `scadoshi/zynergy`, dir `~/actions-runner-zynergy`), both boot-enabled. The deploy step's `sudo systemctl {stop,start} zerver` works because `/etc/sudoers.d/scadoshi` grants NOPASSWD for exactly those service-restart commands. All other admin is `ssh scadoshi@<server-tailnet-ip>` with sudo and its password; root does not log in.
+**Runners (post-migration):** two self-hosted runners live on the VPS: `zerver-prod` (repo `scadoshi/zwipe`, dir `/home/runner/actions-runner-zwipe`) and `zynergy-prod` (repo `scadoshi/zynergy`, dir `/home/runner/actions-runner-zynergy`), both boot-enabled and running as `runner`. Their sudo is `/etc/sudoers.d/runner` (Step 4). All other admin is `ssh scadoshi@<server-tailnet-ip>` with sudo and its password; root does not log in.
 
 ### Setup
 
@@ -162,7 +179,7 @@ ssh scadoshi@<server-tailnet-ip>        # admin: full sudo with a password
 
 ## SQLx
 
-**Migrations** run automatically on every deploy (step 4 in the workflow). The runner sources `~/zwipe/.env` to get `DATABASE_URL` and runs `cargo sqlx migrate run`. Already-run migrations are skipped (idempotent). New migrations land automatically on push.
+**Migrations** run automatically on every deploy (step 4 in the workflow). The runner sources `/etc/zwipe/migrate.env` to get `DATABASE_URL` and runs `cargo sqlx migrate run`. Already-run migrations are skipped (idempotent). New migrations land automatically on push.
 
 **Builds** still use `SQLX_OFFLINE=true` with the committed `.sqlx/` directory so the build step doesn't need a live database connection. After any query change on your Mac:
 

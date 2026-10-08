@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Emails a zervice failure alert via Resend. Wired via OnFailure= on
-# zervice.service; reuses the credentials already in the server's .env
-# (RESEND_API_KEY / RESEND_EMAIL_FROM / SUPPORT_EMAIL_ADDRESS) — no new
-# secrets, nothing in the repo.
+# zervice.service; reads RESEND_API_KEY, RESEND_EMAIL_FROM and
+# SUPPORT_EMAIL_ADDRESS from /etc/zwipe/alert.env. Installed as
+# /usr/local/bin/zervice-alert.
 set -euo pipefail
 for var in RESEND_API_KEY RESEND_EMAIL_FROM SUPPORT_EMAIL_ADDRESS; do
     if [ -z "${!var:-}" ]; then

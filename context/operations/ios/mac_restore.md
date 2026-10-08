@@ -20,7 +20,7 @@ What to back up and restore when wiping this Mac to return to stable macOS.
 
 | What | How to recreate |
 |------|----------------|
-| `zerver/.env` | Copy from server: `ssh scadoshi@zerver cat ~/zwipe/.env`, or recreate with the values in the server's `.env` |
+| `zerver/.env` | Recreate from `zerver/.env.example` with local values; prod's is `/etc/zwipe/zerver.env` on the server (`ssh -t zerver sudo cat /etc/zwipe/zerver.env`) |
 | `zwiper/.env` | Just `BACKEND_URL=https://api.zwipe.net` and `RUST_LOG=info` |
 | Apple signing certs in Keychain | Re-import `~/certs/zwipe-dist-key.pem` + re-download `.cer` from developer.apple.com |
 | Provisioning profiles | Re-download from developer.apple.com → Profiles |
@@ -51,7 +51,7 @@ The home box that used to serve prod is retired, so its physical access is no lo
 - Then double-click the `.cer` file to pair it with the key
 
 ### Database password
-- The DB password is only in `~/zwipe/.env` on the server
+- The DB password is only on the server, in `/etc/zwipe/zerver.env` (also `migrate.env` and `~/.config/zwipe-backup.env`)
 - If you don't have it memorized, copy it before wiping (or just SSH in after restore)
 
 ### GitHub auth

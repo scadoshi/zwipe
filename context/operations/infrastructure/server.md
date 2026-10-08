@@ -15,18 +15,18 @@ Repurposed desktop running Ubuntu Server (headless). Intel i5, 32GB RAM, x86_64.
 - [ ] Install NetworkManager for `nmtui`/`nmcli`: `sudo apt install network-manager`
 - [ ] Install Tailscale for stable SSH access (see Tailscale section below)
 - [ ] Install PostgreSQL, create `zwipe` DB + user
-- [ ] Create `/var/log/zwipe/` log directory
+- [ ] Create the service users, `/etc/zwipe` and `/var/log/zwipe` (see Service Users and Log Directory below)
 - [ ] Install Rust, clone repo, build binaries
-- [ ] Configure zerver `.env` (must include `DATABASE_URL`: CI/CD sources this for migrations)
+- [ ] Write the env files in `/etc/zwipe` (see .env below; the deploy reads `migrate.env` for migrations)
 - [ ] Install sqlx-cli: `cargo install sqlx-cli --no-default-features --features rustls,postgres`
 - [ ] Run initial migrations: `cargo sqlx migrate run --source zerver/migrations`
 - [ ] Install `cloudflared`, configure tunnel to `api.zwipe.net`
-- [ ] Start `zerver` systemd service
-- [ ] Install the `zervice` systemd units from `zcripts/server/systemd/` (`zervice.service`, `zervice.timer`, `zervice-alert.service`, `zervice-alert.sh`) into `/etc/systemd/system/`, script to `~/zwipe/`. Nightly timer, NOT cron
-- [ ] Place `~/zwipe/.env.zervice` (see the zervice scheduling section below) and run `zcripts/server/sql/zervice_role.sql` to create the scoped Postgres role. Feed it on **stdin**, never with `-f`: `sudo -u postgres psql zwipe < ~/zwipe-src/zcripts/server/sql/zervice_role.sql`. The `postgres` user cannot traverse `/home/scadoshi`, so `-f` fails with a bare `Permission denied`; the redirect opens the file as you. Same trap applies to any script under the repo, `zcripts/metrics/errors.sql` included
+- [ ] Install `zerver.service` from `zcripts/server/systemd/` and start it (see systemd Service below)
+- [ ] Install the `zervice` units from `zcripts/server/systemd/` (`zervice.service`, `zervice.timer`, `zervice-alert.service`) into `/etc/systemd/system/`, and `zervice-alert.sh` as `/usr/local/bin/zervice-alert`. Nightly timer, NOT cron
+- [ ] Place `/etc/zwipe/zervice.env` (see the zervice scheduling section below) and run `zcripts/server/sql/zervice_role.sql` to create the scoped Postgres role. Feed it on **stdin**, never with `-f`: `sudo -u postgres psql zwipe < ~/zwipe-src/zcripts/server/sql/zervice_role.sql`. The `postgres` user cannot traverse `/home/scadoshi`, so `-f` fails with a bare `Permission denied`; the redirect opens the file as you. Same trap applies to any script under the repo, `zcripts/metrics/errors.sql` included
 - [ ] Add backup cron (5am daily): see `backups.md`
 - [ ] Run `zervice` once manually to seed Scryfall card data
-- [ ] Install self-hosted GitHub Actions runner (see `cicd.md`): this is what deploys code, runs migrations, and restarts zerver on every push to main
+- [ ] Install the self-hosted GitHub Actions runner as the `runner` user (see `cicd.md`): this is what deploys code, runs migrations, and restarts zerver on every push to main
 - [ ] Verify iOS app hits `api.zwipe.net` successfully
 
 ---
@@ -216,8 +216,9 @@ sudo -u postgres psql -c "CREATE DATABASE zwipe OWNER zwipe;"
 
 **3. Run migrations** (recreates all tables and indexes):
 ```bash
-cd ~/zwipe-src/zerver
-DATABASE_URL=postgres://zwipe:YOUR_PASSWORD@127.0.0.1/zwipe sqlx migrate run
+cd ~/zwipe-src
+set -a; . <(sudo cat /etc/zwipe/migrate.env); set +a
+cargo sqlx migrate run --source zerver/migrations
 ```
 
 Migrations live in `zerver/migrations/`; `zwipe-src` must be cloned and up to date.
@@ -230,12 +231,12 @@ sudo systemctl status zerver
 
 **5. Optionally reseed card data:**
 ```bash
-cd ~/zwipe && set -a && source .env.zervice && set +a && ./zervice
+sudo systemctl start zervice
 ```
 
 This re-syncs all 35k+ cards from Scryfall. Takes a few minutes.
 
-`.env.zervice`, not `.env`. The three materialized views are **owned** by the `zervice` role, and `REFRESH MATERIALIZED VIEW` requires ownership rather than a grant, so sourcing `.env` connects as `zwipe` and step 4 fails on all three with `permission denied for materialized view`. The card sync in steps 1 to 3 still succeeds, which makes the run look half-broken when the only thing wrong is the identity. Hit 2026-09-22.
+Run it through the unit, not by hand: the unit runs as the `zervice` user with `/etc/zwipe/zervice.env`. The three materialized views are **owned** by the `zervice` role, and `REFRESH MATERIALIZED VIEW` requires ownership rather than a grant, so a run with zerver's `DATABASE_URL` connects as `zwipe` and step 4 fails on all three with `permission denied for materialized view`. The card sync in steps 1 to 3 still succeeds, which makes the run look half-broken when the only thing wrong is the identity. Hit 2026-09-22.
 
 ---
 
@@ -248,36 +249,65 @@ openssl rand -hex 24
 # 2. Change it in PostgreSQL
 sudo -u postgres psql -c "ALTER USER zwipe WITH PASSWORD 'NEW_PASSWORD';"
 
-# 3. Update DATABASE_URL in ~/zwipe/.env
-nano ~/zwipe/.env
+# 3. Update DATABASE_URL in all three files that carry it
+sudoedit /etc/zwipe/zerver.env
+sudoedit /etc/zwipe/migrate.env
+nano ~/.config/zwipe-backup.env
 
 # 4. Restart zerver
 sudo systemctl restart zerver
 sudo systemctl status zerver
 ```
 
-URL-encode special characters in `DATABASE_URL` if needed (e.g. `<` → `%3C`). No CI changes required; the deploy workflow sources the same `.env` for migrations.
+URL-encode special characters in `DATABASE_URL` if needed (e.g. `<` → `%3C`). zerver reads `zerver.env`, the deploy's migrations read `migrate.env`, and the nightly backup reads `zwipe-backup.env`; miss one and that one fails.
 
 ---
 
 ## Log Directory
 
-zerver writes rolling daily logs to `/var/log/zwipe/`. The app calls `create_dir_all` on startup (idempotent), but `/var/log/` is root-owned, so create it once:
+zerver and zervice write rolling daily logs to `/var/log/zwipe/`, and the backup cron appends `backup.log` there. All three share it through the `zwipe` group: the folder is setgid, and the units set `UMask=0002`, so every file stays group-writable whichever user created it.
 
 ```bash
-sudo mkdir -p /var/log/zwipe
-sudo chown $USER /var/log/zwipe
+sudo install -d -m 2775 -o root -g zwipe /var/log/zwipe
 ```
+
+---
+
+## Service Users
+
+No service runs as `scadoshi`; only the nightly backup cron does (`backups.md`). Each service has its own login-less system user, and the deploy runner has its own `runner` user:
+
+```bash
+sudo groupadd --system zwipe
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin --user-group --groups zwipe zerver
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin --user-group --groups zwipe zervice
+sudo usermod -aG zwipe scadoshi           # the backup cron writes backup.log
+sudo useradd --create-home --shell /bin/bash runner
+sudo install -d -m 700 -o runner -g runner /home/runner/deploy
+```
+
+Binaries live in `/usr/local/bin` (`zerver`, `zervice`, `zervice-alert`), owned by root. The runner installs new ones through its narrow sudo rule; see `cicd.md`.
 
 ---
 
 ## .env
 
-Located at `~/zwipe/.env`:
+Each process gets its own file in `/etc/zwipe`, owned by root and readable only by the user that needs it:
+
+| File | Owner:group, mode | Read by | Holds |
+|------|-------------------|---------|-------|
+| `zerver.env` | `root:zerver 640` | zerver | everything below |
+| `zervice.env` | `root:zervice 640` | zervice | `DATABASE_URL` (as the `zervice` role), `RUST_LOG`, `LOG_DIR`, `HEALTHCHECK_PING_URL` |
+| `alert.env` | `root:root 600` | zervice-alert (runs as root) | `RESEND_API_KEY`, `RESEND_EMAIL_FROM`, `SUPPORT_EMAIL_ADDRESS` |
+| `migrate.env` | `root:runner 640` | the deploy runner | `DATABASE_URL` only |
+
+Edit one with `sudoedit /etc/zwipe/zerver.env`, then `sudo systemctl restart zerver`. To use a value in an admin shell without making the file readable, source it through sudo: `set -a; . <(sudo cat /etc/zwipe/zerver.env); set +a`.
+
+`/etc/zwipe/zerver.env`:
 ```
 JWT_SECRET=<openssl rand -hex 32>
 DATABASE_URL=postgres://zwipe:URL_ENCODED_PASSWORD@127.0.0.1/zwipe
-BIND_ADDRESS=0.0.0.0:3000
+BIND_ADDRESS=127.0.0.1:3000
 ALLOWED_ORIGINS=https://zwipe.net
 RUST_LOG=info,sqlx=warn,zwipe=debug,zerver=debug
 RUST_BACKTRACE=1
@@ -288,7 +318,7 @@ RESEND_EMAIL_FROM=support@zwipe.net
 # gate. A box rebuilt straight from this template ships with the gate off;
 # set the real floor before it takes traffic.
 # HEALTHCHECK_PING_URL omitted: optional; zervice pings it on a clean run
-# so the monitor can alert on silence. Also belongs in .env.zervice.
+# so the monitor can alert on silence. Belongs in zervice.env.
 # SUPPORT_EMAIL_ADDRESS + WEB_BASE_URL omitted: default to support@zwipe.net
 # and https://zwipe.net. Set both here when switching the public domain.
 ```
@@ -337,8 +367,9 @@ The value is parsed as `HeaderValue`: no trailing slashes, no wildcards.
 ```bash
 cargo install sqlx-cli --no-default-features --features postgres
 
-cd ~/zwipe-src/zerver
-DATABASE_URL=postgres://zwipe:YOUR_DB_PASSWORD@127.0.0.1/zwipe sqlx migrate run
+cd ~/zwipe-src
+set -a; . <(sudo cat /etc/zwipe/migrate.env); set +a
+cargo sqlx migrate run --source zerver/migrations
 ```
 
 **Matview ownership footgun (zervice least privilege, 2026-07-29; bit again 2026-08-14):** the three materialized views (`latest_cards`, `card_signal_rollup`, `otag_context_signal_rollup`) are OWNED by the scoped `zervice` role because `REFRESH` requires ownership (`zcripts/server/sql/zervice_role.sql`). A migration that drops/recreates one of them resets ownership to the migration user (`zwipe`) and the next nightly fails loudly (alert email + Healthchecks), exactly what the `latest_cards_prefer_english` rebuild did on the 2026-08-13 deploy. Hand fix: re-run the ledger (`sudo -u postgres psql -d zwipe < ~/zwipe-src/zcripts/server/sql/zervice_role.sql`).
@@ -382,10 +413,12 @@ git clone <repo-url> ~/zwipe-src
 cd ~/zwipe-src
 cargo build --release --bin zerver --bin zervice
 
-# Deploy binaries: output is in workspace root target/, not zerver/target/
-mkdir -p ~/zwipe
-cp target/release/zerver target/release/zervice ~/zwipe/
+# Install binaries: output is in workspace root target/, not zerver/target/
+sudo install -m 755 target/release/zerver target/release/zervice /usr/local/bin/
+sudo install -m 755 zcripts/server/systemd/zervice-alert.sh /usr/local/bin/zervice-alert
 ```
+
+This first build is by hand; every later one comes from the deploy runner.
 
 ---
 
@@ -393,32 +426,13 @@ cp target/release/zerver target/release/zervice ~/zwipe/
 
 systemd is Ubuntu's service manager. A unit file tells it how to run zerver, so it starts automatically on boot and restarts itself if it crashes, instead of you running `./zerver` manually in a terminal.
 
-**Create the file:**
+The unit is versioned at `zcripts/server/systemd/zerver.service`; install that file rather than writing one:
+
 ```bash
-sudo nano /etc/systemd/system/zerver.service
+sudo cp ~/zwipe-src/zcripts/server/systemd/zerver.service /etc/systemd/system/
 ```
 
-Paste in the following, save with `Ctrl+O` → Enter → `Ctrl+X`:
-
-`/etc/systemd/system/zerver.service`:
-```ini
-[Unit]
-Description=zerver - zwipe backend
-After=network.target postgresql.service
-Requires=postgresql.service
-
-[Service]
-Type=simple
-User=scadoshi
-WorkingDirectory=/home/scadoshi/zwipe
-EnvironmentFile=/home/scadoshi/zwipe/.env
-ExecStart=/home/scadoshi/zwipe/zerver
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-```
+It runs `/usr/local/bin/zerver` as the `zerver` user with `/etc/zwipe/zerver.env`, and is sandboxed the same way as heron's unit: `ProtectSystem=strict` and `ProtectHome=true`, with `/var/log/zwipe` the only writable path, plus `NoNewPrivileges`, `MemoryDenyWriteExecute` and the rest. A new path zerver needs to write must be added to `ReadWritePaths=`, or it fails with a read-only filesystem error.
 
 **Register and start the service:**
 ```bash
@@ -431,18 +445,18 @@ sudo systemctl status zerver   # verify it's running
 What each command does:
 - `enable`: registers zerver to start on boot
 - `start`: starts it immediately without rebooting
-- `Restart=always`: systemd brings zerver back no matter how it exits. It was `on-failure` until 2026-09-13: a startup DB race during an unattended libc upgrade made zerver exit cleanly and stay down for 53 hours (the 09-11 outage), so any exit now restarts. The live server carries this as a drop-in at `/etc/systemd/system/zerver.service.d/override.conf`; on a rebuild this template already includes it.
+- `Restart=always`: systemd brings zerver back no matter how it exits. It was `on-failure` until 2026-09-13: a startup DB race during an unattended libc upgrade made zerver exit cleanly and stay down for 53 hours (the 09-11 outage), so any exit now restarts. The versioned unit includes it.
 - `status`: shows running state and the last few log lines
 
 ---
 
 ## zervice Scheduling (systemd timer: replaced cron 2026-07-29)
 
-Unit files are versioned at `zcripts/server/systemd/` (`zervice.service`, `zervice.timer`, `zervice-alert.service`, `zervice-alert.sh`) and installed to `/etc/systemd/system/` (the script to `~/zwipe/`). Nightly at 04:00 UTC (+ up to 10 min jitter), `Persistent=true` so a missed window (reboot at 4am) fires on next boot.
+Unit files are versioned at `zcripts/server/systemd/` (`zervice.service`, `zervice.timer`, `zervice-alert.service`, `zervice-alert.sh`) and installed to `/etc/systemd/system/` (the script as `/usr/local/bin/zervice-alert`). zervice runs as the `zervice` user, sandboxed like zerver. Nightly at 04:00 UTC (+ up to 10 min jitter), `Persistent=true` so a missed window (reboot at 4am) fires on next boot.
 
-**Least privilege (2026-07-29):** `zervice.service` reads `/home/scadoshi/zwipe/.env.zervice`: exactly `DATABASE_URL`, `RUST_LOG`, `LOG_DIR`, plus optional `HEALTHCHECK_PING_URL` (the bin's `ZerviceConfig` accepts nothing more; it holds no JWT/Resend secrets). The alert unit keeps reading the MAIN `.env` because it legitimately needs the Resend creds.
+**Least privilege (2026-07-29):** `zervice.service` reads `/etc/zwipe/zervice.env`: exactly `DATABASE_URL`, `RUST_LOG`, `LOG_DIR`, plus optional `HEALTHCHECK_PING_URL` (the bin's `ZerviceConfig` accepts nothing more; it holds no JWT/Resend secrets). The alert unit runs as root, since it reads the journal, and reads only `/etc/zwipe/alert.env`, the three Resend values.
 
-**Scoped Postgres role, the lifecycle.** `.env.zervice`'s `DATABASE_URL` connects as the `zervice` role; `zcripts/server/sql/zervice_role.sql` is the canonical, IDEMPOTENT ledger of everything it may touch (card-sync tables, matview ownership, upkeep prunes, incl. the destruction-only session grant: `DELETE` + column-scoped `SELECT (expires_at)`, so it can dust expired sessions but never read them). Grants deliberately do NOT live in migrations (roles are per-cluster infrastructure; dev/test DBs differ). The lifecycle is one command for every case:
+**Scoped Postgres role, the lifecycle.** `zervice.env`'s `DATABASE_URL` connects as the `zervice` role; `zcripts/server/sql/zervice_role.sql` is the canonical, IDEMPOTENT ledger of everything it may touch (card-sync tables, matview ownership, upkeep prunes, incl. the destruction-only session grant: `DELETE` + column-scoped `SELECT (expires_at)`, so it can dust expired sessions but never read them). Grants deliberately do NOT live in migrations (roles are per-cluster infrastructure; dev/test DBs differ). The lifecycle is one command for every case:
 
 ```bash
 # first time, after adding a table zervice touches, or after a migration
@@ -457,7 +471,7 @@ Dev parity: the dev setup/reset scripts run the same file against the local `zer
 
 Why systemd over cron: `EnvironmentFile=` replaces the fragile `SHELL=/bin/bash` + `source .env` dance (a dash-vs-bash `source` failure silently ate weeks of runs in mid-2026), early-startup failures land in the journal (`journalctl -u zervice`) instead of a side-channel log, a non-zero exit marks the unit **failed** visibly in `systemctl status zervice`, and `systemctl list-timers zervice*` answers last-ran/next-run at a glance.
 
-**Failure alerting:** `zervice.service` carries `OnFailure=zervice-alert.service` On any failed scheduled run, systemd fires the alert unit, which emails the last 15 journal lines to `SUPPORT_EMAIL_ADDRESS` via Resend (reuses the existing `.env` creds; no new secrets; the script sets a User-Agent because Cloudflare 403s python-urllib's default). Tested live 2026-07-29. Note it only fires for systemd-launched runs; a bare `./zervice` failing alerts nobody. Manual alert test: `sudo systemctl start zervice-alert.service`.
+**Failure alerting:** `zervice.service` carries `OnFailure=zervice-alert.service` On any failed scheduled run, systemd fires the alert unit, which emails the last 15 journal lines to `SUPPORT_EMAIL_ADDRESS` via Resend (`alert.env` holds the creds; the script sets a User-Agent because Cloudflare 403s python-urllib's default). Tested live 2026-07-29. Note it only fires for systemd-launched runs; a hand-run binary failing alerts nobody. Manual alert test: `sudo systemctl start zervice-alert.service`.
 
 Operate it:
 
@@ -468,17 +482,16 @@ journalctl -u zervice --since today   # full output
 systemctl list-timers zervice*        # last / next scheduled run
 ```
 
-The old crontab entry is removed, **for real as of 2026-08-05**. Incident note: this line originally claimed the removal on 2026-07-29, but the user crontab entry survived the migration, so every night ran zervice TWICE (cron at 04:00:01 running `~/zwipe/zervice` silently, the timer at 04:00:4x per its jitter). Six nights later the two instances' bulk `card_profiles` UPDATEs interleaved into a Postgres deadlock (40P01) and the systemd instance's step 2 failed, firing the alert. Diagnostics that cracked it: `grep -c "zervice running v" $LOG_DIR/zervice.YYYY-MM-DD.log` (two banners = two instances; both write the shared daily file) and the Postgres deadlock `DETAIL:` block in `/var/log/postgresql/`, which named both queries. The cron instance was invisible to alerting (`OnFailure=` only covers systemd-launched runs) and to `journalctl -u zervice`. If the nightly ever double-runs again, count the banners first.
+The old crontab entry is removed, **for real as of 2026-08-05**. Incident note: this line originally claimed the removal on 2026-07-29, but the user crontab entry survived the migration, so every night ran zervice TWICE (cron at 04:00:01 running the old home-folder binary silently, the timer at 04:00:4x per its jitter). Six nights later the two instances' bulk `card_profiles` UPDATEs interleaved into a Postgres deadlock (40P01) and the systemd instance's step 2 failed, firing the alert. Diagnostics that cracked it: `grep -c "zervice running v" $LOG_DIR/zervice.YYYY-MM-DD.log` (two banners = two instances; both write the shared daily file) and the Postgres deadlock `DETAIL:` block in `/var/log/postgresql/`, which named both queries. The cron instance was invisible to alerting (`OnFailure=` only covers systemd-launched runs) and to `journalctl -u zervice`. If the nightly ever double-runs again, count the banners first.
 
 `/var/log/zwipe/zervice-cron.log` is obsolete (the journal covers early startup); zervice's own rolling files at `$LOG_DIR/zervice.YYYY-MM-DD.log` are unchanged. Both planned follow-ups shipped: the dead-man's switch (`HEALTHCHECK_PING_URL`) and the least-privilege split (`context/archive/zervice_least_privilege.md`).
 
 zervice is a run-once binary: it syncs cards from Scryfall, cleans expired sessions, and exits. Logs are written to `$LOG_DIR/zervice.YYYY-MM-DD.log` (default: `/var/log/zwipe/`).
 
-Run manually first to seed card data:
+Run it once to seed card data:
 ```bash
-cd ~/zwipe
-set -a && source .env.zervice && set +a
-./zervice
+sudo systemctl start zervice
+journalctl -u zervice -f
 ```
 
 ---

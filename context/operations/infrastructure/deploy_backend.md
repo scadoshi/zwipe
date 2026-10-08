@@ -48,17 +48,19 @@ If `cargo` is not found: `source ~/.cargo/env`
 
 ### 4. Stop zerver
 
-Linux blocks overwriting a running executable, so stop before copying:
+Linux blocks overwriting a running executable, so stop before installing:
 
 ```bash
 sudo systemctl stop zerver
 ```
 
-### 5. Copy new binaries
+### 5. Install the new binaries
 
 ```bash
-cp target/release/zerver target/release/zervice ~/zwipe/
+sudo install -m 755 target/release/zerver target/release/zervice /usr/local/bin/
 ```
+
+The deploy runner keeps the previous binaries in `/home/runner/deploy/*.previous`; a hand deploy does not, so copy `/usr/local/bin/zerver` aside first if you want a quick way back.
 
 ### 6. Restart zerver
 

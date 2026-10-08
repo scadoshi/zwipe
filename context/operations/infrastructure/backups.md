@@ -79,10 +79,9 @@ Create `~/scripts/backup-db.sh`:
 #!/bin/bash
 set -euo pipefail
 
-# Pull DATABASE_URL from zerver's .env (grep, not source; we don't want to
-# eval other secrets like JWT_SECRET in this shell, and `source` would expand
-# any $/backtick in their values).
-ENV_FILE="/home/scadoshi/zwipe/.env"
+# Pull DATABASE_URL from the backup's own env file (grep, not source, so
+# `source` never expands a $ or backtick in a value).
+ENV_FILE="/home/scadoshi/.config/zwipe-backup.env"
 DATABASE_URL=$(grep -E '^DATABASE_URL=' "$ENV_FILE" | cut -d= -f2-)
 BACKUP_HEALTHCHECK_URL=$(grep -E '^BACKUP_HEALTHCHECK_URL=' "$ENV_FILE" | cut -d= -f2- || true)
 
@@ -107,9 +106,9 @@ echo "backup complete: zwipe-$(date +%Y%m%d).sql.gz"
 
 **Retention:** the newest 30 dumps are kept (about 30 days at one a day, roughly 3.3 GB) and older ones are deleted, but only after a new upload succeeds. That is deliberate: an R2 lifecycle rule ("delete after 30 days") would keep deleting through an outage like the 2026 one and could empty the bucket.
 
-**Alerting:** the last line pings the Healthchecks.io check "Zwipe Backups" (cron `0 5 * * *` UTC, 1 hour grace, email). `set -e` means it is only reached when the dump and the upload both succeeded, so a missing ping is the alert. The ping URL lives in the server's `.env` as `BACKUP_HEALTHCHECK_URL`, never in the repo. On a failed run the dump stays in `/tmp` (the `rm` is never reached), which is a useful last copy until the next reboot.
+**Alerting:** the last line pings the Healthchecks.io check "Zwipe Backups" (cron `0 5 * * *` UTC, 1 hour grace, email). `set -e` means it is only reached when the dump and the upload both succeeded, so a missing ping is the alert. The ping URL lives in `~/.config/zwipe-backup.env` as `BACKUP_HEALTHCHECK_URL`, never in the repo. On a failed run the dump stays in `/tmp` (the `rm` is never reached), which is a useful last copy until the next reboot.
 
-**Why `grep`, not `source`:** sourcing the whole `.env` would expand `$` and backticks in every value (e.g. a future `JWT_SECRET` containing shell-special characters). Pulling just the one line we need keeps the script ignorant of every other secret.
+**Its env file:** `~/.config/zwipe-backup.env`, mode 600 and owned by `scadoshi`, holds only `DATABASE_URL` (the `zwipe` role) and `BACKUP_HEALTHCHECK_URL`. zerver's own env file is `/etc/zwipe/zerver.env`, which `scadoshi` cannot read, so the backup never sees the JWT or Resend secrets. Change the database password here too when it rotates (`server.md`, Change Database Password). The script greps rather than sources so a `$` or backtick in a value is never expanded.
 
 **Note:** `pg_dump` must receive the full connection URL as a positional argument, not via `-U`. Using `-U` with a URL causes PostgreSQL to treat the entire URL as a username and fail with peer authentication errors.
 
@@ -183,8 +182,8 @@ gunzip /tmp/zwipe-20260329.sql.gz
 sudo -u postgres dropdb zwipe
 sudo -u postgres createdb -O zwipe zwipe
 
-# 6. Restore (source .env for DATABASE_URL)
-set -a && source ~/zwipe/.env && set +a
+# 6. Restore (DATABASE_URL from the backup's env file)
+DATABASE_URL=$(grep -E '^DATABASE_URL=' ~/.config/zwipe-backup.env | cut -d= -f2-)
 psql "$DATABASE_URL" < /tmp/zwipe-20260329.sql
 
 # 7. Restart zerver
@@ -204,7 +203,7 @@ If rebuilding from scratch, create the user first:
 ```bash
 sudo -u postgres createuser zwipe -P   # prompts for password
 sudo -u postgres createdb -O zwipe zwipe
-set -a && source ~/zwipe/.env && set +a
+DATABASE_URL=$(grep -E '^DATABASE_URL=' ~/.config/zwipe-backup.env | cut -d= -f2-)
 psql "$DATABASE_URL" < /tmp/zwipe-20260329.sql
 ```
 
@@ -214,7 +213,7 @@ If you only need to restore one table (e.g. user data got corrupted but cards ar
 
 ```bash
 # Extract just that table's data from the dump
-set -a && source ~/zwipe/.env && set +a
+DATABASE_URL=$(grep -E '^DATABASE_URL=' ~/.config/zwipe-backup.env | cut -d= -f2-)
 pg_restore --data-only --table=users /tmp/zwipe-20260329.sql | \
   psql "$DATABASE_URL"
 ```
