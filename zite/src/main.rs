@@ -8,7 +8,7 @@ mod api;
 mod components;
 mod pages;
 use pages::{
-    About, Android, Changelog, Contribute, Discord, GuidePage, Guides, Home, Ios, NotFound,
+    About, Android, Changelog, Community, Contribute, GuidePage, Guides, Home, Ios, NotFound,
     Privacy, Reset, SharedDeck, Verify,
 };
 
@@ -40,8 +40,9 @@ enum Route {
     Changelog {},
     #[route("/contribute")]
     Contribute {},
-    #[route("/discord")]
-    Discord {},
+    #[route("/community")]
+    Community {},
+    #[redirect("/discord", || Route::Community {})]
     #[route("/download/android")]
     Android {},
     #[route("/download/ios")]
@@ -258,7 +259,7 @@ pub fn Nav() -> Element {
                     Link { to: Route::Contribute {}, onclick: move |_| open.set(false), "Contribute" }
                 }
                 li {
-                    Link { to: Route::Discord {}, onclick: move |_| open.set(false), "Discord" }
+                    Link { to: Route::Community {}, onclick: move |_| open.set(false), "Community" }
                 }
                 li { class: "nav-link-store",
                     a {

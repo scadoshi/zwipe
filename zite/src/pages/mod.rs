@@ -1,8 +1,8 @@
 mod about;
 mod android;
 mod changelog;
+mod community;
 mod contribute;
-mod discord;
 mod guides;
 mod home;
 mod ios;
@@ -15,8 +15,8 @@ mod verify;
 pub use about::About;
 pub use android::Android;
 pub use changelog::Changelog;
+pub use community::Community;
 pub use contribute::Contribute;
-pub use discord::Discord;
 pub use guides::{GuidePage, Guides};
 // SSG prerender list only, which `#[server]` compiles under this feature.
 #[cfg(feature = "server")]
