@@ -10,6 +10,11 @@
  * matching rules are removed from the apps' own stylesheets as call sites
  * migrate to the components. */
 
+/* The space between stacked panels on every screen of every app and site. */
+:root {
+    --panel-gap: 1rem;
+}
+
 /* ---- Chip (zwipe_components::Chip) ---- */
 
 /* The ASCII logo's color: the text color on a dark theme, the primary accent
@@ -1750,7 +1755,7 @@ a.nav-dropdown-item.active:visited {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--panel-gap);
 }
 
 .changelog-filter .chip {
@@ -1760,8 +1765,7 @@ a.nav-dropdown-item.active:visited {
 .changelog-list {
     display: flex;
     flex-direction: column;
-    /* Matches the app's 0.5rem element rhythm. */
-    gap: 0.5rem;
+    gap: var(--panel-gap);
 }
 
 .changelog-card {
