@@ -23,7 +23,7 @@ pub fn Ios() -> Element {
     rsx! {
         PageMeta {
             title: "Download for iOS",
-            description: "Zwipe on the App Store: a swipe-based deck builder for trading-card games.",
+            description: "Zwipe on the App Store: a swipe-based Magic: The Gathering deck builder.",
             path: "/download/ios",
         }
         document::Meta { http_equiv: "refresh", content: "0; url={APP_STORE_URL}" }
