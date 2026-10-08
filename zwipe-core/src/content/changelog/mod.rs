@@ -33,6 +33,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "A ? beside the new password field lists the password rules",
         "Privacy policy says where data is stored and how to request a copy",
         "Numbers, names and links each have their own color in every theme",
+        "Titles, selections and labels use the colors each theme's own editor scheme gives them",
         "The chip under the home counters says all users",
         "Screen titles use one capitalization style",
     ],

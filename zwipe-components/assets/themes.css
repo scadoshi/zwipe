@@ -80,9 +80,9 @@
     --border-error: #cc241d;
     --border-success: #98971a;
     --border-warning: #d79921;
-    --accent-primary: #689d6a;
-    --accent-secondary: #cc241d;
-    --accent-tertiary: #d79921;
+    --accent-primary: #83a598;
+    --accent-secondary: #fabd2f;
+    --accent-tertiary: #d3869b;
     /* palette: morhetz/gruvbox gruvbox.vim (bright for dark, faded for light) */
     --palette-1: #83a598;
     --palette-2: #fe8019;
@@ -109,9 +109,9 @@
     --border-error: #cc241d;
     --border-success: #98971a;
     --border-warning: #d79921;
-    --accent-primary: #427658;
-    --accent-secondary: #9d0006;
-    --accent-tertiary: #b57614;
+    --accent-primary: #076678;
+    --accent-secondary: #b57614;
+    --accent-tertiary: #8f3f71;
     /* palette: morhetz/gruvbox gruvbox.vim (bright for dark, faded for light) */
     --palette-1: #076678;
     --palette-2: #af3a03;
@@ -139,9 +139,9 @@
     --border-error: #ff5555;
     --border-success: #50fa7b;
     --border-warning: #f1fa8c;
-    --accent-primary: #8be9fd;
-    --accent-secondary: #ff79c6;
-    --accent-tertiary: #f1fa8c;
+    --accent-primary: #ff79c6;
+    --accent-secondary: #ffb86c;
+    --accent-tertiary: #bd93f9;
     /* palette: dracula/dracula-theme README (Dracula, Alucard) */
     --palette-1: #8be9fd;
     --palette-2: #ffb86c;
@@ -168,9 +168,9 @@
     --border-error: #ff5555;
     --border-success: #2dba4e;
     --border-warning: #c4a616;
-    --accent-primary: #4da0b0;
-    --accent-secondary: #cc3366;
-    --accent-tertiary: #c4a616;
+    --accent-primary: #a3144d;
+    --accent-secondary: #a34d14;
+    --accent-tertiary: #846e15;
     /* palette: dracula/dracula-theme README (Dracula, Alucard) */
     --palette-1: #036a96;
     --palette-2: #a34d14;
@@ -198,9 +198,9 @@
     --border-error: #c65c5e;
     --border-success: #87a060;
     --border-warning: #bb9c5f;
-    --accent-primary: #a7c080;
-    --accent-secondary: #e67e80;
-    --accent-tertiary: #dbbc7f;
+    --accent-primary: #e67e80;
+    --accent-secondary: #a7c080;
+    --accent-tertiary: #d699b6;
     /* palette: sainnhe/everforest everforest.vim (medium) */
     --palette-1: #7fbbb3;
     --palette-2: #e69875;
@@ -227,9 +227,9 @@
     --border-error: #d83530;
     --border-success: #6d8100;
     --border-warning: #bf8000;
-    --accent-primary: #8da101;
-    --accent-secondary: #f85552;
-    --accent-tertiary: #bf8000;
+    --accent-primary: #d96400;
+    --accent-secondary: #7b8e00;
+    --accent-tertiary: #ca56a7;
     /* palette: sainnhe/everforest everforest.vim (medium) */
     --palette-1: #338ebe;
     --palette-2: #d96400;
@@ -257,9 +257,9 @@
     --border-error: #d36b88;
     --border-success: #86c381;
     --border-warning: #d9c28f;
-    --accent-primary: #89b4fa;
-    --accent-secondary: #f38ba8;
-    --accent-tertiary: #f9e2af;
+    --accent-primary: #cba6f7;
+    --accent-secondary: #94e2d5;
+    --accent-tertiary: #fab387;
     /* palette: catppuccin/palette palette.json (Mocha, Latte) */
     --palette-1: #89b4fa;
     --palette-2: #fab387;
@@ -286,9 +286,9 @@
     --border-error: #b20029;
     --border-success: #30800b;
     --border-warning: #bf6e0d;
-    --accent-primary: #1e90b0;
-    --accent-secondary: #d20f39;
-    --accent-tertiary: #df8e1d;
+    --accent-primary: #8839ef;
+    --accent-secondary: #179299;
+    --accent-tertiary: #f05600;
     /* palette: catppuccin/palette palette.json (Mocha, Latte) */
     --palette-1: #1e66f5;
     --palette-2: #f05600;
@@ -316,9 +316,9 @@
     --border-error: #d7566e;
     --border-success: #7eae4a;
     --border-warning: #c08f48;
-    --accent-primary: #7dcfff;
-    --accent-secondary: #bb9af7;
-    --accent-tertiary: #e0af68;
+    --accent-primary: #bb9af7;
+    --accent-secondary: #ff9e64;
+    --accent-tertiary: #7aa2f7;
     /* palette: folke/tokyonight.nvim alacritty night and day; slot 2 orange is the community value */
     --palette-1: #7aa2f7;
     --palette-2: #ff9e64;
@@ -345,9 +345,9 @@
     --border-error: #d50a45;
     --border-success: #385519;
     --border-warning: #6c4c1e;
-    --accent-primary: #2a7a9a;
-    --accent-secondary: #8a5ac0;
-    --accent-tertiary: #8c6c3e;
+    --accent-primary: #924dea;
+    --accent-secondary: #b15c00;
+    --accent-tertiary: #2777e2;
     /* palette: folke/tokyonight.nvim alacritty night and day; slot 2 orange is the community value */
     --palette-1: #2777e2;
     --palette-2: #b15c00;
@@ -375,9 +375,9 @@
     --border-error: #9f414a;
     --border-success: #839e6c;
     --border-warning: #cbab6b;
-    --accent-primary: #88c0d0;
-    --accent-secondary: #b48ead;
-    --accent-tertiary: #ebcb8b;
+    --accent-primary: #81a1c1;
+    --accent-secondary: #88c0d0;
+    --accent-tertiary: #b48ead;
     /* palette: nord.css nord7 to nord15; light derived from dark */
     --palette-1: #81a1c1;
     --palette-2: #d08770;
@@ -404,9 +404,9 @@
     --border-error: #9f414a;
     --border-success: #839e6c;
     --border-warning: #cbab6b;
-    --accent-primary: #5e8fa0;
-    --accent-secondary: #8a5e7e;
-    --accent-tertiary: #b09a5b;
+    --accent-primary: #6989a8;
+    --accent-secondary: #578e9d;
+    --accent-tertiary: #a17c9a;
     /* palette: nord.css nord7 to nord15; light derived from dark */
     --palette-1: #6989a8;
     --palette-2: #bc755e;
@@ -435,8 +435,8 @@
     --border-success: #7cafb8;
     --border-warning: #d6a157;
     --accent-primary: #9ccfd8;
-    --accent-secondary: #eb6f92;
-    --accent-tertiary: #f6c177;
+    --accent-secondary: #f6c177;
+    --accent-tertiary: #c4a7e7;
     /* palette: rose-pine/alacritty rose-pine.toml and rose-pine-dawn.toml */
     --palette-1: #31748f;
     --palette-2: #f6c177;
@@ -464,8 +464,8 @@
     --border-success: #36747f;
     --border-warning: #ca7d14;
     --accent-primary: #56949f;
-    --accent-secondary: #b4637a;
-    --accent-tertiary: #ea9d34;
+    --accent-secondary: #c27800;
+    --accent-tertiary: #907aa9;
     /* palette: rose-pine/alacritty rose-pine.toml and rose-pine-dawn.toml */
     --palette-1: #286983;
     --palette-2: #c27800;
@@ -493,9 +493,9 @@
     --border-error: #d90652;
     --border-success: #86c20e;
     --border-warning: #dd7700;
-    --accent-primary: #66d9ef;
-    --accent-secondary: #f92672;
-    --accent-tertiary: #e6db74;
+    --accent-primary: #f92672;
+    --accent-secondary: #e6db74;
+    --accent-tertiary: #ae81ff;
     /* palette: microsoft/vscode theme-monokai (classic); light derived from dark */
     --palette-1: #66d9ef;
     --palette-2: #fd971f;
@@ -522,9 +522,9 @@
     --border-error: #a40040;
     --border-success: #4a7a00;
     --border-warning: #a05000;
-    --accent-primary: #2a8a9a;
-    --accent-secondary: #c4105a;
-    --accent-tertiary: #b09a20;
+    --accent-primary: #c4105a;
+    --accent-secondary: #9a8e1e;
+    --accent-tertiary: #a274f1;
     /* palette: microsoft/vscode theme-monokai (classic); light derived from dark */
     --palette-1: #1a9fb4;
     --palette-2: #da7700;
@@ -552,8 +552,8 @@
     --border-error: #c04c55;
     --border-success: #78a359;
     --border-warning: #c5a05b;
-    --accent-primary: #61afef;
-    --accent-secondary: #c678dd;
+    --accent-primary: #c678dd;
+    --accent-secondary: #61afef;
     --accent-tertiary: #e5c07b;
     /* palette: atom one-dark-syntax and one-light-syntax colors.less */
     --palette-1: #61afef;
@@ -581,8 +581,8 @@
     --border-error: #c33f34;
     --border-success: #30812f;
     --border-warning: #a16400;
-    --accent-primary: #4078f2;
-    --accent-secondary: #a626a4;
+    --accent-primary: #a626a4;
+    --accent-secondary: #4078f2;
     --accent-tertiary: #c18401;
     /* palette: atom one-dark-syntax and one-light-syntax colors.less */
     --palette-1: #4078f2;
@@ -611,9 +611,9 @@
     --border-error: #bc120f;
     --border-success: #657900;
     --border-warning: #956900;
-    --accent-primary: #268bd2;
-    --accent-secondary: #d33682;
-    --accent-tertiary: #b58900;
+    --accent-primary: #cb4b16;
+    --accent-secondary: #b58900;
+    --accent-tertiary: #2aa198;
     /* palette: altercation/solarized (accents shared by both modes) */
     --palette-1: #268bd2;
     --palette-2: #cb4b16;
@@ -640,9 +640,9 @@
     --border-error: #bc120f;
     --border-success: #657900;
     --border-warning: #956900;
-    --accent-primary: #268bd2;
-    --accent-secondary: #d33682;
-    --accent-tertiary: #b58900;
+    --accent-primary: #cb4b16;
+    --accent-secondary: #af8300;
+    --accent-tertiary: #209b92;
     /* palette: altercation/solarized (accents shared by both modes) */
     --palette-1: #268bd2;
     --palette-2: #cb4b16;
@@ -674,9 +674,9 @@
     --border-error: #d95757;
     --border-success: #8ab33a;
     --border-warning: #e6a33a;
-    --accent-primary: #59c2ff;
-    --accent-secondary: #f07178;
-    --accent-tertiary: #ffb454;
+    --accent-primary: #ff8f40;
+    --accent-secondary: #ffb454;
+    --accent-tertiary: #d2a6ff;
     /* palette: ayu-theme/ayu-colors themes/dark.yaml and light.yaml */
     --palette-1: #59c2ff;
     --palette-2: #ff8f40;
@@ -703,9 +703,9 @@
     --border-error: #cc4040;
     --border-success: #6d9000;
     --border-warning: #d99530;
-    --accent-primary: #399ee6;
-    --accent-secondary: #f07171;
-    --accent-tertiary: #fa8d3e;
+    --accent-primary: #e57214;
+    --accent-secondary: #ca8400;
+    --accent-tertiary: #a37acc;
     /* palette: ayu-theme/ayu-colors themes/dark.yaml and light.yaml */
     --palette-1: #0097d9;
     --palette-2: #e57214;
@@ -734,7 +734,7 @@
     --border-success: #2ea043;
     --border-warning: #bb8009;
     --accent-primary: #58a6ff;
-    --accent-secondary: #f85149;
+    --accent-secondary: #ab7df8;
     --accent-tertiary: #d29922;
     /* palette: @primer/primitives dark.css and light.css (fgColor tokens) */
     --palette-1: #4493f8;
@@ -763,7 +763,7 @@
     --border-success: #116329;
     --border-warning: #7d4e00;
     --accent-primary: #0969da;
-    --accent-secondary: #cf222e;
+    --accent-secondary: #8250df;
     --accent-tertiary: #bc4c00;
     /* palette: @primer/primitives dark.css and light.css (fgColor tokens) */
     --palette-1: #0969da;
@@ -792,9 +792,9 @@
     --border-error: #c34043;
     --border-success: #7a9960;
     --border-warning: #c9a86f;
-    --accent-primary: #7e9cd8;
-    --accent-secondary: #957fb8;
-    --accent-tertiary: #e6c384;
+    --accent-primary: #957fb8;
+    --accent-secondary: #7e9cd8;
+    --accent-tertiary: #7aa89f;
     /* palette: rebelot/kanagawa.nvim colors.lua (Wave, Lotus) */
     --palette-1: #7e9cd8;
     --palette-2: #ffa066;
@@ -821,9 +821,9 @@
     --border-error: #a8323f;
     --border-success: #5a7040;
     --border-warning: #b87c00;
-    --accent-primary: #4d699b;
-    --accent-secondary: #624c83;
-    --accent-tertiary: #cc6d00;
+    --accent-primary: #624c83;
+    --accent-secondary: #4d699b;
+    --accent-tertiary: #597b75;
     /* palette: rebelot/kanagawa.nvim colors.lua (Wave, Lotus) */
     --palette-1: #4d699b;
     --palette-2: #cc6d00;
@@ -851,8 +851,8 @@
     --border-error: #c94a48;
     --border-success: #8fb851;
     --border-warning: #d9c46f;
-    --accent-primary: #82aaff;
-    --accent-secondary: #c792ea;
+    --accent-primary: #c792ea;
+    --accent-secondary: #82aaff;
     --accent-tertiary: #ecc48d;
     /* palette: sdras/night-owl-vscode-theme (Night Owl, Light Owl) */
     --palette-1: #82aaff;
@@ -880,9 +880,9 @@
     --border-error: #b23430;
     --border-success: #077454;
     --border-warning: #b88c00;
-    --accent-primary: #288ed7;
-    --accent-secondary: #994cc3;
-    --accent-tertiary: #c96765;
+    --accent-primary: #994cc3;
+    --accent-secondary: #288ed7;
+    --accent-tertiary: #4876d6;
     /* palette: sdras/night-owl-vscode-theme (Night Owl, Light Owl) */
     --palette-1: #4876d6;
     --palette-2: #c96765;
@@ -969,9 +969,9 @@
     --border-error: #c93c3c;
     --border-success: #3ba892;
     --border-warning: #a88a00;
-    --accent-primary: #569cd6;
-    --accent-secondary: #c586c0;
-    --accent-tertiary: #ce9178;
+    --accent-primary: #c586c0;
+    --accent-secondary: #569cd6;
+    --accent-tertiary: #6a9955;
     /* palette: microsoft/vscode theme-defaults dark_plus and light_plus token colors */
     --palette-1: #569cd6;
     --palette-2: #ce9178;
@@ -998,9 +998,9 @@
     --border-error: #a82525;
     --border-success: #076e48;
     --border-warning: #9c7002;
-    --accent-primary: #0070c1;
-    --accent-secondary: #af00db;
-    --accent-tertiary: #a31515;
+    --accent-primary: #af00db;
+    --accent-secondary: #0070c1;
+    --accent-tertiary: #098658;
     /* palette: microsoft/vscode theme-defaults dark_plus and light_plus token colors */
     --palette-1: #0070c1;
     --palette-2: #795e26;
@@ -1028,9 +1028,9 @@
     --border-error: #a86a6a;
     --border-success: #5f7f5f;
     --border-warning: #c0b080;
-    --accent-primary: #8cd0d3;
-    --accent-secondary: #dca3a3;
-    --accent-tertiary: #dfaf8f;
+    --accent-primary: #f0dfaf;
+    --accent-secondary: #dfaf8f;
+    --accent-tertiary: #7f9f7f;
     /* palette: bbatsov/zenburn-emacs named palette; light derived from dark */
     --palette-1: #8cd0d3;
     --palette-2: #dfaf8f;
@@ -1057,9 +1057,9 @@
     --border-error: #7a4444;
     --border-success: #456045;
     --border-warning: #7a5e28;
-    --accent-primary: #4a8a8d;
-    --accent-secondary: #a86a6a;
-    --accent-tertiary: #a87a5a;
+    --accent-primary: #908154;
+    --accent-secondary: #a57859;
+    --accent-tertiary: #678768;
     /* palette: bbatsov/zenburn-emacs named palette; light derived from dark */
     --palette-1: #488b8e;
     --palette-2: #a57859;
@@ -1091,9 +1091,9 @@
     --border-error: #bf6f8c;
     --border-success: #78ab8f;
     --border-warning: #bfa46f;
-    --accent-primary: #a6b8f0;
-    --accent-secondary: #c8a6f0;
-    --accent-tertiary: #a6e0f0;
+    --accent-primary: #c89dc1;
+    --accent-secondary: #7d82d9;
+    --accent-tertiary: #92a593;
     /* palette: basecamp/omarchy themes/ethereal/colors.toml; light derived from dark */
     --palette-1: #7d82d9;
     --palette-2: #eb8b54;
@@ -1120,9 +1120,9 @@
     --border-error: #a04d6c;
     --border-success: #46805e;
     --border-warning: #8e6c2f;
-    --accent-primary: #6a80d0;
-    --accent-secondary: #9a6fd0;
-    --accent-tertiary: #5aa8c0;
+    --accent-primary: #a87fa1;
+    --accent-secondary: #7d82d9;
+    --accent-tertiary: #809381;
     /* palette: basecamp/omarchy themes/ethereal/colors.toml; light derived from dark */
     --palette-1: #7d82d9;
     --palette-2: #d0723a;
@@ -1150,9 +1150,9 @@
     --border-error: #cc3333;
     --border-success: #22aa22;
     --border-warning: #7fbf1f;
-    --accent-primary: #33ff33;
-    --accent-secondary: #00d9a0;
-    --accent-tertiary: #aaff33;
+    --accent-primary: #829dd4;
+    --accent-secondary: #50f872;
+    --accent-tertiary: #50f7d4;
     /* palette: basecamp/omarchy themes/hackerman/colors.toml; light derived from dark */
     --palette-1: #829dd4;
     --palette-2: #50f7a3;
@@ -1179,9 +1179,9 @@
     --border-error: #8a2020;
     --border-success: #145c14;
     --border-warning: #526c0c;
-    --accent-primary: #1a8a1a;
-    --accent-secondary: #0a8a6a;
-    --accent-tertiary: #4a8a10;
+    --accent-primary: #6a84ba;
+    --accent-secondary: #009b00;
+    --accent-tertiary: #009b7d;
     /* palette: basecamp/omarchy themes/hackerman/colors.toml; light derived from dark */
     --palette-1: #6a84ba;
     --palette-2: #009b4e;
@@ -1209,9 +1209,9 @@
     --border-error: #8a453e;
     --border-success: #5f6d42;
     --border-warning: #a87e3f;
-    --accent-primary: #d4a35a;
-    --accent-secondary: #c8c8c8;
-    --accent-tertiary: #b8965f;
+    --accent-primary: #e68e0d;
+    --accent-secondary: #c02523;
+    --accent-tertiary: #ffc107;
     /* palette: basecamp/omarchy themes/matte-black/colors.toml; light derived from dark */
     --palette-1: #bebebe;
     --palette-2: #e68e0d;
@@ -1238,9 +1238,9 @@
     --border-error: #7a352c;
     --border-success: #465030;
     --border-warning: #7a5a1e;
-    --accent-primary: #9a742a;
-    --accent-secondary: #2e2e2e;
-    --accent-tertiary: #7e5f24;
+    --accent-primary: #cb7500;
+    --accent-secondary: #b91c1c;
+    --accent-tertiary: #b67b00;
     /* palette: basecamp/omarchy themes/matte-black/colors.toml; light derived from dark */
     --palette-1: #868686;
     --palette-2: #cb7500;
@@ -1268,9 +1268,9 @@
     --border-error: #a86a4a;
     --border-success: #5c6638;
     --border-warning: #98763f;
-    --accent-primary: #78834b;
-    --accent-secondary: #c98a6a;
-    --accent-tertiary: #bb9457;
+    --accent-primary: #5f875f;
+    --accent-secondary: #78824b;
+    --accent-tertiary: #7f6e58;
     /* palette: xero/miasma.nvim extras/miasma.toml; light derived from dark */
     --palette-1: #78824b;
     --palette-2: #b36d43;
@@ -1297,9 +1297,9 @@
     --border-error: #7a4428;
     --border-success: #464e28;
     --border-warning: #6c5220;
-    --accent-primary: #5c6638;
-    --accent-secondary: #9a5a3a;
-    --accent-tertiary: #8a6a30;
+    --accent-primary: #5f875f;
+    --accent-secondary: #78824b;
+    --accent-tertiary: #685742;
     /* palette: xero/miasma.nvim extras/miasma.toml; light derived from dark */
     --palette-1: #78824b;
     --palette-2: #b36d43;
@@ -1327,8 +1327,8 @@
     --border-error: #a84545;
     --border-success: #5c9666;
     --border-warning: #b0904a;
-    --accent-primary: #5dd0a0;
-    --accent-secondary: #75a89a;
+    --accent-primary: #2dd5b7;
+    --accent-secondary: #509475;
     --accent-tertiary: #d4b26a;
     /* palette: basecamp/omarchy themes/osaka-jade/colors.toml; light derived from dark */
     --palette-1: #509475;
@@ -1356,8 +1356,8 @@
     --border-error: #863434;
     --border-success: #2c603f;
     --border-warning: #6c521e;
-    --accent-primary: #2a8a64;
-    --accent-secondary: #4a7a6c;
+    --accent-primary: #00957a;
+    --accent-secondary: #509475;
     --accent-tertiary: #8a6a2a;
     /* palette: basecamp/omarchy themes/osaka-jade/colors.toml; light derived from dark */
     --palette-1: #509475;
@@ -1386,9 +1386,9 @@
     --border-error: #d1546c;
     --border-success: #8fb85f;
     --border-warning: #d1aa54;
-    --accent-primary: #85dacc;
-    --accent-secondary: #a8a9eb;
-    --accent-tertiary: #f38d70;
+    --accent-primary: #fd6883;
+    --accent-secondary: #f38d70;
+    --accent-tertiary: #85dacc;
     /* palette: basecamp/omarchy themes/ristretto/colors.toml; light derived from dark */
     --palette-1: #85dacc;
     --palette-2: #fb9a77;
@@ -1415,9 +1415,9 @@
     --border-error: #a02c46;
     --border-success: #587733;
     --border-warning: #8e6c1e;
-    --accent-primary: #2f9488;
-    --accent-secondary: #7a5fb0;
-    --accent-tertiary: #c3623f;
+    --accent-primary: #c33f5a;
+    --accent-secondary: #ca684c;
+    --accent-tertiary: #3d9488;
     /* palette: basecamp/omarchy themes/ristretto/colors.toml; light derived from dark */
     --palette-1: #3d9488;
     --palette-2: #cb6f4d;
@@ -1446,8 +1446,8 @@
     --border-success: #4fc793;
     --border-warning: #d4bb45;
     --accent-primary: #ff7edb;
-    --accent-secondary: #36f9f6;
-    --accent-tertiary: #ff8b39;
+    --accent-secondary: #ff8b39;
+    --accent-tertiary: #0080ff;
     /* palette: omacom/omarchy-synthwave84-theme alacritty.toml; light derived from dark */
     --palette-1: #0080ff;
     --palette-2: #fe5442;
@@ -1475,8 +1475,8 @@
     --border-success: #167a52;
     --border-warning: #8e6208;
     --accent-primary: #c31d86;
-    --accent-secondary: #0a9aa0;
-    --accent-tertiary: #d1621a;
+    --accent-secondary: #d1621a;
+    --accent-tertiary: #0080ff;
     /* palette: omacom/omarchy-synthwave84-theme alacritty.toml; light derived from dark */
     --palette-1: #0080ff;
     --palette-2: #f74d3c;
@@ -1504,9 +1504,9 @@
     --border-error: #d44444;
     --border-success: #3ba33b;
     --border-warning: #d4bb3a;
-    --accent-primary: #3b9eff;
-    --accent-secondary: #ffcf3b;
-    --accent-tertiary: #34c6c6;
+    --accent-primary: #00ff00;
+    --accent-secondary: #00ffff;
+    --accent-tertiary: #808000;
     /* palette: Windows Terminal defaults.json scheme Vintage */
     --palette-1: #1761ff;
     --palette-2: #808000;
@@ -1533,9 +1533,9 @@
     --border-error: #a02216;
     --border-success: #206e20;
     --border-warning: #7a6000;
-    --accent-primary: #0063b1;
-    --accent-secondary: #9a7a00;
-    --accent-tertiary: #007a7a;
+    --accent-primary: #000080;
+    --accent-secondary: #008080;
+    --accent-tertiary: #008000;
     /* palette: Windows Terminal defaults.json scheme Vintage */
     --palette-1: #000080;
     --palette-2: #800000;
@@ -1563,9 +1563,9 @@
     --border-error: #b8492f;
     --border-success: #6f8f38;
     --border-warning: #a87814;
-    --accent-primary: #e6913c;
-    --accent-secondary: #2dbab0;
-    --accent-tertiary: #d2991d;
+    --accent-primary: #ab8ac1;
+    --accent-secondary: #d2991d;
+    --accent-tertiary: #83a300;
     /* palette: rust-lang/docs.rs _themes.scss and _syntax-themes.scss */
     --palette-1: #769acb;
     --palette-2: #d97f26;
@@ -1592,9 +1592,9 @@
     --border-error: #9c2c20;
     --border-success: #4a601f;
     --border-warning: #86600a;
-    --accent-primary: #c7622a;
-    --accent-secondary: #1f8a80;
-    --accent-tertiary: #a8760f;
+    --accent-primary: #8959a8;
+    --accent-secondary: #4271ae;
+    --accent-tertiary: #b76514;
     /* palette: rust-lang/docs.rs _themes.scss and _syntax-themes.scss */
     --palette-1: #4271ae;
     --palette-2: #b76514;
