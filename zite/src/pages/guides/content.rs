@@ -490,7 +490,7 @@ pub static GUIDES: &[Guide] = &[
     },
     Guide {
         slug: "commander-and-formats",
-        title: "Choose a commander & format",
+        title: "Choose a commander and format",
         summary: "Pick a format, then a commander. Zwipe enforces each format's rules and your commander's color identity.",
         tags: &["Commander", "Deck building"],
         related: &["synergy", "commander-maybeboard"],
@@ -817,7 +817,7 @@ pub static GUIDES: &[Guide] = &[
     },
     Guide {
         slug: "tags-roles-and-oracle-tags",
-        title: "Deck tags, card roles & oracle tags: how they fit",
+        title: "Deck tags, card roles, and oracle tags: how they fit",
         summary: "One mental model for Zwipe tagging: deck tags seed oracle tags, oracle tags sharpen suggestions, card roles show the read.",
         tags: &["Oracle tags", "Cards"],
         related: &["deck-tags", "card-roles", "oracle-tags"],
@@ -939,7 +939,7 @@ pub static GUIDES: &[Guide] = &[
     },
     Guide {
         slug: "deck-stats",
-        title: "Read your deck stats & charts",
+        title: "Read your deck stats and charts",
         summary: "The deck view fills with live numbers: counts, prices, mana curve, color and type breakdowns, and draw odds.",
         tags: &["Deck stats"],
         related: &["budgeting", "land-targets", "import-export"],
@@ -977,7 +977,7 @@ pub static GUIDES: &[Guide] = &[
     },
     Guide {
         slug: "import-export",
-        title: "Import & export decklists",
+        title: "Import and export decklists",
         summary: "Bring a deck in from an Archidekt link or pasted text, and copy any deck back out as a plain decklist.",
         tags: &["Importing", "Deck building"],
         related: &["deck-stats"],
