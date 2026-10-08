@@ -1545,11 +1545,11 @@ a.nav-dropdown-item.active:visited {
 
 /* ---- Banner (zwipe_components::Banner) ---- */
 
-/* Fixed toast column. Each site renders this wrapper and drops Banners inside;
-   position is a site layout concern, so sites may override placement. */
+/* Fixed toast column at the bottom-left, clear of the nav and the page's first
+   content. Each site renders this wrapper and drops Banners inside. */
 .banner-stack {
     position: fixed;
-    top: 6rem;
+    bottom: 1.5rem;
     left: 1.5rem;
     z-index: 100;
     display: flex;
@@ -1574,7 +1574,7 @@ a.nav-dropdown-item.active:visited {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
-    animation: banner-slide-in 0.5s ease-out both;
+    animation: banner-rise-in 0.5s ease-out both;
     animation-delay: 1s;
     box-shadow: var(--shadow-md);
 }
@@ -1686,31 +1686,6 @@ a.nav-dropdown-item.active:visited {
 
 .banner-dismiss:hover {
     color: var(--text-primary);
-}
-
-@keyframes banner-slide-in {
-    from {
-        opacity: 0;
-        transform: translateY(-80px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Below the nav breakpoint the stack sits at the bottom of the screen: at the
-   top it lands on the page's first content, and the hamburger panel opens over
-   it there. */
-@media (max-width: 60rem) {
-    .banner-stack {
-        top: auto;
-        bottom: 1.5rem;
-    }
-
-    .announcement-banner {
-        animation-name: banner-rise-in;
-    }
 }
 
 @keyframes banner-rise-in {

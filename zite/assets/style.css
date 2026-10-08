@@ -2067,7 +2067,7 @@ footer {
     left: 0;
     width: 100%;
     filter: drop-shadow(0 0.4rem 1rem rgba(0, 0, 0, 0.6));
-    /* Newcomer drops in from above (portfolio's banner-slide-in). */
+    /* Newcomer drops in from above. */
     animation: sd-preview-in 0.35s ease-out both;
 }
 
