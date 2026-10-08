@@ -18,7 +18,7 @@ const ROUTES: &[(&str, &str, &str)] = &[
     ("/changelog", "weekly", "0.6"),
     ("/about", "monthly", "0.7"),
     ("/contribute", "monthly", "0.6"),
-    ("/discord", "monthly", "0.5"),
+    ("/community", "monthly", "0.5"),
     ("/privacy", "yearly", "0.3"),
 ];
 
