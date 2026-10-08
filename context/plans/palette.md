@@ -88,7 +88,6 @@ Each repo's CI gets a grep that fails when a `--color-(success|warning|error)` r
 
 ## Known gotchas
 
-- `.theme-synthwave-` is missing its `-dark` suffix in `themes.css` (found 2026-10-08). Fix in phase 1.
 - Prerendered sites put the shared stylesheet before inline styles whatever the source order, so a consumer override of a palette slot needs higher specificity. Compare effective CSS, not HTML (see `shared_ui_kit.md`).
 - zwipe CI formats with nightly rustfmt; run `cargo +nightly fmt` before each commit (`development/commit_guidelines.md`).
 
