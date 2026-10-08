@@ -8,7 +8,9 @@ pub fn Verify(token: String) -> Element {
         let token = token.clone();
         async move {
             if token.is_empty() {
-                return Err("This link is missing its code. Open it from the email again.".to_string());
+                return Err(
+                    "This link is missing its code. Open it from the email again.".to_string(),
+                );
             }
 
             api::client()
