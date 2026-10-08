@@ -285,7 +285,7 @@ const DECODE_MS: u64 = 700;
 const DECODE_TICK_MS: u32 = 40;
 /// Columns the front runs past the end, so the last ones get their wobble.
 const OVERRUN: usize = 4;
-/// The shimmer: how many columns the travelling band covers, and how far it
+/// The shimmer: how many columns the traveling band covers, and how far it
 /// moves each frame.
 const SHIMMER_SPAN: usize = 10;
 const SHIMMER_STEP: usize = 2;
