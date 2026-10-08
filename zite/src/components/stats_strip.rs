@@ -6,7 +6,7 @@
 //! zerver once and swaps the live answer in; the chip under the strip says
 //! which one is showing.
 
-use crate::{Route, api};
+use crate::api;
 use dioxus::prelude::*;
 use serde::Deserialize;
 use std::sync::LazyLock;
@@ -60,7 +60,7 @@ pub fn StatsStrip() -> Element {
             ],
             // Where the numbers come from, as chips under the strip.
             source: rsx! {
-                Link { class: "tag", to: Route::About {}, "counted by zerver" }
+                span { class: "tag", "all users" }
                 if let Some(label) = label {
                     span { key: "{label}", class: "tag tag-swap", "{label}" }
                 }
