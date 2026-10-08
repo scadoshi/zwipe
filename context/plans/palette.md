@@ -31,14 +31,14 @@ Slot order is fixed across themes so a given element has the same temperature ev
 | 5 | the theme's yellow | `#fabd2f` |
 | 6 | the theme's cyan or aqua | `#8ec07c` |
 
-A theme's palette is its chromatic hues minus the ones it has already spent on status. Gruvbox's red stays `--color-error` and is not a palette slot. Where a theme has fewer than six hues (Nord, Vantablack), slots repeat a hue at a different lightness rather than borrowing from status.
+A palette slot may hold the same value as a status color. Measured 2026-10-08: in 34 of 62 blocks the theme's only green and yellow are its success and warning colors, so excluding them would leave four slots and hide a theme's best hues from everyday use. The reservation is on the variable, not the color: `--color-success` means an outcome and ships with its context (a toast, a check, an error box), while `--palette-3` means nothing. The guard below enforces the variable. Where a theme has fewer than six hues (Nord, Vantablack, Miasma), slots repeat a hue at a different lightness.
 
 ## Contrast: floors, not a target
 
 Earlier themes were tuned to one contrast level. That is dropped: a theme's contrast is part of its identity (Solarized is soft on purpose, Vantablack is harsh on purpose). The test enforces floors only:
 
 1. **Legible on the surface.** Each slot against `--bg-primary` at 3:1 or better, which is the mark and chip threshold. Text never wears a palette color; labels stay in `--text-*`.
-2. **Distinct from each other.** Every pair of the six at OKLab distance 15 or better under normal vision (all pairs, since tags sit side by side in any order).
+2. **Distinct from each other.** Every pair of the six at OKLab distance 8 or better under normal vision (all pairs, since tags sit side by side in any order), with 15 reported as the target. Measured 2026-10-08: a hard 15 fails 26 of 30 published palettes (Gruvbox green and aqua sit at 8), and the low-variety themes (Miasma, Hackerman, Matte Black, Osaka Jade, Ristretto, Zenburn, Vantablack) clear 8 only by spreading lightness within a hue, which is how their six are built.
 3. **Distinct under color-vision deficiency, as a warning.** Adjacent pairs at OKLab distance 6 or better under simulated protanopia and deuteranopia. A warning, not a failure, because every palette use in the apps carries a label (a tag's text, a chart's legend), which is the secondary encoding the method requires.
 4. **Lightness band and chroma floor are reported, not enforced.** They are the parts of the validator that would push every theme toward the same contrast.
 
@@ -51,7 +51,7 @@ Published palettes, with the source recorded in a comment above each theme block
 - Named schemes: Ayu, Catppuccin, Dracula, Everforest, GitHub, Gruvbox, Kanagawa, Monokai, Night Owl, Nord, One Dark, Rosé Pine, Solarized, Tokyo Night, VS Code, Zenburn. Each has a canonical ANSI or accent table.
 - Omarchy themes: Ethereal, Hackerman, Matte Black, Osaka Jade, Ristretto, Synthwave, Vantablack. Their terminal palettes are in the Omarchy repository.
 - docs.rs, PowerShell, Miasma, Rustbox: site or terminal colors where published; otherwise picked within the theme's existing hues and flagged for review.
-- The four accessibility themes: built, not sourced, by the rules above.
+- The four accessibility themes: built, not sourced, from the deficiency outward (blue and orange plus lightness steps for the red-green pair, red and cyan for tritanopia, six lightness steps for achromatopsia). The 2026-10-08 swatch derived them from their own accents and got pairs at distance 0; that is a placeholder, not a palette.
 
 Collection is a research pass that produces one table per theme (dark and light, hex per slot, source URL) before any CSS changes. A theme whose source has no light variant says so; the light palette is then derived by the same rules and marked derived.
 
@@ -93,5 +93,7 @@ Each repo's CI gets a grep that fails when a `--color-(success|warning|error)` r
 
 ## Open decisions
 
-- Six slots and the name `--palette-N`: confirmed in conversation 2026-10-08, pending the owner reading this plan.
+- Six slots and the name `--palette-N`: confirmed 2026-10-08.
+- Palette may equal status values: confirmed 2026-10-08 (the owner wants every theme hue visible in normal use).
+- Distinctness floor 8 enforced, 15 reported: proposed 2026-10-08, pending the owner.
 - Custom themes' palettes (Miasma, Rustbox, PowerShell, docs.rs): picked by the agent, reviewed by the owner on the swatch page.
