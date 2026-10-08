@@ -9,7 +9,7 @@
 //! alert): deliberately a dead end, the nav is right there for anyone who
 //! wants to explore.
 
-use crate::{Footer, Nav, components::PageMeta};
+use crate::{Footer, Nav, Route, components::PageMeta};
 use dioxus::prelude::*;
 use zwipe_components::Panel;
 
@@ -28,6 +28,9 @@ pub fn NotFound(segments: Vec<String>) -> Element {
             Panel {
                 title: "Page not found",
                 title_h1: true,
+                actions: rsx! {
+                    Link { class: "panel-action", to: Route::Home {}, "Home" }
+                },
                 p { class: "subtitle",
                     "Nothing lives at this address. It may have moved with a site update, or the link may be incomplete."
                 }
