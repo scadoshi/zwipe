@@ -203,7 +203,8 @@ body .reveal-pending.reveal-in {
    `transition: border-color 0.2s` and the lift snaps with no transition at
    all. The extra selector outranks it regardless of order. */
 @media (hover: hover) {
-    a:hover {
+    /* Tags keep their own color on hover. */
+    a:not(.tag):hover {
         color: color-mix(in srgb, var(--palette-1) 30%, var(--text-primary));
     }
 
@@ -483,6 +484,13 @@ body .arch-figure .diagram {
 
 a.tag {
     text-decoration: none;
+}
+
+/* A link inside a tag keeps the tag's color. */
+.tag a,
+.stat-chip a,
+.chip a {
+    color: inherit;
 }
 
 a.tag:hover {
@@ -2290,15 +2298,15 @@ footer {
 /* Price chip: money reads green in every theme. */
 .sd-header-meta .stat-chip-price,
 .info-row-tags .stat-chip-price {
-    color: var(--palette-5);
+    color: var(--color-money);
     background-color: color-mix(
         in srgb,
-        var(--palette-5) 12%,
+        var(--color-money) 12%,
         var(--bg-primary)
     );
     border-color: color-mix(
         in srgb,
-        var(--palette-5) 35%,
+        var(--color-money) 35%,
         var(--bg-primary)
     );
 }

@@ -367,12 +367,12 @@
     white-space: nowrap;
 }
 
-/* Price is a number: slot 5. */
+/* Price is money: each theme picks its own money color. */
 .card-row-price {
     font-variant-numeric: tabular-nums;
-    color: var(--palette-5);
-    background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-5) 35%, transparent);
+    color: var(--color-money);
+    background-color: color-mix(in srgb, var(--color-money) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-money) 35%, transparent);
 }
 
 /* P/T (creatures) and loyalty (planeswalkers): a number, slot 5. */

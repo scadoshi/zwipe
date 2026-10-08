@@ -1,6 +1,6 @@
 //! The palette gate for `assets/themes.css`, per `context/plans/palette.md`.
 //!
-//! Every theme block must carry `--palette-1` to `--palette-6`. Each slot must
+//! Every theme block must carry `--palette-1` to `--palette-6` and `--color-money`. Each slot must
 //! read on the block's `--bg-primary` at 3:1 or better. Pairs closer than 15 in
 //! OKLab are printed, never failed: published colors stay as published. The four
 //! accessibility themes are the exception: their six are built, not sourced, so
@@ -174,6 +174,18 @@ fn every_theme_has_six_legible_palette_slots() {
                     i + 1
                 ));
             }
+        }
+        match b.get("color-money").and_then(hex) {
+            Some(c) => {
+                let cr = contrast(c, bg);
+                if cr < 3.0 {
+                    failures.push(format!(
+                        "{}: color-money is {cr:.2}:1 on the background",
+                        b.name
+                    ));
+                }
+            }
+            None => failures.push(format!("{}: color-money missing or not a hex", b.name)),
         }
         let base = b
             .name

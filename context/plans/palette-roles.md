@@ -35,7 +35,7 @@ Sites keep drawing from fixed variables. Each role gets exactly one.
 | Hint keys (`HintKey`) | hand-picked per call site | the role variable of the thing they point at | 17 call sites; the default becomes `--palette-2` (most keys name a button) |
 | Left rules and tinted surfaces | all three | follow the role of the text they frame | `.keyword-reveal-text`, `.otag-reveal-block`, `.otag-def`, `.card-row.expanded` |
 
-Status colors are untouched; the guard from `palette.md` keeps it so.
+Status colors are untouched; the guard from `palette.md` keeps it so. Prices are the one number that is not slot 5: money has its own per-theme variable, `--color-money` (the theme's green by default, a gray step in Vantablack and achromatopsia), used by `.card-row-price`, `.flavor-price` and zite `.stat-chip-price`. A link inside a tag inherits the tag's color.
 
 Rules that fall out of the table:
 
