@@ -1267,6 +1267,27 @@ code {
     margin-bottom: 0;
 }
 
+/* A centered form, as in the apps: labels sit on the column's center and a
+   label's "?" hangs off its right edge so the text stays centered. */
+.form-centered .form-group > label {
+    text-align: center;
+}
+
+.form-centered .label-row {
+    justify-content: center;
+}
+
+.label-hint-anchor {
+    position: relative;
+}
+
+.label-hint-anchor .info-button {
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
 /* The "?" that opens a hint, as in the apps. */
 .info-button {
     display: inline-flex;

@@ -99,20 +99,30 @@ pub fn Reset(token: String) -> Element {
         div { class: "form-page content-enter",
             match current_state {
                 ResetState::Success => rsx! {
-                    Panel { title: "Password reset", title_h1: true,
+                    Panel { title: "Password reset", title_h1: true, centered: true,
                         p { class: "card-summary", "Your password has been updated and all sessions have been signed out." }
                         div { class: "status-message success", "Password updated successfully" }
                     }
                 },
                 _ => rsx! {
-                    Panel { title: "Reset password", title_h1: true,
-                    p { class: "card-summary", "Choose a new password for your account." }
+                    Panel { title: "Reset password", title_h1: true, centered: true,
+                        actions: rsx! {
+                            button {
+                                r#type: "submit",
+                                form: "reset-form",
+                                class: "panel-action",
+                                disabled: current_state == ResetState::Loading,
+                                if current_state == ResetState::Loading { "Updating..." } else { "Set new password" }
+                            }
+                        },
 
-                    form { onsubmit: on_submit,
+                    form { id: "reset-form", class: "form-centered", onsubmit: on_submit,
                         div { class: "form-group",
                             div { class: "label-row",
-                                label { "New password" }
-                                InfoButton { onclick: move |_| rules_open.set(true) }
+                                span { class: "label-hint-anchor",
+                                    label { "New password" }
+                                    InfoButton { onclick: move |_| rules_open.set(true) }
+                                }
                             }
                             input {
                                 r#type: "password",
@@ -131,12 +141,6 @@ pub fn Reset(token: String) -> Element {
                                 oninput: move |e| confirm.set(e.value()),
                                 disabled: current_state == ResetState::Loading,
                             }
-                        }
-                        button {
-                            r#type: "submit",
-                            class: "btn-primary",
-                            disabled: current_state == ResetState::Loading,
-                            if current_state == ResetState::Loading { "Updating..." } else { "Set new password" }
                         }
                     }
 
