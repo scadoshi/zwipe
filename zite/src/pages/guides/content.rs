@@ -779,7 +779,7 @@ pub static GUIDES: &[Guide] = &[
             },
             Block::H2("What each entry shows"),
             Block::P(
-                "Every row lists the tag's name, its description, and any parent tags it sits under, then two buttons: Examples shows cards that carry the tag, and Use adopts the tag into the deck or filter you opened the dictionary from, without leaving the picker. Descriptions are written by hand over time, so some tags still read \"No description yet.\"",
+                "Every row lists the tag's name, its description, and any parent tags it sits under, then two buttons: Examples shows cards that carry the tag, and Use adopts the tag into the deck or filter you opened the dictionary from, without leaving the picker. Every tag has a description written by Zwipe. A tag added since the last pass may read \"No description yet\" until it gets one.",
             ),
             Block::Note(
                 "For the wider picture of picking oracle tags on a deck, see Sharpen suggestions with oracle tags.",
