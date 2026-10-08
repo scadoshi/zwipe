@@ -29,6 +29,11 @@ pub fn Panel(
     /// Cards and in-page panels leave this off.
     #[props(default = false)]
     title_h1: bool,
+    /// Center the title, body and action row, as the apps' dialogs do. For a
+    /// panel used as a dialog. A centered panel carries no eyebrow: centered,
+    /// it reads as a second subtitle.
+    #[props(default = false)]
+    centered: bool,
     /// Rendered inside the heading after the title text, so it wraps with
     /// the title. For chips that describe the panel, such as a project's tags.
     #[props(default)]
@@ -49,7 +54,9 @@ pub fn Panel(
 
     rsx! {
         // Marked for the sites' scroll reveal (REVEAL_JS); inert elsewhere.
-        div { class: "panel-card", "data-reveal": "true",
+        div {
+            class: if centered { "panel-card panel-centered" } else { "panel-card" },
+            "data-reveal": "true",
             if has_header {
                 div { class: "panel-head",
                     if eyebrow.is_some() || status.is_some() {

@@ -1894,6 +1894,17 @@ a.nav-dropdown-item.active:visited {
     gap: 0.75rem;
 }
 
+/* A dialog-style panel: everything centered, as the apps' dialogs are. */
+.panel-centered .panel-eyebrow-row,
+.panel-centered .panel-actions {
+    justify-content: center;
+}
+
+.panel-centered .panel-title,
+.panel-centered .panel-body {
+    text-align: center;
+}
+
 /* Footer action buttons/links — pill buttons with the util-bar look. Works on
    both <a> (external links) and <button>; add "\u{2197}" to external labels. */
 .panel-action {

@@ -78,8 +78,8 @@ pub fn Reset(token: String) -> Element {
             div { class: "hint-overlay", onclick: move |_| rules_open.set(false),
                 div { class: "hint-dialog", onclick: move |e| e.stop_propagation(),
                     Panel {
-                        eyebrow: "Account",
-                        title: "Password",
+                        title: "Password rules",
+                        centered: true,
                         actions: rsx! {
                             button {
                                 class: "panel-action",
@@ -100,13 +100,13 @@ pub fn Reset(token: String) -> Element {
         div { class: "form-page content-enter",
             match current_state {
                 ResetState::Success => rsx! {
-                    Panel { eyebrow: "Account", title: "Password reset", title_h1: true,
+                    Panel { title: "Password reset", title_h1: true,
                         p { class: "card-summary", "Your password has been updated and all sessions have been signed out." }
                         div { class: "status-message success", "Password updated successfully" }
                     }
                 },
                 _ => rsx! {
-                    Panel { eyebrow: "Account", title: "Reset password", title_h1: true,
+                    Panel { title: "Reset password", title_h1: true,
                     p { class: "card-summary", "Choose a new password for your account." }
 
                     form { onsubmit: on_submit,
