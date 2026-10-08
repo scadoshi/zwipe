@@ -845,9 +845,6 @@ code {
     .form-page {
         margin-top: 2.25rem;
     }
-    .form-page .subtitle {
-        margin-bottom: 1.25rem;
-    }
 }
 
 .card-bullets {
@@ -1232,22 +1229,11 @@ code {
     /* The page gutter on each side, so a phone never runs it edge to edge. */
     width: calc(100% - 3rem);
     margin: 0 auto auto;
-    padding: 2rem;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    box-shadow: var(--shadow-md);
 }
 
-.form-page h1 {
-    font-size: 1.4rem;
-    margin-bottom: 0.5rem;
-}
-
-.form-page .subtitle {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    margin-bottom: 2rem;
+/* The form sits under the panel's summary line. */
+.form-page form {
+    margin-top: 1.25rem;
 }
 
 .form-group {
@@ -1325,30 +1311,6 @@ code {
 .status-message.error {
     border: 1px solid var(--border-error);
     color: var(--color-error);
-}
-
-.password-hint-toggle {
-    margin-bottom: 0.75rem;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    letter-spacing: 0.02em;
-}
-
-.password-hint-toggle summary {
-    cursor: pointer;
-    color: var(--text-muted);
-    font-size: 0.78rem;
-    padding: 0.25rem 0;
-    letter-spacing: 0.03em;
-}
-
-.password-hint-toggle ul {
-    list-style: none;
-    padding: 0.375rem 0 0 0.75rem;
-    margin: 0;
-    font-size: 0.75rem;
-    line-height: 1.7;
-    border-left: 2px solid var(--accent-primary);
 }
 
 /* ==================

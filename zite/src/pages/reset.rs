@@ -1,13 +1,14 @@
 use crate::{Nav, api};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
+use zwipe_components::Panel;
 use zwipe_core::domain::auth::models::secret::Secret;
 
 /// Validate a candidate password against the shared password policy.
 fn validate_password(pw: &str) -> Option<String> {
     zwipe_core::domain::auth::password::validate(pw)
         .err()
-        .map(|e| e.to_string())
+        .map(|e| format!("Password {e}"))
 }
 
 #[derive(Clone, PartialEq)]
@@ -71,13 +72,14 @@ pub fn Reset(token: String) -> Element {
         div { class: "form-page content-enter",
             match current_state {
                 ResetState::Success => rsx! {
-                    h1 { "Password reset" }
-                    p { class: "subtitle", "Your password has been updated and all sessions have been signed out." }
-                    div { class: "status-message success", "Password updated successfully" }
+                    Panel { eyebrow: "Account", title: "Password reset", title_h1: true,
+                        p { class: "card-summary", "Your password has been updated and all sessions have been signed out." }
+                        div { class: "status-message success", "Password updated successfully" }
+                    }
                 },
                 _ => rsx! {
-                    h1 { "Reset password" }
-                    p { class: "subtitle", "Choose a new password for your account." }
+                    Panel { eyebrow: "Account", title: "Reset password", title_h1: true,
+                    p { class: "card-summary", "Choose a new password for your account." }
 
                     form { onsubmit: on_submit,
                         div { class: "form-group",
@@ -88,15 +90,6 @@ pub fn Reset(token: String) -> Element {
                                 value: "{password}",
                                 oninput: move |e| password.set(e.value()),
                                 disabled: current_state == ResetState::Loading,
-                            }
-                        }
-                        details { class: "password-hint-toggle",
-                            summary { "Password requirements" }
-                            ul {
-                                li { "8 to 128 characters" }
-                                li { "Uppercase, lowercase, number, symbol" }
-                                li { "No spaces, at least 6 different characters" }
-                                li { "Max 3 consecutive repeated characters" }
                             }
                         }
                         div { class: "form-group",
@@ -119,6 +112,7 @@ pub fn Reset(token: String) -> Element {
 
                     if let ResetState::Error(msg) = &*state.read() {
                         div { class: "status-message error", "{msg}" }
+                    }
                     }
                 },
             }

@@ -1,6 +1,7 @@
 use crate::{Nav, api};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
+use zwipe_components::Panel;
 
 #[component]
 pub fn Verify(token: String) -> Element {
@@ -29,21 +30,24 @@ pub fn Verify(token: String) -> Element {
         div { class: "form-page content-enter",
             match &*result.read() {
                 None => rsx! {
-                    h1 { "Verifying" }
-                    p { class: "subtitle", "Checking your verification link." }
-                    div { class: "spinner-row",
-                        div { class: "spinner" }
+                    Panel { eyebrow: "Account", title: "Verifying", title_h1: true,
+                        p { class: "card-summary", "Checking your verification link." }
+                        div { class: "spinner-row",
+                            div { class: "spinner" }
+                        }
                     }
                 },
                 Some(Ok(())) => rsx! {
-                    h1 { "Email verified" }
-                    p { class: "subtitle", "Your email address has been confirmed. You can close this page and return to the app." }
-                    div { class: "status-message success", "Verification successful" }
+                    Panel { eyebrow: "Account", title: "Email verified", title_h1: true,
+                        p { class: "card-summary", "Your email address has been confirmed. You can close this page and return to the app." }
+                        div { class: "status-message success", "Verification successful" }
+                    }
                 },
                 Some(Err(e)) => rsx! {
-                    h1 { "Verification failed" }
-                    p { class: "subtitle", "This link may have expired or already been used. Request a new one from the app." }
-                    div { class: "status-message error", "{e}" }
+                    Panel { eyebrow: "Account", title: "Verification failed", title_h1: true,
+                        p { class: "card-summary", "This link may have expired or already been used. Request a new one from the app." }
+                        div { class: "status-message error", "{e}" }
+                    }
                 },
             }
         }
