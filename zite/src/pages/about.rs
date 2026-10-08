@@ -24,37 +24,24 @@ pub fn About() -> Element {
     rsx! {
         PageMeta {
             title: "About",
-            description: "Who builds Zwipe and how: one developer, full-stack Rust (Dioxus, Axum, PostgreSQL), and the architecture behind the app.",
+            description: "How Zwipe is built: an open-source, full-stack Rust app, and the architecture behind it.",
             path: "/about",
         }
         Nav {}
         div { class: "page content-enter",
             div { class: "about-header section",
-                // The profile links ride the panel's own action row rather than
-                // a bespoke header block, so this hero matches every other page.
                 Panel {
                     eyebrow: "About",
-                    title: "Scotty Fermo",
+                    title: "Zwipe",
                     title_h1: true,
                     actions: rsx! {
-                        a { class: "profile-link", href: "https://scottyfermo.com", "scottyfermo.com ↗" }
-                        a { class: "profile-link", href: "https://github.com/scadoshi", "GitHub ↗" }
-                        a { class: "profile-link", href: "https://www.linkedin.com/in/scotty-fermo-41a35b141/", "LinkedIn ↗" }
+                        a { class: "profile-link", href: "https://github.com/scadoshi/zwipe", "Source ↗" }
+                        a { class: "profile-link", href: "https://scottyfermo.com", "Built by Scotty ↗" }
                     },
-                    div { class: "tag-row",
-                        span { class: "tag", "Rust" }
-                        span { class: "tag", "Full-stack" }
-                        span { class: "tag", "iOS" }
-                        span { class: "tag", "Android" }
-                        span { class: "tag", "PostgreSQL" }
-                        span { class: "tag", "Systems" }
-                    }
                     p {
-                        "Zwipe is a solo project: designed, built, and shipped by one person.
-                        This page is the look under the hood, the architecture and the
-                        engineering discipline behind a one-person, full-stack Rust app.
-                        The goal was simple: make deck building feel good on mobile, and
-                        build it that way from the ground up."
+                        "Zwipe is built and maintained by Scotty Fermo, a Commander player who
+                        wanted deck building to work well on a phone. The rest of this page
+                        covers how it's built."
                     }
                 }
             }
