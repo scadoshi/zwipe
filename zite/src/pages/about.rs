@@ -223,9 +223,9 @@ pub fn About() -> Element {
 
                     Panel { eyebrow: "Quality", title: "Testing & lint discipline",
                         p { class: "card-summary",
-                            "736 tests, 430 in "
+                            "750+ tests, 450+ in "
                             a { href: URL_ZWIPE_CORE, "zwipe-core" }
-                            ". Enforced by the compiler."
+                            "."
                         }
                         ul { class: "card-bullets",
                             li {
@@ -282,11 +282,13 @@ pub fn About() -> Element {
 
                     Panel { eyebrow: "Types", title: "Type safety",
                         p { class: "card-summary",
-                            "Newtypes everywhere. Invalid states don't compile."
+                            "User input becomes a validated type before anything trusts it."
                         }
                         ul { class: "card-bullets",
                             li {
-                                code { "UserId" }
+                                code { "Username" }
+                                ", "
+                                code { "DeckName" }
                                 ", "
                                 code { "Email" }
                                 ", "
