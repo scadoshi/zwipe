@@ -8,7 +8,7 @@ pub fn Verify(token: String) -> Element {
         let token = token.clone();
         async move {
             if token.is_empty() {
-                return Err("No token found in URL".to_string());
+                return Err("This link is missing its code. Open it from the email again.".to_string());
             }
 
             api::client()
@@ -17,7 +17,7 @@ pub fn Verify(token: String) -> Element {
                 .map_err(|e| match e {
                     // A request that never landed is not a bad token; say so.
                     ClientError::Network(_) | ClientError::Decode(_) => e.to_user_message(),
-                    _ => "Token not found or expired".to_string(),
+                    _ => "This link is invalid or has expired.".to_string(),
                 })
         }
     });
@@ -34,12 +34,12 @@ pub fn Verify(token: String) -> Element {
                     }
                 },
                 Some(Ok(())) => rsx! {
-                    h1 { "Email Verified" }
+                    h1 { "Email verified" }
                     p { class: "subtitle", "Your email address has been confirmed. You can close this page and return to the app." }
                     div { class: "status-message success", "Verification successful" }
                 },
                 Some(Err(e)) => rsx! {
-                    h1 { "Verification Failed" }
+                    h1 { "Verification failed" }
                     p { class: "subtitle", "This link may have expired or already been used. Request a new one from the app." }
                     div { class: "status-message error", "{e}" }
                 },

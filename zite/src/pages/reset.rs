@@ -41,7 +41,7 @@ pub fn Reset(token: String) -> Element {
 
         let token = token.clone();
         if token.is_empty() {
-            state.set(ResetState::Error("No token found in URL".to_string()));
+            state.set(ResetState::Error("This link is missing its code. Open it from the email again.".to_string()));
             return;
         }
 
@@ -54,7 +54,7 @@ pub fn Reset(token: String) -> Element {
                 Err(e @ (ClientError::Network(_) | ClientError::Decode(_))) => {
                     state.set(ResetState::Error(e.to_user_message()))
                 }
-                Err(_) => state.set(ResetState::Error("Token not found or expired".to_string())),
+                Err(_) => state.set(ResetState::Error("This link is invalid or has expired. Request a new one from the app.".to_string())),
             }
         });
     };
@@ -66,12 +66,12 @@ pub fn Reset(token: String) -> Element {
         div { class: "form-page content-enter",
             match current_state {
                 ResetState::Success => rsx! {
-                    h1 { "Password Reset" }
+                    h1 { "Password reset" }
                     p { class: "subtitle", "Your password has been updated and all sessions have been signed out." }
                     div { class: "status-message success", "Password updated successfully" }
                 },
                 _ => rsx! {
-                    h1 { "Reset Password" }
+                    h1 { "Reset password" }
                     p { class: "subtitle", "Choose a new password for your account." }
 
                     form { onsubmit: on_submit,
@@ -90,7 +90,7 @@ pub fn Reset(token: String) -> Element {
                             ul {
                                 li { "8 to 128 characters" }
                                 li { "Uppercase, lowercase, number, symbol" }
-                                li { "No whitespace, 6+ unique chars" }
+                                li { "No spaces, at least 6 different characters" }
                                 li { "Max 3 consecutive repeated characters" }
                             }
                         }
@@ -108,7 +108,7 @@ pub fn Reset(token: String) -> Element {
                             r#type: "submit",
                             class: "btn-primary",
                             disabled: current_state == ResetState::Loading,
-                            if current_state == ResetState::Loading { "Updating..." } else { "Set New Password" }
+                            if current_state == ResetState::Loading { "Updating..." } else { "Set new password" }
                         }
                     }
 
