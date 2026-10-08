@@ -41,7 +41,9 @@ pub fn Reset(token: String) -> Element {
 
         let token = token.clone();
         if token.is_empty() {
-            state.set(ResetState::Error("This link is missing its code. Open it from the email again.".to_string()));
+            state.set(ResetState::Error(
+                "This link is missing its code. Open it from the email again.".to_string(),
+            ));
             return;
         }
 
@@ -54,7 +56,10 @@ pub fn Reset(token: String) -> Element {
                 Err(e @ (ClientError::Network(_) | ClientError::Decode(_))) => {
                     state.set(ResetState::Error(e.to_user_message()))
                 }
-                Err(_) => state.set(ResetState::Error("This link is invalid or has expired. Request a new one from the app.".to_string())),
+                Err(_) => state.set(ResetState::Error(
+                    "This link is invalid or has expired. Request a new one from the app."
+                        .to_string(),
+                )),
             }
         });
     };
