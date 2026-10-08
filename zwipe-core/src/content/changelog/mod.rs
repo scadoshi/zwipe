@@ -27,7 +27,7 @@ pub struct Release {
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[Release {
-    version: "1.10.8",
+    version: "1.11.0",
     date: "",
     entries: &[
         "A ? beside the new password field lists the password rules",
