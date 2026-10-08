@@ -245,15 +245,7 @@ pub fn Home() -> Element {
                 p { class: "tagline",
                     "The "
                     a { href: "https://magic.wizards.com/en", "Magic: The Gathering" }
-                    " deck builder built for mobile. Swipe "
-                    span { class: "swipe-add", "right" }
-                    " to add card to deck (or remove on remove flow), "
-                    span { class: "swipe-skip", "left" }
-                    " to skip card, "
-                    span { class: "swipe-maybe", "up" }
-                    " to add to maybeboard, "
-                    span { class: "swipe-undo", "down" }
-                    " to undo."
+                    " deck builder built for mobile. Pick a commander and swipe through the cards that fit it, best synergy first."
                 }
                 div { class: "hero-chips",
                     span { class: "hero-chip chip-value", "Free" }
