@@ -341,9 +341,9 @@ pub fn Home() -> Element {
                             li { "Community-maintained, so the labels stay current" }
                         }
                     }
-                    FeaturedFlavor { overlay: flavor_overlay }
                 }
             }
+            FeaturedFlavor { overlay: flavor_overlay }
             Testimonials {}
         }
         Footer {}

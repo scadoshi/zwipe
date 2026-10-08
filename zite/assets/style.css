@@ -986,10 +986,15 @@ code {
     gap: 1.5rem;
 }
 
-/* The feature panels keep their own height against the taller demo column,
-   and the column ends early, as on the portfolio's home page. */
+/* The feature panels keep their own height against the demo panel, and the
+   shorter column ends early, as on the portfolio's home page. */
 .features-stack .panel-card {
     flex: 0 0 auto;
+}
+
+/* Full width under the demo band, one panel gap above Reviews. */
+.featured-flavor {
+    margin-bottom: 1.5rem;
 }
 
 @media (max-width: 56rem) {
