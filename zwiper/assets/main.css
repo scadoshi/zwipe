@@ -807,10 +807,7 @@ button {
     box-shadow: var(--shadow-sm);
     cursor: pointer;
     transition: all 0.2s ease;
-    /* One 0.5rem rhythm between boxed elements app-wide (deck tiles,
-       card groups, profile/privacy/changelog sections, deck profile
-       sections) — and the console chip-rows above lists share it too. */
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--panel-gap);
 }
 
 /* A deck reads as a row of one contained list, like the card list's rows:
@@ -1016,7 +1013,7 @@ button {
 .skeleton-stats {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--panel-gap);
     width: 100%;
 }
 
@@ -1054,8 +1051,7 @@ button {
 }
 
 .skeleton-card-group {
-    /* The app-wide 0.5rem element rhythm (see .card). */
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--panel-gap);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
@@ -2554,7 +2550,7 @@ button {
     /* As wide as the hero panel above it, with a gap between the two. */
     width: calc(100% - 2rem);
     max-width: 24rem;
-    margin-top: 1.25rem;
+    margin-top: var(--panel-gap);
     min-height: 9rem;
     display: flex;
     flex-direction: column;
@@ -2829,8 +2825,7 @@ button {
 }
 
 .card-group {
-    /* The app-wide 0.5rem element rhythm (see .card). */
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--panel-gap);
     overflow: hidden;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
@@ -2928,8 +2923,7 @@ button {
 .profile-sections {
     display: flex;
     flex-direction: column;
-    /* The app-wide 0.5rem element rhythm (see .card). */
-    gap: 0.5rem;
+    gap: var(--panel-gap);
     width: calc(100% - 4rem);
     max-width: 40rem;
     padding-bottom: 1rem;
@@ -3429,8 +3423,7 @@ button {
 .privacy-content {
     display: flex;
     flex-direction: column;
-    /* The app-wide 0.5rem element rhythm (see .card). */
-    gap: 0.5rem;
+    gap: var(--panel-gap);
     width: calc(100% - 4rem);
     max-width: 40rem;
     padding-bottom: 1rem;

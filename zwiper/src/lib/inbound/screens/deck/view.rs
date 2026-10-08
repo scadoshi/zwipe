@@ -259,7 +259,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                             let land_target = deck_profile.land_target;
                             rsx! {
                             div { class: "content-enter",
-                                  style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem 0;",
+                                  style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: var(--panel-gap); padding: 1rem 0;",
                                 DeckProfileSection {
                                     deck_profile: deck_profile.clone(),
                                     commander: commander(),
@@ -316,7 +316,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                           // sections column so Distributions/Mana/Draw odds
                                           // space like every other section pair.
                                           div { class: "content-enter",
-                                                style: "display: flex; flex-direction: column; gap: 0.5rem;",
+                                                style: "display: flex; flex-direction: column; gap: var(--panel-gap);",
                                             // Distributions stays mainboard-only (its bars
                                             // are None without mainboard cards).
                                             if mana_curve_bars.is_some() {
@@ -476,7 +476,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         Some(Err(_)) => rsx! { p { class: "text-muted", "Could not load deck" } },
                         None => rsx! {
                             div { class: "content-enter",
-                                  style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;",
+                                  style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: var(--panel-gap); padding: 1rem 0;",
                                 DeckProfileSkeleton {}
                                 DeckStatsSkeleton {}
                             }
