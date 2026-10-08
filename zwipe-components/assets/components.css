@@ -2197,3 +2197,17 @@ html[data-wipe="left"]::view-transition-new(root) {
     color: var(--text-primary);
     opacity: 0.7;
 }
+
+/* HintKey, shared by the apps' hints and the site. Colored by its inline style. The line height keeps the bordered box
+   the height of the text it sits in, so its padding spills over the line
+   rather than pushing the line above it up. */
+.hint-key {
+    border: 1px solid var(--accent-tertiary);
+    color: var(--accent-tertiary);
+    border-radius: 0.5rem;
+    padding: 0.05rem 0.45rem;
+    font-size: 0.8rem;
+    line-height: 1;
+    white-space: nowrap;
+    pointer-events: none;
+}

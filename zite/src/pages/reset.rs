@@ -99,8 +99,10 @@ pub fn Reset(token: String) -> Element {
         div { class: "form-page content-enter",
             match current_state {
                 ResetState::Success => rsx! {
+                    div { class: "outcome-success",
                     Panel { title: "Password reset", title_h1: true, centered: true,
                         p { class: "card-summary", "Your password is updated and every session is signed out." }
+                    }
                     }
                 },
                 _ => rsx! {

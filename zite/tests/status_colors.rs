@@ -3,8 +3,10 @@
 
 use zwipe_components::status_uses;
 
-const ALLOWED: [&str; 7] = [
+const ALLOWED: [&str; 9] = [
     ".dead-end .panel-title",
+    ".outcome-error .panel-title",
+    ".outcome-success .panel-title",
     ".shipped-tag",
     ".status-message.error",
     ".status-message.success",

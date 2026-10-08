@@ -122,20 +122,6 @@
     margin-bottom: 0.4rem;
 }
 
-/* Colored by HintKey's inline style. The line height keeps the bordered box
-   the height of the text it sits in, so its padding spills over the line
-   rather than pushing the line above it up. */
-.hint-key {
-    border: 1px solid var(--accent-tertiary);
-    color: var(--accent-tertiary);
-    border-radius: 0.5rem;
-    padding: 0.05rem 0.45rem;
-    font-size: 0.8rem;
-    line-height: 1;
-    white-space: nowrap;
-    pointer-events: none;
-}
-
 /* ---- Inputs and chips ---- */
 
 .input {

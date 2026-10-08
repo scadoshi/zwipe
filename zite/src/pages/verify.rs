@@ -1,7 +1,7 @@
 use crate::{Nav, api};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
-use zwipe_components::Panel;
+use zwipe_components::{HintKey, Panel};
 
 #[component]
 pub fn Verify(token: String) -> Element {
@@ -37,14 +37,18 @@ pub fn Verify(token: String) -> Element {
                     }
                 },
                 Some(Ok(())) => rsx! {
+                    div { class: "outcome-success",
                     Panel { title: "Email verified", title_h1: true, centered: true,
                         p { class: "card-summary", "You can close this page and go back to the app." }
                     }
+                    }
                 },
                 Some(Err(e)) => rsx! {
+                    div { class: "outcome-error",
                     Panel { title: "Verification failed", title_h1: true, centered: true,
                         p { class: "card-summary", "{e}" }
-                        p { class: "card-summary", "Tap Resend on Profile in the app for a new link." }
+                        p { class: "card-summary", "Tap " HintKey { "Resend" } " on " HintKey { "Profile" } " in the app for a new link." }
+                    }
                     }
                 },
             }

@@ -2807,6 +2807,16 @@ footer {
     margin: 0 auto auto;
 }
 
+/* An outcome panel's title wears its outcome: verified and reset in the
+   success green, a failed link in the error red. */
+.outcome-success .panel-title {
+    color: var(--color-success);
+}
+
+.outcome-error .panel-title {
+    color: var(--color-error);
+}
+
 .dead-end .panel-title {
     color: var(--color-error);
     text-transform: uppercase;
