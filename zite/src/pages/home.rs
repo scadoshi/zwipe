@@ -319,10 +319,11 @@ pub fn Home() -> Element {
                 div { class: "features-stack",
                     Panel { eyebrow: "Build", title: "Swipe to build",
                         ul { class: "card-bullets",
-                            li { "Right to add card to deck (or remove in remove flow)" }
-                            li { "Left to skip card" }
-                            li { "Up to add to maybeboard" }
-                            li { "Down to undo last swipe" }
+                            li { "Right to add a card" }
+                            li { "Left to skip it" }
+                            li { "Up to save it to your maybeboard" }
+                            li { "Down to undo" }
+                            li { "Removing cards works the same way, swipe by swipe" }
                             li { "Swipe-pick your commander, partner, background, or signature spell" }
                         }
                     }
@@ -330,15 +331,15 @@ pub fn Home() -> Element {
                         ul { class: "card-bullets",
                             li { "Most synergistic cards show first based on your selected commander" }
                             li { "The order learns from swipes: crowd favorites rise as players build" }
-                            li { "Color identity and per-format eligibility validated" }
+                            li { "Only cards legal in your format and colors" }
                         }
                     }
                     Panel { eyebrow: "Tags", title: "Know what every card does",
                         ul { class: "card-bullets",
                             li { "Every card labeled by role: ramp, removal, counterspell, tokens, and more" }
-                            li { "Filter your feed by what a card does, not just its text" }
+                            li { "Filter your feed by what a card does" }
                             li { "Tap any tag for a plain-language definition" }
-                            li { "Community-maintained, so the labels stay current" }
+                            li { "Built on Scryfall's community-maintained tags" }
                         }
                     }
                 }
