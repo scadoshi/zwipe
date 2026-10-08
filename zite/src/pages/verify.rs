@@ -30,23 +30,21 @@ pub fn Verify(token: String) -> Element {
         div { class: "form-page content-enter",
             match &*result.read() {
                 None => rsx! {
-                    Panel { title: "Verifying", title_h1: true,
-                        p { class: "card-summary", "Checking your verification link." }
+                    Panel { title: "Verifying", title_h1: true, centered: true,
                         div { class: "spinner-row",
                             div { class: "spinner" }
                         }
                     }
                 },
                 Some(Ok(())) => rsx! {
-                    Panel { title: "Email verified", title_h1: true,
-                        p { class: "card-summary", "Your email address has been confirmed. You can close this page and return to the app." }
-                        div { class: "status-message success", "Verification successful" }
+                    Panel { title: "Email verified", title_h1: true, centered: true,
+                        p { class: "card-summary", "You can close this page and go back to the app." }
                     }
                 },
                 Some(Err(e)) => rsx! {
-                    Panel { title: "Verification failed", title_h1: true,
-                        p { class: "card-summary", "This link may have expired or already been used. Request a new one from the app." }
-                        div { class: "status-message error", "{e}" }
+                    Panel { title: "Verification failed", title_h1: true, centered: true,
+                        p { class: "card-summary", "{e}" }
+                        p { class: "card-summary", "Tap Resend on Profile in the app for a new link." }
                     }
                 },
             }

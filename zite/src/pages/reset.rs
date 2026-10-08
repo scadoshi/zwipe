@@ -100,8 +100,7 @@ pub fn Reset(token: String) -> Element {
             match current_state {
                 ResetState::Success => rsx! {
                     Panel { title: "Password reset", title_h1: true, centered: true,
-                        p { class: "card-summary", "Your password has been updated and all sessions have been signed out." }
-                        div { class: "status-message success", "Password updated successfully" }
+                        p { class: "card-summary", "Your password is updated and every session is signed out." }
                     }
                 },
                 _ => rsx! {
