@@ -5,7 +5,7 @@
 - [x] 2026-10-09 Steps 1, 2 and 3 merged to main in one push. Client buffer, `ACCESS_TOKEN_MINUTES` (default 1440) and refresh families with the 30-day cap.
 - [x] 2026-10-09 zerver deploy with the families migration green (run 37987257595) (`20261009130000_refresh_token_families.sql`; additive, keeps `revoked`).
 - [ ] Re-run `zcripts/server/sql/zervice_role.sql` on the server so the nightly cleanup can read `replaced_at` (the migration grants it when the role exists, so this is belt and braces).
-- [ ] Client 1.11.2 cut and submitted, carrying the refresh-ahead buffer. Cut 2026-10-09 without waiting on 1.11.1's review; iOS build 92 built and signed, awaiting upload. Android to follow.
+- [ ] Client 1.11.2 cut and submitted, carrying the refresh-ahead buffer. Cut 2026-10-09 without waiting on 1.11.1's review; iOS build 92 and Android vc55 built and signed, both awaiting upload.
 - [ ] `MIN_CLIENT_VERSION` raised to 1.11.2 once the floor query shows old builds gone (or earlier to force them).
 - [ ] `ACCESS_TOKEN_MINUTES=15` set in zerver's env and the service restarted. Owner has to do this by hand; until then tokens still live 24 hours.
 - [ ] Follow-up migration dropping `revoked` and `idx_refresh_tokens_revoked`, one deploy after the families migration is live.
