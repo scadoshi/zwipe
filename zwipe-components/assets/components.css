@@ -1209,18 +1209,43 @@ i.ms.ms-cost.ms-gp {
    (flex-wrap) rather than clipping, so this is a mobile threshold, not a fit one.
    Keep in sync with the banner-slide breakpoints below. */
 @media (max-width: 60rem) {
+    /* A grid, not a wrapping flex row: the header row (brand, persistent
+       slot, toggle) is row one and the panel is row two, so the nav's
+       max-height clamps the panel to the space under the header (a flex line
+       never shrinks). The fr row takes only what the panel needs while that
+       fits, so the menu is unclamped wherever its rows fit. */
     .nav-wrapper nav {
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-rows: auto minmax(0, 1fr);
+        justify-items: center;
+        box-sizing: border-box;
+        max-height: 100vh;
+        max-height: 100dvh;
         padding: 1rem 0.75rem;
-        gap: 0.5rem;
-        /* the collapsed panel still occupies a (zero-height) flex line;
-           row-gap would add phantom space below the toggle row */
-        row-gap: 0;
+        /* no row-gap: the collapsed panel is a zero-height row, and a gap
+           would add phantom space below the toggle row */
+        gap: 0 0.5rem;
+    }
+    .nav-wrapper nav > .nav-brand {
+        grid-column: 1;
+        grid-row: 1;
+        justify-self: start;
     }
     .nav-toggle {
         display: flex;
+        grid-column: 3;
+        grid-row: 1;
+        justify-self: end;
     }
     .nav-panel {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-self: stretch;
+        /* fill the row (the bar's align-items: center would let the panel
+           overflow it) and shrink to it instead of the content minimum */
+        align-self: stretch;
+        min-height: 0;
         display: grid;
         grid-template-rows: 0fr;
         /* explicit full-width column: the implicit auto column would be
@@ -1275,6 +1300,9 @@ i.ms.ms-cost.ms-gp {
         padding-left: 0.75rem;
         padding-right: 0.75rem;
     }
+    /* In a clamped panel the links scroll; the trailing item (the theme
+       picker) stays put as the panel's base. Nothing scrolls while the rows
+       fit. */
     .nav-panel .nav-links {
         flex-direction: column;
         flex-wrap: nowrap;
@@ -1282,6 +1310,15 @@ i.ms.ms-cost.ms-gp {
         justify-content: flex-start;
         gap: 0.75rem;
         height: auto;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+    .nav-panel .nav-panel-inner > :not(.nav-links) {
+        flex-shrink: 0;
     }
     .nav-panel .nav-links li {
         width: 100%;
@@ -1343,6 +1380,31 @@ i.ms.ms-cost.ms-gp {
         margin-top: 0.5rem;
         max-height: 50vh;
         overflow-y: auto;
+    }
+}
+
+/* Short viewports (landscape phones): tighter rows so more of the menu fits
+   before the links have to scroll. */
+@media (max-width: 60rem) and (max-height: 30rem) {
+    .nav-panel-open {
+        margin-top: 0.75rem;
+        padding-top: 0.5rem;
+    }
+    .nav-panel .nav-panel-inner {
+        gap: 0.5rem;
+    }
+    .nav-panel .nav-links {
+        gap: 0.4rem;
+    }
+    .nav-panel .nav-links > li > a,
+    .nav-panel .nav-links > li > button.nav-link,
+    .nav-panel .nav-dropdown-trigger,
+    .nav-panel .mode-toggle {
+        padding-top: 0.4rem;
+        padding-bottom: 0.4rem;
+    }
+    .nav-panel .theme-switcher {
+        padding-top: 0.5rem;
     }
 }
 
