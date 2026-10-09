@@ -1,6 +1,16 @@
 # Access token window
 
-**Status: IN PROGRESS 2026-10-09.** Branches `access-window-client` (zwiper) and `access-window` (zerver). Nothing merged yet.
+**Status: IN PROGRESS.** This block is the running log; update it as each item lands.
+
+- [x] 2026-10-09 Steps 1, 2 and 3 merged to main in one push. Client buffer, `ACCESS_TOKEN_MINUTES` (default 1440) and refresh families with the 30-day cap.
+- [ ] zerver deploy with the families migration confirmed green (`20261009130000_refresh_token_families.sql`; additive, keeps `revoked`).
+- [ ] Re-run `zcripts/server/sql/zervice_role.sql` on the server so the nightly cleanup can read `replaced_at` (the migration grants it when the role exists, so this is belt and braces).
+- [ ] Client 1.11.2 cut and submitted, carrying the refresh-ahead buffer. Waiting on 1.11.1's store review first.
+- [ ] `MIN_CLIENT_VERSION` raised to 1.11.2 once the floor query shows old builds gone (or earlier to force them).
+- [ ] `ACCESS_TOKEN_MINUTES=15` set in zerver's env and the service restarted. Owner has to do this by hand; until then tokens still live 24 hours.
+- [ ] Follow-up migration dropping `revoked` and `idx_refresh_tokens_revoked`, one deploy after the families migration is live.
+- [ ] Check that password and email changes require the current password (out of scope here, but noted as the reason there is no 5-minute tier).
+- [ ] Android: `session.json` is plaintext (no keyring backend). Own task.
 
 **One sentence:** shrink how long a stolen or logged-out bearer token keeps working, from 24 hours to 15 minutes, without adding a per-request blacklist.
 
