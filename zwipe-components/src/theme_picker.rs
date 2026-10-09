@@ -14,6 +14,13 @@ use zwipe_core::domain::user::{
 
 use crate::NavDropdown;
 
+/// The light mode's sun, held to text presentation (U+FE0E) so iOS draws it
+/// in the font's color rather than as an emoji.
+pub const SUN: &str = "\u{2600}\u{FE0E}";
+
+/// The dark mode's moon.
+pub const MOON: &str = "\u{263E}";
+
 /// Theme dropdown + dark/light toggle. Every theme has both modes, so the
 /// toggle is always shown.
 #[component]
@@ -97,7 +104,7 @@ pub fn ThemePicker(
                         is_dark: !current.is_dark,
                     });
                 },
-                if is_dark { "light" } else { "dark" }
+                if is_dark { "{SUN} light" } else { "{MOON} dark" }
             }
         }
     }

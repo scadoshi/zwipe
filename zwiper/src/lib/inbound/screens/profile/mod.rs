@@ -43,7 +43,8 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use preferences::PreferencesSheet;
 use universes_beyond::UniversesBeyondExceptionsSheet;
 use zwipe_components::{
-    ActionBar, BottomSheet, Button, ButtonVariant, HintBullet, HintBullets, HintKey, TOAST_NORMAL,
+    ActionBar, BottomSheet, Button, ButtonVariant, HintBullet, HintBullets, HintKey, MOON, SUN,
+    TOAST_NORMAL,
 };
 use zwipe_core::{
     domain::{
@@ -329,7 +330,7 @@ pub fn Profile() -> Element {
                                         Button {
                                             variant: ButtonVariant::Util,
                                             onclick: move |_| toggle_dark_mode(),
-                                            if theme_config().is_dark { "On" } else { "Off" }
+                                            if theme_config().is_dark { "{MOON} On" } else { "{SUN} Off" }
                                         }
                                     }
                                 }
