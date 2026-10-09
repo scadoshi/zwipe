@@ -21,9 +21,9 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
-## 2026-10-09: 1.11.2 built
+## 2026-10-09: 1.11.2 submitted
 
-1.11.2 was cut the same evening, without waiting on 1.11.1's review, so the client floor can move to 1.11.2 as soon as the stores allow. Its changelog moved to `RELEASES` dated Oct 9 with two entries: sessions renew a couple of minutes before they expire, and logging out ends every device's session within minutes. That is the client half of [`plans/access_token_window.md`](plans/access_token_window.md), the refresh-ahead buffer over the refresh families and `ACCESS_TOKEN_MINUTES` already deployed in zerver. iOS build 92 and Android vc55 are built, signed and verified, awaiting upload. The Android build passed every patch check; the emulator launch test was skipped. Notes at [`operations/store-submissions/1.11.2/whats_new.md`](operations/store-submissions/1.11.2/whats_new.md).
+1.11.2 was cut the same evening, without waiting on 1.11.1's review, so the client floor can move to 1.11.2 as soon as the stores allow. Its changelog moved to `RELEASES` dated Oct 9 with two entries: sessions renew a couple of minutes before they expire, and logging out ends every device's session within minutes. That is the client half of [`plans/access_token_window.md`](plans/access_token_window.md), the refresh-ahead buffer over the refresh families and `ACCESS_TOKEN_MINUTES` already deployed in zerver. iOS build 92 went to App Review and Android vc55 to Production review the same night, hours after 1.11.1. The Android build passed every patch check; the emulator launch test was skipped. Notes at [`operations/store-submissions/1.11.2/whats_new.md`](operations/store-submissions/1.11.2/whats_new.md).
 
 ## 2026-10-09: 1.11.1 submitted
 
