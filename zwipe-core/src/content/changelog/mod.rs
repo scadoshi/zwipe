@@ -26,24 +26,25 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.11.0",
-    date: "",
-    entries: &[
-        "A ? beside the new password field lists the password rules",
-        "Privacy policy says where data is stored and how to request a copy",
-        "Numbers, names and links each have their own color in every theme",
-        "Titles, selections and labels use the colors each theme's own editor scheme gives them",
-        "Theme picker swatches show each theme's six palette colors",
-        "Verification and password reset emails show their link as plain text",
-        "The chip under the home counters says all users",
-        "Screen titles use one capitalization style",
-        "Panels sit the same distance apart on every screen",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.11.0",
+        date: "Oct 9, 2026",
+        entries: &[
+            "A ? beside the new password field lists the password rules",
+            "Privacy policy says where data is stored and how to request a copy",
+            "Numbers, names and links each have their own color in every theme",
+            "Titles, selections and labels use the colors each theme's own editor scheme gives them",
+            "Theme picker swatches show each theme's six palette colors",
+            "Verification and password reset emails show their link as plain text",
+            "The chip under the home counters says all users",
+            "Screen titles use one capitalization style",
+            "Panels sit the same distance apart on every screen",
+        ],
+    },
     Release {
         version: "1.10.7",
         date: "Oct 6, 2026",
