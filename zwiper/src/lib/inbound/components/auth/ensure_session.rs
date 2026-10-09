@@ -1,7 +1,8 @@
 //! Awaitable session freshness guard with single-flight refresh.
 //!
 //! Call sites await
-//! `ensure_fresh` to obtain a session whose access token is valid; if a
+//! `ensure_fresh` to obtain a session whose access token is valid for at
+//! least [`REFRESH_AHEAD`] more; if a
 //! refresh is needed, exactly one `POST /api/auth/refresh` goes out no
 //! matter how many callers race (cold start mounts several resources at
 //! once). The rotated session is persisted to the OS keyring before the
@@ -11,10 +12,12 @@ use std::sync::{Arc, OnceLock};
 use zwipe_client::{ClientError, ZwipeClient};
 
 use crate::outbound::session::Persist;
+use chrono::Duration;
 use dioxus::prelude::*;
 use tokio::sync::{Mutex, oneshot};
 use zwipe_core::{
-    domain::auth::models::session::Session, http::contracts::auth::HttpRefreshSession,
+    domain::auth::models::{access_token::AccessToken, session::Session},
+    http::contracts::auth::HttpRefreshSession,
 };
 
 /// Process-wide single-flight lock: at most one refresh request in flight.
@@ -23,6 +26,15 @@ static REFRESH_LOCK: OnceLock<Arc<Mutex<()>>> = OnceLock::new();
 
 fn refresh_lock() -> Arc<Mutex<()>> {
     Arc::clone(REFRESH_LOCK.get_or_init(|| Arc::new(Mutex::new(()))))
+}
+
+/// How long before `expires_at` the access token counts as stale. Covers the
+/// server's 60-second leeway and a phone clock up to a minute slow.
+const REFRESH_AHEAD: Duration = Duration::minutes(2);
+
+/// Whether `token` needs refreshing before it backs another authed call.
+fn is_stale(token: &AccessToken) -> bool {
+    token.expires_within(REFRESH_AHEAD)
 }
 
 /// Trait for session signals that can vouch for access-token freshness.
@@ -53,7 +65,7 @@ impl EnsureFresh for Signal<Option<Session>> {
             session.set(None);
             return Err(ClientError::Unauthorized("session expired".to_string()));
         }
-        if !current.access_token.is_expired() {
+        if !is_stale(&current.access_token) {
             return Ok(current);
         }
 
@@ -64,7 +76,7 @@ impl EnsureFresh for Signal<Option<Session>> {
         let Some(current) = session.peek().clone() else {
             return Err(ClientError::Unauthorized("not logged in".to_string()));
         };
-        if !current.access_token.is_expired() {
+        if !is_stale(&current.access_token) {
             return Ok(current); // a concurrent caller already refreshed
         }
 

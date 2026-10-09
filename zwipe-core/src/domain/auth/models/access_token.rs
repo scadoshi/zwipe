@@ -10,7 +10,7 @@
 //! via extension traits.
 
 use crate::domain::user::models::{email::Email, username::Username};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
@@ -126,6 +126,11 @@ impl AccessToken {
     /// Checks if the access token has expired (current time >= expires_at).
     pub fn is_expired(&self) -> bool {
         self.expires_at < Utc::now()
+    }
+
+    /// Checks if the access token expires within `window` of now, or already has.
+    pub fn expires_within(&self, window: Duration) -> bool {
+        self.expires_at < Utc::now() + window
     }
 }
 
@@ -251,5 +256,35 @@ mod tests {
             expires_at: Utc::now() - chrono::Duration::seconds(1),
         };
         assert!(token.is_expired());
+    }
+
+    // == `AccessToken::expires_within` tests ==
+
+    fn token_expiring_in(seconds: i64) -> AccessToken {
+        AccessToken {
+            value: Jwt::from_str("header.payload.signature").unwrap(),
+            expires_at: Utc::now() + Duration::seconds(seconds),
+        }
+    }
+
+    #[test]
+    fn test_access_token_expires_within_window_when_expiry_is_inside_it() {
+        assert!(token_expiring_in(110).expires_within(Duration::minutes(2)));
+    }
+
+    #[test]
+    fn test_access_token_does_not_expire_within_window_when_expiry_is_past_it() {
+        assert!(!token_expiring_in(130).expires_within(Duration::minutes(2)));
+    }
+
+    #[test]
+    fn test_access_token_expires_within_window_when_already_expired() {
+        assert!(token_expiring_in(-1).expires_within(Duration::minutes(2)));
+    }
+
+    #[test]
+    fn test_access_token_expires_within_zero_window_matches_is_expired() {
+        assert!(!token_expiring_in(60).expires_within(Duration::zero()));
+        assert!(token_expiring_in(-1).expires_within(Duration::zero()));
     }
 }
