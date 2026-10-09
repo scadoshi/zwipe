@@ -1,6 +1,6 @@
 # Move the synergy-warming flag out of the response header
 
-**Status: STEPS 1 TO 3 DONE, step 4 merged and riding the next app cut.** Step 1 shipped in 1.10.2 (2026-09-22). Step 2: `MIN_CLIENT_VERSION` raised to 1.10.2 on 2026-10-09, when 14 of 40 live app users were still below it (12 on 1.10.1), accepted because every store build since 1.10.3 is downloadable. Steps 3 and 4 were built 2026-09-24 on `feat/synergy-flag-into-body` and landed on main 2026-10-09 after the floor moved, so that day's zerver deploy flipped the wire.
+**Status: COMPLETE, archived 2026-10-09.** Step 4 is on main and rides the next app cut after 1.11.0; field-verified by an in-app commander search on 2026-10-09. Step 1 shipped in 1.10.2 (2026-09-22). Step 2: `MIN_CLIENT_VERSION` raised to 1.10.2 on 2026-10-09, when 14 of 40 live app users were still below it (12 on 1.10.1), accepted because every store build since 1.10.3 is downloadable. Steps 3 and 4 were built 2026-09-24 on `feat/synergy-flag-into-body` and landed on main 2026-10-09 after the floor moved, so that day's zerver deploy flipped the wire.
 
 1.11.0 (submitted 2026-10-09) was cut before step 4, so it still reads either shape; the first app release without the fallback is the one after it.
 
