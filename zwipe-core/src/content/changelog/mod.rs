@@ -29,7 +29,7 @@ pub struct Release {
 pub const UPCOMING: &[Release] = &[Release {
     version: "1.11.1",
     date: "",
-    entries: &["Dark mode moves into the Theme row on Profile as a sun or moon button"],
+    entries: &["The light and dark switch moves into the Theme row on Profile"],
 }];
 
 /// Shipped releases, newest first.
