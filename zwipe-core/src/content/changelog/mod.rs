@@ -26,7 +26,11 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.11.1",
+    date: "",
+    entries: &["Dark mode moves into the Theme row on Profile as a sun or moon button"],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
