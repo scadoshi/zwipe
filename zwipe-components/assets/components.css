@@ -1239,6 +1239,12 @@ i.ms.ms-cost.ms-gp {
         justify-self: end;
     }
     .nav-panel {
+        /* One link row's vertical padding and the gap between rows; the
+           link list's height cap is counted in these rows. */
+        --nav-row-pad: 0.65rem;
+        --nav-row-gap: 0.75rem;
+        /* The theme row's trigger padding; its dropdown is placed from it. */
+        --nav-trigger-pad: 0.55rem;
         grid-column: 1 / -1;
         grid-row: 2;
         justify-self: stretch;
@@ -1300,16 +1306,19 @@ i.ms.ms-cost.ms-gp {
         padding-left: 0.75rem;
         padding-right: 0.75rem;
     }
-    /* In a clamped panel the links scroll; the trailing item (the theme
-       picker) stays put as the panel's base. Nothing scrolls while the rows
-       fit. */
+    /* The links show three and a half rows and scroll the rest, so the open
+       menu stays short on any phone and the trailing item (the theme picker)
+       sits right under them as the panel's base. The half row shows there is
+       more. A row is its padding, the 0.95rem line and a 1px border each
+       side. */
     .nav-panel .nav-links {
         flex-direction: column;
         flex-wrap: nowrap;
         align-items: stretch;
         justify-content: flex-start;
-        gap: 0.75rem;
+        gap: var(--nav-row-gap);
         height: auto;
+        max-height: calc(3.5 * (2 * var(--nav-row-pad) + 0.95rem + 2px) + 3 * var(--nav-row-gap));
         flex: 1 1 auto;
         min-height: 0;
         overflow-y: auto;
@@ -1334,7 +1343,7 @@ i.ms.ms-cost.ms-gp {
         height: auto;
         text-align: center;
         font-size: 0.95rem;
-        padding: 0.65rem 1rem;
+        padding: var(--nav-row-pad) 1rem;
         justify-content: center;
     }
     /* A dropdown in the links slot stretches its trigger with its siblings;
@@ -1343,6 +1352,8 @@ i.ms.ms-cost.ms-gp {
     .nav-panel .nav-links .nav-dropdown-trigger {
         width: 100%;
         justify-content: center;
+        padding-top: var(--nav-row-pad);
+        padding-bottom: var(--nav-row-pad);
     }
     /* ThemePicker as the panel's trailing item. */
     .nav-panel .theme-switcher {
@@ -1363,7 +1374,7 @@ i.ms.ms-cost.ms-gp {
     .nav-panel .mode-toggle {
         height: auto;
         font-size: 0.95rem;
-        padding: 0.55rem 1rem;
+        padding: var(--nav-trigger-pad) 1rem;
     }
     /* Make .nav-dropdown static so the open dropdown's containing block is the
        relative <nav> (inside the sticky .nav-wrapper) rather than .nav-dropdown.
@@ -1381,6 +1392,16 @@ i.ms.ms-cost.ms-gp {
         max-height: 50vh;
         overflow-y: auto;
     }
+    /* The theme row is the bottom of the menu, so its list opens upward:
+       its bottom sits 0.5rem above the trigger (the nav's 1rem bottom
+       padding plus the trigger's height), and it is no taller than the nav
+       above that, so it never leaves the screen. */
+    .nav-panel .theme-switcher .nav-dropdown-content {
+        top: auto;
+        bottom: calc(1rem + 2 * var(--nav-trigger-pad) + 0.95rem + 2px + 0.5rem);
+        margin-top: 0;
+        max-height: min(50vh, calc(100% - 7rem));
+    }
 }
 
 /* Short viewports (landscape phones): tighter rows so more of the menu fits
@@ -1393,15 +1414,10 @@ i.ms.ms-cost.ms-gp {
     .nav-panel .nav-panel-inner {
         gap: 0.5rem;
     }
-    .nav-panel .nav-links {
-        gap: 0.4rem;
-    }
-    .nav-panel .nav-links > li > a,
-    .nav-panel .nav-links > li > button.nav-link,
-    .nav-panel .nav-dropdown-trigger,
-    .nav-panel .mode-toggle {
-        padding-top: 0.4rem;
-        padding-bottom: 0.4rem;
+    .nav-panel {
+        --nav-row-pad: 0.4rem;
+        --nav-row-gap: 0.4rem;
+        --nav-trigger-pad: 0.4rem;
     }
     .nav-panel .theme-switcher {
         padding-top: 0.5rem;
