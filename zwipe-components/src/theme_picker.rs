@@ -150,6 +150,9 @@ pub fn ThemePicker(
             }
             button {
                 class: "mode-toggle",
+                // It names the mode in use, as the apps' settings row does;
+                // the tooltip names the one a click switches to.
+                title: if is_dark { "Switch to light" } else { "Switch to dark" },
                 onclick: move |_| {
                     let current = theme.read().clone();
                     theme.set(ThemeConfig {
@@ -157,7 +160,7 @@ pub fn ThemePicker(
                         is_dark: !current.is_dark,
                     });
                 },
-                ModeLabel { dark: !is_dark }
+                ModeLabel { dark: is_dark }
             }
         }
     }
