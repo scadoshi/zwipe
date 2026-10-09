@@ -3,7 +3,7 @@
 **Status: IN PROGRESS.** This block is the running log; update it as each item lands.
 
 - [x] 2026-10-09 Steps 1, 2 and 3 merged to main in one push. Client buffer, `ACCESS_TOKEN_MINUTES` (default 1440) and refresh families with the 30-day cap.
-- [ ] zerver deploy with the families migration confirmed green (`20261009130000_refresh_token_families.sql`; additive, keeps `revoked`).
+- [x] 2026-10-09 zerver deploy with the families migration green (run 37987257595) (`20261009130000_refresh_token_families.sql`; additive, keeps `revoked`).
 - [ ] Re-run `zcripts/server/sql/zervice_role.sql` on the server so the nightly cleanup can read `replaced_at` (the migration grants it when the role exists, so this is belt and braces).
 - [ ] Client 1.11.2 cut and submitted, carrying the refresh-ahead buffer. Waiting on 1.11.1's store review first.
 - [ ] `MIN_CLIENT_VERSION` raised to 1.11.2 once the floor query shows old builds gone (or earlier to force them).
