@@ -21,6 +21,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-09: 1.11.1 submitted
+
+1.11.1 was cut the same afternoon as 1.11.0, and its changelog moved to `RELEASES` dated Oct 9. iOS build 91 went to App Review and Android vc54 to Production. The release carries one change: the light and dark switch moves into the Theme row on Profile as a shared `DarkModeButton`, a filled sun or moon beside the word light or dark, the same toggle zite, the portfolio and cairn now use. Under it, the synergy flag moved into the search body and the client floor is 1.10.2. The Android build passed every patch check; the emulator launch test was skipped. Notes at [`operations/store-submissions/1.11.1/whats_new.md`](operations/store-submissions/1.11.1/whats_new.md).
+
 ## 2026-10-09: 1.10.7 live, 1.11.0 submitted
 
 1.10.7 (iOS build 89) went live on the App Store on 2026-10-07. 1.11.0 was cut on 2026-10-09 with nothing else in review, so its changelog moved straight to `RELEASES` dated Oct 9, and the same morning iOS build 90 went to App Review and Android vc53 to Production. The release is the palette one: numbers, names, links, titles, selections and labels take their own colors from each theme's scheme, the theme picker swatches show the six palette colors, a ? beside the new password field lists the rules, the privacy policy says where data is stored and how to request a copy, verification and reset emails show their link as plain text, screen titles share one capitalization style, and panels sit the same distance apart. The Android build passed the emulator launch test on the Pixel_9a AVD, which 1.10.7 had skipped. Notes at [`operations/store-submissions/1.11.0/whats_new.md`](operations/store-submissions/1.11.0/whats_new.md).
