@@ -26,17 +26,18 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.11.2",
-    date: "",
-    entries: &[
-        "Sessions renew a couple of minutes before they expire",
-        "Logging out ends every device's session within minutes",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.11.2",
+        date: "Oct 9, 2026",
+        entries: &[
+            "Sessions renew a couple of minutes before they expire",
+            "Logging out ends every device's session within minutes",
+        ],
+    },
     Release {
         version: "1.11.1",
         date: "Oct 9, 2026",
