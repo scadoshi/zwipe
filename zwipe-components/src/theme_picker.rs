@@ -14,23 +14,62 @@ use zwipe_core::domain::user::{
 
 use crate::{Button, ButtonVariant, NavDropdown};
 
-/// The light mode's sun, held to text presentation (U+FE0E) so iOS draws it
-/// in the font's color rather than as an emoji.
-pub const SUN: &str = "\u{2600}\u{FE0E}";
+/// A mode's icon, solid in the text color: the moon for dark, the sun for
+/// light. Drawn as SVG rather than the ☀/☾ glyphs, which most fonts outline
+/// and iOS turns into a color emoji.
+#[component]
+pub fn ModeIcon(dark: bool) -> Element {
+    rsx! {
+        svg {
+            class: "mode-icon",
+            view_box: "0 0 24 24",
+            "aria-hidden": "true",
+            if dark {
+                path {
+                    fill: "currentColor",
+                    d: "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z",
+                }
+            } else {
+                circle { cx: "12", cy: "12", r: "5", fill: "currentColor" }
+                g {
+                    stroke: "currentColor",
+                    stroke_width: "2.2",
+                    stroke_linecap: "round",
+                    line { x1: "12", y1: "1.5", x2: "12", y2: "3.5" }
+                    line { x1: "12", y1: "20.5", x2: "12", y2: "22.5" }
+                    line { x1: "1.5", y1: "12", x2: "3.5", y2: "12" }
+                    line { x1: "20.5", y1: "12", x2: "22.5", y2: "12" }
+                    line { x1: "4.6", y1: "4.6", x2: "6", y2: "6" }
+                    line { x1: "18", y1: "18", x2: "19.4", y2: "19.4" }
+                    line { x1: "4.6", y1: "19.4", x2: "6", y2: "18" }
+                    line { x1: "18", y1: "6", x2: "19.4", y2: "4.6" }
+                }
+            }
+        }
+    }
+}
 
-/// The dark mode's moon.
-pub const MOON: &str = "\u{263E}";
+/// A mode's icon followed by its name, "dark" or "light".
+#[component]
+fn ModeLabel(dark: bool) -> Element {
+    rsx! {
+        span { class: "mode-label",
+            ModeIcon { dark }
+            if dark { "dark" } else { "light" }
+        }
+    }
+}
 
 /// The dark/light toggle that sits in a settings screen's theme row, beside
-/// its `Change` button: a compact util button showing the moon in dark mode
-/// and the sun in light. The host flips and saves the mode in `onclick`.
+/// its `Change` button. It names the mode in use; the host flips and saves
+/// the mode in `onclick`.
 #[component]
 pub fn DarkModeButton(is_dark: bool, onclick: EventHandler<MouseEvent>) -> Element {
     rsx! {
         Button {
             variant: ButtonVariant::Util,
             onclick: move |evt| onclick.call(evt),
-            if is_dark { "{MOON}" } else { "{SUN}" }
+            ModeLabel { dark: is_dark }
         }
     }
 }
@@ -118,7 +157,7 @@ pub fn ThemePicker(
                         is_dark: !current.is_dark,
                     });
                 },
-                if is_dark { "{SUN} light" } else { "{MOON} dark" }
+                ModeLabel { dark: !is_dark }
             }
         }
     }

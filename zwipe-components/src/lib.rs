@@ -92,7 +92,7 @@ pub use page_meta::{PageMeta, SiteMeta};
 pub use palette_guard::{StatusUse, status_uses};
 pub use panel::Panel;
 pub use stats_strip::StatsStrip;
-pub use theme_picker::{DarkModeButton, MOON, SUN, ThemePicker};
+pub use theme_picker::{DarkModeButton, ModeIcon, ThemePicker};
 pub use theme_sheet::ThemeSheet;
 pub use theme_store::use_persisted_theme;
 pub use theme_wipe::{ThemeFollow, use_theme_follow, use_theme_wipe};

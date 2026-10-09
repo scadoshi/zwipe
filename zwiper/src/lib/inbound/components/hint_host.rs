@@ -8,7 +8,7 @@
 //! A single `Option` also means only one hint shows at a time.
 
 use dioxus::prelude::*;
-use zwipe_components::{HintBullet, HintBullets, HintKey, HintLine, MOON, SUN};
+use zwipe_components::{HintBullet, HintBullets, HintKey, HintLine, ModeIcon};
 use zwipe_core::domain::auth::password::requirements;
 
 use crate::inbound::components::{
@@ -171,7 +171,7 @@ impl HintTopic {
                 HintBullets {
                     HintBullet { "The app's palette. Picks preview as you tap" }
                     HintBullet { "The last four are color blind modes" }
-                    HintBullet { HintKey { "{SUN}" } " " HintKey { "{MOON}" } " flips it between light and dark" }
+                    HintBullet { HintKey { ModeIcon { dark: false } " light" } " " HintKey { ModeIcon { dark: true } " dark" } " switches between the theme's two palettes" }
                 }
             },
             Self::UniversesBeyond => rsx! {

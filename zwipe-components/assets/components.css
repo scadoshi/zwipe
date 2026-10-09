@@ -1385,6 +1385,20 @@ i.ms.ms-cost.ms-gp {
         border-color 0.15s;
 }
 
+/* A mode's solid sun or moon, sized to the text beside it. */
+.mode-icon {
+    width: 1.1em;
+    height: 1.1em;
+    flex-shrink: 0;
+    vertical-align: -0.2em;
+}
+
+.mode-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+}
+
 @media (hover: hover) {
     .nav-dropdown-trigger:hover,
     .mode-toggle:hover {
