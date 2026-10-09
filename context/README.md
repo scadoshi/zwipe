@@ -21,6 +21,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-09: 1.10.7 live, 1.11.0 submitted
+
+1.10.7 (iOS build 89) went live on the App Store on 2026-10-07. 1.11.0 was cut on 2026-10-09 with nothing else in review, so its changelog moved straight to `RELEASES` dated Oct 9, and the same morning iOS build 90 went to App Review and Android vc53 to Production. The release is the palette one: numbers, names, links, titles, selections and labels take their own colors from each theme's scheme, the theme picker swatches show the six palette colors, a ? beside the new password field lists the rules, the privacy policy says where data is stored and how to request a copy, verification and reset emails show their link as plain text, screen titles share one capitalization style, and panels sit the same distance apart. The Android build passed the emulator launch test on the Pixel_9a AVD, which 1.10.7 had skipped. Notes at [`operations/store-submissions/1.11.0/whats_new.md`](operations/store-submissions/1.11.0/whats_new.md).
+
 ## 2026-10-08: zerver's SSH locked down to match heron and scotland-server
 
 Root no longer logs in to zerver; admin is `scadoshi` over the tailnet with sudo and its password, which is what `cicd.md` and `server.md` used to get wrong (both said `ssh root@`). Password logins are allowed from the tailnet only, through `/etc/ssh/sshd_config.d/10-hardening.conf`, the same file heron and scotland-server carry; `server.md` (SSH Access) has it and the rebuild steps. ufw was already tailnet-only. Every key in `authorized_keys` now names its device.
