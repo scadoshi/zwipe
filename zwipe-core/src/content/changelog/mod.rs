@@ -29,7 +29,14 @@ pub struct Release {
 pub const UPCOMING: &[Release] = &[Release {
     version: "1.11.2",
     date: "",
-    entries: &["Logging out ends every device's session within minutes"],
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.11.2",
+    date: "",
+    entries: &[
+        "Sessions renew a couple of minutes before they expire",
+        "Logging out ends every device's session within minutes",
+    ],
+}];
 }];
 
 /// Shipped releases, newest first.
