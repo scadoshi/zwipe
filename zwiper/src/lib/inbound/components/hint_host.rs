@@ -8,7 +8,7 @@
 //! A single `Option` also means only one hint shows at a time.
 
 use dioxus::prelude::*;
-use zwipe_components::{HintBullet, HintBullets, HintKey, HintLine};
+use zwipe_components::{HintBullet, HintBullets, HintKey, HintLine, MOON, SUN};
 use zwipe_core::domain::auth::password::requirements;
 
 use crate::inbound::components::{
@@ -56,10 +56,8 @@ pub enum HintTopic {
     Email,
     /// Profile: email verification row.
     Verification,
-    /// Profile: theme row.
+    /// Profile: theme row, with its dark/light toggle.
     Theme,
-    /// Profile: dark mode row.
-    DarkMode,
     /// Profile: Universes Beyond row.
     UniversesBeyond,
     /// Profile: website row.
@@ -100,7 +98,6 @@ impl HintTopic {
             Self::Email => "Email",
             Self::Verification => "Verification",
             Self::Theme => "Theme",
-            Self::DarkMode => "Dark mode",
             Self::UniversesBeyond => "Universes Beyond",
             Self::Website => "Website",
             Self::Version => "Version",
@@ -174,10 +171,8 @@ impl HintTopic {
                 HintBullets {
                     HintBullet { "The app's palette. Picks preview as you tap" }
                     HintBullet { "The last four are color blind modes" }
+                    HintBullet { HintKey { "{SUN}" } " " HintKey { "{MOON}" } " flips it between light and dark" }
                 }
-            },
-            Self::DarkMode => rsx! {
-                HintLine { "Switches the theme between its light and dark palettes" }
             },
             Self::UniversesBeyond => rsx! {
                 HintBullets {

@@ -12,7 +12,7 @@ use zwipe_core::domain::user::{
     preferences::{ALLOWED_THEMES, COLORBLIND_THEMES, display_theme_name},
 };
 
-use crate::NavDropdown;
+use crate::{Button, ButtonVariant, NavDropdown};
 
 /// The light mode's sun, held to text presentation (U+FE0E) so iOS draws it
 /// in the font's color rather than as an emoji.
@@ -20,6 +20,20 @@ pub const SUN: &str = "\u{2600}\u{FE0E}";
 
 /// The dark mode's moon.
 pub const MOON: &str = "\u{263E}";
+
+/// The dark/light toggle that sits in a settings screen's theme row, beside
+/// its `Change` button: a compact util button showing the moon in dark mode
+/// and the sun in light. The host flips and saves the mode in `onclick`.
+#[component]
+pub fn DarkModeButton(is_dark: bool, onclick: EventHandler<MouseEvent>) -> Element {
+    rsx! {
+        Button {
+            variant: ButtonVariant::Util,
+            onclick: move |evt| onclick.call(evt),
+            if is_dark { "{MOON}" } else { "{SUN}" }
+        }
+    }
+}
 
 /// Theme dropdown + dark/light toggle. Every theme has both modes, so the
 /// toggle is always shown.

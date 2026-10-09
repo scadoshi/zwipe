@@ -43,8 +43,8 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use preferences::PreferencesSheet;
 use universes_beyond::UniversesBeyondExceptionsSheet;
 use zwipe_components::{
-    ActionBar, BottomSheet, Button, ButtonVariant, HintBullet, HintBullets, HintKey, MOON, SUN,
-    TOAST_NORMAL,
+    ActionBar, BottomSheet, Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets,
+    HintKey, TOAST_NORMAL,
 };
 use zwipe_core::{
     domain::{
@@ -312,25 +312,14 @@ pub fn Profile() -> Element {
                                     }
                                     div { class: "profile-row-value",
                                         span { { display_theme_name(&theme_config().name) } }
+                                        DarkModeButton {
+                                            is_dark: theme_config().is_dark,
+                                            onclick: move |_| toggle_dark_mode(),
+                                        }
                                         Button {
                                             variant: ButtonVariant::Util,
                                             onclick: move |_| preferences_open.set(true),
                                             "Change"
-                                        }
-                                    }
-                                }
-
-                                div {
-                                    class: "profile-row",
-                                    span { style: "display:flex;align-items:center;",
-                                        span { class: "profile-row-label", "Dark mode" }
-                                        InfoButton { topic: HintTopic::DarkMode }
-                                    }
-                                    div { class: "profile-row-value",
-                                        Button {
-                                            variant: ButtonVariant::Util,
-                                            onclick: move |_| toggle_dark_mode(),
-                                            if theme_config().is_dark { "{MOON} On" } else { "{SUN} Off" }
                                         }
                                     }
                                 }
