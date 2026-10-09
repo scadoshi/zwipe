@@ -10,11 +10,18 @@ Takes the signed `Zwipe.ipa` from [build.md](build.md) and gets it into review.
 
 **Do NOT use `xcrun iTMSTransporter`**: it expects `.itmsp` directories, not `.ipa` files.
 
-1. Open **Transporter** (Mac App Store, free, by Apple)
+One command opens Transporter with the `.ipa` already added, no dragging:
+
+```bash
+open -a Transporter ~/Developer/zwipe/Zwipe.ipa
+```
+
+1. Run the command above (Transporter is free on the Mac App Store, by Apple)
 2. Sign in with your Apple ID if prompted
-3. Drag `~/Developer/zwipe/Zwipe.ipa` into the window
-4. Click **Deliver**: validates and uploads in one step
-5. Wait for "Upload Successful" confirmation
+3. Click **Deliver**: validates and uploads in one step
+4. Wait for "Upload Successful" confirmation
+
+Dragging `~/Developer/zwipe/Zwipe.ipa` into the window does the same thing.
 
 The build will appear in App Store Connect after 5–10 minutes.
 

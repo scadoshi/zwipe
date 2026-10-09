@@ -157,7 +157,7 @@ zip -r Zwipe.ipa Payload
 rm -rf Payload
 ```
 
-**Next:** upload + submit the `.ipa` → [publish.md](publish.md).
+**Next:** `open -a Transporter ~/Developer/zwipe/Zwipe.ipa` opens it in Transporter ready to Deliver; the rest of upload + submit is in [publish.md](publish.md).
 
 ---
 
