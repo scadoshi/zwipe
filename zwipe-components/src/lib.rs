@@ -16,7 +16,8 @@
 //! the apps and styled by the opt-in [`APP_CSS`]. The site kit
 //! ([`use_persisted_theme`], [`StatsStrip`], [`GalleryFrame`], [`REVEAL_JS`],
 //! [`NAV_GLIDE_JS`], [`SCROLL_FADE_JS`]) is for the websites, with the gallery base in the opt-in
-//! [`SITE_CSS`].
+//! [`SITE_CSS`]. [`HeatGrid`] is the contribution heatmap's grid, for any
+//! surface that draws a year of days.
 //!
 //! **CSS cascade order matters:** load themes first, then components, then the
 //! opt-in sheet, then the host's own stylesheet (`THEMES_CSS`, then
@@ -44,6 +45,7 @@ mod diagram;
 mod entrance;
 mod flippable_card_image;
 mod gallery;
+mod heat_grid;
 mod hint;
 mod keyword_chips;
 mod nav_bar;
@@ -79,6 +81,10 @@ pub use diagram::{DIAGRAM_NODE_HEIGHT, DiagramArrow, DiagramDefs, DiagramNode, D
 pub use entrance::{CountUp, Decode, Figure, Replay, with_separators};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use gallery::{GalleryFooter, GalleryFrame};
+pub use heat_grid::{
+    HEAT_CELL, HEAT_GAP, HEAT_ROWS, HEAT_STEP, HeatCell, HeatGrid, HeatHit, heat_span,
+    use_scroll_to_end,
+};
 pub use hint::{HintBullet, HintBullets, HintKey, HintLine, InfoButton};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use nav_bar::{BRAND_RESET_JS, NavBar};

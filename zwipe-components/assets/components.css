@@ -2045,6 +2045,102 @@ a.nav-dropdown-item.active:visited {
     }
 }
 
+/* ==============================
+   heat grid: a year of days, a column per week (HeatGrid)
+   ============================== */
+
+/* Wraps a chart wider than a phone so it scrolls sideways. Stops at either
+   end rather than rubber-banding the chart's edge into empty space. */
+.chart-scroll {
+    overflow-x: auto;
+    overscroll-behavior-x: none;
+    scrollbar-width: thin;
+}
+
+.heat-grid {
+    display: block;
+    width: 100%;
+    height: auto;
+    font-family: inherit;
+    /* A peak's halo on the last column or bottom row reaches past the
+       viewBox and draws whole. */
+    overflow: visible;
+}
+
+.heat-label {
+    fill: var(--text-muted);
+    font-size: 9px;
+}
+
+/* GitHub's five shades, in the primary accent: an empty day is a faint box,
+   the rest rise to the full color. The cells sweep in a column at a time on
+   the delay each carries, with a brightening band on the leading edge.
+   `backwards` holds the start state through the delay and lets the resting
+   style take over after, so a host's hover rules still apply. */
+.heat-cell {
+    fill: var(--border-secondary);
+    cursor: default;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: heat-sweep 0.4s ease-out backwards;
+}
+
+.heat-1 {
+    fill: color-mix(in srgb, var(--accent-primary) 30%, var(--bg-primary));
+}
+
+.heat-2 {
+    fill: color-mix(in srgb, var(--accent-primary) 55%, var(--bg-primary));
+}
+
+.heat-3 {
+    fill: color-mix(in srgb, var(--accent-primary) 80%, var(--bg-primary));
+}
+
+.heat-4 {
+    fill: var(--accent-primary);
+}
+
+/* The year's outlier days: a lit edge in a lighter shade of the accent, and a
+   soft square of the accent behind the cell, drawn as a shape so every
+   browser shows it. The halo sweeps in with its cell. */
+.heat-peak {
+    stroke: color-mix(in srgb, var(--accent-primary) 60%, #fff);
+    stroke-width: 1;
+}
+
+.heat-halo {
+    fill: color-mix(in srgb, var(--accent-primary) 45%, transparent);
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: heat-sweep 0.4s ease-out backwards;
+}
+
+@keyframes heat-sweep {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+        filter: brightness(1.8);
+    }
+    55% {
+        opacity: 1;
+        transform: scale(1.12);
+        filter: brightness(1.8);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+        filter: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .heat-cell,
+    .heat-halo {
+        animation: none;
+    }
+}
+
 .diagram-node rect {
     fill: color-mix(in srgb, var(--bg-primary), #000 10%);
     stroke-width: 1.5;
