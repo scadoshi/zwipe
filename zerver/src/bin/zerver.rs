@@ -67,6 +67,7 @@ async fn run() -> anyhow::Result<()> {
         db.clone(),
         resend,
         config.jwt_secret,
+        config.access_token_lifetime,
         config.web_base_url.clone(),
         config.support_email_address,
     );

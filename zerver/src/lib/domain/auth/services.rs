@@ -71,6 +71,8 @@ where
     user_repo: UR,
     email_sender: ES,
     jwt_secret: JwtSecret,
+    /// How long each minted access token stays valid.
+    access_token_lifetime: Duration,
     /// Public web base URL for building verify/reset links (e.g. `https://zwipe.net`).
     web_base_url: String,
     /// User-facing support email address shown in transactional emails.
@@ -84,12 +86,14 @@ where
     ES: EmailSender,
 {
     /// Creates a new authentication service with the provided repositories,
-    /// email sender, JWT secret, public web base URL, and support email.
+    /// email sender, JWT secret and access token lifetime, public web base URL,
+    /// and support email.
     pub fn new(
         auth_repo: AR,
         user_repo: UR,
         email_sender: ES,
         jwt_secret: JwtSecret,
+        access_token_lifetime: Duration,
         web_base_url: String,
         support_email: String,
     ) -> Self {
@@ -98,6 +102,7 @@ where
             user_repo,
             email_sender,
             jwt_secret,
+            access_token_lifetime,
             web_base_url,
             support_email,
         }
@@ -201,8 +206,9 @@ where
 
         let preferences = UserPreferences::default();
 
-        let access_token = AccessToken::generate(&user, &self.jwt_secret)
-            .map_err(|e| RegisterUserError::FailedAccessToken(anyhow!("{e}")))?;
+        let access_token =
+            AccessToken::generate(&user, &self.jwt_secret, self.access_token_lifetime)
+                .map_err(|e| RegisterUserError::FailedAccessToken(anyhow!("{e}")))?;
 
         // Fire-and-forget: don't fail registration if email sending fails.
         if let Err(e) = self
@@ -274,8 +280,9 @@ where
             .await
             .unwrap_or_default();
 
-        let access_token = AccessToken::generate(&user, &self.jwt_secret)
-            .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;
+        let access_token =
+            AccessToken::generate(&user, &self.jwt_secret, self.access_token_lifetime)
+                .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;
 
         let refresh_token = self
             .auth_repo
@@ -307,7 +314,8 @@ where
             )
             .await?;
 
-        let access_token = AccessToken::generate(&user, self.jwt_secret())?;
+        let access_token =
+            AccessToken::generate(&user, &self.jwt_secret, self.access_token_lifetime)?;
 
         let session = Session {
             user,
@@ -332,7 +340,8 @@ where
 
         let refresh_token = self.auth_repo.use_refresh_token(request).await?;
 
-        let access_token = AccessToken::generate(&user, self.jwt_secret())?;
+        let access_token =
+            AccessToken::generate(&user, &self.jwt_secret, self.access_token_lifetime)?;
 
         let session = Session {
             user,

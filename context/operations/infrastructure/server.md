@@ -321,6 +321,9 @@ RESEND_EMAIL_FROM=support@zwipe.net
 # so the monitor can alert on silence. Belongs in zervice.env.
 # SUPPORT_EMAIL_ADDRESS + WEB_BASE_URL omitted: default to support@zwipe.net
 # and https://zwipe.net. Set both here when switching the public domain.
+# ACCESS_TOKEN_MINUTES omitted: defaults to 1440 (24 hours). Whole minutes,
+# above zero; anything else refuses startup. Shorten it only once most devices
+# run a client that refreshes ahead of expiry (context/plans/access_token_window.md).
 ```
 
 ### RUST_LOG directives

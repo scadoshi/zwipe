@@ -9,6 +9,7 @@ use zwipe_core::domain::auth::models::access_token::{
     AccessToken, InvalidJwt as CoreInvalidJwt, Jwt, UserClaims,
 };
 
+use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -112,16 +113,22 @@ impl JwtValidate for Jwt {
 
 /// Extension trait for server-side access token operations.
 pub trait AccessTokenExt {
-    /// Generates a new access token for a user.
-    fn generate(user: &User, secret: &JwtSecret) -> Result<AccessToken, InvalidJwt>;
+    /// Generates a new access token for a user that expires `lifetime` from now.
+    fn generate(
+        user: &User,
+        secret: &JwtSecret,
+        lifetime: Duration,
+    ) -> Result<AccessToken, InvalidJwt>;
 }
 
 impl AccessTokenExt for AccessToken {
-    fn generate(user: &User, secret: &JwtSecret) -> Result<AccessToken, InvalidJwt> {
-        use chrono::{Duration, Utc};
-
+    fn generate(
+        user: &User,
+        secret: &JwtSecret,
+        lifetime: Duration,
+    ) -> Result<AccessToken, InvalidJwt> {
         let issued_at = Utc::now();
-        let expires_at = issued_at + Duration::hours(24);
+        let expires_at = issued_at + lifetime;
 
         let user_claims = UserClaims {
             user_id: user.id,
@@ -172,6 +179,8 @@ mod tests {
     use std::str::FromStr;
     use uuid::Uuid;
     use zwipe_core::domain::{Email, user::username::Username};
+
+    const LIFETIME: Duration = Duration::hours(24);
 
     // == `JwtSecret` tests ==
 
@@ -227,7 +236,7 @@ mod tests {
 
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let result = AccessToken::generate(&user, &secret);
+        let result = AccessToken::generate(&user, &secret, LIFETIME);
         assert!(result.is_ok());
         let access_token = result.unwrap();
         assert!(!access_token.value.is_empty());
@@ -245,8 +254,8 @@ mod tests {
 
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token1 = AccessToken::generate(&user, &secret).unwrap();
-        let token2 = AccessToken::generate(&user, &secret).unwrap();
+        let token1 = AccessToken::generate(&user, &secret, LIFETIME).unwrap();
+        let token2 = AccessToken::generate(&user, &secret, LIFETIME).unwrap();
 
         let claims1 = token1.value.validate(&secret).unwrap();
         let claims2 = token2.value.validate(&secret).unwrap();
@@ -271,8 +280,8 @@ mod tests {
 
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token1 = AccessToken::generate(&user1, &secret).unwrap();
-        let token2 = AccessToken::generate(&user2, &secret).unwrap();
+        let token1 = AccessToken::generate(&user1, &secret, LIFETIME).unwrap();
+        let token2 = AccessToken::generate(&user2, &secret, LIFETIME).unwrap();
         assert_ne!(token1, token2);
     }
 
@@ -286,8 +295,8 @@ mod tests {
         let secret1 = JwtSecret::new("secret-1-that-is-long-enough-for-validation").unwrap();
         let secret2 = JwtSecret::new("secret-2-that-is-long-enough-for-validation").unwrap();
 
-        let token1 = AccessToken::generate(&user, &secret1).unwrap();
-        let token2 = AccessToken::generate(&user, &secret2).unwrap();
+        let token1 = AccessToken::generate(&user, &secret1, LIFETIME).unwrap();
+        let token2 = AccessToken::generate(&user, &secret2, LIFETIME).unwrap();
         assert_ne!(token1, token2);
     }
 
@@ -300,7 +309,7 @@ mod tests {
         );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = AccessToken::generate(&user, &secret).unwrap();
+        let token = AccessToken::generate(&user, &secret, LIFETIME).unwrap();
         let claims = token.value.validate(&secret).unwrap();
         assert_eq!(claims.email.to_string(), "test@email.com");
     }
@@ -316,7 +325,7 @@ mod tests {
         );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = AccessToken::generate(&user, &secret).unwrap();
+        let token = AccessToken::generate(&user, &secret, LIFETIME).unwrap();
         let claims = token.value.validate(&secret).unwrap();
 
         assert_eq!(claims.user_id, user.id);
@@ -337,7 +346,7 @@ mod tests {
         let wrong_secret =
             JwtSecret::new("wrong-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = AccessToken::generate(&user, &correct_secret).unwrap();
+        let token = AccessToken::generate(&user, &correct_secret, LIFETIME).unwrap();
         let result = token.value.validate(&wrong_secret);
         assert!(result.is_err());
     }
@@ -353,13 +362,29 @@ mod tests {
         );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = AccessToken::generate(&user, &secret).unwrap();
+        let token = AccessToken::generate(&user, &secret, LIFETIME).unwrap();
         let claims = token.value.validate(&secret).unwrap();
 
         let now = chrono::Utc::now().timestamp();
         assert!(claims.exp > now);
         assert!(claims.iat <= now);
         assert_eq!(claims.exp - claims.iat, 86400);
+    }
+
+    #[test]
+    fn test_access_token_lifetime_sets_expiry() {
+        let user = User::new(
+            Uuid::new_v4(),
+            Username::new("testuser").unwrap(),
+            Email::from_str("test@email.com").unwrap(),
+        );
+        let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
+
+        let token = AccessToken::generate(&user, &secret, Duration::minutes(15)).unwrap();
+        let claims = token.value.validate(&secret).unwrap();
+
+        assert_eq!(claims.exp - claims.iat, 15 * 60);
+        assert_eq!(token.expires_at.timestamp(), claims.exp);
     }
 
     #[test]
@@ -371,7 +396,7 @@ mod tests {
         );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = AccessToken::generate(&user, &secret).unwrap();
+        let token = AccessToken::generate(&user, &secret, LIFETIME).unwrap();
         let claims = token.value.validate(&secret).unwrap();
 
         assert_eq!(claims.user_id, user.id);
@@ -392,7 +417,7 @@ mod tests {
 
         for user_id in user_ids {
             let user = User::new(user_id, username.clone(), email.clone());
-            let token = AccessToken::generate(&user, &secret).unwrap();
+            let token = AccessToken::generate(&user, &secret, LIFETIME).unwrap();
             let claims = token.value.validate(&secret).unwrap();
             assert_eq!(claims.user_id, user_id);
         }
@@ -407,7 +432,7 @@ mod tests {
         );
         let secret = JwtSecret::new("production-grade-secret-that-is-long-enough").unwrap();
 
-        let token = AccessToken::generate(&original_user, &secret).unwrap();
+        let token = AccessToken::generate(&original_user, &secret, LIFETIME).unwrap();
         let claims = token.value.validate(&secret).unwrap();
 
         assert_eq!(claims.user_id, original_user.id);

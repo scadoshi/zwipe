@@ -113,7 +113,7 @@ The frontend's API client lives in the `zwipe-client` crate, which both clients 
 
 ## Environment Files
 
-Backend (`zerver/.env`): `DATABASE_URL`, `JWT_SECRET`, `BIND_ADDRESS`, `ALLOWED_ORIGINS`, `RESEND_API_KEY`, `RESEND_EMAIL_FROM`, `LOG_DIR`. Optional with defaults: `HEALTHCHECK_PING_URL`, `MIN_CLIENT_VERSION`, `WEB_BASE_URL`, `SUPPORT_EMAIL_ADDRESS`. `zerver/src/lib/config.rs` is the authority.
+Backend (`zerver/.env`): `DATABASE_URL`, `JWT_SECRET`, `BIND_ADDRESS`, `ALLOWED_ORIGINS`, `RESEND_API_KEY`, `RESEND_EMAIL_FROM`, `LOG_DIR`. Optional with defaults: `HEALTHCHECK_PING_URL`, `MIN_CLIENT_VERSION`, `ACCESS_TOKEN_MINUTES`, `WEB_BASE_URL`, `SUPPORT_EMAIL_ADDRESS`. `zerver/src/lib/config.rs` is the authority.
 
 Frontend (`zwiper/.env`): `BACKEND_URL`, `RUST_LOG`, `RUST_BACKTRACE`
 

@@ -111,6 +111,7 @@ impl TestApp {
             db.clone(),
             emails.clone(),
             jwt_secret.clone(),
+            chrono::Duration::hours(24),
             "http://localhost".to_string(),
             "support@test.local".to_string(),
         );

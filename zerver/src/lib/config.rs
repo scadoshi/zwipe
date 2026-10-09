@@ -7,6 +7,7 @@
 use crate::domain::auth::models::access_token::JwtSecret;
 use anyhow::Context;
 use axum::http::HeaderValue;
+use chrono::Duration;
 
 /// Environment variable key for the JWT signing secret.
 const JWT_SECRET_KEY: &str = "JWT_SECRET";
@@ -44,6 +45,12 @@ const MIN_CLIENT_VERSION_KEY: &str = "MIN_CLIENT_VERSION";
 
 /// Default minimum client version. `0.0.0` means the gate is open.
 const MIN_CLIENT_VERSION_DEFAULT: &str = "0.0.0";
+
+/// Environment variable key for the access token lifetime in whole minutes.
+const ACCESS_TOKEN_MINUTES_KEY: &str = "ACCESS_TOKEN_MINUTES";
+
+/// Default access token lifetime: 24 hours.
+const ACCESS_TOKEN_MINUTES_DEFAULT: i64 = 1440;
 
 /// Environment variable key for the public web base URL (email verify/reset links).
 const WEB_BASE_URL_KEY: &str = "WEB_BASE_URL";
@@ -97,6 +104,10 @@ pub struct Config {
     /// `.env` on the server + restart zerver; no code deploy.
     pub min_client_version: String,
 
+    /// How long a freshly minted access JWT stays valid. Defaults to 24 hours.
+    /// Shortening it = edit `.env` on the server + restart zerver; no deploy.
+    pub access_token_lifetime: Duration,
+
     /// Public web base URL used to build email verify/reset links. Defaults to
     /// `https://zwipe.net`. A domain change = edit `.env` + restart; no deploy.
     pub web_base_url: String,
@@ -138,6 +149,18 @@ impl Config {
                 min_client_version
             );
         }
+        let access_token_minutes = match std::env::var(ACCESS_TOKEN_MINUTES_KEY) {
+            Ok(raw) => match raw.trim().parse::<i64>() {
+                Ok(minutes) if minutes > 0 => minutes,
+                _ => anyhow::bail!(
+                    "invalid {}: {:?} (expected a whole number of minutes above zero)",
+                    ACCESS_TOKEN_MINUTES_KEY,
+                    raw
+                ),
+            },
+            Err(_) => ACCESS_TOKEN_MINUTES_DEFAULT,
+        };
+        let access_token_lifetime = Duration::minutes(access_token_minutes);
         let web_base_url = std::env::var(WEB_BASE_URL_KEY)
             .unwrap_or_else(|_| WEB_BASE_URL_DEFAULT.to_string())
             .trim_end_matches('/')
@@ -155,6 +178,7 @@ impl Config {
             resend_from_email,
             log_dir,
             min_client_version,
+            access_token_lifetime,
             web_base_url,
             support_email_address,
         })
