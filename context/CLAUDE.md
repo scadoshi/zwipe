@@ -100,7 +100,7 @@ The frontend's API client lives in the `zwipe-client` crate, which both clients 
 
 **Module structure**: Uses `module/mod.rs` pattern (not monolithic `module.rs` files)
 
-**Session auth**: JWT access tokens (24h) + rotating refresh tokens (14d, SHA-256 hashed, max 5 per user)
+**Session auth**: JWT access tokens (`ACCESS_TOKEN_MINUTES`, default 24h) + rotating refresh tokens (14d each, SHA-256 hashed, max 5 live per user). A login starts a family that rotation carries; a replayed token kills its family, and a family ends 30 days after its login
 
 **Card filtering**: Backend uses SQLx QueryBuilder with PostgreSQL jsonb operators (`@>`, `<@`, `?|`). Frontend has modular filter screens synced via Dioxus signals.
 

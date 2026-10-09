@@ -5,19 +5,19 @@
 //!
 //! # Refresh Flow
 //!
-//! 1. Client's access token expires (after 24h)
+//! 1. Client's access token nears expiry
 //! 2. Client sends refresh token and user ID
-//! 3. Service validates refresh token (exists, not expired, not revoked, matches user)
-//! 4. Service deletes old refresh token (single-use)
+//! 3. Service validates refresh token (exists, not replaced, not expired, matches user)
+//! 4. Service marks the old refresh token replaced (single-use)
 //! 5. Service creates new session with new access + refresh tokens
 //! 6. Client updates stored tokens
 //!
 //! # Security Features
 //!
-//! - **Single-Use Tokens**: Refresh tokens are deleted after use (rotation)
+//! - **Single-Use Tokens**: a replaced token used again ends its whole family
 //! - **Token Ownership**: Refresh token must belong to requesting user
-//! - **Expiry Check**: Tokens expire after 14 days
-//! - **Revocation Support**: Tokens can be revoked (logout)
+//! - **Expiry Check**: Tokens expire after 14 days, and a family 30 days after its login
+//! - **Revocation**: logout and credential changes delete the user's tokens
 //!
 //! # Example
 //!
@@ -28,7 +28,7 @@
 //! let request = RefreshSession::new(&user_id_str, &refresh_token_value)?;
 //! let new_session = session_service.refresh_session(request).await?;
 //!
-//! // Client now has fresh access token (24h) and refresh token (14d)
+//! // Client now has a fresh access token and refresh token (14d)
 //! ```
 
 use crate::domain::{
@@ -57,7 +57,7 @@ pub enum InvalidRefreshSession {
 /// Errors that can occur during session refresh.
 ///
 /// The refresh operation validates the refresh token through multiple checks:
-/// existence, ownership, expiry, and revocation status. It then creates a new
+/// existence, ownership, replacement, and both expiries. It then creates a new
 /// session, which can also fail.
 #[derive(Debug, Error)]
 pub enum RefreshSessionError {
@@ -78,13 +78,15 @@ pub enum RefreshSessionError {
     #[error("match for given refresh token not found; user attempting: {0}")]
     NotFound(Uuid),
 
-    /// The refresh token has passed its 14-day expiry time.
+    /// The refresh token has passed its 14-day expiry time, or its family's
+    /// login is older than the 30-day absolute lifespan.
     ///
     /// User must re-authenticate with username/password to get a new session.
     #[error("given refresh token is expired; user attempting: {0}")]
     Expired(Uuid),
 
-    /// The refresh token was explicitly revoked (user logged out).
+    /// The refresh token was already rotated. A replay past the grace window
+    /// has deleted the whole family; a loser of a concurrent rotation keeps it.
     ///
     /// User must re-authenticate to get a new session.
     #[error("given refresh token has been revoked; user attempting: {0}")]
@@ -118,7 +120,7 @@ pub enum RefreshSessionError {
 ///
 /// # Security
 ///
-/// - Refresh tokens are single-use - attempting to reuse causes `NotFound` error
+/// - Refresh tokens are single-use - attempting to reuse causes `Revoked` error
 /// - Token must belong to the requesting user - mismatches cause `Forbidden` error
 /// - Expired tokens cannot be used - user must re-authenticate
 ///

@@ -7,7 +7,10 @@
 #![allow(clippy::unwrap_used)]
 
 use zwipe::{
-    domain::upkeep::{ports::UpkeepRepository, services::DIAGNOSTIC_RETENTION_DAYS},
+    domain::upkeep::{
+        ports::UpkeepRepository,
+        services::{DIAGNOSTIC_RETENTION_DAYS, REPLACED_TOKEN_RETENTION_DAYS},
+    },
     outbound::sqlx::postgres::Postgres,
 };
 
@@ -99,7 +102,10 @@ async fn session_prune_kills_expired_across_users(pool: sqlx::PgPool) {
         }
     }
 
-    let pruned = repo.prune_expired_sessions().await.unwrap();
+    let pruned = repo
+        .prune_expired_sessions(REPLACED_TOKEN_RETENTION_DAYS)
+        .await
+        .unwrap();
     assert_eq!(pruned, 2, "both users' expired tokens swept");
 
     let live: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM refresh_tokens")
@@ -107,4 +113,52 @@ async fn session_prune_kills_expired_across_users(pool: sqlx::PgPool) {
         .await
         .unwrap();
     assert_eq!(live, 2, "live tokens untouched");
+}
+
+#[sqlx::test]
+async fn session_prune_kills_replaced_rows_past_grace(pool: sqlx::PgPool) {
+    let repo = Postgres { pool: pool.clone() };
+
+    let user_id: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO users (username, email, password_hash)
+         VALUES ('rotator', 'rotator@test.local', 'x') RETURNING id",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    // One rotated row just past the grace window, one rotated yesterday, and
+    // the live head of the family; all three still inside their 14 days.
+    for (hash, replaced_days_ago) in [
+        ("stale", Some(REPLACED_TOKEN_RETENTION_DAYS + 1)),
+        ("recent", Some(1)),
+        ("head", None),
+    ] {
+        sqlx::query(
+            "INSERT INTO refresh_tokens (user_id, value_hash, expires_at, replaced_at)
+             VALUES ($1, $2, NOW() + INTERVAL '14 days', NOW() - make_interval(days => $3))",
+        )
+        .bind(user_id)
+        .bind(hash)
+        .bind(replaced_days_ago)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+
+    let pruned = repo
+        .prune_expired_sessions(REPLACED_TOKEN_RETENTION_DAYS)
+        .await
+        .unwrap();
+    assert_eq!(pruned, 1, "only the rotated row past the grace window");
+
+    let kept: Vec<String> =
+        sqlx::query_scalar("SELECT value_hash FROM refresh_tokens ORDER BY value_hash")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        kept,
+        ["head", "recent"],
+        "recent evidence and the live head stay"
+    );
 }

@@ -63,12 +63,13 @@ END $$;
 -- Step 5 (upkeep): diagnostic retention prunes.
 GRANT SELECT, DELETE ON client_errors, crash_reports TO zervice;
 
--- Step 5 (upkeep): global expired-session dusting. Deliberately
--- destruction-only — DELETE plus column-scoped SELECT on exactly the column
--- the WHERE clause reads. zervice can log users out (self-healing nuisance)
--- but can never read value_hash/user_id (zero session-data exposure).
+-- Step 5 (upkeep): global expired-session dusting, plus rotated rows past
+-- their replay-evidence window. Deliberately destruction-only: DELETE plus
+-- column-scoped SELECT on exactly the columns the WHERE clause reads. zervice
+-- can log users out (self-healing nuisance) but can never read
+-- value_hash/user_id (zero session-data exposure).
 GRANT DELETE ON refresh_tokens TO zervice;
-GRANT SELECT (expires_at) ON refresh_tokens TO zervice;
+GRANT SELECT (expires_at, replaced_at) ON refresh_tokens TO zervice;
 
 COMMIT;
 

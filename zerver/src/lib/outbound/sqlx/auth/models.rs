@@ -50,7 +50,12 @@ pub struct DatabaseRefreshToken {
     pub id: i32,
     pub user_id: Uuid,
     pub expires_at: DateTime<Utc>,
-    pub revoked: bool,
+    /// Shared by every token rotated from the same login.
+    pub family_id: Uuid,
+    /// When the family's login happened; the absolute lifespan counts from here.
+    pub login_at: DateTime<Utc>,
+    /// Set once the token has been rotated; a later use of it is a replay.
+    pub replaced_at: Option<DateTime<Utc>>,
     /// Client platform string (`ios`/`android`/`desktop`/`web`), NULL if unknown.
     pub platform: Option<String>,
     /// Client app version string (e.g. `"1.6.1"`), NULL if unknown.

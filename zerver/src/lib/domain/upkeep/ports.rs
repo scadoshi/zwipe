@@ -24,10 +24,15 @@ pub trait UpkeepRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = anyhow::Result<u64>> + Send;
 
     /// Deletes expired refresh tokens across all users, the final dusting
-    /// for dormant users the insert-time drive-by never revisits. Returns the
-    /// number of rows removed. (The grant behind this is deliberately
-    /// destruction-only: `DELETE` + column-scoped `SELECT (expires_at)`.)
-    fn prune_expired_sessions(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
+    /// for dormant users the insert-time drive-by never revisits, and rotated
+    /// rows replaced more than `replaced_retention_days` ago, which have
+    /// outlived their use as replay evidence. Returns the number of rows
+    /// removed. (The grant behind this is deliberately destruction-only:
+    /// `DELETE` + column-scoped `SELECT (expires_at, replaced_at)`.)
+    fn prune_expired_sessions(
+        &self,
+        replaced_retention_days: i32,
+    ) -> impl Future<Output = anyhow::Result<u64>> + Send;
 }
 
 /// Service port for the nightly upkeep step.
@@ -38,6 +43,7 @@ pub trait UpkeepService: Clone + Send + Sync + 'static {
     /// Prunes `crash_reports` past the standard retention window.
     fn prune_crash_reports(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
 
-    /// Prunes expired refresh tokens across all users.
+    /// Prunes expired refresh tokens across all users, and replaced ones past
+    /// the standard retention window.
     fn prune_expired_sessions(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
 }

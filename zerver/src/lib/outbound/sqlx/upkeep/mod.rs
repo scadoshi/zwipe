@@ -3,8 +3,8 @@
 //! Runs under the scoped `zervice` role in production; every statement here
 //! must be covered by `zcripts/server/sql/zervice_role.sql`. Uses runtime
 //! queries (not the `query!` macro) deliberately: the session prune's grant is
-//! destruction-only (`DELETE` + column-scoped `SELECT (expires_at)`), and
-//! these are three trivial deletes.
+//! destruction-only (`DELETE` + column-scoped `SELECT (expires_at, replaced_at)`),
+//! and these are three trivial deletes.
 
 use crate::{domain::upkeep::ports::UpkeepRepository, outbound::sqlx::postgres::Postgres};
 use anyhow::Context;
@@ -32,11 +32,14 @@ impl UpkeepRepository for Postgres {
         Ok(result.rows_affected())
     }
 
-    async fn prune_expired_sessions(&self) -> anyhow::Result<u64> {
-        let result = sqlx::query("DELETE FROM refresh_tokens WHERE expires_at < NOW()")
-            .execute(&self.pool)
-            .await
-            .context("pruning expired refresh tokens")?;
+    async fn prune_expired_sessions(&self, replaced_retention_days: i32) -> anyhow::Result<u64> {
+        let result = sqlx::query(
+            "DELETE FROM refresh_tokens WHERE expires_at < NOW() OR replaced_at < NOW() - make_interval(days => $1)",
+        )
+        .bind(replaced_retention_days)
+        .execute(&self.pool)
+        .await
+        .context("pruning expired and replaced refresh tokens")?;
         Ok(result.rows_affected())
     }
 }

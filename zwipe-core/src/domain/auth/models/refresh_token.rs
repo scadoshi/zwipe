@@ -1,15 +1,16 @@
 //! Refresh token generation and validation.
 //!
 //! Refresh tokens allow clients to obtain new access tokens without re-authenticating.
-//! They are longer-lived than access tokens (14 days vs 24 hours) and enable persistent
-//! sessions while maintaining security.
+//! They are longer-lived than access tokens and enable persistent sessions while
+//! maintaining security.
 //!
 //! # Security Features
 //!
 //! - **Single-Use**: Each refresh token can only be used once (token rotation)
 //! - **SHA-256 Hashing**: Tokens are hashed before database storage
 //! - **Cryptographically Random**: Generated using secure RNG (32 bytes)
-//! - **Time-Limited**: 14-day expiration
+//! - **Time-Limited**: each token lives [`REFRESH_TOKEN_LIFESPAN`], and the chain
+//!   of rotations that started at one login ends after [`REFRESH_ABSOLUTE_LIFESPAN`]
 
 use std::str::FromStr;
 
@@ -19,8 +20,12 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 
-/// Refresh token lifespan (14 days).
-const REFRESH_TOKEN_LIFESPAN: Duration = Duration::days(14);
+/// Refresh token lifespan (14 days), renewed on every rotation.
+pub const REFRESH_TOKEN_LIFESPAN: Duration = Duration::days(14);
+
+/// How long a session may be kept alive by rotation, counted from the login
+/// that started it (30 days). After that the user signs in again.
+pub const REFRESH_ABSOLUTE_LIFESPAN: Duration = Duration::days(30);
 
 // == error ==
 

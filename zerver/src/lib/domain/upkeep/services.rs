@@ -6,6 +6,10 @@ use crate::domain::upkeep::ports::{UpkeepRepository, UpkeepService};
 /// nightly prune removes them.
 pub const DIAGNOSTIC_RETENTION_DAYS: i32 = 90;
 
+/// Days a rotated refresh token row is kept after replacement, so a replay
+/// of it is still recognized, before the nightly prune removes it.
+pub const REPLACED_TOKEN_RETENTION_DAYS: i32 = 7;
+
 /// Canonical [`UpkeepService`] implementation.
 #[derive(Debug, Clone)]
 pub struct Service<R: UpkeepRepository> {
@@ -33,6 +37,8 @@ impl<R: UpkeepRepository> UpkeepService for Service<R> {
     }
 
     async fn prune_expired_sessions(&self) -> anyhow::Result<u64> {
-        self.repo.prune_expired_sessions().await
+        self.repo
+            .prune_expired_sessions(REPLACED_TOKEN_RETENTION_DAYS)
+            .await
     }
 }

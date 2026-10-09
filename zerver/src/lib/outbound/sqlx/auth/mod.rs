@@ -27,23 +27,28 @@ use crate::{
     },
     outbound::sqlx::{
         auth::{
-            helpers::TxHelper,
+            helpers::{RefreshFamily, TxHelper},
             models::{DatabaseRefreshToken, DatabaseUserWithPasswordHash},
         },
         postgres::Postgres,
         user::models::DatabaseUser,
     },
 };
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use sqlx::{query, query_as, query_scalar};
 use uuid::Uuid;
 use zwipe_core::domain::{
     auth::models::{
         platform::ClientPlatform,
-        refresh_token::{RefreshToken, Sha256Hash},
+        refresh_token::{REFRESH_ABSOLUTE_LIFESPAN, RefreshToken, Sha256Hash},
     },
     user::User,
 };
+
+/// A token rotated this recently is taken for a concurrent duplicate of the
+/// rotation (several requests racing on one token) rather than a replay, and
+/// gets a plain 401 without ending its family.
+const REFRESH_REPLAY_GRACE: Duration = Duration::seconds(10);
 
 impl AuthRepository for Postgres {
     // == create ==
@@ -63,7 +68,12 @@ impl AuthRepository for Postgres {
 
         let user: User = database_user.try_into()?;
         let refresh_token = tx
-            .create_refresh_token(user.id, request.platform, request.client_version.clone())
+            .create_refresh_token(
+                user.id,
+                RefreshFamily::start(),
+                request.platform,
+                request.client_version.clone(),
+            )
             .await?;
         tx.commit().await?;
 
@@ -78,7 +88,7 @@ impl AuthRepository for Postgres {
     ) -> Result<RefreshToken, CreateSessionError> {
         let mut tx = self.pool.begin().await?;
         let refresh_token = tx
-            .create_refresh_token(user_id, platform, client_version)
+            .create_refresh_token(user_id, RefreshFamily::start(), platform, client_version)
             .await?;
         tx.commit().await?;
 
@@ -221,8 +231,14 @@ impl AuthRepository for Postgres {
         Ok(user)
     }
 
-    /// Rotates a refresh token: validates the existing token (ownership, expiry,
-    /// revocation), deletes it, and issues a new one, all within a single transaction.
+    /// Rotates a refresh token inside one transaction: checks ownership and
+    /// the two lifespans, marks the row replaced, and inserts its successor in
+    /// the same family.
+    ///
+    /// A token that was already replaced longer than [`REFRESH_REPLAY_GRACE`]
+    /// ago is a replay: the whole family is deleted, so whoever holds the
+    /// current token loses it too and the real device signs in again. A family
+    /// older than [`REFRESH_ABSOLUTE_LIFESPAN`] is deleted the same way.
     async fn use_refresh_token(
         &self,
         request: &RefreshSession,
@@ -230,11 +246,11 @@ impl AuthRepository for Postgres {
         let mut tx = self.pool.begin().await?;
 
         // FOR UPDATE serializes concurrent refreshes on the row: the winner
-        // deletes it; losers block, re-read after commit, hit RowNotFound,
-        // and get 401. Makes the token strictly single-use under concurrency.
+        // marks it replaced; losers block, re-read after commit, see
+        // replaced_at within the grace window, and get 401.
         let existing = query_as!(
             DatabaseRefreshToken,
-            "SELECT id, user_id, expires_at, revoked, platform, client_version FROM refresh_tokens WHERE value_hash = $1 FOR UPDATE",
+            "SELECT id, user_id, expires_at, family_id, login_at, replaced_at, platform, client_version FROM refresh_tokens WHERE value_hash = $1 FOR UPDATE",
             request.refresh_token.sha256_hash()
         )
         .fetch_one(&mut *tx)
@@ -248,21 +264,46 @@ impl AuthRepository for Postgres {
             return Err(RefreshSessionError::Forbidden(request.user_id));
         }
 
-        if existing.expires_at < Utc::now() {
-            return Err(RefreshSessionError::Expired(request.user_id));
-        }
+        let now = Utc::now();
 
-        if existing.revoked {
+        if let Some(replaced_at) = existing.replaced_at {
+            if now - replaced_at > REFRESH_REPLAY_GRACE {
+                query!(
+                    "DELETE FROM refresh_tokens WHERE family_id = $1",
+                    existing.family_id
+                )
+                .execute(&mut *tx)
+                .await?;
+                tx.commit().await?;
+            }
             return Err(RefreshSessionError::Revoked(request.user_id));
         }
 
-        let deleted = query!("DELETE FROM refresh_tokens WHERE id = $1", existing.id)
+        if now - existing.login_at > REFRESH_ABSOLUTE_LIFESPAN {
+            query!(
+                "DELETE FROM refresh_tokens WHERE family_id = $1",
+                existing.family_id
+            )
             .execute(&mut *tx)
             .await?;
+            tx.commit().await?;
+            return Err(RefreshSessionError::Expired(request.user_id));
+        }
 
-        // belt-and-suspenders: zero rows deleted means another transaction
+        if existing.expires_at < now {
+            return Err(RefreshSessionError::Expired(request.user_id));
+        }
+
+        let replaced = query!(
+            "UPDATE refresh_tokens SET replaced_at = NOW() WHERE id = $1 AND replaced_at IS NULL",
+            existing.id
+        )
+        .execute(&mut *tx)
+        .await?;
+
+        // belt-and-suspenders: zero rows updated means another transaction
         // already consumed this token, so refuse to mint a replacement
-        if deleted.rows_affected() != 1 {
+        if replaced.rows_affected() != 1 {
             return Err(RefreshSessionError::Revoked(request.user_id));
         }
 
@@ -275,8 +316,12 @@ impl AuthRepository for Postgres {
         // Version can change on app update, so prefer what the client just sent;
         // fall back to the old row's value for clients that don't send it yet.
         let client_version = request.client_version.clone().or(existing.client_version);
+        let family = RefreshFamily {
+            id: existing.family_id,
+            login_at: existing.login_at,
+        };
         let new = tx
-            .create_refresh_token(request.user_id, carried, client_version)
+            .create_refresh_token(request.user_id, family, carried, client_version)
             .await?;
 
         tx.commit().await?;

@@ -15,14 +15,16 @@ use common::TestApp;
 use serde_json::json;
 use uuid::Uuid;
 
-/// The `client_version` on the user's single refresh-token row.
+/// The `client_version` on the user's single live refresh-token row.
 async fn stored_version(app: &TestApp, user_id: &str) -> Option<String> {
     let uid = Uuid::parse_str(user_id).unwrap();
-    sqlx::query_scalar("SELECT client_version FROM refresh_tokens WHERE user_id = $1")
-        .bind(uid)
-        .fetch_one(&app.pool)
-        .await
-        .unwrap()
+    sqlx::query_scalar(
+        "SELECT client_version FROM refresh_tokens WHERE user_id = $1 AND replaced_at IS NULL",
+    )
+    .bind(uid)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap()
 }
 
 #[sqlx::test]

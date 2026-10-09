@@ -39,9 +39,9 @@ Migration on `refresh_tokens`:
 - `family_id UUID NOT NULL`, the same value carried through every rotation; a login starts a new family.
 - `login_at TIMESTAMPTZ NOT NULL`, carried through rotation.
 - `replaced_at TIMESTAMPTZ NULL`: a rotated row is kept with `replaced_at` set instead of deleted, so a replay is recognisable. The nightly cleanup deletes replaced rows older than the grace window and expired rows as now.
-- drop `revoked` and its index: nothing sets it.
+- `revoked` and its index stay for one more deploy: the deploy runs migrations minutes before the new binary starts, and the old binary still selects the column. Drop both in a follow-up migration once this is live; nothing sets it.
 
-Backfill: existing rows get `family_id = gen_random_uuid()` each and `login_at = created_at`.
+Backfill: existing rows get `family_id = gen_random_uuid()` each and `login_at = created_at`. Both new columns carry defaults (`gen_random_uuid()`, `NOW()`) so the old binary's inserts keep working during that same window.
 
 In `use_refresh_token`:
 
