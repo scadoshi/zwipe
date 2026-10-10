@@ -85,15 +85,22 @@ ENV_FILE="/home/scadoshi/.config/zwipe-backup.env"
 DATABASE_URL=$(grep -E '^DATABASE_URL=' "$ENV_FILE" | cut -d= -f2-)
 BACKUP_HEALTHCHECK_URL=$(grep -E '^BACKUP_HEALTHCHECK_URL=' "$ENV_FILE" | cut -d= -f2- || true)
 
+# Split the password out of the URL and pass it through the environment, so
+# it never shows in `ps` or /proc/*/cmdline while the dump runs. The URL is
+# postgres://user:password@host:port/db; the password may be URL-encoded.
+creds=${DATABASE_URL#*://}; creds=${creds%%@*}
+user=${creds%%:*}; encoded=${creds#*:}
+PGPASSWORD=$(printf '%b' "${encoded//%/\\x}")
+export PGPASSWORD
+URL_NO_PASSWORD=${DATABASE_URL/"$creds@"/"$user@"}
+
 # The dump holds every user row, password hash and token hash: it is written
 # under this user's home with owner-only permissions, never in shared /tmp.
 umask 077
 BACKUP_DIR="$HOME/.local/state/zwipe-backup"
 mkdir -p "$BACKUP_DIR"
 BACKUP_FILE="$BACKUP_DIR/zwipe-$(date +%Y%m%d).sql.gz"
-# The URL goes in through the environment, not argv, so the password never
-# shows in `ps` or /proc/*/cmdline while the dump runs.
-PGDATABASE="$DATABASE_URL" pg_dump | gzip > "$BACKUP_FILE"
+pg_dump --dbname="$URL_NO_PASSWORD" | gzip > "$BACKUP_FILE"
 rclone copy "$BACKUP_FILE" r2:zwipe-backups/
 rm "$BACKUP_FILE"
 
@@ -117,7 +124,7 @@ echo "backup complete: zwipe-$(date +%Y%m%d).sql.gz"
 
 **Its env file:** `~/.config/zwipe-backup.env`, mode 600 and owned by `scadoshi`, holds only `DATABASE_URL` (the `zwipe` role) and `BACKUP_HEALTHCHECK_URL`. zerver's own env file is `/etc/zwipe/zerver.env`, which `scadoshi` cannot read, so the backup never sees the JWT or Resend secrets. Change the database password here too when it rotates (`server.md`, Change Database Password). The script greps rather than sources so a `$` or backtick in a value is never expanded.
 
-**Note:** `pg_dump` takes the full connection URL through `PGDATABASE` (libpq reads a URL there as a connection string), never via `-U`, which treats the whole URL as a username and fails with peer authentication errors. Passing the URL as a positional argument also works but puts the password in the process list for the length of the dump, which is why the script uses the variable.
+**Note:** `pg_dump` takes the connection URL through `--dbname`, never via `-U`, which treats the whole URL as a username and fails with peer authentication errors. `PGDATABASE` does not work for this: libpq only expands a URL given as the dbname argument, so a URL in the variable falls back to the local socket and fails with `role "scadoshi" does not exist`. The script strips the password out of the URL and supplies it through `PGPASSWORD` so it stays out of the process list.
 
 ### Known noise: rclone 501 on attempt 1
 

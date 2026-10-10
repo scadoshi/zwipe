@@ -2,8 +2,8 @@
 
 **Status: IN PROGRESS.** Tick items as they land. The audit itself (2026-10-10) and its first fourteen fixes merged as PR #28; this is what it left open, ordered by what to do first.
 
-- [ ] Server hand step: create the `zervice-alert` user and reinstall the unit (`operations/infrastructure/server.md`, zervice Scheduling).
-- [ ] Server hand step: replace `~/scripts/backup-db.sh` with the script in `operations/infrastructure/backups.md` (private dump dir, URL through `PGDATABASE`).
+- [x] 2026-10-10 Server hand step: `zervice-alert.service` reinstalled as the `zervice-alert` user (which already existed), `alert.env` now `root:zervice-alert 640`; manual start exited 0 and the test email arrived.
+- [x] 2026-10-10 Server hand step: `~/scripts/backup-db.sh` replaced with the script in `operations/infrastructure/backups.md` (private dump dir, password through `PGPASSWORD`); a hand run uploaded `zwipe-20261010.sql.gz`.
 - [ ] Ranking signal poisoning: validate and cap the commander signals (below).
 - [ ] Replaced-row retention keyed on `replaced_at`, not the token's own expiry (below).
 - [ ] Follow-up migration: drop `refresh_tokens.revoked` + its index and the three `users` lockout columns. Tracked in `access_token_window.md`; listed here so it is not forgotten when that plan closes.
@@ -11,7 +11,7 @@
 - [ ] Register and change-email stop confirming that an email is taken (below).
 - [ ] Android: `session.json` through the Keystore. Own task; the backup opt-out shipped in PR #28, so the file no longer leaves the device, but it is still plaintext on it.
 - [ ] Merge Dependabot's action-pin PRs as they arrive, reading the pin diff each time.
-- [ ] `RESEND_API_KEY` is the same value in `zerver.env` and `alert.env`; either issue a second scoped key for alerts or add both files to the rotation checklist in `server.md`.
+- [x] 2026-10-10 `RESEND_API_KEY` stays the same value in `zerver.env` and `alert.env` (owner decision); rotate both files together.
 
 **One sentence:** close the audit findings that needed a query change, a schema change or a product decision, which PR #28 could not carry.
 
