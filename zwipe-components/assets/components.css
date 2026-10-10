@@ -1402,10 +1402,51 @@ i.ms.ms-cost.ms-gp {
         max-height: none;
         overflow: visible;
         box-shadow: none;
+        /* The rows become a wrapping row of chips, zwiper's chip look, so the
+           choices read apart from the full-width link buttons around them. */
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0;
+        border: none;
+        background: none;
+        min-width: 0;
     }
-    .nav-panel .nav-links .nav-dropdown-item {
+    .nav-panel .nav-links .nav-dropdown-item,
+    .nav-panel .nav-links a.nav-dropdown-item:visited {
+        display: inline-block;
+        width: auto;
+        padding: 0.3rem 0.65rem;
+        border: 1px solid var(--border-muted);
+        border-radius: 0.6rem;
+        background-color: var(--bg-primary);
+        box-shadow: var(--shadow-sm);
+        font-size: 0.8rem;
+        color: var(--text-muted);
         text-align: center;
-        box-sizing: border-box;
+        transition:
+            color 0.15s,
+            border-color 0.15s;
+    }
+    .nav-panel .nav-links .nav-dropdown-item.active,
+    .nav-panel .nav-links a.nav-dropdown-item.active:visited {
+        border-color: var(--accent-secondary);
+        color: var(--accent-secondary);
+    }
+    /* Same hover as the link buttons: text and border to the accent, no
+       fill, over the shared 0.15s transition. */
+    @media (hover: hover) {
+        .nav-panel .nav-links .nav-dropdown-item:hover,
+        .nav-panel .nav-links a.nav-dropdown-item:visited:hover {
+            background-color: var(--bg-primary);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+    }
+    .nav-panel .nav-links .nav-dropdown-label {
+        width: 100%;
+        text-align: center;
     }
     .nav-panel .nav-links .nav-dropdown::after {
         display: none;
