@@ -298,7 +298,7 @@ Each process gets its own file in `/etc/zwipe`, owned by root and readable only 
 |------|-------------------|---------|-------|
 | `zerver.env` | `root:zerver 640` | zerver | everything below |
 | `zervice.env` | `root:zervice 640` | zervice | `DATABASE_URL` (as the `zervice` role), `RUST_LOG`, `LOG_DIR`, `HEALTHCHECK_PING_URL` |
-| `alert.env` | `root:root 600` | zervice-alert (runs as root) | `RESEND_API_KEY`, `RESEND_EMAIL_FROM`, `SUPPORT_EMAIL_ADDRESS` |
+| `alert.env` | `root:zervice-alert 640` | zervice-alert | `RESEND_API_KEY`, `RESEND_EMAIL_FROM`, `SUPPORT_EMAIL_ADDRESS` |
 | `migrate.env` | `root:runner 640` | the deploy runner | `DATABASE_URL` only |
 
 Edit one with `sudoedit /etc/zwipe/zerver.env`, then `sudo systemctl restart zerver`. To use a value in an admin shell without making the file readable, source it through sudo: `set -a; . <(sudo cat /etc/zwipe/zerver.env); set +a`.
@@ -457,7 +457,7 @@ What each command does:
 
 Unit files are versioned at `zcripts/server/systemd/` (`zervice.service`, `zervice.timer`, `zervice-alert.service`, `zervice-alert.sh`) and installed to `/etc/systemd/system/` (the script as `/usr/local/bin/zervice-alert`). zervice runs as the `zervice` user, sandboxed like zerver. Nightly at 04:00 UTC (+ up to 10 min jitter), `Persistent=true` so a missed window (reboot at 4am) fires on next boot.
 
-**Least privilege (2026-07-29):** `zervice.service` reads `/etc/zwipe/zervice.env`: exactly `DATABASE_URL`, `RUST_LOG`, `LOG_DIR`, plus optional `HEALTHCHECK_PING_URL` (the bin's `ZerviceConfig` accepts nothing more; it holds no JWT/Resend secrets). The alert unit runs as root, since it reads the journal, and reads only `/etc/zwipe/alert.env`, the three Resend values.
+**Least privilege (2026-07-29):** `zervice.service` reads `/etc/zwipe/zervice.env`: exactly `DATABASE_URL`, `RUST_LOG`, `LOG_DIR`, plus optional `HEALTHCHECK_PING_URL` (the bin's `ZerviceConfig` accepts nothing more; it holds no JWT/Resend secrets). The alert unit runs as the `zervice-alert` user (a member of `systemd-journal`, which is all a journal read needs) under the same sandbox block as zervice, and reads only `/etc/zwipe/alert.env`, the three Resend values. Creating that user is a hand step on the box, once: `sudo useradd --system --no-create-home --shell /usr/sbin/nologin zervice-alert && sudo chown root:zervice-alert /etc/zwipe/alert.env && sudo chmod 640 /etc/zwipe/alert.env`, then reinstall the unit and `sudo systemctl daemon-reload`. Test with `sudo systemctl start zervice-alert.service` and expect the email.
 
 **Scoped Postgres role, the lifecycle.** `zervice.env`'s `DATABASE_URL` connects as the `zervice` role; `zcripts/server/sql/zervice_role.sql` is the canonical, IDEMPOTENT ledger of everything it may touch (card-sync tables, matview ownership, upkeep prunes, incl. the destruction-only session grant: `DELETE` + column-scoped `SELECT (expires_at)`, so it can dust expired sessions but never read them). Grants deliberately do NOT live in migrations (roles are per-cluster infrastructure; dev/test DBs differ). The lifecycle is one command for every case:
 

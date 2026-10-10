@@ -1,10 +1,28 @@
 # Emails the last journal lines when a scheduled zervice run fails. Runs as
-# root so it can read the journal; its environment is the three Resend values.
+# its own user, in the systemd-journal group for the read, with the same
+# sandbox as zervice; its environment is the three Resend values.
 
 [Unit]
 Description=Email alert for a failed zervice run
 
 [Service]
 Type=oneshot
+User=zervice-alert
+Group=zervice-alert
+SupplementaryGroups=systemd-journal
 EnvironmentFile=/etc/zwipe/alert.env
 ExecStart=/usr/local/bin/zervice-alert
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX

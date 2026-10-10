@@ -85,8 +85,15 @@ ENV_FILE="/home/scadoshi/.config/zwipe-backup.env"
 DATABASE_URL=$(grep -E '^DATABASE_URL=' "$ENV_FILE" | cut -d= -f2-)
 BACKUP_HEALTHCHECK_URL=$(grep -E '^BACKUP_HEALTHCHECK_URL=' "$ENV_FILE" | cut -d= -f2- || true)
 
-BACKUP_FILE="/tmp/zwipe-$(date +%Y%m%d).sql.gz"
-pg_dump "$DATABASE_URL" | gzip > "$BACKUP_FILE"
+# The dump holds every user row, password hash and token hash: it is written
+# under this user's home with owner-only permissions, never in shared /tmp.
+umask 077
+BACKUP_DIR="$HOME/.local/state/zwipe-backup"
+mkdir -p "$BACKUP_DIR"
+BACKUP_FILE="$BACKUP_DIR/zwipe-$(date +%Y%m%d).sql.gz"
+# The URL goes in through the environment, not argv, so the password never
+# shows in `ps` or /proc/*/cmdline while the dump runs.
+PGDATABASE="$DATABASE_URL" pg_dump | gzip > "$BACKUP_FILE"
 rclone copy "$BACKUP_FILE" r2:zwipe-backups/
 rm "$BACKUP_FILE"
 
@@ -106,11 +113,11 @@ echo "backup complete: zwipe-$(date +%Y%m%d).sql.gz"
 
 **Retention:** the newest 30 dumps are kept (about 30 days at one a day, roughly 3.3 GB) and older ones are deleted, but only after a new upload succeeds. That is deliberate: an R2 lifecycle rule ("delete after 30 days") would keep deleting through an outage like the 2026 one and could empty the bucket.
 
-**Alerting:** the last line pings the Healthchecks.io check "Zwipe Backups" (cron `0 5 * * *` UTC, 1 hour grace, email). `set -e` means it is only reached when the dump and the upload both succeeded, so a missing ping is the alert. The ping URL lives in `~/.config/zwipe-backup.env` as `BACKUP_HEALTHCHECK_URL`, never in the repo. On a failed run the dump stays in `/tmp` (the `rm` is never reached), which is a useful last copy until the next reboot.
+**Alerting:** the last line pings the Healthchecks.io check "Zwipe Backups" (cron `0 5 * * *` UTC, 1 hour grace, email). `set -e` means it is only reached when the dump and the upload both succeeded, so a missing ping is the alert. The ping URL lives in `~/.config/zwipe-backup.env` as `BACKUP_HEALTHCHECK_URL`, never in the repo. On a failed run the dump stays in `~/.local/state/zwipe-backup/` (the `rm` is never reached), which is a useful last copy; delete it by hand once the next night's run succeeds.
 
 **Its env file:** `~/.config/zwipe-backup.env`, mode 600 and owned by `scadoshi`, holds only `DATABASE_URL` (the `zwipe` role) and `BACKUP_HEALTHCHECK_URL`. zerver's own env file is `/etc/zwipe/zerver.env`, which `scadoshi` cannot read, so the backup never sees the JWT or Resend secrets. Change the database password here too when it rotates (`server.md`, Change Database Password). The script greps rather than sources so a `$` or backtick in a value is never expanded.
 
-**Note:** `pg_dump` must receive the full connection URL as a positional argument, not via `-U`. Using `-U` with a URL causes PostgreSQL to treat the entire URL as a username and fail with peer authentication errors.
+**Note:** `pg_dump` takes the full connection URL through `PGDATABASE` (libpq reads a URL there as a connection string), never via `-U`, which treats the whole URL as a username and fails with peer authentication errors. Passing the URL as a positional argument also works but puts the password in the process list for the length of the dump, which is why the script uses the variable.
 
 ### Known noise: rclone 501 on attempt 1
 
