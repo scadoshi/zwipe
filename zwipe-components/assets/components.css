@@ -1392,6 +1392,24 @@ i.ms.ms-cost.ms-gp {
         max-height: 50vh;
         overflow-y: auto;
     }
+    /* A dropdown in the scrolling link list opens in flow, as a sub-list
+       under its own trigger: it scrolls with the list and grows it, so every
+       row is reachable by scrolling. Relative, not static, so its z-index
+       still lifts it over the click-away backdrop. */
+    .nav-panel .nav-links .nav-dropdown-content {
+        position: relative;
+        width: 100%;
+        max-height: none;
+        overflow: visible;
+        box-shadow: none;
+    }
+    .nav-panel .nav-links .nav-dropdown-item {
+        text-align: center;
+        box-sizing: border-box;
+    }
+    .nav-panel .nav-links .nav-dropdown::after {
+        display: none;
+    }
     /* The theme row is the bottom of the menu, so its list opens upward:
        its bottom sits 0.5rem above the trigger (the nav's 1rem bottom
        padding plus the trigger's height), and it is no taller than the nav

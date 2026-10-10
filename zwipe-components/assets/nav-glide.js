@@ -11,12 +11,45 @@
 //
 // Inlined in the head, it waits for the document to finish parsing, the
 // moment a deferred script would run.
+//
+// It also keeps an opened dropdown in view: in the collapsed panel the link
+// list scrolls and a dropdown opens in flow under its trigger, so when one
+// opens, the list scrolls that trigger to its top and the rows sit below it.
 (() => {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const ITEMS = "[data-nav-glide] > *";
 
+    const reveal = (dropdown) => {
+        const list = dropdown.closest(".nav-links");
+        const trigger = dropdown.querySelector(".nav-dropdown-trigger");
+        if (!list || !trigger) return;
+        const top = trigger.getBoundingClientRect().top - list.getBoundingClientRect().top;
+        list.scrollTo({ top: list.scrollTop + top, behavior: reduced ? "auto" : "smooth" });
+    };
+
+    const watchOpens = () => {
+        new MutationObserver((records) => {
+            records.forEach((r) => {
+                const el = r.target;
+                if (
+                    el.classList.contains("nav-dropdown-open") &&
+                    !(r.oldValue || "").split(/\s+/).includes("nav-dropdown-open")
+                ) {
+                    reveal(el);
+                }
+            });
+        }).observe(document.body, {
+            attributes: true,
+            attributeFilter: ["class"],
+            attributeOldValue: true,
+            subtree: true,
+        });
+    };
+
     const start = () => {
+        watchOpens();
+        if (reduced) return;
         let spots = new Map();
 
         const measure = () => {
