@@ -16,7 +16,8 @@
     z-index: 9999;
     left: 1rem;
     top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
-    max-width: 16rem;
+    /* Never past the right edge, whatever the message. */
+    max-width: min(16rem, calc(100vw - 2rem));
 }
 
 /* The library renders newest first, so a plain column puts the newest at the
@@ -142,19 +143,37 @@
 /* Toast content: dioxus_primitives ToastContent renders a plain div; descendant selector targets it */
 .toast-container [role="alertdialog"] > div:first-child {
     flex: 0 1 auto;
+    /* Lets the text column shrink below its longest word, so that word
+       wraps instead of pushing the toast wider than the container. */
+    min-width: 0;
     margin-right: 0.5rem;
 }
 
+/* Collapsed, a message is at most two lines and ends in an ellipsis; a tap
+   expands the stack and with it the whole message, wrapped. A URL or any
+   other unbroken run breaks wherever it has to. */
 .toast-container [role="alertdialog"] [id$="-label"] {
     margin-bottom: 0.25rem;
     color: var(--text-primary);
     font-size: 0.9rem;
     font-weight: 400;
     letter-spacing: 0.1em;
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
     /* Center so any ragged trailing space on wrapped lines is symmetric,
        not dumped on the right edge next to the close button. */
     text-align: center;
+}
+
+.toast-container.expanded [role="alertdialog"] [id$="-label"] {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    overflow: visible;
 }
 
 .toast-container [role="alertdialog"] [id$="-description"] {
