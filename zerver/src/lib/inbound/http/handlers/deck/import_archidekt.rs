@@ -16,7 +16,10 @@ use uuid::Uuid;
 
 use zwipe_core::{
     domain::{
-        deck::requests::import_deck_cards::ImportDeckCardsResult, user::requests::get_user::GetUser,
+        deck::requests::{
+            get_deck_profile::GetDeckProfile, import_deck_cards::ImportDeckCardsResult,
+        },
+        user::requests::get_user::GetUser,
     },
     http::contracts::deck::HttpImportArchidektDeck,
 };
@@ -41,6 +44,9 @@ impl From<ArchidektError> for ApiError {
                 Self::InternalServerError("failed to fetch deck from archidekt".to_string())
             }
             ArchidektError::Network(e) => e.to_500(),
+            ArchidektError::TooLarge => {
+                Self::UnprocessableEntity("deck from archidekt is too large to import".to_string())
+            }
         }
     }
 }
@@ -65,6 +71,13 @@ pub async fn import_archidekt_deck(
         .transpose()
         .map_err(|_| ApiError::UnprocessableEntity("invalid board value".to_string()))?
         .unwrap_or_default();
+
+    // Ownership first, so a request for someone else's deck (or no deck)
+    // never spends a fetch against Archidekt from this origin.
+    state
+        .deck_service
+        .get_deck_profile(&GetDeckProfile::new(user.id, deck_id))
+        .await?;
 
     let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
     let email_verified = db_user.email_verified_at.is_some();

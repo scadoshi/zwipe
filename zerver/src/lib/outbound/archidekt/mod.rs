@@ -19,6 +19,9 @@ use uuid::Uuid;
 /// from config so it tracks the deployment's public domain.
 const USER_AGENT_PRODUCT: &str = "ZwipeTCG/1.0";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
+/// Most a deck response may be before it is dropped unread. A 250-card deck
+/// with Archidekt's full per-card payload is well under 2 MiB.
+const MAX_RESPONSE_BYTES: usize = 5 * 1024 * 1024;
 
 /// Errors fetching or parsing an Archidekt deck.
 #[derive(Debug, Error)]
@@ -32,6 +35,9 @@ pub enum ArchidektError {
     /// Network failure or response body parse failure.
     #[error("archidekt request failed: {0}")]
     Network(#[from] reqwest::Error),
+    /// The response body exceeds [`MAX_RESPONSE_BYTES`].
+    #[error("archidekt response too large")]
+    TooLarge,
 }
 
 /// Thin client over Archidekt's public deck API.
@@ -87,7 +93,20 @@ impl ArchidektClient {
             });
         }
 
-        let raw: RawDeck = response.json().await?;
+        if response
+            .content_length()
+            .is_some_and(|len| len > MAX_RESPONSE_BYTES as u64)
+        {
+            return Err(ArchidektError::TooLarge);
+        }
+        let body = response.bytes().await?;
+        if body.len() > MAX_RESPONSE_BYTES {
+            return Err(ArchidektError::TooLarge);
+        }
+        let raw: RawDeck = serde_json::from_slice(&body).map_err(|e| {
+            tracing::warn!(error = %e, "archidekt response did not parse");
+            ArchidektError::Upstream(status.as_u16())
+        })?;
         Ok(raw.into_cards())
     }
 }

@@ -500,6 +500,16 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(5))
             .burst_size(12)
+            .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
+    // burst 5, then 1 req/min: each import is a fetch from Archidekt made
+    // from this origin's address, so one user cannot spend its reputation.
+    let archidekt_import_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(60))
+            .burst_size(5)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
@@ -603,7 +613,13 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                     Router::new()
                         .route("/", get(get_deck_profiles).post(create_deck_profile))
                         .route("/tags", get(get_deck_tags))
-                        .route("/{deck_id}/import/archidekt", post(import_archidekt_deck))
+                        .route(
+                            "/{deck_id}/import/archidekt",
+                            post(import_archidekt_deck).layer(
+                                GovernorLayer::new(archidekt_import_config)
+                                    .error_handler(unauthorized_on_missing_key),
+                            ),
+                        )
                         .route("/profile/{deck_id}", get(get_deck_profile))
                         .route(
                             "/{deck_id}",
