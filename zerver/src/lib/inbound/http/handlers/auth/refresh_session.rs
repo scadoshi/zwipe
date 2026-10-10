@@ -11,6 +11,7 @@ use crate::{
 use axum::{Json, extract::State, http::StatusCode};
 use zwipe_core::{
     domain::auth::models::session::Session, http::contracts::auth::HttpRefreshSession,
+    version::canonical_version,
 };
 
 impl From<RefreshSessionError> for ApiError {
@@ -58,7 +59,7 @@ impl TryFrom<HttpRefreshSession> for RefreshSession {
     type Error = InvalidRefreshSession;
     fn try_from(value: HttpRefreshSession) -> Result<Self, Self::Error> {
         let mut request = Self::new(&value.user_id, &value.refresh_token)?;
-        request.client_version = value.client_version;
+        request.client_version = value.client_version.as_deref().and_then(canonical_version);
         Ok(request)
     }
 }
@@ -68,8 +69,7 @@ pub async fn refresh_session(
     State(state): State<AppState>,
     Json(body): Json<HttpRefreshSession>,
 ) -> Result<(StatusCode, Json<Session>), ApiError> {
-    let mut request = RefreshSession::new(&body.user_id, &body.refresh_token)?;
-    request.client_version = body.client_version;
+    let request = RefreshSession::try_from(body)?;
 
     let session = state
         .auth_service

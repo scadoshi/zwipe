@@ -14,7 +14,10 @@ use crate::{
     inbound::http::{ApiError, AppState, To500},
 };
 use axum::{Json, extract::State, http::StatusCode};
-use zwipe_core::{domain::auth::models::session::Session, http::contracts::auth::HttpRegisterUser};
+use zwipe_core::{
+    domain::auth::models::session::Session, http::contracts::auth::HttpRegisterUser,
+    version::canonical_version,
+};
 
 impl From<EnforceSessionMaximumError> for ApiError {
     fn from(value: EnforceSessionMaximumError) -> Self {
@@ -93,7 +96,7 @@ pub async fn register_user(
 ) -> Result<(StatusCode, Json<Session>), ApiError> {
     let mut request = RegisterUser::new(&body.username, &body.email, body.password.read())?;
     request.platform = body.platform;
-    request.client_version = body.client_version;
+    request.client_version = body.client_version.as_deref().and_then(canonical_version);
     tracing::info!(event = "register", username = %body.username);
     let session = state
         .auth_service

@@ -24,6 +24,14 @@ pub fn parse_version(version: &str) -> Option<(u64, u64, u64)> {
     Some((major, minor, patch))
 }
 
+/// The `x.y.z` form of a version string, or `None` if it does not parse.
+///
+/// For storing a client-reported version: whatever arrived, only a short
+/// numeric triple is kept.
+pub fn canonical_version(version: &str) -> Option<String> {
+    parse_version(version).map(|(major, minor, patch)| format!("{major}.{minor}.{patch}"))
+}
+
 /// Whether `current` satisfies `minimum` (numeric tuple compare).
 ///
 /// **Fails open**: if either side doesn't parse, returns `true`; a malformed
@@ -55,6 +63,14 @@ mod tests {
         assert_eq!(parse_version("1.0.4-beta"), None);
         assert_eq!(parse_version("abc"), None);
         assert_eq!(parse_version(""), None);
+    }
+
+    #[test]
+    fn canonical_keeps_only_the_triple() {
+        assert_eq!(canonical_version(" 1.11.2 "), Some("1.11.2".to_string()));
+        assert_eq!(canonical_version("1.2"), Some("1.2.0".to_string()));
+        assert_eq!(canonical_version("1.0.4-beta"), None);
+        assert_eq!(canonical_version(&"9".repeat(4096)), None);
     }
 
     #[test]

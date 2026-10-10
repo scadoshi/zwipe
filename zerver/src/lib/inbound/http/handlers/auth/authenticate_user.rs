@@ -1,6 +1,7 @@
 use axum::{Json, extract::State, http::StatusCode};
 use zwipe_core::{
     domain::auth::models::session::Session, http::contracts::auth::HttpAuthenticateUser,
+    version::canonical_version,
 };
 
 use crate::{
@@ -59,7 +60,7 @@ pub async fn authenticate_user(
 ) -> Result<(StatusCode, Json<Session>), ApiError> {
     let mut request = AuthenticateUser::new(&body.identifier, body.password.read())?;
     request.platform = body.platform;
-    request.client_version = body.client_version;
+    request.client_version = body.client_version.as_deref().and_then(canonical_version);
     request.client_ip = Some(client_ip);
 
     let session = state
