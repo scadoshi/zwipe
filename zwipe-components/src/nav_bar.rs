@@ -79,7 +79,7 @@ pub fn NavBar(
                 }
                 div { class: "{panel_class}",
                     div { class: "nav-panel-inner",
-                        ul { class: "nav-links", "data-nav-glide": "true", {links} }
+                        ul { class: "nav-links scroll-fade-y", "data-nav-glide": "true", {links} }
                         if let Some(t) = trailing {
                             {t}
                         }

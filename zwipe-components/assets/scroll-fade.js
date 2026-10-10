@@ -1,9 +1,10 @@
-// Scroll fade for browsers without scroll timelines (Firefox): sets the
-// --fade-left and --fade-right widths that components.css otherwise animates
-// on every .scroll-fade-x and .diagram-scroll, following the same keyframes.
-// No fade on the left at the start, none on the right at the end, the full
-// 1.5rem once the box is 8% in from either end, and none on a box that does
-// not overflow. Browsers with scroll timelines return at once.
+// Scroll fade for browsers without scroll timelines (Firefox, older Safari):
+// sets the --fade-left/--fade-right widths that components.css otherwise
+// animates on every .scroll-fade-x and .diagram-scroll, and --fade-top/
+// --fade-bottom on every .scroll-fade-y, following the same keyframes. No
+// fade at the start edge at the start, none at the end edge at the end, the
+// full 1.5rem once the box is 8% in from either end, and none on a box that
+// does not overflow. Browsers with scroll timelines return at once.
 //
 // The MutationObserver picks up boxes the SPA router mounts after load.
 //
@@ -12,20 +13,23 @@
 (() => {
     if (CSS.supports("animation-timeline: scroll()")) return;
 
-    const BOXES = ".scroll-fade-x, .diagram-scroll";
+    const BOXES = ".scroll-fade-x, .diagram-scroll, .scroll-fade-y";
     const RAMP = 0.08;
 
     const update = (el) => {
-        const range = el.scrollWidth - el.clientWidth;
-        let left = 0;
-        let right = 0;
+        const vertical = el.classList.contains("scroll-fade-y");
+        const range = vertical
+            ? el.scrollHeight - el.clientHeight
+            : el.scrollWidth - el.clientWidth;
+        let start = 0;
+        let end = 0;
         if (range > 0) {
-            const progress = el.scrollLeft / range;
-            left = Math.min(progress / RAMP, 1);
-            right = Math.min((1 - progress) / RAMP, 1);
+            const progress = (vertical ? el.scrollTop : el.scrollLeft) / range;
+            start = Math.min(progress / RAMP, 1);
+            end = Math.min((1 - progress) / RAMP, 1);
         }
-        el.style.setProperty("--fade-left", `${left * 1.5}rem`);
-        el.style.setProperty("--fade-right", `${right * 1.5}rem`);
+        el.style.setProperty(vertical ? "--fade-top" : "--fade-left", `${start * 1.5}rem`);
+        el.style.setProperty(vertical ? "--fade-bottom" : "--fade-right", `${end * 1.5}rem`);
     };
 
     const start = () => {

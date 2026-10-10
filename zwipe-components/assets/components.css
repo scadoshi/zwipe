@@ -2220,6 +2220,52 @@ a.nav-dropdown-item.active:visited {
     }
 }
 
+/* The same for a box that scrolls up and down (the hamburger's link list):
+   the rows dissolve into the edge they are leaving instead of being cut. */
+@property --fade-top {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+
+@property --fade-bottom {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+
+.scroll-fade-y {
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent);
+}
+
+@supports (animation-timeline: scroll()) {
+    .scroll-fade-y {
+        animation: scroll-fade-y linear both;
+        animation-timeline: scroll(self block);
+    }
+}
+
+@keyframes scroll-fade-y {
+    from {
+        --fade-top: 0px;
+        --fade-bottom: 1.5rem;
+    }
+
+    8% {
+        --fade-top: 1.5rem;
+    }
+
+    92% {
+        --fade-bottom: 1.5rem;
+    }
+
+    to {
+        --fade-top: 1.5rem;
+        --fade-bottom: 0px;
+    }
+}
+
 /* ==============================
    heat grid: a year of days, a column per week (HeatGrid)
    ============================== */
