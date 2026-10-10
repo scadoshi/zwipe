@@ -10,7 +10,7 @@
 - [ ] `MIN_CLIENT_VERSION` raised to 1.11.2 once the floor query shows old builds gone (or earlier to force them).
 - [x] 2026-10-09 `ACCESS_TOKEN_MINUTES=60` set in zerver's `.env` by hand and zerver restarted. Tokens now live an hour, down from 24, while older clients (which refresh only after expiry) are still common.
 - [ ] `ACCESS_TOKEN_MINUTES=15` once the floor is at 1.11.2 or the version query shows old builds gone. Same hand step: edit `.env`, restart zerver.
-- [ ] Follow-up migration dropping `revoked` and `idx_refresh_tokens_revoked`, one deploy after the families migration is live.
+- [ ] Follow-up migration dropping `revoked` and `idx_refresh_tokens_revoked`, one deploy after the families migration is live. The same migration can drop `users.failed_login_attempts`, `last_failed_at` and `lockout_until`: the login lockout moved in memory and per address (2026-10-10 security audit), so only the reset-password query still touches them.
 - [ ] Check that password and email changes require the current password (out of scope here, but noted as the reason there is no 5-minute tier).
 - [ ] Android: `session.json` is plaintext (no keyring backend). Own task.
 
