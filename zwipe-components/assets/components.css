@@ -1403,6 +1403,9 @@ i.ms.ms-cost.ms-gp {
         overflow: visible;
         box-shadow: none;
         padding: 0;
+        /* No margin of its own: closed it takes no space at all, so a row of
+           dropdowns spaces exactly like a row of plain links. */
+        margin-top: 0;
         border: none;
         background: none;
         min-width: 0;
