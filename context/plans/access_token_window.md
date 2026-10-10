@@ -6,7 +6,7 @@
 - [x] 2026-10-09 zerver deploy with the families migration green (run 37987257595) (`20261009130000_refresh_token_families.sql`; additive, keeps `revoked`).
 - [x] 2026-10-10 `zcripts/server/sql/zervice_role.sql` re-run on the server (clean BEGIN..COMMIT), so the nightly cleanup can read `replaced_at`.
 - [x] 2026-10-09 Client 1.11.2 shipped: submitted to both stores the same night, carrying the refresh-ahead buffer (iOS build 92, Android vc55). Cut without waiting on 1.11.1's review.
-- [ ] 1.11.2 approved and distributing on both stores. As of 2026-10-09 evening both submissions are in review, awaiting distribution.
+- [ ] 1.11.2 approved and distributing on both stores. iOS: approved and live on the App Store 2026-10-10. Android: vc55 still in Play review as of 2026-10-10. The next client cut is clear to go whenever one is needed.
 - [ ] `MIN_CLIENT_VERSION` raised to 1.11.2 once the floor query shows old builds gone (or earlier to force them).
 - [x] 2026-10-09 `ACCESS_TOKEN_MINUTES=60` set in zerver's `.env` by hand and zerver restarted. Tokens now live an hour, down from 24, while older clients (which refresh only after expiry) are still common.
 - [ ] `ACCESS_TOKEN_MINUTES=15` once the floor is at 1.11.2 or the version query shows old builds gone. Same hand step: edit `.env`, restart zerver.
