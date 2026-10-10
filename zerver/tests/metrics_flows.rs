@@ -383,3 +383,138 @@ async fn crash_route_rejects_oversized_bodies(pool: sqlx::PgPool) {
         .unwrap();
     assert_eq!(rows, 0, "nothing stored");
 }
+
+#[sqlx::test]
+async fn unknown_oracle_ids_leave_no_signal(pool: sqlx::PgPool) {
+    // A client can name any UUID; only ids the catalog knows may reach the
+    // pooled tables, for the card signal and the commander-select signal.
+    let app = TestApp::new(pool.clone());
+    let (token, _) = app.register("inventor").await;
+
+    let atraxa = card("Atraxa, Praetors' Voice");
+    let atraxa_id = atraxa.id();
+    seed_cards(&pool, &[atraxa]).await;
+    let deck_id = commander_deck(&app, &pool, &token, atraxa_id).await;
+    let made_up = Uuid::from_u128(0xFACE);
+
+    let (status, _) = app
+        .post(
+            RECORD_USAGE_ROUTE,
+            json!({
+                "swipes_right": 1, "swipes_left": 0, "swipes_up": 0, "swipes_down": 0, "searches": 0,
+                "signals": [{
+                    "card_oracle_id": made_up.to_string(),
+                    "deck_id": deck_id.to_string(),
+                    "shown": 50, "added": 50, "skipped": 0, "maybed": 0, "removed": 0
+                }],
+                "select_signals": [{
+                    "commander_oracle_id": made_up.to_string(),
+                    "shown": 50, "selected": 50, "skipped": 0
+                }]
+            }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::NO_CONTENT,
+        "the flush is still accepted"
+    );
+
+    let card_rows: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM commander_card_signal WHERE card_oracle_id = $1")
+            .bind(made_up)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    let select_rows: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM commander_select_signal WHERE commander_oracle_id = $1",
+    )
+    .bind(made_up)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!((card_rows, select_rows), (0, 0), "made-up ids land nothing");
+}
+
+#[sqlx::test]
+async fn daily_signal_budget_drops_the_excess(pool: sqlx::PgPool) {
+    // Impressions per user per day are capped; a flush that takes the day
+    // past the cap is accepted but its signals do not reach the pool.
+    let app = TestApp::new(pool.clone());
+    let (token, _) = app.register("firehose").await;
+
+    let atraxa = card("Atraxa, Praetors' Voice");
+    let atraxa_id = atraxa.id();
+    let atraxa_oracle = atraxa.oracle_id().unwrap();
+    let mut cards = vec![atraxa];
+    let fillers: Vec<_> = (0..25).map(|n| card(&format!("Filler {n}"))).collect();
+    let filler_oracles: Vec<Uuid> = fillers.iter().map(|c| c.oracle_id().unwrap()).collect();
+    cards.extend(fillers);
+    let last = card("One Too Many");
+    let last_oracle = last.oracle_id().unwrap();
+    cards.push(last);
+    seed_cards(&pool, &cards).await;
+    let deck_id = commander_deck(&app, &pool, &token, atraxa_id).await;
+
+    // 25 cards at the per-signal ceiling of 200 impressions: exactly the
+    // daily cap of 5,000, all of it applied.
+    let signals: Vec<_> = filler_oracles
+        .iter()
+        .map(|o| {
+            json!({
+                "card_oracle_id": o.to_string(), "deck_id": deck_id.to_string(),
+                "shown": 200, "added": 100, "skipped": 100, "maybed": 0, "removed": 0
+            })
+        })
+        .collect();
+    let (status, _) = app
+        .post(
+            RECORD_USAGE_ROUTE,
+            json!({
+                "swipes_right": 0, "swipes_left": 0, "swipes_up": 0, "swipes_down": 0, "searches": 0,
+                "signals": signals
+            }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let pooled: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM commander_card_signal WHERE commander_oracle_id = $1",
+    )
+    .bind(atraxa_oracle)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(pooled, 25, "a day's budget of signal is applied");
+
+    // One more impression goes over the cap: accepted, not pooled.
+    let (status, _) = app
+        .post(
+            RECORD_USAGE_ROUTE,
+            json!({
+                "swipes_right": 0, "swipes_left": 0, "swipes_up": 0, "swipes_down": 0, "searches": 0,
+                "signals": [{
+                    "card_oracle_id": last_oracle.to_string(), "deck_id": deck_id.to_string(),
+                    "shown": 1, "added": 1, "skipped": 0, "maybed": 0, "removed": 0
+                }]
+            }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT, "over budget is still a 204");
+    let over: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM commander_card_signal WHERE card_oracle_id = $1")
+            .bind(last_oracle)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(over, 0, "the over-budget flush pools nothing");
+    let budget: i64 = sqlx::query_scalar(
+        "SELECT shown FROM usage_signal_budget WHERE day = (NOW() AT TIME ZONE 'UTC')::date",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(budget, 5_001, "the budget row counts the dropped flush too");
+}

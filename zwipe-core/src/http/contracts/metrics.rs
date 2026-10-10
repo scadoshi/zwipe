@@ -271,6 +271,12 @@ impl HttpUsageBatch {
     /// even at the endpoint's request rate limit.
     pub const MAX_PER_FLUSH: u32 = 10_000;
 
+    /// Maximum accepted value per tally of one card or commander signal per
+    /// flush. A ~30s window holds a few dozen swipes on one card at the very
+    /// most; the pooled signal ranks cards for everyone, so one client's say
+    /// per card per flush stops here.
+    pub const MAX_SIGNAL_TALLY: u32 = 200;
+
     /// Maximum accepted number of distinct `(commander, card)` signal deltas per
     /// flush. A legitimate ~30s window touches a few dozen cards at most; this
     /// caps an untrusted client from sending a runaway upsert set.
@@ -328,30 +334,30 @@ impl HttpUsageBatch {
 }
 
 impl CommanderSelectDelta {
-    /// Returns a copy with each tally clamped to [`HttpUsageBatch::MAX_PER_FLUSH`].
+    /// Returns a copy with each tally clamped to [`HttpUsageBatch::MAX_SIGNAL_TALLY`].
     #[must_use]
     pub fn clamped(&self) -> Self {
         Self {
             commander_oracle_id: self.commander_oracle_id,
-            shown: self.shown.min(HttpUsageBatch::MAX_PER_FLUSH),
-            selected: self.selected.min(HttpUsageBatch::MAX_PER_FLUSH),
-            skipped: self.skipped.min(HttpUsageBatch::MAX_PER_FLUSH),
+            shown: self.shown.min(HttpUsageBatch::MAX_SIGNAL_TALLY),
+            selected: self.selected.min(HttpUsageBatch::MAX_SIGNAL_TALLY),
+            skipped: self.skipped.min(HttpUsageBatch::MAX_SIGNAL_TALLY),
         }
     }
 }
 
 impl CardSignalDelta {
-    /// Returns a copy with each tally clamped to [`HttpUsageBatch::MAX_PER_FLUSH`].
+    /// Returns a copy with each tally clamped to [`HttpUsageBatch::MAX_SIGNAL_TALLY`].
     #[must_use]
     pub fn clamped(&self) -> Self {
         Self {
             card_oracle_id: self.card_oracle_id,
             deck_id: self.deck_id,
-            shown: self.shown.min(HttpUsageBatch::MAX_PER_FLUSH),
-            added: self.added.min(HttpUsageBatch::MAX_PER_FLUSH),
-            skipped: self.skipped.min(HttpUsageBatch::MAX_PER_FLUSH),
-            maybed: self.maybed.min(HttpUsageBatch::MAX_PER_FLUSH),
-            removed: self.removed.min(HttpUsageBatch::MAX_PER_FLUSH),
+            shown: self.shown.min(HttpUsageBatch::MAX_SIGNAL_TALLY),
+            added: self.added.min(HttpUsageBatch::MAX_SIGNAL_TALLY),
+            skipped: self.skipped.min(HttpUsageBatch::MAX_SIGNAL_TALLY),
+            maybed: self.maybed.min(HttpUsageBatch::MAX_SIGNAL_TALLY),
+            removed: self.removed.min(HttpUsageBatch::MAX_SIGNAL_TALLY),
         }
     }
 }
@@ -444,20 +450,30 @@ mod tests {
             deck_id: None,
             shown: u32::MAX,
             added: 3,
-            skipped: HttpUsageBatch::MAX_PER_FLUSH + 1,
+            skipped: HttpUsageBatch::MAX_SIGNAL_TALLY + 1,
             maybed: 0,
             removed: 0,
         };
+        let select = CommanderSelectDelta {
+            commander_oracle_id: Uuid::nil(),
+            shown: HttpUsageBatch::MAX_PER_FLUSH,
+            selected: 7,
+            skipped: 0,
+        };
         let batch = HttpUsageBatch {
             signals: vec![delta; HttpUsageBatch::MAX_SIGNALS_PER_FLUSH + 5],
+            select_signals: vec![select],
             ..Default::default()
         }
         .clamped();
         assert_eq!(batch.signals.len(), HttpUsageBatch::MAX_SIGNALS_PER_FLUSH);
         let first = batch.signals.first().unwrap();
-        assert_eq!(first.shown, HttpUsageBatch::MAX_PER_FLUSH);
+        assert_eq!(first.shown, HttpUsageBatch::MAX_SIGNAL_TALLY);
         assert_eq!(first.added, 3);
-        assert_eq!(first.skipped, HttpUsageBatch::MAX_PER_FLUSH);
+        assert_eq!(first.skipped, HttpUsageBatch::MAX_SIGNAL_TALLY);
+        let select = batch.select_signals.first().unwrap();
+        assert_eq!(select.shown, HttpUsageBatch::MAX_SIGNAL_TALLY);
+        assert_eq!(select.selected, 7);
     }
 
     #[test]
@@ -600,7 +616,7 @@ mod tests {
             commander_oracle_id: Uuid::nil(),
             shown: u32::MAX,
             selected: 2,
-            skipped: HttpUsageBatch::MAX_PER_FLUSH + 1,
+            skipped: HttpUsageBatch::MAX_SIGNAL_TALLY + 1,
         };
         let batch = HttpUsageBatch {
             select_signals: vec![delta; HttpUsageBatch::MAX_SIGNALS_PER_FLUSH + 5],
@@ -612,9 +628,9 @@ mod tests {
             HttpUsageBatch::MAX_SIGNALS_PER_FLUSH
         );
         let first = batch.select_signals.first().unwrap();
-        assert_eq!(first.shown, HttpUsageBatch::MAX_PER_FLUSH);
+        assert_eq!(first.shown, HttpUsageBatch::MAX_SIGNAL_TALLY);
         assert_eq!(first.selected, 2);
-        assert_eq!(first.skipped, HttpUsageBatch::MAX_PER_FLUSH);
+        assert_eq!(first.skipped, HttpUsageBatch::MAX_SIGNAL_TALLY);
     }
 
     #[test]

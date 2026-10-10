@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM usage_signal_budget WHERE day < (NOW() AT TIME ZONE 'UTC')::date - 2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "f185b64b0e763724acd0c3e1900a43b8bea083548fdbda8e7c1aa67369b9b923"
+}

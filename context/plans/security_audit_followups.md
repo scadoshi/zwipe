@@ -4,7 +4,7 @@
 
 - [x] 2026-10-10 Server hand step: `zervice-alert.service` reinstalled as the `zervice-alert` user (which already existed), `alert.env` now `root:zervice-alert 640`; manual start exited 0 and the test email arrived.
 - [x] 2026-10-10 Server hand step: `~/scripts/backup-db.sh` replaced with the script in `operations/infrastructure/backups.md` (private dump dir, password through `PGPASSWORD`); a hand run uploaded `zwipe-20261010.sql.gz`.
-- [ ] Ranking signal poisoning: validate and cap the commander signals (below).
+- [x] 2026-10-10 Ranking signal poisoning: signals name only catalog ids, each tally is capped at 200 per flush (`MAX_SIGNAL_TALLY`), and a user's impressions are capped at 5,000 a day (`usage_signal_budget`, `DAILY_SIGNAL_SHOWN_CAP`); a flush over budget is accepted but pools nothing.
 - [ ] Replaced-row retention keyed on `replaced_at`, not the token's own expiry (below).
 - [ ] Follow-up migration: drop `refresh_tokens.revoked` + its index and the three `users` lockout columns. Tracked in `access_token_window.md`; listed here so it is not forgotten when that plan closes.
 - [ ] DML-only runtime role for zerver (below).

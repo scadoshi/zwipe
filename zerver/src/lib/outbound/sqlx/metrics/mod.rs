@@ -1,6 +1,6 @@
 //! Metrics repository implementation.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use sqlx::query;
 use uuid::Uuid;
@@ -17,10 +17,28 @@ use crate::{
     },
     outbound::sqlx::postgres::Postgres,
 };
-use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpCrashReport, HttpUsageBatch};
+use zwipe_core::http::contracts::metrics::{
+    AnonymousEventKind, CardSignalDelta, CommanderSelectDelta, HttpCrashReport, HttpUsageBatch,
+};
 
 fn db(err: sqlx::Error) -> MetricsError {
     MetricsError::Database(err.into())
+}
+
+/// Impressions one user may feed the pooled signals per UTC day. A heavy
+/// session is a few hundred decisions; this is well above that and far
+/// below what it takes to move a commander's ranking alone.
+pub const DAILY_SIGNAL_SHOWN_CAP: i64 = 5_000;
+
+/// Every oracle id a flush's signals name: swiped cards and commander
+/// candidates alike.
+fn signals_wanted(batch: &HttpUsageBatch) -> Vec<Uuid> {
+    batch
+        .signals
+        .iter()
+        .map(|s| s.card_oracle_id)
+        .chain(batch.select_signals.iter().map(|s| s.commander_oracle_id))
+        .collect()
 }
 
 /// Accumulated gesture counts for one `(context, otag)` pair within a flush.
@@ -150,12 +168,80 @@ impl MetricsRepository for Postgres {
             }
         }
 
+        // Only cards the catalog knows feed the pooled signals: an unknown id
+        // is a client inventing data, and a dead row otherwise.
+        let known: HashSet<Uuid> = {
+            let mut wanted: Vec<Uuid> = signals_wanted(&batch);
+            wanted.sort_unstable();
+            wanted.dedup();
+            if wanted.is_empty() {
+                HashSet::new()
+            } else {
+                query!(
+                    "SELECT oracle_id FROM latest_cards WHERE oracle_id = ANY($1)",
+                    &wanted[..],
+                )
+                .fetch_all(&mut *tx)
+                .await
+                .map_err(db)?
+                .into_iter()
+                .filter_map(|row| row.oracle_id)
+                .collect()
+            }
+        };
+        let mut signals: Vec<&CardSignalDelta> = batch
+            .signals
+            .iter()
+            .filter(|s| known.contains(&s.card_oracle_id))
+            .collect();
+        let mut select_signals: Vec<&CommanderSelectDelta> = batch
+            .select_signals
+            .iter()
+            .filter(|s| known.contains(&s.commander_oracle_id))
+            .collect();
+
+        // A day's worth of impressions per user. Past the cap the flush is
+        // still accepted, but none of its signals reach the pooled tables, so
+        // one account cannot steer what every other user of a commander sees.
+        let shown_total: i64 = signals.iter().map(|s| s.shown as i64).sum::<i64>()
+            + select_signals.iter().map(|s| s.shown as i64).sum::<i64>();
+        if shown_total > 0 {
+            let today_total = sqlx::query_scalar!(
+                r#"INSERT INTO usage_signal_budget (user_id, day, shown)
+                   VALUES ($1, (NOW() AT TIME ZONE 'UTC')::date, $2)
+                   ON CONFLICT (user_id, day) DO UPDATE SET
+                       shown = usage_signal_budget.shown + EXCLUDED.shown
+                   RETURNING shown"#,
+                user_id,
+                shown_total,
+            )
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(db)?;
+            query!(
+                "DELETE FROM usage_signal_budget WHERE day < (NOW() AT TIME ZONE 'UTC')::date - 2"
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(db)?;
+            if today_total > DAILY_SIGNAL_SHOWN_CAP {
+                tracing::warn!(
+                    event = "signal_budget_exceeded",
+                    user_id = %user_id,
+                    today_total,
+                    "usage flush over the daily signal budget; its signals are dropped"
+                );
+                signals.clear();
+                select_signals.clear();
+            }
+        }
+
         // First-party suggestion signal: aggregate per-(commander, card) tallies,
         // commander resolved from the deck (clients at or above the 1.7.0
         // `MIN_CLIENT_VERSION` floor never send one). Pure aggregate, no user_id. A deck
         // with no commander (a non-Commander deck) is skipped here: it has no lead
         // key for this table and feeds the otag-context signal below via (format, CI).
-        for sig in &batch.signals {
+        for sig in &signals {
             let Some(commander) = sig
                 .deck_id
                 .and_then(|id| deck_ctx.get(&id))
@@ -190,7 +276,7 @@ impl MetricsRepository for Postgres {
         // Per-user mirror of the aggregate signal: same deltas, user-keyed.
         // Feeds future personalization; nothing consumes it yet. Same deck-derived
         // commander, skipped for commander-less decks.
-        for sig in &batch.signals {
+        for sig in &signals {
             let Some(commander) = sig
                 .deck_id
                 .and_then(|id| deck_ctx.get(&id))
@@ -231,10 +317,9 @@ impl MetricsRepository for Postgres {
         //   * else deck_id present → 'format_ci:<format>:<CI>' from the deck row
         //     (non-Commander decks; ownership-scoped). Nothing otag/format/CI is on
         //     the wire; it is all derived here. Pure aggregate, no user_id.
-        if !batch.signals.is_empty() {
+        if !signals.is_empty() {
             // Otags of every swiped card (cards with none contribute nothing).
-            let signal_card_ids: Vec<Uuid> =
-                batch.signals.iter().map(|s| s.card_oracle_id).collect();
+            let signal_card_ids: Vec<Uuid> = signals.iter().map(|s| s.card_oracle_id).collect();
             let otag_rows = query!(
                 r#"SELECT lc.oracle_id, cp.oracle_tags
                    FROM latest_cards lc
@@ -269,7 +354,7 @@ impl MetricsRepository for Postgres {
             // Context comes from the deck resolved above: a Commander deck keys on
             // `commander:<oracle_id>`, a non-Commander deck on `format_ci:<format>:<CI>`.
             let mut otag_tallies: HashMap<(String, String), OtagTally> = HashMap::new();
-            for sig in &batch.signals {
+            for sig in &signals {
                 let deck_c = sig.deck_id.and_then(|id| deck_ctx.get(&id));
                 let commander = deck_c.and_then(|c| c.0);
                 let context_key = if let Some(commander) = commander {
@@ -323,7 +408,7 @@ impl MetricsRepository for Postgres {
         // Commander-select signal: pooled shown/selected/skipped per candidate.
         // Pure aggregate: no user_id, no per-user mirror (deliberately the
         // lighter posture; see context/archive/commander_select_signal.md).
-        for sig in &batch.select_signals {
+        for sig in &select_signals {
             query!(
                 r#"INSERT INTO commander_select_signal
                        (commander_oracle_id, shown, selected, skipped, updated_at)
@@ -344,11 +429,11 @@ impl MetricsRepository for Postgres {
         }
 
         // Weekly scalar counters (ISO week, Monday UTC). Clamped inputs keep
-        // the per-flush sums (≤1,000 signals × ≤10,000 each) well inside i32.
-        let added_sum: i64 = batch.signals.iter().map(|s| s.added as i64).sum();
-        let skipped_sum: i64 = batch.signals.iter().map(|s| s.skipped as i64).sum();
-        let maybed_sum: i64 = batch.signals.iter().map(|s| s.maybed as i64).sum();
-        let removed_sum: i64 = batch.signals.iter().map(|s| s.removed as i64).sum();
+        // the per-flush sums (≤1,000 signals × ≤200 each) well inside i32.
+        let added_sum: i64 = signals.iter().map(|s| s.added as i64).sum();
+        let skipped_sum: i64 = signals.iter().map(|s| s.skipped as i64).sum();
+        let maybed_sum: i64 = signals.iter().map(|s| s.maybed as i64).sum();
+        let removed_sum: i64 = signals.iter().map(|s| s.removed as i64).sum();
         query!(
             r#"INSERT INTO user_week_signal
                    (user_id, week_start, swipes_right, swipes_left, swipes_up, swipes_down, searches, added, skipped, maybed, removed)
@@ -418,7 +503,7 @@ impl MetricsRepository for Postgres {
             }
 
             let mut tallies: HashMap<(&str, String), i64> = HashMap::new();
-            for sig in batch.signals.iter().filter(|s| s.added > 0) {
+            for sig in signals.iter().filter(|s| s.added > 0) {
                 let Some((colors, categories)) = card_facets.get(&sig.card_oracle_id) else {
                     continue;
                 };
