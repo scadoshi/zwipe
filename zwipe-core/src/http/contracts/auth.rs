@@ -66,12 +66,23 @@ impl HttpRegisterUser {
 /// it on every refresh so the rotated session reflects the live version rather
 /// than the one it was first created with.
 /// On success the old refresh token is consumed and a new token pair is issued.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct HttpRefreshSession {
     pub user_id: String,
     pub refresh_token: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub client_version: Option<String>,
+}
+
+/// Redacted: `refresh_token` is a credential.
+impl std::fmt::Debug for HttpRefreshSession {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("HttpRefreshSession")
+            .field("user_id", &self.user_id)
+            .field("refresh_token", &"REDACTED")
+            .field("client_version", &self.client_version)
+            .finish()
+    }
 }
 
 impl HttpRefreshSession {

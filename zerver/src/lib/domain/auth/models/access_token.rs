@@ -66,8 +66,16 @@ impl From<jsonwebtoken::errors::Error> for InvalidJwt {
 // == newtypes ==
 
 /// Server-side secret key for signing and validating JWT tokens.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct JwtSecret(String);
+
+/// Redacted: the signing key must never reach a log, and `Service` and the
+/// rate-limit key extractor both derive `Debug` over it.
+impl std::fmt::Debug for JwtSecret {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("JwtSecret(REDACTED)")
+    }
+}
 
 impl AsRef<[u8]> for JwtSecret {
     fn as_ref(&self) -> &[u8] {

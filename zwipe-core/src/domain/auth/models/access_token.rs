@@ -63,8 +63,17 @@ pub struct UserClaims {
 ///
 /// Signature and expiry validation requires server-side operations
 /// not available in this crate.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct Jwt(String);
+
+/// Redacted: the token is a bearer credential, and a derived `Debug` would
+/// print it through every struct that holds one. `Display` is the way out,
+/// for the `Authorization` header.
+impl std::fmt::Debug for Jwt {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Jwt(REDACTED)")
+    }
+}
 
 impl FromStr for Jwt {
     type Err = InvalidJwt;

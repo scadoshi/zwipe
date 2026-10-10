@@ -51,12 +51,23 @@ pub enum InvalidRefreshToken {
 ///
 /// - **Database**: SHA-256 hash of `value` (not plaintext!)
 /// - **Client**: Plaintext `value` sent in response body
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Deserialize, Serialize)]
 pub struct RefreshToken {
     /// The token value (64 hex characters = 32 random bytes).
     pub value: String,
     /// When this token expires (14 days from creation).
     pub expires_at: DateTime<Utc>,
+}
+
+/// Redacted: the value is a long-lived credential, and a derived `Debug`
+/// would print it through `Session` and every log that formats one.
+impl std::fmt::Debug for RefreshToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RefreshToken")
+            .field("value", &"REDACTED")
+            .field("expires_at", &self.expires_at)
+            .finish()
+    }
 }
 
 impl RefreshToken {

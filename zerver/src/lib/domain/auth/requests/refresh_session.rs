@@ -137,7 +137,7 @@ pub enum RefreshSessionError {
 /// store_access_token(new_session.access_token);
 /// store_refresh_token(new_session.refresh_token);
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct RefreshSession {
     /// The ID of the user requesting the refresh.
     ///
@@ -156,6 +156,17 @@ pub struct RefreshSession {
     /// `None` for older clients; the rotation then carries the consumed token's
     /// stored value forward.
     pub client_version: Option<String>,
+}
+
+/// Redacted: `refresh_token` is a credential.
+impl std::fmt::Debug for RefreshSession {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RefreshSession")
+            .field("user_id", &self.user_id)
+            .field("refresh_token", &"REDACTED")
+            .field("client_version", &self.client_version)
+            .finish()
+    }
 }
 
 impl RefreshSession {
