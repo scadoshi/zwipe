@@ -51,6 +51,13 @@ No Tailscale, no SSH keys, no SCP: the runner is already on the server. Migratio
 
 ## GitHub Configuration
 
+### Actions are pinned by commit, and fork PRs wait for approval
+
+The deploy job runs on the production box as `runner`, whose sudo rule can swap the zerver binary. Two settings keep that from being reachable by anyone but the owner:
+
+- Every `uses:` in `.github/workflows/` names a full commit SHA with the version in a trailing comment (`actions/checkout@3d3c42e5… # v7`). A tag can be moved to new code by whoever controls the action's repo (tj-actions/changed-files, March 2025); a commit cannot. `.github/dependabot.yml` opens a weekly PR when a pinned action has a new release; merge those by reading the diff of the pin, not the title. `dtolnay/rust-toolchain` is pinned to its `master` commit and takes the channel through `with: toolchain:` (the `@stable` / `@nightly` ref forms are branches, so they cannot be pinned by SHA and still choose the channel).
+- Settings → Actions → General → "Fork pull request workflows from outside collaborators" is **Require approval for all outside collaborators**. The repo is public and `test.yml` runs on `pull_request`, so without this a fork PR that edits a workflow's `runs-on:` to `self-hosted` would execute on the production box. Approving a PR's workflow run is the moment to read its workflow diff. The default `GITHUB_TOKEN` is read-only (Settings → Actions → General → Workflow permissions) and every workflow also says `permissions: contents: read`; `deploy-zite.yml` grants `pages: write` and `id-token: write` to its deploy job only.
+
 ### Secrets (Settings → Secrets and variables → Actions → Secrets)
 
 | Name | Value |

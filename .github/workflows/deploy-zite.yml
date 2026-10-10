@@ -10,10 +10,10 @@ on:
       - '.github/workflows/deploy-zite.yml'
   workflow_dispatch:
 
+# Read-only for test, lint and build; only the deploy job gets the Pages and
+# OIDC grants it needs.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:18 # match the VPS major version (prod runs 18.6)
+        image: postgres:18.6 # the VPS version; a tag that moves is not a pin
         env:
           POSTGRES_PASSWORD: postgres
         ports: ["5432:5432"]
@@ -40,9 +40,11 @@ jobs:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
       SQLX_OFFLINE: "true" # compile against committed .sqlx; #[sqlx::test] uses DATABASE_URL at runtime
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: Test
         run: cargo test -p zwipe-core -p zerver
 
@@ -56,14 +58,16 @@ jobs:
       RUST_LOG: info
       RUST_BACKTRACE: "0"
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@nightly
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
         with:
+          toolchain: nightly
           components: rustfmt
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
         with:
+          toolchain: stable
           components: clippy
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       # zwiper's default (mobile) feature builds against webkit/GTK on Linux.
       - name: Install Dioxus system libraries
         run: |
@@ -89,18 +93,19 @@ jobs:
     # step burns the default job limit before anyone notices.
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
         with:
+          toolchain: stable
           targets: wasm32-unknown-unknown
 
       - name: Cache Rust
         # Caches the compiled dependency graph (native + wasm). Prunes zite's own
         # artifacts so the cache stays lean, and uses restore-keys for partial
         # hits when Cargo.lock changes — far better hit rate than a raw target/ cache.
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: zite
           cache-all-crates: true
@@ -145,7 +150,7 @@ jobs:
         # Keep this matched to the workspace dioxus version (and the build
         # Macs' `dx --version`) — a mismatch is a warning today but dx treats
         # it as incompatible.
-        uses: taiki-e/install-action@v2
+        uses: taiki-e/install-action@ab6895351a88b908e96a4697860d4ffea5e57dbe # v2
         with:
           tool: dioxus-cli@0.7.10
 
@@ -188,17 +193,20 @@ jobs:
       - name: Upload Pages artifact
         # v5 pairs with deploy-pages@v5 and pulls a Node-24 upload-artifact
         # internally (v3 pinned upload-artifact@v4 → Node-20 deprecation warning).
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: target/dx/zite/release/web/public
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5

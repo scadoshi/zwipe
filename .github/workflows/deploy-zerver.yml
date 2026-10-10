@@ -12,6 +12,11 @@ on:
       - '.github/workflows/deploy-zerver.yml'
   workflow_dispatch:
 
+# The deploy job's token lives on the production box for the length of the
+# run; read-only is all any job here needs.
+permissions:
+  contents: read
+
 jobs:
   # Gate the deploy on the test suite. Runs on a GitHub-hosted runner with a
   # throwaway Postgres; the deploy job below only runs if this passes.
@@ -19,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:18 # match the VPS major version (prod runs 18.6)
+        image: postgres:18.6 # the VPS version; a tag that moves is not a pin
         env:
           POSTGRES_PASSWORD: postgres
         ports: ["5432:5432"]
@@ -32,9 +37,11 @@ jobs:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
       SQLX_OFFLINE: "true" # compile against committed .sqlx; #[sqlx::test] uses DATABASE_URL at runtime
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: Test
         run: cargo test -p zwipe-core -p zerver
 
@@ -48,14 +55,16 @@ jobs:
       RUST_LOG: info
       RUST_BACKTRACE: "0"
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@nightly
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
         with:
+          toolchain: nightly
           components: rustfmt
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
         with:
+          toolchain: stable
           components: clippy
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       # zwiper's default (mobile) feature builds against webkit/GTK on Linux.
       - name: Install Dioxus system libraries
         run: |
@@ -76,13 +85,15 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
+        with:
+          toolchain: stable
 
       - name: Cache cargo
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             ~/.cargo/registry
