@@ -52,6 +52,11 @@ const ACCESS_TOKEN_MINUTES_KEY: &str = "ACCESS_TOKEN_MINUTES";
 /// Default access token lifetime: 24 hours.
 const ACCESS_TOKEN_MINUTES_DEFAULT: i64 = 1440;
 
+/// Longest access token lifetime accepted: the default. A token is meant to
+/// get shorter from here, and a stray digit must not mint tokens that outlive
+/// the refresh family.
+const ACCESS_TOKEN_MINUTES_MAX: i64 = ACCESS_TOKEN_MINUTES_DEFAULT;
+
 /// Environment variable key for the public web base URL (email verify/reset links).
 const WEB_BASE_URL_KEY: &str = "WEB_BASE_URL";
 
@@ -151,11 +156,12 @@ impl Config {
         }
         let access_token_minutes = match std::env::var(ACCESS_TOKEN_MINUTES_KEY) {
             Ok(raw) => match raw.trim().parse::<i64>() {
-                Ok(minutes) if minutes > 0 => minutes,
+                Ok(minutes) if (1..=ACCESS_TOKEN_MINUTES_MAX).contains(&minutes) => minutes,
                 _ => anyhow::bail!(
-                    "invalid {}: {:?} (expected a whole number of minutes above zero)",
+                    "invalid {}: {:?} (expected a whole number of minutes from 1 to {})",
                     ACCESS_TOKEN_MINUTES_KEY,
-                    raw
+                    raw,
+                    ACCESS_TOKEN_MINUTES_MAX
                 ),
             },
             Err(_) => ACCESS_TOKEN_MINUTES_DEFAULT,
