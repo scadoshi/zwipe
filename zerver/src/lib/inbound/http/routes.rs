@@ -178,6 +178,16 @@ fn hourly_cache_layer() -> SetResponseHeaderLayer<CacheHeaderFn> {
     )
 }
 
+/// `Cache-Control: private, no-store` on every authenticated response, so no
+/// edge or browser cache can hold one user's data and hand it to another,
+/// whatever cache rules are configured in front of the origin.
+fn private_no_store_layer() -> SetResponseHeaderLayer<HeaderValue> {
+    SetResponseHeaderLayer::overriding(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("private, no-store"),
+    )
+}
+
 /// Routes that don't require authentication.
 #[allow(clippy::expect_used)]
 pub fn public_routes() -> Router<AppState> {
@@ -650,6 +660,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                 ),
         )
         .layer(GovernorLayer::new(private_config).error_handler(unauthorized_on_missing_key))
+        .layer(private_no_store_layer())
 }
 
 #[cfg(test)]
