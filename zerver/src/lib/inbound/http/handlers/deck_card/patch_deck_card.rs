@@ -46,9 +46,7 @@ impl From<UpdateDeckCardError> for ApiError {
             UpdateDeckCardError::Database(e) => e.to_500(),
             UpdateDeckCardError::DeckCardFromDb(e) => e.to_500(),
             UpdateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
-            UpdateDeckCardError::Forbidden => {
-                Self::Forbidden(UpdateDeckCardError::Forbidden.to_string())
-            }
+            UpdateDeckCardError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
     }
 }

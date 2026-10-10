@@ -20,9 +20,7 @@ impl From<DeleteDeckCardError> for ApiError {
             }
             DeleteDeckCardError::Database(e) => e.to_500(),
             DeleteDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
-            DeleteDeckCardError::Forbidden => {
-                Self::Forbidden(DeleteDeckCardError::Forbidden.to_string())
-            }
+            DeleteDeckCardError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
     }
 }

@@ -23,9 +23,7 @@ use zwipe_core::domain::deck::requests::import_deck_cards::{
 impl From<ImportDeckCardsError> for ApiError {
     fn from(value: ImportDeckCardsError) -> Self {
         match value {
-            ImportDeckCardsError::Forbidden => {
-                Self::Forbidden(ImportDeckCardsError::Forbidden.to_string())
-            }
+            ImportDeckCardsError::Forbidden => Self::NotFound("deck not found".to_string()),
             ImportDeckCardsError::DeckNotFound(e) => ApiError::from(e),
             ImportDeckCardsError::LimitReached => Self::UnprocessableEntity(
                 "card limit reached (mainboard, maybeboard, and sideboard all count toward it)"

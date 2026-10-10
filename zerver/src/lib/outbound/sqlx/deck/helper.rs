@@ -19,10 +19,12 @@ pub trait OwnsDeck {
 }
 
 impl OwnsDeck for Uuid {
+    /// A deck that does not exist is not owned either; callers answer both the
+    /// same way, so a guessed id learns nothing.
     async fn owns_deck(&self, deck_id: Uuid, pool: &PgPool) -> Result<bool, sqlx::Error> {
         let deck_user_id = query_scalar!("SELECT user_id FROM decks WHERE id = $1", deck_id)
-            .fetch_one(pool)
+            .fetch_optional(pool)
             .await?;
-        Ok(deck_user_id == *self)
+        Ok(deck_user_id == Some(*self))
     }
 }

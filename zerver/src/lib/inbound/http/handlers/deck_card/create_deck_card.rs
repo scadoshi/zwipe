@@ -39,9 +39,9 @@ impl From<CreateDeckCardError> for ApiError {
             CreateDeckCardError::Database(e) => e.to_500(),
             CreateDeckCardError::DeckCardFromDb(e) => e.to_500(),
             CreateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
-            CreateDeckCardError::Forbidden => {
-                Self::Forbidden(CreateDeckCardError::Forbidden.to_string())
-            }
+            // Someone else's deck and no deck at all read the same, as on
+            // the deck routes.
+            CreateDeckCardError::Forbidden => Self::NotFound("deck not found".to_string()),
         }
     }
 }
