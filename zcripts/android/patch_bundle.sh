@@ -29,7 +29,7 @@ echo "== launcher icons =="
 echo "== back navigation =="
 "$HERE/back_handler.sh"
 
-echo "== manifest (launchMode + configChanges) =="
+echo "== manifest (launchMode + configChanges + allowBackup) =="
 "$HERE/manifest.sh"
 
 echo "== WryActivity (tao 0.37 entry points) =="

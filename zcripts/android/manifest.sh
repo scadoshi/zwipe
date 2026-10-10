@@ -19,6 +19,12 @@
 #    back_handler.sh's process kill fires, so the app silently vanishes
 #    mid-session. Auto dark mode at sunset does this on a schedule.
 #
+# 3. allowBackup="false" on <application> — dx emits no backup attributes, so
+#    Android's default (true) puts the app's files/ dir, and with it
+#    session.json holding the refresh token, into Auto Backup (Google Drive)
+#    and `adb backup` archives. Nothing in the app is worth backing up; the
+#    session is re-created by logging in.
+#
 # dx REGENERATES AndroidManifest.xml on every `dx bundle`, so run this AFTER
 # `dx bundle` and BEFORE the Gradle repackage — the same window as
 # launcher_icons.sh and back_handler.sh. `patch_bundle.sh` runs all three.
@@ -60,9 +66,24 @@ else:
     patched = patched.replace("<activity", '<activity android:launchMode="singleTask"', 1)
 
 if patched != tag:
-    open(path, "w").write(src.replace(tag, patched, 1))
+    src = src.replace(tag, patched, 1)
 
-print("launchMode=singleTask, configChanges=" + config_changes)
+# 3. allowBackup on the <application> tag: add it if absent, force it if dx
+#    ever starts emitting one.
+m = re.search(r'<application\b[^>]*>', src)
+if not m:
+    sys.exit("<application> tag not found — did dx change its manifest template?")
+app_tag = m.group(0)
+if 'android:allowBackup="' in app_tag:
+    app_patched = re.sub(r'android:allowBackup="[^"]*"', 'android:allowBackup="false"', app_tag)
+else:
+    app_patched = app_tag.replace("<application", '<application android:allowBackup="false"', 1)
+if app_patched != app_tag:
+    src = src.replace(app_tag, app_patched, 1)
+
+open(path, "w").write(src)
+
+print("launchMode=singleTask, allowBackup=false, configChanges=" + config_changes)
 PY
 
 echo "Patched MainActivity attributes into $MANIFEST"
