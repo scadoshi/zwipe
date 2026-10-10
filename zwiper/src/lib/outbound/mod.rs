@@ -8,6 +8,8 @@
 pub mod android_fs;
 /// URL construction for external card retailer bulk-buy tools.
 pub mod buy_links;
+/// Local cache of the public counters so a launch without signal still shows them.
+pub mod counts_store;
 /// Crash capture: panic hook writes to disk, next launch posts + clears.
 pub mod crash_store;
 /// Platform keyring entry (v1 wrapper on desktop, keyring-core + protected

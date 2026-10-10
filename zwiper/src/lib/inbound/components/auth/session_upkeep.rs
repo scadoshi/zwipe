@@ -180,7 +180,9 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
 
     // The hero panel's counters: cached above the router for a minute (see
     // CachedCounts), so hopping between screens does not ask zerver each time.
-    let cached_counts: Signal<Option<CachedCounts>> = use_signal(|| None);
+    // Starts from the last launch's copy, so a launch without signal still
+    // shows numbers.
+    let cached_counts: Signal<Option<CachedCounts>> = use_signal(CachedCounts::restored);
     use_context_provider(|| cached_counts);
 
     // Changelog: fetched once in the background at startup and cached above the
