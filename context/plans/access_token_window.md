@@ -4,7 +4,7 @@
 
 - [x] 2026-10-09 Steps 1, 2 and 3 merged to main in one push. Client buffer, `ACCESS_TOKEN_MINUTES` (default 1440) and refresh families with the 30-day cap.
 - [x] 2026-10-09 zerver deploy with the families migration green (run 37987257595) (`20261009130000_refresh_token_families.sql`; additive, keeps `revoked`).
-- [ ] Re-run `zcripts/server/sql/zervice_role.sql` on the server so the nightly cleanup can read `replaced_at` (the migration grants it when the role exists, so this is belt and braces).
+- [x] 2026-10-10 `zcripts/server/sql/zervice_role.sql` re-run on the server (clean BEGIN..COMMIT), so the nightly cleanup can read `replaced_at`.
 - [x] 2026-10-09 Client 1.11.2 shipped: submitted to both stores the same night, carrying the refresh-ahead buffer (iOS build 92, Android vc55). Cut without waiting on 1.11.1's review.
 - [ ] 1.11.2 approved and distributing on both stores. As of 2026-10-09 evening both submissions are in review, awaiting distribution.
 - [ ] `MIN_CLIENT_VERSION` raised to 1.11.2 once the floor query shows old builds gone (or earlier to force them).
