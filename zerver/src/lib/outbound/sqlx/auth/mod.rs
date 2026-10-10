@@ -34,7 +34,7 @@ use crate::{
         user::models::DatabaseUser,
     },
 };
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use sqlx::{query, query_as, query_scalar};
 use uuid::Uuid;
 use zwipe_core::domain::{
@@ -44,11 +44,6 @@ use zwipe_core::domain::{
     },
     user::User,
 };
-
-/// A token rotated this recently is taken for a concurrent duplicate of the
-/// rotation (several requests racing on one token) rather than a replay, and
-/// gets a plain 401 without ending its family.
-const REFRESH_REPLAY_GRACE: Duration = Duration::seconds(10);
 
 impl AuthRepository for Postgres {
     // == create ==
@@ -247,7 +242,7 @@ impl AuthRepository for Postgres {
 
         // FOR UPDATE serializes concurrent refreshes on the row: the winner
         // marks it replaced; losers block, re-read after commit, see
-        // replaced_at within the grace window, and get 401.
+        // replaced_at and are handled as replays below.
         let existing = query_as!(
             DatabaseRefreshToken,
             "SELECT id, user_id, expires_at, family_id, login_at, replaced_at, platform, client_version FROM refresh_tokens WHERE value_hash = $1 FOR UPDATE",
@@ -266,16 +261,20 @@ impl AuthRepository for Postgres {
 
         let now = Utc::now();
 
-        if let Some(replaced_at) = existing.replaced_at {
-            if now - replaced_at > REFRESH_REPLAY_GRACE {
-                query!(
-                    "DELETE FROM refresh_tokens WHERE family_id = $1",
-                    existing.family_id
-                )
-                .execute(&mut *tx)
-                .await?;
-                tx.commit().await?;
-            }
+        // A rotated token presented again is a replay, whoever sends it. The
+        // client refreshes single-flight, so two requests on one token mean a
+        // second holder; the whole family dies and the real device logs in
+        // again. There is deliberately no grace window: one let an attacker
+        // who rotated just before the victim keep the family while the victim
+        // got the 401.
+        if existing.replaced_at.is_some() {
+            query!(
+                "DELETE FROM refresh_tokens WHERE family_id = $1",
+                existing.family_id
+            )
+            .execute(&mut *tx)
+            .await?;
+            tx.commit().await?;
             return Err(RefreshSessionError::Revoked(request.user_id));
         }
 

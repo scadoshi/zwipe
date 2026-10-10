@@ -64,18 +64,6 @@ async fn rows(app: &TestApp, user_id: &str) -> Vec<(Uuid, bool)> {
     .unwrap()
 }
 
-/// Ages every replaced row of the user past the concurrent-rotation grace window.
-async fn age_replaced_rows(app: &TestApp, user_id: &str) {
-    let uid = Uuid::parse_str(user_id).unwrap();
-    sqlx::query(
-        "UPDATE refresh_tokens SET replaced_at = replaced_at - INTERVAL '1 minute' WHERE user_id = $1 AND replaced_at IS NOT NULL",
-    )
-    .bind(uid)
-    .execute(&app.pool)
-    .await
-    .unwrap();
-}
-
 #[sqlx::test]
 async fn rotation_keeps_replaced_row_in_the_same_family(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
@@ -105,8 +93,9 @@ async fn replay_kills_the_family(pool: sqlx::PgPool) {
     let (status, rotated) = refresh(&app, &user_id, &token).await;
     assert_eq!(status, StatusCode::OK, "first refresh: {rotated}");
     let fresh = refresh_value(&rotated);
-    age_replaced_rows(&app, &user_id).await;
 
+    // Straight away, with no ageing: there is no grace window a replay can
+    // hide inside.
     let (status, _) = refresh(&app, &user_id, &token).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED, "the replay is refused");
 
@@ -172,12 +161,17 @@ async fn concurrent_refreshes_leave_one_valid_survivor(pool: sqlx::PgPool) {
     assert_eq!(winners.len(), 1, "exactly one refresh wins: {results:?}");
     assert_eq!(losers, 3, "the other three are 401: {results:?}");
 
-    // The losers were concurrent duplicates, not a replay: the family lives.
+    // Each loser presented an already-rotated token, which is a replay: the
+    // family is gone, the winner's token with it, and the device logs in
+    // again. The client refreshes single-flight, so this only happens when
+    // a token has a second holder.
     let survivor = refresh_value(winners[0]);
-    let (status, rotated) = refresh(&app, &user_id, &survivor).await;
+    let (status, _) = refresh(&app, &user_id, &survivor).await;
     assert_eq!(
         status,
-        StatusCode::OK,
-        "the survivor still rotates: {rotated}"
+        StatusCode::UNAUTHORIZED,
+        "the winner's token died with the family"
     );
+    let rows = rows(&app, &user_id).await;
+    assert_eq!(rows.len(), 1, "only the register session remains: {rows:?}");
 }

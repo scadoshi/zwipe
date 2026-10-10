@@ -85,8 +85,8 @@ pub enum RefreshSessionError {
     #[error("given refresh token is expired; user attempting: {0}")]
     Expired(Uuid),
 
-    /// The refresh token was already rotated. A replay past the grace window
-    /// has deleted the whole family; a loser of a concurrent rotation keeps it.
+    /// The refresh token was already rotated. Presenting it again is a replay
+    /// and has deleted the whole family, including the token that replaced it.
     ///
     /// User must re-authenticate to get a new session.
     #[error("given refresh token has been revoked; user attempting: {0}")]
