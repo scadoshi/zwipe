@@ -1402,16 +1402,51 @@ i.ms.ms-cost.ms-gp {
         max-height: none;
         overflow: visible;
         box-shadow: none;
-        /* The rows become a wrapping row of chips, zwiper's chip look, so the
-           choices read apart from the full-width link buttons around them. */
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 0.5rem;
-        padding: 0.25rem 0;
+        padding: 0;
         border: none;
         background: none;
         min-width: 0;
+        /* Always laid out, as a one-row grid that opens from 0fr to 1fr, so
+           the menu grows and shrinks over the transition instead of popping
+           in and out with display. */
+        display: grid;
+        grid-template-rows: 0fr;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+            grid-template-rows 0.25s ease,
+            opacity 0.2s ease,
+            visibility 0s linear 0.25s;
+    }
+    .nav-panel .nav-links .nav-dropdown-open .nav-dropdown-content {
+        grid-template-rows: 1fr;
+        opacity: 1;
+        visibility: visible;
+        transition:
+            grid-template-rows 0.25s ease,
+            opacity 0.2s ease,
+            visibility 0s;
+    }
+    /* The rows become a wrapping row of chips, zwiper's chip look, so the
+       choices read apart from the full-width link buttons around them. The
+       box clips to the grid row's height while it animates, with padding
+       below for the chips' shadow, and slides down a touch as it opens. */
+    .nav-panel .nav-links .nav-dropdown-rows {
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0;
+        transform: translateY(-0.4rem);
+        transition:
+            transform 0.25s ease,
+            padding 0.25s ease;
+    }
+    .nav-panel .nav-links .nav-dropdown-open .nav-dropdown-rows {
+        padding: 0.25rem 0.25rem 0.75rem;
+        transform: none;
     }
     .nav-panel .nav-links .nav-dropdown-item,
     .nav-panel .nav-links a.nav-dropdown-item:visited {
@@ -1700,7 +1735,7 @@ a.nav-dropdown-item.active:visited {
 }
 
 /* The first subtitle sits flush at the top of the menu. */
-.nav-dropdown-content > .nav-dropdown-label:first-child {
+.nav-dropdown-rows > .nav-dropdown-label:first-child {
     margin-top: 0;
     padding-top: 0;
 }

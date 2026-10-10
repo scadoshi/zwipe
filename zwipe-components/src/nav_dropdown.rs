@@ -52,7 +52,11 @@ pub fn NavDropdown(
                 },
                 "{label} ▾"
             }
-            div { class: "nav-dropdown-content", {children} }
+            // The rows sit in their own box so the collapsed panel can grow
+            // and shrink the menu (a grid row from 0fr to 1fr) around them.
+            div { class: "nav-dropdown-content",
+                div { class: "nav-dropdown-rows", {children} }
+            }
         }
     }
 }
