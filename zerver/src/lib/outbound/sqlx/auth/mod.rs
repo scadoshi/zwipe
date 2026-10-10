@@ -107,56 +107,6 @@ impl AuthRepository for Postgres {
 
         Ok(user)
     }
-    // == lockout ==
-
-    /// Atomically increments failed login counter with a sliding 30-minute window.
-    /// Sets `lockout_until = NOW() + 30 min` after 5 failures within the window.
-    async fn increment_failed_attempts(&self, user_id: Uuid) -> Result<(), AuthenticateUserError> {
-        query!(
-            r#"
-            UPDATE users
-            SET
-                failed_login_attempts = CASE
-                    WHEN COALESCE(last_failed_at, '1970-01-01'::TIMESTAMP) < NOW() - INTERVAL '30 minutes'
-                    THEN 1
-                    ELSE failed_login_attempts + 1
-                END,
-                last_failed_at = NOW(),
-                lockout_until = CASE
-                    WHEN (
-                        CASE
-                            WHEN COALESCE(last_failed_at, '1970-01-01'::TIMESTAMP) < NOW() - INTERVAL '30 minutes'
-                            THEN 1
-                            ELSE failed_login_attempts + 1
-                        END
-                    ) >= 5
-                    THEN NOW() + INTERVAL '30 minutes'
-                    ELSE lockout_until
-                END
-            WHERE id = $1
-            "#,
-            user_id
-        )
-        .execute(&self.pool)
-        .await
-        .map_err(|e| AuthenticateUserError::Database(e.into()))?;
-
-        Ok(())
-    }
-
-    /// Clears failed login counter and lockout on successful authentication.
-    async fn reset_failed_attempts(&self, user_id: Uuid) -> Result<(), AuthenticateUserError> {
-        query!(
-            "UPDATE users SET failed_login_attempts = 0, last_failed_at = NULL, lockout_until = NULL WHERE id = $1",
-            user_id
-        )
-        .execute(&self.pool)
-        .await
-        .map_err(|e| AuthenticateUserError::Database(e.into()))?;
-
-        Ok(())
-    }
-
     // == update ==
     async fn change_password_and_revoke_sessions(
         &self,
@@ -261,12 +211,10 @@ impl AuthRepository for Postgres {
 
         let now = Utc::now();
 
-        // A rotated token presented again is a replay, whoever sends it. The
-        // client refreshes single-flight, so two requests on one token mean a
-        // second holder; the whole family dies and the real device logs in
-        // again. There is deliberately no grace window: one let an attacker
-        // who rotated just before the victim keep the family while the victim
-        // got the 401.
+        // A rotated token presented again is a replay, whoever sends it and
+        // however soon. The client refreshes single-flight, so two requests
+        // on one token mean a second holder; the whole family dies and the
+        // real device logs in again.
         if existing.replaced_at.is_some() {
             query!(
                 "DELETE FROM refresh_tokens WHERE family_id = $1",

@@ -233,7 +233,7 @@ zerver/src/
 
 | Table | Purpose |
 |-------|---------|
-| `users` | Accounts (email, username, hashed password, lockout) |
+| `users` | Accounts (email, username, hashed password; the lockout columns are legacy, the lockout is in memory per address) |
 | `user_preferences` | Theme, dark mode |
 | `scryfall_data` | All card printings (~110k rows, ~100 columns) |
 | `card_profiles` | Internal card metadata (is_token, card_roles) |

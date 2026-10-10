@@ -10,13 +10,18 @@ use crate::{
         },
         metrics::models::kinds::{AuditAction, EventKind},
     },
-    inbound::http::{ApiError, AppState, To500},
+    inbound::http::{ApiError, AppState, To500, middleware::ClientIp},
 };
 
 impl From<AuthenticateUserError> for ApiError {
     fn from(value: AuthenticateUserError) -> Self {
         match value {
-            AuthenticateUserError::UserNotFound | AuthenticateUserError::InvalidPassword => {
+            // One answer for an unknown account, a wrong password and a
+            // locked pair: a distinct "locked" reply would confirm the
+            // account exists and that someone has been guessing at it.
+            AuthenticateUserError::UserNotFound
+            | AuthenticateUserError::InvalidPassword
+            | AuthenticateUserError::AccountLocked => {
                 Self::Unauthorized("invalid credentials".to_string())
             }
             AuthenticateUserError::Database(e) => e.to_500(),
@@ -24,9 +29,6 @@ impl From<AuthenticateUserError> for ApiError {
             AuthenticateUserError::FailedToVerify(e) => e.to_500(),
             AuthenticateUserError::FailedAccessToken(e) => e.to_500(),
             AuthenticateUserError::CreateSessionError(e) => ApiError::from(e),
-            AuthenticateUserError::AccountLocked => {
-                Self::TooManyRequests("account temporarily locked".to_string())
-            }
         }
     }
 }
@@ -52,11 +54,13 @@ impl TryFrom<HttpAuthenticateUser> for AuthenticateUser {
 /// Authenticates a user by email or username and returns a session.
 pub async fn authenticate_user(
     State(state): State<AppState>,
+    ClientIp(client_ip): ClientIp,
     Json(body): Json<HttpAuthenticateUser>,
 ) -> Result<(StatusCode, Json<Session>), ApiError> {
     let mut request = AuthenticateUser::new(&body.identifier, body.password.read())?;
     request.platform = body.platform;
     request.client_version = body.client_version;
+    request.client_ip = Some(client_ip);
 
     let session = state
         .auth_service

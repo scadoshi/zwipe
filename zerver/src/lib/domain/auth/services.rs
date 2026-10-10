@@ -1,5 +1,6 @@
 use crate::domain::{
     auth::{
+        lockout::LoginLockout,
         models::{
             UserWithPasswordHash,
             access_token::{AccessTokenExt, JwtSecret},
@@ -28,7 +29,10 @@ use anyhow::anyhow;
 use chrono::{Duration, Utc};
 use rand::Rng;
 use sha2::Digest;
-use std::sync::LazyLock;
+use std::{
+    net::{IpAddr, Ipv6Addr},
+    sync::{Arc, LazyLock},
+};
 use uuid::Uuid;
 use zwipe_core::domain::{
     auth::models::{access_token::AccessToken, session::Session},
@@ -73,6 +77,8 @@ where
     jwt_secret: JwtSecret,
     /// How long each minted access token stays valid.
     access_token_lifetime: Duration,
+    /// Failed-login counters by account and address; shared by every clone.
+    lockout: Arc<LoginLockout>,
     /// Public web base URL for building verify/reset links (e.g. `https://zwipe.net`).
     web_base_url: String,
     /// User-facing support email address shown in transactional emails.
@@ -103,6 +109,7 @@ where
             email_sender,
             jwt_secret,
             access_token_lifetime,
+            lockout: Arc::new(LoginLockout::default()),
             web_base_url,
             support_email,
         }
@@ -249,11 +256,18 @@ where
             Err(e) => return Err(e),
         };
 
-        // Check lockout before Argon2 to avoid expensive hashing for locked accounts.
-        if let Some(until) = user_with_password_hash.lockout_until
-            && until > Utc::now()
+        // The lockout is keyed by account and address, so only the address
+        // that got the password wrong is held off; it is checked before
+        // Argon2 to spare the hashing. A request with no address (there is
+        // always one over HTTP) shares the unspecified key.
+        let client_ip = request
+            .client_ip
+            .unwrap_or(IpAddr::V6(Ipv6Addr::UNSPECIFIED));
+        if self
+            .lockout
+            .is_locked(user_with_password_hash.id, client_ip)
         {
-            tracing::warn!(event = "login_failure", reason = "account_locked", identifier = %request.identifier);
+            tracing::warn!(event = "login_failure", reason = "locked", identifier = %request.identifier, ip = %client_ip);
             return Err(AuthenticateUserError::AccountLocked);
         }
 
@@ -266,12 +280,14 @@ where
             .map_err(|e| AuthenticateUserError::FailedToVerify(e.into()))?;
 
         if !verified {
-            self.auth_repo.increment_failed_attempts(user.id).await?;
+            if self.lockout.record_failure(user.id, client_ip) {
+                tracing::warn!(event = "login_lockout", identifier = %request.identifier, ip = %client_ip);
+            }
             tracing::warn!(event = "login_failure", reason = "invalid_password", identifier = %request.identifier);
             return Err(AuthenticateUserError::InvalidPassword);
         }
 
-        self.auth_repo.reset_failed_attempts(user.id).await?;
+        self.lockout.clear(user.id, client_ip);
         tracing::info!(event = "login_success", identifier = %request.identifier);
 
         let preferences = self

@@ -435,7 +435,7 @@ Prod migrated off the home box to a **Hetzner CPX31 VPS** on 2026-06-13 (see ent
 | Card search (Scryfall data, JSONB filtering) | ✅ |
 | Produced mana filter | ✅ |
 | Rate limiting (auth + search endpoints) | ✅ |
-| Account lockout (5 failures → 30min lock) | ✅ |
+| Login lockout (5 failures from one address → that address locked 30min; others unaffected) | ✅ |
 | Deck count limit (20/user) + card limit (250/deck) | ✅ |
 | Unverified account soft limits (1 deck, 100 cards) | ✅ |
 | User preferences (theme, dark mode) | ✅ |

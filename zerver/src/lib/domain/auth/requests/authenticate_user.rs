@@ -46,6 +46,7 @@ use crate::domain::auth::requests::{
     change_email::ChangeEmail, change_password::ChangePassword, change_username::ChangeUsername,
     create_session::CreateSessionError, delete_user::DeleteUser,
 };
+use std::net::IpAddr;
 use thiserror::Error;
 use zwipe_core::domain::auth::models::{platform::ClientPlatform, secret::Secret};
 
@@ -94,8 +95,9 @@ pub enum AuthenticateUserError {
     #[error(transparent)]
     CreateSessionError(#[from] CreateSessionError),
 
-    /// Account is temporarily locked after too many failed login attempts.
-    #[error("account temporarily locked")]
+    /// This account is locked for the requesting address after too many
+    /// wrong passwords from it. Answered exactly like a wrong password.
+    #[error("account locked for this address")]
     AccountLocked,
 }
 
@@ -177,6 +179,10 @@ pub struct AuthenticateUser {
     /// Client app version (e.g. `"1.6.1"`) of the session being created (recorded
     /// on the token). `None` for re-authentication and older clients.
     pub client_version: Option<String>,
+
+    /// Address the login request came from, for the per-address lockout.
+    /// `None` for re-authentication, which is not lockout-gated.
+    pub client_ip: Option<IpAddr>,
 }
 
 impl AuthenticateUser {
@@ -219,6 +225,7 @@ impl AuthenticateUser {
             password: Secret::new(password),
             platform: None,
             client_version: None,
+            client_ip: None,
         })
     }
 }
@@ -239,6 +246,7 @@ impl From<&ChangePassword> for AuthenticateUser {
             password: value.current_password.clone(),
             platform: None,
             client_version: None,
+            client_ip: None,
         }
     }
 }
@@ -253,6 +261,7 @@ impl From<&ChangeUsername> for AuthenticateUser {
             password: value.password.clone(),
             platform: None,
             client_version: None,
+            client_ip: None,
         }
     }
 }
@@ -267,6 +276,7 @@ impl From<&ChangeEmail> for AuthenticateUser {
             password: value.password.clone(),
             platform: None,
             client_version: None,
+            client_ip: None,
         }
     }
 }
@@ -281,6 +291,7 @@ impl From<&DeleteUser> for AuthenticateUser {
             password: value.password.clone(),
             platform: None,
             client_version: None,
+            client_ip: None,
         }
     }
 }

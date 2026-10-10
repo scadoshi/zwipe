@@ -204,6 +204,55 @@ async fn login_rate_limit_locks_out(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
+async fn lockout_is_per_address(pool: sqlx::PgPool) {
+    use axum::http::Method;
+    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+
+    let app = TestApp::new(pool);
+    let _ = app.register("victim").await;
+    let attacker = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(203, 0, 113, 5)), 50001);
+    let owner = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(198, 51, 100, 7)), 50002);
+    let wrong = json!({ "identifier": "victim", "password": "WrongPass123!" });
+    let right = json!({ "identifier": "victim", "password": "TestPass123!" });
+
+    // Five wrong passwords from one address: exactly the login limiter's
+    // burst, so every one reaches the service and counts.
+    for n in 1..=5 {
+        let (status, _) = app
+            .send_from(
+                attacker,
+                Method::POST,
+                LOGIN_ROUTE,
+                Some(wrong.clone()),
+                None,
+            )
+            .await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED, "wrong password {n}");
+    }
+
+    // The account's owner, elsewhere, is not locked out by someone else's
+    // guessing: the old per-account lockout let any stranger do that.
+    let (status, body) = app
+        .send_from(owner, Method::POST, LOGIN_ROUTE, Some(right.clone()), None)
+        .await;
+    assert_eq!(status, StatusCode::OK, "owner logs in: {body}");
+
+    // The guessing address is locked even with the right password, and gets
+    // the same answer as a wrong one. Wait out the limiter's burst first so
+    // the reply is the lockout's, not a 429.
+    tokio::time::sleep(std::time::Duration::from_secs(7)).await;
+    // (Error bodies are plain text, so only the status is checked.)
+    let (status, _) = app
+        .send_from(attacker, Method::POST, LOGIN_ROUTE, Some(right), None)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNAUTHORIZED,
+        "locked address gets the wrong-password answer"
+    );
+}
+
+#[sqlx::test]
 async fn session_insert_prunes_expired_and_caps(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (_, uid) = app.register("hoarder").await;

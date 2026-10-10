@@ -18,6 +18,9 @@ pub use models::*;
 pub mod requests;
 pub use requests::*;
 
+/// Failed-login counters keyed by account and client address.
+pub mod lockout;
+
 /// Port traits (interfaces) for authentication operations.
 pub mod ports;
 

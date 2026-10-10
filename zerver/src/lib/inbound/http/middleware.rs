@@ -108,25 +108,45 @@ const CF_CONNECTING_IP: &str = "cf-connecting-ip";
 #[derive(Debug, Clone)]
 pub struct CfConnectingIpKeyExtractor;
 
+/// The real client address: `CF-Connecting-IP` when present, else the socket
+/// peer (localhost / Tailscale paths). See [`CfConnectingIpKeyExtractor`] for
+/// why the header is trustworthy here.
+fn client_ip(
+    headers: &axum::http::HeaderMap,
+    extensions: &axum::http::Extensions,
+) -> Option<IpAddr> {
+    headers
+        .get(CF_CONNECTING_IP)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.trim().parse::<IpAddr>().ok())
+        .or_else(|| {
+            extensions
+                .get::<ConnectInfo<SocketAddr>>()
+                .map(|info| info.0.ip())
+        })
+}
+
 impl KeyExtractor for CfConnectingIpKeyExtractor {
     type Key = IpAddr;
 
     fn extract<T>(&self, req: &axum::http::Request<T>) -> Result<Self::Key, GovernorError> {
-        if let Some(ip) = req
-            .headers()
-            .get(CF_CONNECTING_IP)
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.trim().parse::<IpAddr>().ok())
-        {
-            return Ok(ip);
-        }
+        client_ip(req.headers(), req.extensions()).ok_or(GovernorError::UnableToExtractKey)
+    }
+}
 
-        // No Cloudflare header: fall back to the socket peer IP (localhost /
-        // Tailscale paths). External traffic always carries the header.
-        req.extensions()
-            .get::<ConnectInfo<SocketAddr>>()
-            .map(|info| info.0.ip())
-            .ok_or(GovernorError::UnableToExtractKey)
+/// Handler extractor for the real client address, resolved the same way as
+/// the per-IP rate limit key. Login uses it to key the lockout by address.
+///
+/// Rejects with `400 Bad Request` only when neither the Cloudflare header nor
+/// a socket peer is present, which no served request can hit.
+pub struct ClientIp(pub IpAddr);
+
+impl<S: Send + Sync> FromRequestParts<S> for ClientIp {
+    type Rejection = StatusCode;
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        client_ip(&parts.headers, &parts.extensions)
+            .map(Self)
+            .ok_or(StatusCode::BAD_REQUEST)
     }
 }
 

@@ -159,6 +159,19 @@ impl TestApp {
         json: Option<Value>,
         token: Option<&str>,
     ) -> (StatusCode, Value) {
+        self.send_from(self.fake_ip, method, path, json, token)
+            .await
+    }
+
+    /// `send` from a chosen peer address, for tests about per-address limits.
+    pub async fn send_from(
+        &self,
+        peer: SocketAddr,
+        method: Method,
+        path: &str,
+        json: Option<Value>,
+        token: Option<&str>,
+    ) -> (StatusCode, Value) {
         let mut builder = Request::builder().method(method).uri(path);
         if let Some(t) = token {
             builder = builder.header(header::AUTHORIZATION, format!("Bearer {t}"));
@@ -173,7 +186,7 @@ impl TestApp {
         let mut request = builder.body(body).unwrap();
         // The public routes' governor key-extractor reads the peer IP from
         // ConnectInfo; oneshot requests have none, so insert a fake one.
-        request.extensions_mut().insert(ConnectInfo(self.fake_ip));
+        request.extensions_mut().insert(ConnectInfo(peer));
 
         let response = self.router.clone().oneshot(request).await.unwrap();
         let status = response.status();
