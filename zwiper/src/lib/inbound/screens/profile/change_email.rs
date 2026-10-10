@@ -74,7 +74,7 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
     let mut attempt_submit = move || {
         submit_attempted.set(true);
         if inputs_are_valid() {
-            tracing::info!("change email to {}", new_email());
+            tracing::info!("change email");
             let request = HttpChangeEmail::new(&new_email(), &password());
             is_loading.set(true);
             spawn(async move {

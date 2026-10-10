@@ -27,7 +27,7 @@ pub fn Login() -> Element {
     let auth_client: Signal<ZwipeClient> = use_context();
 
     let username_or_email = use_signal(String::new);
-    let password = use_signal(String::new);
+    let mut password = use_signal(String::new);
 
     let mut is_loading = use_signal(|| false);
     let toast = use_toast();
@@ -59,6 +59,9 @@ pub fn Login() -> Element {
                     let mut theme: Signal<ThemeConfig> = use_context();
                     theme.set(ThemeConfig::from(&new_session.preferences));
                     session.set(Some(new_session));
+                    // The password has done its job; the signal outlives the
+                    // screen in the router cache.
+                    password.set(String::new());
                     is_loading.set(false);
                     navigator.push(Router::Home {});
                 }

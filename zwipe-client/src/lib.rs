@@ -26,6 +26,8 @@ pub mod version;
 
 pub use error::ClientError;
 use reqwest::{Client, Url};
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Duration;
 
 /// HTTP client for the ZWIPE backend API.
 ///
@@ -40,12 +42,34 @@ pub struct ZwipeClient {
     pub base_url: Url,
 }
 
+/// Longest a request may take end to end. A stalled socket otherwise holds
+/// the refresh single-flight lock, and with it every authenticated call,
+/// until the OS gives up on it.
+#[cfg(not(target_arch = "wasm32"))]
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+
 impl ZwipeClient {
     /// Builds a client pointed at `base_url`.
     pub fn new(base_url: Url) -> Self {
         Self {
-            client: Client::new(),
+            client: build_client(),
             base_url,
         }
     }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[allow(clippy::expect_used)]
+fn build_client() -> Client {
+    Client::builder()
+        .timeout(REQUEST_TIMEOUT)
+        .build()
+        .expect("reqwest client with only a timeout set always builds")
+}
+
+/// The browser's fetch has no client-wide timeout; the page's own navigation
+/// and the server's 30-second timeout bound a request there.
+#[cfg(target_arch = "wasm32")]
+fn build_client() -> Client {
+    Client::new()
 }
