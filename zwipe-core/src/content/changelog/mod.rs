@@ -26,23 +26,24 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.11.3",
-    date: "",
-    entries: &[
-        "Home counters show the last numbers fetched when there is no connection",
-        "Home no longer shows an error when its counters cannot be refreshed",
-        "Messages show two lines until tapped, then the whole text",
-        "Long messages wrap instead of running off the screen",
-        "Requests give up after thirty seconds instead of waiting forever",
-        "Changing your email no longer writes the new address to the device log",
-        "Android: the sign-in session is left out of device backups",
-        "Too many wrong passwords lock out only the device that sent them",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.11.3",
+        date: "Oct 11, 2026",
+        entries: &[
+            "Home counters show the last numbers fetched when there is no connection",
+            "Home no longer shows an error when its counters cannot be refreshed",
+            "Messages show two lines until tapped, then the whole text",
+            "Long messages wrap instead of running off the screen",
+            "Requests give up after thirty seconds instead of waiting forever",
+            "Changing your email no longer writes the new address to the device log",
+            "Android: the sign-in session is left out of device backups",
+            "Too many wrong passwords lock out only the device that sent them",
+        ],
+    },
     Release {
         version: "1.11.2",
         date: "Oct 9, 2026",
