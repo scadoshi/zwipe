@@ -168,18 +168,24 @@ impl ThemeFollow {
 /// (`".app-shell"`). Every change to `theme` after mount wipes in, and the
 /// returned `shown` takes it inside the transition, so a host renders its
 /// theme class from it and lets anything set `theme`. A change superseded
-/// before its wipe commits is dropped for the later one.
+/// before its wipe commits is dropped for the later one. Setting `theme` to
+/// what the latest wipe is already heading for, as a saved preference echoed
+/// back from the server does, starts nothing: a second view transition would
+/// cut the running sweep short.
 pub fn use_theme_follow(theme: Signal<ThemeConfig>, target: &'static str) -> ThemeFollow {
     let mut shown = use_signal(|| theme.peek().clone());
     let mut running = use_signal(|| 0u32);
+    // Where the latest wipe is heading, which `shown` only reaches once that
+    // wipe commits. Going back to the shown theme while a sweep is still on
+    // its way elsewhere is a change from this, so it wipes.
+    let mut heading = use_signal(|| theme.peek().clone());
 
     use_effect(move || {
         let next = theme.read().clone();
-        // Going back to the shown theme still wipes while another sweep is on
-        // screen: that sweep has already swapped the page onto its theme.
-        if *shown.peek() == next && *running.peek() == 0 {
+        if *heading.peek() == next {
             return;
         }
+        heading.set(next.clone());
         running += 1;
         spawn(async move {
             let mut js = document::eval(WIPE_JS);
