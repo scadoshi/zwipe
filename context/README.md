@@ -21,6 +21,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-11: 1.11.4 submitted
+
+1.11.4 was cut the same evening 1.11.3 went live, for one fix: switching dark mode sweeps the new theme across the screen again instead of cutting to it (a theme set to where the latest wipe is heading no longer starts a second wipe). The changelog moved to `RELEASES` dated Oct 11. iOS build 94 went to App Review and Android vc57 to Production review the same night. Store notes: [1.11.4](operations/store-submissions/1.11.4/whats_new.md).
+
 ## 2026-10-11: 1.11.3 submitted and live, 1.11.2 live on iOS
 
 1.11.2 (iOS build 92) went live on the App Store on 2026-10-10; Android vc55 was still in Play review when 1.11.3 was cut. 1.11.3 moved its changelog to `RELEASES` dated Oct 11 with eight entries from the 2026-10-10 security audit and the toast work: home counters keep the last fetched numbers offline and stop erroring when a refresh fails, toasts show two lines until tapped and wrap in full, requests give up after thirty seconds, an email change no longer logs the new address, Android leaves the session out of backups, and the wrong-password lockout applies per device. iOS build 93 went to App Review and Android vc56 to Production review the same day, and both were approved and live by that evening, so the client floor and the fifteen-minute access token can move. The Android build passed every patch check; the emulator launch test was skipped. Notes at [`operations/store-submissions/1.11.3/whats_new.md`](operations/store-submissions/1.11.3/whats_new.md). The audit's open items are in [`plans/security_audit_followups.md`](plans/security_audit_followups.md).
