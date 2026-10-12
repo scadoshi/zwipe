@@ -474,6 +474,17 @@ body .arch-figure .diagram {
     margin-inline: auto;
 }
 
+/* The architecture carousel's frame and slide: no fixed floor, and room at the
+   sides so prev and next sit beside a diagram rather than on it. */
+.gallery-body.arch-carousel {
+    min-height: 0;
+    padding: 0 3rem;
+}
+
+.arch-slide {
+    width: 100%;
+}
+
 /* Tech chips inside an architecture panel, above the prose. */
 .arch-tags {
     display: flex;
@@ -667,20 +678,20 @@ code {
     flex-shrink: 0;
 }
 
-.hero-head .hero-figures {
+.hero-head .stats-figures {
     flex: 1;
     min-width: 0;
 }
 
 /* The source chips sit under the strip, centered with it, all in the primary
    accent. */
-.hero-figures .stats-source {
+.stats-figures .stats-source {
     justify-content: center;
     margin: 1rem 0 0;
 }
 
 /* The chip that says which numbers are showing fades up when it changes. */
-.hero-figures .stats-source .tag-swap {
+.stats-figures .stats-source .tag-swap {
     animation: chip-in 0.4s ease-out both;
 }
 
@@ -696,12 +707,12 @@ code {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .hero-figures .stats-source .tag-swap {
+    .stats-figures .stats-source .tag-swap {
         animation: none;
     }
 }
 
-.hero-figures .stats-source .tag {
+.stats-figures .stats-source .tag {
     color: var(--accent-primary);
     border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
     background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
@@ -1149,7 +1160,8 @@ code {
     }
 }
 
-.tag-row {
+/* StatsStrip's source row: the chips under the hero figures. */
+.stats-source {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;

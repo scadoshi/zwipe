@@ -67,8 +67,8 @@ pub(crate) fn CardInfoDisplay(card: Card) -> Element {
 pub(crate) fn RulesButton(open: Signal<bool>) -> Element {
     rsx! {
         Button {
-            variant: ButtonVariant::Util,
-            class: "util-btn-eye",
+            variant: ButtonVariant::Action,
+            class: "btn-action-eye",
             onclick: move |_| open.set(!open()),
             svg {
                 class: "eye-icon",
@@ -83,7 +83,7 @@ pub(crate) fn RulesButton(open: Signal<bool>) -> Element {
 
 /// Dialog showing a card's full details (type, oracle text, stats, keywords,
 /// card roles), for printings whose image is text-light (Secret Lair, full-art,
-/// foreign-language). Opened from the util-bar [`RulesButton`] via the shared
+/// foreign-language). Opened from the action-bar [`RulesButton`] via the shared
 /// `open` signal. Wraps the shared [`CardDetails`] for the body, but drives the
 /// Flip control from the dialog's own footer bar (alongside Close and an optional
 /// view-only Printings) rather than letting the body render it inline, so the

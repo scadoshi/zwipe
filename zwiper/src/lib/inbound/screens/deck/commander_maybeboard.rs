@@ -595,14 +595,14 @@ pub fn CommanderMaybeboard() -> Element {
 
             ActionBar {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| {
                         navigator.push(Router::DeckList {});
                     },
                     "Back"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| filters_overlay_open.set(true),
                     "Filter"
                     if !filter_builder.read().is_empty() || filter_builder.read().sort().is_some() {
@@ -610,12 +610,12 @@ pub fn CommanderMaybeboard() -> Element {
                     }
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| swipe_open.set(true),
                     "Swipe"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| show_more_sheet.set(true),
                     "More"
                 }

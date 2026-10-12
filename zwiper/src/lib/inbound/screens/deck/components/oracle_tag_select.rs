@@ -236,12 +236,12 @@ pub(crate) fn OracleTagSelect(
 
                 ActionBar {
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         onclick: move |_| back.call(()),
                         "Back"
                     }
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         disabled: unchanged,
                         onclick: move |_| on_close.call(()),
                         "Save"
@@ -253,7 +253,7 @@ pub(crate) fn OracleTagSelect(
                     title: "Oracle tags",
                     actions: rsx! {
                         Button {
-                            variant: ButtonVariant::Util,
+                            variant: ButtonVariant::Action,
                             onclick: move |_| {
                                 hint_open.set(false);
                                 dict_open.set(true);

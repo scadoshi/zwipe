@@ -241,12 +241,12 @@ pub fn Profile() -> Element {
                                 }
 
                                 div {
-                                    class: "profile-row",
-                                    span { class: "profile-row-label", "Username" }
-                                    div { class: "profile-row-value",
+                                    class: "settings-row",
+                                    span { class: "settings-row-label", "Username" }
+                                    div { class: "settings-row-value",
                                         span { { s.user.username.to_string() } }
                                         Button {
-                                            variant: ButtonVariant::Util,
+                                            variant: ButtonVariant::Action,
                                             onclick: move |_| change_username_open.set(true),
                                             "Change"
                                         }
@@ -254,12 +254,12 @@ pub fn Profile() -> Element {
                                 }
 
                                 div {
-                                    class: "profile-row",
+                                    class: "settings-row",
                                     span { style: "display:flex;align-items:center;",
-                                        span { class: "profile-row-label", "Email" }
+                                        span { class: "settings-row-label", "Email" }
                                         InfoButton { topic: HintTopic::Email }
                                     }
-                                    div { class: "profile-row-value",
+                                    div { class: "settings-row-value",
                                         EmailVerification {
                                             email: s.user.email.to_string(),
                                             is_verified: s.user.email_verified_at.is_some(),
@@ -270,24 +270,24 @@ pub fn Profile() -> Element {
 
                                 if s.user.email_verified_at.is_none() {
                                     div {
-                                        class: "profile-row",
+                                        class: "settings-row",
                                         span { style: "display:flex;align-items:center;",
-                                        span { class: "profile-row-label", "Verification" }
+                                        span { class: "settings-row-label", "Verification" }
                                         InfoButton { topic: HintTopic::Verification }
                                     }
-                                        div { class: "profile-row-value",
+                                        div { class: "settings-row-value",
                                             VerificationActions {}
                                         }
                                     }
                                 }
 
                                 div {
-                                    class: "profile-row",
-                                    span { class: "profile-row-label", "Password" }
-                                    div { class: "profile-row-value",
+                                    class: "settings-row",
+                                    span { class: "settings-row-label", "Password" }
+                                    div { class: "settings-row-value",
                                         span { "•••••••" }
                                         Button {
-                                            variant: ButtonVariant::Util,
+                                            variant: ButtonVariant::Action,
                                             onclick: move |_| change_password_open.set(true),
                                             "Change"
                                         }
@@ -302,19 +302,19 @@ pub fn Profile() -> Element {
                                 }
 
                                 div {
-                                    class: "profile-row",
+                                    class: "settings-row",
                                     span { style: "display:flex;align-items:center;",
-                                        span { class: "profile-row-label", "Theme" }
+                                        span { class: "settings-row-label", "Theme" }
                                         InfoButton { topic: HintTopic::Theme }
                                     }
-                                    div { class: "profile-row-value",
+                                    div { class: "settings-row-value",
                                         span { { display_theme_name(&theme_config().name) } }
                                         DarkModeButton {
                                             is_dark: theme_config().is_dark,
                                             onclick: move |_| toggle_dark_mode(),
                                         }
                                         Button {
-                                            variant: ButtonVariant::Util,
+                                            variant: ButtonVariant::Action,
                                             onclick: move |_| preferences_open.set(true),
                                             "Change"
                                         }
@@ -322,14 +322,14 @@ pub fn Profile() -> Element {
                                 }
 
                                 div {
-                                    class: "profile-row",
+                                    class: "settings-row",
                                     span { style: "display:flex;align-items:center;",
-                                        span { class: "profile-row-label", "Universes Beyond" }
+                                        span { class: "settings-row-label", "Universes Beyond" }
                                         InfoButton { topic: HintTopic::UniversesBeyond }
                                     }
-                                    div { class: "profile-row-value",
+                                    div { class: "settings-row-value",
                                         Button {
-                                            variant: ButtonVariant::Util,
+                                            variant: ButtonVariant::Action,
                                             disabled: !ub_loaded(),
                                             onclick: move |_| toggle_universes_beyond(),
                                             if ub_hide() { "Hide" } else { "Show" }
@@ -338,9 +338,9 @@ pub fn Profile() -> Element {
                                 }
 
                                 div {
-                                    class: if ub_hide() { "profile-row ub-exceptions-row" } else { "profile-row ub-exceptions-row ub-chips-disabled" },
+                                    class: if ub_hide() { "settings-row ub-exceptions-row" } else { "settings-row ub-exceptions-row ub-chips-disabled" },
                                     span { style: "display:flex;align-items:center;",
-                                        span { class: "profile-row-label", "Exceptions" }
+                                        span { class: "settings-row-label", "Exceptions" }
                                         button {
                                             class: "info-button",
                                             r#type: "button",
@@ -351,9 +351,9 @@ pub fn Profile() -> Element {
                                             "?"
                                         }
                                     }
-                                    div { class: "profile-row-value",
+                                    div { class: "settings-row-value",
                                         Button {
-                                            variant: ButtonVariant::Util,
+                                            variant: ButtonVariant::Action,
                                             disabled: !ub_loaded() || !ub_hide(),
                                             onclick: move |_| ub_exceptions_open.set(true),
                                             "Change"
@@ -392,14 +392,14 @@ pub fn Profile() -> Element {
                                 }
 
                                 div {
-                                    class: "profile-row",
+                                    class: "settings-row",
                                     span { style: "display:flex;align-items:center;",
-                                        span { class: "profile-row-label", "Website" }
+                                        span { class: "settings-row-label", "Website" }
                                         InfoButton { topic: HintTopic::Website }
                                     }
-                                    div { class: "profile-row-value",
+                                    div { class: "settings-row-value",
                                         Button {
-                                            variant: ButtonVariant::Util,
+                                            variant: ButtonVariant::Action,
                                             onclick: move |_| open_url::open(WEB_BASE),
                                             "zwipe.net \u{2197}"
                                         }
@@ -407,11 +407,11 @@ pub fn Profile() -> Element {
                                 }
 
                                 div {
-                                    class: "profile-row",
-                                    span { class: "profile-row-label", "Privacy policy" }
-                                    div { class: "profile-row-value",
+                                    class: "settings-row",
+                                    span { class: "settings-row-label", "Privacy policy" }
+                                    div { class: "settings-row-value",
                                         Button {
-                                            variant: ButtonVariant::Util,
+                                            variant: ButtonVariant::Action,
                                             onclick: move |_| {
                                                 navigator.push(Router::PrivacyPolicy {});
                                             },
@@ -421,15 +421,15 @@ pub fn Profile() -> Element {
                                 }
 
                                 div {
-                                    class: "profile-row",
+                                    class: "settings-row",
                                     span { style: "display:flex;align-items:center;",
-                                        span { class: "profile-row-label", "Version" }
+                                        span { class: "settings-row-label", "Version" }
                                         InfoButton { topic: HintTopic::Version }
                                     }
-                                    div { class: "profile-row-value",
+                                    div { class: "settings-row-value",
                                         span { "v{APP_VERSION}" }
                                         Button {
-                                            variant: ButtonVariant::Util,
+                                            variant: ButtonVariant::Action,
                                             onclick: move |_| {
                                                 navigator.push(Router::Changelog {});
                                             },
@@ -444,18 +444,18 @@ pub fn Profile() -> Element {
 
                 ActionBar {
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         onclick: move |_| navigator.go_back(),
                         "Back"
                     }
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         danger: true,
                         onclick: move |_| show_logout_dialog.set(true),
                         "Log out"
                     }
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         onclick: move |_| show_more_sheet.set(true),
                         "More"
                     }

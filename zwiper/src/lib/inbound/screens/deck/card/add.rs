@@ -1398,12 +1398,12 @@ pub fn Add(deck_id: Uuid) -> Element {
 
             ActionBar {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| navigator.go_back(),
                     "Back"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| filters_overlay_open.set(true),
                     "Filter"
                     if !filter_builder.read().is_empty_ignoring_deck_context_and_auto_lands(lands_at_target()) || filter_builder.read().sort().is_some() {
@@ -1411,7 +1411,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     }
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| {
                         if add_source() == AddSource::Maybeboard {
                             // Maybeboard mode: re-fetch deck to reload maybeboard entries

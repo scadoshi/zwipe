@@ -52,7 +52,7 @@ pub fn UpdateRequired() -> Element {
                     }
                 }
             }
-            div { class: "util-bar" }
+            div { class: "action-bar" }
         }
     }
 }

@@ -239,18 +239,18 @@ pub fn Home() -> Element {
             ImagePreview { card: preview_card, dismissing: preview_dismissing }
 
             ActionBar {
-                Button { variant: ButtonVariant::Util,
+                Button { variant: ButtonVariant::Action,
                     onclick : move |_| {
                         navigator.push(Router::DeckList {} );
                     }, "Decks"
                 }
-                Button { variant: ButtonVariant::Util,
+                Button { variant: ButtonVariant::Action,
                     onclick : move |_| {
                         navigator.push(Router::Profile {} );
                     }, "Profile"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     danger: true,
                     onclick: move |_| show_logout_dialog.set(true),
                     "Log out"

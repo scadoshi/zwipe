@@ -213,7 +213,7 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
 
             ActionBar {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| open.set(false),
                     "Back"
                 }

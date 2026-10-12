@@ -232,13 +232,13 @@ pub fn CreateDeck() -> Element {
 
             ActionBar {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     disabled: is_saving(),
                     onclick: move |_| navigator.go_back(),
                     "Back"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     disabled: is_saving(),
                     onclick : move |_| attempt_submit(),
                     if is_saving() { "Saving..." } else { "Save" }

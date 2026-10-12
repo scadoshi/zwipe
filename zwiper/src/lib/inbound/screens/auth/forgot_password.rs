@@ -93,13 +93,13 @@ pub fn ForgotPassword() -> Element {
             }
             ActionBar {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| navigator.go_back(),
                     "Back to login"
                 }
                 if !submission_success() {
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         onclick: move |_| attempt_submit(),
                         "Send reset link"
                     }

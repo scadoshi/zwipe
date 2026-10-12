@@ -56,7 +56,7 @@ pub fn SupportButton() -> Element {
 
     rsx! {
         button {
-            class: "util-btn page-header-support",
+            class: "btn-action page-header-support",
             "aria-label": "Help and feedback",
             onclick: move |_| open.set(true),
             "{GLYPH}"

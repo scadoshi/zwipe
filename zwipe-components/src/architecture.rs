@@ -5,8 +5,8 @@
 //!
 //! Inline SVG through the shared diagram pieces, so the boxes take the theme's
 //! colors; the frame and footer are the demo gallery's ([`GalleryFrame`],
-//! [`GalleryFooter`]), restyled for short wide diagrams by `.arch-carousel` in
-//! the site sheet.
+//! [`GalleryFooter`]), restyled for short wide diagrams by the host's
+//! `.arch-carousel` rule.
 
 use dioxus::prelude::*;
 

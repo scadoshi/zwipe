@@ -652,12 +652,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
             ActionBar {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| navigator.go_back(),
                     "Back"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| filters_overlay_open.set(true),
                     "Filter"
                     if !filter_builder.read().is_empty() || filter_builder.read().sort().is_some() {
@@ -665,7 +665,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     }
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| {
                         stack.rewind();
                         if filter_builder.peek().sort() == Some(CardSortKey::Random) {

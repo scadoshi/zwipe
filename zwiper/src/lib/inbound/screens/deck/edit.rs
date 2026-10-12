@@ -566,7 +566,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
             ActionBar {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     disabled: is_saving(),
                     onclick: move |_| {
                         navigator.push(Router::ViewDeck { deck_id });
@@ -575,7 +575,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 }
                 if has_made_changes() {
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         disabled: is_saving(),
                         onclick : move |_| attempt_submit(),
                             if is_saving() { "Saving..." } else { "Save changes" }

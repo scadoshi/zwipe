@@ -103,13 +103,13 @@ pub fn Login() -> Element {
         }
         ActionBar {
             Button {
-                variant: ButtonVariant::Util,
+                variant: ButtonVariant::Action,
                 disabled: is_loading(),
                 onclick: move |_| attempt_submit(),
                 if is_loading() { "Logging in..." } else { "Log in" }
             },
             Button {
-                variant: ButtonVariant::Util,
+                variant: ButtonVariant::Action,
                 disabled: is_loading(),
                 onclick: move |_| {
                 navigator.push(Router::Register {});
@@ -117,7 +117,7 @@ pub fn Login() -> Element {
                 "Create profile"
             }
             Button {
-                variant: ButtonVariant::Util,
+                variant: ButtonVariant::Action,
                 disabled: is_loading(),
                 onclick: move |_| { navigator.push(Router::ForgotPassword {}); },
                 "Forgot password"

@@ -522,12 +522,12 @@ pub(crate) fn SwipeSelect(
 
                 ActionBar {
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         onclick: move |_| on_close.call(()),
                         "Back"
                     }
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         onclick: move |_| filters_overlay_open.set(true),
                         "Filter"
                         // Popularity order is this screen's default (no sort),
@@ -537,7 +537,7 @@ pub(crate) fn SwipeSelect(
                         }
                     }
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         onclick: move |_| refresh(),
                         "Refresh"
                     }

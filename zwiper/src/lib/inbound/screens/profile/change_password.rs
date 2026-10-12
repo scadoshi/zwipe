@@ -114,13 +114,13 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
             title: "Change password".to_string(),
             footer: rsx! {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     disabled: is_loading(),
                     onclick: move |_| open.set(false),
                     "Back"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     disabled: is_loading(),
                     onclick: move |_| {
                         submit_attempted.set(true);

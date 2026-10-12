@@ -171,12 +171,12 @@ pub(crate) fn TagSelect(
 
                 ActionBar {
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         onclick: move |_| back.call(()),
                         "Back"
                     }
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         disabled: unchanged,
                         onclick: move |_| on_close.call(()),
                         "Save"

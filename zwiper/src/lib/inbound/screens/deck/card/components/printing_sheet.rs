@@ -90,7 +90,7 @@ pub(crate) fn PrintingSheet(
                     initial_index.set(idx);
                     cached_oracle_id.set(Some(oid));
 
-                    // Measure viewport width (modal-content uses no-pad-x so carousel is full-width)
+                    // Measure viewport width (sheet-content uses no-pad-x so carousel is full-width)
                     let mut eval = document::eval("dioxus.send(window.innerWidth)");
                     let page_width: f64 = eval.recv::<f64>().await.unwrap_or(375.0);
                     carousel_state.set(CarouselState::new(count, idx, page_width));
@@ -135,7 +135,7 @@ pub(crate) fn PrintingSheet(
     rsx! {
         // Modal backdrop
         div {
-            class: if open() { "modal-backdrop show" } else { "modal-backdrop" },
+            class: if open() { "sheet-backdrop show" } else { "sheet-backdrop" },
             onclick: move |_| {
                 if !read_only && has_changed {
                     toast.warning(
@@ -151,11 +151,11 @@ pub(crate) fn PrintingSheet(
         div {
             class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
 
-            div { class: "modal-header",
+            div { class: "sheet-header",
                 span { style: "font-size: 1rem; color: var(--accent-primary);", "Printings" }
             }
 
-            div { class: "modal-content no-pad-x",
+            div { class: "sheet-content no-pad-x",
                 if is_loading() {
                     PrintingSheetSkeleton {}
                 } else if printings().len() > 1 {
@@ -202,7 +202,7 @@ pub(crate) fn PrintingSheet(
 
             ActionBar {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| {
                         if !read_only && has_changed {
                             toast.info(
@@ -221,7 +221,7 @@ pub(crate) fn PrintingSheet(
                 // arriving from nowhere.
                 if !read_only {
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         disabled: !has_changed || visible_card.is_none(),
                         onclick: move |_| {
                             if let Some(new_card) = visible_card.clone() {

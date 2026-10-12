@@ -136,7 +136,7 @@
 }
 
 /* Action-row buttons read as real buttons (filled + lifted), matching the
-   util-bar look, not ghost outlines. Links (buy retailers) can carry these
+   action-bar look, not ghost outlines. Links (buy retailers) can carry these
    classes too, hence text-decoration/-align/display are set here. */
 .alert-dialog-cancel,
 .alert-dialog-action,

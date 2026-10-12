@@ -486,28 +486,28 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
             ActionBar { class: "content-enter-delayed",
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| {
                         navigator.push(Router::DeckList {});
                     },
                     "Back"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| {
                         navigator.push(Router::EditDeck { deck_id });
                     },
                     "Edit"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| {
                         navigator.push(Router::ViewDeckCard { deck_id });
                     },
                     "Cards"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| show_more_sheet.set(true),
                     "More"
                 }

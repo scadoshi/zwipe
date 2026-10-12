@@ -1630,26 +1630,26 @@ pub fn View(deck_id: Uuid) -> Element {
 
             ActionBar {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| navigator.go_back(),
                     "Back"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| {
                         navigator.push(crate::inbound::router::Router::AddDeckCard { deck_id });
                     },
                     "Add"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| {
                         navigator.push(crate::inbound::router::Router::RemoveDeckCard { deck_id });
                     },
                     "Remove"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| filters_overlay_open.set(true),
                     "Filter"
                     if !filter_builder.read().is_empty() || filter_builder.read().sort().is_some() {
@@ -1660,15 +1660,15 @@ pub fn View(deck_id: Uuid) -> Element {
                 // nothing to undo (same pattern as Reset filter below).
                 if !undo_log.0.read().is_empty() {
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         onclick: move |_| apply_undo(),
                         "Undo"
                     }
                 }
                 if !filter_builder.read().is_empty() {
                     Button {
-                        variant: ButtonVariant::Util,
-                        class: "util-btn-clear",
+                        variant: ButtonVariant::Action,
+                        class: "btn-action-clear",
                         onclick: move |_| {
                             filter_builder.write().clear();
                             should_collapse_expanded.set(true);

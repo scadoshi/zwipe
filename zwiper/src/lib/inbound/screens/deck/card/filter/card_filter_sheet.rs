@@ -313,7 +313,7 @@ pub(crate) fn CardFilterSheet(
     rsx! {
         // Modal backdrop
         div {
-            class: if open() { "modal-backdrop show" } else { "modal-backdrop" },
+            class: if open() { "sheet-backdrop show" } else { "sheet-backdrop" },
             onclick: move |_| open.set(false),
         }
 
@@ -321,17 +321,17 @@ pub(crate) fn CardFilterSheet(
         div {
             class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
 
-            div { class: "modal-header", style: "position: relative;",
+            div { class: "sheet-header", style: "position: relative;",
                 span { style: "font-size: 1rem; color: var(--accent-primary);", "Filter" }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
                     onclick: move |_| hint_open.set(true),
                     "?"
                 }
             }
 
-            div { class: "modal-content",
+            div { class: "sheet-content",
                 // Mounted only while the sheet is open, so every section starts
                 // collapsed on reopen. The modal stays in the DOM (hidden via
                 // CSS) and Dioxus won't remount on a key change alone, so this
@@ -717,7 +717,7 @@ pub(crate) fn CardFilterSheet(
 
             ActionBar {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     // Close without applying: the same escape as the backdrop.
                     // Closing restores the open-snapshot, discarding draft edits,
                     // and the close effect says so.
@@ -725,7 +725,7 @@ pub(crate) fn CardFilterSheet(
                     "Back"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     disabled: unchanged,
                     onclick: move |_| {
                         // Block contradictory filters (a value/term both included
@@ -801,7 +801,7 @@ pub(crate) fn CardFilterSheet(
                     "Apply"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| {
                         // Stages the default; Apply commits it, Cancel undoes it.
                         if let Some(handler) = &on_clear {

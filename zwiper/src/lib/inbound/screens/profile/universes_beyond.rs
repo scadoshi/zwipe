@@ -118,12 +118,12 @@ pub fn UniversesBeyondExceptionsSheet(
             on_dismiss: move |_| discard.call(()),
             footer: rsx! {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| discard.call(()),
                     "Back"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     disabled: unchanged,
                     onclick: move |_| save(),
                     "Save"

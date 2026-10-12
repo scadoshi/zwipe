@@ -565,7 +565,7 @@ button {
   utilities - utility bar
   ========================= */
 
-/* .util-bar (ActionBar) is in orangui's components.css. */
+/* .action-bar (ActionBar) is in orangui's components.css. */
 
 /* =====================
   utilities - overflow
@@ -616,9 +616,9 @@ button {
     width: 48%;
 }
 
-/* .util-btn (Button Util) is in the shared components.css and the header
-   corners in the shared app.css. The other modifiers (.util-btn-eye,
-   .util-btn-clear) stay here. */
+/* .btn-action (Button Action) is in the shared components.css and the header
+   corners in the shared app.css. The other modifiers (.btn-action-eye,
+   .btn-action-clear) stay here. */
 .filter-dot {
     width: 6px;
     height: 6px;
@@ -629,12 +629,12 @@ button {
     align-self: center;
 }
 
-.util-btn .filter-dot {
+.btn-action .filter-dot {
     margin-left: 0.3rem;
 }
 
-/* Eye icon for the card-rules util-bar button. Inherits the button's color via
-   currentColor; sits in a util-btn stretched to match its text siblings. */
+/* Eye icon for the card-rules action-bar button. Inherits the button's color via
+   currentColor; sits in a btn-action stretched to match its text siblings. */
 .eye-icon {
     display: block;
     width: 16px;
@@ -657,15 +657,15 @@ button {
     stroke-width: 2;
 }
 
-.util-btn-eye {
+.btn-action-eye {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     align-self: stretch;
 }
 
-/* .util-btn:disabled and .btn-danger/.util-btn-danger moved to components.css. */
-.util-btn-clear {
+/* .btn-action:disabled, .btn-danger and .btn-action-danger are in components.css. */
+.btn-action-clear {
     animation: row-enter 0.2s ease-out both;
 }
 
@@ -1736,7 +1736,7 @@ button {
 
 /* Lets the strip and its source row sit in .hero-head's column as if they
    were its own children, gap and all. */
-.home-hero .hero-figures {
+.home-hero .stats-figures {
     display: contents;
 }
 
@@ -2244,7 +2244,7 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 202; /* above modal-backdrop (200) and bottom-sheet (201) */
+    z-index: 202; /* above sheet-backdrop (200) and bottom-sheet (201) */
     pointer-events: none;
 }
 
@@ -2265,12 +2265,12 @@ button {
     max-height: 38vh;
 }
 
-/* On top of the shared app.css .modal-header. */
-.modal-header {
+/* On top of the shared app.css .sheet-header. */
+.sheet-header {
     gap: 0.75rem;
 }
 
-.bottom-sheet .modal-content {
+.bottom-sheet .sheet-content {
     background-color: var(--bg-sink);
     background-image:
         linear-gradient(var(--grid-line) 1px, transparent 1px),
@@ -2278,12 +2278,12 @@ button {
     background-size: var(--grid-size) var(--grid-size);
 }
 
-.modal-content.no-pad-x {
+.sheet-content.no-pad-x {
     padding-left: 0;
     padding-right: 0;
 }
 
-.modal-content .btn {
+.sheet-content .btn {
     margin-bottom: 0;
 }
 
@@ -2309,7 +2309,7 @@ button {
     transition: all 0.2s ease;
 }
 
-.modal-header-button {
+.sheet-header-button {
     background: none;
     border: none;
     color: var(--text-primary);
@@ -2970,7 +2970,7 @@ button {
     align-self: stretch;
 }
 
-.profile-row-value {
+.settings-row-value {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -3032,7 +3032,7 @@ button {
 
 /* The Exceptions row wraps so its selected-franchise chips sit on their own
    line inside the same row, under the label and Change button. */
-.profile-row.ub-exceptions-row {
+.settings-row.ub-exceptions-row {
     flex-wrap: wrap;
 }
 

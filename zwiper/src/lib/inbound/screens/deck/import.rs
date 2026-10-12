@@ -236,14 +236,14 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
 
                 ActionBar {
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         onclick: move |_| {
                             navigator.push(Router::ViewDeck { deck_id });
                         },
                         "Back"
                     }
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         disabled: loading() || match source() {
                             ImportSource::Text => text().trim().is_empty(),
                             ImportSource::Archidekt => url().trim().is_empty(),

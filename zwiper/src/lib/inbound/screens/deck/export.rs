@@ -214,14 +214,14 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
 
                 ActionBar {
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         onclick: move |_| {
                             navigator.push(Router::ViewDeck { deck_id });
                         },
                         "Back"
                     }
                     Button {
-                        variant: ButtonVariant::Util,
+                        variant: ButtonVariant::Action,
                         onclick: move |_| {
                             if let Some(text) = export_text() {
                                 let js = format!(

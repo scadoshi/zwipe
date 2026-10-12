@@ -135,13 +135,13 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
             title: "Change email".to_string(),
             footer: rsx! {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     disabled: is_loading(),
                     onclick: move |_| open.set(false),
                     "Back"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     disabled: is_loading(),
                     onclick: move |_| attempt_submit(),
                     if is_loading() { "Saving..." } else { "Save changes" }

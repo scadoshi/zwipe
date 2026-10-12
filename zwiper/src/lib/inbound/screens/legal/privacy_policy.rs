@@ -68,7 +68,7 @@ pub fn PrivacyPolicy() -> Element {
 
             ActionBar {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| navigator.go_back(),
                     "Back"
                 }

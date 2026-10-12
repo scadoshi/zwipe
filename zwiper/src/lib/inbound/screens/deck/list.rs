@@ -640,14 +640,14 @@ pub fn DeckList() -> Element {
 
             ActionBar {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| {
                         navigator.push(Router::Home {});
                     },
                     "Back"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| {
                         // Proactive guard: unverified users are limited to 1 deck.
                         // The backend enforces this too, but we surface it here first.
@@ -671,7 +671,7 @@ pub fn DeckList() -> Element {
                     "Create"
                 }
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| show_more_sheet.set(true),
                     "More"
                 }

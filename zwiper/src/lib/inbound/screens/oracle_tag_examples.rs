@@ -267,7 +267,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
 
             ActionBar {
                 Button {
-                    variant: ButtonVariant::Util,
+                    variant: ButtonVariant::Action,
                     onclick: move |_| open.set(false),
                     "Back"
                 }

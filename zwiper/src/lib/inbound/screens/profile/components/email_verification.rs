@@ -35,7 +35,7 @@ pub(crate) fn EmailVerification(
             span { class: "badge-unverified", "Unverified" }
         }
         Button {
-            variant: ButtonVariant::Util,
+            variant: ButtonVariant::Action,
             onclick: move |_| on_change.call(()),
             "Change"
         }
@@ -62,7 +62,7 @@ pub(crate) fn VerificationActions() -> Element {
 
     rsx! {
         Button {
-            variant: ButtonVariant::Util,
+            variant: ButtonVariant::Action,
             disabled: is_resending() || cooldown() > 0,
             onclick: move |evt: MouseEvent| {
                 evt.stop_propagation();
@@ -127,8 +127,8 @@ pub(crate) fn VerificationActions() -> Element {
             }
         }
         Button {
-            variant: ButtonVariant::Util,
-            class: "util-btn-eye",
+            variant: ButtonVariant::Action,
+            class: "btn-action-eye",
             disabled: is_checking(),
             onclick: move |evt: MouseEvent| {
                 evt.stop_propagation();

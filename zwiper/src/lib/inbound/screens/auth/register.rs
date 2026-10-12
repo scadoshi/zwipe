@@ -198,13 +198,13 @@ pub fn Register() -> Element {
         }
         ActionBar {
             Button {
-                variant: ButtonVariant::Util,
+                variant: ButtonVariant::Action,
                 disabled: is_loading(),
                 onclick: move |_| navigator.go_back(),
                 "Back to login"
             }
             Button {
-                variant: ButtonVariant::Util,
+                variant: ButtonVariant::Action,
                 disabled: is_loading(),
                 onclick : move |_| attempt_submit(),
                 if is_loading() { "Creating..." } else { "Create profile" }

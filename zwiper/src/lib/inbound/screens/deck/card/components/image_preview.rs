@@ -14,7 +14,7 @@ pub(crate) fn ImagePreview(
 ) -> Element {
     rsx! {
         if card().is_some() || dismissing() {
-            div { class: "modal-backdrop show" }
+            div { class: "sheet-backdrop show" }
             div {
                 class: if dismissing() {
                     "image-preview-container show dismissing"
