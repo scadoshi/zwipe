@@ -6,8 +6,10 @@
      Referenced by every page via zite's PageMeta as {WEB_BASE}/assets/og-default.png.
      Mirrors zite's look: the gruvbox-dark 28px grid on a darkened --bg-sink, the
      Zwipe wordmark sitting on the grid, and everything else in a hero-style
-     bubble panel. Tokens are copied from shared/themes.css :root (gruvbox-dark);
-     chips reuse the app's .stat-chip formula. The block-glyph wordmark needs the
+     bubble panel. Tokens are copied from zwipe-components/assets/themes.css
+     .theme-gruvbox-dark, and the colors play the roles zite gives them: the
+     tagline's link in palette-1, the stars and value chips in palette-5, the
+     domain in the primary accent. The block-glyph wordmark needs the
      app's self-hosted JetBrains Mono (the CDN fontsource subset drops
      U+2580-U+259F), so the font is loaded from ../../zwiper/assets/fonts.
      Rendered into zite/public/ (served verbatim at /assets/og-default.png, the
@@ -35,10 +37,11 @@
   --bg-primary: #282828;
   --text-primary: #ebdba2;
   --text-muted: #a89984;
-  --accent-primary: #689d6a;
-  --accent-secondary: #cc241d;
-  --accent-tertiary: #d79921;
-  --color-warning: #fabd2f;
+  --accent-primary: #83a598;
+  --accent-secondary: #fabd2f;
+  --accent-tertiary: #d3869b;
+  --palette-1: #83a598;
+  --palette-5: #fabd2f;
   --border-secondary: #3c3836;
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
   --grid-line: rgba(235, 219, 162, 0.04);
@@ -69,6 +72,7 @@ body {
 
 .wordmark {
   white-space: pre;
+  font-family: inherit;
   font-weight: 700;
   font-size: 22px;
   line-height: 0.82;
@@ -96,7 +100,8 @@ body {
   text-align: center;
   white-space: nowrap;
 }
-.hl { color: var(--accent-primary); font-weight: 700; }
+.hl { color: var(--text-primary); font-weight: 700; }
+.link { color: var(--palette-1); font-weight: 700; }
 
 .meta {
   display: flex;
@@ -105,7 +110,7 @@ body {
   font-size: 26px;
   font-weight: 700;
 }
-.stars { color: var(--accent-tertiary); letter-spacing: 4px; }
+.stars { color: var(--palette-5); letter-spacing: 4px; }
 .score { color: var(--text-primary); }
 
 .tags {
@@ -119,9 +124,9 @@ body {
   border: 1px solid;
 }
 .tag-value {
-  color: var(--accent-primary);
-  background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
-  border-color: color-mix(in srgb, var(--accent-primary) 40%, transparent);
+  color: var(--palette-5);
+  background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
+  border-color: color-mix(in srgb, var(--palette-5) 40%, transparent);
 }
 .tag-plat {
   color: var(--text-muted);
@@ -151,7 +156,7 @@ body {
                                    ▎▎▉▉</pre>
 
   <div class="hero">
-    <div class="tagline">The <span class="hl">Magic: The Gathering</span> deck builder built for <span class="hl">mobile</span></div>
+    <div class="tagline">The <span class="link">Magic: The Gathering</span> deck builder built for <span class="hl">mobile</span></div>
     <div class="meta">
       <span class="stars">★★★★★</span>
       <span class="score">4.8</span>
