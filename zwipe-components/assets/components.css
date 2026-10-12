@@ -2266,6 +2266,18 @@ a.nav-dropdown-item.active:visited {
     }
 }
 
+/* The nav's link list scrolls only in the collapsed panel. As a row it never
+   does, and a mask on it would clip the dropdowns that open below it and,
+   where the row's content overruns its box by a pixel or two, dim the row
+   itself through the fallback script's bottom fade. */
+@media (width > 60rem) {
+    .nav-links.scroll-fade-y {
+        -webkit-mask-image: none;
+        mask-image: none;
+        animation: none;
+    }
+}
+
 /* ==============================
    heat grid: a year of days, a column per week (HeatGrid)
    ============================== */
