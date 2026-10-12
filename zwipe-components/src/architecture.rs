@@ -1,6 +1,7 @@
 //! Zwipe's architecture as a two-slide carousel in a panel: how the six
-//! crates import each other, then how the running pieces talk. zite's About
-//! page and the portfolio's Zwipe page both show it, so it lives here.
+//! crates and orangui import each other, then how the running pieces talk.
+//! zite's About page and the portfolio's Zwipe page both show it, so it lives
+//! here.
 //!
 //! Inline SVG through the shared diagram pieces, so the boxes take the theme's
 //! colors; the frame and footer are the demo gallery's ([`GalleryFrame`],
@@ -15,7 +16,7 @@ use orangui::{
 
 /// The caption under each slide, in slide order.
 const CAPTIONS: [&str; 2] = [
-    "Six crates in one workspace: both apps share one typed client, one UI kit and one core, and the server shares the core",
+    "Six crates in one workspace over orangui, the UI kit I built for all my apps: both apps share one typed client, one core and the Magic UI, and the server shares the core",
     "Two clients, one server: the app and the site call the same API, and the card catalog syncs from Scryfall nightly",
 ];
 
@@ -48,15 +49,15 @@ pub fn ZwipeArchitecture(
 }
 
 /// Which crate imports which: the two apps over the shared crates, the server
-/// over the core alone.
+/// over the core alone, and the Magic UI over orangui, the kit in its own repo.
 #[component]
 fn Crates() -> Element {
     rsx! {
         svg {
             class: "diagram",
-            view_box: "0 0 720 236",
+            view_box: "0 0 720 330",
             role: "img",
-            "aria-label": "zwiper and zite import the shared crates, zerver imports zwipe-core, and zwipe-client and zwipe-components both import zwipe-core",
+            "aria-label": "zwiper and zite import the shared crates, zerver imports zwipe-core, zwipe-client imports zwipe-core, and zwipe-components imports zwipe-core and orangui, the UI kit in its own repo",
             DiagramDefs {}
             DiagramNode { x: 30.0, y: 16.0, title: "zwiper", sub: "iOS and Android app", tone: DiagramTone::Primary }
             DiagramNode { x: 285.0, y: 16.0, title: "zerver", sub: "Axum, the REST API", tone: DiagramTone::Tertiary }
@@ -67,12 +68,14 @@ fn Crates() -> Element {
             }
             DiagramNode { x: 30.0, y: 150.0, w: 170.0, title: "zwipe-client", sub: "typed API calls", tone: DiagramTone::Secondary }
             DiagramNode { x: 275.0, y: 150.0, w: 170.0, title: "zwipe-core", sub: "models, filters, traits", tone: DiagramTone::Success }
-            DiagramNode { x: 520.0, y: 150.0, w: 170.0, title: "zwipe-components", sub: "shared Dioxus UI", tone: DiagramTone::Secondary }
+            DiagramNode { x: 520.0, y: 150.0, w: 170.0, title: "zwipe-components", sub: "the Magic UI", tone: DiagramTone::Secondary }
+            DiagramNode { x: 520.0, y: 262.0, w: 170.0, title: "orangui", sub: "UI kit, its own repo", tone: DiagramTone::Secondary }
             DiagramArrow { x1: 105.0, y1: 68.0, x2: 105.0, y2: 136.0, label: "imports" }
             DiagramArrow { x1: 615.0, y1: 68.0, x2: 615.0, y2: 136.0, label: "imports" }
             DiagramArrow { x1: 360.0, y1: 68.0, x2: 360.0, y2: 150.0, label: "imports" }
             DiagramArrow { x1: 200.0, y1: 176.0, x2: 275.0, y2: 176.0 }
             DiagramArrow { x1: 520.0, y1: 176.0, x2: 445.0, y2: 176.0 }
+            DiagramArrow { x1: 605.0, y1: 202.0, x2: 605.0, y2: 262.0, label: "imports" }
         }
     }
 }
