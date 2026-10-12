@@ -174,7 +174,7 @@ a {
     transition: transform 0.25s ease;
 }
 
-/* Scroll reveal (zwipe-components' REVEAL_JS): panels start sunk and faded, then ease
+/* Scroll reveal (orangui's REVEAL_JS): panels start sunk and faded, then ease
    up when the observer flags them on screen. The body prefix outranks the
    crate's .panel-card transition on the same elements while the reveal runs
    (components.css is inlined after this sheet); the script strips both
@@ -324,7 +324,7 @@ body .reveal-pending.reveal-in {
  ==================== */
 
 /* The nav shell (wrapper, hamburger toggle, collapsing panel, link pills)
-   lives in zwipe-components (components.css); only zite-specific pieces
+   lives in orangui (components.css); only zite-specific pieces
    remain here: the ASCII logo, the persistent store CTAs, and store-link
    styling. */
 
@@ -1115,7 +1115,7 @@ code {
 }
 
 /* The changelog content (chip filter + release list) is the shared
-   zwipe_components::Changelog; its styles live in components.css. Only the
+   zwipe_components::Changelog; its styles live in magic.css. Only the
    page header above is zite-specific. */
 
 /* Match the nav-bar pill buttons exactly (.nav-links > li > a in components.css). */
@@ -1734,7 +1734,7 @@ code {
  ==================== */
 
 /* The theme picker (switcher, dropdown, mode toggle) and its in-nav-panel
-   overrides live in zwipe-components (components.css). */
+   overrides live in orangui (components.css). */
 
 /* ==================
         footer

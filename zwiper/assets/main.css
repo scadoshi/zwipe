@@ -565,7 +565,7 @@ button {
   utilities - utility bar
   ========================= */
 
-/* .util-bar (ActionBar) moved to the shared components.css (zwipe-components). */
+/* .util-bar (ActionBar) is in orangui's components.css. */
 
 /* =====================
   utilities - overflow
@@ -1948,7 +1948,7 @@ button {
 }
 
 /* FlippableCardImage: base wrapper/img/flip-button rules live in
-   zwipe-components/assets/components.css (shared with zite). The rules below are
+   zwipe-components/assets/magic.css (shared with zite). The rules below are
    the zwiper-surface-specific max bounds layered on the `.card-image` /
    `.carousel-card-image` layout classes. */
 
@@ -2078,8 +2078,8 @@ button {
   unified chip system
  =========================== */
 
-/* .chip / .chip.selected / .chip .ms moved to the shared components.css
-   (zwipe-components). .chip-xs keeps its own glyph sizing here. */
+/* .chip and .chip.selected are in orangui's components.css and .chip .ms in
+   zwipe-components' magic.css. .chip-xs keeps its own glyph sizing here. */
 .chip-xs .ms {
     font-size: 1.1rem;
     vertical-align: middle;
@@ -2768,8 +2768,8 @@ button {
     gap: 0.3rem;
 }
 
-/* .stepper-btn moved to zwipe-components/assets/components.css — it ships
-   with the shared DrawOdds component. */
+/* .stepper-btn is in orangui's components.css; the DrawOdds component that
+   uses it is in zwipe-components. */
 
 .stepper-value {
     width: 2rem;
