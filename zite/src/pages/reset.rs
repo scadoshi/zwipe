@@ -1,7 +1,7 @@
 use crate::{Nav, api};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
-use zwipe_components::{InfoButton, Panel};
+use zwipe_components::{InfoButton, Panel, PasswordInput};
 use zwipe_core::domain::auth::{models::secret::Secret, password::requirements};
 
 /// Validate a candidate password against the shared password policy.
@@ -21,8 +21,8 @@ enum ResetState {
 
 #[component]
 pub fn Reset(token: String) -> Element {
-    let mut password = use_signal(String::new);
-    let mut confirm = use_signal(String::new);
+    let password = use_signal(String::new);
+    let confirm = use_signal(String::new);
     let mut state = use_signal(|| ResetState::Form);
     let mut rules_open = use_signal(|| false);
 
@@ -121,25 +121,23 @@ pub fn Reset(token: String) -> Element {
                         div { class: "form-group",
                             div { class: "label-row",
                                 span { class: "label-hint-anchor",
-                                    label { "New password" }
+                                    label { r#for: "reset-password", "New password" }
                                     InfoButton { onclick: move |_| rules_open.set(true) }
                                 }
                             }
-                            input {
-                                r#type: "password",
+                            PasswordInput {
+                                value: password,
+                                id: "reset-password",
                                 placeholder: "New password",
-                                value: "{password}",
-                                oninput: move |e| password.set(e.value()),
                                 disabled: current_state == ResetState::Loading,
                             }
                         }
                         div { class: "form-group",
-                            label { "Confirm password" }
-                            input {
-                                r#type: "password",
+                            label { r#for: "reset-confirm", "Confirm password" }
+                            PasswordInput {
+                                value: confirm,
+                                id: "reset-confirm",
                                 placeholder: "Confirm password",
-                                value: "{confirm}",
-                                oninput: move |e| confirm.set(e.value()),
                                 disabled: current_state == ResetState::Loading,
                             }
                         }

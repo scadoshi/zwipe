@@ -2144,6 +2144,38 @@ a.nav-dropdown-item.active:visited {
     transition: all 0.2s ease;
 }
 
+/* ---- PasswordInput (zwipe_components::PasswordInput) ---- */
+
+/* The Show/Hide toggle sits over the field's right edge; the field's padding
+   keeps the typed text clear of it. */
+.password-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-input-wrapper .input-password {
+    padding-right: 4rem;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    top: 50%;
+    right: 0.6rem;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    border-radius: 0.3rem;
+}
+
+.password-toggle-btn:hover {
+    color: var(--palette-1);
+}
+
 /* ==============================
    diagram: boxes and arrows in an inline svg
    ============================== */
