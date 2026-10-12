@@ -768,18 +768,6 @@ button {
     font-size: 0.9rem;
 }
 
-.message-success {
-    text-align: center;
-    font-weight: 400;
-    color: var(--color-success);
-    letter-spacing: 0.1em;
-    padding: 0.75rem 1.25rem;
-    font-size: 0.9rem;
-    border: 1px solid var(--color-success);
-    border-radius: 0.5rem;
-    margin-bottom: 1rem;
-}
-
 .message-empty {
     flex: 1;
     display: flex;
@@ -1719,6 +1707,24 @@ button {
 
 .home-hero .panel-card:hover {
     border-color: var(--border-secondary);
+}
+
+/* An outcome under the hero, as wide as the hero and one panel gap below it.
+   Its title wears the outcome: the success green. Not a link, so it keeps its
+   resting border under a finger. */
+.outcome-success {
+    width: 100%;
+    max-width: 26rem;
+    padding: 0 1rem;
+    margin-top: var(--panel-gap);
+}
+
+.outcome-success .panel-card:hover {
+    border-color: var(--border-secondary);
+}
+
+.outcome-success .panel-title {
+    color: var(--color-success);
 }
 
 .home-hero .hero-head {

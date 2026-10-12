@@ -6,7 +6,7 @@ use crate::inbound::components::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
+use zwipe_components::{ActionBar, Button, ButtonVariant, Panel, TOAST_NORMAL};
 use zwipe_core::{domain::Email, http::contracts::auth::HttpRequestPasswordReset};
 
 /// Forgot password screen for initiating a password reset.
@@ -68,12 +68,14 @@ pub fn ForgotPassword() -> Element {
             ScreenHeader { title: "Reset password" }
             div { class: "screen-content centered content-enter",
                 HomeHero {}
-                div { class: "container-sm text-center",
-                    if submission_success() {
-                        div { class: "message-success",
-                            "If that email is registered, a reset link is on its way."
+                if submission_success() {
+                    div { class: "outcome-success",
+                        Panel { title: "Check your email", centered: true,
+                            p { "If that email is registered, a reset link is on its way." }
                         }
-                    } else {
+                    }
+                } else {
+                    div { class: "container-sm text-center",
                         form { class: "flex-col",
                             TextInput {
                                 value: email,

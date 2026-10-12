@@ -14,7 +14,7 @@ const ALLOWED: [&str; 11] = [
     ".clear-btn",
     ".input-error, .input-error:focus",
     ".message-error",
-    ".message-success",
+    ".outcome-success .panel-title",
     ".stat-chip-bad",
     ".text-error",
     ".text-success",
