@@ -4,17 +4,20 @@
 <meta charset="utf-8" />
 <!-- Default social-share / link-unfurl card (Open Graph + Twitter), 1200x630.
      Referenced by every page via zite's PageMeta as {WEB_BASE}/assets/og-default.png.
-     Mirrors zite's look: the gruvbox-dark 28px grid on a darkened --bg-sink, the
-     Zwipe wordmark sitting on the grid, and everything else in a hero-style
-     bubble panel. Tokens are copied from zwipe-components/assets/themes.css
+     zite's home hero as a card: the gruvbox-dark 28px grid on a darkened
+     --bg-sink, and on it one panel holding the Zwipe wordmark beside the three
+     public counters, a rule, the tagline with the rating, the chips and the
+     domain. Tokens are copied from zwipe-components/assets/themes.css
      .theme-gruvbox-dark, and the colors play the roles zite gives them: the
-     tagline's link in palette-1, the stars and value chips in palette-5, the
-     domain in the primary accent. The block-glyph wordmark needs the
-     app's self-hosted JetBrains Mono (the CDN fontsource subset drops
-     U+2580-U+259F), so the font is loaded from ../../zwiper/assets/fonts.
-     Rendered into zite/public/ (served verbatim at /assets/og-default.png, the
-     literal URL PageMeta points at — NOT zite/assets/, whose files dx content-
-     hashes). Regenerate with:
+     counters and stars in palette-5, the tagline's link in palette-1, a bright
+     gruvbox color per chip (Free yellow, No ads red, iOS blue, Android green)
+     and the domain in palette-6 aqua. The counters are a snapshot of the
+     live numbers at render time; refresh them when regenerating. The
+     block-glyph wordmark needs the app's self-hosted JetBrains Mono (the CDN
+     fontsource subset drops U+2580-U+259F), so the font is loaded from
+     ../../zwiper/assets/fonts. Rendered into zite/public/ (served verbatim at
+     /assets/og-default.png, the literal URL PageMeta points at — NOT
+     zite/assets/, whose files dx content-hashes). Regenerate with:
        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
          --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
          --allow-file-access-from-files --window-size=1200,630 \
@@ -37,12 +40,16 @@
   --bg-primary: #282828;
   --text-primary: #ebdba2;
   --text-muted: #a89984;
+  --border-secondary: #3c3836;
   --accent-primary: #83a598;
-  --accent-secondary: #fabd2f;
-  --accent-tertiary: #d3869b;
   --palette-1: #83a598;
   --palette-5: #fabd2f;
-  --border-secondary: #3c3836;
+  --palette-6: #8ec07c;
+  --red: #fb4934;
+  --green: #b8bb26;
+  --blue: #83a598;
+  --yellow: #fabd2f;
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
   --grid-line: rgba(235, 219, 162, 0.04);
   --grid-size: 28px;
@@ -64,86 +71,126 @@ body {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   -webkit-font-smoothing: antialiased;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 40px;
-}
-
-.wordmark {
-  white-space: pre;
-  font-family: inherit;
-  font-weight: 700;
-  font-size: 22px;
-  line-height: 0.82;
-  color: var(--text-primary);
-  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.6));
 }
 
 .hero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
-  width: 1000px;
-  padding: 40px 56px;
+  width: 1080px;
+  padding: 32px 48px;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-secondary);
   border-radius: 24px;
   box-shadow: var(--shadow-md);
 }
 
-.tagline {
-  font-size: 27px;
-  font-weight: 400;
-  color: var(--text-muted);
-  text-align: center;
-  white-space: nowrap;
-}
-.hl { color: var(--text-primary); font-weight: 700; }
-.link { color: var(--palette-1); font-weight: 700; }
-
-.meta {
+/* The wordmark beside the counters, as the hero lays them out at desktop. */
+.head {
   display: flex;
   align-items: center;
-  gap: 14px;
-  font-size: 26px;
-  font-weight: 700;
+  gap: 36px;
+  width: 100%;
 }
-.stars { color: var(--palette-5); letter-spacing: 4px; }
-.score { color: var(--text-primary); }
 
+.wordmark {
+  white-space: pre;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 0.82;
+  color: var(--text-primary);
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.6));
+  flex-shrink: 0;
+}
+
+.stats {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 8px;
+  border: 1px solid var(--border-secondary);
+  border-radius: 14px;
+  background-color: var(--bg-sink);
+  box-shadow: var(--shadow-sm);
+}
+.stat-num {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--palette-5);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.stat-label {
+  font-size: 16px;
+  color: var(--text-primary);
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.rule {
+  width: calc(100% + 96px);
+  border: none;
+  border-top: 1px solid var(--border-secondary);
+  margin: 24px 0;
+}
+
+.tagline {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 24px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.link { color: var(--palette-1); font-weight: 700; }
+.hl { color: var(--text-primary); font-weight: 700; }
+.stars { color: var(--palette-5); font-weight: 700; letter-spacing: 3px; }
+.score { color: var(--text-primary); font-weight: 700; }
+
+/* A bright gruvbox color per chip; the --c each sets is its text, tint and border. */
 .tags {
   display: flex;
   gap: 14px;
+  margin-top: 22px;
 }
 .tag {
+  --c: var(--text-muted);
   padding: 8px 18px;
   border-radius: 12px;
   font-size: 21px;
-  border: 1px solid;
+  font-weight: 700;
+  color: var(--c);
+  background-color: color-mix(in srgb, var(--c) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
 }
-.tag-value {
-  color: var(--palette-5);
-  background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
-  border-color: color-mix(in srgb, var(--palette-5) 40%, transparent);
-}
-.tag-plat {
-  color: var(--text-muted);
-  background-color: color-mix(in srgb, var(--text-muted) 12%, transparent);
-  border-color: color-mix(in srgb, var(--text-muted) 30%, transparent);
-}
+.tag-yellow { --c: var(--yellow); }
+.tag-red { --c: var(--red); }
+.tag-blue { --c: var(--blue); }
+.tag-green { --c: var(--green); }
 
 .site {
+  margin-top: 24px;
   font-size: 34px;
   font-weight: 700;
   letter-spacing: 6px;
-  color: var(--accent-primary);
+  color: var(--palette-6);
 }
 </style>
 </head>
 <body>
-  <pre class="wordmark">▎▎▉▉▉▉▉▉▉            ▎▎▉▉
+  <div class="hero">
+    <div class="head">
+      <pre class="wordmark">▎▎▉▉▉▉▉▉▉            ▎▎▉▉
   ▎▎▉▉▉▉▉▉▎▎▉▉    ▎▎▉▉▎▎▉▉▎▎▉▉▉▉▉▉ ▎▎▉▉▉▉▉▉▉
       ▎▎▉▉ ▎▎▉▉    ▎▎▉▉    ▎▎▉▉▉▉▉▉▉▎▎▉▉ ▎▎▉▉
      ▎▎▉▉   ▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉ ▎▎▉▉▎▎▉▉▉▉▉▉▉
@@ -154,18 +201,23 @@ body {
                                  ▎▎▉▉
                                   ▎▎▉▉
                                    ▎▎▉▉</pre>
-
-  <div class="hero">
-    <div class="tagline">The <span class="link">Magic: The Gathering</span> deck builder built for <span class="hl">mobile</span></div>
-    <div class="meta">
+      <div class="stats">
+        <div class="stat"><span class="stat-num">2,102</span><span class="stat-label">Decks created</span></div>
+        <div class="stat"><span class="stat-num">28,813</span><span class="stat-label">Searches run</span></div>
+        <div class="stat"><span class="stat-num">251,166</span><span class="stat-label">Cards swiped</span></div>
+      </div>
+    </div>
+    <hr class="rule" />
+    <div class="tagline">
+      <span>The <span class="link">Magic: The Gathering</span> deck builder built for <span class="hl">mobile</span></span>
       <span class="stars">★★★★★</span>
       <span class="score">4.8</span>
     </div>
     <div class="tags">
-      <span class="tag tag-value">Free</span>
-      <span class="tag tag-value">No ads</span>
-      <span class="tag tag-plat">iOS</span>
-      <span class="tag tag-plat">Android</span>
+      <span class="tag tag-yellow">Free</span>
+      <span class="tag tag-red">No ads</span>
+      <span class="tag tag-blue">iOS</span>
+      <span class="tag tag-green">Android</span>
     </div>
     <div class="site">zwipe.net</div>
   </div>
