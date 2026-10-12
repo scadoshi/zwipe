@@ -9,6 +9,7 @@ const URL_ZERVER: &str = "https://github.com/scadoshi/zwipe/tree/main/zerver";
 const URL_ZWIPE_CORE: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-core";
 const URL_ZWIPE_COMPONENTS: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-components";
 const URL_ZWIPE_CLIENT: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-client";
+const URL_ORANGUI: &str = "https://github.com/scadoshi/orangui";
 const URL_DIOXUS: &str = "https://dioxuslabs.com";
 const URL_WASM: &str = "https://webassembly.org";
 const URL_AXUM: &str = "https://github.com/tokio-rs/axum";
@@ -49,7 +50,7 @@ pub fn About() -> Element {
             div { class: "section",
                 div { class: "section-head",
                     Panel { title: "System architecture",
-                        p { class: "card-summary", "Six Rust crates in one workspace. What each one does, and where it pulls from." }
+                        p { class: "card-summary", "Six Rust crates in one workspace, on top of orangui, the UI kit I built and share between this app, this site and two other apps of mine. What each one does, and where it pulls from." }
                     }
                 }
                 div { class: "arch-figure", ZwipeArchitecture {} }
@@ -148,9 +149,15 @@ pub fn About() -> Element {
                         },
                         div { class: "arch-tags",
                             a { class: "tag", href: URL_DIOXUS, "Dioxus" }
+                            a { class: "tag", href: URL_ORANGUI, "orangui" }
                         }
                         ul { class: "card-bullets",
-                            li { "The Dioxus UI shared across the clients: buttons, action bar, card row, changelog" }
+                            li { "The Magic UI shared across the clients: card row, deck charts, changelog, this diagram" }
+                            li {
+                                "Built on "
+                                a { href: URL_ORANGUI, "orangui" }
+                                ", the UI kit I wrote for all my apps: themes, panels, nav, charts"
+                            }
                             li {
                                 "Reused beyond Zwipe on "
                                 a { href: "https://scottyfermo.com", "scottyfermo.com" }
@@ -158,6 +165,8 @@ pub fn About() -> Element {
                             li {
                                 "Imports "
                                 a { href: URL_ZWIPE_CORE, "zwipe-core" }
+                                " and "
+                                a { href: URL_ORANGUI, "orangui" }
                             }
                         }
                     }
