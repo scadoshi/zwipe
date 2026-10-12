@@ -44,17 +44,14 @@ use preferences::PreferencesSheet;
 use universes_beyond::UniversesBeyondExceptionsSheet;
 use zwipe_components::{
     ActionBar, BottomSheet, Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets,
-    HintKey, TOAST_NORMAL,
+    HintKey, TOAST_NORMAL, ThemeConfig, theme_from_preferences,
 };
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
         card::scryfall_data::universe::franchise_by_slug,
         site::WEB_BASE,
-        user::{
-            models::{hints::HINT_PROFILE, theme::ThemeConfig},
-            preferences::display_theme_name,
-        },
+        user::{models::hints::HINT_PROFILE, preferences::display_theme_name},
     },
     http::contracts::user::HttpUpdatePreferences,
 };
@@ -208,7 +205,7 @@ pub fn Profile() -> Element {
                 .await
             {
                 Ok(prefs) => {
-                    theme_config.set(ThemeConfig::from(&prefs));
+                    theme_config.set(theme_from_preferences(&prefs));
                     said.call(if prefs.dark_mode {
                         "Dark mode on"
                     } else {

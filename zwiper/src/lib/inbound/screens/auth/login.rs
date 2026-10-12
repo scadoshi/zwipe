@@ -12,10 +12,11 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
+use zwipe_components::{
+    ActionBar, Button, ButtonVariant, TOAST_NORMAL, ThemeConfig, theme_from_preferences,
+};
 use zwipe_core::{
-    domain::{auth::models::session::Session, user::models::theme::ThemeConfig},
-    http::contracts::auth::HttpAuthenticateUser,
+    domain::auth::models::session::Session, http::contracts::auth::HttpAuthenticateUser,
 };
 
 /// Login form screen for user authentication.
@@ -57,7 +58,7 @@ pub fn Login() -> Element {
                     new_session.infallible_save();
                     // Apply theme from preferences
                     let mut theme: Signal<ThemeConfig> = use_context();
-                    theme.set(ThemeConfig::from(&new_session.preferences));
+                    theme.set(theme_from_preferences(&new_session.preferences));
                     session.set(Some(new_session));
                     // The password has done its job; the signal outlives the
                     // screen in the router cache.

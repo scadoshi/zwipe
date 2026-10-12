@@ -9,7 +9,7 @@
 
 use dioxus::prelude::*;
 
-use crate::{
+use orangui::{
     DiagramArrow, DiagramDefs, DiagramNode, DiagramTone, GalleryFooter, GalleryFrame, Panel,
 };
 

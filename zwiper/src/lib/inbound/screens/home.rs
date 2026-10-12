@@ -23,13 +23,14 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::sync::atomic::{AtomicBool, Ordering};
 use zwipe_client::ZwipeClient;
 use zwipe_components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintKey, TOAST_QUICK,
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintKey, TOAST_QUICK, ThemeConfig,
+    theme_from_preferences,
 };
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{scryfall_data::ScryfallData, search_card::card_filter::price_currency::PriceCurrency},
     deck::deck_metrics::card_price,
-    user::models::{hints::HINT_FIRST_LOGIN, theme::ThemeConfig},
+    user::models::hints::HINT_FIRST_LOGIN,
 };
 
 /// Whether this launch has already greeted. Home remounts on every navigation
@@ -119,7 +120,7 @@ pub fn Home() -> Element {
         spawn(async move {
             match client().get_preferences(&s).await {
                 Ok(prefs) => {
-                    theme_config.set(ThemeConfig::from(&prefs));
+                    theme_config.set(theme_from_preferences(&prefs));
                 }
                 Err(e) => {
                     tracing::warn!("preferences fetch failed: {e}");

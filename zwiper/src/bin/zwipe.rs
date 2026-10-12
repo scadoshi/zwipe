@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use tracing_subscriber::EnvFilter;
-use zwipe_components::ToastStack;
-use zwipe_core::domain::{logo, user::models::theme::ThemeConfig};
+use zwipe_components::{ThemeConfig, ToastStack};
+use zwipe_core::domain::logo;
 use zwiper::{
     config::Config,
     inbound::{
@@ -112,6 +112,7 @@ fn App() -> Element {
         }
         document::Style { {zwipe_components::THEMES_CSS} }
         document::Style { {zwipe_components::COMPONENTS_CSS} }
+        document::Style { {zwipe_components::MAGIC_CSS} }
         document::Style { {zwipe_components::APP_CSS} }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: ACCORDION_CSS }

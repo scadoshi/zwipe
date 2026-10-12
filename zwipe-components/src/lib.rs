@@ -1,150 +1,55 @@
-//! Shared Dioxus UI components for the Zwipe surfaces.
+//! The Magic pieces of the Zwipe UI, over [orangui](https://github.com/scadoshi/orangui).
 //!
-//! `zwiper` (the app) and `zite` (the marketing/site) both depend on this crate
-//! so buttons, chips, and action bars look and behave identically across them;
-//! the portfolio site and cairn (a counter app) take it as a git dependency.
-//! Styling ships alongside: `assets/components.css` (the components' rules) and
-//! `assets/themes.css` (the theme palettes those rules resolve against). The
-//! workspace apps copy both into their own asset bundles at build time;
-//! external consumers can't reach the crate's files by path, so the same CSS
-//! is also exported as the [`COMPONENTS_CSS`] / [`THEMES_CSS`] string
-//! constants to inline via `document::Style`.
+//! orangui is the generic kit: themes, panels, nav, charts, the entrance
+//! effects and the app and site kits. This crate re-exports all of it
+//! (`pub use orangui::*`) so `zwiper` (the app) and `zite` (the site) keep one
+//! import path, and adds what needs `zwipe-core`: [`CardDetails`], [`CardRow`],
+//! [`CardRoleChips`], [`KeywordChips`], [`OracleText`], [`FlippableCardImage`],
+//! [`Changelog`], the deck charts ([`DeckCharts`], [`ManaCurve`],
+//! [`ManaFulfillment`], [`DrawOdds`], [`ChartLabel`]) and [`ZwipeArchitecture`].
 //!
-//! Two kits sit beside the components every surface uses. The app kit
-//! ([`BottomSheet`], [`PageHeader`], [`ThemeSheet`], the hint pieces, the
-//! overlay back stack and, behind the `toast` feature, `ToastStack`) is for
-//! the apps and styled by the opt-in [`APP_CSS`]. The site kit
-//! ([`use_persisted_theme`], [`StatsStrip`], [`GalleryFrame`], [`REVEAL_JS`],
-//! [`NAV_GLIDE_JS`], [`SCROLL_FADE_JS`]) is for the websites, with the gallery base in the opt-in
-//! [`SITE_CSS`]. [`HeatGrid`] is the contribution heatmap's grid, for any
-//! surface that draws a year of days.
+//! Styling ships as string constants to inline through `document::Style`.
+//! orangui's sheets come through as they are; [`MAGIC_CSS`] holds this crate's
+//! own rules (oracle text, keyword chips, card rows, the flippable card image,
+//! the changelog and the mana glyph inside a chip). **CSS cascade order
+//! matters:** `THEMES_CSS`, then `COMPONENTS_CSS`, then `MAGIC_CSS`, then
+//! `APP_CSS` or `SITE_CSS`, then the host's own stylesheet, so component rules
+//! resolve theme variables and host rules override shared defaults at equal
+//! specificity.
 //!
-//! **CSS cascade order matters:** load themes first, then components, then the
-//! opt-in sheet, then the host's own stylesheet (`THEMES_CSS`, then
-//! `COMPONENTS_CSS`, then `APP_CSS` or `SITE_CSS`, then host CSS) so component
-//! rules resolve theme variables and host rules can override shared defaults at
-//! equal specificity.
+//! The hosts hold orangui's [`ThemeConfig`]; [`theme_from_preferences`] builds
+//! it from a user's saved preferences, and a test in `theme.rs` keeps
+//! zwipe-core's theme list equal to orangui's.
 //!
 //! These components deliberately depend only on base `dioxus` (no platform
-//! features) and `zwipe-core`, so any Dioxus target can consume them. The
-//! `toast` feature adds `dioxus-primitives`.
+//! features), orangui and `zwipe-core`, so any Dioxus target can consume them.
+//! The `toast` feature enables orangui's.
 
-mod action_bar;
 mod architecture;
-mod banner;
-mod bottom_sheet;
-mod button;
 mod card_details;
 mod card_role_chips;
 mod card_row;
 mod changelog;
-mod chart_math;
 mod charts;
-mod chip;
-mod diagram;
-mod entrance;
 mod flippable_card_image;
-mod gallery;
-mod heat_grid;
-mod hint;
 mod keyword_chips;
-mod nav_bar;
-mod nav_dropdown;
 mod oracle_text;
-mod overlay_stack;
-mod page_header;
-mod page_meta;
-mod palette_guard;
-mod panel;
-mod password_input;
-mod stats_strip;
-mod theme_picker;
-mod theme_sheet;
-mod theme_store;
-mod theme_wipe;
-#[cfg(feature = "toast")]
-mod toast_stack;
-mod toast_timing;
+mod theme;
 
-pub use action_bar::ActionBar;
+pub use orangui::*;
+
 pub use architecture::ZwipeArchitecture;
-pub use banner::{Banner, BannerStatus};
-pub use bottom_sheet::BottomSheet;
-pub use button::{Button, ButtonVariant};
 pub use card_details::{CardDetails, card_face_count};
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
 pub use changelog::Changelog;
-pub use chart_math::{area, curve, peak_indices, tip_anchor};
 pub use charts::{ChartLabel, DeckCharts, DrawOdds, ManaCurve, ManaFulfillment};
-pub use chip::Chip;
-pub use diagram::{DIAGRAM_NODE_HEIGHT, DiagramArrow, DiagramDefs, DiagramNode, DiagramTone};
-pub use entrance::{CountUp, Decode, Figure, Replay, with_separators};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
-pub use gallery::{GalleryFooter, GalleryFrame};
-pub use heat_grid::{
-    HEAT_CELL, HEAT_GAP, HEAT_ROWS, HEAT_STEP, HeatCell, HeatGrid, HeatHit, heat_span,
-    use_scroll_to_end,
-};
-pub use hint::{HintBullet, HintBullets, HintKey, HintLine, InfoButton};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
-pub use nav_bar::{BRAND_RESET_JS, NavBar};
-pub use nav_dropdown::NavDropdown;
 pub use oracle_text::OracleText;
-pub use overlay_stack::{
-    OverlayBackStack, use_overlay_back, use_overlay_back_action, use_overlay_back_stack,
-};
-pub use page_header::PageHeader;
-pub use page_meta::{PageMeta, SiteMeta};
-pub use palette_guard::{StatusUse, status_uses};
-pub use panel::Panel;
-pub use password_input::PasswordInput;
-pub use stats_strip::StatsStrip;
-pub use theme_picker::{DarkModeButton, ModeIcon, ThemePicker};
-pub use theme_sheet::ThemeSheet;
-pub use theme_store::use_persisted_theme;
-pub use theme_wipe::{ThemeFollow, use_theme_follow, use_theme_wipe};
-#[cfg(feature = "toast")]
-pub use toast_stack::ToastStack;
-pub use toast_timing::{TOAST_LONG, TOAST_NORMAL, TOAST_QUICK};
-// The theme domain types live in zwipe-core (user preferences persist them
-// server-side); re-exported here so UI consumers have one import path.
-pub use zwipe_core::domain::user::{
-    models::theme::ThemeConfig,
-    preferences::{ALLOWED_THEMES, COLORBLIND_THEMES, display_theme_name},
-};
+pub use theme::theme_from_preferences;
 
-/// The shared component rules, for consumers outside this workspace.
-pub const COMPONENTS_CSS: &str = include_str!("../assets/components.css");
-/// The shared theme palettes (31 themes, dark + light), for consumers outside
-/// this workspace.
-pub const THEMES_CSS: &str = include_str!("../assets/themes.css");
-/// The sites' scroll reveal: elements marked `data-reveal` (every [`Panel`])
-/// that start below the fold fade up as they scroll in. Inline it with
-/// `document::Script`; the host's stylesheet styles `.reveal-pending` and
-/// `.reveal-in`.
-pub const REVEAL_JS: &str = include_str!("../assets/reveal.js");
-/// The sites' nav glide: the children of every element marked
-/// `data-nav-glide` (the [`NavBar`] links and the [`ThemePicker`]) slide to
-/// their new places when a neighbor changes width. Inline it with
-/// `document::Script`.
-pub const NAV_GLIDE_JS: &str = include_str!("../assets/nav-glide.js");
-/// The sites' scroll fade for browsers without scroll timelines (Firefox,
-/// older Safari): sets the edge fades on every `.scroll-fade-x`,
-/// `.diagram-scroll` and `.scroll-fade-y` (the [`NavBar`] link list) from the
-/// scroll position, which [`COMPONENTS_CSS`] animates where it can, and does
-/// nothing elsewhere. Inline it with `document::Script`.
-pub const SCROLL_FADE_JS: &str = include_str!("../assets/scroll-fade.js");
-/// The sites' shared base for the gallery ([`GalleryFrame`],
-/// [`GalleryFooter`]), for the websites only. Load it after
-/// [`COMPONENTS_CSS`] and before the site's own stylesheet.
-pub const SITE_CSS: &str = include_str!("../assets/site.css");
-/// The app shell's rules (screen, page header, bottom sheet, settings rows,
-/// hints), for the apps only. Load it after [`COMPONENTS_CSS`] and before the
-/// app's own stylesheet. Sites leave it out: they style these class names
-/// their own way.
-pub const APP_CSS: &str = include_str!("../assets/app.css");
-/// The toast stack's rules, for [`ToastStack`]. Load it after the app's own
-/// stylesheet, as the apps load their toast sheet today.
-#[cfg(feature = "toast")]
-pub const TOAST_CSS: &str = include_str!("../assets/toast.css");
+/// The Magic rules: oracle text, keyword chips, card rows, the flippable card
+/// image, the changelog and the mana glyph inside a chip. Load it after
+/// orangui's [`COMPONENTS_CSS`] and before [`APP_CSS`] or [`SITE_CSS`].
+pub const MAGIC_CSS: &str = include_str!("../assets/magic.css");

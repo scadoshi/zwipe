@@ -11,26 +11,16 @@ path = "src/lib.rs"
 
 [dependencies]
 # Dioxus with its default features (macro/html/signals/hooks) but NO platform
-# feature — each consuming app (zwiper, zite) enables its own web/mobile/
+# feature: each consuming app (zwiper, zite) enables its own web/mobile/
 # fullstack, and cargo unifies; sharing components must not force a platform.
 dioxus = { version = "0.7.9" }
 uuid.workspace = true
 zwipe-core = { path = "../zwipe-core" }
-# The toast stack, behind the `toast` feature so the sites never build it.
-# The same pinned build the apps use.
-dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "02801f27e4b3e30606e5c77e435c9d955c708eb3", version = "0.0.1", default-features = false, optional = true }
+# The generic UI kit: themes, panels, nav, charts and the entrance effects.
+# Everything here that is not Magic is a re-export of it. The workspace
+# Cargo.lock pins the commit; `cargo update -p orangui` moves it.
+orangui = { git = "https://github.com/scadoshi/orangui", branch = "main" }
 
 [features]
 # ToastStack and TOAST_CSS, for the apps.
-toast = ["dep:dioxus-primitives"]
-
-# The entrance module waits between frames: the browser's timer on the web,
-# tokio's everywhere else (the app's WebView runs on tokio already).
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-gloo-timers = { version = "0.4", features = ["futures"] }
-# use_persisted_theme keeps the picked theme in the browser's localStorage.
-serde_json.workspace = true
-web-sys = { version = "0.3", features = ["Window", "Storage"] }
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-tokio.workspace = true
+toast = ["orangui/toast"]

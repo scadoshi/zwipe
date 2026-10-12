@@ -12,7 +12,7 @@
 //!
 //! [`session`]: crate::outbound::session
 
-use zwipe_core::domain::user::models::theme::ThemeConfig;
+use zwipe_components::ThemeConfig;
 
 /// Persisting the last-used theme across application restarts.
 pub trait PersistTheme {

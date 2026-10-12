@@ -34,12 +34,13 @@ use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::interval;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{KeywordReminders, use_overlay_back_stack};
+use zwipe_components::{
+    KeywordReminders, ThemeConfig, theme_from_preferences, use_overlay_back_stack,
+};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
         card::{Card, search_card::card_filter::builder::CardQueryBuilder},
-        user::models::theme::ThemeConfig,
     },
     http::contracts::{changelog::HttpChangelog, metrics::AnonymousEventKind},
     version::version_at_least,
@@ -245,7 +246,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
         session
             .peek()
             .as_ref()
-            .map(|s| ThemeConfig::from(&s.preferences))
+            .map(|s| theme_from_preferences(&s.preferences))
             .or_else(ThemeConfig::infallible_load)
             .unwrap_or_default()
     });

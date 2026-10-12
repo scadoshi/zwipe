@@ -6,10 +6,8 @@ use crate::inbound::components::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{TOAST_QUICK, ThemeSheet};
-use zwipe_core::{
-    domain::user::models::theme::ThemeConfig, http::contracts::user::HttpUpdatePreferences,
-};
+use zwipe_components::{TOAST_QUICK, ThemeConfig, ThemeSheet, theme_from_preferences};
+use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
 /// The shared theme sheet, saving a kept pick to the account. Selections
 /// live-preview against the whole app; Save persists the pick and toasts once
@@ -34,7 +32,7 @@ pub fn PreferencesSheet(open: Signal<bool>) -> Element {
                 })
                 .await
             {
-                theme_config.set(ThemeConfig::from(&prefs));
+                theme_config.set(theme_from_preferences(&prefs));
                 toast.success(
                     "Theme saved".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),

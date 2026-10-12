@@ -1,31 +1,28 @@
 # zwipe-components
 
-Shared Dioxus UI components and CSS for Zwipe, consumed by the app (`zwiper`), the website (`zite`), and, as GitHub git dependencies, the owner's portfolio site and cairn (a counter app). Rendering and styling live here once so the surfaces never drift.
+The Magic pieces of the Zwipe UI, over [orangui](https://github.com/scadoshi/orangui). orangui is the generic Dioxus kit (themes, panels, nav, charts, the entrance effects, the app and site kits); this crate re-exports all of it and adds what needs `zwipe-core`. The app (`zwiper`) and the website (`zite`) depend on it and import everything as `zwipe_components::`. The owner's portfolio and cairn still take it as a git dependency until they move to orangui.
 
 ## Components
 
-For every consumer: `ActionBar`, `Banner`, `Button`, `CardDetails`, `CardRoleChips`, `CardRow`, `Changelog`, `Chip`, `FlippableCardImage`, `KeywordChips`, `NavBar`, `NavDropdown`, `OracleText`, `PageMeta`, `Panel`, `ThemePicker`; the deck chart family (`DeckCharts`, `ManaCurve`, `ManaFulfillment`, `DrawOdds`, `ChartLabel`); the diagram pieces (`DiagramNode`, `DiagramArrow`, `DiagramDefs`); and the entrance figures (`CountUp`, `Decode`, `Figure`).
+Here: `CardDetails`, `CardRow`, `CardRoleChips`, `KeywordChips`, `OracleText`, `FlippableCardImage`, `Changelog`, the deck chart family (`DeckCharts`, `ManaCurve`, `ManaFulfillment`, `DrawOdds`, `ChartLabel`) and `ZwipeArchitecture`.
 
-The app kit, for zwiper and cairn: `BottomSheet`, `PageHeader`, `ThemeSheet`, the hint pieces (`InfoButton`, `HintLine`, `HintBullets`, `HintBullet`, `HintKey`), the OS back stack (`OverlayBackStack`, `use_overlay_back_stack`, `use_overlay_back`, `use_overlay_back_action`), and, behind the `toast` feature, `ToastStack`.
+From orangui, re-exported whole (`pub use orangui::*`): `ActionBar`, `Banner`, `Button`, `Chip`, `NavBar`, `NavDropdown`, `PageMeta`, `Panel`, `PasswordInput`, `ThemePicker`, the diagram pieces, the entrance figures, the app kit (`BottomSheet`, `PageHeader`, `ThemeSheet`, the hint pieces, the overlay back stack and, behind the `toast` feature, `ToastStack`), the site kit (`use_persisted_theme`, `StatsStrip`, `GalleryFrame`, `GalleryFooter`, the scripts), `HeatGrid`, the chart helpers and the theme model (`ThemeConfig`, `ALLOWED_THEMES`, `COLORBLIND_THEMES`, `display_theme_name`).
 
-The site kit, for zite and the portfolio: `use_persisted_theme`, `StatsStrip`, `GalleryFrame`, `GalleryFooter`, and the `REVEAL_JS` and `NAV_GLIDE_JS` scripts.
+## Theme
 
-Chart helpers: `curve`, `area`, `tip_anchor`, `peak_indices`.
+The hosts hold orangui's `ThemeConfig`. `theme_from_preferences` builds one from a user's saved `UserPreferences`. zwipe-core keeps its own theme list because zerver validates a saved theme against it and core cannot depend on a UI crate; a test in `src/theme.rs` fails if the two lists or their display names differ.
 
 ## CSS exports
 
-- `THEMES_CSS`: the 31 theme palettes, each with light and dark variants (`assets/themes.css`)
-- `COMPONENTS_CSS`: component styles (`assets/components.css`)
-- `APP_CSS`: the app shell, for the apps only (`assets/app.css`)
-- `SITE_CSS`: the gallery base, for the websites only (`assets/site.css`)
-- `TOAST_CSS`: the toast stack, behind the `toast` feature (`assets/toast.css`)
+- `THEMES_CSS`, `COMPONENTS_CSS`, `APP_CSS`, `SITE_CSS`, `TOAST_CSS` (behind `toast`): orangui's sheets, re-exported
+- `MAGIC_CSS`: this crate's rules (`assets/magic.css`): oracle text, keyword chips, card rows, the flippable card image, the changelog and the mana glyph inside a chip
 
-Load them in that order (themes, components, then the opt-in sheet), then the host's own stylesheet, so host rules override shared ones at equal specificity. `TOAST_CSS` goes after the host's stylesheet. External consumers include these strings directly; the app and site inline the first two through their own asset pipelines.
+Load them in this order: `THEMES_CSS`, `COMPONENTS_CSS`, `MAGIC_CSS`, then `APP_CSS` or `SITE_CSS`, then the host's own stylesheet, so host rules override shared ones at equal specificity. `TOAST_CSS` goes after the host's stylesheet.
 
 ## Features
 
-- `toast`: `ToastStack` and `TOAST_CSS`. Off by default, so the sites never build `dioxus-primitives`.
+- `toast`: enables orangui's `ToastStack` and `TOAST_CSS`. Off by default, so the sites never build `dioxus-primitives`.
 
 ## Notes
 
-Domain types (themes, card data) come from `zwipe-core`; this crate adds only presentation. The `Changelog` component renders the shared release history from `changelog.rs`, identical on web and in-app.
+Domain types (card data, the changelog entries, the user's preferences) come from `zwipe-core`; this crate adds only presentation. The `Changelog` component renders the shared release history, identical on web and in-app. `scripts/swatch/` renders a themes.css as a review page; point it at orangui's.

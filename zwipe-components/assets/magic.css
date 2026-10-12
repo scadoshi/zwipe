@@ -1,0 +1,989 @@
+/* The Magic rules for zwipe-components, on top of orangui's COMPONENTS_CSS.
+ * Inlined by zwiper and zite through the MAGIC_CSS constant, after orangui's
+ * THEMES_CSS and COMPONENTS_CSS. Rules reference theme CSS variables only,
+ * never color literals, so a component resolves to whichever theme the host
+ * has active. */
+
+/* ---- Chip (orangui::Chip): the mana glyph inside a chip ---- */
+
+.chip .ms {
+    font-size: 1.1rem;
+    vertical-align: middle;
+}
+
+/* ---- OracleText (zwipe_components::OracleText) ---- */
+
+/* Inline mana/tap/energy glyphs inside oracle text — sized to sit with the
+   surrounding text rather than dominate it. The host page styles the text
+   block itself via the class it passes in (e.g. .card-detail-oracle). */
+.oracle-sym {
+    font-size: 0.85em;
+    vertical-align: -0.05em;
+    margin: 0 0.04em;
+}
+
+/* ---- KeywordChips (zwipe_components::KeywordChips) ---- */
+
+/* Keyword abilities (Flying, Trample, …) with a tap-to-reveal reminder. */
+.keyword-section {
+    margin-bottom: 0.5rem;
+}
+
+.keyword-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* Tappable keyword chip — accent-bordered to read as interactive next to the
+   plain info chips. */
+.keyword-chip {
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--palette-1);
+    border-radius: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--palette-1);
+    background-color: var(--bg-primary);
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease,
+        transform 0.15s ease;
+}
+
+/* Hover-capable pointers only, so touch devices never keep a stuck grown
+   state. A slight scale-up signals the chip is clickable. */
+@media (hover: hover) {
+    .keyword-chip:hover {
+        transform: scale(1.06);
+    }
+}
+
+.keyword-chip.active {
+    color: var(--bg-primary);
+    background-color: var(--accent-secondary);
+}
+
+/* Inline reminder reveal below the chip row — eases open via the grid-rows
+   0fr<->1fr technique. */
+.keyword-reveal {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+        grid-template-rows 0.2s ease,
+        opacity 0.2s ease;
+}
+
+.keyword-reveal.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.keyword-reveal-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+.keyword-reveal-text {
+    margin: 0.35rem 0 0;
+    padding: 0.35rem 0.5rem;
+    border-left: 2px solid var(--accent-tertiary);
+    border-radius: 0.25rem;
+    background-color: var(--bg-primary);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--accent-tertiary);
+}
+
+/* ---- CardRow (zwipe_components::CardRow) ---- */
+
+.card-row {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+    transition:
+        background-color 0.15s ease,
+        transform 0.12s ease,
+        box-shadow 0.12s ease;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.card-row:last-child {
+    border-bottom: none;
+}
+
+/* Emphasis (scale + shadow + tint) marks the expanded row; its own border
+   drops so the closing rule isn't doubled. */
+.card-row.expanded {
+    position: relative;
+    z-index: 2;
+    border-bottom: none;
+    transform: scale(1.02);
+    border-radius: 0.4rem;
+    background-color: color-mix(in srgb, var(--accent-primary) 8%, var(--bg-primary));
+    box-shadow: var(--shadow-sm);
+}
+
+/* Flowing row: chevron + qty prefix, then the name with its metadata trailing
+   as tags (price pill, mana pips) right after it, rather than locked into
+   vertical columns across rows. */
+.card-row-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+/* Opt-in art-crop thumbnail at the far left of the row (CardRow `show_art`).
+   Art crops vary in aspect card to card, so a fixed box with cover-fit keeps
+   every row's squircle identical. Lazy-loaded by the img attribute. The
+   host's toggle flips `.art-hidden`, easing size + opacity instead of
+   clipping the DOM in and out; the negative margin swallows the flex gap so
+   a hidden thumb leaves no double-gap. */
+.card-row-art {
+    flex: 0 0 auto;
+    width: 4rem;
+    height: 2.9rem;
+    object-fit: cover;
+    border-radius: 0.6rem;
+    border: 1px solid var(--border-secondary);
+    box-shadow: var(--shadow-sm);
+    transition:
+        width 0.25s ease,
+        height 0.25s ease,
+        opacity 0.25s ease,
+        margin-right 0.25s ease,
+        border-width 0.25s ease;
+}
+
+.card-row-art.art-hidden {
+    width: 0;
+    height: 0;
+    opacity: 0;
+    margin-right: -0.4rem;
+    border-width: 0;
+}
+
+/* Disclosure chevron at the left of each row; rotates to point down when the
+   row is expanded. */
+.card-row-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2rem;
+    height: 1.2rem;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    line-height: 1;
+    transform-origin: center;
+    transition: transform 0.2s ease;
+}
+
+.card-row.expanded .card-row-arrow {
+    transform: rotate(90deg);
+}
+
+.card-row-name {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 400;
+}
+
+.card-row-mvp {
+    display: inline-block;
+    color: var(--palette-6);
+    font-size: 1.1rem;
+    margin-right: 0.3rem;
+    line-height: 1;
+    vertical-align: 0.02rem;
+}
+
+.card-row-qty {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+/* Price reads as a money tag: a small green (success) pill, right-aligned in
+   its column. */
+/* Compact-row metadata tags (price, P/T, loyalty) share the deck-list stat-chip
+   look: colored text on a faint tint with a soft same-hue outline. */
+.card-row-price,
+.card-row-stat {
+    flex: 0 0 auto;
+    padding: 0.1rem 0.4rem;
+    border: 1px solid transparent;
+    border-radius: 0.4rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
+}
+
+/* Price is money: each theme picks its own money color. */
+.card-row-price {
+    font-variant-numeric: tabular-nums;
+    color: var(--color-money);
+    background-color: color-mix(in srgb, var(--color-money) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-money) 35%, transparent);
+}
+
+/* P/T (creatures) and loyalty (planeswalkers): a number, slot 5. */
+.card-row-stat {
+    color: var(--palette-5);
+    background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-5) 35%, transparent);
+}
+
+.card-row-colors {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.card-row-colors .ms {
+    font-size: 0.95rem;
+    margin-left: 2px;
+    /* Align pip boxes by their middle, not baseline: the colorless numeral's
+       smaller ::before glyph shifts the flex box's synthesized baseline, so
+       baseline alignment drops the generic pip below the colored ones. */
+    vertical-align: middle;
+}
+
+/* Match the neighboring price/stat tags' corner radius (0.4rem) so the pips read
+   as part of the same tag row. Element+3-class selector beats the base pip's. */
+.card-row-colors i.ms.ms-cost {
+    border-radius: 0.4rem;
+}
+
+.card-row-detail {
+    padding: 0.5rem 1rem 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    max-width: 100%;
+}
+
+/* Always-mounted wrapper for the expanded card detail. Eases open/closed via
+   the grid-template-rows 0fr<->1fr technique so the row shifts smoothly
+   instead of popping. Pulled out by the row's 1rem padding so it spans full
+   width; the inner clips the content as it collapses. */
+.card-row-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+    /* Clamp the single implicit column to the container width; without this the
+       auto track expands to the oracle text's max-content and blows the row
+       (and page) wider than the viewport on narrow screens. */
+    grid-template-columns: minmax(0, 1fr);
+    opacity: 0;
+    margin: 0 -1rem;
+    pointer-events: none;
+    transition:
+        grid-template-rows 0.22s ease,
+        opacity 0.22s ease;
+}
+
+.card-row-collapse.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.card-row-collapse-inner {
+    overflow: hidden;
+    min-height: 0;
+    min-width: 0;
+}
+
+/* Dividers framing the expanded detail. Span the full row width — the collapse
+   wrapper already reaches the row edges, so no negative margin needed here. */
+.card-row-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 0.5rem 0 0 0;
+}
+
+/* Emphasis marks the expanded row, so the bottom rule is redundant. */
+.card-row-rule-bottom {
+    display: none;
+}
+
+/* Plain separator between the detail and the action buttons. */
+.card-row-rule-muted {
+    border-top-color: var(--border-secondary);
+}
+
+/* Action buttons below the second divider in an expanded card row. */
+.card-row-actions {
+    padding: 0.5rem 1rem 0.25rem;
+}
+
+/* Name + mana cost header inside an expanded card row. */
+.card-detail-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+}
+
+.card-detail-name {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--palette-3);
+    word-break: break-word;
+    white-space: normal;
+}
+
+.card-detail-cost {
+    margin: 0;
+    margin-left: auto;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Match the mana pips on the compact card line (0.8rem). */
+.card-detail-cost .ms {
+    font-size: 0.8rem;
+    /* Middle-align for the same reason as .card-row-colors: baseline drops the
+       colorless numeral pip below the colored ones. */
+    vertical-align: middle;
+}
+
+/* Roomier gray pill around the number, closer to a real card. Applied to the
+   mana cost, the oracle-text symbols, and the compact-row color pips alike so
+   the glyph stays centered in the pill everywhere. */
+.card-detail-cost .ms-cost,
+.oracle-sym.ms-cost,
+.card-row-colors .ms-cost {
+    width: 1.5em;
+    height: 1.5em;
+    line-height: 1.5em;
+}
+
+/* A run of color-identity pips standing in for a name: the deck row's colors,
+   and the group headers that group by color (deck list, deck cards, and the
+   share page). Shared rather than per-screen so a pip is one size wherever it
+   names a color, instead of shrinking to whatever text it sits beside. */
+.identity-pips {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Square, at the stat-chip's height rather than the small inline glyph size. */
+.identity-pips i.ms.ms-cost {
+    box-sizing: border-box;
+    width: 1.55rem;
+    height: 1.55rem;
+    font-size: 1rem;
+    border-radius: 0.5rem;
+    padding: 0;
+}
+
+/* Squircle every mana pip so it shares the app's rounded-rect grammar (buttons,
+   mana filter boxes) instead of mana-font's default circle. The element+two-class
+   selector outranks mana-font's own border-radius; box-shadow follows the radius. */
+i.ms.ms-cost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    border-radius: 0.3em;
+    /* Outline + glyph in the pip's own mana color, 70% darker than mana-font's
+       fill, as fixed hex so they stay recognizable across every theme (replaces
+       the old theme border, which clashed with the fixed fill). Base is MTG's
+       colorless gray for {C}/generic numerals; the five colors override below. */
+    border: 1px solid #393835;
+    color: #393835;
+    padding: 0 1px;
+    /* Override mana-font's hard double `.ms-cost.ms-shadow` offset with a plain
+       soft drop shadow that follows the squircle. */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+i.ms.ms-cost.ms-w {
+    border-color: #48493a;
+    color: #48493a;
+}
+i.ms.ms-cost.ms-u {
+    border-color: #363e44;
+    color: #363e44;
+}
+i.ms.ms-cost.ms-b {
+    border-color: #34312e;
+    color: #34312e;
+}
+i.ms.ms-cost.ms-r {
+    border-color: #42281e;
+    color: #42281e;
+}
+i.ms.ms-cost.ms-g {
+    border-color: #2c3627;
+    color: #2c3627;
+}
+
+/* Colorless/generic pips render a numeral that crowds the squircle border.
+   Shrink just the glyph (the ::before) so the number sits inset; the badge box
+   itself (set on the element) keeps its size. Covers 0-20 plus X/Y/Z. */
+.ms-cost.ms-0::before,
+.ms-cost.ms-1::before,
+.ms-cost.ms-2::before,
+.ms-cost.ms-3::before,
+.ms-cost.ms-4::before,
+.ms-cost.ms-5::before,
+.ms-cost.ms-6::before,
+.ms-cost.ms-7::before,
+.ms-cost.ms-8::before,
+.ms-cost.ms-9::before,
+.ms-cost.ms-10::before,
+.ms-cost.ms-11::before,
+.ms-cost.ms-12::before,
+.ms-cost.ms-13::before,
+.ms-cost.ms-14::before,
+.ms-cost.ms-15::before,
+.ms-cost.ms-16::before,
+.ms-cost.ms-17::before,
+.ms-cost.ms-18::before,
+.ms-cost.ms-19::before,
+.ms-cost.ms-20::before,
+.ms-cost.ms-x::before,
+.ms-cost.ms-y::before,
+.ms-cost.ms-z::before {
+    font-size: 0.82em;
+}
+
+/* Hybrid/twobrid/Phyrexian pips ({W/U}->ms-wu, {2/W}->ms-2w, {W/P}->ms-wp) are drawn
+   by mana-font as TWO absolutely-positioned halves (::before + ::after) whose hardcoded
+   top/left are tuned for its native ~1.3em inline-block box. Our squircle override
+   (1.5em, inline-flex) shifts those halves toward the top-left, off-center. So for
+   hybrids only, restore mana-font's box geometry (inline-block, its dimensions +
+   line-height) so the halves land centered again; the border / radius / shadow / color
+   from `i.ms.ms-cost` above still apply, keeping the squircle look. TUNE HERE: if the
+   pip reads too small next to single-color pips, scale width/height/line-height up
+   together (keep the ratio so the halves stay centered). */
+i.ms.ms-cost.ms-wu,
+i.ms.ms-cost.ms-wb,
+i.ms.ms-cost.ms-ub,
+i.ms.ms-cost.ms-ur,
+i.ms.ms-cost.ms-br,
+i.ms.ms-cost.ms-bg,
+i.ms.ms-cost.ms-rg,
+i.ms.ms-cost.ms-rw,
+i.ms.ms-cost.ms-gw,
+i.ms.ms-cost.ms-gu,
+i.ms.ms-cost.ms-2w,
+i.ms.ms-cost.ms-2u,
+i.ms.ms-cost.ms-2b,
+i.ms.ms-cost.ms-2r,
+i.ms.ms-cost.ms-2g,
+i.ms.ms-cost.ms-wp,
+i.ms.ms-cost.ms-up,
+i.ms.ms-cost.ms-bp,
+i.ms.ms-cost.ms-rp,
+i.ms.ms-cost.ms-gp {
+    display: inline-block;
+    /* content-box so the 1.3em is the padding box the half-offsets target — our 1px
+       border sits outside it, matching mana-font's native (border-less) box. Under
+       the app's global border-box the border would eat 2px and re-offset the halves. */
+    box-sizing: content-box;
+    width: 1.3em;
+    height: 1.3em;
+    line-height: 1.35em;
+    padding: 0;
+}
+
+.card-detail-oracle {
+    margin: 0 0 0.5rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.4;
+}
+
+.card-detail-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-muted);
+}
+
+/* Power/toughness (or planeswalker loyalty) pinned bottom-right of the detail,
+   echoing the card's own P/T corner. Uses the muted .detail-chip look. */
+.card-detail-stats {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+}
+
+/* Non-interactive info chip (type line, rarity, set) in an expanded card row. */
+.detail-chip {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background-color: var(--bg-primary);
+}
+
+/* Color-coded meta chips, consistent with the no-image card: type = accent-1,
+   rarity = accent-3, set = success-green, P/T-or-loyalty = warning-yellow. */
+.detail-chip-type {
+    color: var(--palette-1);
+    background-color: color-mix(in srgb, var(--palette-1) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-1) 35%, transparent);
+}
+
+.detail-chip-rarity {
+    color: var(--palette-4);
+    background-color: color-mix(in srgb, var(--palette-4) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-4) 35%, transparent);
+}
+
+.detail-chip-set {
+    color: var(--palette-3);
+    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
+}
+
+.detail-chip-pt {
+    color: var(--palette-5);
+    background-color: color-mix(in srgb, var(--palette-5) 15%, transparent);
+    border-color: color-mix(in srgb, var(--palette-5) 40%, transparent);
+    font-weight: 700;
+}
+
+.card-action-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.card-action-btn {
+    padding: 0.2rem 0.6rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    border-radius: 0.4rem;
+    border: 1px solid var(--border-primary);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    line-height: 1;
+    transition:
+        border-color 0.15s,
+        color 0.15s;
+}
+
+@media (hover: hover) {
+    .card-action-btn:hover {
+        border-color: var(--palette-2);
+        color: var(--palette-2);
+    }
+}
+
+.card-action-count {
+    font-size: 0.85rem;
+    min-width: 1.2rem;
+    text-align: center;
+}
+
+.card-detail-otags {
+    margin-top: 0.5rem;
+}
+
+.card-detail-otags .detail-chip {
+    border-color: var(--palette-1);
+    color: var(--palette-1);
+}
+
+/* Block-quote frame for a role's exposed otags, echoing .keyword-reveal-text. */
+.otag-reveal-block {
+    margin-top: 0.35rem;
+    padding: 0.4rem 0.5rem;
+    border-left: 2px solid var(--accent-tertiary);
+    border-radius: 0.25rem;
+    background-color: var(--bg-primary);
+}
+
+.otag-reveal-block .card-detail-otags {
+    margin: 0;
+}
+
+.otag-reveal-block .card-detail-meta {
+    margin-bottom: 0;
+}
+
+/* One exposed tag's definition, telescoped under it. Uses a secondary accent (the
+   outer role frame is tertiary) so the two nested block-quote rules read as
+   distinct levels rather than one doubled line. */
+.otag-def {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+    padding: 0.35rem 0.5rem;
+    border-left: 2px solid var(--accent-secondary);
+    border-radius: 0.25rem;
+    background-color: var(--bg-sink);
+}
+
+.otag-def-text {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--text-primary);
+    opacity: 0.9;
+}
+
+.otag-examples-btn {
+    padding: 0.1rem 0.55rem;
+    border: 1px solid var(--palette-2);
+    border-radius: 0.4rem;
+    font-size: 0.72rem;
+    color: var(--palette-2);
+    background-color: var(--bg-primary);
+    cursor: pointer;
+}
+
+.card-roles {
+    margin-bottom: 0.5rem;
+}
+
+.chips-label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.7rem;
+    color: var(--accent-tertiary);
+}
+
+/* ---- FlippableCardImage (zwipe_components::FlippableCardImage) ----
+   Base wrapper/image/flip-button rules, shared by zwiper and zite. Hosts layer
+   their own per-context max bounds on `.flippable-card-wrapper.<host-class> img`. */
+.flippable-card-wrapper {
+    position: relative;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+    flex: 0 0 auto;
+    min-height: 0;
+}
+
+/* Shrink-wraps the image so the flip button (absolute) pins to the image's own
+   corner without resizing the wrapper - no DFC-vs-single-face layout shift. */
+.flip-face {
+    position: relative;
+    display: flex;
+    min-height: 0;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+/* Img owns its own sizing and rounding. Per-context max bounds are layered by
+   hosts. Hidden until the bytes actually arrive (`onload` adds .img-loaded),
+   then eased in - otherwise slow loads pop in a fully-formed card. */
+.flippable-card-wrapper img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: calc(100vw - 2rem);
+    max-height: 100%;
+    min-height: 0;
+    border-radius: 1rem;
+    opacity: 0;
+    transition: opacity 250ms ease;
+}
+
+.flippable-card-wrapper img.img-loaded {
+    opacity: 1;
+}
+
+/* No-art fallback: a flat card shown in place of the image when a card has no
+   picture, laid out like a real card - title + mana pips, rule, boxed "No image"
+   marker, type/rarity/set line, rule, then oracle + flavor text. Continuous: only
+   the art marker is boxed; dividers are hairline rules, not filled panels. */
+.no-image-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: min(calc(100vw - 2rem), 20rem);
+    aspect-ratio: 5 / 7;
+    padding: 0.8rem;
+    gap: 0.45rem;
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    text-align: left;
+    overflow: hidden;
+}
+
+/* Title row: name (left) + mana pips (right, via card-detail-cost). */
+.nic-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+/* Right side of the title row: inline flip button (multi-faced) + mana pips. */
+.nic-head-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.nic-name {
+    font-weight: 700;
+    font-size: 1.05rem;
+    line-height: 1.25;
+    letter-spacing: 0.3px;
+    word-break: break-word;
+    color: var(--palette-3);
+}
+
+/* Hairline divider between card sections, full-bleed to the card edges (negative
+   margins cancel the card's padding). */
+.nic-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    height: 0;
+    align-self: stretch;
+    margin: 0 -0.8rem;
+}
+
+/* Boxed marker where the art window would be. */
+.nic-art {
+    flex: 0 0 34%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+}
+
+.nic-noart {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* Type / rarity / set as chips. */
+.nic-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.nic-chip {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.35rem;
+    background-color: var(--bg-primary);
+    font-size: 0.7rem;
+    line-height: 1.25;
+    color: var(--text-muted);
+}
+
+/* Type / rarity / set chips, each tinted with its own accent. */
+.nic-chip-type {
+    color: var(--palette-1);
+    background-color: color-mix(in srgb, var(--palette-1) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-1) 35%, transparent);
+}
+
+.nic-chip-rarity {
+    color: var(--palette-4);
+    background-color: color-mix(in srgb, var(--palette-4) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-4) 35%, transparent);
+}
+
+.nic-chip-set {
+    color: var(--palette-3);
+    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
+}
+
+/* Power/toughness (or loyalty) tab pinned to the card's bottom-right corner. Warm
+   warning-yellow, and opaque (mixed into the card bg, not transparent) so the
+   oracle text behind it is cleanly covered instead of showing through. */
+.nic-pt {
+    position: absolute;
+    right: 0.6rem;
+    bottom: 0.6rem;
+    font-weight: 700;
+    color: var(--palette-5);
+    background-color: color-mix(in srgb, var(--palette-5) 18%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--palette-5) 40%, var(--border-primary));
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+
+/* Oracle + flavor fill the remaining space and scroll if long, fading out at the
+   top and bottom edges instead of hard-cutting (matches the app's masked scrolls). */
+.nic-textbox {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        black 0.8rem,
+        black calc(100% - 0.9rem),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        black 0.8rem,
+        black calc(100% - 0.9rem),
+        transparent 100%
+    );
+}
+
+.nic-oracle {
+    font-size: 0.82rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    color: var(--text-primary);
+}
+
+.nic-flavor {
+    font-size: 0.8rem;
+    line-height: 1.35;
+    font-style: italic;
+    color: var(--text-muted);
+    white-space: pre-wrap;
+}
+
+.card-flip-button {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    z-index: 2;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.5;
+    transition:
+        opacity 0.15s ease,
+        transform 0.15s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.card-flip-button:active {
+    transform: scale(0.95);
+}
+
+/* ---- Changelog (zwipe_components::Changelog) ---- */
+
+/* Self-contained so it renders identically on the site and in the app: does
+   not lean on any host stylesheet's card/bullet rules. */
+
+.changelog-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: var(--panel-gap);
+}
+
+.changelog-filter .chip {
+    font-family: inherit;
+}
+
+.changelog-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+}
+
+.changelog-card {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    animation: changelog-card-in 0.35s ease-out both;
+}
+
+/* Ease each release card in on mount and when a filter change remounts the
+   visible set. */
+@keyframes changelog-card-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.changelog-version-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.changelog-version {
+    font-size: 1.1rem;
+    color: var(--accent-primary);
+    font-weight: 700;
+    margin: 0;
+}
+
+.changelog-date {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.changelog-bullets {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.changelog-bullets li {
+    font-size: 0.8rem;
+    color: var(--text-subtle);
+    line-height: 1.7;
+    padding-left: 1rem;
+    position: relative;
+    margin-bottom: 0.35rem;
+}
+
+.changelog-bullets li:last-child {
+    margin-bottom: 0;
+}
+
+.changelog-bullets li::before {
+    content: "\203A";
+    position: absolute;
+    left: 0;
+    color: var(--accent-primary);
+}
+
