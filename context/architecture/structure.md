@@ -19,8 +19,8 @@ Every section below describes the code as it stands (last verified against the t
         ┌───────────┴───────────┐
         ↓                       ↓
 ┌──────────────┐      ┌──────────────────┐
-│ zwipe-client │      │ zwipe-components │
-│  (api calls) │      │ (UI + themes.css)│
+│ zwipe-client │      │ zwipe-components │←─(git)─ orangui (the UI kit)
+│  (api calls) │      │  (the Magic UI)  │
 └───────┬──────┘      └─────────┬────────┘
         └──────────┬────────────┘
                    ↓
@@ -45,7 +45,7 @@ Both clients also depend on `zwipe-core` directly, for the domain types they pas
 | **zwiper** | `zwiper` | Dioxus cross-platform mobile app | zwipe-core, zwipe-client, zwipe-components, dioxus |
 | **zite** | `zite` | Dioxus static website (zwipe.net) | zwipe-core, zwipe-client, zwipe-components, dioxus |
 | **zwipe-client** | None (library) | Typed API client: one `call` over the core `Endpoint` descriptions | zwipe-core, reqwest |
-| **zwipe-components** | None (library) | Shared Dioxus UI components + `themes.css`/`components.css` | zwipe-core, dioxus |
+| **zwipe-components** | None (library) | The Magic UI pieces over orangui, which it re-exports, plus `magic.css` | zwipe-core, orangui, dioxus |
 | **zort** | None (hypothetical) | AI card classification client. Sketched only: no crate, no directory, nothing built | Postgres direct, LLM API |
 
 ---
@@ -257,7 +257,7 @@ The rest are signal/analytics tables (user and commander signal, weekly facets, 
 
 ## zwiper: Mobile App
 
-Dioxus cross-platform app. Primary target: iOS. Same hexagonal structure: screens are inbound adapters, the API client is the outbound adapter and lives in `zwipe-client`. UI building blocks and the theme CSS come from `zwipe-components`, including its app kit (bottom sheet, page header, theme sheet, hint pieces, overlay back stack, toast stack) and the `APP_CSS` and `TOAST_CSS` sheets; the theme list lives in zwipe-core's preferences.
+Dioxus cross-platform app. Primary target: iOS. Same hexagonal structure: screens are inbound adapters, the API client is the outbound adapter and lives in `zwipe-client`. UI building blocks and the theme CSS come from `zwipe-components`, which re-exports orangui's app kit (bottom sheet, page header, theme sheet, hint pieces, overlay back stack, toast stack) and the `APP_CSS` and `TOAST_CSS` sheets and adds the Magic pieces; the theme type is orangui's `ThemeConfig`, built from a session's preferences by `theme_from_preferences`, and zwipe-core keeps the list zerver validates against.
 
 ```
 zwiper/src/
@@ -349,7 +349,7 @@ zite/src/
     └── reset.rs            # Password reset form (shared validation from zwipe-core)
 ```
 
-The remembered theme, the hero's stats strip, the demo and guide galleries and the scroll reveal and nav glide scripts come from zwipe-components' site kit; zite keeps the data behind them, the body theme class and its own colors, sizes and entrances in `assets/style.css`.
+The remembered theme, the hero's stats strip, the demo and guide galleries and the scroll reveal and nav glide scripts come from orangui's site kit, through zwipe-components; zite keeps the data behind them, the body theme class and its own colors, sizes and entrances in `assets/style.css`.
 
 **Deploy:** Push to main → GitHub Actions → `dx build --release --platform web --ssg --force-sequential` → GitHub Pages
 
@@ -391,9 +391,9 @@ The wasm target needs reqwest without rustls-tls and getrandom on `wasm_js`, the
 
 ## zwipe-components: Shared UI
 
-Dioxus component library both clients depend on; the owner's portfolio and cairn consume it too, as a git dependency. Ships `themes.css` (31 themes, each with a dark and a light palette) and `components.css` for every consumer, plus three opt-in sheets: `app.css` (the app shell, for zwiper and cairn), `site.css` (the gallery base, for zite and the portfolio) and `toast.css` (behind the `toast` feature). CSS load order matters: themes first, then components, then the opt-in sheet, then app styles.
+The Magic pieces of the UI, over [orangui](https://github.com/scadoshi/orangui), the generic Dioxus kit (themes, panels, nav, charts, the entrance effects, the app and site kits) taken as a git dependency pinned in the workspace lockfile. The crate re-exports all of orangui (`pub use orangui::*`), so both clients keep the `zwipe_components::` import path, and adds what needs zwipe-core: `CardDetails`, `CardRow`, `CardRoleChips`, `KeywordChips`, `OracleText`, `FlippableCardImage`, `Changelog`, the deck charts and `ZwipeArchitecture`. The portfolio and cairn still take this crate as a git dependency until they move to orangui themselves (`orangui/context/plans/host_migration.md`).
 
-The source is flat, one file per component: card_details.rs and card_row.rs (shared card rendering), changelog.rs (renders the compiled-in changelog), charts.rs, theme_picker.rs, nav_bar.rs, nav_dropdown.rs, oracle_text.rs, page_meta.rs, and assorted smaller pieces (buttons, chips, banners, panels). The app kit is overlay_stack.rs (the OS back stack), bottom_sheet.rs, page_header.rs, theme_sheet.rs, hint.rs and, behind the `toast` feature, toast_stack.rs. The site kit is theme_store.rs (`use_persisted_theme`), stats_strip.rs, gallery.rs and the `REVEAL_JS`/`NAV_GLIDE_JS` scripts in `assets/`. chart_math.rs holds the pure chart helpers. The allowed-theme list itself lives in zwipe-core (`ALLOWED_THEMES`, `COLORBLIND_THEMES`); this crate owns the palettes.
+Styling: orangui's `THEMES_CSS`, `COMPONENTS_CSS`, `APP_CSS`, `SITE_CSS` and `TOAST_CSS` come through as they are; `MAGIC_CSS` (`assets/magic.css`) holds this crate's own rules. CSS load order matters: themes, components, Magic rules, the opt-in sheet, then the host's own styles. The source is flat, one file per component: card_details.rs and card_row.rs (shared card rendering), card_role_chips.rs, keyword_chips.rs, oracle_text.rs, flippable_card_image.rs, changelog.rs (renders the compiled-in changelog), charts.rs and architecture.rs. theme.rs converts a user's saved preferences to orangui's `ThemeConfig` and holds the test that keeps zwipe-core's theme list (`ALLOWED_THEMES`, `COLORBLIND_THEMES`, `display_theme_name`) equal to orangui's, since zerver validates against core's and the palettes live in orangui.
 
 ---
 
