@@ -72,21 +72,6 @@ button {
     color: var(--text-primary);
 }
 
-.app-shell {
-    --grid-line: color-mix(in srgb, var(--text-primary) 4%, transparent);
-    --grid-size: 28px;
-    --bg-sink: color-mix(in srgb, var(--bg-primary), #000 15%);
-}
-
-/* Light themes: the #000-darkened sink reads as a muddy, "dirty" panel on a
-   light palette. Lighten it toward white instead, so the content area sits a
-   touch brighter than the chrome (fresh paper-on-desk depth) rather than
-   dirtier. Dark theme classes end in `-dark`, so their recessed sink is left
-   byte-identical. */
-.app-shell[class$="-light"] {
-    --bg-sink: color-mix(in srgb, var(--bg-primary), #fff 35%);
-}
-
 /* Scrollbars hidden everywhere. On the iOS WebView the bar is a non-interactive
    overlay indicator (you scroll by dragging content, not the bar), and the app
    already signals scrollability with edge fades, so hiding it is purely cosmetic. */

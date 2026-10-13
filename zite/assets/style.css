@@ -86,27 +86,17 @@ body {
     overscroll-behavior: none;
 }
 
-/* Derived tokens live on body because the theme class is applied there, so
-   color-mix() resolves against the active theme's --bg-primary / --text-primary.
-   The sink color fills the whole page (including overscroll); the grid itself
-   is painted by the fixed pseudo-element below. */
+/* --grid-line-major lives on body because the theme class is applied there, so
+   color-mix() resolves against the active theme's --text-primary. The sink
+   color fills the whole page (including overscroll); the grid itself is
+   painted by the fixed pseudo-element below. */
 body {
-    --grid-line: color-mix(in srgb, var(--text-primary) 4%, transparent);
     --grid-line-major: color-mix(in srgb, var(--text-primary) 9%, transparent);
-    --grid-size: 28px;
-    --bg-sink: color-mix(in srgb, var(--bg-primary), #000 15%);
     background-color: var(--bg-sink);
     /* Own stacking context so the fixed ::before below paints above this
        background (without it, z-index: -1 drops behind the body background
        and the grid disappears) while staying below all content. */
     isolation: isolate;
-}
-
-/* Light themes: lift the sink toward white (fresh-paper feel) instead of the
-   #000 15% darkening that reads muddy on cream palettes. The theme class is
-   "theme-{name}-{mode}", so only "-light" matches; dark mode is untouched. */
-body[class$="-light"] {
-    --bg-sink: color-mix(in srgb, var(--bg-primary), #fff 35%);
 }
 
 /* Pinned grid: a viewport-fixed layer behind all content, so scrolling moves
@@ -172,25 +162,6 @@ a {
     display: inline-block;
     margin-left: 1ch;
     transition: transform 0.25s ease;
-}
-
-/* Scroll reveal (orangui's REVEAL_JS): panels start sunk and faded, then ease
-   up when the observer flags them on screen. The body prefix outranks the
-   crate's .panel-card transition on the same elements while the reveal runs
-   (components.css is inlined after this sheet); the script strips both
-   classes afterward, handing the panel back to its normal hover behavior.
-   Without JS nothing gets the pending class and content simply shows. */
-body .reveal-pending {
-    opacity: 0;
-    transform: translateY(14px);
-}
-
-body .reveal-pending.reveal-in {
-    opacity: 1;
-    transform: none;
-    transition:
-        opacity 0.55s ease-out,
-        transform 0.55s ease-out;
 }
 
 /* Hover states that answer the cursor: links brighten toward the text color
