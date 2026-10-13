@@ -289,18 +289,18 @@ pub fn Nav() -> Element {
 #[component]
 pub fn Footer() -> Element {
     rsx! {
-        footer {
+        footer { class: "site-footer content-enter-delayed",
             p { "© 2026 Zwipe | "
                 Link { to: Route::Privacy {}, "Privacy policy" }
                 " | "
                 Link { to: Route::Community {}, "Community" }
             }
-            p { class: "fan-content-notice",
+            p { class: "site-footer-note",
                 "Card data and images from "
                 a { href: "https://scryfall.com", "Scryfall" }
                 "."
             }
-            p { class: "fan-content-notice",
+            p { class: "site-footer-note",
                 "Zwipe is unofficial Fan Content permitted under the "
                 a {
                     href: "https://company.wizards.com/en/legal/fancontentpolicy",

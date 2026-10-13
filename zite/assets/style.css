@@ -1490,25 +1490,8 @@ code {
         footer
  ==================== */
 
-footer {
-    text-align: center;
-    padding: 2rem 1.5rem;
-    color: var(--text-muted);
-    font-size: 0.78rem;
-    background-color: var(--bg-primary);
-    border-top: 1px solid var(--accent-primary);
-    box-shadow: var(--shadow-md);
+.site-footer {
     margin-top: 3.75rem;
-    animation: content-enter 0.3s ease-out 0.15s both;
-}
-
-.fan-content-notice {
-    max-width: 42rem;
-    margin: 0.85rem auto 0;
-    font-size: 0.7rem;
-    line-height: 1.5;
-    color: var(--text-subtle);
-    opacity: 0.75;
 }
 
 /* Visually hidden but exposed to assistive tech and crawlers. Used for the
