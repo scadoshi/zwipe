@@ -1429,9 +1429,7 @@ code {
         footer
  ==================== */
 
-/* The element prefix outranks orangui's .site-footer, which is inlined after
-   this sheet. */
-footer.site-footer {
+.site-footer {
     margin-top: 3.75rem;
 }
 
