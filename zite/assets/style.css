@@ -286,7 +286,7 @@ a {
     padding-bottom: 1rem;
 }
 
-.guide-page + footer {
+.guide-page + .site-footer {
     margin-top: 0;
 }
 
@@ -1429,7 +1429,9 @@ code {
         footer
  ==================== */
 
-.site-footer {
+/* The element prefix outranks orangui's .site-footer, which is inlined after
+   this sheet. */
+footer.site-footer {
     margin-top: 3.75rem;
 }
 
