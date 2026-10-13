@@ -299,14 +299,6 @@ a {
    remain here: the ASCII logo, the persistent store CTAs, and store-link
    styling. */
 
-/* zite's nav is denser than the shared 60rem default (store CTAs + theme
-   picker), so let it use the full viewport width. Combined with the bar's
-   flex-wrap, it stays one row while there's room and wraps instead of clipping
-   when there isn't, so no fixed breakpoint has to guess the fit. */
-.nav-wrapper {
-    --nav-max-width: none;
-}
-
 .nav-stores-persistent {
     display: none;
     align-items: center;
@@ -661,26 +653,11 @@ code {
 }
 
 /* Three boxed figures, the same tile cairn's home screen uses: a sunk panel
-   with the number in the accent over its label. The tile itself is the
-   shared StatsStrip base in components.css; these size it for the hero. */
+   with the number in the accent over its label. The tile and its sizes are
+   the shared StatsStrip in components.css; this sets its font and entrance. */
 .stats-strip {
     font-family: "JetBrains Mono", monospace;
     animation: hero-stats-in 0.4s ease-out both;
-}
-
-.stats-strip .stat {
-    padding: 0.7rem 0.35rem 0.6rem;
-}
-
-.stats-strip .stat-num {
-    /* Scales with the viewport so three seven-digit figures share a phone's
-       panel, and tops out at the desktop size. */
-    font-size: clamp(0.9rem, 3.8vw, 1.5rem);
-}
-
-.stats-strip .stat-label {
-    font-size: clamp(0.6rem, 2.4vw, 0.75rem);
-    letter-spacing: 0.06em;
 }
 
 .store-btn {
@@ -859,8 +836,6 @@ code {
 }
 
 .gallery-nav {
-    background-color: var(--bg-primary);
-    opacity: 0.9;
     transition:
         opacity 0.15s,
         border-color 0.15s,
@@ -1007,12 +982,6 @@ code {
    real Panel now: the title comes from panel-title, the profile links ride the
    panel's action row, and the tag row sits in the body.) */
 
-.profile-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-}
-
 /* Panelled page header (title + tagline in a floating bubble), shared by the
    changelog and guides index. */
 .page-header {
@@ -1032,36 +1001,6 @@ code {
    zwipe_components::Changelog; its styles live in magic.css. Only the
    page header above is zite-specific. */
 
-/* Match the nav-bar pill buttons exactly (.nav-links > li > a in components.css). */
-.profile-link {
-    display: inline-flex;
-    align-items: center;
-    box-sizing: border-box;
-    height: 1.85rem;
-    color: var(--text-primary);
-    background-color: var(--bg-primary);
-    text-decoration: none;
-    border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
-    padding: 0 0.8rem;
-    font-family: inherit;
-    font-size: 0.8rem;
-    letter-spacing: 0.04em;
-    line-height: 1;
-    white-space: nowrap;
-    cursor: pointer;
-    box-shadow: var(--shadow-sm);
-    transition:
-        color 0.15s,
-        border-color 0.15s;
-}
-
-@media (hover: hover) {
-    .profile-link:hover {
-        color: var(--accent-primary);
-        border-color: var(--accent-primary);
-    }
-}
 
 /* StatsStrip's source row: the chips under the hero figures. */
 .stats-source {
@@ -1153,25 +1092,6 @@ code {
     left: 100%;
     top: 50%;
     transform: translateY(-50%);
-}
-
-/* The "?" that opens a hint, as in the apps. */
-.info-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.5rem;
-    min-height: 1.5rem;
-    margin-left: 0.35rem;
-    padding: 0;
-    border: 1px solid var(--border-primary);
-    border-radius: 0.5rem;
-    background: var(--bg-primary);
-    color: var(--text-muted);
-    font-family: "JetBrains Mono", monospace;
-    font-size: 0.75rem;
-    line-height: 1;
-    cursor: pointer;
 }
 
 .info-button:hover {

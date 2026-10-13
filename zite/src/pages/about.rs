@@ -36,8 +36,8 @@ pub fn About() -> Element {
                     title: "Zwipe",
                     title_h1: true,
                     actions: rsx! {
-                        a { class: "profile-link", href: "https://github.com/scadoshi/zwipe", "Source ↗" }
-                        a { class: "profile-link", href: "https://scottyfermo.com", "Built by Scotty ↗" }
+                        a { class: "panel-action", href: "https://github.com/scadoshi/zwipe", "Source ↗" }
+                        a { class: "panel-action", href: "https://scottyfermo.com", "Built by Scotty ↗" }
                     },
                     p {
                         "Zwipe is built and maintained by Scotty Fermo, a Commander player who
