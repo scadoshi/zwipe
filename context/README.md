@@ -21,6 +21,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-13: client floor at 1.11.2, access tokens at 15 minutes
+
+The two hand steps in [`plans/access_token_window.md`](plans/access_token_window.md) are done. The owner set `MIN_CLIENT_VERSION=1.11.2` and `ACCESS_TOKEN_MINUTES=15` in `/etc/zwipe/zerver.env` and restarted zerver; `GET https://api.zwipe.net/api/client/min-version` returns `{"min_version":"1.11.2"}`. Every build from 1.11.2 refreshes two minutes before expiry, so a logged-out or stolen access token now stops working within 15 minutes instead of 24 hours. The floor went up with 1.11.4 live on both stores and without a fresh count of older builds; anyone still below 1.11.2 gets the update screen. Nobody has watched a real login's token expire at 15 minutes yet. Still open in the plan: the migration dropping `revoked` and the old lockout columns, the current-password check on credential changes, and Android's plaintext `session.json`.
+
 ## 2026-10-13: zwipe-components renamed to components
 
 The Magic UI crate is now `components` (directory `components/`), at the workspace root as before. zwiper and zite import it as `components::`; the few modules that declare their own `components` submodule (zite's `main.rs`, zwiper's profile screen) reach it as `::components::`. CI, the docs and the About page's crate diagram use the new name. The portfolio and cairn take orangui directly, so nothing outside this repo imports the crate.

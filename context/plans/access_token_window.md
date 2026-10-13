@@ -7,9 +7,9 @@
 - [x] 2026-10-10 `zcripts/server/sql/zervice_role.sql` re-run on the server (clean BEGIN..COMMIT), so the nightly cleanup can read `replaced_at`.
 - [x] 2026-10-09 Client 1.11.2 shipped: submitted to both stores the same night, carrying the refresh-ahead buffer (iOS build 92, Android vc55). Cut without waiting on 1.11.1's review.
 - [x] 2026-10-11 A refresh-ahead client is live on both stores. 1.11.2 went live on iOS 2026-10-10; 1.11.3 (iOS build 93, Android vc56), which carries the same buffer, was submitted and approved on both stores 2026-10-11. The floor below can move to 1.11.2 or straight to 1.11.3.
-- [ ] `MIN_CLIENT_VERSION` raised to 1.11.2 once the floor query shows old builds gone (or earlier to force them).
+- [x] 2026-10-13 `MIN_CLIENT_VERSION=1.11.2` set in `/etc/zwipe/zerver.env` by hand and zerver restarted; `GET /api/client/min-version` returns 1.11.2. Raised with 1.11.4 live on both stores and without a fresh count of older builds, so anyone still below sees the update screen.
 - [x] 2026-10-09 `ACCESS_TOKEN_MINUTES=60` set in zerver's `.env` by hand and zerver restarted. Tokens now live an hour, down from 24, while older clients (which refresh only after expiry) are still common.
-- [ ] `ACCESS_TOKEN_MINUTES=15` once the floor is at 1.11.2 or the version query shows old builds gone. Same hand step: edit `.env`, restart zerver.
+- [x] 2026-10-13 `ACCESS_TOKEN_MINUTES=15` set in the same file, same restart. Not checked from outside yet: a fresh login's access token should expire 15 minutes after it is issued.
 - [ ] Follow-up migration dropping `revoked` and `idx_refresh_tokens_revoked`, one deploy after the families migration is live. The same migration can drop `users.failed_login_attempts`, `last_failed_at` and `lockout_until`: the login lockout moved in memory and per address (2026-10-10 security audit), so only the reset-password query still touches them.
 - [ ] Check that password and email changes require the current password (out of scope here, but noted as the reason there is no 5-minute tier).
 - [ ] Android: `session.json` is plaintext (no keyring backend). Own task.
