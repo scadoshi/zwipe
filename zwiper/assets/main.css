@@ -2157,14 +2157,6 @@ button {
     gap: 0.75rem;
 }
 
-.bottom-sheet .sheet-content {
-    background-color: var(--bg-sink);
-    background-image:
-        linear-gradient(var(--grid-line) 1px, transparent 1px),
-        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-    background-size: var(--grid-size) var(--grid-size);
-}
-
 .sheet-content.no-pad-x {
     padding-left: 0;
     padding-right: 0;
