@@ -1,7 +1,7 @@
 use dioxus::{document::eval, prelude::*};
 
 use crate::{Footer, Nav, components::PageMeta};
-use zwipe_components::Panel;
+use components::Panel;
 
 /// Live Google Play listing for Zwipe (Android). Locale-adaptive; no `&hl`.
 const PLAY_STORE_URL: &str = "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe";

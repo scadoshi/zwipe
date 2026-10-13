@@ -1,6 +1,6 @@
+use components::CardRow as SharedCardRow;
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_components::CardRow as SharedCardRow;
 use zwipe_core::domain::{
     card::{
         Card, scryfall_data::ScryfallData, search_card::card_filter::price_currency::PriceCurrency,

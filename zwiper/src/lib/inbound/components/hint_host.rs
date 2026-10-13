@@ -5,10 +5,8 @@
 //! root, hands the topic's dialog to orangui's dialog host. A single `Option`
 //! means only one hint shows at a time.
 
+use components::{AlertDialog, DialogAction, HintBullet, HintBullets, HintKey, HintLine, ModeIcon};
 use dioxus::prelude::*;
-use zwipe_components::{
-    AlertDialog, DialogAction, HintBullet, HintBullets, HintKey, HintLine, ModeIcon,
-};
 use zwipe_core::domain::auth::password::requirements;
 
 use crate::inbound::components::concept_explainers::{DeckTagsExplainer, OracleTagsExplainer};

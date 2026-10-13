@@ -6,9 +6,9 @@
 //! that reopens it on demand.
 
 use crate::{inbound::components::auth::ensure_session::EnsureFresh, outbound::session::Persist};
+use components::{AlertDialog, DialogAction};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{AlertDialog, DialogAction};
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Opens the returned signal once per account for the given hint key, and
@@ -68,8 +68,8 @@ pub fn open_and_record_hint(
 }
 
 /// Hint dialog shell: title, body content, and a "Got it" button.
-/// Compose the body from [`HintLine`](zwipe_components::HintLine)s, with
-/// [`HintKey`](zwipe_components::HintKey)s for button names.
+/// Compose the body from [`HintLine`](components::HintLine)s, with
+/// [`HintKey`](components::HintKey)s for button names.
 ///
 /// `actions` go before "Got it" in the footer (e.g. a "Dictionary" button),
 /// keeping call-to-actions out of the body.

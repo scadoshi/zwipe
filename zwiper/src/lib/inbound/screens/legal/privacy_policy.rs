@@ -7,8 +7,8 @@
 //! silently fails inside the mobile webview.
 
 use crate::{inbound::components::screen_header::ScreenHeader, outbound::open_url};
+use components::{ActionBar, Button, ButtonVariant};
 use dioxus::prelude::*;
-use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::{
     domain::site::{DISCORD_URL, SUPPORT_EMAIL},
     legal::{PRIVACY_LAST_UPDATED, PRIVACY_POLICY_HTML},

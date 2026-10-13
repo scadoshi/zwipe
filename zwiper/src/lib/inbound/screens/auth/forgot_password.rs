@@ -3,10 +3,10 @@
 use crate::inbound::components::{
     fields::text_input::TextInput, home_hero::HomeHero, screen_header::ScreenHeader,
 };
+use components::{ActionBar, Button, ButtonVariant, Panel, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, Panel, TOAST_NORMAL};
 use zwipe_core::{domain::Email, http::contracts::auth::HttpRequestPasswordReset};
 
 /// Forgot password screen for initiating a password reset.

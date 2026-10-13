@@ -1,6 +1,6 @@
 //! Changelog screen.
 //!
-//! Wraps the shared [`zwipe_components::Changelog`] (the same release history
+//! Wraps the shared [`components::Changelog`] (the same release history
 //! shown on the website) in the app's screen chrome. Reached from Profile.
 //!
 //! The changelog is fetched once in the background at startup and cached for
@@ -16,8 +16,8 @@
 use crate::inbound::components::{
     auth::session_upkeep::ChangelogCache, screen_header::ScreenHeader,
 };
+use components::{ActionBar, Button, ButtonVariant, Changelog as ChangelogContent};
 use dioxus::prelude::*;
-use zwipe_components::{ActionBar, Button, ButtonVariant, Changelog as ChangelogContent};
 
 /// Full release history, reachable from the Profile screen.
 #[component]

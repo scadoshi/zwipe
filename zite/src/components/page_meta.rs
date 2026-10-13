@@ -1,6 +1,6 @@
 use crate::WEB_BASE;
+use components::{PageMeta as SharedPageMeta, SiteMeta};
 use dioxus::prelude::*;
-use zwipe_components::{PageMeta as SharedPageMeta, SiteMeta};
 
 /// Zwipe's site constants for the shared head-meta component.
 const SITE: SiteMeta = SiteMeta {

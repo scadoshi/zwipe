@@ -52,7 +52,7 @@ pub fn StatsStrip() -> Element {
     };
 
     rsx! {
-        zwipe_components::StatsStrip {
+        components::StatsStrip {
             figures: vec![
                 (count(|s| s.decks_created), "Decks created"),
                 (count(|s| s.searches), "Searches run"),

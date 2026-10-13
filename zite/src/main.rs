@@ -1,8 +1,8 @@
-use dioxus::{document::eval, prelude::*};
-use zwipe_components::{
+use ::components::{
     BRAND_RESET_JS, COMPONENTS_CSS, Decode, MAGIC_CSS, NAV_GLIDE_JS, NavBar, REVEAL_JS, Replay,
     SCROLL_FADE_JS, SITE_CSS, THEMES_CSS, ThemeConfig, ThemePicker, use_theme_wipe,
 };
+use dioxus::{document::eval, prelude::*};
 
 mod api;
 mod components;
@@ -127,7 +127,7 @@ fn App() -> Element {
     // so the browser's first render matches the prerender, and adopts the
     // stored theme just after mount; the shell's script already put the body
     // on it, so nothing visible changes.
-    let theme = zwipe_components::use_persisted_theme("zwipe.theme");
+    let theme = ::components::use_persisted_theme("zwipe.theme");
     use_context_provider(|| theme);
     use_context_provider(|| Replay(Signal::new(0u32)));
 

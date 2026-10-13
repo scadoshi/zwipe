@@ -6,8 +6,8 @@
 //! `HintDialog` shell and title.
 
 use crate::inbound::components::hint_dialog::HintColored;
+use components::{HintBullet, HintBullets};
 use dioxus::prelude::*;
-use zwipe_components::{HintBullet, HintBullets};
 use zwipe_core::domain::deck::MAX_DECK_TAGS;
 
 /// Deck tags: the archetype(s) you pick that seed oracle tags.

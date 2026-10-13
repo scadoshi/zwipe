@@ -30,13 +30,11 @@ use crate::{
     outbound::{session::Persist, theme_store::PersistTheme},
 };
 use chrono::{DateTime, Utc};
+use components::{KeywordReminders, ThemeConfig, theme_from_preferences, use_overlay_back_stack};
 use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::interval;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{
-    KeywordReminders, ThemeConfig, theme_from_preferences, use_overlay_back_stack,
-};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,
@@ -135,7 +133,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     use_context_provider(|| client);
 
     // Back-aware overlay stack: the OS back gesture closes the top open overlay
-    // before falling through to the router (see zwipe_components::OverlayBackStack).
+    // before falling through to the router (see components::OverlayBackStack).
     let overlay_back_stack = use_overlay_back_stack();
     use_context_provider(|| overlay_back_stack);
 

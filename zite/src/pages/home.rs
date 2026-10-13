@@ -2,10 +2,8 @@ use crate::{
     Footer, Nav, Route,
     components::{FeaturedFlavor, PageMeta, StatsStrip, dismiss_flavor_overlay},
 };
+use components::{Banner, Decode, FlippableCardImage, GalleryFooter, GalleryFrame, Panel, Replay};
 use dioxus::prelude::*;
-use zwipe_components::{
-    Banner, Decode, FlippableCardImage, GalleryFooter, GalleryFrame, Panel, Replay,
-};
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;

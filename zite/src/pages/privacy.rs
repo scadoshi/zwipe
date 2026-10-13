@@ -1,6 +1,6 @@
 use crate::{DISCORD_URL, Footer, Nav, SUPPORT_EMAIL, components::PageMeta};
+use components::Panel;
 use dioxus::prelude::*;
-use zwipe_components::Panel;
 use zwipe_core::legal::{PRIVACY_LAST_UPDATED, PRIVACY_POLICY_HTML};
 
 /// Splits the shared policy HTML into one fragment per `<h2>` heading so each

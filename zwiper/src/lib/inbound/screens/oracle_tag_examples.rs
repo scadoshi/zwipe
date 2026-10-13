@@ -27,11 +27,11 @@ use crate::inbound::{
         printing_sheet::PrintingSheet,
     },
 };
-use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{
+use components::{
     ActionBar, Button, ButtonVariant, HintBullet, HintBullets, TOAST_QUICK, use_overlay_back,
 };
+use dioxus::prelude::*;
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::{
     card::{
         Card,

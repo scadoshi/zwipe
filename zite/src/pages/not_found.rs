@@ -10,8 +10,8 @@
 //! wants to explore.
 
 use crate::{Footer, Nav, Route, components::PageMeta};
+use components::Panel;
 use dioxus::prelude::*;
-use zwipe_components::Panel;
 
 #[component]
 pub fn NotFound(segments: Vec<String>) -> Element {

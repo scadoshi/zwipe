@@ -5,7 +5,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 use super::super::filter_mode::FilterMode;
-use zwipe_components::TOAST_QUICK;
+use components::TOAST_QUICK;
 
 /// CMC filter sub-component.
 #[component]

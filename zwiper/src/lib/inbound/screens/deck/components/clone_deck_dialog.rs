@@ -5,10 +5,10 @@ use crate::inbound::{
     },
     router::Router,
 };
+use components::{ActionButton, AlertDialog, DialogAction, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
-use zwipe_components::{ActionButton, AlertDialog, DialogAction, TOAST_QUICK};
 use zwipe_core::http::contracts::deck::HttpCloneDeck;
 
 /// Clone deck dialog: prompts for a new name, calls the clone endpoint,

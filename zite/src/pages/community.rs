@@ -1,6 +1,6 @@
 use crate::{DISCORD_URL, Footer, Nav, SUPPORT_EMAIL, components::PageMeta};
+use components::Panel;
 use dioxus::prelude::*;
-use zwipe_components::Panel;
 
 #[component]
 pub fn Community() -> Element {

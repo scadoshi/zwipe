@@ -1,7 +1,7 @@
 use crate::{Nav, api};
+use components::{InfoButton, Panel, PasswordInput};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
-use zwipe_components::{InfoButton, Panel, PasswordInput};
 use zwipe_core::domain::auth::{models::secret::Secret, password::requirements};
 
 /// Validate a candidate password against the shared password policy.

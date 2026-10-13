@@ -2,10 +2,10 @@
 //! screens.
 
 use crate::outbound::counts_store::PersistCounts;
+use components::{Decode, Panel, StatsStrip};
 use dioxus::prelude::*;
 use std::time::{Duration, Instant};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{Decode, Panel, StatsStrip};
 use zwipe_core::{domain::logo, http::contracts::metrics::HttpPublicMetrics};
 
 /// How long a fetched set of counters serves before the next screen asks

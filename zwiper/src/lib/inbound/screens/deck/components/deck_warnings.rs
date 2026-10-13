@@ -7,11 +7,11 @@ use crate::inbound::{
     },
     router::Router,
 };
+use components::{Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_components::{Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
 use zwipe_core::domain::{
     auth::models::session::Session,
     deck::deck_warning::{DeckWarning, WarningAction},

@@ -15,8 +15,8 @@
 //! `position: fixed`.
 
 use crate::components::sleep_ms;
+use components::Panel;
 use dioxus::prelude::*;
-use zwipe_components::Panel;
 use zwipe_core::domain::card::{
     Card,
     scryfall_data::{ImageSize, ScryfallData},

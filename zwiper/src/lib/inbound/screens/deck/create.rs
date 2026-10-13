@@ -17,10 +17,10 @@ use crate::inbound::{
     },
     router::Router,
 };
+use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,

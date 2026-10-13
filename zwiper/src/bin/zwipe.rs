@@ -1,6 +1,6 @@
+use components::{DialogHostView, ThemeConfig, ToastStack, use_dialog_host};
 use dioxus::prelude::*;
 use tracing_subscriber::EnvFilter;
-use zwipe_components::{DialogHostView, ThemeConfig, ToastStack, use_dialog_host};
 use zwipe_core::domain::logo;
 use zwiper::{
     config::Config,
@@ -80,8 +80,7 @@ fn launch_app() {
 fn ThemeWrapper(children: Element) -> Element {
     // Whatever sets the theme (the Themes sheet, the dark-mode toggle, a
     // session's preferences), the shell wipes over to it.
-    let follow =
-        zwipe_components::use_theme_follow(use_context::<Signal<ThemeConfig>>(), ".app-shell");
+    let follow = components::use_theme_follow(use_context::<Signal<ThemeConfig>>(), ".app-shell");
     // The Themes sheet reads it to leave inside the wipe that restores a
     // discarded pick.
     use_context_provider(|| follow);
@@ -111,13 +110,13 @@ fn App() -> Element {
                  @font-face{{font-family:'JetBrains Mono';font-style:normal;font-weight:700;font-display:swap;src:url({FONT_JBM_700}) format('woff2');}}"
             )}
         }
-        document::Style { {zwipe_components::THEMES_CSS} }
-        document::Style { {zwipe_components::COMPONENTS_CSS} }
-        document::Style { {zwipe_components::MAGIC_CSS} }
-        document::Style { {zwipe_components::APP_CSS} }
+        document::Style { {components::THEMES_CSS} }
+        document::Style { {components::COMPONENTS_CSS} }
+        document::Style { {components::MAGIC_CSS} }
+        document::Style { {components::APP_CSS} }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: ACCORDION_CSS }
-        document::Style { {zwipe_components::TOAST_CSS} }
+        document::Style { {components::TOAST_CSS} }
         document::Meta {
             name: "viewport",
             content: "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
@@ -130,7 +129,7 @@ fn App() -> Element {
                 UpdateRequired {}
             } else {
                 ToastStack {
-                    default_duration: zwipe_components::TOAST_NORMAL,
+                    default_duration: components::TOAST_NORMAL,
                     Router::<Router> {}
                     // App-root receiver for on-demand "?" hints.
                     HintHost {}

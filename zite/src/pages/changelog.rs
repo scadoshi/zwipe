@@ -1,6 +1,6 @@
 use crate::{Footer, Nav, components::PageMeta};
+use components::{Changelog as ChangelogContent, Panel};
 use dioxus::prelude::*;
-use zwipe_components::{Changelog as ChangelogContent, Panel};
 
 #[component]
 pub fn Changelog() -> Element {

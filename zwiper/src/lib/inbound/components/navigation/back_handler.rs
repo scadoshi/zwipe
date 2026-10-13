@@ -33,7 +33,7 @@ pub fn BackHandlerLayout() -> Element {
         }
         can
     });
-    zwipe_components::use_os_back("zwipe:back", webview, go_back);
+    components::use_os_back("zwipe:back", webview, go_back);
 
     rsx! {
         Outlet::<Router> {}

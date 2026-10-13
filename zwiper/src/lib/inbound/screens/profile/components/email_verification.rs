@@ -5,12 +5,12 @@ use crate::inbound::components::{
         vocabulary::{ProfileScreen, Screen, component, screen},
     },
 };
+use components::{Button, ButtonVariant, TOAST_LONG, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use tokio::time::sleep;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_components::{Button, ButtonVariant, TOAST_LONG, TOAST_NORMAL};
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Seconds before another resend is allowed. Mirrors the server's dedicated

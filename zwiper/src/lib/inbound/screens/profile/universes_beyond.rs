@@ -9,10 +9,10 @@ use crate::inbound::components::{
     hint_dialog::{HintDialog, open_and_record_hint},
     telemetry::vocabulary::{ProfileScreen, Screen},
 };
+use components::{BottomSheet, Button, ButtonVariant, HintLine, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{BottomSheet, Button, ButtonVariant, HintLine, TOAST_QUICK};
 use zwipe_core::{
     domain::{
         auth::models::session::Session, user::models::hints::HINT_UNIVERSES_BEYOND_EXCEPTIONS,

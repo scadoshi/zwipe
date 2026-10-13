@@ -81,4 +81,4 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: UI tests
-        run: cargo test -p zwipe-components -p zite -p zwiper
+        run: cargo test -p components -p zite -p zwiper

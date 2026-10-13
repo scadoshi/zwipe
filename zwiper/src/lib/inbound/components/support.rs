@@ -7,8 +7,8 @@
 //! pre-filled with the app version and platform so every report self-documents.
 
 use crate::outbound::open_url;
+use components::{AlertDialog, DialogAction};
 use dioxus::prelude::*;
-use zwipe_components::{AlertDialog, DialogAction};
 use zwipe_core::domain::site::{DISCORD_URL, SUPPORT_EMAIL};
 
 /// App version, baked at compile time.

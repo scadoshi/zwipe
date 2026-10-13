@@ -7,7 +7,7 @@
 //! [`crate::http::contracts::changelog`] project it into an owned, serializable
 //! response.
 //!
-//! Data lives here (pure, no UI deps) rather than in `zwipe-components` so the
+//! Data lives here (pure, no UI deps) rather than in `components` so the
 //! server can serve it without depending on a UI crate.
 
 /// One shipped version and its notes. Dates from the App Store Connect

@@ -1,7 +1,7 @@
 //! Status colors mean an outcome. Decoration draws from the palette slots. No
 //! rule in the Magic sheet marks an outcome, so none may name a status color.
 
-use zwipe_components::status_uses;
+use components::status_uses;
 
 #[test]
 fn status_colors_only_where_they_mean_something() {

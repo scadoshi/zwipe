@@ -11,9 +11,9 @@
 
 use zwipe_client::{ClientError, ZwipeClient};
 
+use components::TOAST_NORMAL;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
-use zwipe_components::TOAST_NORMAL;
 use zwipe_core::domain::auth::models::session::Session;
 
 use crate::inbound::components::{

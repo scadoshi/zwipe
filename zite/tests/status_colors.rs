@@ -1,7 +1,7 @@
 //! Status colors mean an outcome. Decoration draws from the palette slots. Every
 //! status reference in zite's stylesheet must be one of these.
 
-use zwipe_components::status_uses;
+use components::status_uses;
 
 const ALLOWED: [&str; 9] = [
     ".dead-end .panel-title",

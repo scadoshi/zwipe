@@ -7,8 +7,8 @@
 //! `open` signal as `hint` just wires up the trigger button.
 
 use crate::inbound::components::support::SupportButton;
+use components::PageHeader;
 use dioxus::prelude::*;
-use zwipe_components::PageHeader;
 
 /// Centered page title flanked by the always-present "!" help button (left) and
 /// an optional "?" hint trigger (right).

@@ -1,13 +1,13 @@
 use crate::{Footer, Nav, components::PageMeta};
+use components::{Panel, ZwipeArchitecture};
 use dioxus::prelude::*;
-use zwipe_components::{Panel, ZwipeArchitecture};
 
 // Source-material links, used inside the architecture diagram (Wikipedia-style refs).
 const URL_ZWIPER: &str = "https://github.com/scadoshi/zwipe/tree/main/zwiper";
 const URL_ZITE: &str = "https://github.com/scadoshi/zwipe/tree/main/zite";
 const URL_ZERVER: &str = "https://github.com/scadoshi/zwipe/tree/main/zerver";
 const URL_ZWIPE_CORE: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-core";
-const URL_ZWIPE_COMPONENTS: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-components";
+const URL_COMPONENTS: &str = "https://github.com/scadoshi/zwipe/tree/main/components";
 const URL_ZWIPE_CLIENT: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-client";
 const URL_ORANGUI: &str = "https://github.com/scadoshi/orangui";
 const URL_DIOXUS: &str = "https://dioxuslabs.com";
@@ -80,7 +80,7 @@ pub fn About() -> Element {
                                 ", "
                                 a { href: URL_ZWIPE_CLIENT, "zwipe-client" }
                                 " and "
-                                a { href: URL_ZWIPE_COMPONENTS, "zwipe-components" }
+                                a { href: URL_COMPONENTS, "components" }
                             }
                         }
                     }
@@ -108,7 +108,7 @@ pub fn About() -> Element {
                                 ", "
                                 a { href: URL_ZWIPE_CLIENT, "zwipe-client" }
                                 " and "
-                                a { href: URL_ZWIPE_COMPONENTS, "zwipe-components" }
+                                a { href: URL_COMPONENTS, "components" }
                             }
                         }
                     }
@@ -143,9 +143,9 @@ pub fn About() -> Element {
                     }
                     Panel {
                         eyebrow: "Shared UI",
-                        title: "zwipe-components",
+                        title: "components",
                         actions: rsx! {
-                            a { class: "panel-action", href: URL_ZWIPE_COMPONENTS, "Source" span { class: "ext", "\u{2197}" } }
+                            a { class: "panel-action", href: URL_COMPONENTS, "Source" span { class: "ext", "\u{2197}" } }
                         },
                         div { class: "arch-tags",
                             a { class: "tag tag-p1", href: URL_DIOXUS, "Dioxus" }

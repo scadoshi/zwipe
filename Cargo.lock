@@ -935,6 +935,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "components"
+version = "1.11.4"
+dependencies = [
+ "dioxus",
+ "orangui",
+ "uuid",
+ "zwipe-core",
+]
+
+[[package]]
 name = "compression-codecs"
 version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9085,6 +9095,7 @@ dependencies = [
 name = "zite"
 version = "1.11.4"
 dependencies = [
+ "components",
  "dioxus",
  "getrandom 0.4.3",
  "gloo-timers 0.4.0",
@@ -9095,7 +9106,6 @@ dependencies = [
  "uuid",
  "web-sys",
  "zwipe-client",
- "zwipe-components",
  "zwipe-core",
 ]
 
@@ -9184,16 +9194,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "zwipe-components"
-version = "1.11.4"
-dependencies = [
- "dioxus",
- "orangui",
- "uuid",
- "zwipe-core",
-]
-
-[[package]]
 name = "zwipe-core"
 version = "1.11.4"
 dependencies = [
@@ -9218,6 +9218,7 @@ dependencies = [
  "anyhow",
  "apple-native-keyring-store",
  "chrono",
+ "components",
  "dioxus",
  "dioxus-primitives",
  "dotenvy",
@@ -9239,6 +9240,5 @@ dependencies = [
  "uuid",
  "webbrowser",
  "zwipe-client",
- "zwipe-components",
  "zwipe-core",
 ]

@@ -15,6 +15,6 @@ use dioxus::prelude::*;
 pub fn InfoButton(topic: HintTopic) -> Element {
     let mut hint: Signal<Option<HintTopic>> = use_context();
     rsx! {
-        zwipe_components::InfoButton { onclick: move |_| hint.set(Some(topic)) }
+        components::InfoButton { onclick: move |_| hint.set(Some(topic)) }
     }
 }

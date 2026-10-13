@@ -2,14 +2,14 @@ use crate::{
     Footer, Nav, api,
     components::{PageMeta, sleep_ms},
 };
+use components::{
+    CardRow as SharedCardRow, Chip, DeckCharts, DrawOdds, FlippableCardImage, ManaCurve,
+    ManaFulfillment, Panel,
+};
 use dioxus::prelude::*;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 use zwipe_client::ClientError;
-use zwipe_components::{
-    CardRow as SharedCardRow, Chip, DeckCharts, DrawOdds, FlippableCardImage, ManaCurve,
-    ManaFulfillment, Panel,
-};
 use zwipe_core::{
     domain::{
         card::{

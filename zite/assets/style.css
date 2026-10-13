@@ -366,7 +366,7 @@ a {
     margin-bottom: var(--panel-gap);
 }
 
-/* The architecture carousel (zwipe_components::ZwipeArchitecture) sits above
+/* The architecture carousel (components::ZwipeArchitecture) sits above
    the crate cards, its diagrams at four fifths of the frame so they read as
    figures rather than filling it. body-prefixed to outrank the shared sheet's
    own .diagram width. */
@@ -938,7 +938,7 @@ code {
 }
 
 /* The changelog content (chip filter + release list) is the shared
-   zwipe_components::Changelog; its styles live in magic.css. Only the
+   components::Changelog; its styles live in magic.css. Only the
    page header above is zite-specific. */
 
 /* StatsStrip's source row: the chips under the hero figures. */
@@ -1848,7 +1848,7 @@ code {
 }
 
 /* The expanded row's actions (Image + Flip for DFCs) and muted separator come
-   from zwipe-components. Shown at every width: the Flip control has to be
+   from the components crate. Shown at every width: the Flip control has to be
    reachable on desktop too, and Image opens the full overlay. */
 .card-row-rule-muted {
     margin-top: 0;
@@ -2334,7 +2334,7 @@ code {
     color: var(--accent-tertiary);
 }
 
-/* Card rows come from zwipe-components (components.css); zite-only additions
+/* Card rows come from the components crate (magic.css); zite-only additions
    below: a mouse-hover cue (this is the one surface with a pointer) and
    slightly smaller detail text than the app. */
 @media (hover: hover) {

@@ -19,7 +19,7 @@ server = ["dioxus/server", "dep:tokio"]
 [dependencies]
 zwipe-core = { path = "../zwipe-core" }
 zwipe-client = { path = "../zwipe-client" }
-zwipe-components = { path = "../zwipe-components" }
+components = { path = "../components" }
 dioxus = { version = "0.7.9", features = ["router", "fullstack"] }
 serde = { workspace = true }
 serde_json = { workspace = true }

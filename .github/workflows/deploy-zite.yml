@@ -6,7 +6,7 @@ on:
     paths:
       - 'zite/**'
       - 'zwipe-core/**'
-      - 'zwipe-components/**'
+      - 'components/**'
       - '.github/workflows/deploy-zite.yml'
   workflow_dispatch:
 
@@ -78,7 +78,7 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: UI tests
-        run: cargo test -p zwipe-components -p zite -p zwiper
+        run: cargo test -p components -p zite -p zwiper
       - name: Clippy (zite server feature)
         # `--workspace` lints default features, which for zite is `web`. The
         # `server` feature is what `dx build --ssg` compiles to enumerate and

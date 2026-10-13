@@ -3,10 +3,10 @@ use crate::inbound::components::{
     fields::text_input::TextInput,
     telemetry::vocabulary::{ProfileScreen, Screen, component},
 };
+use components::{ActionButton, AlertDialog, DialogAction};
 use dioxus::prelude::*;
 use std::time::Duration;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionButton, AlertDialog, DialogAction};
 use zwipe_core::{
     domain::auth::models::{secret::Secret, session::Session},
     http::contracts::auth::HttpDeleteUser,

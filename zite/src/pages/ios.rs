@@ -1,7 +1,7 @@
 use dioxus::{document::eval, prelude::*};
 
 use crate::{Footer, Nav, components::PageMeta};
-use zwipe_components::Panel;
+use components::Panel;
 
 /// Live App Store listing for Zwipe (iOS).
 const APP_STORE_URL: &str = "https://apps.apple.com/us/app/zwipe-tcg/id6761341603";

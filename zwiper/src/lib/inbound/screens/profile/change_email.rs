@@ -8,9 +8,9 @@ use crate::{
         telemetry::vocabulary::{ProfileScreen, Screen},
     },
 };
+use components::{BottomSheet, Button, ButtonVariant, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{BottomSheet, Button, ButtonVariant, TOAST_NORMAL};
 use zwipe_core::{
     domain::{Email, auth::models::session::Session},
     http::contracts::auth::HttpChangeEmail,

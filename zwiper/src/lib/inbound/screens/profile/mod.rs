@@ -31,6 +31,10 @@ use crate::{
     },
     outbound::open_url,
 };
+use ::components::{
+    ActionBar, BottomSheet, Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets,
+    HintKey, TOAST_NORMAL, ThemeConfig, theme_from_preferences,
+};
 use change_email::ChangeEmailSheet;
 use change_password::ChangePasswordSheet;
 use change_username::ChangeUsernameSheet;
@@ -42,10 +46,6 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use preferences::PreferencesSheet;
 use universes_beyond::UniversesBeyondExceptionsSheet;
-use zwipe_components::{
-    ActionBar, BottomSheet, Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets,
-    HintKey, TOAST_NORMAL, ThemeConfig, theme_from_preferences,
-};
 use zwipe_core::{
     domain::{
         auth::models::session::Session,

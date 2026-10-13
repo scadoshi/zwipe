@@ -26,14 +26,14 @@ use crate::{
     },
     outbound::buy_links,
 };
+use components::{
+    ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets, HintKey,
+    TOAST_NORMAL, TOAST_QUICK,
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_components::{
-    ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets, HintKey,
-    TOAST_NORMAL, TOAST_QUICK,
-};
 use zwipe_core::{
     domain::{
         card::Card,

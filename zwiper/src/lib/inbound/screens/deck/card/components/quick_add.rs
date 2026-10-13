@@ -16,12 +16,12 @@ use crate::inbound::components::{
         vocabulary::{DeckScreen, Screen, component},
     },
 };
+use components::TOAST_QUICK;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use tokio::time::sleep;
 use uuid::Uuid;
-use zwipe_components::TOAST_QUICK;
 use zwipe_core::{
     domain::{
         card::{

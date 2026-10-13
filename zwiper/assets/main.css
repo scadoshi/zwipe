@@ -1848,7 +1848,7 @@ button {
 }
 
 /* FlippableCardImage: base wrapper/img/flip-button rules live in
-   zwipe-components/assets/magic.css (shared with zite). The rules below are
+   components/assets/magic.css (shared with zite). The rules below are
    the zwiper-surface-specific max bounds layered on the `.card-image` /
    `.carousel-card-image` layout classes. */
 
@@ -1966,7 +1966,7 @@ button {
  =========================== */
 
 /* .chip and .chip.selected are in orangui's components.css and .chip .ms in
-   zwipe-components' magic.css. .chip-xs keeps its own glyph sizing here. */
+   the components crate's magic.css. .chip-xs keeps its own glyph sizing here. */
 .chip-xs .ms {
     font-size: 1.1rem;
     vertical-align: middle;
@@ -2634,7 +2634,7 @@ button {
 }
 
 /* .stepper-btn is in orangui's components.css; the DrawOdds component that
-   uses it is in zwipe-components. */
+   uses it is in the components crate. */
 
 .stepper-value {
     width: 2rem;

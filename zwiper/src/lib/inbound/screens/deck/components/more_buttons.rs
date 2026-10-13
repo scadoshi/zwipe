@@ -9,11 +9,11 @@ use crate::inbound::{
     },
     router::Router,
 };
+use components::{AlertDialog, BottomSheet, Button, DialogAction, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{AlertDialog, BottomSheet, Button, DialogAction, TOAST_QUICK};
 use zwipe_core::domain::{auth::models::session::Session, site::WEB_BASE};
 
 #[component]

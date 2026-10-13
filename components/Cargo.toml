@@ -1,5 +1,5 @@
 [package]
-name = "zwipe-components"
+name = "components"
 version.workspace = true
 edition = "2024"
 

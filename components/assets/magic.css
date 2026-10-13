@@ -1,4 +1,4 @@
-/* The Magic rules for zwipe-components, on top of orangui's COMPONENTS_CSS.
+/* The Magic rules for the components crate, on top of orangui's COMPONENTS_CSS.
  * Inlined by zwiper and zite through the MAGIC_CSS constant, after orangui's
  * THEMES_CSS and COMPONENTS_CSS. Rules reference theme CSS variables only,
  * never color literals, so a component resolves to whichever theme the host
@@ -11,7 +11,7 @@
     vertical-align: middle;
 }
 
-/* ---- OracleText (zwipe_components::OracleText) ---- */
+/* ---- OracleText (components::OracleText) ---- */
 
 /* Inline mana/tap/energy glyphs inside oracle text — sized to sit with the
    surrounding text rather than dominate it. The host page styles the text
@@ -22,7 +22,7 @@
     margin: 0 0.04em;
 }
 
-/* ---- KeywordChips (zwipe_components::KeywordChips) ---- */
+/* ---- KeywordChips (components::KeywordChips) ---- */
 
 /* Keyword abilities (Flying, Trample, …) with a tap-to-reveal reminder. */
 .keyword-section {
@@ -96,7 +96,7 @@
     color: var(--accent-tertiary);
 }
 
-/* ---- CardRow (zwipe_components::CardRow) ---- */
+/* ---- CardRow (components::CardRow) ---- */
 
 .card-row {
     padding: 0.5rem 1rem;
@@ -665,7 +665,7 @@ i.ms.ms-cost.ms-gp {
     color: var(--accent-tertiary);
 }
 
-/* ---- FlippableCardImage (zwipe_components::FlippableCardImage) ----
+/* ---- FlippableCardImage (components::FlippableCardImage) ----
    Base wrapper/image/flip-button rules, shared by zwiper and zite. Hosts layer
    their own per-context max bounds on `.flippable-card-wrapper.<host-class> img`. */
 .flippable-card-wrapper {
@@ -898,7 +898,7 @@ i.ms.ms-cost.ms-gp {
     transform: scale(0.95);
 }
 
-/* ---- Changelog (zwipe_components::Changelog) ---- */
+/* ---- Changelog (components::Changelog) ---- */
 
 /* Self-contained so it renders identically on the site and in the app: does
    not lean on any host stylesheet's card/bullet rules. */

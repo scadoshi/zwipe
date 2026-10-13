@@ -5,13 +5,13 @@ use crate::inbound::components::{
     info_button::InfoButton,
     telemetry::usage_buffer::UsageBuffer,
 };
+use components::{HintBullet, HintBullets, HintKey, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use std::time::Duration;
 use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{HintBullet, HintBullets, HintKey, TOAST_NORMAL};
 use zwipe_core::domain::{
     auth::models::session::Session,
     card::{

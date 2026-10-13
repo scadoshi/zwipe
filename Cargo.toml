@@ -3,7 +3,7 @@ members = [
     "zerver",
     "zwiper",
     "zwipe-core",
-    "zwipe-components",
+    "components",
     "zite",
     "zwipe-client",
 ]
