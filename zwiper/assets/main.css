@@ -9,15 +9,20 @@
         base
  ==================== */
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    /* Android WebView flashes its own translucent highlight on any tappable
-       element (blue on stock Android) before our styles react; iOS keeps this
-       effectively invisible by default. Kill it — the app provides its own
-       touch feedback. */
-    -webkit-tap-highlight-color: transparent;
+/* In a layer, so it sits under every unlayered rule: the kit's :where()
+   defaults (dialog padding, stat-chip padding) have zero specificity like
+   this reset, and this sheet loads after the kit's. */
+@layer reset {
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        /* Android WebView flashes its own translucent highlight on any tappable
+           element (blue on stock Android) before our styles react; iOS keeps this
+           effectively invisible by default. Kill it — the app provides its own
+           touch feedback. */
+        -webkit-tap-highlight-color: transparent;
+    }
 }
 
 html {
