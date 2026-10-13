@@ -104,8 +104,8 @@ pub fn CardDetails(
     /// elsewhere (the eyeball dialog's title).
     #[props(default = true)]
     show_name: bool,
-    /// Show the mana cost in the detail head. Off for hosts that show it elsewhere
-    /// (the eyeball dialog pins it in the title).
+    /// Show the mana cost in the detail head. Off for hosts that show it
+    /// elsewhere.
     #[props(default = true)]
     show_cost: bool,
     /// Render the card-role classification (roles + grouped oracle tags) below the

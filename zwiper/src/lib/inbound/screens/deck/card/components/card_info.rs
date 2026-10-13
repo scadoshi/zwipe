@@ -1,7 +1,9 @@
 use crate::inbound::components::catalog_cache::CatalogCache;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{AlertDialog, Button, ButtonVariant, CardDetails, DialogAction};
+use zwipe_components::{
+    ActionButton, AlertDialog, Button, ButtonVariant, CardDetails, DialogAction, card_face_count,
+};
 use zwipe_core::domain::card::Card;
 
 /// Displays card metadata: prices, set, release date, artist. The card's oracle
@@ -78,9 +80,10 @@ pub(crate) fn RulesButton(open: Signal<bool>) -> Element {
 /// Dialog showing a card's full details (type, oracle text, stats, keywords,
 /// card roles), for printings whose image is text-light (Secret Lair, full-art,
 /// foreign-language). Opened from the action-bar [`RulesButton`] via the shared
-/// `open` signal. The body is the shared [`CardDetails`] with the mana cost and
-/// the Flip control inline, since every footer action closes the dialog. The
-/// footer holds Close and an optional view-only Printings.
+/// `open` signal. The body is the shared [`CardDetails`], opening on the shown
+/// face's mana cost since the dialog's title holds only text. The footer holds
+/// Flip for a multi-faced card (it leaves the dialog open), Close, and an
+/// optional view-only Printings.
 #[component]
 pub(crate) fn CardDetailsDialog(
     open: Signal<bool>,
@@ -91,6 +94,10 @@ pub(crate) fn CardDetailsDialog(
     on_printings: Option<EventHandler<()>>,
 ) -> Element {
     let name = card.scryfall_data.name.clone();
+    // Face state lives here so Flip can sit in the footer; the body reads it
+    // through the controlled `face` prop.
+    let face_count = card_face_count(&card);
+    let mut face = use_signal(|| 0usize);
 
     // Tag definitions for the card-role cluster: tapping a tag reveals its
     // description inline (same reveal as the deck view's expanded rows).
@@ -109,7 +116,15 @@ pub(crate) fn CardDetailsDialog(
         })
     });
 
-    let mut actions = vec![DialogAction::Dismiss("Close".into())];
+    let mut actions = Vec::new();
+    if face_count > 1 {
+        actions.push(
+            ActionButton::new("Flip")
+                .stay_open(move || face.set((face() + 1) % face_count))
+                .into(),
+        );
+    }
+    actions.push(DialogAction::Dismiss("Close".into()));
     if let Some(handler) = on_printings {
         actions.push(DialogAction::Confirm {
             label: "Printings".into(),
@@ -131,7 +146,8 @@ pub(crate) fn CardDetailsDialog(
                     show_name: false,
                     show_cost: true,
                     show_classification: true,
-                    show_flip: true,
+                    show_flip: false,
+                    face: Some(face),
                     describe_tag: Some(describe_tag),
                 }
             }
