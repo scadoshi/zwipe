@@ -232,12 +232,12 @@ pub fn Profile() -> Element {
 
                 div { class: "screen-content content-enter",
                     if let Some(s) = session().as_ref() {
-                        div { class: "profile-sections",
+                        div { class: "settings-sections",
 
-                            div { class: "profile-list",
+                            div { class: "settings-list",
 
-                                div { class: "card-header",
-                                    span { class: "card-title", "Account" }
+                                div { class: "settings-list-header",
+                                    span { class: "settings-list-title", "Account" }
                                 }
 
                                 div {
@@ -295,10 +295,10 @@ pub fn Profile() -> Element {
                                 }
                             }
 
-                            div { class: "profile-list",
+                            div { class: "settings-list",
 
-                                div { class: "card-header",
-                                    span { class: "card-title", "Preferences" }
+                                div { class: "settings-list-header",
+                                    span { class: "settings-list-title", "Preferences" }
                                 }
 
                                 div {
@@ -385,10 +385,10 @@ pub fn Profile() -> Element {
                                 }
                             }
 
-                            div { class: "profile-list",
+                            div { class: "settings-list",
 
-                                div { class: "card-header",
-                                    span { class: "card-title", "About" }
+                                div { class: "settings-list-header",
+                                    span { class: "settings-list-title", "About" }
                                 }
 
                                 div {

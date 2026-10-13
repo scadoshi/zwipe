@@ -191,8 +191,8 @@ pub fn Home() -> Element {
                                 let usd_price = card_price(&entry.card.scryfall_data, PriceCurrency::Usd)
                                     .map(|p| PriceCurrency::Usd.format_amount(p));
                                 rsx! {
-                                    div { class: "card-header", style: "justify-content: center;",
-                                        span { class: "card-title", "Featured flavor" }
+                                    div { class: "settings-list-header", style: "justify-content: center;",
+                                        span { class: "settings-list-title", "Featured flavor" }
                                     }
                                     div { class: "flavor-quote", style: "padding: 1rem;",
                                         "{flavor_text} "

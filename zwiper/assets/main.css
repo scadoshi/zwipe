@@ -527,8 +527,8 @@ button {
 }
 
 /* Min-version gate blocking screen — the headline pulses red. */
-/* Compound selector so it outranks .card-title's color (defined later). */
-.card-title.update-required-title {
+/* Compound selector so it outranks orangui's .settings-list-title color. */
+.settings-list-title.update-required-title {
     display: block;
     color: #ff3030;
     font-weight: bold;
@@ -1207,8 +1207,8 @@ button {
     width: 100%;
 }
 
-/* Shared "info-list" skeleton — bordered box with row pulses inside.
-   Matches dimensions of real .info-list / .info-row. */
+/* Shared "settings-list" skeleton — bordered box with row pulses inside.
+   Matches dimensions of real .settings-list / .info-row. */
 .skeleton-info-list {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
@@ -2792,15 +2792,6 @@ button {
   specific - info list (read-only card layout)
  =========================== */
 
-.info-list {
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    overflow: hidden;
-    width: 100%;
-    box-shadow: var(--shadow-sm);
-}
-
 .info-row {
     display: flex;
     flex-direction: row;
@@ -2833,67 +2824,12 @@ button {
     word-break: break-word;
 }
 
-/* =========================
-  specific - profile list
- =========================== */
-
-.profile-sections {
-    display: flex;
-    flex-direction: column;
-    gap: var(--panel-gap);
-    width: calc(100% - 4rem);
-    max-width: 40rem;
-    padding-bottom: 1rem;
-}
-
-.profile-list {
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    overflow: hidden;
-    width: 100%;
-    max-width: 40rem;
-    box-shadow: var(--shadow-sm);
-}
-
-.card-header {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--border-secondary);
-}
-
-.card-title {
-    font-size: 1rem;
-    letter-spacing: 0.1em;
-    color: var(--accent-primary);
-}
-
 /* Full-bleed divider under a subtitle inside a padded box (e.g. charts). */
 .box-rule {
     border: none;
     border-top: 1px solid var(--border-secondary);
     margin: 0.35rem -0.75rem 0.6rem -0.75rem;
     align-self: stretch;
-}
-
-.settings-row-value {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    font-size: 1rem;
-    font-weight: 400;
-    flex-shrink: 1;
-    min-width: 0;
-    justify-content: flex-end;
-    word-break: break-all;
-    text-align: right;
 }
 
 .badge-verified {
@@ -2952,14 +2888,6 @@ button {
     flex-wrap: wrap;
     gap: 0.4rem;
     width: 100%;
-}
-
-.pref-note {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-align: center;
-    line-height: 1.4;
-    margin: 0 0 0.6rem;
 }
 
 /* ================================

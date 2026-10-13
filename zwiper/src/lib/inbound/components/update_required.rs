@@ -32,7 +32,7 @@ pub fn UpdateRequired() -> Element {
                 div { class: "container-sm text-center",
                     div { class: "card", style: "cursor: default;",
                         span {
-                            class: "card-title update-required-title",
+                            class: "settings-list-title update-required-title",
                             "Update required"
                         }
                         hr { class: "box-rule", style: "margin-left: -1rem; margin-right: -1rem;" }

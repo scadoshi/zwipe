@@ -56,7 +56,7 @@ pub(crate) fn CollapsibleSection(
                         style: if is_open { "transform:rotate(90deg);" } else { "transform:rotate(0deg);" },
                         "▸"
                     }
-                    span { class: "card-title", "{title}" }
+                    span { class: "settings-list-title", "{title}" }
                     if let Some(badge) = badge.as_ref() {
                         span { style: "font-size:0.65rem;opacity:0.5;", "{badge}" }
                     }

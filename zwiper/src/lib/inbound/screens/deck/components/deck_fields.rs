@@ -472,7 +472,7 @@ pub(crate) fn DeckFields(
     rsx! {
         // Profile: name, format, command zone, power level.
         div { style: "margin-bottom: 0.5rem;",
-            span { class: "card-title", "Profile" }
+            span { class: "settings-list-title", "Profile" }
         }
 
         // Deck name
@@ -938,7 +938,7 @@ pub(crate) fn DeckFields(
 
         // Budget: land target + price target.
         div { style: "margin-top: 1.5rem;",
-            span { class: "card-title", "Budget" }
+            span { class: "settings-list-title", "Budget" }
         }
 
         // Land target (Not set = use the format heuristic)
@@ -1030,7 +1030,7 @@ pub(crate) fn DeckFields(
         // Tags: deck tags, oracle tags, other tags. Grouped at the bottom
         // (under a "Tags" heading) to mirror the deck view's Tags section.
         div { style: "margin-top: 1.5rem;",
-            span { class: "card-title", "Tags" }
+            span { class: "settings-list-title", "Tags" }
         }
 
         // Deck tags (open the full-screen picker to choose)

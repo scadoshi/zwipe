@@ -19,9 +19,9 @@ pub(crate) fn DeckProfileSection(
     };
 
     rsx! {
-        div { class: "info-list",
-            div { class: "card-header",
-                span { class: "card-title", "Profile" }
+        div { class: "settings-list",
+            div { class: "settings-list-header",
+                span { class: "settings-list-title", "Profile" }
             }
             div { class: "info-row",
                 span { class: "info-row-label", "Name" }

@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-/// One bordered "info-list"-shaped skeleton with `rows` row placeholders inside.
+/// One bordered "settings-list"-shaped skeleton with `rows` row placeholders inside.
 #[component]
 fn SkeletonInfoList(rows: usize) -> Element {
     rsx! {
