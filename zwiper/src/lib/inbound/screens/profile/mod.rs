@@ -373,7 +373,7 @@ pub fn Profile() -> Element {
                                                     for (i, name) in names.into_iter().enumerate() {
                                                         span {
                                                             key: "{name}",
-                                                            class: "stat-chip stat-chip-muted ub-exception-chip",
+                                                            class: "stat-chip stat-chip-muted ub-exception-chip chip-in",
                                                             style: "animation-delay: {i * 45}ms",
                                                             { name }
                                                         }

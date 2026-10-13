@@ -62,7 +62,7 @@ pub fn StatsStrip() -> Element {
             source: rsx! {
                 span { class: "tag", "all users" }
                 if let Some(label) = label {
-                    span { key: "{label}", class: "tag tag-swap", "{label}" }
+                    span { key: "{label}", class: "tag chip-in", "{label}" }
                 }
             },
         }

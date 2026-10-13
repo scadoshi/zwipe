@@ -569,29 +569,6 @@ code {
    neither class lands and the prerendered page shows settled. */
 
 /* ==================
-        content-enter
- ==================== */
-
-@keyframes content-enter {
-    from {
-        opacity: 0;
-        transform: translateY(0.625rem);
-    }
-    to {
-        opacity: 1;
-        /* `none`, not translateY(0): `both` retains this, and any non-none
-           transform makes the animated element a containing block that traps
-           position:fixed overlays (the flavor card's full-art preview)
-           inside the page column. */
-        transform: none;
-    }
-}
-
-.content-enter {
-    animation: content-enter 0.3s ease-out both;
-}
-
-/* ==================
         spinner
  ==================== */
 
@@ -673,27 +650,6 @@ code {
     margin: 1rem 0 0;
 }
 
-/* The chip that says which numbers are showing fades up when it changes. */
-.stats-figures .stats-source .tag-swap {
-    animation: chip-in 0.4s ease-out both;
-}
-
-@keyframes chip-in {
-    from {
-        opacity: 0;
-        transform: translateY(0.35rem);
-    }
-    to {
-        opacity: 1;
-        transform: none;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .stats-figures .stats-source .tag-swap {
-        animation: none;
-    }
-}
 
 
 @media (max-width: 62rem) {

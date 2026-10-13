@@ -2533,28 +2533,6 @@ button {
     animation: flavor-enter 0.2s ease-out 0.1s backwards;
 }
 
-@keyframes content-enter {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        /* `none`, not translateY(0): `both` retains this, and any non-none
-           transform makes .content-enter a containing block that traps
-           position:fixed dialogs (InfoButton hints) inside the content column. */
-        transform: none;
-    }
-}
-
-.content-enter {
-    animation: content-enter 0.3s ease-out both;
-}
-
-.content-enter-delayed {
-    animation: content-enter 0.3s ease-out 0.15s both;
-}
-
 @keyframes row-enter {
     from {
         opacity: 0;
@@ -2989,28 +2967,6 @@ button {
     flex-wrap: wrap;
     gap: 0.4rem;
     width: 100%;
-}
-
-/* The chips ease in one after another rather than landing all at once. */
-.ub-exception-chip {
-    animation: chip-in 0.3s ease-out both;
-}
-
-@keyframes chip-in {
-    from {
-        opacity: 0;
-        transform: translateY(0.35rem);
-    }
-    to {
-        opacity: 1;
-        transform: none;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .ub-exception-chip {
-        animation: none;
-    }
 }
 
 .pref-note {
