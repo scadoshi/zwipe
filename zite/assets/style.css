@@ -474,17 +474,6 @@ body .arch-figure .diagram {
     margin-inline: auto;
 }
 
-/* The architecture carousel's frame and slide: no fixed floor, and room at the
-   sides so prev and next sit beside a diagram rather than on it. */
-.gallery-body.arch-carousel {
-    min-height: 0;
-    padding: 0 3rem;
-}
-
-.arch-slide {
-    width: 100%;
-}
-
 /* Tech chips inside an architecture panel, above the prose. */
 .arch-tags {
     display: flex;

@@ -5,8 +5,8 @@
 //!
 //! Inline SVG through the shared diagram pieces, so the boxes take the theme's
 //! colors; the frame and footer are the demo gallery's ([`GalleryFrame`],
-//! [`GalleryFooter`]), restyled for short wide diagrams by the host's
-//! `.arch-carousel` rule.
+//! [`GalleryFooter`]), restyled for short wide diagrams by the kit's
+//! `.diagram-carousel` rule.
 
 use dioxus::prelude::*;
 
@@ -35,8 +35,8 @@ pub fn ZwipeArchitecture(
             actions: rsx! {
                 GalleryFooter { index: index(), total, caption: CAPTIONS.get(index()).map(|c| (*c).to_string()) }
             },
-            GalleryFrame { index, total, noun: "diagram", class: "arch-carousel".to_string(),
-                div { key: "{index()}", class: "arch-slide diagram-scroll",
+            GalleryFrame { index, total, noun: "diagram", class: "diagram-carousel".to_string(),
+                div { key: "{index()}", class: "diagram-slide diagram-scroll",
                     if index() == 0 {
                         Crates {}
                     } else {
