@@ -1,13 +1,12 @@
 //! Status colors mean an outcome. Decoration draws from the palette slots. Every
-//! status reference in the app's stylesheets must be one of these selectors, and
+//! status reference in the app's stylesheet must be one of these selectors, and
 //! the only Rust files that may write one into an inline style are the ones that
 //! draw deck warnings.
 
 use std::{fs, path::Path};
 use zwipe_components::status_uses;
 
-const ALLOWED: [&str; 10] = [
-    ".alert-dialog-action-danger",
+const ALLOWED: [&str; 9] = [
     ".badge-unverified",
     ".badge-verified",
     ".chip-bubble-error",
@@ -26,13 +25,8 @@ const ALLOWED_RS: [&str; 2] = [
 
 #[test]
 fn status_colors_only_where_they_mean_something() {
-    let sheets = [
-        include_str!("../assets/main.css"),
-        include_str!("../assets/alert-dialog.css"),
-    ];
-    let offenders: Vec<String> = sheets
-        .iter()
-        .flat_map(|css| status_uses(css))
+    let offenders: Vec<String> = status_uses(include_str!("../assets/main.css"))
+        .into_iter()
         .filter(|u| !ALLOWED.contains(&u.selector.as_str()))
         .map(|u| format!("{} uses {}", u.selector, u.variable))
         .collect();

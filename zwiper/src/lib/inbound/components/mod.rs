@@ -4,8 +4,6 @@
 
 /// Expandable accordion component.
 pub mod accordion;
-/// Modal alert/confirmation dialog component.
-pub mod alert_dialog;
 /// Authentication-related components (login form, register form).
 pub mod auth;
 /// App-wide cache of slow-changing filter catalogs (artists, sets, oracle tags…).

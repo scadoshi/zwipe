@@ -1967,19 +1967,6 @@ button {
     overflow-wrap: anywhere;
 }
 
-/* Card-rules dialog title row: name left, primary mana cost right. */
-.card-rules-title {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.5rem;
-    text-align: left;
-}
-
-.card-rules-title-name {
-    word-break: break-word;
-}
-
 /* Card-rules dialog body: reuses the expanded card-row detail markup
    (card-detail-* classes) so mana/oracle symbols and chips render identically.
    Scrolling is owned by the enclosing .alert-dialog-description (a single scroll

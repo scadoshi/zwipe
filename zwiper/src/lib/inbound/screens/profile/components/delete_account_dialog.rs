@@ -1,8 +1,4 @@
 use crate::inbound::components::{
-    alert_dialog::{
-        AlertDialogActions, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-        AlertDialogRoot, AlertDialogTitle,
-    },
     auth::{authed::use_authed, signal_logout::SignalLogout},
     fields::text_input::TextInput,
     telemetry::vocabulary::{ProfileScreen, Screen, component},
@@ -10,12 +6,15 @@ use crate::inbound::components::{
 use dioxus::prelude::*;
 use std::time::Duration;
 use zwipe_client::ZwipeClient;
+use zwipe_components::{AlertDialog, DialogAction};
 use zwipe_core::{
     domain::auth::models::{secret::Secret, session::Session},
     http::contracts::auth::HttpDeleteUser,
 };
 
 /// Delete account dialog with 5-second countdown, password confirmation, and deletion logic.
+/// The Delete button sits in the body, since it stays disabled through the
+/// countdown and keeps the dialog open while the request runs.
 #[component]
 pub(crate) fn DeleteAccountDialog(mut open: Signal<bool>) -> Element {
     let session: Signal<Option<Session>> = use_context();
@@ -40,57 +39,77 @@ pub(crate) fn DeleteAccountDialog(mut open: Signal<bool>) -> Element {
         }
     });
 
+    let delete_account = use_callback(move |()| {
+        is_deleting.set(true);
+        let password = delete_password();
+        spawn(async move {
+            if authed
+                .run_at(
+                    component::DELETE_ACCOUNT_DIALOG,
+                    "delete_account",
+                    |c, s| async move {
+                        c.delete_user(
+                            HttpDeleteUser {
+                                password: Secret::new(password),
+                            },
+                            &s,
+                        )
+                        .await
+                    },
+                )
+                .await
+                .is_some()
+            {
+                open.set(false);
+                session.logout(client);
+            }
+            is_deleting.set(false);
+        });
+    });
+
     rsx! {
-        AlertDialogRoot {
-            open: open(),
-            on_open_change: move |v: bool| {
-                if !v { open.set(false); }
-            },
-            AlertDialogContent {
-                AlertDialogTitle { "Delete account" }
-                hr { class: "dialog-rule" }
-                AlertDialogDescription {
-                    "This will permanently delete your account, all decks, and all card data. This cannot be undone."
-                }
-                TextInput {
-                    value: delete_password,
-                    input_type: "password".to_string(),
-                    placeholder: "Password".to_string(),
-                }
-                hr { class: "dialog-rule" }
-                AlertDialogActions {
-                    AlertDialogCancel {
-                        on_click: move |_| open.set(false),
-                        "Cancel"
-                    }
-                    button {
-                        class: "alert-dialog-action-danger",
-                        disabled: delete_countdown() > 0 || is_deleting(),
-                        onclick: move |_| {
-                            is_deleting.set(true);
-                            let password = delete_password();
-                            spawn(async move {
-                                if authed
-                                    .run_at(component::DELETE_ACCOUNT_DIALOG, "delete_account", |c, s| async move {
-                                        c.delete_user(HttpDeleteUser { password: Secret::new(password) }, &s).await
-                                    })
-                                    .await
-                                    .is_some()
-                                {
-                                    open.set(false);
-                                    session.logout(client);
-                                }
-                                is_deleting.set(false);
-                            });
-                        },
-                        if delete_countdown() > 0 {
-                            "Delete ({delete_countdown()})"
-                        } else if is_deleting() {
-                            "Deleting..."
-                        } else {
-                            "Delete"
-                        }
-                    }
+        AlertDialog {
+            open,
+            title: "Delete account",
+            actions: vec![DialogAction::Dismiss("Cancel".into())],
+            DeleteAccountBody {
+                password: delete_password,
+                countdown: delete_countdown,
+                is_deleting,
+                on_delete: delete_account,
+            }
+        }
+    }
+}
+
+/// The warning, the password field and the Delete button. Its own component so
+/// the countdown and the field update where the dialog host draws them.
+#[component]
+fn DeleteAccountBody(
+    password: Signal<String>,
+    countdown: Signal<u8>,
+    is_deleting: Signal<bool>,
+    on_delete: Callback<()>,
+) -> Element {
+    rsx! {
+        "This will permanently delete your account, all decks, and all card data. This cannot be undone."
+        TextInput {
+            value: password,
+            input_type: "password".to_string(),
+            placeholder: "Password".to_string(),
+        }
+        div { class: "alert-dialog-actions",
+            button {
+                class: "alert-dialog-action-danger",
+                r#type: "button",
+                disabled: countdown() > 0 || is_deleting(),
+                onclick: move |_| on_delete.call(()),
+                if countdown() > 0 {
+                    "Delete ({countdown()})"
+                } else if is_deleting() {
+                    "Deleting..."
+                } else {
+                    "Delete"
                 }
             }
         }

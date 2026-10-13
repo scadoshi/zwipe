@@ -1,9 +1,5 @@
 use crate::inbound::{
     components::{
-        alert_dialog::{
-            AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-            AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
-        },
         auth::authed::use_authed,
         telemetry::{
             flush_loop::flush_once,
@@ -17,7 +13,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{BottomSheet, Button, TOAST_QUICK};
+use zwipe_components::{AlertDialog, BottomSheet, Button, DialogAction, TOAST_QUICK};
 use zwipe_core::domain::{auth::models::session::Session, site::WEB_BASE};
 
 #[component]
@@ -58,7 +54,8 @@ pub(crate) fn MoreButtons(
         );
     };
 
-    let share_deck = move || {
+    let share_deck = use_callback(move |()| {
+        show_more_sheet.set(false);
         spawn(async move {
             if let Some(result) = authed
                 .run_at(component::MORE_BUTTONS, "share_deck", |c, s| async move {
@@ -70,9 +67,17 @@ pub(crate) fn MoreButtons(
                 copy_link(result.share_token);
             }
         });
-    };
+    });
 
-    let stop_sharing = move || {
+    let copy_shared_link = use_callback(move |()| {
+        show_more_sheet.set(false);
+        if let Some(token) = *share_token.peek() {
+            copy_link(token);
+        }
+    });
+
+    let stop_sharing = use_callback(move |()| {
+        show_more_sheet.set(false);
         spawn(async move {
             if authed
                 .run_at(component::MORE_BUTTONS, "unshare_deck", |c, s| async move {
@@ -88,9 +93,10 @@ pub(crate) fn MoreButtons(
                 );
             }
         });
-    };
+    });
 
-    let clear_skips = move || {
+    let clear_skips = use_callback(move |()| {
+        show_more_sheet.set(false);
         spawn(async move {
             // Flush pending skips first so this window's not-yet-sent skips
             // are wiped too, not re-suppressed by the next flush.
@@ -110,133 +116,86 @@ pub(crate) fn MoreButtons(
                 );
             }
         });
+    });
+
+    let buy_description = if tcg_url.is_none() && ck_url.is_none() {
+        "No buy links are available for this deck."
+    } else {
+        "Buy this deck's cards from a retailer."
+    };
+    let buy_actions: Vec<DialogAction> = std::iter::once(DialogAction::Dismiss("Close".into()))
+        .chain(tcg_url.map(|href| DialogAction::Link {
+            label: "TCGplayer \u{2197}".into(),
+            href,
+        }))
+        .chain(ck_url.map(|href| DialogAction::Link {
+            label: "Card Kingdom \u{2197}".into(),
+            href,
+        }))
+        .collect();
+
+    let (share_description, share_actions) = if share_token().is_some() {
+        (
+            "Anyone with the link can view this deck. Stop sharing disables the link; sharing again creates a new one.",
+            vec![
+                DialogAction::Dismiss("Close".into()),
+                DialogAction::Confirm {
+                    label: "Copy link".into(),
+                    danger: false,
+                    on_confirm: copy_shared_link,
+                },
+                DialogAction::Confirm {
+                    label: "Stop share".into(),
+                    danger: true,
+                    on_confirm: stop_sharing,
+                },
+            ],
+        )
+    } else {
+        (
+            "Anyone with the link can view this deck. You can stop sharing at any time.",
+            vec![
+                DialogAction::Dismiss("Close".into()),
+                DialogAction::Confirm {
+                    label: "Create link".into(),
+                    danger: false,
+                    on_confirm: share_deck,
+                },
+            ],
+        )
     };
 
     rsx! {
-        AlertDialogRoot {
-            open: show_buy_dialog(),
-            on_open_change: move |open| show_buy_dialog.set(open),
-            AlertDialogContent {
-                AlertDialogTitle { "Buy deck" }
-                hr { class: "dialog-rule" }
-                if tcg_url.is_none() && ck_url.is_none() {
-                    AlertDialogDescription { "No buy links are available for this deck." }
-                } else {
-                    AlertDialogDescription { "Buy this deck's cards from a retailer." }
-                }
-                hr { class: "dialog-rule" }
-                AlertDialogActions {
-                    AlertDialogCancel {
-                        on_click: move |_| show_buy_dialog.set(false),
-                        "Close"
-                    }
-                    if let Some(ref url) = tcg_url {
-                        a {
-                            class: "alert-dialog-action",
-                            href: "{url}",
-                            target: "_blank",
-                            rel: "noopener",
-                            onclick: move |_| show_buy_dialog.set(false),
-                            "TCGplayer ↗"
-                        }
-                    }
-                    if let Some(ref url) = ck_url {
-                        a {
-                            class: "alert-dialog-action",
-                            href: "{url}",
-                            target: "_blank",
-                            rel: "noopener",
-                            onclick: move |_| show_buy_dialog.set(false),
-                            "Card Kingdom ↗"
-                        }
-                    }
-                }
-            }
+        AlertDialog {
+            open: show_buy_dialog,
+            title: "Buy deck",
+            actions: buy_actions,
+            "{buy_description}"
         }
 
-        AlertDialogRoot {
-            open: show_clear_skips_dialog(),
-            on_open_change: move |open| show_clear_skips_dialog.set(open),
-            AlertDialogContent {
-                AlertDialogTitle { "Clear skips" }
-                hr { class: "dialog-rule" }
-                AlertDialogDescription {
-                    "Cards you've skipped or removed will start showing up again when adding cards. This can't be undone."
-                }
-                hr { class: "dialog-rule" }
-                AlertDialogActions {
-                    AlertDialogCancel {
-                        on_click: move |_| show_clear_skips_dialog.set(false),
-                        "Cancel"
-                    }
-                    AlertDialogAction {
-                        danger: true,
-                        on_click: move |_| {
-                            show_clear_skips_dialog.set(false);
-                            show_more_sheet.set(false);
-                            clear_skips();
-                        },
-                        "Clear"
-                    }
-                }
-            }
+        AlertDialog {
+            open: show_clear_skips_dialog,
+            title: "Clear skips",
+            actions: vec![
+                DialogAction::Dismiss("Cancel".into()),
+                DialogAction::Confirm {
+                    label: "Clear".into(),
+                    danger: true,
+                    on_confirm: clear_skips,
+                },
+            ],
+            "Cards you've skipped or removed will start showing up again when adding cards. This can't be undone."
         }
 
         // One dialog covers the whole share lifecycle (mirrors the Buy-deck
         // dialog). "Stop sharing" acts directly from here; the dialog itself
         // is the deliberate surface, and the description carries the caveat,
         // so no second confirmation dialog stacks on top.
-        AlertDialogRoot {
-            open: show_share_dialog(),
-            on_open_change: move |open| show_share_dialog.set(open),
-            AlertDialogContent {
-                AlertDialogTitle { "Share deck" }
-                hr { class: "dialog-rule" }
-                if share_token().is_some() {
-                    AlertDialogDescription {
-                        "Anyone with the link can view this deck. Stop sharing disables the link; sharing again creates a new one."
-                    }
-                } else {
-                    AlertDialogDescription {
-                        "Anyone with the link can view this deck. You can stop sharing at any time."
-                    }
-                }
-                hr { class: "dialog-rule" }
-                AlertDialogActions {
-                    AlertDialogCancel {
-                        on_click: move |_| show_share_dialog.set(false),
-                        "Close"
-                    }
-                    if let Some(token) = share_token() {
-                        AlertDialogAction {
-                            on_click: move |_| {
-                                show_share_dialog.set(false);
-                                show_more_sheet.set(false);
-                                copy_link(token);
-                            },
-                            "Copy link"
-                        }
-                        AlertDialogAction {
-                            danger: true,
-                            on_click: move |_| {
-                                show_share_dialog.set(false);
-                                show_more_sheet.set(false);
-                                stop_sharing();
-                            },
-                            "Stop share"
-                        }
-                    } else {
-                        AlertDialogAction {
-                            on_click: move |_| {
-                                show_share_dialog.set(false);
-                                show_more_sheet.set(false);
-                                share_deck();
-                            },
-                            "Create link"
-                        }
-                    }
-                }
-            }
+        AlertDialog {
+            open: show_share_dialog,
+            title: "Share deck",
+            actions: share_actions,
+            "{share_description}"
         }
 
         BottomSheet { open: show_more_sheet, title: "More actions",

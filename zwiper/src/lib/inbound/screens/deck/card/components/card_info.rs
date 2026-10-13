@@ -1,13 +1,7 @@
-use crate::inbound::components::{
-    alert_dialog::{
-        AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
-        AlertDialogRoot, AlertDialogTitle,
-    },
-    catalog_cache::CatalogCache,
-};
+use crate::inbound::components::catalog_cache::CatalogCache;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
-use zwipe_components::{Button, ButtonVariant, CardDetails, OracleText, card_face_count};
+use zwipe_components::{AlertDialog, Button, ButtonVariant, CardDetails, DialogAction};
 use zwipe_core::domain::card::Card;
 
 /// Displays card metadata: prices, set, release date, artist. The card's oracle
@@ -84,10 +78,9 @@ pub(crate) fn RulesButton(open: Signal<bool>) -> Element {
 /// Dialog showing a card's full details (type, oracle text, stats, keywords,
 /// card roles), for printings whose image is text-light (Secret Lair, full-art,
 /// foreign-language). Opened from the action-bar [`RulesButton`] via the shared
-/// `open` signal. Wraps the shared [`CardDetails`] for the body, but drives the
-/// Flip control from the dialog's own footer bar (alongside Close and an optional
-/// view-only Printings) rather than letting the body render it inline, so the
-/// dialog scrolls in one place and its controls stay pinned.
+/// `open` signal. The body is the shared [`CardDetails`] with the mana cost and
+/// the Flip control inline, since every footer action closes the dialog. The
+/// footer holds Close and an optional view-only Printings.
 #[component]
 pub(crate) fn CardDetailsDialog(
     open: Signal<bool>,
@@ -98,10 +91,6 @@ pub(crate) fn CardDetailsDialog(
     on_printings: Option<EventHandler<()>>,
 ) -> Element {
     let name = card.scryfall_data.name.clone();
-    // Face state lives here so Flip can sit in the footer bar; the body reads it
-    // via the controlled `face` prop.
-    let face_count = card_face_count(&card);
-    let mut face = use_signal(|| 0usize);
 
     // Tag definitions for the card-role cluster: tapping a tag reveals its
     // description inline (same reveal as the deck view's expanded rows).
@@ -120,87 +109,30 @@ pub(crate) fn CardDetailsDialog(
         })
     });
 
-    // Open at the top: the primitive can land the scroll container partway (focus
-    // moves into the dialog on mount). Reset the description's scroll on each open,
-    // after the content paints. `card-rules` is the direct child of the
-    // `.alert-dialog-description` scroll container.
-    use_effect(move || {
-        if open() {
-            let _ = document::eval(
-                "requestAnimationFrame(() => { const el = document.getElementById('card-details-rules'); if (el && el.parentElement) el.parentElement.scrollTop = 0; });",
-            );
-        }
-    });
-    // Mana cost for the shown face, pinned in the title so it tracks Flip.
-    let cost = {
-        let cur = face().min(face_count.saturating_sub(1));
-        card.scryfall_data
-            .card_faces
-            .as_ref()
-            .and_then(|faces| faces.get(cur))
-            .map(|f| f.mana_cost.clone())
-            .filter(|m| !m.is_empty())
-            .or_else(|| card.scryfall_data.mana_cost.clone())
-            .unwrap_or_default()
-    };
+    let mut actions = vec![DialogAction::Dismiss("Close".into())];
+    if let Some(handler) = on_printings {
+        actions.push(DialogAction::Confirm {
+            label: "Printings".into(),
+            danger: false,
+            on_confirm: handler,
+        });
+    }
+
     rsx! {
-        AlertDialogRoot {
-            open: open(),
-            on_open_change: move |v| open.set(v),
-            AlertDialogContent {
-                AlertDialogTitle {
-                    div { class: "card-rules-title",
-                        span { class: "card-rules-title-name", "{name}" }
-                        if !cost.is_empty() {
-                            OracleText { text: cost, class: "card-detail-cost".to_string() }
-                        }
-                    }
-                }
-                hr { class: "dialog-rule" }
-                AlertDialogDescription {
-                    // The name lives in the title; the shared body shows the
-                    // per-face cost, so `show_name` is off. The description is the
-                    // sole scroll container (`card-rules` does not scroll), and
-                    // Flip is hoisted to the footer, so `show_flip` is off.
-                    div { id: "card-details-rules", class: "card-rules",
-                        CardDetails {
-                            card,
-                            show_name: false,
-                            show_cost: false,
-                            show_classification: true,
-                            show_flip: false,
-                            face: Some(face),
-                            describe_tag: Some(describe_tag),
-                        }
-                    }
-                }
-                hr { class: "dialog-rule" }
-                AlertDialogActions {
-                    // Plain button, not AlertDialogAction: the primitive's action
-                    // buttons always close the dialog on click, but Flip must swap
-                    // faces and leave the dialog open. The class matches the footer
-                    // buttons' styling.
-                    if face_count > 1 {
-                        button {
-                            r#type: "button",
-                            class: "alert-dialog-action",
-                            onclick: move |_| face.set((face() + 1) % face_count),
-                            "Flip"
-                        }
-                    }
-                    AlertDialogAction {
-                        on_click: move |_| open.set(false),
-                        "Close"
-                    }
-                    if let Some(handler) = on_printings {
-                        AlertDialogAction {
-                            on_click: move |_| {
-                                open.set(false);
-                                handler.call(());
-                            },
-                            "Printings"
-                        }
-                    }
+        AlertDialog {
+            open,
+            title: name,
+            actions,
+            // The description is the sole scroll container; `card-rules` only
+            // styles the text.
+            div { class: "card-rules alert-dialog-long",
+                CardDetails {
+                    card,
+                    show_name: false,
+                    show_cost: true,
+                    show_classification: true,
+                    show_flip: true,
+                    describe_tag: Some(describe_tag),
                 }
             }
         }

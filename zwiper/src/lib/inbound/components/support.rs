@@ -6,14 +6,9 @@
 //! team: email a problem report or join the Discord. The report email is
 //! pre-filled with the app version and platform so every report self-documents.
 
-use crate::{
-    inbound::components::alert_dialog::{
-        AlertDialogActions, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-        AlertDialogRoot, AlertDialogTitle,
-    },
-    outbound::open_url,
-};
+use crate::outbound::open_url;
 use dioxus::prelude::*;
+use zwipe_components::{AlertDialog, DialogAction};
 use zwipe_core::domain::site::{DISCORD_URL, SUPPORT_EMAIL};
 
 /// App version, baked at compile time.
@@ -53,6 +48,10 @@ pub fn SupportButton() -> Element {
         "Describe the problem:\n\n\n---\nZwipe {APP_VERSION} \u{00b7} {PLATFORM}"
     ));
     let mailto = format!("mailto:{SUPPORT_EMAIL}?subject={subject}&body={body}");
+    // A plain `<a href="mailto:">` does nothing on mobile: the webview's
+    // navigation handler hands it to `webbrowser`, which rejects non-http(s)
+    // URLs. Open it through the OS.
+    let report = use_callback(move |()| open_url::open(&mailto));
 
     rsx! {
         button {
@@ -62,40 +61,22 @@ pub fn SupportButton() -> Element {
             "{GLYPH}"
         }
 
-        AlertDialogRoot {
-            open: open(),
-            on_open_change: move |v| open.set(v),
-            AlertDialogContent {
-                AlertDialogTitle { "Help & feedback" }
-                hr { class: "dialog-rule" }
-                AlertDialogDescription { "Reach the team or join the community." }
-                hr { class: "dialog-rule" }
-                AlertDialogActions {
-                    AlertDialogCancel {
-                        on_click: move |_| open.set(false),
-                        "Close"
-                    }
-                    // A plain `<a href="mailto:">` does nothing on mobile: the
-                    // webview's navigation handler hands it to `webbrowser`,
-                    // which rejects non-http(s) URLs. Open it through the OS.
-                    button {
-                        class: "alert-dialog-action",
-                        onclick: move |_| {
-                            open_url::open(&mailto);
-                            open.set(false);
-                        },
-                        "Report a problem \u{2197}"
-                    }
-                    a {
-                        class: "alert-dialog-action",
-                        href: "{DISCORD_URL}",
-                        target: "_blank",
-                        rel: "noopener noreferrer",
-                        onclick: move |_| open.set(false),
-                        "Join the Discord \u{2197}"
-                    }
-                }
-            }
+        AlertDialog {
+            open,
+            title: "Help & feedback",
+            actions: vec![
+                DialogAction::Dismiss("Close".into()),
+                DialogAction::Confirm {
+                    label: "Report a problem \u{2197}".into(),
+                    danger: false,
+                    on_confirm: report,
+                },
+                DialogAction::Link {
+                    label: "Join the Discord \u{2197}".into(),
+                    href: DISCORD_URL.into(),
+                },
+            ],
+            "Reach the team or join the community."
         }
     }
 }

@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use tracing_subscriber::EnvFilter;
-use zwipe_components::{ThemeConfig, ToastStack};
+use zwipe_components::{DialogHostView, ThemeConfig, ToastStack, use_dialog_host};
 use zwipe_core::domain::logo;
 use zwiper::{
     config::Config,
@@ -16,7 +16,6 @@ use zwiper::{
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const ACCORDION_CSS: Asset = asset!("/assets/accordion.css");
-const ALERT_DIALOG_CSS: Asset = asset!("/assets/alert-dialog.css");
 
 // Self-hosted JetBrains Mono. Registered via asset!() (not a CSS url(), which
 // manganis does not bundle) so the woff2 files ship in the app bundle. The full
@@ -101,6 +100,8 @@ fn App() -> Element {
     use_hook(zwiper::outbound::shake_to_edit::disable);
 
     let upgrade_required = spawn_upkeeper();
+    let dialogs = use_dialog_host();
+    use_context_provider(|| dialogs);
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Style {
@@ -116,7 +117,6 @@ fn App() -> Element {
         document::Style { {zwipe_components::APP_CSS} }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: ACCORDION_CSS }
-        document::Link { rel: "stylesheet", href: ALERT_DIALOG_CSS }
         document::Style { {zwipe_components::TOAST_CSS} }
         document::Meta {
             name: "viewport",
@@ -132,10 +132,11 @@ fn App() -> Element {
                 ToastStack {
                     default_duration: zwipe_components::TOAST_NORMAL,
                     Router::<Router> {}
-                    // App-root receiver for on-demand "?" hints, rendered beside
-                    // the router so its dialog escapes every screen's containing
-                    // block (see hint_host.rs).
+                    // App-root receiver for on-demand "?" hints.
                     HintHost {}
+                    // Every dialog draws here, beside the router, so its
+                    // overlay escapes each screen's containing block.
+                    DialogHostView {}
                 }
             }
         }

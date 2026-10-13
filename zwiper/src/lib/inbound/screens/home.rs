@@ -3,10 +3,6 @@
 use crate::{
     inbound::{
         components::{
-            alert_dialog::{
-                AlertDialogActions, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-                AlertDialogRoot, AlertDialogTitle,
-            },
             auth::session_upkeep::FlavorCard,
             hint_dialog::{HintColored, HintDialog, use_one_time_hint},
             home_hero::HomeHero,
@@ -23,8 +19,8 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::sync::atomic::{AtomicBool, Ordering};
 use zwipe_client::ZwipeClient;
 use zwipe_components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintKey, TOAST_QUICK, ThemeConfig,
-    theme_from_preferences,
+    ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets, HintKey,
+    TOAST_QUICK, ThemeConfig, theme_from_preferences,
 };
 use zwipe_core::domain::{
     auth::models::session::Session,
@@ -169,6 +165,16 @@ pub fn Home() -> Element {
         }
         None => (None, None),
     };
+    let buy_actions: Vec<DialogAction> = std::iter::once(DialogAction::Dismiss("Close".into()))
+        .chain(buy_tcg_url.map(|href| DialogAction::Link {
+            label: "TCGplayer \u{2197}".into(),
+            href,
+        }))
+        .chain(buy_ck_url.map(|href| DialogAction::Link {
+            label: "Card Kingdom \u{2197}".into(),
+            href,
+        }))
+        .collect();
 
     rsx! {
             div { class: "screen",
@@ -259,41 +265,11 @@ pub fn Home() -> Element {
 
             LogoutDialog { open: show_logout_dialog }
 
-            AlertDialogRoot {
-                open: show_buy_sheet(),
-                on_open_change: move |open| show_buy_sheet.set(open),
-                AlertDialogContent {
-                    AlertDialogTitle { "Buy card" }
-                    hr { class: "dialog-rule" }
-                    AlertDialogDescription { "Buy this card from a retailer." }
-                    hr { class: "dialog-rule" }
-                    AlertDialogActions {
-                        AlertDialogCancel {
-                            on_click: move |_| show_buy_sheet.set(false),
-                            "Close"
-                        }
-                        if let Some(ref url) = buy_tcg_url {
-                            a {
-                                class: "alert-dialog-action",
-                                href: "{url}",
-                                target: "_blank",
-                                rel: "noopener",
-                                onclick: move |_| show_buy_sheet.set(false),
-                                "TCGplayer ↗"
-                            }
-                        }
-                        if let Some(ref url) = buy_ck_url {
-                            a {
-                                class: "alert-dialog-action",
-                                href: "{url}",
-                                target: "_blank",
-                                rel: "noopener",
-                                onclick: move |_| show_buy_sheet.set(false),
-                                "Card Kingdom ↗"
-                            }
-                        }
-                    }
-                }
+            AlertDialog {
+                open: show_buy_sheet,
+                title: "Buy card",
+                actions: buy_actions,
+                "Buy this card from a retailer."
             }
             }
     }

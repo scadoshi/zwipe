@@ -1,10 +1,6 @@
 //! Change password bottom sheet.
 
 use crate::inbound::components::{
-    alert_dialog::{
-        AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-        AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
-    },
     auth::authed::use_authed,
     fields::text_input::TextInput,
     hint_host::HintTopic,
@@ -12,7 +8,9 @@ use crate::inbound::components::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_components::{BottomSheet, Button, ButtonVariant, TOAST_QUICK};
+use zwipe_components::{
+    AlertDialog, BottomSheet, Button, ButtonVariant, DialogAction, TOAST_QUICK,
+};
 use zwipe_core::{domain::auth::password::validate, http::contracts::auth::HttpChangePassword};
 
 /// Bottom sheet for updating the user's password.
@@ -69,7 +67,7 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
         }
     });
 
-    let mut attempt_submit = move || {
+    let attempt_submit = use_callback(move |()| {
         submit_attempted.set(true);
         if inputs_are_valid() {
             tracing::info!("change password");
@@ -94,7 +92,7 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                 is_loading.set(false);
             });
         }
-    };
+    });
 
     use_effect(move || {
         let new = new_password();
@@ -163,28 +161,18 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
             }
         }
 
-        AlertDialogRoot {
-            open: show_confirm(),
-            on_open_change: move |open| show_confirm.set(open),
-            AlertDialogContent {
-                AlertDialogTitle { "Change password" }
-                AlertDialogDescription {
-                    "Changing your password will log you out on all other devices."
-                }
-                AlertDialogActions {
-                    AlertDialogCancel {
-                        on_click: move |_| show_confirm.set(false),
-                        "Cancel"
-                    }
-                    AlertDialogAction {
-                        on_click: move |_| {
-                            show_confirm.set(false);
-                            attempt_submit();
-                        },
-                        "Confirm"
-                    }
-                }
-            }
+        AlertDialog {
+            open: show_confirm,
+            title: "Change password",
+            actions: vec![
+                DialogAction::Dismiss("Cancel".into()),
+                DialogAction::Confirm {
+                    label: "Confirm".into(),
+                    danger: false,
+                    on_confirm: attempt_submit,
+                },
+            ],
+            "Changing your password will log you out on all other devices."
         }
     }
 }

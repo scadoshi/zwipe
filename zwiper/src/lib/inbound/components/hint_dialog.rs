@@ -5,18 +5,10 @@
 //! map on the user), then never again. Screens may keep a small "?" button
 //! that reopens it on demand.
 
-use crate::{
-    inbound::components::{
-        alert_dialog::{
-            AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
-            AlertDialogRoot, AlertDialogTitle,
-        },
-        auth::ensure_session::EnsureFresh,
-    },
-    outbound::session::Persist,
-};
+use crate::{inbound::components::auth::ensure_session::EnsureFresh, outbound::session::Persist};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
+use zwipe_components::{AlertDialog, DialogAction};
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Opens the returned signal once per account for the given hint key, and
@@ -75,51 +67,27 @@ pub fn open_and_record_hint(
     });
 }
 
-/// Hint dialog shell: title, body content, and a single "Got it" button, with a
-/// rule under the title and above the button.
+/// Hint dialog shell: title, body content, and a "Got it" button.
 /// Compose the body from [`HintLine`](zwipe_components::HintLine)s, with
 /// [`HintKey`](zwipe_components::HintKey)s for button names.
 ///
-/// `actions` adds extra buttons alongside "Got it" in the footer action bar (e.g.
-/// a "Browse the full dictionary" link), keeping call-to-actions out of the body.
+/// `actions` go before "Got it" in the footer (e.g. a "Dictionary" button),
+/// keeping call-to-actions out of the body.
 #[component]
 pub fn HintDialog(
     open: Signal<bool>,
     title: String,
     children: Element,
-    actions: Option<Element>,
+    #[props(default)] actions: Vec<DialogAction>,
 ) -> Element {
-    // Open scrolled to the top so the init view shows the top buffer (the
-    // primitive can otherwise land focus-scroll partway into a tall body).
-    use_effect(move || {
-        if open() {
-            let _ = document::eval(
-                "requestAnimationFrame(() => { const el = document.getElementById('hint-scroll-body'); if (el && el.parentElement) el.parentElement.scrollTop = 0; });",
-            );
-        }
-    });
-
+    let mut actions = actions;
+    actions.push(DialogAction::Dismiss("Got it".into()));
     rsx! {
-        AlertDialogRoot {
-            open: open(),
-            on_open_change: move |v| open.set(v),
-            AlertDialogContent {
-                AlertDialogTitle { "{title}" }
-                hr { class: "dialog-rule" }
-                AlertDialogDescription {
-                    div { id: "hint-scroll-body", class: "hint-body", style: "padding: 1rem 0;", {children} }
-                }
-                hr { class: "dialog-rule" }
-                AlertDialogActions {
-                    if let Some(actions) = actions {
-                        {actions}
-                    }
-                    AlertDialogAction {
-                        on_click: move |_| open.set(false),
-                        "Got it"
-                    }
-                }
-            }
+        AlertDialog {
+            open,
+            title,
+            actions,
+            div { class: "hint-body", style: "padding: 1rem 0;", {children} }
         }
     }
 }

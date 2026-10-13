@@ -12,10 +12,6 @@ use super::components::{
 use crate::{
     inbound::{
         components::{
-            alert_dialog::{
-                AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-                AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
-            },
             auth::authed::use_authed,
             hint_dialog::{HintDialog, use_one_time_hint},
             hint_host::HintTopic,
@@ -35,7 +31,8 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintKey, TOAST_NORMAL, TOAST_QUICK,
+    ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets, HintKey,
+    TOAST_NORMAL, TOAST_QUICK,
 };
 use zwipe_core::{
     domain::{
@@ -146,7 +143,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         }
     });
     let mut show_more_sheet = use_signal(|| false);
-    let mut show_delete_dialog = use_signal(|| false);
+    let show_delete_dialog = use_signal(|| false);
     let show_clone_dialog = use_signal(|| false);
     // Live share-link state, seeded from the loaded profile and driven by the
     // More sheet's Share / Stop-sharing actions so the buttons reflect reality
@@ -157,7 +154,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             share_token.set(p.share_token);
         }
     });
-    let attempt_delete = move || {
+    let attempt_delete = use_callback(move |()| {
         spawn(async move {
             if authed
                 .run("delete_deck", |c, s| async move {
@@ -169,7 +166,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 navigator.push(Router::DeckList {});
             }
         });
-    };
+    });
 
     // pre-compute metrics and chart data before rsx!
     // True only while the deck fetch is in flight. The stats skeleton must
@@ -513,26 +510,18 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 }
             }
 
-            AlertDialogRoot {
-                open: show_delete_dialog(),
-                on_open_change: move |open| show_delete_dialog.set(open),
-                AlertDialogContent {
-                    AlertDialogTitle { "Delete deck" }
-                    hr { class: "dialog-rule" }
-                    AlertDialogDescription { "Are you sure you want to delete this deck?" }
-                    hr { class: "dialog-rule" }
-                    AlertDialogActions {
-                        AlertDialogCancel {
-                            on_click: move |_| show_delete_dialog.set(false),
-                            "Cancel"
-                        }
-                        AlertDialogAction {
-                            danger: true,
-                            on_click: move |_| attempt_delete(),
-                            "Delete"
-                        }
-                    }
-                }
+            AlertDialog {
+                open: show_delete_dialog,
+                title: "Delete deck",
+                actions: vec![
+                    DialogAction::Dismiss("Cancel".into()),
+                    DialogAction::Confirm {
+                        label: "Delete".into(),
+                        danger: true,
+                        on_confirm: attempt_delete,
+                    },
+                ],
+                "Are you sure you want to delete this deck?"
             }
 
             MoreButtons {

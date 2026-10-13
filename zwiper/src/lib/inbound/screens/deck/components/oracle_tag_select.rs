@@ -17,7 +17,9 @@ use crate::inbound::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_components::{ActionBar, Button, ButtonVariant, TOAST_QUICK, use_overlay_back_action};
+use zwipe_components::{
+    ActionBar, Button, ButtonVariant, DialogAction, TOAST_QUICK, use_overlay_back_action,
+};
 use zwipe_core::domain::{
     card::oracle_tag::{OracleTag, search_oracle_tags},
     deck::MAX_DECK_ORACLE_TAGS,
@@ -46,9 +48,10 @@ pub(crate) fn OracleTagSelect(
     let toast = use_toast();
     let mut query = use_signal(String::new);
     let mut focused = use_signal(|| Option::<OracleTag>::None);
-    let mut hint_open = use_signal(|| false);
+    let hint_open = use_signal(|| false);
     // Dictionary overlay, stacked above this picker; its Use button adopts a tag.
     let mut dict_open = use_signal(|| false);
+    let open_dictionary = use_callback(move |()| dict_open.set(true));
 
     // Adopt a tag chosen via the dictionary's Use button, respecting the deck cap.
     // Stays in place (no return to the form), toasting the outcome.
@@ -251,16 +254,11 @@ pub(crate) fn OracleTagSelect(
                 HintDialog {
                     open: hint_open,
                     title: "Oracle tags",
-                    actions: rsx! {
-                        Button {
-                            variant: ButtonVariant::Action,
-                            onclick: move |_| {
-                                hint_open.set(false);
-                                dict_open.set(true);
-                            },
-                            "Dictionary"
-                        }
-                    },
+                    actions: vec![DialogAction::Confirm {
+                        label: "Dictionary".into(),
+                        danger: false,
+                        on_confirm: open_dictionary,
+                    }],
                     OracleTagsExplainer {}
                 }
 

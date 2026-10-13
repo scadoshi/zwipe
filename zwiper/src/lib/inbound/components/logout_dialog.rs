@@ -1,41 +1,29 @@
-use crate::inbound::components::{
-    alert_dialog::{
-        AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-        AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
-    },
-    auth::signal_logout::SignalLogout,
-};
+use crate::inbound::components::auth::signal_logout::SignalLogout;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
+use zwipe_components::{AlertDialog, DialogAction};
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Simple logout confirmation dialog.
 #[component]
-pub(crate) fn LogoutDialog(mut open: Signal<bool>) -> Element {
+pub(crate) fn LogoutDialog(open: Signal<bool>) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
+    let log_out = use_callback(move |()| session.logout(client));
 
     rsx! {
-        AlertDialogRoot {
-            open: open(),
-            on_open_change: move |v| open.set(v),
-            AlertDialogContent {
-                AlertDialogTitle { "Log out" }
-                hr { class: "dialog-rule" }
-                AlertDialogDescription { "Are you sure you want to log out?" }
-                hr { class: "dialog-rule" }
-                AlertDialogActions {
-                    AlertDialogCancel {
-                        on_click: move |_| open.set(false),
-                        "Cancel"
-                    }
-                    AlertDialogAction {
-                        danger: true,
-                        on_click: move |_| session.logout(client),
-                        "Log out"
-                    }
-                }
-            }
+        AlertDialog {
+            open,
+            title: "Log out",
+            actions: vec![
+                DialogAction::Dismiss("Cancel".into()),
+                DialogAction::Confirm {
+                    label: "Log out".into(),
+                    danger: true,
+                    on_confirm: log_out,
+                },
+            ],
+            "Are you sure you want to log out?"
         }
     }
 }

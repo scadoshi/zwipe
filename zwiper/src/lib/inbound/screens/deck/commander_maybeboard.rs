@@ -17,10 +17,6 @@
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::{
     components::{
-        alert_dialog::{
-            AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-            AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
-        },
         auth::authed::use_authed,
         catalog_cache::CatalogCache,
         hint_dialog::{HintColored, HintDialog, use_one_time_hint},
@@ -53,8 +49,8 @@ use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_components::{
-    ActionBar, BottomSheet, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey,
-    HintLine, TOAST_LONG, TOAST_QUICK,
+    ActionBar, AlertDialog, BottomSheet, Button, ButtonVariant, Chip, DialogAction, HintBullet,
+    HintBullets, HintKey, HintLine, TOAST_LONG, TOAST_QUICK,
 };
 use zwipe_core::domain::{
     auth::models::session::Session,
@@ -350,7 +346,8 @@ pub fn CommanderMaybeboard() -> Element {
 
     let on_create = move |card: Card| create_with(card);
 
-    let clear_maybeboard = move || {
+    let clear_maybeboard = use_callback(move |()| {
+        show_more_sheet.set(false);
         spawn(async move {
             if authed
                 .run("clear_commander_maybeboard", |c, s| async move {
@@ -366,7 +363,7 @@ pub fn CommanderMaybeboard() -> Element {
                 );
             }
         });
-    };
+    });
 
     let on_remove = move |oracle_id: Uuid| {
         spawn(async move {
@@ -631,32 +628,18 @@ pub fn CommanderMaybeboard() -> Element {
                 }
             }
 
-            AlertDialogRoot {
-                open: show_clear_dialog(),
-                on_open_change: move |open| show_clear_dialog.set(open),
-                AlertDialogContent {
-                    AlertDialogTitle { "Clear maybeboard" }
-                    hr { class: "dialog-rule" }
-                    AlertDialogDescription {
-                        "Every commander on your maybeboard will be removed. This can't be undone."
-                    }
-                    hr { class: "dialog-rule" }
-                    AlertDialogActions {
-                        AlertDialogCancel {
-                            on_click: move |_| show_clear_dialog.set(false),
-                            "Cancel"
-                        }
-                        AlertDialogAction {
-                            danger: true,
-                            on_click: move |_| {
-                                show_clear_dialog.set(false);
-                                show_more_sheet.set(false);
-                                clear_maybeboard();
-                            },
-                            "Clear"
-                        }
-                    }
-                }
+            AlertDialog {
+                open: show_clear_dialog,
+                title: "Clear maybeboard",
+                actions: vec![
+                    DialogAction::Dismiss("Cancel".into()),
+                    DialogAction::Confirm {
+                        label: "Clear".into(),
+                        danger: true,
+                        on_confirm: clear_maybeboard,
+                    },
+                ],
+                "Every commander on your maybeboard will be removed. This can't be undone."
             }
 
             CardFilterSheet {

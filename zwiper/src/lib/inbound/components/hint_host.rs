@@ -2,22 +2,16 @@
 //!
 //! An [`InfoButton`](super::info_button::InfoButton) anywhere in the tree posts a
 //! [`HintTopic`] to a context signal; this single [`HintHost`], mounted at the app
-//! root (beside the router), renders the dialog. Because the dialog only ever
-//! renders here, outside every screen's `content-enter` / scroll container, its
-//! `position: fixed` overlay can't be trapped by an ancestor's containing block.
-//! A single `Option` also means only one hint shows at a time.
+//! root, hands the topic's dialog to orangui's dialog host. A single `Option`
+//! means only one hint shows at a time.
 
 use dioxus::prelude::*;
-use zwipe_components::{HintBullet, HintBullets, HintKey, HintLine, ModeIcon};
+use zwipe_components::{
+    AlertDialog, DialogAction, HintBullet, HintBullets, HintKey, HintLine, ModeIcon,
+};
 use zwipe_core::domain::auth::password::requirements;
 
-use crate::inbound::components::{
-    alert_dialog::{
-        AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
-        AlertDialogRoot, AlertDialogTitle,
-    },
-    concept_explainers::{DeckTagsExplainer, OracleTagsExplainer},
-};
+use crate::inbound::components::concept_explainers::{DeckTagsExplainer, OracleTagsExplainer};
 
 /// A concept a "?" button can explain. Cheap `Copy` message on the hint channel.
 ///
@@ -214,31 +208,32 @@ impl HintTopic {
     }
 }
 
-/// The receiver: reads the hint channel and renders the current topic's dialog.
-/// Mount once at the app root, beside the router. `spawn_upkeeper` provides the
-/// `Signal<Option<HintTopic>>` this reads.
+/// The receiver: reads the hint channel and describes the current topic's dialog
+/// to the app root's dialog host. Mount once at the app root, beside the router.
+/// `spawn_upkeeper` provides the `Signal<Option<HintTopic>>` this reads.
 #[component]
 pub fn HintHost() -> Element {
     let mut hint: Signal<Option<HintTopic>> = use_context();
+    let mut open = use_signal(|| false);
+    // A posted topic opens the dialog; closing it clears the channel.
+    use_effect(move || {
+        if hint().is_some() {
+            open.set(true);
+        }
+    });
+    use_effect(move || {
+        if !open() {
+            hint.set(None);
+        }
+    });
     let topic = hint();
     rsx! {
-        AlertDialogRoot {
-            open: topic.is_some(),
-            on_open_change: move |open: bool| {
-                if !open {
-                    hint.set(None);
-                }
-            },
-            AlertDialogContent {
-                if let Some(topic) = topic {
-                    AlertDialogTitle { "{topic.title()}" }
-                    hr { class: "dialog-rule" }
-                    AlertDialogDescription { {topic.body()} }
-                    hr { class: "dialog-rule" }
-                    AlertDialogActions {
-                        AlertDialogAction { on_click: move |_| hint.set(None), "Got it" }
-                    }
-                }
+        AlertDialog {
+            open,
+            title: topic.map(|t| t.title()).unwrap_or_default().to_string(),
+            actions: vec![DialogAction::Dismiss("Got it".into())],
+            if let Some(topic) = topic {
+                {topic.body()}
             }
         }
     }
