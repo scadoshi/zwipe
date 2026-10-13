@@ -212,7 +212,7 @@ GitHub → Actions tab → Deploy zerver → Run workflow → Run workflow
 
 `.github/workflows/deploy-zite.yml`
 
-Triggers on push to `main` when files under `zite/**`, `zwipe-core/**`, or `zwipe-components/**` change (or the workflow file itself). Also has `workflow_dispatch` for manual runs.
+Triggers on push to `main` when files under `zite/**`, `zwipe-core/**`, or `components/**` change (or the workflow file itself). Also has `workflow_dispatch` for manual runs.
 
 ## What the Workflow Does
 

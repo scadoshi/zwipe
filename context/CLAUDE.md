@@ -11,7 +11,7 @@ Zwipe is a mobile-first Magic: The Gathering deck builder with swipe-based navig
 - **zwiper/**: Dioxus app, iOS and Android (web and desktop run for development)
 - **zite/**: Dioxus static site at zwipe.net
 - **zwipe-client/**: the typed API client. Both zwiper and zite call the API through it
-- **zwipe-components/**: the Magic UI pieces over [orangui](https://github.com/scadoshi/orangui), the generic Dioxus kit it re-exports
+- **components/**: the Magic UI pieces over [orangui](https://github.com/scadoshi/orangui), the generic Dioxus kit it re-exports
 - **Database**: ~118k Magic cards synced nightly from Scryfall
 
 ## zwipe-core Purity Rules
@@ -70,12 +70,12 @@ The workspace-root `.sqlx/` is the ONLY offline-data directory. Never create a c
 ```
 zwiper ──→ zwipe-client ──→ zwipe-core ←── zerver
 zite   ──→ zwipe-client
-zwiper ──→ zwipe-components ←── zite
-zwipe-components ──(git)──→ orangui
-portfolio, cairn ──(git)──→ zwipe-components
+zwiper ──→ components ←── zite
+components ──(git)──→ orangui
+portfolio, cairn ──(git)──→ orangui
 ```
 
-zwipe-core owns all shared domain types, including every `Http*` contract (`zwipe-core/src/http/contracts/`) and the route path constants. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers). No client depends on zerver: zwiper and zite both take their domain and contract types from zwipe-core, and zerver is the server only. zwipe-components is the Magic half of the UI (card rows and details, oracle text, keyword chips, the changelog, the deck charts, plus `magic.css`) over orangui, the generic kit (themes, panels, nav, charts, the entrance effects) taken as a git dependency and re-exported whole, so both clients import everything as `zwipe_components::`; `cargo update -p orangui` moves the pin. The portfolio site and cairn (the counter app) still take zwipe-components as a git dependency until they move to orangui. zwipe-client holds the typed API client, depending on zwipe-core and reqwest only, so it carries no Dioxus and no platform code. Both clients use it; neither builds a request by hand.
+zwipe-core owns all shared domain types, including every `Http*` contract (`zwipe-core/src/http/contracts/`) and the route path constants. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers). No client depends on zerver: zwiper and zite both take their domain and contract types from zwipe-core, and zerver is the server only. components is the Magic half of the UI (card rows and details, oracle text, keyword chips, the changelog, the deck charts, plus `magic.css`) over orangui, the generic kit (themes, panels, nav, charts, the entrance effects) taken as a git dependency and re-exported whole, so both clients import everything as `components::` (`::components::` in a module that has its own `components` submodule); `cargo update -p orangui` moves the pin. The portfolio site and cairn (the counter app) take orangui directly as a git dependency; nothing outside this repo imports components. zwipe-client holds the typed API client, depending on zwipe-core and reqwest only, so it carries no Dioxus and no platform code. Both clients use it; neither builds a request by hand.
 
 ### Hexagonal (Ports & Adapters) Pattern
 

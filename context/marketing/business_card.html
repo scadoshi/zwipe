@@ -7,10 +7,10 @@
 
         <!-- JetBrains Mono: same face zwipe.net uses -->
         <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-        <!-- app theme palettes (owned by zwipe-components) — drives the Theme selector -->
+        <!-- app theme palettes (owned by orangui, checked out beside zwipe) — drives the Theme selector -->
         <link
             rel="stylesheet"
-            href="../../zwipe-components/assets/themes.css"
+            href="../../../orangui/assets/themes.css"
         />
         <style>
             @import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/400.css");
@@ -37,7 +37,7 @@
 
                 /* gruvbox-dark fallbacks so the page still renders if
                    themes.css fails to load; the body .theme-* class from
-                   zwipe-components/assets/themes.css overrides all of these */
+                   orangui/assets/themes.css overrides all of these */
                 --bg-primary: #282828;
                 --text-primary: #ebdba2;
                 --text-muted: #a89984;
@@ -264,8 +264,8 @@
             }
 
             /* mana cost — full WUBRG using mana-font, the same pips the app
-               renders, with the app's squircle restyle (zwipe-components
-               components.css) so the card matches what users actually see. */
+               renders, with the app's squircle restyle (components/assets/
+               magic.css) so the card matches what users actually see. */
             .cost {
                 display: flex;
                 align-items: center;

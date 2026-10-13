@@ -10,7 +10,7 @@ Mobile-first Magic: The Gathering deck builder with swipe-based navigation.
 
 Full-stack Rust:
 - **zwipe-core**: shared domain types, validation, business rules, HTTP contracts; the single source of truth
-- **zwipe-components**: shared Dioxus UI components and CSS (themes, changelog, card details) consumed by the app, the site, and the owner's portfolio
+- **components**: the Magic UI (card rows and details, oracle text, the changelog, the deck charts) over [orangui](https://github.com/scadoshi/orangui), the generic Dioxus kit it re-exports; shared by the app and the site
 - **zwipe-client**: typed API client over the shared contracts, one call function for every endpoint; used by both the app and the site
 - **zerver**: Axum REST API, PostgreSQL, SQLx, JWT auth, Scryfall sync
 - **zwiper**: Dioxus iOS and Android app, swipe gestures, 31 themes, dark mode
@@ -18,8 +18,8 @@ Full-stack Rust:
 - **zervice**: background jobs (Scryfall sync, session cleanup)
 
 ```
-zwiper, zite ──→ zwipe-client ─────→ zwipe-core ←── zerver
-zwiper, zite ──→ zwipe-components ──→ zwipe-core     (zervice binary)
+zwiper, zite ──→ zwipe-client ──→ zwipe-core ←── zerver
+zwiper, zite ──→ components ────→ zwipe-core     (zervice binary)
 ```
 
 ## Quick start

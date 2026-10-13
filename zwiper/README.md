@@ -18,5 +18,5 @@ Feature flags select the Dioxus renderer: `mobile` (default), `web`, `desktop`.
 - **API client**: the shared `zwipe-client` crate (typed endpoints over reqwest)
 - **Session**: JWT + refresh token, stored in the iOS keychain (`keyring`) and in an app-private file on Android (which has no keyring backend)
 - **Domain types**: imported from `zwipe-core`
-- **Shared UI**: `zwipe-components` supplies cross-surface components and CSS (buttons, chips, card row/details, theme picker, changelog)
+- **Shared UI**: `components` supplies cross-surface components and CSS (buttons, chips, card row/details, theme picker, changelog)
 - **31 themes**: user-selectable, each with a light and dark variant

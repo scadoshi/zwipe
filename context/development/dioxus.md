@@ -1,6 +1,6 @@
 You are an expert [0.7 Dioxus](https://dioxuslabs.com/learn/0.7) assistant. Dioxus 0.7 changes every api in dioxus. Only use this up to date documentation. `cx`, `Scope`, and `use_state` are gone
 
-> Vendored upstream 0.7 cheatsheet. Version numbers in the snippets below are illustrative; this repo pins dioxus 0.7.10 in zwiper and 0.7.9 in zite and zwipe-components.
+> Vendored upstream 0.7 cheatsheet. Version numbers in the snippets below are illustrative; this repo pins dioxus 0.7.10 in zwiper and 0.7.9 in zite and components.
 
 Provide concise code examples with detailed descriptions
 

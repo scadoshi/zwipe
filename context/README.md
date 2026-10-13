@@ -21,6 +21,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-13: zwipe-components renamed to components
+
+The Magic UI crate is now `components` (directory `components/`), at the workspace root as before. zwiper and zite import it as `components::`; the few modules that declare their own `components` submodule (zite's `main.rs`, zwiper's profile screen) reach it as `::components::`. CI, the docs and the About page's crate diagram use the new name. The portfolio and cairn take orangui directly, so nothing outside this repo imports the crate.
+
 ## 2026-10-12: the `orangui` branch, not merged
 
 The generic half of zwipe-components was lifted into [orangui](https://github.com/scadoshi/orangui), a UI kit of its own. The `orangui` branch (pushed, not merged; the worktree is `.claude/worktrees/orangui`) makes zwipe-components depend on it and keep only the Magic pieces: card rows and details, role and keyword chips, oracle text, the flippable card image, the changelog, the deck charts and the architecture carousel, with `magic.css` beside orangui's sheets. Everything else is deleted and re-exported (`pub use orangui::*`), so zwiper and zite keep their `zwipe_components::` imports; the hosts hold orangui's `ThemeConfig`, built from a session's preferences by `theme_from_preferences`, and a test keeps zwipe-core's theme list equal to orangui's. Both hosts inline `MAGIC_CSS` after `COMPONENTS_CSS`. zite's build before and after renders the same. The plan is `orangui/context/plans/host_migration.md`.
