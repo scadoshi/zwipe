@@ -29,7 +29,11 @@ pub struct Release {
 pub const UPCOMING: &[Release] = &[Release {
     version: "1.11.5",
     date: "",
-    entries: &["Reset password shows its outcome in a panel"],
+    entries: &[
+        "Reset password shows its outcome in a panel",
+        "Dialogs fade out when they close",
+        "Disabled dialog buttons look disabled",
+    ],
 }];
 
 /// Shipped releases, newest first.
