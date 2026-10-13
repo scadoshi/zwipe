@@ -294,16 +294,9 @@ a {
         nav
  ==================== */
 
-/* The nav shell (wrapper, hamburger toggle, collapsing panel, link pills)
-   lives in orangui (components.css); only zite-specific pieces
-   remain here: the ASCII logo, the persistent store CTAs, and store-link
-   styling. */
-
-.nav-stores-persistent {
-    display: none;
-    align-items: center;
-    gap: 0.5rem;
-}
+/* The nav shell (wrapper, hamburger toggle, collapsing panel, link pills, the
+   persistent slot and its .nav-cta pills) lives in orangui (components.css);
+   only the ASCII logo remains here. */
 
 .nav-logo {
     font-family: "JetBrains Mono", monospace;
@@ -331,53 +324,8 @@ a {
 /* Store CTAs share the nav pill look (the .nav-links a rule in
    components.css), restated here for the standalone .store-link class, in
    the warning color. */
-.store-link,
-.nav-links a.store-link {
-    display: inline-flex;
-    align-items: center;
-    box-sizing: border-box;
-    height: 1.85rem;
-    text-decoration: none;
-    color: var(--palette-5);
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
-    padding: 0 0.8rem;
-    font-family: inherit;
-    font-size: 0.8rem;
-    letter-spacing: 0.04em;
-    line-height: 1;
-    white-space: nowrap;
-    cursor: pointer;
-    box-shadow: var(--shadow-sm);
-    transition:
-        color 0.15s,
-        border-color 0.15s;
-}
 
-@media (hover: hover) {
-    .store-link:hover,
-    .nav-links a.store-link:hover {
-        color: var(--palette-5);
-        border-color: var(--palette-5);
-    }
-}
 
-@media (max-width: 60rem) {
-    .nav-stores-persistent {
-        display: flex;
-        gap: 0.35rem;
-    }
-    .nav-stores-persistent .store-link {
-        height: 1.65rem;
-        padding: 0 0.55rem;
-        font-size: 0.7rem;
-    }
-    /* The persistent CTAs cover the stores at this width; hide the panel's. */
-    .nav-panel .nav-link-store {
-        display: none;
-    }
-}
 
 /* ==================
         sections / cards

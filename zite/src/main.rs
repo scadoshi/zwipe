@@ -233,17 +233,15 @@ pub fn Nav() -> Element {
                 }
             },
             persistent: rsx! {
-                div { class: "nav-stores-persistent", "data-nav-glide": "true",
-                    a {
-                        class: "store-link",
-                        href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
-                        "App Store ↗"
-                    }
-                    a {
-                        class: "store-link",
-                        href: "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe",
-                        "Play Store ↗"
-                    }
+                a {
+                    class: "nav-cta",
+                    href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
+                    "App Store ↗"
+                }
+                a {
+                    class: "nav-cta",
+                    href: "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe",
+                    "Play Store ↗"
                 }
             },
             links: rsx! {
@@ -262,17 +260,17 @@ pub fn Nav() -> Element {
                 li {
                     Link { to: Route::Community {}, onclick: move |_| open.set(false), "Community" }
                 }
-                li { class: "nav-link-store",
+                li { class: "nav-cta-item",
                     a {
-                        class: "store-link",
+                        class: "nav-cta",
                         href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
                         onclick: move |_| open.set(false),
                         "App Store ↗"
                     }
                 }
-                li { class: "nav-link-store",
+                li { class: "nav-cta-item",
                     a {
-                        class: "store-link",
+                        class: "nav-cta",
                         href: "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe",
                         onclick: move |_| open.set(false),
                         "Play Store ↗"
