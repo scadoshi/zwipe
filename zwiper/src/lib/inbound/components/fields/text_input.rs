@@ -19,7 +19,11 @@ pub fn TextInput(
     let input_type = input_type.unwrap_or_else(|| "text".to_string());
     let is_password = input_type == "password";
     let is_error = error.is_some();
-    let input_class = if is_error { "input input-error" } else { "input" };
+    let input_class = if is_error {
+        "input input-error"
+    } else {
+        "input"
+    };
 
     rsx! {
         if let Some(label) = label {
