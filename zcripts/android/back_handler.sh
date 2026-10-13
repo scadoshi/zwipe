@@ -7,7 +7,8 @@
 # never reaches it — wry's Activity finishes the app (wry issue #1564). The
 # unified OnBackPressedDispatcher catches both the gesture and the button; we
 # forward it to the app as a `zwipe:back` DOM event, and the Rust side
-# (components/navigation/back_handler.rs) decides: go_back, or finish the
+# (orangui's use_os_back, called from zwiper's
+# components/navigation/back_handler.rs) decides: go_back, or finish the
 # Activity at a root screen.
 #
 # dx REGENERATES MainActivity.kt on every `dx bundle`, so run this AFTER
