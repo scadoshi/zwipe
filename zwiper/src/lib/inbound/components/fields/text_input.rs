@@ -1,5 +1,6 @@
 use crate::inbound::components::{hint_host::HintTopic, info_button::InfoButton};
 use dioxus::prelude::*;
+use zwipe_components::PasswordInput;
 
 /// Labeled text input. `hint` puts a "?" right of the label that opens that
 /// topic's explainer.
@@ -18,13 +19,7 @@ pub fn TextInput(
     let input_type = input_type.unwrap_or_else(|| "text".to_string());
     let is_password = input_type == "password";
     let is_error = error.is_some();
-
-    let mut show_password = use_signal(|| false);
-    let effective_type = if is_password && show_password() {
-        "text".to_string()
-    } else {
-        input_type
-    };
+    let input_class = if is_error { "input input-error" } else { "input" };
 
     rsx! {
         if let Some(label) = label {
@@ -43,31 +38,16 @@ pub fn TextInput(
         }
 
         if is_password {
-            div { class: "password-input-wrapper",
-                input { class: if is_error { "input input-password input-error" } else { "input input-password" },
-                    id : "{id}",
-                    r#type : "{effective_type}",
-                    placeholder : "{placeholder}",
-                    value : "{value}",
-                    autocapitalize : "none",
-                    autocorrect : "off",
-                    spellcheck : "false",
-                    oninput: move |event| {
-                        value.set(event.value());
-                    }
-                }
-                button {
-                    r#type: "button",
-                    class: "password-toggle-btn",
-                    "aria-label": if show_password() { "Hide password" } else { "Show password" },
-                    onclick: move |_| show_password.set(!show_password()),
-                    if show_password() { "Hide" } else { "Show" }
-                }
+            PasswordInput {
+                value,
+                id,
+                placeholder,
+                class: input_class.to_string(),
             }
         } else {
-            input { class: if is_error { "input input-error" } else { "input" },
+            input { class: input_class,
                 id : "{id}",
-                r#type : "{effective_type}",
+                r#type : "{input_type}",
                 placeholder : "{placeholder}",
                 value : "{value}",
                 autocapitalize : "none",

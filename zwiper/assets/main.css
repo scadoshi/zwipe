@@ -672,34 +672,6 @@ button {
     box-shadow: 0 0 0 1px var(--color-error);
 }
 
-.password-input-wrapper {
-    position: relative;
-    width: 100%;
-}
-
-.password-input-wrapper .input-password {
-    padding-right: 4rem;
-}
-
-.password-toggle-btn {
-    position: absolute;
-    top: 50%;
-    right: 0.6rem;
-    transform: translateY(calc(-50% - 0.5rem));
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-family: "JetBrains Mono", monospace;
-    font-size: 0.85rem;
-    padding: 0.25rem 0.5rem;
-    cursor: pointer;
-    border-radius: 0.3rem;
-}
-
-.password-toggle-btn:hover {
-    color: var(--palette-1);
-}
-
 .input-sm {
     width: 50%;
     padding: 0.5rem;
@@ -843,13 +815,13 @@ button {
 /* Tag rows stack: a wide, wrapping chip list can't share a line with the label
    (the chips shrink the value box and overflow back over the label). Label on
    top, chips left-aligned below, spanning the full row width. */
-.info-row.info-row-stacked {
+.settings-row.info-row-stacked {
     flex-direction: column;
     align-items: stretch;
     gap: 0.5rem;
 }
 
-.info-row.info-row-stacked .info-row-tags {
+.settings-row.info-row-stacked .info-row-tags {
     justify-content: flex-start;
 }
 
@@ -1208,7 +1180,7 @@ button {
 }
 
 /* Shared "settings-list" skeleton — bordered box with row pulses inside.
-   Matches dimensions of real .settings-list / .info-row. */
+   Matches dimensions of real .settings-list / .settings-row. */
 .skeleton-info-list {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
@@ -1694,33 +1666,12 @@ button {
     margin: 0;
 }
 
-.home-hero .stats-strip {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.5rem;
-    width: 100%;
-    margin: 0;
-}
-
 .home-hero .stat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.15rem;
-    min-width: 0;
     padding: 0.6rem 0.25rem 0.5rem;
-    border: 1px solid var(--border-secondary);
-    border-radius: 0.8rem;
-    background-color: var(--bg-sink);
-    box-shadow: var(--shadow-sm);
 }
 
 .home-hero .stat-num {
     font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--palette-5);
-    line-height: 1.1;
-    font-variant-numeric: tabular-nums;
 }
 
 .home-hero .stats-source {
@@ -1733,9 +1684,7 @@ button {
 
 .home-hero .stat-label {
     font-size: 0.65rem;
-    color: var(--text-primary);
     letter-spacing: 0.04em;
-    opacity: 0.7;
     text-align: center;
 }
 
@@ -2791,28 +2740,6 @@ button {
 /* =========================
   specific - info list (read-only card layout)
  =========================== */
-
-.info-row {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-secondary);
-    gap: 0.75rem;
-}
-
-.info-row:last-child {
-    border-bottom: none;
-}
-
-.info-row-label {
-    font-size: 1rem;
-    font-weight: 400;
-    letter-spacing: 0.1em;
-    opacity: 0.5;
-    flex-shrink: 0;
-}
 
 .info-row-value {
     font-size: 1rem;

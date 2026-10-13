@@ -326,8 +326,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                                 let fmt = |v: Option<f64>| v.map_or_else(|| "-".to_string(), |v| format!("{v:.1}"));
                                                                 let value = format!("{} / {}", fmt(m.avg_power), fmt(m.avg_toughness));
                                                                 rsx! {
-                                                                    div { class: "info-row",
-                                                                        span { class: "info-row-label", "Average P/T" }
+                                                                    div { class: "settings-row",
+                                                                        span { class: "settings-row-label", "Average P/T" }
                                                                         span { class: "info-row-value", style: "white-space:nowrap;", "{value}" }
                                                                     }
                                                                 }
@@ -356,16 +356,16 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                         None => land_count.to_string(),
                                                     };
                                                     rsx! {
-                                                        div { class: "info-row",
-                                                            span { class: "info-row-label", "Lands" }
+                                                        div { class: "settings-row",
+                                                            span { class: "settings-row-label", "Lands" }
                                                             span { class: "info-row-value", "{value}" }
                                                         }
                                                     }
                                                 }
                                                 if let Some(m) = metrics.as_ref() {
                                                     if mana_curve_bars.is_some() {
-                                                        div { class: "info-row",
-                                                            span { class: "info-row-label", "Average mana value" }
+                                                        div { class: "settings-row",
+                                                            span { class: "settings-row-label", "Average mana value" }
                                                             span { class: "info-row-value", "{m.avg_cmc:.1}" }
                                                         }
                                                     }

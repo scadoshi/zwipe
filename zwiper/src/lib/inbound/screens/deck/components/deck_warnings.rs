@@ -42,7 +42,7 @@ pub(crate) fn DeckWarnings(
     rsx! {
         div { style: "display:flex;flex-direction:column;",
             for warning in warnings.iter() {
-                div { class: "info-row",
+                div { class: "settings-row",
                     style: "justify-content: space-between; gap: 0.5rem;",
                     span { class: "text-muted", "{warning}" }
                     if is_below_min_cards(warning) {

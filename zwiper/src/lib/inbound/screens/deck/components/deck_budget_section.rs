@@ -56,16 +56,16 @@ pub(crate) fn DeckBudgetSection(
                         None => total_fmt,
                     };
                     rsx! {
-                        div { class: "info-row",
-                            span { class: "info-row-label", "Total price" }
+                        div { class: "settings-row",
+                            span { class: "settings-row-label", "Total price" }
                             span { class: "info-row-value", "{value}" }
                         }
                     }
                 }
             }
             if metrics.is_some() {
-                div { class: "info-row",
-                    span { class: "info-row-label", "Average card price" }
+                div { class: "settings-row",
+                    span { class: "settings-row-label", "Average card price" }
                     span { class: "info-row-value", "{fmt(avg)}" }
                 }
             }

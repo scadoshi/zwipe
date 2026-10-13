@@ -75,7 +75,7 @@ pub(crate) fn CollapsibleSection(
             }
             // Height + opacity ease via the grid-template-rows 0fr<->1fr technique
             // (same as the edit-deck commander fields). Body stays mounted.
-            // No horizontal padding here so dividers (section rule + info-row
+            // No horizontal padding here so dividers (section rule + settings-row
             // borders) bleed to the card edges; each child supplies its own inset.
             div {
                 class: if is_open { "collapsible open" } else { "collapsible" },

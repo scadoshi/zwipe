@@ -23,16 +23,16 @@ pub(crate) fn DeckProfileSection(
             div { class: "settings-list-header",
                 span { class: "settings-list-title", "Profile" }
             }
-            div { class: "info-row",
-                span { class: "info-row-label", "Name" }
+            div { class: "settings-row",
+                span { class: "settings-row-label", "Name" }
                 span { class: "info-row-value", "{deck_profile.name}" }
             }
-            div { class: "info-row",
-                span { class: "info-row-label", "Cards" }
+            div { class: "settings-row",
+                span { class: "settings-row-label", "Cards" }
                 span { class: "info-row-value", "{card_count}" }
             }
-            div { class: "info-row",
-                span { class: "info-row-label", "Format" }
+            div { class: "settings-row",
+                span { class: "settings-row-label", "Format" }
                 span { class: "info-row-value",
                     if let Some(fmt) = deck_profile.format {
                         { fmt.display_name().to_string() }
@@ -42,8 +42,8 @@ pub(crate) fn DeckProfileSection(
                 }
             }
             if deck_profile.format.is_some_and(|f| f.has_commander()) {
-                div { class: "info-row",
-                    span { class: "info-row-label", "{commander_label}" }
+                div { class: "settings-row",
+                    span { class: "settings-row-label", "{commander_label}" }
                     span { class: "info-row-value",
                         if let Some(cmd) = commander {
                             { cmd.scryfall_data.name }
@@ -56,26 +56,26 @@ pub(crate) fn DeckProfileSection(
                 }
             }
             if let Some(name) = &deck_profile.partner_commander_name {
-                div { class: "info-row",
-                    span { class: "info-row-label", "Partner" }
+                div { class: "settings-row",
+                    span { class: "settings-row-label", "Partner" }
                     span { class: "info-row-value", { name.clone() } }
                 }
             }
             if let Some(name) = &deck_profile.background_name {
-                div { class: "info-row",
-                    span { class: "info-row-label", "Background" }
+                div { class: "settings-row",
+                    span { class: "settings-row-label", "Background" }
                     span { class: "info-row-value", { name.clone() } }
                 }
             }
             if let Some(name) = &deck_profile.signature_spell_name {
-                div { class: "info-row",
-                    span { class: "info-row-label", "Signature spell" }
+                div { class: "settings-row",
+                    span { class: "settings-row-label", "Signature spell" }
                     span { class: "info-row-value", { name.clone() } }
                 }
             }
             if let Some(pl) = deck_profile.power_level {
-                div { class: "info-row",
-                    span { class: "info-row-label", "Power level" }
+                div { class: "settings-row",
+                    span { class: "settings-row-label", "Power level" }
                     span { class: "info-row-value", { pl.display_name().to_string() } }
                 }
             }

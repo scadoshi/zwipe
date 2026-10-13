@@ -24,9 +24,9 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
     rsx! {
         div { style: "display:flex;flex-direction:column;",
             if !deck_profile.tags.is_empty() {
-                div { class: "info-row info-row-stacked",
+                div { class: "settings-row info-row-stacked",
                     span { style: "display:flex;align-items:center;gap:0.35rem;",
-                        span { class: "info-row-label", "Deck tags" }
+                        span { class: "settings-row-label", "Deck tags" }
                         InfoButton { topic: HintTopic::DeckTags }
                     }
                     span { class: "info-row-value info-row-tags",
@@ -37,9 +37,9 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
                 }
             }
             if !deck_profile.oracle_tags.is_empty() {
-                div { class: "info-row info-row-stacked",
+                div { class: "settings-row info-row-stacked",
                     span { style: "display:flex;align-items:center;gap:0.35rem;",
-                        span { class: "info-row-label", "Oracle tags" }
+                        span { class: "settings-row-label", "Oracle tags" }
                         InfoButton { topic: HintTopic::OracleTags }
                     }
                     span { class: "info-row-value info-row-tags",
@@ -54,8 +54,8 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
                 }
             }
             if !deck_profile.other_tags.is_empty() {
-                div { class: "info-row info-row-stacked",
-                    span { class: "info-row-label", "Other tags" }
+                div { class: "settings-row info-row-stacked",
+                    span { class: "settings-row-label", "Other tags" }
                     span { class: "info-row-value info-row-tags",
                         for tag in deck_profile.other_tags.iter() {
                             span { key: "{tag}", class: "stat-chip stat-chip-muted", "{tag.display_name()}" }
