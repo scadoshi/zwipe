@@ -531,12 +531,10 @@ code {
     overflow: hidden;
 }
 
-/* The mark and the figures share the card's first row when the figures fit
-   beside the mark, and the figures wrap under it when they do not. */
+/* The mark and the figures share the card's first row. They stack on a
+   narrow screen, where the sentence has no room beside anything. */
 .hero-head {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
     align-items: center;
     gap: 1.5rem;
 }
@@ -545,16 +543,9 @@ code {
     flex-shrink: 0;
 }
 
-/* The figures take the width their widest number needs and wrap under the
-   mark when the row has less room than that. */
 .hero-head .stats-figures {
-    flex: 0 1 auto;
-}
-
-/* The tiles share the width equally and none is narrower than its number,
-   so no figure runs into the next. */
-.hero-head .stats-strip {
-    grid-template-columns: repeat(3, 1fr);
+    flex: 1;
+    min-width: 0;
 }
 
 /* The source chips sit under the strip, centered with it, all in the primary
@@ -567,7 +558,6 @@ code {
 @media (max-width: 62rem) {
     .hero-head {
         flex-direction: column;
-        flex-wrap: nowrap;
         gap: 1rem;
     }
 }
