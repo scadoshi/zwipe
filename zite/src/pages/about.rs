@@ -62,10 +62,10 @@ pub fn About() -> Element {
                             a { class: "panel-action", href: URL_ZWIPER, "Source" span { class: "ext", "\u{2197}" } }
                         },
                         div { class: "arch-tags",
-                            span { class: "tag", "iOS" }
-                            span { class: "tag", "Android" }
-                            a { class: "tag", href: URL_DIOXUS, "Dioxus" }
-                            a { class: "tag", href: URL_WASM, "WASM" }
+                            span { class: "tag tag-p1", "iOS" }
+                            span { class: "tag tag-p2", "Android" }
+                            a { class: "tag tag-p3", href: URL_DIOXUS, "Dioxus" }
+                            a { class: "tag tag-p4", href: URL_WASM, "WASM" }
                         }
                         ul { class: "card-bullets",
                             li { "Swipe to build, search cards, keep decks in sync" }
@@ -91,9 +91,9 @@ pub fn About() -> Element {
                             a { class: "panel-action", href: URL_ZITE, "Source" span { class: "ext", "\u{2197}" } }
                         },
                         div { class: "arch-tags",
-                            span { class: "tag", "web" }
-                            a { class: "tag", href: URL_DIOXUS, "Dioxus" }
-                            a { class: "tag", href: URL_WASM, "WASM" }
+                            span { class: "tag tag-p1", "web" }
+                            a { class: "tag tag-p2", href: URL_DIOXUS, "Dioxus" }
+                            a { class: "tag tag-p3", href: URL_WASM, "WASM" }
                         }
                         ul { class: "card-bullets",
                             li { "Landing and guides, the changelog, shared deck pages, password reset and email verification" }
@@ -119,10 +119,10 @@ pub fn About() -> Element {
                             a { class: "panel-action", href: URL_ZERVER, "Source" span { class: "ext", "\u{2197}" } }
                         },
                         div { class: "arch-tags",
-                            span { class: "tag", "REST API" }
-                            a { class: "tag", href: URL_AXUM, "Axum" }
-                            a { class: "tag", href: URL_TOKIO, "Tokio" }
-                            a { class: "tag", href: URL_SQLX, "SQLx" }
+                            span { class: "tag tag-p1", "REST API" }
+                            a { class: "tag tag-p2", href: URL_AXUM, "Axum" }
+                            a { class: "tag tag-p3", href: URL_TOKIO, "Tokio" }
+                            a { class: "tag tag-p4", href: URL_SQLX, "SQLx" }
                         }
                         ul { class: "card-bullets",
                             li { "The REST API behind everything: auth, sessions, decks, cards, and users" }
@@ -148,8 +148,8 @@ pub fn About() -> Element {
                             a { class: "panel-action", href: URL_ZWIPE_COMPONENTS, "Source" span { class: "ext", "\u{2197}" } }
                         },
                         div { class: "arch-tags",
-                            a { class: "tag", href: URL_DIOXUS, "Dioxus" }
-                            a { class: "tag", href: URL_ORANGUI, "orangui" }
+                            a { class: "tag tag-p1", href: URL_DIOXUS, "Dioxus" }
+                            a { class: "tag tag-p2", href: URL_ORANGUI, "orangui" }
                         }
                         ul { class: "card-bullets",
                             li { "The Magic UI shared across the clients: card row, deck charts, changelog, this diagram" }
@@ -177,8 +177,8 @@ pub fn About() -> Element {
                             a { class: "panel-action", href: URL_ZWIPE_CLIENT, "Source" span { class: "ext", "\u{2197}" } }
                         },
                         div { class: "arch-tags",
-                            span { class: "tag", "HTTP" }
-                            span { class: "tag", "Typed" }
+                            span { class: "tag tag-p1", "HTTP" }
+                            span { class: "tag tag-p2", "Typed" }
                         }
                         ul { class: "card-bullets",
                             li { "Every API call the app and the site make, described once and sent by one function" }
@@ -197,7 +197,7 @@ pub fn About() -> Element {
                             a { class: "panel-action", href: URL_ZWIPE_CORE, "Source" span { class: "ext", "\u{2197}" } }
                         },
                         div { class: "arch-tags",
-                            span { class: "tag", "Pure Rust" }
+                            span { class: "tag tag-p1", "Pure Rust" }
                         }
                         ul { class: "card-bullets",
                             li { "Models, filter logic, and traits, with no server- or client-only dependencies" }

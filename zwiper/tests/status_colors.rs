@@ -6,7 +6,7 @@
 use std::{fs, path::Path};
 use zwipe_components::status_uses;
 
-const ALLOWED: [&str; 11] = [
+const ALLOWED: [&str; 10] = [
     ".alert-dialog-action-danger",
     ".badge-unverified",
     ".badge-verified",
@@ -15,7 +15,6 @@ const ALLOWED: [&str; 11] = [
     ".input-error, .input-error:focus",
     ".message-error",
     ".outcome-success .panel-title",
-    ".stat-chip-bad",
     ".text-error",
     ".text-success",
 ];

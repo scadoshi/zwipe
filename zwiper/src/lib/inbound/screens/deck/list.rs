@@ -366,32 +366,32 @@ fn DeckRow(profile: DeckProfile) -> Element {
                     }
                 }
                 span {
-                    class: if count_bad { "stat-chip stat-chip-bad" } else { "stat-chip" },
+                    class: if count_bad { "stat-chip stat-chip-warning" } else { "stat-chip" },
                     "{count} cards"
                 }
                 if let Some(ref fmt) = profile.format {
-                    span { class: "stat-chip stat-chip-format", "{fmt.display_name()}" }
+                    span { class: "stat-chip stat-chip-p3", "{fmt.display_name()}" }
                 }
                 if let Some(pl) = profile.power_level {
-                    span { class: "stat-chip stat-chip-power", "{pl.display_name()}" }
+                    span { class: "stat-chip stat-chip-p5", "{pl.display_name()}" }
                 }
                 if let Some(ref cmd) = profile.commander_name {
-                    span { class: "stat-chip stat-chip-zone", "{cmd}" }
+                    span { class: "stat-chip stat-chip-p3", "{cmd}" }
                 }
                 if let Some(ref name) = profile.partner_commander_name {
-                    span { class: "stat-chip stat-chip-zone", "{name}" }
+                    span { class: "stat-chip stat-chip-p3", "{name}" }
                 }
                 if let Some(ref name) = profile.background_name {
-                    span { class: "stat-chip stat-chip-zone", "{name}" }
+                    span { class: "stat-chip stat-chip-p3", "{name}" }
                 }
                 if let Some(ref name) = profile.signature_spell_name {
-                    span { class: "stat-chip stat-chip-zone", "{name}" }
+                    span { class: "stat-chip stat-chip-p3", "{name}" }
                 }
                 for tag in profile.tags.iter() {
-                    span { key: "{tag}", class: "stat-chip stat-chip-tag", "{deck_tag_label(tag)}" }
+                    span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(tag)}" }
                 }
                 for tag in profile.other_tags.iter() {
-                    span { key: "{tag}", class: "stat-chip stat-chip-other", "{tag.display_name()}" }
+                    span { key: "{tag}", class: "stat-chip stat-chip-p5", "{tag.display_name()}" }
                 }
             }
         }

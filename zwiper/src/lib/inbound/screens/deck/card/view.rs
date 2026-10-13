@@ -1169,16 +1169,16 @@ pub fn View(deck_id: Uuid) -> Element {
                         div { class: "deck-cards-header row-enter",
                             span { class: "deck-cards-header-name", "{deck_name}" }
                             if let Some(fmt) = deck_format() {
-                                span { class: "stat-chip stat-chip-format", "{fmt.display_name()}" }
+                                span { class: "stat-chip stat-chip-p3", "{fmt.display_name()}" }
                             }
                             if let Some(pl) = deck_power() {
-                                span { class: "stat-chip stat-chip-power", "{pl.display_name()}" }
+                                span { class: "stat-chip stat-chip-p5", "{pl.display_name()}" }
                             }
                             for tag in deck_tags() {
-                                span { key: "{tag}", class: "stat-chip stat-chip-tag", "{deck_tag_label(&tag)}" }
+                                span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(&tag)}" }
                             }
                             for tag in deck_other_tags() {
-                                span { key: "{tag}", class: "stat-chip stat-chip-other", "{tag.display_name()}" }
+                                span { key: "{tag}", class: "stat-chip stat-chip-p5", "{tag.display_name()}" }
                             }
                         }
                     } else if !deck_loaded() {

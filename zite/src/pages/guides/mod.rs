@@ -224,12 +224,11 @@ const GUIDE_TAGS: &[&str] = &[
 ];
 
 /// Color class for a guide tag, keyed by its position in [`GUIDE_TAGS`] so the
-/// same tag reads the same color on every card (the bare `.tag` cycle is
-/// positional and would recolor a tag per card).
+/// same tag reads the same color on every card.
 fn tag_color_class(tag: &str) -> &'static str {
-    const CLASSES: [&str; 6] = ["tag-c1", "tag-c2", "tag-c3", "tag-c4", "tag-c5", "tag-c6"];
+    const CLASSES: [&str; 6] = ["tag-p1", "tag-p2", "tag-p3", "tag-p4", "tag-p5", "tag-p6"];
     let idx = GUIDE_TAGS.iter().position(|t| *t == tag).unwrap_or(0);
-    CLASSES.get(idx % CLASSES.len()).unwrap_or(&"tag-c1")
+    CLASSES.get(idx % CLASSES.len()).unwrap_or(&"tag-p1")
 }
 
 #[component]

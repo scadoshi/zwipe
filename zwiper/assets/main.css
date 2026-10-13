@@ -840,45 +840,6 @@ button {
     word-break: break-word;
 }
 
-.stat-chip-bad {
-    color: var(--color-warning);
-    background-color: color-mix(in srgb, var(--color-warning) 12%, transparent);
-    border-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
-}
-
-.stat-chip-format {
-    color: var(--palette-3);
-    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
-}
-
-.stat-chip-zone {
-    color: var(--palette-3);
-    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
-}
-
-/* Deck archetype tags — muted/neutral so they read as labels, not stats. */
-.stat-chip-tag {
-    color: var(--text-muted);
-    background-color: color-mix(in srgb, var(--text-muted) 12%, transparent);
-    border-color: color-mix(in srgb, var(--text-muted) 30%, transparent);
-}
-
-/* Power level (WotC bracket): a rating, so a palette color rather than an outcome. */
-.stat-chip-power {
-    color: var(--palette-5);
-    background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-5) 35%, transparent);
-}
-
-/* Other tags (Budget/Jank/…) — colored so they read apart from archetype tags. */
-.stat-chip-other {
-    color: var(--palette-5);
-    background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-5) 35%, transparent);
-}
-
 /* Small count hint beside the Tags label (e.g. "2/5"). */
 .label-hint {
     margin-left: 0.5rem;

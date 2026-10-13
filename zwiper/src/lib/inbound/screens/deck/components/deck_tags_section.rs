@@ -31,7 +31,7 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
                     }
                     span { class: "info-row-value info-row-tags",
                         for tag in deck_profile.tags.iter() {
-                            span { key: "{tag}", class: "stat-chip stat-chip-tag", "{deck_tag_label(tag)}" }
+                            span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(tag)}" }
                         }
                     }
                 }
@@ -46,7 +46,7 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
                         for slug in deck_profile.oracle_tags.iter() {
                             span {
                                 key: "{slug}",
-                                class: "stat-chip stat-chip-tag",
+                                class: "stat-chip stat-chip-muted",
                                 "{slug}"
                             }
                         }
@@ -58,7 +58,7 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
                     span { class: "info-row-label", "Other tags" }
                     span { class: "info-row-value info-row-tags",
                         for tag in deck_profile.other_tags.iter() {
-                            span { key: "{tag}", class: "stat-chip stat-chip-tag", "{tag.display_name()}" }
+                            span { key: "{tag}", class: "stat-chip stat-chip-muted", "{tag.display_name()}" }
                         }
                     }
                 }

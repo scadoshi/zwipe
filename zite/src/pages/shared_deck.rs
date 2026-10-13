@@ -766,7 +766,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                                 span { class: "info-row-label", "Deck tags" }
                                 span { class: "info-row-value info-row-tags",
                                     for tag in deck.tags.iter() {
-                                        span { key: "{tag}", class: "stat-chip stat-chip-tag", "{deck_tag_label(tag)}" }
+                                        span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(tag)}" }
                                     }
                                 }
                             }
@@ -776,7 +776,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                                 span { class: "info-row-label", "Oracle tags" }
                                 span { class: "info-row-value info-row-tags",
                                     for slug in deck.oracle_tags.iter() {
-                                        span { key: "{slug}", class: "stat-chip stat-chip-tag", "{slug}" }
+                                        span { key: "{slug}", class: "stat-chip stat-chip-muted", "{slug}" }
                                     }
                                 }
                             }
@@ -786,7 +786,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                                 span { class: "info-row-label", "Other tags" }
                                 span { class: "info-row-value info-row-tags",
                                     for tag in deck.other_tags.iter() {
-                                        span { key: "{tag}", class: "stat-chip stat-chip-tag", "{tag.display_name()}" }
+                                        span { key: "{tag}", class: "stat-chip stat-chip-muted", "{tag.display_name()}" }
                                     }
                                 }
                             }
@@ -974,24 +974,24 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             header { class: "sd-header",
                 h1 { "{deck.name}" }
                 div { class: "sd-header-meta",
-                    span { class: "stat-chip", "{display_count} cards" }
+                    span { class: "stat-chip stat-chip-p5", "{display_count} cards" }
                     if let Some(fmt) = deck.format {
-                        span { class: "stat-chip stat-chip-format", "{fmt.display_name()}" }
+                        span { class: "stat-chip stat-chip-p3", "{fmt.display_name()}" }
                     }
                     if let Some(pl) = deck.power_level {
-                        span { class: "stat-chip stat-chip-power", "{pl.display_name()}" }
+                        span { class: "stat-chip stat-chip-p5", "{pl.display_name()}" }
                     }
                     for name in zone_names.iter() {
-                        span { key: "{name}", class: "stat-chip stat-chip-zone", "{name}" }
+                        span { key: "{name}", class: "stat-chip stat-chip-p3", "{name}" }
                     }
                     for tag in deck.tags.iter() {
-                        span { key: "{tag}", class: "stat-chip stat-chip-tag", "{deck_tag_label(tag)}" }
+                        span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(tag)}" }
                     }
                     for tag in deck.other_tags.iter() {
-                        span { key: "{tag}", class: "stat-chip stat-chip-other", "{tag.display_name()}" }
+                        span { key: "{tag}", class: "stat-chip stat-chip-p5", "{tag.display_name()}" }
                     }
                     if price > 0.0 {
-                        span { class: "stat-chip stat-chip-price", "${price:.2}" }
+                        span { class: "stat-chip stat-chip-money", "${price:.2}" }
                     }
                 }
             }
