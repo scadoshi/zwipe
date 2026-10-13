@@ -321,12 +321,6 @@ a {
     border-radius: 0.375rem;
 }
 
-/* Store CTAs share the nav pill look (the .nav-links a rule in
-   components.css), restated here for the standalone .store-link class, in
-   the warning color. */
-
-
-
 /* ==================
         sections / cards
  ==================== */
@@ -560,8 +554,6 @@ code {
     justify-content: center;
     margin: 1rem 0 0;
 }
-
-
 
 @media (max-width: 62rem) {
     .hero-head {
@@ -948,7 +940,6 @@ code {
 /* The changelog content (chip filter + release list) is the shared
    zwipe_components::Changelog; its styles live in magic.css. Only the
    page header above is zite-specific. */
-
 
 /* StatsStrip's source row: the chips under the hero figures. */
 .stats-source {

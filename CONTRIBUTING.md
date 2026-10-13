@@ -75,7 +75,7 @@ zwiper/src/
     ├── inbound/
     │   ├── screens/    # Top-level app screens (auth, deck list, card swipe, profile)
     │   │   └── deck/card/filter/  # Card filter screens (color, type, mana, etc.)
-    │   └── components/ # Reusable UI (swipe gesture, accordion, alert_dialog, fields)
+    │   └── components/ # Reusable UI (swipe gesture, accordion, fields)
     └── outbound/
         └── (platform-bound only: session, keyring, crash store, open URL; the HTTP client is the zwipe-client crate)
 ```
