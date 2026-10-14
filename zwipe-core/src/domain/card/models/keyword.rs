@@ -489,7 +489,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
         }
         "fight" => "Two creatures each deal damage equal to their power to the other.",
         "clash" => {
-            "You and an opponent reveal your top card; the one with the higher cost wins, and you may bottom yours."
+            "You and an opponent each reveal your top card, and you win if yours has the higher mana value. Then each of you keeps your card on top or puts it on the bottom of your library."
         }
         "meld" => "Combine two specific cards into a single larger permanent.",
         "exert" => "You may exert it as it attacks; it won't untap next turn but gets a bonus.",
