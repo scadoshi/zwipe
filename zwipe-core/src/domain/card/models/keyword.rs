@@ -110,10 +110,10 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "Whenever it attacks, the defending player sacrifices that many permanents."
         }
         "training" => {
-            "Whenever it attacks with a creature of greater power, put a +1/+1 counter on it."
+            "Whenever it attacks alongside a creature with greater power, put a +1/+1 counter on it."
         }
         "enlist" => {
-            "As it attacks, you may tap a non-attacking creature to add its power to this one."
+            "As it attacks, you may tap a creature you control that isn't attacking to add that creature's power to this one until end of turn."
         }
         "mobilize" => {
             "Whenever it attacks, create that many tapped, attacking 1/1 red Warriors, then sacrifice them after combat."
@@ -191,7 +191,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "As you cast it, tap two untapped creatures that share a color with it to copy it."
         }
         "splice" => {
-            "As you cast an Arcane spell, reveal this from hand and pay its splice cost to add its text."
+            "As you cast an Arcane spell, you may reveal this from your hand and pay its splice cost to add this card's effect to that spell; this card stays in your hand."
         }
         "surge" => "Pay the surge cost if you or a teammate has cast another spell this turn.",
         "spectacle" => "Pay the spectacle cost instead if an opponent lost life this turn.",
@@ -206,13 +206,15 @@ pub fn keyword_reminder(name: &str) -> &'static str {
         }
         "cleave" => "Pay the cleave cost to cast it without the text in brackets.",
         "compleated" => {
-            "If you pay 2 life instead of Phyrexian mana, it enters with fewer loyalty counters."
+            "You can pay 2 life for each Phyrexian mana in its cost; it enters with two fewer loyalty counters for each one you paid with life."
         }
         "sunburst" => {
             "Enters with a +1/+1 or charge counter for each color of mana spent to cast it."
         }
         "converge" => "Counts the number of colors of mana spent to cast it.",
-        "more than meets the eye" => "You may cast its converted side for its alternative cost.",
+        "more than meets the eye" => {
+            "You may cast it with its back face up for this alternative cost."
+        }
         "prototype" => "You may cast it as a smaller, cheaper, differently colored creature.",
         "offspring" => "Pay an extra cost as you cast it to also create a 1/1 token copy.",
         "squad" => "Pay the squad cost any number of times to create that many token copies.",
@@ -222,13 +224,15 @@ pub fn keyword_reminder(name: &str) -> &'static str {
 
         // --- Cast for less / cast and sacrifice ---
         "evoke" => "Cast it for its evoke cost, then sacrifice it when it enters.",
-        "emerge" => "Cast it by sacrificing a creature and paying the rest of the cost.",
+        "emerge" => {
+            "Cast it for its emerge cost by also sacrificing a creature; the cost is reduced by that creature's mana value."
+        }
         "dash" => "Cast it for its dash cost to give it haste; return it to hand at end of turn.",
         "blitz" => {
             "Cast it for its blitz cost: it gains haste and 'when it dies, draw a card', but is sacrificed at end of turn."
         }
         "mutate" => {
-            "Cast it onto a non-Human creature you own; they merge into one creature keeping all abilities."
+            "Cast it for its mutate cost onto a non-Human creature you own; they become one creature with the top card's name and stats and every ability of both."
         }
 
         // --- Graveyard & recursion ---
@@ -242,30 +246,30 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "Cast it from your graveyard for its escape cost and by exiling other cards from your graveyard."
         }
         "disturb" => {
-            "Cast its back face from your graveyard for the disturb cost, then exile it if it would leave."
+            "Cast it from your graveyard with its back face up, for its disturb cost; if it would go to a graveyard later, exile it instead."
         }
         "embalm" => "Pay the cost to exile it from your graveyard and make a token copy.",
         "eternalize" => "Pay the cost to exile it from your graveyard for a 4/4 black token copy.",
         "encore" => {
-            "Pay the cost to exile it from your graveyard, making a token copy that attacks each opponent, then sacrifice them."
+            "Pay the cost to exile it from your graveyard and make a token copy for each opponent, each attacking that player; sacrifice them at end of turn."
         }
         "unearth" => {
             "Pay the unearth cost to return it from your graveyard with haste; exile it at end of turn."
         }
         "scavenge" => {
-            "Exile it from your graveyard and pay the cost to put that many +1/+1 counters on a creature."
+            "Pay the cost and exile it from your graveyard to put +1/+1 counters equal to its power on a creature, only as a sorcery."
         }
         "recover" => {
             "When a creature dies, pay the recover cost to return this from your graveyard to hand, or exile it."
         }
         "dredge" => {
-            "Instead of drawing, you may mill N cards and return this from your graveyard to your hand."
+            "Instead of drawing a card, you may put the top N cards of your library into your graveyard and return this from your graveyard to your hand."
         }
         "soulshift" => {
             "When it dies, you may return a Spirit with low enough mana value from your graveyard to your hand."
         }
         "haunt" => {
-            "When it dies, exile it haunting a creature; its ability triggers again when that creature dies."
+            "When it dies, exile it attached to a creature; when that creature dies, this card's ability triggers again."
         }
         "madness" => "If discarded, you may cast it for its madness cost instead of discarding it.",
         "gravestorm" => "Copy this spell for each permanent put into a graveyard this turn.",
@@ -273,7 +277,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
         // --- Copy / storm / timing ---
         "storm" => "When cast, copy it for each spell cast before it this turn.",
         "cascade" => {
-            "When cast, exile cards until you reveal a cheaper nonland card, then cast it for free."
+            "When you cast it, exile cards from the top of your library until you exile a nonland card with lower mana value; you may cast that card for free, and the rest go on the bottom."
         }
         "ripple" => {
             "As you cast it, you may reveal the top N cards and cast any with the same name for free."
@@ -282,7 +286,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "Copy this spell at each of your upkeeps; you can't cast other spells for the rest of the game."
         }
         "suspend" => {
-            "Exile it with time counters; remove one each upkeep, then cast it free at zero."
+            "Exile it from your hand with N time counters; remove one at each of your upkeeps, and when the last is removed, cast it for free."
         }
         "rebound" => "If cast from hand, exile it instead and cast it free on your next upkeep.",
         "miracle" => {
@@ -302,10 +306,10 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "It phases out and back each turn; while phased out it's treated as not existing."
         }
         "vanishing" => {
-            "Enters with N time counters; remove one each upkeep, and sacrifice it when the last is gone."
+            "Enters with N time counters; remove one at each of your upkeeps, and sacrifice it when the last is removed."
         }
         "fading" => {
-            "Enters with N fade counters; remove one each upkeep, and sacrifice it when you can't."
+            "Enters with N fade counters; remove one at each of your upkeeps, and sacrifice it if there are none left to remove."
         }
         "cumulative upkeep" => {
             "At each upkeep, put an age counter on it, then pay its cost per counter or sacrifice it."
@@ -317,13 +321,13 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "Cast it face down as a 2/2 for {3}; turn it face up any time for its morph cost."
         }
         "megamorph" => {
-            "Cast it face down as a 2/2; turn it up for its megamorph cost with a +1/+1 counter."
+            "Cast it face down as a 2/2 for {3}; turn it face up any time for its megamorph cost and put a +1/+1 counter on it."
         }
         "disguise" => {
-            "Cast it face down as a 2/2 with ward {2}; turn it up any time for its disguise cost."
+            "Cast it face down as a 2/2 with ward {2} for {3}; turn it face up any time for its disguise cost."
         }
         "hideaway" => {
-            "When it enters, look at the top N cards, exile one face down, and put the rest on the bottom; play it later."
+            "When it enters, look at the top N cards of your library, exile one face down and put the rest on the bottom; later, when its condition is met, you may play the exiled card for free."
         }
 
         // --- Counters & flavor mechanics ---
@@ -335,15 +339,17 @@ pub fn keyword_reminder(name: &str) -> &'static str {
         }
         "aura swap" => "Pay the cost to exchange this Aura with an Aura in your hand.",
         "champion" => {
-            "When it enters, exile another creature you control until it leaves; sacrifice it if you don't."
+            "When it enters, sacrifice it unless you exile another creature you control; the exiled creature comes back when this one leaves the battlefield."
         }
         "exploit" => "When it enters, you may sacrifice a creature for an effect.",
-        "extort" => "Whenever you cast a spell, you may pay W/B to drain each opponent for 1 life.",
+        "extort" => {
+            "Whenever you cast a spell, you may pay {W/B}; if you do, each opponent loses 1 life and you gain that much."
+        }
         "tribute" => {
             "As it enters, an opponent chooses to put N +1/+1 counters on it or let its other ability trigger."
         }
         "cipher" => {
-            "When it deals combat damage to a player, you may encode it on a creature so its controller can copy the spell."
+            "As the spell resolves, you may exile it encoded on a creature you control; whenever that creature deals combat damage to a player, you may cast a copy of the spell for free."
         }
         "provoke" => {
             "When it attacks, you may force a creature the defender controls to untap and block it."
@@ -376,7 +382,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
         // --- Commander / partner ---
         "partner" => "You may have two commanders if both have partner.",
         "partner with" => {
-            "When it enters you may search for the named card; the two can be partner commanders."
+            "You may have it and the named card as two commanders; when it enters, a player may search their library for the named card and put it into their hand."
         }
         "friends forever" => "You may have two commanders if both have friends forever.",
         "choose a background" => "You may have a Background enchantment as a second commander.",
@@ -405,7 +411,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "It enters with X +1/+1 counters; if X is 5 or more, draw a card when it enters."
         }
         "banding" => {
-            "It can attack or block in a band, and you choose how blocked creatures assign their combat damage."
+            "Creatures with banding can attack together as a band, and you decide how combat damage dealt to your creatures in the band is divided."
         }
         "ingest" => {
             "Whenever it deals combat damage to a player, that player exiles the top card of their library."
@@ -453,7 +459,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "Choose any permanents or players with a counter and give each another counter of a kind it already has."
         }
         "explore" => {
-            "Reveal the top card: if a land, put it in hand; otherwise put a +1/+1 counter on the creature and keep or bin the card."
+            "Reveal the top card of your library. If it's a land, put it into your hand; otherwise put a +1/+1 counter on this creature, then leave the card on top or put it into your graveyard."
         }
         "investigate" => "Create a Clue token; sacrifice it and pay {2} to draw a card.",
         "populate" => "Create a token copy of a creature token you control.",
@@ -464,16 +470,16 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "Draw N cards, then discard N; put a +1/+1 counter on it for each nonland card discarded."
         }
         "goad" => {
-            "The creature must attack each combat if able, and a player other than you if able."
+            "Until your next turn, the creature attacks each combat if able, and attacks a player other than you if able."
         }
         "manifest" => {
-            "Put the top card face down as a 2/2; turn it face up for its cost if it's a creature card."
+            "Put the top card of your library onto the battlefield face down as a 2/2 creature; if it's a creature card, you can turn it face up any time for its mana cost."
         }
         "manifest dread" => {
-            "Look at the top two cards, manifest one and put the other into your graveyard."
+            "Look at the top two cards of your library; put one onto the battlefield face down as a 2/2 creature and the other into your graveyard."
         }
         "cloak" => {
-            "Put a card face down as a 2/2 with ward {2}; turn it up any time for its mana cost."
+            "Put a card onto the battlefield face down as a 2/2 creature with ward {2}; if it's a creature card, you can turn it face up any time for its mana cost."
         }
         "bolster" => "Put N +1/+1 counters on the creature you control with the least toughness.",
         "support" => "Put a +1/+1 counter on each of up to N other target creatures.",
@@ -485,7 +491,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "Until your next turn, that permanent can't attack, block, or have its abilities activated."
         }
         "incubate" => {
-            "Create an Incubator token with N +1/+1 counters that can flip into a 0/0 Phyrexian artifact creature."
+            "Create an Incubator token with N +1/+1 counters; pay {2} any time you could cast a sorcery to turn it into a 0/0 Phyrexian artifact creature."
         }
         "fight" => "Two creatures each deal damage equal to their power to the other.",
         "clash" => {
@@ -498,7 +504,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "Enter or advance through a dungeon, taking the next room's effect."
         }
         "discover" => {
-            "Exile cards from the top until a nonland with mana value N or less, then cast it free or put it in hand."
+            "Exile cards from the top of your library until you exile a nonland card with mana value N or less; cast it for free or put it into your hand, and put the rest on the bottom."
         }
         "conjure" => "Create the named card directly, usually into your hand.",
         "role token" => "Create a Role, an Aura token that grants the named bonus to a creature.",
@@ -541,16 +547,16 @@ pub fn keyword_reminder(name: &str) -> &'static str {
         "grandeur" => "Discard another card with the same name to activate its ability.",
         "inspired" => "Triggers whenever it becomes untapped.",
         "kinship" => {
-            "At your upkeep you may reveal the top card; get a bonus if it shares a creature type with it."
+            "At your upkeep, look at the top card of your library; if it shares a creature type with this, you may reveal it for a bonus."
         }
         "radiance" => "Affects the target and every other permanent that shares a color with it.",
         "rally" => "Triggers whenever a creature enters under your control.",
         "alliance" => "Triggers whenever another creature enters under your control.",
         "sweep" => {
-            "Return any number of the named lands you control for an effect that scales with how many."
+            "Return any number of the named lands you control to your hand; the effect scales with how many you returned."
         }
         "tempting offer" => {
-            "You get an effect; each opponent may let you do it again to also copy it for themselves."
+            "You get the effect, then each opponent may get it too; for each one who does, you get it again."
         }
         "will of the council" => "Each player votes, and the option with the most votes happens.",
         "council's dilemma" => "Each player votes among options, shaping a combined effect.",
@@ -571,7 +577,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
         }
         "flurry" => "Triggers whenever you cast your second spell each turn.",
         "eerie" => {
-            "Triggers when an enchantment enters or a face-down permanent turns up under your control."
+            "Triggers whenever an enchantment enters under your control or you turn a permanent face up."
         }
         "lieutenant" => "Gets a bonus as long as you control your commander.",
         "cohort" => "Tap it and an untapped Ally you control to activate its ability.",
@@ -662,7 +668,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "Whenever it attacks, add N red mana; any you don't spend is lost when combat ends."
         }
         "waterbend" => {
-            "A cost that includes mana; for each generic mana in it, you may tap an untapped artifact or creature you control instead of paying it."
+            "When you pay a waterbend cost, you can tap your untapped artifacts and creatures to pay for its generic mana, {1} each."
         }
         "airbend" => {
             "Exile target creature; its owner may cast it later for {2} instead of its mana cost."
@@ -712,7 +718,7 @@ pub fn keyword_reminder(name: &str) -> &'static str {
             "As an additional cost, you may tap creatures you control with total power N or more for the spell's bonus effect."
         }
         "power-up" => {
-            "Activate each power-up ability only once; it costs less by the creature's mana cost if it entered this turn."
+            "Activate it only once; if the creature entered this turn, it costs that creature's mana cost less."
         }
         "rulebreaker" => "Bends the deckbuilding rules as stated while it's your commander.",
         "secret council" => {
