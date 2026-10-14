@@ -25,7 +25,7 @@ A set of cron jobs on the owner's home server watches the repos and pushes to a 
 | probe | every 5 minutes | `https://api.zwipe.net/health` fails three checks in a row (a second opinion to UptimeRobot, from a different network). Also pings a Healthchecks.io heartbeat, so the maintenance host going down, or its ntfy, reaches email within about 20 minutes |
 | appstore-watch | every 15 minutes | An iOS version's App Store review state changes (waiting, in review, approved, live, rejected), through a read-only App Store Connect API key. Play has no review-status API, so Android has no equivalent |
 | repo-sync | hourly | A clean repo that is behind fails to fast-forward |
-| ci-watch | every 30 minutes | A workflow's latest run fails. A run cancelled by a GitHub outage is rerun once, automatically, when GitHub reports Actions healthy |
+| ci-watch | every 30 minutes | A workflow's latest run fails. A run canceled by a GitHub outage is rerun once, automatically, when GitHub reports Actions healthy |
 | zervice-check | daily 05:15 | A local zervice run (against a local Postgres 18) shows retired or renamed oracle-tag slugs, a new tag without our description, or fails |
 | ub-census | Mondays 06:00 | A new set appears that isn't in `universe.rs` FRANCHISES, a set outside FRANCHISES gains triangle-stamped printings, or a watched set first lists cards |
 | reminders | daily 08:00 | A dated follow-up comes due |

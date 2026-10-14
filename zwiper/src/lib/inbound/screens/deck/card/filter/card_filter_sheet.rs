@@ -295,7 +295,7 @@ pub(crate) fn CardFilterSheet(
     };
 
     // Nothing edited since the sheet opened: Apply has nothing to do, so it
-    // greys out rather than closing silently. The same check is repeated
+    // grays out rather than closing silently. The same check is repeated
     // inside Apply, which still has to hold for a tap that lands before this
     // render catches up.
     let unchanged = applied_snapshot

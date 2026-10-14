@@ -35,7 +35,7 @@ fn same_set(a: &[String], b: &[String]) -> bool {
 }
 
 /// In-place oracle-tag picker. Toggled by `open`; mutates `selected` (slugs)
-/// directly, with Save greyed until the set differs from the one it opened
+/// directly, with Save grayed until the set differs from the one it opened
 /// on and Back reverting to it. `on_close` returns to the form.
 #[component]
 pub(crate) fn OracleTagSelect(

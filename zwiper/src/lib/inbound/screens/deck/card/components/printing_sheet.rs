@@ -215,7 +215,7 @@ pub(crate) fn PrintingSheet(
                     "Back"
                 }
 
-                // Always there when saving is possible at all, greyed until
+                // Always there when saving is possible at all, grayed until
                 // the carousel has moved off the printing it opened on. It
                 // used to appear only once changed, which read as a button
                 // arriving from nowhere.

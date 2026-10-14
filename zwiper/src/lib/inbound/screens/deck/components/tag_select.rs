@@ -27,7 +27,7 @@ fn same_set(a: &[String], b: &[String]) -> bool {
 }
 
 /// In-place tag picker. Toggled by `open`; mutates `selected_tags` (slugs)
-/// directly, with Save greyed until the set differs from the one it opened
+/// directly, with Save grayed until the set differs from the one it opened
 /// on and Back reverting to it. `on_close` returns to the form. Options come from the server-delivered
 /// `catalog` (`GET /api/deck/tags`), so a new deck tag is selectable without a
 /// client release.

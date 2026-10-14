@@ -129,7 +129,7 @@ pub const RELEASES: &[Release] = &[
             "Messages appear at the top left, over the title bar, clear of the buttons",
             "Several messages at once stack; tap to open, tap again to close",
             "Messages stay up longer",
-            "Save on the Themes, Exceptions, Deck tags, Oracle tags, Format, Filter and Printing sheets is greyed out until something changes; Back puts things back",
+            "Save on the Themes, Exceptions, Deck tags, Oracle tags, Format, Filter and Printing sheets is grayed out until something changes; Back puts things back",
             "Swiping back out of the Oracle tags picker drops your edits, the same as Back",
             "Dark mode and Universes Beyond say what they switched to",
             "Every deck form field and most Profile rows have their own ?",

@@ -48,7 +48,7 @@ fn command_zone_text(fmt: Format) -> &'static str {
 }
 
 /// In-place format picker. Toggled by `open`. `on_select` fires with the chosen
-/// format, `on_clear` clears the current pick, `on_close` commits (Save, greyed
+/// format, `on_clear` clears the current pick, `on_close` commits (Save, grayed
 /// until the pick differs from the one it opened on), `on_cancel` reverts (the
 /// parent restores the format + its command-zone cascade snapshot). Single-select
 /// with a live cascade, so the revert is parent-owned; this picker only knows
@@ -63,7 +63,7 @@ pub(crate) fn FormatSelect(
     on_cancel: EventHandler<()>,
 ) -> Element {
     let toast = use_toast();
-    // The pick the picker opened on, so Save can grey out while nothing has
+    // The pick the picker opened on, so Save can gray out while nothing has
     // moved and Back can tell whether it is throwing anything away.
     let mut snapshot = use_signal(|| Option::<Format>::None);
     use_effect(move || {
