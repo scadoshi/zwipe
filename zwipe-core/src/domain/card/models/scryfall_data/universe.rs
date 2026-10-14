@@ -146,6 +146,9 @@ pub const FRANCHISES: &[UbFranchise] = &[
             ("tmsc", "Marvel Super Heroes Commander Tokens"),
             ("amsh", "Marvel Super Heroes Art Series"),
             ("fmsc", "Marvel Super Heroes Jumpstart Front Cards"),
+            ("mdd", "Marvel: Darkhold Destiny"),
+            ("mdc", "Darkhold Destiny Commander"),
+            ("tmdd", "Marvel: Darkhold Destiny Tokens"),
         ],
     },
     UbFranchise {
