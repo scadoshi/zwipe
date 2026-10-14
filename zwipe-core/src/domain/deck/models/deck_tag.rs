@@ -406,9 +406,9 @@ impl DeckTag {
             Self::Auras => "Stack enchantment auras onto a creature to enlarge it",
             Self::BigMana => "Generate huge mana to power out oversized threats and X spells",
             Self::Blink => {
-                "Flicker creatures out and back to reuse their enter-the-battlefield effects"
+                "Exile your creatures and bring them right back to reuse their enter-the-battlefield effects"
             }
-            Self::Blood => "Make Blood tokens to loot away cards and fuel payoffs",
+            Self::Blood => "Make Blood tokens to discard and draw cards and fuel payoffs",
             Self::Bounce => "Return permanents to hand to reset boards and reuse effects",
             Self::Burn => "Deal direct damage with spells to creatures or players",
             Self::Cascade => "Chain free spells off cascade and cost-reduction effects",
@@ -428,9 +428,11 @@ impl DeckTag {
             Self::Counterspells => "Hold up counterspells to stop key spells before they resolve",
             Self::Curses => "Saddle opponents with Curse enchantments that punish them over time",
             Self::Cycling => "Discard cards to draw and trigger cycling payoffs",
-            Self::Deathtouch => "Pair deathtouch with pingers and forced blocks to trade up",
+            Self::Deathtouch => {
+                "Pair deathtouch with damage-dealing abilities and forced blocks to trade up"
+            }
             Self::Defenders => "Hold the line with high-toughness walls, then turn them into a win",
-            Self::Devotion => "Reward heavy colored pips with devotion-scaling effects",
+            Self::Devotion => "Reward heavy colored mana symbols with devotion-scaling effects",
             Self::DiceRolling => "Roll dice and reward high rolls with d20 payoffs",
             Self::Discard => "Strip opponents' hands to deny resources and options",
             Self::Domain => "Reward many basic land types with domain-scaling effects",
@@ -443,7 +445,7 @@ impl DeckTag {
             Self::Etb => "Chain enter-the-battlefield effects for repeatable value",
             Self::ExtraCombats => "Take additional combat steps to attack again and again",
             Self::ExtraTurns => "Chain extra turns to pull ahead and close the game",
-            Self::Fight => "Bite opponents' creatures by fighting them with your bigger ones",
+            Self::Fight => "Remove opponents' creatures by having your bigger ones fight them",
             Self::Flash => "Hold up instants and flash threats to play on your opponents' turns",
             Self::Flying => "Win in the air with evasive flying creatures",
             Self::Food => "Make Food tokens to gain life and feed sacrifice value",
@@ -486,11 +488,13 @@ impl DeckTag {
             Self::Politics => "Make deals and incentives to steer the multiplayer table",
             Self::PowerMatters => "Reward high power and pumping your creatures' power",
             Self::Powerstones => "Make Powerstone tokens to ramp into artifacts and big spells",
-            Self::Prison => "Lock opponents out with continuous resource-denial effects",
+            Self::Prison => "Lock opponents out by denying them mana, cards, and actions",
             Self::Proliferate => "Multiply every kind of existing counter with proliferate",
             Self::Ramp => "Accelerate mana to cast big spells ahead of schedule",
-            Self::Reanimator => "Cheat large creatures from the graveyard into play",
-            Self::Removal => "Lean on efficient spot removal to answer any threat",
+            Self::Reanimator => {
+                "Fill your graveyard with large creatures, then return them to the battlefield without casting them"
+            }
+            Self::Removal => "Lean on efficient single-target removal to answer any threat",
             Self::Roles => "Hand out Role tokens to buff your creatures or shrink theirs",
             Self::Rooms => "Build around Room enchantments and unlock both doors for value",
             Self::Sacrifice => "Use sacrifice outlets to turn permanents into value",
@@ -498,23 +502,25 @@ impl DeckTag {
             Self::SelfMill => "Mill your own library to fuel graveyard payoffs",
             Self::Shrines => "Stack Shrine enchantments that scale with each Shrine you control",
             Self::Snow => "Build around snow permanents and their scaling payoffs",
-            Self::Speed => "Prioritize a fast clock to win before opponents set up",
+            Self::Speed => "Prioritize winning quickly before opponents set up",
             Self::Spellslinger => "Cast many instants and sorceries with spell payoffs",
-            Self::Stax => "Slow the whole table with symmetric resource-denial pieces",
-            Self::Stompy => "Ramp into big, efficient creatures and swing",
+            Self::Stax => "Slow the whole table with effects that tax and restrict every player",
+            Self::Stompy => "Ramp into big, efficient creatures and attack with them",
             Self::Storm => "Cast a chain of spells to power up storm finishers",
             Self::Superfriends => "Deploy many planeswalkers and protect their loyalty",
             Self::Surveil => "Surveil to fill the graveyard while smoothing your draws",
-            Self::Tempo => "Trade efficiently and use tempo to stay a step ahead",
+            Self::Tempo => {
+                "Trade efficiently and set opponents back a turn at a time to stay ahead"
+            }
             Self::Theft => "Steal opponents' creatures, spells, and permanents",
             Self::Tokens => "Generate creature tokens to go wide and fuel payoffs",
-            Self::Toolbox => "Tutor up the right answer from a versatile card pool",
+            Self::Toolbox => "Search your library for the right answer from a versatile card pool",
             Self::ToughnessMatters => "Reward high toughness and defensive bodies",
             Self::Toxic => "Deal poison counters in combat with the toxic keyword",
-            Self::Treasure => "Make Treasure tokens for ramp and artifact synergies",
-            Self::Tribal => "Build around a single creature type and its lords",
+            Self::Treasure => "Make Treasure tokens for extra mana and artifact synergies",
+            Self::Tribal => "Build around a single creature type and the cards that boost it",
             Self::Turbo => "Accelerate your game plan to deploy it ahead of schedule",
-            Self::TurboFog => "Fog every combat and draw cards until you win late",
+            Self::TurboFog => "Prevent combat damage every turn and draw cards until you win late",
             Self::Untap => "Untap permanents to reuse abilities and generate value",
             Self::Vehicles => "Crew vehicles for efficient, removal-resistant attackers",
             Self::Voltron => "Pile buffs on one creature to win with commander damage",

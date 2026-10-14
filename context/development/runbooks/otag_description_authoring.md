@@ -122,6 +122,7 @@ Ship path from there: user pushes -> next `zervice` overlays all authored text.
 - No em dashes, no `[label](slug)` cross-links, no URLs, no `&` (write "and").
 - Sibling precision: `gives-X` grants to OTHERS; `gains-X` / `-self` is about ITSELF; `-to-all` hits your whole team; `repeatable-X` can be done again and again; `typal-X` cares about creatures of type X; `synergy-X` / `hate-X` reward / punish X.
 - Many tags are keyword MECHANICS (convoke, threshold, phasing, heroic, bushido, ninjutsu, imprint, strive); define the mechanic plainly in one sentence.
+- No player slang a newer player would have to look up: write "returns it to hand" not "bounces", "searches your library" not "tutors", "discard and draw" not "loot" or "rummage", "an artifact that taps for mana" not "mana rock", "put on the bottom of their library" not "bottom". Say whose library a "top card" comes from ("the top card of your library", not "your top card"). The same rule covers the keyword reminders in `zwipe-core/src/domain/card/models/keyword.rs` and the deck tag descriptions in `deck_tag.rs`.
 
 ---
 
