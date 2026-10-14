@@ -14955,10 +14955,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Makes nonartifact spells cost more or restricts players from casting them.",
     ),
     (
-        "cycle-emn-escalate-alliance",
-        "An escalate instant letting you pay extra to combine multiple modes in one spell.",
-    ),
-    (
         "cycle-grn-precon-tutor",
         "A removal or bounce spell that also lets you search for a specific named legend.",
     ),
@@ -17908,6 +17904,15 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "gains-frenzy",
         "Creatures gain frenzy, getting +X/+0 whenever they attack and aren't blocked.",
+    ),
+    (
+        "gains-training",
+        "Grants training to your creatures, so each gets a +1/+1 counter when it attacks alongside a creature with greater power.",
+    ),
+    ("synergy-dimension", "Cares about Dimensions you control."),
+    (
+        "finality-counter",
+        "Puts a finality counter on a creature, usually one it brings back from the graveyard, so it gets exiled if it would die.",
     ),
 ];
 
