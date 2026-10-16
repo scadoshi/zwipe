@@ -14,7 +14,11 @@ $ADB devices -l
 
 On the phone: **Settings → About phone →** tap Build number ×7, then **Developer options → USB debugging → ON**, then accept the authorization prompt.
 
-**Diagnosing "no devices found":** `system_profiler SPUSBDataType` returns empty on this Mac (a sandbox quirk); it is NOT evidence the cable is bad. Use `ioreg -p IOUSB -w0 | grep -i pixel` instead. If the phone shows there but `adb` sees nothing, USB debugging is off. The "Use USB for" mode reverting to *No data transfer* is normal and does not block ADB.
+**Diagnosing "no devices found":**
+
+- `system_profiler SPUSBDataType` returns empty on this Mac (a sandbox quirk). It is NOT evidence the cable is bad. Use `ioreg -p IOUSB -w0 | grep -i pixel` instead.
+- If the phone shows there but `adb` sees nothing, USB debugging is off.
+- The "Use USB for" mode reverting to *No data transfer* is normal and does not block ADB.
 
 ## Installing a test build
 

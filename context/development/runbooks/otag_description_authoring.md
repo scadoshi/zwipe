@@ -10,7 +10,10 @@ This is a **repeatable loop** a fresh AI can run cold. It fans out subagents to 
 
 ## Are these compared against real cards? Yes: two layers
 
-1. **Verify stage (every tag):** each verifier agent pulls the actual `oracle_text` of real cards and judges the drafted description against what those cards literally do. Grounding is **hierarchy-aware**: it passes the tag's parents, its children, and cards sampled from the tag *plus its direct children*. That last part matters more than it sounds. Plenty of tags carry zero cards of their own because they are umbrella nodes (`recursion-land`, `typal-creature`) or cycle roots whose members live on child tags, and an inner join against `card_oracle_tags` returns nothing for those. It is what lets `cycle-fetchland` be written off actual fetchlands instead of guessed from its name. That produces the `accurate` / `minor` / `wrong` verdict and any correction. Nothing ships un-grounded.
+1. **Verify stage (every tag):** each verifier agent pulls the actual `oracle_text` of real cards and judges the drafted description against what those cards literally do. That produces the `accurate` / `minor` / `wrong` verdict and any correction. Nothing ships un-grounded.
+   - Grounding is **hierarchy-aware**: it passes the tag's parents, its children, and cards sampled from the tag *plus its direct children*.
+   - That last part matters more than it sounds. Plenty of tags carry zero cards of their own because they are umbrella nodes (`recursion-land`, `typal-creature`) or cycle roots whose members live on child tags, and an inner join against `card_oracle_tags` returns nothing for those.
+   - It is what lets `cycle-fetchland` be written off actual fetchlands instead of guessed from its name.
 2. **Human spot-check (sample):** after the workflow, hand-verify ~10 of the most obscure/mis-nameable tags per batch against oracle text (query in Step 3) before splicing. This is where slug-name traps get caught (e.g. `tapper-creature` is not a creature; `group-slug` is damage/drain, not a slowdown).
 
 ---
@@ -140,7 +143,12 @@ Ship path from there: user pushes -> next `zervice` overlays all authored text.
 
 ## Progress markers (update as you go)
 
-Coverage is `len(ORACLE_TAG_DESCRIPTIONS)` / the live catalog count. Milestones: 7 (starter) -> 82 (hand) -> 257 -> 500 -> 700 -> 4,357 -> 4,395 (2026-08-06, every tag with a real card population) -> **4,521 of 4,522 (2026-08-18), the whole tail including unpopulated umbrella and cycle tags**. The one holdout is `nanni`: a single card, no parent, no children, nothing to derive a meaning from, so it stays blank rather than get invented copy. **4,568 of 4,570 (2026-10-08)** after a catch-up: 15 new `gains-<keyword>` tags (mostly Sliver and lord grants), and two renames dropped (`counter-lord` became `outlast-mentor`, `egg-token` became `typal-egg`, both already described). `double` joined `nanni` as a deliberate blank: no cards, label text, parents or children. The maintenance host's `zervice-check` allows both. **4,576 of 4,577 (2026-10-14)** after another catch-up: `gains-training`, `synergy-dimension` and `finality-counter` added, `cycle-emn-escalate-alliance` dropped (its `-borrowed` and `-collective` siblings were already described), and `double` left the catalog, so `nanni` is the only deliberate blank again.
+Coverage is `len(ORACLE_TAG_DESCRIPTIONS)` / the live catalog count. Milestones:
+
+- 7 (starter) -> 82 (hand) -> 257 -> 500 -> 700 -> 4,357 -> 4,395 (2026-08-06, every tag with a real card population).
+- **4,521 of 4,522 (2026-08-18)**: the whole tail, including unpopulated umbrella and cycle tags. The one holdout is `nanni`: a single card, no parent, no children, nothing to derive a meaning from, so it stays blank rather than get invented copy.
+- **4,568 of 4,570 (2026-10-08)** after a catch-up: 15 new `gains-<keyword>` tags (mostly Sliver and lord grants), and two renames dropped (`counter-lord` became `outlast-mentor`, `egg-token` became `typal-egg`, both already described). `double` joined `nanni` as a deliberate blank: no cards, label text, parents or children. The maintenance host's `zervice-check` allows both.
+- **4,576 of 4,577 (2026-10-14)** after another catch-up: `gains-training`, `synergy-dimension` and `finality-counter` added, and `cycle-emn-escalate-alliance` dropped (its `-borrowed` and `-collective` siblings were already described). `double` left the catalog, so `nanni` is the only deliberate blank again.
 
 Future runs are incremental. Two things move the number, and the second is the one that surprises people:
 

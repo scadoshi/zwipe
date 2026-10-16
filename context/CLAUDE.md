@@ -75,7 +75,13 @@ components ──(git)──→ orangui
 portfolio, cairn ──(git)──→ orangui
 ```
 
-zwipe-core owns all shared domain types, including every `Http*` contract (`zwipe-core/src/http/contracts/`) and the route path constants. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers). No client depends on zerver: zwiper and zite both take their domain and contract types from zwipe-core, and zerver is the server only. components is the Magic half of the UI (card rows and details, oracle text, keyword chips, the changelog, the deck charts, plus `magic.css`) over orangui, the generic kit (themes, panels, nav, charts, the entrance effects) taken as a git dependency and re-exported whole, so both clients import everything as `components::` (`::components::` in a module that has its own `components` submodule); `cargo update -p orangui` moves the pin. The portfolio site and cairn (the counter app) take orangui directly as a git dependency; nothing outside this repo imports components. zwipe-client holds the typed API client, depending on zwipe-core and reqwest only, so it carries no Dioxus and no platform code. Both clients use it; neither builds a request by hand.
+zwipe-core owns all shared domain types, including every `Http*` contract (`zwipe-core/src/http/contracts/`) and the route path constants. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers).
+
+- No client depends on zerver. zwiper and zite both take their domain and contract types from zwipe-core, and zerver is the server only.
+- components is the Magic half of the UI (card rows and details, oracle text, keyword chips, the changelog, the deck charts, plus `magic.css`). It sits over orangui, the generic kit (themes, panels, nav, charts, the entrance effects), which it takes as a git dependency and re-exports whole.
+- So both clients import everything as `components::` (`::components::` in a module that has its own `components` submodule), and `cargo update -p orangui` moves the pin.
+- The portfolio site and cairn (the counter app) take orangui directly as a git dependency. Nothing outside this repo imports components.
+- zwipe-client holds the typed API client and depends on zwipe-core and reqwest only, so it carries no Dioxus and no platform code. Both clients use it; neither builds a request by hand.
 
 ### Hexagonal (Ports & Adapters) Pattern
 

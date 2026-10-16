@@ -15,7 +15,10 @@ Listing + content forms must be complete (no errors) first; there is **no separa
 5. **Save → Review → Start rollout to closed testing.**
 6. **Testers** tab → add testers, then share the opt-in link. The 14-day clock runs from when ≥12 are opted in.
 
-**Promoting to Production (after the 14-day gate):** create the release under **Test and release → Production**. The Production track starts with **no countries selected**: the "no countries or regions" error blocks the release until you set them at **Test and release → Production → Countries/regions → Add / Select all**. This is per-track (closed testing's country list does *not* carry over) and lives on the track, **not** the release page or the bundle. (First hit 2026-07-11.)
+**Promoting to Production (after the 14-day gate):** create the release under **Test and release → Production**. (First hit 2026-07-11.)
+
+- The Production track starts with **no countries selected**. The "no countries or regions" error blocks the release until you set them at **Test and release → Production → Countries/regions → Add / Select all**.
+- This is per-track (closed testing's country list does *not* carry over), and it lives on the track, **not** the release page or the bundle.
 
 ## 2. Recruiting testers (the gotchas)
 

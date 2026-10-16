@@ -57,9 +57,16 @@ If the Apple Distribution line is missing, the key didn't import; fix that befor
 
 Two things, both avoidable:
 
-**1. Creating a new distribution certificate.** Apple caps how many Apple Distribution certs an account may hold. Hit the cap, and the UI offers to revoke an existing one to make room; revoking is what kills the other Mac, because every provisioning profile built on that cert dies with it. So on the new machine, never click "Create Certificate" on developer.apple.com and never let Xcode's *Automatically manage signing* fix a signing error for you. There is no reason to: the identity you copied is the identity you want. Zwipe's release build is plain CLI `codesign` with no Xcode project, so automatic signing should never enter the picture unless you go looking for it.
+**1. Creating a new distribution certificate.** Apple caps how many Apple Distribution certs an account may hold.
 
-**2. Reusing a build number.** `CFBundleVersion` must be unique per upload forever, and two machines make it easy to build 70 twice. Read the last shipped number off [history.md](app-store/submission/history.md) before every build, and log the new one there in the same commit as the release. That file is the coordination point between the machines; a stale checkout on one of them is the failure mode to watch for, so `git pull` first.
+- Hit the cap, and the UI offers to revoke an existing one to make room. Revoking is what kills the other Mac, because every provisioning profile built on that cert dies with it.
+- So on the new machine, never click "Create Certificate" on developer.apple.com, and never let Xcode's *Automatically manage signing* fix a signing error for you.
+- There is no reason to: the identity you copied is the identity you want. Zwipe's release build is plain CLI `codesign` with no Xcode project, so automatic signing should never enter the picture unless you go looking for it.
+
+**2. Reusing a build number.** `CFBundleVersion` must be unique per upload forever, and two machines make it easy to build 70 twice.
+
+- Read the last shipped number off [history.md](app-store/submission/history.md) before every build, and log the new one there in the same commit as the release.
+- That file is the coordination point between the machines. A stale checkout on one of them is the failure mode to watch for, so `git pull` first.
 
 Nothing else is at risk:
 

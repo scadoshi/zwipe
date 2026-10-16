@@ -42,7 +42,12 @@ impl Username {
 }
 ```
 
-Four things travel with it. A `new` returning `Result<Self, InvalidX>`, where `InvalidX` is a `thiserror` enum with one variant per rule, so the caller can tell the user which rule they broke. A private field, so the only way in is through `new`. A `Deref` to the inner value for read access (`str` for the string types, `i32` for `Quantity`). And a `Deserialize` that routes through `new`, written by hand:
+Four things travel with it:
+
+1. A `new` returning `Result<Self, InvalidX>`, where `InvalidX` is a `thiserror` enum with one variant per rule, so the caller can tell the user which rule they broke.
+2. A private field, so the only way in is through `new`.
+3. A `Deref` to the inner value for read access (`str` for the string types, `i32` for `Quantity`).
+4. A `Deserialize` that routes through `new`, written by hand:
 
 ```rust
 impl<'de> Deserialize<'de> for Username {

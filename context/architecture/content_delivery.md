@@ -39,4 +39,10 @@ Then apply the surface's constraint:
 
 ## How the app's fallbacks behave
 
-The served copies are strict overrides, never dependencies: fetch fails → compiled copy, silently (a missing catalog isn't a toast-worthy error). A name missing from a served map → compiled entry for that name. Failed fetches retry on next launch (keyword reminders, changelog: prefetched once) or on next consumer screen (`ensure_*` catalogs like otags). Consequence: success and fallback are visually identical when the copies agree, so verify the served path via the startup `GET` log line, or by shipping a server-side text tweak and watching it appear without an app rebuild.
+The served copies are strict overrides, never dependencies:
+
+- A failed fetch falls back to the compiled copy, silently. A missing catalog isn't a toast-worthy error.
+- A name missing from a served map falls back to the compiled entry for that name.
+- Failed fetches retry on next launch (keyword reminders and the changelog, prefetched once) or on the next consumer screen (`ensure_*` catalogs like otags).
+
+Consequence: success and fallback look identical when the copies agree. Verify the served path via the startup `GET` log line, or by shipping a server-side text tweak and watching it appear without an app rebuild.

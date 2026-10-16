@@ -257,7 +257,10 @@ The rest are signal/analytics tables (user and commander signal, weekly facets, 
 
 ## zwiper: Mobile App
 
-Dioxus cross-platform app. Primary target: iOS. Same hexagonal structure: screens are inbound adapters, the API client is the outbound adapter and lives in `zwipe-client`. UI building blocks and the theme CSS come from `components`, which re-exports orangui's app kit (bottom sheet, page header, theme sheet, hint pieces, overlay back stack, toast stack) and the `APP_CSS` and `TOAST_CSS` sheets and adds the Magic pieces; the theme type is orangui's `ThemeConfig`, built from a session's preferences by `theme_from_preferences`, and zwipe-core keeps the list zerver validates against.
+Dioxus cross-platform app. Primary target: iOS. Same hexagonal structure: screens are inbound adapters, and the API client is the outbound adapter and lives in `zwipe-client`.
+
+- UI building blocks and the theme CSS come from `components`. It re-exports orangui's app kit (bottom sheet, page header, theme sheet, hint pieces, overlay back stack, toast stack) and the `APP_CSS` and `TOAST_CSS` sheets, and adds the Magic pieces.
+- The theme type is orangui's `ThemeConfig`, built from a session's preferences by `theme_from_preferences`. zwipe-core keeps the list zerver validates against.
 
 ```
 zwiper/src/
@@ -391,7 +394,12 @@ The wasm target needs reqwest without rustls-tls and getrandom on `wasm_js`, the
 
 ## components: Shared UI
 
-The Magic pieces of the UI, over [orangui](https://github.com/scadoshi/orangui), the generic Dioxus kit (themes, panels, nav, charts, the entrance effects, the app and site kits) taken as a git dependency pinned in the workspace lockfile. The crate re-exports all of orangui (`pub use orangui::*`), so both clients import from the one `components::` path, and adds what needs zwipe-core: `CardDetails`, `CardRow`, `CardRoleChips`, `KeywordChips`, `OracleText`, `FlippableCardImage`, `Changelog`, the deck charts and `ZwipeArchitecture`. The portfolio and cairn take orangui directly; nothing outside this repo imports this crate. The crate shares its name with the `components` modules in zwiper (`inbound/components/` and the screen-level `components/` folders) and zite (`src/components/`); a module that declares its own `components` submodule reaches the crate as `::components::`.
+The Magic pieces of the UI, over [orangui](https://github.com/scadoshi/orangui), the generic Dioxus kit (themes, panels, nav, charts, the entrance effects, the app and site kits) taken as a git dependency pinned in the workspace lockfile.
+
+- The crate re-exports all of orangui (`pub use orangui::*`), so both clients import from the one `components::` path.
+- It adds what needs zwipe-core: `CardDetails`, `CardRow`, `CardRoleChips`, `KeywordChips`, `OracleText`, `FlippableCardImage`, `Changelog`, the deck charts and `ZwipeArchitecture`.
+- The portfolio and cairn take orangui directly. Nothing outside this repo imports this crate.
+- The crate shares its name with the `components` modules in zwiper (`inbound/components/` and the screen-level `components/` folders) and zite (`src/components/`). A module that declares its own `components` submodule reaches the crate as `::components::`.
 
 Styling: orangui's `THEMES_CSS`, `COMPONENTS_CSS`, `APP_CSS`, `SITE_CSS` and `TOAST_CSS` come through as they are; `MAGIC_CSS` (`assets/magic.css`) holds this crate's own rules. CSS load order matters: themes, components, Magic rules, the opt-in sheet, then the host's own styles. The source is flat, one file per component: card_details.rs and card_row.rs (shared card rendering), card_role_chips.rs, keyword_chips.rs, oracle_text.rs, flippable_card_image.rs, changelog.rs (renders the compiled-in changelog), charts.rs and architecture.rs. theme.rs converts a user's saved preferences to orangui's `ThemeConfig` and holds the test that keeps zwipe-core's theme list (`ALLOWED_THEMES`, `COLORBLIND_THEMES`, `display_theme_name`) equal to orangui's, since zerver validates against core's and the palettes live in orangui.
 

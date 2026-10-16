@@ -14,7 +14,9 @@ History varies, and that is fine. Of the 27 releases that went to both stores, o
 
 ## Naming cards and features
 
-Use the card game's own words. "Magic: The Gathering", "Commander", "Oathbreaker", "command zone", "Universes Beyond", "Secret Lair": these name things the user is looking at, and working around them produces copy that describes nothing. This covers store listings, release notes and any feature description, not just the notes in this directory. Casing follows [`../../development/ui_text_conventions.md`](../../development/ui_text_conventions.md), which has always spelled these out properly.
+Use the card game's own words. "Magic: The Gathering", "Commander", "Oathbreaker", "command zone", "Universes Beyond", "Secret Lair": these name things the user is looking at, and working around them produces copy that describes nothing.
+
+This covers store listings, release notes and any feature description, not just the notes in this directory. Casing follows [`../../development/ui_text_conventions.md`](../../development/ui_text_conventions.md), which has always spelled these out properly.
 
 Both apps are approved and have cleared review many times with this vocabulary in the listing: the iOS subtitle is "Swipe to Build MTG Decks", and the keyword field carries MTG, Magic the Gathering, commander, EDH and Scryfall.
 
@@ -24,7 +26,11 @@ Some older Play notes avoided these words on the theory that Apple required it. 
 
 ## Writing a new one
 
-Start from the `UPCOMING` block in `zwipe-core/src/content/changelog/mod.rs`, which is the in-app changelog and already in the right voice. Compress to fit 500, name the actual controls, and skip anything a user cannot see. Server-side work does not belong here. The same rule as the changelog applies, [`../../development/changelog_guidelines.md`](../../development/changelog_guidelines.md): each line is a phrase, no period at the end, no examples. Releases through 1.10.2 predate the rule and stay as submitted.
+Start from the `UPCOMING` block in `zwipe-core/src/content/changelog/mod.rs`, which is the in-app changelog and already in the right voice.
+
+- Compress to fit 500, name the actual controls, and skip anything a user cannot see. Server-side work does not belong here.
+- The changelog's rule applies too ([`../../development/changelog_guidelines.md`](../../development/changelog_guidelines.md)): each line is a phrase, no period at the end, no examples.
+- Releases through 1.10.2 predate the rule and stay as submitted.
 
 Then paste the same text into App Store Connect and Play Console. Field positions and the rest of the listing copy live in [`../ios/app-store/submission/form_fields.md`](../ios/app-store/submission/form_fields.md) and [`../android/play-store/submission/form_fields.md`](../android/play-store/submission/form_fields.md).
 

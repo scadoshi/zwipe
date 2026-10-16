@@ -96,7 +96,10 @@ Applies to `.logo` (hero ASCII) and `.nav-logo` (tiny version in nav bar). Both 
 
 Theme slugs (`gruvbox`, `tokyo-night`, `rose-pine`, etc.) are stored as-is in `ALLOWED_THEMES` (zwipe-core) and drive CSS class names. For display in theme pickers, `display_theme_name(slug)` capitalizes each hyphen-split word.
 
-**Special case:** `rose-pine` displays as **"Rosé Pine"** (accent on the first e). Hardcoded in the helper rather than renaming the slug because the slug drives CSS class names + DB stored values for every user with that theme selected. A display-only special-case is cheaper than a SQL migration + CSS rename. Same treatment for `vscode` → "VS Code", `github` → "GitHub", `synthwave-84` → "Synthwave '84", `powershell` → "PowerShell", `docs-rs` → "docs.rs".
+**Special case:** `rose-pine` displays as **"Rosé Pine"** (accent on the first e).
+
+- It's hardcoded in the helper rather than renaming the slug, because the slug drives CSS class names and DB stored values for every user with that theme selected. A display-only special case is cheaper than a SQL migration + CSS rename.
+- Same treatment for `vscode` → "VS Code", `github` → "GitHub", `synthwave-84` → "Synthwave '84", `powershell` → "PowerShell", `docs-rs` → "docs.rs".
 
 The canonical copy is `display_theme_name` in `zwipe-core/src/domain/user/models/preferences.rs`, beside `ALLOWED_THEMES`; add new overrides there. zite renders the shared `ThemePicker`, and both it and zwiper's preferences sheet import that one function, so there is no duplicate to keep in sync.
 

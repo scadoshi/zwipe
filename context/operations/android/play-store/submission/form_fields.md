@@ -4,7 +4,9 @@ Text to paste into Google Play Console fields for **Zwipe TCG**. Mirrors the iOS
 
 The **app name** stays generic: "Zwipe TCG", never "Zwipe MTG". That is what Apple's Guideline 4.1(a) rejection was about, and the Play package name is permanent regardless.
 
-Descriptive copy is a different question, and since 2026-09-22 it uses the app's own vocabulary. "Commander", "command zone", "Universes Beyond" and the rest name things the user is looking at. Both apps are approved and the iOS listing has cleared review many times carrying MTG, Magic the Gathering, commander, EDH and Scryfall in its subtitle and keywords. Earlier notes here claimed Apple required the scrub to extend that far; it did not.
+Descriptive copy is a different question, and since 2026-09-22 it uses the app's own vocabulary. "Commander", "command zone", "Universes Beyond" and the rest name things the user is looking at.
+
+Both apps are approved, and the iOS listing has cleared review many times carrying MTG, Magic the Gathering, commander, EDH and Scryfall in its subtitle and keywords. Earlier notes here claimed Apple required the scrub to extend that far; it did not.
 
 ---
 

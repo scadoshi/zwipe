@@ -13,7 +13,10 @@ Produce a **signed release `.aab`** ready for the Play Console. To upload it, co
 5. **dx regenerates `MainActivity.kt` too** (bare `class MainActivity : WryActivity()`), which closes the app on the OS back gesture. Re-apply the back-navigation patch after `dx bundle` (step 1c) or back-swipe ships broken.
 6. **dx regenerates `AndroidManifest.xml` as well**, without `launchMode` and with a short `configChanges` list. Ship it unpatched and you reship the `ndk-context` crash (an explicit component start: a notification tap, the Play Store's **Open** button after an update, creates a second Activity in the live process and native init runs twice) *and* the bug where a system dark/light switch silently closes the app. **This one survived five releases because it was a checklist item nobody ran.**
 
-7. **dx's `WryActivity.kt` is written for tao 0.34, and the vendored tao is 0.37** (`vendor/tao/VENDOR.md`). Its native entry points have different names (`onCreate`, `onStart`, … instead of `create`, `start`, …), so the stock activity throws `UnsatisfiedLinkError` in `onCreate` and the app dies on launch on every device. Play's pre-launch lab reported it on 1.10.3 vc46 as a "16 KB page size" failure, which it is not. `wry_activity.sh` rewrites the file and adds R8 keep rules, since tao also reaches `getId()` through JNI and R8 stripped it (a second launch crash, `NoSuchMethodError`, found on the emulator). It goes away with the vendored tao.
+7. **dx's `WryActivity.kt` is written for tao 0.34, and the vendored tao is 0.37** (`vendor/tao/VENDOR.md`). It goes away with the vendored tao.
+   - Its native entry points have different names (`onCreate`, `onStart`, … instead of `create`, `start`, …), so the stock activity throws `UnsatisfiedLinkError` in `onCreate` and the app dies on launch on every device.
+   - Play's pre-launch lab reported it on 1.10.3 vc46 as a "16 KB page size" failure, which it is not.
+   - `wry_activity.sh` rewrites the file and adds R8 keep rules, since tao also reaches `getId()` through JNI and R8 stripped it (a second launch crash, `NoSuchMethodError`, found on the emulator).
 
 **→ Because of 1, 5, 6 and 7, run one command after every `dx bundle`:**
 

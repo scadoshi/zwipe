@@ -62,7 +62,10 @@ Zerver files for extracted types become one-liners: `pub use zwipe_core::domain:
 
 **Why:** Zerver has 70+ `impl From<DomainError> for ApiError` conversions across its handler files (e.g., `impl From<InvalidCreateDeckProfile> for ApiError`). If `ApiError` moves to zwipe-core, both the error type AND the domain error type become foreign to zerver, and Rust's orphan rule forbids implementing a foreign trait (`From`) for two foreign types. Every handler-level error mapping would break.
 
-**Consequence:** `ApiError` stays server-side, where it implements `IntoResponse`. Clients never see the type: `zwipe-client`'s `ClientError` owns the status vocabulary and builds the same variants from the response's status and body. So neither zwiper nor zite depends on zerver (zwiper dropped it on 2026-09-21, `c84c9841`), and zerver has no feature flag gating server-only code. The contract between the two sides is `zwipe-core`'s HTTP types and route paths, which both compile against.
+**Consequence:** `ApiError` stays server-side, where it implements `IntoResponse`. Clients never see the type: `zwipe-client`'s `ClientError` owns the status vocabulary and builds the same variants from the response's status and body.
+
+- So neither zwiper nor zite depends on zerver (zwiper dropped it on 2026-09-21, `c84c9841`), and zerver has no feature flag gating server-only code.
+- The contract between the two sides is `zwipe-core`'s HTTP types and route paths, which both compile against.
 
 ---
 
@@ -76,7 +79,12 @@ Zerver files for extracted types become one-liners: `pub use zwipe_core::domain:
 
 **Why erased over generic:** before this, `AppState<AS, US, HS, CS, DS>` threaded five type params through 104 signature sites across ~50 files; every handler carried a 5-line where-clause before its first real line. Now handlers take `State(state): State<AppState>` with zero ceremony. Call sites are unchanged (`state.card_service.search(...)`); mocks still satisfy the fields via the blanket impls.
 
-**The steady-state trade:** a new service method costs one extra write (the twin signature + `Box::pin` forward, compiler-checked, mindless); a new handler costs zero ceremony (was ~12 lines of bounds). Since endpoints usually add one of each, the per-feature cost is a wash. The payoff was the one-time 104-site cleanup and the permanent reading-cost win in handlers. The repo-trait/service-trait split predates and is independent of this (that's the hexagonal seam, not an erasure cost).
+**The steady-state trade:**
+
+- A new service method costs one extra write: the twin signature + `Box::pin` forward, compiler-checked and mindless.
+- A new handler costs zero ceremony (it was ~12 lines of bounds).
+- Endpoints usually add one of each, so the per-feature cost is a wash. The payoff was the one-time 104-site cleanup and the permanent reading-cost win in handlers.
+- The repo-trait/service-trait split predates and is independent of this. That's the hexagonal seam, not an erasure cost.
 
 **Runtime cost:** one heap allocation (`Box::pin`) + one vtable jump per service call, which is noise next to the Postgres round-trip every call performs.
 
@@ -175,7 +183,11 @@ See `architecture/hosting.md`.
 
 **Decision (2026-08-05):** server-side caches for shared, parameterless values are `TtlSlot<V>` instances (`zerver/src/lib/inbound/http/cache.rs`): one **typed field per cached value on `AppState`**, not a keyed cache store.
 
-A `TtlSlot` is a cached *variable*, not a store: one slot holding THE current value plus a deadline. No keys, no lookups, no eviction policy, since overwrite-on-expiry is the whole lifecycle. Deadlines are pinned instants (the refresher returns `(value, expires_at)`), so each use case aligns expiry to a wall-clock boundary instead of drifting per refresh time. Rebuilds are single-flight (write-lock double-check), and a failed refresh serves the stale value with a WARN rather than a 5xx.
+A `TtlSlot` is a cached *variable*, not a store: one slot holding THE current value plus a deadline.
+
+- No keys, no lookups and no eviction policy, since overwrite-on-expiry is the whole lifecycle.
+- Deadlines are pinned instants (the refresher returns `(value, expires_at)`), so each use case aligns expiry to a wall-clock boundary instead of drifting per refresh time.
+- Rebuilds are single-flight (write-lock double-check), and a failed refresh serves the stale value with a WARN rather than a 5xx.
 
 **The pairing rule that makes it safe:** whatever fills a slot must be **deterministic for its time bucket** (first consumer: the featured-flavor pick, `ORDER BY md5(id || hour_key)`). Then the cache is pure memoization: a restart mid-bucket re-derives the identical value on the first request, so deploys (which restart zerver) are invisible and nothing ever needs Redis or a persisted slot. The database plus the clock is the durable state.
 
@@ -185,7 +197,13 @@ A `TtlSlot` is a cached *variable*, not a store: one slot holding THE current va
 
 **Decision (2026-08-17):** `DeckProfile` keeps the command zone as flat optional fields: `commander_id` / `partner_commander_id` / `background_id` / `signature_spell_id`, each with a parallel `*_name` and `*_art_url`. We deliberately did NOT introduce a `CommandZone` sum type whose variants enumerate the legal slot combinations (`Commander`, `CommanderAndPartner`, `CommanderAndBackground`, `Oathbreaker { .. }`).
 
-**The proposal and why it was rejected.** The flat shape can represent states Magic doesn't allow: a Commander deck holding a signature spell, an art URL with no card, a partner with no commander. The obvious fix is a sum type that makes them unrepresentable. The owner's counter-argument is the one that decided it: **partner-plus-background is not forbidden by the rules; it just hasn't been printed.** Encoding "these slots are mutually exclusive" as an enum bakes a fact about Wizards' printing history into the type system. The day a card carries both Partner and Choose a Background, the fix isn't a new field, it's a new variant plus every match arm across three crates, under release pressure, for a card that was always legal. Types should encode what is *necessarily* true, not what is *currently* true.
+**The proposal and why it was rejected.** The flat shape can represent states Magic doesn't allow: a Commander deck holding a signature spell, an art URL with no card, a partner with no commander. The obvious fix is a sum type that makes them unrepresentable.
+
+The owner's counter-argument is the one that decided it: **partner-plus-background is not forbidden by the rules; it just hasn't been printed.**
+
+- Encoding "these slots are mutually exclusive" as an enum bakes a fact about Wizards' printing history into the type system.
+- The day a card carries both Partner and Choose a Background, the fix isn't a new field. It's a new variant plus every match arm across three crates, under release pressure, for a card that was always legal.
+- Types should encode what is *necessarily* true, not what is *currently* true.
 
 **Why the looseness is tolerable.** The invalid states are unreachable in practice, verified 2026-08-17: building an Oathbreaker deck and switching it to Commander does not persist the oathbreaker or signature spell. The construction surface is tiny: `DeckProfile` is built only by the DB `TryFrom`, one test helper, and a few optimistic-update sites in `zwiper`'s `edit.rs` that use struct spread (`..`) and so can only change what they name.
 

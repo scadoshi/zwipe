@@ -155,7 +155,10 @@ Each rule's shape is the same: a path match (prefix or exact) → "Eligible for 
 - Condition: `starts_with(http.request.uri.path, "/api/card/")`
 - Action: Eligible for cache · Ignore origin Cache-Control · Edge TTL **24 hours**
 - Why: card metadata is immutable between nightly Scryfall syncs. Origin gets one hit per POP per day for routes like `/api/card/{id}`, `/types`, `/keywords`, `/roles`, `/oracle-tags`, `/sets`, `/artists`, `/oracle-words`, `/languages`, `/{oracle_id}/printings`. Cache-hit responses skip the tunnel entirely (~5-10ms vs ~125ms public tunnel floor).
-- `/oracle-tags` freshness caveat: unlike the rest of `/api/card/*`, the oracle-tag catalog's *descriptions* change on **our deploys**, not just the nightly sync (the in-app dictionary reads this route). With the 24h edge TTL a freshly deployed description batch can lag up to 24h. Default: accept it (descriptions aren't urgent). To push a batch live now, purge the one URL after the deploy + `zervice` run: `https://api.zwipe.net/api/card/oracle-tags` (Custom Purge → URL, or the API call below). No new rule needed; Rule 1 already covers it.
+- `/oracle-tags` freshness caveat: unlike the rest of `/api/card/*`, the oracle-tag catalog's *descriptions* change on **our deploys**, not just the nightly sync (the in-app dictionary reads this route).
+  - With the 24h edge TTL, a freshly deployed description batch can lag up to 24h. Default: accept it (descriptions aren't urgent).
+  - To push a batch live now, purge the one URL after the deploy + `zervice` run: `https://api.zwipe.net/api/card/oracle-tags` (Custom Purge → URL, or the API call below).
+  - No new rule needed; Rule 1 already covers it.
 - Compat requirement: client must NOT send `Authorization: Bearer` on these requests, since CF bypasses cache for authenticated requests by default. zwiper drops `bearer_auth` on the affected client methods; the backend serves these routes from `public_routes()`.
 - Verification: `zcripts/latency/cf_cache_verify.sh` warms POPs and checks for `cf-cache-status: HIT`. Or one-liner:
 
