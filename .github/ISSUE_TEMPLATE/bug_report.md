@@ -1,8 +1,5 @@
 ---
-name: Bug report
-about: Something isn't working as expected
-title: "[Bug] "
-labels: bug
+name: Bug report about: Something isn't working as expected title: "[Bug] " labels: bug
 ---
 
 ## What happened
@@ -15,9 +12,7 @@ labels: bug
 
 ## Steps to reproduce
 
-1.
-2.
-3.
+1. 2. 3.
 
 ## Environment
 

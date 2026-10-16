@@ -1,11 +1,5 @@
 ---
-name: human-copy
-description: |
-  Write Zwipe user-facing copy that doesn't read as AI-generated: video VO
-  scripts, social posts, store listings, on-screen captions, site copy. Load
-  BEFORE drafting any marketing/social/VO text, or when asked to review copy
-  for AI tells. Distilled from blader/humanizer (MIT, Wikipedia's "Signs of AI
-  writing") and the StoryScope paper (arXiv:2604.03136) on AI narrative tells.
+name: human-copy description: | Write Zwipe user-facing copy that doesn't read as AI-generated: video VO scripts, social posts, store listings, on-screen captions, site copy. Load BEFORE drafting any marketing/social/VO text, or when asked to review copy for AI tells. Distilled from blader/humanizer (MIT, Wikipedia's "Signs of AI writing") and the StoryScope paper (arXiv:2604.03136) on AI narrative tells.
 ---
 
 # Human copy for Zwipe

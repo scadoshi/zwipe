@@ -1,6 +1,5 @@
 ---
-description: The newtypes zwipe actually has, what each one guarantees, and when to add another
-alwaysApply: true
+description: The newtypes zwipe actually has, what each one guarantees, and when to add another alwaysApply: true
 ---
 
 # Newtypes
