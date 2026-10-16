@@ -4,11 +4,11 @@ Brainstormed 2026-06-10. This directory details every candidate feature for the 
 
 ## Guiding principles
 
-- **The core loop is the swipe stack.** The most defensible premium features make the stack itself smarter, not bolt on screens users have to find.
-- **Numbers free, intelligence paid.** Current price free, history + alerts paid. Bracket number free, "why and how to move" paid. The free metric is the acquisition surface; the paid layer explains and acts on it.
-- **Free tier = acquisition + moat.** Import/export, sharing, basic metrics, collection tracking, and the bracket badge stay free, since they drive installs and switching cost. Charging for them strangles growth.
-- **Honest subscription framing.** Features with ongoing cost (AI calls, price polling, push notifications) justify recurring billing. Pure-math features are cheap sweeteners, not the headline.
-- **Deck tags are the join key.** One closed vocabulary (shared with `card_profiles.mechanical_categories`) powers consistency math, AI prompts, stack ranking, and bracket heuristics. Build it once, consume it everywhere.
+- The core loop is the swipe stack. The most defensible premium features make the stack itself smarter, not bolt on screens users have to find.
+- Numbers free, intelligence paid. Current price free, history + alerts paid. Bracket number free, "why and how to move" paid. The free metric is the acquisition surface; the paid layer explains and acts on it.
+- Free tier = acquisition + moat. Import/export, sharing, basic metrics, collection tracking, and the bracket badge stay free, since they drive installs and switching cost. Charging for them strangles growth.
+- Honest subscription framing. Features with ongoing cost (AI calls, price polling, push notifications) justify recurring billing. Pure-math features are cheap sweeteners, not the headline.
+- Deck tags are the join key. One closed vocabulary (shared with `card_profiles.mechanical_categories`) powers consistency math, AI prompts, stack ranking, and bracket heuristics. Build it once, consume it everywhere.
 
 ## Feature catalog: by decision confidence (sorted 2026-06-10)
 

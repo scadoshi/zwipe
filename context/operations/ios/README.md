@@ -16,7 +16,7 @@ Everything needed to build, test, and ship Zwipe on iOS.
 
 ## Reference
 
-- **[troubleshooting.md](troubleshooting.md)**: Common errors and fixes
-- **[simulator.md](simulator.md)**: iOS Simulator management for screenshots
-- **[mac_restore.md](mac_restore.md)**: Back up signing certs + dev env before wiping the Mac
-- **[second_mac.md](second_mac.md)**: Set up an additional build machine without disturbing the first
+- [troubleshooting.md](troubleshooting.md): Common errors and fixes
+- [simulator.md](simulator.md): iOS Simulator management for screenshots
+- [mac_restore.md](mac_restore.md): Back up signing certs + dev env before wiping the Mac
+- [second_mac.md](second_mac.md): Set up an additional build machine without disturbing the first

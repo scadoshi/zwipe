@@ -4,14 +4,14 @@ Axum REST API server for Zwipe. Re-exports domain types from `zwipe-core` and ad
 
 ## Responsibilities
 
-- **HTTP handlers**: Axum route handlers, middleware, JWT auth extraction (`src/lib/inbound/http/`), covering auth, card, deck, deck_card, user, and metrics endpoints
-- **Database adapters**: SQLx repositories with `Database*` wrapper types for Postgres (`src/lib/outbound/sqlx/`)
-- **External adapters**: Scryfall card ingest (`inbound/external/scryfall`), Archidekt deck-list import (`outbound/archidekt`), Resend transactional email (`outbound/resend`)
-- **Service layer**: business logic orchestration, port trait implementations
-- **Port traits**: repository and service interfaces
-- **Service-layer errors**: error types wrapping `anyhow::Error` (not in core)
-- **Server-only domains**: modules that need server deps but not clients: `health`, `metrics`, `email`
-- **Binaries**: `zerver` (web server) and `zervice` (background sync jobs)
+- HTTP handlers: Axum route handlers, middleware, JWT auth extraction (`src/lib/inbound/http/`), covering auth, card, deck, deck_card, user, and metrics endpoints
+- Database adapters: SQLx repositories with `Database*` wrapper types for Postgres (`src/lib/outbound/sqlx/`)
+- External adapters: Scryfall card ingest (`inbound/external/scryfall`), Archidekt deck-list import (`outbound/archidekt`), Resend transactional email (`outbound/resend`)
+- Service layer: business logic orchestration, port trait implementations
+- Port traits: repository and service interfaces
+- Service-layer errors: error types wrapping `anyhow::Error` (not in core)
+- Server-only domains: modules that need server deps but not clients: `health`, `metrics`, `email`
+- Binaries: `zerver` (web server) and `zervice` (background sync jobs)
 
 ## Key pattern
 

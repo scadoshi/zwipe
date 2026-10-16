@@ -18,9 +18,9 @@ This is a **repeatable loop** a fresh AI can run cold. It fans out subagents to 
 ## Prerequisites
 
 - **Local Postgres** with the synced catalog. Connection string: `export DATABASE_URL="$(grep '^DATABASE_URL=' zerver/.env | cut -d= -f2-)"`
-- **Tables:** `oracle_tags(slug, label, description, parent_ids)`, `card_oracle_tags(oracle_id, oracle_tag, source)`, `scryfall_data(oracle_id, name, type_line, oracle_text, mana_cost, ...)`.
-- **The const file:** `zerver/src/lib/outbound/sqlx/card/helpers/oracle_tag_descriptions.rs` (`ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)]`). `zervice` overlays it into `oracle_tags.description` every sync (ours always wins). No DB write from this runbook, no migration, no `MIN_CLIENT_VERSION` bump: additive.
-- **The workflow script:** [`otag_authoring_workflow.js`](otag_authoring_workflow.js) (sibling file). Edit its `ENV` constant to your absolute path to `zerver/.env`.
+- Tables: `oracle_tags(slug, label, description, parent_ids)`, `card_oracle_tags(oracle_id, oracle_tag, source)`, `scryfall_data(oracle_id, name, type_line, oracle_text, mana_cost, ...)`.
+- The const file: `zerver/src/lib/outbound/sqlx/card/helpers/oracle_tag_descriptions.rs` (`ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)]`). `zervice` overlays it into `oracle_tags.description` every sync (ours always wins). No DB write from this runbook, no migration, no `MIN_CLIENT_VERSION` bump: additive.
+- The workflow script: [`otag_authoring_workflow.js`](otag_authoring_workflow.js) (sibling file). Edit its `ENV` constant to your absolute path to `zerver/.env`.
 - A scratch dir for intermediate JSON (use the session scratchpad, not `/tmp`).
 
 ---
@@ -128,15 +128,15 @@ Ship path from there: user pushes -> next `zervice` overlays all authored text.
 
 ## Gotchas / lessons learned
 
-- **`Workflow` args arrive as a JSON string, not an object.** The script guards with `const A = typeof args === 'string' ? JSON.parse(args) : (args || {})`. Without it, `args.slugs` is undefined -> 0 chunks -> 0 agents (a 40ms no-op run).
-- **Test fixture collision.** `repo_oracle_tags.rs` used real slugs (`ramp`) as throwaway "no-description" fixtures and asserted `NULL`. Once you author that slug, the sync overlay fills it and the test fails. Fixtures that assert a NULL description must use a **synthetic slug** (e.g. `test-null-desc`) guaranteed to stay out of `ORACLE_TAG_DESCRIPTIONS`.
-- **`&` in descriptions.** A literal `&` compiles fine in Rust but can bite if the text ever renders in an HTML context (the dictionary page). Write "and".
-- **Concurrent AI safety.** Scope formatting to `cargo +nightly fmt -p zerver`; never run tree-wide git ops; `git add` only your files by explicit path.
-- **No SQLx prepare needed.** The overlay uses runtime `sqlx::query`, not a `query!` macro, so `.sqlx/` offline data is untouched.
-- **Cost.** 7 slugs/chunk for populated tags, 10 for hierarchy-grounded ones (lighter payload per tag). Sonnet draft + opus verify. The 2026-08-18 run was 138 tags = 28 agents, ~874k output tokens, ~5 min wall clock. Scale to appetite.
-- **`pop: 0` is normal, not a bug.** An empty card list means the tag is an umbrella or cycle root, not that the tag is meaningless. Read the children list instead. The prompts say this explicitly because a drafter handed nothing will invent.
+- `Workflow` args arrive as a JSON string, not an object. The script guards with `const A = typeof args === 'string' ? JSON.parse(args) : (args || {})`. Without it, `args.slugs` is undefined -> 0 chunks -> 0 agents (a 40ms no-op run).
+- Test fixture collision. `repo_oracle_tags.rs` used real slugs (`ramp`) as throwaway "no-description" fixtures and asserted `NULL`. Once you author that slug, the sync overlay fills it and the test fails. Fixtures that assert a NULL description must use a **synthetic slug** (e.g. `test-null-desc`) guaranteed to stay out of `ORACLE_TAG_DESCRIPTIONS`.
+- `&` in descriptions. A literal `&` compiles fine in Rust but can bite if the text ever renders in an HTML context (the dictionary page). Write "and".
+- Concurrent AI safety. Scope formatting to `cargo +nightly fmt -p zerver`; never run tree-wide git ops; `git add` only your files by explicit path.
+- No SQLx prepare needed. The overlay uses runtime `sqlx::query`, not a `query!` macro, so `.sqlx/` offline data is untouched.
+- Cost. 7 slugs/chunk for populated tags, 10 for hierarchy-grounded ones (lighter payload per tag). Sonnet draft + opus verify. The 2026-08-18 run was 138 tags = 28 agents, ~874k output tokens, ~5 min wall clock. Scale to appetite.
+- `pop: 0` is normal, not a bug. An empty card list means the tag is an umbrella or cycle root, not that the tag is meaningless. Read the children list instead. The prompts say this explicitly because a drafter handed nothing will invent.
 - **Priority is population, not the catalog order**, while any populated tag is still unauthored. As of 2026-08-18 none are, so future runs are just whatever the tagger added or renamed.
-- **The grounding query takes ~20s.** That is the recursive subtree expansion over big roots. It is not hung; the prompt tells agents not to kill it.
+- The grounding query takes ~20s. That is the recursive subtree expansion over big roots. It is not hung; the prompt tells agents not to kill it.
 
 ## Progress markers (update as you go)
 

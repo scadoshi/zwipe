@@ -63,8 +63,8 @@ Two things, both avoidable:
 
 Nothing else is at risk:
 
-- **The Mac itself is never registered with Apple.** Only test *iPhones* get registered, and only for development profiles. Adding a Mac is not an event Apple knows about.
-- **The App Store provisioning profile contains no device UDIDs**: that's what distinguishes an App Store profile from a development one. Copying it changes nothing about where it's valid.
+- The Mac itself is never registered with Apple. Only test *iPhones* get registered, and only for development profiles. Adding a Mac is not an event Apple knows about.
+- The App Store provisioning profile contains no device UDIDs: that's what distinguishes an App Store profile from a development one. Copying it changes nothing about where it's valid.
 - **The API key and Transporter's Apple ID sign-in** both work from any number of machines simultaneously.
 - **The cert and profile expire 2027-03-29**, on the same day, regardless of how many machines hold copies. Renewing then is one job, not two: renew once, copy the new pair to both.
 

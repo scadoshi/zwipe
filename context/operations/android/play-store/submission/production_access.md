@@ -8,7 +8,7 @@ Answers are plain single-paragraph text, **each ≤300 characters**, so they cop
 
 - Say **"testers" / "testing program"**, never "users," "launch," or "release." Testers joined a closed test; the app was never on the production track.
 - The 400 tester count is a **strength** (broad, active engagement), not a risk. Recruiting testers publicly via a public opt-in group is allowed and is *not* "treating it like live" (that would be distributing via production, or fake/ install-only testers). We had real engagement, so say so.
-- **Don't overclaim.** Frame it as a broad tester base plus a core of engaged testers (hired QA + active community) who filed detailed reports.
+- Don't overclaim. Frame it as a broad tester base plus a core of engaged testers (hired QA + active community) who filed detailed reports.
 - Disclosing the paid testing provider is correct, Google's Q1 explicitly asks.
 
 ---

@@ -6,25 +6,25 @@ The rules for working in this repo. Everything here is enforced somewhere: by CI
 
 Zwipe is a mobile-first Magic: The Gathering deck builder with swipe-based navigation, live on both stores. Full-stack Rust, hexagonal architecture.
 
-- **zwipe-core/**: pure domain types, validation, business rules, and every HTTP contract; see the purity rules below
-- **zerver/**: Axum REST API with PostgreSQL, SQLx, JWT auth. Also builds `zervice`, the nightly Scryfall sync
-- **zwiper/**: Dioxus app, iOS and Android (web and desktop run for development)
-- **zite/**: Dioxus static site at zwipe.net
-- **zwipe-client/**: the typed API client. Both zwiper and zite call the API through it
-- **components/**: the Magic UI pieces over [orangui](https://github.com/scadoshi/orangui), the generic Dioxus kit it re-exports
-- **Database**: ~118k Magic cards synced nightly from Scryfall
+- `zwipe-core/`: pure domain types, validation, business rules, and every HTTP contract; see the purity rules below
+- `zerver/`: Axum REST API with PostgreSQL, SQLx, JWT auth. Also builds `zervice`, the nightly Scryfall sync
+- `zwiper/`: Dioxus app, iOS and Android (web and desktop run for development)
+- `zite/`: Dioxus static site at zwipe.net
+- `zwipe-client/`: the typed API client. Both zwiper and zite call the API through it
+- `components/`: the Magic UI pieces over [orangui](https://github.com/scadoshi/orangui), the generic Dioxus kit it re-exports
+- Database: ~118k Magic cards synced nightly from Scryfall
 
 ## zwipe-core Purity Rules
 
 **zwipe-core is the shared domain crate. It must stay pure.** These rules are non-negotiable:
 
-- **No feature flags.** No `#[cfg(feature = "...")]` on anything in this crate.
-- **No server-only dependencies.** No sqlx, anyhow, axum, tokio, argon2, jsonwebtoken, or any crate only the server needs.
-- **No SQLx derives or annotations.** No `#[derive(FromRow)]`, no `#[sqlx(...)]`. Domain types must not know about Postgres.
-- **No service-layer errors.** Error types that wrap `anyhow::Error` (database failures, not-found, etc.) stay in zerver.
-- **Only truly shared types.** If only the server needs it, it stays in zerver.
-- **No types with `From` impls in zerver's handlers.** `ApiError` stays in zerver because its `From<DomainError>` impls would violate the orphan rule if both types were in core. See `architecture/decisions.md`.
-- **All domain validation and tests live here.** Zerver re-exports via `pub use zwipe_core::...`; it adds only server-specific behavior.
+- No feature flags. No `#[cfg(feature = "...")]` on anything in this crate.
+- No server-only dependencies. No sqlx, anyhow, axum, tokio, argon2, jsonwebtoken, or any crate only the server needs.
+- No SQLx derives or annotations. No `#[derive(FromRow)]`, no `#[sqlx(...)]`. Domain types must not know about Postgres.
+- No service-layer errors. Error types that wrap `anyhow::Error` (database failures, not-found, etc.) stay in zerver.
+- Only truly shared types. If only the server needs it, it stays in zerver.
+- No types with `From` impls in zerver's handlers. `ApiError` stays in zerver because its `From<DomainError>` impls would violate the orphan rule if both types were in core. See `architecture/decisions.md`.
+- All domain validation and tests live here. Zerver re-exports via `pub use zwipe_core::...`; it adds only server-specific behavior.
 
 **Allowed dependencies:** serde, serde_json, serde_with, thiserror, uuid, chrono, email_address, once_cell, sha2, hex, rand, regex. All of them are crates both frontend and backend legitimately use.
 
@@ -136,7 +136,7 @@ A comment says what the code does, in the present tense, and only when the code 
 
 ## Markdown Conventions
 
-- **Do not hard-wrap prose.** One paragraph is one line; one bullet is one line. Let the editor or viewer soft-wrap it. Manual line breaks make every later edit a reflow.
+- Do not hard-wrap prose. One paragraph is one line; one bullet is one line. Let the editor or viewer soft-wrap it. Manual line breaks make every later edit a reflow.
 - Code fences, tables and indented blocks keep their own formatting.
 - No em dashes.
 

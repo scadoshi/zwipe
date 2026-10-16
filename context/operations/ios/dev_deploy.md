@@ -60,8 +60,8 @@ vtool -show ~/Developer/zwipe/target/dx/zwipe/debug/ios/Zwipe.app/zwipe
 
 The `BACKEND_URL` is baked into the binary at compile time via `env!()`.
 
-- **Production**: `BACKEND_URL=https://api.zwipe.net`
-- **Local dev**: omit `BACKEND_URL` (defaults to `.env` value, typically `127.0.0.1:3000`)
+- Production: `BACKEND_URL=https://api.zwipe.net`
+- Local dev: omit `BACKEND_URL` (defaults to `.env` value, typically `127.0.0.1:3000`)
 
 ---
 

@@ -168,8 +168,8 @@ The note that earns its place here is *why the wrapper exists at all*: `FromRow`
 
 **Good documentation has high signal-to-noise ratio:**
 
-- **High Signal**: "Lower values indicate more popular" (non-obvious ranking direction)
-- **Low Signal**: "The white color" (restates the name "White")
+- High Signal: "Lower values indicate more popular" (non-obvious ranking direction)
+- Low Signal: "The white color" (restates the name "White")
 
 **Ask yourself:**
 1. Would a competent developer in this domain be confused without this doc?

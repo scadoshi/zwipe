@@ -76,5 +76,5 @@ $ADB shell monkey -p com.scadoshi.zwipe -c android.intent.category.LAUNCHER 1
 
 ## What this has been used for
 
-- **ndk-context crash**: root-caused and fixed, verified fixed on device ([`../../plans/archive/android_ndk_context_crash.md`](../../plans/archive/android_ndk_context_crash.md))
-- **Back-swipe overlay fixes**: verified with `KEYCODE_BACK` across the format picker, a bottom sheet, and the nested picker→dictionary case ([`../../plans/archive/back_swipe_audit.md`](../../plans/archive/back_swipe_audit.md))
+- ndk-context crash: root-caused and fixed, verified fixed on device ([`../../plans/archive/android_ndk_context_crash.md`](../../plans/archive/android_ndk_context_crash.md))
+- Back-swipe overlay fixes: verified with `KEYCODE_BACK` across the format picker, a bottom sheet, and the nested picker→dictionary case ([`../../plans/archive/back_swipe_audit.md`](../../plans/archive/back_swipe_audit.md))

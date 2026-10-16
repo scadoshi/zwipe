@@ -6,9 +6,9 @@ All DNS is managed through Cloudflare. The API is exposed via Cloudflare Tunnel 
 
 ## Domain Registrar
 
-- **Registrar**: Namecheap (all domains)
-- **DNS management**: Cloudflare (nameservers pointed at Cloudflare for all domains)
-- **Domains**:
+- Registrar: Namecheap (all domains)
+- DNS management: Cloudflare (nameservers pointed at Cloudflare for all domains)
+- Domains: 
   - `zwipe.net`: main app domain; GitHub Pages (zite) + Cloudflare Tunnel (api.zwipe.net)
   - `scottyfermo.com`: portfolio (GitHub Pages)
   - `scadoshi.com`: 301 redirect → scottyfermo.com (Cloudflare redirect rule)
@@ -152,12 +152,12 @@ Each rule's shape is the same: a path match (prefix or exact) → "Eligible for 
 
 ### Rule 1: `Cache card metadata`
 
-- **Condition**: `starts_with(http.request.uri.path, "/api/card/")`
-- **Action**: Eligible for cache · Ignore origin Cache-Control · Edge TTL **24 hours**
-- **Why**: card metadata is immutable between nightly Scryfall syncs. Origin gets one hit per POP per day for routes like `/api/card/{id}`, `/types`, `/keywords`, `/roles`, `/oracle-tags`, `/sets`, `/artists`, `/oracle-words`, `/languages`, `/{oracle_id}/printings`. Cache-hit responses skip the tunnel entirely (~5-10ms vs ~125ms public tunnel floor).
-- **`/oracle-tags` freshness caveat**: unlike the rest of `/api/card/*`, the oracle-tag catalog's *descriptions* change on **our deploys**, not just the nightly sync (the in-app dictionary reads this route). With the 24h edge TTL a freshly deployed description batch can lag up to 24h. Default: accept it (descriptions aren't urgent). To push a batch live now, purge the one URL after the deploy + `zervice` run: `https://api.zwipe.net/api/card/oracle-tags` (Custom Purge → URL, or the API call below). No new rule needed; Rule 1 already covers it.
-- **Compat requirement**: client must NOT send `Authorization: Bearer` on these requests, since CF bypasses cache for authenticated requests by default. zwiper drops `bearer_auth` on the affected client methods; the backend serves these routes from `public_routes()`.
-- **Verification**: `zcripts/latency/cf_cache_verify.sh` warms POPs and checks for `cf-cache-status: HIT`. Or one-liner:
+- Condition: `starts_with(http.request.uri.path, "/api/card/")`
+- Action: Eligible for cache · Ignore origin Cache-Control · Edge TTL **24 hours**
+- Why: card metadata is immutable between nightly Scryfall syncs. Origin gets one hit per POP per day for routes like `/api/card/{id}`, `/types`, `/keywords`, `/roles`, `/oracle-tags`, `/sets`, `/artists`, `/oracle-words`, `/languages`, `/{oracle_id}/printings`. Cache-hit responses skip the tunnel entirely (~5-10ms vs ~125ms public tunnel floor).
+- `/oracle-tags` freshness caveat: unlike the rest of `/api/card/*`, the oracle-tag catalog's *descriptions* change on **our deploys**, not just the nightly sync (the in-app dictionary reads this route). With the 24h edge TTL a freshly deployed description batch can lag up to 24h. Default: accept it (descriptions aren't urgent). To push a batch live now, purge the one URL after the deploy + `zervice` run: `https://api.zwipe.net/api/card/oracle-tags` (Custom Purge → URL, or the API call below). No new rule needed; Rule 1 already covers it.
+- Compat requirement: client must NOT send `Authorization: Bearer` on these requests, since CF bypasses cache for authenticated requests by default. zwiper drops `bearer_auth` on the affected client methods; the backend serves these routes from `public_routes()`.
+- Verification: `zcripts/latency/cf_cache_verify.sh` warms POPs and checks for `cf-cache-status: HIT`. Or one-liner:
 
   ```bash
   curl -sI https://api.zwipe.net/api/card/sets | grep -i cf-cache-status
@@ -165,20 +165,20 @@ Each rule's shape is the same: a path match (prefix or exact) → "Eligible for 
 
 ### Rule 2: `Cache marketing aggregates`
 
-- **Condition**: `starts_with(http.request.uri.path, "/api/marketing/")`
-- **Action**: Eligible for cache · Ignore origin Cache-Control · Edge TTL **2 hours** (CF free-plan minimum)
-- **Why**: `/api/marketing/stats` returns app-wide sums across every user (`cards_swiped`, `searches`, `decks_created`) for the zwipe.net stats strip. Vanity totals don't move meaningfully inside a 2h window. Origin gets ~(POP count × 12) hits/day across the globe regardless of pageview volume.
-- **Why not 1h**: free-plan minimum is 2h. Functionally indistinguishable for vanity numbers. If a milestone post ever needs immediate refresh, purge by URL (see below).
-- **Path-prefix covers future endpoints**: any new `/api/marketing/*` we add (e.g. `/timeline`, `/leaderboard`) inherits the same rule.
+- Condition: `starts_with(http.request.uri.path, "/api/marketing/")`
+- Action: Eligible for cache · Ignore origin Cache-Control · Edge TTL **2 hours** (CF free-plan minimum)
+- Why: `/api/marketing/stats` returns app-wide sums across every user (`cards_swiped`, `searches`, `decks_created`) for the zwipe.net stats strip. Vanity totals don't move meaningfully inside a 2h window. Origin gets ~(POP count × 12) hits/day across the globe regardless of pageview volume.
+- Why not 1h: free-plan minimum is 2h. Functionally indistinguishable for vanity numbers. If a milestone post ever needs immediate refresh, purge by URL (see below).
+- Path-prefix covers future endpoints: any new `/api/marketing/*` we add (e.g. `/timeline`, `/leaderboard`) inherits the same rule.
 
 ### Rule 3: `Cache changelog`
 
-- **Condition**: `http.request.uri.path eq "/api/changelog"` (exact match, not a prefix; it's a single endpoint)
-- **Action**: Eligible for cache · Ignore origin Cache-Control · Edge TTL **2 hours**
-- **Why**: `/api/changelog` serves the release history (compiled into the server binary, `zwipe_core::content::changelog`), public and identical for every user, fetched once per app launch. Edge caching keeps origin cold; the payload is tiny.
-- **Freshness caveat**: the changelog changes on **our deploys** (edit the const + ship `zerver`), not a sync. With the 2h edge TTL a freshly deployed entry can lag up to 2h. Default: accept it. To push it live now, purge the one URL after deploy: `https://api.zwipe.net/api/changelog` (Custom Purge → URL, or the API call below).
-- **Compat requirement**: same as Rule 1, the request must NOT carry `Authorization: Bearer` (CF bypasses cache for authenticated requests). zwipe-client's `get_changelog` sends none, and the route is in `public_routes()`.
-- **Client fallback**: if the fetch ever misses, zwiper falls back to the copy compiled into its own binary, so a stale or unreachable edge never blanks the changelog screen.
+- Condition: `http.request.uri.path eq "/api/changelog"` (exact match, not a prefix; it's a single endpoint)
+- Action: Eligible for cache · Ignore origin Cache-Control · Edge TTL **2 hours**
+- Why: `/api/changelog` serves the release history (compiled into the server binary, `zwipe_core::content::changelog`), public and identical for every user, fetched once per app launch. Edge caching keeps origin cold; the payload is tiny.
+- Freshness caveat: the changelog changes on **our deploys** (edit the const + ship `zerver`), not a sync. With the 2h edge TTL a freshly deployed entry can lag up to 2h. Default: accept it. To push it live now, purge the one URL after deploy: `https://api.zwipe.net/api/changelog` (Custom Purge → URL, or the API call below).
+- Compat requirement: same as Rule 1, the request must NOT carry `Authorization: Bearer` (CF bypasses cache for authenticated requests). zwipe-client's `get_changelog` sends none, and the route is in `public_routes()`.
+- Client fallback: if the fetch ever misses, zwiper falls back to the copy compiled into its own binary, so a stale or unreachable edge never blanks the changelog screen.
 
 ### Adding a new cache rule
 

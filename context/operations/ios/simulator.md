@@ -85,8 +85,8 @@ xcrun simctl shutdown all
 
 ## Take screenshots
 
-- **In Simulator window**: `Cmd+S`: saves to Desktop
-- **From CLI**:
+- In Simulator window: `Cmd+S`: saves to Desktop
+- From CLI: 
   ```bash
   xcrun simctl io booted screenshot ~/Desktop/screenshot.png
   ```

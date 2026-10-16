@@ -13,10 +13,10 @@ Feature flags select the Dioxus renderer: `mobile` (default), `web`, `desktop`.
 
 ## Architecture
 
-- **Screens**: Dioxus components in `src/lib/inbound/screens/` (auth, deck, card browse + filters, profile, legal)
-- **Components**: reusable UI in `src/lib/inbound/components/` (fields, dialogs, swipe/carousel interactions, navigation, toast, telemetry)
-- **API client**: the shared `zwipe-client` crate (typed endpoints over reqwest)
-- **Session**: JWT + refresh token, stored in the iOS keychain (`keyring`) and in an app-private file on Android (which has no keyring backend)
-- **Domain types**: imported from `zwipe-core`
-- **Shared UI**: `components` supplies cross-surface components and CSS (buttons, chips, card row/details, theme picker, changelog)
-- **31 themes**: user-selectable, each with a light and dark variant
+- Screens: Dioxus components in `src/lib/inbound/screens/` (auth, deck, card browse + filters, profile, legal)
+- Components: reusable UI in `src/lib/inbound/components/` (fields, dialogs, swipe/carousel interactions, navigation, toast, telemetry)
+- API client: the shared `zwipe-client` crate (typed endpoints over reqwest)
+- Session: JWT + refresh token, stored in the iOS keychain (`keyring`) and in an app-private file on Android (which has no keyring backend)
+- Domain types: imported from `zwipe-core`
+- Shared UI: `components` supplies cross-surface components and CSS (buttons, chips, card row/details, theme picker, changelog)
+- 31 themes: user-selectable, each with a light and dark variant

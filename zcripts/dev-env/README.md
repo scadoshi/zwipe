@@ -14,8 +14,8 @@ Each platform lives in its own directory with its own README covering the OS-spe
 
 Every platform ships the same two scripts:
 
-- **`setup.sh`**: first time on a new machine, or after a fresh OS install. Installs the Rust cargo tools (`dioxus-cli`, `sqlx-cli`), Postgres, and the OS build dependencies, then creates the `zerver` database and applies migrations. Idempotent: safe to re-run if something drifted.
-- **`reset.sh`**: when you want a clean local DB. Drops + recreates the `zerver` database, regenerates the `.env` files, and re-applies migrations. Does **not** touch toolchains.
+- `setup.sh`: first time on a new machine, or after a fresh OS install. Installs the Rust cargo tools (`dioxus-cli`, `sqlx-cli`), Postgres, and the OS build dependencies, then creates the `zerver` database and applies migrations. Idempotent: safe to re-run if something drifted.
+- `reset.sh`: when you want a clean local DB. Drops + recreates the `zerver` database, regenerates the `.env` files, and re-applies migrations. Does **not** touch toolchains.
 
 ## Shared end state
 

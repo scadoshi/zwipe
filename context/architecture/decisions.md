@@ -10,9 +10,9 @@ Key technical decisions made during development. Context for why things are buil
 
 Single language (Rust) across backend and frontend. Same types, same error handling, same mental model. For a solo developer this eliminates context switching: shared domain types between zerver and zwiper, compile-time safety on both sides.
 
-- **Framework**: Dioxus 0.7 (`dx` CLI). zwiper pins 0.7.10, zite 0.7.9
-- **Target**: iOS physical device (`aarch64-apple-ios`)
-- **Session storage**: `keyring` crate → iOS Keychain via `keychain-access-groups` entitlement
+- Framework: Dioxus 0.7 (`dx` CLI). zwiper pins 0.7.10, zite 0.7.9
+- Target: iOS physical device (`aarch64-apple-ios`)
+- Session storage: `keyring` crate → iOS Keychain via `keychain-access-groups` entitlement
 
 ### Critical build flag
 

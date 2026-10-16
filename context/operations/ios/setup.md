@@ -18,8 +18,8 @@ One-time setup for certificates, App ID, and signing infrastructure.
 2. Click **+** → select **App IDs** → Continue
 3. Select **App** (not App Clip) → Continue
 4. Fill out:
-   - **Description**: Zwipe
-   - **Bundle ID**: select **Explicit**, enter `com.scadoshi.zwipe`
+   - Description: Zwipe
+   - Bundle ID: select **Explicit**, enter `com.scadoshi.zwipe`
 5. Under **Capabilities**, enable **Keychain Sharing** (required for session storage via `keyring` crate)
 6. Click **Continue** → **Register**
 

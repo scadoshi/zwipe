@@ -6,11 +6,11 @@ The code explains itself. A comment covers the part it cannot: the surprise, the
 
 ## Do not write
 
-- **The history.** No "previously", "used to", "now", "no longer", "was changed to". No dates, commit hashes or issue numbers. The code has no past tense; git has the history.
-- **The situation.** No "this is needed because we ran into", no "this prevents the bug where". If the code only makes sense with the story attached, the code is wrong, not the comment.
-- **The sermon.** No "without this, X would happen, and then Y". Say what the line does. If the consequence is the part that is not obvious, give it one short clause.
-- **A restatement.** `/// Returns the name.` above `fn name()` is noise. Delete it. When every item in a container explains itself, put `#[allow(missing_docs)]` on the container.
-- **Advice.** Unless it is an instruction the reader must follow: "loopback only, do not widen".
+- The history. No "previously", "used to", "now", "no longer", "was changed to". No dates, commit hashes or issue numbers. The code has no past tense; git has the history.
+- The situation. No "this is needed because we ran into", no "this prevents the bug where". If the code only makes sense with the story attached, the code is wrong, not the comment.
+- The sermon. No "without this, X would happen, and then Y". Say what the line does. If the consequence is the part that is not obvious, give it one short clause.
+- A restatement. `/// Returns the name.` above `fn name()` is noise. Delete it. When every item in a container explains itself, put `#[allow(missing_docs)]` on the container.
+- Advice. Unless it is an instruction the reader must follow: "loopback only, do not widen".
 
 ## Do write
 
