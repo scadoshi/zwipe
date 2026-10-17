@@ -26,18 +26,19 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.11.5",
-    date: "",
-    entries: &[
-        "Reset password shows its outcome in a panel",
-        "Dialogs fade out when they close",
-        "Disabled dialog buttons look disabled",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.11.5",
+        date: "Oct 16, 2026",
+        entries: &[
+            "Reset password shows its outcome in a panel",
+            "Dialogs fade out when they close",
+            "Disabled dialog buttons look disabled",
+        ],
+    },
     Release {
         version: "1.11.4",
         date: "Oct 11, 2026",
