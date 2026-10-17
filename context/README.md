@@ -21,11 +21,24 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-16: rustls 0.23.46
+
+The security audit failed on the 1.11.5 push. rustls 0.23.45 picked up four advisories after Oct 13, RUSTSEC-2026-0346 through 0349.
+
+Bumping rustls to 0.23.46 cleared them and the audit passes again. The server has the fix now. The 1.11.5 apps were built before the bump, so they get it next release.
+
+The commit message says 0350. It should say 0346.
+
 ## 2026-10-16: 1.11.5 submitted
 
-1.11.5 is the first release on orangui's dialogs, sheets and settings lists. Its changelog moved to `RELEASES` dated Oct 16 with three entries: reset password shows its outcome in a panel, dialogs fade out when they close, and disabled dialog buttons look disabled. iOS build 95 went to App Review and Android vc58 to Production review the same day. Store notes: [1.11.5](operations/store-submissions/1.11.5/whats_new.md).
+Three changes: reset password shows its outcome in a panel, dialogs fade out when they close, and disabled dialog buttons look disabled. It's also the first release on orangui's dialogs, sheets and settings lists.
 
-The laptop needed macOS 27 first. On macOS 26.5.2 the App Store stopped at Xcode 26.6, and builds from anything older than the latest Xcode get rejected. Build 95 used Xcode 27.1. After the upgrade, Homebrew's LLVM clang, first on `PATH`, looked for a `CommandLineTools/SDKs/MacOSX27.sdk` that 26.6's Command Line Tools didn't have, and every host link failed with `library 'System' not found`. Putting `/usr/bin` first worked around it for the builds. The Command Line Tools 27.0 update, installed the same evening, ships `MacOSX27.sdk`, and plain `cargo` builds link again with Homebrew clang still first.
+iOS build 95 and Android vc58 both went in for review the same day. Store notes: [1.11.5](operations/store-submissions/1.11.5/whats_new.md).
+
+Two snags on the laptop:
+
+- On macOS 26.5.2 the App Store wouldn't offer anything past Xcode 26.6, and Apple rejects builds from an old Xcode. Upgrading to macOS 27 got Xcode 27.1, which built 95.
+- After the upgrade, Homebrew's clang looked for a macOS 27 SDK the old Command Line Tools didn't have, so every build failed to link with `library 'System' not found`. Putting `/usr/bin` first on `PATH` got around it, and the Command Line Tools 27.0 update fixed it for good.
 
 ## 2026-10-13: client floor at 1.11.2, access tokens at 15 minutes
 
