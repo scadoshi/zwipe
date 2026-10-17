@@ -21,9 +21,9 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
-## 2026-10-16: 1.11.5 cut and built
+## 2026-10-16: 1.11.5 submitted
 
-1.11.5 is the first release on orangui's dialogs, sheets and settings lists. Its changelog moved to `RELEASES` dated Oct 16 with three entries: reset password shows its outcome in a panel, dialogs fade out when they close, and disabled dialog buttons look disabled. iOS build 95 went to App Review the same day. Android vc58 is built, signed and verified. Store notes: [1.11.5](operations/store-submissions/1.11.5/whats_new.md).
+1.11.5 is the first release on orangui's dialogs, sheets and settings lists. Its changelog moved to `RELEASES` dated Oct 16 with three entries: reset password shows its outcome in a panel, dialogs fade out when they close, and disabled dialog buttons look disabled. iOS build 95 went to App Review and Android vc58 to Production review the same day. Store notes: [1.11.5](operations/store-submissions/1.11.5/whats_new.md).
 
 The laptop needed macOS 27 first. On macOS 26.5.2 the App Store stopped at Xcode 26.6, and builds from anything older than the latest Xcode get rejected. Build 95 used Xcode 27.1. After the upgrade, Homebrew's LLVM clang, first on `PATH`, looked for a `CommandLineTools/SDKs/MacOSX27.sdk` that 26.6's Command Line Tools didn't have, and every host link failed with `library 'System' not found`. Putting `/usr/bin` first worked around it, and the Command Line Tools for Xcode 27 update is the real fix.
 
