@@ -21,6 +21,12 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-16: 1.11.5 cut and built
+
+1.11.5 is the first release on orangui's dialogs, sheets and settings lists. Its changelog moved to `RELEASES` dated Oct 16 with three entries: reset password shows its outcome in a panel, dialogs fade out when they close, and disabled dialog buttons look disabled. iOS build 95 went to App Review the same day. Android vc58 is built, signed and verified. Store notes: [1.11.5](operations/store-submissions/1.11.5/whats_new.md).
+
+The laptop needed macOS 27 first. On macOS 26.5.2 the App Store stopped at Xcode 26.6, and builds from anything older than the latest Xcode get rejected. Build 95 used Xcode 27.1. After the upgrade, Homebrew's LLVM clang, first on `PATH`, looked for a `CommandLineTools/SDKs/MacOSX27.sdk` that 26.6's Command Line Tools didn't have, and every host link failed with `library 'System' not found`. Putting `/usr/bin` first worked around it, and the Command Line Tools for Xcode 27 update is the real fix.
+
 ## 2026-10-13: client floor at 1.11.2, access tokens at 15 minutes
 
 The two hand steps in [`plans/access_token_window.md`](plans/access_token_window.md) are done. The owner set `MIN_CLIENT_VERSION=1.11.2` and `ACCESS_TOKEN_MINUTES=15` in `/etc/zwipe/zerver.env` and restarted zerver; `GET https://api.zwipe.net/api/client/min-version` returns `{"min_version":"1.11.2"}`. Every build from 1.11.2 refreshes two minutes before expiry, so a logged-out or stolen access token now stops working within 15 minutes instead of 24 hours. The floor went up with 1.11.4 live on both stores and without a fresh count of older builds; anyone still below 1.11.2 gets the update screen. Nobody has watched a real login's token expire at 15 minutes yet. Still open in the plan: the migration dropping `revoked` and the old lockout columns, the current-password check on credential changes, and Android's plaintext `session.json`.
