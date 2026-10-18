@@ -88,8 +88,30 @@ pub fn Profile() -> Element {
     let mut show_more_sheet = use_signal(|| false);
     let mut preferences_open = use_signal(|| false);
     let mut app_icon_open = use_signal(|| false);
-    let app_icon_theme = use_signal(app_icon::current);
+    let mut app_icon_theme = use_signal(app_icon::current);
     let mut ub_exceptions_open = use_signal(|| false);
+
+    // The home-screen icon's own mode, apart from the app's.
+    let toggle_app_icon_dark = move |_| {
+        let prev = app_icon_theme.read().clone();
+        let next = ThemeConfig {
+            name: prev.name,
+            is_dark: !prev.is_dark,
+        };
+        match app_icon::set(&next) {
+            Ok(()) => {
+                toast.success(
+                    format!("App icon {}", app_icon::mode(next.is_dark)),
+                    ToastOptions::default().duration(TOAST_NORMAL),
+                );
+                app_icon_theme.set(next);
+            }
+            Err(e) => {
+                tracing::error!("failed to set app icon: {e}");
+                toast.error(e.to_string(), ToastOptions::default());
+            }
+        }
+    };
 
     // Universes Beyond preference, fetched once on mount. The toggle writes
     // through immediately (dark-mode pattern); the exceptions sheet edits and
@@ -334,7 +356,11 @@ pub fn Profile() -> Element {
                                             InfoButton { topic: HintTopic::AppIcon }
                                         }
                                         div { class: "settings-row-value",
-                                            span { { display_theme_name(&app_icon_theme()) } }
+                                            span { { display_theme_name(&app_icon_theme().name) } }
+                                            DarkModeButton {
+                                                is_dark: app_icon_theme().is_dark,
+                                                onclick: toggle_app_icon_dark,
+                                            }
                                             Button {
                                                 variant: ButtonVariant::Action,
                                                 onclick: move |_| app_icon_open.set(true),

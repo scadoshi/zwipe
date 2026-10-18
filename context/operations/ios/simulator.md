@@ -23,6 +23,8 @@ zcripts/ios/sim.sh "iPhone 17"  # or any other created device
 
 Then `cd zwiper && dx serve --platform ios`.
 
+dx installs the bundle with no icons at all, so the App icon sheet has nothing to switch to and Save says "No alternate icons in this build". Once the app is up, `zcripts/ios/sim_icons.sh` compiles the icons into that bundle and reinstalls it; the simulator's home screen then shows the pick. A full rebuild writes a fresh bundle, so run it again after one. Hot reloads keep the icons.
+
 The script takes the newest iOS runtime carrying that device. It used to pin iOS 18.6, which broke silently the moment an Xcode update dropped that runtime: the lookup failed, nothing booted, and `dx serve` had nothing to install to.
 
 ---

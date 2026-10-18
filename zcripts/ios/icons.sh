@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # Compile the app icons into an asset catalog and reference them from
 # Info.plist: the gruvbox primary from zwiper/assets/favicon, plus one
-# alternate per theme from zwiper/assets/app-icons (zcripts/ios/icon.py
+# alternate per theme and mode from zwiper/assets/app-icons (zcripts/ios/icon.py
 # renders those). dx does not run actool, so without this the phone shows a
-# blank icon and Apple rejects the upload.
+# blank icon, the App icon sheet has nothing to switch to, and Apple rejects
+# the upload.
 #
-# Run after every release build and before signing; build.md step 3.
+# Run after every build and before signing: zcripts/ios/deploy.sh does it for
+# a phone, zcripts/ios/sim_icons.sh for the simulator, and build.md step 3 for
+# the store.
 #
 # Usage: zcripts/ios/icons.sh [APP_BUNDLE]
 set -euo pipefail
@@ -42,8 +45,8 @@ for px in 40 60 80 87 120 180 1024; do
   cp "$ICONS/icon-$px.png" "$SET/"
 done
 
-# One single-size set per theme, named AppIcon-<theme>, which is the name
-# zwiper/src/lib/outbound/app_icon.rs asks UIKit for.
+# One single-size set per theme and mode, named AppIcon-<theme>-<mode>, which
+# is the name zwiper/src/lib/outbound/app_icon.rs asks UIKit for.
 ALTERNATES=()
 for png in "$REPO_ROOT"/zwiper/assets/app-icons/*.png; do
   name="AppIcon-$(basename "$png" .png)"
@@ -61,7 +64,14 @@ JSON
   ALTERNATES+=(--alternate-app-icon "$name")
 done
 
-actool --compile "$APP" --platform iphoneos --minimum-deployment-target 16.0 \
+# A simulator build is its own platform to actool; the binary says which it is.
+BIN="$APP/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Info.plist")"
+case "$(xcrun vtool -show-build "$BIN" 2>/dev/null | awk '/platform/ { print $2; exit }')" in
+  IOSSIMULATOR) PLATFORM=iphonesimulator ;;
+  *) PLATFORM=iphoneos ;;
+esac
+
+actool --compile "$APP" --platform "$PLATFORM" --minimum-deployment-target 16.0 \
   --app-icon AppIcon "${ALTERNATES[@]}" \
   --output-partial-info-plist "$WORK/partial.plist" \
   "$WORK/Assets.xcassets" > /dev/null

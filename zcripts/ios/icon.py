@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Render the alternate app icons, one per orangui theme.
+"""Render the alternate app icons, one per orangui theme and mode.
 
     zcripts/ios/icon.py
 
 Draws the Z from zwipe-core/src/domain/logo/z.txt in JetBrains Mono,
-each theme's dark text on its dark background, read from
+each theme's text on its background in dark and in light, read from
 the themes.css of the orangui build Cargo.lock pins. Sized and placed to
 match the gruvbox primary icon in zwiper/assets/favicon, which was made with
 asciier and stays as it is (context/operations/ios/app-store/submission/
 icon_update.md).
 
-Writes zwiper/assets/app-icons/<theme>.png. zcripts/ios/icons.sh compiles
-them into the alternate icons the App icon sheet switches between.
+Writes zwiper/assets/app-icons/<theme>-<mode>.png. zcripts/ios/icons.sh
+compiles them into the alternate icons the App icon sheet switches between.
 
 Needs Pillow and fonttools: pip3 install pillow fonttools brotli
 """
@@ -26,7 +26,7 @@ from fontTools.ttLib import TTFont
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
-PRIMARY = "gruvbox"
+PRIMARY = ("gruvbox", "dark")
 # Font size, line height and where the ink's top-left lands, fitted to the
 # primary icon's ink box, (127, 224) to (890, 810).
 SIZE = 92
@@ -46,8 +46,8 @@ def ttf_path() -> str:
     return str(out)
 
 
-def dark_palettes() -> dict[str, tuple[str, str]]:
-    """Each theme's dark (background, text) from the pinned orangui themes.css."""
+def palettes() -> dict[tuple[str, str], tuple[str, str]]:
+    """Each (theme, mode)'s (background, text) from the pinned orangui themes.css."""
     meta = json.loads(
         subprocess.run(
             ["cargo", "metadata", "--format-version", "1"],
@@ -57,11 +57,13 @@ def dark_palettes() -> dict[str, tuple[str, str]]:
     manifest = next(p["manifest_path"] for p in meta["packages"] if p["name"] == "orangui")
     css = (pathlib.Path(manifest).parent / "assets/themes.css").read_text()
     out = {}
-    for name, body in re.findall(r"^\.theme-([a-z0-9-]+)-dark\s*\{(.*?)^\}", css, re.M | re.S):
+    for name, mode, body in re.findall(
+        r"^\.theme-([a-z0-9-]+)-(dark|light)\s*\{(.*?)^\}", css, re.M | re.S
+    ):
         bg = re.search(r"--bg-primary:\s*(#[0-9a-fA-F]{6})", body)
         fg = re.search(r"--text-primary:\s*(#[0-9a-fA-F]{6})", body)
         if bg and fg:
-            out[name] = (bg.group(1), fg.group(1))
+            out[(name, mode)] = (bg.group(1), fg.group(1))
     return out
 
 
@@ -85,9 +87,9 @@ def main() -> None:
     out.mkdir(exist_ok=True)
     for stale in out.glob("*.png"):
         stale.unlink()
-    for name, (bg, fg) in sorted(dark_palettes().items()):
-        if name != PRIMARY:
-            render(lines, ttf, bg, fg).save(out / f"{name}.png")
+    for (name, mode), (bg, fg) in sorted(palettes().items()):
+        if (name, mode) != PRIMARY:
+            render(lines, ttf, bg, fg).save(out / f"{name}-{mode}.png")
     print("wrote", len(list(out.glob("*.png"))), "alternate icons")
 
 
