@@ -95,41 +95,10 @@ done
 ## 3. Compile app icons
 
 ```bash
-mkdir -p /tmp/Assets.xcassets/AppIcon.appiconset
-cat > /tmp/Assets.xcassets/AppIcon.appiconset/Contents.json << 'EOF'
-{
-  "images": [
-    {"size":"20x20","idiom":"iphone","scale":"2x","filename":"icon-40.png"},
-    {"size":"20x20","idiom":"iphone","scale":"3x","filename":"icon-60.png"},
-    {"size":"29x29","idiom":"iphone","scale":"2x","filename":"icon-60.png"},
-    {"size":"29x29","idiom":"iphone","scale":"3x","filename":"icon-87.png"},
-    {"size":"40x40","idiom":"iphone","scale":"2x","filename":"icon-80.png"},
-    {"size":"40x40","idiom":"iphone","scale":"3x","filename":"icon-120.png"},
-    {"size":"60x60","idiom":"iphone","scale":"2x","filename":"icon-120.png"},
-    {"size":"60x60","idiom":"iphone","scale":"3x","filename":"icon-180.png"},
-    {"size":"1024x1024","idiom":"ios-marketing","scale":"1x","filename":"icon-1024.png"}
-  ],
-  "info":{"version":1,"author":"xcode"}
-}
-EOF
-cat > /tmp/Assets.xcassets/Contents.json << 'EOF'
-{"info":{"version":1,"author":"xcode"}}
-EOF
-cp ~/Developer/zwipe/zwiper/assets/favicon/icon-{40,60,80,87,120,180,1024}.png \
-   /tmp/Assets.xcassets/AppIcon.appiconset/
-
-actool --compile $APP --platform iphoneos --minimum-deployment-target 16.0 \
-  --app-icon AppIcon --output-partial-info-plist /tmp/assetcatalog_generated_info.plist \
-  /tmp/Assets.xcassets
-
-/usr/libexec/PlistBuddy \
-  -c "Add :CFBundleIcons dict" \
-  -c "Add :CFBundleIcons:CFBundlePrimaryIcon dict" \
-  -c "Add :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconFiles array" \
-  -c "Add :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconFiles:0 string AppIcon60x60" \
-  -c "Add :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconName string AppIcon" \
-  $APP/Info.plist
+~/Developer/zwipe/zcripts/ios/icons.sh $APP
 ```
+
+Compiles the gruvbox primary from `zwiper/assets/favicon` and one alternate per theme from `zwiper/assets/app-icons` into `Assets.car`, and writes `CFBundleIcons` (primary plus `CFBundleAlternateIcons`) into `Info.plist`. The alternates are what Profile's App icon sheet switches between; `zcripts/ios/icon.py` re-renders them when orangui adds a theme. It should print `icons: Assets.car, primary + 30 alternates`.
 
 ## 4. Sign
 

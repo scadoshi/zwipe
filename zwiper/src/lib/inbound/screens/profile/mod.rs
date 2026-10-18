@@ -4,6 +4,8 @@
 
 /// Change email bottom sheet.
 use zwipe_client::ZwipeClient;
+/// App icon bottom sheet.
+pub mod app_icon_sheet;
 pub mod change_email;
 /// Change password bottom sheet.
 pub mod change_password;
@@ -29,12 +31,13 @@ use crate::{
         },
         router::Router,
     },
-    outbound::open_url,
+    outbound::{app_icon, open_url},
 };
 use ::components::{
     ActionBar, BottomSheet, Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets,
     HintKey, TOAST_NORMAL, ThemeConfig, theme_from_preferences,
 };
+use app_icon_sheet::AppIconSheet;
 use change_email::ChangeEmailSheet;
 use change_password::ChangePasswordSheet;
 use change_username::ChangeUsernameSheet;
@@ -84,6 +87,8 @@ pub fn Profile() -> Element {
     let mut show_delete_dialog = use_signal(|| false);
     let mut show_more_sheet = use_signal(|| false);
     let mut preferences_open = use_signal(|| false);
+    let mut app_icon_open = use_signal(|| false);
+    let app_icon_theme = use_signal(app_icon::current);
     let mut ub_exceptions_open = use_signal(|| false);
 
     // Universes Beyond preference, fetched once on mount. The toggle writes
@@ -321,6 +326,24 @@ pub fn Profile() -> Element {
                                     }
                                 }
 
+                                if app_icon::SUPPORTED {
+                                    div {
+                                        class: "settings-row",
+                                        span { style: "display:flex;align-items:center;",
+                                            span { class: "settings-row-label", "App icon" }
+                                            InfoButton { topic: HintTopic::AppIcon }
+                                        }
+                                        div { class: "settings-row-value",
+                                            span { { display_theme_name(&app_icon_theme()) } }
+                                            Button {
+                                                variant: ButtonVariant::Action,
+                                                onclick: move |_| app_icon_open.set(true),
+                                                "Change"
+                                            }
+                                        }
+                                    }
+                                }
+
                                 div {
                                     class: "settings-row",
                                     span { style: "display:flex;align-items:center;",
@@ -472,6 +495,7 @@ pub fn Profile() -> Element {
                 LogoutDialog { open: show_logout_dialog }
                 DeleteAccountDialog { open: show_delete_dialog }
                 PreferencesSheet { open: preferences_open }
+                AppIconSheet { open: app_icon_open, icon: app_icon_theme }
                 UniversesBeyondExceptionsSheet {
                     open: ub_exceptions_open,
                     exceptions: ub_exceptions,

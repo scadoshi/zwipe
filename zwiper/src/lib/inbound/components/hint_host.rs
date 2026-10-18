@@ -50,6 +50,8 @@ pub enum HintTopic {
     Verification,
     /// Profile: theme row, with its dark/light toggle.
     Theme,
+    /// Profile: app icon row.
+    AppIcon,
     /// Profile: Universes Beyond row.
     UniversesBeyond,
     /// Profile: website row.
@@ -90,6 +92,7 @@ impl HintTopic {
             Self::Email => "Email",
             Self::Verification => "Verification",
             Self::Theme => "Theme",
+            Self::AppIcon => "App icon",
             Self::UniversesBeyond => "Universes Beyond",
             Self::Website => "Website",
             Self::Version => "Version",
@@ -164,6 +167,13 @@ impl HintTopic {
                     HintBullet { "The app's palette. Picks preview as you tap" }
                     HintBullet { "The last four are color blind modes" }
                     HintBullet { HintKey { ModeIcon { dark: false } " light" } " " HintKey { ModeIcon { dark: true } " dark" } " switches between the theme's two palettes" }
+                }
+            },
+            Self::AppIcon => rsx! {
+                HintBullets {
+                    HintBullet { "The icon on your home screen, in any theme's colors" }
+                    HintBullet { "It stays put when you change the app's theme" }
+                    HintBullet { "iPhone tells you when it switches" }
                 }
             },
             Self::UniversesBeyond => rsx! {

@@ -1614,6 +1614,31 @@ button {
     color: var(--logo);
 }
 
+/* The icon in the App icon sheet: the Z as text on its theme's dark
+   background, rounded the way iOS rounds the home screen icon, and bordered
+   in its own muted text like the theme sheet's swatches. The line height is
+   the app icon's, tighter than the logo's. */
+.app-icon-tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 22.37%;
+    background: var(--bg-primary);
+    border: 1px solid var(--text-muted);
+    overflow: hidden;
+}
+
+.app-icon-tile pre {
+    margin: 0;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.24rem;
+    line-height: 0.84;
+    color: var(--text-primary);
+}
+
 /* ======================
   specific - home screen
  ======================== */

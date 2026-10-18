@@ -6,6 +6,8 @@
 /// Android private-storage path resolution, shared by `session` + `theme_store`.
 #[cfg(target_os = "android")]
 pub mod android_fs;
+/// The home-screen icon, switched between the per-theme alternates.
+pub mod app_icon;
 /// URL construction for external card retailer bulk-buy tools.
 pub mod buy_links;
 /// Local cache of the public counters so a launch without signal still shows them.
