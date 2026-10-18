@@ -170,11 +170,7 @@ impl HintTopic {
                 }
             },
             Self::AppIcon => rsx! {
-                HintBullets {
-                    HintBullet { "The icon on your home screen, in any theme's colors" }
-                    HintBullet { "It stays put when you change the app's theme" }
-                    HintBullet { "iPhone tells you when it switches" }
-                }
+                HintLine { "The icon on your home screen, in any theme's colors" }
             },
             Self::UniversesBeyond => rsx! {
                 HintBullets {
