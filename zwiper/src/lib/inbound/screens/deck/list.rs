@@ -588,7 +588,12 @@ pub fn DeckList() -> Element {
                                         Chip {
                                             selected: tags_open(),
                                             onclick: move |_| tags_open.set(!tags_open()),
-                                            if tags_open() { "Tags \u{25B4}" } else { "Tags \u{25BE}" }
+                                            "Tags"
+                                            // The card rows' disclosure arrow: sideways folded, down open.
+                                            span {
+                                                class: if tags_open() { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
+                                                "\u{25B8}"
+                                            }
                                         }
                                         // The tags that are on stay in the row while folded.
                                         if !tags_open() {
@@ -610,7 +615,7 @@ pub fn DeckList() -> Element {
                                     div { class: if tags_open() { "collapsible open" } else { "collapsible" },
                                         div { class: "collapsible-inner",
                                             div { class: "chip-row",
-                                                for (key, label) in tags_present.clone() {
+                                                for (key, label) in tags_present {
                                                     Chip {
                                                         key: "{key}",
                                                         selected: selected_tags().contains(&key),

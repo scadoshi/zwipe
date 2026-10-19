@@ -2734,6 +2734,21 @@ button {
    container like the card list's, so the header has something to divide and
    both screens share one header style.) */
 
+/* The fold chip's arrow: the card rows' disclosure grammar, pointing
+   sideways while folded and easing down when open, a size up so it reads
+   in a chip. */
+.chip-fold-arrow {
+    display: inline-block;
+    margin-left: 0.35rem;
+    font-size: 1rem;
+    line-height: 1;
+    transition: transform 0.2s ease;
+}
+
+.chip-fold-arrow.expanded {
+    transform: rotate(90deg);
+}
+
 /* Collapsible group headers (deck cards screen): the card-row disclosure
    grammar — arrow points down while expanded, eases sideways when collapsed
    (rotation transition rides .card-row-arrow's own 0.2s ease). The body
