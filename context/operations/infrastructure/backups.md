@@ -236,6 +236,20 @@ pg_restore --data-only --table=users /tmp/zwipe-20260329.sql | \
 
 ---
 
+## Restore test
+
+Since 2026-10-18 a backup only counts as good once it has been restored and read. scotland (the home server) runs `upkeep/restore-test.sh` from its `morning.sh` at 05:00 Pacific, seven hours after the dump lands:
+
+1. Lists `zwipe-backups` through `r2-zwipe`, a read-only token for that bucket, and takes the newest dump. Over 26 hours old, or uploaded on a day other than its name says, is a failure before anything is downloaded.
+2. Downloads it under a 700 directory, restores it into a fresh `zwipe_restore_test` on scotland's own Postgres 18 container with `psql -v ON_ERROR_STOP=1`.
+3. Reads it: the newest `_sqlx_migrations` version is one this repo has, `users`, `decks`, `deck_cards`, `scryfall_data` and `user_daily_activity` are over their floors, every deck card joins to a card, the newest activity day is within two days of the dump date, and the materialized views are populated.
+4. Drops the scratch database and deletes the dump, pass or fail.
+5. On a pass pings Healthchecks.io "Zwipe Restore Test" (daily, 3 h grace) with the dump date, restore time and counts. On a failure it alerts the phone and skips the ping, so a missing ping is the alert, the same pattern as the backup.
+
+The dump names three roles. `zwipe` owns the tables, `zervice` owns the materialized views and `synergy_worker` holds grants; a cluster restoring it needs all three, which the manual steps above don't say. The test creates the two it lacks without login.
+
+First run, 2026-10-18: `zwipe-20261018.sql.gz`, 111 MB, restored to 762 MB in 24 s, 48 s end to end. Details and the drill results are in scotland-server's `context/README.md` log; the job itself is documented in its `upkeep/README.md` and `context/checks.md`.
+
 ## Verify Backups Are Running
 
 ```bash
