@@ -4,6 +4,7 @@ Per-release iOS build numbers (`CFBundleVersion`). iOS and Android ship coupled 
 
 | Version | iOS build | Notes |
 |---------|-----------|-------|
+| 1.12.0 | 100 | Build 99 with gruvbox's accent as its aqua (orangui `1ac1b5b`). 99 alternate icons. Built 2026-10-19 with Xcode 27.1 (27A9275), signed and verified. **Awaiting upload.** Android counterpart vc62. |
 | 1.12.0 | 99 | Build 98 plus the shaded-square backdrop drawn on a canvas and the opening splash, with the home figures rolling as it leaves; gruvbox's heatmap in its aqua. 99 alternate icons. Built 2026-10-19 with Xcode 27.1 (27A9275), signed and verified. **Never uploaded**: gruvbox's accent became its aqua the same afternoon, so 1.12.0 ships as build 100. Android counterpart vc61, likewise set aside. |
 | 1.12.0 | 98 | Nineteen new themes, 50 in all, each in dark and light, with the theme and App icon pickers grouped under headings by look, and Ristretto renamed Monokai Pro Ristretto. 99 alternate icons bundled by zcripts/ios/icons.sh. Built 2026-10-19 with Xcode 27.1 (27A9275), signed and verified, uploaded through Transporter. **Uploaded 2026-10-19, never submitted**: the same day the backdrop became shaded squares and the app got its splash, so 1.12.0 ships as build 99. |
 | 1.11.6 | 97 | Build 96 with the light-mode icons fixed: the mark in each theme's accent color, like the sites. Built 2026-10-18 with Xcode 27.1 (27A9275), uploaded through Transporter. **Submitted 2026-10-18.** Android counterpart vc59, live the same evening. |
