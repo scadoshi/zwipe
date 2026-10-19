@@ -1636,7 +1636,7 @@ button {
     font-family: "JetBrains Mono", monospace;
     font-size: 0.24rem;
     line-height: 0.84;
-    color: var(--text-primary);
+    color: var(--logo);
 }
 
 /* ======================

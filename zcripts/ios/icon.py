@@ -4,7 +4,8 @@
     zcripts/ios/icon.py
 
 Draws the Z from zwipe-core/src/domain/logo/z.txt in JetBrains Mono,
-each theme's text on its background in dark and in light, read from
+each theme's logo color on its background, the text color in dark and the
+accent in light like orangui's --logo, read from
 the themes.css of the orangui build Cargo.lock pins. Sized and placed to
 match the gruvbox primary icon in zwiper/assets/favicon, which was made with
 asciier and stays as it is (context/operations/ios/app-store/submission/
@@ -60,8 +61,10 @@ def palettes() -> dict[tuple[str, str], tuple[str, str]]:
     for name, mode, body in re.findall(
         r"^\.theme-([a-z0-9-]+)-(dark|light)\s*\{(.*?)^\}", css, re.M | re.S
     ):
+        # The mark takes orangui's --logo: the text color in dark, the accent in light.
+        ink = "--text-primary" if mode == "dark" else "--accent-primary"
         bg = re.search(r"--bg-primary:\s*(#[0-9a-fA-F]{6})", body)
-        fg = re.search(r"--text-primary:\s*(#[0-9a-fA-F]{6})", body)
+        fg = re.search(ink + r":\s*(#[0-9a-fA-F]{6})", body)
         if bg and fg:
             out[(name, mode)] = (bg.group(1), fg.group(1))
     return out
