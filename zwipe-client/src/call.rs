@@ -44,9 +44,24 @@ impl ZwipeClient {
         }
 
         info!("{} {}", E::METHOD.as_str(), url);
+        hold_for_skeleton_audit(E::METHOD).await;
         decode::<E>(request.send().await?).await
     }
 }
+
+/// Holds every GET for `SKELETON_DELAY_MS` when the app is built with it set,
+/// so each loading skeleton stays up long enough to look at. Unset, which is
+/// every shipped build, this is nothing. Writes are never held.
+#[cfg(not(target_arch = "wasm32"))]
+async fn hold_for_skeleton_audit(method: Method) {
+    let ms = option_env!("SKELETON_DELAY_MS").and_then(|ms| ms.parse::<u64>().ok());
+    if let (Method::Get, Some(ms)) = (method, ms) {
+        tokio::time::sleep(std::time::Duration::from_millis(ms)).await;
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+async fn hold_for_skeleton_audit(_method: Method) {}
 
 /// Splits the response into success and failure, and turns a success body into
 /// `E::Response`. Any 2xx is success: several endpoints answer 200 or 204 for
