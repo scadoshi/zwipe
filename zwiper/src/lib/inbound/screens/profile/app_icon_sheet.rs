@@ -4,8 +4,7 @@
 
 use crate::outbound::app_icon;
 use components::{
-    ALLOWED_THEMES, BottomSheet, Button, ButtonVariant, COLORBLIND_THEMES, TOAST_NORMAL,
-    TOAST_QUICK, ThemeConfig,
+    BottomSheet, Button, ButtonVariant, THEME_GROUPS, TOAST_NORMAL, TOAST_QUICK, ThemeConfig,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -60,14 +59,6 @@ pub fn AppIconSheet(mut open: Signal<bool>, mut icon: Signal<ThemeConfig>) -> El
     });
 
     let mode = app_icon::mode(icon().is_dark).to_string();
-    let regular = ALLOWED_THEMES
-        .iter()
-        .copied()
-        .filter(|t| !COLORBLIND_THEMES.contains(t));
-    let colorblind = ALLOWED_THEMES
-        .iter()
-        .copied()
-        .filter(|t| COLORBLIND_THEMES.contains(t));
 
     rsx! {
         BottomSheet {
@@ -106,12 +97,11 @@ pub fn AppIconSheet(mut open: Signal<bool>, mut icon: Signal<ThemeConfig>) -> El
                     "Save"
                 }
             },
-            for t in regular {
-                IconRow { theme: t.to_string(), mode: mode.clone(), draft }
-            }
-            div { class: "pref-section-label", "Color blind" }
-            for t in colorblind {
-                IconRow { theme: t.to_string(), mode: mode.clone(), draft }
+            for group in THEME_GROUPS {
+                div { class: "pref-section-label", "{group.label}" }
+                for t in group.themes.iter().copied() {
+                    IconRow { theme: t.to_string(), mode: mode.clone(), draft }
+                }
             }
         }
     }
