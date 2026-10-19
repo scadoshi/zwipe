@@ -87,6 +87,9 @@ fn ThemeWrapper(children: Element) -> Element {
     let class = follow.shown.read().css_class();
     rsx! {
         div { class: "app-shell {class}",
+            // Keyed on the theme class so the field rains in again on a theme
+            // or mode change, and holds across navigation.
+            zwiper::inbound::components::grid_cells::GridCells { key: "{class}" }
             {children}
         }
     }

@@ -12,6 +12,8 @@ pub mod catalog_cache;
 pub mod concept_explainers;
 /// Form field components (text input, password input, etc.).
 pub mod fields;
+/// The shaded-cell backdrop under every screen.
+pub mod grid_cells;
 /// One-time hint dialogs (per-account, tracked via `hints_shown`).
 pub mod hint_dialog;
 /// App-root receiver that renders on-demand "?" hint dialogs (sender/receiver).
