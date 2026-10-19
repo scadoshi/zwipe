@@ -31,7 +31,7 @@ pub const UPCOMING: &[Release] = &[Release {
     date: "",
     entries: &[
         "The backdrop is a field of shaded squares instead of grid lines, on screens and sheets",
-        "The app opens on a short splash: the backdrop rains in and the mark resolves over it before the first screen",
+        "The app opens on a short splash: the backdrop rains in and the mark resolves over it before the first screen, whose figures roll as it leaves",
     ],
 }];
 

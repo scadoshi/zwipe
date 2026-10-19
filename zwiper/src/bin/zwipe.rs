@@ -108,6 +108,8 @@ fn App() -> Element {
     let upgrade_required = spawn_upkeeper();
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
+    // Closed until the splash starts to fade; the entrances wait on it.
+    use_context_provider(|| components::SplashGate(Signal::new(false)));
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Style {
