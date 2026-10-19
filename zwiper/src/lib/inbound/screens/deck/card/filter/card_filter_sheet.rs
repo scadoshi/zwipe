@@ -321,6 +321,9 @@ pub(crate) fn CardFilterSheet(
         div {
             class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
 
+            // The same backdrop orangui's BottomSheet carries, since this sheet is
+            // built by hand on the same classes.
+            ::components::GridCells { still: true }
             div { class: "sheet-header", style: "position: relative;",
                 span { style: "font-size: 1rem; color: var(--accent-primary);", "Filter" }
                 Button {
