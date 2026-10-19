@@ -57,12 +57,12 @@ Examples:
 # iPhone 15 Pro Max on iOS 26.4
 xcrun simctl create "iPhone 15 Pro Max" \
   "com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro-Max" \
-  "com.apple.CoreSimulator.SimRuntime.iOS-26-4"
+  "com.apple.CoreSimulator.SimRuntime.iOS-26-5"
 
 # iPhone 16 Pro Max (6.9" for App Store screenshots)
 xcrun simctl create "iPhone 16 Pro Max" \
   "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro-Max" \
-  "com.apple.CoreSimulator.SimRuntime.iOS-26-4"
+  "com.apple.CoreSimulator.SimRuntime.iOS-26-5"
 ```
 
 ---

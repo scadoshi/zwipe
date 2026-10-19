@@ -54,6 +54,9 @@ IDENTITY="$(codesign -dvv "$APP" 2>&1 | sed -n 's/^Authority=\(Apple Development
 codesign --force --sign "$IDENTITY" --preserve-metadata=entitlements "$APP"
 codesign --verify "$APP"
 
+# The old build is stopped first, so the new one is what opens next.
+stop_app
+
 # --id matters: with two phones connected ios-deploy otherwise picks one on
 # its own.
 ios-deploy --id "$UDID" --bundle "$APP"

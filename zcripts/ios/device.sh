@@ -78,3 +78,27 @@ find_device() {
   UDID="$(printf '%s' "$found" | awk '{print $1}')"
   DEVICE_NAME="$(printf '%s' "$found" | cut -d' ' -f2-)"
 }
+
+BUNDLE_ID=com.scadoshi.zwipe
+
+# Stops the app on the phone, the way cairn's deploy does: ios-deploy installs
+# over a running app and leaves the old process up, so the new build only
+# shows after a force quit. Launching with --terminate-existing hands back a
+# pid to terminate, which is the one way devicectl offers to stop an app it
+# did not start.
+stop_app() {
+  local launch pid
+  launch="$(mktemp)"
+  if xcrun devicectl device process launch --device "$UDID" \
+      --terminate-existing --json-output "$launch" "$BUNDLE_ID" > /dev/null 2>&1; then
+    pid="$(python3 -c '
+import json, sys
+print(json.load(open(sys.argv[1]))["result"]["process"]["processIdentifier"])
+' "$launch" 2>/dev/null || true)"
+    sleep 3
+    [ -n "$pid" ] && xcrun devicectl device process terminate --device "$UDID" \
+      --pid "$pid" > /dev/null 2>&1 || true
+    sleep 1
+  fi
+  rm -f "$launch"
+}

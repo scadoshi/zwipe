@@ -87,9 +87,13 @@ fn ThemeWrapper(children: Element) -> Element {
     let class = follow.shown.read().css_class();
     rsx! {
         div { class: "app-shell {class}",
-            // Keyed on the theme class so the field rains in again on a theme
-            // or mode change, and holds across navigation.
-            components::GridCells { key: "{class}" }
+            // In place from the start; the splash is what rains.
+            components::GridCells { still: true }
+            // The opening: the field rains in under the mark, then fades to
+            // the first screen while it mounts underneath.
+            components::Splash {
+                div { class: "logo", components::Decode { text: logo::ZWIPE } }
+            }
             {children}
         }
     }
