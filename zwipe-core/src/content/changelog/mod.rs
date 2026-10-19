@@ -26,7 +26,13 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.13.0",
+    date: "",
+    entries: &[
+        "The backdrop is a field of shaded squares instead of grid lines, raining in when the app opens and when the theme changes",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[

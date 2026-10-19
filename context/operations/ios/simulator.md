@@ -10,14 +10,14 @@ Xcode 27 ships no `Simulator.app`. `DeviceHub.app` replaced it, at `/Application
 
 If the old window is wanted back, install Xcode 26 alongside 27 and use its `Contents/Developer/Applications/Simulator.app`. Both versions coexist and `xcode-select` decides which owns the toolchain. An older Simulator may refuse a newer runtime, so pair it with a runtime it knows.
 
-## Default device: iPhone 11 Pro Max (6.5")
+## Default device: iPhone 16 Pro Max (6.9")
 
-The project default for running and screenshotting is the **6.5" iPhone 11 Pro Max** (the App Store's required 6.5" size, 1242×2688). Screenshot size comes from the device model, not the runtime, so any installed iOS runtime will do.
+The project default for running and screenshotting is the **6.9" iPhone 16 Pro Max** (the App Store's required 6.9" size, 1320×2868; the 11 Pro Max's 6.5" set is still accepted but no longer the required one, so the 11 Pro Max device was deleted 2026-10-19). Screenshot size comes from the device model, not the runtime, so any installed iOS runtime will do.
 
 `dx serve --platform ios` installs to the *booted* simulator and will **not boot one for you**, which is what makes it look like nothing happens:
 
 ```bash
-zcripts/ios/sim.sh              # shuts others down, boots the 11 Pro Max
+zcripts/ios/sim.sh              # shuts others down, boots the 16 Pro Max
 zcripts/ios/sim.sh "iPhone 17"  # or any other created device
 ```
 
@@ -59,10 +59,10 @@ xcrun simctl create "iPhone 15 Pro Max" \
   "com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro-Max" \
   "com.apple.CoreSimulator.SimRuntime.iOS-26-4"
 
-# iPhone 11 Pro Max on iOS 18.6 (6.5" for App Store screenshots)
-xcrun simctl create "iPhone 11 Pro Max" \
-  "com.apple.CoreSimulator.SimDeviceType.iPhone-11-Pro-Max" \
-  "com.apple.CoreSimulator.SimRuntime.iOS-18-6"
+# iPhone 16 Pro Max (6.9" for App Store screenshots)
+xcrun simctl create "iPhone 16 Pro Max" \
+  "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro-Max" \
+  "com.apple.CoreSimulator.SimRuntime.iOS-26-4"
 ```
 
 ---
@@ -110,8 +110,9 @@ xcrun simctl delete all
 
 | Display | Resolution | Device examples |
 |---------|-----------|-----------------|
-| 6.7" | 1290×2796 | iPhone 15/16 Pro Max |
+| 6.9" | 1320×2868 | iPhone 16/17 Pro Max |
+| 6.7" | 1290×2796 | iPhone 15 Pro Max |
 | 6.5" | 1242×2688 | iPhone 11 Pro Max, XS Max |
 | 5.5" | 1242×2208 | iPhone 8 Plus, 7 Plus |
 
-App Store Connect requires at least the 6.5" size. Uploading 6.7" screenshots works; they get scaled down automatically.
+App Store Connect requires the 6.9" size; a 6.5" set is still accepted and scaled, which is how every submission through 2026-10-19 went in.

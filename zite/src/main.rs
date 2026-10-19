@@ -171,6 +171,8 @@ fn App() -> Element {
         });
     });
 
+    // The backdrop, keyed on the theme class so a theme change rains it in again.
+    let shell_class = theme.read().css_class();
     rsx! {
         document::Meta { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" }
         // Tells Dark Reader to leave the site alone: theming is first-class
@@ -199,6 +201,8 @@ fn App() -> Element {
         document::Script { {NAV_GLIDE_JS} }
         // Edge fades on sideways scrollers where CSS can't drive them.
         document::Script { {SCROLL_FADE_JS} }
+        // Its own block, since a key sits only on a block's first node.
+        div { ::components::GridCells { key: "{shell_class}" } }
         Router::<Route> {}
     }
 }

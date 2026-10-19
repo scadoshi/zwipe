@@ -86,42 +86,13 @@ body {
     overscroll-behavior: none;
 }
 
-/* --grid-line-major lives on body because the theme class is applied there, so
-   color-mix() resolves against the active theme's --text-primary. The sink
-   color fills the whole page (including overscroll); the grid itself is
-   painted by the fixed pseudo-element below. */
+/* The sink fills the whole page (including overscroll); the backdrop itself
+   is orangui's GridCells, a fixed layer mounted beside the router. */
 body {
-    --grid-line-major: color-mix(in srgb, var(--text-primary) 9%, transparent);
     background-color: var(--bg-sink);
-    /* Own stacking context so the fixed ::before below paints above this
-       background (without it, z-index: -1 drops behind the body background
-       and the grid disappears) while staying below all content. */
+    /* Own stacking context so that layer (z-index -1) paints above this
+       background while staying below all content. */
     isolation: isolate;
-}
-
-/* Pinned grid: a viewport-fixed layer behind all content, so scrolling moves
-   the elements over a stationary grid instead of dragging the grid with them.
-   A fixed pseudo-element is used rather than `background-attachment: fixed`
-   because that keyword is unreliable on mobile (iOS scales it to the full
-   document height and scroll-janks). One element still paints the grid, so
-   seams never double-line; nav, footer, and panels paint solid on top and
-   mask it in their footprint. */
-body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image:
-        linear-gradient(var(--grid-line-major) 1px, transparent 1px),
-        linear-gradient(90deg, var(--grid-line-major) 1px, transparent 1px),
-        linear-gradient(var(--grid-line) 1px, transparent 1px),
-        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-    background-size:
-        calc(var(--grid-size) * 4) calc(var(--grid-size) * 4),
-        calc(var(--grid-size) * 4) calc(var(--grid-size) * 4),
-        var(--grid-size) var(--grid-size),
-        var(--grid-size) var(--grid-size);
 }
 
 /* Floating bubble — opaque panel lifted off the grid with a soft shadow. */

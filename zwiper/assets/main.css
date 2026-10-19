@@ -73,7 +73,7 @@ button {
     display: flex;
     flex-direction: column;
     width: 100%;
-    background-color: var(--bg-primary);
+    /* No fill: orangui's GridCells layer under the screen is the backdrop. */
     color: var(--text-primary);
 }
 
@@ -3459,130 +3459,7 @@ button {
     animation-delay: 270ms;
 }
 
-/* ---- Grid cells (grid-cells branch) ----
-   The screens and sheets drop their line gradients; the field below draws
-   the grid as shaded squares on a fixed layer under every screen. The
-   screen column goes transparent so the layer shows through; a sheet keeps
-   its sink so the screen under it stays hidden. */
-/* The screen painted the primary color over the whole viewport, which hid
-   the layer entirely; it goes clear too. The header and action bar keep
-   their own fills. */
-.screen,
-.screen-content {
-    background-image: none;
-    background-color: transparent;
-}
-
-/* The screen's safe-area padding is outside the header and the action bar,
-   so the field showed in the status bar and home indicator strips. Two
-   fixed bands in the primary color fill them, as the screen's fill did. */
-.screen::before,
-.screen::after {
-    content: "";
-    position: fixed;
-    left: 0;
-    right: 0;
-    z-index: 1;
-    pointer-events: none;
-    background-color: var(--bg-primary);
-}
-
-.screen::before {
-    top: 0;
-    height: env(safe-area-inset-top, 0px);
-}
-
-.screen::after {
-    bottom: 0;
-    height: env(safe-area-inset-bottom, 0px);
-}
-
-:where(.sheet-content) {
-    background-image: none;
-}
-
-/* Shaded cells: every square of the backdrop grid in its own shade, on a
-   fixed layer like the old lines, brightest at the top and fading out down
-   the viewport. They rain in row by row with the hero and hold; a third of
-   them breathe a few percent over half a minute. GridCells places them on
-   the grid's cell size. */
-.grid-cells {
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    background-color: var(--bg-sink);
-    pointer-events: none;
-    overflow: hidden;
-    mask-image: linear-gradient(to bottom, #000 0, rgba(0, 0, 0, 0.45) 45vh, transparent 100vh);
-    -webkit-mask-image: linear-gradient(to bottom, #000 0, rgba(0, 0, 0, 0.45) 45vh, transparent 100vh);
-}
-
-.grid-cell {
-    position: absolute;
-    left: calc(var(--col) * var(--grid-size) + 1px);
-    top: calc(var(--row) * var(--grid-size) + 1px);
-    width: calc(var(--grid-size) - 2px);
-    height: calc(var(--grid-size) - 2px);
-    /* The heatmap's corners: 2px on an 11px cell. */
-    border-radius: 18%;
-    background: color-mix(in srgb, var(--text-primary) var(--lit), transparent);
-    animation: cell-rain 0.35s cubic-bezier(0.2, 0.7, 0.3, 1) both;
-}
-
-.grid-cell-1 {
-    --lit: 1.5%;
-}
-
-.grid-cell-2 {
-    --lit: 3%;
-}
-
-.grid-cell-3 {
-    --lit: 5%;
-}
-
-.grid-cell-4 {
-    --lit: 7.5%;
-}
-
-.grid-cell-5 {
-    --lit: 10%;
-}
-
-.grid-cell-breathes {
-    animation:
-        cell-rain 0.35s cubic-bezier(0.2, 0.7, 0.3, 1) both,
-        cell-breathe 32s ease-in-out infinite;
-}
-
-@keyframes cell-rain {
-    from {
-        opacity: 0;
-        transform: translateY(calc(var(--grid-size) * -3));
-    }
-    to {
-        opacity: 1;
-        transform: none;
-    }
-}
-
-@keyframes cell-breathe {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.45;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .grid-cell {
-        animation: none;
-    }
-}
-
-/* The shell is its own stacking context, so the grid cells layer (z-index -1)
+/* The shell is its own stacking context, so orangui's GridCells layer (z-index -1)
    stays under every screen, sheet and dialog in it, including mid-rain when
    each cell carries a transform. */
 .app-shell {

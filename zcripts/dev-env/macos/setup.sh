@@ -43,9 +43,9 @@ if ! xcrun simctl list runtimes 2>/dev/null | grep -q "iOS "; then
     echo "  install it with:  xcodebuild -downloadPlatform iOS"
     echo "  then re-run this script to provision a simulator device"
 else
-    # 6.5\" reference device. dx serve --ios launches into whatever sim is booted;
+    # 6.9\" reference device, the App Store screenshot size. dx serve --ios launches into whatever sim is booted;
     # runtime is omitted so simctl picks the newest installed one automatically.
-    SIM_NAME="iPhone 11 Pro Max"
+    SIM_NAME="iPhone 16 Pro Max"
     if xcrun simctl list devices | grep -q "^[[:space:]]*$SIM_NAME ("; then
         echo "simulator '$SIM_NAME' already present"
     else

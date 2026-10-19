@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Boot the project's DEFAULT iOS simulator and make it the sole active one:
-# iPhone 11 Pro Max, the 6.5" device used for App Store screenshots and
+# iPhone 16 Pro Max, the 6.9" device used for App Store screenshots and
 # day-to-day dev. The runtime does not matter for screenshot size; the device
 # model does, so this takes whatever iOS runtime is installed.
 #
@@ -8,7 +8,7 @@
 # boot one for you. Run this once per session first.
 set -euo pipefail
 
-DEVICE="${1:-iPhone 11 Pro Max}"
+DEVICE="${1:-iPhone 16 Pro Max}"
 
 # Newest iOS runtime that has the device. Xcode updates drop old runtimes, so
 # pinning one (this used to pin iOS 18.6) breaks the script the first time

@@ -46,7 +46,7 @@ xcrun simctl list runtimes                     # lists an "iOS <n>" runtime
 Beyond the [shared end state](../README.md#shared-end-state), the macOS script:
 
 - Requires the `iphonesimulator` SDK (exits early with fix steps otherwise).
-- Provisions a **6.5" iPhone 11 Pro Max** Simulator device if one doesn't already exist (idempotent: re-running won't create duplicates).
+- Provisions a **6.9" iPhone 16 Pro Max** Simulator device if one doesn't already exist (idempotent: re-running won't create duplicates).
 - Installs Postgres via Homebrew (`postgresql@18`, matching the prod VPS) and starts it as a service.
 - Uses **peer auth**: the DB is owned by your macOS user, no password.
 
@@ -55,7 +55,7 @@ Beyond the [shared end state](../README.md#shared-end-state), the macOS script:
 `dx serve --ios` installs into whatever Simulator is **booted**, so boot one first:
 
 ```bash
-./zcripts/ios/sim.sh                  # boots the default device (iPhone 11 Pro Max)
+./zcripts/ios/sim.sh                  # boots the default device (iPhone 16 Pro Max)
 cd zwiper && dx serve --ios
 ```
 
@@ -75,7 +75,7 @@ xcrun simctl list devices available        # what exists, and boot state
 xcrun simctl list devicetypes | grep Max   # available device models
 # create another size (runtime omitted → newest installed is used):
 xcrun simctl create "iPhone 16 Pro Max" "iPhone 16 Pro Max"
-xcrun simctl shutdown "iPhone 11 Pro Max"  # free resources when done
+xcrun simctl shutdown "iPhone 16 Pro Max"  # free resources when done
 ```
 
 ## dx / dioxus version pinning

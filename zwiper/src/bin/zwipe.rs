@@ -89,7 +89,7 @@ fn ThemeWrapper(children: Element) -> Element {
         div { class: "app-shell {class}",
             // Keyed on the theme class so the field rains in again on a theme
             // or mode change, and holds across navigation.
-            zwiper::inbound::components::grid_cells::GridCells { key: "{class}" }
+            components::GridCells { key: "{class}" }
             {children}
         }
     }
