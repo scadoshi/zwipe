@@ -4,8 +4,8 @@
 <meta charset="utf-8" />
 <!-- Default social-share / link-unfurl card (Open Graph + Twitter), 1200x630.
      Referenced by every page via zite's PageMeta as {WEB_BASE}/assets/og-default.png.
-     zite's home hero as a card: the gruvbox-dark 28px grid on a darkened
-     --bg-sink, and on it one panel holding the Zwipe wordmark beside the three
+     zite's home hero as a card: the sites' backdrop of shaded 28px squares on a
+     darkened --bg-sink (drawn by the script in the body), and on it one panel holding the Zwipe wordmark beside the three
      public counters, a rule, the tagline with the rating, the chips and the
      domain. Tokens are copied from orangui/assets/themes.css
      .theme-gruvbox-dark, and the colors play the roles zite gives them: the
@@ -63,10 +63,6 @@ html, body { width: 100%; height: 100%; }
 body {
   min-height: 100vh;
   background-color: var(--bg-sink);
-  background-image:
-    linear-gradient(var(--grid-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size: var(--grid-size) var(--grid-size);
   color: var(--text-primary);
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   -webkit-font-smoothing: antialiased;
@@ -188,6 +184,31 @@ body {
 </style>
 </head>
 <body>
+<!-- The backdrop the sites draw now: shaded squares on the sink in place of
+     grid lines, brightest at the top and fading out down the card, drawn
+     once the way orangui's grid-cells.js draws its settled field. -->
+<canvas id="field" width="1200" height="630" style="position:fixed;inset:0;z-index:-1"></canvas>
+<script>
+(() => {
+  const c = document.getElementById("field"), ctx = c.getContext("2d");
+  const cell = 28, shades = [0.015, 0.03, 0.05, 0.075, 0.1];
+  let seed = 0x9e3779b9;
+  const next = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed >>> 8; };
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--bg-sink").trim();
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--text-primary").trim();
+  const w = cell - 2, r = w * 0.18;
+  for (let row = 0; row * cell < c.height; row++) {
+    const y = row * cell, t = y / c.height;
+    // the sites' mask: full to 0.45 at 45% of the height, then out
+    const fade = t < 0.45 ? 1 - (t / 0.45) * 0.55 : 0.45 * (1 - (t - 0.45) / 0.55);
+    for (let col = 0; col * cell < c.width; col++) {
+      ctx.globalAlpha = shades[next() % 5] * fade;
+      ctx.beginPath(); ctx.roundRect(col * cell + 1, y + 1, w, w, r); ctx.fill();
+    }
+  }
+})();
+</script>
   <div class="hero">
     <div class="head">
       <pre class="wordmark">▎▎▉▉▉▉▉▉▉            ▎▎▉▉
@@ -202,9 +223,9 @@ body {
                                   ▎▎▉▉
                                    ▎▎▉▉</pre>
       <div class="stats">
-        <div class="stat"><span class="stat-num">2,115</span><span class="stat-label">Decks created</span></div>
-        <div class="stat"><span class="stat-num">28,993</span><span class="stat-label">Searches run</span></div>
-        <div class="stat"><span class="stat-num">251,764</span><span class="stat-label">Cards swiped</span></div>
+        <div class="stat"><span class="stat-num">2,147</span><span class="stat-label">Decks created</span></div>
+        <div class="stat"><span class="stat-num">29,930</span><span class="stat-label">Searches run</span></div>
+        <div class="stat"><span class="stat-num">255,802</span><span class="stat-label">Cards swiped</span></div>
       </div>
     </div>
     <hr class="rule" />
