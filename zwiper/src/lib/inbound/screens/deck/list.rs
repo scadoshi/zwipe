@@ -590,17 +590,39 @@ pub fn DeckList() -> Element {
                                             onclick: move |_| tags_open.set(!tags_open()),
                                             if tags_open() { "Tags \u{25B4}" } else { "Tags \u{25BE}" }
                                         }
-                                        for (key, label) in tags_present.into_iter().filter(|(key, _)| tags_open() || selected_tags().contains(key)) {
-                                            Chip {
-                                                key: "{key}",
-                                                selected: selected_tags().contains(&key),
-                                                onclick: move |_| {
-                                                    let mut tags = selected_tags.write();
-                                                    if !tags.remove(&key) {
-                                                        tags.insert(key.clone());
+                                        // The tags that are on stay in the row while folded.
+                                        if !tags_open() {
+                                            for (key, label) in tags_present.iter().filter(|(key, _)| selected_tags().contains(key)).cloned() {
+                                                Chip {
+                                                    key: "{key}",
+                                                    selected: true,
+                                                    onclick: move |_| {
+                                                        selected_tags.write().remove(&key);
+                                                    },
+                                                    "{label}"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                // The full tag row folds open and closed under the Show row.
+                                if !loading && !tags_present.is_empty() {
+                                    div { class: if tags_open() { "collapsible open" } else { "collapsible" },
+                                        div { class: "collapsible-inner",
+                                            div { class: "chip-row",
+                                                for (key, label) in tags_present.clone() {
+                                                    Chip {
+                                                        key: "{key}",
+                                                        selected: selected_tags().contains(&key),
+                                                        onclick: move |_| {
+                                                            let mut tags = selected_tags.write();
+                                                            if !tags.remove(&key) {
+                                                                tags.insert(key.clone());
+                                                            }
+                                                        },
+                                                        "{label}"
                                                     }
-                                                },
-                                                "{label}"
+                                                }
                                             }
                                         }
                                     }
