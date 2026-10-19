@@ -1,10 +1,10 @@
 # 1.12.0 release notes
 
-One text, both stores. 445 characters, 55 to spare.
+One text, both stores. 424 characters, 76 to spare.
 
 ```
 - Nineteen new themes, 50 in all, each in dark and light: the Monokai Pro filters, Darcula, Xcode, Visual Studio, Eclipse, Neovim, Bluloco, GitHub High Contrast, Kanagawa Dragon, Material, Melange, Modus, Nightfox, Oxocarbon, Poimandres and Terafox
-- The theme and App icon pickers sort themes by look, high contrast and color blind last
+- The theme and App icon pickers group themes under headings by look
 - Ristretto is now called Monokai Pro Ristretto
 - iOS: the app icon on Profile comes in the new themes too
 ```

@@ -37,7 +37,7 @@ pub const RELEASES: &[Release] = &[
             "Four Monokai Pro themes: Pro, Machine, Octagon and Spectrum, in dark and light",
             "Editor defaults as themes: Darcula, Xcode, Visual Studio, Eclipse and Neovim, in dark and light",
             "Ten more themes: Bluloco, GitHub High Contrast, Kanagawa Dragon, Material, Melange, Modus, Nightfox, Oxocarbon, Poimandres and Terafox, in dark and light",
-            "The theme and App icon pickers sort themes by look, warm to cool to neutral, with high contrast and color blind last",
+            "The theme and App icon pickers group themes under headings by look, with high contrast and color blind last",
             "Ristretto is now called Monokai Pro Ristretto",
             "iOS: the app icon on Profile comes in the new themes too",
         ],
