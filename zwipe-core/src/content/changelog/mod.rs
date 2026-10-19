@@ -26,17 +26,18 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.11.6",
-    date: "",
-    entries: &[
-        "Hint text no longer fades out at the edges when it all fits",
-        "Profile: the app icon can be drawn in any theme's colors, dark or light",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.11.6",
+        date: "Oct 18, 2026",
+        entries: &[
+            "Hint text no longer fades out at the edges when it all fits",
+            "Profile: the app icon can be drawn in any theme's colors, dark or light",
+        ],
+    },
     Release {
         version: "1.11.5",
         date: "Oct 16, 2026",
