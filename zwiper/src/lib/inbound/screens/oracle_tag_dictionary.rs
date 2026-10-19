@@ -135,7 +135,7 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                                     oninput: move |event| query.set(event.value()),
                                 }
 
-                                div { class: "dict-letter-rail",
+                                div { class: "dict-letter-rail scroll-fade-x",
                                     for c in ('a'..='z').chain(has_hash.then_some('#')) {
                                         {
                                             let is_sel = !searching && c == letter;
@@ -245,7 +245,7 @@ fn DictionarySkeleton() -> Element {
     rsx! {
         div { class: "dict-controls",
             div { class: "skeleton-bar dict-skeleton-search" }
-            div { class: "dict-letter-rail",
+            div { class: "dict-letter-rail scroll-fade-x",
                 for i in 0..12 {
                     div { key: "{i}", class: "skeleton-bar dict-skeleton-letter" }
                 }

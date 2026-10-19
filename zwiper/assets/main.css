@@ -3047,22 +3047,10 @@ button {
     gap: 0.35rem;
     padding-bottom: 0.25rem;
     -webkit-overflow-scrolling: touch;
+    /* The edge fade is the kit's scroll-fade-x, which lifts at the edge the
+       rail is scrolled to, so A is whole at rest. */
     scrollbar-width: none;
     -ms-overflow-style: none;
-    -webkit-mask-image: linear-gradient(
-        to right,
-        transparent 0,
-        black 0.85rem,
-        black calc(100% - 0.85rem),
-        transparent 100%
-    );
-    mask-image: linear-gradient(
-        to right,
-        transparent 0,
-        black 0.85rem,
-        black calc(100% - 0.85rem),
-        transparent 100%
-    );
 }
 
 .dict-letter-rail::-webkit-scrollbar {
