@@ -6,7 +6,7 @@
 
 zwipe-core:
 
-- `COLORBLIND_THEMES` beside `ALLOWED_THEMES` in `domain/user/models/preferences.rs`, plus a test pinning `display_theme_name` for all 40 themes.
+- `COLORBLIND_THEMES` beside `ALLOWED_THEMES` in `domain/user/models/preferences.rs`, plus a test pinning `display_theme_name` for all 50 themes.
 
 zwipe-components, for everyone:
 
