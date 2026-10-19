@@ -126,6 +126,9 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: ACCORDION_CSS }
         document::Style { {components::TOAST_CSS} }
+        // Drives the edge fades on sideways scrollers where CSS scroll
+        // timelines are missing (the dictionary's letter rail).
+        document::Script { {components::SCROLL_FADE_JS} }
         document::Meta {
             name: "viewport",
             content: "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
