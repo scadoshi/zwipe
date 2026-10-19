@@ -137,7 +137,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     // entries slide under the console (dictionary pattern).
                     div { class: "import-controls",
                         div { class: "chip-row",
-                            span { class: "chip-row-label", "From:" }
+                            span { class: "chip-row-label", "From" }
                             for (label, value) in [("Text", ImportSource::Text), ("Archidekt", ImportSource::Archidekt)] {
                                 Chip {
                                     selected: *source.read() == value,
@@ -147,7 +147,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             }
                         }
                         div { class: "chip-row",
-                            span { class: "chip-row-label", "Mode:" }
+                            span { class: "chip-row-label", "Mode" }
                             for (label, value) in [("Add", ImportMode::Add), ("Replace", ImportMode::Replace)] {
                                 Chip {
                                     selected: *mode.read() == value,
@@ -157,7 +157,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             }
                         }
                         div { class: "chip-row",
-                            span { class: "chip-row-label", "Board:" }
+                            span { class: "chip-row-label", "Board" }
                             for (label, value) in [("Main", None), ("Maybe", Some("maybeboard")), ("Side", Some("sideboard"))] {
                                 Chip {
                                     selected: *board_selection.read() == value,

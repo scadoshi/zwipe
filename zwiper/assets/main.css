@@ -2679,10 +2679,17 @@ button {
     margin-bottom: 0.5rem;
 }
 
+/* The row's label as a chip of its own at its head, so the row is one
+   console and no bare text sits on the backdrop. The chip's shape, with
+   the label's tertiary color and no colon; it is not a control. */
 .chip-row-label {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    background-color: var(--bg-primary);
     font-size: 0.75rem;
-    /* Same weight as .card-group-header: these labels sit directly on the
-       background grid, and the regular face gets lost against it. */
     font-weight: 600;
     color: var(--accent-tertiary);
     white-space: nowrap;

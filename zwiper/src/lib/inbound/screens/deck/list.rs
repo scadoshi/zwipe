@@ -1,9 +1,9 @@
 //! Deck list screen.
 //!
 //! The list carries the deck cards screen's chip-row grammar: a single-select
-//! "Group by:" row that folds the list into `card-group-header` sections
+//! "Group by" row that folds the list into `card-group-header` sections
 //! (format, color identity, or tag: a deck with several tags appears under
-//! each), and a "Show:" filter row seeded from the decks themselves (color
+//! each), and a "Show" filter row seeded from the decks themselves (color
 //! pips, deck tags, descriptive tags) with All as the reset. Both are
 //! ephemeral per visit: with the 20-deck cap there is no state worth
 //! persisting.
@@ -543,7 +543,7 @@ pub fn DeckList() -> Element {
                         rsx! {
                             if show_rows {
                                 div { class: "chip-row",
-                                    span { class: "chip-row-label", "Group by:" }
+                                    span { class: "chip-row-label", "Group by" }
                                     for option in DeckGroupBy::all() {
                                         Chip {
                                             key: "{option}",
@@ -554,7 +554,7 @@ pub fn DeckList() -> Element {
                                     }
                                 }
                                 div { class: "chip-row",
-                                    span { class: "chip-row-label", "Show:" }
+                                    span { class: "chip-row-label", "Show" }
                                     Chip {
                                         selected: all_on,
                                         onclick: move |_| {

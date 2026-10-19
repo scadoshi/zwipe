@@ -1213,7 +1213,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
                     // Group-by row
                     div { class: "chip-row",
-                        span { class: "chip-row-label", "Group by:" }
+                        span { class: "chip-row-label", "Group by" }
                         for option in GroupByOption::all() {
                             Chip {
                                 key: "{option}",
@@ -1229,7 +1229,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
                     // Board filter row (multi-select, at least one must be on)
                     div { class: "chip-row",
-                        span { class: "chip-row-label", "Boards:" }
+                        span { class: "chip-row-label", "Boards" }
                         Chip {
                             selected: show_deck(),
                             onclick: move |_| {
@@ -1279,7 +1279,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
                     // Show toggles row
                     div { class: "chip-row",
-                        span { class: "chip-row-label", "Show:" }
+                        span { class: "chip-row-label", "Show" }
                         Chip {
                             selected: show_tokens(),
                             onclick: move |_| show_tokens.set(!show_tokens()),

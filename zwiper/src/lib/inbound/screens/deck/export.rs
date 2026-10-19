@@ -143,7 +143,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     // decklist slides under the console (dictionary pattern).
                     div { class: "import-controls",
                         div { class: "chip-row",
-                            span { class: "chip-row-label", "Export:" }
+                            span { class: "chip-row-label", "Export" }
                             Chip {
                                 selected: include_deck(),
                                 onclick: move |_| {

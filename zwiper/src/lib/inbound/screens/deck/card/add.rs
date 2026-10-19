@@ -1121,7 +1121,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // Source selector chips
                 div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                     div { class: "chip-row",
-                        span { class: "chip-row-label", "From:" }
+                        span { class: "chip-row-label", "From" }
                         for (label, variant) in [("Search", AddSource::Search), ("Maybeboard", AddSource::Maybeboard)] {
                             Chip {
                                 selected: add_source() == variant,
@@ -1188,7 +1188,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         // synergy pool, then sorts within it. Search source +
                         // commander only (no commander = nothing to constrain to).
                         // Pinned right (margin-left:auto) so it reads as its own
-                        // control, not part of the "From:" source group.
+                        // control, not part of the "From" source group.
                         if add_source() == AddSource::Search && deck_has_commander() {
                             div { style: "margin-left: auto;",
                                 Chip {

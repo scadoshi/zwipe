@@ -463,7 +463,7 @@ pub fn CommanderMaybeboard() -> Element {
                     // Console rows render statically (closed vocabulary): the
                     // search input and all five pips are always valid.
                     div { class: "chip-row",
-                        span { class: "chip-row-label", "Quick add:" }
+                        span { class: "chip-row-label", "Quick add" }
                         input {
                             class: "input input-compact",
                             style: "flex: 1; margin-bottom: 0;",
@@ -514,7 +514,7 @@ pub fn CommanderMaybeboard() -> Element {
                         }
                     }
                     div { class: "chip-row",
-                        span { class: "chip-row-label", "Show:" }
+                        span { class: "chip-row-label", "Show" }
                         Chip {
                             selected: all_on,
                             onclick: move |_| selected_colors.write().clear(),
