@@ -85,6 +85,9 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
 
     rsx! {
         div { class: "screen dict-overlay",
+            // An overlay screen paints its own backdrop, since .screen is clear
+            // and the screen beneath would show through.
+            ::components::GridCells { still: true }
             ScreenHeader { title: "Oracle tags", hint }
 
             div { class: "screen-content content-enter",

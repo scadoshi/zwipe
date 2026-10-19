@@ -174,6 +174,9 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
 
     rsx! {
         div { class: "screen examples-overlay",
+            // An overlay screen paints its own backdrop, since .screen is clear
+            // and the screen beneath would show through.
+            ::components::GridCells { still: true }
             ScreenHeader { title: "Examples", hint: examples_hint_open }
 
             HintDialog {
