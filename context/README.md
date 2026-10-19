@@ -21,6 +21,16 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-18: 1.11.6 submitted
+
+Two changes. Hint dialogs stop fading over text that already fits: the fade now follows the scroll, so it only shows at an edge with more text past it. That one lives in orangui (b95fb46), and every repo that pins orangui or zwipe-core moved its pin the same day: cairn, portfolio and zynergy.
+
+The second is iOS only. Profile has an App icon row with the same moon and sun button as Theme, and the sheet shows the home-screen icon in every theme's colors. `zcripts/ios/icon.py` renders 61 alternates, `zcripts/ios/icons.sh` bundles them, and the dev deploy and new `sim_icons.sh` scripts add them to phone and simulator builds, which dx leaves without icons. Android hides the row, since it has no alternate icons.
+
+iOS build 96 and Android vc59 both went in for review the same day. Store notes: [1.11.6](operations/store-submissions/1.11.6/whats_new.md). The changelog entry was reworded to say iOS after the cut (6dc9a2aa), so the apps' bundled changelog has the older wording.
+
+Same day, rustls went to 0.23.46 in cairn and zynergy for the same four advisories zwipe fixed on the 16th, and the old local branches were cleared out of every repo.
+
 ## 2026-10-16: rustls 0.23.46
 
 The security audit failed on the 1.11.5 push. rustls 0.23.45 picked up four advisories after Oct 13, RUSTSEC-2026-0346 through 0349.
