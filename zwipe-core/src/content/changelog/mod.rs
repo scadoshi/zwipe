@@ -34,7 +34,9 @@ pub const RELEASES: &[Release] = &[
         version: "1.12.0",
         date: "Oct 19, 2026",
         entries: &[
-            "Three new themes: Monokai Octagon, Oxocarbon and Poimandres, in dark and light",
+            "Four Monokai Pro themes: Pro, Machine, Octagon and Spectrum, in dark and light",
+            "Five more themes: Darcula, GitHub High Contrast, Kanagawa Dragon, Oxocarbon and Poimandres, in dark and light",
+            "Ristretto is now called Monokai Pro Ristretto",
             "iOS: the app icon on Profile comes in the new themes too",
         ],
     },

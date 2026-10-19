@@ -13,7 +13,7 @@ Full-stack Rust:
 - `components`: the Magic UI (card rows and details, oracle text, the changelog, the deck charts) over [orangui](https://github.com/scadoshi/orangui), the generic Dioxus kit it re-exports; shared by the app and the site
 - `zwipe-client`: typed API client over the shared contracts, one call function for every endpoint; used by both the app and the site
 - `zerver`: Axum REST API, PostgreSQL, SQLx, JWT auth, Scryfall sync
-- `zwiper`: Dioxus iOS and Android app, swipe gestures, 34 themes, dark mode
+- `zwiper`: Dioxus iOS and Android app, swipe gestures, 40 themes, dark mode
 - `zite`: Dioxus site at [zwipe.net](https://zwipe.net) (guides, changelog, shared deck pages, email verification and password reset)
 - `zervice`: background jobs (Scryfall sync, session cleanup)
 

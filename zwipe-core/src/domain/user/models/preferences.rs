@@ -12,19 +12,26 @@ pub const ALLOWED_THEMES: &[&str] = &[
     "achromatopsia",
     "ayu",
     "catppuccin",
+    "darcula",
     "deuteranopia",
     "docs-rs",
     "dracula",
     "ethereal",
     "everforest",
     "github",
+    "github-high-contrast",
     "gruvbox",
     "hackerman",
     "kanagawa",
+    "kanagawa-dragon",
     "matte-black",
     "miasma",
     "monokai",
-    "monokai-octagon",
+    "monokai-pro",
+    "monokai-pro-machine",
+    "monokai-pro-octagon",
+    "monokai-pro-ristretto",
+    "monokai-pro-spectrum",
     "night-owl",
     "nord",
     "one-dark",
@@ -33,7 +40,6 @@ pub const ALLOWED_THEMES: &[&str] = &[
     "poimandres",
     "powershell",
     "protanopia",
-    "ristretto",
     "rose-pine",
     "rustbox",
     "solarized",
@@ -48,6 +54,11 @@ pub const ALLOWED_THEMES: &[&str] = &[
 /// The themes with palettes adjusted for color-vision deficiency. Every theme
 /// picker groups these in their own section at the bottom, so the list lives
 /// here once.
+/// Slugs a theme has had before, mapped to its current one, so a client built
+/// before the rename keeps working until it updates. The server's migration
+/// moves stored rows the same way.
+pub const RENAMED_THEMES: &[(&str, &str)] = &[("ristretto", "monokai-pro-ristretto")];
+
 pub const COLORBLIND_THEMES: &[&str] =
     &["protanopia", "deuteranopia", "tritanopia", "achromatopsia"];
 
@@ -61,6 +72,7 @@ pub fn display_theme_name(slug: &str) -> String {
         "rose-pine" => return "Rosé Pine".to_string(),
         "vscode" => return "VS Code".to_string(),
         "github" => return "GitHub".to_string(),
+        "github-high-contrast" => return "GitHub High Contrast".to_string(),
         "synthwave-84" => return "Synthwave '84".to_string(),
         "powershell" => return "PowerShell".to_string(),
         "docs-rs" => return "docs.rs".to_string(),
@@ -135,6 +147,12 @@ impl UpdatePreferences {
         exclude_universes_beyond: Option<bool>,
         universes_beyond_exceptions: Option<Vec<String>>,
     ) -> Result<Self, InvalidUpdatePreferences> {
+        let theme = theme.map(|t| {
+            RENAMED_THEMES
+                .iter()
+                .find(|(from, _)| *from == t)
+                .map_or(t, |(_, to)| to)
+        });
         if let Some(theme) = theme
             && !ALLOWED_THEMES.contains(&theme)
         {
@@ -202,19 +220,26 @@ mod tests {
                 "Achromatopsia",
                 "Ayu",
                 "Catppuccin",
+                "Darcula",
                 "Deuteranopia",
                 "docs.rs",
                 "Dracula",
                 "Ethereal",
                 "Everforest",
                 "GitHub",
+                "GitHub High Contrast",
                 "Gruvbox",
                 "Hackerman",
                 "Kanagawa",
+                "Kanagawa Dragon",
                 "Matte Black",
                 "Miasma",
                 "Monokai",
-                "Monokai Octagon",
+                "Monokai Pro",
+                "Monokai Pro Machine",
+                "Monokai Pro Octagon",
+                "Monokai Pro Ristretto",
+                "Monokai Pro Spectrum",
                 "Night Owl",
                 "Nord",
                 "One Dark",
@@ -223,7 +248,6 @@ mod tests {
                 "Poimandres",
                 "PowerShell",
                 "Protanopia",
-                "Ristretto",
                 "Rosé Pine",
                 "Rustbox",
                 "Solarized",
@@ -260,6 +284,15 @@ mod tests {
             let result = UpdatePreferences::new(id, Some(theme), Some(true), None, None);
             assert!(result.is_ok(), "should accept theme: {theme}");
         }
+    }
+
+    #[test]
+    fn an_old_slug_updates_to_its_current_theme() {
+        let result = UpdatePreferences::new(Uuid::new_v4(), Some("ristretto"), None, None, None);
+        assert_eq!(
+            result.unwrap().theme.as_deref(),
+            Some("monokai-pro-ristretto")
+        );
     }
 
     #[test]

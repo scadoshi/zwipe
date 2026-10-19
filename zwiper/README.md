@@ -19,4 +19,4 @@ Feature flags select the Dioxus renderer: `mobile` (default), `web`, `desktop`.
 - Session: JWT + refresh token, stored in the iOS keychain (`keyring`) and in an app-private file on Android (which has no keyring backend)
 - Domain types: imported from `zwipe-core`
 - Shared UI: `components` supplies cross-surface components and CSS (buttons, chips, card row/details, theme picker, changelog)
-- 34 themes: user-selectable, each with a light and dark variant
+- 40 themes: user-selectable, each with a light and dark variant

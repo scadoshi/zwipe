@@ -21,7 +21,7 @@ Short-form vertical videos (TikTok / Reels / Shorts). One file per video, each a
 | 3 | [video_03_stops_when_youre_done.md](video_03_stops_when_youre_done.md) | Smart targeting | Land target, budget target, price filter | P2 |
 | 4 | [video_04_draw_odds.md](video_04_draw_odds.md) | Consistency math | Turn-by-turn draw odds | **P1** |
 | 5 | [video_05_synergy.md](video_05_synergy.md) | Synergy-aware swipes | Synergy ON/OFF toggle (now community-signal blended) | P2 |
-| 6 | [video_06_deck_profile.md](video_06_deck_profile.md) | Make it yours | Tags, brackets, archetype→otag seed, 34 themes | P3 |
+| 6 | [video_06_deck_profile.md](video_06_deck_profile.md) | Make it yours | Tags, brackets, archetype→otag seed, 40 themes | P3 |
 | 7 | [video_07_know_every_card.md](video_07_know_every_card.md) | Know every card | Rules dialog, DFC flip, printings, tap-a-tag definitions | P3 |
 | 8 | [video_08_share_your_deck.md](video_08_share_your_deck.md) | Share your deck as a link | Public `/deck/:token` page, web render, MVP headline | **P1** |
 | 9 | [video_09_deck_mvps.md](video_09_deck_mvps.md) | Star your MVPs | 3 MVP slots, ★ in list, share-page headline | P2 |
