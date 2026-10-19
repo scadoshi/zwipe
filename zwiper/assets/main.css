@@ -2416,6 +2416,13 @@ button {
     margin-bottom: 0;
 }
 
+/* Filter sheet labels: each group already sits a flex gap plus its chips'
+   bottom margin below the last, so a small lead keeps the groups snug. */
+.label-row.mt-2 {
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
 .label-row .info-button {
     margin-left: 0;
     margin-right: 0.35rem;
