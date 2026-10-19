@@ -26,14 +26,7 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.13.0",
-    date: "",
-    entries: &[
-        "The backdrop is a field of shaded squares instead of grid lines, on screens and sheets",
-        "The app opens on a short splash: the backdrop rains in and the mark resolves over it before the first screen, whose figures roll as it leaves",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
@@ -47,6 +40,8 @@ pub const RELEASES: &[Release] = &[
             "The theme and App icon pickers group themes under headings by look, with high contrast and color blind last",
             "Ristretto is now called Monokai Pro Ristretto",
             "iOS: the app icon on Profile comes in the new themes too",
+            "The backdrop is a field of shaded squares instead of grid lines, on screens and sheets",
+            "The app opens on a short splash: the backdrop rains in and the mark resolves over it before the first screen, whose figures roll as it leaves",
         ],
     },
     Release {
