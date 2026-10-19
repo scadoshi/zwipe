@@ -3464,6 +3464,10 @@ button {
    the grid as shaded squares on a fixed layer under every screen. The
    screen column goes transparent so the layer shows through; a sheet keeps
    its sink so the screen under it stays hidden. */
+/* The screen painted the primary color over the whole viewport, which hid
+   the layer entirely; it goes clear too. The header and action bar keep
+   their own fills. */
+.screen,
 .screen-content {
     background-image: none;
     background-color: transparent;
