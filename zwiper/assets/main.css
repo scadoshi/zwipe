@@ -3473,6 +3473,30 @@ button {
     background-color: transparent;
 }
 
+/* The screen's safe-area padding is outside the header and the action bar,
+   so the field showed in the status bar and home indicator strips. Two
+   fixed bands in the primary color fill them, as the screen's fill did. */
+.screen::before,
+.screen::after {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-color: var(--bg-primary);
+}
+
+.screen::before {
+    top: 0;
+    height: env(safe-area-inset-top, 0px);
+}
+
+.screen::after {
+    bottom: 0;
+    height: env(safe-area-inset-bottom, 0px);
+}
+
 :where(.sheet-content) {
     background-image: none;
 }
@@ -3489,8 +3513,8 @@ button {
     background-color: var(--bg-sink);
     pointer-events: none;
     overflow: hidden;
-    mask-image: linear-gradient(to bottom, #000 0, rgba(0, 0, 0, 0.55) 45vh, transparent 100vh);
-    -webkit-mask-image: linear-gradient(to bottom, #000 0, rgba(0, 0, 0, 0.55) 45vh, transparent 100vh);
+    mask-image: linear-gradient(to bottom, #000 0, rgba(0, 0, 0, 0.45) 45vh, transparent 100vh);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0, rgba(0, 0, 0, 0.45) 45vh, transparent 100vh);
 }
 
 .grid-cell {
@@ -3506,23 +3530,23 @@ button {
 }
 
 .grid-cell-1 {
-    --lit: 3%;
+    --lit: 1.5%;
 }
 
 .grid-cell-2 {
-    --lit: 7%;
+    --lit: 3%;
 }
 
 .grid-cell-3 {
-    --lit: 12%;
+    --lit: 5%;
 }
 
 .grid-cell-4 {
-    --lit: 18%;
+    --lit: 7.5%;
 }
 
 .grid-cell-5 {
-    --lit: 26%;
+    --lit: 10%;
 }
 
 .grid-cell-breathes {
