@@ -42,6 +42,10 @@ pub const RELEASES: &[Release] = &[
             "iOS: the app icon on Profile comes in the new themes too",
             "The backdrop is a field of shaded squares instead of grid lines, on screens and sheets",
             "The app opens on a short splash: the backdrop rains in and the mark resolves over it before the first screen, whose figures roll as it leaves",
+            "Chip row labels are tags with no colon",
+            "The deck list's tags fold behind a Tags chip",
+            "The Oracle tags dictionary's letter rail fades only at the edge with more letters past it",
+            "The filter sheet's sections sit closer together",
         ],
     },
     Release {
