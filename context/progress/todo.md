@@ -8,6 +8,8 @@ Only open, actionable items live here. When something ships, its outcome moves t
 
 ## Next Up
 
+- [ ] **Reshoot the store screenshots and the marketing videos after the 1.12.0 look.** Gruvbox's accent is its aqua now (orangui `1ac1b5b`), the backdrop is shaded squares and the app opens on a splash, so every screenshot in `context/operations/ios/app-store/submission/screenshots/` and `context/marketing/` shows the old blue over grid lines, and so do the zwipe shots on the portfolio. Skipped on purpose for the 1.12.0 cut (2026-10-19); redo them together once 1.12.0 is live, the 16 Pro Max simulator on iOS 26.5 is the device.
+
 - [x] ~~**Light-mode app icons paint the mark in the accent color, then rebuild and resubmit 1.11.6.**~~ DONE 2026-10-18 (`2233eb42`, cairn `e15852e`): `icon.py` takes the light mark color from `--accent-primary`, the sheet tiles use `var(--logo)`, both apps re-rendered and deployed to the phone, and iOS build 97 replaces the rejected 96. Android vc59 never had the row and went live as is.
 
 - [ ] **Confirm phone deploys ship the app icon.** Builds put on the phone by `zcripts/ios/deploy.sh` showed a blank icon through 2026-10-18, because dx never runs actool and the script installed the bundle as built. Since `17d06c6b` (2026-10-18) `deploy.sh` runs `zcripts/ios/icons.sh` after the build and signs the bundle again, so the next deploy from a pulled main should carry the gruvbox icon and the 99 alternates. Nobody has deployed from that commit yet: run `zcripts/ios/deploy.sh --device scotland-mobile`, check the home screen, then try the App icon row. If the icon is still blank, the re-sign is the first suspect (`codesign -dvv` on the installed bundle).
