@@ -35,7 +35,7 @@ pub const RELEASES: &[Release] = &[
         date: "Oct 18, 2026",
         entries: &[
             "Hint text no longer fades out at the edges when it all fits",
-            "Profile: the app icon can be drawn in any theme's colors, dark or light",
+            "iOS: the app icon on Profile can be drawn in any theme's colors, dark or light",
         ],
     },
     Release {
