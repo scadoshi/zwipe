@@ -420,6 +420,9 @@ pub fn DeckList() -> Element {
     let collapsed_groups: Signal<HashSet<String>> = use_signal(HashSet::new);
     let mut selected_colors: Signal<HashSet<Color>> = use_signal(HashSet::new);
     let mut selected_tags: Signal<HashSet<String>> = use_signal(HashSet::new);
+    // The deck tags fold behind one chip, so the row stays short on a
+    // library with many; a tag that is on stays in view while folded.
+    let mut tags_open = use_signal(|| false);
     let mut show_more_sheet = use_signal(|| false);
 
     // Refresh user on mount so email_verified_at is current without re-login.
@@ -543,7 +546,7 @@ pub fn DeckList() -> Element {
                         rsx! {
                             if show_rows {
                                 div { class: "chip-row",
-                                    span { class: "chip-row-label", "Group by" }
+                                    span { class: "stat-chip stat-chip-p1 chip-row-label", "Group by" }
                                     for option in DeckGroupBy::all() {
                                         Chip {
                                             key: "{option}",
@@ -554,7 +557,7 @@ pub fn DeckList() -> Element {
                                     }
                                 }
                                 div { class: "chip-row",
-                                    span { class: "chip-row-label", "Show" }
+                                    span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
                                     Chip {
                                         selected: all_on,
                                         onclick: move |_| {
@@ -581,8 +584,13 @@ pub fn DeckList() -> Element {
                                         for (i, size) in ["md", "sm", "lg", "sm", "md", "sm", "lg", "md"].iter().enumerate() {
                                             div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
                                         }
-                                    } else {
-                                        for (key, label) in tags_present {
+                                    } else if !tags_present.is_empty() {
+                                        Chip {
+                                            selected: tags_open(),
+                                            onclick: move |_| tags_open.set(!tags_open()),
+                                            if tags_open() { "Tags \u{25B4}" } else { "Tags \u{25BE}" }
+                                        }
+                                        for (key, label) in tags_present.into_iter().filter(|(key, _)| tags_open() || selected_tags().contains(key)) {
                                             Chip {
                                                 key: "{key}",
                                                 selected: selected_tags().contains(&key),

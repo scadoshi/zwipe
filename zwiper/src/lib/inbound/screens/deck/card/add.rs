@@ -1121,7 +1121,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // Source selector chips
                 div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                     div { class: "chip-row",
-                        span { class: "chip-row-label", "From" }
+                        span { class: "stat-chip stat-chip-p1 chip-row-label", "From" }
                         for (label, variant) in [("Search", AddSource::Search), ("Maybeboard", AddSource::Maybeboard)] {
                             Chip {
                                 selected: add_source() == variant,

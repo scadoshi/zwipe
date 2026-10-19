@@ -561,7 +561,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 // Board filter chips
                 div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                     div { class: "chip-row",
-                        span { class: "chip-row-label", "Boards" }
+                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Boards" }
                         for (label, variant) in [("Main", BoardFilter::Deck), ("Maybe", BoardFilter::Maybeboard), ("Side", BoardFilter::Sideboard), ("All", BoardFilter::All)] {
                             Chip {
                                 selected: board_filter() == variant,
