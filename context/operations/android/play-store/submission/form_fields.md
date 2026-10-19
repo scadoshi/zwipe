@@ -61,7 +61,7 @@ Other tools:
 - Set a land target and a price budget, and get warned as you drift
 - Star your deck's MVPs and share any deck with a public link
 - Import and export decklists in standard text format, or import straight from a deck-list URL
-- 31 color themes with dark and light modes, including colorblind-accessible options
+- 34 color themes with dark and light modes, including colorblind-accessible options
 - 110,000+ cards synced nightly
 - Free to use, no ads, no microtransactions
 - Your decks sync across sessions and devices

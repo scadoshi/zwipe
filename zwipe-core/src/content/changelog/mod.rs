@@ -31,6 +31,14 @@ pub const UPCOMING: &[Release] = &[];
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
     Release {
+        version: "1.12.0",
+        date: "Oct 19, 2026",
+        entries: &[
+            "Three new themes: Monokai Octagon, Oxocarbon and Poimandres, in dark and light",
+            "iOS: the app icon on Profile comes in the new themes too",
+        ],
+    },
+    Release {
         version: "1.11.6",
         date: "Oct 18, 2026",
         entries: &[

@@ -25,7 +25,7 @@ The running log, newest first. Update this when something ships; [`progress/todo
 
 Two changes. Hint dialogs stop fading over text that already fits: the fade now follows the scroll, so it only shows at an edge with more text past it. That one lives in orangui (b95fb46), and every repo that pins orangui or zwipe-core moved its pin the same day: cairn, portfolio and zynergy.
 
-The second is iOS only. Profile has an App icon row with the same moon and sun button as Theme, and the sheet shows the home-screen icon in every theme's colors. `zcripts/ios/icon.py` renders 61 alternates, `zcripts/ios/icons.sh` bundles them, and the dev deploy and new `sim_icons.sh` scripts add them to phone and simulator builds, which dx leaves without icons. Android hides the row, since it has no alternate icons.
+The second is iOS only. Profile has an App icon row with the same moon and sun button as Theme, and the sheet shows the home-screen icon in every theme's colors. `zcripts/ios/icon.py` renders 67 alternates, `zcripts/ios/icons.sh` bundles them, and the dev deploy and new `sim_icons.sh` scripts add them to phone and simulator builds, which dx leaves without icons. Android hides the row, since it has no alternate icons.
 
 iOS build 96 and Android vc59 both went in for review the same day. Store notes: [1.11.6](operations/store-submissions/1.11.6/whats_new.md). The changelog entry was reworded to say iOS after the cut (6dc9a2aa), so the apps' bundled changelog has the older wording.
 
@@ -353,7 +353,7 @@ Three days that closed the whole release train:
 
 ## 2026-07-24 (1.7.3 clients SUBMITTED: iOS build 68 / Android vc30)
 
-- **1.7.3 submitted to both stores 2026-07-24.** iOS build 68 (first build on **Xcode 26.6**/17F113, updated per the allowlist rule) via Transporter; Android vc30, the **first targetSdk 36 build**, which clears the Play target-API deadline (2026-08-31) a month early (runbook updated to 36). Client payload: filter current/staged split (+ maybeboard empty-Apply fix), average P/T, ranked otag search, dialog otag definitions. Store listing refreshed: new iOS Description (oracle tags/dictionary/draw odds/31 themes; "mechanical role" retired), new promotional text, 1.7.3 what's-new on both stores.
+- **1.7.3 submitted to both stores 2026-07-24.** iOS build 68 (first build on **Xcode 26.6**/17F113, updated per the allowlist rule) via Transporter; Android vc30, the **first targetSdk 36 build**, which clears the Play target-API deadline (2026-08-31) a month early (runbook updated to 36). Client payload: filter current/staged split (+ maybeboard empty-Apply fix), average P/T, ranked otag search, dialog otag definitions. Store listing refreshed: new iOS Description (oracle tags/dictionary/draw odds/34 themes; "mechanical role" retired), new promotional text, 1.7.3 what's-new on both stores.
 - **`MIN_CLIENT_VERSION` floored to 1.7.0** (owner, 2026-07-24, server env var): the Phase 5S step-3 cleanup (drop the legacy `commander_oracle_id` wire + fallback) is now unblocked.
 - **Changelog flipped to shipped**: 1.7.3 moved `UPCOMING` → `RELEASES` (Jul 24, 2026), zite home banner now announces 1.7.3. Discord intake fixes also landed 2026-07-24: guide-card tags recolored per tag (stable across cards, `a9468209`), maybeboard filter fix (`f8b139ee`).
 
@@ -544,7 +544,7 @@ All 14 routes below are live. The ones that read the public API (`/changelog`, `
 | Profile (change email/username/password) | ✅ |
 | Account deletion | ✅ |
 | Unverified email toast + soft limits | ✅ |
-| Preferences screen (31 themes, dark mode) | ✅ |
+| Preferences screen (34 themes, dark mode) | ✅ |
 | Set name on swipe screens | ✅ |
 | Clear filter (inline button + clears stack) | ✅ |
 | Entrance transitions on all screens | ✅ |

@@ -98,7 +98,7 @@ done
 ~/Developer/zwipe/zcripts/ios/icons.sh $APP
 ```
 
-Compiles the gruvbox primary from `zwiper/assets/favicon` and one alternate per theme and mode from `zwiper/assets/app-icons` into `Assets.car`, and writes `CFBundleIcons` (primary plus `CFBundleAlternateIcons`) into `Info.plist`. The alternates are what Profile's App icon sheet switches between; `zcripts/ios/icon.py` re-renders them when orangui adds a theme. It should print `icons: Assets.car, primary + 61 alternates`.
+Compiles the gruvbox primary from `zwiper/assets/favicon` and one alternate per theme and mode from `zwiper/assets/app-icons` into `Assets.car`, and writes `CFBundleIcons` (primary plus `CFBundleAlternateIcons`) into `Info.plist`. The alternates are what Profile's App icon sheet switches between; `zcripts/ios/icon.py` re-renders them when orangui adds a theme. It should print `icons: Assets.car, primary + 67 alternates`.
 
 ## 4. Sign
 

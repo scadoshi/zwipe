@@ -11,7 +11,7 @@
 | 0:06–0:10 | Set the power level (WotC brackets 1–5) | Set your bracket. |
 | 0:10–0:12 | Pick other-tags (Budget / Jank / Meme / Precon) | Budget, jank, precon, and more. |
 | 0:12–0:14 | Archetype seeds oracle tags (chips appear on select) | Your archetype seeds its tags. |
-| 0:14–0:16 | Theme picker montage: 2-3 fast theme swaps | 31 themes. Yours everywhere. |
+| 0:14–0:16 | Theme picker montage: 2-3 fast theme swaps | 34 themes. Yours everywhere. |
 | 0:16–0:20 | End card | (video_end_card.png) |
 
 ## Shots to capture
@@ -38,7 +38,7 @@ First-person dev voice, ~150 wpm.
 | 0:06–0:10 | Bracket three. Upgraded precon territory, that's honest. | Set your bracket. |
 | 0:10–0:12 | Budget, jank, meme, precon. Say what it is. | Budget, jank, precon, and more. |
 | 0:12–0:14 | Picking aristocrats tagged my strategy for me. Sacrifice outlets, death triggers. | Your archetype seeds its tags. |
-| 0:14–0:16 | Thirty one themes. This one's Gruvbox. This one hurts. | 31 themes. Yours everywhere. |
+| 0:14–0:16 | Thirty-four themes. This one's Gruvbox. This one hurts. | 34 themes. Yours everywhere. |
 | 0:16–0:20 | (end card, no VO) | |
 
 Delivery notes: "this one hurts" lands over the brightest light theme in the swap montage; pick the theme for the joke. The seeded otag chips in beat 5 should visibly appear on selection, so film archetype-pick and chips in one take (same take covers video #11 beat 5).
