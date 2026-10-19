@@ -2738,10 +2738,17 @@ button {
    sideways while folded and easing down when open, a size up so it reads
    in a chip. */
 .chip-fold-arrow {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* A fixed square box with the glyph centered in it, so the turn is
+       about the arrow's own middle rather than the glyph cell's. */
+    width: 1em;
+    height: 1em;
     margin-left: 0.35rem;
     font-size: 1rem;
     line-height: 1;
+    transform-origin: 50% 50%;
     transition: transform 0.2s ease;
 }
 
