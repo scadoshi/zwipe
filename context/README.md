@@ -29,6 +29,8 @@ The second is iOS only. Profile has an App icon row with the same moon and sun b
 
 iOS build 96 and Android vc59 both went in for review the same day. Store notes: [1.11.6](operations/store-submissions/1.11.6/whats_new.md). The changelog entry was reworded to say iOS after the cut (6dc9a2aa), so the apps' bundled changelog has the older wording.
 
+Later that night the light-mode icons turned out to paint the Z in the text color, where the sites paint the mark in the accent (orangui's `--logo`). `icon.py` now reads `--accent-primary` for light, the sheet tiles use `var(--logo)`, and iOS build 97 replaced the rejected 96 with the fixed set (`2233eb42`). Android vc59 was already live and has no App icon row, so it stayed.
+
 Same day, rustls went to 0.23.46 in cairn and zynergy for the same four advisories zwipe fixed on the 16th, and the old local branches were cleared out of every repo.
 
 ## 2026-10-16: rustls 0.23.46
