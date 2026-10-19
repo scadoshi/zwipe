@@ -42,7 +42,6 @@ pub const RELEASES: &[Release] = &[
             "iOS: the app icon on Profile comes in the new themes too",
             "The backdrop is a field of shaded squares instead of grid lines, on screens and sheets",
             "The app opens on a short splash: the backdrop rains in and the mark resolves over it before the first screen, whose figures roll as it leaves",
-            "Gruvbox's accent is its aqua, with its blue in the swatches and syntax where the aqua was",
         ],
     },
     Release {
