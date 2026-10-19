@@ -86,6 +86,9 @@ pub(crate) fn TagSelect(
 
     rsx! {
         div { class: "{screen_class}",
+            // A screen over another paints its own backdrop, since .screen is
+            // clear and the one beneath would show through.
+            ::components::GridCells { still: true }
             if open() {
                 ScreenHeader { title: "Deck tags", hint: hint_open }
 
