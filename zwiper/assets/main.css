@@ -3486,3 +3486,10 @@ button {
 .app-shell {
     isolation: isolate;
 }
+
+/* A screen stacked over another (the pickers, the dictionary) carries its
+   own GridCells; this is the floor under that, so a stacked screen without
+   one still hides what it covers. */
+.screen .screen {
+    background-color: var(--bg-sink);
+}
