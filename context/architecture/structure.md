@@ -133,7 +133,7 @@ zwipe-core/src/
 │   │   │   ├── email.rs            # Email handling
 │   │   │   ├── hints.rs            # One-time UI hint tracking
 │   │   │   ├── theme.rs            # ThemeConfig
-│   │   │   └── preferences.rs      # Theme (ALLOWED_THEMES, 31), dark mode, franchises
+│   │   │   └── preferences.rs      # Theme (ALLOWED_THEMES, 50), dark mode, franchises
 │   │   └── requests/
 │   │       └── get_user.rs
 │   │
