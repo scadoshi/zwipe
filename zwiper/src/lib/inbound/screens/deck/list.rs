@@ -580,10 +580,9 @@ pub fn DeckList() -> Element {
                                         }
                                     }
                                     if loading {
-                                        // Deck-derived tag chips ghost until the list lands.
-                                        for (i, size) in ["md", "sm", "lg", "sm", "md", "sm", "lg", "md"].iter().enumerate() {
-                                            div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
-                                        }
+                                        // The Tags fold chip ghosts until the list lands; the
+                                        // tags themselves load folded behind it.
+                                        div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
                                     } else if !tags_present.is_empty() {
                                         Chip {
                                             selected: tags_open(),
