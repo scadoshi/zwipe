@@ -24,12 +24,11 @@
                  keeping high contrast. Defaults = gruvbox. */
                 --qr-bg: #ebdbb2;
                 --qr-fg: #282828;
-                --grid-line: rgba(
-                    235,
-                    219,
-                    178,
-                    0.025
-                ); /* faint grid; JS recolors per theme from --text-primary */
+                /* the grid-cells field: one image covering the full bleed,
+                   drawn by JS per theme in its --text-primary */
+                --cells: none;
+                --bleed-w: 2.72in;
+                --bleed-h: 3.7in;
 
                 /* True MTG / MPC poker cut size = 63 x 88 mm = 2.48 x 3.46 in. */
                 --card-w: 2.48in;
@@ -158,15 +157,9 @@
             body.show-bleed .bleed-frame {
                 padding: 0.12in; /* MPC bleed margin per side */
                 background-color: var(--bg-primary);
-                background-image:
-                    linear-gradient(var(--grid-line) 1px, transparent 1px),
-                    linear-gradient(
-                        90deg,
-                        var(--grid-line) 1px,
-                        transparent 1px
-                    );
-                background-size: 7px 7px;
-                background-position: 4.5px 4.5px;
+                background-image: var(--cells);
+                background-size: var(--bleed-w) var(--bleed-h);
+                background-position: 0 0;
             }
             body.show-bleed .card {
                 box-shadow: none;
@@ -180,23 +173,19 @@
                 position: relative;
                 width: var(--card-w);
                 height: var(--card-h);
-                /* theme-colored frame + grid (no black border) so the cut card has a
-                 theme-colored edge, continuous with the bleed */
+                /* theme-colored frame + grid cells (no black border) so the cut card
+                 has a theme-colored edge; the field is the bleed's, offset by the
+                 bleed margin so the cells run on unbroken past the trim */
                 background-color: var(--bg-primary);
-                background-image:
-                    linear-gradient(var(--grid-line) 1px, transparent 1px),
-                    linear-gradient(
-                        90deg,
-                        var(--grid-line) 1px,
-                        transparent 1px
-                    );
-                background-size: 7px 7px;
+                background-image: var(--cells);
+                background-size: var(--bleed-w) var(--bleed-h);
+                background-position: -0.12in -0.12in;
                 border-radius: 11px; /* corner round like a real card */
                 padding: 9px; /* frame thickness */
                 overflow: hidden;
             }
 
-            /* inner card face — transparent so the card's single grid shows through
+            /* inner card face — transparent so the card's grid cells show through
                continuously (panels float on it); no border, no separate grid */
             .face {
                 position: relative;
@@ -547,7 +536,7 @@
             /* ====================================================== */
             /*  CARD BACK — full Zwipe wordmark                       */
             /* ====================================================== */
-            /* no container: the wordmark rests directly on the card's grid */
+            /* no container: the wordmark rests directly on the card's grid cells */
             .back-face {
                 padding: 9px;
                 justify-content: center;
@@ -817,48 +806,48 @@
 
             document.getElementById("bleed").addEventListener("change", render);
 
-            /* ---- theme selector: applies a .theme-* class from the crate's
-   themes.css. Dark themes only. Mirrors ALLOWED_THEMES (zwipe-core
-   preferences.rs) + the picker's display names, colorblind themes last. ---- */
-            const THEMES = [
-                ["ayu-dark", "Ayu"],
-                ["catppuccin-dark", "Catppuccin"],
-                ["docs-rs-dark", "docs.rs"],
-                ["dracula-dark", "Dracula"],
-                ["ethereal-dark", "Ethereal"],
-                ["everforest-dark", "Everforest"],
-                ["github-dark", "GitHub"],
-                ["gruvbox-dark", "Gruvbox"],
-                ["hackerman-dark", "Hackerman"],
-                ["kanagawa-dark", "Kanagawa"],
-                ["matte-black-dark", "Matte Black"],
-                ["miasma-dark", "Miasma"],
-                ["monokai-dark", "Monokai"],
-                ["night-owl-dark", "Night Owl"],
-                ["nord-dark", "Nord"],
-                ["one-dark-dark", "One Dark"],
-                ["osaka-jade-dark", "Osaka Jade"],
-                ["powershell-dark", "PowerShell"],
-                ["ristretto-dark", "Ristretto"],
-                ["rose-pine-dark", "Rosé Pine"],
-                ["rustbox-dark", "Rustbox"],
-                ["solarized-dark", "Solarized"],
-                ["synthwave-84-dark", "Synthwave '84"],
-                ["tokyo-night-dark", "Tokyo Night"],
-                ["vantablack-dark", "Vantablack"],
-                ["vscode-dark", "VS Code"],
-                ["zenburn-dark", "Zenburn"],
-                ["achromatopsia-dark", "Achromatopsia"],
-                ["deuteranopia-dark", "Deuteranopia"],
-                ["protanopia-dark", "Protanopia"],
-                ["tritanopia-dark", "Tritanopia"],
+            /* ---- theme selector: applies a .theme-* class from orangui's
+   themes.css. Dark themes only. Mirrors orangui's THEME_GROUPS, the order and
+   sections every app picker shows. ---- */
+            const THEME_GROUPS = [
+                ["Warm & earthy", ["darcula", "gruvbox", "kanagawa-dragon", "melange", "miasma", "rustbox", "zenburn"]],
+                ["Cool & blue", ["ayu", "bluloco", "kanagawa", "night-owl", "nightfox", "nord", "one-dark", "poimandres", "powershell", "solarized", "tokyo-night"]],
+                ["Green & teal", ["everforest", "hackerman", "osaka-jade", "terafox"]],
+                ["Purple & pink", ["catppuccin", "dracula", "rose-pine", "synthwave-84"]],
+                ["Black & gray", ["docs-rs", "eclipse", "github", "matte-black", "neovim", "oxocarbon", "vantablack", "visual-studio", "vscode"]],
+                ["Bright & colorful", ["ethereal", "material", "monokai", "monokai-pro", "monokai-pro-machine", "monokai-pro-octagon", "monokai-pro-ristretto", "monokai-pro-spectrum", "xcode"]],
+                ["High contrast & color blind", ["achromatopsia", "deuteranopia", "github-high-contrast", "modus", "protanopia", "tritanopia"]],
             ];
+            /* orangui's display_theme_name: title case, brand spellings kept */
+            const NAMES = {
+                "rose-pine": "Rosé Pine",
+                vscode: "VS Code",
+                github: "GitHub",
+                "github-high-contrast": "GitHub High Contrast",
+                "synthwave-84": "Synthwave '84",
+                powershell: "PowerShell",
+                "docs-rs": "docs.rs",
+            };
+            const themeName = (slug) =>
+                NAMES[slug] ??
+                slug
+                    .split("-")
+                    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                    .join(" ");
+            const THEMES = THEME_GROUPS.flatMap(([, slugs]) =>
+                slugs.map((slug) => [slug + "-dark", themeName(slug)]),
+            );
             const themeSel = document.getElementById("theme");
-            for (const [value, label] of THEMES) {
-                const o = document.createElement("option");
-                o.value = value;
-                o.textContent = label;
-                themeSel.appendChild(o);
+            for (const [label, slugs] of THEME_GROUPS) {
+                const group = document.createElement("optgroup");
+                group.label = label;
+                for (const slug of slugs) {
+                    const o = document.createElement("option");
+                    o.value = slug + "-dark";
+                    o.textContent = themeName(slug);
+                    group.appendChild(o);
+                }
+                themeSel.appendChild(group);
             }
             themeSel.value = "gruvbox-dark"; // app default, not alphabetical first
 
@@ -888,17 +877,52 @@
                 document.body.style.setProperty("--qr-bg", light.trim());
                 document.body.style.setProperty("--qr-fg", dark.trim());
 
-                // grid texture = this theme's text color at low opacity (exact theme match)
-                const t = tx.trim().replace("#", "");
-                if (t.length >= 6) {
-                    const r = parseInt(t.slice(0, 2), 16),
-                        g = parseInt(t.slice(2, 4), 16),
-                        b = parseInt(t.slice(4, 6), 16);
-                    document.body.style.setProperty(
-                        "--grid-line",
-                        `rgba(${r},${g},${b},.025)`,
-                    );
+                document.body.style.setProperty(
+                    "--cells",
+                    `url(${cellField(tx.trim())})`,
+                );
+            }
+
+            /* ---- grid cells: the app's backdrop (orangui grid-cells.js), still.
+   Same seeded pattern, five shades of the theme's text color and rounded
+   corners, sized so the trim width holds a whole number of cells. Drawn once
+   over the full bleed at export resolution. ---- */
+            const IN = 96; // CSS px per inch
+            const BLEED_W = 2.72 * IN,
+                BLEED_H = 3.7 * IN,
+                TRIM_INSET = 0.12 * IN;
+            const CELL = (2.48 * IN) / 14; // 14 cells across the trim
+            const CELL_SHADES = [0.015, 0.03, 0.05, 0.075, 0.1];
+            const CELL_DPR = 6; // above EXPORT_SCALE so exports stay crisp
+            function cellField(ink) {
+                const canvas = document.createElement("canvas");
+                canvas.width = Math.round(BLEED_W * CELL_DPR);
+                canvas.height = Math.round(BLEED_H * CELL_DPR);
+                const ctx = canvas.getContext("2d");
+                ctx.scale(CELL_DPR, CELL_DPR);
+                ctx.fillStyle = ink;
+                let seed = 0x9e3779b9;
+                const next = () => {
+                    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+                    return seed >>> 8;
+                };
+                // a cell boundary sits on the trim line, on every side
+                const x0 = TRIM_INSET - CELL,
+                    y0 = TRIM_INSET - CELL;
+                const cols = Math.ceil((BLEED_W - x0) / CELL),
+                    rows = Math.ceil((BLEED_H - y0) / CELL);
+                const gap = CELL / 14, // the app's 2px gap on a 28px cell
+                    w = CELL - gap,
+                    radius = w * 0.18;
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        ctx.globalAlpha = CELL_SHADES[next() % 5];
+                        ctx.beginPath();
+                        ctx.roundRect(x0 + c * CELL + gap / 2, y0 + r * CELL + gap / 2, w, w, radius);
+                        ctx.fill();
+                    }
                 }
+                return canvas.toDataURL("image/png");
             }
             themeSel.addEventListener("change", () => {
                 applyTheme();
@@ -929,13 +953,11 @@
                 let css =
                     "position:fixed;left:-99999px;top:0;display:flex;align-items:center;justify-content:center;";
                 if (bleed) {
-                    // bleed field = theme color + grid, aligned to the card's 7px grid so the
-                    // cut card has a theme-colored edge with no black border
+                    // bleed field = theme color + the same grid cells the card shows, so
+                    // the cut card has a theme-colored edge with no black border
                     css +=
                         "width:2.72in;height:3.7in;background-color:var(--bg-primary);" +
-                        "background-image:linear-gradient(var(--grid-line) 1px,transparent 1px)," +
-                        "linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);" +
-                        "background-size:7px 7px;background-position:4.5px 4.5px;";
+                        "background-image:var(--cells);background-size:2.72in 3.7in;background-position:0 0;";
                 }
                 wrap.style.cssText = css;
                 // export a clone: no drop shadow, square corners (MPC rounds the physical card)
