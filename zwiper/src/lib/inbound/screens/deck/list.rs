@@ -514,8 +514,8 @@ pub fn DeckList() -> Element {
                         // and the five colors are closed sets, so they render
                         // permanently (a color with no matching decks just yields
                         // "No decks match", never a selected chip that vanishes).
-                        // Tags are open and deck-derived, so they ghost while
-                        // loading; the deck tiles below stay skeleton.
+                        // Tags are open and deck-derived, so they load folded
+                        // behind the Tags chip; the deck tiles below stay skeleton.
                         let colors_shown: Vec<Color> = Color::all().to_vec();
                         let tags_present: Vec<(String, String)> = profiles
                             .as_ref()
@@ -579,11 +579,9 @@ pub fn DeckList() -> Element {
                                             i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
                                         }
                                     }
-                                    if loading {
-                                        // The Tags fold chip ghosts until the list lands; the
-                                        // tags themselves load folded behind it.
-                                        div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
-                                    } else if !tags_present.is_empty() {
+                                    // The Tags fold chip renders while loading and leaves
+                                    // once the list lands with no tags.
+                                    if loading || !tags_present.is_empty() {
                                         Chip {
                                             selected: tags_open(),
                                             onclick: move |_| tags_open.set(!tags_open()),
