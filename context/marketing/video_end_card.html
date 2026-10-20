@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <!-- Vertical (9:16, 1080x1920) end card for the swipe-demo video. Mirrors
-     og_default.html's look: the gruvbox-dark grid on a darkened --bg-sink, the
+     og_default.html's look: the gruvbox-dark grid cells on a darkened --bg-sink, the
      Zwipe wordmark sitting on the grid, then a hero-style bubble panel with the
      value-prop tagline, a star rating, the Free/No ads/iOS/Android tag chips,
      and zwipe.net. Sizes are scaled up from og_default for the taller canvas.
@@ -36,8 +36,6 @@
   --accent-tertiary: #d79921;
   --border-secondary: #3c3836;
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
-  --grid-line: rgba(235, 219, 162, 0.04);
-  --grid-size: 40px;
   --bg-sink: #222222;
 }
 
@@ -47,10 +45,6 @@ html, body { width: 1080px; height: 1920px; }
 
 body {
   background-color: var(--bg-sink);
-  background-image:
-    linear-gradient(var(--grid-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size: var(--grid-size) var(--grid-size);
   color: var(--text-primary);
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   -webkit-font-smoothing: antialiased;
@@ -59,6 +53,17 @@ body {
   align-items: center;
   justify-content: center;
   gap: 96px;
+}
+
+/* the grid-cells field, under everything else */
+#field {
+  position: fixed;
+  inset: 0;
+}
+
+.wordmark,
+.hero {
+  position: relative;
 }
 
 .wordmark {
@@ -132,6 +137,30 @@ body {
 </style>
 </head>
 <body>
+<!-- The backdrop the sites draw: shaded squares in place of grid lines,
+     brightest at the top and fading out down the card, drawn once the way
+     orangui's grid-cells.js draws its settled field (as og_default.html does),
+     at the larger cell this taller canvas scales to. -->
+<canvas id="field" width="1080" height="1920"></canvas>
+<script>
+(() => {
+  const c = document.getElementById("field"), ctx = c.getContext("2d");
+  const cell = 40, shades = [0.015, 0.03, 0.05, 0.075, 0.1];
+  let seed = 0x9e3779b9;
+  const next = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed >>> 8; };
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--text-primary").trim();
+  const w = cell - 2, r = w * 0.18;
+  for (let row = 0; row * cell < c.height; row++) {
+    const y = row * cell, t = y / c.height;
+    // the sites' mask: full to 0.45 at 45% of the height, then out
+    const fade = t < 0.45 ? 1 - (t / 0.45) * 0.55 : 0.45 * (1 - (t - 0.45) / 0.55);
+    for (let col = 0; col * cell < c.width; col++) {
+      ctx.globalAlpha = shades[next() % 5] * fade;
+      ctx.beginPath(); ctx.roundRect(col * cell + 1, y + 1, w, w, r); ctx.fill();
+    }
+  }
+})();
+</script>
   <pre class="wordmark">▎▎▉▉▉▉▉▉▉            ▎▎▉▉
   ▎▎▉▉▉▉▉▉▎▎▉▉    ▎▎▉▉▎▎▉▉▎▎▉▉▉▉▉▉ ▎▎▉▉▉▉▉▉▉
       ▎▎▉▉ ▎▎▉▉    ▎▎▉▉    ▎▎▉▉▉▉▉▉▉▎▎▉▉ ▎▎▉▉
