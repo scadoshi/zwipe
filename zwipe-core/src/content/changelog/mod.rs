@@ -29,7 +29,7 @@ pub struct Release {
 pub const UPCOMING: &[Release] = &[Release {
     version: "1.12.1",
     date: "",
-    entries: &["The Decks loading skeleton shows the folded Tags chip instead of a row of tags"],
+    entries: &["Decks shows the Tags chip while loading instead of a row of placeholder tags"],
 }];
 
 /// Shipped releases, newest first.
