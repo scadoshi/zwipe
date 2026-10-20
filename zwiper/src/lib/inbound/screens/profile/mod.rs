@@ -89,6 +89,7 @@ pub fn Profile() -> Element {
     let mut preferences_open = use_signal(|| false);
     let mut app_icon_open = use_signal(|| false);
     let mut app_icon_theme = use_signal(app_icon::current);
+    let app_icon_follows = use_signal(app_icon::follows_theme);
     let mut ub_exceptions_open = use_signal(|| false);
 
     // The home-screen icon's own mode, apart from the app's.
@@ -232,7 +233,10 @@ pub fn Profile() -> Element {
                 .await
             {
                 Ok(prefs) => {
-                    theme_config.set(theme_from_preferences(&prefs));
+                    let theme = theme_from_preferences(&prefs);
+                    app_icon::follow(&theme);
+                    app_icon_theme.set(app_icon::current());
+                    theme_config.set(theme);
                     said.call(if prefs.dark_mode {
                         "Dark mode on"
                     } else {
@@ -356,10 +360,14 @@ pub fn Profile() -> Element {
                                             InfoButton { topic: HintTopic::AppIcon }
                                         }
                                         div { class: "settings-row-value",
-                                            span { { display_theme_name(&app_icon_theme().name) } }
-                                            DarkModeButton {
-                                                is_dark: app_icon_theme().is_dark,
-                                                onclick: toggle_app_icon_dark,
+                                            if app_icon_follows() {
+                                                span { "Matches theme" }
+                                            } else {
+                                                span { { display_theme_name(&app_icon_theme().name) } }
+                                                DarkModeButton {
+                                                    is_dark: app_icon_theme().is_dark,
+                                                    onclick: toggle_app_icon_dark,
+                                                }
                                             }
                                             Button {
                                                 variant: ButtonVariant::Action,
@@ -521,7 +529,11 @@ pub fn Profile() -> Element {
                 LogoutDialog { open: show_logout_dialog }
                 DeleteAccountDialog { open: show_delete_dialog }
                 PreferencesSheet { open: preferences_open }
-                AppIconSheet { open: app_icon_open, icon: app_icon_theme }
+                AppIconSheet {
+                    open: app_icon_open,
+                    icon: app_icon_theme,
+                    follows: app_icon_follows,
+                }
                 UniversesBeyondExceptionsSheet {
                     open: ub_exceptions_open,
                     exceptions: ub_exceptions,

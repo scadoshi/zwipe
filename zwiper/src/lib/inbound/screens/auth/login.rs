@@ -7,7 +7,7 @@ use crate::{
         },
         router::Router,
     },
-    outbound::session::Persist,
+    outbound::{app_icon, session::Persist},
 };
 use components::{
     ActionBar, Button, ButtonVariant, TOAST_NORMAL, ThemeConfig, theme_from_preferences,
@@ -58,7 +58,9 @@ pub fn Login() -> Element {
                     new_session.infallible_save();
                     // Apply theme from preferences
                     let mut theme: Signal<ThemeConfig> = use_context();
-                    theme.set(theme_from_preferences(&new_session.preferences));
+                    let picked = theme_from_preferences(&new_session.preferences);
+                    app_icon::follow(&picked);
+                    theme.set(picked);
                     session.set(Some(new_session));
                     // The password has done its job; the signal outlives the
                     // screen in the router cache.

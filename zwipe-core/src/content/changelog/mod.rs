@@ -29,7 +29,10 @@ pub struct Release {
 pub const UPCOMING: &[Release] = &[Release {
     version: "1.12.1",
     date: "",
-    entries: &["Decks shows the Tags chip while loading instead of a row of placeholder tags"],
+    entries: &[
+        "Decks shows the Tags chip while loading instead of a row of placeholder tags",
+        "iOS: the app icon can match your theme, switching with it in dark and light",
+    ],
 }];
 
 /// Shipped releases, newest first.

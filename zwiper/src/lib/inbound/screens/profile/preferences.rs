@@ -1,8 +1,11 @@
 //! User preferences screen for theme and dark mode selection.
 
-use crate::inbound::components::{
-    auth::authed::use_authed,
-    telemetry::vocabulary::{ProfileScreen, Screen},
+use crate::{
+    inbound::components::{
+        auth::authed::use_authed,
+        telemetry::vocabulary::{ProfileScreen, Screen},
+    },
+    outbound::app_icon,
 };
 use components::{TOAST_QUICK, ThemeConfig, ThemeSheet, theme_from_preferences};
 use dioxus::prelude::*;
@@ -32,7 +35,9 @@ pub fn PreferencesSheet(open: Signal<bool>) -> Element {
                 })
                 .await
             {
-                theme_config.set(theme_from_preferences(&prefs));
+                let theme = theme_from_preferences(&prefs);
+                app_icon::follow(&theme);
+                theme_config.set(theme);
                 toast.success(
                     "Theme saved".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),

@@ -170,7 +170,10 @@ impl HintTopic {
                 }
             },
             Self::AppIcon => rsx! {
-                HintLine { "The icon on your home screen, in any theme's colors" }
+                HintBullets {
+                    HintBullet { "The icon on your home screen, in any theme's colors" }
+                    HintBullet { HintKey { "Match theme" } " keeps it in your theme as you change it" }
+                }
             },
             Self::UniversesBeyond => rsx! {
                 HintBullets {

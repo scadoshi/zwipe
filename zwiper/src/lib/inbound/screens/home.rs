@@ -12,7 +12,7 @@ use crate::{
         router::Router,
         screens::deck::card::components::image_preview::ImagePreview,
     },
-    outbound::buy_links,
+    outbound::{app_icon, buy_links},
 };
 use components::{
     ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets, HintKey,
@@ -116,7 +116,9 @@ pub fn Home() -> Element {
         spawn(async move {
             match client().get_preferences(&s).await {
                 Ok(prefs) => {
-                    theme_config.set(theme_from_preferences(&prefs));
+                    let theme = theme_from_preferences(&prefs);
+                    app_icon::follow(&theme);
+                    theme_config.set(theme);
                 }
                 Err(e) => {
                     tracing::warn!("preferences fetch failed: {e}");

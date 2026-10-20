@@ -5,6 +5,10 @@
 //! alternate icons, so the setting is hidden there. Desktop holds the pick for
 //! the session so the sheet behaves the same in development.
 //!
+//! The icon can instead follow the app's theme. That flag belongs to the
+//! device, not the account: iOS keeps it in the keychain beside the cached
+//! theme, and desktop holds it for the session like the pick.
+//!
 //! `zcripts/ios/icon.py` renders an icon per theme and mode into
 //! `zwiper/assets/app-icons/`, and `zcripts/ios/icons.sh` bundles each as an
 //! alternate icon named `AppIcon-<theme>-<mode>`.
@@ -39,6 +43,27 @@ pub fn current() -> ThemeConfig {
 /// saying the icon changed.
 pub fn set(icon: &ThemeConfig) -> anyhow::Result<()> {
     platform::set(alternate_name(icon).as_deref())
+}
+
+/// Whether the icon follows the app's theme on this device.
+pub fn follows_theme() -> bool {
+    SUPPORTED && platform::follows_theme()
+}
+
+/// Turns following the app's theme on or off for this device.
+pub fn set_follows_theme(on: bool) -> anyhow::Result<()> {
+    platform::set_follows_theme(on)
+}
+
+/// Switches the icon to `theme` when it follows the theme and shows another.
+/// Called only with a theme the account holds, never a sheet's preview.
+pub fn follow(theme: &ThemeConfig) {
+    if !follows_theme() || current() == *theme {
+        return;
+    }
+    if let Err(e) = set(theme) {
+        tracing::error!("failed to match app icon to theme: {e}");
+    }
 }
 
 /// "dark" or "light", as the icon files and bundle names spell it.
@@ -120,14 +145,52 @@ mod platform {
             unsafe { msg_send![&*app, setAlternateIconName: name, completionHandler: handler] };
         Ok(())
     }
+
+    fn follows_entry() -> Result<crate::outbound::keyring_entry::Entry, keyring::Error> {
+        crate::outbound::keyring_entry::entry(
+            &(env!("CARGO_PKG_NAME").to_string() + "-service"),
+            &(env!("CARGO_PKG_NAME").to_string() + "-icon-follows-theme"),
+        )
+    }
+
+    pub fn follows_theme() -> bool {
+        follows_entry().is_ok_and(|entry| entry.get_secret().is_ok())
+    }
+
+    pub fn set_follows_theme(on: bool) -> anyhow::Result<()> {
+        let entry = follows_entry()?;
+        if on {
+            entry.set_secret(b"1")?;
+        } else {
+            match entry.delete_credential() {
+                Ok(()) | Err(keyring::Error::NoEntry) => {}
+                Err(e) => return Err(e.into()),
+            }
+        }
+        Ok(())
+    }
 }
 
-// Everywhere else: the pick, held for the session.
+// Everywhere else: the pick and the flag, held for the session.
 #[cfg(not(target_os = "ios"))]
 mod platform {
-    use std::sync::Mutex;
+    use std::sync::{
+        Mutex,
+        atomic::{AtomicBool, Ordering},
+    };
 
     static PICKED: Mutex<Option<String>> = Mutex::new(None);
+    static FOLLOWS: AtomicBool = AtomicBool::new(false);
+
+    pub fn follows_theme() -> bool {
+        FOLLOWS.load(Ordering::Relaxed)
+    }
+
+    #[allow(clippy::unnecessary_wraps)]
+    pub fn set_follows_theme(on: bool) -> anyhow::Result<()> {
+        FOLLOWS.store(on, Ordering::Relaxed);
+        Ok(())
+    }
 
     pub fn current() -> Option<String> {
         PICKED.lock().ok()?.clone()
@@ -195,10 +258,21 @@ mod tests {
         }
     }
 
+    // One test, since the pick and the flag are process-wide.
     #[test]
-    fn a_pick_reads_back_as_its_theme_and_mode() {
+    fn a_pick_reads_back_and_the_icon_follows_only_when_asked() {
         assert!(set(&icon("nord", false)).is_ok());
         assert!(current() == icon("nord", false));
+
+        follow(&icon("dracula", true));
+        assert!(current() == icon("nord", false));
+
+        assert!(set_follows_theme(true).is_ok());
+        assert!(follows_theme());
+        follow(&icon("dracula", true));
+        assert!(current() == icon("dracula", true));
+
+        assert!(set_follows_theme(false).is_ok());
         assert!(set(&primary()).is_ok());
         assert!(current() == primary());
     }
