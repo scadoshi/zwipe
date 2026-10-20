@@ -8,7 +8,9 @@ Only open, actionable items live here. When something ships, its outcome moves t
 
 ## Next Up
 
-- [ ] **Reshoot the store screenshots and the marketing videos after the 1.12.0 look.** Gruvbox's accent is its aqua now (orangui `1ac1b5b`), the backdrop is shaded squares and the app opens on a splash, so every screenshot in `context/operations/ios/app-store/submission/screenshots/` and `context/marketing/` shows the old blue over grid lines, and so do the zwipe shots on the portfolio. Skipped on purpose for the 1.12.0 cut (2026-10-19); redo them together once 1.12.0 is live, the 16 Pro Max simulator on iOS 26.5 is the device.
+- [ ] **Refresh all the marketing content for the 1.12.0 look.** The backdrop is shaded squares now and the apps open on a splash, so every image and video still shows the grid lines. That covers zwipe's store screenshots in `context/operations/ios/app-store/submission/screenshots/` and the videos and art in `context/marketing/`, zite's images and copy on zwipe.net, and the zwipe and cairn shots and copy on the portfolio's project pages. Use the 16 Pro Max simulator on iOS 26.5. Cairn's new App Store screenshots already exist, in cairn's `assets/app-store/screenshots/` (2026-10-19), for use once 1.0.0 is approved. This is the only open item from the 2026-10-19 session.
+
+- [ ] **Revert the skeleton audit hold once the audit is done.** `0ce6039d` holds every GET in `zwipe-client/src/call.rs` for `SKELETON_DELAY_MS` when a build sets it. It does nothing when the variable is unset, which covers every store build, but it is test scaffolding: `git revert 0ce6039d` once every skeleton has been checked on the phone.
 
 - [x] ~~**Light-mode app icons paint the mark in the accent color, then rebuild and resubmit 1.11.6.**~~ DONE 2026-10-18 (`2233eb42`, cairn `e15852e`): `icon.py` takes the light mark color from `--accent-primary`, the sheet tiles use `var(--logo)`, both apps re-rendered and deployed to the phone, and iOS build 97 replaces the rejected 96. Android vc59 never had the row and went live as is.
 
