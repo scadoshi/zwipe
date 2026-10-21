@@ -26,13 +26,7 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.12.2",
-    date: "",
-    entries: &[
-        "The Z's second row reaches one column further left, in the logo and on the app icons",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
@@ -44,6 +38,7 @@ pub const RELEASES: &[Release] = &[
             "iOS: the app icon can match your theme, switching with it in dark and light",
             "The Zwipe logo builds left to right, its shape arriving as noise and then decoding, on the splash and the home screen",
             "The splash's logo leaves the way it arrived, turning back to noise and clearing left to right before the home screen shows",
+            "The Z's second row reaches one column further left, in the logo and on the app icons",
         ],
     },
     Release {
