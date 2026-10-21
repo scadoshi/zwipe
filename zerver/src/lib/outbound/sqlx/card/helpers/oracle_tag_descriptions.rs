@@ -17842,10 +17842,6 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "Cares about how much unspent mana you have, or changes what happens to it.",
     ),
     (
-        "wordle",
-        "A trivia tag tied to the Wordle word game that says nothing about what the card does.",
-    ),
-    (
         "gains-skulk",
         "A creature gains skulk, so it can't be blocked by creatures with greater power.",
     ),
@@ -17913,6 +17909,38 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     (
         "finality-counter",
         "Puts a finality counter on a creature, usually one it brings back from the graveyard, so it gets exiled if it would die.",
+    ),
+    (
+        "cycle-trk-draft-signpost",
+        "A two-color legendary creature from Star Trek built to signal and reward its color pair's draft archetype.",
+    ),
+    (
+        "cycle-trk-hybrid-signpost",
+        "A Star Trek draft signpost legend costed with two-color hybrid mana, castable with either color.",
+    ),
+    (
+        "cycle-trk-modal-land",
+        "A one-color land that enters tapped unless you control two or more other lands, and if it enters untapped you choose surveil 1 or a small bonus.",
+    ),
+    (
+        "cycle-trk-planet",
+        "A Planet dual land that enters tapped and gains you 1 life when it enters.",
+    ),
+    (
+        "cycle-yfra-stx-student",
+        "A two-color Alchemy legend from Reality Fracture depicting one of Strixhaven's students.",
+    ),
+    (
+        "synergy-communicator",
+        "Cares about Communicator Equipment, such as by making an extra copy when you cast one.",
+    ),
+    (
+        "typal-officer",
+        "Cares about or supports Officer creatures.",
+    ),
+    (
+        "typal-tribble",
+        "Cares about or supports Tribble creatures.",
     ),
 ];
 

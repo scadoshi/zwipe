@@ -149,6 +149,7 @@ Coverage is `len(ORACLE_TAG_DESCRIPTIONS)` / the live catalog count. Milestones:
 - 4,521 of 4,522 (2026-08-18): the whole tail, including unpopulated umbrella and cycle tags. The one holdout is `nanni`: a single card, no parent, no children, nothing to derive a meaning from, so it stays blank rather than get invented copy.
 - **4,568 of 4,570 (2026-10-08)** after a catch-up: 15 new `gains-<keyword>` tags (mostly Sliver and lord grants), and two renames dropped (`counter-lord` became `outlast-mentor`, `egg-token` became `typal-egg`, both already described). `double` joined `nanni` as a deliberate blank: no cards, label text, parents or children. The maintenance host's `zervice-check` allows both.
 - **4,576 of 4,577 (2026-10-14)** after another catch-up: `gains-training`, `synergy-dimension` and `finality-counter` added, and `cycle-emn-escalate-alliance` dropped (its `-borrowed` and `-collective` siblings were already described). `double` left the catalog, so `nanni` is the only deliberate blank again.
+- **4,584 of 4,585 (2026-10-21)** after a catch-up for the Star Trek set: `cycle-trk-draft-signpost`, `cycle-trk-hybrid-signpost`, `cycle-trk-modal-land`, `cycle-trk-planet`, `typal-officer`, `typal-tribble` and `synergy-communicator`, plus `cycle-yfra-stx-student` from Alchemy: Reality Fracture. `wordle` left the catalog with no successor, so its text was dropped. Written by hand against each tag's cards (eight tags did not need the fan-out).
 
 Future runs are incremental. Two things move the number, and the second is the one that surprises people:
 
