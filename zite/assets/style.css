@@ -2557,6 +2557,26 @@ html.js:not(.splash-skip) .splash-out {
     opacity: 0;
 }
 
+/* The prerendered opening, run by orangui's splash.js through classes on the
+   root: the mark stays hidden until the script has blanked it, so its whole
+   text never paints first, and the overlay fades and goes on the script's
+   timeline. */
+.splash[data-prerendered] .splash-mark {
+    visibility: hidden;
+}
+
+html.splash-running .splash[data-prerendered] .splash-mark {
+    visibility: visible;
+}
+
+html.js:not(.splash-skip).splash-fading .splash {
+    opacity: 0;
+}
+
+html.js:not(.splash-skip).splash-over .splash {
+    display: none;
+}
+
 .splash-mark {
     display: flex;
     justify-content: center;

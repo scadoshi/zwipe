@@ -236,7 +236,7 @@ pub fn Home() -> Element {
         // At the page's top level, outside the `content-enter` tree, so its
         // `position: fixed` covers the viewport (see the flavor overlay).
         if splash() {
-            Splash { pace: 67,
+            Splash { pace: 67, prerendered: true,
                 div { class: "logo", Decode { text: LOGO_ASCII } }
             }
         }

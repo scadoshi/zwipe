@@ -53,6 +53,8 @@
                 if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
                     var entries = [];
                     document.querySelectorAll(".stat-num, .logo").forEach(function (el) {
+                        // The splash's mark is orangui's splash.js to run.
+                        if (el.closest(".splash")) return;
                         // The text sits after the comment the prerender marks it with.
                         var t = null;
                         el.childNodes.forEach(function (n) { if (!t && n.nodeType === 3 && n.data.trim()) t = n; });
