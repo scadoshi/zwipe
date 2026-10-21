@@ -5016,7 +5016,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "orangui"
 version = "0.0.0"
-source = "git+https://github.com/scadoshi/orangui?branch=main#200fd248dd83f1135a7d63a32ba43860cb5bad10"
+source = "git+https://github.com/scadoshi/orangui?branch=main#367bb32e172c17c385def008c291df6d936cc0c2"
 dependencies = [
  "dioxus",
  "dioxus-primitives",
@@ -7222,7 +7222,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
