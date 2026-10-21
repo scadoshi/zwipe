@@ -21,6 +21,12 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-21: 1.12.1 resubmitted with the new Z, zwipe.net opens on a splash
+
+Android vc65 went live as 1.12.1 on 2026-10-20. iOS build 103 was pulled from review before release so 1.12.1 could carry a redrawn Z: its second row reaches one column further left. That row changed in every logo in `zwipe-core/src/domain/logo/` and the four pages in `marketing/`, and the app icons were redrawn with it: the primary, the Android master, all 99 alternates (`zcripts/ios/icon.py`) and zite's favicons, which are now shrunk from the app's primary rather than drawn on their own (`c45ca92f`). The Z is the fifth 1.12.1 entry in `RELEASES` and in the [store notes](operations/store-submissions/1.12.1/whats_new.md), 488 of 500 characters. iOS build 104 and Android vc66, both 1.12.1, went to review on 2026-10-21; vc66 ships as an update over the live vc65 under the same versionName.
+
+zwipe.net opens on the app's splash at 1.2 s (`4c729a3c`), on a session's first landing on the home page only, skipped for reduced motion. `index.html` decides before first paint and marks the document `splash-skip` otherwise, and the prerendered overlay stays hidden unless the document is `js` and not `splash-skip`, so crawlers and script-less visitors get the page as before. The shorter timeline is orangui's new `Splash` `pace` prop (`06e3b75`); the app keeps the full 1.8 s.
+
 ## 2026-10-20: 1.12.0 live, 1.12.1 submitted
 
 1.12.0 (iOS build 102) went live on the App Store on 2026-10-20: 50 themes grouped by look, the shaded-square backdrop, the opening splash, and the folded deck tags.
