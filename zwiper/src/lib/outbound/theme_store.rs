@@ -18,7 +18,8 @@ use components::ThemeConfig;
 pub trait PersistTheme {
     /// Saves the theme, logging errors instead of returning them.
     fn infallible_save(&self);
-    /// Loads the cached theme, returning `None` if not found.
+    /// Loads the cached theme, returning `None` if not found or if it names no
+    /// theme this build has. A retired theme loads as its replacement.
     fn load() -> anyhow::Result<Option<ThemeConfig>>;
     /// Loads the cached theme, logging errors and returning `None` on failure.
     fn infallible_load() -> Option<ThemeConfig>;
@@ -32,7 +33,7 @@ impl PersistTheme for ThemeConfig {
     }
 
     fn load() -> anyhow::Result<Option<ThemeConfig>> {
-        platform::load()
+        Ok(platform::load()?.and_then(ThemeConfig::resolve))
     }
 
     fn infallible_load() -> Option<ThemeConfig> {

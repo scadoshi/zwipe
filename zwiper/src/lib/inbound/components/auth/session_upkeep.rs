@@ -27,7 +27,7 @@ use crate::{
             create::CreateDeckCommanderSeed,
         },
     },
-    outbound::{session::Persist, theme_store::PersistTheme},
+    outbound::{app_icon, session::Persist, theme_store::PersistTheme},
 };
 use chrono::{DateTime, Utc};
 use components::{KeywordReminders, ThemeConfig, theme_from_preferences, use_overlay_back_stack};
@@ -253,6 +253,9 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // Persist every theme change at one point (login, prefs update, picker), so
     // the choice survives logout and themes the next launch's pre-auth screens.
     use_effect(move || theme.read().infallible_save());
+
+    // An icon a retired theme drew switches to its replacement, once a launch.
+    use_hook(app_icon::replace_retired);
 
     // Usage telemetry buffer (swipe / search counters + suggestion signals).
     // Flushed by two tasks sharing this one buffer: a 30s timer, and a

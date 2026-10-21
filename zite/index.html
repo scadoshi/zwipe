@@ -99,8 +99,11 @@
                 }
                 try {
                     var stored = JSON.parse(localStorage.getItem("zwipe.theme"));
+                    // orangui's RETIRED_THEMES: a retired slug paints as its replacement.
+                    var retired = { "ristretto": "monokai-pro-ristretto", "visual-studio": "vscode" };
                     if (stored && stored.name) {
-                        document.body.className = "theme-" + stored.name + "-" + (stored.is_dark ? "dark" : "light");
+                        var name = retired[stored.name] || stored.name;
+                        document.body.className = "theme-" + name + "-" + (stored.is_dark ? "dark" : "light");
                     }
                 } catch (e) {}
             })();

@@ -212,3 +212,35 @@ async fn universes_beyond_preference_round_trips(pool: sqlx::PgPool) {
         "unknown slug: {body}"
     );
 }
+
+#[sqlx::test]
+async fn visual_studio_moves_to_vs_code(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, _) = app.register("vsuser").await;
+
+    // An old client still sending the removed slug lands on its replacement.
+    let (status, updated) = app
+        .patch(
+            PREFERENCES_ROUTE,
+            json!({ "theme": "visual-studio" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "old slug: {updated}");
+    assert_eq!(updated["theme"], "vscode");
+
+    // A row stored before the removal moves with the migration.
+    sqlx::query("UPDATE user_preferences SET theme = 'visual-studio'")
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::raw_sql(include_str!(
+        "../migrations/20261021200000_remove_visual_studio_theme.sql"
+    ))
+    .execute(&pool)
+    .await
+    .unwrap();
+    let (status, prefs) = app.get(PREFERENCES_ROUTE, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "get preferences: {prefs}");
+    assert_eq!(prefs["theme"], "vscode");
+}

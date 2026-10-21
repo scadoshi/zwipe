@@ -20,6 +20,7 @@ pub const ALLOWED_THEMES: &[&str] = &[
     "eclipse",
     "ethereal",
     "everforest",
+    "flexoki",
     "github",
     "github-high-contrast",
     "gruvbox",
@@ -55,20 +56,23 @@ pub const ALLOWED_THEMES: &[&str] = &[
     "tokyo-night",
     "tritanopia",
     "vantablack",
-    "visual-studio",
     "vscode",
     "xcode",
     "zenburn",
 ];
 
+/// Slugs the list no longer has, each mapped to the theme its users move to
+/// (a renamed theme's new slug, a removed theme's closest look), so a client
+/// built before the change keeps working until it updates. The server's
+/// migrations move stored rows the same way.
+pub const RENAMED_THEMES: &[(&str, &str)] = &[
+    ("ristretto", "monokai-pro-ristretto"),
+    ("visual-studio", "vscode"),
+];
+
 /// The themes with palettes adjusted for color-vision deficiency. Every theme
 /// picker groups these in their own section at the bottom, so the list lives
 /// here once.
-/// Slugs a theme has had before, mapped to its current one, so a client built
-/// before the rename keeps working until it updates. The server's migration
-/// moves stored rows the same way.
-pub const RENAMED_THEMES: &[(&str, &str)] = &[("ristretto", "monokai-pro-ristretto")];
-
 pub const COLORBLIND_THEMES: &[&str] =
     &["protanopia", "deuteranopia", "tritanopia", "achromatopsia"];
 
@@ -238,6 +242,7 @@ mod tests {
                 "Eclipse",
                 "Ethereal",
                 "Everforest",
+                "Flexoki",
                 "GitHub",
                 "GitHub High Contrast",
                 "Gruvbox",
@@ -273,7 +278,6 @@ mod tests {
                 "Tokyo Night",
                 "Tritanopia",
                 "Vantablack",
-                "Visual Studio",
                 "VS Code",
                 "Xcode",
                 "Zenburn",
@@ -313,6 +317,13 @@ mod tests {
             result.unwrap().theme.as_deref(),
             Some("monokai-pro-ristretto")
         );
+    }
+
+    #[test]
+    fn a_removed_theme_updates_to_its_closest_one() {
+        let result =
+            UpdatePreferences::new(Uuid::new_v4(), Some("visual-studio"), None, None, None);
+        assert_eq!(result.unwrap().theme.as_deref(), Some("vscode"));
     }
 
     #[test]

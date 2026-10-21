@@ -32,11 +32,29 @@ pub fn primary() -> ThemeConfig {
     }
 }
 
-/// The theme and mode the icon is drawn in now.
+/// The theme and mode the icon is drawn in now. A retired theme's icon reads
+/// as its replacement's, and a name this build cannot read as the primary.
 pub fn current() -> ThemeConfig {
     platform::current()
         .and_then(|name| parse(&name))
+        .and_then(ThemeConfig::resolve)
         .unwrap_or_else(primary)
+}
+
+/// Moves an icon this build no longer bundles (a retired theme's) onto the one
+/// [`current`] reads it as. A no-op once they match; on iOS the OS shows its
+/// own alert when it switches.
+pub fn replace_retired() {
+    let Some(shown) = platform::current().and_then(|name| parse(&name)) else {
+        return;
+    };
+    let now = current();
+    if shown == now {
+        return;
+    }
+    if let Err(e) = set(&now) {
+        tracing::error!("failed to replace a retired app icon: {e}");
+    }
 }
 
 /// Switches the icon to `icon`'s colors. On iOS the OS shows its own alert
@@ -227,6 +245,17 @@ mod tests {
             alternate_name(&icon(PRIMARY, false)).as_deref(),
             Some("AppIcon-gruvbox-light")
         );
+    }
+
+    #[test]
+    fn a_retired_icon_reads_as_its_replacement() {
+        assert!(platform::set(Some("AppIcon-visual-studio-light")).is_ok());
+        assert!(current() == icon("vscode", false));
+        replace_retired();
+        assert_eq!(platform::current().as_deref(), Some("AppIcon-vscode-light"));
+        assert!(platform::set(Some("AppIcon-no-such-theme-dark")).is_ok());
+        assert!(current() == primary());
+        assert!(platform::set(None).is_ok());
     }
 
     #[test]
