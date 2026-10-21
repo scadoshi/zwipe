@@ -21,6 +21,12 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-20: 1.12.0 live, 1.12.1 cut
+
+1.12.0 (iOS build 102) went live on the App Store on 2026-10-20: 50 themes grouped by look, the shaded-square backdrop, the opening splash, and the folded deck tags.
+
+1.12.1 was cut the same night. Its four entries moved to `RELEASES` dated Oct 20: Decks shows the Tags chip while loading, the iOS app icon can match the theme, and the logo builds left to right from noise on the splash and home, then leaves the splash the way it arrived. iOS build 103 is built and signed; Android is not built yet. Store notes: [1.12.1](operations/store-submissions/1.12.1/whats_new.md). The `SKELETON_DELAY_MS` hold (`0ce6039d`) is still in; it does nothing unless a build sets the variable, and this one does not.
+
 ## 2026-10-18: 1.11.6 submitted
 
 Two changes. Hint dialogs stop fading over text that already fits: the fade now follows the scroll, so it only shows at an edge with more text past it. That one lives in orangui (b95fb46), and every repo that pins orangui or zwipe-core moved its pin the same day: cairn, portfolio and zynergy.

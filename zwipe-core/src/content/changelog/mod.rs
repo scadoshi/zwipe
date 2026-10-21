@@ -26,19 +26,20 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.12.1",
-    date: "",
-    entries: &[
-        "Decks shows the Tags chip while loading instead of a row of placeholder tags",
-        "iOS: the app icon can match your theme, switching with it in dark and light",
-        "The Zwipe logo builds left to right, its shape arriving as noise and then decoding, on the splash and the home screen",
-        "The splash's logo leaves the way it arrived, turning back to noise and clearing left to right before the home screen shows",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.12.1",
+        date: "Oct 20, 2026",
+        entries: &[
+            "Decks shows the Tags chip while loading instead of a row of placeholder tags",
+            "iOS: the app icon can match your theme, switching with it in dark and light",
+            "The Zwipe logo builds left to right, its shape arriving as noise and then decoding, on the splash and the home screen",
+            "The splash's logo leaves the way it arrived, turning back to noise and clearing left to right before the home screen shows",
+        ],
+    },
     Release {
         version: "1.12.0",
         date: "Oct 19, 2026",
