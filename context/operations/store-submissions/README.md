@@ -38,6 +38,7 @@ Then paste the same text into App Store Connect and Play Console. Field position
 
 | Version | Shape | Characters |
 |---------|-------|-----------|
+| [1.12.2](1.12.2/whats_new.md) | shared | 118 |
 | [1.12.1](1.12.1/whats_new.md) | shared | 488 |
 | [1.12.0](1.12.0/whats_new.md) | shared | 489 |
 | [1.11.6](1.11.6/whats_new.md) | shared | 141 |
