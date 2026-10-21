@@ -223,10 +223,10 @@ fn App() -> Element {
         document::Script { {NAV_GLIDE_JS} }
         // Edge fades on sideways scrollers where CSS can't drive them.
         document::Script { {SCROLL_FADE_JS} }
-        // The backdrop: rains in once, after the page's 0.3s entrance has
-        // landed so the cells never show through the hero while it fades in;
-        // a theme change leaves it.
-        ::components::GridCells { delay_ms: 350 }
+        // The backdrop, still: drawn in place on first paint. The splash's own
+        // field rains in over it, the same seeded cells, so when the overlay
+        // fades the backdrop is already there and nothing rains twice.
+        ::components::GridCells { still: true }
         Router::<Route> {}
     }
 }
