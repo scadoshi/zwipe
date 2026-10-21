@@ -2529,3 +2529,35 @@ code {
     /* The panel-rule below owns the bottom spacing. */
     margin: 0.5rem 0 0;
 }
+
+/* ====================
+   Splash (orangui::Splash)
+   ==================== */
+
+/* orangui's app.css rules, which the site doesn't load, shown only while
+   index.html has left the document `js` and not `splash-skip`. Without
+   script, or on any load but a session's first landing on the home page,
+   the prerendered overlay never covers the page. */
+.splash {
+    display: none;
+}
+
+html.js:not(.splash-skip) .splash {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+html.js:not(.splash-skip) .splash-out {
+    opacity: 0;
+}
+
+.splash-mark {
+    display: flex;
+    justify-content: center;
+}

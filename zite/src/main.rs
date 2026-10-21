@@ -121,6 +121,12 @@ async fn static_routes() -> ServerFnResult<Vec<String>> {
     Ok(routes)
 }
 
+/// Whether this load's splash is still to come or playing. The home page
+/// draws it; it goes false once the splash has faded, or at once on a load
+/// that skips it, so coming back to the home page never plays it again.
+#[derive(Clone, Copy)]
+pub struct SiteSplash(pub Signal<bool>);
+
 #[component]
 fn App() -> Element {
     // The picked theme, remembered in localStorage. It starts at the default
@@ -130,6 +136,24 @@ fn App() -> Element {
     let theme = ::components::use_persisted_theme("zwipe.theme");
     use_context_provider(|| theme);
     use_context_provider(|| Replay(Signal::new(0u32)));
+    // Closed until the splash starts to fade, so the hero's entrances run as
+    // it leaves. index.html decides before first paint whether this load gets
+    // the splash (the first landing on the home page in a session) and marks
+    // the document `splash-skip` otherwise, which hides the prerendered
+    // overlay; read here, it opens the gate at once and stands the splash down.
+    let mut gate = use_context_provider(|| ::components::SplashGate(Signal::new(false))).0;
+    let mut splash = use_context_provider(|| SiteSplash(Signal::new(true))).0;
+    use_effect(move || {
+        spawn(async move {
+            let mut eval = eval(
+                "const root = document.documentElement; root.classList.add('splash-live'); dioxus.send(root.classList.contains('splash-skip'));",
+            );
+            if eval.recv::<bool>().await.unwrap_or(true) {
+                splash.set(false);
+                gate.set(true);
+            }
+        });
+    });
 
     // `hydrated` on the document releases the hero's entrance, which the
     // stylesheet holds until the app can run it.

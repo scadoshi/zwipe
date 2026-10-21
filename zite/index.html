@@ -26,6 +26,26 @@
                 // for longer than three seconds.
                 setTimeout(function () { root.classList.add("hydrated"); }, 3000);
 
+                // The splash plays once a session, on a landing on the home
+                // page, for a viewer who hasn't asked for less motion. Any
+                // other load is marked `splash-skip`, which hides the
+                // prerendered overlay before it paints; the app reads the
+                // same mark. If the app isn't up in three seconds the overlay
+                // goes too, so a slow or broken wasm never leaves it covering
+                // the page.
+                var seen = false;
+                try {
+                    seen = sessionStorage.getItem("splash.seen") === "1";
+                    sessionStorage.setItem("splash.seen", "1");
+                } catch (e) {}
+                var home = location.pathname === "/" || location.pathname === "/index.html";
+                if (seen || !home || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                    root.classList.add("splash-skip");
+                }
+                setTimeout(function () {
+                    if (!root.classList.contains("splash-live")) root.classList.add("splash-skip");
+                }, 3000);
+
                 // Before the app is up, the figures roll and the mark shimmers,
                 // written into the text nodes the prerender gave them. The app
                 // hydrates onto those same nodes and takes over from wherever

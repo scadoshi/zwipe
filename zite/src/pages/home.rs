@@ -1,8 +1,11 @@
 use crate::{
-    Footer, Nav, Route,
-    components::{FeaturedFlavor, PageMeta, StatsStrip, dismiss_flavor_overlay},
+    Footer, Nav, Route, SiteSplash,
+    components::{FeaturedFlavor, PageMeta, StatsStrip, dismiss_flavor_overlay, sleep_ms},
 };
-use components::{Banner, Decode, FlippableCardImage, GalleryFooter, GalleryFrame, Panel, Replay};
+use components::{
+    Banner, Decode, FlippableCardImage, GalleryFooter, GalleryFrame, Panel, Replay, Splash,
+    SplashGate,
+};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
@@ -210,6 +213,19 @@ pub fn Home() -> Element {
     let flavor_overlay: Signal<Option<ScryfallData>> = use_signal(|| None);
     let flavor_overlay_dismissing = use_signal(|| false);
 
+    // The opening. Once it has faded (the gate opens as the fade starts) it is
+    // done for this load.
+    let mut splash = use_context::<SiteSplash>().0;
+    let gate = use_context::<SplashGate>().0;
+    use_effect(move || {
+        if gate() && splash() {
+            spawn(async move {
+                sleep_ms(300).await;
+                splash.set(false);
+            });
+        }
+    });
+
     rsx! {
         PageMeta {
             title: "Magic: The Gathering Deck Builder for Mobile",
@@ -217,6 +233,13 @@ pub fn Home() -> Element {
             path: "/",
         }
         HomeJsonLd {}
+        // At the page's top level, outside the `content-enter` tree, so its
+        // `position: fixed` covers the viewport (see the flavor overlay).
+        if splash() {
+            Splash { pace: 67,
+                div { class: "logo", Decode { text: LOGO_ASCII } }
+            }
+        }
         Nav {}
         div { class: "banner-stack",
             Banner {
