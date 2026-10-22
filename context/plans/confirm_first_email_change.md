@@ -1,6 +1,6 @@
 # Confirm-first email change
 
-**Status: Phases 1 and 2 built on `email-enumeration` 2026-10-22, tested locally, not deployed. Replaces the approach on the `email-enumeration` branch (commit `5d0bbb20`). Companion: `verify_first_registration.md`.**
+**Status: Phases 1 and 2 built on `account-enumeration` 2026-10-22, tested locally, not deployed. Replaces the first approach (commit `5d0bbb20`, kept in the branch history and undone by the next one). The Phase 4 move of the remaining duplicates to 409 waits on `duplicate-409`, on top of it. Companion: `verify_first_registration.md`.**
 
 **One sentence:** changing your email stops changing it; the new address is held as pending until someone clicks a link sent to it, so a free address and a taken one get the same response and leave the account looking the same.
 
@@ -96,4 +96,4 @@ Tests in `zerver/tests/user_flows.rs`, replacing `change_email_to_taken_address_
 
 ## What happens to the branch
 
-`email-enumeration` (`5d0bbb20`) isn't merged. Keep `ChangeEmailOutcome` if the service still wants to tell the handler which branch ran (for the log line), drop the template and `EmailClaimAttempted`, and rebuild on main per Phase 1. The test from the branch is a useful starting shape for the new ones.
+Done 2026-10-22: the `5d0bbb20` approach was replaced in the commit that built Phases 1 and 2. `ChangeEmailOutcome`, `email_claim_attempted.html` and `EmailClaimAttempted` are gone; its test became the starting shape for the new ones.
