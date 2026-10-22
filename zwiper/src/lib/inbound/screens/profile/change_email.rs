@@ -92,7 +92,7 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
                         session.set(Some(current));
                     }
                     toast.success(
-                        format!("Check {requested} for a link to confirm the change."),
+                        format!("Check {requested} for a link to confirm the change"),
                         ToastOptions::default().duration(TOAST_NORMAL),
                     );
                     clear_inputs();
