@@ -21,7 +21,7 @@ pub fn ConfirmEmail(token: String) -> Element {
                 .map_err(|e| match e {
                     // A request that never landed is not a bad token; say so.
                     ClientError::Network(_) | ClientError::Decode(_) => e.to_user_message(),
-                    ClientError::UnprocessableEntity(m) if m.contains("already in use") => {
+                    ClientError::Conflict(_) => {
                         "Another account started using this address after you asked for it."
                             .to_string()
                     }

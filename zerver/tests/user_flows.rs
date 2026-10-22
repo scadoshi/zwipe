@@ -291,7 +291,7 @@ async fn confirm_first_fails_when_the_address_was_taken_meanwhile(pool: sqlx::Pg
     let (status, body) = app
         .post(CONFIRM_EMAIL_CHANGE_ROUTE, json!({ "token": raw }), None)
         .await;
-    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+    assert_eq!(status, StatusCode::CONFLICT, "{body}");
 
     let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
     assert_eq!(me["email"], "slowpoke@test.local");

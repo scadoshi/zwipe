@@ -10,8 +10,8 @@ impl ZwipeClient {
     /// confirmation link.
     ///
     /// Unauthenticated, for the same reason as [`ZwipeClient::verify_email`].
-    /// A token that is unknown, spent or expired, or an address another
-    /// account took in the meantime, answers 422.
+    /// A token that is unknown, spent or expired answers 422; an address
+    /// another account took in the meantime answers 409.
     pub async fn confirm_email_change(&self, token: String) -> Result<(), ClientError> {
         self.call(ConfirmEmailChange(HttpConfirmEmailChange { token }), None)
             .await

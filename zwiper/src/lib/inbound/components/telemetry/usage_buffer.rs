@@ -312,6 +312,7 @@ fn api_error_kind(api: &ClientError) -> &'static str {
         ClientError::NotFound(_) => "api_not_found",
         ClientError::UnprocessableEntity(_) => "api_unprocessable",
         ClientError::TooManyRequests(_) => "api_too_many_requests",
+        ClientError::Conflict(_) => "api_conflict",
         ClientError::InternalServerError(_) => "api_internal",
         // Handled before this is reached.
         ClientError::Network(_) | ClientError::Decode(_) => "api_internal",
