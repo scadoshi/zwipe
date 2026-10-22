@@ -57,29 +57,43 @@ pub(crate) enum ApplyAction {
     NoChange,
 }
 
-/// Decides Apply from the draft and the filter that was on when the sheet
-/// opened.
+/// Whether a filter narrows the catalog or searches all of it.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum FilterState {
+    Empty,
+    Set,
+}
+
+impl FilterState {
+    /// `Set` when the filter has search intent.
+    fn of(has_intent: bool) -> Self {
+        if has_intent { Self::Set } else { Self::Empty }
+    }
+}
+
+/// Decides Apply from the transition between the filter that was on when
+/// the sheet opened (`from`) and the draft (`to`).
 ///
 /// An empty filter searches the whole catalog, so the add screen's search
-/// source refuses one (`validate_before_apply`). Judging the draft alone
-/// would also refuse a deliberate clear, leaving no way back out of a filter
-/// once one is on, so the decision reads the transition instead.
+/// source refuses one (`validate_before_apply`). Judging `to` alone would
+/// also refuse a deliberate clear, leaving no way back out of a filter once
+/// one is on, so the decision reads the transition instead.
 pub(crate) fn apply_action(
     validate_before_apply: bool,
-    draft_filters: bool,
-    was_filtered: bool,
+    from: FilterState,
+    to: FilterState,
     unchanged: bool,
 ) -> ApplyAction {
     // The refusal is checked first: it explains why an empty filter served
     // nothing, which is more use than silently closing.
-    if validate_before_apply && !draft_filters && !was_filtered {
+    if validate_before_apply && from == FilterState::Empty && to == FilterState::Empty {
         return ApplyAction::RefuseEmpty;
     }
     if unchanged {
         return ApplyAction::NoChange;
     }
     ApplyAction::Commit {
-        cleared: !draft_filters && was_filtered,
+        cleared: from == FilterState::Set && to == FilterState::Empty,
     }
 }
 
@@ -742,11 +756,13 @@ pub(crate) fn CardFilterSheet(
                         // applied is a reset, not that: judge the transition,
                         // not the draft alone, or there is no way back out of
                         // a filter once one is on.
-                        let draft_filters = filter_builder.read().has_search_intent();
-                        let was_filtered = applied_snapshot
-                            .read()
-                            .as_ref()
-                            .is_some_and(|previous| previous.has_search_intent());
+                        let to = FilterState::of(filter_builder.read().has_search_intent());
+                        let from = FilterState::of(
+                            applied_snapshot
+                                .read()
+                                .as_ref()
+                                .is_some_and(|previous| previous.has_search_intent()),
+                        );
                         // Nothing edited since the sheet opened: closing must
                         // not refetch, or a look at the filters throws away the
                         // user's place in the card stack.
@@ -754,12 +770,7 @@ pub(crate) fn CardFilterSheet(
                             .read()
                             .as_ref()
                             .is_some_and(|previous| *previous == *filter_builder.read());
-                        let cleared = match apply_action(
-                            validate_before_apply,
-                            draft_filters,
-                            was_filtered,
-                            unchanged,
-                        ) {
+                        let cleared = match apply_action(validate_before_apply, from, to, unchanged) {
                             ApplyAction::RefuseEmpty => {
                                 toast.warning(
                                     "Filter is already empty".to_string(),
@@ -837,6 +848,7 @@ pub(crate) fn CardFilterSheet(
 
 #[cfg(test)]
 mod tests {
+    use super::FilterState::{Empty, Set};
     use super::{ApplyAction, apply_action};
 
     /// The four states Apply can be pressed in, all with an edited draft. The
@@ -846,24 +858,20 @@ mod tests {
     /// existing filter read as a clear.
     #[test]
     fn apply_reads_the_transition_not_just_the_draft() {
-        // draft filters, over an existing filter: an ordinary apply.
         assert_eq!(
-            apply_action(true, true, true, false),
+            apply_action(true, Set, Set, false),
             ApplyAction::Commit { cleared: false }
         );
-        // draft filters, nothing before: an ordinary apply.
         assert_eq!(
-            apply_action(true, true, false, false),
+            apply_action(true, Empty, Set, false),
             ApplyAction::Commit { cleared: false }
         );
-        // draft empty, a filter was on: a deliberate clear, so commit it.
         assert_eq!(
-            apply_action(true, false, true, false),
+            apply_action(true, Set, Empty, false),
             ApplyAction::Commit { cleared: true }
         );
-        // draft empty, nothing before: the firehose the guard exists for.
         assert_eq!(
-            apply_action(true, false, false, false),
+            apply_action(true, Empty, Empty, false),
             ApplyAction::RefuseEmpty
         );
     }
@@ -872,8 +880,8 @@ mod tests {
     /// would throw away the user's place in the card stack for nothing.
     #[test]
     fn an_unedited_apply_changes_nothing() {
-        assert_eq!(apply_action(true, true, true, true), ApplyAction::NoChange);
-        assert_eq!(apply_action(false, true, true, true), ApplyAction::NoChange);
+        assert_eq!(apply_action(true, Set, Set, true), ApplyAction::NoChange);
+        assert_eq!(apply_action(false, Set, Set, true), ApplyAction::NoChange);
     }
 
     /// The refusal still wins over the no-change shortcut: an empty filter that
@@ -881,7 +889,7 @@ mod tests {
     #[test]
     fn refusing_an_empty_filter_beats_the_no_change_shortcut() {
         assert_eq!(
-            apply_action(true, false, false, true),
+            apply_action(true, Empty, Empty, true),
             ApplyAction::RefuseEmpty
         );
     }
@@ -891,11 +899,11 @@ mod tests {
     #[test]
     fn without_validation_every_edit_commits() {
         assert_eq!(
-            apply_action(false, false, false, false),
+            apply_action(false, Empty, Empty, false),
             ApplyAction::Commit { cleared: false }
         );
         assert_eq!(
-            apply_action(false, false, true, false),
+            apply_action(false, Set, Empty, false),
             ApplyAction::Commit { cleared: true }
         );
     }
