@@ -23,6 +23,7 @@ cargo +nightly fmt        # NOT `cargo fmt`; stable can't apply the unstable imp
 ```bash
 cargo clippy --workspace --all-targets -- -D warnings
 RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --lib   # what CI's lint job runs; rustdoc warnings fail it
+RUSTDOCFLAGS="-D warnings" cargo doc --no-deps -p zite             # zite is a binary crate, which --lib skips
 ```
 
 ### 3. Tests

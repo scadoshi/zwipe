@@ -79,6 +79,11 @@ jobs:
         run: cargo doc --workspace --no-deps --lib
         env:
           RUSTDOCFLAGS: -D warnings
+      # zite is a binary crate, which --lib skips; it has no name collision of its own.
+      - name: Docs (zite)
+        run: cargo doc --no-deps -p zite
+        env:
+          RUSTDOCFLAGS: -D warnings
       - name: UI tests
         run: cargo test -p components -p zite -p zwiper
 
