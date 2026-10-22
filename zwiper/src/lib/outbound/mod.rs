@@ -6,6 +6,9 @@
 /// Android private-storage path resolution, shared by `session` + `theme_store`.
 #[cfg(target_os = "android")]
 pub mod android_fs;
+/// AES-GCM sealing under an Android Keystore key, for the session file.
+#[cfg(target_os = "android")]
+pub mod android_keystore;
 /// The home-screen icon, switched between the per-theme alternates.
 pub mod app_icon;
 /// URL construction for external card retailer bulk-buy tools.

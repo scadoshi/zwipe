@@ -9,7 +9,7 @@
 - [x] 2026-10-22 built on the local `security-followups` branch, two commits, push one deploy apart. Follow-up migration: drop `refresh_tokens.revoked` + its index and the three `users` lockout columns. Tracked in `access_token_window.md`; listed here so it is not forgotten when that plan closes.
 - [ ] DML-only runtime role for zerver (below).
 - [ ] Register and change-email stop confirming that an email is taken (below).
-- [ ] Android: `session.json` through the Keystore. Own task; the backup opt-out shipped in PR #28, so the file no longer leaves the device, but it is still plaintext on it.
+- [ ] Android: `session.json` through the Keystore. Built on the local branch `android-keystore`, waiting on the emulator run in [`android_keystore_session.md`](android_keystore_session.md). The backup opt-out shipped in PR #28, so the file no longer leaves the device, but it is still plaintext on it until that merges.
 - [ ] Merge Dependabot's action-pin PRs as they arrive, reading the pin diff each time.
 - [x] 2026-10-10 `RESEND_API_KEY` stays the same value in `zerver.env` and `alert.env` (owner decision); rotate both files together.
 

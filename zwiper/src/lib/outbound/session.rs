@@ -5,10 +5,10 @@
 //! Secret Service on Linux).
 //!
 //! `keyring` has **no Android backend**: there it silently falls back to an
-//! in-memory mock store that's lost on app restart (which is why Android wasn't
-//! persisting sessions). So on Android we persist the session to a JSON file in
-//! the app's **private internal storage** (`/data/data/<pkg>/files/`), which is
-//! sandboxed per-app and survives restarts. The path is resolved through JNI
+//! in-memory mock store that's lost on app restart. So on Android we persist
+//! the session to a file in the app's **private internal storage**
+//! (`/data/data/<pkg>/files/session.json`), sealed under an Android Keystore
+//! AES key (`outbound/android_keystore.rs`). The path is resolved through JNI
 //! from the Android `Context` that `ndk-context` exposes.
 
 use zwipe_core::domain::auth::models::session::Session;
@@ -113,13 +113,15 @@ mod platform {
     }
 }
 
-// Android: a JSON file in the app's private internal storage.
+// Android: the session JSON sealed under a Keystore key, in a file in the
+// app's private internal storage.
 #[cfg(target_os = "android")]
 mod platform {
     use std::path::PathBuf;
 
     use super::Session;
     use crate::outbound::android_fs::files_dir;
+    use crate::outbound::android_keystore;
 
     fn session_path() -> anyhow::Result<PathBuf> {
         Ok(files_dir()?.join("session.json"))
@@ -127,24 +129,54 @@ mod platform {
 
     pub fn save(session: &Session) -> anyhow::Result<()> {
         let bytes = serde_json::to_vec(session)?;
-        std::fs::write(session_path()?, bytes)?;
+        let blob = android_keystore::seal(&bytes)?;
+        std::fs::write(session_path()?, blob)?;
         Ok(())
     }
 
+    /// A file that starts with `{` is plaintext JSON from a build before the
+    /// Keystore; it is read as is and rewritten sealed. A sealed file that does
+    /// not open (the key is gone after a reinstall, or the file is corrupt)
+    /// counts as logged out and is removed.
     pub fn load() -> anyhow::Result<Option<Session>> {
         let path = session_path()?;
-        match std::fs::read(&path) {
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
-            Err(e) => Err(e.into()),
-            Ok(bytes) => {
-                let session: Session = serde_json::from_slice(&bytes)?;
-                if session.is_expired() {
+        let bytes = match std::fs::read(&path) {
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(e) => return Err(e.into()),
+            Ok(bytes) => bytes,
+        };
+        let plaintext = bytes.first() == Some(&b'{');
+        let json = if plaintext {
+            tracing::info!("session: sealing a plaintext session file");
+            bytes
+        } else {
+            match android_keystore::open(&bytes) {
+                Ok(json) => json,
+                Err(e) => {
+                    tracing::warn!(
+                        "session: sealed file does not open, treating as logged out: {e}"
+                    );
                     let _ = std::fs::remove_file(&path);
                     return Ok(None);
                 }
-                Ok(Some(session))
             }
+        };
+        let session: Session = match serde_json::from_slice(&json) {
+            Ok(session) => session,
+            Err(e) => {
+                tracing::warn!("session: file does not parse, treating as logged out: {e}");
+                let _ = std::fs::remove_file(&path);
+                return Ok(None);
+            }
+        };
+        if session.is_expired() {
+            let _ = std::fs::remove_file(&path);
+            return Ok(None);
         }
+        if plaintext {
+            save(&session)?;
+        }
+        Ok(Some(session))
     }
 
     pub fn delete() -> anyhow::Result<()> {
