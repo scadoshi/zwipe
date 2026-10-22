@@ -224,7 +224,17 @@ mod platform {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::{Mutex, MutexGuard, PoisonError};
+
     use super::*;
+
+    /// Serializes the tests that write the process-wide pick and flag, which
+    /// cargo otherwise runs on parallel threads.
+    static PLATFORM: Mutex<()> = Mutex::new(());
+
+    fn platform_lock() -> MutexGuard<'static, ()> {
+        PLATFORM.lock().unwrap_or_else(PoisonError::into_inner)
+    }
 
     fn icon(name: &str, is_dark: bool) -> ThemeConfig {
         ThemeConfig {
@@ -248,6 +258,7 @@ mod tests {
 
     #[test]
     fn a_retired_icon_reads_as_its_replacement() {
+        let _platform = platform_lock();
         assert!(platform::set(Some("AppIcon-visual-studio-light")).is_ok());
         assert!(current() == icon("vscode", false));
         replace_retired();
@@ -289,6 +300,7 @@ mod tests {
     // One test, since the pick and the flag are process-wide.
     #[test]
     fn a_pick_reads_back_and_the_icon_follows_only_when_asked() {
+        let _platform = platform_lock();
         assert!(set(&icon("nord", false)).is_ok());
         assert!(current() == icon("nord", false));
 
