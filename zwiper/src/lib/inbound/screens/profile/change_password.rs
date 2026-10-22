@@ -25,10 +25,15 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     let mut confirm_password = use_signal(String::new);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut password_touched = use_signal(|| false);
+    let mut submit_attempted = use_signal(|| false);
     let mut validate_new_password = move || {
         if let Err(e) = validate(&new_password()) {
             password_error.set(Some(e.to_string()));
-        } else if new_password().as_str() != confirm_password().as_str() {
+        } else if new_password().as_str() != confirm_password().as_str()
+            // Mid-typing the confirmation can't match yet; judge it once it
+            // is as long as the password, or on submit.
+            && (submit_attempted() || confirm_password().chars().count() >= new_password().chars().count())
+        {
             password_error.set(Some("Passwords do not match".to_string()));
         } else if new_password().as_str() == current_password().as_str() {
             password_error.set(Some(
@@ -39,7 +44,6 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
         }
     };
 
-    let mut submit_attempted = use_signal(|| false);
     let mut show_confirm = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
     let toast = use_toast();
