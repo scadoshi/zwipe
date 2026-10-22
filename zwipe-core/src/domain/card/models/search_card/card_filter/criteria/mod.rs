@@ -12,16 +12,14 @@ pub mod getters;
 pub mod matches;
 
 pub use matches::PLAYABLE_LAYOUTS;
-
-use crate::domain::{
-    card::{
-        scryfall_data::{colors::Colors, rarity::Rarities},
-        search_card::{card_filter::price_currency::PriceCurrency, card_type::CardType},
-    },
-    deck::Format,
-};
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
+
+use crate::domain::card::scryfall_data::colors::Colors;
+use crate::domain::card::scryfall_data::rarity::Rarities;
+use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use crate::domain::card::search_card::card_type::CardType;
+use crate::domain::deck::Format;
 
 /// Validated card-matching criteria (text, mana, combat, flags, legality).
 ///

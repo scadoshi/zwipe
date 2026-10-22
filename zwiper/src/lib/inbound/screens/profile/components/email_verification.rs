@@ -1,17 +1,16 @@
-use crate::inbound::components::{
-    auth::{authed::use_authed, ensure_session::EnsureFresh},
-    telemetry::{
-        usage_buffer::UsageBuffer,
-        vocabulary::{ProfileScreen, Screen, component, screen},
-    },
-};
+use std::time::Duration;
+
 use components::{Button, ButtonVariant, TOAST_LONG, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use tokio::time::sleep;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
+
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::auth::ensure_session::EnsureFresh;
+use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen, component, screen};
 
 /// Seconds before another resend is allowed. Mirrors the server's dedicated
 /// resend-verification rate-limit window (burst 1, then 1/60s per user) so the

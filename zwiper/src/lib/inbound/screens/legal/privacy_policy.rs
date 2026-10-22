@@ -6,13 +6,13 @@
 //! support contact line uses [`open_url::open`] because a raw `mailto:` anchor
 //! silently fails inside the mobile webview.
 
-use crate::{inbound::components::screen_header::ScreenHeader, outbound::open_url};
 use components::{ActionBar, Button, ButtonVariant};
 use dioxus::prelude::*;
-use zwipe_core::{
-    domain::site::{DISCORD_URL, SUPPORT_EMAIL},
-    legal::{PRIVACY_LAST_UPDATED, PRIVACY_POLICY_HTML},
-};
+use zwipe_core::domain::site::{DISCORD_URL, SUPPORT_EMAIL};
+use zwipe_core::legal::{PRIVACY_LAST_UPDATED, PRIVACY_POLICY_HTML};
+
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::outbound::open_url;
 
 /// Splits the shared policy HTML into one fragment per `<h2>` heading so each
 /// section can render inside its own card, matching the panelled look of the

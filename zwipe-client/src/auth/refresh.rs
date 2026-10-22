@@ -1,10 +1,10 @@
 //! Access token refresh API client.
 
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::auth::HttpRefreshSession;
+use zwipe_core::http::endpoints::auth::Refresh;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::auth::models::session::Session,
-    http::{contracts::auth::HttpRefreshSession, endpoints::auth::Refresh},
-};
 
 impl ZwipeClient {
     /// Refreshes access tokens using a refresh token.

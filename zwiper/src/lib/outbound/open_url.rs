@@ -19,11 +19,12 @@ pub fn open(url: &str) {
 // minus its `http(s)`-only gate so that `mailto:` is allowed through.
 #[cfg(target_os = "ios")]
 mod platform {
-    use objc2::{
-        Encode, Encoding, MainThreadMarker, class, msg_send, rc::Retained, runtime::NSObject,
-    };
-    use objc2_foundation::{NSDictionary, NSString, NSURL};
     use std::ffi::c_void;
+
+    use objc2::rc::Retained;
+    use objc2::runtime::NSObject;
+    use objc2::{Encode, Encoding, MainThreadMarker, class, msg_send};
+    use objc2_foundation::{NSDictionary, NSString, NSURL};
 
     /// Empty stand-in for the Objective-C completion block, so we don't pull in
     /// the `block2` crate just to pass a null block.

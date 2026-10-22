@@ -1,10 +1,12 @@
-use axum::{Json, extract::State, http::StatusCode};
-
-use crate::{
-    domain::metrics::models::{errors::MetricsError, kinds::EventKind},
-    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
-};
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
 use zwipe_core::http::contracts::metrics::HttpUsageBatch;
+
+use crate::domain::metrics::models::errors::MetricsError;
+use crate::domain::metrics::models::kinds::EventKind;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<MetricsError> for ApiError {
     fn from(value: MetricsError) -> Self {

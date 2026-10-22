@@ -1,17 +1,15 @@
 //! Mark a one-time UI hint as shown handler.
 
-use crate::{
-    domain::user::models::hints::MarkHintShownError,
-    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
-};
-use axum::{Json, extract::State, http::StatusCode};
-use zwipe_core::{
-    domain::user::{
-        User,
-        models::hints::{InvalidHintKey, MarkHintShown},
-    },
-    http::contracts::user::HttpMarkHintShown,
-};
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::models::hints::{InvalidHintKey, MarkHintShown};
+use zwipe_core::http::contracts::user::HttpMarkHintShown;
+
+use crate::domain::user::models::hints::MarkHintShownError;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<InvalidHintKey> for ApiError {
     fn from(value: InvalidHintKey) -> Self {

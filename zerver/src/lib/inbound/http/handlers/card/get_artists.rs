@@ -1,9 +1,9 @@
-use crate::{
-    domain::card::requests::get_artists::GetArtistsError,
-    inbound::http::{ApiError, AppState, To500},
-};
-use axum::{Json, extract::State};
+use axum::Json;
+use axum::extract::State;
 use reqwest::StatusCode;
+
+use crate::domain::card::requests::get_artists::GetArtistsError;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<GetArtistsError> for ApiError {
     fn from(value: GetArtistsError) -> Self {

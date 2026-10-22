@@ -1,15 +1,15 @@
 //! Change password bottom sheet.
 
-use crate::inbound::components::{
-    auth::authed::use_authed,
-    fields::text_input::TextInput,
-    hint_host::HintTopic,
-    telemetry::vocabulary::{ProfileScreen, Screen},
-};
 use components::{AlertDialog, BottomSheet, Button, ButtonVariant, DialogAction, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_core::{domain::auth::password::validate, http::contracts::auth::HttpChangePassword};
+use zwipe_core::domain::auth::password::validate;
+use zwipe_core::http::contracts::auth::HttpChangePassword;
+
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::fields::text_input::TextInput;
+use crate::inbound::components::hint_host::HintTopic;
+use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
 
 /// Bottom sheet for updating the user's password.
 #[component]

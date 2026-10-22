@@ -1,31 +1,3 @@
-use super::components::{
-    clone_deck_dialog::CloneDeckDialog,
-    collapsible_section::CollapsibleSection,
-    deck_budget_section::{DeckBudgetSection, has_budget},
-    deck_charts::{DeckCharts, DrawOdds, ManaBalanceRow, ManaCurve, ManaFulfillment},
-    deck_profile::DeckProfileSection,
-    deck_tags_section::{DeckTagsSection, has_any_tags, total_tag_count},
-    deck_warnings::DeckWarnings,
-    more_buttons::MoreButtons,
-    skeletons::{DeckProfileSkeleton, DeckStatsSkeleton},
-};
-use crate::{
-    inbound::{
-        components::{
-            auth::authed::use_authed,
-            hint_dialog::{HintDialog, use_one_time_hint},
-            hint_host::HintTopic,
-            info_button::InfoButton,
-            screen_header::ScreenHeader,
-            telemetry::{
-                usage_buffer::UsageBuffer,
-                vocabulary::{DeckScreen, Screen, component, screen},
-            },
-        },
-        router::Router,
-    },
-    outbound::buy_links,
-};
 use components::{
     ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets, HintKey,
     TOAST_NORMAL, TOAST_QUICK,
@@ -34,20 +6,36 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::{
-        card::Card,
-        deck::{
-            DeckEntry, deck_metrics::DeckMetrics, deck_profile::DeckProfile,
-            deck_warning::DeckWarning,
-        },
-        user::models::hints::HINT_FIRST_DECK,
-    },
-    http::{
-        contracts::{deck::HttpUpdateDeckProfile, deck_card::HttpPatchDeckCard},
-        helpers::Opdate,
-    },
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::deck::DeckEntry;
+use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::deck::deck_warning::DeckWarning;
+use zwipe_core::domain::user::models::hints::HINT_FIRST_DECK;
+use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
+use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
+use zwipe_core::http::helpers::Opdate;
+
+use super::components::clone_deck_dialog::CloneDeckDialog;
+use super::components::collapsible_section::CollapsibleSection;
+use super::components::deck_budget_section::{DeckBudgetSection, has_budget};
+use super::components::deck_charts::{
+    DeckCharts, DrawOdds, ManaBalanceRow, ManaCurve, ManaFulfillment,
 };
+use super::components::deck_profile::DeckProfileSection;
+use super::components::deck_tags_section::{DeckTagsSection, has_any_tags, total_tag_count};
+use super::components::deck_warnings::DeckWarnings;
+use super::components::more_buttons::MoreButtons;
+use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::hint_dialog::{HintDialog, use_one_time_hint};
+use crate::inbound::components::hint_host::HintTopic;
+use crate::inbound::components::info_button::InfoButton;
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
+use crate::inbound::router::Router;
+use crate::outbound::buy_links;
 
 type DeckResult = Result<(Vec<DeckEntry>, Vec<DeckWarning>, Vec<Card>), ClientError>;
 

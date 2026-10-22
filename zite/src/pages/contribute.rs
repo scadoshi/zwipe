@@ -1,6 +1,8 @@
-use crate::{Footer, Nav, components::PageMeta};
 use components::Panel;
 use dioxus::prelude::*;
+
+use crate::components::PageMeta;
+use crate::{Footer, Nav};
 
 const STRIPE_URL: &str = "https://buy.stripe.com/5kQdRa5tUeNm9pd8BY9Zm00";
 const BMC_URL: &str = "https://buymeacoffee.com/scadoshi";

@@ -2,10 +2,10 @@
 //!
 //! Retrieves both Scryfall data and application metadata for cards.
 
-use crate::domain::card::requests::{
-    get_card_profile::GetCardProfileError, get_scryfall_data::GetScryfallDataError,
-};
 use thiserror::Error;
+
+use crate::domain::card::requests::get_card_profile::GetCardProfileError;
+use crate::domain::card::requests::get_scryfall_data::GetScryfallDataError;
 
 /// Errors that can occur when retrieving card data.
 ///

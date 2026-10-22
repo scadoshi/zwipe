@@ -9,11 +9,11 @@
 //! in-memory path ([`Cards`](crate::domain::card::search_card::cards::Cards))
 //! cannot express a limit at all.
 
-use crate::domain::card::search_card::card_filter::{
-    card_sort_key::CardSortKey, criteria::CardCriteria,
-};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::skip_serializing_none;
+
+use crate::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+use crate::domain::card::search_card::card_filter::criteria::CardCriteria;
 
 /// Bounded result-page size for the server search.
 ///

@@ -6,13 +6,9 @@
 
 #![allow(clippy::unwrap_used)]
 
-use zwipe::{
-    domain::upkeep::{
-        ports::UpkeepRepository,
-        services::{DIAGNOSTIC_RETENTION_DAYS, REPLACED_TOKEN_RETENTION_DAYS},
-    },
-    outbound::sqlx::postgres::Postgres,
-};
+use zwipe::domain::upkeep::ports::UpkeepRepository;
+use zwipe::domain::upkeep::services::{DIAGNOSTIC_RETENTION_DAYS, REPLACED_TOKEN_RETENTION_DAYS};
+use zwipe::outbound::sqlx::postgres::Postgres;
 
 /// Inserts a client_errors row with `received_at` backdated by `days`.
 async fn seed_client_error(pool: &sqlx::PgPool, days: i32) {

@@ -1,20 +1,17 @@
 //! Login, registration, session refresh and account recovery.
 
-use crate::{
-    domain::auth::models::session::Session,
-    http::{
-        contracts::auth::{
-            HttpAuthenticateUser, HttpRefreshSession, HttpRegisterUser, HttpRequestPasswordReset,
-            HttpResetPassword, HttpVerifyEmail,
-        },
-        endpoint::{Endpoint, Method},
-        paths::{
-            FORGOT_PASSWORD_ROUTE, LOGIN_ROUTE, LOGOUT_ROUTE, REFRESH_SESSION_ROUTE,
-            REGISTER_ROUTE, RESEND_VERIFICATION_ROUTE, RESET_PASSWORD_ROUTE, VERIFY_EMAIL_ROUTE,
-        },
-    },
-};
 use std::borrow::Cow;
+
+use crate::domain::auth::models::session::Session;
+use crate::http::contracts::auth::{
+    HttpAuthenticateUser, HttpRefreshSession, HttpRegisterUser, HttpRequestPasswordReset,
+    HttpResetPassword, HttpVerifyEmail,
+};
+use crate::http::endpoint::{Endpoint, Method};
+use crate::http::paths::{
+    FORGOT_PASSWORD_ROUTE, LOGIN_ROUTE, LOGOUT_ROUTE, REFRESH_SESSION_ROUTE, REGISTER_ROUTE,
+    RESEND_VERIFICATION_ROUTE, RESET_PASSWORD_ROUTE, VERIFY_EMAIL_ROUTE,
+};
 
 /// Exchange credentials for a session.
 pub struct Login(pub HttpAuthenticateUser);

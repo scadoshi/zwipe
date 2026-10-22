@@ -138,7 +138,7 @@ async fn legacy_commander_field_is_ignored(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, _) = app.register("straggler").await;
 
-    let commander = Uuid::from_u128(0xC0);
+    let commander = Uuid::from_u128(0xc0);
     let (status, _) = app
         .post(
             RECORD_USAGE_ROUTE,
@@ -169,7 +169,7 @@ async fn legacy_commander_field_is_ignored(pool: sqlx::PgPool) {
 #[sqlx::test]
 async fn anonymous_events_accept_the_three_kinds_no_auth(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
-    let session = Uuid::from_u128(0x5E551047);
+    let session = Uuid::from_u128(0x5e551047);
 
     for kind in ["app_opened", "register_viewed", "register_submitted"] {
         let (status, _) = app
@@ -293,7 +293,7 @@ async fn usage_batch_without_client_errors_still_accepted(pool: sqlx::PgPool) {
 #[sqlx::test]
 async fn crash_report_stored_exactly_once_no_auth(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
-    let crash_id = Uuid::from_u128(0xDEAD);
+    let crash_id = Uuid::from_u128(0xdead);
     let report = json!({
         "crash_id": crash_id.to_string(),
         "client_version": "1.8.0",
@@ -395,7 +395,7 @@ async fn unknown_oracle_ids_leave_no_signal(pool: sqlx::PgPool) {
     let atraxa_id = atraxa.id();
     seed_cards(&pool, &[atraxa]).await;
     let deck_id = commander_deck(&app, &pool, &token, atraxa_id).await;
-    let made_up = Uuid::from_u128(0xFACE);
+    let made_up = Uuid::from_u128(0xface);
 
     let (status, _) = app
         .post(

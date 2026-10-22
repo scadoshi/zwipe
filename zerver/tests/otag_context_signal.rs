@@ -29,7 +29,7 @@ async fn legacy_commander_field_credits_no_otag_rows(pool: sqlx::PgPool) {
     let bolt_oracle = bolt.oracle_id().unwrap();
     seed_cards(&pool, &[bolt]).await;
 
-    let commander = Uuid::from_u128(0xC0);
+    let commander = Uuid::from_u128(0xc0);
     let (status, _) = app
         .post(
             RECORD_USAGE_ROUTE,
@@ -301,7 +301,8 @@ async fn rollup_refresh_computes_net_and_shown(pool: sqlx::PgPool) {
     // serving-ready rollup: net = added + 0.5*maybed - removed, shown = SUM.
     // Base-table crediting is covered above; this guards the condensing step
     // itself — the numbers Phase 6 will trust.
-    use zwipe::{domain::card::ports::CardRepository, outbound::sqlx::postgres::Postgres};
+    use zwipe::domain::card::ports::CardRepository;
+    use zwipe::outbound::sqlx::postgres::Postgres;
 
     let app = TestApp::new(pool.clone());
     let (token, _) = app.register("rollup").await;

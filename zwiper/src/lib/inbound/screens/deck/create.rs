@@ -1,38 +1,31 @@
 //! Create new deck screen.
 
-use super::components::{
-    deck_fields::{DeckFields, DeckFieldsHint, autofill_named_partner},
-    format_select::FormatSelect,
-    oracle_tag_select::OracleTagSelect,
-    swipe_select::{SwipeMode, SwipeSelect},
-    tag_select::TagSelect,
-};
-use crate::inbound::{
-    components::{
-        auth::authed::use_authed,
-        catalog_cache::CatalogCache,
-        hint_dialog::use_one_time_hint,
-        screen_header::ScreenHeader,
-        telemetry::vocabulary::{DeckScreen, Screen, screen},
-    },
-    router::Router,
-};
 use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_core::{
-    domain::{
-        auth::models::session::Session,
-        card::{Card, search_card::card_filter::price_currency::PriceCurrency},
-        deck::{
-            DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel, format::Format,
-            seed_oracle_tags_from_catalog,
-        },
-        user::models::hints::HINT_CREATE_DECK,
-    },
-    http::contracts::deck::HttpCreateDeckProfile,
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::format::Format;
+use zwipe_core::domain::deck::{
+    DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel,
+    seed_oracle_tags_from_catalog,
 };
+use zwipe_core::domain::user::models::hints::HINT_CREATE_DECK;
+use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
+
+use super::components::deck_fields::{DeckFields, DeckFieldsHint, autofill_named_partner};
+use super::components::format_select::FormatSelect;
+use super::components::oracle_tag_select::OracleTagSelect;
+use super::components::swipe_select::{SwipeMode, SwipeSelect};
+use super::components::tag_select::TagSelect;
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::hint_dialog::use_one_time_hint;
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, screen};
+use crate::inbound::router::Router;
 
 /// Snapshot of the format + command-zone state, captured when the format picker
 /// opens so Cancel can revert it: (format, commander, commander name, signature

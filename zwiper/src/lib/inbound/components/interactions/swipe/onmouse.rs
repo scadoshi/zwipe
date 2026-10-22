@@ -1,9 +1,11 @@
 //! Mouse event handlers for desktop swipe emulation.
 
-use crate::inbound::components::interactions::swipe::{
-    config::SwipeConfig, onswipe::OnSwipe, state::SwipeState,
-};
-use dioxus::{html::input_data::MouseButton, prelude::*};
+use dioxus::html::input_data::MouseButton;
+use dioxus::prelude::*;
+
+use crate::inbound::components::interactions::swipe::config::SwipeConfig;
+use crate::inbound::components::interactions::swipe::onswipe::OnSwipe;
+use crate::inbound::components::interactions::swipe::state::SwipeState;
 
 /// Trait for handling mouse events as swipe gestures (desktop development).
 #[allow(missing_docs)]

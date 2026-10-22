@@ -1,10 +1,10 @@
 //! Deck card operation HTTP request contracts.
 
-use crate::{
-    domain::{card::scryfall_data::ScryfallData, deck::ImportMode},
-    http::helpers::Opdate,
-};
 use serde::{Deserialize, Serialize};
+
+use crate::domain::card::scryfall_data::ScryfallData;
+use crate::domain::deck::ImportMode;
+use crate::http::helpers::Opdate;
 
 /// Add card to deck request body.
 #[derive(Debug, Clone, Deserialize, Serialize)]

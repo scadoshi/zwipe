@@ -1,24 +1,18 @@
 //! Import cards into a deck from plain-text decklist.
 
-use axum::{
-    Json,
-    extract::{Path, State},
-    http::StatusCode,
-};
-use zwipe_core::{
-    domain::user::requests::get_user::GetUser, http::contracts::deck_card::HttpImportDeckCards,
-};
-
-use crate::{
-    domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsError,
-    inbound::http::{
-        ApiError, AppState, To500, handlers::metrics::check_completion::check_deck_completion,
-        middleware::AuthenticatedUser,
-    },
-};
+use axum::Json;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use zwipe_core::domain::deck::requests::import_deck_cards::{
     ImportDeckCards, ImportDeckCardsResult,
 };
+use zwipe_core::domain::user::requests::get_user::GetUser;
+use zwipe_core::http::contracts::deck_card::HttpImportDeckCards;
+
+use crate::domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsError;
+use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<ImportDeckCardsError> for ApiError {
     fn from(value: ImportDeckCardsError) -> Self {

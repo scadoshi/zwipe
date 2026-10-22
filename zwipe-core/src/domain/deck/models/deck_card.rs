@@ -1,10 +1,11 @@
 //! Deck-card join entity.
 
-use super::board::Board;
-use crate::domain::deck::Quantity;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use super::board::Board;
+use crate::domain::deck::Quantity;
 
 /// A card in a deck (join table entity).
 ///

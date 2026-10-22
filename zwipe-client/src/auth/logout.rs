@@ -1,7 +1,9 @@
 //! User logout API client.
 
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::endpoints::auth::Logout;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{domain::auth::models::session::Session, http::endpoints::auth::Logout};
 
 impl ZwipeClient {
     /// Logs out users and invalidating sessions.

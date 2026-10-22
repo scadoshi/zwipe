@@ -11,10 +11,12 @@
 //! These are the residual ~4 roles with no gold-standard equivalent; every
 //! other role comes from Oracle Tags.
 
+use std::sync::LazyLock;
+
+use regex::Regex;
+
 use super::CardRole;
 use crate::domain::card::Card;
-use regex::Regex;
-use std::sync::LazyLock;
 
 /// Classifies a card into the subset of `{Pump, Stax, Protection, GraveyardHate}`
 /// it matches: the categories with no clean Oracle-tag equivalent. All other
@@ -99,9 +101,10 @@ use patterns::*;
 
 #[cfg(test)]
 mod tests {
+    use CardRole::*;
+
     use super::*;
     use crate::test_utils::make_card;
-    use CardRole::*;
 
     fn card_with(oracle: &str) -> Card {
         let mut card = make_card("Test");

@@ -6,9 +6,10 @@
 //! still owns its `HintDialog` (with screen-specific content); passing its
 //! `open` signal as `hint` just wires up the trigger button.
 
-use crate::inbound::components::support::SupportButton;
 use components::PageHeader;
 use dioxus::prelude::*;
+
+use crate::inbound::components::support::SupportButton;
 
 /// Centered page title flanked by the always-present "!" help button (left) and
 /// an optional "?" hint trigger (right).

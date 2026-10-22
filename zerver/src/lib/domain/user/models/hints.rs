@@ -4,7 +4,6 @@
 //! and key constants live in zwipe-core (`domain::user::models::hints`).
 
 use thiserror::Error;
-
 #[allow(unused_imports)]
 use zwipe_core::domain::user::models::hints::MarkHintShown;
 

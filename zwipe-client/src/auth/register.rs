@@ -1,10 +1,10 @@
 //! New user registration API client.
 
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::auth::HttpRegisterUser;
+use zwipe_core::http::endpoints::auth::Register;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::auth::models::session::Session,
-    http::{contracts::auth::HttpRegisterUser, endpoints::auth::Register},
-};
 
 impl ZwipeClient {
     /// Registers new user accounts.

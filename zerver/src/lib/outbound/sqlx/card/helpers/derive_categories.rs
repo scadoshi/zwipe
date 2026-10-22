@@ -336,8 +336,9 @@ pub async fn derive_categories(pool: &PgPool) -> anyhow::Result<u64> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use zwipe_core::domain::card::card_role::CardRole;
+
+    use super::*;
 
     /// Every mapped category string must round-trip to a real `CardRole`,
     /// so the map can't drift from the enum's snake_case serde.

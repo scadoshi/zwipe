@@ -1,10 +1,10 @@
 //! Fetch the deck-tag catalog.
 
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::DeckTagView;
+use zwipe_core::http::endpoints::deck::GetDeckTags;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::{auth::models::session::Session, deck::DeckTagView},
-    http::endpoints::deck::GetDeckTags,
-};
 
 impl ZwipeClient {
     /// Fetches the full deck-tag catalog (slug, label, description, seed

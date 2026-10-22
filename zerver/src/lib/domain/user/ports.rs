@@ -11,21 +11,18 @@
 //!
 //! This separation keeps authentication logic isolated from user data access.
 
-use crate::domain::BoxFuture;
 use std::future::Future;
-use uuid::Uuid;
 
-use crate::domain::user::models::{
-    get_user::GetUserError,
-    hints::MarkHintShownError,
-    preferences::{GetPreferencesError, UpdatePreferencesError},
-};
-use zwipe_core::domain::user::{
-    User,
-    models::hints::MarkHintShown,
-    preferences::{UpdatePreferences, UserPreferences},
-    requests::get_user::GetUser,
-};
+use uuid::Uuid;
+use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::models::hints::MarkHintShown;
+use zwipe_core::domain::user::preferences::{UpdatePreferences, UserPreferences};
+use zwipe_core::domain::user::requests::get_user::GetUser;
+
+use crate::domain::BoxFuture;
+use crate::domain::user::models::get_user::GetUserError;
+use crate::domain::user::models::hints::MarkHintShownError;
+use crate::domain::user::models::preferences::{GetPreferencesError, UpdatePreferencesError};
 
 /// Database port for user profile operations.
 ///

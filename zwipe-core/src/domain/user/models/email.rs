@@ -10,9 +10,12 @@
 //! constructors. Outbound adapters that need a `&str` for transport call
 //! [`Email::as_ref`].
 
+use std::fmt::Display;
+use std::ops::Deref;
+use std::str::FromStr;
+
 use email_address::{EmailAddress, Options};
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, ops::Deref, str::FromStr};
 
 /// Validation error when constructing an [`Email`].
 ///

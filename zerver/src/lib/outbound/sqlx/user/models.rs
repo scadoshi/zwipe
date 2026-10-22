@@ -1,12 +1,11 @@
 use chrono::{DateTime, Utc};
 use sqlx_macros::FromRow;
 use uuid::Uuid;
+use zwipe_core::domain::Email;
+use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::username::Username;
 
 use crate::outbound::sqlx::user::error::IntoUserError;
-use zwipe_core::domain::{
-    Email,
-    user::{User, username::Username},
-};
 
 /// raw database user record
 /// (unvalidated data from `PostgreSQL`)

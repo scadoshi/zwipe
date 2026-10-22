@@ -5,11 +5,13 @@
 //! map on the user), then never again. Screens may keep a small "?" button
 //! that reopens it on demand.
 
-use crate::{inbound::components::auth::ensure_session::EnsureFresh, outbound::session::Persist};
 use components::{AlertDialog, DialogAction};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
+
+use crate::inbound::components::auth::ensure_session::EnsureFresh;
+use crate::outbound::session::Persist;
 
 /// Opens the returned signal once per account for the given hint key, and
 /// reports the hint as shown so it never auto-opens again (on any device).

@@ -3,10 +3,13 @@
 //! This module provides the [`Username`] type, which ensures all usernames
 //! meet platform requirements for length, content, and appropriateness.
 
-use crate::domain::moderation::ContainsBadWord;
+use std::fmt::Display;
+use std::ops::Deref;
+
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, ops::Deref};
 use thiserror::Error;
+
+use crate::domain::moderation::ContainsBadWord;
 
 /// Validation errors when creating a username.
 ///

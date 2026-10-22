@@ -5,8 +5,9 @@
 //! Picking an archetype seeds these client-side (the `DeckTag → otag-set` map
 //! arrives in Phase 3 Slice B).
 
-use super::deck_tag::{DeckTag, DeckTagView};
 use std::collections::HashSet;
+
+use super::deck_tag::{DeckTag, DeckTagView};
 
 /// Maximum oracle tags a deck may declare. Higher than `MAX_DECK_TAGS` (5)
 /// because oracle tags are granular; a deck legitimately touches many.

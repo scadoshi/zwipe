@@ -1,17 +1,18 @@
 //! Shared test utilities for constructing domain types.
 
-use crate::domain::{
-    card::{
-        Card,
-        card_profile::CardProfile,
-        scryfall_data::{
-            ScryfallData, colors::Colors, legalities::Legalities, prices::Prices, rarity::Rarity,
-        },
-    },
-    deck::{Board, DeckCard, deck::DeckEntry, quantity::Quantity},
-};
 use chrono::NaiveDate;
 use uuid::Uuid;
+
+use crate::domain::card::Card;
+use crate::domain::card::card_profile::CardProfile;
+use crate::domain::card::scryfall_data::ScryfallData;
+use crate::domain::card::scryfall_data::colors::Colors;
+use crate::domain::card::scryfall_data::legalities::Legalities;
+use crate::domain::card::scryfall_data::prices::Prices;
+use crate::domain::card::scryfall_data::rarity::Rarity;
+use crate::domain::deck::deck::DeckEntry;
+use crate::domain::deck::quantity::Quantity;
+use crate::domain::deck::{Board, DeckCard};
 
 /// Creates a minimal test `DeckEntry` with the given card name and quantity.
 pub fn make_entry(name: &str, qty: i32) -> DeckEntry {

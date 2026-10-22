@@ -1,11 +1,11 @@
 //! Endpoints describing the service itself rather than a user's data.
 
-use crate::http::{
-    contracts::{changelog::HttpChangelog, client::HttpMinClientVersion},
-    endpoint::{Endpoint, Method},
-    paths::{CHANGELOG_ROUTE, MIN_CLIENT_VERSION_ROUTE},
-};
 use std::borrow::Cow;
+
+use crate::http::contracts::changelog::HttpChangelog;
+use crate::http::contracts::client::HttpMinClientVersion;
+use crate::http::endpoint::{Endpoint, Method};
+use crate::http::paths::{CHANGELOG_ROUTE, MIN_CLIENT_VERSION_ROUTE};
 
 /// The release history the app and site both render.
 pub struct GetChangelog;

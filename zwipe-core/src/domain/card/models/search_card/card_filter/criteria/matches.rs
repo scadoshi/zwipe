@@ -3,19 +3,13 @@
 //! Mirrors the SQL adapter's filtering logic exactly, so the same criteria
 //! applied against a local collection agree with a server-side search.
 
-use crate::domain::{
-    card::{
-        Card,
-        scryfall_data::legalities::LegalityKind,
-        search_card::{
-            card_filter::{
-                criteria::CardCriteria, price_currency::PriceCurrency, strip_punctuation,
-            },
-            commander_eligibility::is_valid_commander,
-        },
-    },
-    deck::Format,
-};
+use crate::domain::card::Card;
+use crate::domain::card::scryfall_data::legalities::LegalityKind;
+use crate::domain::card::search_card::card_filter::criteria::CardCriteria;
+use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use crate::domain::card::search_card::card_filter::strip_punctuation;
+use crate::domain::card::search_card::commander_eligibility::is_valid_commander;
+use crate::domain::deck::Format;
 
 /// Layouts representing cards playable in Magic formats.
 ///

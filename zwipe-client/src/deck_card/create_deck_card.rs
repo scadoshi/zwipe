@@ -1,11 +1,12 @@
 //! Add a card to a deck.
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::{
-    domain::{auth::models::session::Session, deck::deck_card::DeckCard},
-    http::{contracts::deck_card::HttpCreateDeckCard, endpoints::deck::CreateDeckCard},
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::deck_card::DeckCard;
+use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
+use zwipe_core::http::endpoints::deck::CreateDeckCard;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Adds cards to a deck.

@@ -4,12 +4,13 @@
 //! - **Access Token**: Short-lived JWT (24h) for authenticating API requests
 //! - **Refresh Token**: Long-lived token (14d) for obtaining new access tokens
 
-use crate::domain::{
-    auth::models::{access_token::AccessToken, refresh_token::RefreshToken},
-    user::models::{User, preferences::UserPreferences},
-};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
+
+use crate::domain::auth::models::access_token::AccessToken;
+use crate::domain::auth::models::refresh_token::RefreshToken;
+use crate::domain::user::models::User;
+use crate::domain::user::models::preferences::UserPreferences;
 
 /// Maximum number of concurrent sessions allowed per user.
 ///
@@ -41,14 +42,15 @@ impl Session {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::domain::{
-        auth::models::access_token::Jwt,
-        user::models::{email::Email, username::Username},
-    };
-    use chrono::Duration;
     use std::str::FromStr;
+
+    use chrono::Duration;
     use uuid::Uuid;
+
+    use super::*;
+    use crate::domain::auth::models::access_token::Jwt;
+    use crate::domain::user::models::email::Email;
+    use crate::domain::user::models::username::Username;
 
     fn make_session(refresh_expires_at: chrono::DateTime<Utc>) -> Session {
         let user = User::new(

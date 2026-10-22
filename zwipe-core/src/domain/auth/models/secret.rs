@@ -1,7 +1,8 @@
 //! Plaintext secrets that survive a `Debug` print.
 
-use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
+
+use serde::{Deserialize, Serialize};
 
 /// Plaintext the user typed, held only long enough to send or verify it.
 ///

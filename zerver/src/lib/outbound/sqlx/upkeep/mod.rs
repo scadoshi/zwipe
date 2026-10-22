@@ -6,8 +6,10 @@
 //! destruction-only (`DELETE` + column-scoped `SELECT (expires_at, replaced_at)`),
 //! and these are three trivial deletes.
 
-use crate::{domain::upkeep::ports::UpkeepRepository, outbound::sqlx::postgres::Postgres};
 use anyhow::Context;
+
+use crate::domain::upkeep::ports::UpkeepRepository;
+use crate::outbound::sqlx::postgres::Postgres;
 
 impl UpkeepRepository for Postgres {
     async fn prune_client_errors(&self, retention_days: i32) -> anyhow::Result<u64> {

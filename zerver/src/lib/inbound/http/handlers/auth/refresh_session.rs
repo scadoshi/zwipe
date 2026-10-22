@@ -1,18 +1,16 @@
-use crate::{
-    domain::{
-        auth::requests::refresh_session::{
-            InvalidRefreshSession, RefreshSession, RefreshSessionError,
-        },
-        metrics::models::kinds::{AuditAction, EventKind},
-        user::models::get_user::GetUserError,
-    },
-    inbound::http::{ApiError, AppState, To500},
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::auth::HttpRefreshSession;
+use zwipe_core::version::canonical_version;
+
+use crate::domain::auth::requests::refresh_session::{
+    InvalidRefreshSession, RefreshSession, RefreshSessionError,
 };
-use axum::{Json, extract::State, http::StatusCode};
-use zwipe_core::{
-    domain::auth::models::session::Session, http::contracts::auth::HttpRefreshSession,
-    version::canonical_version,
-};
+use crate::domain::metrics::models::kinds::{AuditAction, EventKind};
+use crate::domain::user::models::get_user::GetUserError;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<RefreshSessionError> for ApiError {
     fn from(value: RefreshSessionError) -> Self {

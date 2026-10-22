@@ -13,6 +13,7 @@
 //! there are no string keys to collide.
 
 use std::time::Instant;
+
 use tokio::sync::RwLock;
 
 /// One-slot, deadline-based cache. See the module docs for the model.
@@ -87,11 +88,10 @@ impl<V: Clone> TtlSlot<V> {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::atomic::{AtomicU32, Ordering};
+    use std::time::Duration;
+
     use super::*;
-    use std::{
-        sync::atomic::{AtomicU32, Ordering},
-        time::Duration,
-    };
 
     fn far() -> Instant {
         Instant::now() + Duration::from_secs(3600)

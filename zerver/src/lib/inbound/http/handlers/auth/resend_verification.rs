@@ -1,7 +1,9 @@
-use axum::{extract::State, http::StatusCode};
-
-use crate::inbound::http::{ApiError, AppState, middleware::AuthenticatedUser};
+use axum::extract::State;
+use axum::http::StatusCode;
 use zwipe_core::domain::user::requests::get_user::GetUser;
+
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState};
 
 /// Re-sends the email verification link to the authenticated user.
 ///

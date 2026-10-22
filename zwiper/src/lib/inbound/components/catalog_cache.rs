@@ -21,16 +21,12 @@
 
 use chrono::{DateTime, Utc};
 use dioxus::prelude::*;
-use zwipe_client::ClientError;
-use zwipe_core::domain::{
-    auth::models::session::Session,
-    card::{
-        card_role::CardRoleView, oracle_tag::OracleTag, scryfall_data::universe::UbFranchiseView,
-    },
-    deck::DeckTagView,
-};
-
-use zwipe_client::ZwipeClient;
+use zwipe_client::{ClientError, ZwipeClient};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::card_role::CardRoleView;
+use zwipe_core::domain::card::oracle_tag::OracleTag;
+use zwipe_core::domain::card::scryfall_data::universe::UbFranchiseView;
+use zwipe_core::domain::deck::DeckTagView;
 
 /// How long a fetched catalog stays fresh before a read schedules a revalidation.
 /// One day, aligned with the nightly sync and Cloudflare's 24h edge cache.

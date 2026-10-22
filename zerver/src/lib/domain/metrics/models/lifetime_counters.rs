@@ -2,7 +2,6 @@
 
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
-
 use zwipe_core::http::contracts::metrics::HttpLifetimeCounters;
 
 /// Lifetime totals for one user, fetched as a single row.

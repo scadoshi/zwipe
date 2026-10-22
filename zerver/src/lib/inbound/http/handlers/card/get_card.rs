@@ -1,17 +1,12 @@
-use crate::{
-    domain::card::requests::{
-        get_card::GetCardError,
-        get_card_profile::GetCardProfileError,
-        get_scryfall_data::{GetScryfallData, GetScryfallDataError},
-    },
-    inbound::http::{ApiError, AppState, To500},
-};
-use axum::{
-    Json,
-    extract::{Path, State},
-    http::StatusCode,
-};
+use axum::Json;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use zwipe_core::domain::card::Card;
+
+use crate::domain::card::requests::get_card::GetCardError;
+use crate::domain::card::requests::get_card_profile::GetCardProfileError;
+use crate::domain::card::requests::get_scryfall_data::{GetScryfallData, GetScryfallDataError};
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<GetCardProfileError> for ApiError {
     fn from(value: GetCardProfileError) -> Self {

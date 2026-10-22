@@ -1,8 +1,10 @@
 //! Fetch a single card by ID.
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::{domain::card::Card, http::endpoints::card::GetCard};
+use zwipe_core::domain::card::Card;
+use zwipe_core::http::endpoints::card::GetCard;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Fetches a single card by its Scryfall data ID.

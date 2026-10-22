@@ -1,14 +1,12 @@
-use crate::{
-    domain::deck::models::deck::get_deck::GetDeckError,
-    inbound::http::{ApiError, AppState, middleware::AuthenticatedUser},
-};
-use axum::{
-    Json,
-    extract::{Path, State},
-    http::StatusCode,
-};
+use axum::Json;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use uuid::Uuid;
 use zwipe_core::domain::deck::Deck;
+
+use crate::domain::deck::models::deck::get_deck::GetDeckError;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState};
 
 impl From<GetDeckError> for ApiError {
     fn from(value: GetDeckError) -> Self {

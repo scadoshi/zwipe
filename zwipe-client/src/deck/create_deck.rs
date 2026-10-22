@@ -1,10 +1,11 @@
 //! Create new deck.
 
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
+use zwipe_core::http::endpoints::deck::CreateDeck;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::{auth::models::session::Session, deck::deck_profile::DeckProfile},
-    http::{contracts::deck::HttpCreateDeckProfile, endpoints::deck::CreateDeck},
-};
 
 impl ZwipeClient {
     /// Creates new deck profiles.

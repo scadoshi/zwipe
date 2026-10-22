@@ -1,10 +1,12 @@
 //! Database-to-domain conversion for card profiles.
 
+use std::collections::BTreeMap;
+
 use chrono::{DateTime, Utc};
 use sqlx_macros::FromRow;
-use std::collections::BTreeMap;
 use uuid::Uuid;
-use zwipe_core::domain::card::{card_profile::CardProfile, card_role::CardRole};
+use zwipe_core::domain::card::card_profile::CardProfile;
+use zwipe_core::domain::card::card_role::CardRole;
 
 /// Raw database card profile record (unvalidated data from PostgreSQL).
 #[derive(Debug, Clone, FromRow)]

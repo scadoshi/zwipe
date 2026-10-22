@@ -14,7 +14,8 @@ mod common;
 use axum::http::StatusCode;
 use common::TestApp;
 use serde_json::json;
-use zwipe_core::http::{contracts::deck::HttpUpdateDeckProfile, helpers::Opdate};
+use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
+use zwipe_core::http::helpers::Opdate;
 
 #[sqlx::test]
 async fn deck_profile_lifecycle(pool: sqlx::PgPool) {

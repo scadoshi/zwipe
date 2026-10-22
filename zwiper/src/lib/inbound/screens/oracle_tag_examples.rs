@@ -12,33 +12,31 @@
 //! `oracle_tags_contains_any` criterion; the same linear `CardStack` +
 //! `SwipeStack` machinery as the add screen, minus all the deck side effects.
 
-use crate::inbound::{
-    components::{
-        auth::authed::use_authed,
-        hint_dialog::{HintColored, HintDialog, use_one_time_hint},
-        interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
-        screen_header::ScreenHeader,
-        telemetry::vocabulary::{OracleTagScreen, Screen, screen},
-    },
-    screens::deck::card::components::{
-        action_history::{BrowseAction, MAX_CARDS_IN_STACK},
-        card_info::{CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton},
-        card_stack::use_card_stack,
-        printing_sheet::PrintingSheet,
-    },
-};
 use components::{
     ActionBar, Button, ButtonVariant, HintBullet, HintBullets, TOAST_QUICK, use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_core::domain::{
-    card::{
-        Card,
-        search_card::card_filter::{builder::CardQueryBuilder, card_sort_key::CardSortKey},
-    },
-    user::models::hints::HINT_OTAG_EXAMPLES,
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+use zwipe_core::domain::user::models::hints::HINT_OTAG_EXAMPLES;
+
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::hint_dialog::{HintColored, HintDialog, use_one_time_hint};
+use crate::inbound::components::interactions::swipe::SwipeStack;
+use crate::inbound::components::interactions::swipe::config::SwipeConfig;
+use crate::inbound::components::interactions::swipe::direction::Direction;
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::telemetry::vocabulary::{OracleTagScreen, Screen, screen};
+use crate::inbound::screens::deck::card::components::action_history::{
+    BrowseAction, MAX_CARDS_IN_STACK,
 };
+use crate::inbound::screens::deck::card::components::card_info::{
+    CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton,
+};
+use crate::inbound::screens::deck::card::components::card_stack::use_card_stack;
+use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
 
 /// One page of example cards per fetch (matches the backend default).
 const PAGE_LIMIT: u32 = 25;

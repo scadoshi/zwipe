@@ -1,16 +1,13 @@
 //! User preferences screen for theme and dark mode selection.
 
-use crate::{
-    inbound::components::{
-        auth::authed::use_authed,
-        telemetry::vocabulary::{ProfileScreen, Screen},
-    },
-    outbound::app_icon,
-};
 use components::{TOAST_QUICK, ThemeConfig, ThemeSheet, theme_from_preferences};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
+use crate::outbound::app_icon;
 
 /// The shared theme sheet, saving a kept pick to the account. Selections
 /// live-preview against the whole app; Save persists the pick and toasts once

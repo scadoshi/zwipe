@@ -11,7 +11,8 @@
 //! [`CardRow`]: crate::CardRow
 
 use dioxus::prelude::*;
-use zwipe_core::domain::card::{Card, scryfall_data::ImageSize};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::ImageSize;
 
 use crate::{CardRoleChips, KeywordChips, OracleText};
 

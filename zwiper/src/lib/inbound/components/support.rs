@@ -6,10 +6,11 @@
 //! team: email a problem report or join the Discord. The report email is
 //! pre-filled with the app version and platform so every report self-documents.
 
-use crate::outbound::open_url;
 use components::{AlertDialog, DialogAction};
 use dioxus::prelude::*;
 use zwipe_core::domain::site::{DISCORD_URL, SUPPORT_EMAIL};
+
+use crate::outbound::open_url;
 
 /// App version, baked at compile time.
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");

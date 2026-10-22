@@ -8,24 +8,18 @@
 //! the body is a 422 per the RFC 7396 resolution (null clears nullable
 //! fields, errors on required ones); absent means untouched.
 
-use axum::{
-    Json,
-    extract::{Path, State},
-    http::StatusCode,
-};
-use zwipe_core::http::{contracts::deck_card::HttpPatchDeckCard, helpers::Opdate};
+use axum::Json;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
+use zwipe_core::domain::deck::DeckCard;
+use zwipe_core::domain::deck::requests::update_deck_card::{InvalidUpdateDeckCard, UpdateDeckCard};
+use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
+use zwipe_core::http::helpers::Opdate;
 
-use crate::{
-    domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError,
-    inbound::http::{
-        ApiError, AppState, To500, handlers::metrics::check_completion::check_deck_completion,
-        middleware::AuthenticatedUser,
-    },
-};
-use zwipe_core::domain::deck::{
-    DeckCard,
-    requests::update_deck_card::{InvalidUpdateDeckCard, UpdateDeckCard},
-};
+use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError;
+use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<UpdateDeckCardError> for ApiError {
     fn from(value: UpdateDeckCardError) -> Self {

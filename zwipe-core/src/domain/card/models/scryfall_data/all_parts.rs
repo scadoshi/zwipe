@@ -1,5 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::ops::Deref;
+
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// Information about a related card component (other faces, tokens, meld pairs, etc.).

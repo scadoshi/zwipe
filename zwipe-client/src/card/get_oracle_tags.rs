@@ -1,7 +1,9 @@
 //! Fetch the oracle tag catalog.
 
+use zwipe_core::domain::card::oracle_tag::OracleTag;
+use zwipe_core::http::endpoints::card::GetOracleTags;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{domain::card::oracle_tag::OracleTag, http::endpoints::card::GetOracleTags};
 
 impl ZwipeClient {
     /// Fetches the full oracle tag catalog (slug, label, description, parents).

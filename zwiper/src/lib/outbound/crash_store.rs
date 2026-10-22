@@ -81,9 +81,10 @@ pub fn clear() {
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used)]
-    use super::{HttpCrashReport, clear, take_pending, write_report};
     use uuid::Uuid;
     use zwipe_core::domain::auth::models::platform::ClientPlatform;
+
+    use super::{HttpCrashReport, clear, take_pending, write_report};
 
     /// One test owns the whole lifecycle: the store is a single shared file
     /// (desktop: temp dir), so split tests would race under the parallel

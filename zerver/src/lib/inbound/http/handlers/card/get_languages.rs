@@ -1,9 +1,9 @@
-use crate::{
-    domain::card::requests::get_languages::GetLanguagesError,
-    inbound::http::{ApiError, AppState, To500},
-};
-use axum::{Json, extract::State};
+use axum::Json;
+use axum::extract::State;
 use reqwest::StatusCode;
+
+use crate::domain::card::requests::get_languages::GetLanguagesError;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<GetLanguagesError> for ApiError {
     fn from(value: GetLanguagesError) -> Self {

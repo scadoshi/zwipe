@@ -1,7 +1,9 @@
-use crate::{DISCORD_URL, Footer, Nav, SUPPORT_EMAIL, components::PageMeta};
 use components::Panel;
 use dioxus::prelude::*;
 use zwipe_core::legal::{PRIVACY_LAST_UPDATED, PRIVACY_POLICY_HTML};
+
+use crate::components::PageMeta;
+use crate::{DISCORD_URL, Footer, Nav, SUPPORT_EMAIL};
 
 /// Splits the shared policy HTML into one fragment per `<h2>` heading so each
 /// section renders inside its own panel with a divider under the heading,

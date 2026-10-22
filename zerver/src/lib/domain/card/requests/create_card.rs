@@ -3,8 +3,9 @@
 //! Inserts or updates card data (Scryfall data + application metadata).
 //! Used during Scryfall sync to populate the card database.
 
-use crate::domain::card::requests::get_scryfall_data::GetScryfallDataError;
 use thiserror::Error;
+
+use crate::domain::card::requests::get_scryfall_data::GetScryfallDataError;
 
 /// Errors that can occur during card creation/upsertion.
 #[derive(Debug, Error)]

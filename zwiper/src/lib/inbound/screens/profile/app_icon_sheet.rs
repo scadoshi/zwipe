@@ -2,13 +2,15 @@
 //! the icon drawn in that theme's colors in the mode the icon is in now
 //! (Profile's App icon row flips the mode), laid out like the theme sheet.
 
-use crate::outbound::app_icon;
 use components::{
     BottomSheet, Button, ButtonVariant, THEME_GROUPS, TOAST_NORMAL, TOAST_QUICK, ThemeConfig,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_core::domain::{logo::Z, user::preferences::display_theme_name};
+use zwipe_core::domain::logo::Z;
+use zwipe_core::domain::user::preferences::display_theme_name;
+
+use crate::outbound::app_icon;
 
 /// The tile: the mark as text in a theme's own class, so it is the same glyph
 /// and colors `zcripts/ios/icon.py` renders, with nothing bundled to show it.

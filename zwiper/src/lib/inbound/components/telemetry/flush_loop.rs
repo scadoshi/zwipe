@@ -1,15 +1,14 @@
 //! Background flusher that posts batched usage to the backend.
 
 use std::time::Duration;
-use zwipe_client::ZwipeClient;
 
 use dioxus::prelude::{ReadableExt, Signal, document, spawn};
 use tokio::time::interval;
-
-use crate::inbound::components::{
-    auth::ensure_session::EnsureFresh, telemetry::usage_buffer::UsageBuffer,
-};
+use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
+
+use crate::inbound::components::auth::ensure_session::EnsureFresh;
+use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 
 /// Interval between automatic flushes when the app is foregrounded.
 pub const FLUSH_INTERVAL_SECS: u64 = 30;

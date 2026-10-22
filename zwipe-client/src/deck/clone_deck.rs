@@ -1,14 +1,11 @@
 //! Clone an existing deck.
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::{
-    domain::auth::models::session::Session,
-    http::{
-        contracts::deck::{HttpCloneDeck, HttpClonedDeck},
-        endpoints::deck::CloneDeck,
-    },
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::deck::{HttpCloneDeck, HttpClonedDeck};
+use zwipe_core::http::endpoints::deck::CloneDeck;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Clones an existing deck into a new one with a caller-chosen name.

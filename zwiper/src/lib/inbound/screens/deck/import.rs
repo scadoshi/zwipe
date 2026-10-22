@@ -2,16 +2,6 @@
 //! replace mode. Both sources import into the selected board of this deck and
 //! share the same result shape.
 
-use crate::inbound::{
-    components::{
-        auth::authed::use_authed,
-        hint_dialog::{HintDialog, use_one_time_hint},
-        screen_header::ScreenHeader,
-        telemetry::vocabulary::{DeckScreen, Screen},
-    },
-    router::Router,
-    screens::deck::card::components::undo_log::UndoStore,
-};
 use components::{
     ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey, TOAST_NORMAL,
     TOAST_QUICK,
@@ -19,10 +9,16 @@ use components::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
-use zwipe_core::domain::{
-    deck::{ImportMode, requests::import_deck_cards::ImportDeckCardsResult},
-    user::models::hints::HINT_IMPORT,
-};
+use zwipe_core::domain::deck::ImportMode;
+use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
+use zwipe_core::domain::user::models::hints::HINT_IMPORT;
+
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::hint_dialog::{HintDialog, use_one_time_hint};
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
+use crate::inbound::router::Router;
+use crate::inbound::screens::deck::card::components::undo_log::UndoStore;
 
 /// Which import source is active.
 #[derive(Debug, Clone, Copy, PartialEq)]

@@ -13,11 +13,11 @@
 //! compiled copy is by definition the one that shipped with this build, so it
 //! could never show anything the reader has not already got.
 
-use crate::inbound::components::{
-    auth::session_upkeep::ChangelogCache, screen_header::ScreenHeader,
-};
 use components::{ActionBar, Button, ButtonVariant, Changelog as ChangelogContent};
 use dioxus::prelude::*;
+
+use crate::inbound::components::auth::session_upkeep::ChangelogCache;
+use crate::inbound::components::screen_header::ScreenHeader;
 
 /// Full release history, reachable from the Profile screen.
 #[component]

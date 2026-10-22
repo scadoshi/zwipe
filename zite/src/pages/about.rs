@@ -1,6 +1,8 @@
-use crate::{Footer, Nav, components::PageMeta};
 use components::{Panel, ZwipeArchitecture};
 use dioxus::prelude::*;
+
+use crate::components::PageMeta;
+use crate::{Footer, Nav};
 
 // Source-material links, used inside the architecture diagram (Wikipedia-style refs).
 const URL_ZWIPER: &str = "https://github.com/scadoshi/zwipe/tree/main/zwiper";

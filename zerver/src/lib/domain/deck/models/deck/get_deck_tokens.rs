@@ -3,10 +3,10 @@
 //! Extracts token Scryfall IDs from each card's `all_parts` field
 //! and resolves them to full card objects.
 
-use crate::domain::{
-    card::requests::get_card::GetCardError, deck::models::deck::get_deck::GetDeckError,
-};
 use thiserror::Error;
+
+use crate::domain::card::requests::get_card::GetCardError;
+use crate::domain::deck::models::deck::get_deck::GetDeckError;
 
 /// Errors that can occur when retrieving tokens for a deck.
 #[derive(Debug, Error)]

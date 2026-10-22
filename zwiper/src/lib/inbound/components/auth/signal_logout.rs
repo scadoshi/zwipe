@@ -3,10 +3,12 @@
 //! Provides a trait extension for session signals to perform logout operations,
 //! including server-side session invalidation and local storage cleanup.
 
-use crate::{inbound::components::auth::ensure_session::EnsureFresh, outbound::session::Persist};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
+
+use crate::inbound::components::auth::ensure_session::EnsureFresh;
+use crate::outbound::session::Persist;
 
 /// Trait for session signals that can perform logout operations.
 pub trait SignalLogout {

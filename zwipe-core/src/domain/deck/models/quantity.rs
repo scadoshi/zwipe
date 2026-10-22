@@ -2,8 +2,9 @@
 //!
 //! Ensures card quantities are valid (1-99).
 
-use serde::{Deserialize, Serialize};
 use std::ops::Deref;
+
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Error when quantity is zero or negative.

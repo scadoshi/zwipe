@@ -4,8 +4,10 @@
 //! serves everyone the same card from its in-memory slot (see the featured
 //! flavor plan).
 
+use zwipe_core::domain::card::Card;
+use zwipe_core::http::endpoints::card::FeaturedFlavor;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{domain::card::Card, http::endpoints::card::FeaturedFlavor};
 
 impl ZwipeClient {
     /// Fetches the hour's featured flavor card.

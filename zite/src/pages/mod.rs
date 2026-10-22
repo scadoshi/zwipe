@@ -17,10 +17,10 @@ pub use android::Android;
 pub use changelog::Changelog;
 pub use community::Community;
 pub use contribute::Contribute;
-pub use guides::{GuidePage, Guides};
 // SSG prerender list only, which `#[server]` compiles under this feature.
 #[cfg(feature = "server")]
 pub(crate) use guides::slugs as guide_slugs;
+pub use guides::{GuidePage, Guides};
 pub use home::Home;
 pub use ios::Ios;
 pub use not_found::NotFound;

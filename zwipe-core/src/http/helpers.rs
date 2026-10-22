@@ -2,7 +2,8 @@
 //!
 //! Provides utilities for handling partial updates and JSON serialization edge cases.
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer, de::DeserializeOwned};
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Wrapper for optional field updates that preserves `None` vs "unchanged" semantics.
 ///

@@ -5,8 +5,9 @@
 //! the reveal. A chip with no reminder is inert, which only happens when a
 //! host serves the catalog and it omits that keyword.
 
-use dioxus::prelude::*;
 use std::collections::HashMap;
+
+use dioxus::prelude::*;
 use zwipe_core::domain::card::keyword::keyword_reminder;
 
 /// Context: the served keyword-reminder catalog (name → reminder).

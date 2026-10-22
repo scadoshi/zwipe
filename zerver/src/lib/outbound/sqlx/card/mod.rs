@@ -13,58 +13,47 @@ pub mod oracle_tag;
 /// Sync metrics JSONB codecs and database model.
 pub mod zervice_metrics;
 
-use crate::{
-    domain::card::{
-        models::{
-            helpers::SleeveCardProfile, search_card::error::SearchCardsError,
-            zervice_metrics::ZerviceMetrics,
-        },
-        ports::{CardRepository, DeckServeContext},
-        requests::{
-            create_card::CreateCardError,
-            get_artists::GetArtistsError,
-            get_card::GetCardError,
-            get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
-            get_card_types::GetCardTypesError,
-            get_keywords::GetKeywordsError,
-            get_languages::GetLanguagesError,
-            get_oracle_tags::GetOracleTagsError,
-            get_oracle_words::GetOracleWordsError,
-            get_scryfall_data::{
-                GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
-            },
-            get_sets::GetSetsError,
-        },
-    },
-    outbound::sqlx::{
-        card::{
-            card_profile::DatabaseCardProfile,
-            helpers::upsert_card::{
-                BatchDeltaUpsertWithTx, BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
-            },
-            models::DatabaseScryfallData,
-            oracle_tag::DatabaseOracleTag,
-            zervice_metrics::DatabaseZerviceMetrics,
-        },
-        postgres::Postgres as MyPostgres,
-    },
-};
-use zwipe_core::domain::{
-    card::{
-        Card,
-        card_profile::CardProfile,
-        oracle_tag::OracleTag,
-        scryfall_data::ScryfallData,
-        search_card::card_filter::{
-            CardQuery, card_sort_key::CardSortKey, criteria::PLAYABLE_LAYOUTS,
-        },
-    },
-    deck::{Format, requests::import_deck_cards::entry_front_face},
-};
-
 use anyhow::Context;
 use chrono::{DateTime, Utc};
-use sqlx::{Postgres, QueryBuilder, query_as, query_builder::Separated, query_scalar};
+use sqlx::query_builder::Separated;
+use sqlx::{Postgres, QueryBuilder, query_as, query_scalar};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::card_profile::CardProfile;
+use zwipe_core::domain::card::oracle_tag::OracleTag;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+use zwipe_core::domain::card::search_card::card_filter::criteria::PLAYABLE_LAYOUTS;
+use zwipe_core::domain::deck::Format;
+use zwipe_core::domain::deck::requests::import_deck_cards::entry_front_face;
+
+use crate::domain::card::models::helpers::SleeveCardProfile;
+use crate::domain::card::models::search_card::error::SearchCardsError;
+use crate::domain::card::models::zervice_metrics::ZerviceMetrics;
+use crate::domain::card::ports::{CardRepository, DeckServeContext};
+use crate::domain::card::requests::create_card::CreateCardError;
+use crate::domain::card::requests::get_artists::GetArtistsError;
+use crate::domain::card::requests::get_card::GetCardError;
+use crate::domain::card::requests::get_card_profile::{
+    CardProfileIds, GetCardProfile, GetCardProfileError,
+};
+use crate::domain::card::requests::get_card_types::GetCardTypesError;
+use crate::domain::card::requests::get_keywords::GetKeywordsError;
+use crate::domain::card::requests::get_languages::GetLanguagesError;
+use crate::domain::card::requests::get_oracle_tags::GetOracleTagsError;
+use crate::domain::card::requests::get_oracle_words::GetOracleWordsError;
+use crate::domain::card::requests::get_scryfall_data::{
+    GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
+};
+use crate::domain::card::requests::get_sets::GetSetsError;
+use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
+use crate::outbound::sqlx::card::helpers::upsert_card::{
+    BatchDeltaUpsertWithTx, BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
+};
+use crate::outbound::sqlx::card::models::DatabaseScryfallData;
+use crate::outbound::sqlx::card::oracle_tag::DatabaseOracleTag;
+use crate::outbound::sqlx::card::zervice_metrics::DatabaseZerviceMetrics;
+use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
 
 /// Hard ceiling on rows returned by a single card search.
 ///

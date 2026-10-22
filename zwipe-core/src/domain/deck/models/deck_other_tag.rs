@@ -9,8 +9,9 @@
 //! Variants are only ever added, never removed or renamed, so previously-stored
 //! values keep parsing.
 
-use serde::{Deserialize, Serialize};
 use std::fmt;
+
+use serde::{Deserialize, Serialize};
 
 /// Maximum number of other-tags a single deck may carry.
 pub const MAX_DECK_OTHER_TAGS: usize = 5;

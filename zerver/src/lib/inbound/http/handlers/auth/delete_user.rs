@@ -1,10 +1,11 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
 use zwipe_core::http::contracts::auth::HttpDeleteUser;
 
-use crate::{
-    domain::auth::requests::delete_user::{DeleteUser, DeleteUserError, InvalidDeleteUser},
-    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
-};
+use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError, InvalidDeleteUser};
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<DeleteUserError> for ApiError {
     fn from(value: DeleteUserError) -> Self {

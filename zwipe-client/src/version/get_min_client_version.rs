@@ -1,9 +1,9 @@
 //! Fetch the server's minimum supported app version.
 
+use zwipe_core::http::contracts::client::HttpMinClientVersion;
+use zwipe_core::http::endpoints::meta::GetMinClientVersion;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::http::{
-    contracts::client::HttpMinClientVersion, endpoints::meta::GetMinClientVersion,
-};
 
 impl ZwipeClient {
     /// Fetches the server's minimum supported app version.

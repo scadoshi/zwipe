@@ -1,11 +1,12 @@
 //! Update deck profile metadata.
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::{
-    domain::{auth::models::session::Session, deck::deck_profile::DeckProfile},
-    http::{contracts::deck::HttpUpdateDeckProfile, endpoints::deck::UpdateDeckProfile},
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
+use zwipe_core::http::endpoints::deck::UpdateDeckProfile;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Updates deck profile metadata.

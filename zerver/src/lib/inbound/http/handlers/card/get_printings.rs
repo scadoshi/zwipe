@@ -1,10 +1,9 @@
-use crate::inbound::http::{ApiError, AppState};
-use axum::{
-    Json,
-    extract::{Path, State},
-    http::StatusCode,
-};
+use axum::Json;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use zwipe_core::domain::card::Card;
+
+use crate::inbound::http::{ApiError, AppState};
 
 /// Returns all printings of a card by oracle ID, ordered by release date.
 pub async fn get_printings(

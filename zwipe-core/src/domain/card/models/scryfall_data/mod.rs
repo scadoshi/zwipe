@@ -445,7 +445,7 @@ mod tests {
     #[test]
     fn reversible_cards_take_their_oracle_id_from_a_face() {
         use crate::domain::card::scryfall_data::card_faces::CardFaces;
-        let oracle_id = uuid::Uuid::from_u128(0xABCD);
+        let oracle_id = uuid::Uuid::from_u128(0xabcd);
 
         // Shaped like the real feed: both faces carry the same id.
         let faces: CardFaces = serde_json::from_value(serde_json::json!([
@@ -470,7 +470,7 @@ mod tests {
     #[test]
     fn a_backfilled_card_differs_from_its_stored_form() {
         use crate::domain::card::scryfall_data::card_faces::CardFaces;
-        let oracle_id = uuid::Uuid::from_u128(0xABCD);
+        let oracle_id = uuid::Uuid::from_u128(0xabcd);
         let faces: CardFaces = serde_json::from_value(serde_json::json!([
             { "name": "Blood Crypt", "mana_cost": "", "object": "card_face", "oracle_id": oracle_id },
         ]))

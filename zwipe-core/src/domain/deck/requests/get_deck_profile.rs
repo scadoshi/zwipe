@@ -1,13 +1,12 @@
 //! Get deck profile operation (metadata only, no cards).
 
-use crate::domain::deck::{
-    DeckProfile,
-    requests::{
-        create_deck_card::CreateDeckCard, delete_deck_card::DeleteDeckCard,
-        update_deck_card::UpdateDeckCard, update_deck_profile::UpdateDeckProfile,
-    },
-};
 use uuid::Uuid;
+
+use crate::domain::deck::DeckProfile;
+use crate::domain::deck::requests::create_deck_card::CreateDeckCard;
+use crate::domain::deck::requests::delete_deck_card::DeleteDeckCard;
+use crate::domain::deck::requests::update_deck_card::UpdateDeckCard;
+use crate::domain::deck::requests::update_deck_profile::UpdateDeckProfile;
 
 /// Request to retrieve deck profile (metadata).
 #[derive(Debug, Clone)]

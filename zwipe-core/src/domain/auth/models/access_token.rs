@@ -9,12 +9,16 @@
 //! Server-only operations (signing, verification) are provided by zerver
 //! via extension traits.
 
-use crate::domain::user::models::{email::Email, username::Username};
+use std::fmt::Display;
+use std::str::FromStr;
+
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 use uuid::Uuid;
+
+use crate::domain::user::models::email::Email;
+use crate::domain::user::models::username::Username;
 
 // == errors ==
 
@@ -145,8 +149,9 @@ impl AccessToken {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::str::FromStr;
+
+    use super::*;
 
     // == `Jwt` tests ==
 

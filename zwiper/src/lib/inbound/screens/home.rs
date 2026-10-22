@@ -1,33 +1,28 @@
 //! Home/landing page screen.
 
-use crate::{
-    inbound::{
-        components::{
-            auth::session_upkeep::FlavorCard,
-            hint_dialog::{HintColored, HintDialog, use_one_time_hint},
-            home_hero::HomeHero,
-            logout_dialog::LogoutDialog,
-            screen_header::ScreenHeader,
-        },
-        router::Router,
-        screens::deck::card::components::image_preview::ImagePreview,
-    },
-    outbound::{app_icon, buy_links},
-};
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use components::{
     ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets, HintKey,
     TOAST_QUICK, ThemeConfig, theme_from_preferences,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::sync::atomic::{AtomicBool, Ordering};
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::{
-    auth::models::session::Session,
-    card::{scryfall_data::ScryfallData, search_card::card_filter::price_currency::PriceCurrency},
-    deck::deck_metrics::card_price,
-    user::models::hints::HINT_FIRST_LOGIN,
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::deck_metrics::card_price;
+use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
+
+use crate::inbound::components::auth::session_upkeep::FlavorCard;
+use crate::inbound::components::hint_dialog::{HintColored, HintDialog, use_one_time_hint};
+use crate::inbound::components::home_hero::HomeHero;
+use crate::inbound::components::logout_dialog::LogoutDialog;
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::router::Router;
+use crate::inbound::screens::deck::card::components::image_preview::ImagePreview;
+use crate::outbound::{app_icon, buy_links};
 
 /// Whether this launch has already greeted. Home remounts on every navigation
 /// back to it, so the greeting needs somewhere to remember itself that

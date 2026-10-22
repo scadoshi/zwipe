@@ -7,19 +7,16 @@
 //! restart mid-hour re-derives the identical card. Plan:
 //! `context/plans/featured_flavor.md`.
 
-use axum::{
-    Json,
-    extract::State,
-    http::{StatusCode, header},
-};
-use chrono::Timelike;
 use std::time::{Duration, Instant};
+
+use axum::Json;
+use axum::extract::State;
+use axum::http::{StatusCode, header};
+use chrono::Timelike;
 use zwipe_core::domain::card::Card;
 
-use crate::{
-    domain::card::requests::get_card::GetCardError,
-    inbound::http::{ApiError, AppState},
-};
+use crate::domain::card::requests::get_card::GetCardError;
+use crate::inbound::http::{ApiError, AppState};
 
 /// Serves the hour's featured flavor card (unauthed; the app home screen and
 /// the zwipe.net home page both read it).

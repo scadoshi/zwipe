@@ -1,13 +1,11 @@
 //! Card search with filters.
 
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::http::endpoints::card::SearchCards;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::{
-        auth::models::session::Session,
-        card::{Card, search_card::card_filter::CardQuery},
-    },
-    http::endpoints::card::SearchCards,
-};
 
 impl ZwipeClient {
     /// Searches cards with filter criteria.

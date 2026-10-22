@@ -1,10 +1,10 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
 use zwipe_core::http::contracts::auth::HttpVerifyEmail;
 
-use crate::{
-    domain::auth::requests::verify_email::{VerifyEmail, VerifyEmailError},
-    inbound::http::{ApiError, AppState, To500},
-};
+use crate::domain::auth::requests::verify_email::{VerifyEmail, VerifyEmailError};
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<VerifyEmailError> for ApiError {
     fn from(value: VerifyEmailError) -> Self {

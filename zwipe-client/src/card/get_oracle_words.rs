@@ -1,7 +1,8 @@
 //! Fetch all oracle text words.
 
-use crate::{ClientError, ZwipeClient};
 use zwipe_core::http::endpoints::card::GetOracleWords;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Fetches the list of all normalized oracle text words.

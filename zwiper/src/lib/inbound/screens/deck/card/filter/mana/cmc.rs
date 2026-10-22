@@ -1,11 +1,11 @@
 //! CMC (converted mana cost) filter component.
 
+use components::TOAST_QUICK;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 use super::super::filter_mode::FilterMode;
-use components::TOAST_QUICK;
 
 /// CMC filter sub-component.
 #[component]

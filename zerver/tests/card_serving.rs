@@ -67,7 +67,7 @@ async fn get_card_by_id_round_trips(pool: sqlx::PgPool) {
 async fn get_missing_card_is_404(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     seed_cards(&pool, &[]).await; // populate the (empty) view so queries don't error
-    let missing = uuid::Uuid::from_u128(0xDEAD_BEEF);
+    let missing = uuid::Uuid::from_u128(0xdead_beef);
     let (status, _) = app.get(&get_card_route(missing), None).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }

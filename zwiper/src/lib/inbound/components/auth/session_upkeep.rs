@@ -4,45 +4,39 @@
 //! [`EnsureFresh`] helper, and initializes the app-wide Dioxus context
 //! (session, client, card search state, theme, telemetry buffer).
 
-use crate::{
-    config::Config,
-    inbound::{
-        components::{
-            auth::ensure_session::EnsureFresh,
-            catalog_cache::use_catalog_cache,
-            hint_host::HintTopic,
-            home_hero::CachedCounts,
-            telemetry::{
-                anonymous::record_anonymous_event,
-                flush_loop::{spawn_usage_flusher, spawn_visibility_flusher},
-                usage_buffer::UsageBuffer,
-            },
-        },
-        screens::deck::{
-            card::components::{
-                action_history::AddAction, add_stack_cache::use_add_stack_cache,
-                card_stack::use_card_stack, filter_store::use_filter_store,
-                undo_log::use_undo_store,
-            },
-            create::CreateDeckCommanderSeed,
-        },
-    },
-    outbound::{app_icon, session::Persist, theme_store::PersistTheme},
-};
+use std::time::Duration;
+
 use chrono::{DateTime, Utc};
 use components::{KeywordReminders, ThemeConfig, theme_from_preferences, use_overlay_back_stack};
 use dioxus::prelude::*;
-use std::time::Duration;
 use tokio::time::interval;
 use zwipe_client::ZwipeClient;
-use zwipe_core::{
-    domain::{
-        auth::models::session::Session,
-        card::{Card, search_card::card_filter::builder::CardQueryBuilder},
-    },
-    http::contracts::{changelog::HttpChangelog, metrics::AnonymousEventKind},
-    version::version_at_least,
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::http::contracts::changelog::HttpChangelog;
+use zwipe_core::http::contracts::metrics::AnonymousEventKind;
+use zwipe_core::version::version_at_least;
+
+use crate::config::Config;
+use crate::inbound::components::auth::ensure_session::EnsureFresh;
+use crate::inbound::components::catalog_cache::use_catalog_cache;
+use crate::inbound::components::hint_host::HintTopic;
+use crate::inbound::components::home_hero::CachedCounts;
+use crate::inbound::components::telemetry::anonymous::record_anonymous_event;
+use crate::inbound::components::telemetry::flush_loop::{
+    spawn_usage_flusher, spawn_visibility_flusher,
 };
+use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::inbound::screens::deck::card::components::action_history::AddAction;
+use crate::inbound::screens::deck::card::components::add_stack_cache::use_add_stack_cache;
+use crate::inbound::screens::deck::card::components::card_stack::use_card_stack;
+use crate::inbound::screens::deck::card::components::filter_store::use_filter_store;
+use crate::inbound::screens::deck::card::components::undo_log::use_undo_store;
+use crate::inbound::screens::deck::create::CreateDeckCommanderSeed;
+use crate::outbound::app_icon;
+use crate::outbound::session::Persist;
+use crate::outbound::theme_store::PersistTheme;
 
 /// The running app version, baked in at compile time (matches
 /// CFBundleShortVersionString since 1.0.3).

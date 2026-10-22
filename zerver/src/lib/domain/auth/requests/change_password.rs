@@ -29,12 +29,12 @@
 //! ```
 
 use thiserror::Error;
-use zwipe_core::domain::auth::{models::secret::Secret, password::InvalidPassword};
-
-use crate::domain::auth::{
-    models::password::HashedPassword, requests::authenticate_user::AuthenticateUserError,
-};
 use uuid::Uuid;
+use zwipe_core::domain::auth::models::secret::Secret;
+use zwipe_core::domain::auth::password::InvalidPassword;
+
+use crate::domain::auth::models::password::HashedPassword;
+use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
 
 /// Errors that can occur while constructing a [`ChangePassword`] request.
 #[derive(Debug, Error)]
@@ -159,8 +159,9 @@ impl ChangePassword {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use uuid::Uuid;
+
+    use super::*;
 
     #[test]
     fn test_change_password_new_succeeds_with_valid_inputs() {

@@ -4,7 +4,9 @@
 //! same pattern as the Scryfall data codecs.
 
 use chrono::{DateTime, Utc};
-use sqlx::{Decode, Encode, Postgres, Type, encode::IsNull, types::JsonValue};
+use sqlx::encode::IsNull;
+use sqlx::types::JsonValue;
+use sqlx::{Decode, Encode, Postgres, Type};
 use sqlx_macros::FromRow;
 use uuid::Uuid;
 

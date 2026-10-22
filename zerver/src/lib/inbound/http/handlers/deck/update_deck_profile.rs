@@ -1,27 +1,18 @@
-use crate::{
-    domain::deck::models::deck::update_deck_profile::UpdateDeckProfileError,
-    inbound::http::{
-        ApiError, AppState, To500,
-        handlers::{
-            deck_card::patch_deck_card::reject_null,
-            metrics::check_completion::check_deck_completion,
-        },
-        middleware::AuthenticatedUser,
-    },
-};
-use axum::{
-    Json,
-    extract::{Path, State},
-    http::StatusCode,
-};
+use axum::Json;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use uuid::Uuid;
-use zwipe_core::{
-    domain::deck::{
-        deck_profile::DeckProfile,
-        requests::update_deck_profile::{InvalidUpdateDeckProfile, UpdateDeckProfile},
-    },
-    http::contracts::deck::HttpUpdateDeckProfile,
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::deck::requests::update_deck_profile::{
+    InvalidUpdateDeckProfile, UpdateDeckProfile,
 };
+use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
+
+use crate::domain::deck::models::deck::update_deck_profile::UpdateDeckProfileError;
+use crate::inbound::http::handlers::deck_card::patch_deck_card::reject_null;
+use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<UpdateDeckProfileError> for ApiError {
     fn from(value: UpdateDeckProfileError) -> Self {

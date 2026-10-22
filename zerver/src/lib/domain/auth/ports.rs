@@ -3,33 +3,32 @@
 //! This module defines the interfaces (ports) for authentication in hexagonal architecture.
 //! These traits decouple the domain logic from infrastructure concerns (database, HTTP, etc.).
 
-use crate::domain::{
-    BoxFuture,
-    auth::{
-        models::{UserWithPasswordHash, access_token::JwtSecret},
-        requests::{
-            authenticate_user::{AuthenticateUser, AuthenticateUserError},
-            change_email::{ChangeEmail, ChangeEmailError},
-            change_password::{ChangePassword, ChangePasswordError},
-            change_username::{ChangeUsername, ChangeUsernameError},
-            create_session::{CreateSession, CreateSessionError},
-            delete_user::{DeleteUser, DeleteUserError},
-            refresh_session::{RefreshSession, RefreshSessionError},
-            register_user::{RegisterUser, RegisterUserError},
-            request_password_reset::{RequestPasswordReset, RequestPasswordResetError},
-            reset_password::{ResetPassword, ResetPasswordError},
-            revoke_sessions::{RevokeSessions, RevokeSessionsError},
-            verify_email::{VerifyEmail, VerifyEmailError},
-        },
-    },
-};
-use chrono::{DateTime, Utc};
 use std::future::Future;
+
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
-use zwipe_core::domain::{
-    auth::models::{platform::ClientPlatform, refresh_token::RefreshToken, session::Session},
-    user::User,
+use zwipe_core::domain::auth::models::platform::ClientPlatform;
+use zwipe_core::domain::auth::models::refresh_token::RefreshToken;
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::user::User;
+
+use crate::domain::BoxFuture;
+use crate::domain::auth::models::UserWithPasswordHash;
+use crate::domain::auth::models::access_token::JwtSecret;
+use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
+use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
+use crate::domain::auth::requests::change_password::{ChangePassword, ChangePasswordError};
+use crate::domain::auth::requests::change_username::{ChangeUsername, ChangeUsernameError};
+use crate::domain::auth::requests::create_session::{CreateSession, CreateSessionError};
+use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError};
+use crate::domain::auth::requests::refresh_session::{RefreshSession, RefreshSessionError};
+use crate::domain::auth::requests::register_user::{RegisterUser, RegisterUserError};
+use crate::domain::auth::requests::request_password_reset::{
+    RequestPasswordReset, RequestPasswordResetError,
 };
+use crate::domain::auth::requests::reset_password::{ResetPassword, ResetPasswordError};
+use crate::domain::auth::requests::revoke_sessions::{RevokeSessions, RevokeSessionsError};
+use crate::domain::auth::requests::verify_email::{VerifyEmail, VerifyEmailError};
 
 /// Database port for authentication operations.
 ///

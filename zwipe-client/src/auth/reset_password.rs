@@ -1,10 +1,10 @@
 //! Finish a password reset from the reset link.
 
+use zwipe_core::domain::auth::models::secret::Secret;
+use zwipe_core::http::contracts::auth::HttpResetPassword;
+use zwipe_core::http::endpoints::auth::ResetPassword;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::auth::models::secret::Secret,
-    http::{contracts::auth::HttpResetPassword, endpoints::auth::ResetPassword},
-};
 
 impl ZwipeClient {
     /// Sets a new password using the token from the reset link.

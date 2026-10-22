@@ -1,16 +1,14 @@
 //! Get tokens produced by a deck's cards.
 
-use crate::{
-    domain::deck::models::deck::get_deck_tokens::GetDeckTokensError,
-    inbound::http::{ApiError, AppState, middleware::AuthenticatedUser},
-};
-use axum::{
-    Json,
-    extract::{Path, State},
-    http::StatusCode,
-};
+use axum::Json;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+
+use crate::domain::deck::models::deck::get_deck_tokens::GetDeckTokensError;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState};
 
 impl From<GetDeckTokensError> for ApiError {
     fn from(value: GetDeckTokensError) -> Self {

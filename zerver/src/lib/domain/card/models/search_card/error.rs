@@ -1,7 +1,7 @@
-use crate::domain::card::requests::{
-    get_card_profile::GetCardProfileError, get_scryfall_data::SearchScryfallDataError,
-};
 use thiserror::Error;
+
+use crate::domain::card::requests::get_card_profile::GetCardProfileError;
+use crate::domain::card::requests::get_scryfall_data::SearchScryfallDataError;
 
 /// Errors that can occur when searching for cards.
 #[derive(Debug, Error)]

@@ -1,6 +1,8 @@
-use crate::{DISCORD_URL, Footer, Nav, SUPPORT_EMAIL, components::PageMeta};
 use components::Panel;
 use dioxus::prelude::*;
+
+use crate::components::PageMeta;
+use crate::{DISCORD_URL, Footer, Nav, SUPPORT_EMAIL};
 
 #[component]
 pub fn Community() -> Element {

@@ -9,9 +9,11 @@
 //! alert): deliberately a dead end, the nav is right there for anyone who
 //! wants to explore.
 
-use crate::{Footer, Nav, Route, components::PageMeta};
 use components::Panel;
 use dioxus::prelude::*;
+
+use crate::components::PageMeta;
+use crate::{Footer, Nav, Route};
 
 #[component]
 pub fn NotFound(segments: Vec<String>) -> Element {

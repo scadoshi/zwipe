@@ -1,28 +1,3 @@
-use super::components::{
-    card_info::{CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton},
-    filter_store::{FilterScope, FilterStore},
-    printing_sheet::PrintingSheet,
-};
-use crate::inbound::{
-    components::{
-        auth::{authed::use_authed, ensure_session::EnsureFresh},
-        hint_dialog::{HintColored, HintDialog, use_one_time_hint},
-        interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
-        screen_header::ScreenHeader,
-        telemetry::{
-            usage_buffer::UsageBuffer,
-            vocabulary::{DeckScreen, Screen, component, screen},
-        },
-    },
-    screens::deck::card::{
-        components::{
-            action_history::{RemoveAction, StackAction},
-            card_stack::use_card_stack,
-            undo_log::{UndoAction, UndoStore},
-        },
-        filter::{card_filter_sheet::CardFilterSheet, deck_cards::DeckCards},
-    },
-};
 use components::{
     ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintLine, TOAST_NORMAL,
     TOAST_QUICK,
@@ -31,27 +6,34 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_core::{
-    domain::{
-        auth::models::session::Session,
-        card::{
-            Card,
-            search_card::{
-                card_filter::{
-                    builder::CardQueryBuilder, card_sort_key::CardSortKey,
-                    price_currency::PriceCurrency,
-                },
-                cards::Cards,
-            },
-        },
-        deck::{
-            Board, DeckEntry,
-            deck_metrics::{budget_tier, deck_price},
-        },
-        user::models::hints::HINT_REMOVE_DECK_CARDS,
-    },
-    http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard},
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::card::search_card::cards::Cards;
+use zwipe_core::domain::deck::deck_metrics::{budget_tier, deck_price};
+use zwipe_core::domain::deck::{Board, DeckEntry};
+use zwipe_core::domain::user::models::hints::HINT_REMOVE_DECK_CARDS;
+use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
+
+use super::components::card_info::{CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton};
+use super::components::filter_store::{FilterScope, FilterStore};
+use super::components::printing_sheet::PrintingSheet;
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::auth::ensure_session::EnsureFresh;
+use crate::inbound::components::hint_dialog::{HintColored, HintDialog, use_one_time_hint};
+use crate::inbound::components::interactions::swipe::SwipeStack;
+use crate::inbound::components::interactions::swipe::config::SwipeConfig;
+use crate::inbound::components::interactions::swipe::direction::Direction;
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
+use crate::inbound::screens::deck::card::components::action_history::{RemoveAction, StackAction};
+use crate::inbound::screens::deck::card::components::card_stack::use_card_stack;
+use crate::inbound::screens::deck::card::components::undo_log::{UndoAction, UndoStore};
+use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
+use crate::inbound::screens::deck::card::filter::deck_cards::DeckCards;
 
 /// Board filter for the remove screen.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]

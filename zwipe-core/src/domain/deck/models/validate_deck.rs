@@ -3,20 +3,16 @@
 //! Generates informational warnings about deck-building rule violations
 //! based on the deck's format. Does not prevent invalid states.
 
-use crate::domain::{
-    card::{
-        Card,
-        scryfall_data::legalities::LegalityKind,
-        search_card::commander_eligibility::{
-            are_valid_partners, has_choose_a_background, is_background_card,
-            is_signature_spell_in_color_identity, is_valid_commander,
-            is_valid_signature_spell_type, partner_kind,
-        },
-    },
-    deck::{
-        DeckProfile, DeckWarning, Format, WarningAction, deck::DeckEntry, deck_metrics::deck_price,
-    },
+use crate::domain::card::Card;
+use crate::domain::card::scryfall_data::legalities::LegalityKind;
+use crate::domain::card::search_card::commander_eligibility::{
+    are_valid_partners, has_choose_a_background, is_background_card,
+    is_signature_spell_in_color_identity, is_valid_commander, is_valid_signature_spell_type,
+    partner_kind,
 };
+use crate::domain::deck::deck::DeckEntry;
+use crate::domain::deck::deck_metrics::deck_price;
+use crate::domain::deck::{DeckProfile, DeckWarning, Format, WarningAction};
 
 /// Cards in the command zone (stored on the profile, not in deck_cards).
 pub struct DeckCommandZone<'a> {
@@ -612,10 +608,8 @@ mod tests {
 
     mod land_target {
         use super::*;
-        use crate::{
-            domain::deck::{Board, DeckCard, Quantity},
-            test_utils::make_card,
-        };
+        use crate::domain::deck::{Board, DeckCard, Quantity};
+        use crate::test_utils::make_card;
 
         fn land_entry(name: &str, qty: i32) -> DeckEntry {
             let mut card = make_card(name);
@@ -661,7 +655,8 @@ mod tests {
 
     mod commander_eligibility {
         use super::*;
-        use crate::{domain::card::scryfall_data::rarity::Rarity, test_utils::make_card};
+        use crate::domain::card::scryfall_data::rarity::Rarity;
+        use crate::test_utils::make_card;
 
         #[test]
         fn valid_legendary_creature_no_warning() {
@@ -828,10 +823,8 @@ mod tests {
 
     mod color_identity {
         use super::*;
-        use crate::{
-            domain::card::scryfall_data::colors::{Color, Colors},
-            test_utils::{make_card, make_entry},
-        };
+        use crate::domain::card::scryfall_data::colors::{Color, Colors};
+        use crate::test_utils::{make_card, make_entry};
 
         #[test]
         fn card_outside_commander_color_identity_warns() {

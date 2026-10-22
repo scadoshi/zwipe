@@ -6,11 +6,13 @@
 //! zerver once and swaps the live answer in; the chip under the strip says
 //! which one is showing.
 
-use crate::api;
+use std::sync::LazyLock;
+
 use dioxus::prelude::*;
 use serde::Deserialize;
-use std::sync::LazyLock;
 use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
+
+use crate::api;
 
 /// What the deploy workflow writes: when it asked, and what zerver said.
 #[derive(Deserialize)]

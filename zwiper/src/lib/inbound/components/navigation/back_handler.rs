@@ -14,7 +14,8 @@
 //! attaches to, and the vendored tao delivers the swipe while a list still
 //! glides. The web build keeps the browser's own back button.
 
-use std::{ffi::c_void, ptr::NonNull};
+use std::ffi::c_void;
+use std::ptr::NonNull;
 
 use dioxus::prelude::*;
 

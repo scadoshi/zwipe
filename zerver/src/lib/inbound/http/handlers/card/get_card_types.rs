@@ -1,9 +1,9 @@
-use crate::{
-    domain::card::requests::get_card_types::GetCardTypesError,
-    inbound::http::{ApiError, AppState, To500},
-};
-use axum::{Json, extract::State};
+use axum::Json;
+use axum::extract::State;
 use reqwest::StatusCode;
+
+use crate::domain::card::requests::get_card_types::GetCardTypesError;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<GetCardTypesError> for ApiError {
     fn from(value: GetCardTypesError) -> Self {

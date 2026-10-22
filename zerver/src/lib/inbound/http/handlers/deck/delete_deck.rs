@@ -1,13 +1,10 @@
-use axum::{
-    extract::{Path, State},
-    http::StatusCode,
-};
-
-use crate::{
-    domain::deck::models::deck::delete_deck::DeleteDeckError,
-    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
-};
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use zwipe_core::domain::deck::requests::delete_deck::{DeleteDeck, InvalidDeleteDeck};
+
+use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<DeleteDeckError> for ApiError {
     fn from(value: DeleteDeckError) -> Self {

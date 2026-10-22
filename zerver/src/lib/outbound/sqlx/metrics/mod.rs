@@ -4,22 +4,16 @@ use std::collections::{HashMap, HashSet};
 
 use sqlx::query;
 use uuid::Uuid;
-
-use crate::{
-    domain::metrics::{
-        models::{
-            errors::MetricsError,
-            kinds::{AuditAction, EventKind},
-            lifetime_counters::LifetimeCounters,
-            public_metrics::PublicMetrics,
-        },
-        ports::MetricsRepository,
-    },
-    outbound::sqlx::postgres::Postgres,
-};
 use zwipe_core::http::contracts::metrics::{
     AnonymousEventKind, CardSignalDelta, CommanderSelectDelta, HttpCrashReport, HttpUsageBatch,
 };
+
+use crate::domain::metrics::models::errors::MetricsError;
+use crate::domain::metrics::models::kinds::{AuditAction, EventKind};
+use crate::domain::metrics::models::lifetime_counters::LifetimeCounters;
+use crate::domain::metrics::models::public_metrics::PublicMetrics;
+use crate::domain::metrics::ports::MetricsRepository;
+use crate::outbound::sqlx::postgres::Postgres;
 
 fn db(err: sqlx::Error) -> MetricsError {
     MetricsError::Database(err.into())

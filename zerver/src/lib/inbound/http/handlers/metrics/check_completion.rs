@@ -9,13 +9,13 @@
 //! must not break the user-visible mutation that triggered it.
 
 use std::sync::Arc;
-use uuid::Uuid;
 
-use crate::domain::{
-    deck::ports::ErasedDeckService,
-    metrics::{models::kinds::EventKind, ports::ErasedMetricsService},
-};
+use uuid::Uuid;
 use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
+
+use crate::domain::deck::ports::ErasedDeckService;
+use crate::domain::metrics::models::kinds::EventKind;
+use crate::domain::metrics::ports::ErasedMetricsService;
 
 /// Runs the deck-completion check after a mutation. Logs but does not return
 /// errors; callers spawn this off the request path.

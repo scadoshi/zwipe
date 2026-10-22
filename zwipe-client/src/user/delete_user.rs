@@ -1,10 +1,10 @@
 //! Delete user account endpoint.
 
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::auth::HttpDeleteUser;
+use zwipe_core::http::endpoints::user::DeleteUser;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::auth::models::session::Session,
-    http::{contracts::auth::HttpDeleteUser, endpoints::user::DeleteUser},
-};
 
 impl ZwipeClient {
     /// Deletes user accounts.

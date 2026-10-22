@@ -17958,8 +17958,9 @@ pub fn description_pairs() -> (Vec<String>, Vec<String>) {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::collections::HashSet;
+
+    use super::*;
 
     /// A duplicate slug would make one authored description silently shadow the
     /// other in the overlay `UPDATE`; forbid it.

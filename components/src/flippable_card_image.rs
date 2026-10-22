@@ -5,11 +5,10 @@
 //! everywhere. Owns its `face_idx` internally; a host can seed the first face
 //! shown via `initial_face` (e.g. to open an overlay already on the back side).
 
+use std::collections::HashSet;
+use std::sync::{Mutex, OnceLock};
+
 use dioxus::prelude::*;
-use std::{
-    collections::HashSet,
-    sync::{Mutex, OnceLock},
-};
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
 use crate::OracleText;

@@ -24,10 +24,11 @@ pub mod user;
 /// Client version gate operations.
 pub mod version;
 
-pub use error::ClientError;
-use reqwest::{Client, Url};
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::Duration;
+
+pub use error::ClientError;
+use reqwest::{Client, Url};
 
 /// HTTP client for the ZWIPE backend API.
 ///

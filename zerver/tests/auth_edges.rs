@@ -205,8 +205,9 @@ async fn login_rate_limit_locks_out(pool: sqlx::PgPool) {
 
 #[sqlx::test]
 async fn lockout_is_per_address(pool: sqlx::PgPool) {
-    use axum::http::Method;
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+
+    use axum::http::Method;
 
     let app = TestApp::new(pool);
     let _ = app.register("victim").await;

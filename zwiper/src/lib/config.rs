@@ -5,9 +5,10 @@
 
 #![allow(clippy::unwrap_used)]
 
+use std::str::FromStr;
+
 use anyhow::Context;
 use reqwest::Url;
-use std::str::FromStr;
 
 const BACKEND_URL: &str = env!("BACKEND_URL");
 const RUST_LOG: &str = env!("RUST_LOG");

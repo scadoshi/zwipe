@@ -1,12 +1,15 @@
 //! The mark in a panel with the three public counters, on home and the auth
 //! screens.
 
-use crate::outbound::counts_store::PersistCounts;
+use std::time::{Duration, Instant};
+
 use components::{Decode, Panel, StatsStrip};
 use dioxus::prelude::*;
-use std::time::{Duration, Instant};
 use zwipe_client::ZwipeClient;
-use zwipe_core::{domain::logo, http::contracts::metrics::HttpPublicMetrics};
+use zwipe_core::domain::logo;
+use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
+
+use crate::outbound::counts_store::PersistCounts;
 
 /// How long a fetched set of counters serves before the next screen asks
 /// zerver again. Hopping between home and the auth screens reuses it.

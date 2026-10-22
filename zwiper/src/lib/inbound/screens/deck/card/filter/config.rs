@@ -1,8 +1,9 @@
 //! Filter configuration accordion component.
 
-use crate::inbound::components::tri_toggle::TriToggle;
 use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+
+use crate::inbound::components::tri_toggle::TriToggle;
 
 /// Configuration panel with language, reprint, and promo filters.
 #[component]

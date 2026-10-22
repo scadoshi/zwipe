@@ -1,26 +1,17 @@
-use crate::{
-    domain::{
-        deck::models::deck::{clone_deck::CloneDeckError, get_deck_profile::GetDeckProfileError},
-        metrics::models::kinds::EventKind,
-    },
-    inbound::http::{
-        ApiError, AppState, To500, handlers::metrics::check_completion::check_deck_completion,
-        middleware::AuthenticatedUser,
-    },
-};
-use axum::{
-    Json,
-    extract::{Path, State},
-    http::StatusCode,
-};
+use axum::Json;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use uuid::Uuid;
-use zwipe_core::{
-    domain::{
-        deck::requests::clone_deck::{CloneDeck, InvalidCloneDeck},
-        user::requests::get_user::GetUser,
-    },
-    http::contracts::deck::{HttpCloneDeck, HttpClonedDeck},
-};
+use zwipe_core::domain::deck::requests::clone_deck::{CloneDeck, InvalidCloneDeck};
+use zwipe_core::domain::user::requests::get_user::GetUser;
+use zwipe_core::http::contracts::deck::{HttpCloneDeck, HttpClonedDeck};
+
+use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
+use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
+use crate::domain::metrics::models::kinds::EventKind;
+use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<CloneDeckError> for ApiError {
     fn from(value: CloneDeckError) -> Self {

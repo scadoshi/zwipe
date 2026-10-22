@@ -9,11 +9,14 @@
 //! Archidekt's API is undocumented (open beta); this adapter deliberately
 //! deserializes only the handful of fields we need and tolerates the rest.
 
-use crate::domain::deck::models::deck::import_archidekt::ArchidektCard;
+use std::collections::HashSet;
+use std::time::Duration;
+
 use serde::{Deserialize, Deserializer};
-use std::{collections::HashSet, time::Duration};
 use thiserror::Error;
 use uuid::Uuid;
+
+use crate::domain::deck::models::deck::import_archidekt::ArchidektCard;
 
 /// Product token for the User-Agent; the contact URL is appended per-client
 /// from config so it tracks the deployment's public domain.

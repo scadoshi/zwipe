@@ -1,10 +1,10 @@
-use crate::{
-    domain::card::requests::get_oracle_tags::GetOracleTagsError,
-    inbound::http::{ApiError, AppState, To500},
-};
-use axum::{Json, extract::State};
+use axum::Json;
+use axum::extract::State;
 use reqwest::StatusCode;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
+
+use crate::domain::card::requests::get_oracle_tags::GetOracleTagsError;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<GetOracleTagsError> for ApiError {
     fn from(value: GetOracleTagsError) -> Self {

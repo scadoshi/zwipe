@@ -1,7 +1,9 @@
 //! Public install and deck counts for the site's stats strip.
 
+use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
+use zwipe_core::http::endpoints::metrics::PublicMetrics;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::http::{contracts::metrics::HttpPublicMetrics, endpoints::metrics::PublicMetrics};
 
 impl ZwipeClient {
     /// Fetches the public counts shown on the marketing pages.

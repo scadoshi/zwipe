@@ -10,13 +10,12 @@
 //! decision trail is in `context/plans/global_undo.md` (built on
 //! `archive/deck_cards_undo.md`).
 
-use dioxus::prelude::*;
 use std::collections::HashMap;
+
+use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_core::domain::{
-    card::Card,
-    deck::{Board, DeckEntry},
-};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::deck::{Board, DeckEntry};
 
 /// Cap: enough to walk back a whole editing session; oldest entries drop.
 const MAX_UNDO_ACTIONS: usize = 100;

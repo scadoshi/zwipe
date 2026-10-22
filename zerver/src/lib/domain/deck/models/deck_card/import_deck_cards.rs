@@ -2,8 +2,9 @@
 //!
 //! Re-exported from `zwipe_core`. Service-layer error type remains here.
 
-use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
 use thiserror::Error;
+
+use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
 
 /// Errors that can occur during deck card import.
 #[derive(Debug, Error)]

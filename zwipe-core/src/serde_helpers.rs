@@ -31,8 +31,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::lossy_vec;
     use serde::Deserialize;
+
+    use super::lossy_vec;
 
     #[derive(Debug, PartialEq, Deserialize)]
     #[serde(rename_all = "snake_case")]

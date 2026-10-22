@@ -11,20 +11,12 @@ mod common;
 
 use common::{card, seed_cards};
 use uuid::Uuid;
-
-use zwipe::{
-    domain::card::{
-        ports::{CardRepository, CardService},
-        services::Service,
-    },
-    inbound::external::scryfall::oracle_tag::{OracleTag, Tagging},
-    outbound::sqlx::{
-        card::helpers::{
-            derive_categories::derive_categories, oracle_tag_descriptions::ORACLE_TAG_DESCRIPTIONS,
-        },
-        postgres::Postgres,
-    },
-};
+use zwipe::domain::card::ports::{CardRepository, CardService};
+use zwipe::domain::card::services::Service;
+use zwipe::inbound::external::scryfall::oracle_tag::{OracleTag, Tagging};
+use zwipe::outbound::sqlx::card::helpers::derive_categories::derive_categories;
+use zwipe::outbound::sqlx::card::helpers::oracle_tag_descriptions::ORACLE_TAG_DESCRIPTIONS;
+use zwipe::outbound::sqlx::postgres::Postgres;
 
 fn tag(id: u128, slug: &str, description: Option<&str>, cards: &[Uuid]) -> OracleTag {
     OracleTag {
@@ -48,8 +40,8 @@ async fn count(pool: &sqlx::PgPool, sql: &'static str) -> i64 {
 #[sqlx::test]
 async fn sync_populates_catalog_and_correlations(pool: sqlx::PgPool) {
     let repo = Postgres { pool: pool.clone() };
-    let card_a = Uuid::from_u128(0xA);
-    let card_b = Uuid::from_u128(0xB);
+    let card_a = Uuid::from_u128(0xa);
+    let card_b = Uuid::from_u128(0xb);
     // NOTE: `test-null-desc` is a synthetic slug, not a real Scryfall tag. It must
     // stay absent from `ORACLE_TAG_DESCRIPTIONS` so the sync-time description overlay
     // leaves it NULL — the point of the round-trip assertion below. (A real slug like
@@ -98,7 +90,7 @@ async fn sync_populates_catalog_and_correlations(pool: sqlx::PgPool) {
 #[sqlx::test]
 async fn re_sync_fully_replaces_scryfall_rows(pool: sqlx::PgPool) {
     let repo = Postgres { pool: pool.clone() };
-    let card = Uuid::from_u128(0xC);
+    let card = Uuid::from_u128(0xc);
 
     // First sync: two oracle tags on the card.
     repo.sync_oracle_tags(&[
@@ -145,7 +137,7 @@ async fn re_sync_fully_replaces_scryfall_rows(pool: sqlx::PgPool) {
 #[sqlx::test]
 async fn re_sync_preserves_heuristic_rows(pool: sqlx::PgPool) {
     let repo = Postgres { pool: pool.clone() };
-    let card = Uuid::from_u128(0xD);
+    let card = Uuid::from_u128(0xd);
 
     // Seed a heuristic-sourced correlation (as a later phase would).
     sqlx::query(

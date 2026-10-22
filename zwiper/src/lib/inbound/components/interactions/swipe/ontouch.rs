@@ -1,9 +1,10 @@
 //! Touch event handlers for mobile swipe gestures.
 
-use crate::inbound::components::interactions::swipe::{
-    config::SwipeConfig, onswipe::OnSwipe, state::SwipeState,
-};
 use dioxus::prelude::*;
+
+use crate::inbound::components::interactions::swipe::config::SwipeConfig;
+use crate::inbound::components::interactions::swipe::onswipe::OnSwipe;
+use crate::inbound::components::interactions::swipe::state::SwipeState;
 
 /// Trait for handling touch events as swipe gestures (mobile devices).
 #[allow(missing_docs)]

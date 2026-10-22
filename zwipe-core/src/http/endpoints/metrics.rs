@@ -1,13 +1,14 @@
 //! Usage counters, anonymous funnel events and crash reports.
 
-use crate::http::{
-    contracts::metrics::{HttpAnonymousEvent, HttpCrashReport, HttpPublicMetrics, HttpUsageBatch},
-    endpoint::{Endpoint, Method},
-    paths::{
-        PUBLIC_METRICS_ROUTE, RECORD_ANONYMOUS_EVENT_ROUTE, RECORD_CRASH_ROUTE, RECORD_USAGE_ROUTE,
-    },
-};
 use std::borrow::Cow;
+
+use crate::http::contracts::metrics::{
+    HttpAnonymousEvent, HttpCrashReport, HttpPublicMetrics, HttpUsageBatch,
+};
+use crate::http::endpoint::{Endpoint, Method};
+use crate::http::paths::{
+    PUBLIC_METRICS_ROUTE, RECORD_ANONYMOUS_EVENT_ROUTE, RECORD_CRASH_ROUTE, RECORD_USAGE_ROUTE,
+};
 
 /// Flush a batch of buffered usage counters.
 pub struct RecordUsage(pub HttpUsageBatch);

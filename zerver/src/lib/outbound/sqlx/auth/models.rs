@@ -1,11 +1,11 @@
-use crate::{
-    domain::auth::models::{UserWithPasswordHash, password::HashedPassword},
-    outbound::sqlx::auth::error::IntoUserWithPasswordHashError,
-};
 use chrono::{DateTime, Utc};
 use sqlx_macros::FromRow;
 use uuid::Uuid;
 use zwipe_core::domain::user::username::Username;
+
+use crate::domain::auth::models::UserWithPasswordHash;
+use crate::domain::auth::models::password::HashedPassword;
+use crate::outbound::sqlx::auth::error::IntoUserWithPasswordHashError;
 
 /// raw database user with password hash record
 /// (unvalidated data from `PostgreSQL`)

@@ -7,14 +7,13 @@
 //! `oracle_tags_*` filter criteria, mirroring the include/any-all/exclude
 //! structure of the other multi-select filters.
 
-use super::match_mode::MatchMode;
-use crate::inbound::components::catalog_cache::CatalogCache;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::card::{
-    oracle_tag::{OracleTag, search_oracle_tags},
-    search_card::card_filter::builder::CardQueryBuilder,
-};
+use zwipe_core::domain::card::oracle_tag::{OracleTag, search_oracle_tags};
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+
+use super::match_mode::MatchMode;
+use crate::inbound::components::catalog_cache::CatalogCache;
 
 pub(super) fn read_selected(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {

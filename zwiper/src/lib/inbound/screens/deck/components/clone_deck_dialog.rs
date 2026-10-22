@@ -1,15 +1,12 @@
-use crate::inbound::{
-    components::{
-        auth::authed::use_authed,
-        telemetry::vocabulary::{DeckScreen, Screen, component},
-    },
-    router::Router,
-};
 use components::{ActionButton, AlertDialog, DialogAction, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_core::http::contracts::deck::HttpCloneDeck;
+
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component};
+use crate::inbound::router::Router;
 
 /// Clone deck dialog: prompts for a new name, calls the clone endpoint,
 /// and navigates to the new deck on success.

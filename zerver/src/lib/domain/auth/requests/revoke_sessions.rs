@@ -28,6 +28,7 @@
 //! ```
 
 use std::str::FromStr;
+
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -105,9 +106,11 @@ impl From<Uuid> for RevokeSessions {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::str::FromStr;
+
     use uuid::Uuid;
+
+    use super::*;
 
     const VALID_UUID: &str = "550e8400-e29b-41d4-a716-446655440000";
 

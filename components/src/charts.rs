@@ -8,7 +8,8 @@
 //! used by the app only.
 
 use dioxus::prelude::*;
-use zwipe_core::domain::deck::{deck_metrics::ManaBalanceRow, draw_odds::p_at_least_one};
+use zwipe_core::domain::deck::deck_metrics::ManaBalanceRow;
+use zwipe_core::domain::deck::draw_odds::p_at_least_one;
 
 /// Sentence-case accent sub-heading shown above each flattened chart block.
 ///

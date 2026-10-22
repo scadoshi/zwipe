@@ -10,10 +10,10 @@
 
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_core::domain::{
-    card::{Card, search_card::card_filter::price_currency::PriceCurrency},
-    deck::{Board, deck_metrics::card_price},
-};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::Board;
+use zwipe_core::domain::deck::deck_metrics::card_price;
 
 use crate::CardDetails;
 

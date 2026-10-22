@@ -1,22 +1,21 @@
 //! Card catalog, search and metadata endpoints.
 
-use crate::{
-    domain::card::{
-        Card, card_role::CardRoleView, oracle_tag::OracleTag,
-        scryfall_data::universe::UbFranchiseView, search_card::card_filter::CardQuery,
-    },
-    http::{
-        endpoint::{Endpoint, Method},
-        paths::{
-            FEATURED_FLAVOR_ROUTE, GET_ARTISTS_ROUTE, GET_CARD_ROLES_ROUTE, GET_CARD_TYPES_ROUTE,
-            GET_KEYWORD_REMINDERS_ROUTE, GET_KEYWORDS_ROUTE, GET_LANGUAGES_ROUTE,
-            GET_ORACLE_TAGS_ROUTE, GET_ORACLE_WORDS_ROUTE, GET_SETS_ROUTE, GET_UB_FRANCHISES_ROUTE,
-            SEARCH_CARDS_ROUTE, SEARCH_COMMANDERS_ROUTE, get_card_route, get_printings_route,
-        },
-    },
-};
 use std::borrow::Cow;
+
 use uuid::Uuid;
+
+use crate::domain::card::Card;
+use crate::domain::card::card_role::CardRoleView;
+use crate::domain::card::oracle_tag::OracleTag;
+use crate::domain::card::scryfall_data::universe::UbFranchiseView;
+use crate::domain::card::search_card::card_filter::CardQuery;
+use crate::http::endpoint::{Endpoint, Method};
+use crate::http::paths::{
+    FEATURED_FLAVOR_ROUTE, GET_ARTISTS_ROUTE, GET_CARD_ROLES_ROUTE, GET_CARD_TYPES_ROUTE,
+    GET_KEYWORD_REMINDERS_ROUTE, GET_KEYWORDS_ROUTE, GET_LANGUAGES_ROUTE, GET_ORACLE_TAGS_ROUTE,
+    GET_ORACLE_WORDS_ROUTE, GET_SETS_ROUTE, GET_UB_FRANCHISES_ROUTE, SEARCH_CARDS_ROUTE,
+    SEARCH_COMMANDERS_ROUTE, get_card_route, get_printings_route,
+};
 
 /// Builds an unauthed GET returning `$resp` from a fixed path.
 macro_rules! public_get {

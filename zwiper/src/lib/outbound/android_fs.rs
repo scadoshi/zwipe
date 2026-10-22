@@ -4,8 +4,9 @@
 //! the Android `Context` that `ndk-context` exposes. It's sandboxed per-app and
 //! survives restarts; both stores drop their JSON here.
 
-use jni::objects::{JObject, JString};
 use std::path::PathBuf;
+
+use jni::objects::{JObject, JString};
 
 /// The app's private internal files dir (e.g. `/data/data/<pkg>/files`).
 pub fn files_dir() -> anyhow::Result<PathBuf> {

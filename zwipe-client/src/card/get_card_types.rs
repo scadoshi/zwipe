@@ -1,7 +1,8 @@
 //! Fetch all card types.
 
-use crate::{ClientError, ZwipeClient};
 use zwipe_core::http::endpoints::card::GetCardTypes;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Fetches the list of all card types (creature, instant, etc.).

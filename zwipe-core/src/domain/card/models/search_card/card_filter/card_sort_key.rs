@@ -1,6 +1,8 @@
-use crate::domain::card::scryfall_data::ScryfallData;
-use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
+
+use serde::{Deserialize, Serialize};
+
+use crate::domain::card::scryfall_data::ScryfallData;
 
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

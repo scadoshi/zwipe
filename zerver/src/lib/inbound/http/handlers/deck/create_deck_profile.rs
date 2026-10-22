@@ -1,21 +1,17 @@
-use crate::{
-    domain::{
-        deck::models::deck::create_deck_profile::CreateDeckProfileError,
-        metrics::models::kinds::EventKind,
-    },
-    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::deck::requests::create_deck_profile::{
+    CreateDeckProfile, InvalidCreateDeckProfile,
 };
-use axum::{Json, extract::State, http::StatusCode};
-use zwipe_core::{
-    domain::{
-        deck::{
-            deck_profile::DeckProfile,
-            requests::create_deck_profile::{CreateDeckProfile, InvalidCreateDeckProfile},
-        },
-        user::requests::get_user::GetUser,
-    },
-    http::contracts::deck::HttpCreateDeckProfile,
-};
+use zwipe_core::domain::user::requests::get_user::GetUser;
+use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
+
+use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
+use crate::domain::metrics::models::kinds::EventKind;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<CreateDeckProfileError> for ApiError {
     fn from(value: CreateDeckProfileError) -> Self {

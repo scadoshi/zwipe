@@ -1,18 +1,17 @@
 //! Update deck profile operation.
 
-use crate::domain::{
-    card::search_card::card_filter::price_currency::PriceCurrency,
-    deck::{
-        DeckName, DeckOtherTag, DeckTag, InvalidDeckOtherTag, InvalidDeckTag, InvalidDeckname,
-        InvalidPowerLevel, MAX_DECK_ORACLE_TAGS, MAX_DECK_OTHER_TAGS, MAX_DECK_TAGS, PowerLevel,
-        deck_oracle_tags::dedupe_oracle_tags,
-        deck_other_tag::parse_other_tags,
-        deck_tag::parse_tags,
-        format::{Format, InvalidFormat},
-    },
-};
 use thiserror::Error;
 use uuid::Uuid;
+
+use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use crate::domain::deck::deck_oracle_tags::dedupe_oracle_tags;
+use crate::domain::deck::deck_other_tag::parse_other_tags;
+use crate::domain::deck::deck_tag::parse_tags;
+use crate::domain::deck::format::{Format, InvalidFormat};
+use crate::domain::deck::{
+    DeckName, DeckOtherTag, DeckTag, InvalidDeckOtherTag, InvalidDeckTag, InvalidDeckname,
+    InvalidPowerLevel, MAX_DECK_ORACLE_TAGS, MAX_DECK_OTHER_TAGS, MAX_DECK_TAGS, PowerLevel,
+};
 
 /// Errors that can occur while constructing an [`UpdateDeckProfile`] request.
 #[derive(Debug, Error)]

@@ -1,21 +1,15 @@
 use std::fmt::Debug;
 
 use uuid::Uuid;
+use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::models::hints::MarkHintShown;
+use zwipe_core::domain::user::preferences::{UpdatePreferences, UserPreferences};
+use zwipe_core::domain::user::requests::get_user::GetUser;
 
-use crate::domain::user::{
-    models::{
-        get_user::GetUserError,
-        hints::MarkHintShownError,
-        preferences::{GetPreferencesError, UpdatePreferencesError},
-    },
-    ports::{UserRepository, UserService},
-};
-use zwipe_core::domain::user::{
-    User,
-    models::hints::MarkHintShown,
-    preferences::{UpdatePreferences, UserPreferences},
-    requests::get_user::GetUser,
-};
+use crate::domain::user::models::get_user::GetUserError;
+use crate::domain::user::models::hints::MarkHintShownError;
+use crate::domain::user::models::preferences::{GetPreferencesError, UpdatePreferencesError};
+use crate::domain::user::ports::{UserRepository, UserService};
 
 /// User service implementation handling user data retrieval operations.
 ///

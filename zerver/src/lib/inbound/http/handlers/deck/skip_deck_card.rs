@@ -1,17 +1,12 @@
-use axum::{
-    Json,
-    extract::{Path, State},
-    http::StatusCode,
-};
+use axum::Json;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
+use zwipe_core::domain::deck::requests::skip_deck_card::{InvalidSkipDeckCard, SkipDeckCard};
+use zwipe_core::http::contracts::deck::HttpSkipDeckCard;
 
-use crate::{
-    domain::deck::models::deck::skip_deck_card::SkipDeckCardError,
-    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
-};
-use zwipe_core::{
-    domain::deck::requests::skip_deck_card::{InvalidSkipDeckCard, SkipDeckCard},
-    http::contracts::deck::HttpSkipDeckCard,
-};
+use crate::domain::deck::models::deck::skip_deck_card::SkipDeckCardError;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<SkipDeckCardError> for ApiError {
     fn from(value: SkipDeckCardError) -> Self {

@@ -1,7 +1,8 @@
 //! Public client-metadata handlers (app version gating).
 
-use axum::{Json, extract::State, http::StatusCode};
-
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
 use zwipe_core::http::contracts::client::HttpMinClientVersion;
 
 use crate::inbound::http::AppState;

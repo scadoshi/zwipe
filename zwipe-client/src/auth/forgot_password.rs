@@ -1,9 +1,9 @@
 //! Forgot password API client.
 
+use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
+use zwipe_core::http::endpoints::auth::RequestPasswordReset;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::http::{
-    contracts::auth::HttpRequestPasswordReset, endpoints::auth::RequestPasswordReset,
-};
 
 impl ZwipeClient {
     /// Initiates a password reset via the forgot-password endpoint.

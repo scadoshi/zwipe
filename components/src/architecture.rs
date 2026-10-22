@@ -9,7 +9,6 @@
 //! `.diagram-carousel` rule.
 
 use dioxus::prelude::*;
-
 use orangui::{
     DiagramArrow, DiagramDefs, DiagramNode, DiagramTone, GalleryFooter, GalleryFrame, Panel,
 };

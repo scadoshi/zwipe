@@ -1,23 +1,20 @@
 //! Error mappings between SQLx errors and deck domain errors.
 
-use crate::{
-    domain::deck::models::{
-        deck::{
-            create_deck_profile::CreateDeckProfileError, delete_deck::DeleteDeckError,
-            get_deck_profile::GetDeckProfileError, update_deck_profile::UpdateDeckProfileError,
-        },
-        deck_card::{
-            create_deck_card::CreateDeckCardError, delete_deck_card::DeleteDeckCardError,
-            get_deck_card::GetDeckCardError, update_deck_card::UpdateDeckCardError,
-        },
-    },
-    outbound::sqlx::postgres::IsConstraintViolation,
-};
 use thiserror::Error;
-use zwipe_core::domain::deck::{
-    board::InvalidBoard, deck_name::InvalidDeckname, format::InvalidFormat,
-    quantity::InvalidQuantity,
-};
+use zwipe_core::domain::deck::board::InvalidBoard;
+use zwipe_core::domain::deck::deck_name::InvalidDeckname;
+use zwipe_core::domain::deck::format::InvalidFormat;
+use zwipe_core::domain::deck::quantity::InvalidQuantity;
+
+use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
+use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
+use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
+use crate::domain::deck::models::deck::update_deck_profile::UpdateDeckProfileError;
+use crate::domain::deck::models::deck_card::create_deck_card::CreateDeckCardError;
+use crate::domain::deck::models::deck_card::delete_deck_card::DeleteDeckCardError;
+use crate::domain::deck::models::deck_card::get_deck_card::GetDeckCardError;
+use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError;
+use crate::outbound::sqlx::postgres::IsConstraintViolation;
 
 /// Errors from converting a database deck profile row into domain types.
 #[derive(Debug, Error)]

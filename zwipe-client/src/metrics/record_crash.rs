@@ -1,7 +1,9 @@
 //! Crash report POST (no auth: the launch after a crash may have no session).
 
+use zwipe_core::http::contracts::metrics::HttpCrashReport;
+use zwipe_core::http::endpoints::metrics::RecordCrash;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::http::{contracts::metrics::HttpCrashReport, endpoints::metrics::RecordCrash};
 
 impl ZwipeClient {
     /// Posts a crash report from the previous run.

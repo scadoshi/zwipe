@@ -9,10 +9,12 @@
 
 mod content;
 
-use crate::{Footer, Nav, Route, WEB_BASE, components::PageMeta};
 use components::{GalleryFooter, GalleryFrame, Panel};
 use content::{Block, GUIDES, Guide};
 use dioxus::prelude::*;
+
+use crate::components::PageMeta;
+use crate::{Footer, Nav, Route, WEB_BASE};
 
 /// Every guide slug, for the SSG prerender list in `main.rs`. Reads `GUIDES`
 /// so the prerendered set, the rendered articles and `build.rs`'s sitemap all

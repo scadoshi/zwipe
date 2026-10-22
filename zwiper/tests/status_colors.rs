@@ -3,8 +3,10 @@
 //! the only Rust files that may write one into an inline style are the ones that
 //! draw deck warnings.
 
+use std::fs;
+use std::path::Path;
+
 use components::status_uses;
-use std::{fs, path::Path};
 
 const ALLOWED: [&str; 9] = [
     ".badge-unverified",

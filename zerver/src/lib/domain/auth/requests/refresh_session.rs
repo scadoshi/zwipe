@@ -31,18 +31,14 @@
 //! // Client now has a fresh access token and refresh token (14d)
 //! ```
 
-use crate::domain::{
-    auth::{
-        models::access_token::InvalidJwt,
-        requests::{
-            create_session::CreateSessionError, enforce_session_maximum::EnforceSessionMaximumError,
-        },
-    },
-    user::models::get_user::GetUserError,
-};
 use thiserror::Error;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
+
+use crate::domain::auth::models::access_token::InvalidJwt;
+use crate::domain::auth::requests::create_session::CreateSessionError;
+use crate::domain::auth::requests::enforce_session_maximum::EnforceSessionMaximumError;
+use crate::domain::user::models::get_user::GetUserError;
 
 /// Validation errors when constructing a [`RefreshSession`] request.
 ///
@@ -225,19 +221,19 @@ impl From<&Session> for RefreshSession {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use chrono::{Duration, Utc};
     use std::str::FromStr;
+
+    use chrono::{Duration, Utc};
     use uuid::Uuid;
-    use zwipe_core::domain::{
-        Email,
-        auth::models::{
-            access_token::{AccessToken, Jwt},
-            refresh_token::RefreshToken,
-            session::Session,
-        },
-        user::{User, preferences::UserPreferences, username::Username},
-    };
+    use zwipe_core::domain::Email;
+    use zwipe_core::domain::auth::models::access_token::{AccessToken, Jwt};
+    use zwipe_core::domain::auth::models::refresh_token::RefreshToken;
+    use zwipe_core::domain::auth::models::session::Session;
+    use zwipe_core::domain::user::User;
+    use zwipe_core::domain::user::preferences::UserPreferences;
+    use zwipe_core::domain::user::username::Username;
+
+    use super::*;
 
     const VALID_UUID: &str = "550e8400-e29b-41d4-a716-446655440000";
 

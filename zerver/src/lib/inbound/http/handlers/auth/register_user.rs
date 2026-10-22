@@ -1,23 +1,19 @@
-use crate::{
-    domain::{
-        auth::{
-            models::access_token::InvalidJwt,
-            requests::{
-                create_session::CreateSessionError,
-                enforce_session_maximum::EnforceSessionMaximumError,
-                register_user::{InvalidRegisterUser, RegisterUser, RegisterUserError},
-            },
-        },
-        metrics::models::kinds::EventKind,
-        user::models::get_user::GetUserError,
-    },
-    inbound::http::{ApiError, AppState, To500},
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::auth::HttpRegisterUser;
+use zwipe_core::version::canonical_version;
+
+use crate::domain::auth::models::access_token::InvalidJwt;
+use crate::domain::auth::requests::create_session::CreateSessionError;
+use crate::domain::auth::requests::enforce_session_maximum::EnforceSessionMaximumError;
+use crate::domain::auth::requests::register_user::{
+    InvalidRegisterUser, RegisterUser, RegisterUserError,
 };
-use axum::{Json, extract::State, http::StatusCode};
-use zwipe_core::{
-    domain::auth::models::session::Session, http::contracts::auth::HttpRegisterUser,
-    version::canonical_version,
-};
+use crate::domain::metrics::models::kinds::EventKind;
+use crate::domain::user::models::get_user::GetUserError;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<EnforceSessionMaximumError> for ApiError {
     fn from(value: EnforceSessionMaximumError) -> Self {

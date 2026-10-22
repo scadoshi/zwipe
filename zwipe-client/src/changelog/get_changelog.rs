@@ -1,7 +1,9 @@
 //! Fetch the changelog (release history) from the server.
 
+use zwipe_core::http::contracts::changelog::HttpChangelog;
+use zwipe_core::http::endpoints::meta::GetChangelog;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::http::{contracts::changelog::HttpChangelog, endpoints::meta::GetChangelog};
 
 impl ZwipeClient {
     /// Fetches the changelog.

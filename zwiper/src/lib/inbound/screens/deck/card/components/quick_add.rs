@@ -8,30 +8,23 @@
 //! applying synergy *ordering* (which it does whenever no sort is set). The
 //! result is a plain, alphabetically-ordered name match.
 
-use super::undo_log::{UndoAction, UndoLog};
-use crate::inbound::components::{
-    auth::authed::use_authed,
-    telemetry::{
-        usage_buffer::UsageBuffer,
-        vocabulary::{DeckScreen, Screen, component},
-    },
-};
+use std::time::Duration;
+
 use components::TOAST_QUICK;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::time::Duration;
 use tokio::time::sleep;
 use uuid::Uuid;
-use zwipe_core::{
-    domain::{
-        card::{
-            Card,
-            search_card::card_filter::{builder::CardQueryBuilder, card_sort_key::CardSortKey},
-        },
-        deck::DeckEntry,
-    },
-    http::contracts::deck_card::HttpCreateDeckCard,
-};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+use zwipe_core::domain::deck::DeckEntry;
+use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
+
+use super::undo_log::{UndoAction, UndoLog};
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component};
 
 /// Minimum characters before a search fires: keeps single-letter typing from
 /// hammering the server and returning a near-full pool.

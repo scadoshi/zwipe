@@ -88,7 +88,7 @@ async fn metadata_endpoints_return_distinct_values(pool: sqlx::PgPool) {
 #[sqlx::test]
 async fn printings_returns_all_printings_of_an_oracle(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
-    let shared = Uuid::from_u128(0x0B00);
+    let shared = Uuid::from_u128(0x0b00);
     seed_cards(
         &pool,
         &[

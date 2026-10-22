@@ -1,7 +1,8 @@
-use crate::{Nav, api};
 use components::{HintKey, Panel};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
+
+use crate::{Nav, api};
 
 #[component]
 pub fn Verify(token: String) -> Element {

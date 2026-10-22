@@ -1,20 +1,14 @@
 //! In-memory swipe/search counters with snapshot-and-zero semantics.
 
-use std::{
-    collections::HashMap,
-    sync::{
-        Arc, Mutex,
-        atomic::{AtomicU32, Ordering},
-    },
-};
-use zwipe_client::ClientError;
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::{Arc, Mutex};
 
 use uuid::Uuid;
-use zwipe_core::{
-    domain::auth::models::platform::ClientPlatform,
-    http::contracts::metrics::{
-        CardSignalDelta, ClientErrorReport, CommanderSelectDelta, HttpUsageBatch,
-    },
+use zwipe_client::ClientError;
+use zwipe_core::domain::auth::models::platform::ClientPlatform;
+use zwipe_core::http::contracts::metrics::{
+    CardSignalDelta, ClientErrorReport, CommanderSelectDelta, HttpUsageBatch,
 };
 
 use crate::inbound::components::interactions::swipe::direction::Direction;
@@ -353,11 +347,12 @@ fn sanitized_decode_message(detail: &str) -> String {
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
-    use super::UsageBuffer;
-    use crate::inbound::components::interactions::swipe::direction::Direction;
     use uuid::Uuid;
     use zwipe_client::ClientError;
     use zwipe_core::http::contracts::metrics::HttpUsageBatch;
+
+    use super::UsageBuffer;
+    use crate::inbound::components::interactions::swipe::direction::Direction;
 
     #[test]
     fn snapshot_drains_once_and_resets() {

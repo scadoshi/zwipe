@@ -7,28 +7,19 @@ pub mod getters;
 /// Setter methods for modifying filter values.
 pub mod setters;
 
-use crate::domain::{
-    card::{
-        scryfall_data::{
-            colors::{Color, Colors},
-            rarity::Rarities,
-        },
-        search_card::{
-            card_filter::{
-                CardSortKey,
-                criteria::CardCriteria,
-                error::InvalidCardCriteria,
-                price_currency::PriceCurrency,
-                query::{CardQuery, Limit},
-                strip_punctuation,
-            },
-            card_type::CardType,
-        },
-    },
-    deck::Format,
-};
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+
+use serde::{Deserialize, Serialize};
+
+use crate::domain::card::scryfall_data::colors::{Color, Colors};
+use crate::domain::card::scryfall_data::rarity::Rarities;
+use crate::domain::card::search_card::card_filter::criteria::CardCriteria;
+use crate::domain::card::search_card::card_filter::error::InvalidCardCriteria;
+use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use crate::domain::card::search_card::card_filter::query::{CardQuery, Limit};
+use crate::domain::card::search_card::card_filter::{CardSortKey, strip_punctuation};
+use crate::domain::card::search_card::card_type::CardType;
+use crate::domain::deck::Format;
 
 /// Errors if any value appears in both an include list and the exclude list for
 /// the same attribute, a contradiction that matches zero cards. `field` names

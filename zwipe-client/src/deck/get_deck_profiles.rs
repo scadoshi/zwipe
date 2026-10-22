@@ -1,10 +1,10 @@
 //! Fetch all deck profiles for the current user.
 
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::http::endpoints::deck::GetDeckProfiles;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::{auth::models::session::Session, deck::deck_profile::DeckProfile},
-    http::endpoints::deck::GetDeckProfiles,
-};
 
 impl ZwipeClient {
     /// Fetches all deck profiles for the authenticated user.

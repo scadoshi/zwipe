@@ -1,13 +1,12 @@
-use crate::{
-    Footer, Nav, Route, SiteSplash,
-    components::{FeaturedFlavor, PageMeta, StatsStrip, dismiss_flavor_overlay, sleep_ms},
-};
 use components::{
     Banner, Decode, FlippableCardImage, GalleryFooter, GalleryFrame, Panel, Replay, Splash,
     SplashGate,
 };
 use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
+
+use crate::components::{FeaturedFlavor, PageMeta, StatsStrip, dismiss_flavor_overlay, sleep_ms};
+use crate::{Footer, Nav, Route, SiteSplash};
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
 

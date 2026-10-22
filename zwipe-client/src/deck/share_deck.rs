@@ -1,14 +1,11 @@
 //! Share / unshare a deck (public link token management).
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::{
-    domain::auth::models::session::Session,
-    http::{
-        contracts::deck::HttpDeckShareToken,
-        endpoints::deck::{ShareDeck, UnshareDeck},
-    },
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::deck::HttpDeckShareToken;
+use zwipe_core::http::endpoints::deck::{ShareDeck, UnshareDeck};
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Creates a deck's public share link.

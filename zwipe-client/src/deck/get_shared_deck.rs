@@ -1,8 +1,10 @@
 //! Read a deck through its public share token.
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::http::{contracts::deck::HttpSharedDeck, endpoints::deck::GetSharedDeck};
+use zwipe_core::http::contracts::deck::HttpSharedDeck;
+use zwipe_core::http::endpoints::deck::GetSharedDeck;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Fetches a shared deck by its public token.

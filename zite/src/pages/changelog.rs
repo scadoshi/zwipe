@@ -1,6 +1,8 @@
-use crate::{Footer, Nav, components::PageMeta};
 use components::{Changelog as ChangelogContent, Panel};
 use dioxus::prelude::*;
+
+use crate::components::PageMeta;
+use crate::{Footer, Nav};
 
 #[component]
 pub fn Changelog() -> Element {

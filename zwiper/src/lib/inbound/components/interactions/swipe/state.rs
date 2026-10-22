@@ -3,10 +3,12 @@
 //! Tracks the current state of a swipe gesture including position, velocity,
 //! and the final swipe direction when the gesture completes.
 
-use crate::inbound::components::interactions::swipe::{
-    axis::Axis, config::SwipeConfig, direction::Direction as Dir, time_point::TimePoint,
-};
 use dioxus::html::geometry::euclid::{Point2D, UnknownUnit};
+
+use crate::inbound::components::interactions::swipe::axis::Axis;
+use crate::inbound::components::interactions::swipe::config::SwipeConfig;
+use crate::inbound::components::interactions::swipe::direction::Direction as Dir;
+use crate::inbound::components::interactions::swipe::time_point::TimePoint;
 
 type DeltaPoint = Point2D<f64, UnknownUnit>;
 
@@ -247,12 +249,13 @@ impl SwipeState {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use super::*;
-    use crate::inbound::components::interactions::swipe::{
-        config::SwipeConfig, direction::Direction, time_point::TimePoint,
-    };
     use chrono::NaiveDate;
     use dioxus::html::geometry::euclid::Point2D;
+
+    use super::*;
+    use crate::inbound::components::interactions::swipe::config::SwipeConfig;
+    use crate::inbound::components::interactions::swipe::direction::Direction;
+    use crate::inbound::components::interactions::swipe::time_point::TimePoint;
 
     /// Builds a TimePoint at (x, y) offset by `ms` milliseconds from a fixed base time.
     fn tp(x: f64, y: f64, ms: i64) -> TimePoint {

@@ -1,9 +1,13 @@
-use crate::inbound::http::{ApiError, AppState, middleware::AuthenticatedUser};
-use axum::{Json, extract::State, http::StatusCode};
-use zwipe_core::domain::deck::{
-    deck_profile::DeckProfile,
-    requests::get_deck_profiles::{GetDeckProfiles, InvalidGetDeckProfiles},
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::deck::requests::get_deck_profiles::{
+    GetDeckProfiles, InvalidGetDeckProfiles,
 };
+
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState};
 
 impl From<InvalidGetDeckProfiles> for ApiError {
     fn from(value: InvalidGetDeckProfiles) -> Self {

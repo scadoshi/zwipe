@@ -6,9 +6,10 @@
 //! register / forgot-password) are public: a new authed screen is gated by
 //! being under this layout, with nothing to remember to wrap.
 
-use crate::inbound::router::Router;
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
+
+use crate::inbound::router::Router;
 
 /// Router layout that admits only authenticated users, redirecting to `/login`
 /// when no valid (unexpired) session exists.

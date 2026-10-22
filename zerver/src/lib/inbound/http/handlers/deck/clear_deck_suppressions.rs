@@ -1,18 +1,13 @@
-use axum::{
-    Json,
-    extract::{Path, State},
+use axum::Json;
+use axum::extract::{Path, State};
+use zwipe_core::domain::deck::requests::clear_deck_suppressions::{
+    ClearDeckSuppressions, InvalidClearDeckSuppressions,
 };
+use zwipe_core::http::contracts::deck::HttpClearedSuppressions;
 
-use crate::{
-    domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError,
-    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
-};
-use zwipe_core::{
-    domain::deck::requests::clear_deck_suppressions::{
-        ClearDeckSuppressions, InvalidClearDeckSuppressions,
-    },
-    http::contracts::deck::HttpClearedSuppressions,
-};
+use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<ClearDeckSuppressionsError> for ApiError {
     fn from(value: ClearDeckSuppressionsError) -> Self {

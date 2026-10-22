@@ -1,8 +1,10 @@
 //! Fetch all printings of a card by oracle ID.
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::{domain::card::Card, http::endpoints::card::GetPrintings};
+use zwipe_core::domain::card::Card;
+use zwipe_core::http::endpoints::card::GetPrintings;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Fetches all printings of a card by oracle ID.

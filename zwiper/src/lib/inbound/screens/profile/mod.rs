@@ -18,21 +18,6 @@ pub mod preferences;
 /// Universes Beyond preference bottom sheet.
 pub mod universes_beyond;
 
-use crate::{
-    inbound::{
-        components::{
-            auth::authed::use_authed,
-            hint_dialog::{HintDialog, use_one_time_hint},
-            hint_host::HintTopic,
-            info_button::InfoButton,
-            logout_dialog::LogoutDialog,
-            screen_header::ScreenHeader,
-            telemetry::vocabulary::{ProfileScreen, Screen},
-        },
-        router::Router,
-    },
-    outbound::{app_icon, open_url},
-};
 use ::components::{
     ActionBar, BottomSheet, Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets,
     HintKey, TOAST_NORMAL, ThemeConfig, theme_from_preferences,
@@ -41,23 +26,28 @@ use app_icon_sheet::AppIconSheet;
 use change_email::ChangeEmailSheet;
 use change_password::ChangePasswordSheet;
 use change_username::ChangeUsernameSheet;
-use components::{
-    delete_account_dialog::DeleteAccountDialog,
-    email_verification::{EmailVerification, VerificationActions},
-};
+use components::delete_account_dialog::DeleteAccountDialog;
+use components::email_verification::{EmailVerification, VerificationActions};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use preferences::PreferencesSheet;
 use universes_beyond::UniversesBeyondExceptionsSheet;
-use zwipe_core::{
-    domain::{
-        auth::models::session::Session,
-        card::scryfall_data::universe::franchise_by_slug,
-        site::WEB_BASE,
-        user::{models::hints::HINT_PROFILE, preferences::display_theme_name},
-    },
-    http::contracts::user::HttpUpdatePreferences,
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::scryfall_data::universe::franchise_by_slug;
+use zwipe_core::domain::site::WEB_BASE;
+use zwipe_core::domain::user::models::hints::HINT_PROFILE;
+use zwipe_core::domain::user::preferences::display_theme_name;
+use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::hint_dialog::{HintDialog, use_one_time_hint};
+use crate::inbound::components::hint_host::HintTopic;
+use crate::inbound::components::info_button::InfoButton;
+use crate::inbound::components::logout_dialog::LogoutDialog;
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
+use crate::inbound::router::Router;
+use crate::outbound::{app_icon, open_url};
 
 /// Client version baked in at compile time, shown at the bottom of the screen
 /// so users can report which build they're on.

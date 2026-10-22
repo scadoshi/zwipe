@@ -3,7 +3,8 @@
 //! This is the authoritative definition of commander eligibility.
 //! The SQL filter in zerver's `search_scryfall_data` must mirror this logic.
 
-use crate::domain::{card::Card, deck::Format};
+use crate::domain::card::Card;
+use crate::domain::deck::Format;
 
 // == Commander Eligibility ==
 
@@ -256,7 +257,8 @@ pub fn is_signature_spell_in_color_identity(spell: &Card, oathbreaker: &Card) ->
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{domain::card::scryfall_data::rarity::Rarity, test_utils::make_card};
+    use crate::domain::card::scryfall_data::rarity::Rarity;
+    use crate::test_utils::make_card;
 
     #[test]
     fn legendary_token_is_not_a_commander() {

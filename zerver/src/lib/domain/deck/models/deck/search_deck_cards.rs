@@ -3,11 +3,10 @@
 //! Service-layer error type only: request/response shapes are the shared
 //! `CardQuery` / `Card` from zwipe_core.
 
-use crate::domain::{
-    card::models::search_card::error::SearchCardsError,
-    deck::models::deck::get_deck_profile::GetDeckProfileError,
-};
 use thiserror::Error;
+
+use crate::domain::card::models::search_card::error::SearchCardsError;
+use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
 
 /// Errors from the deck-aware card search (exclusion + synergy ordering).
 #[derive(Debug, Error)]

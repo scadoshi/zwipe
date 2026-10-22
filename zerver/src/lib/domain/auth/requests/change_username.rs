@@ -24,13 +24,12 @@
 //! )?;
 //! ```
 
-use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
 use thiserror::Error;
 use uuid::Uuid;
-use zwipe_core::domain::{
-    auth::models::secret::Secret,
-    user::username::{InvalidUsername, Username},
-};
+use zwipe_core::domain::auth::models::secret::Secret;
+use zwipe_core::domain::user::username::{InvalidUsername, Username};
+
+use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
 
 /// Errors that can occur while constructing a [`ChangeUsername`] request.
 #[derive(Debug, Error)]
@@ -122,8 +121,9 @@ impl ChangeUsername {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use uuid::Uuid;
+
+    use super::*;
 
     #[test]
     fn test_change_username_new_succeeds_with_valid_inputs() {

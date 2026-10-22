@@ -1,10 +1,9 @@
 //! Deck aggregate entity combining profile, cards, and warnings.
 
-use crate::domain::{
-    card::Card,
-    deck::{DeckCard, DeckProfile, DeckWarning},
-};
 use serde::{Deserialize, Serialize};
+
+use crate::domain::card::Card;
+use crate::domain::deck::{DeckCard, DeckProfile, DeckWarning};
 
 /// A card paired with its deck membership data (quantity, IDs).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

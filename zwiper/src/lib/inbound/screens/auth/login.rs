@@ -1,23 +1,20 @@
 //! User login screen.
 
-use crate::{
-    inbound::{
-        components::{
-            fields::text_input::TextInput, home_hero::HomeHero, screen_header::ScreenHeader,
-        },
-        router::Router,
-    },
-    outbound::{app_icon, session::Persist},
-};
 use components::{
     ActionBar, Button, ButtonVariant, TOAST_NORMAL, ThemeConfig, theme_from_preferences,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_core::{
-    domain::auth::models::session::Session, http::contracts::auth::HttpAuthenticateUser,
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
+
+use crate::inbound::components::fields::text_input::TextInput;
+use crate::inbound::components::home_hero::HomeHero;
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::router::Router;
+use crate::outbound::app_icon;
+use crate::outbound::session::Persist;
 
 /// Login form screen for user authentication.
 #[component]

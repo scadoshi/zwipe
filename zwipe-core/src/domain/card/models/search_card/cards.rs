@@ -17,14 +17,12 @@
 //!     .into();
 //! ```
 
-use crate::domain::{
-    card::{
-        Card,
-        search_card::card_filter::{card_sort_key::CardSortKey, criteria::CardCriteria},
-    },
-    deck::DeckEntry,
-};
 use rand::seq::SliceRandom;
+
+use crate::domain::card::Card;
+use crate::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+use crate::domain::card::search_card::card_filter::criteria::CardCriteria;
+use crate::domain::deck::DeckEntry;
 
 /// A collection of cards already loaded in memory.
 ///
@@ -119,21 +117,19 @@ pub fn sort_deck_entries(
 #[cfg(test)]
 #[allow(clippy::indexing_slicing)]
 mod tests {
-    use super::Cards;
-    use crate::domain::card::{
-        Card,
-        card_profile::CardProfile,
-        scryfall_data::{
-            ScryfallData,
-            colors::{Color, Colors},
-            legalities::{Legalities, LegalityKind},
-            prices::Prices,
-            rarity::{Rarities, Rarity},
-        },
-        search_card::card_filter::{builder::CardQueryBuilder, card_sort_key::CardSortKey},
-    };
     use chrono::NaiveDate;
     use uuid::Uuid;
+
+    use super::Cards;
+    use crate::domain::card::Card;
+    use crate::domain::card::card_profile::CardProfile;
+    use crate::domain::card::scryfall_data::ScryfallData;
+    use crate::domain::card::scryfall_data::colors::{Color, Colors};
+    use crate::domain::card::scryfall_data::legalities::{Legalities, LegalityKind};
+    use crate::domain::card::scryfall_data::prices::Prices;
+    use crate::domain::card::scryfall_data::rarity::{Rarities, Rarity};
+    use crate::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+    use crate::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 
     fn make_card(name: &str) -> Card {
         Card {
@@ -953,8 +949,9 @@ mod tests {
 
     #[test]
     fn test_sort_deck_entries_orders_by_card() {
-        use crate::domain::deck::{Board, DeckCard, DeckEntry, Quantity};
         use uuid::Uuid;
+
+        use crate::domain::deck::{Board, DeckCard, DeckEntry, Quantity};
         let entry = |name: &str| DeckEntry {
             deck_card: DeckCard {
                 deck_id: Uuid::new_v4(),

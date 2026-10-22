@@ -1,14 +1,15 @@
-use crate::{
-    domain::{
-        auth::requests::change_username::{
-            ChangeUsername, ChangeUsernameError, InvalidChangeUsername,
-        },
-        metrics::models::kinds::AuditAction,
-    },
-    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+use zwipe_core::domain::user::User;
+use zwipe_core::http::contracts::auth::HttpChangeUsername;
+
+use crate::domain::auth::requests::change_username::{
+    ChangeUsername, ChangeUsernameError, InvalidChangeUsername,
 };
-use axum::{Json, extract::State, http::StatusCode};
-use zwipe_core::{domain::user::User, http::contracts::auth::HttpChangeUsername};
+use crate::domain::metrics::models::kinds::AuditAction;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<ChangeUsernameError> for ApiError {
     fn from(value: ChangeUsernameError) -> Self {

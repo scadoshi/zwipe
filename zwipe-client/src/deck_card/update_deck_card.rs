@@ -5,12 +5,13 @@
 //! delta route still exists for older shipped clients: migration:
 //! `context/plans/patch_idempotent_updates.md`.
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::{
-    domain::{auth::models::session::Session, deck::deck_card::DeckCard},
-    http::{contracts::deck_card::HttpPatchDeckCard, endpoints::deck::UpdateDeckCard},
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::deck_card::DeckCard;
+use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
+use zwipe_core::http::endpoints::deck::UpdateDeckCard;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Updates a card in a deck.

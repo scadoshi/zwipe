@@ -1,13 +1,9 @@
-use crate::domain::{
-    card::{
-        scryfall_data::{colors::Colors, rarity::Rarities},
-        search_card::{
-            card_filter::{criteria::CardCriteria, price_currency::PriceCurrency},
-            card_type::CardType,
-        },
-    },
-    deck::Format,
-};
+use crate::domain::card::scryfall_data::colors::Colors;
+use crate::domain::card::scryfall_data::rarity::Rarities;
+use crate::domain::card::search_card::card_filter::criteria::CardCriteria;
+use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use crate::domain::card::search_card::card_type::CardType;
+use crate::domain::deck::Format;
 
 #[allow(missing_docs)]
 impl CardCriteria {

@@ -3,11 +3,12 @@
 //! Defines the [`OnSwipe`] trait with shared functionality used by both
 //! touch and mouse event handlers.
 
-use crate::inbound::components::interactions::swipe::{
-    config::SwipeConfig, state::SwipeState, time_point::TimePoint,
-};
 use chrono::Utc;
 use dioxus::html::geometry::ClientPoint;
+
+use crate::inbound::components::interactions::swipe::config::SwipeConfig;
+use crate::inbound::components::interactions::swipe::state::SwipeState;
+use crate::inbound::components::interactions::swipe::time_point::TimePoint;
 
 /// Core swipe event handlers shared by touch and mouse implementations.
 #[allow(missing_docs)]

@@ -17,6 +17,7 @@
 //! - **Repeat Limit**: Maximum 3 consecutive repeated characters
 
 use std::collections::HashSet;
+
 use thiserror::Error;
 
 // == errors ==

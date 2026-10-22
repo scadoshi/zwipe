@@ -1,13 +1,5 @@
 //! Bottom sheet for browsing and selecting card printings.
 
-use super::{
-    card_info::{CardInfoDisplay, PrintingSheetSkeleton},
-    flippable_card_image::FlippableCardImage,
-};
-use crate::inbound::components::{
-    interactions::carousel::{Carousel, dots::CarouselDots, state::CarouselState},
-    telemetry::{usage_buffer::UsageBuffer, vocabulary::component},
-};
 use components::{
     ActionBar, Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK, use_overlay_back_action,
 };
@@ -15,7 +7,16 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::card::{Card, scryfall_data::ImageSize};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::ImageSize;
+
+use super::card_info::{CardInfoDisplay, PrintingSheetSkeleton};
+use super::flippable_card_image::FlippableCardImage;
+use crate::inbound::components::interactions::carousel::Carousel;
+use crate::inbound::components::interactions::carousel::dots::CarouselDots;
+use crate::inbound::components::interactions::carousel::state::CarouselState;
+use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::inbound::components::telemetry::vocabulary::component;
 
 /// Bottom sheet for browsing all printings of a card and selecting one.
 #[component]

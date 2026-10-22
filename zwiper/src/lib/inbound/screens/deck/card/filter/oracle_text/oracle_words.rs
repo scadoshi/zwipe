@@ -1,13 +1,12 @@
 //! Oracle words chip multi-select component.
 
-use super::super::{
-    deck_cards::{DeckCards, extract_oracle_words},
-    match_mode::MatchMode,
-};
-use crate::inbound::components::catalog_cache::CatalogCache;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+
+use super::super::deck_cards::{DeckCards, extract_oracle_words};
+use super::super::match_mode::MatchMode;
+use crate::inbound::components::catalog_cache::CatalogCache;
 
 fn read_oracle_words(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {

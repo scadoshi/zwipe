@@ -4,36 +4,35 @@
 //! All card data originates from the Scryfall API and is synced to the local database
 //! for fast querying.
 
-use crate::{
-    domain::{
-        BoxFuture,
-        card::{
-            models::{search_card::error::SearchCardsError, zervice_metrics::ZerviceMetrics},
-            requests::{
-                create_card::CreateCardError,
-                get_artists::GetArtistsError,
-                get_card::GetCardError,
-                get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
-                get_card_types::GetCardTypesError,
-                get_keywords::GetKeywordsError,
-                get_languages::GetLanguagesError,
-                get_oracle_tags::GetOracleTagsError,
-                get_oracle_words::GetOracleWordsError,
-                get_scryfall_data::{
-                    GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
-                },
-                get_sets::GetSetsError,
-            },
-        },
-    },
-    inbound::external::scryfall::{bulk::BulkEndpoint, oracle_tag::OracleTag as ScryfallOracleTag},
-};
-use chrono::{DateTime, Utc};
 use std::future::Future;
-use zwipe_core::domain::card::{
-    Card, card_profile::CardProfile, oracle_tag::OracleTag, scryfall_data::ScryfallData,
-    search_card::card_filter::CardQuery,
+
+use chrono::{DateTime, Utc};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::card_profile::CardProfile;
+use zwipe_core::domain::card::oracle_tag::OracleTag;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+
+use crate::domain::BoxFuture;
+use crate::domain::card::models::search_card::error::SearchCardsError;
+use crate::domain::card::models::zervice_metrics::ZerviceMetrics;
+use crate::domain::card::requests::create_card::CreateCardError;
+use crate::domain::card::requests::get_artists::GetArtistsError;
+use crate::domain::card::requests::get_card::GetCardError;
+use crate::domain::card::requests::get_card_profile::{
+    CardProfileIds, GetCardProfile, GetCardProfileError,
 };
+use crate::domain::card::requests::get_card_types::GetCardTypesError;
+use crate::domain::card::requests::get_keywords::GetKeywordsError;
+use crate::domain::card::requests::get_languages::GetLanguagesError;
+use crate::domain::card::requests::get_oracle_tags::GetOracleTagsError;
+use crate::domain::card::requests::get_oracle_words::GetOracleWordsError;
+use crate::domain::card::requests::get_scryfall_data::{
+    GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
+};
+use crate::domain::card::requests::get_sets::GetSetsError;
+use crate::inbound::external::scryfall::bulk::BulkEndpoint;
+use crate::inbound::external::scryfall::oracle_tag::OracleTag as ScryfallOracleTag;
 
 /// The optional deck-serving inputs threaded into the deck-aware search entry
 /// points ([`CardRepository::search_scryfall_data_deck_aware`] +

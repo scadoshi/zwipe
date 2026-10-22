@@ -1,11 +1,11 @@
 //! Fetch a deck with all its cards.
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::{
-    domain::{auth::models::session::Session, deck::Deck},
-    http::endpoints::deck::GetDeck,
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::Deck;
+use zwipe_core::http::endpoints::deck::GetDeck;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Fetches a complete deck with all cards.

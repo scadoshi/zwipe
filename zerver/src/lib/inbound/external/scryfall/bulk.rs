@@ -1,13 +1,14 @@
-use crate::inbound::external::scryfall::{
-    oracle_tag::OracleTag,
-    request::{SCRYFALL_API_BASE, ScryfallRequest},
-};
+use std::io::{BufRead, BufReader};
+
 use anyhow::Context;
 use flate2::read::GzDecoder;
 use reqwest::Client;
-use serde::{Deserialize, de::DeserializeOwned};
-use std::io::{BufRead, BufReader};
+use serde::Deserialize;
+use serde::de::DeserializeOwned;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
+
+use crate::inbound::external::scryfall::oracle_tag::OracleTag;
+use crate::inbound::external::scryfall::request::{SCRYFALL_API_BASE, ScryfallRequest};
 
 /// Scryfall bulk data metadata response (contains the download URI).
 ///
@@ -123,9 +124,12 @@ fn parse_jsonl_gz<T: DeserializeOwned>(bytes: &[u8]) -> anyhow::Result<Vec<T>> {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use super::parse_jsonl_gz;
-    use flate2::{Compression, write::GzEncoder};
     use std::io::Write;
+
+    use flate2::Compression;
+    use flate2::write::GzEncoder;
+
+    use super::parse_jsonl_gz;
 
     fn gz(lines: &str) -> Vec<u8> {
         let mut enc = GzEncoder::new(Vec::new(), Compression::default());

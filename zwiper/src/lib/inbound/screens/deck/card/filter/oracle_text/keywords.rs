@@ -1,13 +1,12 @@
 //! Keywords chip multi-select component.
 
-use super::super::{
-    deck_cards::{DeckCards, extract_keywords},
-    match_mode::MatchMode,
-};
-use crate::inbound::components::catalog_cache::CatalogCache;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+
+use super::super::deck_cards::{DeckCards, extract_keywords};
+use super::super::match_mode::MatchMode;
+use crate::inbound::components::catalog_cache::CatalogCache;
 
 fn read_keywords(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {

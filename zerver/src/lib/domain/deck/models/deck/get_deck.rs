@@ -2,13 +2,12 @@
 //!
 //! Retrieves deck metadata and all cards in the deck with full card data.
 
-use crate::domain::{
-    card::requests::{get_card::GetCardError, get_card_profile::GetCardProfileError},
-    deck::models::{
-        deck::get_deck_profile::GetDeckProfileError, deck_card::get_deck_card::GetDeckCardError,
-    },
-};
 use thiserror::Error;
+
+use crate::domain::card::requests::get_card::GetCardError;
+use crate::domain::card::requests::get_card_profile::GetCardProfileError;
+use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
+use crate::domain::deck::models::deck_card::get_deck_card::GetDeckCardError;
 
 /// Errors that can occur when retrieving a complete deck.
 ///

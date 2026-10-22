@@ -9,43 +9,33 @@ pub mod middleware;
 /// Route definitions mapping paths to handlers.
 pub mod routes;
 
-use crate::{
-    domain::{
-        auth::{
-            access_token::JwtSecret,
-            ports::{AuthService, ErasedAuthService},
-        },
-        card::ports::{CardService, ErasedCardService},
-        deck::ports::{DeckService, ErasedDeckService},
-        health::ports::{ErasedHealthService, HealthService},
-        metrics::ports::ErasedMetricsService,
-        user::ports::{ErasedUserService, UserService},
-    },
-    inbound::http::routes::{private_routes, public_routes},
-};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+
 use anyhow::{Context, anyhow};
-use axum::{
-    extract::Request,
-    http::{HeaderValue, Method, StatusCode, header},
-    middleware::Next,
-    response::{IntoResponse, Response},
-};
+use axum::extract::Request;
+use axum::http::{HeaderValue, Method, StatusCode, header};
+use axum::middleware::Next;
+use axum::response::{IntoResponse, Response};
 use dashmap::DashMap;
-use std::{
-    sync::Arc,
-    time::{Duration, Instant},
-};
 use thiserror::Error;
 use tokio::net;
-use tower_http::{
-    catch_panic::CatchPanicLayer,
-    compression::CompressionLayer,
-    cors::CorsLayer,
-    limit::RequestBodyLimitLayer,
-    request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer},
-    timeout::TimeoutLayer,
-};
+use tower_http::catch_panic::CatchPanicLayer;
+use tower_http::compression::CompressionLayer;
+use tower_http::cors::CorsLayer;
+use tower_http::limit::RequestBodyLimitLayer;
+use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
+use tower_http::timeout::TimeoutLayer;
 use uuid::Uuid;
+
+use crate::domain::auth::access_token::JwtSecret;
+use crate::domain::auth::ports::{AuthService, ErasedAuthService};
+use crate::domain::card::ports::{CardService, ErasedCardService};
+use crate::domain::deck::ports::{DeckService, ErasedDeckService};
+use crate::domain::health::ports::{ErasedHealthService, HealthService};
+use crate::domain::metrics::ports::ErasedMetricsService;
+use crate::domain::user::ports::{ErasedUserService, UserService};
+use crate::inbound::http::routes::{private_routes, public_routes};
 
 // == error ==
 
@@ -347,8 +337,9 @@ async fn shutdown_signal() {
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::panic)]
-    use super::*;
     use http_body_util::BodyExt;
+
+    use super::*;
 
     async fn body_of(error: ApiError) -> (StatusCode, String) {
         let response = error.into_response();

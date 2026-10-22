@@ -5,9 +5,10 @@
 //! legacy delta (PUT) form was removed at the end of the migration in
 //! `context/plans/patch_idempotent_updates.md`.
 
-use crate::domain::deck::{Board, InvalidQuantity, Quantity};
 use thiserror::Error;
 use uuid::Uuid;
+
+use crate::domain::deck::{Board, InvalidQuantity, Quantity};
 
 /// Errors that occur while constructing an [`UpdateDeckCard`] request.
 #[derive(Debug, Error)]

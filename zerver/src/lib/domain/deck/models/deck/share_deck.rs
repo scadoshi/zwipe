@@ -3,9 +3,11 @@
 //! The share token is a capability: an unguessable UUID that makes the deck
 //! readable at a public URL. NULL = private. Server-side types only.
 
-use crate::domain::deck::models::deck::get_deck::GetDeckError;
 use thiserror::Error;
-use zwipe_core::domain::{card::Card, deck::Deck};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::deck::Deck;
+
+use crate::domain::deck::models::deck::get_deck::GetDeckError;
 
 /// Errors that can occur while sharing or unsharing a deck.
 #[derive(Debug, Error)]

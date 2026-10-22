@@ -5,11 +5,14 @@
 //! [`FlippableCardImage`] so DFC commanders can show both faces. Cards share
 //! the row's width and shrink together instead of wrapping.
 
-use super::super::card::components::flippable_card_image::FlippableCardImage;
-use dioxus::prelude::*;
 use std::time::Duration;
+
+use dioxus::prelude::*;
 use tokio::time::sleep;
-use zwipe_core::domain::card::{Card, scryfall_data::ImageSize};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::ImageSize;
+
+use super::super::card::components::flippable_card_image::FlippableCardImage;
 
 /// One labeled featured card: image (when available) above name + role chip.
 /// Tapping it fires `on_tap` with the card so the host can open its image

@@ -1,6 +1,7 @@
 //! User profile retrieval request type.
 
 use std::ops::Deref;
+
 use uuid::Uuid;
 
 /// Request to fetch a user profile by ID.

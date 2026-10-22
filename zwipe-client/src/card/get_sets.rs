@@ -1,7 +1,8 @@
 //! Fetch all card sets.
 
-use crate::{ClientError, ZwipeClient};
 use zwipe_core::http::endpoints::card::GetSets;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Fetches the list of all card sets.

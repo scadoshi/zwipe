@@ -7,15 +7,16 @@
 //! at the top, so users learn what a tag does while picking it. The search box
 //! filters the grid by name for quick jumps.
 
-use crate::inbound::components::{
-    concept_explainers::DeckTagsExplainer, hint_dialog::HintDialog, screen_header::ScreenHeader,
-};
 use components::{
     ActionBar, Button, ButtonVariant, HintBullet, HintBullets, TOAST_QUICK, use_overlay_back_action,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
+
+use crate::inbound::components::concept_explainers::DeckTagsExplainer;
+use crate::inbound::components::hint_dialog::HintDialog;
+use crate::inbound::components::screen_header::ScreenHeader;
 
 /// Whether two slug lists pick the same tags, ignoring tap order.
 fn same_set(a: &[String], b: &[String]) -> bool {

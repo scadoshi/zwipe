@@ -1,7 +1,9 @@
 //! Confirm an email address from the verification link.
 
+use zwipe_core::http::contracts::auth::HttpVerifyEmail;
+use zwipe_core::http::endpoints::auth::VerifyEmail;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::http::{contracts::auth::HttpVerifyEmail, endpoints::auth::VerifyEmail};
 
 impl ZwipeClient {
     /// Confirms an email address with the token from the verification link.

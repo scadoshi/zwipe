@@ -1,9 +1,9 @@
-use crate::{
-    domain::card::requests::get_sets::GetSetsError,
-    inbound::http::{ApiError, AppState, To500},
-};
-use axum::{Json, extract::State};
+use axum::Json;
+use axum::extract::State;
 use reqwest::StatusCode;
+
+use crate::domain::card::requests::get_sets::GetSetsError;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<GetSetsError> for ApiError {
     fn from(value: GetSetsError) -> Self {

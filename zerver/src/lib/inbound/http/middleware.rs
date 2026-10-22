@@ -1,32 +1,28 @@
 //! JWT authentication and last-active tracking middleware.
 
-use crate::{
-    domain::auth::models::access_token::{JwtSecret, JwtValidate},
-    inbound::http::AppState,
-};
-use axum::{
-    extract::{ConnectInfo, FromRequestParts, Request, State},
-    http::{StatusCode, header::AUTHORIZATION, request::Parts},
-    middleware::Next,
-    response::Response,
-};
-use axum_extra::{
-    TypedHeader,
-    headers::{Authorization, authorization::Bearer},
-};
-use std::{
-    net::{IpAddr, SocketAddr},
-    str::FromStr,
-    sync::Arc,
-    time::{Duration, Instant},
-};
-use tower_governor::{GovernorError, key_extractor::KeyExtractor};
+use std::net::{IpAddr, SocketAddr};
+use std::str::FromStr;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+
+use axum::extract::{ConnectInfo, FromRequestParts, Request, State};
+use axum::http::StatusCode;
+use axum::http::header::AUTHORIZATION;
+use axum::http::request::Parts;
+use axum::middleware::Next;
+use axum::response::Response;
+use axum_extra::TypedHeader;
+use axum_extra::headers::Authorization;
+use axum_extra::headers::authorization::Bearer;
+use tower_governor::GovernorError;
+use tower_governor::key_extractor::KeyExtractor;
 use uuid::Uuid;
-use zwipe_core::domain::{
-    Email,
-    auth::models::access_token::{Jwt, UserClaims},
-    user::username::Username,
-};
+use zwipe_core::domain::Email;
+use zwipe_core::domain::auth::models::access_token::{Jwt, UserClaims};
+use zwipe_core::domain::user::username::Username;
+
+use crate::domain::auth::models::access_token::{JwtSecret, JwtValidate};
+use crate::inbound::http::AppState;
 
 /// Axum extractor that enforces JWT authentication.
 ///
@@ -226,10 +222,12 @@ impl FromRequestParts<AppState> for AuthenticatedUser {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use super::{CF_CONNECTING_IP, CfConnectingIpKeyExtractor};
-    use axum::extract::ConnectInfo;
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+
+    use axum::extract::ConnectInfo;
     use tower_governor::key_extractor::KeyExtractor;
+
+    use super::{CF_CONNECTING_IP, CfConnectingIpKeyExtractor};
 
     fn peer(ip: [u8; 4]) -> ConnectInfo<SocketAddr> {
         ConnectInfo(SocketAddr::new(

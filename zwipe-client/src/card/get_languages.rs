@@ -1,7 +1,8 @@
 //! Fetch all available languages.
 
-use crate::{ClientError, ZwipeClient};
 use zwipe_core::http::endpoints::card::GetLanguages;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Fetches the list of all available card languages.

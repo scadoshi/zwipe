@@ -1,8 +1,10 @@
-use crate::inbound::http::AppState;
-use axum::{Json, extract::State};
+use axum::Json;
+use axum::extract::State;
 use chrono::Utc;
 use serde::Serialize;
 use serde_json::{Value, json};
+
+use crate::inbound::http::AppState;
 
 // == root ==
 

@@ -1,64 +1,51 @@
-use std::{collections::HashMap, fmt::Debug};
+use std::collections::HashMap;
+use std::fmt::Debug;
 
 use uuid::Uuid;
-
-use crate::domain::{
-    card::{
-        models::synergy::SynergyPayload,
-        ports::{CardRepository, DeckServeContext},
-        requests::get_scryfall_data::ScryfallDataIds,
-    },
-    deck::{
-        models::{
-            deck::{
-                clear_deck_suppressions::ClearDeckSuppressionsError,
-                clone_deck::CloneDeckError,
-                commander_maybeboard::CommanderMaybeboardError,
-                create_deck_profile::CreateDeckProfileError,
-                delete_deck::DeleteDeckError,
-                get_deck::GetDeckError,
-                get_deck_profile::GetDeckProfileError,
-                get_deck_tokens::GetDeckTokensError,
-                import_archidekt::ArchidektCard,
-                search_deck_cards::SearchDeckCardsError,
-                share_deck::{GetSharedDeckError, ShareDeckError, SharedDeck},
-                skip_deck_card::SkipDeckCardError,
-                update_deck_profile::UpdateDeckProfileError,
-            },
-            deck_card::{
-                create_deck_card::CreateDeckCardError, delete_deck_card::DeleteDeckCardError,
-                import_deck_cards::ImportDeckCardsError, update_deck_card::UpdateDeckCardError,
-            },
-        },
-        ports::{DeckRepository, DeckService},
-    },
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::deck::requests::clear_deck_suppressions::ClearDeckSuppressions;
+use zwipe_core::domain::deck::requests::clone_deck::CloneDeck;
+use zwipe_core::domain::deck::requests::commander_maybeboard::CommanderMaybeboardCard;
+use zwipe_core::domain::deck::requests::create_deck_card::CreateDeckCard;
+use zwipe_core::domain::deck::requests::create_deck_profile::CreateDeckProfile;
+use zwipe_core::domain::deck::requests::delete_deck::DeleteDeck;
+use zwipe_core::domain::deck::requests::delete_deck_card::DeleteDeckCard;
+use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
+use zwipe_core::domain::deck::requests::get_deck_profiles::GetDeckProfiles;
+use zwipe_core::domain::deck::requests::import_deck_cards::{
+    ImportDeckCards, ImportDeckCardsResult, ImportedCard, UnresolvedCard, dfc_front_face,
+    entry_front_face,
 };
-use zwipe_core::domain::{
-    card::{Card, search_card::card_filter::CardQuery},
-    deck::{
-        Board, Deck, DeckCard, DeckEntry, ImportMode,
-        deck_profile::DeckProfile,
-        requests::{
-            clear_deck_suppressions::ClearDeckSuppressions,
-            clone_deck::CloneDeck,
-            commander_maybeboard::CommanderMaybeboardCard,
-            create_deck_card::CreateDeckCard,
-            create_deck_profile::CreateDeckProfile,
-            delete_deck::DeleteDeck,
-            delete_deck_card::DeleteDeckCard,
-            get_deck_profile::GetDeckProfile,
-            get_deck_profiles::GetDeckProfiles,
-            import_deck_cards::{
-                ImportDeckCards, ImportDeckCardsResult, ImportedCard, UnresolvedCard,
-                dfc_front_face, entry_front_face,
-            },
-            skip_deck_card::SkipDeckCard,
-            update_deck_card::UpdateDeckCard,
-            update_deck_profile::UpdateDeckProfile,
-        },
-    },
-};
+use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
+use zwipe_core::domain::deck::requests::update_deck_card::UpdateDeckCard;
+use zwipe_core::domain::deck::requests::update_deck_profile::UpdateDeckProfile;
+use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, ImportMode};
 
+use crate::domain::card::models::synergy::SynergyPayload;
+use crate::domain::card::ports::{CardRepository, DeckServeContext};
+use crate::domain::card::requests::get_scryfall_data::ScryfallDataIds;
+use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError;
+use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
+use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
+use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
+use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
+use crate::domain::deck::models::deck::get_deck::GetDeckError;
+use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
+use crate::domain::deck::models::deck::get_deck_tokens::GetDeckTokensError;
+use crate::domain::deck::models::deck::import_archidekt::ArchidektCard;
+use crate::domain::deck::models::deck::search_deck_cards::SearchDeckCardsError;
+use crate::domain::deck::models::deck::share_deck::{
+    GetSharedDeckError, ShareDeckError, SharedDeck,
+};
+use crate::domain::deck::models::deck::skip_deck_card::SkipDeckCardError;
+use crate::domain::deck::models::deck::update_deck_profile::UpdateDeckProfileError;
+use crate::domain::deck::models::deck_card::create_deck_card::CreateDeckCardError;
+use crate::domain::deck::models::deck_card::delete_deck_card::DeleteDeckCardError;
+use crate::domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsError;
+use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError;
+use crate::domain::deck::ports::{DeckRepository, DeckService};
 use crate::domain::deck::{
     MAX_CARDS_PER_DECK, MAX_COMMANDER_MAYBEBOARD, MAX_DECKS_PER_USER,
     UNVERIFIED_MAX_CARDS_PER_DECK, UNVERIFIED_MAX_DECKS_PER_USER,

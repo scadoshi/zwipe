@@ -1,5 +1,6 @@
-use crate::domain::deck::Format;
 use serde::{Deserialize, Serialize};
+
+use crate::domain::deck::Format;
 
 /// Card legality status across all Magic: The Gathering formats.
 ///

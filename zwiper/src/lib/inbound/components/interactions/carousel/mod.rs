@@ -8,7 +8,8 @@ pub mod dots;
 /// Carousel state and snap logic.
 pub mod state;
 
-use dioxus::{html::input_data::MouseButton, prelude::*};
+use dioxus::html::input_data::MouseButton;
+use dioxus::prelude::*;
 use state::CarouselState;
 
 /// A horizontal snap-to-page carousel.

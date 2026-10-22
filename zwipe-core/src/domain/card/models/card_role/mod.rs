@@ -5,10 +5,10 @@
 
 mod oracle_tag_gaps;
 
-pub use oracle_tag_gaps::classify_oracle_tag_gaps;
-
-use serde::{Deserialize, Serialize};
 use std::fmt;
+
+pub use oracle_tag_gaps::classify_oracle_tag_gaps;
+use serde::{Deserialize, Serialize};
 
 /// Strategic role a card can fill in a deck.
 ///

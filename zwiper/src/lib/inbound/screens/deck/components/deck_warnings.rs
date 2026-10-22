@@ -1,21 +1,16 @@
 //! Deck warnings section with action buttons for card-specific warnings.
 
-use crate::inbound::{
-    components::telemetry::{
-        usage_buffer::UsageBuffer,
-        vocabulary::{component, screen},
-    },
-    router::Router,
-};
 use components::{Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_core::domain::{
-    auth::models::session::Session,
-    deck::deck_warning::{DeckWarning, WarningAction},
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::deck_warning::{DeckWarning, WarningAction};
+
+use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::inbound::components::telemetry::vocabulary::{component, screen};
+use crate::inbound::router::Router;
 
 #[component]
 pub(crate) fn DeckWarnings(

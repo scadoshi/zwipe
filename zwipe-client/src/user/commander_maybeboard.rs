@@ -1,14 +1,14 @@
 //! Commander maybeboard endpoints (per-user "maybe this commander" list).
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::{
-    domain::{auth::models::session::Session, card::Card},
-    http::endpoints::user::{
-        AddCommanderMaybeboardCard, ClearCommanderMaybeboard, GetCommanderMaybeboard,
-        RemoveCommanderMaybeboardCard,
-    },
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::Card;
+use zwipe_core::http::endpoints::user::{
+    AddCommanderMaybeboardCard, ClearCommanderMaybeboard, GetCommanderMaybeboard,
+    RemoveCommanderMaybeboardCard,
 };
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Reads the user's commander maybeboard.

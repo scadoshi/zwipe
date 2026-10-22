@@ -1,45 +1,37 @@
 //! Edit deck screen.
 
-use super::components::{
-    deck_fields::{DeckFields, DeckFieldsHint, autofill_named_partner},
-    format_select::FormatSelect,
-    oracle_tag_select::OracleTagSelect,
-    skeletons::EditDeckSkeleton,
-    swipe_select::{SwipeMode, SwipeSelect},
-    tag_select::TagSelect,
-};
-use crate::inbound::{
-    components::{
-        auth::authed::use_authed,
-        catalog_cache::CatalogCache,
-        hint_dialog::use_one_time_hint,
-        screen_header::ScreenHeader,
-        telemetry::{
-            usage_buffer::UsageBuffer,
-            vocabulary::{DeckScreen, Screen, component, screen},
-        },
-    },
-    router::Router,
-};
 use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::{
-        auth::models::session::Session,
-        card::{Card, search_card::card_filter::price_currency::PriceCurrency},
-        deck::{
-            Deck, DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel,
-            deck_profile::DeckProfile, format::Format,
-            requests::update_deck_profile::InvalidUpdateDeckProfile, seed_oracle_tags,
-            seed_oracle_tags_from_catalog,
-        },
-        user::models::hints::HINT_EDIT_DECK,
-    },
-    http::{contracts::deck::HttpUpdateDeckProfile, helpers::Opdate},
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::deck::format::Format;
+use zwipe_core::domain::deck::requests::update_deck_profile::InvalidUpdateDeckProfile;
+use zwipe_core::domain::deck::{
+    Deck, DeckName, DeckOtherTag, DeckTagView, MAX_DECK_ORACLE_TAGS, PowerLevel, seed_oracle_tags,
+    seed_oracle_tags_from_catalog,
 };
+use zwipe_core::domain::user::models::hints::HINT_EDIT_DECK;
+use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
+use zwipe_core::http::helpers::Opdate;
+
+use super::components::deck_fields::{DeckFields, DeckFieldsHint, autofill_named_partner};
+use super::components::format_select::FormatSelect;
+use super::components::oracle_tag_select::OracleTagSelect;
+use super::components::skeletons::EditDeckSkeleton;
+use super::components::swipe_select::{SwipeMode, SwipeSelect};
+use super::components::tag_select::TagSelect;
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::hint_dialog::use_one_time_hint;
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
+use crate::inbound::router::Router;
 
 /// Screen for editing a deck with name and settings.
 /// Snapshot of the format + command-zone state, captured when the format picker

@@ -1,7 +1,8 @@
 //! Query-based deck ownership verification.
 
-use sqlx::{PgPool, query_scalar};
 use std::future::Future;
+
+use sqlx::{PgPool, query_scalar};
 use uuid::Uuid;
 
 /// Checks deck ownership by querying the `decks` table.

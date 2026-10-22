@@ -1,8 +1,10 @@
-use super::flippable_card_image::FlippableCardImage;
-use dioxus::prelude::*;
 use std::time::Duration;
+
+use dioxus::prelude::*;
 use tokio::time::sleep;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
+
+use super::flippable_card_image::FlippableCardImage;
 
 /// Fullscreen image preview overlay with dismiss animation. The payload carries
 /// the face to open on (0 = front) so it lands on whichever side the caller was

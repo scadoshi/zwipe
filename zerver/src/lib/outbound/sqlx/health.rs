@@ -3,10 +3,9 @@
 use anyhow::anyhow;
 use sqlx::query;
 
-use crate::{
-    domain::health::{models::HealthCheckFailed, ports::HealthRepository},
-    outbound::sqlx::postgres::Postgres,
-};
+use crate::domain::health::models::HealthCheckFailed;
+use crate::domain::health::ports::HealthRepository;
+use crate::outbound::sqlx::postgres::Postgres;
 
 impl HealthRepository for Postgres {
     async fn check_database(&self) -> Result<(), HealthCheckFailed> {

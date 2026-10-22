@@ -1,37 +1,33 @@
 //! Decks, their cards, sharing and suppressions.
 
-use crate::{
-    domain::{
-        card::{Card, search_card::card_filter::CardQuery},
-        deck::{
-            Deck,
-            models::{deck_card::DeckCard, deck_profile::DeckProfile, deck_tag::DeckTagView},
-            requests::import_deck_cards::ImportDeckCardsResult,
-        },
-    },
-    http::{
-        contracts::{
-            deck::{
-                HttpClearedSuppressions, HttpCloneDeck, HttpClonedDeck, HttpCreateDeckProfile,
-                HttpDeckCardSearch, HttpDeckShareToken, HttpImportArchidektDeck, HttpSharedDeck,
-                HttpSkipDeckCard, HttpUpdateDeckProfile,
-            },
-            deck_card::{HttpCreateDeckCard, HttpImportDeckCards, HttpPatchDeckCard},
-        },
-        endpoint::{Endpoint, Method},
-        paths::{
-            CREATE_DECK_ROUTE, GET_DECK_PROFILES_ROUTE, GET_DECK_TAGS_ROUTE,
-            clear_deck_suppressions_route, clone_deck_route, create_deck_card_route,
-            delete_deck_card_route, delete_deck_route, get_deck_profile_route, get_deck_route,
-            get_deck_tokens_route, get_shared_deck_route, import_archidekt_deck_route,
-            import_deck_cards_route, search_deck_cards_route, share_deck_route,
-            skip_deck_card_route, unskip_deck_card_route, update_deck_card_route,
-            update_deck_route,
-        },
-    },
-};
 use std::borrow::Cow;
+
 use uuid::Uuid;
+
+use crate::domain::card::Card;
+use crate::domain::card::search_card::card_filter::CardQuery;
+use crate::domain::deck::Deck;
+use crate::domain::deck::models::deck_card::DeckCard;
+use crate::domain::deck::models::deck_profile::DeckProfile;
+use crate::domain::deck::models::deck_tag::DeckTagView;
+use crate::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
+use crate::http::contracts::deck::{
+    HttpClearedSuppressions, HttpCloneDeck, HttpClonedDeck, HttpCreateDeckProfile,
+    HttpDeckCardSearch, HttpDeckShareToken, HttpImportArchidektDeck, HttpSharedDeck,
+    HttpSkipDeckCard, HttpUpdateDeckProfile,
+};
+use crate::http::contracts::deck_card::{
+    HttpCreateDeckCard, HttpImportDeckCards, HttpPatchDeckCard,
+};
+use crate::http::endpoint::{Endpoint, Method};
+use crate::http::paths::{
+    CREATE_DECK_ROUTE, GET_DECK_PROFILES_ROUTE, GET_DECK_TAGS_ROUTE, clear_deck_suppressions_route,
+    clone_deck_route, create_deck_card_route, delete_deck_card_route, delete_deck_route,
+    get_deck_profile_route, get_deck_route, get_deck_tokens_route, get_shared_deck_route,
+    import_archidekt_deck_route, import_deck_cards_route, search_deck_cards_route,
+    share_deck_route, skip_deck_card_route, unskip_deck_card_route, update_deck_card_route,
+    update_deck_route,
+};
 
 /// Every deck profile the user owns.
 pub struct GetDeckProfiles;

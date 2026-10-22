@@ -1,17 +1,13 @@
 //! Service implementation for the metrics domain.
 
 use uuid::Uuid;
-
-use crate::domain::metrics::{
-    models::{
-        errors::MetricsError,
-        kinds::{AuditAction, EventKind},
-        lifetime_counters::LifetimeCounters,
-        public_metrics::PublicMetrics,
-    },
-    ports::{MetricsRepository, MetricsService},
-};
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpCrashReport, HttpUsageBatch};
+
+use crate::domain::metrics::models::errors::MetricsError;
+use crate::domain::metrics::models::kinds::{AuditAction, EventKind};
+use crate::domain::metrics::models::lifetime_counters::LifetimeCounters;
+use crate::domain::metrics::models::public_metrics::PublicMetrics;
+use crate::domain::metrics::ports::{MetricsRepository, MetricsService};
 
 /// Default metrics service.
 #[derive(Debug, Clone)]

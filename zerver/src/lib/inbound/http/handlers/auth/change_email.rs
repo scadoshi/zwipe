@@ -1,14 +1,15 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+use zwipe_core::domain::user::User;
 use zwipe_core::http::contracts::auth::HttpChangeEmail;
 
-use crate::{
-    domain::{
-        auth::requests::change_email::{ChangeEmail, ChangeEmailError, InvalidChangeEmail},
-        metrics::models::kinds::AuditAction,
-    },
-    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
+use crate::domain::auth::requests::change_email::{
+    ChangeEmail, ChangeEmailError, InvalidChangeEmail,
 };
-use zwipe_core::domain::user::User;
+use crate::domain::metrics::models::kinds::AuditAction;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<ChangeEmailError> for ApiError {
     fn from(value: ChangeEmailError) -> Self {

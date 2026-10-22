@@ -1,8 +1,9 @@
 //! Add card to deck operation.
 
-use crate::domain::deck::{Board, InvalidQuantity, Quantity};
 use thiserror::Error;
 use uuid::Uuid;
+
+use crate::domain::deck::{Board, InvalidQuantity, Quantity};
 
 /// Errors that can occur while constructing a [`CreateDeckCard`] request.
 #[derive(Debug, Error)]

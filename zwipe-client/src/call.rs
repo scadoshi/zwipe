@@ -3,12 +3,11 @@
 //! Every endpoint goes through [`ZwipeClient::call`]; the per-endpoint files
 //! describe the call and hold no transport code.
 
-use crate::{ClientError, ZwipeClient};
 use tracing::info;
-use zwipe_core::{
-    domain::auth::models::session::Session,
-    http::endpoint::{Endpoint, Method},
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::endpoint::{Endpoint, Method};
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Sends `endpoint` and decodes its success body.

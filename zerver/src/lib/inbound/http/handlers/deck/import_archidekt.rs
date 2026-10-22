@@ -7,30 +7,19 @@
 //! Keeping fetch + parse server-side means the (undocumented) Archidekt shape
 //! can be patched without an app release.
 
-use axum::{
-    Json,
-    extract::{Path, State},
-    http::StatusCode,
-};
+use axum::Json;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use uuid::Uuid;
+use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
+use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
+use zwipe_core::domain::user::requests::get_user::GetUser;
+use zwipe_core::http::contracts::deck::HttpImportArchidektDeck;
 
-use zwipe_core::{
-    domain::{
-        deck::requests::{
-            get_deck_profile::GetDeckProfile, import_deck_cards::ImportDeckCardsResult,
-        },
-        user::requests::get_user::GetUser,
-    },
-    http::contracts::deck::HttpImportArchidektDeck,
-};
-
-use crate::{
-    inbound::http::{
-        ApiError, AppState, To500, handlers::metrics::check_completion::check_deck_completion,
-        middleware::AuthenticatedUser,
-    },
-    outbound::archidekt::{ArchidektClient, ArchidektError},
-};
+use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
+use crate::outbound::archidekt::{ArchidektClient, ArchidektError};
 
 impl From<ArchidektError> for ApiError {
     fn from(value: ArchidektError) -> Self {

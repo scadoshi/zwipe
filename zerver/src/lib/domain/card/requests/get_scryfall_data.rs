@@ -1,10 +1,9 @@
 use serde::Deserialize;
 use thiserror::Error;
 use uuid::Uuid;
-use zwipe_core::domain::{
-    card::{card_profile::CardProfile, scryfall_data::ScryfallData},
-    deck::DeckCard,
-};
+use zwipe_core::domain::card::card_profile::CardProfile;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::deck::DeckCard;
 
 /// Errors that can occur when retrieving Scryfall data.
 #[derive(Debug, Error)]

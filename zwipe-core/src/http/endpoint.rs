@@ -7,8 +7,10 @@
 //!
 //! Transport lives in the client, not here; core stays free of reqwest.
 
-use serde::{Serialize, de::DeserializeOwned};
 use std::borrow::Cow;
+
+use serde::Serialize;
+use serde::de::DeserializeOwned;
 
 /// HTTP methods the API uses. Defined here so core needs no `http` dependency.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

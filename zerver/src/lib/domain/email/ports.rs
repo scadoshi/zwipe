@@ -1,7 +1,8 @@
 //! [`EmailSender`] outbound port for email delivery.
 
-use crate::domain::email::models::{SendEmail, SendEmailError};
 use std::future::Future;
+
+use crate::domain::email::models::{SendEmail, SendEmailError};
 
 /// Outbound port for sending transactional email.
 ///

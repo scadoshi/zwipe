@@ -1,9 +1,9 @@
 //! Pre-auth funnel event POST (no auth: there is no user yet).
 
+use zwipe_core::http::contracts::metrics::HttpAnonymousEvent;
+use zwipe_core::http::endpoints::metrics::RecordAnonymousEvent;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::http::{
-    contracts::metrics::HttpAnonymousEvent, endpoints::metrics::RecordAnonymousEvent,
-};
 
 impl ZwipeClient {
     /// Posts a pre-auth funnel event.

@@ -1,35 +1,3 @@
-use crate::inbound::{
-    components::{
-        accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
-        catalog_cache::CatalogCache,
-        hint_dialog::{HintColored, HintDialog, open_and_record_hint},
-        hint_host::HintTopic,
-        info_button::InfoButton,
-    },
-    screens::{
-        deck::card::filter::{
-            artist::Artist,
-            card_role::CardRole,
-            combat::Combat,
-            config::Config,
-            flavor_text::FlavorText,
-            format::FormatFilter,
-            mana::Mana,
-            match_mode::MatchMode,
-            name::Name,
-            oracle_tags::{
-                OracleTags, read_excluded, read_selected, write_excluded, write_selected,
-            },
-            oracle_text::OracleText,
-            price::PriceFilter,
-            rarity::Rarity,
-            set::Set,
-            sort::Sort,
-            types::Types,
-        },
-        oracle_tag_dictionary::OracleTagDictionary,
-    },
-};
 use components::{
     ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintKey, TOAST_NORMAL, TOAST_QUICK,
     use_overlay_back,
@@ -37,11 +5,37 @@ use components::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::{
-    auth::models::session::Session,
-    card::search_card::card_filter::{builder::CardQueryBuilder, error::InvalidCardCriteria},
-    user::models::hints::HINT_FILTER,
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriteria;
+use zwipe_core::domain::user::models::hints::HINT_FILTER;
+
+use crate::inbound::components::accordion::{
+    Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 };
+use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::hint_dialog::{HintColored, HintDialog, open_and_record_hint};
+use crate::inbound::components::hint_host::HintTopic;
+use crate::inbound::components::info_button::InfoButton;
+use crate::inbound::screens::deck::card::filter::artist::Artist;
+use crate::inbound::screens::deck::card::filter::card_role::CardRole;
+use crate::inbound::screens::deck::card::filter::combat::Combat;
+use crate::inbound::screens::deck::card::filter::config::Config;
+use crate::inbound::screens::deck::card::filter::flavor_text::FlavorText;
+use crate::inbound::screens::deck::card::filter::format::FormatFilter;
+use crate::inbound::screens::deck::card::filter::mana::Mana;
+use crate::inbound::screens::deck::card::filter::match_mode::MatchMode;
+use crate::inbound::screens::deck::card::filter::name::Name;
+use crate::inbound::screens::deck::card::filter::oracle_tags::{
+    OracleTags, read_excluded, read_selected, write_excluded, write_selected,
+};
+use crate::inbound::screens::deck::card::filter::oracle_text::OracleText;
+use crate::inbound::screens::deck::card::filter::price::PriceFilter;
+use crate::inbound::screens::deck::card::filter::rarity::Rarity;
+use crate::inbound::screens::deck::card::filter::set::Set;
+use crate::inbound::screens::deck::card::filter::sort::Sort;
+use crate::inbound::screens::deck::card::filter::types::Types;
+use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
 /// Newtype so `try_use_context` doesn't collide with other `Signal<bool>`
 /// contexts: a bare `Signal<bool>` lookup here once grabbed the root

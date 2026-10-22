@@ -5,24 +5,18 @@ pub mod error;
 /// Database-to-domain user model conversions.
 pub mod models;
 
-use crate::{
-    domain::user::{
-        models::{
-            get_user::GetUserError,
-            hints::MarkHintShownError,
-            preferences::{GetPreferencesError, UpdatePreferencesError},
-        },
-        ports::UserRepository,
-    },
-    outbound::sqlx::{postgres::Postgres, user::models::DatabaseUser},
-};
 use sqlx::query_as;
 use uuid::Uuid;
-use zwipe_core::domain::user::{
-    User,
-    models::hints::MarkHintShown,
-    preferences::{UpdatePreferences, UserPreferences},
-};
+use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::models::hints::MarkHintShown;
+use zwipe_core::domain::user::preferences::{UpdatePreferences, UserPreferences};
+
+use crate::domain::user::models::get_user::GetUserError;
+use crate::domain::user::models::hints::MarkHintShownError;
+use crate::domain::user::models::preferences::{GetPreferencesError, UpdatePreferencesError};
+use crate::domain::user::ports::UserRepository;
+use crate::outbound::sqlx::postgres::Postgres;
+use crate::outbound::sqlx::user::models::DatabaseUser;
 
 /// Raw database preferences record.
 #[derive(Debug, Clone, sqlx::FromRow)]

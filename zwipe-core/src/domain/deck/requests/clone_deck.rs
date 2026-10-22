@@ -4,10 +4,11 @@
 //! new name, owned by the same caller. Carries everything the service needs
 //! to enforce authorization and the deck-count limit.
 
-use crate::domain::deck::models::deck_name::{DeckName, InvalidDeckname};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
+
+use crate::domain::deck::models::deck_name::{DeckName, InvalidDeckname};
 
 /// Request to clone an existing deck into a new one with a caller-chosen name.
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -4,7 +4,6 @@ pub(crate) mod power;
 pub(crate) mod toughness;
 
 use dioxus::prelude::*;
-
 use power::PowerFilter;
 use toughness::ToughnessFilter;
 

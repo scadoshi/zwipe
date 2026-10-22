@@ -28,10 +28,11 @@
 //! )?;
 //! ```
 
-use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
 use thiserror::Error;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::secret::Secret;
+
+use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
 
 /// Errors that can occur during user deletion execution.
 #[derive(Debug, Error)]
@@ -116,8 +117,9 @@ impl DeleteUser {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use uuid::Uuid;
+
+    use super::*;
 
     #[test]
     fn test_delete_user_new_succeeds() {

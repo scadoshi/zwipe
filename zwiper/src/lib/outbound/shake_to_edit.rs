@@ -16,7 +16,9 @@
 /// main-thread marker or app object just returns.
 #[cfg(target_os = "ios")]
 pub fn disable() {
-    use objc2::{MainThreadMarker, class, msg_send, rc::Retained, runtime::NSObject};
+    use objc2::rc::Retained;
+    use objc2::runtime::NSObject;
+    use objc2::{MainThreadMarker, class, msg_send};
 
     // `sharedApplication` must be used on the main thread. A component's
     // render already runs there, so the marker is available.

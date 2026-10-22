@@ -5,7 +5,8 @@
 //! for platform analytics and targeted comms. Serialized/stored as a lowercase
 //! string (`"ios"`, `"android"`, `"desktop"`, `"web"`).
 
-use std::{fmt, str::FromStr};
+use std::fmt;
+use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 

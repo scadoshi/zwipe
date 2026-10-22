@@ -4,16 +4,16 @@ pub mod preferences;
 pub mod theme;
 pub mod username;
 
+use std::collections::HashMap;
+
+use chrono::{DateTime, Utc};
 pub use email::{Email, InvalidEmail};
 pub use hints::{InvalidHintKey, MarkHintShown};
 pub use preferences::{
     ALLOWED_THEMES, InvalidUpdatePreferences, UpdatePreferences, UserPreferences,
 };
-pub use username::{InvalidUsername, Username};
-
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+pub use username::{InvalidUsername, Username};
 use uuid::Uuid;
 
 /// A public user profile entity.

@@ -28,16 +28,13 @@
 
 use std::str::FromStr;
 
-use crate::domain::{
-    auth::{
-        models::access_token::InvalidJwt,
-        requests::enforce_session_maximum::EnforceSessionMaximumError,
-    },
-    user::models::get_user::GetUserError,
-};
 use thiserror::Error;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
+
+use crate::domain::auth::models::access_token::InvalidJwt;
+use crate::domain::auth::requests::enforce_session_maximum::EnforceSessionMaximumError;
+use crate::domain::user::models::get_user::GetUserError;
 
 /// Validation errors when constructing a [`CreateSession`] request.
 ///

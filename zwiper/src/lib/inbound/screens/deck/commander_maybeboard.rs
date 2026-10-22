@@ -14,57 +14,45 @@
 //! seeds the create screen with that commander (capacity-gated like the deck
 //! list's Create). **Remove** un-maybes an entry in place.
 
-use super::components::swipe_select::{SwipeMode, SwipeSelect};
-use crate::inbound::{
-    components::{
-        auth::authed::use_authed,
-        catalog_cache::CatalogCache,
-        hint_dialog::{HintColored, HintDialog, use_one_time_hint},
-        screen_header::ScreenHeader,
-        telemetry::{
-            usage_buffer::UsageBuffer,
-            vocabulary::{Screen, screen},
-        },
-    },
-    router::Router,
-    screens::{
-        deck::{
-            card::{
-                components::{
-                    card_row::{CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt},
-                    image_preview::ImagePreview,
-                    printing_sheet::PrintingSheet,
-                },
-                filter::card_filter_sheet::CardFilterSheet,
-            },
-            create::CreateDeckCommanderSeed,
-        },
-        oracle_tag_examples::OracleTagExamples,
-    },
-};
+use std::collections::HashSet;
+use std::time::Duration;
+
 use components::{
     ActionBar, AlertDialog, BottomSheet, Button, ButtonVariant, Chip, DialogAction, HintBullet,
     HintBullets, HintKey, HintLine, TOAST_LONG, TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::{collections::HashSet, time::Duration};
 use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::{
-    auth::models::session::Session,
-    card::{
-        Card,
-        scryfall_data::{ScryfallData, colors::Color},
-        search_card::{
-            card_filter::{builder::CardQueryBuilder, card_sort_key::CardSortKey},
-            cards::Cards,
-        },
-    },
-    deck::{deck_profile::DeckProfile, format::Format},
-    user::models::hints::HINT_COMMANDER_MAYBEBOARD,
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::scryfall_data::colors::Color;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+use zwipe_core::domain::card::search_card::cards::Cards;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::deck::format::Format;
+use zwipe_core::domain::user::models::hints::HINT_COMMANDER_MAYBEBOARD;
+
+use super::components::swipe_select::{SwipeMode, SwipeSelect};
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::hint_dialog::{HintColored, HintDialog, use_one_time_hint};
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
+use crate::inbound::router::Router;
+use crate::inbound::screens::deck::card::components::card_row::{
+    CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt,
 };
+use crate::inbound::screens::deck::card::components::image_preview::ImagePreview;
+use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
+use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
+use crate::inbound::screens::deck::create::CreateDeckCommanderSeed;
+use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
 /// Minimum characters before the commander search fires.
 const MIN_QUERY_LEN: usize = 2;

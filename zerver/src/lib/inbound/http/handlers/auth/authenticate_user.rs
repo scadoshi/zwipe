@@ -1,18 +1,16 @@
-use axum::{Json, extract::State, http::StatusCode};
-use zwipe_core::{
-    domain::auth::models::session::Session, http::contracts::auth::HttpAuthenticateUser,
-    version::canonical_version,
-};
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
+use zwipe_core::version::canonical_version;
 
-use crate::{
-    domain::{
-        auth::requests::authenticate_user::{
-            AuthenticateUser, AuthenticateUserError, InvalidAuthenticateUser,
-        },
-        metrics::models::kinds::{AuditAction, EventKind},
-    },
-    inbound::http::{ApiError, AppState, To500, middleware::ClientIp},
+use crate::domain::auth::requests::authenticate_user::{
+    AuthenticateUser, AuthenticateUserError, InvalidAuthenticateUser,
 };
+use crate::domain::metrics::models::kinds::{AuditAction, EventKind};
+use crate::inbound::http::middleware::ClientIp;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<AuthenticateUserError> for ApiError {
     fn from(value: AuthenticateUserError) -> Self {

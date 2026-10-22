@@ -14,13 +14,12 @@
 //! animated ancestor's transform makes it the containing block for
 //! `position: fixed`.
 
-use crate::components::sleep_ms;
 use components::Panel;
 use dioxus::prelude::*;
-use zwipe_core::domain::card::{
-    Card,
-    scryfall_data::{ImageSize, ScryfallData},
-};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
+
+use crate::components::sleep_ms;
 
 /// A real card response (Research Assistant, M15) frozen 2026-08-07, decoded as
 /// the DEBUG-ONLY fallback while the live fetch is pending or failing, so

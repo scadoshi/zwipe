@@ -2,10 +2,13 @@
 //!
 //! Ensures deck names meet content and length requirements before storage.
 
-use crate::domain::moderation::ContainsBadWord;
+use std::fmt::Display;
+use std::ops::Deref;
+
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, ops::Deref};
 use thiserror::Error;
+
+use crate::domain::moderation::ContainsBadWord;
 
 /// Errors that occur when constructing an invalid deck name.
 #[derive(Debug, Error)]

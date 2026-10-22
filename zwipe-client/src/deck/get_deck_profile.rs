@@ -1,11 +1,11 @@
 //! Fetch a single deck profile (metadata only).
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::{
-    domain::{auth::models::session::Session, deck::deck_profile::DeckProfile},
-    http::endpoints::deck::GetDeckProfile,
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::http::endpoints::deck::GetDeckProfile;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Fetches deck metadata without cards.

@@ -4,10 +4,11 @@
 //! required at startup. Missing or invalid values cause immediate failure
 //! with descriptive error messages.
 
-use crate::domain::auth::models::access_token::JwtSecret;
 use anyhow::Context;
 use axum::http::HeaderValue;
 use chrono::Duration;
+
+use crate::domain::auth::models::access_token::JwtSecret;
 
 /// Environment variable key for the JWT signing secret.
 const JWT_SECRET_KEY: &str = "JWT_SECRET";

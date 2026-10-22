@@ -41,12 +41,11 @@
 //! stored_hash.verify(&provided)?; // Returns Ok(()) if matches
 //! ```
 
-use argon2::{
-    Argon2, PasswordHasher, PasswordVerifier,
-    password_hash::{self, SaltString, rand_core::OsRng},
-};
 use std::fmt::Display;
 
+use argon2::password_hash::rand_core::OsRng;
+use argon2::password_hash::{self, SaltString};
+use argon2::{Argon2, PasswordHasher, PasswordVerifier};
 use zwipe_core::domain::auth::password::InvalidPassword;
 
 /// A validated password that meets all security policy requirements.

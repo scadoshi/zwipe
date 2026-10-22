@@ -14,7 +14,8 @@ mod common;
 use axum::http::{Method as HttpMethod, StatusCode};
 use common::TestApp;
 use uuid::Uuid;
-use zwipe_core::http::{endpoint::Method, paths::*};
+use zwipe_core::http::endpoint::Method;
+use zwipe_core::http::paths::*;
 
 fn http_method(method: Method) -> HttpMethod {
     match method {

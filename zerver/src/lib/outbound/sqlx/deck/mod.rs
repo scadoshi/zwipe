@@ -7,46 +7,40 @@ pub mod helper;
 /// Database-to-domain deck model conversions.
 pub mod models;
 
-use crate::{
-    domain::deck::{
-        models::{
-            deck::{
-                clear_deck_suppressions::ClearDeckSuppressionsError, clone_deck::CloneDeckError,
-                commander_maybeboard::CommanderMaybeboardError,
-                create_deck_profile::CreateDeckProfileError, delete_deck::DeleteDeckError,
-                get_deck_profile::GetDeckProfileError, share_deck::ShareDeckError,
-                skip_deck_card::SkipDeckCardError, update_deck_profile::UpdateDeckProfileError,
-            },
-            deck_card::{
-                create_deck_card::CreateDeckCardError, delete_deck_card::DeleteDeckCardError,
-                get_deck_card::GetDeckCardError, import_deck_cards::ImportDeckCardsError,
-                update_deck_card::UpdateDeckCardError,
-            },
-        },
-        ports::DeckRepository,
-    },
-    outbound::sqlx::{
-        deck::{
-            error::{IntoDeckCardError, IntoDeckProfileError},
-            helper::OwnsDeck,
-            models::{DatabaseDeckCard, DatabaseDeckProfile},
-        },
-        postgres::Postgres,
-    },
-};
 use sqlx::{QueryBuilder, query, query_as, query_scalar};
-use zwipe_core::domain::deck::{
-    Board, DeckCard, DeckName, DeckOtherTag, DeckTag,
-    deck_profile::DeckProfile,
-    requests::{
-        clear_deck_suppressions::ClearDeckSuppressions,
-        commander_maybeboard::CommanderMaybeboardCard, create_deck_card::CreateDeckCard,
-        create_deck_profile::CreateDeckProfile, delete_deck::DeleteDeck,
-        delete_deck_card::DeleteDeckCard, get_deck_profile::GetDeckProfile,
-        get_deck_profiles::GetDeckProfiles, skip_deck_card::SkipDeckCard,
-        update_deck_card::UpdateDeckCard, update_deck_profile::UpdateDeckProfile,
-    },
-};
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::deck::requests::clear_deck_suppressions::ClearDeckSuppressions;
+use zwipe_core::domain::deck::requests::commander_maybeboard::CommanderMaybeboardCard;
+use zwipe_core::domain::deck::requests::create_deck_card::CreateDeckCard;
+use zwipe_core::domain::deck::requests::create_deck_profile::CreateDeckProfile;
+use zwipe_core::domain::deck::requests::delete_deck::DeleteDeck;
+use zwipe_core::domain::deck::requests::delete_deck_card::DeleteDeckCard;
+use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
+use zwipe_core::domain::deck::requests::get_deck_profiles::GetDeckProfiles;
+use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
+use zwipe_core::domain::deck::requests::update_deck_card::UpdateDeckCard;
+use zwipe_core::domain::deck::requests::update_deck_profile::UpdateDeckProfile;
+use zwipe_core::domain::deck::{Board, DeckCard, DeckName, DeckOtherTag, DeckTag};
+
+use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError;
+use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
+use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
+use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
+use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
+use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
+use crate::domain::deck::models::deck::share_deck::ShareDeckError;
+use crate::domain::deck::models::deck::skip_deck_card::SkipDeckCardError;
+use crate::domain::deck::models::deck::update_deck_profile::UpdateDeckProfileError;
+use crate::domain::deck::models::deck_card::create_deck_card::CreateDeckCardError;
+use crate::domain::deck::models::deck_card::delete_deck_card::DeleteDeckCardError;
+use crate::domain::deck::models::deck_card::get_deck_card::GetDeckCardError;
+use crate::domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsError;
+use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError;
+use crate::domain::deck::ports::DeckRepository;
+use crate::outbound::sqlx::deck::error::{IntoDeckCardError, IntoDeckProfileError};
+use crate::outbound::sqlx::deck::helper::OwnsDeck;
+use crate::outbound::sqlx::deck::models::{DatabaseDeckCard, DatabaseDeckProfile};
+use crate::outbound::sqlx::postgres::Postgres;
 
 /// Per-deck ceiling on suppression rows, enforced at ingest by evicting the
 /// oldest `suppressed_at` beyond it.

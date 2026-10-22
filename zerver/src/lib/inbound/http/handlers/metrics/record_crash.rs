@@ -1,7 +1,9 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+use zwipe_core::http::contracts::metrics::HttpCrashReport;
 
 use crate::inbound::http::{ApiError, AppState};
-use zwipe_core::http::contracts::metrics::HttpCrashReport;
 
 /// Stores one crash report (no auth: the next launch after a crash may have
 /// no session, and a crash in the auth flow must still be reportable).

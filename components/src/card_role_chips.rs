@@ -14,8 +14,9 @@
 //! reveal is nested inside the role reveal, so collapsing the role hides it and
 //! reopening the role restores it (its open state persists, like the keywords).
 
-use dioxus::prelude::*;
 use std::collections::BTreeMap;
+
+use dioxus::prelude::*;
 use zwipe_core::domain::card::card_role::role_label;
 
 /// Card roles as chips; expandable to their grouped oracle tags, plus an "Other

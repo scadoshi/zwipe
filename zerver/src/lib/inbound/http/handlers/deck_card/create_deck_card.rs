@@ -1,23 +1,15 @@
-use axum::{
-    Json,
-    extract::{Path, State},
-    http::StatusCode,
-};
-use zwipe_core::{
-    domain::user::requests::get_user::GetUser, http::contracts::deck_card::HttpCreateDeckCard,
-};
+use axum::Json;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
+use zwipe_core::domain::deck::DeckCard;
+use zwipe_core::domain::deck::requests::create_deck_card::{CreateDeckCard, InvalidCreateDeckCard};
+use zwipe_core::domain::user::requests::get_user::GetUser;
+use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 
-use crate::{
-    domain::deck::models::deck_card::create_deck_card::CreateDeckCardError,
-    inbound::http::{
-        ApiError, AppState, To500, handlers::metrics::check_completion::check_deck_completion,
-        middleware::AuthenticatedUser,
-    },
-};
-use zwipe_core::domain::deck::{
-    DeckCard,
-    requests::create_deck_card::{CreateDeckCard, InvalidCreateDeckCard},
-};
+use crate::domain::deck::models::deck_card::create_deck_card::CreateDeckCardError;
+use crate::inbound::http::handlers::metrics::check_completion::check_deck_completion;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<CreateDeckCardError> for ApiError {
     fn from(value: CreateDeckCardError) -> Self {

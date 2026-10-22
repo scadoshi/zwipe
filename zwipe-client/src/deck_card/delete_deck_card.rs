@@ -1,8 +1,10 @@
 //! Remove a card from a deck.
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::{domain::auth::models::session::Session, http::endpoints::deck::DeleteDeckCard};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::endpoints::deck::DeleteDeckCard;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Removes cards from a deck.

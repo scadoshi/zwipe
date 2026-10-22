@@ -1,14 +1,11 @@
 //! Post a single durable skip (and its undo) for a deck.
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::{
-    domain::auth::models::session::Session,
-    http::{
-        contracts::deck::HttpSkipDeckCard,
-        endpoints::deck::{SkipDeckCard, UnskipDeckCard},
-    },
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::deck::HttpSkipDeckCard;
+use zwipe_core::http::endpoints::deck::{SkipDeckCard, UnskipDeckCard};
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Posts a single deck-card skip.

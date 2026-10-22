@@ -1,10 +1,11 @@
-use crate::inbound::components::catalog_cache::CatalogCache;
 use components::{
     ActionButton, AlertDialog, Button, ButtonVariant, CardDetails, DialogAction, card_face_count,
 };
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
+
+use crate::inbound::components::catalog_cache::CatalogCache;
 
 /// Displays card metadata: prices, set, release date, artist. The card's oracle
 /// text and stats live in [`CardDetailsDialog`], opened from the header eyeball.

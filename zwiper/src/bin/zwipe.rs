@@ -2,16 +2,11 @@ use components::{DialogHostView, ThemeConfig, ToastStack, use_dialog_host};
 use dioxus::prelude::*;
 use tracing_subscriber::EnvFilter;
 use zwipe_core::domain::logo;
-use zwiper::{
-    config::Config,
-    inbound::{
-        components::{
-            auth::session_upkeep::spawn_upkeeper, hint_host::HintHost,
-            update_required::UpdateRequired,
-        },
-        router::Router,
-    },
-};
+use zwiper::config::Config;
+use zwiper::inbound::components::auth::session_upkeep::spawn_upkeeper;
+use zwiper::inbound::components::hint_host::HintHost;
+use zwiper::inbound::components::update_required::UpdateRequired;
+use zwiper::inbound::router::Router;
 
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");

@@ -5,17 +5,15 @@
 
 use std::future::Future;
 
-use crate::domain::auth::requests::{
-    create_session::CreateSessionError, enforce_session_maximum::EnforceSessionMaximumError,
-};
 use chrono::{DateTime, Utc};
 use sqlx::{PgTransaction, query};
 use uuid::Uuid;
-use zwipe_core::domain::auth::models::{
-    platform::ClientPlatform,
-    refresh_token::{RefreshToken, Sha256Hash},
-    session::MAXIMUM_SESSION_COUNT,
-};
+use zwipe_core::domain::auth::models::platform::ClientPlatform;
+use zwipe_core::domain::auth::models::refresh_token::{RefreshToken, Sha256Hash};
+use zwipe_core::domain::auth::models::session::MAXIMUM_SESSION_COUNT;
+
+use crate::domain::auth::requests::create_session::CreateSessionError;
+use crate::domain::auth::requests::enforce_session_maximum::EnforceSessionMaximumError;
 
 /// The chain of refresh tokens that one login produces.
 ///

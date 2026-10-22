@@ -387,11 +387,12 @@ impl DeckSkipDelta {
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
+
     use super::{
         AnonymousEventKind, CardSignalDelta, ClientErrorReport, CommanderSelectDelta,
         DeckSkipDelta, HttpAnonymousEvent, HttpCrashReport, HttpUsageBatch,
     };
-    use uuid::Uuid;
 
     #[test]
     fn anonymous_kind_wire_form_matches_db_string() {

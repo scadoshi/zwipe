@@ -23,9 +23,10 @@ use std::collections::BTreeSet;
 use common::{card, seed_cards};
 use serde_json::{Value, json};
 use uuid::Uuid;
-
-use zwipe::{domain::card::ports::CardRepository, outbound::sqlx::postgres::Postgres};
-use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
+use zwipe::domain::card::ports::CardRepository;
+use zwipe::outbound::sqlx::postgres::Postgres;
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 
 /// Build a `CardQuery` from a flat criteria object, forcing a high limit so the
 /// SQL side never truncates below the predicate side.

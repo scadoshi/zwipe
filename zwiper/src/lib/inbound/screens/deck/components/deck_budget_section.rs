@@ -8,10 +8,9 @@
 //! [`CollapsibleSection`](super::collapsible_section::CollapsibleSection).
 
 use dioxus::prelude::*;
-use zwipe_core::domain::{
-    card::search_card::card_filter::price_currency::PriceCurrency,
-    deck::{deck_metrics::DeckMetrics, deck_profile::DeckProfile},
-};
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
 
 /// Whether the deck has any budget-relevant field to show: a price target set,
 /// or live metrics (which carry the running prices).

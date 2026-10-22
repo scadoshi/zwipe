@@ -4,8 +4,9 @@
 //! identifies a funnel attempt, not a person or an install. Posts are
 //! fire-and-forget: a failed send is logged and dropped, never surfaced.
 
-use dioxus::prelude::*;
 use std::sync::LazyLock;
+
+use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpAnonymousEvent};

@@ -5,15 +5,15 @@
 //! - [`JwtValidate`]: Extension trait for JWT signature verification
 //! - [`AccessTokenExt`]: Extension trait for token generation
 
-use zwipe_core::domain::auth::models::access_token::{
-    AccessToken, InvalidJwt as CoreInvalidJwt, Jwt, UserClaims,
-};
+use std::str::FromStr;
 
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 use thiserror::Error;
+use zwipe_core::domain::auth::models::access_token::{
+    AccessToken, InvalidJwt as CoreInvalidJwt, Jwt, UserClaims,
+};
 use zwipe_core::domain::user::User;
 
 // == errors ==
@@ -183,10 +183,13 @@ impl<'de> Deserialize<'de> for InvalidJwt {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::str::FromStr;
+
     use uuid::Uuid;
-    use zwipe_core::domain::{Email, user::username::Username};
+    use zwipe_core::domain::Email;
+    use zwipe_core::domain::user::username::Username;
+
+    use super::*;
 
     const LIFETIME: Duration = Duration::hours(24);
 

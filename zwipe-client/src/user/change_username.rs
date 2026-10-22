@@ -1,10 +1,11 @@
 //! Change username endpoint.
 
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::user::User;
+use zwipe_core::http::contracts::auth::HttpChangeUsername;
+use zwipe_core::http::endpoints::user::ChangeUsername;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::{auth::models::session::Session, user::User},
-    http::{contracts::auth::HttpChangeUsername, endpoints::user::ChangeUsername},
-};
 
 impl ZwipeClient {
     /// Updates usernames.

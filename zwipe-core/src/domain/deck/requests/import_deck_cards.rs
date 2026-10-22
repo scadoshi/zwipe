@@ -4,9 +4,10 @@
 //! resolves card names against the database, and bulk-inserts matched cards.
 //! Supports `// Sideboard` and `// Maybeboard` section headers.
 
-use crate::domain::deck::{Board, ImportMode};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use crate::domain::deck::{Board, ImportMode};
 
 /// A parsed line from import text.
 #[derive(Debug, Clone)]

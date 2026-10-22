@@ -2,7 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::auth::models::{platform::ClientPlatform, secret::Secret};
+use crate::domain::auth::models::platform::ClientPlatform;
+use crate::domain::auth::models::secret::Secret;
 
 /// Login request body.
 ///

@@ -4,9 +4,10 @@
 //! - Token status (whether this is a token vs. real card)
 //! - Timestamps (when card was added/updated in database)
 
+use std::collections::BTreeMap;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 use uuid::Uuid;
 
 /// Application metadata for a card.

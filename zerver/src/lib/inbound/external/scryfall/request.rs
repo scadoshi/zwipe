@@ -2,10 +2,8 @@
 //! User-Agent and Accept headers Scryfall expects.
 
 use anyhow::Context;
-use reqwest::{
-    Client, RequestBuilder, Response,
-    header::{ACCEPT, USER_AGENT},
-};
+use reqwest::header::{ACCEPT, USER_AGENT};
+use reqwest::{Client, RequestBuilder, Response};
 use serde::Deserialize;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 

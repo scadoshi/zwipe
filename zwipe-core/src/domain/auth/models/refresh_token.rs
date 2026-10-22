@@ -136,8 +136,9 @@ impl FromStr for UnvalidatedRefreshToken {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::str::FromStr;
+
+    use super::*;
 
     #[test]
     fn test_refresh_token_generate_produces_64_char_hex_value() {

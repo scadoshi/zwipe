@@ -1,11 +1,13 @@
 //! Get user preferences handler.
 
-use crate::{
-    domain::user::models::preferences::GetPreferencesError,
-    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
-};
-use axum::{Json, extract::State, http::StatusCode};
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
 use zwipe_core::domain::user::preferences::UserPreferences;
+
+use crate::domain::user::models::preferences::GetPreferencesError;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<GetPreferencesError> for ApiError {
     fn from(value: GetPreferencesError) -> Self {

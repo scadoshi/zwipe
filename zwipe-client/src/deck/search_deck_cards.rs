@@ -4,15 +4,13 @@
 //! server excludes cards already in the deck (any board, plus profile slots)
 //! and defaults to synergy ordering when no explicit sort is set.
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::{
-    domain::{
-        auth::models::session::Session,
-        card::{Card, search_card::card_filter::CardQuery},
-    },
-    http::endpoints::deck::SearchDeckCards,
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::http::endpoints::deck::SearchDeckCards;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Deck-aware card search.

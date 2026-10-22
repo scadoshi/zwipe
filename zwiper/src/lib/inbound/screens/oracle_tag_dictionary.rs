@@ -10,14 +10,6 @@
 //! startup, 1-day TTL, stale-while-revalidate), the same copy the oracle-tag
 //! picker and card filter read: one fetch of the ~4,500-row list per session.
 
-use crate::inbound::{
-    components::{
-        catalog_cache::{CatalogCache, CatalogCell},
-        hint_dialog::{HintColored, HintDialog, use_one_time_hint},
-        screen_header::ScreenHeader,
-    },
-    screens::oracle_tag_examples::OracleTagExamples,
-};
 use components::{
     ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintKey, TOAST_NORMAL,
     use_overlay_back,
@@ -25,10 +17,13 @@ use components::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::{
-    card::oracle_tag::{OracleTag, search_oracle_tags},
-    user::models::hints::HINT_ORACLE_TAG_DICTIONARY,
-};
+use zwipe_core::domain::card::oracle_tag::{OracleTag, search_oracle_tags};
+use zwipe_core::domain::user::models::hints::HINT_ORACLE_TAG_DICTIONARY;
+
+use crate::inbound::components::catalog_cache::{CatalogCache, CatalogCell};
+use crate::inbound::components::hint_dialog::{HintColored, HintDialog, use_one_time_hint};
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
 /// Cap on how many rows a search renders, so a broad query can't mount thousands
 /// of DOM nodes. Matches are ranked (exact, then slug/label, then description)

@@ -1,11 +1,11 @@
 //! Clear a deck's suppression set (skipped/removed cards).
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::{
-    domain::auth::models::session::Session,
-    http::{contracts::deck::HttpClearedSuppressions, endpoints::deck::ClearDeckSuppressions},
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::deck::HttpClearedSuppressions;
+use zwipe_core::http::endpoints::deck::ClearDeckSuppressions;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Clears a deck's suppression set.

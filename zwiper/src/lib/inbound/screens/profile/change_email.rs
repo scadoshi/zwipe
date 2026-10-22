@@ -1,20 +1,16 @@
 //! Change email bottom sheet.
 
-use crate::{
-    domain::error::UserFacing,
-    inbound::components::{
-        auth::authed::use_authed,
-        fields::text_input::TextInput,
-        telemetry::vocabulary::{ProfileScreen, Screen},
-    },
-};
 use components::{BottomSheet, Button, ButtonVariant, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_core::{
-    domain::{Email, auth::models::session::Session},
-    http::contracts::auth::HttpChangeEmail,
-};
+use zwipe_core::domain::Email;
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::auth::HttpChangeEmail;
+
+use crate::domain::error::UserFacing;
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::fields::text_input::TextInput;
+use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
 
 /// Bottom sheet for updating the user's email address.
 #[component]

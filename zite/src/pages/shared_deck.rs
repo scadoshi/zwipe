@@ -1,39 +1,28 @@
-use crate::{
-    Footer, Nav, api,
-    components::{PageMeta, sleep_ms},
-};
+use std::collections::{HashMap, HashSet};
+
 use components::{
     CardRow as SharedCardRow, Chip, DeckCharts, DrawOdds, FlippableCardImage, ManaCurve,
     ManaFulfillment, Panel,
 };
 use dioxus::prelude::*;
-use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 use zwipe_client::ClientError;
-use zwipe_core::{
-    domain::{
-        card::{
-            Card,
-            oracle_tag::OracleTag,
-            scryfall_data::{ImageSize, ScryfallData, colors::Color},
-            search_card::{
-                card_filter::{
-                    builder::CardQueryBuilder, card_sort_key::CardSortKey,
-                    price_currency::PriceCurrency,
-                },
-                card_type::CardType,
-                cards::Cards,
-                group_cards::{GroupByOption, GroupCards},
-            },
-        },
-        deck::{
-            Board, DeckEntry,
-            deck_metrics::{DeckMetrics, mainboard_total_price},
-            deck_tag_label,
-        },
-    },
-    http::contracts::deck::HttpSharedDeck,
-};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::oracle_tag::OracleTag;
+use zwipe_core::domain::card::scryfall_data::colors::Color;
+use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::card::search_card::card_type::CardType;
+use zwipe_core::domain::card::search_card::cards::Cards;
+use zwipe_core::domain::card::search_card::group_cards::{GroupByOption, GroupCards};
+use zwipe_core::domain::deck::deck_metrics::{DeckMetrics, mainboard_total_price};
+use zwipe_core::domain::deck::{Board, DeckEntry, deck_tag_label};
+use zwipe_core::http::contracts::deck::HttpSharedDeck;
+
+use crate::components::{PageMeta, sleep_ms};
+use crate::{Footer, Nav, api};
 
 /// How a shared-deck fetch can fail, from the reader's point of view.
 #[derive(Clone, PartialEq)]

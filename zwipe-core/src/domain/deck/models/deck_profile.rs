@@ -1,11 +1,11 @@
 //! Deck metadata (profile without cards).
 
-use crate::domain::{
-    card::search_card::card_filter::price_currency::PriceCurrency,
-    deck::{DeckName, DeckOtherTag, PowerLevel, format::Format},
-};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use crate::domain::deck::format::Format;
+use crate::domain::deck::{DeckName, DeckOtherTag, PowerLevel};
 
 /// Deck metadata without card list.
 #[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]

@@ -1,21 +1,16 @@
 //! Commander maybeboard handlers (per-user "maybe this commander" list).
 
-use axum::{
-    Json,
-    extract::{Path, State},
-    http::StatusCode,
+use axum::Json;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::deck::requests::commander_maybeboard::{
+    CommanderMaybeboardCard, InvalidCommanderMaybeboardCard,
 };
 
-use crate::{
-    domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError,
-    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
-};
-use zwipe_core::domain::{
-    card::Card,
-    deck::requests::commander_maybeboard::{
-        CommanderMaybeboardCard, InvalidCommanderMaybeboardCard,
-    },
-};
+use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<CommanderMaybeboardError> for ApiError {
     fn from(value: CommanderMaybeboardError) -> Self {

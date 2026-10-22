@@ -1,15 +1,13 @@
-use crate::{
-    domain::card::requests::{
-        create_card::CreateCardError,
-        get_artists::GetArtistsError,
-        get_card_profile::GetCardProfileError,
-        get_card_types::GetCardTypesError,
-        get_languages::GetLanguagesError,
-        get_scryfall_data::{GetScryfallDataError, SearchScryfallDataError},
-        get_sets::GetSetsError,
-    },
-    outbound::sqlx::postgres::IsConstraintViolation,
+use crate::domain::card::requests::create_card::CreateCardError;
+use crate::domain::card::requests::get_artists::GetArtistsError;
+use crate::domain::card::requests::get_card_profile::GetCardProfileError;
+use crate::domain::card::requests::get_card_types::GetCardTypesError;
+use crate::domain::card::requests::get_languages::GetLanguagesError;
+use crate::domain::card::requests::get_scryfall_data::{
+    GetScryfallDataError, SearchScryfallDataError,
 };
+use crate::domain::card::requests::get_sets::GetSetsError;
+use crate::outbound::sqlx::postgres::IsConstraintViolation;
 
 impl From<sqlx::Error> for CreateCardError {
     fn from(value: sqlx::Error) -> Self {

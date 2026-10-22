@@ -1,80 +1,85 @@
 //! Route definitions and path constants shared between frontend and backend.
 
-use crate::{
-    domain::auth::models::access_token::JwtSecret,
-    inbound::http::{
-        AppState,
-        handlers::{
-            auth::{
-                authenticate_user::authenticate_user, change_email::change_email,
-                change_password::change_password, change_username::change_username,
-                delete_user::delete_user, refresh_session::refresh_session,
-                register_user::register_user, request_password_reset::request_password_reset,
-                resend_verification::resend_verification, reset_password::reset_password,
-                revoke_sessions::revoke_sessions, verify_email::verify_email,
-            },
-            card::{
-                featured_flavor::get_featured_flavor, get_artists::get_artists, get_card::get_card,
-                get_card_roles::get_card_roles, get_card_types::get_card_types,
-                get_keyword_reminders::get_keyword_reminders, get_keywords::get_keywords,
-                get_languages::get_languages, get_oracle_tags::get_oracle_tags,
-                get_oracle_words::get_oracle_words, get_printings::get_printings,
-                get_sets::get_sets, get_ub_franchises::get_ub_franchises,
-                search_card::search_cards, search_commanders::search_commanders,
-            },
-            changelog::get_changelog,
-            client::get_min_client_version,
-            deck::{
-                clear_deck_suppressions::clear_deck_suppressions,
-                clone_deck::clone_deck,
-                create_deck_profile::create_deck_profile,
-                delete_deck::delete_deck,
-                get_deck::get_deck,
-                get_deck_profile::get_deck_profile,
-                get_deck_profiles::get_deck_profiles,
-                get_deck_tags::get_deck_tags,
-                get_deck_tokens::get_deck_tokens,
-                get_shared_deck::get_shared_deck,
-                import_archidekt::import_archidekt_deck,
-                search_deck_cards::search_deck_cards,
-                share_deck::{share_deck, unshare_deck},
-                skip_deck_card::{skip_deck_card, unskip_deck_card},
-                update_deck_profile::update_deck_profile,
-            },
-            deck_card::{
-                create_deck_card::create_deck_card, delete_deck_card::delete_deck_card,
-                import_deck_cards::import_deck_cards, patch_deck_card::patch_deck_card,
-            },
-            health::{are_server_and_database_running, is_server_running, root},
-            metrics::{
-                get_my_metrics::get_my_metrics, get_public_metrics::get_public_metrics,
-                record_anonymous_event::record_anonymous_event, record_crash::record_crash,
-                record_usage::record_usage,
-            },
-            user::{
-                commander_maybeboard::{
-                    add_commander_maybeboard_card, clear_commander_maybeboard,
-                    get_commander_maybeboard, remove_commander_maybeboard_card,
-                },
-                get_preferences::get_preferences,
-                get_user::get_user,
-                mark_hint_shown::mark_hint_shown,
-                update_preferences::update_preferences,
-            },
-        },
-        middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtractor},
-    },
-};
-use axum::{
-    Router,
-    body::Body,
-    extract::DefaultBodyLimit,
-    http::{HeaderMap, HeaderValue, Response, StatusCode, header},
-    routing::{delete, get, patch, post},
-};
-use std::{sync::Arc, time::Duration};
-use tower_governor::{GovernorLayer, errors::GovernorError, governor::GovernorConfigBuilder};
+use std::sync::Arc;
+use std::time::Duration;
+
+use axum::Router;
+use axum::body::Body;
+use axum::extract::DefaultBodyLimit;
+use axum::http::{HeaderMap, HeaderValue, Response, StatusCode, header};
+use axum::routing::{delete, get, patch, post};
+use tower_governor::GovernorLayer;
+use tower_governor::errors::GovernorError;
+use tower_governor::governor::GovernorConfigBuilder;
 use tower_http::set_header::SetResponseHeaderLayer;
+
+use crate::domain::auth::models::access_token::JwtSecret;
+use crate::inbound::http::AppState;
+use crate::inbound::http::handlers::auth::authenticate_user::authenticate_user;
+use crate::inbound::http::handlers::auth::change_email::change_email;
+use crate::inbound::http::handlers::auth::change_password::change_password;
+use crate::inbound::http::handlers::auth::change_username::change_username;
+use crate::inbound::http::handlers::auth::delete_user::delete_user;
+use crate::inbound::http::handlers::auth::refresh_session::refresh_session;
+use crate::inbound::http::handlers::auth::register_user::register_user;
+use crate::inbound::http::handlers::auth::request_password_reset::request_password_reset;
+use crate::inbound::http::handlers::auth::resend_verification::resend_verification;
+use crate::inbound::http::handlers::auth::reset_password::reset_password;
+use crate::inbound::http::handlers::auth::revoke_sessions::revoke_sessions;
+use crate::inbound::http::handlers::auth::verify_email::verify_email;
+use crate::inbound::http::handlers::card::featured_flavor::get_featured_flavor;
+use crate::inbound::http::handlers::card::get_artists::get_artists;
+use crate::inbound::http::handlers::card::get_card::get_card;
+use crate::inbound::http::handlers::card::get_card_roles::get_card_roles;
+use crate::inbound::http::handlers::card::get_card_types::get_card_types;
+use crate::inbound::http::handlers::card::get_keyword_reminders::get_keyword_reminders;
+use crate::inbound::http::handlers::card::get_keywords::get_keywords;
+use crate::inbound::http::handlers::card::get_languages::get_languages;
+use crate::inbound::http::handlers::card::get_oracle_tags::get_oracle_tags;
+use crate::inbound::http::handlers::card::get_oracle_words::get_oracle_words;
+use crate::inbound::http::handlers::card::get_printings::get_printings;
+use crate::inbound::http::handlers::card::get_sets::get_sets;
+use crate::inbound::http::handlers::card::get_ub_franchises::get_ub_franchises;
+use crate::inbound::http::handlers::card::search_card::search_cards;
+use crate::inbound::http::handlers::card::search_commanders::search_commanders;
+use crate::inbound::http::handlers::changelog::get_changelog;
+use crate::inbound::http::handlers::client::get_min_client_version;
+use crate::inbound::http::handlers::deck::clear_deck_suppressions::clear_deck_suppressions;
+use crate::inbound::http::handlers::deck::clone_deck::clone_deck;
+use crate::inbound::http::handlers::deck::create_deck_profile::create_deck_profile;
+use crate::inbound::http::handlers::deck::delete_deck::delete_deck;
+use crate::inbound::http::handlers::deck::get_deck::get_deck;
+use crate::inbound::http::handlers::deck::get_deck_profile::get_deck_profile;
+use crate::inbound::http::handlers::deck::get_deck_profiles::get_deck_profiles;
+use crate::inbound::http::handlers::deck::get_deck_tags::get_deck_tags;
+use crate::inbound::http::handlers::deck::get_deck_tokens::get_deck_tokens;
+use crate::inbound::http::handlers::deck::get_shared_deck::get_shared_deck;
+use crate::inbound::http::handlers::deck::import_archidekt::import_archidekt_deck;
+use crate::inbound::http::handlers::deck::search_deck_cards::search_deck_cards;
+use crate::inbound::http::handlers::deck::share_deck::{share_deck, unshare_deck};
+use crate::inbound::http::handlers::deck::skip_deck_card::{skip_deck_card, unskip_deck_card};
+use crate::inbound::http::handlers::deck::update_deck_profile::update_deck_profile;
+use crate::inbound::http::handlers::deck_card::create_deck_card::create_deck_card;
+use crate::inbound::http::handlers::deck_card::delete_deck_card::delete_deck_card;
+use crate::inbound::http::handlers::deck_card::import_deck_cards::import_deck_cards;
+use crate::inbound::http::handlers::deck_card::patch_deck_card::patch_deck_card;
+use crate::inbound::http::handlers::health::{
+    are_server_and_database_running, is_server_running, root,
+};
+use crate::inbound::http::handlers::metrics::get_my_metrics::get_my_metrics;
+use crate::inbound::http::handlers::metrics::get_public_metrics::get_public_metrics;
+use crate::inbound::http::handlers::metrics::record_anonymous_event::record_anonymous_event;
+use crate::inbound::http::handlers::metrics::record_crash::record_crash;
+use crate::inbound::http::handlers::metrics::record_usage::record_usage;
+use crate::inbound::http::handlers::user::commander_maybeboard::{
+    add_commander_maybeboard_card, clear_commander_maybeboard, get_commander_maybeboard,
+    remove_commander_maybeboard_card,
+};
+use crate::inbound::http::handlers::user::get_preferences::get_preferences;
+use crate::inbound::http::handlers::user::get_user::get_user;
+use crate::inbound::http::handlers::user::mark_hint_shown::mark_hint_shown;
+use crate::inbound::http::handlers::user::update_preferences::update_preferences;
+use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtractor};
 
 /// Rate-limit error handler for the routes keyed by user id
 /// (`UserIdKeyExtractor`).

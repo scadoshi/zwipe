@@ -9,10 +9,12 @@
 // visitors and not others, so it is a build bug, not a runtime condition.
 #![allow(clippy::unwrap_used)]
 
-use crate::API_BASE;
-use reqwest::Url;
 use std::sync::OnceLock;
+
+use reqwest::Url;
 use zwipe_client::ZwipeClient;
+
+use crate::API_BASE;
 
 /// The process-wide client. Cheap to clone; reqwest pools connections.
 pub fn client() -> ZwipeClient {

@@ -1,8 +1,10 @@
-use crate::{Nav, api};
 use components::{InfoButton, Panel, PasswordInput};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
-use zwipe_core::domain::auth::{models::secret::Secret, password::requirements};
+use zwipe_core::domain::auth::models::secret::Secret;
+use zwipe_core::domain::auth::password::requirements;
+
+use crate::{Nav, api};
 
 /// Validate a candidate password against the shared password policy.
 fn validate_password(pw: &str) -> Option<String> {

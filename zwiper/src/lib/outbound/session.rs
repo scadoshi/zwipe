@@ -116,9 +116,10 @@ mod platform {
 // Android: a JSON file in the app's private internal storage.
 #[cfg(target_os = "android")]
 mod platform {
+    use std::path::PathBuf;
+
     use super::Session;
     use crate::outbound::android_fs::files_dir;
-    use std::path::PathBuf;
 
     fn session_path() -> anyhow::Result<PathBuf> {
         Ok(files_dir()?.join("session.json"))

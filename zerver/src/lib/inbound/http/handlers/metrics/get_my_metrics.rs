@@ -1,7 +1,10 @@
-use axum::{Json, extract::State, http::StatusCode};
-
-use crate::inbound::http::{ApiError, AppState, middleware::AuthenticatedUser};
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
 use zwipe_core::http::contracts::metrics::HttpLifetimeCounters;
+
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState};
 
 /// Returns the caller's lifetime metric totals.
 pub async fn get_my_metrics(

@@ -1,7 +1,7 @@
 //! Public changelog handler (release-history feed).
 
-use axum::{Json, http::StatusCode};
-
+use axum::Json;
+use axum::http::StatusCode;
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 
 /// Returns the changelog: upcoming teasers plus the shipped release history.

@@ -8,41 +8,27 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing, dead_code)]
 
-use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    sync::{
-        Arc, Mutex,
-        atomic::{AtomicU32, AtomicU64, Ordering},
-    },
-};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 
-use axum::{
-    body::Body,
-    extract::ConnectInfo,
-    http::{Method, Request, StatusCode, header},
-};
+use axum::body::Body;
+use axum::extract::ConnectInfo;
+use axum::http::{Method, Request, StatusCode, header};
 use chrono::NaiveDate;
 use dashmap::DashMap;
 use http_body_util::BodyExt;
 use serde_json::{Value, json};
-use sqlx::{PgPool, QueryBuilder, types::Json};
+use sqlx::types::Json;
+use sqlx::{PgPool, QueryBuilder};
 use tower::ServiceExt; // oneshot
 use uuid::Uuid;
-
-use zwipe::{
-    domain::{
-        auth,
-        auth::models::access_token::JwtSecret,
-        card, deck,
-        email::{
-            models::{SendEmail, SendEmailError},
-            ports::EmailSender,
-        },
-        health, metrics, user,
-    },
-    inbound::http::{AppState, build_router},
-    outbound::sqlx::postgres::Postgres,
-};
+use zwipe::domain::auth::models::access_token::JwtSecret;
+use zwipe::domain::email::models::{SendEmail, SendEmailError};
+use zwipe::domain::email::ports::EmailSender;
+use zwipe::domain::{auth, card, deck, health, metrics, user};
+use zwipe::inbound::http::{AppState, build_router};
+use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_core::domain::card::scryfall_data::rarity::Rarity;
 
 const TEST_JWT_SECRET: &str = "test-jwt-secret-that-is-at-least-32-characters-long";
@@ -345,7 +331,7 @@ pub fn card(name: &str) -> CardFixture {
         usd: None,
         set: "TST".to_string(),
         set_name: "Test Set".to_string(),
-        set_id: Uuid::from_u128(0x5E7),
+        set_id: Uuid::from_u128(0x5e7),
         collector_number: n.to_string(),
         legalities: json!({}),
         flavor_text: None,

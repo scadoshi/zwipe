@@ -1,7 +1,8 @@
 //! Deck validation warning value object.
 
-use serde::{Deserialize, Serialize};
 use std::ops::Deref;
+
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// Suggested fix action for a deck warning.

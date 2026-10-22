@@ -1,26 +1,23 @@
 //! Profile, preferences and the commander maybeboard.
 
-use crate::{
-    domain::{
-        card::Card,
-        user::{User, models::preferences::UserPreferences},
-    },
-    http::{
-        contracts::{
-            auth::{HttpChangeEmail, HttpChangePassword, HttpChangeUsername, HttpDeleteUser},
-            user::{HttpMarkHintShown, HttpUpdatePreferences},
-        },
-        endpoint::{Endpoint, Method},
-        paths::{
-            CHANGE_EMAIL_ROUTE, CHANGE_PASSWORD_ROUTE, CHANGE_USERNAME_ROUTE,
-            CLEAR_COMMANDER_MAYBEBOARD_ROUTE, DELETE_USER_ROUTE, GET_COMMANDER_MAYBEBOARD_ROUTE,
-            GET_USER_ROUTE, MARK_HINT_SHOWN_ROUTE, PREFERENCES_ROUTE,
-            add_commander_maybeboard_card_route, remove_commander_maybeboard_card_route,
-        },
-    },
-};
 use std::borrow::Cow;
+
 use uuid::Uuid;
+
+use crate::domain::card::Card;
+use crate::domain::user::User;
+use crate::domain::user::models::preferences::UserPreferences;
+use crate::http::contracts::auth::{
+    HttpChangeEmail, HttpChangePassword, HttpChangeUsername, HttpDeleteUser,
+};
+use crate::http::contracts::user::{HttpMarkHintShown, HttpUpdatePreferences};
+use crate::http::endpoint::{Endpoint, Method};
+use crate::http::paths::{
+    CHANGE_EMAIL_ROUTE, CHANGE_PASSWORD_ROUTE, CHANGE_USERNAME_ROUTE,
+    CLEAR_COMMANDER_MAYBEBOARD_ROUTE, DELETE_USER_ROUTE, GET_COMMANDER_MAYBEBOARD_ROUTE,
+    GET_USER_ROUTE, MARK_HINT_SHOWN_ROUTE, PREFERENCES_ROUTE, add_commander_maybeboard_card_route,
+    remove_commander_maybeboard_card_route,
+};
 
 /// The signed-in user's profile.
 pub struct GetUser;

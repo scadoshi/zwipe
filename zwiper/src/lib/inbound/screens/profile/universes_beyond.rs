@@ -3,22 +3,18 @@
 //! Show/Hide toggle itself lives on the profile screen; this sheet edits only
 //! the whitelist. The server applies both at serve time.
 
-use crate::inbound::components::{
-    auth::authed::use_authed,
-    catalog_cache::CatalogCache,
-    hint_dialog::{HintDialog, open_and_record_hint},
-    telemetry::vocabulary::{ProfileScreen, Screen},
-};
 use components::{BottomSheet, Button, ButtonVariant, HintLine, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_core::{
-    domain::{
-        auth::models::session::Session, user::models::hints::HINT_UNIVERSES_BEYOND_EXCEPTIONS,
-    },
-    http::contracts::user::HttpUpdatePreferences,
-};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::user::models::hints::HINT_UNIVERSES_BEYOND_EXCEPTIONS;
+use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::hint_dialog::{HintDialog, open_and_record_hint};
+use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
 
 /// Whether two slug lists pick the same franchises. Order is tap order and
 /// means nothing, so a re-tap of the same chips is not a change.

@@ -2,12 +2,11 @@
 //! animation, kept in lockstep by construction.
 
 use dioxus::prelude::*;
-
-use crate::inbound::{
-    components::interactions::swipe::{STACK_DEPTH, direction::Direction},
-    screens::deck::card::components::action_history::StackAction,
-};
 use zwipe_core::domain::card::Card;
+
+use crate::inbound::components::interactions::swipe::STACK_DEPTH;
+use crate::inbound::components::interactions::swipe::direction::Direction;
+use crate::inbound::screens::deck::card::components::action_history::StackAction;
 
 /// A swipeable card stack: the fetched cards, the top-card cursor, the undo
 /// history, and the enter-animation direction. A `Copy` handle over signals,

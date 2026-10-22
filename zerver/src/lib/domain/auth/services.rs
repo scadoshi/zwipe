@@ -1,43 +1,38 @@
-use crate::domain::{
-    auth::{
-        lockout::LoginLockout,
-        models::{
-            UserWithPasswordHash,
-            access_token::{AccessTokenExt, JwtSecret},
-            password::{HashedPassword, Password},
-        },
-        ports::{AuthRepository, AuthService},
-        requests::{
-            authenticate_user::{AuthenticateUser, AuthenticateUserError},
-            change_email::{ChangeEmail, ChangeEmailError},
-            change_password::{ChangePassword, ChangePasswordError},
-            change_username::{ChangeUsername, ChangeUsernameError},
-            create_session::{CreateSession, CreateSessionError},
-            delete_user::{DeleteUser, DeleteUserError},
-            refresh_session::{RefreshSession, RefreshSessionError},
-            register_user::{RegisterUser, RegisterUserError},
-            request_password_reset::{RequestPasswordReset, RequestPasswordResetError},
-            reset_password::{ResetPassword, ResetPasswordError},
-            revoke_sessions::{RevokeSessions, RevokeSessionsError},
-            verify_email::{VerifyEmail, VerifyEmailError},
-        },
-    },
-    email::{models::SendEmail, ports::EmailSender},
-    user::ports::UserRepository,
-};
+use std::net::{IpAddr, Ipv6Addr};
+use std::sync::{Arc, LazyLock};
+
 use anyhow::anyhow;
 use chrono::{Duration, Utc};
 use rand::Rng;
 use sha2::Digest;
-use std::{
-    net::{IpAddr, Ipv6Addr},
-    sync::{Arc, LazyLock},
-};
 use uuid::Uuid;
-use zwipe_core::domain::{
-    auth::models::{access_token::AccessToken, session::Session},
-    user::{User, preferences::UserPreferences},
+use zwipe_core::domain::auth::models::access_token::AccessToken;
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::preferences::UserPreferences;
+
+use crate::domain::auth::lockout::LoginLockout;
+use crate::domain::auth::models::UserWithPasswordHash;
+use crate::domain::auth::models::access_token::{AccessTokenExt, JwtSecret};
+use crate::domain::auth::models::password::{HashedPassword, Password};
+use crate::domain::auth::ports::{AuthRepository, AuthService};
+use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
+use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
+use crate::domain::auth::requests::change_password::{ChangePassword, ChangePasswordError};
+use crate::domain::auth::requests::change_username::{ChangeUsername, ChangeUsernameError};
+use crate::domain::auth::requests::create_session::{CreateSession, CreateSessionError};
+use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError};
+use crate::domain::auth::requests::refresh_session::{RefreshSession, RefreshSessionError};
+use crate::domain::auth::requests::register_user::{RegisterUser, RegisterUserError};
+use crate::domain::auth::requests::request_password_reset::{
+    RequestPasswordReset, RequestPasswordResetError,
 };
+use crate::domain::auth::requests::reset_password::{ResetPassword, ResetPasswordError};
+use crate::domain::auth::requests::revoke_sessions::{RevokeSessions, RevokeSessionsError};
+use crate::domain::auth::requests::verify_email::{VerifyEmail, VerifyEmailError};
+use crate::domain::email::models::SendEmail;
+use crate::domain::email::ports::EmailSender;
+use crate::domain::user::ports::UserRepository;
 
 /// A throwaway Argon2 hash used to equalize login timing for non-existent
 /// accounts. Generated lazily with the same default Argon2 params as real

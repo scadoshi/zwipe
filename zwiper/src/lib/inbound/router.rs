@@ -2,31 +2,28 @@
 //!
 //! Defines all client-side routes and maps them to their corresponding screen components.
 
-use crate::inbound::{
-    components::{auth::auth_gate::AuthGate, navigation::back_handler::BackHandlerLayout},
-    screens::{
-        auth::{forgot_password::ForgotPassword, login::Login, register::Register},
-        changelog::Changelog,
-        deck::{
-            card::{
-                add::Add as AddDeckCard, remove::Remove as RemoveDeckCard,
-                view::View as ViewDeckCard,
-            },
-            commander_maybeboard::CommanderMaybeboard,
-            create::CreateDeck,
-            edit::EditDeck,
-            export::ExportDeck,
-            import::ImportDeck,
-            list::DeckList,
-            view::ViewDeck,
-        },
-        home::Home,
-        legal::privacy_policy::PrivacyPolicy,
-        profile::Profile,
-    },
-};
 use dioxus::prelude::*;
 use uuid::Uuid;
+
+use crate::inbound::components::auth::auth_gate::AuthGate;
+use crate::inbound::components::navigation::back_handler::BackHandlerLayout;
+use crate::inbound::screens::auth::forgot_password::ForgotPassword;
+use crate::inbound::screens::auth::login::Login;
+use crate::inbound::screens::auth::register::Register;
+use crate::inbound::screens::changelog::Changelog;
+use crate::inbound::screens::deck::card::add::Add as AddDeckCard;
+use crate::inbound::screens::deck::card::remove::Remove as RemoveDeckCard;
+use crate::inbound::screens::deck::card::view::View as ViewDeckCard;
+use crate::inbound::screens::deck::commander_maybeboard::CommanderMaybeboard;
+use crate::inbound::screens::deck::create::CreateDeck;
+use crate::inbound::screens::deck::edit::EditDeck;
+use crate::inbound::screens::deck::export::ExportDeck;
+use crate::inbound::screens::deck::import::ImportDeck;
+use crate::inbound::screens::deck::list::DeckList;
+use crate::inbound::screens::deck::view::ViewDeck;
+use crate::inbound::screens::home::Home;
+use crate::inbound::screens::legal::privacy_policy::PrivacyPolicy;
+use crate::inbound::screens::profile::Profile;
 
 /// Application routes mapping URLs to screen components.
 #[derive(Debug, Clone, Routable, PartialEq)]

@@ -1,10 +1,10 @@
 //! Batched usage POST.
 
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::metrics::HttpUsageBatch;
+use zwipe_core::http::endpoints::metrics::RecordUsage;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::auth::models::session::Session,
-    http::{contracts::metrics::HttpUsageBatch, endpoints::metrics::RecordUsage},
-};
 
 impl ZwipeClient {
     /// Posts a batched usage update.

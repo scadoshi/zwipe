@@ -1,9 +1,9 @@
 //! Resend email verification API client.
 
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::endpoints::auth::ResendVerification;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::auth::models::session::Session, http::endpoints::auth::ResendVerification,
-};
 
 impl ZwipeClient {
     /// Re-sends the email verification link for the authenticated user.

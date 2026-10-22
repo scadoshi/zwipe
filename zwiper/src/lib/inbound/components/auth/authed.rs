@@ -9,20 +9,15 @@
 //! and the hint recorder have shapes that don't fit a screen-scoped facade
 //! and keep calling `ensure_fresh` directly. The facade is for screens.
 
-use zwipe_client::{ClientError, ZwipeClient};
-
 use components::TOAST_NORMAL;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
+use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 
-use crate::inbound::components::{
-    auth::ensure_session::EnsureFresh,
-    telemetry::{
-        usage_buffer::UsageBuffer,
-        vocabulary::{Screen, component},
-    },
-};
+use crate::inbound::components::auth::ensure_session::EnsureFresh;
+use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::inbound::components::telemetry::vocabulary::{Screen, component};
 
 /// Everything the ceremony needs, in one Copy handle so closures and spawns
 /// capture it freely.

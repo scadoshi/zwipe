@@ -2,7 +2,8 @@ use ::components::{
     BRAND_RESET_JS, COMPONENTS_CSS, Decode, MAGIC_CSS, NAV_GLIDE_JS, NavBar, REVEAL_JS, Replay,
     SCROLL_FADE_JS, SITE_CSS, THEMES_CSS, ThemeConfig, ThemePicker, use_theme_wipe,
 };
-use dioxus::{document::eval, prelude::*};
+use dioxus::document::eval;
+use dioxus::prelude::*;
 
 mod api;
 mod components;
@@ -11,7 +12,6 @@ use pages::{
     About, Android, Changelog, Community, Contribute, GuidePage, Guides, Home, Ios, NotFound,
     Privacy, Reset, SharedDeck, Verify,
 };
-
 // Base URLs + contact points live in zwipe-core's `site` module (shared with
 // zwiper and zerver so they can't drift); re-exported so pages keep importing
 // them from crate root. Debug builds resolve the URLs to the local dev servers.

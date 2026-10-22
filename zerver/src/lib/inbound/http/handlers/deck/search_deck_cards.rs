@@ -1,19 +1,14 @@
-use crate::{
-    domain::deck::models::deck::search_deck_cards::SearchDeckCardsError,
-    inbound::http::{ApiError, AppState, middleware::AuthenticatedUser},
-};
-use axum::{
-    Json,
-    extract::{Path, State},
-    http::StatusCode,
-};
+use axum::Json;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use uuid::Uuid;
-use zwipe_core::{
-    domain::{
-        card::search_card::card_filter::CardQuery, deck::requests::get_deck_profile::GetDeckProfile,
-    },
-    http::contracts::deck::HttpDeckCardSearch,
-};
+use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
+use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
+
+use crate::domain::deck::models::deck::search_deck_cards::SearchDeckCardsError;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState};
 
 impl From<SearchDeckCardsError> for ApiError {
     fn from(value: SearchDeckCardsError) -> Self {

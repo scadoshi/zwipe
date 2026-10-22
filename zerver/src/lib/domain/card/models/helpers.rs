@@ -1,6 +1,9 @@
 use std::collections::HashMap;
+
 use uuid::Uuid;
-use zwipe_core::domain::card::{Card, card_profile::CardProfile, scryfall_data::ScryfallData};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::card_profile::CardProfile;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
 /// Extension trait to combine Scryfall data with card profiles into complete Card objects.
 ///

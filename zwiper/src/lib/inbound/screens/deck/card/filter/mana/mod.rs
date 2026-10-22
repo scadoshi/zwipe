@@ -4,10 +4,9 @@ pub(crate) mod cmc;
 pub(crate) mod color_identity;
 pub(crate) mod produced_mana;
 
-use dioxus::prelude::*;
-
 use cmc::CmcFilter;
 use color_identity::ColorIdentityFilter;
+use dioxus::prelude::*;
 use produced_mana::ProducedManaFilter;
 
 /// Filter component for mana cost and color identity.

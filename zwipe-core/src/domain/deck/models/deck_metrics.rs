@@ -4,15 +4,12 @@
 //! color distribution, and summary stats. Supports both `Vec<Card>` (each card
 //! counted once) and `Vec<DeckEntry>` (each card counted by its quantity).
 
-use crate::domain::{
-    card::{
-        Card,
-        card_role::CardRole,
-        scryfall_data::{ScryfallData, colors::Color},
-        search_card::card_filter::price_currency::PriceCurrency,
-    },
-    deck::deck::DeckEntry,
-};
+use crate::domain::card::Card;
+use crate::domain::card::card_role::CardRole;
+use crate::domain::card::scryfall_data::ScryfallData;
+use crate::domain::card::scryfall_data::colors::Color;
+use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use crate::domain::deck::deck::DeckEntry;
 
 /// One chart-ready per-color mana balance row (see
 /// [`DeckMetrics::mana_balance_rows`]).
@@ -677,13 +674,9 @@ fn classify_color(card: &Card) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        domain::card::scryfall_data::{
-            card_faces::CardFace,
-            colors::{Color, Colors},
-        },
-        test_utils::make_entry,
-    };
+    use crate::domain::card::scryfall_data::card_faces::CardFace;
+    use crate::domain::card::scryfall_data::colors::{Color, Colors};
+    use crate::test_utils::make_entry;
 
     #[test]
     fn empty_deck() {

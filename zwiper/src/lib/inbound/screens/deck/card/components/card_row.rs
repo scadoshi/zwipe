@@ -1,12 +1,10 @@
 use components::CardRow as SharedCardRow;
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_core::domain::{
-    card::{
-        Card, scryfall_data::ScryfallData, search_card::card_filter::price_currency::PriceCurrency,
-    },
-    deck::Board,
-};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::Board;
 
 /// Context: resolve an oracle tag's description for the expandable otag reveal.
 /// Provided by the deck-cards view (which holds the catalog cache); absent

@@ -1,7 +1,9 @@
-use super::image_uris::ImageUris;
-use serde::{Deserialize, Serialize};
 use std::ops::Deref;
+
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use super::image_uris::ImageUris;
 
 /// Data for a single face of a multi-faced card.
 ///

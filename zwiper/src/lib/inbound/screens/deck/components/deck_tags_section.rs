@@ -3,9 +3,12 @@
 //! compact (a deck can carry many oracle tags). Rendered inside a
 //! [`CollapsibleSection`](super::collapsible_section::CollapsibleSection).
 
-use crate::inbound::components::{hint_host::HintTopic, info_button::InfoButton};
 use dioxus::prelude::*;
-use zwipe_core::domain::deck::{deck_profile::DeckProfile, deck_tag_label};
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::deck::deck_tag_label;
+
+use crate::inbound::components::hint_host::HintTopic;
+use crate::inbound::components::info_button::InfoButton;
 
 /// Whether the deck has any tag worth showing the Tags section for.
 pub(crate) fn has_any_tags(p: &DeckProfile) -> bool {

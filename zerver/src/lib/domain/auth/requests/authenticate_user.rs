@@ -42,13 +42,17 @@
 //! println!("Logged in as: {}", session.user.username);
 //! ```
 
-use crate::domain::auth::requests::{
-    change_email::ChangeEmail, change_password::ChangePassword, change_username::ChangeUsername,
-    create_session::CreateSessionError, delete_user::DeleteUser,
-};
 use std::net::IpAddr;
+
 use thiserror::Error;
-use zwipe_core::domain::auth::models::{platform::ClientPlatform, secret::Secret};
+use zwipe_core::domain::auth::models::platform::ClientPlatform;
+use zwipe_core::domain::auth::models::secret::Secret;
+
+use crate::domain::auth::requests::change_email::ChangeEmail;
+use crate::domain::auth::requests::change_password::ChangePassword;
+use crate::domain::auth::requests::change_username::ChangeUsername;
+use crate::domain::auth::requests::create_session::CreateSessionError;
+use crate::domain::auth::requests::delete_user::DeleteUser;
 
 /// Errors that can occur during user authentication.
 ///
@@ -344,8 +348,9 @@ mod tests {
 
     #[test]
     fn test_authenticate_user_from_change_password() {
-        use crate::domain::auth::requests::change_password::ChangePassword;
         use uuid::Uuid;
+
+        use crate::domain::auth::requests::change_password::ChangePassword;
         let user_id = Uuid::new_v4();
         let req = ChangePassword::new(user_id, "OldPass!", "NewSecure123!").unwrap();
         let auth: AuthenticateUser = AuthenticateUser::from(&req);
@@ -355,8 +360,9 @@ mod tests {
 
     #[test]
     fn test_authenticate_user_from_change_username() {
-        use crate::domain::auth::requests::change_username::ChangeUsername;
         use uuid::Uuid;
+
+        use crate::domain::auth::requests::change_username::ChangeUsername;
         let user_id = Uuid::new_v4();
         let req = ChangeUsername::new(user_id, "newname", "SecurePass123!").unwrap();
         let auth: AuthenticateUser = AuthenticateUser::from(&req);
@@ -366,8 +372,9 @@ mod tests {
 
     #[test]
     fn test_authenticate_user_from_change_email() {
-        use crate::domain::auth::requests::change_email::ChangeEmail;
         use uuid::Uuid;
+
+        use crate::domain::auth::requests::change_email::ChangeEmail;
         let user_id = Uuid::new_v4();
         let req = ChangeEmail::new(user_id, "new@example.com", "SecurePass123!").unwrap();
         let auth: AuthenticateUser = AuthenticateUser::from(&req);
@@ -377,8 +384,9 @@ mod tests {
 
     #[test]
     fn test_authenticate_user_from_delete_user() {
-        use crate::domain::auth::requests::delete_user::DeleteUser;
         use uuid::Uuid;
+
+        use crate::domain::auth::requests::delete_user::DeleteUser;
         let user_id = Uuid::new_v4();
         let req = DeleteUser::new(user_id, "SomePassword!").unwrap();
         let auth: AuthenticateUser = AuthenticateUser::from(&req);

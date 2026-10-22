@@ -6,8 +6,9 @@
 
 #![allow(missing_docs)]
 
-use crate::http::endpoint::Method;
 use uuid::Uuid;
+
+use crate::http::endpoint::Method;
 
 // == health ==
 

@@ -1,14 +1,14 @@
 //! Update user preferences handler.
 
-use crate::{
-    domain::user::models::preferences::{InvalidUpdatePreferences, UpdatePreferencesError},
-    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
-};
-use axum::{Json, extract::State, http::StatusCode};
-use zwipe_core::{
-    domain::user::preferences::{UpdatePreferences, UserPreferences},
-    http::contracts::user::HttpUpdatePreferences,
-};
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+use zwipe_core::domain::user::preferences::{UpdatePreferences, UserPreferences};
+use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+
+use crate::domain::user::models::preferences::{InvalidUpdatePreferences, UpdatePreferencesError};
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<InvalidUpdatePreferences> for ApiError {
     fn from(value: InvalidUpdatePreferences) -> Self {

@@ -4,9 +4,10 @@
 //! `card_oracle_tags` from a fresh Oracle Tags pull, all in one transaction. Rows
 //! with a non-`scryfall` `source` are left untouched. See `context/plans/otags/`.
 
-use crate::inbound::external::scryfall::oracle_tag::OracleTag;
 use anyhow::Context;
 use sqlx::{PgPool, QueryBuilder};
+
+use crate::inbound::external::scryfall::oracle_tag::OracleTag;
 
 /// Catalog rows per INSERT batch (6 bind params/row, well under Postgres' 65535).
 const CATALOG_BATCH: usize = 4_000;
@@ -141,9 +142,10 @@ pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Resu
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
+
     use super::*;
     use crate::inbound::external::scryfall::oracle_tag::Tagging;
-    use uuid::Uuid;
 
     fn tag(slug: &str, oracle_ids: &[Option<Uuid>]) -> OracleTag {
         OracleTag {
@@ -162,8 +164,8 @@ mod tests {
 
     #[test]
     fn flatten_emits_one_row_per_tagging() {
-        let a = Uuid::from_u128(0xA);
-        let b = Uuid::from_u128(0xB);
+        let a = Uuid::from_u128(0xa);
+        let b = Uuid::from_u128(0xb);
         let tags = vec![tag("removal", &[Some(a), Some(b)]), tag("ramp", &[Some(a)])];
         let rows = flatten_correlations(&tags);
         assert_eq!(rows, vec![(a, "removal"), (b, "removal"), (a, "ramp")]);
@@ -171,7 +173,7 @@ mod tests {
 
     #[test]
     fn flatten_skips_taggings_without_oracle_id() {
-        let a = Uuid::from_u128(0xA);
+        let a = Uuid::from_u128(0xa);
         let tags = vec![tag("removal", &[Some(a), None, None])];
         let rows = flatten_correlations(&tags);
         assert_eq!(rows, vec![(a, "removal")]);

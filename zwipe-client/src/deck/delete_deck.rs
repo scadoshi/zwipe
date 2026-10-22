@@ -1,8 +1,10 @@
 //! Delete existing deck.
 
-use crate::{ClientError, ZwipeClient};
 use uuid::Uuid;
-use zwipe_core::{domain::auth::models::session::Session, http::endpoints::deck::DeleteDeck};
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::endpoints::deck::DeleteDeck;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Deletes decks by ID.

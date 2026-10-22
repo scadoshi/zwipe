@@ -1,28 +1,24 @@
 //! New user registration screen.
 
-use crate::{
-    domain::error::UserFacing,
-    inbound::{
-        components::{
-            fields::text_input::TextInput, hint_host::HintTopic, home_hero::HomeHero,
-            screen_header::ScreenHeader, telemetry::anonymous::record_anonymous_event,
-        },
-        router::Router,
-    },
-    outbound::session::Persist,
-};
 use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
-use zwipe_core::{
-    domain::{
-        Email,
-        auth::{models::session::Session, password::validate},
-        user::username::Username,
-    },
-    http::contracts::{auth::HttpRegisterUser, metrics::AnonymousEventKind},
-};
+use zwipe_core::domain::Email;
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::auth::password::validate;
+use zwipe_core::domain::user::username::Username;
+use zwipe_core::http::contracts::auth::HttpRegisterUser;
+use zwipe_core::http::contracts::metrics::AnonymousEventKind;
+
+use crate::domain::error::UserFacing;
+use crate::inbound::components::fields::text_input::TextInput;
+use crate::inbound::components::hint_host::HintTopic;
+use crate::inbound::components::home_hero::HomeHero;
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::telemetry::anonymous::record_anonymous_event;
+use crate::inbound::router::Router;
+use crate::outbound::session::Persist;
 
 /// Registration form screen for creating new user accounts.
 #[component]

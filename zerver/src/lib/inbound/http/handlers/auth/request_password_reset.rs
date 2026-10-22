@@ -1,12 +1,12 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 
-use crate::{
-    domain::auth::requests::request_password_reset::{
-        RequestPasswordReset, RequestPasswordResetError,
-    },
-    inbound::http::{ApiError, AppState, To500},
+use crate::domain::auth::requests::request_password_reset::{
+    RequestPasswordReset, RequestPasswordResetError,
 };
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<RequestPasswordResetError> for ApiError {
     fn from(value: RequestPasswordResetError) -> Self {

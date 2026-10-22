@@ -1,7 +1,5 @@
-use crate::{
-    domain::deck::models::deck_card::get_deck_card::GetDeckCardError,
-    inbound::http::{ApiError, To500},
-};
+use crate::domain::deck::models::deck_card::get_deck_card::GetDeckCardError;
+use crate::inbound::http::{ApiError, To500};
 
 impl From<GetDeckCardError> for ApiError {
     fn from(value: GetDeckCardError) -> Self {

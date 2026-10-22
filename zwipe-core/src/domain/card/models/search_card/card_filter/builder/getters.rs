@@ -3,16 +3,13 @@
 //! All getters return `Option` types since filters may be unset.
 //! String fields return `Option<&str>`, collections return `Option<&[T]>`.
 
-use crate::domain::{
-    card::{
-        scryfall_data::{colors::Colors, rarity::Rarities},
-        search_card::{
-            card_filter::{CardSortKey, builder::CardQueryBuilder, price_currency::PriceCurrency},
-            card_type::CardType,
-        },
-    },
-    deck::Format,
-};
+use crate::domain::card::scryfall_data::colors::Colors;
+use crate::domain::card::scryfall_data::rarity::Rarities;
+use crate::domain::card::search_card::card_filter::CardSortKey;
+use crate::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use crate::domain::card::search_card::card_type::CardType;
+use crate::domain::deck::Format;
 
 impl CardQueryBuilder {
     // == Text Filter Getters ==

@@ -1,10 +1,11 @@
 //! User login API client.
 
+use zwipe_core::domain::auth::models::platform::ClientPlatform;
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
+use zwipe_core::http::endpoints::auth::Login;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::auth::models::{platform::ClientPlatform, session::Session},
-    http::{contracts::auth::HttpAuthenticateUser, endpoints::auth::Login},
-};
 
 impl ZwipeClient {
     /// Authenticates users via the login endpoint.

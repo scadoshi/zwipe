@@ -9,38 +9,36 @@
 //! **down** to undo; **up** saves to the commander maybeboard (commander and
 //! partner modes only: the pile advances and selection continues).
 
-use crate::inbound::{
-    components::{
-        hint_dialog::{HintColored, HintDialog, open_and_record_hint},
-        interactions::swipe::{STACK_DEPTH, SwipeStack, config::SwipeConfig, direction::Direction},
-        screen_header::ScreenHeader,
-        telemetry::{usage_buffer::UsageBuffer, vocabulary::component},
-    },
-    screens::deck::card::{
-        components::{
-            card_info::{CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton},
-            printing_sheet::PrintingSheet,
-        },
-        filter::card_filter_sheet::CardFilterSheet,
-    },
-};
+use std::collections::HashSet;
+use std::time::Duration;
+
 use components::{
     ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintKey, HintLine, TOAST_QUICK,
     use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::{collections::HashSet, time::Duration};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::{
-    auth::models::session::Session,
-    card::{
-        Card, scryfall_data::colors::Colors, search_card::card_filter::builder::CardQueryBuilder,
-    },
-    deck::format::Format,
-    user::models::hints::HINT_SWIPE_SELECT,
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::colors::Colors;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::deck::format::Format;
+use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
+
+use crate::inbound::components::hint_dialog::{HintColored, HintDialog, open_and_record_hint};
+use crate::inbound::components::interactions::swipe::config::SwipeConfig;
+use crate::inbound::components::interactions::swipe::direction::Direction;
+use crate::inbound::components::interactions::swipe::{STACK_DEPTH, SwipeStack};
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::inbound::components::telemetry::vocabulary::component;
+use crate::inbound::screens::deck::card::components::card_info::{
+    CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton,
 };
+use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
+use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 
 /// Cards fetched per page (matches the backend default).
 const PAGE: u32 = 25;

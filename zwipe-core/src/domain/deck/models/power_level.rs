@@ -9,8 +9,9 @@
 //! this isn't gated by format. Variants are only ever added, never removed or
 //! renamed, so previously-stored values keep parsing.
 
-use serde::{Deserialize, Serialize};
 use std::fmt;
+
+use serde::{Deserialize, Serialize};
 
 /// The WotC Commander Bracket a deck targets (1–5).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

@@ -1,7 +1,8 @@
 //! Fetch all unique artist names.
 
-use crate::{ClientError, ZwipeClient};
 use zwipe_core::http::endpoints::card::GetArtists;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Fetches the list of all unique card artists.

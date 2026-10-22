@@ -1,7 +1,8 @@
 //! Changelog contracts (release-history feed).
 
-use crate::content::changelog::{RELEASES, Release, UPCOMING};
 use serde::{Deserialize, Serialize};
+
+use crate::content::changelog::{RELEASES, Release, UPCOMING};
 
 /// One release, owned and serializable for the wire.
 ///

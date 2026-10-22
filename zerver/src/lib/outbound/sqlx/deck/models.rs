@@ -1,14 +1,13 @@
 use sqlx_macros::FromRow;
 use uuid::Uuid;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::deck_name::DeckName;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::deck::format::Format;
+use zwipe_core::domain::deck::quantity::Quantity;
+use zwipe_core::domain::deck::{Board, DeckCard, DeckOtherTag, PowerLevel};
 
 use crate::outbound::sqlx::deck::error::{IntoDeckCardError, IntoDeckProfileError};
-use zwipe_core::domain::{
-    card::search_card::card_filter::price_currency::PriceCurrency,
-    deck::{
-        Board, DeckCard, DeckOtherTag, PowerLevel, deck_name::DeckName, deck_profile::DeckProfile,
-        format::Format, quantity::Quantity,
-    },
-};
 
 /// raw database deck record
 /// (unvalidated data from `PostgreSQL`)

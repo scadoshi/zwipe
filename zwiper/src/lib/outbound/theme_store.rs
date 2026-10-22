@@ -82,9 +82,10 @@ mod platform {
 // Android: a JSON file in the app's private internal storage.
 #[cfg(target_os = "android")]
 mod platform {
+    use std::path::PathBuf;
+
     use super::ThemeConfig;
     use crate::outbound::android_fs::files_dir;
-    use std::path::PathBuf;
 
     fn theme_path() -> anyhow::Result<PathBuf> {
         Ok(files_dir()?.join("theme.json"))

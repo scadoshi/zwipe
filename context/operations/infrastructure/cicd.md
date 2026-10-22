@@ -38,7 +38,7 @@ The gate lives inside the deploy workflows because GitHub can't make a `push` wo
 
 A parallel `lint` job in all three workflows runs:
 
-- `cargo +nightly fmt --check` across the workspace. It needs nightly because `rustfmt.toml` sets the unstable `imports_granularity = "Crate"`.
+- `cargo +nightly fmt --check` across the workspace. It needs nightly because `rustfmt.toml` sets unstable options: `imports_granularity = "Module"` (one `use` per module), `group_imports = "StdExternalCrate"` (std, then external crates, then this crate), `hex_literal_case = "Lower"` and `format_macro_matchers = true`.
 - `cargo clippy --workspace --all-targets -- -D warnings`, with `SQLX_OFFLINE=true` and the WebKitGTK libraries installed so zwiper compiles. `deploy-zite.yml` also lints zite with `--features server`.
 
 The lint job dates from 2026-07-10, after fmt was found to have drifted silently.

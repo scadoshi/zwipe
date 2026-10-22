@@ -25,7 +25,8 @@
 
 use thiserror::Error;
 use uuid::Uuid;
-use zwipe_core::domain::{Email, InvalidEmail, auth::models::secret::Secret};
+use zwipe_core::domain::auth::models::secret::Secret;
+use zwipe_core::domain::{Email, InvalidEmail};
 
 use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
 
@@ -115,8 +116,9 @@ impl ChangeEmail {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use uuid::Uuid;
+
+    use super::*;
 
     #[test]
     fn test_change_email_new_succeeds_with_valid_inputs() {

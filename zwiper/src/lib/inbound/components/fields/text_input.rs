@@ -1,6 +1,8 @@
-use crate::inbound::components::{hint_host::HintTopic, info_button::InfoButton};
 use components::PasswordInput;
 use dioxus::prelude::*;
+
+use crate::inbound::components::hint_host::HintTopic;
+use crate::inbound::components::info_button::InfoButton;
 
 /// Labeled text input. `hint` puts a "?" right of the label that opens that
 /// topic's explainer.

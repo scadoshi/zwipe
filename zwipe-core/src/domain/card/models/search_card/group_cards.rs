@@ -15,8 +15,11 @@
 //! }
 //! ```
 
-use crate::domain::card::{Card, card_role::role_label, scryfall_data::colors::Color};
 use std::collections::BTreeMap;
+
+use crate::domain::card::Card;
+use crate::domain::card::card_role::role_label;
+use crate::domain::card::scryfall_data::colors::Color;
 
 /// Grouping strategies for partitioning cards.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -282,20 +285,17 @@ fn classify_cmc(card: &Card) -> usize {
 #[cfg(test)]
 #[allow(clippy::indexing_slicing)]
 mod tests {
-    use super::{GroupByOption, GroupCards};
-    use crate::domain::card::{
-        Card,
-        card_profile::CardProfile,
-        scryfall_data::{
-            ScryfallData,
-            colors::{Color, Colors},
-            legalities::Legalities,
-            prices::Prices,
-            rarity::Rarity,
-        },
-    };
     use chrono::NaiveDate;
     use uuid::Uuid;
+
+    use super::{GroupByOption, GroupCards};
+    use crate::domain::card::Card;
+    use crate::domain::card::card_profile::CardProfile;
+    use crate::domain::card::scryfall_data::ScryfallData;
+    use crate::domain::card::scryfall_data::colors::{Color, Colors};
+    use crate::domain::card::scryfall_data::legalities::Legalities;
+    use crate::domain::card::scryfall_data::prices::Prices;
+    use crate::domain::card::scryfall_data::rarity::Rarity;
 
     fn make_card(name: &str) -> Card {
         Card {

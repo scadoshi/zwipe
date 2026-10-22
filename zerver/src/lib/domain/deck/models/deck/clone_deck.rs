@@ -3,11 +3,10 @@
 //! Service-layer error type for copying an existing deck (profile + all
 //! entries on every board) into a new deck with a caller-chosen name.
 
-use crate::{
-    domain::deck::models::deck::get_deck_profile::GetDeckProfileError,
-    outbound::sqlx::postgres::IsConstraintViolation,
-};
 use thiserror::Error;
+
+use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
+use crate::outbound::sqlx::postgres::IsConstraintViolation;
 
 /// Errors that can occur during deck cloning execution.
 #[derive(Debug, Error)]

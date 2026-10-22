@@ -5,14 +5,12 @@
 //! token/emblem printings excluded. An explicit sort in the filter still
 //! wins. (context/archive/commander_select_ordering.md)
 
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::http::endpoints::card::SearchCommanders;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::{
-        auth::models::session::Session,
-        card::{Card, search_card::card_filter::CardQuery},
-    },
-    http::endpoints::card::SearchCommanders,
-};
 
 impl ZwipeClient {
     /// Searches commander candidates.

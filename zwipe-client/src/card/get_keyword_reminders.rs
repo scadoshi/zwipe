@@ -1,8 +1,10 @@
 //! Fetch the served keyword-reminder catalog (name → reminder text).
 
-use crate::{ClientError, ZwipeClient};
 use std::collections::HashMap;
+
 use zwipe_core::http::endpoints::card::GetKeywordReminders;
+
+use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
     /// Fetches the keyword-reminder map. Served so definition fixes

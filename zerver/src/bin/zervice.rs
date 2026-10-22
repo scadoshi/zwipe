@@ -1,14 +1,14 @@
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
-use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
-use zwipe::{
-    config::ZerviceConfig,
-    domain::{
-        card::{ports::CardService, services::Service as CardService_},
-        upkeep::{ports::UpkeepService, services::Service as UpkeepService_},
-    },
-    inbound::external::scryfall::bulk::BulkEndpoint,
-    outbound::sqlx::postgres::Postgres,
-};
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use zwipe::config::ZerviceConfig;
+use zwipe::domain::card::ports::CardService;
+use zwipe::domain::card::services::Service as CardService_;
+use zwipe::domain::upkeep::ports::UpkeepService;
+use zwipe::domain::upkeep::services::Service as UpkeepService_;
+use zwipe::inbound::external::scryfall::bulk::BulkEndpoint;
+use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_core::domain::logo;
 
 #[tokio::main]

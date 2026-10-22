@@ -1,10 +1,11 @@
 //! Change user email endpoint.
 
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::user::User;
+use zwipe_core::http::contracts::auth::HttpChangeEmail;
+use zwipe_core::http::endpoints::user::ChangeEmail;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::{auth::models::session::Session, user::User},
-    http::{contracts::auth::HttpChangeEmail, endpoints::user::ChangeEmail},
-};
 
 impl ZwipeClient {
     /// Updates user email addresses.

@@ -13,21 +13,13 @@ mod common;
 use common::{card, refresh_card_views, seed_cards};
 use serde_json::json;
 use uuid::Uuid;
-
-use zwipe::{
-    domain::{
-        card::ports::{CardRepository, DeckServeContext},
-        deck::ports::DeckRepository,
-    },
-    outbound::sqlx::postgres::Postgres,
-};
-use zwipe_core::domain::{
-    card::{
-        scryfall_data::universe,
-        search_card::card_filter::{CardQuery, builder::CardQueryBuilder},
-    },
-    deck::requests::get_deck_profile::GetDeckProfile,
-};
+use zwipe::domain::card::ports::{CardRepository, DeckServeContext};
+use zwipe::domain::deck::ports::DeckRepository;
+use zwipe::outbound::sqlx::postgres::Postgres;
+use zwipe_core::domain::card::scryfall_data::universe;
+use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 
 /// A default `CardQuery` — no criteria, no explicit sort (so the synergy /
 /// popularity ordering is the one under test).
@@ -64,15 +56,15 @@ async fn insert_signal(
 /// pair: `net = Σ(added + 0.5·maybed − removed)`, `shown = Σ shown`.
 #[sqlx::test]
 async fn card_signal_rollup_math(pool: sqlx::PgPool) {
-    let card_oracle = Uuid::from_u128(0xCA2D);
-    let c1 = Uuid::from_u128(0xC001);
-    let c2 = Uuid::from_u128(0xC002);
+    let card_oracle = Uuid::from_u128(0xca2d);
+    let c1 = Uuid::from_u128(0xc001);
+    let c2 = Uuid::from_u128(0xc002);
 
     // c1: 4 + 0.5*2 - 1 = 4.0 over 10 shown; c2: 1 + 0 - 0 = 1.0 over 5 shown.
     insert_signal(&pool, c1, card_oracle, 10, 4, 2, 1).await;
     insert_signal(&pool, c2, card_oracle, 5, 1, 0, 0).await;
     // a different card, to prove the GROUP BY isolates rows
-    insert_signal(&pool, c1, Uuid::from_u128(0xBEEF), 3, 3, 0, 0).await;
+    insert_signal(&pool, c1, Uuid::from_u128(0xbeef), 3, 3, 0, 0).await;
 
     refresh_card_views(&pool).await;
 
@@ -88,7 +80,7 @@ async fn card_signal_rollup_math(pool: sqlx::PgPool) {
     // the isolated card carries only its own row
     let (net2, shown2): (f64, f64) =
         sqlx::query_as("SELECT net, shown FROM card_signal_rollup WHERE card_oracle_id = $1")
-            .bind(Uuid::from_u128(0xBEEF))
+            .bind(Uuid::from_u128(0xbeef))
             .fetch_one(&pool)
             .await
             .unwrap();
@@ -178,7 +170,7 @@ async fn null_oracle_card_survives_deck_aware_shuffle(pool: sqlx::PgPool) {
     .await;
 
     let scores = json!({});
-    let deck = Uuid::from_u128(0xDEC0);
+    let deck = Uuid::from_u128(0xdec0);
     let repo = Postgres { pool: pool.clone() };
     let q = default_query();
 
@@ -306,7 +298,7 @@ async fn deck_oracle_tags_lift_matching_cards_in_banded_serve(pool: sqlx::PgPool
     // is the only thing that moves a card between bands.
     let scores = json!({});
     let repo = Postgres { pool: pool.clone() };
-    let deck = Uuid::from_u128(0xB4_0004);
+    let deck = Uuid::from_u128(0xb4_0004);
     let q = default_query();
 
     let served_without = repo

@@ -1,12 +1,10 @@
-use axum::{extract::State, http::StatusCode};
+use axum::extract::State;
+use axum::http::StatusCode;
 
-use crate::{
-    domain::{
-        auth::requests::revoke_sessions::{RevokeSessions, RevokeSessionsError},
-        metrics::models::kinds::{AuditAction, EventKind},
-    },
-    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
-};
+use crate::domain::auth::requests::revoke_sessions::{RevokeSessions, RevokeSessionsError};
+use crate::domain::metrics::models::kinds::{AuditAction, EventKind};
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<RevokeSessionsError> for ApiError {
     fn from(value: RevokeSessionsError) -> Self {

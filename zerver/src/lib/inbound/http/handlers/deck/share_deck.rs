@@ -1,18 +1,13 @@
-use axum::{
-    Json,
-    extract::{Path, State},
-    http::StatusCode,
-};
+use axum::Json;
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use uuid::Uuid;
+use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
+use zwipe_core::http::contracts::deck::HttpDeckShareToken;
 
-use crate::{
-    domain::deck::models::deck::share_deck::ShareDeckError,
-    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
-};
-use zwipe_core::{
-    domain::deck::requests::get_deck_profile::GetDeckProfile,
-    http::contracts::deck::HttpDeckShareToken,
-};
+use crate::domain::deck::models::deck::share_deck::ShareDeckError;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<ShareDeckError> for ApiError {
     fn from(value: ShareDeckError) -> Self {

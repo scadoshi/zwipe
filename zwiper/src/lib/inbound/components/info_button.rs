@@ -7,8 +7,9 @@
 //! dialogs clipped to the content column). Not one-time; no session
 //! dependency.
 
-use crate::inbound::components::hint_host::HintTopic;
 use dioxus::prelude::*;
+
+use crate::inbound::components::hint_host::HintTopic;
 
 /// Inline "?" glyph that opens the given concept's hint via the app-root host.
 #[component]

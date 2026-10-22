@@ -1,10 +1,10 @@
 //! Change user password endpoint.
 
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::auth::HttpChangePassword;
+use zwipe_core::http::endpoints::user::ChangePassword;
+
 use crate::{ClientError, ZwipeClient};
-use zwipe_core::{
-    domain::auth::models::session::Session,
-    http::{contracts::auth::HttpChangePassword, endpoints::user::ChangePassword},
-};
 
 impl ZwipeClient {
     /// Updates user passwords.

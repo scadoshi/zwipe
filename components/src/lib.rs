@@ -36,8 +36,6 @@ mod keyword_chips;
 mod oracle_text;
 mod theme;
 
-pub use orangui::*;
-
 pub use architecture::ZwipeArchitecture;
 pub use card_details::{CardDetails, card_face_count};
 pub use card_role_chips::CardRoleChips;
@@ -47,6 +45,7 @@ pub use charts::{ChartLabel, DeckCharts, DrawOdds, ManaCurve, ManaFulfillment};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use oracle_text::OracleText;
+pub use orangui::*;
 pub use theme::theme_from_preferences;
 
 /// The Magic rules: oracle text, keyword chips, card rows, the flippable card

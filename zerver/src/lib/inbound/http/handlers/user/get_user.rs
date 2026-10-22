@@ -1,9 +1,12 @@
-use crate::{
-    domain::user::models::get_user::GetUserError,
-    inbound::http::{ApiError, AppState, To500, middleware::AuthenticatedUser},
-};
-use axum::{Json, extract::State, http::StatusCode};
-use zwipe_core::domain::user::{User, requests::get_user::GetUser};
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::requests::get_user::GetUser;
+
+use crate::domain::user::models::get_user::GetUserError;
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState, To500};
 
 impl From<GetUserError> for ApiError {
     fn from(value: GetUserError) -> Self {

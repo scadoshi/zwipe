@@ -19,9 +19,10 @@ use std::collections::BTreeSet;
 
 use common::{card, seed_cards};
 use serde_json::json;
-
-use zwipe::{domain::card::ports::CardRepository, outbound::sqlx::postgres::Postgres};
-use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
+use zwipe::domain::card::ports::CardRepository;
+use zwipe::outbound::sqlx::postgres::Postgres;
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 
 fn names(cards: &[Card]) -> BTreeSet<String> {
     cards.iter().map(|c| c.scryfall_data.name.clone()).collect()

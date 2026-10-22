@@ -9,12 +9,11 @@
 //! Counters live in memory. zerver is one process, and a restart clearing
 //! them hands an attacker five more guesses, nothing more.
 
+use std::net::IpAddr;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::{Duration, Instant};
+
 use dashmap::DashMap;
-use std::{
-    net::IpAddr,
-    sync::atomic::{AtomicUsize, Ordering},
-    time::{Duration, Instant},
-};
 use uuid::Uuid;
 
 /// Wrong passwords from one address before the pair is locked.

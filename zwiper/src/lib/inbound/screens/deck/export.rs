@@ -1,14 +1,5 @@
 //! Export deck as plain-text decklist screen.
 
-use crate::inbound::{
-    components::{
-        auth::authed::use_authed,
-        hint_dialog::{HintDialog, use_one_time_hint},
-        screen_header::ScreenHeader,
-        telemetry::vocabulary::{DeckScreen, Screen},
-    },
-    router::Router,
-};
 use components::{
     ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey, TOAST_QUICK,
 };
@@ -16,7 +7,14 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ClientError;
-use zwipe_core::domain::{deck::Deck, user::models::hints::HINT_EXPORT};
+use zwipe_core::domain::deck::Deck;
+use zwipe_core::domain::user::models::hints::HINT_EXPORT;
+
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::hint_dialog::{HintDialog, use_one_time_hint};
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
+use crate::inbound::router::Router;
 
 #[component]
 pub fn ExportDeck(deck_id: Uuid) -> Element {

@@ -111,11 +111,12 @@ fn parse(name: &str) -> Option<ThemeConfig> {
 // iOS: UIApplication's alternate icon API.
 #[cfg(target_os = "ios")]
 mod platform {
-    use objc2::{
-        Encode, Encoding, MainThreadMarker, class, msg_send, rc::Retained, runtime::NSObject,
-    };
-    use objc2_foundation::NSString;
     use std::ffi::c_void;
+
+    use objc2::rc::Retained;
+    use objc2::runtime::NSObject;
+    use objc2::{Encode, Encoding, MainThreadMarker, class, msg_send};
+    use objc2_foundation::NSString;
 
     /// Empty stand-in for the Objective-C completion block, the same one
     /// `open_url` passes.
@@ -192,10 +193,8 @@ mod platform {
 // Everywhere else: the pick and the flag, held for the session.
 #[cfg(not(target_os = "ios"))]
 mod platform {
-    use std::sync::{
-        Mutex,
-        atomic::{AtomicBool, Ordering},
-    };
+    use std::sync::Mutex;
+    use std::sync::atomic::{AtomicBool, Ordering};
 
     static PICKED: Mutex<Option<String>> = Mutex::new(None);
     static FOLLOWS: AtomicBool = AtomicBool::new(false);

@@ -1,16 +1,16 @@
-use crate::inbound::components::{
-    auth::{authed::use_authed, signal_logout::SignalLogout},
-    fields::text_input::TextInput,
-    telemetry::vocabulary::{ProfileScreen, Screen, component},
-};
+use std::time::Duration;
+
 use components::{ActionButton, AlertDialog, DialogAction};
 use dioxus::prelude::*;
-use std::time::Duration;
 use zwipe_client::ZwipeClient;
-use zwipe_core::{
-    domain::auth::models::{secret::Secret, session::Session},
-    http::contracts::auth::HttpDeleteUser,
-};
+use zwipe_core::domain::auth::models::secret::Secret;
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::auth::HttpDeleteUser;
+
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::auth::signal_logout::SignalLogout;
+use crate::inbound::components::fields::text_input::TextInput;
+use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen, component};
 
 /// Delete account dialog with 5-second countdown, password confirmation, and deletion logic.
 #[component]

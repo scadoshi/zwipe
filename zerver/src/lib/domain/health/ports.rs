@@ -3,8 +3,10 @@
 //! This module defines the interfaces (ports) for service health monitoring.
 //! Health checks verify the service is operational and can communicate with dependencies.
 
-use crate::domain::{BoxFuture, health::models::HealthCheckFailed};
 use std::future::Future;
+
+use crate::domain::BoxFuture;
+use crate::domain::health::models::HealthCheckFailed;
 
 /// Database port for health check operations.
 pub trait HealthRepository: Clone + Send + Sync + 'static {

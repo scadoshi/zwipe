@@ -1,16 +1,15 @@
 //! Port traits for metrics persistence.
 
-use crate::domain::BoxFuture;
 use std::future::Future;
-use uuid::Uuid;
 
-use crate::domain::metrics::models::{
-    errors::MetricsError,
-    kinds::{AuditAction, EventKind},
-    lifetime_counters::LifetimeCounters,
-    public_metrics::PublicMetrics,
-};
+use uuid::Uuid;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpCrashReport, HttpUsageBatch};
+
+use crate::domain::BoxFuture;
+use crate::domain::metrics::models::errors::MetricsError;
+use crate::domain::metrics::models::kinds::{AuditAction, EventKind};
+use crate::domain::metrics::models::lifetime_counters::LifetimeCounters;
+use crate::domain::metrics::models::public_metrics::PublicMetrics;
 
 /// Database port for metrics writes and reads.
 pub trait MetricsRepository: Clone + Send + Sync + 'static {
