@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../docs/logo/zite-dark.png">
+  <img src="../docs/logo/zite-light.png" alt="zite" width="344">
+</picture>
+
 # zite
 
 Dioxus website for Zwipe at [zwipe.net](https://zwipe.net). Statically rendered from `Route::static_routes()`, with a few token-driven dynamic pages.

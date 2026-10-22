@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../docs/logo/zwiper-dark.png">
+  <img src="../docs/logo/zwiper-light.png" alt="zwiper" width="536">
+</picture>
+
 # zwiper
 
 Dioxus cross-platform app for Zwipe. Swipe-based MTG deck builder, live on the iOS App Store and Google Play.

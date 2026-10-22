@@ -1,10 +1,13 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/logo/zwipe-dark.png">
+  <img src="docs/logo/zwipe-light.png" alt="zwipe" width="478">
+</picture>
+
 # Zwipe
 
 Mobile-first Magic: The Gathering deck builder with swipe-based navigation.
 
 **Status:** live on the iOS App Store and Google Play. Deck building is in the app; [zwipe.net](https://zwipe.net) is the site.
-
-![Swiping through cards to add them to a deck](demo/demo.gif)
 
 ## Tech stack
 

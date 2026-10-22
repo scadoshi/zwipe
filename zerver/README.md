@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../docs/logo/zerver-dark.png">
+  <img src="../docs/logo/zerver-light.png" alt="zerver" width="565">
+</picture>
+
 # zerver
 
 Axum REST API server for Zwipe. Re-exports domain types from `zwipe-core` and adds server-specific layers.
@@ -18,3 +23,12 @@ Axum REST API server for Zwipe. Re-exports domain types from `zwipe-core` and ad
 Domain types live in `zwipe-core`. Zerver re-exports via `pub use zwipe_core::...` and adds only what requires server-only dependencies (sqlx, axum, argon2, jsonwebtoken, tokio).
 
 Database persistence uses `Database*` wrapper structs with primitive fields; domain types never have SQLx derives.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../docs/logo/zervice-dark.png">
+  <img src="../docs/logo/zervice-light.png" alt="zervice" width="632">
+</picture>
+
+## zervice
+
+The second binary in this crate. It runs once and exits, nightly on a systemd timer in production: card sync from Scryfall, oracle tags, derived categories, materialized view refreshes, then upkeep prunes. Each step logs its own result, and a failed step doesn't stop the ones after it.
