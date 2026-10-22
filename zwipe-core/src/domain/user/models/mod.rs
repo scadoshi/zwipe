@@ -63,6 +63,11 @@ pub struct User {
     /// (see [`hints`]). Defaults to empty for responses from older servers.
     #[serde(default)]
     pub hints_shown: HashMap<String, bool>,
+
+    /// An address the user asked to switch to, held until a link sent to it
+    /// is clicked. Absent from the JSON when there is none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pending_email: Option<Email>,
 }
 
 impl User {
@@ -86,6 +91,7 @@ impl User {
             email,
             email_verified_at: None,
             hints_shown: HashMap::new(),
+            pending_email: None,
         }
     }
 

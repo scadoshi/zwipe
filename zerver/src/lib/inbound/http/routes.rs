@@ -19,6 +19,7 @@ use crate::inbound::http::handlers::auth::authenticate_user::authenticate_user;
 use crate::inbound::http::handlers::auth::change_email::change_email;
 use crate::inbound::http::handlers::auth::change_password::change_password;
 use crate::inbound::http::handlers::auth::change_username::change_username;
+use crate::inbound::http::handlers::auth::confirm_email_change::confirm_email_change;
 use crate::inbound::http::handlers::auth::delete_user::delete_user;
 use crate::inbound::http::handlers::auth::refresh_session::refresh_session;
 use crate::inbound::http::handlers::auth::register_user::register_user;
@@ -232,7 +233,7 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // 10 req / 1hr per IP: verify-email + reset-password
+    // 10 req / 1hr per IP: verify-email, confirm-email-change, reset-password
     let verify_reset_config = Arc::new(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(360))
@@ -365,6 +366,13 @@ pub fn public_routes() -> Router<AppState> {
                         .route(
                             "/verify-email",
                             post(verify_email).layer(
+                                GovernorLayer::new(Arc::clone(&verify_reset_config))
+                                    .error_handler(stable_rate_limit),
+                            ),
+                        )
+                        .route(
+                            "/confirm-email-change",
+                            post(confirm_email_change).layer(
                                 GovernorLayer::new(Arc::clone(&verify_reset_config))
                                     .error_handler(stable_rate_limit),
                             ),

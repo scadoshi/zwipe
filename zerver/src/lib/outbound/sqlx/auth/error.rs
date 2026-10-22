@@ -7,6 +7,7 @@ use zwipe_core::domain::user::username::InvalidUsername;
 use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
 use crate::domain::auth::requests::change_email::ChangeEmailError;
 use crate::domain::auth::requests::change_username::ChangeUsernameError;
+use crate::domain::auth::requests::confirm_email_change::ConfirmEmailChangeError;
 use crate::domain::auth::requests::create_session::CreateSessionError;
 use crate::domain::auth::requests::delete_user::DeleteUserError;
 use crate::domain::auth::requests::enforce_session_maximum::EnforceSessionMaximumError;
@@ -91,6 +92,18 @@ impl From<sqlx::Error> for ChangeEmailError {
 }
 
 impl From<IntoUserError> for ChangeEmailError {
+    fn from(value: IntoUserError) -> Self {
+        Self::UserFromDb(value.into())
+    }
+}
+
+impl From<sqlx::Error> for ConfirmEmailChangeError {
+    fn from(value: sqlx::Error) -> Self {
+        Self::Database(value.into())
+    }
+}
+
+impl From<IntoUserError> for ConfirmEmailChangeError {
     fn from(value: IntoUserError) -> Self {
         Self::UserFromDb(value.into())
     }

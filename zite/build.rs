@@ -7,7 +7,7 @@ const WEB_BASE: &str = "https://zwipe.net";
 
 /// Every prerendered, indexable route with its sitemap hints. Kept here as the
 /// single source of truth so `public/sitemap.xml` can't drift from the routes
-/// the way a hand-edited file does. Dynamic routes (`/verify/:token`,
+/// the way a hand-edited file does. Dynamic routes (`/verify/:token`, `/confirm-email/:token`,
 /// `/reset/:token`) are excluded — they're `Disallow`ed in robots.txt.
 /// `(path, changefreq, priority)`.
 const ROUTES: &[(&str, &str, &str)] = &[

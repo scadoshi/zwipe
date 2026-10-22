@@ -2,6 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /deck/
 Disallow: /verify/
+Disallow: /confirm-email/
 Disallow: /reset/
 
 Sitemap: https://zwipe.net/sitemap.xml

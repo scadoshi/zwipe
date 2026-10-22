@@ -7,6 +7,7 @@ use std::future::Future;
 
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
+use zwipe_core::domain::Email;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::domain::auth::models::refresh_token::RefreshToken;
 use zwipe_core::domain::auth::models::session::Session;
@@ -16,11 +17,12 @@ use crate::domain::BoxFuture;
 use crate::domain::auth::models::UserWithPasswordHash;
 use crate::domain::auth::models::access_token::JwtSecret;
 use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
-use crate::domain::auth::requests::change_email::{
-    ChangeEmail, ChangeEmailError, ChangeEmailOutcome,
-};
+use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
 use crate::domain::auth::requests::change_password::{ChangePassword, ChangePasswordError};
 use crate::domain::auth::requests::change_username::{ChangeUsername, ChangeUsernameError};
+use crate::domain::auth::requests::confirm_email_change::{
+    ConfirmEmailChange, ConfirmEmailChangeError, ConfirmedEmailChange,
+};
 use crate::domain::auth::requests::create_session::{CreateSession, CreateSessionError};
 use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError};
 use crate::domain::auth::requests::refresh_session::{RefreshSession, RefreshSessionError};
@@ -109,6 +111,25 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         &self,
         request: &ChangeEmail,
     ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
+
+    /// Stores the user's pending email change, replacing any earlier one.
+    fn store_email_change_request(
+        &self,
+        user_id: Uuid,
+        new_email: &Email,
+        token_hash: String,
+        expires_at: DateTime<Utc>,
+    ) -> impl Future<Output = Result<(), ChangeEmailError>> + Send;
+
+    /// Consumes an unexpired pending change by token hash and switches the
+    /// user to its address, marked verified, in one transaction.
+    ///
+    /// Returns [`ConfirmEmailChangeError::AddressTaken`] when another account
+    /// holds the address by now; the request is consumed either way.
+    fn use_email_change_request(
+        &self,
+        token_hash: &str,
+    ) -> impl Future<Output = Result<ConfirmedEmailChange, ConfirmEmailChangeError>> + Send;
 
     // == delete ==
 
@@ -282,14 +303,29 @@ pub trait AuthService: Clone + Send + Sync + 'static {
 
     /// Changes a user's email after verifying password.
     ///
-    /// Verifies the password, then tries the update. A free address is taken
-    /// and the old address is notified. An address another account already
-    /// holds is left alone and its owner is notified instead; the caller gets
-    /// the same shape back either way so the result never says which.
+    /// Verifies password, checks uniqueness, updates email.
     fn change_email(
         &self,
         request: &ChangeEmail,
-    ) -> impl Future<Output = Result<ChangeEmailOutcome, ChangeEmailError>> + Send;
+    ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
+
+    /// Holds a new email as pending after verifying the password, and mails a
+    /// confirmation link to it when no other account has it.
+    ///
+    /// Answers the same way whether or not the address is taken: the user as
+    /// they are, with `pending_email` set. The email goes out in the
+    /// background so the response time doesn't say either.
+    fn request_email_change(
+        &self,
+        request: &ChangeEmail,
+    ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
+
+    /// Switches a user to their pending email from the confirmation link and
+    /// tells the old address.
+    fn confirm_email_change(
+        &self,
+        request: &ConfirmEmailChange,
+    ) -> impl Future<Output = Result<User, ConfirmEmailChangeError>> + Send;
 
     // == delete ==
 
@@ -394,7 +430,19 @@ pub trait ErasedAuthService: Send + Sync + 'static {
     fn change_email<'a>(
         &'a self,
         request: &'a ChangeEmail,
-    ) -> BoxFuture<'a, Result<ChangeEmailOutcome, ChangeEmailError>>;
+    ) -> BoxFuture<'a, Result<User, ChangeEmailError>>;
+
+    /// See [`AuthService::request_email_change`].
+    fn request_email_change<'a>(
+        &'a self,
+        request: &'a ChangeEmail,
+    ) -> BoxFuture<'a, Result<User, ChangeEmailError>>;
+
+    /// See [`AuthService::confirm_email_change`].
+    fn confirm_email_change<'a>(
+        &'a self,
+        request: &'a ConfirmEmailChange,
+    ) -> BoxFuture<'a, Result<User, ConfirmEmailChangeError>>;
 
     /// See [`AuthService::delete_user`].
     fn delete_user<'a>(
@@ -489,8 +537,22 @@ where
     fn change_email<'a>(
         &'a self,
         request: &'a ChangeEmail,
-    ) -> BoxFuture<'a, Result<ChangeEmailOutcome, ChangeEmailError>> {
+    ) -> BoxFuture<'a, Result<User, ChangeEmailError>> {
         Box::pin(AuthService::change_email(self, request))
+    }
+
+    fn request_email_change<'a>(
+        &'a self,
+        request: &'a ChangeEmail,
+    ) -> BoxFuture<'a, Result<User, ChangeEmailError>> {
+        Box::pin(AuthService::request_email_change(self, request))
+    }
+
+    fn confirm_email_change<'a>(
+        &'a self,
+        request: &'a ConfirmEmailChange,
+    ) -> BoxFuture<'a, Result<User, ConfirmEmailChangeError>> {
+        Box::pin(AuthService::confirm_email_change(self, request))
     }
 
     fn delete_user<'a>(

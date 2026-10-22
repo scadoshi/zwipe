@@ -17,11 +17,12 @@ use crate::domain::auth::models::access_token::{AccessTokenExt, JwtSecret};
 use crate::domain::auth::models::password::{HashedPassword, Password};
 use crate::domain::auth::ports::{AuthRepository, AuthService};
 use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
-use crate::domain::auth::requests::change_email::{
-    ChangeEmail, ChangeEmailError, ChangeEmailOutcome,
-};
+use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
 use crate::domain::auth::requests::change_password::{ChangePassword, ChangePasswordError};
 use crate::domain::auth::requests::change_username::{ChangeUsername, ChangeUsernameError};
+use crate::domain::auth::requests::confirm_email_change::{
+    ConfirmEmailChange, ConfirmEmailChangeError, ConfirmedEmailChange,
+};
 use crate::domain::auth::requests::create_session::{CreateSession, CreateSessionError};
 use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError};
 use crate::domain::auth::requests::refresh_session::{RefreshSession, RefreshSessionError};
@@ -134,6 +135,27 @@ where
         {
             tracing::error!(event = "email_send_failure", user_id = %user_id, error = %e);
         }
+    }
+
+    /// Mails the link that confirms a pending email change.
+    ///
+    /// Runs in the background after the response, so a delivery failure is
+    /// logged and never reaches the caller.
+    async fn send_email_change_link(&self, user_id: Uuid, to_email: &str, raw_token: &str) {
+        let link = format!("{}/confirm-email/{raw_token}", self.web_base_url);
+        // Debug builds only, like `dev_email_verification`.
+        #[cfg(debug_assertions)]
+        tracing::warn!(
+            event = "dev_email_change_confirmation",
+            %user_id,
+            confirm_link = %link,
+            raw_token = %raw_token,
+            "DEV ONLY: email change link (or POST the raw_token to /api/auth/confirm-email-change)"
+        );
+        let html =
+            include_str!("email_templates/confirm_email_change.html").replace("{link}", &link);
+        self.send_change_notification(user_id, to_email, "Confirm your new Zwipe email", html)
+            .await;
     }
 
     /// Re-verifies a user's password for a sensitive operation (change
@@ -392,33 +414,9 @@ where
         Ok(user)
     }
 
-    async fn change_email(
-        &self,
-        request: &ChangeEmail,
-    ) -> Result<ChangeEmailOutcome, ChangeEmailError> {
-        let current = self.verify_password(&request.into()).await?;
-
-        // Both arms do the same work in the same order: one update attempt,
-        // one notification, so the caller cannot time which one ran.
-        let user = match self.auth_repo.change_email(request).await {
-            Ok(user) => user,
-            Err(ChangeEmailError::Duplicate) => {
-                // Tell the address's owner; the caller learns nothing. The
-                // unique index just confirmed the address is on a row, so it
-                // is sent as given, no lookup needed.
-                let html = include_str!("email_templates/email_claim_attempted.html")
-                    .replace("{support_email}", &escape_html(&self.support_email));
-                self.send_change_notification(
-                    current.id,
-                    request.email.as_ref(),
-                    "Someone tried to use your email on Zwipe",
-                    html,
-                )
-                .await;
-                return Ok(ChangeEmailOutcome::Taken(current));
-            }
-            Err(e) => return Err(e),
-        };
+    async fn change_email(&self, request: &ChangeEmail) -> Result<User, ChangeEmailError> {
+        let old_email = self.verify_password(&request.into()).await?.email;
+        let user = self.auth_repo.change_email(request).await?;
 
         // Notify the OLD address: the new one is what an attacker would control.
         let html = include_str!("email_templates/email_changed.html")
@@ -426,13 +424,13 @@ where
             .replace("{support_email}", &escape_html(&self.support_email));
         self.send_change_notification(
             user.id,
-            current.email.as_ref(),
+            old_email.as_ref(),
             "Your Zwipe email was changed",
             html,
         )
         .await;
 
-        Ok(ChangeEmailOutcome::Changed(user))
+        Ok(user)
     }
 
     async fn change_password_and_revoke_sessions(
@@ -457,6 +455,60 @@ where
     }
 
     // == delete ==
+    async fn request_email_change(&self, request: &ChangeEmail) -> Result<User, ChangeEmailError> {
+        let mut user = self.verify_password(&request.into()).await?;
+
+        let (raw, hash) = generate_hex_token();
+        let expires_at = Utc::now() + Duration::hours(24);
+        self.auth_repo
+            .store_email_change_request(user.id, &request.email, hash, expires_at)
+            .await?;
+
+        // Both arms store the request and answer the same; only the free one
+        // mails, and it mails off the request path.
+        let taken = self
+            .auth_repo
+            .get_user_id_by_email(request.email.as_ref())
+            .await
+            .map_err(ChangeEmailError::Database)?
+            .is_some();
+        if taken {
+            tracing::info!(event = "email_change_taken", user_id = %user.id);
+        } else {
+            let this = self.clone();
+            let user_id = user.id;
+            let to = request.email.to_string();
+            tokio::spawn(async move { this.send_email_change_link(user_id, &to, &raw).await });
+        }
+
+        user.pending_email = Some(request.email.clone());
+        Ok(user)
+    }
+
+    async fn confirm_email_change(
+        &self,
+        request: &ConfirmEmailChange,
+    ) -> Result<User, ConfirmEmailChangeError> {
+        let hash = hex::encode(sha2::Sha256::digest(request.token.as_bytes()));
+        let ConfirmedEmailChange { user, old_email } =
+            self.auth_repo.use_email_change_request(&hash).await?;
+        tracing::info!(event = "email_change_confirmed", user_id = %user.id);
+
+        // Notify the OLD address: the new one is what an attacker would control.
+        let html = include_str!("email_templates/email_changed.html")
+            .replace("{new_email}", &escape_html(user.email.as_ref()))
+            .replace("{support_email}", &escape_html(&self.support_email));
+        self.send_change_notification(
+            user.id,
+            old_email.as_ref(),
+            "Your Zwipe email was changed",
+            html,
+        )
+        .await;
+
+        Ok(user)
+    }
+
     async fn delete_user(&self, request: &DeleteUser) -> Result<(), DeleteUserError> {
         self.verify_password(&request.into()).await?;
         self.auth_repo.delete_user(request).await

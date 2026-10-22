@@ -3,6 +3,8 @@
 //! Methods for user authentication:
 //! login, logout, token refresh, and registration.
 
+/// Pending email change confirmation endpoint.
+pub mod confirm_email_change;
 /// Forgot password / password reset initiation endpoint.
 pub mod forgot_password;
 /// User login endpoint.
