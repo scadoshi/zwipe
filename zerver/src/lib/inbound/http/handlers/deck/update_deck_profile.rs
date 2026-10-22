@@ -20,9 +20,9 @@ impl From<UpdateDeckProfileError> for ApiError {
             UpdateDeckProfileError::NotFound => {
                 Self::NotFound("deck profile not found".to_string())
             }
-            UpdateDeckProfileError::Duplicate => Self::UnprocessableEntity(
-                "deck with name and user combination already exists".to_string(),
-            ),
+            UpdateDeckProfileError::Duplicate => {
+                Self::Conflict("deck with name and user combination already exists".to_string())
+            }
             UpdateDeckProfileError::GetDeckProfileError(e) => ApiError::from(e),
             UpdateDeckProfileError::DeckFromDb(e) => e.to_500(),
             UpdateDeckProfileError::Database(e) => e.to_500(),

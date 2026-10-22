@@ -16,9 +16,7 @@ impl From<ChangeUsernameError> for ApiError {
         tracing::warn!(event = "change_username_error", error = %value);
         match value {
             ChangeUsernameError::UserNotFound => Self::NotFound("user not found".to_string()),
-            ChangeUsernameError::Duplicate => {
-                Self::UnprocessableEntity("username already in use".to_string())
-            }
+            ChangeUsernameError::Duplicate => Self::Conflict("username already in use".to_string()),
             ChangeUsernameError::Database(e) => e.to_500(),
             ChangeUsernameError::UserFromDb(e) => e.to_500(),
             ChangeUsernameError::AuthenticateUserError(e) => ApiError::from(e),

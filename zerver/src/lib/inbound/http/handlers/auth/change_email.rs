@@ -18,9 +18,7 @@ impl From<ChangeEmailError> for ApiError {
             ChangeEmailError::Database(e) => e.to_500(),
             ChangeEmailError::UserFromDb(e) => e.to_500(),
             ChangeEmailError::AuthenticateUserError(e) => ApiError::from(e),
-            ChangeEmailError::Duplicate => {
-                Self::UnprocessableEntity("email already in use".to_string())
-            }
+            ChangeEmailError::Duplicate => Self::Conflict("email already in use".to_string()),
         }
     }
 }

@@ -149,7 +149,7 @@ async fn duplicate_deck_name_rejected(pool: sqlx::PgPool) {
         .await;
     assert_eq!(
         s2,
-        StatusCode::UNPROCESSABLE_ENTITY,
+        StatusCode::CONFLICT,
         "duplicate name should be rejected"
     );
 }
