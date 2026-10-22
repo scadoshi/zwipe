@@ -1,6 +1,8 @@
 # Verify-first registration
 
-**Status: PLANNED 2026-10-22, not started. Companion: `confirm_first_email_change.md` (the change-email half).**
+**Status: Phases 1 and 2 built on `verify-first-registration` (stacked on `conflict-409` and `email-enumeration`) 2026-10-22, tested locally, not deployed. Companion: `confirm_first_email_change.md` (the change-email half).**
+
+**As built:** a taken username answers 409 "username already taken" (the `conflict-409` branch moved duplicates off 422). The zite verify page copy is unchanged: "You can close this page and go back to the app" already fits, since login works unverified. The client sends the user back to the Login screen it came from, with the email filled in, and toasts "Check your inbox to verify your email, then log in".
 
 **Owner decisions, 2026-10-22, after the design below was written:** login stays open to unverified accounts (the recommendation under "What an unverified account can do" is accepted; a login gate was considered and dropped as stricter than a TCG app needs). The `account_exists` notice stays, because on register the person typing a taken address is often its owner. Every email on both branches is spawned off the request path so the response never waits on Resend; that replaces the "same work shape" parity argument below as the timing defense.
 

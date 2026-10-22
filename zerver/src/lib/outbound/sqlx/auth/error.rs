@@ -50,6 +50,11 @@ impl From<IntoUserError> for AuthenticateUserError {
 impl From<sqlx::Error> for RegisterUserError {
     fn from(value: sqlx::Error) -> Self {
         match value {
+            sqlx::Error::Database(ref db)
+                if db.is_unique_violation() && db.constraint() == Some("users_email_key") =>
+            {
+                Self::DuplicateEmail
+            }
             e if e.is_unique_constraint_violation() => Self::Duplicate,
             e => Self::Database(e.into()),
         }

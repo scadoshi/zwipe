@@ -15,6 +15,7 @@ use crate::domain::auth::lockout::LoginLockout;
 use crate::domain::auth::models::UserWithPasswordHash;
 use crate::domain::auth::models::access_token::{AccessTokenExt, JwtSecret};
 use crate::domain::auth::models::password::{HashedPassword, Password};
+use crate::domain::auth::notice_cooldown::NoticeCooldown;
 use crate::domain::auth::ports::{AuthRepository, AuthService};
 use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
 use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
@@ -26,7 +27,9 @@ use crate::domain::auth::requests::confirm_email_change::{
 use crate::domain::auth::requests::create_session::{CreateSession, CreateSessionError};
 use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError};
 use crate::domain::auth::requests::refresh_session::{RefreshSession, RefreshSessionError};
-use crate::domain::auth::requests::register_user::{RegisterUser, RegisterUserError};
+use crate::domain::auth::requests::register_user::{
+    RegisterOutcome, RegisterUser, RegisterUserError,
+};
 use crate::domain::auth::requests::request_password_reset::{
     RequestPasswordReset, RequestPasswordResetError,
 };
@@ -77,6 +80,8 @@ where
     access_token_lifetime: Duration,
     /// Failed-login counters by account and address; shared by every clone.
     lockout: Arc<LoginLockout>,
+    /// When each address last got an "account exists" notice; shared by every clone.
+    account_exists_notices: Arc<NoticeCooldown>,
     /// Public web base URL for building verify/reset links (e.g. `https://zwipe.net`).
     web_base_url: String,
     /// User-facing support email address shown in transactional emails.
@@ -108,6 +113,7 @@ where
             jwt_secret,
             access_token_lifetime,
             lockout: Arc::new(LoginLockout::default()),
+            account_exists_notices: Arc::new(NoticeCooldown::default()),
             web_base_url,
             support_email,
         }
@@ -156,6 +162,26 @@ where
             include_str!("email_templates/confirm_email_change.html").replace("{link}", &link);
         self.send_change_notification(user_id, to_email, "Confirm your new Zwipe email", html)
             .await;
+    }
+
+    /// Tells an address's owner that someone tried to register with it.
+    ///
+    /// Runs in the background after the response, so a delivery failure is
+    /// logged and never reaches the caller.
+    async fn send_account_exists_notice(&self, to_email: &str) {
+        let html = include_str!("email_templates/account_exists.html")
+            .replace("{support_email}", &escape_html(&self.support_email));
+        if let Err(e) = self
+            .email_sender
+            .send_email(SendEmail {
+                to: to_email.to_string(),
+                subject: "You already have a Zwipe account".to_string(),
+                html_body: html,
+            })
+            .await
+        {
+            tracing::error!(event = "email_send_failure", kind = "account_exists", error = %e);
+        }
     }
 
     /// Re-verifies a user's password for a sensitive operation (change
@@ -250,6 +276,46 @@ where
             refresh_token,
             preferences,
         })
+    }
+
+    async fn register_user_verify_first(
+        &self,
+        request: &RegisterUser,
+    ) -> Result<RegisterOutcome, RegisterUserError> {
+        // Checked first so a taken email can only ever be what the insert
+        // trips over. Usernames are public, so answering this inline tells
+        // nobody anything new.
+        if self.auth_repo.username_exists(&request.username).await? {
+            return Err(RegisterUserError::UsernameTaken);
+        }
+
+        // Both arms answer without waiting on Resend, so the response time
+        // doesn't say which one ran.
+        match self.auth_repo.create_user(request).await {
+            Ok(user) => {
+                let this = self.clone();
+                let user_id = user.id;
+                let to = user.email.to_string();
+                tokio::spawn(async move {
+                    if let Err(e) = this.send_verification_email(user_id, &to).await {
+                        tracing::error!(event = "verification_email_failed", %user_id, error = %e);
+                    }
+                });
+                Ok(RegisterOutcome::Created(user))
+            }
+            Err(RegisterUserError::DuplicateEmail) => {
+                tracing::info!(event = "register_existing_email");
+                if self.account_exists_notices.try_send(request.email.as_ref()) {
+                    let this = self.clone();
+                    let to = request.email.to_string();
+                    tokio::spawn(async move { this.send_account_exists_notice(&to).await });
+                }
+                Ok(RegisterOutcome::EmailTaken)
+            }
+            // A username taken between the check and the insert.
+            Err(RegisterUserError::Duplicate) => Err(RegisterUserError::UsernameTaken),
+            Err(e) => Err(e),
+        }
     }
 
     async fn authenticate_user(

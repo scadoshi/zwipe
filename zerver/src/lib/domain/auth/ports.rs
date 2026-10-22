@@ -12,6 +12,7 @@ use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::domain::auth::models::refresh_token::RefreshToken;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::username::Username;
 
 use crate::domain::BoxFuture;
 use crate::domain::auth::models::UserWithPasswordHash;
@@ -26,7 +27,9 @@ use crate::domain::auth::requests::confirm_email_change::{
 use crate::domain::auth::requests::create_session::{CreateSession, CreateSessionError};
 use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError};
 use crate::domain::auth::requests::refresh_session::{RefreshSession, RefreshSessionError};
-use crate::domain::auth::requests::register_user::{RegisterUser, RegisterUserError};
+use crate::domain::auth::requests::register_user::{
+    RegisterOutcome, RegisterUser, RegisterUserError,
+};
 use crate::domain::auth::requests::request_password_reset::{
     RequestPasswordReset, RequestPasswordResetError,
 };
@@ -53,6 +56,18 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         &self,
         request: &RegisterUser,
     ) -> impl Future<Output = Result<(User, RefreshToken), RegisterUserError>> + Send;
+
+    /// Creates a new user without a session (`verify_first` registration).
+    fn create_user(
+        &self,
+        request: &RegisterUser,
+    ) -> impl Future<Output = Result<User, RegisterUserError>> + Send;
+
+    /// Whether any account has this username.
+    fn username_exists(
+        &self,
+        username: &Username,
+    ) -> impl Future<Output = Result<bool, RegisterUserError>> + Send;
 
     /// Creates a new refresh token for an existing user (new session).
     ///
@@ -259,6 +274,16 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         request: &RegisterUser,
     ) -> impl Future<Output = Result<Session, RegisterUserError>> + Send;
 
+    /// Registers a new user without a session.
+    ///
+    /// A taken username is an error; a taken email is
+    /// [`RegisterOutcome::EmailTaken`], so the handler can answer it like a
+    /// new one. Emails go out in the background either way.
+    fn register_user_verify_first(
+        &self,
+        request: &RegisterUser,
+    ) -> impl Future<Output = Result<RegisterOutcome, RegisterUserError>> + Send;
+
     /// Creates a new session for an authenticated user.
     ///
     /// Enforces session maximum, generates new refresh token and access token.
@@ -396,6 +421,12 @@ pub trait ErasedAuthService: Send + Sync + 'static {
         request: &'a RegisterUser,
     ) -> BoxFuture<'a, Result<Session, RegisterUserError>>;
 
+    /// See [`AuthService::register_user_verify_first`].
+    fn register_user_verify_first<'a>(
+        &'a self,
+        request: &'a RegisterUser,
+    ) -> BoxFuture<'a, Result<RegisterOutcome, RegisterUserError>>;
+
     /// See [`AuthService::create_session`].
     fn create_session<'a>(
         &'a self,
@@ -495,6 +526,13 @@ where
         request: &'a RegisterUser,
     ) -> BoxFuture<'a, Result<Session, RegisterUserError>> {
         Box::pin(AuthService::register_user(self, request))
+    }
+
+    fn register_user_verify_first<'a>(
+        &'a self,
+        request: &'a RegisterUser,
+    ) -> BoxFuture<'a, Result<RegisterOutcome, RegisterUserError>> {
+        Box::pin(AuthService::register_user_verify_first(self, request))
     }
 
     fn create_session<'a>(

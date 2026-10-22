@@ -5,7 +5,7 @@ use std::borrow::Cow;
 use crate::domain::auth::models::session::Session;
 use crate::http::contracts::auth::{
     HttpAuthenticateUser, HttpConfirmEmailChange, HttpRefreshSession, HttpRegisterUser,
-    HttpRequestPasswordReset, HttpResetPassword, HttpVerifyEmail,
+    HttpRegistrationAccepted, HttpRequestPasswordReset, HttpResetPassword, HttpVerifyEmail,
 };
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths::{
@@ -36,6 +36,24 @@ impl Endpoint for Register {
     const AUTH: bool = false;
     type Request = HttpRegisterUser;
     type Response = Session;
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(REGISTER_ROUTE)
+    }
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
+    }
+}
+
+/// Create an account without a session; the caller logs in afterwards.
+///
+/// Same path as [`Register`], with `verify_first` set in the body, so the
+/// answer is the same whether or not the email already has an account.
+pub struct RegisterVerifyFirst(pub HttpRegisterUser);
+impl Endpoint for RegisterVerifyFirst {
+    const METHOD: Method = Method::Post;
+    const AUTH: bool = false;
+    type Request = HttpRegisterUser;
+    type Response = HttpRegistrationAccepted;
     fn path(&self) -> Cow<'static, str> {
         Cow::Borrowed(REGISTER_ROUTE)
     }

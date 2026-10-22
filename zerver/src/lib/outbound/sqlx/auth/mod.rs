@@ -16,6 +16,7 @@ use zwipe_core::domain::auth::models::refresh_token::{
     REFRESH_ABSOLUTE_LIFESPAN, RefreshToken, Sha256Hash,
 };
 use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::username::Username;
 
 use crate::domain::auth::models::UserWithPasswordHash;
 use crate::domain::auth::models::password::HashedPassword;
@@ -67,6 +68,28 @@ impl AuthRepository for Postgres {
         tx.commit().await?;
 
         Ok((user, refresh_token))
+    }
+
+    async fn create_user(&self, request: &RegisterUser) -> Result<User, RegisterUserError> {
+        let database_user = query_as!(
+            DatabaseUser,
+            "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email, email_verified_at, hints_shown",
+            request.username.to_string(),
+            request.email.to_string(),
+            request.password_hash.to_string()
+        ).fetch_one(&self.pool).await?;
+
+        Ok(database_user.try_into()?)
+    }
+
+    async fn username_exists(&self, username: &Username) -> Result<bool, RegisterUserError> {
+        let exists = query_scalar!(
+            r#"SELECT EXISTS(SELECT 1 FROM users WHERE username = $1) AS "exists!""#,
+            username.to_string()
+        )
+        .fetch_one(&self.pool)
+        .await?;
+        Ok(exists)
     }
 
     async fn create_refresh_token(
