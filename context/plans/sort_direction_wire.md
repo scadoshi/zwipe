@@ -50,7 +50,7 @@ Old clients are untouched: they keep sending `ascending` alone and the fallback 
 
 The next cut after Phase 1 is deployed carries the new core, so the app sends both fields. No client code changes beyond the pin. Nothing to do in the stores beyond the normal release.
 
-Record the version here when it is cut: **client sends both from ___**.
+Record the version here when it is cut: **client sends both from 1.13.0** (iOS build 106, Android vc68, submitted 2026-10-22). Its Phase 3 floor is the same 1.13.0 as the email enumeration plans.
 
 ## Phase 3: raise the floor and wait
 

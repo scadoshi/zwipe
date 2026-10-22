@@ -1,6 +1,6 @@
 # Confirm-first email change
 
-**Status: Phases 1 and 2 built on `account-enumeration` 2026-10-22, tested locally, not deployed. Replaces the first approach (commit `5d0bbb20`, kept in the branch history and undone by the next one). The Phase 4 move of the remaining duplicates to 409 waits on `duplicate-409`, on top of it. Companion: `verify_first_registration.md`.**
+**Status: Phase 1 deployed 2026-10-22 (PR #31) and tested live, Phase 2 submitted as 1.13.0 (iOS build 106, Android vc68) the same day. Next is Phase 3, the floor at 1.13.0. Replaces the first approach (commit `5d0bbb20`, kept in the branch history and undone by the next one). The Phase 4 move of the remaining duplicates to 409 waits in PR #32 (`duplicate-409`). Companion: `verify_first_registration.md`.**
 
 **One sentence:** changing your email stops changing it; the new address is held as pending until someone clicks a link sent to it, so a free address and a taken one get the same response and leave the account looking the same.
 

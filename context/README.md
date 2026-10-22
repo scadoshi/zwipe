@@ -21,6 +21,18 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-22: email enumeration fixed behind flags, 1.13.0 submitted
+
+Register and change-email no longer say whether an email has an account, for clients that ask. PR #31 deployed both halves: change-email holds a new address as pending until a link sent to it is clicked (new `email_change_requests` table, `POST /api/auth/confirm-email-change`, zite's `/confirm-email/:token`), and register creates the account with no session and answers `202 {"status":"verification_sent"}` for a new or a taken email. A taken email's owner gets "You already have a Zwipe account", once an hour per address; a taken address on change-email mails nobody. Emails on both paths go out in a spawned task, so the response doesn't wait on Resend. Old clients don't send `verify_first` or `confirm_first`, so they get main's old behavior; that was checked live from an installed 1.12.2, and the new paths were checked live with a throwaway account, all four emails reaching a real inbox. Plans: [`plans/verify_first_registration.md`](plans/verify_first_registration.md) and [`plans/confirm_first_email_change.md`](plans/confirm_first_email_change.md).
+
+1.13.0 is the first client that sends the flags: register returns to Login with the username filled in, change-email shows a Pending row, and "Passwords do not match" waits until the confirmation is as long as the password (zite's reset page too). iOS build 106 and Android vc68 went to review the same day; notes at [`operations/store-submissions/1.13.0/whats_new.md`](operations/store-submissions/1.13.0/whats_new.md). The oracle closes at Phase 4, once the floor is at 1.13.0; PR #32 waits for that too, moving the seven duplicate answers from 422 to 409.
+
+Also on main today: emails lost their "Zwipe" header line (the subject names it), toasts never end in a period, zite's verify and confirm pages say a dead link "was already used or expired" instead of claiming nothing changed (a mail scanner opening a link first spends it), and the privacy policy covers the pending address and every email type.
+
+## 2026-10-21: 1.12.2 submitted
+
+Flexoki replaces Visual Studio, whose users move to VS Code, and Synthwave '84 takes the original theme's colors. iOS build 105 and Android vc67 went to review on 2026-10-21; notes at [`operations/store-submissions/1.12.2/whats_new.md`](operations/store-submissions/1.12.2/whats_new.md).
+
 ## 2026-10-21: 1.12.1 resubmitted with the new Z, zwipe.net opens on a splash
 
 Android vc65 went live as 1.12.1 on 2026-10-20. iOS build 103 was pulled from review before release so 1.12.1 could carry a redrawn Z: its second row reaches one column further left. That row changed in every logo in `zwipe-core/src/domain/logo/` and the four pages in `marketing/`, and the app icons were redrawn with it: the primary, the Android master, all 99 alternates (`zcripts/ios/icon.py`) and zite's favicons, which are now shrunk from the app's primary rather than drawn on their own (`c45ca92f`). The Z is the fifth 1.12.1 entry in `RELEASES` and in the [store notes](operations/store-submissions/1.12.1/whats_new.md), 488 of 500 characters. iOS build 104 and Android vc66, both 1.12.1, went to review on 2026-10-21; vc66 ships as an update over the live vc65 under the same versionName.

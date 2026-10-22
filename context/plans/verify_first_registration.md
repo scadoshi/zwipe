@@ -1,8 +1,8 @@
 # Verify-first registration
 
-**Status: Phases 1 and 2 built on `account-enumeration` with the change-email half, 2026-10-22, tested locally, not deployed. Companion: `confirm_first_email_change.md` (the change-email half).**
+**Status: Phase 1 deployed 2026-10-22 with the change-email half (PR #31) and tested live, Phase 2 submitted as 1.13.0 (iOS build 106, Android vc68) the same day. Next is Phase 3, the floor at 1.13.0. Companion: `confirm_first_email_change.md` (the change-email half).**
 
-**As built:** on the `verify_first` path a taken username answers 409 "username already taken"; only clients that know 409 send the flag. The old path keeps its 422 until `duplicate-409` merges with Phase 4. The zite verify page copy is unchanged: "You can close this page and go back to the app" already fits, since login works unverified. The client sends the user back to the Login screen it came from, with the username filled in, and toasts "Check your inbox to verify your email, then log in".
+**As built:** on the `verify_first` path a taken username answers 409 "username already taken"; only clients that know 409 send the flag. The old path keeps its 422 until PR #32 (`duplicate-409`) merges with Phase 4. The zite verify page copy is unchanged: "You can close this page and go back to the app" already fits, since login works unverified. The client sends the user back to the Login screen it came from, with the username filled in, and toasts "Check your inbox to verify your email, then log in".
 
 **Owner decisions, 2026-10-22, after the design below was written:** login stays open to unverified accounts (the recommendation under "What an unverified account can do" is accepted; a login gate was considered and dropped as stricter than a TCG app needs). The `account_exists` notice stays, because on register the person typing a taken address is often its owner. Every email on both branches is spawned off the request path so the response never waits on Resend; that replaces the "same work shape" parity argument below as the timing defense.
 
@@ -136,7 +136,7 @@ Manual check on the app, against the dev server (debug builds log the verificati
 3. Register with an address that already has an account and any password: identical screen and toast; the server log shows `register_existing_email`; the inbox (or the fake sender in a test) gets the account-exists notice and nothing else.
 4. Register with a taken username: the inline 422 as today.
 
-Record the version here when it is cut: **client sends `verify_first` from ___**.
+Record the version here when it is cut: **client sends `verify_first` from 1.13.0** (iOS build 106, Android vc68, submitted 2026-10-22).
 
 ## Phase 3: raise the floor and wait
 
