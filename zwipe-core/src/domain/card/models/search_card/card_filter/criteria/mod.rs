@@ -1,7 +1,7 @@
 //! Shared card-matching criteria: "what matches a card".
 //!
-//! [`CardCriteria`] is the predicate core shared by both search paths:
-//! flattened into [`CardQuery`](super::query::CardQuery) for the server query,
+//! [`CardCriteria`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria) is the predicate core shared by both search paths:
+//! flattened into [`CardQuery`](crate::domain::card::models::search_card::card_filter::query::CardQuery) for the server query,
 //! and taken by [`Cards`](crate::domain::card::search_card::cards::Cards)
 //! operations for in-memory filtering. It carries **no pagination and no
 //! ordering**; those are query concerns.
@@ -23,9 +23,9 @@ use crate::domain::deck::Format;
 
 /// Validated card-matching criteria (text, mana, combat, flags, legality).
 ///
-/// Created via [`CardQueryBuilder`](super::builder::CardQueryBuilder)
+/// Created via [`CardQueryBuilder`](crate::domain::card::models::search_card::card_filter::builder::CardQueryBuilder)
 /// (`build_criteria()` for the in-memory path, or flattened inside
-/// [`CardQuery`](super::query::CardQuery) via `build()` for the server path).
+/// [`CardQuery`](crate::domain::card::models::search_card::card_filter::query::CardQuery) via `build()` for the server path).
 /// At least one criterion must be set (enforced by the builder).
 #[skip_serializing_none]
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone)]

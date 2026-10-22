@@ -1,23 +1,23 @@
 //! Card search criteria and query construction.
 //!
-//! Two types share one predicate core, [`CardCriteria`]:
+//! Two types share one predicate core, [`CardCriteria`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria):
 //!
-//! - [`CardQuery`]: the **database query** POSTed to the server: criteria plus
-//!   bounded pagination ([`query::Limit`]) and ordering.
+//! - [`CardQuery`](crate::domain::card::models::search_card::card_filter::query::CardQuery): the **database query** POSTed to the server: criteria plus
+//!   bounded pagination ([`Limit`](crate::domain::card::models::search_card::card_filter::query::Limit)) and ordering.
 //! - [`Cards`](crate::domain::card::search_card::cards::Cards): the
 //!   **in-memory collection**, whose operations take bare criteria and cannot
 //!   express a limit.
 //!
-//! Both are built from one [`CardQueryBuilder`](builder::CardQueryBuilder):
+//! Both are built from one [`CardQueryBuilder`](crate::domain::card::models::search_card::card_filter::builder::CardQueryBuilder):
 //! `build()` for the server path, `build_criteria()` for the in-memory path.
 //!
-//! On the wire a [`CardQuery`] is the criteria flattened to the top level
+//! On the wire a [`CardQuery`](crate::domain::card::models::search_card::card_filter::query::CardQuery) is the criteria flattened to the top level
 //! beside `limit` / `offset` / `order_by` / `ascending` / `direction` /
 //! `synergy` / `include_skipped`. `ascending` and `direction` say the same
 //! thing; the server reads `direction` first and the bool goes away once the
 //! client floor passes the release that sends the name.
 
-/// Builder producing [`CardQuery`] / [`CardCriteria`] with validation.
+/// Builder producing [`CardQuery`](crate::domain::card::models::search_card::card_filter::query::CardQuery) / [`CardCriteria`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria) with validation.
 pub mod builder;
 /// Sort key options (name, CMC, rarity, etc.).
 pub mod card_sort_key;

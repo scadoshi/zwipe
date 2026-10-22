@@ -26,7 +26,7 @@ fn front_face(type_line: &str) -> &str {
 ///
 /// A meld result (Brisela, Titania Gaea Incarnate) is its own card object with
 /// its own legendary creature type line and no `" // "` in it, so
-/// [`front_face`] cannot see it. It is never a commander: it exists only by
+/// `front_face` cannot see it. It is never a commander: it exists only by
 /// melding two cards already on the battlefield and can never be put in a deck.
 ///
 /// Both the result and its two parts carry `layout = "meld"`, and the parts are
@@ -117,7 +117,7 @@ pub fn is_valid_commander(card: &Card, format: &Format) -> bool {
 pub enum PartnerKind {
     /// Generic "Partner" keyword: compatible with any other Generic partner.
     Generic,
-    /// "Partner with [Name]": compatible only with the named card.
+    /// "Partner with \[Name\]": compatible only with the named card.
     Named(String),
     /// "Friends forever": compatible with any other FriendsForever card.
     FriendsForever,
@@ -231,7 +231,7 @@ pub fn is_background_card(card: &Card) -> bool {
 /// characteristics of both halves at once (CR 709.4), so either half being an
 /// instant or sorcery is enough. Every other multi-face card is only its front
 /// face outside the stack (CR 712.4a), which is why the rest go through
-/// [`front_face`].
+/// `front_face`.
 pub fn is_valid_signature_spell_type(card: &Card) -> bool {
     let sd = &card.scryfall_data;
     let type_line = sd.type_line.as_deref().unwrap_or("");

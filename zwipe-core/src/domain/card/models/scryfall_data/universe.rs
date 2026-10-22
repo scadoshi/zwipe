@@ -1,7 +1,7 @@
 //! Universes Beyond mapping: which printings are out of universe.
 //!
 //! A printing is out of universe when it carries the triangle security stamp
-//! OR its set code belongs to a franchise in [`FRANCHISES`]. The stamp alone
+//! OR its set code belongs to a franchise in [`FRANCHISES`](crate::domain::card::models::scryfall_data::universe::FRANCHISES). The stamp alone
 //! is not enough: WotC retired it starting with Marvel's Spider-Man (2025-09),
 //! so the newest UB tentpoles print with oval or no stamp, and even stamped UB
 //! sets hold stampless satellites (art series, minigames, front cards). The

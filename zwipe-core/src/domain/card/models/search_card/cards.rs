@@ -1,11 +1,11 @@
 //! The in-memory card collection.
 //!
-//! [`Cards`] wraps a `Vec<Card>` already in hand (a loaded deck, a fetched
+//! [`Cards`](crate::domain::card::models::search_card::cards::Cards) wraps a `Vec<Card>` already in hand (a loaded deck, a fetched
 //! stack) and exposes the two in-memory operations as explicit steps:
-//! [`matching`](Cards::matching) (predicate, via
-//! [`CardCriteria::matches`]) and [`sorted`](Cards::sorted) (ordering, via
-//! [`CardSortKey::compare`]). There is deliberately **no limit/offset here**;
-//! pagination is a [`CardQuery`](super::card_filter::CardQuery) concern; the
+//! [`matching`](crate::domain::card::models::search_card::cards::Cards::matching) (predicate, via
+//! [`CardCriteria::matches`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria::matches)) and [`sorted`](crate::domain::card::models::search_card::cards::Cards::sorted) (ordering, via
+//! [`CardSortKey::compare`](crate::domain::card::models::search_card::card_filter::card_sort_key::CardSortKey::compare)). There is deliberately **no limit/offset here**;
+//! pagination is a [`CardQuery`](crate::domain::card::models::search_card::card_filter::query::CardQuery) concern; the
 //! in-memory path cannot express one, by construction.
 //!
 //! # Example
@@ -27,7 +27,7 @@ use crate::domain::deck::DeckEntry;
 
 /// A collection of cards already loaded in memory.
 ///
-/// Operations take bare [`CardCriteria`], never a query, and read like a
+/// Operations take bare [`CardCriteria`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria), never a query, and read like a
 /// slice via `Deref`.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Cards(Vec<Card>);
@@ -97,13 +97,13 @@ impl Cards {
 
     /// True if any card matches `criteria`. The single-card membership test
     /// (`Cards::from(vec![card]).any_match(...)`) needs no allocation dance;
-    /// prefer calling [`CardCriteria::matches`] directly when you hold one card.
+    /// prefer calling [`CardCriteria::matches`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria::matches) directly when you hold one card.
     pub fn any_match(&self, criteria: &CardCriteria) -> bool {
         self.0.iter().any(|card| criteria.matches(card))
     }
 }
 
-/// Sorts deck entries by their card under `sort`, mirroring [`Cards::sorted`]
+/// Sorts deck entries by their card under `sort`, mirroring [`Cards::sorted`](crate::domain::card::models::search_card::cards::Cards::sorted)
 /// (`None` no-op, `Random` shuffles, missing values last ascending).
 pub fn sort_deck_entries(
     entries: &mut [DeckEntry],

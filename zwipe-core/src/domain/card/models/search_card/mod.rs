@@ -8,7 +8,7 @@ pub mod card_type;
 pub mod cards;
 /// Commander eligibility rules by format.
 pub mod commander_eligibility;
-/// In-memory card grouping trait for Vec<Card>.
+/// In-memory card grouping trait for `Vec<Card>`.
 pub mod group_cards;
 /// Stop words for card text tokenization (shared with frontend).
 pub mod stop_words;

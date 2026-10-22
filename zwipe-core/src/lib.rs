@@ -1,4 +1,5 @@
 //! Domain types and HTTP contracts shared by zerver, zwiper and zite.
+#![warn(missing_docs)]
 
 /// Static content every edge renders, such as the changelog.
 pub mod content;

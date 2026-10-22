@@ -1,5 +1,5 @@
 //! Deck-level oracle tags: the granular functional tags a deck declares as its
-//! strategy. Unlike [`DeckTag`](super::deck_tag::DeckTag) / `DeckOtherTag`
+//! strategy. Unlike [`DeckTag`] / `DeckOtherTag`
 //! (curated enums), these are free slug strings from the `oracle_tags` catalog
 //! (e.g. `spot-removal`), so validation is just dedupe + a cap, no enum parse.
 //! Picking an archetype seeds these client-side (the `DeckTag → otag-set` map

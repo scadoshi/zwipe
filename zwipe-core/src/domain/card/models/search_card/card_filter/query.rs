@@ -1,7 +1,7 @@
 //! The server card-search request: criteria + pagination + ordering.
 //!
-//! [`CardQuery`] is what zwiper POSTs to `/api/card/search` and the deck-aware
-//! search. Its [`CardCriteria`] is `#[serde(flatten)]`ed, so the wire JSON is
+//! [`CardQuery`](crate::domain::card::models::search_card::card_filter::query::CardQuery) is what zwiper POSTs to `/api/card/search` and the deck-aware
+//! search. Its [`CardCriteria`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria) is `#[serde(flatten)]`ed, so the wire JSON is
 //! identical to the pre-split `CardFilter` (criteria fields at the top level
 //! alongside `limit` / `offset` / `order_by` / `ascending` / `direction` /
 //! `synergy`).
@@ -62,8 +62,8 @@ impl<'de> Deserialize<'de> for Limit {
 
 /// A server card-search request: what to match, plus pagination and ordering.
 ///
-/// Built via [`CardQueryBuilder`](super::builder::CardQueryBuilder). The
-/// in-memory filter path uses bare [`CardCriteria`] instead and cannot carry
+/// Built via [`CardQueryBuilder`](crate::domain::card::models::search_card::card_filter::builder::CardQueryBuilder). The
+/// in-memory filter path uses bare [`CardCriteria`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria) instead and cannot carry
 /// pagination; that split is the point.
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]

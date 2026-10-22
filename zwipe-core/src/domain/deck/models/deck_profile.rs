@@ -78,7 +78,7 @@ pub struct DeckProfile {
     /// Art-crop URL for the commander's chosen printing, so a deck can show its
     /// command zone without fetching the cards themselves. Resolved server-side
     /// with the same front-face fallback as
-    /// [`ScryfallData::art_crop_url`](crate::domain::card::ScryfallData::art_crop_url),
+    /// [`ScryfallData::art_crop_url`](crate::domain::card::models::scryfall_data::ScryfallData::art_crop_url),
     /// so double-faced commanders resolve to their front art.
     ///
     /// These four are `#[serde(default)]` like the fields above: a payload from
