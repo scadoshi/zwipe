@@ -1,8 +1,9 @@
 //! Refresh token families through the real router: a rotation keeps the old
 //! row as replay evidence and carries the family forward, a replay past the
 //! grace window deletes the whole family (the fresh token from that rotation
-//! dies with it), a family older than the absolute lifespan cannot rotate, and
-//! concurrent refreshes of one token still yield one winner whose token works.
+//! dies with it), a family older than the absolute lifespan cannot rotate,
+//! concurrent refreshes of one token still yield one winner whose token works,
+//! and a replaced row outlives its own expiry so a late replay is still caught.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
@@ -15,6 +16,9 @@ use axum::http::StatusCode;
 use common::TestApp;
 use serde_json::{Value, json};
 use uuid::Uuid;
+use zwipe::domain::upkeep::ports::UpkeepRepository;
+use zwipe::domain::upkeep::services::REPLACED_TOKEN_RETENTION_DAYS;
+use zwipe::outbound::sqlx::postgres::Postgres;
 
 /// Registers `username` and returns the session's user id and refresh token.
 async fn login(app: &TestApp, username: &str) -> (String, String) {
@@ -174,4 +178,80 @@ async fn concurrent_refreshes_leave_one_valid_survivor(pool: sqlx::PgPool) {
     );
     let rows = rows(&app, &user_id).await;
     assert_eq!(rows.len(), 1, "only the register session remains: {rows:?}");
+}
+
+#[sqlx::test]
+async fn replaced_row_outlives_its_expiry_as_replay_evidence(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (user_id, token) = login(&app, "latecomer").await;
+    let uid = Uuid::parse_str(&user_id).unwrap();
+
+    let (status, rotated) = refresh(&app, &user_id, &token).await;
+    assert_eq!(status, StatusCode::OK, "refresh: {rotated}");
+    let fresh = refresh_value(&rotated);
+
+    // The token was rotated an hour ago, near the end of its own 14 days,
+    // which have since run out. Its replay evidence is still inside the
+    // retention window and must survive both prunes.
+    sqlx::query(
+        "UPDATE refresh_tokens
+         SET expires_at = NOW() - INTERVAL '1 day', replaced_at = NOW() - INTERVAL '1 hour'
+         WHERE user_id = $1 AND replaced_at IS NOT NULL",
+    )
+    .bind(uid)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+
+    // The nightly sweep, then the insert-time prune that a fresh login runs.
+    let repo = Postgres { pool: pool.clone() };
+    let pruned = repo
+        .prune_expired_sessions(REPLACED_TOKEN_RETENTION_DAYS)
+        .await
+        .unwrap();
+    assert_eq!(pruned, 0, "the replaced row is kept past its expiry");
+    let (status, session) = app
+        .post(
+            LOGIN_ROUTE,
+            json!({ "identifier": "latecomer", "password": "TestPass123!" }),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "second login: {session}");
+    let second_login = refresh_value(&session);
+
+    let kept = rows(&app, &user_id).await;
+    assert_eq!(
+        kept.len(),
+        4,
+        "register, replaced login, successor, second login: {kept:?}"
+    );
+    assert!(kept[1].1, "the replaced row still stands as evidence");
+
+    let (status, _) = refresh(&app, &user_id, &token).await;
+    assert_eq!(
+        status,
+        StatusCode::UNAUTHORIZED,
+        "the late replay is refused"
+    );
+    let (status, _) = refresh(&app, &user_id, &fresh).await;
+    assert_eq!(
+        status,
+        StatusCode::UNAUTHORIZED,
+        "the fresh token from that rotation died with the family"
+    );
+
+    let rows = rows(&app, &user_id).await;
+    assert_eq!(
+        rows.len(),
+        2,
+        "the register and second-login sessions remain: {rows:?}"
+    );
+    assert!(
+        rows.iter().all(|(_, replaced)| !replaced),
+        "and both are live"
+    );
+
+    let (status, _) = refresh(&app, &user_id, &second_login).await;
+    assert_eq!(status, StatusCode::OK, "the unrelated family still rotates");
 }

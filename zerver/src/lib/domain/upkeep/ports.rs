@@ -23,12 +23,14 @@ pub trait UpkeepRepository: Clone + Send + Sync + 'static {
         retention_days: i32,
     ) -> impl Future<Output = anyhow::Result<u64>> + Send;
 
-    /// Deletes expired refresh tokens across all users, the final dusting
-    /// for dormant users the insert-time drive-by never revisits, and rotated
-    /// rows replaced more than `replaced_retention_days` ago, which have
-    /// outlived their use as replay evidence. Returns the number of rows
-    /// removed. (The grant behind this is deliberately destruction-only:
-    /// `DELETE` + column-scoped `SELECT (expires_at, replaced_at)`.)
+    /// Deletes expired live refresh tokens across all users, the final
+    /// dusting for dormant users the insert-time drive-by never revisits, and
+    /// rotated rows replaced more than `replaced_retention_days` ago, which
+    /// have outlived their use as replay evidence. A replaced row stays for
+    /// that whole window even once its own `expires_at` has passed. Returns
+    /// the number of rows removed. (The grant behind this is deliberately
+    /// destruction-only: `DELETE` + column-scoped `SELECT (expires_at,
+    /// replaced_at)`.)
     fn prune_expired_sessions(
         &self,
         replaced_retention_days: i32,

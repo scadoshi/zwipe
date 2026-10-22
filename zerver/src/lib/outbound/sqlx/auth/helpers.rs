@@ -14,6 +14,7 @@ use zwipe_core::domain::auth::models::session::MAXIMUM_SESSION_COUNT;
 
 use crate::domain::auth::requests::create_session::CreateSessionError;
 use crate::domain::auth::requests::enforce_session_maximum::EnforceSessionMaximumError;
+use crate::domain::upkeep::services::REPLACED_TOKEN_RETENTION_DAYS;
 
 /// The chain of refresh tokens that one login produces.
 ///
@@ -54,9 +55,12 @@ pub trait TxHelper {
         client_version: Option<String>,
     ) -> impl Future<Output = Result<RefreshToken, CreateSessionError>> + Send;
 
-    /// Prunes the user's refresh tokens: deletes expired ones and, of the live
-    /// rest (not yet rotated), keeps only the [`MAXIMUM_SESSION_COUNT`] most
-    /// recently created. Replaced rows do not count against the cap.
+    /// Prunes the user's refresh tokens: deletes expired live ones, deletes
+    /// replaced ones older than [`REPLACED_TOKEN_RETENTION_DAYS`] whatever
+    /// their own expiry says, and of the live rest (not yet rotated) keeps
+    /// only the [`MAXIMUM_SESSION_COUNT`] most recently created. Replaced
+    /// rows do not count against the cap; a replaced row keeps its replay
+    /// evidence for the full retention window even if the token expired.
     ///
     /// Runs at every insert, so the table stays bounded without a global sweeper.
     fn prune_users_refresh_tokens(
@@ -105,9 +109,13 @@ impl<'a> TxHelper for PgTransaction<'a> {
                             WHERE user_id = $1 AND replaced_at IS NULL
                         ) live_refresh_tokens
                         WHERE token_number > $2
-                ) OR (user_id = $1 AND expires_at < NOW())"#,
+                ) OR (user_id = $1 AND (
+                    (replaced_at IS NULL AND expires_at < NOW())
+                    OR replaced_at < NOW() - make_interval(days => $3)
+                ))"#,
             user_id,
-            MAXIMUM_SESSION_COUNT as i64
+            MAXIMUM_SESSION_COUNT as i64,
+            REPLACED_TOKEN_RETENTION_DAYS
         )
         .execute(&mut **self)
         .await?;

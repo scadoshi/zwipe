@@ -36,7 +36,7 @@ impl UpkeepRepository for Postgres {
 
     async fn prune_expired_sessions(&self, replaced_retention_days: i32) -> anyhow::Result<u64> {
         let result = sqlx::query(
-            "DELETE FROM refresh_tokens WHERE expires_at < NOW() OR replaced_at < NOW() - make_interval(days => $1)",
+            "DELETE FROM refresh_tokens WHERE (replaced_at IS NULL AND expires_at < NOW()) OR replaced_at < NOW() - make_interval(days => $1)",
         )
         .bind(replaced_retention_days)
         .execute(&self.pool)
