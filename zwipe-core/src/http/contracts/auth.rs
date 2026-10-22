@@ -154,14 +154,20 @@ pub struct HttpChangeEmail {
     pub email: String,
     /// The account password, for re-verification.
     pub password: Secret,
+    /// Holds the address as pending until a link sent to it is clicked,
+    /// instead of switching to it now. Absent means switch now, which is
+    /// what clients sent before the field existed.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub confirm_first: bool,
 }
 
 impl HttpChangeEmail {
-    /// Creates a new email change request.
+    /// Creates a confirm-first email change request.
     pub fn new(email: &str, password: &str) -> Self {
         Self {
             email: email.to_string(),
             password: Secret::new(password),
+            confirm_first: true,
         }
     }
 }
@@ -177,6 +183,13 @@ pub struct HttpDeleteUser {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpVerifyEmail {
     /// The verification token from the email link.
+    pub token: String,
+}
+
+/// Email change confirmation request body.
+#[derive(Debug, Deserialize, Serialize)]
+pub struct HttpConfirmEmailChange {
+    /// The token from the confirmation link.
     pub token: String,
 }
 

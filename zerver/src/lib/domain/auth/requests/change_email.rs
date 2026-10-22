@@ -8,9 +8,8 @@
 //!
 //! 1. User provides new email + current password
 //! 2. System verifies password matches current hash
-//! 3. System tries the update; the database refuses a duplicate
-//! 4. On success the email is updated; on a duplicate nothing changes and the
-//!    address's owner is told, so the caller cannot learn that it is taken
+//! 3. System checks new email isn't already in use
+//! 4. Email is updated in database
 //!
 //! # Example
 //!
@@ -27,7 +26,6 @@
 use thiserror::Error;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::secret::Secret;
-use zwipe_core::domain::user::User;
 use zwipe_core::domain::{Email, InvalidEmail};
 
 use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
@@ -58,24 +56,9 @@ pub enum ChangeEmailError {
     /// Password verification failed or user not found during authentication.
     #[error(transparent)]
     AuthenticateUserError(#[from] AuthenticateUserError),
-    /// Another user already has this email address. The service turns this
-    /// into [`ChangeEmailOutcome::Taken`]; it never reaches the handler.
+    /// Another user already has this email address.
     #[error("user with that email already exists")]
     Duplicate,
-}
-
-/// What the service did with a change-email request.
-///
-/// Both arms carry the user as the caller sees them afterwards, so the handler
-/// answers the same way for each and the response cannot say whether an
-/// address is registered.
-#[derive(Debug)]
-pub enum ChangeEmailOutcome {
-    /// The address was free. The user now carries it, unverified.
-    Changed(User),
-    /// The address belongs to another account. Nothing changed and that
-    /// account's owner was told; the caller is returned as they were.
-    Taken(User),
 }
 
 /// Request to change a user's email address.

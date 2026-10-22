@@ -1,6 +1,6 @@
 # Confirm-first email change
 
-**Status: PLANNED 2026-10-22, not started. Replaces the approach on the `email-enumeration` branch (commit `5d0bbb20`). Companion: `verify_first_registration.md`.**
+**Status: Phases 1 and 2 built on `email-enumeration` 2026-10-22, tested locally, not deployed. Replaces the approach on the `email-enumeration` branch (commit `5d0bbb20`). Companion: `verify_first_registration.md`.**
 
 **One sentence:** changing your email stops changing it; the new address is held as pending until someone clicks a link sent to it, so a free address and a taken one get the same response and leave the account looking the same.
 
@@ -15,7 +15,7 @@ So the account doesn't change in either case until the new address proves it can
 - Pending model as below.
 - A taken address sends nothing to anyone. The person typing someone else's address is never that address's owner, and the owner can't act on a warning. `email_claim_attempted.html` from the branch goes.
 - Emails leave the request path. Sending one is a few hundred milliseconds of Resend round trip; if the free branch waits on it and the taken branch sends nothing, the response time is the oracle. Both branches spawn their send (or their non-send) and answer without waiting.
-- If the address gets taken between request and click, the confirm step fails and tells whoever clicked. Only someone holding that inbox can see that.
+- If the address gets taken between request and click, the confirm step fails (422) and tells whoever clicked. Only someone holding that inbox can see that.
 
 ## Design
 
@@ -52,13 +52,13 @@ The writes are identical on both branches, the token row exists either way (a ta
 
 Public, takes the raw token, like `verify_email`. In one transaction: delete the row by hash where unexpired and return `user_id` and `new_email`; `UPDATE users SET email = new_email, email_verified_at = NOW()`. Then send `email_changed.html` to the old address (moved here from request time, since this is when the change happens) and write `EmailChanged`.
 
-A unique violation on the update means someone registered or switched to the address since the request. Answer 409 "That address is already in use by another account." The row is already consumed, so the link is dead.
+A unique violation on the update means someone registered or switched to the address since the request. Answer 422 "that address is already in use by another account". The update runs in a savepoint so the row's deletion still commits and the link is dead.
 
-Expired or unknown token: 410 with the same text the verify page uses for an expired verification link.
+Expired or unknown token: 422 "token not found or expired", like `verify_email`. Both are 422 because `ApiError` has no 409 or 410; the zite page tells them apart by the message.
 
 ### zite
 
-New page `zite/src/pages/confirm_email.rs`, route `/confirm-email/:token`, built like `verify.rs`. Success: "Email changed. Open Zwipe to keep going." 409 and 410 get their own copy; both say to request the change again from Profile.
+New page `zite/src/pages/confirm_email.rs`, route `/confirm-email/:token`, built like `verify.rs`. Success: "Email changed. Open Zwipe to keep going." The taken and expired cases get their own copy; both say to request the change again from Profile.
 
 ### App
 
@@ -85,8 +85,7 @@ Tests in `zerver/tests/user_flows.rs`, replacing `change_email_to_taken_address_
 - free sends exactly one email, to the new address, and the captured token confirms; after confirm, `email` is the new address and verified, and the old address got `email_changed`;
 - taken sends no email and the owner's row is untouched;
 - a second request replaces the first, and the first token no longer confirms;
-- confirm after someone else took the address is 409 and leaves both rows as they were;
-- expired token is 410;
+- confirm after someone else took the address is 422 and leaves both rows as they were;
 - a Resend verification during a pending change leaves the change row alone.
 
 **Phase 2, client.** The toast, the pending row on Profile, `confirm_first: true`. Changelog: "Changing your email takes effect once you confirm it from the new address".

@@ -2,6 +2,7 @@ mod about;
 mod android;
 mod changelog;
 mod community;
+mod confirm_email;
 mod contribute;
 mod guides;
 mod home;
@@ -16,6 +17,7 @@ pub use about::About;
 pub use android::Android;
 pub use changelog::Changelog;
 pub use community::Community;
+pub use confirm_email::ConfirmEmail;
 pub use contribute::Contribute;
 // SSG prerender list only, which `#[server]` compiles under this feature.
 #[cfg(feature = "server")]

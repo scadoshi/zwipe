@@ -23,6 +23,7 @@ pub const LOGIN_ROUTE: &str = "/api/auth/login";
 pub const REFRESH_SESSION_ROUTE: &str = "/api/auth/refresh";
 pub const LOGOUT_ROUTE: &str = "/api/auth/logout";
 pub const VERIFY_EMAIL_ROUTE: &str = "/api/auth/verify-email";
+pub const CONFIRM_EMAIL_CHANGE_ROUTE: &str = "/api/auth/confirm-email-change";
 pub const FORGOT_PASSWORD_ROUTE: &str = "/api/auth/forgot-password";
 pub const RESET_PASSWORD_ROUTE: &str = "/api/auth/reset-password";
 pub const RESEND_VERIFICATION_ROUTE: &str = "/api/auth/resend-verification";
@@ -191,6 +192,7 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Patch, CHANGE_PASSWORD_ROUTE, true),
     (Method::Patch, CHANGE_USERNAME_ROUTE, true),
     (Method::Delete, CLEAR_COMMANDER_MAYBEBOARD_ROUTE, true),
+    (Method::Post, CONFIRM_EMAIL_CHANGE_ROUTE, false),
     (Method::Post, CREATE_DECK_ROUTE, true),
     (Method::Delete, DELETE_USER_ROUTE, true),
     (Method::Get, FEATURED_FLAVOR_ROUTE, false),

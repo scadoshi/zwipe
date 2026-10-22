@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT new_email FROM email_change_requests WHERE user_id = $1 AND expires_at > NOW()",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "new_email",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "email_change_requests",
+            "name": "new_email"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b2bbb4e94d1a72609981a4dc21dcf0a7a6a7e27e5ba793f37e3a960ad83d90b0"
+}

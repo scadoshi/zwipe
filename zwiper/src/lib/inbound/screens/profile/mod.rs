@@ -289,6 +289,16 @@ pub fn Profile() -> Element {
                                     }
                                 }
 
+                                if let Some(pending) = s.user.pending_email.as_ref() {
+                                    div {
+                                        class: "settings-row",
+                                        span { class: "settings-row-label", "Pending" }
+                                        div { class: "settings-row-value",
+                                            span { "{pending}" }
+                                        }
+                                    }
+                                }
+
                                 if s.user.email_verified_at.is_none() {
                                     div {
                                         class: "settings-row",
