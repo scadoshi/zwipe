@@ -116,6 +116,99 @@ async fn change_email_updates_profile(pool: sqlx::PgPool) {
     assert_eq!(updated["email"], "moved@test.local");
 }
 
+/// A new address that belongs to another account must look exactly like a
+/// successful change from the outside, so the endpoint cannot be used to
+/// learn which addresses have accounts. The real owner is told instead.
+#[sqlx::test]
+async fn change_email_to_taken_address_answers_like_success_and_tells_owner(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (_, _) = app.register("owner").await;
+    let (token, claimant_id) = app.register("claimant").await;
+
+    // a real change, for the shape to compare against
+    let (ok_status, changed) = app
+        .patch(
+            CHANGE_EMAIL_ROUTE,
+            json!({ "email": "claimant2@test.local", "password": "TestPass123!" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(ok_status, StatusCode::OK, "change email: {changed}");
+
+    // (to, subject, body) snapshots; `SendEmail` is not `Clone`
+    let snapshot = || -> Vec<(String, String, String)> {
+        app.emails
+            .sent
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|e| (e.to.clone(), e.subject.clone(), e.html_body.clone()))
+            .collect()
+    };
+    let sent_before = snapshot();
+    let to_owner_before = sent_before
+        .iter()
+        .filter(|(to, _, _)| to == "owner@test.local")
+        .count();
+
+    let (status, body) = app
+        .patch(
+            CHANGE_EMAIL_ROUTE,
+            json!({ "email": "owner@test.local", "password": "TestPass123!" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status, ok_status,
+        "taken address must answer like success: {body}"
+    );
+    let keys = |v: &serde_json::Value| {
+        let mut k: Vec<String> = v.as_object().unwrap().keys().cloned().collect();
+        k.sort();
+        k
+    };
+    assert_eq!(keys(&body), keys(&changed), "same user JSON shape");
+    assert_eq!(body["id"], changed["id"]);
+    assert_eq!(
+        body["email"], "claimant2@test.local",
+        "caller's email unchanged in response"
+    );
+
+    let claimant_uuid: uuid::Uuid = claimant_id.parse().unwrap();
+    let stored: String = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+        .bind(claimant_uuid)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        stored, "claimant2@test.local",
+        "caller's email unchanged in the database"
+    );
+
+    let sent_after = snapshot();
+    assert_eq!(
+        sent_after.len(),
+        sent_before.len() + 1,
+        "the duplicate attempt sends exactly one email"
+    );
+    let to_owner: Vec<_> = sent_after
+        .iter()
+        .filter(|(to, _, _)| to == "owner@test.local")
+        .collect();
+    assert_eq!(
+        to_owner.len(),
+        to_owner_before + 1,
+        "the owner got exactly one more email"
+    );
+    let (_, subject, html_body) = to_owner.last().unwrap();
+    assert_eq!(subject, "Someone tried to use your email on Zwipe");
+    assert!(html_body.contains("Nothing changed"), "{html_body}");
+    assert!(
+        !html_body.contains("claimant"),
+        "the owner's email must not name the other account"
+    );
+}
+
 #[sqlx::test]
 async fn delete_user_cascades_decks(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());

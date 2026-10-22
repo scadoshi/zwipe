@@ -8,7 +8,7 @@
 - [x] 2026-10-22 Replaced-row retention keyed on `replaced_at`, not the token's own expiry (below). Both prunes now keep a replaced row for the full window even once its own `expires_at` has passed; test `replaced_row_outlives_its_expiry_as_replay_evidence`.
 - [x] 2026-10-22 built on the local `security-followups` branch, two commits, push one deploy apart. Follow-up migration: drop `refresh_tokens.revoked` + its index and the three `users` lockout columns. Tracked in `access_token_window.md`; listed here so it is not forgotten when that plan closes.
 - [ ] DML-only runtime role for zerver (below).
-- [ ] Register and change-email stop confirming that an email is taken (below).
+- [x] 2026-10-22 change-email done; register deferred, see below. Register and change-email stop confirming that an email is taken (below).
 - [ ] Android: `session.json` through the Keystore. Own task; the backup opt-out shipped in PR #28, so the file no longer leaves the device, but it is still plaintext on it.
 - [ ] Merge Dependabot's action-pin PRs as they arrive, reading the pin diff each time.
 - [x] 2026-10-10 `RESEND_API_KEY` stays the same value in `zerver.env` and `alert.env` (owner decision); rotate both files together.
@@ -47,6 +47,8 @@ Do:
 Login and forgot-password hide whether an account exists; register answers `422 "user with that username or email already exists"` and change-email the same on a duplicate. Rate limited (5 per 12 minutes per IP) but still an oracle.
 
 Decide first: the usual fix is to answer register as if it succeeded and send "you already have an account, here is a reset link" to the address, which changes the register flow's UX (no inline error; the user finds out by email). Username collisions can stay inline, since usernames are public. If that is not wanted, leave it and record the decision here.
+
+Decided 2026-10-22: the owner chose to fix change-email now and leave register's oracle for a later verify-first registration change. Change-email answers a taken address with the same 200 and the same user JSON (the caller's unchanged email) as a real change, changes nothing, writes an `email_claim_attempted` audit row, and emails the address's owner (`email_claim_attempted.html`) that someone tried to use it on another account and nothing changed. Register auto-logs in, so its duplicate path cannot match the success path without dropping the auto-login; it keeps the inline 422 and the rate limit of 5 per 12 minutes per IP stands until registration verifies the address first.
 
 ## Not doing
 

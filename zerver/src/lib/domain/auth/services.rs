@@ -17,7 +17,9 @@ use crate::domain::auth::models::access_token::{AccessTokenExt, JwtSecret};
 use crate::domain::auth::models::password::{HashedPassword, Password};
 use crate::domain::auth::ports::{AuthRepository, AuthService};
 use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
-use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
+use crate::domain::auth::requests::change_email::{
+    ChangeEmail, ChangeEmailError, ChangeEmailOutcome,
+};
 use crate::domain::auth::requests::change_password::{ChangePassword, ChangePasswordError};
 use crate::domain::auth::requests::change_username::{ChangeUsername, ChangeUsernameError};
 use crate::domain::auth::requests::create_session::{CreateSession, CreateSessionError};
@@ -390,9 +392,33 @@ where
         Ok(user)
     }
 
-    async fn change_email(&self, request: &ChangeEmail) -> Result<User, ChangeEmailError> {
-        let old_email = self.verify_password(&request.into()).await?.email;
-        let user = self.auth_repo.change_email(request).await?;
+    async fn change_email(
+        &self,
+        request: &ChangeEmail,
+    ) -> Result<ChangeEmailOutcome, ChangeEmailError> {
+        let current = self.verify_password(&request.into()).await?;
+
+        // Both arms do the same work in the same order: one update attempt,
+        // one notification, so the caller cannot time which one ran.
+        let user = match self.auth_repo.change_email(request).await {
+            Ok(user) => user,
+            Err(ChangeEmailError::Duplicate) => {
+                // Tell the address's owner; the caller learns nothing. The
+                // unique index just confirmed the address is on a row, so it
+                // is sent as given, no lookup needed.
+                let html = include_str!("email_templates/email_claim_attempted.html")
+                    .replace("{support_email}", &escape_html(&self.support_email));
+                self.send_change_notification(
+                    current.id,
+                    request.email.as_ref(),
+                    "Someone tried to use your email on Zwipe",
+                    html,
+                )
+                .await;
+                return Ok(ChangeEmailOutcome::Taken(current));
+            }
+            Err(e) => return Err(e),
+        };
 
         // Notify the OLD address: the new one is what an attacker would control.
         let html = include_str!("email_templates/email_changed.html")
@@ -400,13 +426,13 @@ where
             .replace("{support_email}", &escape_html(&self.support_email));
         self.send_change_notification(
             user.id,
-            old_email.as_ref(),
+            current.email.as_ref(),
             "Your Zwipe email was changed",
             html,
         )
         .await;
 
-        Ok(user)
+        Ok(ChangeEmailOutcome::Changed(user))
     }
 
     async fn change_password_and_revoke_sessions(
