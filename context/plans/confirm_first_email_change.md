@@ -15,7 +15,7 @@ So the account doesn't change in either case until the new address proves it can
 - Pending model as below.
 - A taken address sends nothing to anyone. The person typing someone else's address is never that address's owner, and the owner can't act on a warning. `email_claim_attempted.html` from the branch goes.
 - Emails leave the request path. Sending one is a few hundred milliseconds of Resend round trip; if the free branch waits on it and the taken branch sends nothing, the response time is the oracle. Both branches spawn their send (or their non-send) and answer without waiting.
-- If the address gets taken between request and click, the confirm step fails (422) and tells whoever clicked. Only someone holding that inbox can see that.
+- If the address gets taken between request and click, the confirm step fails (409) and tells whoever clicked. Only someone holding that inbox can see that.
 
 ## Design
 
@@ -52,9 +52,9 @@ The writes are identical on both branches, the token row exists either way (a ta
 
 Public, takes the raw token, like `verify_email`. In one transaction: delete the row by hash where unexpired and return `user_id` and `new_email`; `UPDATE users SET email = new_email, email_verified_at = NOW()`. Then send `email_changed.html` to the old address (moved here from request time, since this is when the change happens) and write `EmailChanged`.
 
-A unique violation on the update means someone registered or switched to the address since the request. Answer 422 "that address is already in use by another account". The update runs in a savepoint so the row's deletion still commits and the link is dead.
+A unique violation on the update means someone registered or switched to the address since the request. Answer 409 "that address is already in use by another account". The update runs in a savepoint so the row's deletion still commits and the link is dead.
 
-Expired or unknown token: 422 "token not found or expired", like `verify_email`. Both are 422 because `ApiError` has no 409 or 410; the zite page tells them apart by the message.
+Expired or unknown token: 422 "token not found or expired", like `verify_email`. `ApiError::Conflict` and `ClientError::Conflict` were added for the 409; it is safe here because only zite calls this route. Existing routes keep 422 until the floor passes the client that knows 409.
 
 ### zite
 
@@ -85,7 +85,7 @@ Tests in `zerver/tests/user_flows.rs`, replacing `change_email_to_taken_address_
 - free sends exactly one email, to the new address, and the captured token confirms; after confirm, `email` is the new address and verified, and the old address got `email_changed`;
 - taken sends no email and the owner's row is untouched;
 - a second request replaces the first, and the first token no longer confirms;
-- confirm after someone else took the address is 422 and leaves both rows as they were;
+- confirm after someone else took the address is 409 and leaves both rows as they were;
 - a Resend verification during a pending change leaves the change row alone.
 
 **Phase 2, client.** The toast, the pending row on Profile, `confirm_first: true`. Changelog: "Changing your email takes effect once you confirm it from the new address".

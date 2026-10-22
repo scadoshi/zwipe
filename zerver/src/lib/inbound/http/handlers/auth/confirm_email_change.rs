@@ -15,9 +15,9 @@ impl From<ConfirmEmailChangeError> for ApiError {
             ConfirmEmailChangeError::InvalidToken => {
                 Self::UnprocessableEntity("token not found or expired".to_string())
             }
-            ConfirmEmailChangeError::AddressTaken => Self::UnprocessableEntity(
-                "that address is already in use by another account".to_string(),
-            ),
+            ConfirmEmailChangeError::AddressTaken => {
+                Self::Conflict("that address is already in use by another account".to_string())
+            }
             ConfirmEmailChangeError::UserFromDb(e) => e.to_500(),
             ConfirmEmailChangeError::Database(e) => e.to_500(),
         }
