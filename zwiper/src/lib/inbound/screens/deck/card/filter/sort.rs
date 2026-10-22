@@ -55,10 +55,10 @@ pub fn Sort() -> Element {
                 div {
                     class: "chip",
                     onclick: move |_| {
-                        let current = filter_builder().ascending();
-                        filter_builder.write().set_ascending(!current);
+                        let current = filter_builder().direction();
+                        filter_builder.write().set_direction(current.flipped());
                     },
-                    { if filter_builder().ascending() { "Ascending" } else { "Descending" } }
+                    { filter_builder().direction().to_string() }
                 }
             }
         }

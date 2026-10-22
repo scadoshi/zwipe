@@ -5,9 +5,9 @@
 
 use crate::domain::card::scryfall_data::colors::Colors;
 use crate::domain::card::scryfall_data::rarity::Rarities;
-use crate::domain::card::search_card::card_filter::CardSortKey;
 use crate::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use crate::domain::card::search_card::card_filter::{CardSortKey, SortDirection};
 use crate::domain::card::search_card::card_type::CardType;
 use crate::domain::deck::Format;
 
@@ -338,9 +338,9 @@ impl CardQueryBuilder {
         self.sort
     }
 
-    /// Returns the ascending sort direction flag.
-    pub fn ascending(&self) -> bool {
-        self.ascending
+    /// The sort direction.
+    pub fn direction(&self) -> SortDirection {
+        self.direction
     }
 
     /// Returns the deck-aware suppression opt-out flag.

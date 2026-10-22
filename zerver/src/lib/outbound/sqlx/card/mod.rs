@@ -24,6 +24,7 @@ use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::criteria::PLAYABLE_LAYOUTS;
+use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDirection;
 use zwipe_core::domain::deck::Format;
 use zwipe_core::domain::deck::requests::import_deck_cards::entry_front_face;
 
@@ -1190,7 +1191,10 @@ impl CardRepository for MyPostgres {
             };
             qb.push(col);
             if order_by != CardSortKey::Random {
-                qb.push(if request.ascending() { " ASC" } else { " DESC" });
+                qb.push(match request.direction() {
+                    SortDirection::Ascending => " ASC",
+                    SortDirection::Descending => " DESC",
+                });
             }
             // edhrec_rank is nullable (obscure/new cards lack a rank): keep them
             // but sort last in either direction, with a name tiebreak so paging

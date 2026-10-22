@@ -400,7 +400,7 @@ pub fn CommanderMaybeboard() -> Element {
     // Save order (newest first) stands unless the sheet chose a sort.
     if let Some(sort) = builder.sort() {
         filtered = Cards::from(filtered)
-            .sorted(sort, builder.ascending())
+            .sorted(sort, builder.direction())
             .into();
     }
     let has_entries = !entries().is_empty();

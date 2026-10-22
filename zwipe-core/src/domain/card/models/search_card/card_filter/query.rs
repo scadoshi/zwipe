@@ -14,6 +14,7 @@ use serde_with::skip_serializing_none;
 
 use crate::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use crate::domain::card::search_card::card_filter::criteria::CardCriteria;
+use crate::domain::card::search_card::card_filter::sort_direction::SortDirection;
 
 /// Bounded result-page size for the server search.
 ///
@@ -105,7 +106,7 @@ impl CardQuery {
         limit: Limit,
         offset: u32,
         sort: Option<CardSortKey>,
-        ascending: bool,
+        direction: SortDirection,
         synergy: bool,
         include_skipped: bool,
     ) -> Self {
@@ -114,7 +115,7 @@ impl CardQuery {
             limit,
             offset,
             sort,
-            ascending,
+            ascending: direction.is_ascending(),
             synergy,
             include_skipped,
         }
@@ -140,9 +141,14 @@ impl CardQuery {
         self.sort
     }
 
-    /// Sort direction.
+    /// Sort direction as the wire bool; `true` is ascending.
     pub fn ascending(&self) -> bool {
         self.ascending
+    }
+
+    /// Sort direction.
+    pub fn direction(&self) -> SortDirection {
+        SortDirection::from_ascending(self.ascending)
     }
 
     /// Deck-aware synergy membership mode (see field docs).
@@ -201,7 +207,7 @@ mod tests {
         builder.set_limit(50);
         builder.set_offset(25);
         builder.set_sort(CardSortKey::Cmc);
-        builder.set_ascending(false);
+        builder.set_direction(SortDirection::Descending);
         builder.set_synergy(true);
         let query = builder.build().unwrap();
 
@@ -250,6 +256,29 @@ mod tests {
         assert_eq!(query.limit(), 25);
         assert_eq!(query.offset(), 0);
         assert!(query.ascending());
+    }
+
+    #[test]
+    fn direction_serializes_as_the_ascending_bool() {
+        for (direction, expected) in [
+            (SortDirection::Ascending, r#""ascending":true"#),
+            (SortDirection::Descending, r#""ascending":false"#),
+        ] {
+            let mut builder = CardQueryBuilder::with_name_contains("bolt");
+            builder.set_direction(direction);
+            let json = serde_json::to_string(&builder.build().unwrap()).unwrap();
+            assert!(json.contains(expected), "{json}");
+            assert!(!json.contains("direction"), "{json}");
+        }
+    }
+
+    #[test]
+    fn absent_ascending_reads_as_ascending() {
+        let query: CardQuery = serde_json::from_str(r#"{"name_contains":"bolt"}"#).unwrap();
+        assert_eq!(query.direction(), SortDirection::Ascending);
+        let query: CardQuery =
+            serde_json::from_str(r#"{"name_contains":"bolt","ascending":false}"#).unwrap();
+        assert_eq!(query.direction(), SortDirection::Descending);
     }
 
     #[test]

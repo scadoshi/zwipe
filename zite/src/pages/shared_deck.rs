@@ -14,6 +14,7 @@ use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDirection;
 use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::card::search_card::group_cards::{GroupByOption, GroupCards};
@@ -591,7 +592,9 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             Err(_) => cards,
         }
     };
-    let filtered: Vec<Card> = Cards::from(filtered).sorted(CardSortKey::Name, true).into();
+    let filtered: Vec<Card> = Cards::from(filtered)
+        .sorted(CardSortKey::Name, SortDirection::Ascending)
+        .into();
     // Lands render in their own section, pinned below the grouped columns, out of
     // the group-by pipeline (consistent across grouping modes). Both stay filtered.
     let (lands, nonlands): (Vec<Card>, Vec<Card>) = filtered
@@ -613,7 +616,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     // token list. Name-sorted, not run through the card filter.
     if show_tokens() && !deck.tokens.is_empty() {
         let tokens: Vec<Card> = Cards::from(deck.tokens.clone())
-            .sorted(CardSortKey::Name, true)
+            .sorted(CardSortKey::Name, SortDirection::Ascending)
             .into();
         sections.push(Section::titled(
             format!("Tokens ({})", tokens.len()),

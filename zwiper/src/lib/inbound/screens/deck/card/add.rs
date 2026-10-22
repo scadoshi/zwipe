@@ -941,7 +941,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             }
         };
         let filtered: Vec<Card> = Cards::from(filtered)
-            .sorted(builder.sort(), builder.ascending())
+            .sorted(builder.sort(), builder.direction())
             .into();
         mb_stack.replace(filtered);
     });

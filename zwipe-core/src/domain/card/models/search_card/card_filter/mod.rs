@@ -23,10 +23,13 @@ pub mod error;
 pub mod price_currency;
 /// The server search request: criteria + `Limit` + offset + sort.
 pub mod query;
+/// The direction a sort runs in.
+pub mod sort_direction;
 
 pub use card_sort_key::CardSortKey;
 pub use criteria::CardCriteria;
 pub use query::{CardQuery, Limit};
+pub use sort_direction::SortDirection;
 
 /// Strips punctuation from a string, keeping only alphanumeric characters and whitespace.
 /// Used for punctuation-insensitive text search (e.g., "akromas will" matches "Akroma's Will").

@@ -22,6 +22,7 @@ use rand::seq::SliceRandom;
 use crate::domain::card::Card;
 use crate::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use crate::domain::card::search_card::card_filter::criteria::CardCriteria;
+use crate::domain::card::search_card::card_filter::sort_direction::SortDirection;
 use crate::domain::deck::DeckEntry;
 
 /// A collection of cards already loaded in memory.
@@ -71,8 +72,12 @@ impl Cards {
 
     /// Returns the cards ordered by `sort`. `None` is a no-op (pass a
     /// [`CardSortKey`] directly or a builder's `sort()`); `Random` shuffles and
-    /// ignores `ascending`.
-    pub fn sorted(mut self, sort: impl Into<Option<CardSortKey>>, ascending: bool) -> Cards {
+    /// ignores `direction`.
+    pub fn sorted(
+        mut self,
+        sort: impl Into<Option<CardSortKey>>,
+        direction: SortDirection,
+    ) -> Cards {
         let Some(sort) = sort.into() else {
             return self;
         };
@@ -82,7 +87,10 @@ impl Cards {
         }
         self.0.sort_by(|a, b| {
             let ord = sort.compare(&a.scryfall_data, &b.scryfall_data);
-            if ascending { ord } else { ord.reverse() }
+            match direction {
+                SortDirection::Ascending => ord,
+                SortDirection::Descending => ord.reverse(),
+            }
         });
         self
     }
@@ -100,7 +108,7 @@ impl Cards {
 pub fn sort_deck_entries(
     entries: &mut [DeckEntry],
     sort: impl Into<Option<CardSortKey>>,
-    ascending: bool,
+    direction: SortDirection,
 ) {
     let Some(sort) = sort.into() else {
         return;
@@ -111,7 +119,10 @@ pub fn sort_deck_entries(
     }
     entries.sort_by(|a, b| {
         let ord = sort.compare(&a.card.scryfall_data, &b.card.scryfall_data);
-        if ascending { ord } else { ord.reverse() }
+        match direction {
+            SortDirection::Ascending => ord,
+            SortDirection::Descending => ord.reverse(),
+        }
     });
 }
 #[cfg(test)]
@@ -130,6 +141,7 @@ mod tests {
     use crate::domain::card::scryfall_data::rarity::{Rarities, Rarity};
     use crate::domain::card::search_card::card_filter::builder::CardQueryBuilder;
     use crate::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+    use crate::domain::card::search_card::card_filter::sort_direction::SortDirection;
 
     fn make_card(name: &str) -> Card {
         Card {
@@ -914,7 +926,7 @@ mod tests {
     #[test]
     fn test_sorted_by_name_ascending() {
         let cards = vec![make_card("Zap"), make_card("Aardvark"), make_card("Mox")];
-        let result = Cards::from(cards).sorted(CardSortKey::Name, true);
+        let result = Cards::from(cards).sorted(CardSortKey::Name, SortDirection::Ascending);
         assert_eq!(result[0].scryfall_data.name, "Aardvark");
         assert_eq!(result[2].scryfall_data.name, "Zap");
     }
@@ -922,7 +934,7 @@ mod tests {
     #[test]
     fn test_sorted_by_name_descending() {
         let cards = vec![make_card("Zap"), make_card("Aardvark"), make_card("Mox")];
-        let result = Cards::from(cards).sorted(CardSortKey::Name, false);
+        let result = Cards::from(cards).sorted(CardSortKey::Name, SortDirection::Descending);
         assert_eq!(result[0].scryfall_data.name, "Zap");
         assert_eq!(result[2].scryfall_data.name, "Aardvark");
     }
@@ -935,7 +947,7 @@ mod tests {
         b.scryfall_data.cmc = Some(1.0);
         let mut c = make_card("C");
         c.scryfall_data.cmc = Some(3.0);
-        let result = Cards::from(vec![a, b, c]).sorted(CardSortKey::Cmc, true);
+        let result = Cards::from(vec![a, b, c]).sorted(CardSortKey::Cmc, SortDirection::Ascending);
         assert_eq!(result[0].scryfall_data.name, "B");
         assert_eq!(result[2].scryfall_data.name, "A");
     }
@@ -943,7 +955,7 @@ mod tests {
     #[test]
     fn test_sorted_none_is_a_noop() {
         let cards = vec![make_card("Zap"), make_card("Aardvark")];
-        let result = Cards::from(cards).sorted(None, true);
+        let result = Cards::from(cards).sorted(None, SortDirection::Ascending);
         assert_eq!(result[0].scryfall_data.name, "Zap");
     }
 
@@ -964,7 +976,7 @@ mod tests {
             card: make_card(name),
         };
         let mut entries = vec![entry("Zap"), entry("Aardvark"), entry("Mox")];
-        super::sort_deck_entries(&mut entries, CardSortKey::Name, true);
+        super::sort_deck_entries(&mut entries, CardSortKey::Name, SortDirection::Ascending);
         assert_eq!(entries[0].card.scryfall_data.name, "Aardvark");
         assert_eq!(entries[2].card.scryfall_data.name, "Zap");
     }

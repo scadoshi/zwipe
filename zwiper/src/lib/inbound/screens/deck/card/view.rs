@@ -525,7 +525,7 @@ pub fn View(deck_id: Uuid) -> Element {
         let filtered: Vec<Card> = Cards::from(filtered)
             .sorted(
                 builder.sort().unwrap_or(CardSortKey::Name),
-                builder.ascending(),
+                builder.direction(),
             )
             .into();
 
@@ -1282,7 +1282,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         {
                             let sorted_tokens: Option<Vec<Card>> = tokens_resource().map(|t| {
                                 let b = filter_builder.peek();
-                                Cards::from(t).sorted(b.sort().unwrap_or(CardSortKey::Name), b.ascending()).into()
+                                Cards::from(t).sorted(b.sort().unwrap_or(CardSortKey::Name), b.direction()).into()
                             });
                             rsx! {
                                 if let Some(tokens) = sorted_tokens {
@@ -1322,7 +1322,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             {
                                 mb_entries.retain(|e| criteria.matches(&e.card));
                             }
-                            sort_deck_entries(&mut mb_entries, b.sort().unwrap_or(CardSortKey::Name), b.ascending());
+                            sort_deck_entries(&mut mb_entries, b.sort().unwrap_or(CardSortKey::Name), b.direction());
                         }
                         let mb_count = mb_entries.len();
                         rsx! {
@@ -1375,7 +1375,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             {
                                 sb_entries.retain(|e| criteria.matches(&e.card));
                             }
-                            sort_deck_entries(&mut sb_entries, b.sort().unwrap_or(CardSortKey::Name), b.ascending());
+                            sort_deck_entries(&mut sb_entries, b.sort().unwrap_or(CardSortKey::Name), b.direction());
                         }
                         let sb_count = sb_entries.len();
                         rsx! {

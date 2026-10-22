@@ -17,7 +17,9 @@ use crate::domain::card::search_card::card_filter::criteria::CardCriteria;
 use crate::domain::card::search_card::card_filter::error::InvalidCardCriteria;
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use crate::domain::card::search_card::card_filter::query::{CardQuery, Limit};
-use crate::domain::card::search_card::card_filter::{CardSortKey, strip_punctuation};
+use crate::domain::card::search_card::card_filter::{
+    CardSortKey, SortDirection, sort_direction, strip_punctuation,
+};
 use crate::domain::card::search_card::card_type::CardType;
 use crate::domain::deck::Format;
 
@@ -117,7 +119,7 @@ fn check_contains_not_contains_clash(
 /// - `language`: `"en"`
 /// - `limit`: 25
 /// - `offset`: 0
-/// - `ascending`: `true`
+/// - `direction`: `SortDirection::Ascending`
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CardQueryBuilder {
     // Combat stats
@@ -200,7 +202,9 @@ pub struct CardQueryBuilder {
     limit: u32,
     offset: u32,
     sort: Option<CardSortKey>,
-    ascending: bool,
+    /// Serialized as the `ascending` bool so the derived shape stays put.
+    #[serde(rename = "ascending", with = "sort_direction::as_ascending")]
+    direction: SortDirection,
     synergy: bool,
     include_skipped: bool,
 }
@@ -270,7 +274,7 @@ impl Default for CardQueryBuilder {
             limit: 25,
             offset: 0,
             sort: None,
-            ascending: true,
+            direction: SortDirection::Ascending,
             synergy: false,
             include_skipped: false,
         }
@@ -727,7 +731,7 @@ impl CardQueryBuilder {
             Limit::new(self.limit),
             self.offset,
             self.sort,
-            self.ascending,
+            self.direction,
             self.synergy,
             self.include_skipped,
         ))
