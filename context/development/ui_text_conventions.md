@@ -110,7 +110,7 @@ The canonical copy is `display_theme_name` in `zwipe-core/src/domain/user/models
 1. **Headings** (`h1`/`h2`/`h3`, page titles, section labels) → Title Case
 2. **Buttons** → sentence case in zwiper, Title Case in zite
 3. **Form labels & placeholders** → sentence case ("Email address"), Title Case for single proper nouns ("Email")
-4. **Toasts you author** → sentence case, no trailing period for short status ("Card added"), period for full sentences ("Verify your email to enable password recovery.")
+4. **Toasts you author** → sentence case, never a trailing period ("Card added", "Check {address} for a link to confirm the change"). A toast that needs a second sentence is too long; shorten it, or join the halves with a semicolon
 5. **Toasts derived from `e.to_user_message()` / `e.to_string()`** → pass through, no `.to_lowercase()` wrappers
 6. **Don't add inline `font-family`**: body inheritance handles it (form elements covered by the reset)
 7. **Avoid `style="font-family:monospace"`**: see above
