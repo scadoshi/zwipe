@@ -6,7 +6,7 @@
 //! reduced to navigation: swipe **left** for the next card, **down** to go back
 //! one. Right/up are not allowed by the `SwipeConfig`, so those gestures return
 //! the card to center instead of committing. The ActionBar carries the same
-//! eyeball [`RulesButton`] as the other swipe screens for full card details.
+//! eyeball `RulesButton` as the other swipe screens for full card details.
 //!
 //! Cards come from the plain (deck-agnostic) `search_cards` route with a single
 //! `oracle_tags_contains_any` criterion; the same linear `CardStack` +

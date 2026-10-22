@@ -7,7 +7,7 @@
 //! Free-form strings never enter reports: the server aggregates on `screen`,
 //! and a typo'd axis fragments every rollup query.
 //!
-//! `component` is the drill-down: `""` (via [`component::NONE`]) when the
+//! `component` is the drill-down: `""` (via [`component::NONE`](crate::inbound::components::telemetry::vocabulary::component::NONE)) when the
 //! screen itself surfaced the error, else the component's module name.
 //! Dialogs and sheets report their HOST screen plus their own component name.
 //!

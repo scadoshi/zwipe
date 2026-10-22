@@ -1,14 +1,14 @@
 //! Our own oracle-tag descriptions.
 //!
 //! Scryfall describes only ~29% of the ~4,500 oracle tags, and its
-//! [`sync_oracle_tags`](super::oracle_tags::sync_oracle_tags) does a full
+//! [`sync_oracle_tags`](crate::outbound::sqlx::card::helpers::oracle_tags::sync_oracle_tags) does a full
 //! `DELETE` + re-`INSERT` of the catalog every run, so anything written into
 //! `oracle_tags.description` out of band is wiped on the next sync. To make our
 //! text durable, we author it here (compiled into the binary, shipped by a normal
 //! deploy) and overlay it onto the catalog **inside the same sync transaction**,
 //! right after the reinsert. Ours always wins: it replaces Scryfall's description
 //! where we have one and fills the blanks where we don't. The end state is that
-//! every tag is described by us; grow [`ORACLE_TAG_DESCRIPTIONS`] over time,
+//! every tag is described by us; grow [`ORACLE_TAG_DESCRIPTIONS`](crate::outbound::sqlx::card::helpers::oracle_tag_descriptions::ORACLE_TAG_DESCRIPTIONS) over time,
 //! priority order = highest card population first.
 //!
 //! Because the column itself carries the merged text post-sync, every reader

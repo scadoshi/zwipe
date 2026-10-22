@@ -1,6 +1,6 @@
 //! Horizontal snap-to-page carousel.
 //!
-//! Provides a [`Carousel`] component that renders children in a horizontal
+//! Provides a [`Carousel`](crate::inbound::components::interactions::carousel::Carousel) component that renders children in a horizontal
 //! strip and handles touch/mouse gestures for page navigation with snap behavior.
 
 /// Page indicator dots.

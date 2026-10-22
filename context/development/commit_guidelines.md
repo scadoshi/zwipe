@@ -22,6 +22,7 @@ cargo +nightly fmt        # NOT `cargo fmt`; stable can't apply the unstable imp
 ### 2. Clippy: the exact CI command, warnings are errors
 ```bash
 cargo clippy --workspace --all-targets -- -D warnings
+RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --lib   # what CI's lint job runs; rustdoc warnings fail it
 ```
 
 ### 3. Tests

@@ -2,7 +2,7 @@
 //!
 //! Every screen opens with the same top bar: a centered title and, on screens
 //! that have a hint dialog, a faded top-right "?" trigger. This wraps the
-//! shared [`PageHeader`] with the app's help button on the left. The screen
+//! shared [`PageHeader`](components::PageHeader) with the app's help button on the left. The screen
 //! still owns its `HintDialog` (with screen-specific content); passing its
 //! `open` signal as `hint` just wires up the trigger button.
 

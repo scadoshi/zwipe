@@ -1,7 +1,7 @@
 //! App-root hint host: a sender/receiver for on-demand "?" help.
 //!
-//! An [`InfoButton`](super::info_button::InfoButton) anywhere in the tree posts a
-//! [`HintTopic`] to a context signal; this single [`HintHost`], mounted at the app
+//! An [`InfoButton`](crate::inbound::components::info_button::InfoButton) anywhere in the tree posts a
+//! [`HintTopic`](crate::inbound::components::hint_host::HintTopic) to a context signal; this single [`HintHost`](crate::inbound::components::hint_host::HintHost), mounted at the app
 //! root, hands the topic's dialog to orangui's dialog host. A single `Option`
 //! means only one hint shows at a time.
 

@@ -2,7 +2,7 @@
 //!
 //! Call sites await
 //! `ensure_fresh` to obtain a session whose access token is valid for at
-//! least [`REFRESH_AHEAD`] more; if a
+//! least `REFRESH_AHEAD` more; if a
 //! refresh is needed, exactly one `POST /api/auth/refresh` goes out no
 //! matter how many callers race (cold start mounts several resources at
 //! once). The rotated session is persisted to the OS keyring before the

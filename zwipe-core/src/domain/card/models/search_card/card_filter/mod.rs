@@ -17,7 +17,7 @@
 //! thing; the server reads `direction` first and the bool goes away once the
 //! client floor passes the release that sends the name.
 
-/// Builder producing [`CardQuery`](crate::domain::card::models::search_card::card_filter::query::CardQuery) / [`CardCriteria`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria) with validation.
+/// Builder producing [`CardQuery`] / [`CardCriteria`] with validation.
 pub mod builder;
 /// Sort key options (name, CMC, rarity, etc.).
 pub mod card_sort_key;

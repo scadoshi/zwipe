@@ -1,6 +1,6 @@
 //! One-time UI hint marking operation.
 //!
-//! Service-layer error type. The validated request type ([`MarkHintShown`])
+//! Service-layer error type. The validated request type ([`MarkHintShown`](zwipe_core::domain::user::models::hints::MarkHintShown))
 //! and key constants live in zwipe-core (`domain::user::models::hints`).
 
 use thiserror::Error;

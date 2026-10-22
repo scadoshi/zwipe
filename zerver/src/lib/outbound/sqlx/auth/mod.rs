@@ -170,7 +170,7 @@ impl AuthRepository for Postgres {
     /// the two lifespans, marks the row replaced, and inserts its successor in
     /// the same family.
     ///
-    /// A token that was already replaced longer than [`REFRESH_REPLAY_GRACE`]
+    /// A token that was already replaced longer than `REFRESH_REPLAY_GRACE`
     /// ago is a replay: the whole family is deleted, so whoever holds the
     /// current token loses it too and the real device signs in again. A family
     /// older than [`REFRESH_ABSOLUTE_LIFESPAN`] is deleted the same way.

@@ -713,7 +713,7 @@ impl CardQueryBuilder {
         }
     }
 
-    /// Builds a [`CardQuery`](crate::domain::card::models::search_card::card_filter::query::CardQuery) (the server search request) with validation.
+    /// Builds a [`CardQuery`] (the server search request) with validation.
     ///
     /// The builder's `limit` is clamped into a bounded [`Limit`] here; the
     /// server path is the only one that can carry pagination at all.
@@ -737,7 +737,7 @@ impl CardQueryBuilder {
         ))
     }
 
-    /// Builds bare [`CardCriteria`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria) for the in-memory path
+    /// Builds bare [`CardCriteria`] for the in-memory path
     /// ([`Cards`](crate::domain::card::search_card::cards::Cards) operations).
     /// Same validation as [`build`](Self::build); no pagination or ordering.
     ///

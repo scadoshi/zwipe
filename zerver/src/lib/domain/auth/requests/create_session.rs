@@ -96,7 +96,7 @@ impl FromStr for CreateSession {
 /// 1. Verify the user exists
 /// 2. Enforce session maximum (5 per user)
 /// 3. Generate access and refresh tokens
-/// 4. Return a complete [`Session`](super::Session)
+/// 4. Return a complete [`Session`](zwipe_core::domain::auth::models::session::Session)
 ///
 /// # Security
 ///

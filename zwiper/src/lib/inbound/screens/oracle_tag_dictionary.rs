@@ -6,7 +6,7 @@
 //! slug + label + description. Reached from the oracle-tag picker and its hint;
 //! authed like every app screen (behind the router `AuthGate`).
 //!
-//! The catalog is read from the shared app-wide [`CatalogCache`] (prefetched at
+//! The catalog is read from the shared app-wide [`CatalogCache`](crate::inbound::components::catalog_cache::CatalogCache) (prefetched at
 //! startup, 1-day TTL, stale-while-revalidate), the same copy the oracle-tag
 //! picker and card filter read: one fetch of the ~4,500-row list per session.
 

@@ -3,7 +3,7 @@
 //! `Guides` is the index and `GuidePage` renders one article by slug.
 //!
 //! Content lives in `content.rs`. `/guides/:slug` is one dynamic route, and
-//! [`slugs`] feeds the SSG pass so each article is prerendered as its own
+//! `slugs` feeds the SSG pass so each article is prerendered as its own
 //! page: a dynamic route is excluded from `Route::static_routes()`, and an
 //! unprerendered path is served by `404.html` with a 404 status.
 

@@ -38,7 +38,7 @@ pub enum ArchidektError {
     /// Network failure or response body parse failure.
     #[error("archidekt request failed: {0}")]
     Network(#[from] reqwest::Error),
-    /// The response body exceeds [`MAX_RESPONSE_BYTES`].
+    /// The response body exceeds `MAX_RESPONSE_BYTES`.
     #[error("archidekt response too large")]
     TooLarge,
 }

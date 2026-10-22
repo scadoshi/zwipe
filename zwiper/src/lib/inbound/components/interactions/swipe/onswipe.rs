@@ -1,6 +1,6 @@
 //! Core swipe event processing.
 //!
-//! Defines the [`OnSwipe`] trait with shared functionality used by both
+//! Defines the [`OnSwipe`](crate::inbound::components::interactions::swipe::onswipe::OnSwipe) trait with shared functionality used by both
 //! touch and mouse event handlers.
 
 use chrono::Utc;

@@ -174,7 +174,7 @@ impl BulkUpsertWithTx for &[ScryfallData] {
 /// Chunked batch insert/update with automatic fallback.
 ///
 /// Processes cards in chunks using [`BulkUpsertWithTx`]. On chunk failure,
-/// falls back to card-by-card insertion via [`upsert_card_by_card`] so one
+/// falls back to card-by-card insertion via `upsert_card_by_card` so one
 /// bad card doesn't block the entire batch.
 pub trait BatchUpsertWithTx
 where

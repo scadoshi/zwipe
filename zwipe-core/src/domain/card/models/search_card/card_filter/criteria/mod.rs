@@ -1,7 +1,7 @@
 //! Shared card-matching criteria: "what matches a card".
 //!
-//! [`CardCriteria`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria) is the predicate core shared by both search paths:
-//! flattened into [`CardQuery`](crate::domain::card::models::search_card::card_filter::query::CardQuery) for the server query,
+//! [`CardCriteria`] is the predicate core shared by both search paths:
+//! flattened into [`CardQuery`] for the server query,
 //! and taken by [`Cards`](crate::domain::card::search_card::cards::Cards)
 //! operations for in-memory filtering. It carries **no pagination and no
 //! ordering**; those are query concerns.

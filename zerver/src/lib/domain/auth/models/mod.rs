@@ -1,14 +1,14 @@
 //! Authentication domain entities and value objects.
 //!
 //! This module contains entities and value objects used in authentication workflows.
-//! Request types live in the sibling [`super::requests`] module.
+//! Request types live in the sibling [`requests`] module.
 //!
 //! # Module Organization
 //!
 //! - [`access_token`]: JWT access token generation and validation
 //! - [`password`]: Password validation, hashing, and verification
-//! - [`refresh_token`]: Long-lived refresh token management
-//! - [`session`]: Session entity and constants
+//! - [`refresh_token`](zwipe_core::domain::auth::models::refresh_token): Long-lived refresh token management
+//! - [`session`](zwipe_core::domain::auth::models::session): Session entity and constants
 
 pub mod access_token;
 pub mod password;

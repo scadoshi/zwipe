@@ -1,4 +1,4 @@
-//! [`EmailSender`] outbound port for email delivery.
+//! [`EmailSender`](crate::domain::email::ports::EmailSender) outbound port for email delivery.
 
 use std::future::Future;
 

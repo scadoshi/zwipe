@@ -27,7 +27,7 @@ use crate::domain::deck::DeckEntry;
 
 /// A collection of cards already loaded in memory.
 ///
-/// Operations take bare [`CardCriteria`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria), never a query, and read like a
+/// Operations take bare [`CardCriteria`], never a query, and read like a
 /// slice via `Deref`.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Cards(Vec<Card>);

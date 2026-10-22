@@ -1,7 +1,7 @@
 //! Carousel state management.
 //!
 //! Tracks the current page index, drag offset, and velocity for a horizontal
-//! snap-to-page carousel. Unlike [`SwipeState`](super::super::swipe::state::SwipeState)
+//! snap-to-page carousel. Unlike [`SwipeState`](crate::inbound::components::interactions::swipe::state::SwipeState)
 //! which detects fling gestures, this state manages persistent page position
 //! with smooth snapping and edge resistance.
 

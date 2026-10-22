@@ -1,6 +1,6 @@
 //! Local theme persistence.
 //!
-//! Caches the last-used [`ThemeConfig`] so pre-auth screens (login, register,
+//! Caches the last-used [`ThemeConfig`](zwipe_core::domain::user::models::theme::ThemeConfig) so pre-auth screens (login, register,
 //! verify, reset) render in it before a session loads, instead of the default.
 //! The theme can drift (changed on another device), so this is a best-effort
 //! "last known" that a live session's preferences override.

@@ -85,6 +85,11 @@ jobs:
         # prerender routes, and nothing else lints it, so a warning there is
         # invisible until someone runs this by hand.
         run: cargo clippy -p zite --all-targets --features server -- -D warnings
+      # Broken intra-doc links and other rustdoc warnings fail the way clippy's do.
+      - name: Docs
+        run: cargo doc --workspace --no-deps --lib
+        env:
+          RUSTDOCFLAGS: -D warnings
 
   build:
     needs: [test, lint] # blocked if tests or lints fail

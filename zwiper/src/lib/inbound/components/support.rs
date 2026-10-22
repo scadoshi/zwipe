@@ -1,7 +1,7 @@
 //! Support / help entry point.
 //!
 //! A small faded "!" button rendered at the left of every screen header (via
-//! [`ScreenHeader`](super::screen_header::ScreenHeader)), mirroring the "?"
+//! [`ScreenHeader`](crate::inbound::components::screen_header::ScreenHeader)), mirroring the "?"
 //! hint on the right. Tapping it opens a dialog with ways to reach the
 //! team: email a problem report or join the Discord. The report email is
 //! pre-filled with the app version and platform so every report self-documents.

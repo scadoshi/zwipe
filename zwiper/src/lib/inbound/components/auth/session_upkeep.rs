@@ -1,7 +1,7 @@
 //! Background session upkeep loop and app context providers.
 //!
 //! Periodically keeps the access token fresh via the single-flight
-//! [`EnsureFresh`] helper, and initializes the app-wide Dioxus context
+//! [`EnsureFresh`](crate::inbound::components::auth::ensure_session::EnsureFresh) helper, and initializes the app-wide Dioxus context
 //! (session, client, card search state, theme, telemetry buffer).
 
 use std::time::Duration;

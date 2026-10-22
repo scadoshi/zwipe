@@ -1,7 +1,7 @@
 //! Archidekt deck import operation: server-side types.
 //!
 //! The Archidekt outbound adapter reduces a fetched deck to a list of
-//! [`ArchidektCard`]s, which the deck service imports into an existing deck
+//! [`ArchidektCard`](crate::domain::deck::models::deck::import_archidekt::ArchidektCard)s, which the deck service imports into an existing deck
 //! exactly like a plain-text import: same boards, same add/replace modes,
 //! same result shape. Card *data* is never taken from Archidekt; only
 //! identity (Scryfall printing id), quantity, and name.

@@ -1,7 +1,7 @@
 //! Authentication request types.
 //!
 //! This module contains all request/response types for authentication operations.
-//! Entities and value objects live in the sibling [`super::models`] module.
+//! Entities and value objects live in the sibling [`models`] module.
 //!
 //! # Module Organization
 //!

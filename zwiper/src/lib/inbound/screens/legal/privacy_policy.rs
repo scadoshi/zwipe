@@ -3,7 +3,7 @@
 //! Renders the shared policy copy from [`zwipe_core::legal`] via
 //! `dangerous_inner_html` so the app and the website stay in sync. Inline
 //! `https://` links open externally on device through Dioxus's link handling; the
-//! support contact line uses [`open_url::open`] because a raw `mailto:` anchor
+//! support contact line uses [`open_url::open`](crate::outbound::open_url::open) because a raw `mailto:` anchor
 //! silently fails inside the mobile webview.
 
 use components::{ActionBar, Button, ButtonVariant};
