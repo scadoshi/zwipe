@@ -1,6 +1,6 @@
 # Sort direction on the wire: `ascending: bool` to `direction`
 
-**Status: PLANNED 2026-10-22. Phase 0 is on main (the `SortDirection` commit). Nothing on the wire has changed yet.**
+**Status: Phase 1 DONE 2026-10-22; next: the client cut.**
 
 **One sentence:** `CardQuery` sends the sort direction as `"ascending": true|false` today; move it to `"direction": "ascending"|"descending"` by sending both for one release train, reading the new one first on the server, and dropping the bool once the client floor is past the release that sends it.
 
@@ -34,15 +34,15 @@ Absent `direction` means ascending, which is also what absent `ascending` means 
 
 On main: `SortDirection` lives in zwipe-core beside `CardSortKey`. The builder holds `direction`, `Cards::sorted` and `sort_deck_entries` take it, the sort sheet flips it, and `CardQuery::new` takes it and stores `ascending: direction.is_ascending()`. The struct field and its serde attributes are unchanged, and a test pins `"ascending":true` and `"ascending":false` in the serialized body.
 
-## Phase 1: core and server send and accept both
+## Phase 1: core and server send and accept both. DONE
 
 One commit in zwipe-core and zerver, deployed before any client build carries it.
 
 - `SortDirection` gains `Serialize` and `Deserialize` with `#[serde(rename_all = "lowercase")]`, so it reads and writes as `"ascending"` and `"descending"`.
 - `CardQuery` gains `#[serde(default)] direction: Option<SortDirection>` and keeps `#[serde(default = "default_ascending")] ascending: bool`. `new` sets both from the one `SortDirection` it is given, so a client on this core always sends both fields.
-- The getter `direction()` resolves `self.direction.unwrap_or(SortDirection::from_ascending(self.ascending))`: the new field wins when present, the bool fills in for older clients. The `ascending()` getter is deleted here; zerver's `ASC`/`DESC` push matches on `direction()`.
-- Tests in zwipe-core, one per shape the server can receive: both fields, `ascending` only (a pre-Phase-2 client), `direction` only (the end state), neither (the default). A zerver integration test posts the `direction` only shape and the `ascending` only shape to `search_card` and asserts the order of the first page flips.
-- Check for a persisted `CardQueryBuilder` or `CardQuery` on the device. If one is stored, its on-disk reader must accept both shapes the same way. The Phase 0 report says whether such a store exists.
+- The getter `direction()` resolves `self.direction.unwrap_or_else(|| SortDirection::from_ascending(self.ascending))`: the new field wins when present, the bool fills in for older clients. The `ascending()` getter is deleted here; zerver's `ASC`/`DESC` push matches on `direction()`.
+- Tests in zwipe-core, one per shape the server can receive: both fields, `ascending` only (a pre-Phase-2 client), `direction` only (the end state), neither (the default), and the two disagreeing (`direction` wins). A zerver integration test (`search_reads_direction_from_either_wire_field`) posts the `ascending` only and `direction` only descending shapes to `search_card` and asserts the same first card, then the `direction: ascending` shape and asserts a different one.
+- Nothing persists `CardQueryBuilder` or `CardQuery` on the device (confirmed 2026-10-22), so the server is the only reader and no second one is needed.
 
 Old clients are untouched: they keep sending `ascending` alone and the fallback reads it. Deploy order is server first, as always.
 

@@ -2,8 +2,13 @@
 
 use std::fmt;
 
+use serde::{Deserialize, Serialize};
+
 /// Which way a sort runs.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+///
+/// On the wire it is its name in lowercase: `"ascending"` or `"descending"`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum SortDirection {
     /// Smallest first; missing values last.
     #[default]
@@ -95,6 +100,19 @@ mod tests {
         }
         assert!(SortDirection::Ascending.is_ascending());
         assert!(!SortDirection::Descending.is_ascending());
+    }
+
+    #[test]
+    fn wire_string_round_trip() {
+        for (direction, wire) in [
+            (SortDirection::Ascending, r#""ascending""#),
+            (SortDirection::Descending, r#""descending""#),
+        ] {
+            assert_eq!(serde_json::to_string(&direction).unwrap(), wire);
+            let read: SortDirection = serde_json::from_str(wire).unwrap();
+            assert_eq!(read, direction);
+        }
+        assert!(serde_json::from_str::<SortDirection>(r#""Ascending""#).is_err());
     }
 
     #[test]

@@ -168,6 +168,56 @@ async fn search_color_identity_within(pool: sqlx::PgPool) {
     );
 }
 
+/// Phase 1 of the sort-direction wire plan: the body may carry the direction
+/// as the old `ascending` bool, the new `direction` name, or both. The two
+/// descending shapes must sort the same way, and the ascending name must flip
+/// it.
+#[sqlx::test]
+async fn search_reads_direction_from_either_wire_field(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, _) = app.register("sorter").await;
+    seed_cards(
+        &pool,
+        &[
+            card("Goblin Guide").mono("R"),
+            card("Goblin Matron").mono("R"),
+            card("Goblin Warchief").mono("R"),
+        ],
+    )
+    .await;
+
+    let first = |body: serde_json::Value| {
+        let app = &app;
+        let token = &token;
+        async move {
+            let (status, results) = app.post(SEARCH_CARDS_ROUTE, body, Some(token)).await;
+            assert_eq!(status, StatusCode::OK, "search: {results}");
+            names(&results).into_iter().next().unwrap()
+        }
+    };
+
+    let bool_only = first(json!({
+        "name_contains": "Goblin", "order_by": "Name", "ascending": false
+    }))
+    .await;
+    let name_only = first(json!({
+        "name_contains": "Goblin", "order_by": "Name", "direction": "descending"
+    }))
+    .await;
+    let name_ascending = first(json!({
+        "name_contains": "Goblin", "order_by": "Name", "direction": "ascending"
+    }))
+    .await;
+
+    assert_eq!(bool_only, "Goblin Warchief");
+    assert_eq!(
+        bool_only, name_only,
+        "ascending:false and direction:descending must sort the same way"
+    );
+    assert_eq!(name_ascending, "Goblin Guide");
+    assert_ne!(name_ascending, name_only);
+}
+
 #[sqlx::test]
 async fn search_requires_auth(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
