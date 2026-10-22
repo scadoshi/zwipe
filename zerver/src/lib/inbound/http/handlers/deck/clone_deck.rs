@@ -19,7 +19,7 @@ impl From<CloneDeckError> for ApiError {
             CloneDeckError::SourceNotFound => Self::NotFound("source deck not found".to_string()),
             CloneDeckError::Forbidden => Self::NotFound("deck not found".to_string()),
             CloneDeckError::Duplicate => {
-                Self::UnprocessableEntity("a deck with that name already exists".to_string())
+                Self::Conflict("a deck with that name already exists".to_string())
             }
             CloneDeckError::LimitReached => {
                 Self::UnprocessableEntity("deck limit reached".to_string())

@@ -16,9 +16,9 @@ use crate::inbound::http::{ApiError, AppState, To500};
 impl From<CreateDeckProfileError> for ApiError {
     fn from(value: CreateDeckProfileError) -> Self {
         match value {
-            CreateDeckProfileError::Duplicate => Self::UnprocessableEntity(
-                "deck with name and user combination already exists".to_string(),
-            ),
+            CreateDeckProfileError::Duplicate => {
+                Self::Conflict("deck with name and user combination already exists".to_string())
+            }
             CreateDeckProfileError::LimitReached => {
                 Self::UnprocessableEntity("deck limit reached".to_string())
             }

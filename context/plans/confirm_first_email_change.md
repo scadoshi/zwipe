@@ -92,6 +92,8 @@ Tests in `zerver/tests/user_flows.rs`, replacing `change_email_to_taken_address_
 
 **Phase 3, floor.** Shared with `verify_first_registration.md` Phase 3.
 
+**Also behind the floor: the `duplicate-409` branch.** On top of `account-enumeration`, it moves the seven duplicate answers (register, change username, change email's old path, create, rename and clone deck, add card) from 422 to 409. A client from before `ClientError::Conflict` shows a generic error for 409, so it merges with Phase 4, not before. Messages are unchanged and the app shows them as before.
+
 **Phase 4, cleanup.** Delete the field and the old arm, with registration's Phase 4. Tick the change-email half in `security_audit_followups.md` and archive this file.
 
 ## What happens to the branch

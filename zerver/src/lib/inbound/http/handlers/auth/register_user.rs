@@ -53,15 +53,9 @@ impl From<CreateSessionError> for ApiError {
 impl From<RegisterUserError> for ApiError {
     fn from(value: RegisterUserError) -> Self {
         match value {
-            // The old path's answer, unchanged until clients older than 409
-            // are below the version floor.
             RegisterUserError::Duplicate | RegisterUserError::DuplicateEmail => {
-                Self::UnprocessableEntity(
-                    "user with that username or email already exists".to_string(),
-                )
+                Self::Conflict("user with that username or email already exists".to_string())
             }
-            // Only the verify_first path checks this, and only clients that
-            // know 409 send verify_first.
             RegisterUserError::UsernameTaken => {
                 Self::Conflict("username already taken".to_string())
             }

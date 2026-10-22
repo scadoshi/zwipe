@@ -15,7 +15,7 @@ impl From<CreateDeckCardError> for ApiError {
     fn from(value: CreateDeckCardError) -> Self {
         match value {
             CreateDeckCardError::Duplicate => {
-                Self::UnprocessableEntity("card and deck combination already exist".to_string())
+                Self::Conflict("card and deck combination already exist".to_string())
             }
             CreateDeckCardError::IsCommander => {
                 Self::UnprocessableEntity(CreateDeckCardError::IsCommander.to_string())
