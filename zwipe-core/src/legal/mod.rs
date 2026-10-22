@@ -22,7 +22,7 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>
 
 <h2>Data we collect</h2>
 <ul>
-<li><strong>Account data</strong>: email address, username, and a hashed password (never stored in plaintext).</li>
+<li><strong>Account data</strong>: email address, username, and a hashed password (never stored in plaintext). When you change your email, the new address is kept as pending until you confirm it from that address, for up to 24 hours.</li>
 <li><strong>Deck data</strong>: the decks and card selections you create within the app, including cards you skip or remove per deck so they stop being suggested for that deck (you can clear this anytime from the deck's More menu).</li>
 <li><strong>Session data</strong>: authentication tokens stored securely on your device.</li>
 <li><strong>Usage activity</strong>: how you interact with the app, including swiping, searches, and card decisions (adds, skips, maybes, removals). This is kept both in aggregate and per account, so the app can improve overall and personalize your experience.</li>
@@ -34,7 +34,7 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>
 <ul>
 <li>To authenticate your account and maintain sessions.</li>
 <li>To store and sync your decks across devices.</li>
-<li>To send transactional emails (email verification, password reset).</li>
+<li>To send transactional emails: email verification, password reset, confirming an email change, and notices about changes to your account.</li>
 <li>To remember which cards you've skipped or removed for a deck so we stop suggesting them there.</li>
 <li>To analyze swiping and usage patterns, in aggregate and per account, so we can improve the app and personalize card suggestions.</li>
 <li>To find and fix bugs, using anonymous error and crash reports.</li>
@@ -44,7 +44,7 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>
 <h2>Third-party services</h2>
 <ul>
 <li><strong><a href="https://scryfall.com" target="_blank" rel="noopener noreferrer">Scryfall</a></strong>: card data (names, images, oracle text) is sourced from the Scryfall API and stored on our servers. Your account data is never shared with Scryfall.</li>
-<li><strong><a href="https://resend.com" target="_blank" rel="noopener noreferrer">Resend</a></strong>: transactional email delivery (verification and password reset emails). Your email address is passed to Resend solely to deliver these messages.</li>
+<li><strong><a href="https://resend.com" target="_blank" rel="noopener noreferrer">Resend</a></strong>: transactional email delivery (the emails listed above). Your email address is passed to Resend solely to deliver these messages.</li>
 <li><strong><a href="https://archidekt.com" target="_blank" rel="noopener noreferrer">Archidekt</a></strong>: when you import a deck from Archidekt, we request that deck's public card data from the Archidekt API. This only happens when you use the import feature, and no account data is shared with Archidekt.</li>
 <li><strong><a href="https://www.cloudflare.com" target="_blank" rel="noopener noreferrer">Cloudflare</a></strong>: all traffic between the app and our server passes through Cloudflare's network, which forwards requests to our server.</li>
 </ul>

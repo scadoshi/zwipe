@@ -98,7 +98,7 @@ pub fn About() -> Element {
                             a { class: "tag tag-p3", href: URL_WASM, "WASM" }
                         }
                         ul { class: "card-bullets",
-                            li { "Landing and guides, the changelog, shared deck pages, password reset and email verification" }
+                            li { "Landing and guides, the changelog, shared deck pages, password reset, email verification and email change confirmation" }
                             li {
                                 "Talks to "
                                 a { href: URL_ZERVER, "zerver" }
