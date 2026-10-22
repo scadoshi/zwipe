@@ -16,32 +16,59 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CardRole {
+    /// Adds mana ahead of the curve.
     Ramp,
+    /// Draws extra cards.
     Draw,
+    /// Kills or exiles a single threat.
     Removal,
+    /// Clears the board.
     Wipe,
+    /// Stops a spell as it is cast.
     Counterspell,
+    /// Keeps your own permanents safe from removal.
     Protection,
+    /// Gets attackers past blockers.
     Evasion,
+    /// Ends the game once it lands.
     Finisher,
+    /// Makes creature tokens.
     Tokens,
+    /// Gains life.
     Lifegain,
+    /// Flickers a permanent to reuse its enter effect.
     Blink,
+    /// Brings cards back from the graveyard.
     Recursion,
+    /// Puts cards from a library into the graveyard.
     Mill,
+    /// Deals direct damage to creatures or players.
     Burn,
+    /// Takes life from opponents and gives it to you.
     Drain,
+    /// Boosts a creature's power or toughness for a turn.
     Pump,
+    /// Buffs your whole team at once.
     Anthem,
+    /// Puts +1/+1 or other counters on permanents.
     Counters,
+    /// Copies a spell or permanent.
     Copy,
+    /// Sacrifices permanents for value.
     Sacrifice,
+    /// Taxes or locks down what opponents can do.
     Stax,
+    /// Untaps a permanent for a second use.
     Untap,
+    /// Searches the library for a specific card.
     Tutor,
+    /// Exiles or shuts off graveyards.
     GraveyardHate,
+    /// Nets more cards than it costs.
     CardAdvantage,
+    /// Makes or spends energy counters.
     Energy,
+    /// Pressures life totals early.
     Aggression,
 }
 

@@ -13,10 +13,14 @@ use crate::domain::auth::models::secret::Secret;
 /// that omit them deserialize to `None`.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpAuthenticateUser {
+    /// Username or email.
     pub identifier: String,
+    /// The account password.
     pub password: Secret,
+    /// The platform the client runs on, if it sends one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub platform: Option<ClientPlatform>,
+    /// The app version making the request, if it sends one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub client_version: Option<String>,
 }
@@ -38,11 +42,16 @@ impl HttpAuthenticateUser {
 /// registration.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpRegisterUser {
+    /// The username to register.
     pub username: String,
+    /// The email address to register.
     pub email: String,
+    /// The password for the new account.
     pub password: Secret,
+    /// The platform the client runs on, if it sends one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub platform: Option<ClientPlatform>,
+    /// The app version making the request, if it sends one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub client_version: Option<String>,
 }
@@ -69,8 +78,11 @@ impl HttpRegisterUser {
 /// On success the old refresh token is consumed and a new token pair is issued.
 #[derive(Clone, Deserialize, Serialize)]
 pub struct HttpRefreshSession {
+    /// The session owner's id, as a UUID string.
     pub user_id: String,
+    /// The refresh token being exchanged; consumed on success.
     pub refresh_token: String,
+    /// The app version running now, if the client sends one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub client_version: Option<String>,
 }
@@ -100,7 +112,9 @@ impl HttpRefreshSession {
 /// Password change request body. Requires current password for re-verification.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpChangePassword {
+    /// The password in use, for re-verification.
     pub current_password: Secret,
+    /// The password to switch to.
     pub new_password: Secret,
 }
 
@@ -117,7 +131,9 @@ impl HttpChangePassword {
 /// Username change request body. Requires password for re-verification.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpChangeUsername {
+    /// The username to switch to.
     pub new_username: String,
+    /// The account password, for re-verification.
     pub password: Secret,
 }
 
@@ -134,7 +150,9 @@ impl HttpChangeUsername {
 /// Email change request body. Requires password for re-verification.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpChangeEmail {
+    /// The email address to switch to.
     pub email: String,
+    /// The account password, for re-verification.
     pub password: Secret,
 }
 
@@ -158,12 +176,14 @@ pub struct HttpDeleteUser {
 /// Email verification request body.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpVerifyEmail {
+    /// The verification token from the email link.
     pub token: String,
 }
 
 /// Password reset initiation request body.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpRequestPasswordReset {
+    /// The email address of the account to reset.
     pub email: String,
 }
 
@@ -179,7 +199,9 @@ impl HttpRequestPasswordReset {
 /// Password reset completion request body.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpResetPassword {
+    /// The reset token from the email link.
     pub token: String,
+    /// The password to set.
     pub new_password: Secret,
 }
 

@@ -15,10 +15,15 @@ use serde::de::DeserializeOwned;
 /// HTTP methods the API uses. Defined here so core needs no `http` dependency.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Method {
+    /// Reads a resource; never carries a body.
     Get,
+    /// Creates a resource or runs an action.
     Post,
+    /// Replaces a resource in full.
     Put,
+    /// Updates part of a resource.
     Patch,
+    /// Removes a resource.
     Delete,
 }
 

@@ -20,10 +20,15 @@ pub const MAX_DECK_OTHER_TAGS: usize = 5;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DeckOtherTag {
+    /// Built to a tight price.
     Budget,
+    /// Leans on suboptimal cards for fun.
     Jank,
+    /// A joke deck built around a bit.
     Meme,
+    /// An unmodified preconstructed deck.
     Precon,
+    /// A preconstructed deck with upgrades.
     UpgradedPrecon,
 }
 

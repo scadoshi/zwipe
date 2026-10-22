@@ -32,10 +32,12 @@ impl Quantity {
         Ok(Self(quantity))
     }
 
+    /// A single copy.
     pub fn one() -> Self {
         Self(1)
     }
 
+    /// A full playset.
     pub fn four() -> Self {
         Self(4)
     }

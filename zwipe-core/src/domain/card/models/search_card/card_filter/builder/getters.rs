@@ -273,50 +273,62 @@ impl CardQueryBuilder {
 
     // == Exclude Filter Getters ==
 
+    /// The substring a card name must not contain.
     pub fn name_not_contains(&self) -> Option<&str> {
         self.name_not_contains.as_deref()
     }
 
+    /// The substring the oracle text must not contain.
     pub fn oracle_text_not_contains(&self) -> Option<&str> {
         self.oracle_text_not_contains.as_deref()
     }
 
+    /// Substrings that each rule out a card when its oracle text has one.
     pub fn oracle_text_excludes_any(&self) -> Option<&[String]> {
         self.oracle_text_excludes_any.as_deref()
     }
 
+    /// Keywords that each rule out a card.
     pub fn keywords_excludes(&self) -> Option<&[String]> {
         self.keywords_excludes.as_deref()
     }
 
+    /// The substring the flavor text must not contain.
     pub fn flavor_text_not_contains(&self) -> Option<&str> {
         self.flavor_text_not_contains.as_deref()
     }
 
+    /// The substring the type line must not contain.
     pub fn type_line_not_contains(&self) -> Option<&str> {
         self.type_line_not_contains.as_deref()
     }
 
+    /// Substrings that each rule out a card when its type line has one.
     pub fn type_line_excludes_any(&self) -> Option<&[String]> {
         self.type_line_excludes_any.as_deref()
     }
 
+    /// Card types that each rule out a card.
     pub fn card_type_excludes_any(&self) -> Option<&[CardType]> {
         self.card_type_excludes_any.as_deref()
     }
 
+    /// Mana colors a card must not produce.
     pub fn produced_mana_excludes(&self) -> Option<&[String]> {
         self.produced_mana_excludes.as_deref()
     }
 
+    /// Rarities that each rule out a card.
     pub fn rarity_excludes_any(&self) -> Option<&Rarities> {
         self.rarity_excludes_any.as_ref()
     }
 
+    /// Set codes that each rule out a card.
     pub fn set_excludes_any(&self) -> Option<&[String]> {
         self.set_excludes_any.as_deref()
     }
 
+    /// Artists whose cards are ruled out.
     pub fn artist_excludes_any(&self) -> Option<&[String]> {
         self.artist_excludes_any.as_deref()
     }

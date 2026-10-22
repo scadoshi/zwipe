@@ -14,9 +14,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ClientPlatform {
+    /// The iOS app.
     Ios,
+    /// The Android app.
     Android,
+    /// The desktop app.
     Desktop,
+    /// The browser client.
     Web,
 }
 
@@ -35,13 +39,19 @@ impl ClientPlatform {
     /// server) this resolves to `Desktop` and is simply never read there.
     #[cfg(target_os = "ios")]
     pub const CURRENT: ClientPlatform = ClientPlatform::Ios;
+    /// The platform this build is compiled for. On non-client targets (e.g. the
+    /// server) this resolves to `Desktop` and is simply never read there.
     #[cfg(target_os = "android")]
     pub const CURRENT: ClientPlatform = ClientPlatform::Android;
+    /// The platform this build is compiled for. On non-client targets (e.g. the
+    /// server) this resolves to `Desktop` and is simply never read there.
     #[cfg(all(
         target_arch = "wasm32",
         not(any(target_os = "ios", target_os = "android"))
     ))]
     pub const CURRENT: ClientPlatform = ClientPlatform::Web;
+    /// The platform this build is compiled for. On non-client targets (e.g. the
+    /// server) this resolves to `Desktop` and is simply never read there.
     #[cfg(all(
         not(target_os = "ios"),
         not(target_os = "android"),

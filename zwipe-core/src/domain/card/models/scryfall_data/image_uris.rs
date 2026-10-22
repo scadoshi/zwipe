@@ -4,8 +4,11 @@ use serde::{Deserialize, Serialize};
 /// [`crate::domain::card::scryfall_data::ScryfallData::primary_image_url`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImageSize {
+    /// Thumbnail, about 146x204px.
     Small,
+    /// Standard card display, about 488x680px.
     Normal,
+    /// High-quality display, about 672x936px.
     Large,
 }
 
