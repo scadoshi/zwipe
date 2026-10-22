@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, username, email, password_hash, lockout_until, email_verified_at, hints_shown FROM users WHERE (id::text = $1 OR username = $1 OR email = $1)",
+  "query": "SELECT id, username, email, password_hash, email_verified_at, hints_shown FROM users WHERE (id::text = $1 OR username = $1 OR email = $1)",
   "describe": {
     "columns": [
       {
@@ -49,17 +49,6 @@
       },
       {
         "ordinal": 4,
-        "name": "lockout_until",
-        "type_info": "Timestamptz",
-        "origin": {
-          "Table": {
-            "table": "users",
-            "name": "lockout_until"
-          }
-        }
-      },
-      {
-        "ordinal": 5,
         "name": "email_verified_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -70,7 +59,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 5,
         "name": "hints_shown",
         "type_info": "Jsonb",
         "origin": {
@@ -92,9 +81,8 @@
       false,
       false,
       true,
-      true,
       false
     ]
   },
-  "hash": "17983a11f7a393194da563193311da3e739030b48e631a86e1ff6f0dfaa350c7"
+  "hash": "20b254fc95fb75b04cf24d1d8429e62ee5b8d7d9825da6e025a9d46d1e500c43"
 }

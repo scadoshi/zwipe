@@ -143,7 +143,7 @@ where
     /// access token lock the owner out of login, and let a user lock themselves
     /// out by mistyping their current password. Brute-force protection here is
     /// the per-route rate limit, not the lockout. Unlike `authenticate_user`,
-    /// this neither increments `failed_login_attempts` nor issues tokens.
+    /// this neither counts a failure toward the lockout nor issues tokens.
     async fn verify_password(
         &self,
         request: &AuthenticateUser,

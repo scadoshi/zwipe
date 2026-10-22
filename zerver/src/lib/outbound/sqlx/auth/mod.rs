@@ -87,7 +87,7 @@ impl AuthRepository for Postgres {
     ) -> Result<UserWithPasswordHash, AuthenticateUserError> {
         let database_user: DatabaseUserWithPasswordHash = query_as!(
             DatabaseUserWithPasswordHash,
-            "SELECT id, username, email, password_hash, lockout_until, email_verified_at, hints_shown FROM users WHERE (id::text = $1 OR username = $1 OR email = $1)",
+            "SELECT id, username, email, password_hash, email_verified_at, hints_shown FROM users WHERE (id::text = $1 OR username = $1 OR email = $1)",
             request.identifier
         )
         .fetch_one(&self.pool)
@@ -428,7 +428,7 @@ impl AuthRepository for Postgres {
             .map_err(|e| ResetPasswordError::Database(e.into()))?;
 
         query!(
-            "UPDATE users SET password_hash = $1, failed_login_attempts = 0, last_failed_at = NULL, lockout_until = NULL WHERE id = $2",
+            "UPDATE users SET password_hash = $1 WHERE id = $2",
             new_hash.to_string(),
             user_id
         )
