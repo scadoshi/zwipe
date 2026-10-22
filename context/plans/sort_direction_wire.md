@@ -1,6 +1,6 @@
 # Sort direction on the wire: `ascending: bool` to `direction`
 
-**Status: Phase 1 DONE 2026-10-22; next: the client cut.**
+**Status: Phase 1 DONE 2026-10-22 (`494d2217`); next: the client cut.**
 
 **One sentence:** `CardQuery` sends the sort direction as `"ascending": true|false` today; move it to `"direction": "ascending"|"descending"` by sending both for one release train, reading the new one first on the server, and dropping the bool once the client floor is past the release that sends it.
 
