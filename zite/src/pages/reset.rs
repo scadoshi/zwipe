@@ -68,7 +68,24 @@ pub fn Reset(token: String) -> Element {
         });
     };
 
+    // Editing either field clears a submit error, so the live check below
+    // isn't hidden behind a stale one.
+    use_effect(move || {
+        let _ = (password.read().len(), confirm.read().len());
+        if matches!(*state.peek(), ResetState::Error(_)) {
+            state.set(ResetState::Form);
+        }
+    });
+
     let current_state = state.read().clone();
+
+    // Same rule as the app: mid-typing the confirmation can't match yet, so
+    // it is judged once it is as long as the password (submit checks too).
+    let mismatch = {
+        let pw = password.read();
+        let cf = confirm.read();
+        !cf.is_empty() && cf.chars().count() >= pw.chars().count() && *pw != *cf
+    };
 
     rsx! {
         Nav {}
@@ -147,6 +164,8 @@ pub fn Reset(token: String) -> Element {
 
                     if let ResetState::Error(msg) = &*state.read() {
                         div { class: "status-message error", "{msg}" }
+                    } else if mismatch {
+                        div { class: "status-message error", "Passwords do not match" }
                     }
                     }
                 },
