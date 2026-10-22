@@ -21,122 +21,239 @@ pub const MAX_DECK_TAGS: usize = 5;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DeckTag {
+    /// Casts adventure cards for two spells in one.
     Adventures,
+    /// Attacks early with cheap creatures to win before opponents stabilize.
     Aggro,
+    /// Turns opponents' own attacks and resources against them.
     Aikido,
+    /// Wins through a card's alternate victory condition.
     AlternateWincon,
+    /// Sacrifices its own creatures for value.
     Aristocrats,
+    /// Builds its engine around artifacts and their synergies.
     Artifacts,
+    /// Rewards attacking with triggers on each swing.
     AttackTriggers,
+    /// Stacks auras onto one creature to make it huge.
     Auras,
+    /// Ramps hard and casts huge spells.
     BigMana,
+    /// Flickers permanents to reuse their enter-the-battlefield triggers.
     Blink,
+    /// Makes Blood tokens to loot through its deck and feed payoffs.
     Blood,
+    /// Returns permanents to hand to reset boards and reuse effects.
     Bounce,
+    /// Deals direct damage with spells to creatures or players.
     Burn,
+    /// Chains free spells off cascade.
     Cascade,
+    /// Warps the game with random effects that hit the whole table.
     Chaos,
+    /// Chains zero-cost artifacts to draw into a combo finish.
     Cheerios,
+    /// Copies the best creatures and permanents on the battlefield.
     Clone,
+    /// Investigates for Clue tokens to draw cards and trigger payoffs.
     Clues,
+    /// Flips coins and wins off coin-flip payoffs.
     CoinFlips,
+    /// Leans on colorless permanents and colorless-matters payoffs.
     Colorless,
+    /// Assembles a few cards into a game-ending interaction.
     Combo,
+    /// Builds around casting and recasting its commander.
     CommanderMatters,
+    /// Answers every threat, then wins late with inevitability.
     Control,
+    /// Slashes spell costs to deploy threats far ahead of curve.
     CostReduction,
+    /// Grows creatures with +1/+1 counters and counter payoffs.
     Counters,
+    /// Holds up counterspells to stop key spells before they resolve.
     Counterspells,
+    /// Saddles opponents with Curse enchantments that punish them over time.
     Curses,
+    /// Cycles cards to dig and trigger cycling payoffs.
     Cycling,
+    /// Pairs deathtouch with pings and forced blocks to trade up.
     Deathtouch,
+    /// Holds the line with walls, then turns them into a win.
     Defenders,
+    /// Packs heavy colored mana symbols for devotion payoffs.
     Devotion,
+    /// Rolls dice and rewards high rolls.
     DiceRolling,
+    /// Strips opponents' hands to deny them options.
     Discard,
+    /// Collects basic land types for domain-scaling effects.
     Domain,
+    /// Draws extra cards to outresource the table.
     Draw,
+    /// Ventures through dungeons and takes the initiative for staged payoffs.
     Dungeons,
+    /// Builds its engine around enchantments and their synergies.
     Enchantments,
+    /// Draws a card whenever it casts an enchantment.
     Enchantress,
+    /// Accumulates energy counters and spends them for value.
     Energy,
+    /// Suits up creatures with equipment for repeatable buffs.
     Equipment,
+    /// Chains enter-the-battlefield effects for repeatable value.
     Etb,
+    /// Takes additional combat steps to attack again and again.
     ExtraCombats,
+    /// Chains extra turns to pull ahead and close the game.
     ExtraTurns,
+    /// Removes opponents' creatures by having its bigger ones fight them.
     Fight,
+    /// Holds up instants and flash threats to act on opponents' turns.
     Flash,
+    /// Wins in the air with evasive flying creatures.
     Flying,
+    /// Makes Food tokens to gain life and feed sacrifice payoffs.
     Food,
+    /// Wins fast and folds if the plan is disrupted.
     GlassCannon,
+    /// Forces opponents' creatures to attack each other.
     Goad,
+    /// Plays the strongest standalone cards over tight synergy.
     GoodStuff,
+    /// Floods the board with creatures, then buffs them all at once.
     GoWide,
+    /// Uses the graveyard as a resource to recur and reuse cards.
     Graveyard,
+    /// Gives every player resources to steer the table.
     GroupHug,
+    /// Punishes the whole table with symmetric damage and taxes.
     GroupSlug,
+    /// Disrupts opponents with small creatures that tax and deny.
     Hatebears,
+    /// Attacks with infect creatures to deal damage as poison counters.
     Infect,
+    /// Pays kicker for bigger, scalable spell effects.
     Kicker,
+    /// Destroys opponents' lands to deny them mana.
     LandDestruction,
+    /// Triggers payoffs each time a land enters the battlefield.
     Landfall,
+    /// Treats lands as the engine, ramping and recurring them for value.
     Lands,
+    /// Floods the board with legendary permanents and their payoffs.
     LegendsMatter,
+    /// Drains opponents' life while padding its own total.
     Lifedrain,
+    /// Gains life and turns that life total into payoffs.
     Lifegain,
+    /// Discards cards to cast them for their cheaper madness cost.
     Madness,
+    /// Plays efficient threats and removal to grind out value.
     Midrange,
+    /// Empties opponents' libraries to deck them out.
     Mill,
+    /// Takes and keeps the monarch for an extra card each turn.
     Monarch,
+    /// Plays creatures face down and flips them for surprise value.
     Morph,
+    /// Saddles Mounts to turn on their combat payoffs.
     Mounts,
+    /// Rewards playing many colors and gold cards.
     Multicolor,
+    /// Stacks mutating creatures into one body that piles up triggers.
     Mutate,
+    /// Commits crimes with Assassins, Mercenaries, Pirates, Rogues, and Warlocks.
     Outlaws,
+    /// Assembles a full party of Cleric, Rogue, Warrior, and Wizard for payoffs.
     Party,
+    /// Walls itself off with deterrents so attacks go elsewhere.
     Pillowfort,
+    /// Repeatedly deals 1 damage to pick off creatures and players.
     Ping,
+    /// Plots spells early to cast them for free later.
     Plot,
+    /// Wins through poison counters from infect and toxic sources.
     Poison,
+    /// Makes deals and incentives to steer the multiplayer table.
     Politics,
+    /// Rewards high power and pumping its creatures' power.
     PowerMatters,
+    /// Makes Powerstone tokens to ramp into artifacts and big spells.
     Powerstones,
+    /// Locks opponents out by denying them mana, cards, and actions.
     Prison,
+    /// Multiplies every kind of counter it has with proliferate.
     Proliferate,
+    /// Accelerates mana to cast big spells ahead of schedule.
     Ramp,
+    /// Fills its graveyard with big creatures, then returns them to play cheaply.
     Reanimator,
+    /// Leans on efficient single-target removal to answer any threat.
     Removal,
+    /// Hands out Role tokens to buff its creatures or shrink theirs.
     Roles,
+    /// Unlocks both doors of Room enchantments for value.
     Rooms,
+    /// Uses sacrifice outlets to turn permanents into value.
     Sacrifice,
+    /// Builds around Sagas and their chapter effects.
     Sagas,
+    /// Mills its own library to fuel graveyard payoffs.
     SelfMill,
+    /// Stacks Shrine enchantments that scale with each Shrine it controls.
     Shrines,
+    /// Builds around snow permanents and their scaling payoffs.
     Snow,
+    /// Races to win quickly before opponents set up.
     Speed,
+    /// Casts many instants and sorceries with spell payoffs.
     Spellslinger,
+    /// Slows the whole table with effects that tax and restrict every player.
     Stax,
+    /// Ramps into big, efficient creatures and attacks with them.
     Stompy,
+    /// Casts a chain of spells to power up storm finishers.
     Storm,
+    /// Deploys many planeswalkers and protects their loyalty.
     Superfriends,
+    /// Surveils to fill the graveyard while smoothing its draws.
     Surveil,
+    /// Trades efficiently and sets opponents back a turn at a time.
     Tempo,
+    /// Steals opponents' creatures, spells, and permanents.
     Theft,
+    /// Generates creature tokens to go wide and fuel payoffs.
     Tokens,
+    /// Tutors for the right answer to each situation.
     Toolbox,
+    /// Rewards high toughness and deals damage equal to it.
     ToughnessMatters,
+    /// Attacks with toxic creatures to hand out poison counters.
     Toxic,
+    /// Makes Treasure tokens for burst mana and artifact payoffs.
     Treasure,
+    /// Fills the deck with one creature type and its lords.
     Tribal,
+    /// Goes all-in on one fast plan and ignores everything else.
     Turbo,
+    /// Fogs combat every turn until an alternate win arrives.
     TurboFog,
+    /// Untaps permanents to reuse their abilities within a turn.
     Untap,
+    /// Crews Vehicles for cheap, evasive attackers.
     Vehicles,
+    /// Loads one creature with buffs and swings for lethal.
     Voltron,
+    /// Plays Werewolves and controls day and night to flip them.
     Werewolves,
+    /// Forces every player to discard and redraw a full hand.
     Wheels,
+    /// Clears the board with sweepers, then rebuilds first.
     Wipe,
+    /// Pours all its mana into X spells that scale with it.
     XSpells,
+    /// Curves out cheap, efficient multicolor creatures.
     Zoo,
 }
 
