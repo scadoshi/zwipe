@@ -16,6 +16,11 @@ use crate::inbound::router::Router;
 use crate::outbound::app_icon;
 use crate::outbound::session::Persist;
 
+/// An identifier for the login form to fill in once, set by a screen that
+/// sends the user here (registration). Provided at the root.
+#[derive(Clone, Copy)]
+pub struct LoginPrefill(pub Signal<Option<String>>);
+
 /// Login form screen for user authentication.
 #[component]
 pub fn Login() -> Element {
@@ -24,8 +29,19 @@ pub fn Login() -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let auth_client: Signal<ZwipeClient> = use_context();
 
-    let username_or_email = use_signal(String::new);
+    let mut username_or_email = use_signal(String::new);
     let mut password = use_signal(String::new);
+
+    // Takes the prefill whenever it is set, including while this screen sits
+    // mounted under Register.
+    let LoginPrefill(mut prefill) = use_context();
+    use_effect(move || {
+        if let Some(identifier) = prefill() {
+            username_or_email.set(identifier);
+            password.set(String::new());
+            prefill.set(None);
+        }
+    });
 
     let mut is_loading = use_signal(|| false);
     let toast = use_toast();

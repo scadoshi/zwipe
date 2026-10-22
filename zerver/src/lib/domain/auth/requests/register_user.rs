@@ -9,6 +9,9 @@
 //! 4. Creating the user account in the database
 //! 5. Automatically creating a session for immediate login
 //!
+//! The `verify_first` path stops after step 4: no session, and the same answer
+//! whether or not the email already has an account (see [`RegisterOutcome`]).
+//!
 //! # Security Features
 //!
 //! - **Password Policy Enforcement**: Validates complexity requirements
@@ -76,6 +79,17 @@ pub enum RegisterUserError {
     /// prompt the user to choose a different username or email.
     #[error("user with name or email already exists")]
     Duplicate,
+
+    /// Another account has this email. Only the `verify_first` path tells
+    /// this apart from [`RegisterUserError::Duplicate`], and it never reaches
+    /// the caller there: it becomes [`RegisterOutcome::EmailTaken`].
+    #[error("user with that email already exists")]
+    DuplicateEmail,
+
+    /// Another account has this username. Usernames are public, so the
+    /// `verify_first` path answers this one inline.
+    #[error("username already taken")]
+    UsernameTaken,
 
     /// Database operation failed during user creation.
     #[error(transparent)]
@@ -206,6 +220,17 @@ impl RawRegisterUser {
             password,
         })
     }
+}
+
+/// What a `verify_first` registration did. The handler answers both the same.
+#[derive(Debug)]
+pub enum RegisterOutcome {
+    /// The account was created, unverified, and a verification email is on
+    /// its way.
+    Created(zwipe_core::domain::user::User),
+    /// Another account has the email. Nothing was written; the address's
+    /// owner is told unless they were told within the last hour.
+    EmailTaken,
 }
 
 /// Request to register a new user account.
