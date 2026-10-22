@@ -6,13 +6,15 @@ use crate::{Nav, api};
 
 #[component]
 pub fn Verify(token: String) -> Element {
-    let result: Resource<Result<(), String>> = use_resource(move || {
+    // `Err(None)` is a link that is unknown, used or expired; `Err(Some(_))`
+    // is anything else, with what to say about it.
+    let result: Resource<Result<(), Option<String>>> = use_resource(move || {
         let token = token.clone();
         async move {
             if token.is_empty() {
-                return Err(
+                return Err(Some(
                     "This link is missing its code. Open it from the email again.".to_string(),
-                );
+                ));
             }
 
             api::client()
@@ -20,8 +22,8 @@ pub fn Verify(token: String) -> Element {
                 .await
                 .map_err(|e| match e {
                     // A request that never landed is not a bad token; say so.
-                    ClientError::Network(_) | ClientError::Decode(_) => e.to_user_message(),
-                    _ => "This link is invalid or has expired.".to_string(),
+                    ClientError::Network(_) | ClientError::Decode(_) => Some(e.to_user_message()),
+                    _ => None,
                 })
         }
     });
@@ -44,7 +46,16 @@ pub fn Verify(token: String) -> Element {
                     }
                     }
                 },
-                Some(Err(e)) => rsx! {
+                // A mail scanner opening the link first spends it and does the
+                // verifying, so a dead link can't claim it failed.
+                Some(Err(None)) => rsx! {
+                    div { class: "outcome-error",
+                    Panel { title: "Link already used or expired", title_h1: true, centered: true,
+                        p { class: "card-summary", "If you already verified, you're all set. If not, tap " HintKey { "Resend" } " on " HintKey { "Profile" } " in the app for a new link." }
+                    }
+                    }
+                },
+                Some(Err(Some(e))) => rsx! {
                     div { class: "outcome-error",
                     Panel { title: "Verification failed", title_h1: true, centered: true,
                         p { class: "card-summary", "{e}" }
