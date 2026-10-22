@@ -16,7 +16,9 @@ use crate::domain::BoxFuture;
 use crate::domain::auth::models::UserWithPasswordHash;
 use crate::domain::auth::models::access_token::JwtSecret;
 use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
-use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
+use crate::domain::auth::requests::change_email::{
+    ChangeEmail, ChangeEmailError, ChangeEmailOutcome,
+};
 use crate::domain::auth::requests::change_password::{ChangePassword, ChangePasswordError};
 use crate::domain::auth::requests::change_username::{ChangeUsername, ChangeUsernameError};
 use crate::domain::auth::requests::create_session::{CreateSession, CreateSessionError};
@@ -280,11 +282,14 @@ pub trait AuthService: Clone + Send + Sync + 'static {
 
     /// Changes a user's email after verifying password.
     ///
-    /// Verifies password, checks uniqueness, updates email.
+    /// Verifies the password, then tries the update. A free address is taken
+    /// and the old address is notified. An address another account already
+    /// holds is left alone and its owner is notified instead; the caller gets
+    /// the same shape back either way so the result never says which.
     fn change_email(
         &self,
         request: &ChangeEmail,
-    ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
+    ) -> impl Future<Output = Result<ChangeEmailOutcome, ChangeEmailError>> + Send;
 
     // == delete ==
 
@@ -389,7 +394,7 @@ pub trait ErasedAuthService: Send + Sync + 'static {
     fn change_email<'a>(
         &'a self,
         request: &'a ChangeEmail,
-    ) -> BoxFuture<'a, Result<User, ChangeEmailError>>;
+    ) -> BoxFuture<'a, Result<ChangeEmailOutcome, ChangeEmailError>>;
 
     /// See [`AuthService::delete_user`].
     fn delete_user<'a>(
@@ -484,7 +489,7 @@ where
     fn change_email<'a>(
         &'a self,
         request: &'a ChangeEmail,
-    ) -> BoxFuture<'a, Result<User, ChangeEmailError>> {
+    ) -> BoxFuture<'a, Result<ChangeEmailOutcome, ChangeEmailError>> {
         Box::pin(AuthService::change_email(self, request))
     }
 

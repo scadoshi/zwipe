@@ -49,6 +49,9 @@ pub enum AuditAction {
     UsernameChanged,
     /// Email was changed.
     EmailChanged,
+    /// A change-email request named an address that belongs to another
+    /// account. Nothing changed; that account's owner was told.
+    EmailClaimAttempted,
     /// Password was changed or reset.
     PasswordChanged,
     /// User logged in.
@@ -65,6 +68,7 @@ impl AuditAction {
         match self {
             AuditAction::UsernameChanged => "username_changed",
             AuditAction::EmailChanged => "email_changed",
+            AuditAction::EmailClaimAttempted => "email_claim_attempted",
             AuditAction::PasswordChanged => "password_changed",
             AuditAction::Login => "login",
             AuditAction::Refresh => "refresh",
