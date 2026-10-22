@@ -568,28 +568,25 @@ impl CardRepository for MyPostgres {
 
         if let Some(query_string_array) = &criteria.type_line_contains_any() {
             sep.push(" (");
-            query_string_array
-                .iter()
-                .enumerate()
-                .for_each(|(i, query_string)| {
-                    if i > 0 {
-                        sep.push_unseparated(" OR ");
-                    }
-                    sep.push_unseparated(STRIP_TYPE);
-                    sep.push_bind_unseparated(format!("%{}%", query_string));
-                });
-            sep.push_unseparated(") ");
-        }
-
-        if let Some(card_types) = &criteria.card_type_contains_any() {
-            sep.push(" (");
-            card_types.iter().enumerate().for_each(|(i, query_string)| {
+            for (i, query_string) in query_string_array.iter().enumerate() {
                 if i > 0 {
                     sep.push_unseparated(" OR ");
                 }
                 sep.push_unseparated(STRIP_TYPE);
                 sep.push_bind_unseparated(format!("%{}%", query_string));
-            });
+            }
+            sep.push_unseparated(") ");
+        }
+
+        if let Some(card_types) = &criteria.card_type_contains_any() {
+            sep.push(" (");
+            for (i, query_string) in card_types.iter().enumerate() {
+                if i > 0 {
+                    sep.push_unseparated(" OR ");
+                }
+                sep.push_unseparated(STRIP_TYPE);
+                sep.push_bind_unseparated(format!("%{}%", query_string));
+            }
             sep.push_unseparated(") ");
         }
 
@@ -616,28 +613,25 @@ impl CardRepository for MyPostgres {
 
         if let Some(query_string_array) = &criteria.type_line_excludes_any() {
             sep.push("(type_line IS NULL OR NOT (");
-            query_string_array
-                .iter()
-                .enumerate()
-                .for_each(|(i, query_string)| {
-                    if i > 0 {
-                        sep.push_unseparated(" OR ");
-                    }
-                    sep.push_unseparated(STRIP_TYPE);
-                    sep.push_bind_unseparated(format!("%{}%", query_string));
-                });
-            sep.push_unseparated(")) ");
-        }
-
-        if let Some(card_types) = &criteria.card_type_excludes_any() {
-            sep.push("(type_line IS NULL OR NOT (");
-            card_types.iter().enumerate().for_each(|(i, query_string)| {
+            for (i, query_string) in query_string_array.iter().enumerate() {
                 if i > 0 {
                     sep.push_unseparated(" OR ");
                 }
                 sep.push_unseparated(STRIP_TYPE);
                 sep.push_bind_unseparated(format!("%{}%", query_string));
-            });
+            }
+            sep.push_unseparated(")) ");
+        }
+
+        if let Some(card_types) = &criteria.card_type_excludes_any() {
+            sep.push("(type_line IS NULL OR NOT (");
+            for (i, query_string) in card_types.iter().enumerate() {
+                if i > 0 {
+                    sep.push_unseparated(" OR ");
+                }
+                sep.push_unseparated(STRIP_TYPE);
+                sep.push_bind_unseparated(format!("%{}%", query_string));
+            }
             sep.push_unseparated(")) ");
         }
 
@@ -764,16 +758,13 @@ impl CardRepository for MyPostgres {
 
         if let Some(query_string_array) = &criteria.oracle_text_contains_any() {
             sep.push(" (");
-            query_string_array
-                .iter()
-                .enumerate()
-                .for_each(|(i, query_string)| {
-                    if i > 0 {
-                        sep.push_unseparated(" OR ");
-                    }
-                    sep.push_unseparated(STRIP_ORACLE);
-                    sep.push_bind_unseparated(format!("%{}%", query_string));
-                });
+            for (i, query_string) in query_string_array.iter().enumerate() {
+                if i > 0 {
+                    sep.push_unseparated(" OR ");
+                }
+                sep.push_unseparated(STRIP_ORACLE);
+                sep.push_bind_unseparated(format!("%{}%", query_string));
+            }
             sep.push_unseparated(") ");
         }
 
@@ -793,16 +784,13 @@ impl CardRepository for MyPostgres {
 
         if let Some(query_string_array) = &criteria.oracle_text_excludes_any() {
             sep.push("(oracle_text IS NULL OR NOT (");
-            query_string_array
-                .iter()
-                .enumerate()
-                .for_each(|(i, query_string)| {
-                    if i > 0 {
-                        sep.push_unseparated(" OR ");
-                    }
-                    sep.push_unseparated(STRIP_ORACLE);
-                    sep.push_bind_unseparated(format!("%{}%", query_string));
-                });
+            for (i, query_string) in query_string_array.iter().enumerate() {
+                if i > 0 {
+                    sep.push_unseparated(" OR ");
+                }
+                sep.push_unseparated(STRIP_ORACLE);
+                sep.push_bind_unseparated(format!("%{}%", query_string));
+            }
             sep.push_unseparated(")) ");
         }
 
@@ -810,67 +798,67 @@ impl CardRepository for MyPostgres {
         // Use array_lowercase() via subquery to compare case-insensitively.
         if let Some(keywords) = &criteria.keywords_contains_any() {
             sep.push("(SELECT array_agg(lower(k)) FROM unnest(keywords) k) && ARRAY[");
-            keywords.iter().enumerate().for_each(|(i, kw)| {
+            for (i, kw) in keywords.iter().enumerate() {
                 if i > 0 {
                     sep.push_unseparated(", ");
                 }
                 sep.push_bind_unseparated(kw.to_lowercase());
-            });
+            }
             sep.push_unseparated("]::text[]");
         }
 
         if let Some(keywords) = &criteria.keywords_contains_all() {
             sep.push("(SELECT array_agg(lower(k)) FROM unnest(keywords) k) @> ARRAY[");
-            keywords.iter().enumerate().for_each(|(i, kw)| {
+            for (i, kw) in keywords.iter().enumerate() {
                 if i > 0 {
                     sep.push_unseparated(", ");
                 }
                 sep.push_bind_unseparated(kw.to_lowercase());
-            });
+            }
             sep.push_unseparated("]::text[]");
         }
 
         if let Some(keywords) = &criteria.keywords_excludes() {
             sep.push("(keywords IS NULL OR NOT ((SELECT array_agg(lower(k)) FROM unnest(keywords) k) && ARRAY[");
-            keywords.iter().enumerate().for_each(|(i, kw)| {
+            for (i, kw) in keywords.iter().enumerate() {
                 if i > 0 {
                     sep.push_unseparated(", ");
                 }
                 sep.push_bind_unseparated(kw.to_lowercase());
-            });
+            }
             sep.push_unseparated("]::text[]))");
         }
 
         if let Some(colors) = &criteria.produced_mana_contains_any() {
             sep.push("produced_mana && ARRAY[");
-            colors.iter().enumerate().for_each(|(i, c)| {
+            for (i, c) in colors.iter().enumerate() {
                 if i > 0 {
                     sep.push_unseparated(", ");
                 }
                 sep.push_bind_unseparated(c.to_uppercase());
-            });
+            }
             sep.push_unseparated("]::text[]");
         }
 
         if let Some(colors) = &criteria.produced_mana_contains_all() {
             sep.push("produced_mana @> ARRAY[");
-            colors.iter().enumerate().for_each(|(i, c)| {
+            for (i, c) in colors.iter().enumerate() {
                 if i > 0 {
                     sep.push_unseparated(", ");
                 }
                 sep.push_bind_unseparated(c.to_uppercase());
-            });
+            }
             sep.push_unseparated("]::text[]");
         }
 
         if let Some(colors) = &criteria.produced_mana_excludes() {
             sep.push("(produced_mana IS NULL OR NOT (produced_mana && ARRAY[");
-            colors.iter().enumerate().for_each(|(i, c)| {
+            for (i, c) in colors.iter().enumerate() {
                 if i > 0 {
                     sep.push_unseparated(", ");
                 }
                 sep.push_bind_unseparated(c.to_uppercase());
-            });
+            }
             sep.push_unseparated("]::text[]))");
         }
 

@@ -126,7 +126,7 @@ impl GroupCards for Vec<Card> {
             GroupByOption::CardRole => unreachable!("card role uses group_by_card_role"),
         };
         let mut buckets: Vec<Vec<Card>> = vec![Vec::new(); labels.len()];
-        self.into_iter().for_each(|card| {
+        for card in self {
             if let Some((_, bucket)) = buckets
                 .iter_mut()
                 .enumerate()
@@ -134,7 +134,7 @@ impl GroupCards for Vec<Card> {
             {
                 bucket.push(card);
             }
-        });
+        }
         labels
             .into_iter()
             .zip(buckets)
