@@ -6,7 +6,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::expect_used)]
 
-use zwipe_core::http::paths::*;
+use zwipe_core::http::paths::{GET_CARD_ROLES_ROUTE, GET_DECK_TAGS_ROUTE};
 mod common;
 
 use axum::http::StatusCode;

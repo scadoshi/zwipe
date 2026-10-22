@@ -15,7 +15,15 @@ use axum::http::{Method as HttpMethod, StatusCode};
 use common::TestApp;
 use uuid::Uuid;
 use zwipe_core::http::endpoint::Method;
-use zwipe_core::http::paths::*;
+use zwipe_core::http::paths::{
+    FEATURED_FLAVOR_ROUTE, FIXED_ROUTES, add_commander_maybeboard_card_route,
+    clear_deck_suppressions_route, clone_deck_route, create_deck_card_route,
+    delete_deck_card_route, delete_deck_route, get_card_route, get_deck_profile_route,
+    get_deck_route, get_deck_tokens_route, get_printings_route, get_shared_deck_route,
+    import_archidekt_deck_route, import_deck_cards_route, remove_commander_maybeboard_card_route,
+    search_deck_cards_route, share_deck_route, skip_deck_card_route, unskip_deck_card_route,
+    update_deck_card_route, update_deck_route,
+};
 
 fn http_method(method: Method) -> HttpMethod {
     match method {

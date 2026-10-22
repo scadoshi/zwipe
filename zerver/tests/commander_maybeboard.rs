@@ -6,7 +6,10 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
-use zwipe_core::http::paths::*;
+use zwipe_core::http::paths::{
+    COMMANDER_MAYBEBOARD_ROUTE, add_commander_maybeboard_card_route,
+    remove_commander_maybeboard_card_route,
+};
 mod common;
 
 use axum::http::StatusCode;

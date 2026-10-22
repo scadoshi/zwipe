@@ -7,7 +7,10 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
-use zwipe_core::http::paths::*;
+use zwipe_core::http::paths::{
+    DECK_ROUTE, PREFERENCES_ROUTE, SEARCH_CARDS_ROUTE, get_card_route, get_deck_route,
+    search_deck_cards_route,
+};
 mod common;
 
 use axum::http::StatusCode;

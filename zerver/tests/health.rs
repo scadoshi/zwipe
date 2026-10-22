@@ -5,7 +5,7 @@
 
 #![allow(clippy::unwrap_used)]
 
-use zwipe_core::http::paths::*;
+use zwipe_core::http::paths::{DATABASE_HEALTH_ROUTE, HEALTH_ROUTE, SERVER_HEALTH_ROUTE};
 mod common;
 
 use axum::http::StatusCode;

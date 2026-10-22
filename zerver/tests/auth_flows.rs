@@ -6,7 +6,7 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
-use zwipe_core::http::paths::*;
+use zwipe_core::http::paths::{GET_USER_ROUTE, LOGIN_ROUTE, REFRESH_SESSION_ROUTE};
 mod common;
 
 use axum::http::StatusCode;

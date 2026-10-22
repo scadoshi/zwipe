@@ -7,7 +7,10 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
-use zwipe_core::http::paths::*;
+use zwipe_core::http::paths::{
+    CHANGE_EMAIL_ROUTE, CHANGE_PASSWORD_ROUTE, CHANGE_USERNAME_ROUTE, DECK_ROUTE,
+    DELETE_USER_ROUTE, GET_USER_ROUTE, LOGIN_ROUTE, PREFERENCES_ROUTE,
+};
 mod common;
 
 use axum::http::StatusCode;

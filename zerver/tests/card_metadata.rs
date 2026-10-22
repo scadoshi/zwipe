@@ -7,7 +7,10 @@
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
-use zwipe_core::http::paths::*;
+use zwipe_core::http::paths::{
+    GET_ARTISTS_ROUTE, GET_CARD_TYPES_ROUTE, GET_KEYWORDS_ROUTE, GET_LANGUAGES_ROUTE,
+    GET_SETS_ROUTE, get_printings_route,
+};
 mod common;
 
 use axum::http::StatusCode;

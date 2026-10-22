@@ -97,7 +97,7 @@ mod patterns {
         Regex::new(r"exile.{0,30}(graveyard|all cards from)").expect("valid regex")
     });
 }
-use patterns::*;
+use patterns::{GRAVEYARD_HATE, PUMP, REMINDER, STAX_CANT, STAX_EACH};
 
 #[cfg(test)]
 mod tests {
