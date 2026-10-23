@@ -112,7 +112,9 @@ ORDER BY events DESC;
 \echo
 \echo ── 5. PRE-AUTH FUNNEL — last 48h (sessions per step) ──
 -- Distinct anonymous sessions reaching each step. Compare against the
--- register events above; funnel.sql has the full breakdown.
+-- register events above (accounts created; register starts no session, so a
+-- new account's first login event is the sign-in); funnel.sql has the full
+-- breakdown.
 -- (Empty until the anonymous_events migration + client are live.)
 SELECT kind, count(DISTINCT session_id) AS sessions, count(*) AS events
 FROM anonymous_events
