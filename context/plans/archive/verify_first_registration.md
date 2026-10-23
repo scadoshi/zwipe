@@ -159,8 +159,8 @@ One commit, after Phase 3 has been quiet. The oracle closes here, when every cal
 
 Verification: the Phase 1 suite minus the deleted cases is the proof; clippy and fmt as always; deploy; one live registration with a new address and one with a taken one from the shipped app, both landing on Login the same way.
 
-## Open questions for the owner
+## Decided
 
-1. **Should the client chain a login right after the 202?** With login allowed for unverified accounts, `register.rs` could call `login` with the credentials it just sent and land a new account on Home, falling back to the Login screen with the toast when that fails. It does not reopen the oracle: login only confirms a complete credential pair, which is the one thing login has always confirmed, so a taken address with the wrong password looks exactly like a wrong password. It does recover the happy path the decision gave up. The plan assumes no, per the 2026-10-22 decision, and it is a one-arm change in `register.rs` if the funnel says otherwise.
-2. **Is the per-address notice cooldown wanted in Phase 1?** It is a small in-memory map; without it the per-IP limit is the only cap on how often a victim's inbox gets the account-exists notice. The plan includes it.
-3. **Do username collisions stay inline?** The plan keeps the 422 for a taken username because usernames are public, which is what the audit note assumed. If the owner wants usernames hidden too, the username pre-check goes and the taken branch covers both, at the cost of a user never learning their chosen name was taken.
+1. **No login right after the 202.** The app fills the username into the Login screen instead (`68cfa499`), and the user logs in once they've verified. Chaining a login wouldn't reopen the oracle, since login only confirms a full credential pair, so this stays a one-arm change in `register.rs` if the funnel ever argues for it.
+2. **The per-address cooldown on the account-exists notice shipped in Phase 1.** Without it the per-IP limit was the only cap on how often someone else's inbox could get the notice.
+3. **Taken usernames stay inline.** Usernames are public, so saying one is taken tells nobody anything. It answers 409 since Phase 4, not 422.

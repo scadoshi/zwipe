@@ -7,7 +7,6 @@
 - [x] 2026-10-10 Ranking signal poisoning: signals name only catalog ids, each tally is capped at 200 per flush (`MAX_SIGNAL_TALLY`), and a user's impressions are capped at 5,000 a day (`usage_signal_budget`, `DAILY_SIGNAL_SHOWN_CAP`); a flush over budget is accepted but pools nothing.
 - [x] 2026-10-22 Replaced-row retention keyed on `replaced_at`, not the token's own expiry (below). Both prunes now keep a replaced row for the full window even once its own `expires_at` has passed; test `replaced_row_outlives_its_expiry_as_replay_evidence`.
 - [x] 2026-10-22 built on the local `security-followups` branch, two commits, push one deploy apart. Follow-up migration: drop `refresh_tokens.revoked` + its index and the three `users` lockout columns. Tracked in `access_token_window.md`; listed here so it is not forgotten when that plan closes.
-- [ ] DML-only runtime role for zerver (below).
 - [x] 2026-10-23 Register and change-email stop confirming that an email is taken (below). Phases 1 and 2 shipped 2026-10-22. Phase 4 merged 2026-10-23 with the floor at 1.13.0, which closes the oracle.
 - [ ] Android: `session.json` through the Keystore. Own task; the backup opt-out shipped in PR #28, so the file no longer leaves the device, but it is still plaintext on it.
 - [ ] Merge Dependabot's action-pin PRs as they arrive, reading the pin diff each time.
@@ -34,6 +33,8 @@ Do: in both prune queries, keep a replaced row until `replaced_at + 7 days` rega
 
 ## DML-only runtime role
 
+Not doing, the owner's call on 2026-10-22. Kept here as the recipe if that changes.
+
 `CREATE DATABASE zwipe OWNER zwipe` and zerver connects as that owner (`server.md`), so the running server can `DROP TABLE`. The migration runner needs the owner; the server does not.
 
 Do:
@@ -52,6 +53,7 @@ Decided 2026-10-22, and changed the same day. The first fix (the caller's unchan
 
 ## Not doing
 
+- zerver keeps connecting as the database owner. The DML-only role (above) would stop a compromised server from dropping tables, but every `REFRESH MATERIALIZED VIEW` and `TRUNCATE` needs a grant, and a missed one is a 500 in prod.
 - Account lockout stays per address. Brute force spread across many addresses gets five guesses per address per half hour on each account, which the password policy makes impractical; a global per-account lock is exactly the denial of service that was removed.
 - `MIN_CLIENT_VERSION` defaulting to `0.0.0` on a rebuilt box is documented in `server.md` already.
 - `vendor/tao` is relabelled 0.34.9 while being 0.37.0 code, which hides 0.37 advisories from `cargo audit`. Known, documented in `vendor/tao/VENDOR.md`, and goes away when the vendoring does.
