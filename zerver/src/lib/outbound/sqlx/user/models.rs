@@ -34,6 +34,7 @@ impl TryFrom<DatabaseUser> for User {
             // lenient: a malformed map degrades to "no hints shown"
             hints_shown: serde_json::from_value(value.hints_shown).unwrap_or_default(),
             pending_email: None,
+            pending_email_expires_at: None,
         })
     }
 }

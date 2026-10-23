@@ -140,6 +140,7 @@ async fn change_email_answers_the_same_for_a_taken_address(pool: sqlx::PgPool) {
     }
     assert_eq!(taken["pending_email"], "owner@test.local");
     assert_eq!(free["pending_email"], "fresh@test.local");
+    assert!(taken["pending_email_expires_at"].is_string(), "{taken}");
 
     let keys = |v: &serde_json::Value| {
         let mut k: Vec<String> = v.as_object().unwrap().keys().cloned().collect();
@@ -189,6 +190,10 @@ async fn change_email_free_address_switches_on_confirm(pool: sqlx::PgPool) {
         me["pending_email"], "moved@test.local",
         "pending shows: {me}"
     );
+    assert!(
+        me["pending_email_expires_at"].is_string(),
+        "expiry shows: {me}"
+    );
 
     let (status, _) = app
         .post(CONFIRM_EMAIL_CHANGE_ROUTE, json!({ "token": raw }), None)
@@ -202,6 +207,10 @@ async fn change_email_free_address_switches_on_confirm(pool: sqlx::PgPool) {
         "verified by the click: {me}"
     );
     assert!(me.get("pending_email").is_none(), "pending cleared: {me}");
+    assert!(
+        me.get("pending_email_expires_at").is_none(),
+        "expiry cleared: {me}"
+    );
 
     assert_eq!(
         app.emails.last_to().as_deref(),

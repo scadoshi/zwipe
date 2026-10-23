@@ -498,6 +498,7 @@ where
         }
 
         user.pending_email = Some(request.email.clone());
+        user.pending_email_expires_at = Some(expires_at);
         Ok(user)
     }
 

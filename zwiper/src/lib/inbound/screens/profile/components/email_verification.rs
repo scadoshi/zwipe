@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use chrono::{DateTime, Utc};
 use components::{Button, ButtonVariant, TOAST_LONG, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -38,6 +39,42 @@ pub(crate) fn EmailVerification(
             onclick: move |_| on_change.call(()),
             "Change"
         }
+    }
+}
+
+/// Pending row value: the address waiting on its confirmation link and, when
+/// the server says, how long that link has left. Servers older than
+/// `pending_email_expires_at` send only the address.
+#[component]
+pub(crate) fn PendingEmail(email: String, expires_at: Option<DateTime<Utc>>) -> Element {
+    let note = expires_at.map(|at| link_expiry_text(at, Utc::now()));
+    rsx! {
+        div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem;",
+            span { "{email}" }
+            if let Some(note) = note {
+                span { class: "text-muted text-sm", "{note}" }
+            }
+        }
+    }
+}
+
+/// What the Pending row says about its link: minutes in the last hour,
+/// whole hours before that, and where to get a new one once it's dead.
+fn link_expiry_text(expires_at: DateTime<Utc>, now: DateTime<Utc>) -> String {
+    let left = expires_at - now;
+    if left <= chrono::Duration::zero() {
+        return "Link expired; tap Change to send a new one".to_string();
+    }
+    let minutes = (left.num_seconds() + 59) / 60;
+    if minutes < 60 {
+        return match minutes {
+            1 => "Link expires in 1 minute".to_string(),
+            n => format!("Link expires in {n} minutes"),
+        };
+    }
+    match (minutes + 30) / 60 {
+        1 => "Link expires in 1 hour".to_string(),
+        n => format!("Link expires in {n} hours"),
     }
 }
 
@@ -171,5 +208,43 @@ pub(crate) fn VerificationActions() -> Element {
                 path { d: "M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.63 4.36A9 9 0 0 0 20.49 15" }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::{Duration, TimeZone};
+
+    use super::*;
+
+    fn at(left: Duration) -> String {
+        let now = Utc.with_ymd_and_hms(2026, 10, 23, 12, 0, 0).unwrap();
+        link_expiry_text(now + left, now)
+    }
+
+    #[test]
+    fn fresh_link_reads_in_hours() {
+        assert_eq!(at(Duration::hours(24)), "Link expires in 24 hours");
+        assert_eq!(
+            at(Duration::hours(24) - Duration::seconds(5)),
+            "Link expires in 24 hours"
+        );
+        assert_eq!(at(Duration::minutes(90)), "Link expires in 2 hours");
+        assert_eq!(at(Duration::minutes(80)), "Link expires in 1 hour");
+        assert_eq!(at(Duration::minutes(60)), "Link expires in 1 hour");
+    }
+
+    #[test]
+    fn last_hour_reads_in_minutes() {
+        assert_eq!(at(Duration::minutes(59)), "Link expires in 59 minutes");
+        assert_eq!(at(Duration::seconds(61)), "Link expires in 2 minutes");
+        assert_eq!(at(Duration::seconds(1)), "Link expires in 1 minute");
+    }
+
+    #[test]
+    fn dead_link_points_at_change() {
+        let expired = "Link expired; tap Change to send a new one";
+        assert_eq!(at(Duration::zero()), expired);
+        assert_eq!(at(Duration::hours(-3)), expired);
     }
 }

@@ -68,6 +68,11 @@ pub struct User {
     /// is clicked. Absent from the JSON when there is none.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pending_email: Option<Email>,
+
+    /// When the link for `pending_email` stops working. Absent from the JSON
+    /// when there is no pending change, and from servers older than the field.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pending_email_expires_at: Option<DateTime<Utc>>,
 }
 
 impl User {
@@ -92,11 +97,59 @@ impl User {
             email_verified_at: None,
             hints_shown: HashMap::new(),
             pending_email: None,
+            pending_email_expires_at: None,
         }
     }
 
     /// Whether a one-time UI hint has already been shown to this user.
     pub fn has_seen_hint(&self, key: &str) -> bool {
         self.hints_shown.get(key).copied().unwrap_or(false)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::TimeZone;
+
+    use super::*;
+
+    fn user() -> User {
+        User::new(
+            Uuid::nil(),
+            Username::new("tester").unwrap(),
+            Email::new("tester@test.local").unwrap(),
+        )
+    }
+
+    #[test]
+    fn pending_expiry_round_trips_when_present() {
+        let mut u = user();
+        u.pending_email = Some(Email::new("new@test.local").unwrap());
+        u.pending_email_expires_at = Some(Utc.with_ymd_and_hms(2026, 10, 24, 12, 0, 0).unwrap());
+        let json = serde_json::to_value(&u).unwrap();
+        assert_eq!(
+            json.get("pending_email_expires_at"),
+            Some(&serde_json::json!("2026-10-24T12:00:00Z"))
+        );
+        let back: User = serde_json::from_value(json).unwrap();
+        assert_eq!(back, u);
+    }
+
+    #[test]
+    fn pending_expiry_is_omitted_and_defaults_when_absent() {
+        let u = user();
+        let json = serde_json::to_value(&u).unwrap();
+        assert!(json.get("pending_email_expires_at").is_none(), "{json}");
+
+        // An older server sends the pending address without the expiry.
+        let old = serde_json::json!({
+            "id": Uuid::nil(),
+            "username": "tester",
+            "email": "tester@test.local",
+            "pending_email": "new@test.local",
+        });
+        let back: User = serde_json::from_value(old).unwrap();
+        assert!(back.pending_email.is_some());
+        assert_eq!(back.pending_email_expires_at, None);
     }
 }

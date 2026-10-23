@@ -5,7 +5,7 @@ pub mod error;
 /// Database-to-domain user model conversions.
 pub mod models;
 
-use sqlx::{query_as, query_scalar};
+use sqlx::{query, query_as};
 use uuid::Uuid;
 use zwipe_core::domain::Email;
 use zwipe_core::domain::user::User;
@@ -57,13 +57,17 @@ impl UserRepository for Postgres {
 
         // Lenient like `hints_shown`: an address that no longer validates
         // reads as no pending change.
-        user.pending_email = query_scalar!(
-            "SELECT new_email FROM email_change_requests WHERE user_id = $1 AND expires_at > NOW()",
+        if let Some(row) = query!(
+            "SELECT new_email, expires_at FROM email_change_requests WHERE user_id = $1 AND expires_at > NOW()",
             user_id
         )
         .fetch_optional(&self.pool)
         .await?
-        .and_then(|email| Email::new(&email).ok());
+            && let Ok(email) = Email::new(&row.new_email)
+        {
+            user.pending_email = Some(email);
+            user.pending_email_expires_at = Some(row.expires_at);
+        }
 
         Ok(user)
     }
