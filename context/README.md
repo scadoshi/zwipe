@@ -21,6 +21,14 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-23: 1.14.0 submitted, Android session under the Keystore, enumeration closed
+
+1.14.0 went to review on both stores: Profile's Pending row shows when the confirmation link expires, the changelog narrows by year, month and version, field labels with a ? center with it with more room above the field, and Delete account's password field sits a line below the warning. iOS build 107 and Android vc69; notes at [`operations/store-submissions/1.14.0/whats_new.md`](operations/store-submissions/1.14.0/whats_new.md). It is the first minor under the plain versioning rule in [`development/versioning.md`](development/versioning.md), and the changelog's release dates are typed now.
+
+vc69 is also the first build that keeps the Android session file as AES-256-GCM ciphertext under a Keystore key; an older plaintext file is sealed on first load, so logins survive the update. The emulator run passed every step ([`plans/archive/android_keystore_session.md`](plans/archive/android_keystore_session.md)). Android debug builds now go through `zcripts/android/debug_apk.sh`, because a bare `dx build` APK crashes on launch without the post-bundle patches.
+
+Also today: the floor reached 1.13.0 and email enumeration Phase 4 merged, so register and change-email no longer confirm a taken email for any client; the sort direction cleanup went with it. zwiper's fields and hint dialogs moved onto orangui's `TextInput` and `HintDialog`. No more Discord release posts: the changelog at zwipe.net/changelog and in the app is where new versions are announced.
+
 ## 2026-10-22: email enumeration fixed behind flags, 1.13.0 submitted
 
 Register and change-email no longer say whether an email has an account, for clients that ask. PR #31 deployed both halves: change-email holds a new address as pending until a link sent to it is clicked (new `email_change_requests` table, `POST /api/auth/confirm-email-change`, zite's `/confirm-email/:token`), and register creates the account with no session and answers `202 {"status":"verification_sent"}` for a new or a taken email. A taken email's owner gets "You already have a Zwipe account", once an hour per address; a taken address on change-email mails nobody. Emails on both paths go out in a spawned task, so the response doesn't wait on Resend. Old clients don't send `verify_first` or `confirm_first`, so they get main's old behavior; that was checked live from an installed 1.12.2, and the new paths were checked live with a throwaway account, all four emails reaching a real inbox. Plans: [`plans/archive/verify_first_registration.md`](plans/archive/verify_first_registration.md) and [`plans/archive/confirm_first_email_change.md`](plans/archive/confirm_first_email_change.md).

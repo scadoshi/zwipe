@@ -6,4 +6,4 @@ How to build, deploy, and ship Zwipe.
 - [observability/](observability/): How we know things are running: health checks, alerts (push and email), logs, metrics, error and crash reports. Start with [observability/README.md](observability/README.md).
 - [ios/](ios/): iOS development, device setup, App Store submission. Start with [ios/README.md](ios/README.md).
 - [android/](android/): Android build setup ([setup.md](android/setup.md)) and Play Store submission ([play-store/submission/](android/play-store/submission/overview.md)).
-- [store-submissions/](store-submissions/): The "What's New" text for each release, one directory per version, shared by both stores and written to Play's 500-character cap. How to write it, and the Discord post beside it, is in [`../development/release_notes_guidelines.md`](../development/release_notes_guidelines.md).
+- [store-submissions/](store-submissions/): The "What's New" text for each release, one directory per version, shared by both stores and written to Play's 500-character cap. How to write it is in [`../development/release_notes_guidelines.md`](../development/release_notes_guidelines.md).

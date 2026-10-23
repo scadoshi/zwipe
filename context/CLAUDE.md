@@ -134,7 +134,7 @@ Frontend (`zwiper/.env`): `BACKEND_URL`, `RUST_LOG`, `RUST_BACKTRACE`
 
 ## Changelog Entries
 
-One phrase per entry saying what changed: no period at the end, no examples, no second sentence explaining why. The full rule is `development/changelog_guidelines.md`, and tests in `zwipe-core/src/content/changelog/mod.rs` fail the build on a period or an example. The store text and the Discord post are written from those entries per `development/release_notes_guidelines.md`.
+One phrase per entry saying what changed: no period at the end, no examples, no second sentence explaining why. The full rule is `development/changelog_guidelines.md`, and tests in `zwipe-core/src/content/changelog/mod.rs` fail the build on a period or an example. The store text is written from those entries per `development/release_notes_guidelines.md`.
 
 ## Comments
 
