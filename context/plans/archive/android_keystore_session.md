@@ -1,6 +1,6 @@
 # Android session file under the Keystore
 
-**Status: BUILT 2026-10-22 on the local branch `android-keystore`, not pushed. Next: the emulator run below, then merge.**
+**Status: PASSED on the emulator 2026-10-23; ready to merge.**
 
 **One sentence:** on Android the session file in app-private storage is now AES-256-GCM ciphertext under a key the Android Keystore holds, instead of plain JSON.
 
@@ -20,7 +20,7 @@ Checked here: `cargo +nightly fmt --all --check`, host `cargo clippy -p zwiper -
 
 ## Emulator test plan
 
-Environment per [`../operations/android/emulator.md`](../operations/android/emulator.md) section 0, with the `Pixel_9a` AVD booted. The app's Rust log goes to logcat under the `RustStdoutStderr` tag, so keep this running in a second terminal for the whole session:
+Environment per [`../operations/android/emulator.md`](../../operations/android/emulator.md) section 0, with the `Pixel_9a` AVD booted. The app's Rust log goes to logcat under the `RustStdoutStderr` tag, so keep this running in a second terminal for the whole session:
 
 ```bash
 adb logcat -s RustStdoutStderr | grep -E 'keystore|session'
@@ -45,4 +45,4 @@ Ciphertext starts with the 12 random iv bytes; a plaintext file starts with `7b`
 7. Corrupt file: while logged in, `adb shell am force-stop com.scadoshi.zwipe`, `adb shell run-as com.scadoshi.zwipe sh -c 'head -c 40 /dev/urandom > files/session.json'`, `am start`. Logcat shows `sealed file does not open, treating as logged out`, the app shows the login screen, and the file is gone.
 8. Logout still clears the file: log in, log out from the settings screen, then the file check reports no such file.
 
-If every step passes, tick the Android line in [`security_audit_followups.md`](security_audit_followups.md), move this plan to `archive/`, and push the branch for a PR.
+If every step passes, tick the Android line in [`security_audit_followups.md`](../security_audit_followups.md), move this plan to `archive/`, and push the branch for a PR.
