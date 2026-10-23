@@ -35,6 +35,12 @@ pub trait UpkeepRepository: Clone + Send + Sync + 'static {
         &self,
         replaced_retention_days: i32,
     ) -> impl Future<Output = anyhow::Result<u64>> + Send;
+
+    /// Deletes `email_change_requests` rows whose link has expired. Nothing
+    /// reads them and the next request overwrites them, so this only keeps
+    /// the table from holding stale addresses. Returns the number of rows
+    /// removed. (Destruction-only grant: `DELETE` + `SELECT (expires_at)`.)
+    fn prune_expired_email_changes(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
 }
 
 /// Service port for the nightly upkeep step.
@@ -48,4 +54,7 @@ pub trait UpkeepService: Clone + Send + Sync + 'static {
     /// Prunes expired refresh tokens across all users, and replaced ones past
     /// the standard retention window.
     fn prune_expired_sessions(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
+
+    /// Prunes email change requests whose link has expired.
+    fn prune_expired_email_changes(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
 }

@@ -41,4 +41,8 @@ impl<R: UpkeepRepository> UpkeepService for Service<R> {
             .prune_expired_sessions(REPLACED_TOKEN_RETENTION_DAYS)
             .await
     }
+
+    async fn prune_expired_email_changes(&self) -> anyhow::Result<u64> {
+        self.repo.prune_expired_email_changes().await
+    }
 }

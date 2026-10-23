@@ -25,20 +25,6 @@ impl SortDirection {
             Self::Descending => Self::Ascending,
         }
     }
-
-    /// `true` for `Ascending`. The wire still carries a bool.
-    pub fn is_ascending(self) -> bool {
-        matches!(self, Self::Ascending)
-    }
-
-    /// From the wire bool.
-    pub fn from_ascending(ascending: bool) -> Self {
-        if ascending {
-            Self::Ascending
-        } else {
-            Self::Descending
-        }
-    }
 }
 
 impl fmt::Display for SortDirection {
@@ -47,25 +33,6 @@ impl fmt::Display for SortDirection {
             Self::Ascending => write!(f, "Ascending"),
             Self::Descending => write!(f, "Descending"),
         }
-    }
-}
-
-/// Serde adapter that reads and writes a [`SortDirection`] as the `ascending`
-/// bool, for `#[serde(with = "...")]` on fields whose serialized shape keeps
-/// the bool.
-pub mod as_ascending {
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-    use super::SortDirection;
-
-    /// Writes `true` for `Ascending`, `false` for `Descending`.
-    pub fn serialize<S: Serializer>(direction: &SortDirection, s: S) -> Result<S::Ok, S::Error> {
-        direction.is_ascending().serialize(s)
-    }
-
-    /// Reads a bool, `true` meaning `Ascending`.
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<SortDirection, D::Error> {
-        bool::deserialize(d).map(SortDirection::from_ascending)
     }
 }
 
@@ -88,18 +55,6 @@ mod tests {
             SortDirection::Descending.flipped(),
             SortDirection::Ascending
         );
-    }
-
-    #[test]
-    fn bool_round_trip() {
-        for direction in [SortDirection::Ascending, SortDirection::Descending] {
-            assert_eq!(
-                SortDirection::from_ascending(direction.is_ascending()),
-                direction
-            );
-        }
-        assert!(SortDirection::Ascending.is_ascending());
-        assert!(!SortDirection::Descending.is_ascending());
     }
 
     #[test]

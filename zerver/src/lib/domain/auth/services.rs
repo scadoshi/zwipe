@@ -9,7 +9,6 @@ use uuid::Uuid;
 use zwipe_core::domain::auth::models::access_token::AccessToken;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::User;
-use zwipe_core::domain::user::preferences::UserPreferences;
 
 use crate::domain::auth::lockout::LoginLockout;
 use crate::domain::auth::models::UserWithPasswordHash;
@@ -250,35 +249,7 @@ where
     }
 
     // == create ==
-    async fn register_user(&self, request: &RegisterUser) -> Result<Session, RegisterUserError> {
-        let (user, refresh_token) = self
-            .auth_repo
-            .create_user_and_refresh_token(request)
-            .await?;
-
-        let preferences = UserPreferences::default();
-
-        let access_token =
-            AccessToken::generate(&user, &self.jwt_secret, self.access_token_lifetime)
-                .map_err(|e| RegisterUserError::FailedAccessToken(anyhow!("{e}")))?;
-
-        // Fire-and-forget: don't fail registration if email sending fails.
-        if let Err(e) = self
-            .send_verification_email(user.id, user.email.as_ref())
-            .await
-        {
-            tracing::error!(event = "verification_email_failed", user_id = %user.id, error = %e);
-        }
-
-        Ok(Session {
-            user,
-            access_token,
-            refresh_token,
-            preferences,
-        })
-    }
-
-    async fn register_user_verify_first(
+    async fn register_user(
         &self,
         request: &RegisterUser,
     ) -> Result<RegisterOutcome, RegisterUserError> {
@@ -312,8 +283,6 @@ where
                 }
                 Ok(RegisterOutcome::EmailTaken)
             }
-            // A username taken between the check and the insert.
-            Err(RegisterUserError::Duplicate) => Err(RegisterUserError::UsernameTaken),
             Err(e) => Err(e),
         }
     }
@@ -480,25 +449,6 @@ where
         Ok(user)
     }
 
-    async fn change_email(&self, request: &ChangeEmail) -> Result<User, ChangeEmailError> {
-        let old_email = self.verify_password(&request.into()).await?.email;
-        let user = self.auth_repo.change_email(request).await?;
-
-        // Notify the OLD address: the new one is what an attacker would control.
-        let html = include_str!("email_templates/email_changed.html")
-            .replace("{new_email}", &escape_html(user.email.as_ref()))
-            .replace("{support_email}", &escape_html(&self.support_email));
-        self.send_change_notification(
-            user.id,
-            old_email.as_ref(),
-            "Your Zwipe email was changed",
-            html,
-        )
-        .await;
-
-        Ok(user)
-    }
-
     async fn change_password_and_revoke_sessions(
         &self,
         request: &ChangePassword,
@@ -548,6 +498,7 @@ where
         }
 
         user.pending_email = Some(request.email.clone());
+        user.pending_email_expires_at = Some(expires_at);
         Ok(user)
     }
 

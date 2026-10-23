@@ -18,9 +18,6 @@ impl From<ChangeEmailError> for ApiError {
             ChangeEmailError::Database(e) => e.to_500(),
             ChangeEmailError::UserFromDb(e) => e.to_500(),
             ChangeEmailError::AuthenticateUserError(e) => ApiError::from(e),
-            ChangeEmailError::Duplicate => {
-                Self::UnprocessableEntity("email already in use".to_string())
-            }
         }
     }
 }
@@ -36,11 +33,10 @@ impl From<InvalidChangeEmail> for ApiError {
     }
 }
 
-/// Changes the user's email after verifying the password.
+/// Holds a new email as pending after verifying the password.
 ///
-/// With `confirm_first`, the address is held as pending instead, and the
-/// response is the same whether or not another account has it. Without it,
-/// the switch happens now, which is what clients from before the field get.
+/// The response is the same whether or not another account has the address;
+/// the switch happens when the link sent to it is clicked.
 pub async fn change_email(
     user: AuthenticatedUser,
     State(state): State<AppState>,
@@ -48,48 +44,22 @@ pub async fn change_email(
 ) -> Result<(StatusCode, Json<User>), ApiError> {
     let request = ChangeEmail::new(user.id, &body.email, body.password.read())?;
 
-    if body.confirm_first {
-        let user = state
-            .auth_service
-            .request_email_change(&request)
-            .await
-            .map_err(ApiError::from)?;
-
-        let metrics = std::sync::Arc::clone(&state.metrics_service);
-        let uid = user.id;
-        tokio::spawn(async move {
-            if let Err(e) = metrics
-                .record_audit(uid, AuditAction::EmailChangeRequested)
-                .await
-            {
-                tracing::warn!(error = ?e, "metrics: audit email change request failed");
-            }
-        });
-
-        return Ok((StatusCode::OK, Json(user)));
-    }
-
-    let updated_user = state
+    let user = state
         .auth_service
-        .change_email(&request)
+        .request_email_change(&request)
         .await
         .map_err(ApiError::from)?;
 
-    if let Err(e) = state
-        .auth_service
-        .send_verification_email(updated_user.id, updated_user.email.as_ref())
-        .await
-    {
-        tracing::error!(event = "verification_email_failed", user_id = %updated_user.id, error = %e);
-    }
-
     let metrics = std::sync::Arc::clone(&state.metrics_service);
-    let uid = updated_user.id;
+    let uid = user.id;
     tokio::spawn(async move {
-        if let Err(e) = metrics.record_audit(uid, AuditAction::EmailChanged).await {
-            tracing::warn!(error = ?e, "metrics: audit email change failed");
+        if let Err(e) = metrics
+            .record_audit(uid, AuditAction::EmailChangeRequested)
+            .await
+        {
+            tracing::warn!(error = ?e, "metrics: audit email change request failed");
         }
     });
 
-    Ok((StatusCode::OK, Json(updated_user)))
+    Ok((StatusCode::OK, Json(user)))
 }

@@ -1,6 +1,6 @@
 # Confirm-first email change
 
-**Status: Phase 1 deployed 2026-10-22 (PR #31) and tested live, Phase 2 submitted as 1.13.0 (iOS build 106, Android vc68) the same day. Next is Phase 3, the floor at 1.13.0. Replaces the first approach (commit `5d0bbb20`, kept in the branch history and undone by the next one). The Phase 4 move of the remaining duplicates to 409 waits in PR #32 (`duplicate-409`). Companion: `verify_first_registration.md`.**
+**Status: Phase 4 merged 2026-10-23 with the register half and PR #32's 409s, the floor at 1.13.0. Phases 1 and 2 shipped 2026-10-22 (PR #31, then 1.13.0 as iOS build 106 and Android vc68). Replaced the first approach (commit `5d0bbb20`). Companion: `verify_first_registration.md`.**
 
 **One sentence:** changing your email stops changing it; the new address is held as pending until someone clicks a link sent to it, so a free address and a taken one get the same response and leave the account looking the same.
 
@@ -92,7 +92,11 @@ Tests in `zerver/tests/user_flows.rs`, replacing `change_email_to_taken_address_
 
 **Phase 3, floor.** Shared with `verify_first_registration.md` Phase 3.
 
+**Also behind the floor: the `duplicate-409` branch.** On top of `account-enumeration`, it moves the seven duplicate answers (register, change username, change email's old path, create, rename and clone deck, add card) from 422 to 409. A client from before `ClientError::Conflict` shows a generic error for 409, so it merges with Phase 4, not before. Messages are unchanged and the app shows them as before.
+
 **Phase 4, cleanup.** Delete the field and the old arm, with registration's Phase 4. Tick the change-email half in `security_audit_followups.md` and archive this file.
+
+Merged 2026-10-23. `change_email` only holds the address as pending now. `confirm_first` is gone from `HttpChangeEmail`, and serde ignores it when 1.13.x sends it. `AuthService::change_email`, the repository's `change_email` with its `.sqlx` entry, and `ChangeEmailError::Duplicate` are deleted. `email_changed.html` stays because confirm uses it. `change_email_updates_profile` is gone, the `confirm_first_*` tests are now `change_email_*` and send no flag, and `change_email_ignores_the_retired_flag` is new.
 
 ## What happens to the branch
 

@@ -1,5 +1,5 @@
-//! Auth HTTP flows through the real router: register → authed request → login →
-//! refresh (token rotation). Proves the whole stack (handler + middleware +
+//! Auth HTTP flows through the real router: register (202, no session) → login
+//! → authed request → login again → refresh (token rotation). Proves the whole stack (handler + middleware +
 //! service + repo + real SQL) works end-to-end in a test.
 //!
 //! Requires `DATABASE_URL` (dev's value works): `set -a; source zerver/.env`.
@@ -16,7 +16,7 @@ use common::TestApp;
 async fn register_authed_login_refresh(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
 
-    // 1. Register — 201 + a session.
+    // 1. Register, then log in: the helper does both.
     let (token, user_id) = app.register("alice").await;
     assert!(!token.is_empty());
 

@@ -4,13 +4,13 @@
 //! and security measures. Registration involves:
 //!
 //! 1. Validating username, email, and password against policies
-//! 2. Checking for duplicate usernames or emails
-//! 3. Hashing the password with Argon2id
-//! 4. Creating the user account in the database
-//! 5. Automatically creating a session for immediate login
+//! 2. Hashing the password with Argon2id
+//! 3. Checking that the username is free
+//! 4. Creating the user account, unverified, and mailing a verification link
 //!
-//! The `verify_first` path stops after step 4: no session, and the same answer
-//! whether or not the email already has an account (see [`RegisterOutcome`]).
+//! No session comes back: the caller logs in afterwards. The answer is the
+//! same whether or not the email already has an account (see
+//! [`RegisterOutcome`]).
 //!
 //! # Security Features
 //!
@@ -29,13 +29,13 @@
 //!     ↓
 //! Hash Password (Argon2id)
 //!     ↓
-//! Check for Duplicates
+//! Check Username (taken → 409)
 //!     ↓
-//! Create User in Database
+//! Insert User ─── email taken → notice to the owner
 //!     ↓
-//! Create Session (access + refresh tokens)
+//! Verification Email (background)
 //!     ↓
-//! Return Session to Client
+//! 202, the same body either way
 //! ```
 //!
 //! # Example
@@ -50,44 +50,31 @@
 //!     "SecurePass123!"
 //! )?;
 //!
-//! // Register user and get session
-//! let session = auth_service.register_user(request).await?;
-//!
-//! // User is now registered and logged in
-//! println!("Welcome, {}!", session.user.username);
+//! // Register the user; they log in afterwards
+//! let outcome = auth_service.register_user(&request).await?;
 //! ```
 
 use thiserror::Error;
-use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::domain::auth::password::InvalidPassword;
 use zwipe_core::domain::user::username::{InvalidUsername, Username};
 use zwipe_core::domain::{Email, InvalidEmail};
 
 use crate::domain::auth::models::password::{HashedPassword, Password};
-use crate::domain::auth::requests::create_session::CreateSessionError;
 
 /// Errors that can occur during user registration.
 ///
-/// Registration involves multiple steps (validation, duplicate checking, user creation,
-/// session creation), each of which can fail. These errors distinguish between
+/// Registration involves multiple steps (validation, duplicate checking, user
+/// creation), each of which can fail. These errors distinguish between
 /// validation failures (user's fault) and system failures (server's fault).
 #[derive(Debug, Error)]
 pub enum RegisterUserError {
-    /// A user with the same username or email already exists.
-    ///
-    /// Usernames and emails must be unique across all users. The client should
-    /// prompt the user to choose a different username or email.
-    #[error("user with name or email already exists")]
-    Duplicate,
-
-    /// Another account has this email. Only the `verify_first` path tells
-    /// this apart from [`RegisterUserError::Duplicate`], and it never reaches
-    /// the caller there: it becomes [`RegisterOutcome::EmailTaken`].
+    /// Another account has this email. It never reaches the caller: the
+    /// service turns it into [`RegisterOutcome::EmailTaken`].
     #[error("user with that email already exists")]
     DuplicateEmail,
 
-    /// Another account has this username. Usernames are public, so the
-    /// `verify_first` path answers this one inline.
+    /// Another account has this username. Usernames are public, so this one
+    /// is answered inline.
     #[error("username already taken")]
     UsernameTaken,
 
@@ -95,19 +82,11 @@ pub enum RegisterUserError {
     #[error(transparent)]
     Database(anyhow::Error),
 
-    /// Failed to generate JWT access token for the new user's session.
-    #[error("failed to generate access token: {0}")]
-    FailedAccessToken(anyhow::Error),
-
     /// User was created but the database returned invalid/corrupted data.
     ///
     /// This is a critical error indicating database schema issues or data corruption.
     #[error("user created but database returned invalid object: {0}")]
     UserFromDb(anyhow::Error),
-
-    /// Failed to create initial session for the newly registered user.
-    #[error(transparent)]
-    CreateSessionError(#[from] CreateSessionError),
 }
 
 /// Errors that can occur while constructing a [`RawRegisterUser`] (before hashing).
@@ -222,7 +201,7 @@ impl RawRegisterUser {
     }
 }
 
-/// What a `verify_first` registration did. The handler answers both the same.
+/// What a registration did. The handler answers both the same.
 #[derive(Debug)]
 pub enum RegisterOutcome {
     /// The account was created, unverified, and a verification email is on
@@ -269,7 +248,7 @@ pub enum RegisterOutcome {
 /// assert!(!request.password_hash.to_string().contains("SecurePass"));
 ///
 /// // Register the user
-/// let session = auth_service.register_user(request).await?;
+/// let outcome = auth_service.register_user(&request).await?;
 /// ```
 #[derive(Debug)]
 pub struct RegisterUser {
@@ -283,14 +262,6 @@ pub struct RegisterUser {
     ///
     /// Never contains the plaintext password.
     pub password_hash: HashedPassword,
-
-    /// Client platform, recorded on the auto-login session. `None` for older
-    /// clients; set by the HTTP handler from the request body.
-    pub platform: Option<ClientPlatform>,
-
-    /// Client app version (e.g. `"1.6.1"`), recorded on the auto-login session.
-    /// `None` for older clients; set by the HTTP handler from the request body.
-    pub client_version: Option<String>,
 }
 
 impl RegisterUser {
@@ -337,8 +308,6 @@ impl RegisterUser {
             username,
             email,
             password_hash,
-            platform: None,
-            client_version: None,
         })
     }
 }

@@ -150,6 +150,13 @@ async fn main() -> anyhow::Result<()> {
             tracing::error!("step 5/5 upkeep expired sessions FAILED (continuing): {e:#}");
         }
     }
+    match upkeep_service.prune_expired_email_changes().await {
+        Ok(rows) => tracing::info!("step 5/5 upkeep expired email changes: {rows} pruned"),
+        Err(e) => {
+            failures += 1;
+            tracing::error!("step 5/5 upkeep expired email changes FAILED (continuing): {e:#}");
+        }
+    }
 
     if failures == 0 {
         tracing::info!("zervice completed: all 5 steps ok");

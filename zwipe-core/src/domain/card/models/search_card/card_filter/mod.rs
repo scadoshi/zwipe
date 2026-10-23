@@ -12,10 +12,9 @@
 //! `build()` for the server path, `build_criteria()` for the in-memory path.
 //!
 //! On the wire a [`CardQuery`](crate::domain::card::models::search_card::card_filter::query::CardQuery) is the criteria flattened to the top level
-//! beside `limit` / `offset` / `order_by` / `ascending` / `direction` /
-//! `synergy` / `include_skipped`. `ascending` and `direction` say the same
-//! thing; the server reads `direction` first and the bool goes away once the
-//! client floor passes the release that sends the name.
+//! beside `limit` / `offset` / `order_by` / `direction` / `synergy` /
+//! `include_skipped`. `direction` is `"ascending"` or `"descending"` and
+//! defaults to ascending when absent.
 
 /// Builder producing [`CardQuery`] / [`CardCriteria`] with validation.
 pub mod builder;

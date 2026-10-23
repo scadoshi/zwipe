@@ -27,7 +27,7 @@ use change_email::ChangeEmailSheet;
 use change_password::ChangePasswordSheet;
 use change_username::ChangeUsernameSheet;
 use components::delete_account_dialog::DeleteAccountDialog;
-use components::email_verification::{EmailVerification, VerificationActions};
+use components::email_verification::{EmailVerification, PendingEmail, VerificationActions};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use preferences::PreferencesSheet;
@@ -294,7 +294,10 @@ pub fn Profile() -> Element {
                                         class: "settings-row",
                                         span { class: "settings-row-label", "Pending" }
                                         div { class: "settings-row-value",
-                                            span { "{pending}" }
+                                            PendingEmail {
+                                                email: pending.to_string(),
+                                                expires_at: s.user.pending_email_expires_at,
+                                            }
                                         }
                                     }
                                 }

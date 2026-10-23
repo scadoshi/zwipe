@@ -71,6 +71,12 @@ GRANT SELECT, DELETE ON client_errors, crash_reports TO zervice;
 GRANT DELETE ON refresh_tokens TO zervice;
 GRANT SELECT (expires_at, replaced_at) ON refresh_tokens TO zervice;
 
+-- Step 5 (upkeep): expired email change links. Same destruction-only shape:
+-- DELETE plus SELECT on the one column the WHERE clause reads, so zervice
+-- never sees new_email, token_hash or user_id.
+GRANT DELETE ON email_change_requests TO zervice;
+GRANT SELECT (expires_at) ON email_change_requests TO zervice;
+
 COMMIT;
 
 -- Everything else (users, decks, deck_cards, signal writes, email tokens, ...)

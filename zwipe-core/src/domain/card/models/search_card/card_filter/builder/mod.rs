@@ -18,7 +18,7 @@ use crate::domain::card::search_card::card_filter::error::InvalidCardCriteria;
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use crate::domain::card::search_card::card_filter::query::{CardQuery, Limit};
 use crate::domain::card::search_card::card_filter::{
-    CardSortKey, SortDirection, sort_direction, strip_punctuation,
+    CardSortKey, SortDirection, strip_punctuation,
 };
 use crate::domain::card::search_card::card_type::CardType;
 use crate::domain::deck::Format;
@@ -202,8 +202,6 @@ pub struct CardQueryBuilder {
     limit: u32,
     offset: u32,
     sort: Option<CardSortKey>,
-    /// Serialized as the `ascending` bool so the derived shape stays put.
-    #[serde(rename = "ascending", with = "sort_direction::as_ascending")]
     direction: SortDirection,
     synergy: bool,
     include_skipped: bool,

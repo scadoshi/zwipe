@@ -63,9 +63,9 @@ pub enum ApiError {
     Forbidden(String),
     #[error("{0}")]
     TooManyRequests(String),
-    /// The request clashes with the current state, such as an address another
-    /// account took. Only for routes no shipped client called before 409
-    /// existed: an old client folds an unknown status into a generic error.
+    /// The request clashes with the current state: a name, address or card
+    /// that is already taken. A client from before 409 existed folds it into
+    /// a generic error, so this ships behind the client version floor.
     #[error("{0}")]
     Conflict(String),
 }

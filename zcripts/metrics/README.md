@@ -29,7 +29,7 @@ Read-only usage reports you run against the production database, then paste the 
 | `overview.sql` | Full state of the world, 16 sections | Weekly / before decisions |
 | `retention.sql` | Do deck-builders come back on a later day? | Weekly |
 | `swipes.sql` | How deep, how picky, how habitual is swiping? | Weekly |
-| `funnel.sql` | Where do people drop off before registering? | After a build with funnel events ships |
+| `funnel.sql` | Where do people drop off before registering and signing in? | After a build with funnel events ships |
 | `signal.sql` | Is the suggestion-signal substrate filling in? What does it say? | Before Phase 3 (ranking) work |
 | `swipe-memory.sql` | Are durable skips used? Any deck near the 5k cap? | Occasional |
 | `errors.sql` | What's breaking for users in the field? Any contract drift? | After each release, then weekly |
@@ -73,7 +73,7 @@ Session depth (swipes per active user-day, median/p90 + buckets), weekly add-rat
 
 ### `funnel.sql`: pre-auth registration funnel
 
-App opened → register viewed → register submitted (distinct anonymous sessions), with registrations from `users` as the final leg. Sessions carry no identity, so the last step is counted alongside, never joined. Also: open-to-submit time (median / p90) and submit-retry distribution (form friction). Empty until the `anonymous_events` migration and an instrumented client build are both live.
+App opened → register viewed → register submitted (distinct anonymous sessions), then accounts created (from `users`) and how many of those new accounts have signed in (a `login` row in `user_events`). Register is verify-first and starts no session, so the first login is the real end of the funnel. Sessions carry no identity, so the account steps are counted alongside, never joined. Accounts created before verify-first (2026-10-23) got their session at register, so windows reaching back past that date undercount the signed-in step. Also: open-to-submit time (median / p90) and submit-retry distribution (form friction). Empty until the `anonymous_events` migration and an instrumented client build are both live.
 
 ### `signal.sql`: suggestion-signal health
 

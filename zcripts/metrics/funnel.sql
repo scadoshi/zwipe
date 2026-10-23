@@ -1,8 +1,17 @@
--- Zwipe pre-auth funnel — app opened → register viewed → submitted → registered.
+-- Zwipe pre-auth funnel — app opened → register viewed → submitted →
+-- registered → signed in.
 --
 -- Built on anonymous_events (client-generated session UUIDs, no identity) plus
 -- registrations from users.created_at. Sessions can't be joined to accounts by
--- design, so the final step is a count alongside, not a per-session join.
+-- design, so the account steps are counts alongside, not a per-session join.
+--
+-- Registration is verify-first: register creates the account and sends the
+-- verification link but starts no session. So "registered" counts accounts
+-- created, and "signed in" counts those new accounts that have since logged
+-- in (a 'login' row in user_events), which is the real end of the funnel.
+-- Accounts created before verify-first (2026-10-23) got a session at register
+-- and logged no login for it, so windows reaching back past that date
+-- undercount the signed-in step.
 --
 --   psql "$DATABASE_URL" -f zcripts/metrics/funnel.sql
 --   sudo -u postgres psql zwipe -f zcripts/metrics/funnel.sql
@@ -26,8 +35,8 @@ SELECT now() AS generated_at_utc;
 -- ───────────────────────────────────────────────────────────────────
 \echo
 \echo ── 1. FUNNEL — last 30 days ──
--- Distinct sessions per step, each step's share of app_opened, and
--- registrations (from users) over the same window for the final leg.
+-- Distinct sessions per step, each step's share of app_opened, then the
+-- accounts created in the same window and how many of them have logged in.
 WITH steps AS (
     SELECT kind, count(DISTINCT session_id) AS sessions
     FROM anonymous_events
@@ -50,6 +59,12 @@ FROM (
     UNION ALL
     SELECT 4, '4 registered (accounts)',
            (SELECT count(*) FROM users WHERE created_at >= now() - INTERVAL '30 days')
+    UNION ALL
+    SELECT 5, '5 signed in (new accounts)',
+           (SELECT count(*) FROM users u
+            WHERE u.created_at >= now() - INTERVAL '30 days'
+              AND EXISTS (SELECT 1 FROM user_events e
+                          WHERE e.user_id = u.id AND e.kind = 'login'))
 ) f
 ORDER BY ord;
 
@@ -57,15 +72,19 @@ ORDER BY ord;
 -- ───────────────────────────────────────────────────────────────────
 \echo
 \echo ── 2. DAILY FUNNEL — last 14 days ──
--- Sessions per step per day, with that day's registrations alongside.
+-- Sessions per step per day, with that day's new accounts alongside and how
+-- many of those accounts have logged in since.
 WITH s AS (
     SELECT occurred_at::date AS day, kind, session_id
     FROM anonymous_events
     WHERE occurred_at >= CURRENT_DATE - INTERVAL '14 days'
 ), reg AS (
-    SELECT created_at::date AS day, count(*) AS registered
-    FROM users
-    WHERE created_at >= CURRENT_DATE - INTERVAL '14 days'
+    SELECT u.created_at::date AS day,
+           count(*) AS registered,
+           count(*) FILTER (WHERE EXISTS (SELECT 1 FROM user_events e
+                                          WHERE e.user_id = u.id AND e.kind = 'login')) AS signed_in
+    FROM users u
+    WHERE u.created_at >= CURRENT_DATE - INTERVAL '14 days'
     GROUP BY 1
 )
 SELECT
@@ -73,7 +92,8 @@ SELECT
     count(DISTINCT s.session_id) FILTER (WHERE s.kind = 'app_opened')         AS opened,
     count(DISTINCT s.session_id) FILTER (WHERE s.kind = 'register_viewed')    AS viewed,
     count(DISTINCT s.session_id) FILTER (WHERE s.kind = 'register_submitted') AS submitted,
-    COALESCE(max(reg.registered), 0)                                          AS registered
+    COALESCE(max(reg.registered), 0)                                          AS registered,
+    COALESCE(max(reg.signed_in), 0)                                           AS signed_in
 FROM (SELECT DISTINCT day FROM s UNION SELECT day FROM reg) d
 LEFT JOIN s   ON s.day = d.day
 LEFT JOIN reg ON reg.day = d.day

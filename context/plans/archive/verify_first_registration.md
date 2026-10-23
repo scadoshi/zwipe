@@ -1,6 +1,6 @@
 # Verify-first registration
 
-**Status: Phase 1 deployed 2026-10-22 with the change-email half (PR #31) and tested live, Phase 2 submitted as 1.13.0 (iOS build 106, Android vc68) the same day. Next is Phase 3, the floor at 1.13.0. Companion: `confirm_first_email_change.md` (the change-email half).**
+**Status: Phase 4 merged 2026-10-23 with the change-email half and PR #32's 409s, the floor at 1.13.0. Phases 1 and 2 shipped 2026-10-22 (PR #31, then 1.13.0 as iOS build 106 and Android vc68). After the deploy, the live check below is still owed. Companion: `confirm_first_email_change.md` (the change-email half).**
 
 **As built:** on the `verify_first` path a taken username answers 409 "username already taken"; only clients that know 409 send the flag. The old path keeps its 422 until PR #32 (`duplicate-409`) merges with Phase 4. The zite verify page copy is unchanged: "You can close this page and go back to the app" already fits, since login works unverified. The client sends the user back to the Login screen it came from, with the username filled in, and toasts "Check your inbox to verify your email, then log in".
 
@@ -146,6 +146,8 @@ This phase changes nothing about the oracle. The floor is enforced by the app, n
 
 ## Phase 4: remove the auto-login path
 
+**Merged 2026-10-23.** Register answers only 202. `HttpRegisterUser` is down to username, email and password, and serde ignores what 1.13.x still sends (no contract uses `deny_unknown_fields`). `RegisterVerifyFirst` became `Register` and the client's `register_verify_first` became `register`. `AuthService::register_user` is the verify-first body now. `create_user_and_refresh_token` is gone, along with its `.sqlx` entry, and so are `RegisterUserError::{Duplicate, FailedAccessToken, CreateSessionError}` and `RegisterUser`'s `platform` and `client_version`. The variants kept their as-built names, `DuplicateEmail` and `UsernameTaken`, and any unique violation other than the email maps to `UsernameTaken`. `TestApp::register` registers, waits for the verification email and logs in from its own address so it doesn't use up the test's five logins. `register_stamps_client_version` is gone; the two refresh cases now take their version from a login. New tests `retired_fields_are_ignored` and `no_flag_no_session`. PR #32 came in as a cherry-pick, so duplicates answer 409, except a taken email on register, which still answers 202. The handler's `DuplicateEmail` arm can't be reached (the service turns it into `EmailTaken`) and answers a bare 500 in case it ever is, so it can't name the address.
+
 One commit, after Phase 3 has been quiet. The oracle closes here, when every caller goes through the new path.
 
 - `HttpRegisterUser`: delete `verify_first`. `platform` and `client_version` have nothing left to stamp, so delete them too and the `register_deserializes_without_client_version` test with them; a 1.12.x body still deserializes (serde ignores unknown fields) but is below the floor anyway.
@@ -157,8 +159,8 @@ One commit, after Phase 3 has been quiet. The oracle closes here, when every cal
 
 Verification: the Phase 1 suite minus the deleted cases is the proof; clippy and fmt as always; deploy; one live registration with a new address and one with a taken one from the shipped app, both landing on Login the same way.
 
-## Open questions for the owner
+## Decided
 
-1. **Should the client chain a login right after the 202?** With login allowed for unverified accounts, `register.rs` could call `login` with the credentials it just sent and land a new account on Home, falling back to the Login screen with the toast when that fails. It does not reopen the oracle: login only confirms a complete credential pair, which is the one thing login has always confirmed, so a taken address with the wrong password looks exactly like a wrong password. It does recover the happy path the decision gave up. The plan assumes no, per the 2026-10-22 decision, and it is a one-arm change in `register.rs` if the funnel says otherwise.
-2. **Is the per-address notice cooldown wanted in Phase 1?** It is a small in-memory map; without it the per-IP limit is the only cap on how often a victim's inbox gets the account-exists notice. The plan includes it.
-3. **Do username collisions stay inline?** The plan keeps the 422 for a taken username because usernames are public, which is what the audit note assumed. If the owner wants usernames hidden too, the username pre-check goes and the taken branch covers both, at the cost of a user never learning their chosen name was taken.
+1. **No login right after the 202.** The app fills the username into the Login screen instead (`68cfa499`), and the user logs in once they've verified. Chaining a login wouldn't reopen the oracle, since login only confirms a full credential pair, so this stays a one-arm change in `register.rs` if the funnel ever argues for it.
+2. **The per-address cooldown on the account-exists notice shipped in Phase 1.** Without it the per-IP limit was the only cap on how often someone else's inbox could get the notice.
+3. **Taken usernames stay inline.** Usernames are public, so saying one is taken tells nobody anything. It answers 409 since Phase 4, not 422.

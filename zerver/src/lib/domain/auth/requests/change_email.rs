@@ -8,8 +8,10 @@
 //!
 //! 1. User provides new email + current password
 //! 2. System verifies password matches current hash
-//! 3. System checks new email isn't already in use
-//! 4. Email is updated in database
+//! 3. The new address is stored as pending, the same way whether or not
+//!    another account has it
+//! 4. A confirmation link goes to the new address if it is free; the switch
+//!    happens when it is clicked
 //!
 //! # Example
 //!
@@ -56,9 +58,6 @@ pub enum ChangeEmailError {
     /// Password verification failed or user not found during authentication.
     #[error(transparent)]
     AuthenticateUserError(#[from] AuthenticateUserError),
-    /// Another user already has this email address.
-    #[error("user with that email already exists")]
-    Duplicate,
 }
 
 /// Request to change a user's email address.

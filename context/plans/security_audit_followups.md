@@ -7,9 +7,8 @@
 - [x] 2026-10-10 Ranking signal poisoning: signals name only catalog ids, each tally is capped at 200 per flush (`MAX_SIGNAL_TALLY`), and a user's impressions are capped at 5,000 a day (`usage_signal_budget`, `DAILY_SIGNAL_SHOWN_CAP`); a flush over budget is accepted but pools nothing.
 - [x] 2026-10-22 Replaced-row retention keyed on `replaced_at`, not the token's own expiry (below). Both prunes now keep a replaced row for the full window even once its own `expires_at` has passed; test `replaced_row_outlives_its_expiry_as_replay_evidence`.
 - [x] 2026-10-22 built on the local `security-followups` branch, two commits, push one deploy apart. Follow-up migration: drop `refresh_tokens.revoked` + its index and the three `users` lockout columns. Tracked in `access_token_window.md`; listed here so it is not forgotten when that plan closes.
-- [ ] DML-only runtime role for zerver (below).
-- [ ] Register and change-email stop confirming that an email is taken (below). Phases 1 and 2 shipped 2026-10-22; closes at Phase 4, after the floor reaches 1.13.0.
-- [x] Android: `session.json` through the Keystore. Emulator run passed 2026-10-23 on the branch `android-keystore` ([`archive/android_keystore_session.md`](archive/android_keystore_session.md)). The backup opt-out shipped in PR #28, so the file no longer leaves the device; it stays plaintext on it until the branch merges.
+- [x] 2026-10-23 Register and change-email stop confirming that an email is taken (below). Phases 1 and 2 shipped 2026-10-22. Phase 4 merged 2026-10-23 with the floor at 1.13.0, which closes the oracle.
+- [x] 2026-10-23 Android: `session.json` through the Keystore. Emulator run passed on the branch `android-keystore` ([`archive/android_keystore_session.md`](archive/android_keystore_session.md)); the file is AES-256-GCM ciphertext under a Keystore key from the first release that carries the branch. The backup opt-out from PR #28 already kept it on the device.
 - [ ] Merge Dependabot's action-pin PRs as they arrive, reading the pin diff each time.
 - [x] 2026-10-10 `RESEND_API_KEY` stays the same value in `zerver.env` and `alert.env` (owner decision); rotate both files together.
 
@@ -34,6 +33,8 @@ Do: in both prune queries, keep a replaced row until `replaced_at + 7 days` rega
 
 ## DML-only runtime role
 
+Not doing, the owner's call on 2026-10-22. Kept here as the recipe if that changes.
+
 `CREATE DATABASE zwipe OWNER zwipe` and zerver connects as that owner (`server.md`), so the running server can `DROP TABLE`. The migration runner needs the owner; the server does not.
 
 Do:
@@ -48,10 +49,11 @@ Login and forgot-password hide whether an account exists; register answers `422 
 
 Decide first: the usual fix is to answer register as if it succeeded and send "you already have an account, here is a reset link" to the address, which changes the register flow's UX (no inline error; the user finds out by email). Username collisions can stay inline, since usernames are public. If that is not wanted, leave it and record the decision here.
 
-Decided 2026-10-22, and changed the same day. The first fix (the caller's unchanged user for a taken address, an email to the owner) still leaked: a real change returned the new address and a taken one the old, and the app's toast showed it. Both halves are now in their own plans, [`confirm_first_email_change.md`](confirm_first_email_change.md) and [`verify_first_registration.md`](verify_first_registration.md). Change-email holds the address as pending until a link sent to it is confirmed and mails nobody about a taken one; register creates the account without a session and answers 202 either way, and a taken email's owner gets "You already have a Zwipe account". Both sit behind request flags that 1.13.0 sends, so the oracle only closes at Phase 4, when the old paths go after the floor passes 1.13.0. Until then a script that leaves the flags out still gets the old answers.
+Decided 2026-10-22, and changed the same day. The first fix (the caller's unchanged user for a taken address, an email to the owner) still leaked: a real change returned the new address and a taken one the old, and the app's toast showed it. Both halves are now in their own plans, [`confirm_first_email_change.md`](archive/confirm_first_email_change.md) and [`verify_first_registration.md`](archive/verify_first_registration.md). Change-email holds the address as pending until a link sent to it is confirmed and mails nobody about a taken one; register creates the account without a session and answers 202 either way, and a taken email's owner gets "You already have a Zwipe account". Both sit behind request flags that 1.13.0 sends, so the oracle only closes at Phase 4, when the old paths go after the floor passes 1.13.0. Until then a script that leaves the flags out still gets the old answers. Phase 4 merged 2026-10-23: both flags and both old paths are gone, and duplicates answer 409.
 
 ## Not doing
 
+- zerver keeps connecting as the database owner. The DML-only role (above) would stop a compromised server from dropping tables, but every `REFRESH MATERIALIZED VIEW` and `TRUNCATE` needs a grant, and a missed one is a 500 in prod.
 - Account lockout stays per address. Brute force spread across many addresses gets five guesses per address per half hour on each account, which the password policy makes impractical; a global per-account lock is exactly the denial of service that was removed.
 - `MIN_CLIENT_VERSION` defaulting to `0.0.0` on a rebuilt box is documented in `server.md` already.
 - `vendor/tao` is relabelled 0.34.9 while being 0.37.0 code, which hides 0.37 advisories from `cargo audit`. Known, documented in `vendor/tao/VENDOR.md`, and goes away when the vendoring does.

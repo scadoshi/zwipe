@@ -315,7 +315,7 @@ async fn session_insert_prunes_expired_and_caps(pool: sqlx::PgPool) {
         .unwrap();
     assert_eq!(total, 5, "live tokens capped at the session maximum");
 
-    // Newest-first survivors: the login + register rows and live-0..2; the
+    // Newest-first survivors: the two login rows and live-0..2; the
     // three oldest planted live tokens are the cap's casualties.
     let casualties: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM refresh_tokens WHERE user_id = $1 AND value_hash IN ('live-3', 'live-4', 'live-5')",

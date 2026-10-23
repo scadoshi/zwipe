@@ -3,8 +3,7 @@
 //! [`CardQuery`] is what zwiper POSTs to `/api/card/search` and the deck-aware
 //! search. Its [`CardCriteria`] is `#[serde(flatten)]`ed, so the wire JSON is
 //! identical to the pre-split `CardFilter` (criteria fields at the top level
-//! alongside `limit` / `offset` / `order_by` / `ascending` / `direction` /
-//! `synergy`).
+//! alongside `limit` / `offset` / `order_by` / `direction` / `synergy`).
 //!
 //! `limit` is untrusted pagination input, so it is a clamping [`Limit`]; the
 //! in-memory path ([`Cards`](crate::domain::card::search_card::cards::Cards))
@@ -78,17 +77,10 @@ pub struct CardQuery {
     /// Sort key; serialized as `order_by` to preserve the wire contract.
     #[serde(rename = "order_by")]
     sort: Option<CardSortKey>,
-    /// Sort direction as the bool the wire has always carried; `true` is
-    /// ascending. Kept until the client floor passes the release that sends
-    /// `direction`, then dropped.
-    #[serde(default = "default_ascending")]
-    ascending: bool,
-    /// Sort direction by name (`"ascending"` / `"descending"`). Sent alongside
-    /// `ascending` until the client floor passes the release that sends it;
-    /// the server reads this one first and falls back to the bool when it is
-    /// absent.
+    /// Sort direction by name (`"ascending"` / `"descending"`); absent means
+    /// ascending. A stray `ascending` bool from an old body is ignored.
     #[serde(default)]
-    direction: Option<SortDirection>,
+    direction: SortDirection,
     /// Deck-aware search only: when true, constrain results to the commander's
     /// synergy pool (membership), then sort by `sort` within it. Ignored by
     /// the plain (non-deck) search. `#[serde(default)]` so older clients that
@@ -102,10 +94,6 @@ pub struct CardQuery {
     /// so older clients that omit it parse to `false` (suppressions applied).
     #[serde(default)]
     include_skipped: bool,
-}
-
-fn default_ascending() -> bool {
-    true
 }
 
 impl CardQuery {
@@ -125,8 +113,7 @@ impl CardQuery {
             limit,
             offset,
             sort,
-            ascending: direction.is_ascending(),
-            direction: Some(direction),
+            direction,
             synergy,
             include_skipped,
         }
@@ -152,11 +139,9 @@ impl CardQuery {
         self.sort
     }
 
-    /// Sort direction. `direction` wins when the body carries it; the
-    /// `ascending` bool fills in for clients that predate it.
+    /// Sort direction.
     pub fn direction(&self) -> SortDirection {
         self.direction
-            .unwrap_or_else(|| SortDirection::from_ascending(self.ascending))
     }
 
     /// Deck-aware synergy membership mode (see field docs).
@@ -192,7 +177,7 @@ mod tests {
         "limit": 50,
         "offset": 25,
         "order_by": "Cmc",
-        "ascending": false,
+        "direction": "descending",
         "synergy": true
     }"#;
 
@@ -233,7 +218,6 @@ mod tests {
             "limit": 50,
             "offset": 25,
             "order_by": "Cmc",
-            "ascending": false,
             "direction": "descending",
             "synergy": true,
             "include_skipped": false
@@ -268,69 +252,43 @@ mod tests {
     }
 
     #[test]
-    fn direction_serializes_as_the_ascending_bool() {
-        // Phase 1 of the direction wire plan: a client on this core sends
-        // both the bool and the name, so a server on either side reads it.
-        for (direction, expected_bool, expected_name) in [
-            (
-                SortDirection::Ascending,
-                r#""ascending":true"#,
-                r#""direction":"ascending""#,
-            ),
-            (
-                SortDirection::Descending,
-                r#""ascending":false"#,
-                r#""direction":"descending""#,
-            ),
+    fn direction_serializes_by_name() {
+        for (direction, expected) in [
+            (SortDirection::Ascending, r#""direction":"ascending""#),
+            (SortDirection::Descending, r#""direction":"descending""#),
         ] {
             let mut builder = CardQueryBuilder::with_name_contains("bolt");
             builder.set_direction(direction);
             let json = serde_json::to_string(&builder.build().unwrap()).unwrap();
-            assert!(json.contains(expected_bool), "{json}");
-            assert!(json.contains(expected_name), "{json}");
+            assert!(json.contains(expected), "{json}");
+            assert!(!json.contains(r#""ascending":"#), "{json}");
         }
     }
 
     // ── every body shape the server can receive ──────────────────────────
 
     #[test]
-    fn both_fields_agreeing_read_as_direction() {
-        let query: CardQuery = serde_json::from_str(
-            r#"{"name_contains":"bolt","ascending":false,"direction":"descending"}"#,
-        )
-        .unwrap();
-        assert_eq!(query.direction(), SortDirection::Descending);
-    }
-
-    #[test]
-    fn ascending_only_reads_as_direction() {
-        // A client that predates the `direction` field.
-        let query: CardQuery =
-            serde_json::from_str(r#"{"name_contains":"bolt","ascending":false}"#).unwrap();
-        assert_eq!(query.direction(), SortDirection::Descending);
-    }
-
-    #[test]
     fn direction_only_reads_as_direction() {
-        // The end state, once the bool is dropped.
         let query: CardQuery =
             serde_json::from_str(r#"{"name_contains":"bolt","direction":"descending"}"#).unwrap();
         assert_eq!(query.direction(), SortDirection::Descending);
     }
 
     #[test]
-    fn neither_field_reads_as_ascending() {
+    fn absent_direction_reads_as_ascending() {
         let query: CardQuery = serde_json::from_str(r#"{"name_contains":"bolt"}"#).unwrap();
         assert_eq!(query.direction(), SortDirection::Ascending);
     }
 
     #[test]
-    fn direction_wins_when_the_fields_disagree() {
+    fn a_stray_ascending_bool_is_ignored() {
+        // A body from before the bool was dropped still parses; only
+        // `direction` decides.
         let query: CardQuery = serde_json::from_str(
-            r#"{"name_contains":"bolt","ascending":true,"direction":"descending"}"#,
+            r#"{"name_contains":"bolt","ascending":false,"direction":"ascending"}"#,
         )
         .unwrap();
-        assert_eq!(query.direction(), SortDirection::Descending);
+        assert_eq!(query.direction(), SortDirection::Ascending);
     }
 
     #[test]
