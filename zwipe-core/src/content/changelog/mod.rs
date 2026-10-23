@@ -40,6 +40,7 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "Profile's Pending row shows when the confirmation link expires",
         "The changelog narrows by year, month and version",
+        "Field labels with a ? sit centered with it, with more room above the field",
     ],
 }];
 
