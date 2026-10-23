@@ -18,22 +18,30 @@
 # The manifest bug survived five releases partly because this was a checklist.
 # Call this one script instead; add new patches here rather than to the docs.
 #
-# Usage: zcripts/android/patch_bundle.sh
+# APP_DIR is the generated Gradle project; it defaults to the release one that
+# `dx bundle --release` writes. debug_apk.sh passes the debug one.
+#
+# Usage: zcripts/android/patch_bundle.sh [APP_DIR]
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$HERE/../.." && pwd)"
+APP_DIR="${1:-$REPO_ROOT/target/dx/zwipe/release/android/app}"
+MAIN="$APP_DIR/app/src/main"
+
+[ -d "$MAIN" ] || { echo "generated Android project not found: $APP_DIR" >&2; exit 1; }
 
 echo "== launcher icons =="
-"$HERE/launcher_icons.sh"
+"$HERE/launcher_icons.sh" "$MAIN/res"
 
 echo "== back navigation =="
-"$HERE/back_handler.sh"
+"$HERE/back_handler.sh" "$MAIN/kotlin/dev/dioxus/main/MainActivity.kt"
 
 echo "== manifest (launchMode + configChanges + allowBackup) =="
-"$HERE/manifest.sh"
+"$HERE/manifest.sh" "$MAIN/AndroidManifest.xml"
 
 echo "== WryActivity (tao 0.37 entry points) =="
-"$HERE/wry_activity.sh"
+"$HERE/wry_activity.sh" "$MAIN/kotlin/dev/dioxus/main/WryActivity.kt"
 
 echo
 echo "All post-bundle patches applied. Next: edit build.gradle.kts (targetSdk /"

@@ -8,7 +8,7 @@
 - [x] 2026-10-22 Replaced-row retention keyed on `replaced_at`, not the token's own expiry (below). Both prunes now keep a replaced row for the full window even once its own `expires_at` has passed; test `replaced_row_outlives_its_expiry_as_replay_evidence`.
 - [x] 2026-10-22 built on the local `security-followups` branch, two commits, push one deploy apart. Follow-up migration: drop `refresh_tokens.revoked` + its index and the three `users` lockout columns. Tracked in `access_token_window.md`; listed here so it is not forgotten when that plan closes.
 - [x] 2026-10-23 Register and change-email stop confirming that an email is taken (below). Phases 1 and 2 shipped 2026-10-22. Phase 4 merged 2026-10-23 with the floor at 1.13.0, which closes the oracle.
-- [ ] Android: `session.json` through the Keystore. Own task; the backup opt-out shipped in PR #28, so the file no longer leaves the device, but it is still plaintext on it.
+- [x] 2026-10-23 Android: `session.json` through the Keystore. Emulator run passed on the branch `android-keystore` ([`archive/android_keystore_session.md`](archive/android_keystore_session.md)); the file is AES-256-GCM ciphertext under a Keystore key from the first release that carries the branch. The backup opt-out from PR #28 already kept it on the device.
 - [ ] Merge Dependabot's action-pin PRs as they arrive, reading the pin diff each time.
 - [x] 2026-10-10 `RESEND_API_KEY` stays the same value in `zerver.env` and `alert.env` (owner decision); rotate both files together.
 
