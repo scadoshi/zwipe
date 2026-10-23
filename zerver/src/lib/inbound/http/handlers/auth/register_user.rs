@@ -53,9 +53,10 @@ impl From<RegisterUserError> for ApiError {
     fn from(value: RegisterUserError) -> Self {
         match value {
             // The service turns this into `RegisterOutcome::EmailTaken`, so it
-            // never gets here; answering it would undo the flat response.
+            // never gets here. If it ever does, a bare 500 keeps it from saying
+            // the address is taken.
             RegisterUserError::DuplicateEmail => {
-                Self::Conflict("user with that username or email already exists".to_string())
+                Self::InternalServerError("internal server error".to_string())
             }
             RegisterUserError::UsernameTaken => {
                 Self::Conflict("username already taken".to_string())
