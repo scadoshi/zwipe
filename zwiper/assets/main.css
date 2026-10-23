@@ -1922,6 +1922,12 @@ button {
     overflow-wrap: anywhere;
 }
 
+/* A field in a dialog's body sits a line below the text above it. */
+.alert-dialog-description > .input,
+.alert-dialog-description > .password-input-wrapper {
+    margin-top: 1rem;
+}
+
 /* Card-rules dialog body: reuses the expanded card-row detail markup
    (card-detail-* classes) so mana/oracle symbols and chips render identically.
    Scrolling is owned by the enclosing .alert-dialog-description (a single scroll
