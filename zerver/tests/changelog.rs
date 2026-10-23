@@ -10,7 +10,7 @@ mod common;
 
 use axum::http::StatusCode;
 use common::TestApp;
-use zwipe_core::content::changelog::{RELEASES, UPCOMING};
+use zwipe_core::content::changelog::{DISPLAY_DATE_FORMAT, RELEASES, UPCOMING};
 
 #[sqlx::test]
 async fn changelog_serves_the_compiled_in_history(pool: sqlx::PgPool) {
@@ -35,10 +35,26 @@ async fn changelog_serves_the_compiled_in_history(pool: sqlx::PgPool) {
     // Newest first, and each entry carries its notes.
     let latest = &releases[0];
     assert_eq!(latest["version"].as_str().unwrap(), RELEASES[0].version);
-    assert_eq!(latest["date"].as_str().unwrap(), RELEASES[0].date);
+    // `date` keeps the display string old apps render; `released_on` is the
+    // same day as an ISO date, added alongside it.
+    let day = RELEASES[0].date.unwrap();
+    assert_eq!(
+        latest["date"].as_str().unwrap(),
+        day.format(DISPLAY_DATE_FORMAT).to_string()
+    );
+    assert_eq!(
+        latest["released_on"].as_str().unwrap(),
+        day.format("%Y-%m-%d").to_string()
+    );
     assert_eq!(
         latest["entries"].as_array().unwrap().len(),
         RELEASES[0].entries.len(),
         "latest release keeps all its bullets"
     );
+
+    // Upcoming has not shipped: an empty `date` and no `released_on`.
+    for release in upcoming {
+        assert_eq!(release["date"].as_str().unwrap(), "");
+        assert!(release.get("released_on").is_none(), "{release}");
+    }
 }
