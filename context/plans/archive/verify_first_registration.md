@@ -1,6 +1,6 @@
 # Verify-first registration
 
-**Status: Phase 1 deployed 2026-10-22 with the change-email half (PR #31) and tested live, Phase 2 submitted as 1.13.0 (iOS build 106, Android vc68) the same day. Next is Phase 3, the floor at 1.13.0. Companion: `confirm_first_email_change.md` (the change-email half).**
+**Status: Phase 4 merged 2026-10-23 with the change-email half and PR #32's 409s, the floor at 1.13.0. Phases 1 and 2 shipped 2026-10-22 (PR #31, then 1.13.0 as iOS build 106 and Android vc68). After the deploy, the live check below is still owed. Companion: `confirm_first_email_change.md` (the change-email half).**
 
 **As built:** on the `verify_first` path a taken username answers 409 "username already taken"; only clients that know 409 send the flag. The old path keeps its 422 until PR #32 (`duplicate-409`) merges with Phase 4. The zite verify page copy is unchanged: "You can close this page and go back to the app" already fits, since login works unverified. The client sends the user back to the Login screen it came from, with the username filled in, and toasts "Check your inbox to verify your email, then log in".
 
@@ -145,6 +145,8 @@ When the Phase 2 build is live on both stores and rolled out, set `MIN_CLIENT_VE
 This phase changes nothing about the oracle. The floor is enforced by the app, not the server, so a scripted caller still sends a body without `verify_first` and still gets the old 422. Phase 3 exists so that Phase 4 strands nobody who is still using the app.
 
 ## Phase 4: remove the auto-login path
+
+**Merged 2026-10-23.** Register answers only 202. `HttpRegisterUser` is down to username, email and password, and serde ignores what 1.13.x still sends (no contract uses `deny_unknown_fields`). `RegisterVerifyFirst` became `Register` and the client's `register_verify_first` became `register`. `AuthService::register_user` is the verify-first body now. `create_user_and_refresh_token` is gone, along with its `.sqlx` entry, and so are `RegisterUserError::{Duplicate, FailedAccessToken, CreateSessionError}` and `RegisterUser`'s `platform` and `client_version`. The variants kept their as-built names, `DuplicateEmail` and `UsernameTaken`, and any unique violation other than the email maps to `UsernameTaken`. `TestApp::register` registers, waits for the verification email and logs in from its own address so it doesn't use up the test's five logins. `register_stamps_client_version` is gone; the two refresh cases now take their version from a login. New tests `retired_fields_are_ignored` and `no_flag_no_session`. PR #32 came in as a cherry-pick, so duplicates answer 409, except a taken email on register, which still answers 202. The handler's `DuplicateEmail` arm can't be reached (the service turns it into `EmailTaken`) and answers a bare 500 in case it ever is, so it can't name the address.
 
 One commit, after Phase 3 has been quiet. The oracle closes here, when every caller goes through the new path.
 

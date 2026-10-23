@@ -8,7 +8,7 @@ Only open, actionable items live here. When something ships, its outcome moves t
 
 ## Next Up
 
-- [ ] **Close the email enumeration oracle.** The client floor is 1.13.0 since 2026-10-23, the first build sending `verify_first` and `confirm_first`. Next is Phase 4 of [`../plans/verify_first_registration.md`](../plans/verify_first_registration.md) and [`../plans/confirm_first_email_change.md`](../plans/confirm_first_email_change.md): delete the old register and change-email paths and both flags, merge PR #32 (duplicates answer 409), and archive both plans.
+- [x] ~~**Close the email enumeration oracle.**~~ DONE 2026-10-23: with the floor at 1.13.0, Phase 4 of [`../plans/archive/verify_first_registration.md`](../plans/archive/verify_first_registration.md) and [`../plans/archive/confirm_first_email_change.md`](../plans/archive/confirm_first_email_change.md) is on main. The old register and change-email paths and both flags are gone, and PR #32's 409s came in with it. Left: one live registration from the shipped app with a new address and one with a taken one.
 
 - [ ] **Small leftovers from the email work.** None blocks Phase 4. Profile's Pending row doesn't show when the confirmation link expires. Expired `email_change_requests` rows are never deleted (nothing reads them, and the next request overwrites them). The signup funnel: register no longer starts a session, so a funnel read should count first logins of new accounts, not register events.
 
