@@ -1,6 +1,6 @@
 # Sort direction on the wire: `ascending: bool` to `direction`
 
-**Status: Phase 1 DONE 2026-10-22 (`494d2217`); Phase 2 cut as 1.13.0; Phase 3 DONE 2026-10-23 (`MIN_CLIENT_VERSION=1.13.0` live; the owner skipped the quiet days); Phase 4 merged 2026-10-23. Left: flip a sort in the live app after the deploy, then archive this plan.**
+**Status: DONE 2026-10-23. Phase 1 `494d2217`, Phase 2 cut as 1.13.0, Phase 3 the 1.13.0 floor, Phase 4 `893a1bb4`; a sort flipped in the live app afterwards.**
 
 **One sentence:** `CardQuery` sends the sort direction as `"ascending": true|false` today; move it to `"direction": "ascending"|"descending"` by sending both for one release train, reading the new one first on the server, and dropping the bool once the client floor is past the release that sends it.
 
@@ -28,7 +28,7 @@ Absent `direction` means ascending, which is also what absent `ascending` means 
 
 ## The rule this follows
 
-[`../development/api_evolution.md`](../development/api_evolution.md): new request fields are additive and defaulted, server first, no gate. Removing a field the server still reads is a wire change and needs the propagation wait plus the `MIN_CLIENT_VERSION` gate. So this is one additive step, one client release, one gated cleanup. The precedent is the `mechanical_categories` to `card_roles` sunset in [`archive/server_driven_catalogs.md`](archive/server_driven_catalogs.md) and the five-phase train in [`archive/patch_idempotent_updates.md`](archive/patch_idempotent_updates.md).
+[`../development/api_evolution.md`](../../development/api_evolution.md): new request fields are additive and defaulted, server first, no gate. Removing a field the server still reads is a wire change and needs the propagation wait plus the `MIN_CLIENT_VERSION` gate. So this is one additive step, one client release, one gated cleanup. The precedent is the `mechanical_categories` to `card_roles` sunset in [`archive/server_driven_catalogs.md`](server_driven_catalogs.md) and the five-phase train in [`archive/patch_idempotent_updates.md`](patch_idempotent_updates.md).
 
 ## Phase 0: the enum, wire untouched. DONE
 
@@ -54,7 +54,7 @@ Record the version here when it is cut: **client sends both from 1.13.0** (iOS b
 
 ## Phase 3: raise the floor and wait
 
-When Phase 2 is live on both stores and rolled out, set `MIN_CLIENT_VERSION` to that version in `/etc/zwipe/zerver.env` and restart zerver, the way [`access_token_window.md`](access_token_window.md) did for 1.11.2. Any client below it gets the update screen and can no longer send a body without `direction`. Wait a few quiet days and watch `zcripts/metrics/errors.sql` for anything the gate caught.
+When Phase 2 is live on both stores and rolled out, set `MIN_CLIENT_VERSION` to that version in `/etc/zwipe/zerver.env` and restart zerver, the way [`access_token_window.md`](../access_token_window.md) did for 1.11.2. Any client below it gets the update screen and can no longer send a body without `direction`. Wait a few quiet days and watch `zcripts/metrics/errors.sql` for anything the gate caught.
 
 ## Phase 4: drop the bool. BUILT on `phase4-sort-direction`
 

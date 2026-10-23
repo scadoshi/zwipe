@@ -14,7 +14,7 @@ Only open, actionable items live here. When something ships, its outcome moves t
 
 - [x] ~~**Push the local `security-followups` branch in two steps.**~~ DONE 2026-10-22: both commits are on main and deployed, `4061d3e9` (zerver stops reading the lockout columns) and then `930fc3ca` (the migration dropping `refresh_tokens.revoked` and the three `users` lockout columns).
 
-- [x] ~~**Sort direction wire plan, Phase 4.**~~ DONE 2026-10-23: `direction` is the only sort field on the wire, and a stray `ascending` is ignored. Left: flip a sort in the live app, then archive [`../plans/sort_direction_wire.md`](../plans/sort_direction_wire.md).
+- [x] ~~**Sort direction wire plan, Phase 4.**~~ DONE 2026-10-23: `direction` is the only sort field on the wire, and a stray `ascending` is ignored. Checked in the live app; the plan is archived at [`../plans/archive/sort_direction_wire.md`](../plans/archive/sort_direction_wire.md).
 
 - [ ] **Refresh all the marketing content for the 1.12.0 look.** The backdrop is shaded squares now and the apps open on a splash, so every image and video still shows the grid lines. That covers zwipe's store screenshots in `context/operations/ios/app-store/submission/screenshots/` and the videos and art in `context/marketing/`, zite's images and copy on zwipe.net, and the zwipe and cairn shots and copy on the portfolio's project pages. Use the 16 Pro Max simulator on iOS 26.5. Cairn's new App Store screenshots already exist, in cairn's `assets/app-store/screenshots/` (2026-10-19), for use once 1.0.0 is approved. This is the only open item from the 2026-10-19 session.
 
