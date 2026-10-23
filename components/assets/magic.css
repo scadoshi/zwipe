@@ -910,8 +910,22 @@ i.ms.ms-cost.ms-gp {
     margin-bottom: var(--panel-gap);
 }
 
+/* The year row sits close above its months. */
+.changelog-filter.changelog-years {
+    margin-bottom: 0.5rem;
+}
+
 .changelog-filter .chip {
     font-family: inherit;
+}
+
+.changelog-anchor {
+    color: inherit;
+    text-decoration: none;
+}
+
+.changelog-anchor:hover {
+    text-decoration: underline;
 }
 
 .changelog-list {
@@ -927,6 +941,8 @@ i.ms.ms-cost.ms-gp {
     padding: 1.5rem;
     box-shadow: var(--shadow-sm);
     animation: changelog-card-in 0.35s ease-out both;
+    /* An anchored card lands below zite's sticky nav. */
+    scroll-margin-top: calc(var(--nav-height, 0px) + 1rem);
 }
 
 /* Ease each release card in on mount and when a filter change remounts the
