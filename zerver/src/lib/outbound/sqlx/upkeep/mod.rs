@@ -2,9 +2,9 @@
 //!
 //! Runs under the scoped `zervice` role in production; every statement here
 //! must be covered by `zcripts/server/sql/zervice_role.sql`. Uses runtime
-//! queries (not the `query!` macro) deliberately: the session prune's grant is
-//! destruction-only (`DELETE` + column-scoped `SELECT (expires_at, replaced_at)`),
-//! and these are three trivial deletes.
+//! queries (not the `query!` macro) deliberately: the session and email-change
+//! prunes' grants are destruction-only (`DELETE` + column-scoped `SELECT` on
+//! the columns their WHERE reads), and these are four trivial deletes.
 
 use anyhow::Context;
 
@@ -42,6 +42,14 @@ impl UpkeepRepository for Postgres {
         .execute(&self.pool)
         .await
         .context("pruning expired and replaced refresh tokens")?;
+        Ok(result.rows_affected())
+    }
+
+    async fn prune_expired_email_changes(&self) -> anyhow::Result<u64> {
+        let result = sqlx::query("DELETE FROM email_change_requests WHERE expires_at < NOW()")
+            .execute(&self.pool)
+            .await
+            .context("pruning expired email_change_requests")?;
         Ok(result.rows_affected())
     }
 }

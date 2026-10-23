@@ -475,7 +475,7 @@ Unit files are versioned at `zcripts/server/systemd/` (`zervice.service`, `zervi
 - Creating that user is a hand step on the box, once: `sudo useradd --system --no-create-home --shell /usr/sbin/nologin zervice-alert && sudo chown root:zervice-alert /etc/zwipe/alert.env && sudo chmod 640 /etc/zwipe/alert.env`, then reinstall the unit and `sudo systemctl daemon-reload`.
 - Test with `sudo systemctl start zervice-alert.service` and expect the email.
 
-**Scoped Postgres role, the lifecycle.** `zervice.env`'s `DATABASE_URL` connects as the `zervice` role; `zcripts/server/sql/zervice_role.sql` is the canonical, IDEMPOTENT ledger of everything it may touch (card-sync tables, matview ownership, upkeep prunes, incl. the destruction-only session grant: `DELETE` + column-scoped `SELECT (expires_at)`, so it can dust expired sessions but never read them). Grants deliberately do NOT live in migrations (roles are per-cluster infrastructure; dev/test DBs differ). The lifecycle is one command for every case:
+**Scoped Postgres role, the lifecycle.** `zervice.env`'s `DATABASE_URL` connects as the `zervice` role; `zcripts/server/sql/zervice_role.sql` is the canonical, IDEMPOTENT ledger of everything it may touch (card-sync tables, matview ownership, upkeep prunes, incl. the destruction-only session and email-change grants: `DELETE` + column-scoped `SELECT` on `expires_at` (plus `replaced_at` for sessions), so it can dust expired sessions and email change links but never read them). Grants deliberately do NOT live in migrations (roles are per-cluster infrastructure; dev/test DBs differ). The lifecycle is one command for every case:
 
 ```bash
 # first time, after adding a table zervice touches, or after a migration

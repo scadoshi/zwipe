@@ -158,3 +158,39 @@ async fn session_prune_kills_replaced_rows_past_grace(pool: sqlx::PgPool) {
         "recent evidence and the live head stay"
     );
 }
+
+#[sqlx::test]
+async fn email_change_prune_kills_expired_and_spares_live(pool: sqlx::PgPool) {
+    let repo = Postgres { pool: pool.clone() };
+
+    // One user per request: the table keys on user_id.
+    for (who, offset_hours) in [("lapsed", -1), ("waiting", 1)] {
+        let user_id: uuid::Uuid = sqlx::query_scalar(
+            "INSERT INTO users (username, email, password_hash)
+             VALUES ($1, $1 || '@test.local', 'x') RETURNING id",
+        )
+        .bind(who)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        sqlx::query(
+            "INSERT INTO email_change_requests (user_id, new_email, token_hash, expires_at)
+             VALUES ($1, $2 || '@new.local', $2, NOW() + make_interval(hours => $3))",
+        )
+        .bind(user_id)
+        .bind(who)
+        .bind(offset_hours)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+
+    let pruned = repo.prune_expired_email_changes().await.unwrap();
+    assert_eq!(pruned, 1, "exactly the expired request");
+
+    let kept: Vec<String> = sqlx::query_scalar("SELECT token_hash FROM email_change_requests")
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+    assert_eq!(kept, ["waiting"], "the live request survives");
+}
