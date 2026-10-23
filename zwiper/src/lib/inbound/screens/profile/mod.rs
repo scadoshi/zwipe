@@ -20,7 +20,7 @@ pub mod universes_beyond;
 
 use ::components::{
     ActionBar, BottomSheet, Button, ButtonVariant, DarkModeButton, HintBullet, HintBullets,
-    HintKey, TOAST_NORMAL, ThemeConfig, theme_from_preferences,
+    HintDialog, HintKey, TOAST_NORMAL, ThemeConfig, theme_from_preferences,
 };
 use app_icon_sheet::AppIconSheet;
 use change_email::ChangeEmailSheet;
@@ -40,7 +40,7 @@ use zwipe_core::domain::user::preferences::display_theme_name;
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
 use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::hint_dialog::{HintDialog, use_one_time_hint};
+use crate::inbound::components::hint_dialog::use_one_time_hint;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::logout_dialog::LogoutDialog;

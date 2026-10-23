@@ -19,3 +19,11 @@ pub fn InfoButton(topic: HintTopic) -> Element {
         components::InfoButton { onclick: move |_| hint.set(Some(topic)) }
     }
 }
+
+/// A click handler that opens the given concept's hint via the app-root host,
+/// for the `on_info` "?" of a kit field such as
+/// [`TextInput`](components::TextInput).
+pub fn open_topic(topic: HintTopic) -> EventHandler<MouseEvent> {
+    let mut hint: Signal<Option<HintTopic>> = consume_context();
+    EventHandler::new(move |_| hint.set(Some(topic)))
+}

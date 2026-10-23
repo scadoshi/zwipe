@@ -1,6 +1,6 @@
 //! Change username bottom sheet.
 
-use components::{BottomSheet, Button, ButtonVariant, TOAST_QUICK};
+use components::{BottomSheet, Button, ButtonVariant, TOAST_QUICK, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
@@ -8,7 +8,6 @@ use zwipe_core::domain::user::username::Username;
 use zwipe_core::http::contracts::auth::HttpChangeUsername;
 
 use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::fields::text_input::TextInput;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
 
 /// Bottom sheet for updating the user's username.

@@ -7,13 +7,13 @@
 //! command-zone cascade (clearing commander and signature spell on a change).
 
 use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, TOAST_QUICK, use_overlay_back_action,
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, TOAST_QUICK,
+    use_overlay_back_action,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::deck::format::Format;
 
-use crate::inbound::components::hint_dialog::HintDialog;
 use crate::inbound::components::screen_header::ScreenHeader;
 
 /// Deck size summary, e.g. "100 cards, singleton" or "60+ cards, up to 4 copies".

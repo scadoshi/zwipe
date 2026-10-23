@@ -1,6 +1,6 @@
 use components::{
-    ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets, HintKey,
-    TOAST_NORMAL, TOAST_QUICK,
+    ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets,
+    HintDialog, HintKey, TOAST_NORMAL, TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -28,7 +28,7 @@ use super::components::deck_warnings::DeckWarnings;
 use super::components::more_buttons::MoreButtons;
 use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
 use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::hint_dialog::{HintDialog, use_one_time_hint};
+use crate::inbound::components::hint_dialog::use_one_time_hint;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;

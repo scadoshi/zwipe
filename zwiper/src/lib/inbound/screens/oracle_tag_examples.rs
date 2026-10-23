@@ -13,7 +13,8 @@
 //! `SwipeStack` machinery as the add screen, minus all the deck side effects.
 
 use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, TOAST_QUICK, use_overlay_back,
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, TOAST_QUICK,
+    use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -23,7 +24,7 @@ use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortK
 use zwipe_core::domain::user::models::hints::HINT_OTAG_EXAMPLES;
 
 use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::hint_dialog::{HintColored, HintDialog, use_one_time_hint};
+use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use components::{HintBullet, HintBullets, HintKey, TOAST_NORMAL};
+use components::{HintBullet, HintBullets, HintDialog, HintKey, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use tokio::time::sleep;
@@ -19,10 +19,9 @@ use zwipe_core::domain::deck::{
     DeckName, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel, deck_tag_label,
 };
 
-use crate::inbound::components::fields::text_input::TextInput;
-use crate::inbound::components::hint_dialog::{HintColored, HintDialog};
+use crate::inbound::components::hint_dialog::HintColored;
 use crate::inbound::components::hint_host::HintTopic;
-use crate::inbound::components::info_button::InfoButton;
+use crate::inbound::components::info_button::{InfoButton, open_topic};
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 
 /// Upper bound for the land-target stepper: no deck runs more lands than this.
@@ -473,7 +472,7 @@ pub(crate) fn DeckFields(
         // Deck name
         TextInput {
             label: "Deck name",
-            hint: HintTopic::DeckName,
+            on_info: open_topic(HintTopic::DeckName),
             value: deck_name,
             id: "deck_name",
             placeholder: "Not set",

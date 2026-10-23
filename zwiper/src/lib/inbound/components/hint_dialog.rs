@@ -5,7 +5,6 @@
 //! map on the user), then never again. Screens may keep a small "?" button
 //! that reopens it on demand.
 
-use components::{AlertDialog, DialogAction};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -67,31 +66,6 @@ pub fn open_and_record_hint(
             Err(e) => tracing::warn!("failed to record hint {key}: {e}"),
         }
     });
-}
-
-/// Hint dialog shell: title, body content, and a "Got it" button.
-/// Compose the body from [`HintLine`](components::HintLine)s, with
-/// [`HintKey`](components::HintKey)s for button names.
-///
-/// `actions` go before "Got it" in the footer (e.g. a "Dictionary" button),
-/// keeping call-to-actions out of the body.
-#[component]
-pub fn HintDialog(
-    open: Signal<bool>,
-    title: String,
-    children: Element,
-    #[props(default)] actions: Vec<DialogAction>,
-) -> Element {
-    let mut actions = actions;
-    actions.push(DialogAction::Dismiss("Got it".into()));
-    rsx! {
-        AlertDialog {
-            open,
-            title,
-            actions,
-            div { class: "hint-body", style: "padding: 1rem 0;", {children} }
-        }
-    }
 }
 
 /// A color-coded word inside a hint (e.g. a swipe direction). `color` is a

@@ -11,8 +11,8 @@
 use std::collections::HashSet;
 
 use components::{
-    ActionBar, BottomSheet, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey,
-    TOAST_LONG,
+    ActionBar, BottomSheet, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog,
+    HintKey, TOAST_LONG,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -24,7 +24,7 @@ use zwipe_core::domain::deck::deck_tag_label;
 use zwipe_core::domain::user::models::hints::HINT_DECK_LIST;
 
 use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::hint_dialog::{HintDialog, open_and_record_hint};
+use crate::inbound::components::hint_dialog::open_and_record_hint;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::router::Router;

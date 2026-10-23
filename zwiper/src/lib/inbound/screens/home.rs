@@ -3,8 +3,8 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use components::{
-    ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets, HintKey,
-    TOAST_QUICK, ThemeConfig, theme_from_preferences,
+    ActionBar, AlertDialog, Button, ButtonVariant, DialogAction, HintBullet, HintBullets,
+    HintDialog, HintKey, TOAST_QUICK, ThemeConfig, theme_from_preferences,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -16,7 +16,7 @@ use zwipe_core::domain::deck::deck_metrics::card_price;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
 
 use crate::inbound::components::auth::session_upkeep::FlavorCard;
-use crate::inbound::components::hint_dialog::{HintColored, HintDialog, use_one_time_hint};
+use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::logout_dialog::LogoutDialog;
 use crate::inbound::components::screen_header::ScreenHeader;

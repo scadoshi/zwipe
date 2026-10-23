@@ -13,8 +13,8 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintKey, HintLine, TOAST_QUICK,
-    use_overlay_back,
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
+    TOAST_QUICK, use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -27,7 +27,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
 
-use crate::inbound::components::hint_dialog::{HintColored, HintDialog, open_and_record_hint};
+use crate::inbound::components::hint_dialog::{HintColored, open_and_record_hint};
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::interactions::swipe::{STACK_DEPTH, SwipeStack};

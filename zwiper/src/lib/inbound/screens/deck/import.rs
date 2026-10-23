@@ -3,8 +3,8 @@
 //! share the same result shape.
 
 use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey, TOAST_NORMAL,
-    TOAST_QUICK,
+    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey,
+    TOAST_NORMAL, TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -14,7 +14,7 @@ use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult
 use zwipe_core::domain::user::models::hints::HINT_IMPORT;
 
 use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::hint_dialog::{HintDialog, use_one_time_hint};
+use crate::inbound::components::hint_dialog::use_one_time_hint;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::router::Router;

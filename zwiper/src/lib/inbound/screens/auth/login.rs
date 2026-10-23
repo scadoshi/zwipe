@@ -1,7 +1,7 @@
 //! User login screen.
 
 use components::{
-    ActionBar, Button, ButtonVariant, TOAST_NORMAL, ThemeConfig, theme_from_preferences,
+    ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig, theme_from_preferences,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -9,7 +9,6 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 
-use crate::inbound::components::fields::text_input::TextInput;
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::router::Router;

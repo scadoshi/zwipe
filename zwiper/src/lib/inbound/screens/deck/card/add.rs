@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey, HintLine,
+    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
     TOAST_NORMAL, TOAST_QUICK,
 };
 use dioxus::prelude::*;
@@ -25,7 +25,7 @@ use super::components::card_info::{CardDetailsDialog, CardInfoDisplay, CardSkele
 use super::components::printing_sheet::PrintingSheet;
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
-use crate::inbound::components::hint_dialog::{HintColored, HintDialog, use_one_time_hint};
+use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;

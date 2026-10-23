@@ -1,6 +1,6 @@
 //! New user registration screen.
 
-use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL};
+use components::{ActionBar, Button, ButtonVariant, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
@@ -11,9 +11,9 @@ use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 
 use crate::domain::error::UserFacing;
-use crate::inbound::components::fields::text_input::TextInput;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_hero::HomeHero;
+use crate::inbound::components::info_button::open_topic;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::anonymous::record_anonymous_event;
 use crate::inbound::screens::auth::login::LoginPrefill;
@@ -188,7 +188,7 @@ pub fn Register() -> Element {
                         placeholder: "Password",
                         input_type: "password",
                         error: password_error(),
-                        hint: HintTopic::Password,
+                        on_info: open_topic(HintTopic::Password),
                     }
                     TextInput {
                         value: confirm_password,

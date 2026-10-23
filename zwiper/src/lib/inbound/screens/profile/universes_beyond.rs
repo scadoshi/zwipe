@@ -3,7 +3,7 @@
 //! Show/Hide toggle itself lives on the profile screen; this sheet edits only
 //! the whitelist. The server applies both at serve time.
 
-use components::{BottomSheet, Button, ButtonVariant, HintLine, TOAST_QUICK};
+use components::{BottomSheet, Button, ButtonVariant, HintDialog, HintLine, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
@@ -13,7 +13,7 @@ use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog::{HintDialog, open_and_record_hint};
+use crate::inbound::components::hint_dialog::open_and_record_hint;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
 
 /// Whether two slug lists pick the same franchises. Order is tap order and

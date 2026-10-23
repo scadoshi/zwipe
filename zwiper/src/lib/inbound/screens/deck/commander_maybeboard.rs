@@ -19,7 +19,7 @@ use std::time::Duration;
 
 use components::{
     ActionBar, AlertDialog, BottomSheet, Button, ButtonVariant, Chip, DialogAction, HintBullet,
-    HintBullets, HintKey, HintLine, TOAST_LONG, TOAST_QUICK,
+    HintBullets, HintDialog, HintKey, HintLine, TOAST_LONG, TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -40,7 +40,7 @@ use zwipe_core::domain::user::models::hints::HINT_COMMANDER_MAYBEBOARD;
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog::{HintColored, HintDialog, use_one_time_hint};
+use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};

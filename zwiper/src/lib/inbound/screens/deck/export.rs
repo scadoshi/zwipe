@@ -1,7 +1,8 @@
 //! Export deck as plain-text decklist screen.
 
 use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey, TOAST_QUICK,
+    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey,
+    TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -11,7 +12,7 @@ use zwipe_core::domain::deck::Deck;
 use zwipe_core::domain::user::models::hints::HINT_EXPORT;
 
 use crate::inbound::components::auth::authed::use_authed;
-use crate::inbound::components::hint_dialog::{HintDialog, use_one_time_hint};
+use crate::inbound::components::hint_dialog::use_one_time_hint;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::router::Router;

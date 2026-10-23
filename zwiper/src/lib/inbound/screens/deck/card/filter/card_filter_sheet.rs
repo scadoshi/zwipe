@@ -1,6 +1,6 @@
 use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintKey, TOAST_NORMAL, TOAST_QUICK,
-    use_overlay_back,
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey, TOAST_NORMAL,
+    TOAST_QUICK, use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -14,7 +14,7 @@ use crate::inbound::components::accordion::{
     Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 };
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog::{HintColored, HintDialog, open_and_record_hint};
+use crate::inbound::components::hint_dialog::{HintColored, open_and_record_hint};
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::screens::deck::card::filter::artist::Artist;

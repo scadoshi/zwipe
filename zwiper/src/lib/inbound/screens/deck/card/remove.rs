@@ -1,6 +1,6 @@
 use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintLine, TOAST_NORMAL,
-    TOAST_QUICK,
+    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintLine,
+    TOAST_NORMAL, TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -22,7 +22,7 @@ use super::components::filter_store::{FilterScope, FilterStore};
 use super::components::printing_sheet::PrintingSheet;
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
-use crate::inbound::components::hint_dialog::{HintColored, HintDialog, use_one_time_hint};
+use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;

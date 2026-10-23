@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use components::{
-    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintKey, HintLine,
+    ActionBar, Button, ButtonVariant, Chip, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
     TOAST_NORMAL, TOAST_QUICK,
 };
 use dioxus::core::spawn_forever;
@@ -37,7 +37,7 @@ use super::components::quick_add::QuickAdd;
 use super::components::undo_log::{CommandZoneSlot, UndoAction, UndoLog, UndoStore};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog::{HintColored, HintDialog, open_and_record_hint};
+use crate::inbound::components::hint_dialog::{HintColored, open_and_record_hint};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, screen};

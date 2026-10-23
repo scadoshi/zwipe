@@ -8,7 +8,8 @@
 //! these (handled by the host screen); here the user tunes the set.
 
 use components::{
-    ActionBar, Button, ButtonVariant, DialogAction, TOAST_QUICK, use_overlay_back_action,
+    ActionBar, Button, ButtonVariant, DialogAction, HintDialog, TOAST_QUICK,
+    use_overlay_back_action,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -18,7 +19,6 @@ use zwipe_core::domain::deck::MAX_DECK_ORACLE_TAGS;
 
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::concept_explainers::OracleTagsExplainer;
-use crate::inbound::components::hint_dialog::HintDialog;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 

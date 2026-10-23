@@ -11,7 +11,7 @@
 //! picker and card filter read: one fetch of the ~4,500-row list per session.
 
 use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintKey, TOAST_NORMAL,
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey, TOAST_NORMAL,
     use_overlay_back,
 };
 use dioxus::prelude::*;
@@ -21,7 +21,7 @@ use zwipe_core::domain::card::oracle_tag::{OracleTag, search_oracle_tags};
 use zwipe_core::domain::user::models::hints::HINT_ORACLE_TAG_DICTIONARY;
 
 use crate::inbound::components::catalog_cache::{CatalogCache, CatalogCell};
-use crate::inbound::components::hint_dialog::{HintColored, HintDialog, use_one_time_hint};
+use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
