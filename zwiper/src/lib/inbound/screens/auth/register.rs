@@ -102,7 +102,7 @@ pub fn Register() -> Element {
         spawn(async move {
             // The same answer whether or not the email already has an
             // account, so this screen can't tell either and says the same.
-            match auth_client().register_verify_first(request).await {
+            match auth_client().register(request).await {
                 Ok(_) => {
                     is_loading.set(false);
                     login_prefill.set(Some(username));

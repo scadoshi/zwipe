@@ -22,7 +22,7 @@ use crate::domain::auth::models::UserWithPasswordHash;
 use crate::domain::auth::models::password::HashedPassword;
 use crate::domain::auth::ports::AuthRepository;
 use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
-use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
+use crate::domain::auth::requests::change_email::ChangeEmailError;
 use crate::domain::auth::requests::change_password::{ChangePassword, ChangePasswordError};
 use crate::domain::auth::requests::change_username::{ChangeUsername, ChangeUsernameError};
 use crate::domain::auth::requests::confirm_email_change::{
@@ -42,34 +42,6 @@ use crate::outbound::sqlx::user::models::DatabaseUser;
 
 impl AuthRepository for Postgres {
     // == create ==
-    async fn create_user_and_refresh_token(
-        &self,
-        request: &RegisterUser,
-    ) -> Result<(User, RefreshToken), RegisterUserError> {
-        let mut tx = self.pool.begin().await?;
-
-        let database_user = query_as!(
-            DatabaseUser,
-            "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email, email_verified_at, hints_shown",
-            request.username.to_string(),
-            request.email.to_string(),
-            request.password_hash.to_string()
-        ).fetch_one(&mut *tx).await?;
-
-        let user: User = database_user.try_into()?;
-        let refresh_token = tx
-            .create_refresh_token(
-                user.id,
-                RefreshFamily::start(),
-                request.platform,
-                request.client_version.clone(),
-            )
-            .await?;
-        tx.commit().await?;
-
-        Ok((user, refresh_token))
-    }
-
     async fn create_user(&self, request: &RegisterUser) -> Result<User, RegisterUserError> {
         let database_user = query_as!(
             DatabaseUser,
@@ -166,23 +138,6 @@ impl AuthRepository for Postgres {
             DatabaseUser,
             "UPDATE users SET username = $1 WHERE id = $2 RETURNING id, username, email, email_verified_at, hints_shown",
             request.new_username.to_string(),
-            request.user_id
-        ).fetch_one(&mut *tx).await?;
-
-        let user: User = database_user.try_into()?;
-
-        tx.commit().await?;
-
-        Ok(user)
-    }
-
-    async fn change_email(&self, request: &ChangeEmail) -> Result<User, ChangeEmailError> {
-        let mut tx = self.pool.begin().await?;
-
-        let database_user = query_as!(
-            DatabaseUser,
-            "UPDATE users SET email = $1, email_verified_at = NULL WHERE id = $2 RETURNING id, username, email, email_verified_at, hints_shown",
-            request.email.to_string(),
             request.user_id
         ).fetch_one(&mut *tx).await?;
 

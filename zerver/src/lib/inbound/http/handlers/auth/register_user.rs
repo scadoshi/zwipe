@@ -6,7 +6,6 @@ use uuid::Uuid;
 use zwipe_core::http::contracts::auth::{
     HttpRegisterUser, HttpRegistrationAccepted, RegistrationStatus,
 };
-use zwipe_core::version::canonical_version;
 
 use crate::domain::auth::models::access_token::InvalidJwt;
 use crate::domain::auth::requests::create_session::CreateSessionError;
@@ -53,16 +52,16 @@ impl From<CreateSessionError> for ApiError {
 impl From<RegisterUserError> for ApiError {
     fn from(value: RegisterUserError) -> Self {
         match value {
-            RegisterUserError::Duplicate | RegisterUserError::DuplicateEmail => {
+            // The service turns this into `RegisterOutcome::EmailTaken`, so it
+            // never gets here; answering it would undo the flat response.
+            RegisterUserError::DuplicateEmail => {
                 Self::Conflict("user with that username or email already exists".to_string())
             }
             RegisterUserError::UsernameTaken => {
                 Self::Conflict("username already taken".to_string())
             }
             RegisterUserError::Database(e) => e.to_500(),
-            RegisterUserError::FailedAccessToken(e) => e.to_500(),
             RegisterUserError::UserFromDb(e) => e.to_500(),
-            RegisterUserError::CreateSessionError(e) => ApiError::from(e),
         }
     }
 }
@@ -93,42 +92,27 @@ impl TryFrom<HttpRegisterUser> for RegisterUser {
 
 /// Registers a new user.
 ///
-/// With `verify_first`, answers `202` and the same body whether the email is
-/// new or already has an account; the caller logs in afterwards. Without it,
-/// answers `201` with a session, which is what clients from before the field
-/// get.
+/// Answers `202` and the same body whether the email is new or already has an
+/// account; the caller logs in afterwards.
 pub async fn register_user(
     State(state): State<AppState>,
     Json(body): Json<HttpRegisterUser>,
 ) -> Result<Response, ApiError> {
-    let mut request = RegisterUser::new(&body.username, &body.email, body.password.read())?;
-    request.platform = body.platform;
-    request.client_version = body.client_version.as_deref().and_then(canonical_version);
-    tracing::info!(event = "register", username = %body.username, verify_first = body.verify_first);
+    let request = RegisterUser::new(&body.username, &body.email, body.password.read())?;
+    tracing::info!(event = "register", username = %body.username);
 
-    if body.verify_first {
-        let outcome = state
-            .auth_service
-            .register_user_verify_first(&request)
-            .await
-            .map_err(ApiError::from)?;
-        if let RegisterOutcome::Created(user) = outcome {
-            record_registration(&state, user.id);
-        }
-        let accepted = HttpRegistrationAccepted {
-            status: RegistrationStatus::VerificationSent,
-        };
-        return Ok((StatusCode::ACCEPTED, Json(accepted)).into_response());
-    }
-
-    let session = state
+    let outcome = state
         .auth_service
         .register_user(&request)
         .await
         .map_err(ApiError::from)?;
-    record_registration(&state, session.user.id);
-
-    Ok((StatusCode::CREATED, Json(session)).into_response())
+    if let RegisterOutcome::Created(user) = outcome {
+        record_registration(&state, user.id);
+    }
+    let accepted = HttpRegistrationAccepted {
+        status: RegistrationStatus::VerificationSent,
+    };
+    Ok((StatusCode::ACCEPTED, Json(accepted)).into_response())
 }
 
 /// Starts the new account's metrics rows in the background.

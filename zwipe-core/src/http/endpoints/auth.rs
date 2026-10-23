@@ -29,27 +29,12 @@ impl Endpoint for Login {
     }
 }
 
-/// Create an account. Answers 201.
-pub struct Register(pub HttpRegisterUser);
-impl Endpoint for Register {
-    const METHOD: Method = Method::Post;
-    const AUTH: bool = false;
-    type Request = HttpRegisterUser;
-    type Response = Session;
-    fn path(&self) -> Cow<'static, str> {
-        Cow::Borrowed(REGISTER_ROUTE)
-    }
-    fn body(&self) -> Option<&Self::Request> {
-        Some(&self.0)
-    }
-}
-
 /// Create an account without a session; the caller logs in afterwards.
 ///
-/// Same path as [`Register`], with `verify_first` set in the body, so the
-/// answer is the same whether or not the email already has an account.
-pub struct RegisterVerifyFirst(pub HttpRegisterUser);
-impl Endpoint for RegisterVerifyFirst {
+/// Answers 202 and the same body whether or not the email already has an
+/// account.
+pub struct Register(pub HttpRegisterUser);
+impl Endpoint for Register {
     const METHOD: Method = Method::Post;
     const AUTH: bool = false;
     type Request = HttpRegisterUser;

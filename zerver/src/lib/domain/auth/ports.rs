@@ -49,15 +49,7 @@ use crate::domain::auth::requests::verify_email::{VerifyEmail, VerifyEmailError}
 pub trait AuthRepository: Clone + Send + Sync + 'static {
     // == create ==
 
-    /// Creates a new user and initial refresh token (registration).
-    ///
-    /// Inserts user into database and generates first refresh token for immediate login.
-    fn create_user_and_refresh_token(
-        &self,
-        request: &RegisterUser,
-    ) -> impl Future<Output = Result<(User, RefreshToken), RegisterUserError>> + Send;
-
-    /// Creates a new user without a session (`verify_first` registration).
+    /// Creates a new user, unverified and without a session.
     fn create_user(
         &self,
         request: &RegisterUser,
@@ -118,14 +110,6 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         &self,
         request: &ChangeUsername,
     ) -> impl Future<Output = Result<User, ChangeUsernameError>> + Send;
-
-    /// Updates a user's email address after verification.
-    ///
-    /// Verifies password, checks uniqueness, then updates email.
-    fn change_email(
-        &self,
-        request: &ChangeEmail,
-    ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
 
     /// Stores the user's pending email change, replacing any earlier one.
     fn store_email_change_request(
@@ -266,20 +250,12 @@ pub trait AuthService: Clone + Send + Sync + 'static {
 
     // == create ==
 
-    /// Registers a new user and creates their first session.
-    ///
-    /// Creates user, generates JWT access token and refresh token, returns complete session.
-    fn register_user(
-        &self,
-        request: &RegisterUser,
-    ) -> impl Future<Output = Result<Session, RegisterUserError>> + Send;
-
     /// Registers a new user without a session.
     ///
     /// A taken username is an error; a taken email is
     /// [`RegisterOutcome::EmailTaken`], so the handler can answer it like a
     /// new one. Emails go out in the background either way.
-    fn register_user_verify_first(
+    fn register_user(
         &self,
         request: &RegisterUser,
     ) -> impl Future<Output = Result<RegisterOutcome, RegisterUserError>> + Send;
@@ -325,14 +301,6 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         &self,
         request: &ChangeUsername,
     ) -> impl Future<Output = Result<User, ChangeUsernameError>> + Send;
-
-    /// Changes a user's email after verifying password.
-    ///
-    /// Verifies password, checks uniqueness, updates email.
-    fn change_email(
-        &self,
-        request: &ChangeEmail,
-    ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
 
     /// Holds a new email as pending after verifying the password, and mails a
     /// confirmation link to it when no other account has it.
@@ -419,12 +387,6 @@ pub trait ErasedAuthService: Send + Sync + 'static {
     fn register_user<'a>(
         &'a self,
         request: &'a RegisterUser,
-    ) -> BoxFuture<'a, Result<Session, RegisterUserError>>;
-
-    /// See [`AuthService::register_user_verify_first`].
-    fn register_user_verify_first<'a>(
-        &'a self,
-        request: &'a RegisterUser,
     ) -> BoxFuture<'a, Result<RegisterOutcome, RegisterUserError>>;
 
     /// See [`AuthService::create_session`].
@@ -456,12 +418,6 @@ pub trait ErasedAuthService: Send + Sync + 'static {
         &'a self,
         request: &'a ChangeUsername,
     ) -> BoxFuture<'a, Result<User, ChangeUsernameError>>;
-
-    /// See [`AuthService::change_email`].
-    fn change_email<'a>(
-        &'a self,
-        request: &'a ChangeEmail,
-    ) -> BoxFuture<'a, Result<User, ChangeEmailError>>;
 
     /// See [`AuthService::request_email_change`].
     fn request_email_change<'a>(
@@ -524,15 +480,8 @@ where
     fn register_user<'a>(
         &'a self,
         request: &'a RegisterUser,
-    ) -> BoxFuture<'a, Result<Session, RegisterUserError>> {
-        Box::pin(AuthService::register_user(self, request))
-    }
-
-    fn register_user_verify_first<'a>(
-        &'a self,
-        request: &'a RegisterUser,
     ) -> BoxFuture<'a, Result<RegisterOutcome, RegisterUserError>> {
-        Box::pin(AuthService::register_user_verify_first(self, request))
+        Box::pin(AuthService::register_user(self, request))
     }
 
     fn create_session<'a>(
@@ -570,13 +519,6 @@ where
         request: &'a ChangeUsername,
     ) -> BoxFuture<'a, Result<User, ChangeUsernameError>> {
         Box::pin(AuthService::change_username(self, request))
-    }
-
-    fn change_email<'a>(
-        &'a self,
-        request: &'a ChangeEmail,
-    ) -> BoxFuture<'a, Result<User, ChangeEmailError>> {
-        Box::pin(AuthService::change_email(self, request))
     }
 
     fn request_email_change<'a>(

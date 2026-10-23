@@ -253,15 +253,32 @@ impl TestApp {
             .unwrap();
     }
 
-    /// Register a fresh user; returns `(access_token, user_id)`.
+    /// Register a fresh user, wait for the verification email, then log in;
+    /// returns `(access_token, user_id)`. Register answers without a session,
+    /// so this is what the app does too. The login comes from its own address
+    /// so it doesn't spend the test's login budget.
     pub async fn register(&self, username: &str) -> (String, String) {
+        let emails_before = self.emails.count();
         let body = serde_json::json!({
             "username": username,
             "email": format!("{username}@test.local"),
             "password": "TestPass123!",
         });
         let (status, v) = self.post("/api/auth/register", body, None).await;
-        assert_eq!(status, StatusCode::CREATED, "register failed: {v}");
+        assert_eq!(status, StatusCode::ACCEPTED, "register failed: {v}");
+        self.emails.wait_for(emails_before + 1).await;
+
+        let n = IP_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let o = n.to_be_bytes();
+        let login_ip = SocketAddr::new(
+            IpAddr::V4(Ipv4Addr::new(11, o[1], o[2], o[3].max(1))),
+            40000,
+        );
+        let login = serde_json::json!({ "identifier": username, "password": "TestPass123!" });
+        let (status, v) = self
+            .send_from(login_ip, Method::POST, "/api/auth/login", Some(login), None)
+            .await;
+        assert_eq!(status, StatusCode::OK, "login after register failed: {v}");
         (
             v["access_token"]["value"].as_str().unwrap().to_string(),
             v["user"]["id"].as_str().unwrap().to_string(),

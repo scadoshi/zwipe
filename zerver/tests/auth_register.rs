@@ -1,7 +1,5 @@
-//! `verify_first` registration through the real router: no session, and the
-//! same answer whether or not the email already has an account. The old path
-//! (no flag, 201 with a session) is what `TestApp::register` and
-//! `auth_flows.rs` cover.
+//! Registration through the real router: no session, and the same answer
+//! whether or not the email already has an account.
 //!
 //! Requires `DATABASE_URL` (dev's value works): `set -a; source zerver/.env`.
 
@@ -14,14 +12,13 @@ use axum::http::StatusCode;
 use common::TestApp;
 use serde_json::{Value, json};
 
-async fn register_verify_first(app: &TestApp, username: &str, email: &str) -> (StatusCode, Value) {
+async fn register(app: &TestApp, username: &str, email: &str) -> (StatusCode, Value) {
     app.post(
         REGISTER_ROUTE,
         json!({
             "username": username,
             "email": email,
             "password": "TestPass123!",
-            "verify_first": true,
         }),
         None,
     )
@@ -38,7 +35,7 @@ async fn settle() {
 async fn new_email_is_202_without_session_and_can_log_in(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
 
-    let (status, body) = register_verify_first(&app, "newbie", "newbie@test.local").await;
+    let (status, body) = register(&app, "newbie", "newbie@test.local").await;
     assert_eq!(status, StatusCode::ACCEPTED, "{body}");
     assert_eq!(body, json!({ "status": "verification_sent" }));
 
@@ -76,8 +73,8 @@ async fn taken_email_answers_like_a_new_one_and_tells_the_owner(pool: sqlx::PgPo
         .unwrap();
     let emails_before = app.emails.count();
 
-    let (status, taken) = register_verify_first(&app, "mallory", "alice@test.local").await;
-    let (_, fresh) = register_verify_first(&app, "fresh", "fresh@test.local").await;
+    let (status, taken) = register(&app, "mallory", "alice@test.local").await;
+    let (_, fresh) = register(&app, "fresh", "fresh@test.local").await;
     assert_eq!(status, StatusCode::ACCEPTED, "{taken}");
     assert_eq!(taken, fresh, "byte-equal bodies");
 
@@ -115,8 +112,41 @@ async fn taken_username_is_409(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let _ = app.register("bob").await;
 
-    let (status, _) = register_verify_first(&app, "bob", "other@test.local").await;
+    let (status, _) = register(&app, "bob", "other@test.local").await;
     assert_eq!(status, StatusCode::CONFLICT);
+}
+
+/// What 1.13.x sends: the retired `verify_first` flag and `client_version`
+/// are ignored, not rejected.
+#[sqlx::test]
+async fn retired_fields_are_ignored(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (status, body) = app
+        .post(
+            REGISTER_ROUTE,
+            json!({
+                "username": "oldapp",
+                "email": "oldapp@test.local",
+                "password": "TestPass123!",
+                "client_version": "1.13.0",
+                "verify_first": true,
+            }),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::ACCEPTED, "{body}");
+    assert_eq!(body, json!({ "status": "verification_sent" }));
+}
+
+/// A client that leaves the flag out gets the same flat answer: the old
+/// auto-login path is gone.
+#[sqlx::test]
+async fn no_flag_no_session(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let _ = app.register("dave").await;
+    let (status, body) = register(&app, "dave2", "dave@test.local").await;
+    assert_eq!(status, StatusCode::ACCEPTED, "{body}");
+    assert!(body.get("access_token").is_none());
 }
 
 #[sqlx::test]
@@ -125,8 +155,8 @@ async fn account_exists_notice_is_on_cooldown(pool: sqlx::PgPool) {
     let _ = app.register("carol").await;
     let before = app.emails.count();
 
-    let _ = register_verify_first(&app, "copy1", "carol@test.local").await;
-    let _ = register_verify_first(&app, "copy2", "carol@test.local").await;
+    let _ = register(&app, "copy1", "carol@test.local").await;
+    let _ = register(&app, "copy2", "carol@test.local").await;
     app.emails.wait_for(before + 1).await;
     settle().await;
     assert_eq!(app.emails.count(), before + 1, "one notice an hour");

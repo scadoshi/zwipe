@@ -37,9 +37,11 @@ impl HttpAuthenticateUser {
     }
 }
 
-/// Registration request body. `platform` and `client_version` (additive,
-/// `#[serde(default)]`) are recorded on the auto-login session that the old,
-/// non-`verify_first` path creates.
+/// Registration request body.
+///
+/// The account is created unverified and no session comes back; the caller
+/// logs in afterwards. Older clients also sent `platform`, `client_version`
+/// and `verify_first`; serde ignores them.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpRegisterUser {
     /// The username to register.
@@ -48,35 +50,20 @@ pub struct HttpRegisterUser {
     pub email: String,
     /// The password for the new account.
     pub password: Secret,
-    /// The platform the client runs on, if it sends one.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub platform: Option<ClientPlatform>,
-    /// The app version making the request, if it sends one.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub client_version: Option<String>,
-    /// Creates the account without a session and answers the same whether or
-    /// not the email already has an account. Absent means the old behavior,
-    /// a session straight away, which is what clients sent before the field
-    /// existed.
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub verify_first: bool,
 }
 
 impl HttpRegisterUser {
-    /// Creates a new registration request (no platform/version; set the fields to record them).
+    /// Creates a new registration request.
     pub fn new(username: &str, email: &str, password: &str) -> Self {
         Self {
             username: username.to_string(),
             email: email.to_string(),
             password: Secret::new(password),
-            platform: None,
-            client_version: None,
-            verify_first: false,
         }
     }
 }
 
-/// What a `verify_first` registration did, as far as the caller is told.
+/// What a registration did, as far as the caller is told.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RegistrationStatus {
@@ -85,8 +72,8 @@ pub enum RegistrationStatus {
     VerificationSent,
 }
 
-/// Response body for a `verify_first` registration. Identical for a new
-/// address and a taken one.
+/// Response body for a registration. Identical for a new address and a
+/// taken one.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct HttpRegistrationAccepted {
     /// What happened.
@@ -172,26 +159,23 @@ impl HttpChangeUsername {
 }
 
 /// Email change request body. Requires password for re-verification.
+///
+/// The address is held as pending until a link sent to it is clicked. Older
+/// clients also sent `confirm_first`; serde ignores it.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpChangeEmail {
     /// The email address to switch to.
     pub email: String,
     /// The account password, for re-verification.
     pub password: Secret,
-    /// Holds the address as pending until a link sent to it is clicked,
-    /// instead of switching to it now. Absent means switch now, which is
-    /// what clients sent before the field existed.
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub confirm_first: bool,
 }
 
 impl HttpChangeEmail {
-    /// Creates a confirm-first email change request.
+    /// Creates an email change request.
     pub fn new(email: &str, password: &str) -> Self {
         Self {
             email: email.to_string(),
             password: Secret::new(password),
-            confirm_first: true,
         }
     }
 }
@@ -317,18 +301,17 @@ mod tests {
         assert!(!wire.contains("client_version"), "wire: {wire}");
     }
 
+    /// 1.12.x and 1.13.x bodies carry fields the server no longer reads.
+    /// None of the contracts deny unknown fields, so they still deserialize.
     #[test]
-    fn register_deserializes_without_client_version() {
-        let json = r#"{"username":"alice","email":"a@b.co","password":"pw"}"#;
+    fn retired_flags_are_ignored() {
+        let json = r#"{"username":"alice","email":"a@b.co","password":"pw","platform":"ios","client_version":"1.13.0","verify_first":true}"#;
         let req: HttpRegisterUser = serde_json::from_str(json).unwrap();
-        assert_eq!(req.client_version, None);
-        assert!(!req.verify_first, "absent means the old auto-login path");
-    }
+        assert_eq!(req.username, "alice");
 
-    #[test]
-    fn register_omits_verify_first_when_false() {
-        let wire = serde_json::to_string(&HttpRegisterUser::new("alice", "a@b.co", "pw")).unwrap();
-        assert!(!wire.contains("verify_first"), "wire: {wire}");
+        let json = r#"{"email":"a@b.co","password":"pw","confirm_first":true}"#;
+        let req: HttpChangeEmail = serde_json::from_str(json).unwrap();
+        assert_eq!(req.email, "a@b.co");
     }
 
     #[test]

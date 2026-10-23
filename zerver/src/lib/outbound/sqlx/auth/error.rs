@@ -55,7 +55,8 @@ impl From<sqlx::Error> for RegisterUserError {
             {
                 Self::DuplicateEmail
             }
-            e if e.is_unique_constraint_violation() => Self::Duplicate,
+            // The only other unique column is the username.
+            e if e.is_unique_constraint_violation() => Self::UsernameTaken,
             e => Self::Database(e.into()),
         }
     }
@@ -88,11 +89,7 @@ impl From<IntoUserError> for ChangeUsernameError {
 
 impl From<sqlx::Error> for ChangeEmailError {
     fn from(value: sqlx::Error) -> Self {
-        if value.is_unique_constraint_violation() {
-            Self::Duplicate
-        } else {
-            Self::Database(value.into())
-        }
+        Self::Database(value.into())
     }
 }
 

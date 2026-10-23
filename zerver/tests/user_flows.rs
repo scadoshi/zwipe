@@ -101,23 +101,7 @@ async fn change_password_then_login_with_new(pool: sqlx::PgPool) {
     );
 }
 
-#[sqlx::test]
-async fn change_email_updates_profile(pool: sqlx::PgPool) {
-    let app = TestApp::new(pool);
-    let (token, _) = app.register("mailer").await;
-
-    let (status, updated) = app
-        .patch(
-            CHANGE_EMAIL_ROUTE,
-            json!({ "email": "moved@test.local", "password": "TestPass123!" }),
-            Some(&token),
-        )
-        .await;
-    assert_eq!(status, StatusCode::OK, "change email: {updated}");
-    assert_eq!(updated["email"], "moved@test.local");
-}
-
-/// Asks for `email` with `confirm_first`, as current clients do.
+/// Asks for `email`.
 async fn request_change(
     app: &TestApp,
     token: &str,
@@ -125,7 +109,7 @@ async fn request_change(
 ) -> (StatusCode, serde_json::Value) {
     app.patch(
         CHANGE_EMAIL_ROUTE,
-        json!({ "email": email, "password": "TestPass123!", "confirm_first": true }),
+        json!({ "email": email, "password": "TestPass123!" }),
         Some(token),
     )
     .await
@@ -138,7 +122,7 @@ async fn settle() {
 }
 
 #[sqlx::test]
-async fn confirm_first_answers_the_same_for_a_taken_address(pool: sqlx::PgPool) {
+async fn change_email_answers_the_same_for_a_taken_address(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let _ = app.register("owner").await;
     let (token, _) = app.register("prober").await;
@@ -166,8 +150,26 @@ async fn confirm_first_answers_the_same_for_a_taken_address(pool: sqlx::PgPool) 
     assert_eq!(taken["email_verified_at"], free["email_verified_at"]);
 }
 
+/// 1.13.x still sends the retired `confirm_first` flag; it is ignored.
 #[sqlx::test]
-async fn confirm_first_free_address_switches_on_confirm(pool: sqlx::PgPool) {
+async fn change_email_ignores_the_retired_flag(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("flagged").await;
+
+    let (status, body) = app
+        .patch(
+            CHANGE_EMAIL_ROUTE,
+            json!({ "email": "moved@test.local", "password": "TestPass123!", "confirm_first": true }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(body["email"], "flagged@test.local");
+    assert_eq!(body["pending_email"], "moved@test.local");
+}
+
+#[sqlx::test]
+async fn change_email_free_address_switches_on_confirm(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (token, _) = app.register("mover").await;
     let before = app.emails.count();
@@ -219,7 +221,7 @@ async fn confirm_first_free_address_switches_on_confirm(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
-async fn confirm_first_taken_address_sends_nothing(pool: sqlx::PgPool) {
+async fn change_email_taken_address_sends_nothing(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let _ = app.register("holder").await;
     let (token, uid) = app.register("claimant").await;
@@ -245,7 +247,7 @@ async fn confirm_first_taken_address_sends_nothing(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
-async fn confirm_first_new_request_replaces_the_old(pool: sqlx::PgPool) {
+async fn change_email_new_request_replaces_the_old(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (token, _) = app.register("fickle").await;
 
@@ -276,7 +278,7 @@ async fn confirm_first_new_request_replaces_the_old(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
-async fn confirm_first_fails_when_the_address_was_taken_meanwhile(pool: sqlx::PgPool) {
+async fn change_email_fails_when_the_address_was_taken_meanwhile(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (token, _) = app.register("slowpoke").await;
 
