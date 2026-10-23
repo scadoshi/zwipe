@@ -34,18 +34,20 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.14.0",
-    date: None,
-    entries: &[
-        "Profile's Pending row shows when the confirmation link expires",
-        "The changelog narrows by year, month and version",
-        "Field labels with a ? sit centered with it, with more room above the field",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.14.0",
+        date: NaiveDate::from_ymd_opt(2026, 10, 23),
+        entries: &[
+            "Profile's Pending row shows when the confirmation link expires",
+            "The changelog narrows by year, month and version",
+            "Field labels with a ? sit centered with it, with more room above the field",
+            "Delete account's password field sits a line below the warning",
+        ],
+    },
     Release {
         version: "1.13.0",
         date: NaiveDate::from_ymd_opt(2026, 10, 22),
