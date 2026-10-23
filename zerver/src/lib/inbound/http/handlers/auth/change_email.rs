@@ -37,12 +37,37 @@ impl From<InvalidChangeEmail> for ApiError {
 }
 
 /// Changes the user's email after verifying the password.
+///
+/// With `confirm_first`, the address is held as pending instead, and the
+/// response is the same whether or not another account has it. Without it,
+/// the switch happens now, which is what clients from before the field get.
 pub async fn change_email(
     user: AuthenticatedUser,
     State(state): State<AppState>,
     Json(body): Json<HttpChangeEmail>,
 ) -> Result<(StatusCode, Json<User>), ApiError> {
     let request = ChangeEmail::new(user.id, &body.email, body.password.read())?;
+
+    if body.confirm_first {
+        let user = state
+            .auth_service
+            .request_email_change(&request)
+            .await
+            .map_err(ApiError::from)?;
+
+        let metrics = std::sync::Arc::clone(&state.metrics_service);
+        let uid = user.id;
+        tokio::spawn(async move {
+            if let Err(e) = metrics
+                .record_audit(uid, AuditAction::EmailChangeRequested)
+                .await
+            {
+                tracing::warn!(error = ?e, "metrics: audit email change request failed");
+            }
+        });
+
+        return Ok((StatusCode::OK, Json(user)));
+    }
 
     let updated_user = state
         .auth_service

@@ -9,6 +9,7 @@
 //! - [`change_email`]: Email change requests with password verification
 //! - [`change_password`]: Password change requests with current password verification
 //! - [`change_username`]: Username change requests with password verification
+//! - [`confirm_email_change`]: Switch to a pending email from its link
 //! - [`create_session`]: Create new session for a user
 //! - [`delete_user`]: Account deletion requests with password verification
 //! - [`enforce_session_maximum`]: Enforce max session limit per user
@@ -23,6 +24,7 @@ pub mod authenticate_user;
 pub mod change_email;
 pub mod change_password;
 pub mod change_username;
+pub mod confirm_email_change;
 pub mod create_session;
 pub mod delete_user;
 pub mod enforce_session_maximum;

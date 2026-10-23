@@ -8,8 +8,9 @@
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
 use zwipe_core::http::paths::{
-    CHANGE_EMAIL_ROUTE, CHANGE_PASSWORD_ROUTE, CHANGE_USERNAME_ROUTE, DECK_ROUTE,
-    DELETE_USER_ROUTE, GET_USER_ROUTE, LOGIN_ROUTE, PREFERENCES_ROUTE,
+    CHANGE_EMAIL_ROUTE, CHANGE_PASSWORD_ROUTE, CHANGE_USERNAME_ROUTE, CONFIRM_EMAIL_CHANGE_ROUTE,
+    DECK_ROUTE, DELETE_USER_ROUTE, GET_USER_ROUTE, LOGIN_ROUTE, PREFERENCES_ROUTE,
+    RESEND_VERIFICATION_ROUTE,
 };
 mod common;
 
@@ -114,6 +115,220 @@ async fn change_email_updates_profile(pool: sqlx::PgPool) {
         .await;
     assert_eq!(status, StatusCode::OK, "change email: {updated}");
     assert_eq!(updated["email"], "moved@test.local");
+}
+
+/// Asks for `email` with `confirm_first`, as current clients do.
+async fn request_change(
+    app: &TestApp,
+    token: &str,
+    email: &str,
+) -> (StatusCode, serde_json::Value) {
+    app.patch(
+        CHANGE_EMAIL_ROUTE,
+        json!({ "email": email, "password": "TestPass123!", "confirm_first": true }),
+        Some(token),
+    )
+    .await
+}
+
+/// Lets a background send that was going to happen land, so a test can say
+/// none did.
+async fn settle() {
+    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+}
+
+#[sqlx::test]
+async fn confirm_first_answers_the_same_for_a_taken_address(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let _ = app.register("owner").await;
+    let (token, _) = app.register("prober").await;
+
+    let (taken_status, taken) = request_change(&app, &token, "owner@test.local").await;
+    let (free_status, free) = request_change(&app, &token, "fresh@test.local").await;
+
+    assert_eq!(taken_status, StatusCode::OK, "taken: {taken}");
+    assert_eq!(free_status, StatusCode::OK, "free: {free}");
+    for body in [&taken, &free] {
+        assert_eq!(
+            body["email"], "prober@test.local",
+            "email unchanged: {body}"
+        );
+    }
+    assert_eq!(taken["pending_email"], "owner@test.local");
+    assert_eq!(free["pending_email"], "fresh@test.local");
+
+    let keys = |v: &serde_json::Value| {
+        let mut k: Vec<String> = v.as_object().unwrap().keys().cloned().collect();
+        k.sort();
+        k
+    };
+    assert_eq!(keys(&taken), keys(&free), "same user JSON shape");
+    assert_eq!(taken["email_verified_at"], free["email_verified_at"]);
+}
+
+#[sqlx::test]
+async fn confirm_first_free_address_switches_on_confirm(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("mover").await;
+    let before = app.emails.count();
+
+    let (status, body) = request_change(&app, &token, "moved@test.local").await;
+    assert_eq!(status, StatusCode::OK, "request: {body}");
+    app.emails.wait_for(before + 1).await;
+    assert_eq!(app.emails.last_to().as_deref(), Some("moved@test.local"));
+    let raw = app.emails.last_token("confirm-email").unwrap();
+
+    let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
+    assert_eq!(
+        me["email"], "mover@test.local",
+        "not switched before confirm"
+    );
+    assert_eq!(
+        me["pending_email"], "moved@test.local",
+        "pending shows: {me}"
+    );
+
+    let (status, _) = app
+        .post(CONFIRM_EMAIL_CHANGE_ROUTE, json!({ "token": raw }), None)
+        .await;
+    assert_eq!(status, StatusCode::OK, "confirm");
+
+    let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
+    assert_eq!(me["email"], "moved@test.local");
+    assert!(
+        me["email_verified_at"].is_string(),
+        "verified by the click: {me}"
+    );
+    assert!(me.get("pending_email").is_none(), "pending cleared: {me}");
+
+    assert_eq!(
+        app.emails.last_to().as_deref(),
+        Some("mover@test.local"),
+        "the old address is told"
+    );
+    assert!(app.emails.last_body().unwrap().contains("moved@test.local"));
+
+    let (status, _) = app
+        .post(CONFIRM_EMAIL_CHANGE_ROUTE, json!({ "token": raw }), None)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "a link works once"
+    );
+}
+
+#[sqlx::test]
+async fn confirm_first_taken_address_sends_nothing(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let _ = app.register("holder").await;
+    let (token, uid) = app.register("claimant").await;
+    let before = app.emails.count();
+
+    let (status, _) = request_change(&app, &token, "holder@test.local").await;
+    assert_eq!(status, StatusCode::OK);
+    settle().await;
+    assert_eq!(app.emails.count(), before, "no email to anyone");
+
+    let owners: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM users WHERE email = 'holder@test.local'")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(owners, 1, "the owner keeps the address");
+    let mine: String = sqlx::query_scalar("SELECT email FROM users WHERE id = $1::uuid")
+        .bind(&uid)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(mine, "claimant@test.local");
+}
+
+#[sqlx::test]
+async fn confirm_first_new_request_replaces_the_old(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("fickle").await;
+
+    let before = app.emails.count();
+    let _ = request_change(&app, &token, "first@test.local").await;
+    app.emails.wait_for(before + 1).await;
+    let first = app.emails.last_token("confirm-email").unwrap();
+
+    let _ = request_change(&app, &token, "second@test.local").await;
+    app.emails.wait_for(before + 2).await;
+    let second = app.emails.last_token("confirm-email").unwrap();
+
+    let (status, _) = app
+        .post(CONFIRM_EMAIL_CHANGE_ROUTE, json!({ "token": first }), None)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "the first link is dead"
+    );
+
+    let (status, _) = app
+        .post(CONFIRM_EMAIL_CHANGE_ROUTE, json!({ "token": second }), None)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
+    assert_eq!(me["email"], "second@test.local");
+}
+
+#[sqlx::test]
+async fn confirm_first_fails_when_the_address_was_taken_meanwhile(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("slowpoke").await;
+
+    let before = app.emails.count();
+    let _ = request_change(&app, &token, "late@test.local").await;
+    app.emails.wait_for(before + 1).await;
+    let raw = app.emails.last_token("confirm-email").unwrap();
+
+    // someone registers the address before the link is clicked
+    let _ = app.register("late").await;
+
+    let (status, body) = app
+        .post(CONFIRM_EMAIL_CHANGE_ROUTE, json!({ "token": raw }), None)
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT, "{body}");
+
+    let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
+    assert_eq!(me["email"], "slowpoke@test.local");
+    assert!(
+        me.get("pending_email").is_none(),
+        "the request is spent: {me}"
+    );
+
+    let (status, _) = app
+        .post(CONFIRM_EMAIL_CHANGE_ROUTE, json!({ "token": raw }), None)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "and the link is dead"
+    );
+}
+
+#[sqlx::test]
+async fn resend_verification_leaves_a_pending_change_alone(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("juggler").await;
+
+    let before = app.emails.count();
+    let _ = request_change(&app, &token, "juggled@test.local").await;
+    app.emails.wait_for(before + 1).await;
+    let raw = app.emails.last_token("confirm-email").unwrap();
+
+    let (status, body) = app
+        .post(RESEND_VERIFICATION_ROUTE, json!({}), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::OK, "resend: {body}");
+
+    let (status, _) = app
+        .post(CONFIRM_EMAIL_CHANGE_ROUTE, json!({ "token": raw }), None)
+        .await;
+    assert_eq!(status, StatusCode::OK, "the change link still works");
 }
 
 #[sqlx::test]

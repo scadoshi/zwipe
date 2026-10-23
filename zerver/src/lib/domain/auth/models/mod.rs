@@ -54,6 +54,7 @@ impl From<UserWithPasswordHash> for User {
             email: value.email,
             email_verified_at: value.email_verified_at,
             hints_shown: value.hints_shown,
+            pending_email: None,
         }
     }
 }

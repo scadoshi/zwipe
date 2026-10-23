@@ -4,13 +4,14 @@ use std::borrow::Cow;
 
 use crate::domain::auth::models::session::Session;
 use crate::http::contracts::auth::{
-    HttpAuthenticateUser, HttpRefreshSession, HttpRegisterUser, HttpRequestPasswordReset,
-    HttpResetPassword, HttpVerifyEmail,
+    HttpAuthenticateUser, HttpConfirmEmailChange, HttpRefreshSession, HttpRegisterUser,
+    HttpRegistrationAccepted, HttpRequestPasswordReset, HttpResetPassword, HttpVerifyEmail,
 };
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths::{
-    FORGOT_PASSWORD_ROUTE, LOGIN_ROUTE, LOGOUT_ROUTE, REFRESH_SESSION_ROUTE, REGISTER_ROUTE,
-    RESEND_VERIFICATION_ROUTE, RESET_PASSWORD_ROUTE, VERIFY_EMAIL_ROUTE,
+    CONFIRM_EMAIL_CHANGE_ROUTE, FORGOT_PASSWORD_ROUTE, LOGIN_ROUTE, LOGOUT_ROUTE,
+    REFRESH_SESSION_ROUTE, REGISTER_ROUTE, RESEND_VERIFICATION_ROUTE, RESET_PASSWORD_ROUTE,
+    VERIFY_EMAIL_ROUTE,
 };
 
 /// Exchange credentials for a session.
@@ -35,6 +36,24 @@ impl Endpoint for Register {
     const AUTH: bool = false;
     type Request = HttpRegisterUser;
     type Response = Session;
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(REGISTER_ROUTE)
+    }
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
+    }
+}
+
+/// Create an account without a session; the caller logs in afterwards.
+///
+/// Same path as [`Register`], with `verify_first` set in the body, so the
+/// answer is the same whether or not the email already has an account.
+pub struct RegisterVerifyFirst(pub HttpRegisterUser);
+impl Endpoint for RegisterVerifyFirst {
+    const METHOD: Method = Method::Post;
+    const AUTH: bool = false;
+    type Request = HttpRegisterUser;
+    type Response = HttpRegistrationAccepted;
     fn path(&self) -> Cow<'static, str> {
         Cow::Borrowed(REGISTER_ROUTE)
     }
@@ -106,6 +125,23 @@ impl Endpoint for VerifyEmail {
     type Response = ();
     fn path(&self) -> Cow<'static, str> {
         Cow::Borrowed(VERIFY_EMAIL_ROUTE)
+    }
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
+    }
+}
+
+/// Switch to a pending email address with the token from the link sent to it.
+///
+/// Unauthenticated, for the same reason as [`VerifyEmail`].
+pub struct ConfirmEmailChange(pub HttpConfirmEmailChange);
+impl Endpoint for ConfirmEmailChange {
+    const METHOD: Method = Method::Post;
+    const AUTH: bool = false;
+    type Request = HttpConfirmEmailChange;
+    type Response = ();
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(CONFIRM_EMAIL_CHANGE_ROUTE)
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.0)

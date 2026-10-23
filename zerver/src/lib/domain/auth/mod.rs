@@ -20,6 +20,8 @@ pub use requests::*;
 
 /// Failed-login counters keyed by account and client address.
 pub mod lockout;
+/// One "you already have an account" email per address per hour.
+pub mod notice_cooldown;
 
 /// Port traits (interfaces) for authentication operations.
 pub mod ports;

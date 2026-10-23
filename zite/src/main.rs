@@ -9,8 +9,8 @@ mod api;
 mod components;
 mod pages;
 use pages::{
-    About, Android, Changelog, Community, Contribute, GuidePage, Guides, Home, Ios, NotFound,
-    Privacy, Reset, SharedDeck, Verify,
+    About, Android, Changelog, Community, ConfirmEmail, Contribute, GuidePage, Guides, Home, Ios,
+    NotFound, Privacy, Reset, SharedDeck, Verify,
 };
 // Base URLs + contact points live in zwipe-core's `site` module (shared with
 // zwiper and zerver so they can't drift); re-exported so pages keep importing
@@ -53,6 +53,8 @@ enum Route {
     SharedDeck { token: String },
     #[route("/verify/:token")]
     Verify { token: String },
+    #[route("/confirm-email/:token")]
+    ConfirmEmail { token: String },
     #[route("/reset/:token")]
     Reset { token: String },
     // Catch-all LAST so it only matches when nothing above does. The deploy
@@ -99,7 +101,7 @@ fn main() {
 
 /// Endpoint hit by `dx build --ssg` to enumerate routes to prerender.
 /// `Route::static_routes()` returns every route with no dynamic segments,
-/// so `/verify/:token`, `/reset/:token` and `/deck/:token` are excluded
+/// so `/verify/:token`, `/confirm-email/:token`, `/reset/:token` and `/deck/:token` are excluded
 /// automatically, which is right: their content is per-token.
 ///
 /// The guides are the exception. `/guides/:slug` is one dynamic route over a

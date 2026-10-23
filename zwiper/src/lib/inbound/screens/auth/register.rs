@@ -5,7 +5,6 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::Email;
-use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::auth::password::validate;
 use zwipe_core::domain::user::username::Username;
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
@@ -17,15 +16,14 @@ use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::anonymous::record_anonymous_event;
-use crate::inbound::router::Router;
-use crate::outbound::session::Persist;
+use crate::inbound::screens::auth::login::LoginPrefill;
 
 /// Registration form screen for creating new user accounts.
 #[component]
 pub fn Register() -> Element {
     let navigator = use_navigator();
 
-    let mut session: Signal<Option<Session>> = use_context();
+    let LoginPrefill(mut login_prefill) = use_context();
     let auth_client: Signal<ZwipeClient> = use_context();
 
     // Funnel: register screen reached (once per mount; distinct-session
@@ -64,7 +62,11 @@ pub fn Register() -> Element {
     let mut validate_password = move || {
         if let Err(e) = validate(&password()) {
             password_error.set(Some(e.to_string()))
-        } else if password().as_str() != confirm_password().as_str() {
+        } else if password().as_str() != confirm_password().as_str()
+            // Mid-typing the confirmation can't match yet; judge it once it
+            // is as long as the password, or on submit.
+            && (submit_attempted() || confirm_password().chars().count() >= password().chars().count())
+        {
             password_error.set(Some("Passwords do not match".to_string()));
         } else {
             password_error.set(None);
@@ -95,14 +97,20 @@ pub fn Register() -> Element {
         record_anonymous_event(auth_client, AnonymousEventKind::RegisterSubmitted);
 
         let email = email().trim().to_string();
-        let request = HttpRegisterUser::new(&username(), &email, &password());
+        let username = username();
+        let request = HttpRegisterUser::new(&username, &email, &password());
         spawn(async move {
-            match auth_client().register(request).await {
-                Ok(new_session) => {
-                    new_session.infallible_save();
-                    session.set(Some(new_session));
+            // The same answer whether or not the email already has an
+            // account, so this screen can't tell either and says the same.
+            match auth_client().register_verify_first(request).await {
+                Ok(_) => {
                     is_loading.set(false);
-                    navigator.push(Router::Home {});
+                    login_prefill.set(Some(username));
+                    toast.info(
+                        "Check your inbox to verify your email, then log in".to_string(),
+                        ToastOptions::default().duration(TOAST_NORMAL),
+                    );
+                    navigator.go_back();
                 }
                 Err(e) => {
                     tracing::warn!("register failed: {e}");

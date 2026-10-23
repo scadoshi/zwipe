@@ -80,20 +80,19 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
                     })
                     .await
                 {
-                    let new_email = updated_user.email.clone();
-                    // Take the whole user, not only the address: the server
-                    // clears `email_verified_at` on an email change, and
-                    // copying only the email left the session claiming the
-                    // account was still verified while it sat on the
-                    // unverified deck and card limits. Re-read rather than
-                    // mutate the captured session (the facade consumed it).
+                    // The typed address, not the response's: the response
+                    // reads the same whether or not the address is free.
+                    let requested = new_email.peek().clone();
+                    // Take the whole user so `pending_email` shows on
+                    // Profile. Re-read rather than mutate the captured
+                    // session (the facade consumed it).
                     let current = session.peek().clone();
                     if let Some(mut current) = current {
                         current.user = updated_user;
                         session.set(Some(current));
                     }
                     toast.success(
-                        format!("Email changed to {new_email}. Verify it to restore full access."),
+                        format!("Check {requested} for a link to confirm the change"),
                         ToastOptions::default().duration(TOAST_NORMAL),
                     );
                     clear_inputs();

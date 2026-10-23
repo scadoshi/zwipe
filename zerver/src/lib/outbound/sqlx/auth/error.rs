@@ -7,6 +7,7 @@ use zwipe_core::domain::user::username::InvalidUsername;
 use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
 use crate::domain::auth::requests::change_email::ChangeEmailError;
 use crate::domain::auth::requests::change_username::ChangeUsernameError;
+use crate::domain::auth::requests::confirm_email_change::ConfirmEmailChangeError;
 use crate::domain::auth::requests::create_session::CreateSessionError;
 use crate::domain::auth::requests::delete_user::DeleteUserError;
 use crate::domain::auth::requests::enforce_session_maximum::EnforceSessionMaximumError;
@@ -49,6 +50,11 @@ impl From<IntoUserError> for AuthenticateUserError {
 impl From<sqlx::Error> for RegisterUserError {
     fn from(value: sqlx::Error) -> Self {
         match value {
+            sqlx::Error::Database(ref db)
+                if db.is_unique_violation() && db.constraint() == Some("users_email_key") =>
+            {
+                Self::DuplicateEmail
+            }
             e if e.is_unique_constraint_violation() => Self::Duplicate,
             e => Self::Database(e.into()),
         }
@@ -91,6 +97,18 @@ impl From<sqlx::Error> for ChangeEmailError {
 }
 
 impl From<IntoUserError> for ChangeEmailError {
+    fn from(value: IntoUserError) -> Self {
+        Self::UserFromDb(value.into())
+    }
+}
+
+impl From<sqlx::Error> for ConfirmEmailChangeError {
+    fn from(value: sqlx::Error) -> Self {
+        Self::Database(value.into())
+    }
+}
+
+impl From<IntoUserError> for ConfirmEmailChangeError {
     fn from(value: IntoUserError) -> Self {
         Self::UserFromDb(value.into())
     }

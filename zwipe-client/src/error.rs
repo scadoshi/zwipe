@@ -30,6 +30,9 @@ pub enum ClientError {
     /// 422: the request was understood but rejected.
     #[error("{0}")]
     UnprocessableEntity(String),
+    /// 409: the request clashes with the current state.
+    #[error("{0}")]
+    Conflict(String),
     /// 429: rate limited.
     #[error("{0}")]
     TooManyRequests(String),
@@ -85,6 +88,7 @@ impl From<(StatusCode, String)> for ClientError {
             StatusCode::NOT_FOUND => Self::NotFound(message),
             StatusCode::UNPROCESSABLE_ENTITY => Self::UnprocessableEntity(message),
             StatusCode::TOO_MANY_REQUESTS => Self::TooManyRequests(message),
+            StatusCode::CONFLICT => Self::Conflict(message),
             _ => Self::InternalServerError(message),
         }
     }
@@ -103,6 +107,7 @@ mod tests {
             (StatusCode::NOT_FOUND, "not_found"),
             (StatusCode::UNPROCESSABLE_ENTITY, "unprocessable"),
             (StatusCode::TOO_MANY_REQUESTS, "too_many"),
+            (StatusCode::CONFLICT, "conflict"),
             (StatusCode::INTERNAL_SERVER_ERROR, "internal"),
             (StatusCode::BAD_GATEWAY, "internal"), // unknown statuses fold to 500
         ];
@@ -114,6 +119,7 @@ mod tests {
                 ClientError::NotFound(_) => "not_found",
                 ClientError::UnprocessableEntity(_) => "unprocessable",
                 ClientError::TooManyRequests(_) => "too_many",
+                ClientError::Conflict(_) => "conflict",
                 ClientError::InternalServerError(_) => "internal",
                 other => panic!("expected a status variant for {status}, got {other:?}"),
             };

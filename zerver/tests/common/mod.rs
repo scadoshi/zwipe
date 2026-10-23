@@ -57,6 +57,32 @@ impl FakeEmailSender {
             .map(|e| e.html_body.clone())
     }
 
+    /// Waits for at least `count` captured emails, for sends that run in the
+    /// background after the response. Panics after two seconds.
+    pub async fn wait_for(&self, count: usize) {
+        for _ in 0..200 {
+            if self.count() >= count {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+        assert!(
+            self.count() >= count,
+            "expected {count} emails, got {}",
+            self.count()
+        );
+    }
+
+    /// Number of emails captured so far.
+    pub fn count(&self) -> usize {
+        self.sent.lock().unwrap().len()
+    }
+
+    /// Recipient of the most recently sent email.
+    pub fn last_to(&self) -> Option<String> {
+        self.sent.lock().unwrap().last().map(|e| e.to.clone())
+    }
+
     /// Extracts the raw token from a `/{segment}/{token}` link in the most
     /// recent email body — the verify/reset flows embed the raw token there
     /// (`{web_base_url}/verify/{raw}`, `.../reset/{raw}`), exactly as a user

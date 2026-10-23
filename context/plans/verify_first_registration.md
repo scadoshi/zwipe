@@ -1,6 +1,10 @@
 # Verify-first registration
 
-**Status: PLANNED 2026-10-22, not started. Companion: the change-email half is on the local email-enumeration branch.**
+**Status: Phase 1 deployed 2026-10-22 with the change-email half (PR #31) and tested live, Phase 2 submitted as 1.13.0 (iOS build 106, Android vc68) the same day. Next is Phase 3, the floor at 1.13.0. Companion: `confirm_first_email_change.md` (the change-email half).**
+
+**As built:** on the `verify_first` path a taken username answers 409 "username already taken"; only clients that know 409 send the flag. The old path keeps its 422 until PR #32 (`duplicate-409`) merges with Phase 4. The zite verify page copy is unchanged: "You can close this page and go back to the app" already fits, since login works unverified. The client sends the user back to the Login screen it came from, with the username filled in, and toasts "Check your inbox to verify your email, then log in".
+
+**Owner decisions, 2026-10-22, after the design below was written:** login stays open to unverified accounts (the recommendation under "What an unverified account can do" is accepted; a login gate was considered and dropped as stricter than a TCG app needs). The `account_exists` notice stays, because on register the person typing a taken address is often its owner. Every email on both branches is spawned off the request path so the response never waits on Resend; that replaces the "same work shape" parity argument below as the timing defense.
 
 **One sentence:** `POST /api/auth/register` stops answering with a session, so a request for an address that already has an account can answer exactly like a request for a new one, and only the inbox learns which it was.
 
@@ -24,7 +28,7 @@ The wire change needs a client floor. Other in-flight work needs one too (`sort_
 - **Site.** zite's `Verify` page (`zite/src/pages/verify.rs`, route `/verify/:token` in `zite/src/main.rs`) posts the token and says "You can close this page and go back to the app"; on failure it points at Resend on Profile. zite holds no session and deploys with the server on every push to main.
 - **Tests.** `zerver/tests/common/mod.rs` has `FakeEmailSender` (`last_body`, `last_token("verify")`), `TestApp::register` (asserts 201, returns the access token and user id; most suites build on it), `TestApp::verify_email`. Flows in `zerver/tests/auth_flows.rs`, token edges in `auth_edges.rs` (`verify_email_via_captured_token`), `register_stamps_client_version` in `auth_session_version.rs`, and `user_flows.rs` for the profile changes. `route_coverage.rs` checks the path table in `paths.rs`.
 - **Floor.** `MIN_CLIENT_VERSION` in `zerver/src/lib/config.rs` (default `0.0.0`, refuses startup if malformed) is served by `GET /api/client/min-version` and enforced only by the app's own "Update required" screen (`session_upkeep.rs`). The server never rejects a request for being below the floor. `client_version` reaches the server as a body field on login, register and refresh (`HttpAuthenticateUser`, `HttpRegisterUser`, `HttpRefreshSession`), not as a header.
-- **Companion.** The `email-enumeration` worktree (`.claude/worktrees/enumeration`, uncommitted as of 2026-10-22) makes `change_email` return `ChangeEmailOutcome::{Changed, Taken}`, does the same work on both arms, and mails the address's owner `email_templates/email_claim_attempted.html` on the taken arm. This plan copies that shape and its template style; it does not touch that branch.
+- **Companion.** The `email-enumeration` branch (`5d0bbb20`) made `change_email` return `ChangeEmailOutcome::{Changed, Taken}` and mailed the owner `email_claim_attempted.html`. Testing showed the response body still differed, so it is being replaced by `confirm_first_email_change.md`, which drops the owner email. This plan borrows the outcome-enum shape and the template style only.
 
 ## Design
 
@@ -44,7 +48,7 @@ Branches, in `AuthService`, as `RegisterOutcome::{Created(User), Taken}` the way
 - **New email.** `INSERT INTO users` without a refresh token (the transaction in `create_user_and_refresh_token` loses its second half; see Phase 1 for how the two paths coexist), then `send_verification_email` as today. Metrics as today, on the handler side, from `Created(user)`.
 - **Taken email.** The insert's unique violation (`DuplicateEmail`, split from today's `Duplicate` in `zerver/src/lib/outbound/sqlx/auth/error.rs` by constraint name). Nothing is written. The existing owner is sent `email_templates/account_exists.html`, new, in the same style as `email_claim_attempted.html` on the companion branch: "Someone tried to create a Zwipe account with this email address. Nothing changed: you already have one. Log in with the app; if you have forgotten the password, Forgot password on the log in screen resets it. If this wasn't you, no action is needed," plus the Discord and `{support_email}` footer. Subject "You already have a Zwipe account". Sent with `send_change_notification` (fire-and-forget, logged on failure). The email is sent to the address as given, since the unique index just confirmed it is on a row.
 
-Same work shape on both branches: Argon2 hash (already done in the handler before the service runs), one insert attempt, one email through Resend. The token write on the created branch is the only extra query, which is noise next to the Resend round trip; this is the same parity the companion branch settles for, and the per-IP limit (five per hour) is what actually blunts timing probes.
+Timing: both branches spawn their email and answer without waiting on Resend, so the round trip that would otherwise separate them never reaches the response. What's left is the Argon2 hash (done in the handler before the service runs), one insert attempt, and the token write on the created branch, which is one small query. The per-IP limit (five per hour) blunts what remains.
 
 Notice cooldown: one `account_exists` notice per address per hour, kept in memory beside `LoginLockout` (`zerver/src/lib/domain/auth/lockout.rs` is the pattern: a keyed map with expiry, no migration). Without it, five IPs can send a victim five emails an hour each. The cooldown check runs on the taken branch only and is cheap. The handler still answers 202 when the notice is suppressed.
 
@@ -132,7 +136,7 @@ Manual check on the app, against the dev server (debug builds log the verificati
 3. Register with an address that already has an account and any password: identical screen and toast; the server log shows `register_existing_email`; the inbox (or the fake sender in a test) gets the account-exists notice and nothing else.
 4. Register with a taken username: the inline 422 as today.
 
-Record the version here when it is cut: **client sends `verify_first` from ___**.
+Record the version here when it is cut: **client sends `verify_first` from 1.13.0** (iOS build 106, Android vc68, submitted 2026-10-22).
 
 ## Phase 3: raise the floor and wait
 

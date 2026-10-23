@@ -63,6 +63,11 @@ pub enum ApiError {
     Forbidden(String),
     #[error("{0}")]
     TooManyRequests(String),
+    /// The request clashes with the current state, such as an address another
+    /// account took. Only for routes no shipped client called before 409
+    /// existed: an old client folds an unknown status into a generic error.
+    #[error("{0}")]
+    Conflict(String),
 }
 
 impl From<anyhow::Error> for ApiError {
@@ -95,6 +100,7 @@ impl IntoResponse for ApiError {
             ApiError::NotFound(message) => (StatusCode::NOT_FOUND, message),
             ApiError::Forbidden(message) => (StatusCode::FORBIDDEN, message),
             ApiError::TooManyRequests(message) => (StatusCode::TOO_MANY_REQUESTS, message),
+            ApiError::Conflict(message) => (StatusCode::CONFLICT, message),
         };
         if status != StatusCode::INTERNAL_SERVER_ERROR {
             tracing::warn!("{} {}", status.as_u16(), message);
@@ -392,6 +398,10 @@ mod tests {
             (
                 ApiError::TooManyRequests("slow down".into()),
                 StatusCode::TOO_MANY_REQUESTS,
+            ),
+            (
+                ApiError::Conflict("address already in use".into()),
+                StatusCode::CONFLICT,
             ),
         ];
         for (error, expected_status) in cases {

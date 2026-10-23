@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO email_change_requests (user_id, new_email, token_hash, expires_at)\n               VALUES ($1, $2, $3, $4)\n               ON CONFLICT (user_id) DO UPDATE\n               SET new_email = EXCLUDED.new_email,\n                   token_hash = EXCLUDED.token_hash,\n                   expires_at = EXCLUDED.expires_at,\n                   created_at = NOW()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fc5bff80936903c5279573857a09eab8711e8c53ed043de2edb3fabccb31eecc"
+}

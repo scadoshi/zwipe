@@ -8,6 +8,8 @@ pub mod change_email;
 pub mod change_password;
 /// Username change handler.
 pub mod change_username;
+/// Pending email change confirmation handler.
+pub mod confirm_email_change;
 /// Account deletion handler.
 pub mod delete_user;
 /// Session refresh handler.

@@ -28,6 +28,7 @@ use crate::inbound::components::telemetry::flush_loop::{
     spawn_usage_flusher, spawn_visibility_flusher,
 };
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
+use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::deck::card::components::action_history::AddAction;
 use crate::inbound::screens::deck::card::components::add_stack_cache::use_add_stack_cache;
 use crate::inbound::screens::deck::card::components::card_stack::use_card_stack;
@@ -125,6 +126,10 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // its build-time config, which is what lets a debug build point at prod.
     let client = use_signal(|| ZwipeClient::new(Config::from_env().backend_url));
     use_context_provider(|| client);
+
+    // Registration hands its email to the login form through this.
+    let login_prefill = use_signal(|| None);
+    use_context_provider(|| LoginPrefill(login_prefill));
 
     // Back-aware overlay stack: the OS back gesture closes the top open overlay
     // before falling through to the router (see components::OverlayBackStack).

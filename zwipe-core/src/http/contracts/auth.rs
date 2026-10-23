@@ -38,8 +38,8 @@ impl HttpAuthenticateUser {
 }
 
 /// Registration request body. `platform` and `client_version` (additive,
-/// `#[serde(default)]`) are recorded on the auto-login session created by
-/// registration.
+/// `#[serde(default)]`) are recorded on the auto-login session that the old,
+/// non-`verify_first` path creates.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpRegisterUser {
     /// The username to register.
@@ -54,6 +54,12 @@ pub struct HttpRegisterUser {
     /// The app version making the request, if it sends one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub client_version: Option<String>,
+    /// Creates the account without a session and answers the same whether or
+    /// not the email already has an account. Absent means the old behavior,
+    /// a session straight away, which is what clients sent before the field
+    /// existed.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub verify_first: bool,
 }
 
 impl HttpRegisterUser {
@@ -65,8 +71,26 @@ impl HttpRegisterUser {
             password: Secret::new(password),
             platform: None,
             client_version: None,
+            verify_first: false,
         }
     }
+}
+
+/// What a `verify_first` registration did, as far as the caller is told.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RegistrationStatus {
+    /// An email went to the address: a verification link if it was new, a
+    /// note that an account already exists if it wasn't.
+    VerificationSent,
+}
+
+/// Response body for a `verify_first` registration. Identical for a new
+/// address and a taken one.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub struct HttpRegistrationAccepted {
+    /// What happened.
+    pub status: RegistrationStatus,
 }
 
 /// Token refresh request body.
@@ -154,14 +178,20 @@ pub struct HttpChangeEmail {
     pub email: String,
     /// The account password, for re-verification.
     pub password: Secret,
+    /// Holds the address as pending until a link sent to it is clicked,
+    /// instead of switching to it now. Absent means switch now, which is
+    /// what clients sent before the field existed.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub confirm_first: bool,
 }
 
 impl HttpChangeEmail {
-    /// Creates a new email change request.
+    /// Creates a confirm-first email change request.
     pub fn new(email: &str, password: &str) -> Self {
         Self {
             email: email.to_string(),
             password: Secret::new(password),
+            confirm_first: true,
         }
     }
 }
@@ -177,6 +207,13 @@ pub struct HttpDeleteUser {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpVerifyEmail {
     /// The verification token from the email link.
+    pub token: String,
+}
+
+/// Email change confirmation request body.
+#[derive(Debug, Deserialize, Serialize)]
+pub struct HttpConfirmEmailChange {
+    /// The token from the confirmation link.
     pub token: String,
 }
 
@@ -285,6 +322,24 @@ mod tests {
         let json = r#"{"username":"alice","email":"a@b.co","password":"pw"}"#;
         let req: HttpRegisterUser = serde_json::from_str(json).unwrap();
         assert_eq!(req.client_version, None);
+        assert!(!req.verify_first, "absent means the old auto-login path");
+    }
+
+    #[test]
+    fn register_omits_verify_first_when_false() {
+        let wire = serde_json::to_string(&HttpRegisterUser::new("alice", "a@b.co", "pw")).unwrap();
+        assert!(!wire.contains("verify_first"), "wire: {wire}");
+    }
+
+    #[test]
+    fn registration_accepted_wire_shape() {
+        let body = HttpRegistrationAccepted {
+            status: RegistrationStatus::VerificationSent,
+        };
+        assert_eq!(
+            serde_json::to_string(&body).unwrap(),
+            r#"{"status":"verification_sent"}"#
+        );
     }
 
     #[test]

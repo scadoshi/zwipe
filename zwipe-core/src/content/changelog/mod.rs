@@ -31,6 +31,15 @@ pub const UPCOMING: &[Release] = &[];
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
     Release {
+        version: "1.13.0",
+        date: "Oct 22, 2026",
+        entries: &[
+            "Registering sends a verification email and takes you to log in",
+            "Changing your email takes effect once you confirm it from the new address",
+            "Passwords do not match waits until you finish typing the confirmation",
+        ],
+    },
+    Release {
         version: "1.12.2",
         date: "Oct 21, 2026",
         entries: &[

@@ -8,13 +8,15 @@ pub mod helpers;
 pub mod models;
 
 use chrono::{DateTime, Utc};
-use sqlx::{query, query_as, query_scalar};
+use sqlx::{Acquire, query, query_as, query_scalar};
 use uuid::Uuid;
+use zwipe_core::domain::Email;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::domain::auth::models::refresh_token::{
     REFRESH_ABSOLUTE_LIFESPAN, RefreshToken, Sha256Hash,
 };
 use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::username::Username;
 
 use crate::domain::auth::models::UserWithPasswordHash;
 use crate::domain::auth::models::password::HashedPassword;
@@ -23,6 +25,9 @@ use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, Authent
 use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
 use crate::domain::auth::requests::change_password::{ChangePassword, ChangePasswordError};
 use crate::domain::auth::requests::change_username::{ChangeUsername, ChangeUsernameError};
+use crate::domain::auth::requests::confirm_email_change::{
+    ConfirmEmailChangeError, ConfirmedEmailChange,
+};
 use crate::domain::auth::requests::create_session::CreateSessionError;
 use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError};
 use crate::domain::auth::requests::refresh_session::{RefreshSession, RefreshSessionError};
@@ -32,7 +37,7 @@ use crate::domain::auth::requests::revoke_sessions::RevokeSessionsError;
 use crate::domain::auth::requests::verify_email::VerifyEmailError;
 use crate::outbound::sqlx::auth::helpers::{RefreshFamily, TxHelper};
 use crate::outbound::sqlx::auth::models::{DatabaseRefreshToken, DatabaseUserWithPasswordHash};
-use crate::outbound::sqlx::postgres::Postgres;
+use crate::outbound::sqlx::postgres::{IsConstraintViolation, Postgres};
 use crate::outbound::sqlx::user::models::DatabaseUser;
 
 impl AuthRepository for Postgres {
@@ -63,6 +68,28 @@ impl AuthRepository for Postgres {
         tx.commit().await?;
 
         Ok((user, refresh_token))
+    }
+
+    async fn create_user(&self, request: &RegisterUser) -> Result<User, RegisterUserError> {
+        let database_user = query_as!(
+            DatabaseUser,
+            "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email, email_verified_at, hints_shown",
+            request.username.to_string(),
+            request.email.to_string(),
+            request.password_hash.to_string()
+        ).fetch_one(&self.pool).await?;
+
+        Ok(database_user.try_into()?)
+    }
+
+    async fn username_exists(&self, username: &Username) -> Result<bool, RegisterUserError> {
+        let exists = query_scalar!(
+            r#"SELECT EXISTS(SELECT 1 FROM users WHERE username = $1) AS "exists!""#,
+            username.to_string()
+        )
+        .fetch_one(&self.pool)
+        .await?;
+        Ok(exists)
     }
 
     async fn create_refresh_token(
@@ -164,6 +191,87 @@ impl AuthRepository for Postgres {
         tx.commit().await?;
 
         Ok(user)
+    }
+
+    async fn store_email_change_request(
+        &self,
+        user_id: Uuid,
+        new_email: &Email,
+        token_hash: String,
+        expires_at: DateTime<Utc>,
+    ) -> Result<(), ChangeEmailError> {
+        query!(
+            r#"INSERT INTO email_change_requests (user_id, new_email, token_hash, expires_at)
+               VALUES ($1, $2, $3, $4)
+               ON CONFLICT (user_id) DO UPDATE
+               SET new_email = EXCLUDED.new_email,
+                   token_hash = EXCLUDED.token_hash,
+                   expires_at = EXCLUDED.expires_at,
+                   created_at = NOW()"#,
+            user_id,
+            new_email.as_ref(),
+            token_hash,
+            expires_at
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| ChangeEmailError::Database(e.into()))?;
+        Ok(())
+    }
+
+    async fn use_email_change_request(
+        &self,
+        token_hash: &str,
+    ) -> Result<ConfirmedEmailChange, ConfirmEmailChangeError> {
+        let mut tx = self.pool.begin().await?;
+
+        let request = query!(
+            "DELETE FROM email_change_requests WHERE token_hash = $1 AND expires_at > NOW() RETURNING user_id, new_email",
+            token_hash
+        )
+        .fetch_optional(&mut *tx)
+        .await?
+        .ok_or(ConfirmEmailChangeError::InvalidToken)?;
+
+        let old_email: String = query_scalar!(
+            "SELECT email FROM users WHERE id = $1 FOR UPDATE",
+            request.user_id
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        // A savepoint, because a unique violation aborts the transaction it
+        // runs in, and the deletion above must commit either way so the link
+        // stays dead.
+        let mut savepoint = Acquire::begin(&mut *tx).await?;
+        let switched = query_as!(
+            DatabaseUser,
+            "UPDATE users SET email = $1, email_verified_at = NOW() WHERE id = $2 RETURNING id, username, email, email_verified_at, hints_shown",
+            request.new_email,
+            request.user_id
+        )
+        .fetch_one(&mut *savepoint)
+        .await;
+
+        let database_user = match switched {
+            Ok(user) => {
+                savepoint.commit().await?;
+                user
+            }
+            Err(e) if e.is_unique_constraint_violation() => {
+                savepoint.rollback().await?;
+                tx.commit().await?;
+                return Err(ConfirmEmailChangeError::AddressTaken);
+            }
+            Err(e) => return Err(e.into()),
+        };
+
+        tx.commit().await?;
+
+        let user: User = database_user.try_into()?;
+        let old_email =
+            Email::new(&old_email).map_err(|e| ConfirmEmailChangeError::UserFromDb(e.into()))?;
+        Ok(ConfirmedEmailChange { user, old_email })
     }
 
     /// Rotates a refresh token inside one transaction: checks ownership and
