@@ -1,11 +1,38 @@
 use components::{Changelog as ChangelogContent, Panel};
+use dioxus::document::eval;
 use dioxus::prelude::*;
 
-use crate::components::PageMeta;
+use crate::components::{PageMeta, sleep_ms};
 use crate::{Footer, Nav};
+
+/// Reads the URL fragment on the client, as text without its `#`.
+const READ_HASH_JS: &str = "dioxus.send(decodeURIComponent(window.location.hash.slice(1)))";
 
 #[component]
 pub fn Changelog() -> Element {
+    // The release the URL fragment names (`/changelog#v1-12-1`). Read after
+    // hydration, since the prerendered page cannot know it; the changelog then
+    // selects that release's chips and the card is scrolled into view.
+    let mut anchor = use_signal(|| None::<String>);
+    use_effect(move || {
+        spawn(async move {
+            let mut read = eval(READ_HASH_JS);
+            let Ok(fragment) = read.recv::<String>().await else {
+                return;
+            };
+            if fragment.is_empty() {
+                return;
+            }
+            anchor.set(Some(fragment.clone()));
+            // One frame for the selected month's cards to mount.
+            sleep_ms(50).await;
+            let _ = eval(&format!(
+                "document.getElementById({fragment:?})?.scrollIntoView({{ block: 'start' }});"
+            ))
+            .await;
+        });
+    });
+
     rsx! {
         PageMeta {
             title: "Changelog",
@@ -19,7 +46,7 @@ pub fn Changelog() -> Element {
                     p { class: "tagline", "Every release, newest first." }
                 }
             }
-            ChangelogContent {}
+            ChangelogContent { anchor: anchor(), link_versions: true }
         }
         Footer {}
     }
