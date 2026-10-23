@@ -81,15 +81,16 @@ cd ~/Developer/zwipe/zwiper
 dx serve --platform android        # builds, installs, launches, hot-reloads on edits
 ```
 
-Fastest for iterating on UI. Caveat: it sometimes reuses a stale install instead of reinstalling; if changes don't appear, fall back to the manual loop.
+Fastest for iterating on UI, when it works. It installs dx's stock `WryActivity.kt` without the patches, so with the vendored tao the app dies on launch with `UnsatisfiedLinkError` (see Troubleshooting). Until the vendored tao goes, use the manual loop. It also sometimes reuses a stale install instead of reinstalling.
 
 ### B. Manual build + install: bulletproof
 
-```bash
-cd ~/Developer/zwipe/zwiper
-dx build --platform android
+`zcripts/android/debug_apk.sh` runs `dx build --platform android`, applies `patch_bundle.sh` to the debug project and repackages with Gradle. A bare `dx build` APK crashes on launch, so always go through the script.
 
-APK=~/Developer/zwipe/target/dx/zwipe/debug/android/app/app/build/outputs/apk/debug/app-debug.apk
+```bash
+cd ~/Developer/zwipe
+APK=$(zcripts/android/debug_apk.sh | tail -1)
+
 adb shell am force-stop com.scadoshi.zwipe                 # <-- kills the old process so new code loads
 adb install -r "$APK"                                      # -r = keep app data; drop it for a clean install
 adb shell am start -n com.scadoshi.zwipe/dev.dioxus.main.MainActivity
@@ -130,6 +131,8 @@ adb shell dumpsys package com.scadoshi.zwipe | grep -E 'versionName|versionCode'
 | `INSTALL_FAILED_INSUFFICIENT_STORAGE` / install returns blank | `/data` is full; the 117 MB debug APK extracts a ~425 MB `.so` | **Wipe the emulator** (§1). `df -h /data` to confirm. |
 | Rebuilt but app shows old code; **PID unchanged** | `install -r` + `am start` resumed the running process | `adb shell am force-stop …` before `am start` (or `adb uninstall` + clean `adb install`) |
 | Gradle aborts in ~12s (`JdkImageTransform` / `core-for-system-modules`) | Wrong JDK (system default 26) | Set `JAVA_HOME` to the Android Studio JBR 21 (§0) |
+| App closes on launch; crash buffer says `UnsatisfiedLinkError: No implementation found for ... WryActivity.create` | APK came from a bare `dx build` or `dx serve`: the stock activity calls tao 0.34's native names, the vendored tao 0.37 exports others | Build with `zcripts/android/debug_apk.sh` (§2B), which runs `wry_activity.sh` and the other patches |
+| `adb shell input text` into a WebView field drops characters (`Test!123` arrives as `Ts!123`) | The WebView misses keystrokes sent in one burst | Send one character per `input text` call with a short sleep between them, and check with the field's Show toggle |
 | Home-screen ASCII logo glyphs garbled | (historical) CDN font lacked block glyphs | Already fixed: full JetBrains Mono is self-hosted/bundled |
 
 ---
