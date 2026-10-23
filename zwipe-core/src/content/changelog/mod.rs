@@ -27,7 +27,7 @@ pub struct Release {
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[Release {
-    version: "1.14.0",
+    version: "1.13.1",
     date: "",
     entries: &["Profile's Pending row shows when the confirmation link expires"],
 }];
