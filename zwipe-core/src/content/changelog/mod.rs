@@ -39,7 +39,7 @@ pub const UPCOMING: &[Release] = &[Release {
     date: None,
     entries: &[
         "Profile's Pending row shows when the confirmation link expires",
-        "The changelog groups releases by month",
+        "The changelog narrows by year, month and version",
     ],
 }];
 

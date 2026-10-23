@@ -903,16 +903,19 @@ i.ms.ms-cost.ms-gp {
 /* Self-contained so it renders identically on the site and in the app: does
    not lean on any host stylesheet's card/bullet rules. */
 
-.changelog-filter {
+/* The chip rows: years, then the picked year's months, then the picked
+   month's versions. */
+.changelog-filters {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 0.5rem;
     margin-bottom: var(--panel-gap);
 }
 
-/* The year row sits close above its months. */
-.changelog-filter.changelog-years {
-    margin-bottom: 0.5rem;
+.changelog-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 .changelog-filter .chip {
