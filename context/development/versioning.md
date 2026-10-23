@@ -1,9 +1,12 @@
 # Versioning
 
-Owner convention, decided 2026-08-11 (previously vibes):
+Owner convention, decided 2026-08-11 (previously vibes), reworded 2026-10-23:
 
-- Minor bump (1.7 → 1.8): the release carries ANY feature. New capability, new screen element, new behavior a user can see, however small.
-- Patch bump (1.8.0 → 1.8.1): fixes, UI tweaks, copy, polish only. A patch number now tells users "nothing new, just better" (the 1.7.4 crash-fix train is the model).
+The goal is a balanced changelog. zite's Changelog page has one tab per minor line (1.13, 1.12, ...), so each tab should stay short and roughly as heavy as its neighbors.
+
+- Minor bump (1.7 → 1.8): a real new capability (a new screen, flow or behavior), or the current minor line's tab is getting long and a fresh one reads better.
+- Patch bump (1.8.0 → 1.8.1): fixes, polish, copy, and small additions to things that already exist (an extra detail on a row, a count on a chip). 1.13.1's link expiry on Profile's Pending row is the model.
+- When in doubt, pick whichever keeps the tabs more balanced.
 - Major stays reserved for a product-shape change (owner's call when it comes).
 
 Why: release pages group by minor line, and 1.7.x accumulated seven feature trains before this was written down: heavy pages, and a patch digit that had stopped meaning anything.
