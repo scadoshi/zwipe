@@ -15,7 +15,9 @@
 //!
 //! The chips narrow the list as a tree. The first row is Latest and then each
 //! year, newest first; picking a year adds a row of its months, and picking a
-//! month adds a row of its versions. Latest, the default, shows the upcoming
+//! month adds a row of its minor versions (`1.12` for 1.12.0 to 1.12.2), so
+//! the row stays short however many patches ship. Picking a minor shows its
+//! releases in that month. Latest, the default, shows the upcoming
 //! release and the newest shipped one. The upcoming release counts in the
 //! newest shipped month. The day comes from [`HttpRelease::released_on`], which
 //! also reads the display string an older server sends; a release whose day
@@ -23,8 +25,8 @@
 //!
 //! Every card carries an id from its version ([`anchor_id`], `v1-12-1` for
 //! 1.12.1). zite links each version heading to it and passes the URL fragment
-//! in as `anchor`, which selects the chips down to that release; zite then
-//! scrolls the card into view.
+//! in as `anchor`, which selects the chips down to that release's minor; zite
+//! then scrolls the card into view.
 
 use dioxus::prelude::*;
 use zwipe_core::http::contracts::changelog::{HttpChangelog, HttpRelease};
@@ -71,22 +73,22 @@ enum Selection {
     Year(String),
     /// One month of a year.
     Month { year: String, month: String },
-    /// One release.
-    Version {
+    /// One minor version's releases in a month, the minor as `"1.12"`.
+    Minor {
         year: String,
         month: String,
-        version: String,
+        minor: String,
     },
 }
 
 impl Selection {
-    /// One level up: a version goes back to its month, a month to its year,
+    /// One level up: a minor goes back to its month, a month to its year,
     /// a year to Latest.
     fn parent(&self) -> Self {
         match self {
             Self::Latest | Self::Year(_) => Self::Latest,
             Self::Month { year, .. } => Self::Year(year.clone()),
-            Self::Version { year, month, .. } => Self::Month {
+            Self::Minor { year, month, .. } => Self::Month {
                 year: year.clone(),
                 month: month.clone(),
             },
@@ -96,23 +98,32 @@ impl Selection {
     fn year(&self) -> Option<&str> {
         match self {
             Self::Latest => None,
-            Self::Year(year) | Self::Month { year, .. } | Self::Version { year, .. } => Some(year),
+            Self::Year(year) | Self::Month { year, .. } | Self::Minor { year, .. } => Some(year),
         }
     }
 
     fn month(&self) -> Option<&str> {
         match self {
-            Self::Month { month, .. } | Self::Version { month, .. } => Some(month),
+            Self::Month { month, .. } | Self::Minor { month, .. } => Some(month),
             _ => None,
         }
     }
 
-    fn version(&self) -> Option<&str> {
+    fn minor(&self) -> Option<&str> {
         match self {
-            Self::Version { version, .. } => Some(version),
+            Self::Minor { minor, .. } => Some(minor),
             _ => None,
         }
     }
+}
+
+/// A version's major and minor, `"1.12"` for 1.12.1: the label of its chip
+/// in the last row. A version with no second dot is its own minor.
+fn minor_of(version: &str) -> &str {
+    version
+        .match_indices('.')
+        .nth(1)
+        .map_or(version, |(dot, _)| &version[..dot])
 }
 
 /// One chip: its label, whether it lights up, and what clicking it selects.
@@ -165,7 +176,7 @@ fn distinct<T: Clone + PartialEq>(items: impl Iterator<Item = T>) -> Vec<T> {
 
 /// The chip rows for a selection: Latest and the years (Earlier last, when
 /// any release landed there), then the selected year's months, then the
-/// selected month's versions.
+/// selected month's minor versions.
 fn chip_rows(listed: &[(&HttpRelease, Place)], selection: &Selection) -> Vec<Vec<Chip>> {
     let chip = |label: String, own: Selection, lit: bool| Chip {
         label,
@@ -228,18 +239,23 @@ fn chip_rows(listed: &[(&HttpRelease, Place)], selection: &Selection) -> Vec<Vec
     let Some(month) = selection.month() else {
         return rows;
     };
-    rows.push(
+    let minors = distinct(
         listed
             .iter()
             .filter(|(_, place)| place.month == month)
-            .map(|(release, _)| {
-                let lit = selection.version() == Some(release.version.as_str());
-                let own = Selection::Version {
+            .map(|(release, _)| minor_of(&release.version)),
+    );
+    rows.push(
+        minors
+            .into_iter()
+            .map(|minor| {
+                let lit = selection.minor() == Some(minor);
+                let own = Selection::Minor {
                     year: year.to_string(),
                     month: month.to_string(),
-                    version: release.version.clone(),
+                    minor: minor.to_string(),
                 };
-                chip(release.version.clone(), own, lit)
+                chip(minor.to_string(), own, lit)
             })
             .collect(),
     );
@@ -256,7 +272,9 @@ fn visible(listed: &[(&HttpRelease, Place)], upcoming: usize, selection: &Select
             Selection::Latest => i <= upcoming,
             Selection::Year(year) => place.year == *year,
             Selection::Month { month, .. } => place.month == *month,
-            Selection::Version { version, .. } => release.version == *version,
+            Selection::Minor { month, minor, .. } => {
+                place.month == *month && minor_of(&release.version) == minor
+            }
         })
         .collect()
 }
@@ -267,17 +285,18 @@ pub fn anchor_id(version: &str) -> String {
     format!("v{}", version.replace('.', "-"))
 }
 
-/// The selection down to the release `fragment` names. Takes the fragment
+/// The selection down to the minor of the release `fragment` names, in that
+/// release's month. Takes the fragment
 /// with or without its `#`. `None` when no release has that anchor.
 fn anchor_selection(fragment: &str, listed: &[(&HttpRelease, Place)]) -> Option<Selection> {
     let fragment = fragment.strip_prefix('#').unwrap_or(fragment);
     listed
         .iter()
         .find(|(release, _)| anchor_id(&release.version) == fragment)
-        .map(|(release, place)| Selection::Version {
+        .map(|(release, place)| Selection::Minor {
             year: place.year.clone(),
             month: place.month.clone(),
-            version: release.version.clone(),
+            minor: minor_of(&release.version).to_string(),
         })
 }
 
@@ -426,11 +445,11 @@ mod tests {
         }
     }
 
-    fn version(year: &str, month: &str, version: &str) -> Selection {
-        Selection::Version {
+    fn minor(year: &str, month: &str, minor: &str) -> Selection {
+        Selection::Minor {
             year: year.to_string(),
             month: month.to_string(),
-            version: version.to_string(),
+            minor: minor.to_string(),
         }
     }
 
@@ -497,33 +516,53 @@ mod tests {
         let rows = rows(&data, &month("2027", "2027-01"));
         assert_eq!(rows.len(), 3);
         assert_eq!(labels(&rows[1]), ["Jan"]);
-        assert_eq!(labels(&rows[2]), ["1.16.0", "1.15.1", "1.15.0"]);
+        assert_eq!(labels(&rows[2]), ["1.16", "1.15"]);
         assert_eq!(lit(&rows), ["2027", "Jan"]);
     }
 
     #[test]
-    fn a_month_adds_its_versions_and_shows_the_month() {
+    fn a_month_adds_its_minors_and_shows_the_month() {
         let data = two_years();
         let selection = month("2026", "2026-12");
         let rows = rows(&data, &selection);
-        assert_eq!(labels(&rows[2]), ["1.14.2", "1.14.1"]);
+        assert_eq!(labels(&rows[2]), ["1.14"]);
         assert_eq!(shown(&data, &selection), ["1.14.2", "1.14.1"]);
     }
 
     #[test]
-    fn a_version_shows_one_card() {
+    fn a_minor_shows_its_patches_in_that_month() {
         let data = two_years();
-        let selection = version("2026", "2026-12", "1.14.1");
+        let selection = minor("2026", "2026-12", "1.14");
         let rows = rows(&data, &selection);
         assert_eq!(rows.len(), 3);
-        assert_eq!(lit(&rows), ["2026", "Dec", "1.14.1"]);
-        assert_eq!(shown(&data, &selection), ["1.14.1"]);
+        assert_eq!(lit(&rows), ["2026", "Dec", "1.14"]);
+        assert_eq!(shown(&data, &selection), ["1.14.2", "1.14.1"]);
+        // 1.14.0 shipped in November, so it shows under November's 1.14.
+        assert_eq!(shown(&data, &minor("2026", "2026-11", "1.14")), ["1.14.0"]);
+    }
+
+    #[test]
+    fn minors_are_major_dot_minor() {
+        assert_eq!(minor_of("1.12.1"), "1.12");
+        assert_eq!(minor_of("10.0.12"), "10.0");
+        assert_eq!(minor_of("2.1"), "2.1");
+        assert_eq!(minor_of("3"), "3");
+    }
+
+    #[test]
+    fn the_compiled_in_months_list_each_minor_once() {
+        let data = HttpChangelog::current();
+        let rows = rows(&data, &month("2026", "2026-10"));
+        let minors = labels(&rows[2]);
+        assert_eq!(minors.first(), Some(&"1.14"));
+        assert!(minors.iter().all(|label| label.matches('.').count() == 1));
+        assert_eq!(minors, distinct(minors.iter().copied()));
     }
 
     #[test]
     fn higher_chips_clear_the_levels_below() {
         let data = two_years();
-        let rows = rows(&data, &version("2026", "2026-12", "1.14.1"));
+        let rows = rows(&data, &minor("2026", "2026-12", "1.14"));
         // Latest, the other year, the lit year, the other month.
         assert_eq!(rows[0][0].target, Selection::Latest);
         assert_eq!(rows[0][1].target, year("2027"));
@@ -535,8 +574,8 @@ mod tests {
     #[test]
     fn the_deepest_lit_chip_goes_up_a_level() {
         let data = two_years();
-        let rows_v = rows(&data, &version("2026", "2026-12", "1.14.1"));
-        assert_eq!(rows_v[2][1].target, month("2026", "2026-12"));
+        let rows_v = rows(&data, &minor("2026", "2026-12", "1.14"));
+        assert_eq!(rows_v[2][0].target, month("2026", "2026-12"));
         let rows_m = rows(&data, &month("2026", "2026-12"));
         assert_eq!(rows_m[1][0].target, year("2026"));
         let rows_y = rows(&data, &year("2026"));
@@ -576,21 +615,21 @@ mod tests {
     }
 
     #[test]
-    fn an_anchor_selects_down_to_its_release() {
+    fn an_anchor_selects_down_to_its_minor() {
         let data = two_years();
         let all = listed(&data);
         assert_eq!(
             anchor_selection("#v1-14-1", &all),
-            Some(version("2026", "2026-12", "1.14.1"))
+            Some(minor("2026", "2026-12", "1.14"))
         );
         assert_eq!(
             anchor_selection("v1-16-0", &all),
-            Some(version("2027", "2027-01", "1.16.0"))
+            Some(minor("2027", "2027-01", "1.16"))
         );
         let current = HttpChangelog::current();
         assert_eq!(
             anchor_selection("v1-9-1", &listed(&current)),
-            Some(version("2026", "2026-08", "1.9.1"))
+            Some(minor("2026", "2026-08", "1.9"))
         );
     }
 
