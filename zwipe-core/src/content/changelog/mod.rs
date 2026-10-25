@@ -43,6 +43,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Synergy keeps going with related cards once your commander's synergy picks run out",
         "The changelog's version chips group patches under their minor version",
         "Swiping to add cards shows every recommended card before it runs out",
+        "Suggested commanders, picked from the decks you've built, with why each one fits",
     ],
 }];
 

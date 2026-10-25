@@ -55,8 +55,8 @@ Otag data changes nightly with the Scryfall sync, so a profile reflects the otag
 ## Build order
 
 1. `commander_tag_profiles` (migration in zwipe), written by the synergy worker alongside each payload, with its backfill pass (in the worker repo).
-2. The scoring endpoint with its breakdown, with integration tests over seeded profiles.
-3. Dismissals table and routes, including clear all.
+2. Done 2026-10-25. `GET /api/commander/suggestions?limit=N` (default 10, max 100) answers `HttpCommanderSuggestions`: each suggestion carries the commander's card and its reasons (top 3 shared themes with catalog labels, and per color how many of the user's commander decks use it), plus `deck_count` (0 is the cold start). Scoring is `score_commander_suggestions` in zerver's card repository; the user profile reuses `deck_tag_profile` over every commander deck's commander and mainboard. Integration tests in `zerver/tests/commander_suggestions.rs`.
+3. Done 2026-10-25. `user_commander_dismissals` with a 7-day TTL; `POST /api/commander/suggestions/dismissals` (body `{"oracle_id"}`) dismisses, `DELETE .../dismissals/{oracle_id}` undoes one, `DELETE .../dismissals` clears all and answers `{"cleared": n}`. Client methods `commander_suggestions`, `dismiss_commander`, `undismiss_commander`, `clear_commander_dismissals`.
 4. The list screen, its More actions entry with Clear dismissals, and the cold-start state.
 5. The `footer` prop and `SuggestionReasons`.
 6. The swipe view: a mode of the shared `SwipeSelect` overlay (`screens/deck/components/swipe_select.rs`) that swipes a given list instead of searching. Moderate work in that one file.
