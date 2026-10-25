@@ -12,6 +12,12 @@ What might get built next. The app has been live since June 2026, so nothing her
 
 ---
 
+## Commanders You'd Like (noted 2026-10-25, after tier-2 synergy)
+
+Suggest commanders from the decks a user has already built. It reuses the tier-2 deck tag profile, pointed at commanders instead of cards: build one profile across all of a user's decks, then score commander-legal cards by their own otags plus their synergy pool's otags, and add a color-affinity term from the colors those decks use. Tag relationships can widen matches: 3,671 of 4,588 otags have `parent_ids`, so a sibling tag (same parent) of one the user favors can earn partial credit, which matters because exact tag matches between commanders are sparse. Cheapest surface: a "Commanders for you" ordering in the commander picker, which already swipes commanders in popularity order. Build after tier 2 ships.
+
+---
+
 ## Weekly Badges + Stats / Share Cards (gamification; pairs with future social)
 
 **Promoted to a full plan 2026-07-06: [`../plans/social-features/`](../plans/social-features/overview.md) (weekly badges + owner-curated featured decks with MVPs). The plan carries these decisions forward; this section stays as the original rationale.**
