@@ -621,6 +621,49 @@ pub static GUIDES: &[Guide] = &[
         ],
     },
     Guide {
+        slug: "suggested-commanders",
+        title: "Suggested commanders",
+        summary: "Ten commanders ranked against the decks you already build, each with the reasons it made the list, and a swipe stack that goes 100 deep.",
+        tags: &["Commander"],
+        related: &["commander-maybeboard", "synergy"],
+        blocks: &[
+            Block::Lead(
+                "Your decks already say what you like to play. Suggested commanders reads them and ranks commanders you haven't built yet, with a plain reason next to each one.",
+            ),
+            Block::H2("Where it lives"),
+            Block::P(
+                "Open it from the Decks screen: More, then Suggested commanders. The screen shows your top 10 as card rows, best fit first. Under the list a line reads \"Your top 10. Tap Swipe to see more suggestions.\"",
+            ),
+            Block::H2("Why this commander"),
+            Block::P(
+                "Expand a row and the details end with a short block headed \"Why this commander\". It names the themes the commander shares with your decks, as in \"Shares your top themes: tokens, sacrifice, goblins\", and the colors you keep coming back to, as in \"You build in red: 3 of your 4 decks\". No percentages: a named theme or a count says more than a score.",
+            ),
+            Block::H2("Three actions on a row"),
+            Block::Bullets(&[
+                "`Start deck` opens the create screen with that commander already in the command zone and the format set to Commander.",
+                "`Maybeboard` saves it to your commander maybeboard for later.",
+                "`Not for me` hides it for a week and pulls the next commander up, so the list stays a full ten.",
+            ]),
+            Block::H2("Swipe deeper"),
+            Block::P(
+                "The Swipe button deals the same ranking as a stack, starting with your top 10 and continuing down to 100. The eye button shows the card's details with its reasons at the bottom.",
+            ),
+            Block::Swipe(&[
+                ("right", "start a new deck with this commander"),
+                ("left", "pass on it for a week"),
+                ("up", "save it to your commander maybeboard"),
+                ("down", "undo your last swipe"),
+            ]),
+            Block::H2("Passing is not forever"),
+            Block::P(
+                "Not for me and a left swipe both mean \"not right now\". A passed commander comes back on its own after seven days, the same as a skipped card. To bring every one of them back at once, open More on the suggestions screen and tap Clear dismissals. It asks first.",
+            ),
+            Block::Note(
+                "The ranking needs a deck with a commander and some cards in it to read from. Until you have one, the screen says so and shows no list.",
+            ),
+        ],
+    },
+    Guide {
         slug: "budgeting",
         title: "Set a budget with price targets",
         summary: "Give a deck a price target and Zwipe tracks the running total, warns as you approach it, and offers buy links.",
