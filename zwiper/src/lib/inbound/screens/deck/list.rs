@@ -715,6 +715,13 @@ pub fn DeckList() -> Element {
                     },
                     "Commander maybeboard"
                 }
+                Button {
+                    onclick: move |_| {
+                        show_more_sheet.set(false);
+                        navigator.push(Router::SuggestedCommanders {});
+                    },
+                    "Suggested commanders"
+                }
             }
             }
     }

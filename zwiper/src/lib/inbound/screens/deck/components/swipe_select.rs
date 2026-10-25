@@ -8,6 +8,11 @@
 //! full [`CardFilterSheet`]. Swipe **left** to skip, **right** to choose,
 //! **down** to undo; **up** saves to the commander maybeboard (commander and
 //! partner modes only: the pile advances and selection continues).
+//!
+//! [`SwipeMode::Suggested`] deals a given ranking instead of a search: the
+//! suggested commanders, fetched 100 deep when the overlay opens. There a left
+//! swipe dismisses the commander for a week and the eyeball dialog carries the
+//! reasons it was suggested. No filter applies.
 
 use std::collections::HashSet;
 use std::time::Duration;
@@ -26,6 +31,7 @@ use zwipe_core::domain::card::scryfall_data::colors::Colors;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
+use zwipe_core::http::contracts::suggestions::HttpCommanderSuggestion;
 
 use crate::inbound::components::hint_dialog::{HintColored, open_and_record_hint};
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
@@ -39,11 +45,14 @@ use crate::inbound::screens::deck::card::components::card_info::{
 };
 use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
+use crate::inbound::screens::deck::suggested_commanders::SuggestionReasons;
 
 /// Cards fetched per page (matches the backend default).
 const PAGE: u32 = 25;
 /// Prefetch the next page when this many or fewer cards remain ahead of the top.
 const LOAD_MORE_AT: usize = 5;
+/// Suggestions fetched for the suggested mode's pile, the server's maximum.
+const SUGGESTED_DEPTH: u32 = 100;
 
 /// Which command-zone slot a [`SwipeSelect`] is filling. Decides the always-on
 /// filter constraint applied on top of whatever the user sets in the sheet.
@@ -57,6 +66,8 @@ pub(crate) enum SwipeMode {
     Background,
     /// Signature spells within the oathbreaker's color identity.
     SignatureSpell(Colors),
+    /// The user's suggested commanders, a fixed ranking rather than a search.
+    Suggested,
 }
 
 impl SwipeMode {
@@ -66,7 +77,7 @@ impl SwipeMode {
     fn noun(&self) -> &'static str {
         match self {
             Self::Commander(format) if format.has_signature_spell() => "oathbreaker",
-            Self::Commander(_) => "commander",
+            Self::Commander(_) | Self::Suggested => "commander",
             Self::Partner => "partner",
             Self::Background => "background",
             Self::SignatureSpell(_) => "signature spell",
@@ -90,6 +101,8 @@ impl SwipeMode {
                 builder.set_is_signature_spell(true);
                 builder.set_color_identity_within(colors.clone());
             }
+            // The suggested pile never searches.
+            Self::Suggested => {}
         }
     }
 }
@@ -103,6 +116,8 @@ enum SelectSwipe {
     Skip,
     /// Up swipe: saved this oracle to the commander maybeboard.
     Maybe(Uuid),
+    /// Left swipe in the suggested mode: dismissed this oracle for a week.
+    Dismissed(Uuid),
 }
 
 /// Layers the mode constraint, no-tokens, and pagination onto a user-built
@@ -155,6 +170,10 @@ pub(crate) fn SwipeSelect(
     use_context_provider(|| filter_reset_counter);
 
     let mut cards = use_signal(Vec::<Card>::new);
+    // Suggested mode only: the reasons behind each card in the pile, keyed by
+    // scryfall id for the eyeball dialog, and the deck count they count against.
+    let mut suggestions = use_signal(Vec::<HttpCommanderSuggestion>::new);
+    let mut deck_count = use_signal(|| 0u32);
     let mut current_index = use_signal(|| 0usize);
     let mut offset = use_signal(|| 0u32);
     let mut exhausted = use_signal(|| false);
@@ -203,6 +222,9 @@ pub(crate) fn SwipeSelect(
         let Some(mode) = mode.peek().clone() else {
             return;
         };
+        if mode == SwipeMode::Suggested {
+            return;
+        }
         is_loading_more.set(true);
         spawn(async move {
             for _ in 0..4 {
@@ -257,7 +279,14 @@ pub(crate) fn SwipeSelect(
             return;
         };
         let mode_changed = last_mode.peek().as_ref() != Some(&current_mode);
-        if counter == *last_searched.peek() && !mode_changed && !cards.peek().is_empty() {
+        let suggested = current_mode == SwipeMode::Suggested;
+        // The suggested pile refetches on every open: the host's own actions
+        // dismiss and save commanders between opens, so a kept pile goes stale.
+        if !suggested
+            && counter == *last_searched.peek()
+            && !mode_changed
+            && !cards.peek().is_empty()
+        {
             return;
         }
         last_searched.set(counter);
@@ -267,6 +296,37 @@ pub(crate) fn SwipeSelect(
         offset.set(0);
         exhausted.set(false);
         swipe_history.set(Vec::new());
+        if suggested {
+            let Some(session) = session.peek().clone() else {
+                return;
+            };
+            is_loading_cards.set(true);
+            exhausted.set(true);
+            spawn(async move {
+                match client()
+                    .commander_suggestions(SUGGESTED_DEPTH, &session)
+                    .await
+                {
+                    Ok(found) => {
+                        deck_count.set(found.deck_count);
+                        cards.set(found.suggestions.iter().map(|s| s.card.clone()).collect());
+                        suggestions.set(found.suggestions);
+                    }
+                    Err(e) => {
+                        tracing::warn!("suggested commanders fetch failed: {e}");
+                        usage_buffer.peek().report_error(
+                            host_screen,
+                            component::SWIPE_SELECT,
+                            "load_suggestions",
+                            &e,
+                        );
+                        toast.error(e.to_user_message(), ToastOptions::default());
+                    }
+                }
+                is_loading_cards.set(false);
+            });
+            return;
+        }
         let builder = mode_filter(&current_mode, filter_builder.peek().clone(), 0);
         let (Some(session), Ok(filter)) = (session.peek().clone(), builder.build()) else {
             return;
@@ -318,7 +378,8 @@ pub(crate) fn SwipeSelect(
     };
 
     // Down = undo the last swipe: bring the previous card back in, and if
-    // that swipe was an up (maybeboard save), un-save it too.
+    // that swipe was an up (maybeboard save), un-save it too; a suggested
+    // mode dismissal is lifted the same way.
     let mut undo = move || {
         if current_index() == 0 {
             toast.info("Nothing to undo".to_string(), ToastOptions::default());
@@ -355,6 +416,27 @@ pub(crate) fn SwipeSelect(
                         }
                     }
                 });
+            }
+            Some(SelectSwipe::Dismissed(oracle_id)) => {
+                // Quiet like the dismissal itself: the card is already back.
+                spawn(async move {
+                    let Some(session) = session.peek().clone() else {
+                        return;
+                    };
+                    if let Err(e) = client().undismiss_commander(oracle_id, &session).await {
+                        tracing::warn!("undo commander dismissal failed: {e}");
+                        usage_buffer.peek().report_error(
+                            host_screen,
+                            component::SWIPE_SELECT,
+                            "undismiss_commander",
+                            &e,
+                        );
+                    }
+                });
+                toast.info(
+                    "Undid pass".to_string(),
+                    ToastOptions::default().duration(TOAST_QUICK),
+                );
             }
             _ => {
                 toast.info(
@@ -400,13 +482,27 @@ pub(crate) fn SwipeSelect(
         (Vec::new(), None, false)
     };
     let noun = mode().as_ref().map(SwipeMode::noun).unwrap_or("card");
+    let suggested = mode() == Some(SwipeMode::Suggested);
     // Up-swipe = "maybe this commander" (per-user save), so it's only live in
     // the modes whose pool is commanders. Background/signature-spell picks
     // have no maybeboard home.
     let maybe_enabled = matches!(
         mode().as_ref(),
-        Some(SwipeMode::Commander(_) | SwipeMode::Partner)
+        Some(SwipeMode::Commander(_) | SwipeMode::Partner | SwipeMode::Suggested)
     );
+    // The reasons behind the card on top, for the eyeball dialog's footer.
+    let current_reasons = current_card.as_ref().and_then(|card| {
+        suggestions
+            .read()
+            .iter()
+            .find(|s| s.card.scryfall_data.id == card.scryfall_data.id)
+            .map(|s| s.reasons.clone())
+    });
+    let title = if suggested {
+        "Suggested commanders"
+    } else {
+        "Swipe select"
+    };
     let mut directions = vec![Direction::Left, Direction::Right, Direction::Down];
     if maybe_enabled {
         directions.push(Direction::Up);
@@ -419,7 +515,7 @@ pub(crate) fn SwipeSelect(
             // clear and the one beneath would show through.
             ::components::GridCells { still: true }
             if open() {
-                ScreenHeader { title: "Swipe select", hint: hint_open }
+                ScreenHeader { title, hint: hint_open }
 
                 div { class: "screen-content card-swipe content-enter",
                     if has_cards {
@@ -431,8 +527,27 @@ pub(crate) fn SwipeSelect(
                                 usage_buffer().record_swipe(Direction::Left);
                                 usage_buffer()
                                     .record_select_signal(card.scryfall_data.oracle_id, Direction::Left);
-                                swipe_history.write().push(SelectSwipe::Skip);
                                 advance();
+                                // Suggested mode: a left swipe hides the
+                                // commander for a week. Quiet like a deck
+                                // skip: the pile already moved on, and a
+                                // failed post only means it comes back sooner.
+                                if let (true, Some(oracle_id)) = (suggested, card.scryfall_data.oracle_id) {
+                                    swipe_history.write().push(SelectSwipe::Dismissed(oracle_id));
+                                    if let Some(session) = session.peek().clone() {
+                                        spawn(async move {
+                                            if let Err(e) = client().dismiss_commander(oracle_id, &session).await {
+                                                tracing::warn!("dismiss commander failed: {e}");
+                                            }
+                                        });
+                                    }
+                                    toast.info(
+                                        "Passed".to_string(),
+                                        ToastOptions::default().duration(TOAST_QUICK),
+                                    );
+                                    return;
+                                }
+                                swipe_history.write().push(SelectSwipe::Skip);
                                 toast.info(
                                     "Skipped".to_string(),
                                     ToastOptions::default().duration(TOAST_QUICK),
@@ -512,6 +627,9 @@ pub(crate) fn SwipeSelect(
                                 open: show_details,
                                 card,
                                 on_printings: move |_| printing_open.set(true),
+                                footer: current_reasons.map(|reasons| rsx! {
+                                    SuggestionReasons { reasons, deck_count: deck_count() }
+                                }),
                             }
                         }
                     } else if is_loading_cards() || is_loading_more() {
@@ -527,14 +645,17 @@ pub(crate) fn SwipeSelect(
                         onclick: move |_| on_close.call(()),
                         "Back"
                     }
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| filters_overlay_open.set(true),
-                        "Filter"
-                        // Popularity order is this screen's default (no sort),
-                        // so any user filter or any explicit sort lights the dot.
-                        if !filter_builder.read().is_empty() || filter_builder.read().sort().is_some() {
-                            span { class: "filter-dot" }
+                    // The suggested ranking takes no filter.
+                    if !suggested {
+                        Button {
+                            variant: ButtonVariant::Action,
+                            onclick: move |_| filters_overlay_open.set(true),
+                            "Filter"
+                            // Popularity order is this screen's default (no sort),
+                            // so any user filter or any explicit sort lights the dot.
+                            if !filter_builder.read().is_empty() || filter_builder.read().sort().is_some() {
+                                span { class: "filter-dot" }
+                            }
                         }
                     }
                     Button {
@@ -573,14 +694,23 @@ pub(crate) fn SwipeSelect(
 
                 HintDialog {
                     open: hint_open,
-                    title: "Swipe select",
+                    title,
                     HintBullets {
-                        HintBullet { "Swipe " HintColored { color: "--color-success", "right" } " picks that {noun}" }
-                        HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " skips it" }
+                        if suggested {
+                            HintBullet { "Swipe " HintColored { color: "--color-success", "right" } " starts a deck with that commander" }
+                            HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " passes on it for a week" }
+                        } else {
+                            HintBullet { "Swipe " HintColored { color: "--color-success", "right" } " picks that {noun}" }
+                            HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " skips it" }
+                        }
                         HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " saves it to your commander maybeboard" }
                         HintBullet { "Swipe " HintColored { color: "--accent-tertiary", "down" } " undoes the last swipe" }
                     }
-                    HintLine { "Most-played first. " HintKey { "Filter" } " narrows by color or anything else" }
+                    if suggested {
+                        HintLine { "Best fit first, 100 deep. The eye shows why each one was suggested" }
+                    } else {
+                        HintLine { "Most-played first. " HintKey { "Filter" } " narrows by color or anything else" }
+                    }
                 }
             }
         }
