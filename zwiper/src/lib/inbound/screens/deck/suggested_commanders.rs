@@ -90,7 +90,7 @@ pub(crate) fn SuggestionReasons(reasons: HttpSuggestionReasons, deck_count: u32)
                         "Shares your top themes:"
                         div { class: "keyword-chips",
                             for theme in reasons.themes {
-                                span { key: "{theme.slug}", class: "detail-chip", "{theme.label}" }
+                                span { key: "{theme.slug}", class: "keyword-chip static", "{theme.label}" }
                             }
                         }
                     }

@@ -59,6 +59,13 @@
     }
 }
 
+/* Same colors without the tap affordances, for a chip that only labels. */
+.keyword-chip.static,
+.keyword-chip.static:hover {
+    cursor: default;
+    transform: none;
+}
+
 .keyword-chip.active {
     color: var(--bg-primary);
     background-color: var(--accent-secondary);
@@ -668,7 +675,7 @@ i.ms.ms-cost.ms-gp {
 /* ---- CardDetails footer ----
    Host content under the chip clusters (the suggested commanders screen's
    "Why this commander?" block): a `.chips-label` heading over a bullet list
-   whose items hold plain text or a row of `.detail-chip`s. */
+   whose items hold plain text or a row of static `.keyword-chip`s. */
 .card-detail-footer {
     margin: 0.5rem 0;
 }
@@ -693,7 +700,7 @@ i.ms.ms-cost.ms-gp {
 }
 
 .card-detail-bullets li::before {
-    content: "\203A";
+    content: "\2022";
     position: absolute;
     left: 0;
     color: var(--accent-primary);
