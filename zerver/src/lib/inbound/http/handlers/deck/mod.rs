@@ -4,6 +4,8 @@
 pub mod clear_deck_suppressions;
 /// Deck clone handler.
 pub mod clone_deck;
+/// Suggested commanders and their dismissals.
+pub mod commander_suggestions;
 /// Deck creation handler.
 pub mod create_deck_profile;
 /// Deck deletion handler.

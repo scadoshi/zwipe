@@ -8,6 +8,8 @@ pub mod clear_deck_suppressions;
 pub mod clone_deck;
 /// Commander maybeboard operations (per-user "maybe this commander" list).
 pub mod commander_maybeboard;
+/// Suggested commanders and their dismissals.
+pub mod commander_suggestions;
 /// Create deck profile operation.
 pub mod create_deck_profile;
 /// Delete deck operation.

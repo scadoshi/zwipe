@@ -47,6 +47,9 @@ use crate::inbound::http::handlers::changelog::get_changelog;
 use crate::inbound::http::handlers::client::get_min_client_version;
 use crate::inbound::http::handlers::deck::clear_deck_suppressions::clear_deck_suppressions;
 use crate::inbound::http::handlers::deck::clone_deck::clone_deck;
+use crate::inbound::http::handlers::deck::commander_suggestions::{
+    clear_commander_dismissals, dismiss_commander, get_commander_suggestions, undismiss_commander,
+};
 use crate::inbound::http::handlers::deck::create_deck_profile::create_deck_profile;
 use crate::inbound::http::handlers::deck::delete_deck::delete_deck;
 use crate::inbound::http::handlers::deck::get_deck::get_deck;
@@ -598,6 +601,19 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                             "/commander-maybeboard/{oracle_id}",
                             post(add_commander_maybeboard_card)
                                 .delete(remove_commander_maybeboard_card),
+                        ),
+                )
+                .nest(
+                    "/commander",
+                    Router::new()
+                        .route("/suggestions", get(get_commander_suggestions))
+                        .route(
+                            "/suggestions/dismissals",
+                            post(dismiss_commander).delete(clear_commander_dismissals),
+                        )
+                        .route(
+                            "/suggestions/dismissals/{oracle_id}",
+                            delete(undismiss_commander),
                         ),
                 )
                 .nest(

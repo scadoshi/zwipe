@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM user_commander_dismissals WHERE user_id = $1 AND oracle_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "57f092bd75a007c20e5ab173180bc298c2e82e2c3cd73892d6604c3c4b956774"
+}

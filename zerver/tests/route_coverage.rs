@@ -21,8 +21,8 @@ use zwipe_core::http::paths::{
     delete_deck_card_route, delete_deck_route, get_card_route, get_deck_profile_route,
     get_deck_route, get_deck_tokens_route, get_printings_route, get_shared_deck_route,
     import_archidekt_deck_route, import_deck_cards_route, remove_commander_maybeboard_card_route,
-    search_deck_cards_route, share_deck_route, skip_deck_card_route, unskip_deck_card_route,
-    update_deck_card_route, update_deck_route,
+    search_deck_cards_route, share_deck_route, skip_deck_card_route, undismiss_commander_route,
+    unskip_deck_card_route, update_deck_card_route, update_deck_route,
 };
 
 fn http_method(method: Method) -> HttpMethod {
@@ -112,6 +112,7 @@ async fn every_id_carrying_route_matches_the_contract(pool: sqlx::PgPool) {
         (Method::Delete, unskip_deck_card_route(id, id)),
         (Method::Post, add_commander_maybeboard_card_route(id)),
         (Method::Delete, remove_commander_maybeboard_card_route(id)),
+        (Method::Delete, undismiss_commander_route(id)),
         (Method::Post, import_archidekt_deck_route(id)),
         (Method::Post, search_deck_cards_route(id)),
         (Method::Post, create_deck_card_route(id)),

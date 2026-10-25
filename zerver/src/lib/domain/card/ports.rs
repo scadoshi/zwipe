@@ -31,6 +31,9 @@ use crate::domain::card::requests::get_scryfall_data::{
     GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
 };
 use crate::domain::card::requests::get_sets::GetSetsError;
+use crate::domain::deck::models::deck::commander_suggestions::{
+    CommanderSuggestionsError, ScoredCommander,
+};
 use crate::inbound::external::scryfall::bulk::BulkEndpoint;
 use crate::inbound::external::scryfall::oracle_tag::OracleTag as ScryfallOracleTag;
 
@@ -339,6 +342,21 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         oracle_ids: &[uuid::Uuid],
         lowercased_names: &[String],
     ) -> impl Future<Output = Result<Option<serde_json::Value>, SearchCardsError>> + Send;
+
+    /// Ranks the commanders in `commander_tag_profiles` against a user's tag
+    /// profile (otag → weight) and color shares (WUBRG letter → fraction of
+    /// the user's commander decks using it), best first, at most `limit`.
+    /// Leaves out `exclude_oracle_ids`, tokens, commanders not legal in
+    /// Commander, and the user's live dismissals. Each result carries its
+    /// strongest shared tags with catalog labels.
+    fn score_commander_suggestions(
+        &self,
+        user_id: uuid::Uuid,
+        user_profile: &serde_json::Value,
+        color_shares: &serde_json::Value,
+        exclude_oracle_ids: &[uuid::Uuid],
+        limit: i64,
+    ) -> impl Future<Output = Result<Vec<ScoredCommander>, CommanderSuggestionsError>> + Send;
 
     // == category derivation ==
 

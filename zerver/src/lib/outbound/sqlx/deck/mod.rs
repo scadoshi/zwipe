@@ -25,6 +25,9 @@ use zwipe_core::domain::deck::{Board, DeckCard, DeckName, DeckOtherTag, DeckTag}
 use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError;
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
+use crate::domain::deck::models::deck::commander_suggestions::{
+    CommanderDeck, CommanderDismissal, CommanderSuggestionsError,
+};
 use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
 use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
@@ -742,6 +745,81 @@ impl DeckRepository for Postgres {
         .execute(&self.pool)
         .await
         .map_err(|e| CommanderMaybeboardError::Database(e.into()))?;
+        Ok(result.rows_affected())
+    }
+
+    async fn commander_decks(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> Result<Vec<CommanderDeck>, CommanderSuggestionsError> {
+        let rows = query!(
+            r#"SELECT s.oracle_id AS "commander_oracle_id!",
+                      s.color_identity AS commander_colors,
+                      COALESCE(array_agg(dc.oracle_id) FILTER (WHERE dc.board = 'deck'), '{}')
+                          AS "mainboard_oracle_ids!: Vec<uuid::Uuid>"
+               FROM decks d
+               JOIN scryfall_data s ON s.id = d.commander_id
+               LEFT JOIN deck_cards dc ON dc.deck_id = d.id
+               WHERE d.user_id = $1 AND s.oracle_id IS NOT NULL
+               GROUP BY d.id, s.oracle_id, s.color_identity"#,
+            user_id,
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
+        Ok(rows
+            .into_iter()
+            .map(|row| CommanderDeck {
+                commander_oracle_id: row.commander_oracle_id,
+                commander_colors: row.commander_colors,
+                mainboard_oracle_ids: row.mainboard_oracle_ids,
+            })
+            .collect())
+    }
+
+    async fn dismiss_commander(
+        &self,
+        request: &CommanderDismissal,
+    ) -> Result<(), CommanderSuggestionsError> {
+        query!(
+            r#"INSERT INTO user_commander_dismissals (user_id, oracle_id)
+               VALUES ($1, $2)
+               ON CONFLICT (user_id, oracle_id) DO UPDATE SET dismissed_at = now()"#,
+            request.user_id,
+            request.oracle_id,
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
+        Ok(())
+    }
+
+    async fn undismiss_commander(
+        &self,
+        request: &CommanderDismissal,
+    ) -> Result<(), CommanderSuggestionsError> {
+        query!(
+            "DELETE FROM user_commander_dismissals WHERE user_id = $1 AND oracle_id = $2",
+            request.user_id,
+            request.oracle_id,
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
+        Ok(())
+    }
+
+    async fn clear_commander_dismissals(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> Result<u64, CommanderSuggestionsError> {
+        let result = query!(
+            "DELETE FROM user_commander_dismissals WHERE user_id = $1",
+            user_id
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
         Ok(result.rows_affected())
     }
 

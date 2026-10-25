@@ -47,6 +47,9 @@ use crate::domain::card::requests::get_scryfall_data::{
     GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
 };
 use crate::domain::card::requests::get_sets::GetSetsError;
+use crate::domain::deck::models::deck::commander_suggestions::{
+    CommanderSuggestionsError, ScoredCommander, SharedTheme,
+};
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::upsert_card::{
     BatchDeltaUpsertWithTx, BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
@@ -153,6 +156,22 @@ const W_POPULAR: f64 = 0.05;
 
 /// The deck tag profile keeps its strongest this-many tags.
 const PROFILE_TAG_LIMIT: i64 = 40;
+
+// == suggested commanders ==
+
+/// Weight of the color-affinity term in a commander suggestion's score: the
+/// share of the user's commander decks using each of the candidate's colors,
+/// averaged over its colors (0..1), times this. Tag overlap is a sum of
+/// products of two profiles that each sum to 1, so it lands well under 1 and
+/// this keeps colors a tiebreak rather than the ranking.
+const W_COLOR_AFFINITY: f64 = 0.15;
+
+/// Shared tags a suggestion carries as its themes.
+const SUGGESTION_THEME_LIMIT: i64 = 3;
+
+/// Days a dismissal keeps a commander out of the suggestions. Dismissing it
+/// again restarts the clock.
+const DISMISSAL_TTL_DAYS: i32 = 7;
 
 /// Base ranking for the commander-select ordering: decks-helmed popularity
 /// first (`commander_popularity`, written by the synergy worker), then
@@ -1919,6 +1938,106 @@ impl CardRepository for MyPostgres {
         .await
         .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
         Ok(profile)
+    }
+
+    async fn score_commander_suggestions(
+        &self,
+        user_id: uuid::Uuid,
+        user_profile: &serde_json::Value,
+        color_shares: &serde_json::Value,
+        exclude_oracle_ids: &[uuid::Uuid],
+        limit: i64,
+    ) -> Result<Vec<ScoredCommander>, CommanderSuggestionsError> {
+        // Score = Σ over shared tags of user weight × commander weight, plus
+        // W_COLOR_AFFINITY × the mean user share of the candidate's colors
+        // (0 for a colorless candidate). Themes are the top shared tags by
+        // that product, labeled from the catalog.
+        let rows: Vec<(uuid::Uuid, f64, serde_json::Value)> = sqlx::query_as(
+            "WITH user_profile AS (
+                 SELECT key AS oracle_tag, value::float8 AS w
+                 FROM jsonb_each_text($1::jsonb)
+             ),
+             user_colors AS (
+                 SELECT key AS color, value::float8 AS share
+                 FROM jsonb_each_text($2::jsonb)
+             ),
+             candidates AS (
+                 SELECT p.oracle_id, p.profile, lc.name, lc.color_identity
+                 FROM commander_tag_profiles p
+                 JOIN latest_cards lc ON lc.oracle_id = p.oracle_id
+                 WHERE lc.layout <> 'token'
+                   AND lc.legalities->>'commander' = 'legal'
+                   AND NOT (p.oracle_id = ANY($3::uuid[]))
+                   AND NOT EXISTS (
+                       SELECT 1 FROM user_commander_dismissals d
+                       WHERE d.user_id = $4 AND d.oracle_id = p.oracle_id
+                         AND d.dismissed_at > now() - make_interval(days => $5)
+                   )
+             ),
+             overlap AS (
+                 SELECT c.oracle_id, t.key AS oracle_tag, up.w * t.value::float8 AS w
+                 FROM candidates c
+                 CROSS JOIN LATERAL jsonb_each_text(c.profile) t
+                 JOIN user_profile up ON up.oracle_tag = t.key
+             ),
+             tag_score AS (
+                 SELECT oracle_id, sum(w) AS s FROM overlap GROUP BY oracle_id
+             ),
+             color_score AS (
+                 SELECT c.oracle_id, avg(COALESCE(uc.share, 0)) AS s
+                 FROM candidates c
+                 LEFT JOIN LATERAL unnest(c.color_identity) AS ci(color) ON true
+                 LEFT JOIN user_colors uc ON uc.color = ci.color
+                 GROUP BY c.oracle_id
+             ),
+             themes AS (
+                 SELECT o.oracle_id,
+                        jsonb_agg(
+                            jsonb_build_object(
+                                'slug', o.oracle_tag,
+                                'label', COALESCE(ot.label, o.oracle_tag)
+                            ) ORDER BY o.w DESC, o.oracle_tag
+                        ) AS themes
+                 FROM (
+                     SELECT oracle_id, oracle_tag, w,
+                            row_number() OVER (
+                                PARTITION BY oracle_id ORDER BY w DESC, oracle_tag
+                            ) AS rn
+                     FROM overlap
+                 ) o
+                 LEFT JOIN oracle_tags ot ON ot.slug = o.oracle_tag
+                 WHERE o.rn <= $6
+                 GROUP BY o.oracle_id
+             )
+             SELECT c.oracle_id,
+                    COALESCE(ts.s, 0) + $7 * cs.s AS score,
+                    COALESCE(th.themes, '[]'::jsonb) AS themes
+             FROM candidates c
+             LEFT JOIN tag_score ts ON ts.oracle_id = c.oracle_id
+             JOIN color_score cs ON cs.oracle_id = c.oracle_id
+             LEFT JOIN themes th ON th.oracle_id = c.oracle_id
+             ORDER BY score DESC, c.name ASC, c.oracle_id
+             LIMIT $8",
+        )
+        .bind(user_profile)
+        .bind(color_shares)
+        .bind(exclude_oracle_ids)
+        .bind(user_id)
+        .bind(DISMISSAL_TTL_DAYS)
+        .bind(SUGGESTION_THEME_LIMIT)
+        .bind(W_COLOR_AFFINITY)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
+        rows.into_iter()
+            .map(|(oracle_id, _score, themes)| {
+                let themes: Vec<SharedTheme> = serde_json::from_value(themes)
+                    .context("commander suggestion themes")
+                    .map_err(CommanderSuggestionsError::Database)?;
+                Ok(ScoredCommander { oracle_id, themes })
+            })
+            .collect()
     }
 
     // == category derivation ==

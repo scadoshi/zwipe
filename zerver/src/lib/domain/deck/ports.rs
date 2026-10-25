@@ -29,6 +29,9 @@ use crate::domain::BoxFuture;
 use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError;
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
+use crate::domain::deck::models::deck::commander_suggestions::{
+    CommanderDeck, CommanderDismissal, CommanderSuggestions, CommanderSuggestionsError,
+};
 use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
 use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
 use crate::domain::deck::models::deck::get_deck::GetDeckError;
@@ -207,6 +210,33 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<u64, CommanderMaybeboardError>> + Send;
 
+    // == suggested commanders ==
+
+    /// The user's decks that have a commander, each with its commander's
+    /// oracle id and colors and its mainboard oracle ids.
+    fn commander_decks(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<Vec<CommanderDeck>, CommanderSuggestionsError>> + Send;
+
+    /// Records a dismissal, restarting its clock when one exists.
+    fn dismiss_commander(
+        &self,
+        request: &CommanderDismissal,
+    ) -> impl Future<Output = Result<(), CommanderSuggestionsError>> + Send;
+
+    /// Deletes one dismissal (idempotent).
+    fn undismiss_commander(
+        &self,
+        request: &CommanderDismissal,
+    ) -> impl Future<Output = Result<(), CommanderSuggestionsError>> + Send;
+
+    /// Deletes every dismissal of the user, returning the number removed.
+    fn clear_commander_dismissals(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<u64, CommanderSuggestionsError>> + Send;
+
     // == clone ==
 
     /// Transactionally copies a source deck's profile and all entries into a
@@ -377,6 +407,33 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<u64, CommanderMaybeboardError>> + Send;
 
+    /// Ranks commanders for the user from the decks they have built, at most
+    /// `limit`, each with the reasons behind it. A user with no commander deck
+    /// gets an empty list and `deck_count` 0.
+    fn commander_suggestions(
+        &self,
+        user_id: uuid::Uuid,
+        limit: u32,
+    ) -> impl Future<Output = Result<CommanderSuggestions, CommanderSuggestionsError>> + Send;
+
+    /// Hides a commander from the user's suggestions for a week.
+    fn dismiss_commander(
+        &self,
+        request: &CommanderDismissal,
+    ) -> impl Future<Output = Result<(), CommanderSuggestionsError>> + Send;
+
+    /// Lifts one dismissal (idempotent).
+    fn undismiss_commander(
+        &self,
+        request: &CommanderDismissal,
+    ) -> impl Future<Output = Result<(), CommanderSuggestionsError>> + Send;
+
+    /// Lifts every dismissal of the user, returning the number lifted.
+    fn clear_commander_dismissals(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<u64, CommanderSuggestionsError>> + Send;
+
     /// Imports cards from a plain-text decklist with authorization check.
     fn import_deck_cards(
         &self,
@@ -543,6 +600,31 @@ pub trait ErasedDeckService: Send + Sync + 'static {
         &self,
         user_id: uuid::Uuid,
     ) -> BoxFuture<'_, Result<u64, CommanderMaybeboardError>>;
+
+    /// See [`DeckService::commander_suggestions`].
+    fn commander_suggestions(
+        &self,
+        user_id: uuid::Uuid,
+        limit: u32,
+    ) -> BoxFuture<'_, Result<CommanderSuggestions, CommanderSuggestionsError>>;
+
+    /// See [`DeckService::dismiss_commander`].
+    fn dismiss_commander<'a>(
+        &'a self,
+        request: &'a CommanderDismissal,
+    ) -> BoxFuture<'a, Result<(), CommanderSuggestionsError>>;
+
+    /// See [`DeckService::undismiss_commander`].
+    fn undismiss_commander<'a>(
+        &'a self,
+        request: &'a CommanderDismissal,
+    ) -> BoxFuture<'a, Result<(), CommanderSuggestionsError>>;
+
+    /// See [`DeckService::clear_commander_dismissals`].
+    fn clear_commander_dismissals(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> BoxFuture<'_, Result<u64, CommanderSuggestionsError>>;
 
     /// See [`DeckService::import_deck_cards`].
     fn import_deck_cards<'a>(
@@ -715,6 +797,35 @@ where
         user_id: uuid::Uuid,
     ) -> BoxFuture<'_, Result<u64, CommanderMaybeboardError>> {
         Box::pin(DeckService::clear_commander_maybeboard(self, user_id))
+    }
+
+    fn commander_suggestions(
+        &self,
+        user_id: uuid::Uuid,
+        limit: u32,
+    ) -> BoxFuture<'_, Result<CommanderSuggestions, CommanderSuggestionsError>> {
+        Box::pin(DeckService::commander_suggestions(self, user_id, limit))
+    }
+
+    fn dismiss_commander<'a>(
+        &'a self,
+        request: &'a CommanderDismissal,
+    ) -> BoxFuture<'a, Result<(), CommanderSuggestionsError>> {
+        Box::pin(DeckService::dismiss_commander(self, request))
+    }
+
+    fn undismiss_commander<'a>(
+        &'a self,
+        request: &'a CommanderDismissal,
+    ) -> BoxFuture<'a, Result<(), CommanderSuggestionsError>> {
+        Box::pin(DeckService::undismiss_commander(self, request))
+    }
+
+    fn clear_commander_dismissals(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> BoxFuture<'_, Result<u64, CommanderSuggestionsError>> {
+        Box::pin(DeckService::clear_commander_dismissals(self, user_id))
     }
 
     fn import_deck_cards<'a>(
