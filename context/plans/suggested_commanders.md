@@ -1,6 +1,6 @@
 # Suggested commanders
 
-**Status: AGREED, not started (2026-10-25).** Shape settled with Scotty on 2026-10-25; the one open call is how commander profiles are precomputed (see Open question). Backlog origin: "Commanders You'd Like" in `../progress/backlog.md`, built on the tier-2 deck tag profile that shipped in `8deb24ed`.
+**Status: AGREED, not started (2026-10-25).** Shape settled with Scotty on 2026-10-25, including where commander profiles are computed (the synergy worker, see Commander profiles). Backlog origin: "Commanders You'd Like" in `../progress/backlog.md`, built on the tier-2 deck tag profile that shipped in `8deb24ed`.
 
 ## Problem
 
@@ -12,7 +12,8 @@ Zwipe helps you fill a deck once you've picked a commander, but not pick the nex
 - **The list:** the top 10 suggestions, styled like the commander maybeboard (`screens/deck/commander_maybeboard.rs`): one card row per commander, tap to expand. Under the list, a hint line: "Your top 10. Tap Swipe to see more suggestions."
 - **Swipe:** the action bar's Swipe button opens a swipe stack that starts at the top 10 and keeps going down the same ranking, to 100. Right starts a new deck with that commander, up saves it to the commander maybeboard, left dismisses it, down undoes.
 - **In the list:** an expanded row carries the same actions as buttons (Start deck, Maybeboard, Not for me), through the row's existing `extra_actions` slot the way the commander maybeboard adds Create deck and Remove.
-- **Dismissals refill:** "Not for me" or a left swipe hides the commander and pulls the next one up, so the list always shows the best 10 not yet turned down.
+- **Dismissals refill:** "Not for me" or a left swipe hides the commander for 7 days, the same as a deck skip, and pulls the next one up, so the list always shows the best 10 not yet turned down. A left swipe means "not right now", not "never".
+- **Clear dismissals:** the suggestions screen's More sheet has "Clear dismissals", like Clear skips on a deck, bringing every dismissed commander back at once.
 - **Cold start:** with no deck that has a commander and cards, the screen stays empty with "Build a deck and we'll suggest commanders that fit how you play." No popularity list standing in for personal picks.
 
 ## Why it was suggested
@@ -35,29 +36,30 @@ No raw percentages: a small profile makes them swing, and a named theme or a cou
 - **Score:** overlap of the user profile with each candidate's profile, plus a color-affinity term (how often the candidate's colors appear across the user's decks). Later: partial credit for sibling tags (shared `oracle_tags.parent_ids`; 3,671 of 4,588 tags have parents).
 - **Excluded:** commanders the user already has a deck with, has in the commander maybeboard, or dismissed.
 
-## Open question: precomputing commander profiles
+## Commander profiles (decided 2026-10-25: the synergy worker writes them)
 
-The user profile is cheap per request (the deck tag profile query runs in ~30-50 ms locally). Candidate profiles are not: each comes from a ~250-card payload, across every cached commander. They have to be precomputed. Options:
+The user profile is cheap per request (the deck tag profile query runs in ~30-50 ms locally), so it is computed live and never lags. Candidate profiles are not: each comes from a payload averaging 263 cards (production 2026-10-25: 1,527 cached payloads, 86 to 445 cards each). They are precomputed into `commander_tag_profiles(commander_oracle_id, profile jsonb, computed_at)`.
 
-1. **Materialized view refreshed nightly by zervice (recommended).** `commander_tag_profiles(commander_oracle_id, profile jsonb)`, refreshed in zervice's step 4 alongside `latest_cards` and the rollups. Same pattern as the existing views. Cost: one production step, re-running `zcripts/server/sql/zervice_role.sql` with the new view added to its ownership loop, since `REFRESH` needs ownership.
-2. **Written by the synergy worker.** It already writes `commander_synergy`, so it could write each commander's profile alongside the payload. No zervice grant, and profiles stay fresh with the payload. Cost: the work lands in the private worker repo and it starts reading otag data.
-3. **Computed lazily by zerver and cached in a table it owns.** No grants and no second repo, but the first request per commander pays the cost and the cache needs its own freshness rule.
+**The synergy worker writes each profile in the same step that writes the commander's payload.** A commander profile depends only on its payload, and the worker is the demand-driven lane: it discovers new deck commanders, fetches them, pre-warms popular ones and refreshes stale ones on a short poll. Computing the profile there means a newly cached commander can be suggested right away. A nightly zervice view was the other candidate and was ruled out because a commander cached during the day would have no profile until that night. This also needs no zervice role change. One-time cost: a backfill pass over the existing payloads on the first run (about 400k card lookups).
+
+Otag data changes nightly with the Scryfall sync, so a profile reflects the otags as of its payload's last fetch or refresh. That is fresh enough: profiles roll forward with the worker's payload refresh cycle.
 
 ## Data and endpoints
 
 - `GET /api/commander/suggestions?limit=…` returns ranked suggestions, each with the card and its breakdown (top shared tags with labels and weights, color counts). The list asks for 10, Swipe for 100.
-- Dismissals: `user_commander_dismissals(user_id, oracle_id, dismissed_at)` with a TTL like deck skips (30 days to start), read at query time, plus `POST`/`DELETE` routes for dismiss and undo.
+- Dismissals: `user_commander_dismissals(user_id, oracle_id, dismissed_at)` with a 7-day TTL like deck skips, read at query time, plus routes to dismiss, undo one, and clear all.
 - Start deck reuses deck creation with `commander_id`; Maybeboard reuses the commander maybeboard's save route.
 
 ## Build order
 
-1. Commander profiles (the open question) and the scoring endpoint with its breakdown, with integration tests over seeded payloads and otags.
-2. Dismissals table and routes.
-3. The list screen and its More actions entry, with the cold-start state.
-4. The `footer` prop and `SuggestionReasons`.
-5. The swipe view: a mode of the shared `SwipeSelect` overlay (`screens/deck/components/swipe_select.rs`) that swipes a given list instead of searching. Moderate work in that one file.
-6. Copy: a guide, the More actions label, the hint line, a changelog entry.
+1. `commander_tag_profiles` (migration in zwipe), written by the synergy worker alongside each payload, with its backfill pass (in the worker repo).
+2. The scoring endpoint with its breakdown, with integration tests over seeded profiles.
+3. Dismissals table and routes, including clear all.
+4. The list screen, its More actions entry with Clear dismissals, and the cold-start state.
+5. The `footer` prop and `SuggestionReasons`.
+6. The swipe view: a mode of the shared `SwipeSelect` overlay (`screens/deck/components/swipe_select.rs`) that swipes a given list instead of searching. Moderate work in that one file.
+7. Copy: a guide, the More actions labels, the hint line, a changelog entry.
 
 ## Ship
 
-Server first (zerver deploy, a migration, and one zervice-role step if option 1), then the app in the next store build. Old apps don't call the new endpoint, so nothing gates on version.
+The migration and the worker first, so profiles exist before anything reads them. Then zerver, then the app in the next store build. Old apps don't call the new endpoint, so nothing gates on version.
