@@ -46,6 +46,9 @@ pub(crate) fn CardRow(
     /// Host-specific buttons appended to the shared row's expanded action bar.
     #[props(default)]
     extra_actions: Option<Element>,
+    /// Host content under the expanded detail's chips, before its action bar.
+    #[props(default)]
+    footer: Option<Element>,
 ) -> Element {
     let scryfall_data_for_preview = card.scryfall_data.clone();
     // Which face the expanded detail is flipped to (0 = front), so the fullscreen
@@ -84,6 +87,7 @@ pub(crate) fn CardRow(
             mvp,
             on_toggle_mvp,
             extra_actions,
+            footer,
             price_currency,
             show_classification: true,
             describe_tag,

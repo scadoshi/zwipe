@@ -9,7 +9,7 @@ use crate::http::contracts::suggestions::{
 };
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths::{
-    COMMANDER_DISMISSALS_ROUTE, commander_suggestions_route, undismiss_commander_route,
+    COMMANDER_DISMISSALS_ROUTE, COMMANDER_SUGGESTIONS_ROUTE, undismiss_commander_route,
 };
 
 /// The user's ranked commander suggestions, at most this many. The server
@@ -20,7 +20,10 @@ impl Endpoint for GetCommanderSuggestions {
     type Request = ();
     type Response = HttpCommanderSuggestions;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(commander_suggestions_route(self.0))
+        Cow::Borrowed(COMMANDER_SUGGESTIONS_ROUTE)
+    }
+    fn query(&self) -> Option<String> {
+        Some(format!("limit={}", self.0))
     }
 }
 
@@ -57,5 +60,17 @@ impl Endpoint for ClearCommanderDismissals {
     type Response = HttpClearedDismissals;
     fn path(&self) -> Cow<'static, str> {
         Cow::Borrowed(COMMANDER_DISMISSALS_ROUTE)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn suggestions_carry_the_limit_as_a_query() {
+        let endpoint = GetCommanderSuggestions(100);
+        assert_eq!(endpoint.path(), "/api/commander/suggestions");
+        assert_eq!(endpoint.query().as_deref(), Some("limit=100"));
     }
 }

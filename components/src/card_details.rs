@@ -144,6 +144,11 @@ pub fn CardDetails(
     /// Open the example-cards browse for a tag slug. Forwarded to [`CardRoleChips`].
     #[props(default)]
     on_examples: Option<Callback<String>>,
+    /// Host content rendered after the role chips and before the action bar
+    /// (the suggested commanders screen's reasons block). `None` renders
+    /// nothing.
+    #[props(default)]
+    footer: Option<Element>,
 ) -> Element {
     let sd = &card.scryfall_data;
     let name = sd.name.clone();
@@ -221,6 +226,7 @@ pub fn CardDetails(
             if show_classification {
                 CardRoleChips { roles, tags_by_role, other_tags, describe_tag, on_examples }
             }
+            {footer}
         }
         if show_bar {
             hr { class: "card-row-rule card-row-rule-muted" }

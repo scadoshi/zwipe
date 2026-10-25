@@ -16,6 +16,8 @@ pub mod export;
 pub mod import;
 /// Deck list screen showing all user's decks.
 pub mod list;
+/// Suggested commanders screen (ranked against the user's decks).
+pub mod suggested_commanders;
 /// View deck details screen.
 pub mod view;
 

@@ -20,6 +20,7 @@ use crate::inbound::screens::deck::edit::EditDeck;
 use crate::inbound::screens::deck::export::ExportDeck;
 use crate::inbound::screens::deck::import::ImportDeck;
 use crate::inbound::screens::deck::list::DeckList;
+use crate::inbound::screens::deck::suggested_commanders::SuggestedCommanders;
 use crate::inbound::screens::deck::view::ViewDeck;
 use crate::inbound::screens::home::Home;
 use crate::inbound::screens::legal::privacy_policy::PrivacyPolicy;
@@ -71,6 +72,10 @@ pub enum Router {
     /// up-swiping during commander Zwipe-select.
     #[route("/deck/commander-maybeboard")]
     CommanderMaybeboard {},
+    /// Suggested commanders: the top 10 ranked against the user's decks, with
+    /// a Swipe overlay going deeper.
+    #[route("/deck/suggested-commanders")]
+    SuggestedCommanders {},
     /// Create a new deck: name, format, commander selection.
     #[route("/deck/create")]
     CreateDeck,

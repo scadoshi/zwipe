@@ -3416,6 +3416,29 @@ button {
     animation-delay: 270ms;
 }
 
+/* ── Suggested commanders ─────────────────────────────────────────────── */
+
+/* "Why this commander" under a suggestion's chips: the same label face as
+   the keyword and role clusters, with quiet body lines. */
+.suggestion-reasons {
+    margin-bottom: 0.5rem;
+}
+
+.suggestion-reason {
+    margin: 0 0 0.25rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--text-muted);
+}
+
+/* The line under the top 10 pointing at Swipe. */
+.suggestion-hint {
+    margin: 0.75rem 0 0;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
 /* The shell is its own stacking context, so orangui's GridCells layer (z-index -1)
    stays under every screen, sheet and dialog in it, including mid-rain when
    each cell carries a transform. */

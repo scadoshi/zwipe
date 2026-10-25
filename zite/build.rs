@@ -36,6 +36,7 @@ const GUIDE_SLUGS: &[&str] = &[
     "synergy",
     "commander-and-formats",
     "commander-maybeboard",
+    "suggested-commanders",
     "budgeting",
     "land-targets",
     "deck-tags",

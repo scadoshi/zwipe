@@ -72,6 +72,10 @@ pub fn CardRow(
     /// toggle animates instead of clipping.
     #[props(default)]
     show_art: Option<bool>,
+    /// Host content rendered under the expanded detail's chips, before its
+    /// action bar. Forwarded to `CardDetails`.
+    #[props(default)]
+    footer: Option<Element>,
 ) -> Element {
     let card_id = card.scryfall_data.id;
     let is_expanded = expanded_card() == Some(card_id);
@@ -188,6 +192,7 @@ pub fn CardRow(
                     on_examples,
                     on_image,
                     on_face_change,
+                    footer,
                     has_actions: has_slot_actions,
                     actions: rsx! {
                         div { class: "card-action-row",

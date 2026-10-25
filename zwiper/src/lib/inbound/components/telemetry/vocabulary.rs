@@ -38,6 +38,7 @@ pub mod screen {
     pub const PROFILE_CHANGE_PASSWORD: &str = "profile_change_password";
     pub const PROFILE_CHANGE_USERNAME: &str = "profile_change_username";
     pub const PROFILE_PREFERENCES: &str = "profile_preferences";
+    pub const SUGGESTED_COMMANDERS: &str = "suggested_commanders";
 }
 
 /// Typed screen identity for the authed facade: the same closed vocabulary as
@@ -63,6 +64,8 @@ pub enum Screen {
     OracleTag(OracleTagScreen),
     /// Screens under `screens/profile/`.
     Profile(ProfileScreen),
+    /// The suggested commanders screen.
+    SuggestedCommanders,
 }
 
 /// `screens/auth/` members.
@@ -135,6 +138,7 @@ impl Screen {
             Self::Profile(ProfileScreen::ChangePassword) => screen::PROFILE_CHANGE_PASSWORD,
             Self::Profile(ProfileScreen::ChangeUsername) => screen::PROFILE_CHANGE_USERNAME,
             Self::Profile(ProfileScreen::Preferences) => screen::PROFILE_PREFERENCES,
+            Self::SuggestedCommanders => screen::SUGGESTED_COMMANDERS,
         }
     }
 }
@@ -170,6 +174,7 @@ mod tests {
             Screen::Profile(ProfileScreen::ChangePassword),
             Screen::Profile(ProfileScreen::ChangeUsername),
             Screen::Profile(ProfileScreen::Preferences),
+            Screen::SuggestedCommanders,
         ];
         let mut mapped: Vec<&str> = variants.iter().map(|v| v.as_str()).collect();
         mapped.sort_unstable();
@@ -196,6 +201,7 @@ mod tests {
             screen::PROFILE_CHANGE_PASSWORD,
             screen::PROFILE_CHANGE_USERNAME,
             screen::PROFILE_PREFERENCES,
+            screen::SUGGESTED_COMMANDERS,
         ];
         constants.sort_unstable();
         assert_eq!(mapped, constants);

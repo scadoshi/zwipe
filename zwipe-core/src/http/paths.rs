@@ -74,7 +74,7 @@ pub const GET_DECK_TAGS_ROUTE: &str = "/api/deck/tags";
 
 // == suggested commanders ==
 
-/// Ranked commander suggestions; `commander_suggestions_route` adds the limit.
+/// Ranked commander suggestions; the `limit` query caps how many.
 pub const COMMANDER_SUGGESTIONS_ROUTE: &str = "/api/commander/suggestions";
 /// POST dismisses one commander for a week; DELETE clears every dismissal.
 pub const COMMANDER_DISMISSALS_ROUTE: &str = "/api/commander/suggestions/dismissals";
@@ -155,11 +155,6 @@ pub fn remove_commander_maybeboard_card_route(oracle_id: Uuid) -> String {
 
 pub fn import_archidekt_deck_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/import/archidekt")
-}
-
-/// The suggestions list asking for at most `limit` commanders.
-pub fn commander_suggestions_route(limit: u32) -> String {
-    format!("{COMMANDER_SUGGESTIONS_ROUTE}?limit={limit}")
 }
 
 pub fn undismiss_commander_route(oracle_id: Uuid) -> String {
@@ -294,10 +289,6 @@ mod tests {
         assert_eq!(
             import_archidekt_deck_route(a),
             format!("/api/deck/{sa}/import/archidekt")
-        );
-        assert_eq!(
-            commander_suggestions_route(10),
-            "/api/commander/suggestions?limit=10"
         );
         assert_eq!(
             undismiss_commander_route(a),

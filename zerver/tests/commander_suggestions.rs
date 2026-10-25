@@ -14,8 +14,7 @@ use serde_json::{Value, json};
 use uuid::Uuid;
 use zwipe_core::http::paths::{
     COMMANDER_DISMISSALS_ROUTE, COMMANDER_SUGGESTIONS_ROUTE, DECK_ROUTE,
-    add_commander_maybeboard_card_route, commander_suggestions_route, get_deck_route,
-    undismiss_commander_route,
+    add_commander_maybeboard_card_route, get_deck_route, undismiss_commander_route,
 };
 
 /// Writes one commander's precomputed tag profile, as the synergy worker does.
@@ -83,7 +82,10 @@ async fn build_commander_deck(
 
 async fn suggestions(app: &TestApp, token: &str, limit: u32) -> Value {
     let (status, body) = app
-        .get(&commander_suggestions_route(limit), Some(token))
+        .get(
+            &format!("{COMMANDER_SUGGESTIONS_ROUTE}?limit={limit}"),
+            Some(token),
+        )
         .await;
     assert_eq!(status, StatusCode::OK, "suggestions: {body}");
     body
