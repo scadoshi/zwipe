@@ -215,3 +215,106 @@ async fn swiping_through_the_pile_serves_every_card(pool: sqlx::PgPool) {
         "every card serves once before the pile runs dry"
     );
 }
+
+/// Creates a commander deck and returns its id.
+async fn new_deck(app: &TestApp, token: &str, name: &str) -> String {
+    let (status, deck) = app
+        .post(
+            DECK_ROUTE,
+            json!({ "name": name, "format": "commander" }),
+            Some(token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+    deck["id"].as_str().unwrap().to_string()
+}
+
+/// Writes a suppression `days_ago` days old, as if it had aged in place.
+async fn suppress_aged(
+    pool: &sqlx::PgPool,
+    deck_id: &str,
+    oracle_id: uuid::Uuid,
+    source: &str,
+    days_ago: i32,
+) {
+    sqlx::query(
+        "INSERT INTO deck_card_suppressions (deck_id, oracle_id, source, suppressed_at)
+         VALUES ($1, $2, $3, now() - make_interval(days => $4))",
+    )
+    .bind(deck_id.parse::<uuid::Uuid>().unwrap())
+    .bind(oracle_id)
+    .bind(source)
+    .bind(days_ago)
+    .execute(pool)
+    .await
+    .unwrap();
+}
+
+#[sqlx::test]
+async fn skips_last_a_week_and_removals_a_month(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("ager").await;
+    app.verify_email(&uid).await;
+
+    let fresh_skip = card("Fresh Skip").mono("R");
+    let old_skip = card("Old Skip").mono("R");
+    let fresh_removal = card("Fresh Removal").mono("R");
+    let old_removal = card("Old Removal").mono("R");
+    let rows = [
+        (fresh_skip.oracle_id().unwrap(), "skip", 6),
+        (old_skip.oracle_id().unwrap(), "skip", 8),
+        (fresh_removal.oracle_id().unwrap(), "removal", 29),
+        (old_removal.oracle_id().unwrap(), "removal", 31),
+    ];
+    seed_cards(&pool, &[fresh_skip, old_skip, fresh_removal, old_removal]).await;
+    let did = new_deck(&app, &token, "Ager").await;
+    for (oracle, source, days) in rows {
+        suppress_aged(&pool, &did, oracle, source, days).await;
+    }
+
+    let mut served = deck_search_names(&app, &did, &token).await;
+    served.sort();
+    assert_eq!(
+        served,
+        ["Old Removal", "Old Skip"],
+        "a skip lasts 7 days and a removal 30; older ones serve again"
+    );
+}
+
+#[sqlx::test]
+async fn returning_cards_serve_after_unseen_ones(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("returner").await;
+    app.verify_email(&uid).await;
+
+    let alpha = card("Alpha").mono("R");
+    let alpha_oracle = alpha.oracle_id().unwrap();
+    seed_cards(
+        &pool,
+        &[alpha, card("Bravo").mono("R"), card("Charlie").mono("R")],
+    )
+    .await;
+    let did = new_deck(&app, &token, "Returner").await;
+    suppress_aged(&pool, &did, alpha_oracle, "skip", 8).await;
+
+    // Unsorted (no commander, so no synergy data) and sorted by name, where
+    // Alpha would otherwise lead: either way the returning card comes last.
+    for body in [json!({}), json!({ "order_by": "Name" })] {
+        let (status, page) = app
+            .post(
+                &search_deck_cards_route(did.parse().unwrap()),
+                body.clone(),
+                Some(&token),
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK, "deck search: {page}");
+        let names: Vec<&str> = page["cards"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| c["scryfall_data"]["name"].as_str().unwrap())
+            .collect();
+        assert_eq!(names.len(), 3, "{body}: {names:?}");
+        assert_eq!(names.last(), Some(&"Alpha"), "{body}: {names:?}");
+    }
+}

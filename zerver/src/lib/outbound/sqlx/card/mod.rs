@@ -131,6 +131,14 @@ const DEEP_POOL_FLOOR: i64 = 500;
 /// hand, early enough to be reliably seen before the page is exhausted.
 const WILDCARD_POSITION: usize = 17;
 
+/// Days a left swipe keeps a card out of the deck's swipe pile. Skipping it
+/// again restarts the clock (the insert refreshes `suppressed_at`).
+const SKIP_TTL_DAYS: i32 = 7;
+
+/// Days a deliberate removal keeps a card out of the pile: longer than a
+/// skip, since taking a card out of the deck is the stronger "doesn't fit".
+const REMOVAL_TTL_DAYS: i32 = 30;
+
 /// Base ranking for the commander-select ordering: decks-helmed popularity
 /// first (`commander_popularity`, written by the synergy worker), then
 /// `edhrec_rank` as the fallback for commanders the table doesn't cover, then
@@ -383,6 +391,17 @@ impl CardRepository for MyPostgres {
         // WHERE clauses read the predicate fields; LIMIT/OFFSET/ORDER BY read
         // the query config: the CardCriteria/CardQuery split, mirrored here.
         let criteria = request.criteria();
+        // The deck whose suppressions apply: set for the swipe pile, unset for
+        // quick add (`include_skipped`) and every deckless search.
+        let returned_deck = deck_id.filter(|_| !request.include_skipped());
+        // Sort key for returning cards: the WHERE clause drops every live
+        // suppression, so a row left for a served card is an expired one.
+        // False sorts first, so cards nobody has passed on lead the pile.
+        let push_returned = |qb: &mut QueryBuilder<Postgres>, deck_id: uuid::Uuid| {
+            qb.push("EXISTS (SELECT 1 FROM deck_card_suppressions ret WHERE ret.deck_id = ");
+            qb.push_bind(deck_id);
+            qb.push(" AND ret.oracle_id = latest_cards.oracle_id)");
+        };
         // Default synergy ordering (no explicit sort, score map present) gets
         // the signal + jitter terms, which need the pooled rollup and the
         // global rate in scope; every other path keeps the plain FROM.
@@ -462,8 +481,15 @@ impl CardRepository for MyPostgres {
                      hashtext(COALESCE(latest_cards.oracle_id::text, '') || ",
             );
             qb.push_bind(seed);
+            qb.push(") AS shuffle, ");
+            match returned_deck {
+                Some(d) => push_returned(&mut qb, d),
+                None => {
+                    qb.push("FALSE");
+                }
+            }
             qb.push(
-                ") AS shuffle, COALESCE(sig.shown, 0) AS pool_shown
+                " AS pool_returned, COALESCE(sig.shown, 0) AS pool_shown
              FROM latest_cards
              JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
              LEFT JOIN card_signal_rollup sig ON sig.card_oracle_id = latest_cards.oracle_id
@@ -495,7 +521,7 @@ impl CardRepository for MyPostgres {
             );
             qb.push_bind(seed);
             qb.push(format!(
-                ") AS shuffle, COALESCE(sel.sel_shown, 0) AS pool_shown
+                ") AS shuffle, FALSE AS pool_returned, COALESCE(sel.sel_shown, 0) AS pool_shown
              FROM latest_cards
              JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
              {POPULARITY_JOIN}
@@ -1110,19 +1136,23 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(")))");
         }
 
-        // Suppression filtering: the deck's skipped/removed cards never come
-        // back through the deck-aware search (Clear skips is the escape
-        // hatch). Quick add opts out via `include_skipped`: a typed card
-        // name is explicit intent, so suppressed cards stay findable there
-        // while the swipe pile keeps respecting them. NOT EXISTS rather than
-        // a bind array; the set can be thousands of rows. Null-oracle
+        // Suppression filtering: the deck's skipped cards stay out of the
+        // deck-aware search for SKIP_TTL_DAYS and removed cards for
+        // REMOVAL_TTL_DAYS (Clear skips brings them back sooner). Expired rows
+        // stay in the table, and the ORDER BY below serves those cards after
+        // everything unseen. Quick add opts out via `include_skipped`: a typed
+        // card name is explicit intent, so suppressed cards stay findable
+        // there while the swipe pile keeps respecting them. NOT EXISTS rather
+        // than a bind array; the set can be thousands of rows. Null-oracle
         // printings pass, matching the exclusion clause above.
-        if let Some(deck_id) = deck_id
-            && !request.include_skipped()
-        {
+        if let Some(deck_id) = returned_deck {
             sep.push("NOT EXISTS (SELECT 1 FROM deck_card_suppressions dcs WHERE dcs.deck_id = ");
             sep.push_bind_unseparated(deck_id);
-            sep.push_unseparated(" AND dcs.oracle_id = latest_cards.oracle_id)");
+            sep.push_unseparated(format!(
+                " AND dcs.oracle_id = latest_cards.oracle_id \
+                 AND dcs.suppressed_at > now() - make_interval(days => CASE dcs.source \
+                 WHEN 'removal' THEN {REMOVAL_TTL_DAYS} ELSE {SKIP_TTL_DAYS} END))"
+            ));
         }
 
         // Synergy ON: constrain to the commander's synergy pool (membership).
@@ -1176,6 +1206,10 @@ impl CardRepository for MyPostgres {
         // ORDER BY
         if let Some(order_by) = request.sort() {
             qb.push(" ORDER BY ");
+            if let Some(d) = returned_deck {
+                push_returned(&mut qb, d);
+                qb.push(", ");
+            }
             let col = match order_by {
                 CardSortKey::Name => "name",
                 CardSortKey::Cmc => "cmc",
@@ -1227,18 +1261,18 @@ impl CardRepository for MyPostgres {
             let page_index = i64::from(request.offset().min(i32::MAX as u32)) / limit.max(1);
             qb.push(format!(
                 ") SELECT * FROM ((SELECT *, 0 AS slice FROM pool \
-                 ORDER BY (rn - 1) / {BAND_SIZE}, shuffle, name ASC LIMIT "
+                 ORDER BY pool_returned, (rn - 1) / {BAND_SIZE}, shuffle, name ASC LIMIT "
             ));
             qb.push_bind(band_limit);
             qb.push(" OFFSET ");
             qb.push_bind(page_index * band_limit);
             qb.push(format!(
                 ") UNION ALL (SELECT *, 1 AS slice FROM pool WHERE rn > {DEEP_POOL_FLOOR} \
-                 ORDER BY pool_shown ASC, shuffle LIMIT {WILDCARD_SLOTS} OFFSET "
+                 ORDER BY pool_returned, pool_shown ASC, shuffle LIMIT {WILDCARD_SLOTS} OFFSET "
             ));
             qb.push_bind(page_index * WILDCARD_SLOTS);
             qb.push(format!(
-                ")) AS combined ORDER BY slice ASC, (rn - 1) / {BAND_SIZE}, shuffle, name ASC"
+                ")) AS combined ORDER BY slice ASC, pool_returned, (rn - 1) / {BAND_SIZE}, shuffle, name ASC"
             ));
         } else if let Some(scores) = synergy_scores {
             // Default synergy ordering: band shuffle over (base + signal)
@@ -1256,6 +1290,10 @@ impl CardRepository for MyPostgres {
             //          the visible cast, which reads as "same order"
             //          (2026-07-06 live Krenko tests at 0.01/0.04/0.08).
             qb.push(" ORDER BY ");
+            if let Some(d) = returned_deck {
+                push_returned(&mut qb, d);
+                qb.push(", ");
+            }
             if let Some(deck_id) = deck_id {
                 let seed = format!("{deck_id}:{}", Utc::now().date_naive());
                 qb.push("(row_number() OVER (ORDER BY ");
@@ -1287,6 +1325,11 @@ impl CardRepository for MyPostgres {
                 qb.push_bind(seed);
                 qb.push("), latest_cards.name ASC");
             }
+        } else if let Some(d) = returned_deck {
+            // No sort and no synergy data (cold cache): the pool is otherwise
+            // unordered, but returning cards still come after the rest.
+            qb.push(" ORDER BY ");
+            push_returned(&mut qb, d);
         }
 
         // The wildcard CTE carries per-slice LIMIT/OFFSET above.

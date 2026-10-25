@@ -35,9 +35,11 @@ pub struct Release {
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[Release {
-    version: "1.14.1",
+    version: "1.15.0",
     date: None,
     entries: &[
+        "Skipped cards come back to a deck's swipe pile after a week, and removed cards after a month",
+        "Cards coming back from a skip show up after the ones you haven't seen",
         "The changelog's version chips group patches under their minor version",
         "Swiping to add cards shows every recommended card before it runs out",
     ],
