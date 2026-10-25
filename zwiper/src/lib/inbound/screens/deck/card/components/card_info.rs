@@ -93,6 +93,9 @@ pub(crate) fn CardDetailsDialog(
     /// dialog footer (mirrors the deck-view expand-row → Printing button).
     #[props(default)]
     on_printings: Option<EventHandler<()>>,
+    /// Host content under the details' chips, before the action bar.
+    #[props(default)]
+    footer: Option<Element>,
 ) -> Element {
     let name = card.scryfall_data.name.clone();
     // Face state lives here so Flip can sit in the footer; the body reads it
@@ -150,6 +153,7 @@ pub(crate) fn CardDetailsDialog(
                     show_flip: false,
                     face: Some(face),
                     describe_tag: Some(describe_tag),
+                    footer,
                 }
             }
         }
