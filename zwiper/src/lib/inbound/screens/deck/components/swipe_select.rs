@@ -4,7 +4,7 @@
 //! `open`: it stays mounted while closed so its filter and swipe position
 //! persist, letting you commit a pick and reopen right where you left off. The
 //! [`SwipeMode`] decides the always-on pool (commander, partner, background, or
-//! signature spell); cards are served in **EDHREC-popularity order** through the
+//! signature spell); cards are served in **popularity order** through the
 //! full [`CardFilterSheet`]. Swipe **left** to skip, **right** to choose,
 //! **down** to undo; **up** saves to the commander maybeboard (commander and
 //! partner modes only: the pile advances and selection continues).

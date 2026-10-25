@@ -176,7 +176,7 @@ Once wasm compiles, build the authenticated experience into zite:
 
 ## Synergy & Popularity Data
 
-The cache-first synergy layer shipped, and so did its first two consumers: **synergy scores** (the Synergy chip on the add screen, guide: `synergy`) and **popularity data** (commanders serve in EDHREC-popularity order; see `swipe_select.rs`, and the in-app hint says "Most-played cards come first"). Outcomes in [`../README.md`](../README.md). What's left:
+The cache-first synergy layer shipped, and so did its first two consumers: **synergy scores** (the Synergy chip on the add screen, guide: `synergy`) and **popularity data** (commanders serve in popularity order; see `swipe_select.rs`, and the in-app hint says "Most-played cards come first"). Outcomes in [`../README.md`](../README.md). What's left:
 
 - [ ] Salt score, display per card and aggregate per deck, filtering and sorting on card search
 - [ ] Evaluate further data (themes, combos, etc.) as the layer matures
