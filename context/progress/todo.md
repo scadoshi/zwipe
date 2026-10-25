@@ -185,6 +185,7 @@ The cache-first synergy layer shipped, and so did its first two consumers: **syn
 
 ## Maintenance
 
+- [ ] **Prune `pile_end_events` once it's worth a grant (added 2026-10-25).** The pile-end telemetry table has no retention prune yet: rows hold no identity and arrive a handful a day. A prune means a `prune_pile_end_events` upkeep step like `prune_client_errors` plus a `DELETE` grant for the scoped `zervice` role in `zcripts/server/sql/zervice_role.sql`, applied by hand in production.
 - [ ] **Known wrinkle, kept on purpose 2026-10-25: deck search accepts an `offset` it ignores.** The plain and deck searches share one `CardQuery` body, so `POST /api/deck/{id}/card/search` takes `offset`, but it always serves the top of what is left, because swiped cards leave the pool before the next page (`search_deck_cards` in `zerver/src/lib/domain/deck/services.rs`). Splitting the type isn't worth it while the two bodies are otherwise identical. Revisit if either search gains fields the other doesn't use.
 
 - [x] ~~**Catalog-cache pickers fail silently with no retry**~~ SHIPPED 2026-09-22 (rides 1.10.2). A failed catalog load now raises a toast and retries instead of leaving the filter pickers empty for the session. Plan archived at `../plans/archive/catalog_cache_retry.md`.

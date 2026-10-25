@@ -20,6 +20,7 @@ use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::deck::{Board, DeckEntry, Quantity};
 use zwipe_core::domain::user::models::hints::HINT_ADD_DECK_CARDS;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
+use zwipe_core::http::contracts::metrics::PileEndKind;
 
 use super::components::card_info::{CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton};
 use super::components::printing_sheet::PrintingSheet;
@@ -271,6 +272,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             is_loading_more.set(false);
             return;
         };
+        let synergy = builder.synergy();
 
         usage_buffer().record_search();
         spawn(async move {
@@ -310,6 +312,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         stack.append(unique_new_cards);
                     } else {
                         pagination_exhausted.set(true);
+                        usage_buffer().record_pile_end(deck_id, PileEndKind::Empty, synergy);
                     }
 
                     is_loading_more.set(false);
@@ -889,6 +892,11 @@ pub fn Add(deck_id: Uuid) -> Element {
                     // pool; while warming the server searched the full pool
                     // instead, so warming is context rather than the cause.
                     if served.is_empty() {
+                        usage_buffer().record_pile_end(
+                            deck_id,
+                            PileEndKind::Empty,
+                            filter_snapshot.synergy(),
+                        );
                         let mut message = String::from("No results for this filter");
                         if filter_snapshot.synergy() {
                             message.push_str(if warming {

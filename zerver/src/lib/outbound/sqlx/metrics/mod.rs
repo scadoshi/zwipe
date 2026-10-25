@@ -587,6 +587,34 @@ impl MetricsRepository for Postgres {
             .map_err(db)?;
         }
 
+        // Pile-end reports. A report for someone else's deck is dropped, like
+        // the skip deltas above; only the deck's commander is stored.
+        for report in &batch.pile_ends {
+            let deck = query!(
+                r#"SELECT d.user_id, s.oracle_id AS "commander_oracle_id?"
+                   FROM decks d
+                   LEFT JOIN scryfall_data s ON s.id = d.commander_id
+                   WHERE d.id = $1"#,
+                report.deck_id,
+            )
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(db)?;
+            let Some(deck) = deck.filter(|row| row.user_id == user_id) else {
+                continue;
+            };
+            query!(
+                r#"INSERT INTO pile_end_events (kind, synergy, commander_oracle_id)
+                   VALUES ($1, $2, $3)"#,
+                report.kind.as_str(),
+                report.synergy,
+                deck.commander_oracle_id,
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(db)?;
+        }
+
         // Handled-error reports. Already vec-truncated and string/count-clamped
         // by the batch-level clamped() above; each entry becomes one row.
         for report in &batch.client_errors {

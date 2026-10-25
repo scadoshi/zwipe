@@ -81,6 +81,43 @@ pub struct HttpUsageBatch {
     /// keeps older clients compatible.
     #[serde(default)]
     pub client_errors: Vec<ClientErrorReport>,
+    /// Times a deck's add-screen pile ran out over the flush window. Ingest
+    /// keeps only the deck's commander, never the deck or user.
+    /// `#[serde(default)]` keeps older clients compatible.
+    #[serde(default)]
+    pub pile_ends: Vec<PileEndReport>,
+}
+
+/// How a deck's add-screen pile ran out.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PileEndKind {
+    /// No cards left to serve.
+    Empty,
+    /// Every synergy card was served, so the pile moved on to related cards.
+    SynergyExhausted,
+}
+
+impl PileEndKind {
+    /// The stored label, matching the wire spelling.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Empty => "empty",
+            Self::SynergyExhausted => "synergy_exhausted",
+        }
+    }
+}
+
+/// One time a deck's add-screen pile ran out. Ownership of `deck_id` is
+/// verified at ingest, where the deck resolves to its commander.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub struct PileEndReport {
+    /// The deck whose pile ran out.
+    pub deck_id: Uuid,
+    /// How it ran out.
+    pub kind: PileEndKind,
+    /// Whether the Synergy chip was on.
+    pub synergy: bool,
 }
 
 /// One handled-error report: a `ClientError` was surfaced to the user
@@ -292,6 +329,11 @@ impl HttpUsageBatch {
     /// adding entries (its repeats still tally into existing `count`s).
     pub const MAX_CLIENT_ERRORS_PER_FLUSH: usize = 20;
 
+    /// Maximum accepted number of pile-end reports per flush. A pile runs out
+    /// at most a few times in a ~30s window; this caps an untrusted client
+    /// from writing a runaway set of rows.
+    pub const MAX_PILE_ENDS_PER_FLUSH: usize = 20;
+
     /// Returns a copy with every counter clamped to [`Self::MAX_PER_FLUSH`], the
     /// signal list truncated to [`Self::MAX_SIGNALS_PER_FLUSH`], each signal's
     /// tallies clamped per field, and the deck-skip deltas truncated to
@@ -328,6 +370,12 @@ impl HttpUsageBatch {
                 .iter()
                 .take(Self::MAX_CLIENT_ERRORS_PER_FLUSH)
                 .map(ClientErrorReport::clamped)
+                .collect(),
+            pile_ends: self
+                .pile_ends
+                .iter()
+                .take(Self::MAX_PILE_ENDS_PER_FLUSH)
+                .copied()
                 .collect(),
         }
     }
@@ -391,7 +439,8 @@ mod tests {
 
     use super::{
         AnonymousEventKind, CardSignalDelta, ClientErrorReport, CommanderSelectDelta,
-        DeckSkipDelta, HttpAnonymousEvent, HttpCrashReport, HttpUsageBatch,
+        DeckSkipDelta, HttpAnonymousEvent, HttpCrashReport, HttpUsageBatch, PileEndKind,
+        PileEndReport,
     };
 
     #[test]
@@ -435,6 +484,7 @@ mod tests {
             deck_skips: Vec::new(),
             select_signals: Vec::new(),
             client_errors: Vec::new(),
+            pile_ends: Vec::new(),
         }
         .clamped();
         assert_eq!(clamped.swipes_right, HttpUsageBatch::MAX_PER_FLUSH);
@@ -442,6 +492,36 @@ mod tests {
         assert_eq!(clamped.swipes_up, HttpUsageBatch::MAX_PER_FLUSH);
         assert_eq!(clamped.swipes_down, 0);
         assert_eq!(clamped.searches, HttpUsageBatch::MAX_PER_FLUSH);
+    }
+
+    #[test]
+    fn clamped_truncates_pile_ends_and_old_batches_parse_without_them() {
+        let report = PileEndReport {
+            deck_id: Uuid::nil(),
+            kind: PileEndKind::Empty,
+            synergy: true,
+        };
+        let batch = HttpUsageBatch {
+            pile_ends: vec![report; HttpUsageBatch::MAX_PILE_ENDS_PER_FLUSH + 5],
+            ..Default::default()
+        };
+        assert_eq!(
+            batch.clamped().pile_ends.len(),
+            HttpUsageBatch::MAX_PILE_ENDS_PER_FLUSH
+        );
+
+        let old =
+            r#"{"swipes_right":1,"swipes_left":0,"swipes_up":0,"swipes_down":0,"searches":0}"#;
+        let parsed: HttpUsageBatch = serde_json::from_str(old).unwrap();
+        assert!(parsed.pile_ends.is_empty());
+    }
+
+    #[test]
+    fn pile_end_kind_labels_match_the_wire() {
+        for kind in [PileEndKind::Empty, PileEndKind::SynergyExhausted] {
+            let wire = serde_json::to_value(kind).unwrap();
+            assert_eq!(wire.as_str(), Some(kind.as_str()));
+        }
     }
 
     #[test]

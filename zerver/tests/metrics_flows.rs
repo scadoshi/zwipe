@@ -520,3 +520,44 @@ async fn daily_signal_budget_drops_the_excess(pool: sqlx::PgPool) {
     .unwrap();
     assert_eq!(budget, 5_001, "the budget row counts the dropped flush too");
 }
+
+#[sqlx::test]
+async fn pile_ends_store_the_commander_and_drop_other_users_decks(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, _) = app.register("drained").await;
+    let (other_token, _) = app.register("bystander").await;
+
+    let krenko = card("Krenko, Mob Boss");
+    let krenko_id = krenko.id();
+    let krenko_oracle = krenko.oracle_id().unwrap();
+    seed_cards(&pool, &[krenko]).await;
+    let mine = commander_deck(&app, &pool, &token, krenko_id).await;
+    let theirs = commander_deck(&app, &pool, &other_token, krenko_id).await;
+
+    let (status, _) = app
+        .post(
+            RECORD_USAGE_ROUTE,
+            json!({
+                "swipes_right": 0, "swipes_left": 0, "swipes_up": 0, "swipes_down": 0,
+                "searches": 0,
+                "pile_ends": [
+                    { "deck_id": mine.to_string(), "kind": "empty", "synergy": true },
+                    { "deck_id": theirs.to_string(), "kind": "empty", "synergy": false }
+                ]
+            }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT, "usage batch accepted");
+
+    let rows: Vec<(String, bool, Option<Uuid>)> =
+        sqlx::query_as("SELECT kind, synergy, commander_oracle_id FROM pile_end_events")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        rows,
+        [("empty".to_string(), true, Some(krenko_oracle))],
+        "only the reporter's own deck lands, keyed by its commander"
+    );
+}

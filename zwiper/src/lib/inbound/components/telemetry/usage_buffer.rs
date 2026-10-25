@@ -8,7 +8,8 @@ use uuid::Uuid;
 use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::http::contracts::metrics::{
-    CardSignalDelta, ClientErrorReport, CommanderSelectDelta, HttpUsageBatch,
+    CardSignalDelta, ClientErrorReport, CommanderSelectDelta, HttpUsageBatch, PileEndKind,
+    PileEndReport,
 };
 
 use crate::inbound::components::interactions::swipe::direction::Direction;
@@ -55,6 +56,9 @@ struct UsageBufferInner {
     /// flush window: an error loop increments existing counts but never
     /// grows the map past the cap.
     errors: Mutex<HashMap<ErrorKey, u32>>,
+    /// Times a deck's add-screen pile ran out, capped at
+    /// [`HttpUsageBatch::MAX_PILE_ENDS_PER_FLUSH`] per flush window.
+    pile_ends: Mutex<Vec<PileEndReport>>,
 }
 
 /// Add/skip/maybe/remove tally for one `(card, deck)` key within a flush
@@ -208,6 +212,19 @@ impl UsageBuffer {
         }
     }
 
+    /// Records one time a deck's add-screen pile ran out.
+    pub fn record_pile_end(&self, deck_id: Uuid, kind: PileEndKind, synergy: bool) {
+        if let Ok(mut ends) = self.inner.pile_ends.lock()
+            && ends.len() < HttpUsageBatch::MAX_PILE_ENDS_PER_FLUSH
+        {
+            ends.push(PileEndReport {
+                deck_id,
+                kind,
+                synergy,
+            });
+        }
+    }
+
     /// Snapshots all counters into a batch and resets them to zero.
     ///
     /// Returns `None` when every counter is zero and no signals are buffered.
@@ -275,6 +292,13 @@ impl UsageBuffer {
             })
             .collect();
 
+        let pile_ends: Vec<PileEndReport> = self
+            .inner
+            .pile_ends
+            .lock()
+            .map(|mut ends| std::mem::take(&mut *ends))
+            .unwrap_or_default();
+
         if right == 0
             && left == 0
             && up == 0
@@ -283,6 +307,7 @@ impl UsageBuffer {
             && signals.is_empty()
             && select_signals.is_empty()
             && client_errors.is_empty()
+            && pile_ends.is_empty()
         {
             return None;
         }
@@ -299,6 +324,7 @@ impl UsageBuffer {
             signals,
             select_signals,
             client_errors,
+            pile_ends,
         })
     }
 }
@@ -350,7 +376,7 @@ fn sanitized_decode_message(detail: &str) -> String {
 mod tests {
     use uuid::Uuid;
     use zwipe_client::ClientError;
-    use zwipe_core::http::contracts::metrics::HttpUsageBatch;
+    use zwipe_core::http::contracts::metrics::{HttpUsageBatch, PileEndKind, PileEndReport};
 
     use super::UsageBuffer;
     use crate::inbound::components::interactions::swipe::direction::Direction;
@@ -371,6 +397,24 @@ mod tests {
         assert_eq!(delta.deck_id, Some(deck));
         assert!(batch.deck_skips.is_empty());
 
+        assert!(buffer.snapshot_and_zero().is_none());
+    }
+
+    #[test]
+    fn a_pile_end_alone_makes_a_batch_and_drains() {
+        let buffer = UsageBuffer::new();
+        let deck = Uuid::new_v4();
+
+        buffer.record_pile_end(deck, PileEndKind::Empty, true);
+        let batch = buffer.snapshot_and_zero().unwrap();
+        assert_eq!(
+            batch.pile_ends,
+            [PileEndReport {
+                deck_id: deck,
+                kind: PileEndKind::Empty,
+                synergy: true,
+            }]
+        );
         assert!(buffer.snapshot_and_zero().is_none());
     }
 
