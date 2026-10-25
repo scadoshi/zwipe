@@ -665,6 +665,44 @@ i.ms.ms-cost.ms-gp {
     color: var(--accent-tertiary);
 }
 
+/* ---- CardDetails footer ----
+   Host content under the chip clusters (the suggested commanders screen's
+   "Why this commander?" block): a `.chips-label` heading over a bullet list
+   whose items hold plain text or a row of `.detail-chip`s. */
+.card-detail-footer {
+    margin: 0.5rem 0;
+}
+
+.card-detail-bullets {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.card-detail-bullets li {
+    position: relative;
+    padding-left: 1rem;
+    margin-bottom: 0.35rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--text-muted);
+}
+
+.card-detail-bullets li:last-child {
+    margin-bottom: 0;
+}
+
+.card-detail-bullets li::before {
+    content: "\203A";
+    position: absolute;
+    left: 0;
+    color: var(--accent-primary);
+}
+
+.card-detail-bullets .keyword-chips {
+    margin-top: 0.25rem;
+}
+
 /* ---- FlippableCardImage (components::FlippableCardImage) ----
    Base wrapper/image/flip-button rules, shared by zwiper and zite. Hosts layer
    their own per-context max bounds on `.flippable-card-wrapper.<host-class> img`. */

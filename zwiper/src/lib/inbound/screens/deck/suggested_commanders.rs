@@ -24,7 +24,7 @@ use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
 use zwipe_core::http::contracts::suggestions::{
-    HttpColorAffinity, HttpCommanderSuggestion, HttpSharedTheme, HttpSuggestionReasons,
+    HttpColorAffinity, HttpCommanderSuggestion, HttpSuggestionReasons,
 };
 
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
@@ -44,32 +44,6 @@ use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
 /// Suggestions the list shows; a shorter list after a dismissal refetches.
 const LIST_SIZE: usize = 10;
-
-/// The themes line: the shared tag labels joined with commas, or `None` when
-/// there are none.
-///
-/// A label is lowercased when only its first letter is capitalized (a plain
-/// word like "Tokens"); one with a capital further in ("Eldrazi Tribal",
-/// "ETB") is taken for a proper noun and kept as written.
-pub(crate) fn themes_line(themes: &[HttpSharedTheme]) -> Option<String> {
-    if themes.is_empty() {
-        return None;
-    }
-    let labels: Vec<String> = themes.iter().map(|t| theme_word(&t.label)).collect();
-    Some(format!("Shares your top themes: {}", labels.join(", ")))
-}
-
-fn theme_word(label: &str) -> String {
-    let proper = label.chars().skip(1).any(char::is_uppercase);
-    if proper {
-        return label.to_string();
-    }
-    let mut chars = label.chars();
-    match chars.next() {
-        Some(first) => first.to_lowercase().chain(chars).collect(),
-        None => String::new(),
-    }
-}
 
 /// One line per color the user builds in, most decks first, in the order the
 /// server sent. A color code outside WUBRG is skipped.
@@ -98,24 +72,32 @@ fn color_name(code: &str) -> Option<&'static str> {
     }
 }
 
-/// The "Why this commander" block under a suggestion's details: the themes
-/// line and one line per shared color, each omitted when empty. Renders
-/// nothing at all when both are.
+/// The "Why this commander?" block under a suggestion's details: the shared
+/// themes as chips and one bullet per shared color, each omitted when empty.
+/// Renders nothing at all when both are.
 #[component]
 pub(crate) fn SuggestionReasons(reasons: HttpSuggestionReasons, deck_count: u32) -> Element {
-    let themes = themes_line(&reasons.themes);
     let colors = color_lines(&reasons.colors, deck_count);
-    if themes.is_none() && colors.is_empty() {
+    if reasons.themes.is_empty() && colors.is_empty() {
         return rsx! {};
     }
     rsx! {
-        div { class: "suggestion-reasons",
-            span { class: "chips-label", "Why this commander" }
-            if let Some(line) = themes {
-                p { class: "suggestion-reason", "{line}" }
-            }
-            for line in colors {
-                p { key: "{line}", class: "suggestion-reason", "{line}" }
+        div { class: "card-detail-footer",
+            span { class: "chips-label", "Why this commander?" }
+            ul { class: "card-detail-bullets",
+                if !reasons.themes.is_empty() {
+                    li {
+                        "Shares your top themes:"
+                        div { class: "keyword-chips",
+                            for theme in reasons.themes {
+                                span { key: "{theme.slug}", class: "detail-chip", "{theme.label}" }
+                            }
+                        }
+                    }
+                }
+                for line in colors {
+                    li { key: "{line}", "{line}" }
+                }
             }
         }
     }
@@ -551,37 +533,11 @@ pub fn SuggestedCommanders() -> Element {
 mod tests {
     use super::*;
 
-    fn theme(label: &str) -> HttpSharedTheme {
-        HttpSharedTheme {
-            slug: label.to_lowercase(),
-            label: label.to_string(),
-        }
-    }
-
     fn color(code: &str, decks: u32) -> HttpColorAffinity {
         HttpColorAffinity {
             color: code.to_string(),
             decks,
         }
-    }
-
-    #[test]
-    fn themes_line_lowercases_plain_words_and_keeps_proper_nouns() {
-        let line = themes_line(&[theme("Tokens"), theme("Sacrifice"), theme("Goblins")]);
-        assert_eq!(
-            line.as_deref(),
-            Some("Shares your top themes: tokens, sacrifice, goblins")
-        );
-        let line = themes_line(&[theme("Eldrazi Tribal"), theme("ETB")]);
-        assert_eq!(
-            line.as_deref(),
-            Some("Shares your top themes: Eldrazi Tribal, ETB")
-        );
-    }
-
-    #[test]
-    fn themes_line_is_absent_without_themes() {
-        assert_eq!(themes_line(&[]), None);
     }
 
     #[test]

@@ -145,8 +145,8 @@ pub fn CardDetails(
     #[props(default)]
     on_examples: Option<Callback<String>>,
     /// Host content rendered after the role chips and before the action bar
-    /// (the suggested commanders screen's reasons block). `None` renders
-    /// nothing.
+    /// (the suggested commanders screen's reasons block), set off from the
+    /// chips by a muted rule. `None` renders nothing, rule included.
     #[props(default)]
     footer: Option<Element>,
 ) -> Element {
@@ -225,6 +225,9 @@ pub fn CardDetails(
             }
             if show_classification {
                 CardRoleChips { roles, tags_by_role, other_tags, describe_tag, on_examples }
+            }
+            if footer.is_some() {
+                hr { class: "card-row-rule card-row-rule-muted" }
             }
             {footer}
         }
