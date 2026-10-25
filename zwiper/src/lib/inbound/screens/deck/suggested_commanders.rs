@@ -22,6 +22,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
 use zwipe_core::http::contracts::suggestions::{
     HttpColorAffinity, HttpCommanderSuggestion, HttpSharedTheme, HttpSuggestionReasons,
 };
@@ -29,7 +30,7 @@ use zwipe_core::http::contracts::suggestions::{
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::hint_dialog::HintColored;
+use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
 use crate::inbound::router::Router;
@@ -190,7 +191,8 @@ pub fn SuggestedCommanders() -> Element {
     let toast = use_toast();
     let authed = use_authed(Screen::SuggestedCommanders);
     let seed: CreateDeckCommanderSeed = use_context();
-    let hint_open = use_signal(|| false);
+    // Auto-opens once per account, reopenable from the header "?".
+    let hint_open = use_one_time_hint(HINT_SUGGESTED_COMMANDERS);
     // Art-crop thumbnails on, as on the commander maybeboard.
     let show_row_art = use_signal(|| true);
     use_context_provider(|| ShowRowArt(show_row_art));
@@ -386,13 +388,13 @@ pub fn SuggestedCommanders() -> Element {
             HintDialog {
                 open: hint_open,
                 title: "Suggested commanders",
-                HintLine { "Commanders that fit the decks you already build" }
                 HintBullets {
                     HintBullet { HintKey { "Start deck" } " begins a deck with that commander" }
                     HintBullet { HintKey { "Maybeboard" } " saves it to your commander maybeboard" }
                     HintBullet { HintKey { color: "--color-error", "Not for me" } " hides it for a week and pulls the next one up" }
-                    HintBullet { HintKey { "Swipe" } " deals the same ranking: " HintColored { color: "--color-success", "right" } " starts a deck, " HintColored { color: "--color-warning", "up" } " saves, " HintColored { color: "--color-error", "left" } " passes" }
+                    HintBullet { HintKey { "Swipe" } " deals the same ranking: " HintColored { color: "--color-success", "right" } " starts a deck, " HintColored { color: "--color-warning", "up" } " saves, " HintColored { color: "--color-error", "left" } " skips it" }
                 }
+                HintLine { "Your top 10 for the decks you already build, best fit first. Swipe keeps going down the same ranking" }
             }
 
             div { class: "screen-content",
@@ -448,7 +450,6 @@ pub fn SuggestedCommanders() -> Element {
                                 }
                             }
                         }
-                        p { class: "suggestion-hint", "Your top 10. Tap Swipe to see more suggestions." }
                     }
                 }
             }
