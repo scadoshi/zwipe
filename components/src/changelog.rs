@@ -552,9 +552,18 @@ mod tests {
     #[test]
     fn the_compiled_in_months_list_each_minor_once() {
         let data = HttpChangelog::current();
-        let rows = rows(&data, &month("2026", "2026-10"));
+        // The newest month holds the upcoming release, so its minor leads.
+        let newest = &release_places(&data)[0];
+        let rows = rows(&data, &month(&newest.year, &newest.month));
         let minors = labels(&rows[2]);
-        assert_eq!(minors.first(), Some(&"1.14"));
+        let newest_version = &data
+            .upcoming
+            .iter()
+            .chain(&data.releases)
+            .next()
+            .unwrap()
+            .version;
+        assert_eq!(minors.first(), Some(&minor_of(newest_version)));
         assert!(minors.iter().all(|label| label.matches('.').count() == 1));
         assert_eq!(minors, distinct(minors.iter().copied()));
     }
