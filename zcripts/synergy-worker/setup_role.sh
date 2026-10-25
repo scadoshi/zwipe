@@ -8,8 +8,10 @@ set -euo pipefail
 #   synergy_requests      read/write/delete  (its own work queue)
 #   commander_synergy     read/insert/update (the cache it fills; upsert = insert+update)
 #   commander_popularity  read/insert/update (decks-helmed table it fills; upsert)
+#   commander_tag_profiles read/insert/update (profiles it builds per payload; upsert)
 #   decks                 read-only          (demand discovery)
 #   scryfall_data         read-only          (commander identity resolution)
+#   card_oracle_tags      read-only          (the tags a commander profile is built from)
 # nothing else — no users, sessions, deck_cards, etc. a compromised or buggy
 # worker cannot read accounts or touch deck contents.
 #
@@ -22,7 +24,10 @@ set -euo pipefail
 #   PSQL="sudo -u postgres psql" override how psql runs (default: sudo -u
 #   postgres psql on linux, plain psql elsewhere)
 #
-# idempotent: re-running updates the password and re-applies grants.
+# idempotent: re-running updates the password and re-applies grants. to only
+# re-apply grants on a live worker, pass its current password through
+# SYNERGY_WORKER_PASSWORD, or the generated one locks the worker out until its
+# env files are updated.
 # run AFTER the synergy tables migration — grants on missing tables fail.
 
 DB="${1:-zwipe}"
@@ -40,9 +45,9 @@ fi
 run() { $PSQL -d "$DB" -v ON_ERROR_STOP=1 "$@"; }
 
 echo "checking synergy tables exist in '$DB'..."
-MISSING=$(run -tAc "SELECT 3 - count(*) FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('synergy_requests', 'commander_synergy', 'commander_popularity')")
+MISSING=$(run -tAc "SELECT 4 - count(*) FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('synergy_requests', 'commander_synergy', 'commander_popularity', 'commander_tag_profiles')")
 if [[ "$MISSING" != "0" ]]; then
-    echo "error: synergy tables missing — run the migrations first (zerver/migrations/20260611120000_create_synergy_tables.sql and 20260707000000_create_commander_popularity.sql)"
+    echo "error: synergy tables missing — run the migrations first (zerver/migrations/20260611120000_create_synergy_tables.sql, 20260707000000_create_commander_popularity.sql and 20261026120000_create_commander_tag_profiles.sql)"
     exit 1
 fi
 
@@ -72,8 +77,12 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON synergy_requests TO $ROLE;
 GRANT SELECT, INSERT, UPDATE ON commander_synergy TO $ROLE;
 -- the decks-helmed popularity table it fills (same upsert shape; never delete)
 GRANT SELECT, INSERT, UPDATE ON commander_popularity TO $ROLE;
+-- the commander tag profiles it builds from each payload (same upsert shape)
+GRANT SELECT, INSERT, UPDATE ON commander_tag_profiles TO $ROLE;
 -- demand discovery + identity resolution, strictly read-only
 GRANT SELECT ON decks, scryfall_data TO $ROLE;
+-- the per-card oracle tags a commander profile is built from, read-only
+GRANT SELECT ON card_oracle_tags TO $ROLE;
 SQL
 
 echo
