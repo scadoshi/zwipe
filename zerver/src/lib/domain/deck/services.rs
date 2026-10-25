@@ -262,6 +262,13 @@ where
             return Err(GetDeckProfileError::Forbidden.into());
         }
 
+        // Deck search always serves from the top. The swipe pile drains its
+        // own pool (every swipe skips the card or puts it on a board, and
+        // both drop it from the next query), so an offset would jump past
+        // ranked cards nobody has seen. Quick add only ever wants the top
+        // matches. Older clients still send a growing offset; it is ignored.
+        let filter = &filter.clone().with_offset(0);
+
         // Exclude everything already in the deck: all boards by oracle_id,
         // plus profile slots (printing ids resolved to oracle, mirroring the
         // importers' slot exclusion).

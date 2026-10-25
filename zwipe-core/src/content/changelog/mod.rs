@@ -37,7 +37,10 @@ pub struct Release {
 pub const UPCOMING: &[Release] = &[Release {
     version: "1.14.1",
     date: None,
-    entries: &["The changelog's version chips group patches under their minor version"],
+    entries: &[
+        "The changelog's version chips group patches under their minor version",
+        "Swiping to add cards shows every recommended card before it runs out",
+    ],
 }];
 
 /// Shipped releases, newest first.

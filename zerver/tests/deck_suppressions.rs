@@ -154,3 +154,64 @@ async fn clear_suppressions_restores_all(pool: sqlx::PgPool) {
         "all cards serve again after clear: {restored:?}"
     );
 }
+
+/// The swipe pile drains its own pool: every card it serves is skipped (or
+/// added) before the next page, so each page must come from the top of what
+/// is left. Pages are requested the way the shipped client does, with the
+/// offset growing by the page size; an offset applied to the shrinking pool
+/// would jump past cards that were never served.
+#[sqlx::test]
+async fn swiping_through_the_pile_serves_every_card(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("drainer").await;
+    app.verify_email(&uid).await;
+
+    let names = [
+        "Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel",
+    ];
+    let cards: Vec<_> = names.iter().map(|n| card(n).mono("R")).collect();
+    seed_cards(&pool, &cards).await;
+
+    let (_, deck) = app
+        .post(
+            DECK_ROUTE,
+            json!({ "name": "Drainer", "format": "commander" }),
+            Some(&token),
+        )
+        .await;
+    let did = deck["id"].as_str().unwrap().to_string();
+
+    let page_size = 2;
+    let mut served = Vec::new();
+    for page in 0..names.len() {
+        let (status, body) = app
+            .post(
+                &search_deck_cards_route(did.parse().unwrap()),
+                json!({ "limit": page_size, "offset": page * page_size }),
+                Some(&token),
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK, "deck search: {body}");
+        let page_cards = body["cards"].as_array().unwrap().clone();
+        if page_cards.is_empty() {
+            break;
+        }
+        for c in page_cards {
+            served.push(c["scryfall_data"]["name"].as_str().unwrap().to_string());
+            let (status, _) = app
+                .post(
+                    &skip_deck_card_route(did.parse().unwrap()),
+                    json!({ "oracle_id": c["scryfall_data"]["oracle_id"] }),
+                    Some(&token),
+                )
+                .await;
+            assert_eq!(status, StatusCode::NO_CONTENT, "skip");
+        }
+    }
+
+    served.sort();
+    assert_eq!(
+        served, names,
+        "every card serves once before the pile runs dry"
+    );
+}

@@ -25,7 +25,8 @@ impl From<SearchDeckCardsError> for ApiError {
 /// Deck-aware card search: same `CardQuery` body as the plain search, but
 /// scoped to a deck: cards already in the deck (any board, plus profile
 /// slots) are excluded, and results default to synergy ordering when no
-/// explicit `order_by` is set.
+/// explicit `order_by` is set. `offset` is ignored: every page is the top of
+/// what is left, since swiped cards leave the pool before the next request.
 pub async fn search_deck_cards(
     user: AuthenticatedUser,
     State(state): State<AppState>,

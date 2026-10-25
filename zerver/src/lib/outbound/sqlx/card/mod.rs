@@ -1207,12 +1207,15 @@ impl CardRepository for MyPostgres {
             // (context/archive/wildcard_slot/server.md):
             //   band slice: the normal banded page, WILDCARD_SLOTS narrower.
             //         Offsets are consumption-aligned (page_index * band
-            //         width), so no ranked card is ever skipped between
-            //         pages; the client advances by its page size but
-            //         dedups by id, so the server owns the math here.
+            //         width) for pools that hold still between pages. The
+            //         deck swipe pile doesn't: swiped cards leave it, so the
+            //         deck service always asks for page 0 and the next page
+            //         is simply the top of what is left.
             //   deep slice: the probe, cards beyond the reachable horizon,
-            //         least-shown first, then the daily shuffle; pages walk
-            //         the deep list so a probe never repeats within a day.
+            //         least-shown first, then the daily shuffle. In a still
+            //         pool, pages walk the deep list so a probe never repeats
+            //         within a day; in the swipe pile a swiped probe leaves
+            //         the pool, so page 0 serves the next one.
             //         A pool that never reaches the horizon (tight filters,
             //         synergy ON) yields an empty slice and pure band
             //         serving, automatically.

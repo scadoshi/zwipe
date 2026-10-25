@@ -134,6 +134,13 @@ impl CardQuery {
         self.offset
     }
 
+    /// The same query starting at `offset`. Any offset is valid, so this
+    /// needs no trip back through the builder.
+    pub fn with_offset(mut self, offset: u32) -> Self {
+        self.offset = offset;
+        self
+    }
+
     /// Sort key (`order_by` on the wire).
     pub fn sort(&self) -> Option<CardSortKey> {
         self.sort
