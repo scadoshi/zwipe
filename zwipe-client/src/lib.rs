@@ -19,6 +19,8 @@ pub mod deck_card;
 pub mod error;
 /// User metrics operations.
 pub mod metrics;
+/// Suggested commanders and their dismissals.
+pub mod suggestions;
 /// User profile operations.
 pub mod user;
 /// Client version gate operations.

@@ -72,6 +72,13 @@ pub const CREATE_DECK_ROUTE: &str = DECK_ROUTE;
 pub const GET_DECK_PROFILES_ROUTE: &str = DECK_ROUTE;
 pub const GET_DECK_TAGS_ROUTE: &str = "/api/deck/tags";
 
+// == suggested commanders ==
+
+/// Ranked commander suggestions; `commander_suggestions_route` adds the limit.
+pub const COMMANDER_SUGGESTIONS_ROUTE: &str = "/api/commander/suggestions";
+/// POST dismisses one commander for a week; DELETE clears every dismissal.
+pub const COMMANDER_DISMISSALS_ROUTE: &str = "/api/commander/suggestions/dismissals";
+
 // == metrics ==
 
 pub const RECORD_USAGE_ROUTE: &str = "/api/metrics/usage";
@@ -150,6 +157,15 @@ pub fn import_archidekt_deck_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/import/archidekt")
 }
 
+/// The suggestions list asking for at most `limit` commanders.
+pub fn commander_suggestions_route(limit: u32) -> String {
+    format!("{COMMANDER_SUGGESTIONS_ROUTE}?limit={limit}")
+}
+
+pub fn undismiss_commander_route(oracle_id: Uuid) -> String {
+    format!("{COMMANDER_DISMISSALS_ROUTE}/{oracle_id}")
+}
+
 pub fn search_deck_cards_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/card/search")
 }
@@ -192,6 +208,9 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Patch, CHANGE_PASSWORD_ROUTE, true),
     (Method::Patch, CHANGE_USERNAME_ROUTE, true),
     (Method::Delete, CLEAR_COMMANDER_MAYBEBOARD_ROUTE, true),
+    (Method::Post, COMMANDER_DISMISSALS_ROUTE, true),
+    (Method::Delete, COMMANDER_DISMISSALS_ROUTE, true),
+    (Method::Get, COMMANDER_SUGGESTIONS_ROUTE, true),
     (Method::Post, CONFIRM_EMAIL_CHANGE_ROUTE, false),
     (Method::Post, CREATE_DECK_ROUTE, true),
     (Method::Delete, DELETE_USER_ROUTE, true),
@@ -275,6 +294,14 @@ mod tests {
         assert_eq!(
             import_archidekt_deck_route(a),
             format!("/api/deck/{sa}/import/archidekt")
+        );
+        assert_eq!(
+            commander_suggestions_route(10),
+            "/api/commander/suggestions?limit=10"
+        );
+        assert_eq!(
+            undismiss_commander_route(a),
+            format!("/api/commander/suggestions/dismissals/{sa}")
         );
         assert_eq!(
             search_deck_cards_route(a),
