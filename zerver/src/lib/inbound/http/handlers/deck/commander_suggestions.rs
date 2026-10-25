@@ -6,7 +6,7 @@ use axum::http::StatusCode;
 use serde::Deserialize;
 use zwipe_core::http::contracts::suggestions::{
     DEFAULT_SUGGESTION_LIMIT, HttpClearedDismissals, HttpColorAffinity, HttpCommanderSuggestion,
-    HttpCommanderSuggestions, HttpDismissCommander, HttpSharedTheme, HttpSuggestionReasons,
+    HttpCommanderSuggestions, HttpDismissCommander, HttpSharedTag, HttpSuggestionReasons,
     MAX_SUGGESTION_LIMIT,
 };
 
@@ -53,12 +53,12 @@ impl From<CommanderSuggestion> for HttpCommanderSuggestion {
         Self {
             card: value.card,
             reasons: HttpSuggestionReasons {
-                themes: value
-                    .themes
+                tags: value
+                    .tags
                     .into_iter()
-                    .map(|theme| HttpSharedTheme {
-                        slug: theme.slug,
-                        label: theme.label,
+                    .map(|tag| HttpSharedTag {
+                        slug: tag.slug,
+                        role: tag.role,
                     })
                     .collect(),
                 colors: value

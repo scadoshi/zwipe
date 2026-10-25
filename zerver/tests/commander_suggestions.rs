@@ -158,16 +158,20 @@ async fn goblin_user(app: &TestApp) -> (String, Uuid, Uuid) {
         ],
     )
     .await;
+    // sacrifice-outlet is a root of the sacrifice role, so it groups under it
+    // once the catalog carries the row; typal-goblin falls under no role.
     sqlx::query(
-        "INSERT INTO oracle_tags (id, slug, label) VALUES ($1, 'typal-goblin', 'Goblin typal')",
+        "INSERT INTO oracle_tags (id, slug, label) VALUES \
+         ($1, 'sacrifice-outlet', 'Sacrifice outlet'), ($2, 'typal-goblin', 'Goblin typal')",
     )
+    .bind(Uuid::from_u128(0x7a5))
     .bind(Uuid::from_u128(0x7a6))
     .execute(&app.pool)
     .await
     .unwrap();
 
     // The rare sacrifice tag outweighs the goblin tag in the user's profile,
-    // so the candidate's own lean decides which theme comes first.
+    // so the candidate's own lean decides which tag comes first.
     seed_profile(
         &app.pool,
         match_oid,
@@ -216,7 +220,7 @@ async fn cold_start_is_empty_with_zero_decks(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
-async fn shared_themes_rank_first_with_reasons_and_exclusions(pool: sqlx::PgPool) {
+async fn shared_tags_rank_first_with_reasons_and_exclusions(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, _, _) = goblin_user(&app).await;
 
@@ -230,17 +234,17 @@ async fn shared_themes_rank_first_with_reasons_and_exclusions(pool: sqlx::PgPool
 
     let reasons = &body["suggestions"][0]["reasons"];
     assert_eq!(
-        reasons["themes"],
+        reasons["tags"],
         json!([
-            { "slug": "typal-goblin", "label": "Goblin typal" },
-            { "slug": "sacrifice-outlet", "label": "sacrifice-outlet" },
+            { "slug": "typal-goblin", "role": null },
+            { "slug": "sacrifice-outlet", "role": "sacrifice" },
         ]),
-        "shared tags strongest first, catalog label or the slug"
+        "shared tags strongest first, each under the card display's role or none"
     );
     assert_eq!(reasons["colors"], json!([{ "color": "R", "decks": 1 }]));
 
     let stranger = &body["suggestions"][1]["reasons"];
-    assert_eq!(stranger["themes"], json!([]), "no shared tags");
+    assert_eq!(stranger["tags"], json!([]), "no shared tags");
     assert_eq!(stranger["colors"], json!([]), "white decks: none");
 }
 

@@ -33,9 +33,9 @@ pub struct HttpCommanderSuggestion {
 /// The score terms behind one suggestion, for the client to word.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HttpSuggestionReasons {
-    /// Themes the commander shares with the user's decks, strongest first, at
-    /// most 3.
-    pub themes: Vec<HttpSharedTheme>,
+    /// Oracle tags the commander shares with the user's decks, strongest
+    /// first, at most 5.
+    pub tags: Vec<HttpSharedTag>,
     /// The commander's colors the user's decks use, most-used first. Colors no
     /// deck uses are absent.
     pub colors: Vec<HttpColorAffinity>,
@@ -43,11 +43,13 @@ pub struct HttpSuggestionReasons {
 
 /// An oracle tag the user's decks and the commander both lean on.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct HttpSharedTheme {
+pub struct HttpSharedTag {
     /// The oracle tag slug.
     pub slug: String,
-    /// The tag's human label; the slug when the catalog has none.
-    pub label: String,
+    /// The card role slug (`CardRole`'s snake_case form) the tag falls under,
+    /// the same one the card's own `oracle_tags_by_role` files it beneath.
+    /// `None` is the "Other" bucket.
+    pub role: Option<String>,
 }
 
 /// How many of the user's commander decks use one of the commander's colors.
@@ -81,10 +83,16 @@ mod tests {
     #[test]
     fn reasons_round_trip() {
         let reasons = HttpSuggestionReasons {
-            themes: vec![HttpSharedTheme {
-                slug: "typal-goblin".to_string(),
-                label: "Goblin typal".to_string(),
-            }],
+            tags: vec![
+                HttpSharedTag {
+                    slug: "sacrifice-outlet".to_string(),
+                    role: Some("sacrifice".to_string()),
+                },
+                HttpSharedTag {
+                    slug: "typal-goblin".to_string(),
+                    role: None,
+                },
+            ],
             colors: vec![HttpColorAffinity {
                 color: "R".to_string(),
                 decks: 3,
@@ -93,7 +101,7 @@ mod tests {
         let json = serde_json::to_string(&reasons).unwrap();
         assert_eq!(
             json,
-            r#"{"themes":[{"slug":"typal-goblin","label":"Goblin typal"}],"colors":[{"color":"R","decks":3}]}"#
+            r#"{"tags":[{"slug":"sacrifice-outlet","role":"sacrifice"},{"slug":"typal-goblin","role":null}],"colors":[{"color":"R","decks":3}]}"#
         );
         let back: HttpSuggestionReasons = serde_json::from_str(&json).unwrap();
         assert_eq!(back, reasons);

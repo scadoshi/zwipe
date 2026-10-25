@@ -665,7 +665,7 @@ where
                 colors.sort_by_key(|color| std::cmp::Reverse(color.decks));
                 Some(CommanderSuggestion {
                     card,
-                    themes: scored.themes,
+                    tags: scored.tags,
                     colors,
                 })
             })

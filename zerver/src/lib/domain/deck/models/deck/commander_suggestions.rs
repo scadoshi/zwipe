@@ -58,11 +58,12 @@ pub struct CommanderDeck {
 
 /// An oracle tag the user's decks and a commander both lean on.
 #[derive(Debug, Clone, Deserialize, PartialEq)]
-pub struct SharedTheme {
+pub struct SharedTag {
     /// The oracle tag slug.
     pub slug: String,
-    /// The tag's label from the catalog; the slug when it has none.
-    pub label: String,
+    /// The card role the tag falls under, as the card display groups it; `None`
+    /// for a tag under no role.
+    pub role: Option<String>,
 }
 
 /// How many of the user's commander decks use one of a commander's colors.
@@ -80,7 +81,7 @@ pub struct ScoredCommander {
     /// The commander's oracle id.
     pub oracle_id: Uuid,
     /// The strongest shared tags, strongest first.
-    pub themes: Vec<SharedTheme>,
+    pub tags: Vec<SharedTag>,
 }
 
 /// One suggestion with the terms behind it.
@@ -88,8 +89,8 @@ pub struct ScoredCommander {
 pub struct CommanderSuggestion {
     /// The commander's current printing.
     pub card: Card,
-    /// Shared themes, strongest first.
-    pub themes: Vec<SharedTheme>,
+    /// Shared oracle tags, strongest first.
+    pub tags: Vec<SharedTag>,
     /// The commander's colors the user's decks use, most-used first.
     pub colors: Vec<ColorAffinity>,
 }

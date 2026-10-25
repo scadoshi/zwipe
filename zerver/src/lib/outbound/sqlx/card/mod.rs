@@ -16,7 +16,7 @@ pub mod zervice_metrics;
 use anyhow::Context;
 use chrono::{DateTime, Utc};
 use sqlx::query_builder::Separated;
-use sqlx::{Postgres, QueryBuilder, query_as, query_scalar};
+use sqlx::{Postgres, QueryBuilder, Row, query_as, query_scalar};
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
@@ -48,9 +48,12 @@ use crate::domain::card::requests::get_scryfall_data::{
 };
 use crate::domain::card::requests::get_sets::GetSetsError;
 use crate::domain::deck::models::deck::commander_suggestions::{
-    CommanderSuggestionsError, ScoredCommander, SharedTheme,
+    CommanderSuggestionsError, ScoredCommander, SharedTag,
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
+use crate::outbound::sqlx::card::helpers::oracle_tag_groups::{
+    RoleMembershipBinds, role_membership_ctes,
+};
 use crate::outbound::sqlx::card::helpers::upsert_card::{
     BatchDeltaUpsertWithTx, BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
 };
@@ -166,8 +169,8 @@ const PROFILE_TAG_LIMIT: i64 = 40;
 /// this keeps colors a tiebreak rather than the ranking.
 const W_COLOR_AFFINITY: f64 = 0.15;
 
-/// Shared tags a suggestion carries as its themes.
-const SUGGESTION_THEME_LIMIT: i64 = 3;
+/// Shared tags a suggestion carries as its reasons.
+const SUGGESTION_TAG_LIMIT: i64 = 5;
 
 /// Days a dismissal keeps a commander out of the suggestions. Dismissing it
 /// again restarts the clock.
@@ -1950,16 +1953,21 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<ScoredCommander>, CommanderSuggestionsError> {
         // Score = Σ over shared tags of user weight × commander weight, plus
         // W_COLOR_AFFINITY × the mean user share of the candidate's colors
-        // (0 for a colorless candidate). Themes are the top shared tags by
-        // that product, labeled from the catalog.
-        let rows: Vec<(uuid::Uuid, f64, serde_json::Value)> = sqlx::query_as(
-            "WITH user_profile AS (
+        // (0 for a colorless candidate). The reasons are the top shared tags
+        // by that product, each with the card role it falls under in the
+        // card display's own membership (the first role alphabetically when
+        // it falls under several; null when under none). The SQL text is
+        // literals plus parameter numbers; the data is all bound.
+        let binds = RoleMembershipBinds::new();
+        let sql = format!(
+            "WITH RECURSIVE {},
+             user_profile AS (
                  SELECT key AS oracle_tag, value::float8 AS w
-                 FROM jsonb_each_text($1::jsonb)
+                 FROM jsonb_each_text($7::jsonb)
              ),
              user_colors AS (
                  SELECT key AS color, value::float8 AS share
-                 FROM jsonb_each_text($2::jsonb)
+                 FROM jsonb_each_text($8::jsonb)
              ),
              candidates AS (
                  SELECT p.oracle_id, p.profile, lc.name, lc.color_identity
@@ -1967,11 +1975,11 @@ impl CardRepository for MyPostgres {
                  JOIN latest_cards lc ON lc.oracle_id = p.oracle_id
                  WHERE lc.layout <> 'token'
                    AND lc.legalities->>'commander' = 'legal'
-                   AND NOT (p.oracle_id = ANY($3::uuid[]))
+                   AND NOT (p.oracle_id = ANY($9::uuid[]))
                    AND NOT EXISTS (
                        SELECT 1 FROM user_commander_dismissals d
-                       WHERE d.user_id = $4 AND d.oracle_id = p.oracle_id
-                         AND d.dismissed_at > now() - make_interval(days => $5)
+                       WHERE d.user_id = $10 AND d.oracle_id = p.oracle_id
+                         AND d.dismissed_at > now() - make_interval(days => $11)
                    )
              ),
              overlap AS (
@@ -1990,14 +1998,15 @@ impl CardRepository for MyPostgres {
                  LEFT JOIN user_colors uc ON uc.color = ci.color
                  GROUP BY c.oracle_id
              ),
-             themes AS (
+             tag_role AS (
+                 SELECT slug, min(role) AS role FROM membership GROUP BY slug
+             ),
+             shared_tags AS (
                  SELECT o.oracle_id,
                         jsonb_agg(
-                            jsonb_build_object(
-                                'slug', o.oracle_tag,
-                                'label', COALESCE(ot.label, o.oracle_tag)
-                            ) ORDER BY o.w DESC, o.oracle_tag
-                        ) AS themes
+                            jsonb_build_object('slug', o.oracle_tag, 'role', tr.role)
+                            ORDER BY o.w DESC, o.oracle_tag
+                        ) AS tags
                  FROM (
                      SELECT oracle_id, oracle_tag, w,
                             row_number() OVER (
@@ -2005,37 +2014,41 @@ impl CardRepository for MyPostgres {
                             ) AS rn
                      FROM overlap
                  ) o
-                 LEFT JOIN oracle_tags ot ON ot.slug = o.oracle_tag
-                 WHERE o.rn <= $6
+                 LEFT JOIN tag_role tr ON tr.slug = o.oracle_tag
+                 WHERE o.rn <= $12
                  GROUP BY o.oracle_id
              )
              SELECT c.oracle_id,
-                    COALESCE(ts.s, 0) + $7 * cs.s AS score,
-                    COALESCE(th.themes, '[]'::jsonb) AS themes
+                    COALESCE(ts.s, 0) + $13 * cs.s AS score,
+                    COALESCE(st.tags, '[]'::jsonb) AS tags
              FROM candidates c
              LEFT JOIN tag_score ts ON ts.oracle_id = c.oracle_id
              JOIN color_score cs ON cs.oracle_id = c.oracle_id
-             LEFT JOIN themes th ON th.oracle_id = c.oracle_id
+             LEFT JOIN shared_tags st ON st.oracle_id = c.oracle_id
              ORDER BY score DESC, c.name ASC, c.oracle_id
-             LIMIT $8",
-        )
-        .bind(user_profile)
-        .bind(color_shares)
-        .bind(exclude_oracle_ids)
-        .bind(user_id)
-        .bind(DISMISSAL_TTL_DAYS)
-        .bind(SUGGESTION_THEME_LIMIT)
-        .bind(W_COLOR_AFFINITY)
-        .bind(limit)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
+             LIMIT $14",
+            role_membership_ctes(1)
+        );
+        let rows: Vec<(uuid::Uuid, f64, serde_json::Value)> = binds
+            .bind(sqlx::query(sqlx::AssertSqlSafe(sql)))
+            .bind(user_profile)
+            .bind(color_shares)
+            .bind(exclude_oracle_ids)
+            .bind(user_id)
+            .bind(DISMISSAL_TTL_DAYS)
+            .bind(SUGGESTION_TAG_LIMIT)
+            .bind(W_COLOR_AFFINITY)
+            .bind(limit)
+            .map(|row: sqlx::postgres::PgRow| (row.get(0), row.get(1), row.get(2)))
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
         rows.into_iter()
-            .map(|(oracle_id, _score, themes)| {
-                let themes: Vec<SharedTheme> = serde_json::from_value(themes)
-                    .context("commander suggestion themes")
+            .map(|(oracle_id, _score, tags)| {
+                let tags: Vec<SharedTag> = serde_json::from_value(tags)
+                    .context("commander suggestion tags")
                     .map_err(CommanderSuggestionsError::Database)?;
-                Ok(ScoredCommander { oracle_id, themes })
+                Ok(ScoredCommander { oracle_id, tags })
             })
             .collect()
     }
