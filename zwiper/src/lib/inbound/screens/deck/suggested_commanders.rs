@@ -9,9 +9,11 @@
 //! With no commander deck to read from, the screen shows a single line instead
 //! of a list.
 
+use std::collections::BTreeMap;
+
 use components::{
-    ActionBar, AlertDialog, BottomSheet, Button, ButtonVariant, DialogAction, HintBullet,
-    HintBullets, HintDialog, HintKey, HintLine, TOAST_LONG, TOAST_QUICK,
+    ActionBar, AlertDialog, BottomSheet, Button, ButtonVariant, CardRoleChips, DialogAction,
+    HintBullet, HintBullets, HintDialog, HintKey, HintLine, TOAST_LONG, TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -23,7 +25,7 @@ use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
 use zwipe_core::http::contracts::suggestions::{
-    HttpColorAffinity, HttpCommanderSuggestion, HttpSuggestionReasons,
+    HttpColorAffinity, HttpCommanderSuggestion, HttpSharedTag, HttpSuggestionReasons,
 };
 
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
@@ -52,7 +54,7 @@ pub(crate) fn color_lines(colors: &[HttpColorAffinity], deck_count: u32) -> Vec<
         .filter_map(|c| {
             let name = color_name(&c.color)?;
             Some(format!(
-                "You build in {name}: {} of your {deck_count} {}",
+                "You build in {name} ({} of your {deck_count} {})",
                 c.decks,
                 if deck_count == 1 { "deck" } else { "decks" }
             ))
@@ -71,26 +73,61 @@ fn color_name(code: &str) -> Option<&'static str> {
     }
 }
 
+/// The shared tags in the shape [`CardRoleChips`] takes: the roles in order of
+/// first appearance (the tags come strongest first), each role's tags, and the
+/// role-less tags for the "Other" bucket.
+pub(crate) fn group_shared_tags(
+    tags: &[HttpSharedTag],
+) -> (Vec<String>, BTreeMap<String, Vec<String>>, Vec<String>) {
+    let mut roles: Vec<String> = Vec::new();
+    let mut by_role: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    let mut other: Vec<String> = Vec::new();
+    for tag in tags {
+        match &tag.role {
+            Some(role) => {
+                if !roles.contains(role) {
+                    roles.push(role.clone());
+                }
+                by_role
+                    .entry(role.clone())
+                    .or_default()
+                    .push(tag.slug.clone());
+            }
+            None => other.push(tag.slug.clone()),
+        }
+    }
+    (roles, by_role, other)
+}
+
 /// The "Why this commander?" block under a suggestion's details: the shared
-/// themes as chips and one bullet per shared color, each omitted when empty.
-/// Renders nothing at all when both are.
+/// oracle tags grouped by card role, in the card's own role-chip grammar, and
+/// one bullet per shared color, each omitted when empty. Renders nothing at
+/// all when both are. The tag reveal reads the same `OtagDescribe` and
+/// `OtagExamplesOpen` contexts as the card rows, so a tapped tag shows its
+/// description and its examples button.
 #[component]
 pub(crate) fn SuggestionReasons(reasons: HttpSuggestionReasons, deck_count: u32) -> Element {
     let colors = color_lines(&reasons.colors, deck_count);
-    if reasons.themes.is_empty() && colors.is_empty() {
+    if reasons.tags.is_empty() && colors.is_empty() {
         return rsx! {};
     }
+    let (roles, tags_by_role, other_tags) = group_shared_tags(&reasons.tags);
+    let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     rsx! {
         div { class: "card-detail-footer",
             span { class: "chips-label", "Why this commander?" }
             ul { class: "card-detail-bullets",
-                if !reasons.themes.is_empty() {
+                if !reasons.tags.is_empty() {
                     li {
-                        "Shares your top themes:"
-                        div { class: "keyword-chips",
-                            for theme in reasons.themes {
-                                span { key: "{theme.slug}", class: "keyword-chip static", "{theme.label}" }
-                            }
+                        "Shares oracle tags with your decks"
+                        CardRoleChips {
+                            roles,
+                            tags_by_role,
+                            other_tags,
+                            describe_tag,
+                            on_examples,
+                            show_label: false,
                         }
                     }
                 }
@@ -545,18 +582,45 @@ mod tests {
         assert_eq!(
             lines,
             vec![
-                "You build in red: 3 of your 4 decks",
-                "You build in green: 1 of your 4 decks"
+                "You build in red (3 of your 4 decks)",
+                "You build in green (1 of your 4 decks)"
             ]
         );
         assert_eq!(
             color_lines(&[color("W", 1)], 1),
-            vec!["You build in white: 1 of your 1 deck"]
+            vec!["You build in white (1 of your 1 deck)"]
         );
     }
 
     #[test]
     fn color_lines_skip_unknown_codes() {
         assert!(color_lines(&[color("C", 2)], 2).is_empty());
+    }
+
+    fn tag(slug: &str, role: Option<&str>) -> HttpSharedTag {
+        HttpSharedTag {
+            slug: slug.to_string(),
+            role: role.map(str::to_string),
+        }
+    }
+
+    #[test]
+    fn shared_tags_group_by_role_in_first_appearance_order() {
+        let (roles, by_role, other) = group_shared_tags(&[
+            tag("sacrifice-outlet", Some("sacrifice")),
+            tag("typal-goblin", None),
+            tag("spot-removal", Some("removal")),
+            tag("aristocrats", Some("sacrifice")),
+        ]);
+        assert_eq!(roles, vec!["sacrifice", "removal"]);
+        let expected: BTreeMap<String, Vec<String>> = BTreeMap::from([
+            (
+                "sacrifice".to_string(),
+                vec!["sacrifice-outlet".to_string(), "aristocrats".to_string()],
+            ),
+            ("removal".to_string(), vec!["spot-removal".to_string()]),
+        ]);
+        assert_eq!(by_role, expected);
+        assert_eq!(other, vec!["typal-goblin"]);
     }
 }

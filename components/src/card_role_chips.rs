@@ -42,6 +42,10 @@ pub fn CardRoleChips(
     /// zwiper overlay.
     #[props(default)]
     on_examples: Option<Callback<String>>,
+    /// Whether the "Card roles" label heads the chips. A host that has its own
+    /// lead-in (the suggested commanders' reasons block) turns it off.
+    #[props(default = true)]
+    show_label: bool,
 ) -> Element {
     if roles.is_empty() && other_tags.is_empty() {
         return rsx! {};
@@ -86,7 +90,9 @@ pub fn CardRoleChips(
 
     rsx! {
         div { class: "card-roles",
-            span { class: "chips-label", "Card roles" }
+            if show_label {
+                span { class: "chips-label", "Card roles" }
+            }
             if let Some(help) = help {
                 {help}
             }

@@ -710,6 +710,12 @@ i.ms.ms-cost.ms-gp {
     margin-top: 0.25rem;
 }
 
+/* Role chips nested under a bullet's lead-in (the suggestion reasons). */
+.card-detail-bullets .card-roles {
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+}
+
 /* ---- FlippableCardImage (components::FlippableCardImage) ----
    Base wrapper/image/flip-button rules, shared by zwiper and zite. Hosts layer
    their own per-context max bounds on `.flippable-card-wrapper.<host-class> img`. */
