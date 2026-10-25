@@ -195,7 +195,7 @@ pub static GUIDES: &[Guide] = &[
                 caption: None,
             },
             Block::P(
-                "Every add saves instantly and syncs across your devices. Skips stick too: swipe left and that card stays out of this deck, even after you close the app. Each deck also keeps your place, so you can hop between decks and pick up where you left off.",
+                "Every add saves instantly and syncs across your devices. Skips stick too: swipe left and that card stays out of this deck for a week, even after you close the app. Each deck also keeps your place, so you can hop between decks and pick up where you left off.",
             ),
             Block::H2("Shape the stack"),
             Block::P(
@@ -242,7 +242,7 @@ pub static GUIDES: &[Guide] = &[
             },
             Block::H2("Skips are remembered"),
             Block::P(
-                "A left swipe keeps that card out of this deck's swipe pile, even after you reopen the app. Clear skips in the deck's More menu brings them back. The swipe-memory guide covers this in full.",
+                "A left swipe keeps that card out of this deck's swipe pile for a week, even after you reopen the app. After that it can come back, behind the cards you haven't seen yet. Clear skips in the deck's More menu brings them all back sooner. The swipe-memory guide covers this in full.",
             ),
             Block::H2("Synergy"),
             Block::P(
@@ -305,23 +305,31 @@ pub static GUIDES: &[Guide] = &[
                 caption: None,
             },
             Block::Note(
-                "A card you remove also stops showing up when adding to this deck, the same as a skip. Clear the deck's skips to bring removed cards back into the pool.",
+                "A card you remove also stops showing up when adding to this deck, for a month instead of a skip's week. Clear the deck's skips to bring removed cards back sooner.",
             ),
         ],
     },
     Guide {
         slug: "swipe-memory",
-        title: "Swipe memory: skips that stick",
-        summary: "Skips and removals stick per deck and survive closing the app. Clear skips starts a deck over.",
+        title: "Swipe memory: how long skips last",
+        summary: "A skip keeps a card out of that deck for a week and a removal for a month, even after you close the app. Clear skips starts a deck over.",
         tags: &["Swiping"],
         related: &["swipe-to-build", "remove-cards"],
         blocks: &[
             Block::Lead(
-                "Zwipe remembers the cards you pass on. Skip a card and it stays out of that deck's swipe pile, so you don't swipe past the same card twice.",
+                "Zwipe remembers the cards you pass on. Skip a card and it stays out of that deck's swipe pile for a week, so you don't swipe past it again while you're building.",
             ),
-            Block::H2("Skips stay skipped"),
+            Block::H2("A skip lasts a week"),
             Block::P(
-                "A left swipe on the add screen tells Zwipe you don't want that card in this deck. It stops appearing in the swipe pile, and it stays gone after you close and reopen the app. Quick add still finds it by name, since typing a name is explicit intent. Removing a card from a deck skips it the same way, so trimmed cards don't come back in the pile.",
+                "A left swipe on the add screen tells Zwipe you don't want that card in this deck right now. It stays out of the swipe pile for 7 days, and that holds after you close and reopen the app. Skip it again when it comes back and the 7 days start over. Quick add still finds it by name, since typing a name is explicit intent.",
+            ),
+            Block::H2("A removal lasts a month"),
+            Block::P(
+                "Removing a card from a deck keeps it out of the pile for 30 days. Taking a card out says more than passing on it once, so it stays away longer.",
+            ),
+            Block::H2("When cards come back"),
+            Block::P(
+                "Once a skip or removal runs out, the card can show up again, but only after every card you haven't seen yet. Old skips come back at the end of the pile, not the front.",
             ),
             Block::H2("It's per deck"),
             Block::P(
@@ -333,7 +341,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Changed your mind? Clear skips"),
             Block::P(
-                "Open the deck's More menu and tap Clear skips. Every card you skipped or removed for that deck comes back into the pool, and swiping starts fresh.",
+                "Open the deck's More menu and tap Clear skips. Every card you skipped or removed for that deck comes back into the pool right away, and swiping starts fresh.",
             ),
             Block::Image {
                 file: "swipe-memory/01-clear-skips.webp",

@@ -180,7 +180,7 @@ pub(crate) fn MoreButtons(
                     on_confirm: clear_skips,
                 },
             ],
-            "Cards you've skipped or removed will start showing up again when adding cards. This can't be undone."
+            "Skipped cards come back on their own after a week, and removed cards after a month. Clearing brings them all back now. This can't be undone."
         }
 
         // One dialog covers the whole share lifecycle (mirrors the Buy-deck

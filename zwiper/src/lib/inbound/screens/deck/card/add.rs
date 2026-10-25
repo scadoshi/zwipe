@@ -1510,7 +1510,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 title: "Swipe to build",
                 HintBullets {
                     HintBullet { "Swipe " HintColored { color: "--color-success", "right" } " adds the card" }
-                    HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " skips it" }
+                    HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " skips it for a week" }
                     HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " sends it to the maybeboard" }
                     HintBullet { "Swipe " HintColored { color: "--accent-tertiary", "down" } " undoes the last swipe" }
                     HintBullet { HintKey { "Synergy" } " on keeps the stack to cards that work with your commander. Off shows every legal card" }
