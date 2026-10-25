@@ -317,7 +317,7 @@ pub static GUIDES: &[Guide] = &[
         related: &["swipe-to-build", "remove-cards"],
         blocks: &[
             Block::Lead(
-                "Zwipe remembers the cards you pass on. Skip a card and it stays out of that deck's swipe pile for a week, so you don't swipe past it again while you're building.",
+                "Zwipe remembers the cards you skip. Skip one and it stays out of that deck's swipe pile for a week, so you don't swipe past it again while you're building.",
             ),
             Block::H2("A skip lasts a week"),
             Block::P(
@@ -325,7 +325,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("A removal lasts a month"),
             Block::P(
-                "Removing a card from a deck keeps it out of the pile for 30 days. Taking a card out says more than passing on it once, so it stays away longer.",
+                "Removing a card from a deck keeps it out of the pile for 30 days. Taking a card out says more than skipping it once, so it stays away longer.",
             ),
             Block::H2("When cards come back"),
             Block::P(
@@ -632,11 +632,11 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Where it lives"),
             Block::P(
-                "Open it from the Decks screen: More, then Suggested commanders. The screen shows your top 10 as card rows, best fit first. Under the list a line reads \"Your top 10. Tap Swipe to see more suggestions.\"",
+                "Open it from the Decks screen: More, then Suggested commanders. The screen shows your top 10 as card rows, best fit first. A hint on your first visit explains the screen, and the question mark in the header reopens it: the list is your top 10, and Swipe goes further down the same ranking.",
             ),
             Block::H2("Why this commander"),
             Block::P(
-                "Expand a row and the details end with a short block headed \"Why this commander\". It names the themes the commander shares with your decks, as in \"Shares your top themes: tokens, sacrifice, goblins\", and the colors you keep coming back to, as in \"You build in red: 3 of your 4 decks\". No percentages: a named theme or a count says more than a score.",
+                "Expand a row and the details end with a short block headed \"Why this commander?\". It names the themes the commander shares with your decks, shown as chips under \"Shares your top themes:\", and the colors you keep coming back to, as in \"You build in red: 3 of your 4 decks\". No percentages: a named theme or a count says more than a score.",
             ),
             Block::H2("Three actions on a row"),
             Block::Bullets(&[
@@ -650,13 +650,13 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::Swipe(&[
                 ("right", "start a new deck with this commander"),
-                ("left", "pass on it for a week"),
+                ("left", "skip it for a week"),
                 ("up", "save it to your commander maybeboard"),
                 ("down", "undo your last swipe"),
             ]),
-            Block::H2("Passing is not forever"),
+            Block::H2("Skips are not forever"),
             Block::P(
-                "Not for me and a left swipe both mean \"not right now\". A passed commander comes back on its own after seven days, the same as a skipped card. To bring every one of them back at once, open More on the suggestions screen and tap Clear dismissals. It asks first.",
+                "Not for me and a left swipe both mean \"not right now\". A skipped commander comes back on its own after seven days, the same as a skipped card. To bring every one of them back at once, open More on the suggestions screen and tap Clear skips. It asks first.",
             ),
             Block::Note(
                 "The ranking needs a deck with a commander and some cards in it to read from. Until you have one, the screen says so and shows no list.",

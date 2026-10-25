@@ -164,7 +164,7 @@ fn SuggestionRow(
 }
 
 /// Screen listing the user's top 10 suggested commanders with the reasons
-/// behind each, a Swipe overlay going deeper, and Clear dismissals under More.
+/// behind each, a Swipe overlay going deeper, and Clear skips under More.
 #[component]
 pub fn SuggestedCommanders() -> Element {
     let navigator = use_navigator();
@@ -213,7 +213,7 @@ pub fn SuggestedCommanders() -> Element {
 
     // Entries live in a plain signal so a dismissal can drop its row in place.
     // `reload` refetches: after a dismissal leaves the list short, when the
-    // Swipe overlay closes, and after Clear dismissals. A refetch with entries
+    // Swipe overlay closes, and after Clear skips. A refetch with entries
     // present is silent (no skeleton flash).
     let mut entries: Signal<Vec<HttpCommanderSuggestion>> = use_signal(Vec::new);
     let mut deck_count = use_signal(|| 0u32);
@@ -334,7 +334,7 @@ pub fn SuggestedCommanders() -> Element {
             {
                 drop_row(oracle_id);
                 toast.info(
-                    "Passed for a week".to_string(),
+                    "Skipped for a week".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
@@ -352,7 +352,7 @@ pub fn SuggestedCommanders() -> Element {
                 .is_some()
             {
                 toast.info(
-                    "Dismissals cleared".to_string(),
+                    "Skips cleared".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),
                 );
                 refetch();
@@ -464,13 +464,13 @@ pub fn SuggestedCommanders() -> Element {
                     onclick: move |_| {
                         show_clear_dialog.set(true);
                     },
-                    "Clear dismissals"
+                    "Clear skips"
                 }
             }
 
             AlertDialog {
                 open: show_clear_dialog,
-                title: "Clear dismissals",
+                title: "Clear skips",
                 actions: vec![
                     DialogAction::Dismiss("Cancel".into()),
                     DialogAction::Confirm {
@@ -479,7 +479,7 @@ pub fn SuggestedCommanders() -> Element {
                         on_confirm: clear_dismissals,
                     },
                 ],
-                "Commanders you passed on will be suggested again. This can't be undone."
+                "Commanders you skipped will be suggested again. This can't be undone."
             }
 
             // The shared overlay in its suggested mode deals this ranking down

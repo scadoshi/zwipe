@@ -434,7 +434,7 @@ pub(crate) fn SwipeSelect(
                     }
                 });
                 toast.info(
-                    "Undid pass".to_string(),
+                    "Undid skip".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),
                 );
             }
@@ -542,7 +542,7 @@ pub(crate) fn SwipeSelect(
                                         });
                                     }
                                     toast.info(
-                                        "Passed".to_string(),
+                                        "Skipped".to_string(),
                                         ToastOptions::default().duration(TOAST_QUICK),
                                     );
                                     return;
@@ -698,7 +698,7 @@ pub(crate) fn SwipeSelect(
                     HintBullets {
                         if suggested {
                             HintBullet { "Swipe " HintColored { color: "--color-success", "right" } " starts a deck with that commander" }
-                            HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " passes on it for a week" }
+                            HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " skips it for a week" }
                         } else {
                             HintBullet { "Swipe " HintColored { color: "--color-success", "right" } " picks that {noun}" }
                             HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " skips it" }
