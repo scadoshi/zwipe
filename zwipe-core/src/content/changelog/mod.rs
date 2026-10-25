@@ -40,6 +40,7 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "Skipped cards come back to a deck's swipe pile after a week, and removed cards after a month",
         "Cards coming back from a skip show up after the ones you haven't seen",
+        "Synergy keeps going with related cards once your commander's synergy picks run out",
         "The changelog's version chips group patches under their minor version",
         "Swiping to add cards shows every recommended card before it runs out",
     ],

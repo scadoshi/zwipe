@@ -199,7 +199,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Shape the stack"),
             Block::P(
-                "On a commander deck, the Synergy toggle keeps the stack to cards that fit your commander. Filter narrows by color, type, keyword, price, and more. Sorting reorders what you see without changing which cards are eligible.",
+                "On a commander deck, the Synergy toggle starts the stack with cards that fit your commander. Filter narrows by color, type, keyword, price, and more. Sorting reorders what you see without changing which cards are eligible.",
             ),
             Block::H2("Review and refine"),
             Block::P(
@@ -246,7 +246,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Synergy"),
             Block::P(
-                "On a commander deck, the Synergy chip keeps the stack to cards that fit your commander, best fits first, 25 at a time. Off, you browse every legal card. It's on by default, and toggling it reloads the stack.",
+                "On a commander deck, the Synergy chip starts the stack with cards that fit your commander, best fits first, 25 at a time, then continues with cards like your deck. Off, you browse every legal card. It's on by default, and toggling it reloads the stack.",
             ),
             Block::Note(
                 "If synergy is still warming up, Zwipe shows the full pool and tells you once.",
@@ -467,7 +467,7 @@ pub static GUIDES: &[Guide] = &[
     Guide {
         slug: "synergy",
         title: "Synergy-ranked cards",
-        summary: "On a commander deck, Synergy keeps the stack to cards that work with your commander and deals the best fits first.",
+        summary: "On a commander deck, Synergy deals the cards that work with your commander first, best fits first, then keeps going with cards like your deck.",
         tags: &["Commander", "Cards"],
         related: &["commander-and-formats", "oracle-tags"],
         blocks: &[
@@ -476,7 +476,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Where and how"),
             Block::P(
-                "The Synergy chip sits on the \"From:\" row of the Add Deck Cards screen whenever the source is Search and your deck has a commander. On, the stack is limited to fitting cards, served best-first, 25 at a time, and shuffled within each batch per deck per day, so the same commander doesn't show an identical stack twice; off, you browse everything legal. It's on by default, and toggling it reloads the stack.",
+                "The Synergy chip sits on the \"From:\" row of the Add Deck Cards screen whenever the source is Search and your deck has a commander. On, the stack starts with fitting cards, served best-first, 25 at a time, and shuffled within each batch per deck per day, so the same commander doesn't show an identical stack twice; off, you browse everything legal. It's on by default, and toggling it reloads the stack.",
             ),
             Block::Image {
                 file: "synergy/01-synergy-on.webp",
@@ -485,6 +485,10 @@ pub static GUIDES: &[Guide] = &[
             },
             Block::Note(
                 "If a commander's synergy isn't ready yet, Zwipe shows all cards and says \"Synergy warming up\" once.",
+            ),
+            Block::H2("When the synergy picks run out"),
+            Block::P(
+                "Each commander has a few hundred synergy picks. Once you've swiped through them, the stack keeps going with cards like your deck: ones that share what your commander and your best picks do, and a rare shared trait counts for more than a common one like ramp. Zwipe says so once, when the first of those cards comes up. With a sort applied, the stack stops at the last synergy pick instead.",
             ),
             Block::H2("Synergy vs. sorting"),
             Block::P(
