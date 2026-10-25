@@ -66,6 +66,15 @@ pub trait Endpoint {
     /// of it; only the id-carrying paths build a `String`.
     fn path(&self) -> Cow<'static, str>;
 
+    /// Query string without the leading `?`, or `None` for no query.
+    ///
+    /// Kept apart from [`path`](Self::path) because `Url::set_path`
+    /// percent-encodes a `?`, so a query folded into the path never reaches
+    /// the server as one.
+    fn query(&self) -> Option<String> {
+        None
+    }
+
     /// JSON request body, or `None` to send none.
     ///
     /// Bodyless calls must return `None`: sending `null` on a GET would put a

@@ -11,6 +11,8 @@ pub mod change_password;
 pub mod change_username;
 /// Commander maybeboard endpoints (per-user "maybe this commander" list).
 pub mod commander_maybeboard;
+/// Suggested commanders and their dismissals.
+pub mod commander_suggestions;
 /// Delete user account endpoint.
 pub mod delete_user;
 /// Fetch user profile endpoint.

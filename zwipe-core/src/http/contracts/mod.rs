@@ -12,5 +12,7 @@ pub mod deck;
 pub mod deck_card;
 /// User metrics request and response contracts.
 pub mod metrics;
+/// Suggested commanders and their dismissals.
+pub mod suggestions;
 /// User account request contracts.
 pub mod user;

@@ -22,6 +22,7 @@ impl ZwipeClient {
     ) -> Result<E::Response, ClientError> {
         let mut url = self.base_url.clone();
         url.set_path(&endpoint.path());
+        url.set_query(endpoint.query().as_deref());
 
         let mut request = match E::METHOD {
             Method::Get => self.client.get(url.clone()),

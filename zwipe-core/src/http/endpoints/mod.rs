@@ -14,5 +14,7 @@ pub mod deck;
 pub mod meta;
 /// Usage, event and crash reporting endpoints.
 pub mod metrics;
+/// Suggested commanders and their dismissals.
+pub mod suggestions;
 /// User profile and preference endpoints.
 pub mod user;

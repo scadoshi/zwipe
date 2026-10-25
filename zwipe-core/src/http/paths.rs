@@ -64,6 +64,16 @@ pub const GET_UB_FRANCHISES_ROUTE: &str = "/api/card/ub-franchises";
 pub const GET_SETS_ROUTE: &str = "/api/card/sets";
 pub const GET_LANGUAGES_ROUTE: &str = "/api/card/languages";
 
+// == commander ==
+
+/// Base for suggested commanders; the dismissal routes hang off it.
+pub const COMMANDER_SUGGESTIONS_ROUTE: &str = "/api/commander/suggestions";
+pub const GET_COMMANDER_SUGGESTIONS_ROUTE: &str = COMMANDER_SUGGESTIONS_ROUTE;
+/// Base for dismissals; also the dismiss (POST) and clear-all (DELETE) route.
+pub const COMMANDER_DISMISSALS_ROUTE: &str = "/api/commander/suggestions/dismissals";
+pub const DISMISS_COMMANDER_ROUTE: &str = COMMANDER_DISMISSALS_ROUTE;
+pub const CLEAR_COMMANDER_DISMISSALS_ROUTE: &str = COMMANDER_DISMISSALS_ROUTE;
+
 // == deck ==
 
 /// Base for deck routes; also the create and list route.
@@ -146,6 +156,10 @@ pub fn remove_commander_maybeboard_card_route(oracle_id: Uuid) -> String {
     format!("{COMMANDER_MAYBEBOARD_ROUTE}/{oracle_id}")
 }
 
+pub fn undismiss_commander_route(oracle_id: Uuid) -> String {
+    format!("{COMMANDER_DISMISSALS_ROUTE}/{oracle_id}")
+}
+
 pub fn import_archidekt_deck_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/import/archidekt")
 }
@@ -191,16 +205,19 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Patch, CHANGE_EMAIL_ROUTE, true),
     (Method::Patch, CHANGE_PASSWORD_ROUTE, true),
     (Method::Patch, CHANGE_USERNAME_ROUTE, true),
+    (Method::Delete, CLEAR_COMMANDER_DISMISSALS_ROUTE, true),
     (Method::Delete, CLEAR_COMMANDER_MAYBEBOARD_ROUTE, true),
     (Method::Post, CONFIRM_EMAIL_CHANGE_ROUTE, false),
     (Method::Post, CREATE_DECK_ROUTE, true),
     (Method::Delete, DELETE_USER_ROUTE, true),
+    (Method::Post, DISMISS_COMMANDER_ROUTE, true),
     (Method::Get, FEATURED_FLAVOR_ROUTE, false),
     (Method::Post, FORGOT_PASSWORD_ROUTE, false),
     (Method::Get, GET_ARTISTS_ROUTE, false),
     (Method::Get, GET_CARD_ROLES_ROUTE, false),
     (Method::Get, GET_CARD_TYPES_ROUTE, false),
     (Method::Get, GET_COMMANDER_MAYBEBOARD_ROUTE, true),
+    (Method::Get, GET_COMMANDER_SUGGESTIONS_ROUTE, true),
     (Method::Get, GET_DECK_PROFILES_ROUTE, true),
     (Method::Get, GET_DECK_TAGS_ROUTE, true),
     (Method::Get, GET_KEYWORDS_ROUTE, false),
@@ -271,6 +288,10 @@ mod tests {
         assert_eq!(
             remove_commander_maybeboard_card_route(a),
             format!("/api/user/commander-maybeboard/{sa}")
+        );
+        assert_eq!(
+            undismiss_commander_route(a),
+            format!("/api/commander/suggestions/dismissals/{sa}")
         );
         assert_eq!(
             import_archidekt_deck_route(a),
