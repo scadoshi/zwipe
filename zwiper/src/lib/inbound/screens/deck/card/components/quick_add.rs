@@ -127,8 +127,8 @@ pub fn QuickAdd(deck_id: Uuid, deck_entries: Signal<Vec<DeckEntry>>) -> Element 
                 )
                 .await
             {
-                Some((cards, _synergy_warming)) => {
-                    results.set(cards);
+                Some(page) => {
+                    results.set(page.cards);
                     is_searching.set(false);
                     show_dropdown.set(true);
                 }

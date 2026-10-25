@@ -40,12 +40,13 @@ pub async fn search_deck_cards(
         .search_deck_cards(&request, &filter)
         .await
         .map_err(ApiError::from)
-        .map(|(cards, synergy_warming)| {
+        .map(|serve| {
             (
                 StatusCode::OK,
                 Json(HttpDeckCardSearch {
-                    cards,
-                    synergy_applied: !synergy_warming,
+                    cards: serve.cards,
+                    synergy_applied: !serve.synergy_warming,
+                    related_from: serve.related_from,
                 }),
             )
         })

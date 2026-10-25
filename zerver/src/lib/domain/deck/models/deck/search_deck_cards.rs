@@ -1,12 +1,27 @@
 //! Deck-aware card search operation (exclusion + synergy ordering).
 //!
-//! Service-layer error type only: request/response shapes are the shared
-//! `CardQuery` / `Card` from zwipe_core.
+//! The request is the shared `CardQuery` from zwipe_core; this module holds
+//! the service's result and error types.
 
 use thiserror::Error;
+use zwipe_core::domain::card::Card;
 
 use crate::domain::card::models::search_card::error::SearchCardsError;
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
+
+/// One page of the deck-aware card search.
+#[derive(Debug)]
+pub struct DeckCardServe {
+    /// The cards, in serve order.
+    pub cards: Vec<Card>,
+    /// Synergy was requested but the commander's cache wasn't ready, so the
+    /// page came from the full pool.
+    pub synergy_warming: bool,
+    /// Index into `cards` where related cards begin: the synergy pool ran out
+    /// and the page was filled with cards like the deck. `None` when every
+    /// card on the page is from the pool.
+    pub related_from: Option<usize>,
+}
 
 /// Errors from the deck-aware card search (exclusion + synergy ordering).
 #[derive(Debug, Error)]

@@ -50,6 +50,10 @@ pub struct DeckServeContext<'a> {
     pub synergy_scores: Option<&'a serde_json::Value>,
     /// Constrain results to the score map's cards (the synergy membership fence).
     pub synergy_only: bool,
+    /// The deck's otag → weight profile (weights sum to 1). Ranks cards
+    /// outside the score map by how well their otags cover it; `None` leaves
+    /// them ranked by popularity alone.
+    pub neighbor_weights: Option<&'a serde_json::Value>,
     /// Commander-select shuffle seed (`{user_id}:{date}`), which enables token/emblem
     /// exclusion + the banded shuffle. `None` on every non-commander-select path.
     pub commander_seed: Option<String>,
@@ -324,6 +328,16 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn commander_synergy_payload(
         &self,
         commander_printing_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<Option<serde_json::Value>, SearchCardsError>> + Send;
+
+    /// Builds a deck's oracle-tag profile from the given cards (by oracle id)
+    /// and card names (lowercased): an otag → weight map whose weights sum to
+    /// 1, each tag weighted by how often the cards carry it and how rare it is
+    /// overall. `None` when the cards carry no usable tags.
+    fn deck_tag_profile(
+        &self,
+        oracle_ids: &[uuid::Uuid],
+        lowercased_names: &[String],
     ) -> impl Future<Output = Result<Option<serde_json::Value>, SearchCardsError>> + Send;
 
     // == category derivation ==

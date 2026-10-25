@@ -35,7 +35,7 @@ use crate::domain::deck::models::deck::get_deck::GetDeckError;
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
 use crate::domain::deck::models::deck::get_deck_tokens::GetDeckTokensError;
 use crate::domain::deck::models::deck::import_archidekt::ArchidektCard;
-use crate::domain::deck::models::deck::search_deck_cards::SearchDeckCardsError;
+use crate::domain::deck::models::deck::search_deck_cards::{DeckCardServe, SearchDeckCardsError};
 use crate::domain::deck::models::deck::share_deck::{
     GetSharedDeckError, ShareDeckError, SharedDeck,
 };
@@ -295,7 +295,7 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         &self,
         request: &GetDeckProfile,
         filter: &CardQuery,
-    ) -> impl Future<Output = Result<(Vec<Card>, bool), SearchDeckCardsError>> + Send;
+    ) -> impl Future<Output = Result<DeckCardServe, SearchDeckCardsError>> + Send;
 
     /// Retrieves all token cards produced by the cards in a deck.
     fn get_deck_tokens(
@@ -470,7 +470,7 @@ pub trait ErasedDeckService: Send + Sync + 'static {
         &'a self,
         request: &'a GetDeckProfile,
         filter: &'a CardQuery,
-    ) -> BoxFuture<'a, Result<(Vec<Card>, bool), SearchDeckCardsError>>;
+    ) -> BoxFuture<'a, Result<DeckCardServe, SearchDeckCardsError>>;
 
     /// See [`DeckService::get_deck_tokens`].
     fn get_deck_tokens<'a>(
@@ -629,7 +629,7 @@ where
         &'a self,
         request: &'a GetDeckProfile,
         filter: &'a CardQuery,
-    ) -> BoxFuture<'a, Result<(Vec<Card>, bool), SearchDeckCardsError>> {
+    ) -> BoxFuture<'a, Result<DeckCardServe, SearchDeckCardsError>> {
         Box::pin(DeckService::search_deck_cards(self, request, filter))
     }
 

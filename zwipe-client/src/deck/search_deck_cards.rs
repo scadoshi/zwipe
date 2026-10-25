@@ -6,27 +6,24 @@
 
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
 use zwipe_core::http::endpoints::deck::SearchDeckCards;
 
 use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
-    /// Deck-aware card search.
-    ///
-    /// Returns `(cards, synergy_warming)`: `synergy_warming` is true when
-    /// synergy was requested but the commander's cache was still warming, so
-    /// the server served the full pool instead of a synergy ordering.
+    /// Deck-aware card search: the page of cards, whether synergy applied
+    /// (false while the commander's cache is still warming, so the server
+    /// served the full pool), and where related cards begin when the synergy
+    /// pool ran out.
     pub async fn search_deck_cards(
         &self,
         deck_id: Uuid,
         card_filter: &CardQuery,
         session: &Session,
-    ) -> Result<(Vec<Card>, bool), ClientError> {
-        let body = self
-            .call(SearchDeckCards(deck_id, card_filter.clone()), Some(session))
-            .await?;
-        Ok((body.cards, !body.synergy_applied))
+    ) -> Result<HttpDeckCardSearch, ClientError> {
+        self.call(SearchDeckCards(deck_id, card_filter.clone()), Some(session))
+            .await
     }
 }

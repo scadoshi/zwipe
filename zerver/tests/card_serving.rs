@@ -402,3 +402,114 @@ async fn plain_search_honors_universes_beyond_preference(pool: sqlx::PgPool) {
         .await;
     assert_eq!(names(&results), vec!["Sonic the Hedgehog"]);
 }
+
+/// Synergy ON past the end of the commander's pool: the page continues with
+/// related cards, and `related_from` marks where the pool ended. Within the
+/// first band the order is a daily shuffle, so the tier-2 guarantee checked
+/// here is band membership: the one card sharing the deck's tags always
+/// makes the first page, ahead of 60 cards that share none.
+#[sqlx::test]
+async fn synergy_pool_runs_out_into_related_cards(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("tiertwo").await;
+    app.verify_email(&uid).await;
+
+    let commander = card("Tier Commander")
+        .mono("R")
+        .type_line("Legendary Creature — Goblin")
+        .commander_legal()
+        .oracle_tags(&["typal-goblin", "sacrifice-outlet"]);
+    let cmd_sid = commander.id();
+    let cmd_oid = commander.oracle_id().unwrap();
+    let mut fixtures = vec![
+        commander,
+        card("Pool Card").mono("R").oracle_tags(&["typal-goblin"]),
+        card("Near Card")
+            .mono("R")
+            .oracle_tags(&["typal-goblin", "sacrifice-outlet"]),
+    ];
+    fixtures.extend((1..=60).map(|i| {
+        card(&format!("Far{i:02}"))
+            .mono("R")
+            .oracle_tags(&["lifegain"])
+    }));
+
+    // The tag profile reads the per-oracle tag table, which the fixtures
+    // don't write.
+    let tag_rows: Vec<(uuid::Uuid, String)> = fixtures
+        .iter()
+        .filter_map(|c| c.oracle_id().map(|oid| (oid, c.name().to_string())))
+        .flat_map(|(oid, name)| {
+            let tags: &[&str] = match name.as_str() {
+                "Tier Commander" | "Near Card" => &["typal-goblin", "sacrifice-outlet"],
+                "Pool Card" => &["typal-goblin"],
+                _ => &["lifegain"],
+            };
+            tags.iter().map(move |t| (oid, t.to_string()))
+        })
+        .collect();
+    seed_cards(&pool, &fixtures).await;
+    for (oid, tag) in tag_rows {
+        sqlx::query("INSERT INTO card_oracle_tags (oracle_id, oracle_tag) VALUES ($1, $2)")
+            .bind(oid)
+            .bind(tag)
+            .execute(&pool)
+            .await
+            .unwrap();
+    }
+
+    let payload = json!({
+        "lists": [ { "tag": "hi", "cards": [ { "name": "Pool Card", "synergy": 0.5 } ] } ]
+    });
+    sqlx::query(
+        "INSERT INTO commander_synergy (oracle_id, commander_name, payload) VALUES ($1, $2, $3)",
+    )
+    .bind(cmd_oid)
+    .bind("Tier Commander")
+    .bind(sqlx::types::Json(&payload))
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let (status, deck) = app
+        .post(
+            DECK_ROUTE,
+            json!({ "name": "Tier Deck", "format": "commander" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "create: {deck}");
+    let did = deck["id"].as_str().unwrap().to_string();
+    let (status, updated) = app
+        .patch(
+            &get_deck_route(did.parse().unwrap()),
+            json!({ "commander_id": cmd_sid.to_string() }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "set commander: {updated}");
+
+    let (status, body) = app
+        .post(
+            &search_deck_cards_route(did.parse().unwrap()),
+            json!({ "synergy": true, "limit": 25 }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "serve: {body}");
+    let served = deck_search_names(&body);
+    assert_eq!(served.len(), 25, "the page fills past the pool: {served:?}");
+    assert_eq!(
+        served.first().map(String::as_str),
+        Some("Pool Card"),
+        "{served:?}"
+    );
+    assert_eq!(
+        body["related_from"], 1,
+        "related cards start after the pool"
+    );
+    assert!(
+        served.iter().any(|n| n == "Near Card"),
+        "the card sharing the deck's tags makes the first page: {served:?}"
+    );
+}

@@ -19,6 +19,7 @@ use zwipe_core::domain::deck::deck_metrics::{budget_tier, card_price, deck_price
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::deck::{Board, DeckEntry, Quantity};
 use zwipe_core::domain::user::models::hints::HINT_ADD_DECK_CARDS;
+use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 use zwipe_core::http::contracts::metrics::PileEndKind;
 
@@ -94,6 +95,19 @@ fn ensure_lands_excluded(mut filter_builder: Signal<CardQueryBuilder>) {
     }
 }
 
+/// Printing ids of the cards a page served after the synergy pool ran out.
+fn related_ids_of(page: &HttpDeckCardSearch) -> HashSet<Uuid> {
+    page.related_from
+        .map(|from| {
+            page.cards
+                .iter()
+                .skip(from)
+                .map(|card| card.card_profile.scryfall_data_id)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 #[component]
 pub fn Add(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
@@ -163,6 +177,11 @@ pub fn Add(deck_id: Uuid) -> Element {
     // True when synergy was requested but the commander's cache is still warming
     // (server fell back to the full pool); drives the inline "warming up" note.
     let mut synergy_warming = use_signal(|| false);
+    // Cards the server served after the synergy pool ran out, by printing
+    // id, and whether that switch has been announced since the last fresh
+    // stack.
+    let mut related_ids: Signal<HashSet<Uuid>> = use_signal(HashSet::new);
+    let mut related_announced = use_signal(|| false);
     let mut mb_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
     // Screen-local maybeboard stack: a cycling view over `mb_entries`.
     let mut mb_stack = use_card_stack::<MaybeboardAction>();
@@ -284,8 +303,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                 })
                 .await
             {
-                Ok((new_cards, warming)) => {
-                    synergy_warming.set(warming);
+                Ok(page) => {
+                    synergy_warming.set(!page.synergy_applied);
+                    related_ids.write().extend(related_ids_of(&page));
+                    let new_cards = page.cards;
                     let existing_cards = stack.cards();
                     let deck_ids = deck_cards_ids();
 
@@ -874,10 +895,14 @@ pub fn Add(deck_id: Uuid) -> Element {
                 })
                 .await
             {
-                Ok((cards_from_search, warming)) => {
+                Ok(page) => {
+                    let warming = !page.synergy_applied;
                     synergy_warming.set(warming);
+                    related_ids.set(related_ids_of(&page));
+                    related_announced.set(false);
                     let deck_ids = deck_cards_ids();
-                    let served: Vec<Card> = cards_from_search
+                    let served: Vec<Card> = page
+                        .cards
                         .into_iter()
                         .filter(|card| {
                             !card
@@ -1097,6 +1122,29 @@ pub fn Add(deck_id: Uuid) -> Element {
             }
         }
     };
+
+    // The first related card to reach the top of the stack: say the synergy
+    // pool is spent, once per fresh stack.
+    use_effect(move || {
+        let Some(card) = current_card() else {
+            return;
+        };
+        if *related_announced.peek()
+            || !related_ids
+                .read()
+                .contains(&card.card_profile.scryfall_data_id)
+        {
+            return;
+        }
+        related_announced.set(true);
+        toast.info(
+            "That's every synergy pick. Showing cards like your deck".to_string(),
+            ToastOptions::default().duration(TOAST_NORMAL),
+        );
+        usage_buffer
+            .peek()
+            .record_pile_end(deck_id, PileEndKind::SynergyExhausted, true);
+    });
 
     rsx! {
             div { class: "screen",
@@ -1458,11 +1506,13 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     })
                                     .await
                                 {
-                                    Ok((cards_from_search, warming)) => {
-                                        synergy_warming.set(warming);
+                                    Ok(page) => {
+                                        synergy_warming.set(!page.synergy_applied);
+                                        related_ids.set(related_ids_of(&page));
+                                        related_announced.set(false);
                                         let deck_ids = deck_cards_ids();
                                         stack.replace(
-                                            cards_from_search
+                                            page.cards
                                                 .into_iter()
                                                 .filter(|card| {
                                                     !card.scryfall_data.oracle_id.is_some_and(|oid| deck_ids.contains(&oid))
@@ -1521,7 +1571,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     HintBullet { "Swipe " HintColored { color: "--color-error", "left" } " skips it for a week" }
                     HintBullet { "Swipe " HintColored { color: "--color-warning", "up" } " sends it to the maybeboard" }
                     HintBullet { "Swipe " HintColored { color: "--accent-tertiary", "down" } " undoes the last swipe" }
-                    HintBullet { HintKey { "Synergy" } " on keeps the stack to cards that work with your commander. Off shows every legal card" }
+                    HintBullet { HintKey { "Synergy" } " on starts with cards that work with your commander, then cards like your deck. Off shows every legal card" }
                 }
                 HintLine { "Sort only reorders. It never hides cards" }
             }

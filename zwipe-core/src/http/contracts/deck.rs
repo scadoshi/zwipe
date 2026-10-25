@@ -509,6 +509,11 @@ pub struct HttpDeckCardSearch {
     /// False when synergy was requested but the commander's cache was still
     /// warming, so these are the full pool rather than a synergy ordering.
     pub synergy_applied: bool,
+    /// Index into `cards` where related cards begin: the synergy pool ran out
+    /// and the page continues with cards like the deck. Absent when every card
+    /// is from the pool; older clients ignore it and keep swiping.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub related_from: Option<usize>,
 }
 
 #[cfg(test)]

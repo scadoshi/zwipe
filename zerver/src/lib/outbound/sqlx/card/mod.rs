@@ -139,6 +139,21 @@ const SKIP_TTL_DAYS: i32 = 7;
 /// skip, since taking a card out of the deck is the stronger "doesn't fit".
 const REMOVAL_TTL_DAYS: i32 = 30;
 
+// Related-card tiers: cards outside the synergy payload are ranked above
+// UNSCORED_ANCHOR by how well their otags cover the deck's tag profile
+// (tier 2), then by overall popularity (tier 3). W_NEIGHBOR + W_POPULAR stays
+// under the 0.5 gap between UNSCORED_ANCHOR and the payload's scoreless floor
+// (-10.0), so every payload card still outranks every related card.
+
+/// Lift for a card covering the whole deck tag profile (coverage is 0..1).
+const W_NEIGHBOR: f64 = 0.4;
+
+/// Lift for the most popular card overall, fading with Scryfall's rank.
+const W_POPULAR: f64 = 0.05;
+
+/// The deck tag profile keeps its strongest this-many tags.
+const PROFILE_TAG_LIMIT: i64 = 40;
+
 /// Base ranking for the commander-select ordering: decks-helmed popularity
 /// first (`commander_popularity`, written by the synergy worker), then
 /// `edhrec_rank` as the fallback for commanders the table doesn't cover, then
@@ -382,6 +397,7 @@ impl CardRepository for MyPostgres {
             exclude_oracle_ids,
             synergy_scores,
             synergy_only,
+            neighbor_weights,
             commander_seed,
             deck_oracle_tags,
             mvp_card_roles,
@@ -427,7 +443,22 @@ impl CardRepository for MyPostgres {
         let push_score = |qb: &mut QueryBuilder<Postgres>, scores: &serde_json::Value| {
             qb.push("COALESCE((");
             qb.push_bind(scores.clone());
-            qb.push(format!(" ->> LOWER(name))::float8, {UNSCORED_ANCHOR})"));
+            // Cards outside the score map: the anchor plus the related-card
+            // tiers. COALESCE skips this branch for scored cards.
+            qb.push(format!(" ->> LOWER(name))::float8, {UNSCORED_ANCHOR}"));
+            if let Some(weights) = neighbor_weights {
+                qb.push(format!(
+                    " + {W_NEIGHBOR} * LEAST(1.0, (SELECT COALESCE(SUM(("
+                ));
+                qb.push_bind(weights.clone());
+                qb.push(
+                    " ->> tag)::float8), 0) \
+                     FROM jsonb_array_elements_text(card_profiles.oracle_tags) tag))",
+                );
+            }
+            qb.push(format!(
+                " + {W_POPULAR} / (1.0 + COALESCE(latest_cards.edhrec_rank, 1000000) / 1000.0))"
+            ));
             qb.push(format!(
                 " + {W_SIGNAL} * ((COALESCE(sig.net, 0) + {SHRINK_K} * g.rate) \
                    / (COALESCE(sig.shown, 0) + {SHRINK_K}) - g.rate)"
@@ -1840,6 +1871,54 @@ impl CardRepository for MyPostgres {
         .await
         .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
         Ok(payload)
+    }
+
+    async fn deck_tag_profile(
+        &self,
+        oracle_ids: &[uuid::Uuid],
+        lowercased_names: &[String],
+    ) -> Result<Option<serde_json::Value>, SearchCardsError> {
+        // Weight = how many profile cards carry the tag × ln(tagged cards /
+        // cards with the tag), so a shared rare tag counts far more than a
+        // common one. Cycle tags group cards by print run, not by what they
+        // do, so they carry no synergy and are left out. The strongest
+        // PROFILE_TAG_LIMIT tags are kept, normalized to sum to 1.
+        let profile: Option<serde_json::Value> = sqlx::query_scalar(
+            "WITH profile_cards AS (
+                 SELECT unnest($1::uuid[]) AS oracle_id
+                 UNION
+                 SELECT oracle_id FROM latest_cards
+                 WHERE LOWER(name) = ANY($2) AND oracle_id IS NOT NULL
+             ),
+             tf AS (
+                 SELECT t.oracle_tag, count(*)::float8 AS n
+                 FROM card_oracle_tags t JOIN profile_cards p USING (oracle_id)
+                 WHERE t.oracle_tag NOT LIKE 'cycle-%'
+                 GROUP BY t.oracle_tag
+             ),
+             df AS (
+                 SELECT oracle_tag, count(*)::float8 AS n FROM card_oracle_tags
+                 WHERE oracle_tag IN (SELECT oracle_tag FROM tf)
+                 GROUP BY oracle_tag
+             ),
+             total AS (SELECT count(DISTINCT oracle_id)::float8 AS n FROM card_oracle_tags),
+             weighted AS (
+                 SELECT tf.oracle_tag, tf.n * ln(total.n / df.n) AS w
+                 FROM tf JOIN df USING (oracle_tag) CROSS JOIN total
+                 WHERE df.n < total.n
+                 ORDER BY w DESC
+                 LIMIT $3
+             )
+             SELECT jsonb_object_agg(oracle_tag, w / (SELECT sum(w) FROM weighted))
+             FROM weighted",
+        )
+        .bind(oracle_ids)
+        .bind(lowercased_names)
+        .bind(PROFILE_TAG_LIMIT)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
+        Ok(profile)
     }
 
     // == category derivation ==

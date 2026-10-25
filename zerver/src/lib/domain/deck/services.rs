@@ -35,7 +35,7 @@ use crate::domain::deck::models::deck::get_deck::GetDeckError;
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
 use crate::domain::deck::models::deck::get_deck_tokens::GetDeckTokensError;
 use crate::domain::deck::models::deck::import_archidekt::ArchidektCard;
-use crate::domain::deck::models::deck::search_deck_cards::SearchDeckCardsError;
+use crate::domain::deck::models::deck::search_deck_cards::{DeckCardServe, SearchDeckCardsError};
 use crate::domain::deck::models::deck::share_deck::{
     GetSharedDeckError, ShareDeckError, SharedDeck,
 };
@@ -50,6 +50,10 @@ use crate::domain::deck::{
     MAX_CARDS_PER_DECK, MAX_COMMANDER_MAYBEBOARD, MAX_DECKS_PER_USER,
     UNVERIFIED_MAX_CARDS_PER_DECK, UNVERIFIED_MAX_DECKS_PER_USER,
 };
+
+/// The synergy payload's top this-many cards join the deck's own cards in its
+/// tag profile, so a deck with few cards still has a profile to rank by.
+const PROFILE_SYNERGY_CARDS: usize = 15;
 
 /// Deck service implementation handling deck building and card management operations.
 ///
@@ -256,7 +260,7 @@ where
         &self,
         request: &GetDeckProfile,
         filter: &CardQuery,
-    ) -> Result<(Vec<Card>, bool), SearchDeckCardsError> {
+    ) -> Result<DeckCardServe, SearchDeckCardsError> {
         let deck_profile = self.deck_repo.get_deck_profile(request).await?;
         if request.user_id != deck_profile.user_id {
             return Err(GetDeckProfileError::Forbidden.into());
@@ -306,26 +310,49 @@ where
         // set. A missing/unparseable signal degrades to the filter's own
         // semantics (full pool), which is also the cold-cache fallback for ON.
         let synergy_only = filter.synergy();
-        let synergy_scores: Option<serde_json::Value> = match deck_profile.commander_id {
+        let score_map: Option<HashMap<String, f64>> = match deck_profile.commander_id {
             Some(commander_id) if synergy_only || filter.sort().is_none() => self
                 .card_repo
                 .commander_synergy_payload(commander_id)
                 .await?
                 .and_then(|payload| match serde_json::from_value::<SynergyPayload>(payload) {
-                    Ok(parsed) => {
-                        let scores = parsed.into_scores();
-                        if scores.is_empty() {
-                            None
-                        } else {
-                            serde_json::to_value(scores).ok()
-                        }
-                    }
+                    Ok(parsed) => Some(parsed.into_scores()).filter(|scores| !scores.is_empty()),
                     Err(e) => {
                         tracing::warn!(%commander_id, "synergy payload failed to parse, serving unordered: {e}");
                         None
                     }
                 }),
             _ => None,
+        };
+        let synergy_scores: Option<serde_json::Value> = score_map
+            .as_ref()
+            .and_then(|scores| serde_json::to_value(scores).ok());
+
+        // The deck's tag profile ranks cards outside the synergy payload (the
+        // related-card tiers). It draws on the deck's own cards and the
+        // payload's strongest cards, so a brand-new deck has one too. A failed
+        // read degrades to popularity-only ranking rather than failing the
+        // serve.
+        let neighbor_weights: Option<serde_json::Value> = match &score_map {
+            Some(scores) => {
+                let mut ranked: Vec<(&String, &f64)> = scores.iter().collect();
+                ranked.sort_by(|a, b| b.1.total_cmp(a.1));
+                let top_names: Vec<String> = ranked
+                    .into_iter()
+                    .take(PROFILE_SYNERGY_CARDS)
+                    .map(|(name, _)| name.clone())
+                    .collect();
+                self.card_repo
+                    .deck_tag_profile(&exclude_oracle_ids, &top_names)
+                    .await
+                    .unwrap_or_else(|e| {
+                        tracing::warn!(
+                            "deck tag profile failed, ranking related cards by popularity: {e}"
+                        );
+                        None
+                    })
+            }
+            None => None,
         };
 
         // Oracle-tag-aware ordering (Phase 4): the deck's explicitly selected
@@ -355,29 +382,64 @@ where
             .await
             .unwrap_or_default();
 
-        let cards = self
+        let context = DeckServeContext {
+            deck_id: Some(deck_profile.id),
+            exclude_oracle_ids: &exclude_oracle_ids,
+            synergy_scores: synergy_scores.as_ref(),
+            synergy_only,
+            neighbor_weights: neighbor_weights.as_ref(),
+            deck_oracle_tags,
+            mvp_card_roles: &mvp_card_roles,
+            exclude_universes_beyond,
+            universes_beyond_exception_set_names,
+            ..Default::default()
+        };
+        let mut cards = self
             .card_repo
-            .search_cards_deck_aware(
-                filter,
-                DeckServeContext {
-                    deck_id: Some(deck_profile.id),
-                    exclude_oracle_ids: &exclude_oracle_ids,
-                    synergy_scores: synergy_scores.as_ref(),
-                    synergy_only,
-                    deck_oracle_tags,
-                    mvp_card_roles: &mvp_card_roles,
-                    exclude_universes_beyond,
-                    universes_beyond_exception_set_names,
-                    ..Default::default()
-                },
-            )
+            .search_cards_deck_aware(filter, context.clone())
             .await?;
+
+        // Synergy ON ran short of a full page: the pool is spent, so the rest
+        // of the page continues with related cards (the same serve without
+        // the membership fence, minus this page's cards). Only under the
+        // default ordering: an explicit sort over unrelated cards would lead
+        // with whatever sorts first, not with what fits the deck.
+        let mut related_from = None;
+        let limit = usize::try_from(filter.limit()).unwrap_or(usize::MAX);
+        if synergy_only
+            && synergy_scores.is_some()
+            && filter.sort().is_none()
+            && cards.len() < limit
+        {
+            let mut exclude_more = exclude_oracle_ids.clone();
+            exclude_more.extend(cards.iter().filter_map(|c| c.scryfall_data.oracle_id));
+            let related = self
+                .card_repo
+                .search_cards_deck_aware(
+                    filter,
+                    DeckServeContext {
+                        exclude_oracle_ids: &exclude_more,
+                        synergy_only: false,
+                        ..context
+                    },
+                )
+                .await?;
+            if !related.is_empty() {
+                related_from = Some(cards.len());
+                cards.extend(related.into_iter().take(limit - cards.len()));
+            }
+        }
+
         // Synergy was requested but the commander's cache wasn't available (cold
         // / still computing), so the search fell back to the full pool. Surfaced
-        // to the client as a header so it can show a "warming up" hint.
+        // to the client so it can show a "warming up" hint.
         let synergy_warming =
             synergy_only && deck_profile.commander_id.is_some() && synergy_scores.is_none();
-        Ok((cards, synergy_warming))
+        Ok(DeckCardServe {
+            cards,
+            synergy_warming,
+            related_from,
+        })
     }
 
     async fn get_deck_tokens(
