@@ -2,9 +2,8 @@
 //! user's own decks, each with the reasons it ranked, styled like the
 //! commander maybeboard.
 //!
-//! An expanded row offers **Start deck** (seeds the create screen), **Maybeboard**
-//! (saves to the commander maybeboard) and **Not for me** (hides it for a
-//! week). The action bar's Swipe opens the shared overlay in its suggested
+//! An expanded row offers **Create deck** (seeds the create screen), **Maybeboard**
+//! (saves to the commander maybeboard) and **Remove** (hides it for a week). The action bar's Swipe opens the shared overlay in its suggested
 //! mode, which deals the same ranking down to 100. Every action that removes
 //! a row refetches when fewer than ten remain, so the list stays a full top 10.
 //! With no commander deck to read from, the screen shows a single line instead
@@ -138,7 +137,7 @@ fn SuggestionRow(
                         evt.stop_propagation();
                         on_start.call(card_for_start.clone());
                     },
-                    "Start deck"
+                    "Create deck"
                 }
                 if let Some(oid) = oracle_id {
                     button {
@@ -155,7 +154,7 @@ fn SuggestionRow(
                             evt.stop_propagation();
                             on_dismiss.call(oid);
                         },
-                        "Not for me"
+                        "Remove"
                     }
                 }
             },
@@ -371,9 +370,9 @@ pub fn SuggestedCommanders() -> Element {
                 open: hint_open,
                 title: "Suggested commanders",
                 HintBullets {
-                    HintBullet { HintKey { "Start deck" } " begins a deck with that commander" }
+                    HintBullet { HintKey { "Create deck" } " begins a deck with that commander" }
                     HintBullet { HintKey { "Maybeboard" } " saves it to your commander maybeboard" }
-                    HintBullet { HintKey { color: "--color-error", "Not for me" } " hides it for a week and pulls the next one up" }
+                    HintBullet { HintKey { color: "--color-error", "Remove" } " hides it for a week and pulls the next one up" }
                     HintBullet { HintKey { "Swipe" } " deals the same ranking: " HintColored { color: "--color-success", "right" } " starts a deck, " HintColored { color: "--color-warning", "up" } " saves, " HintColored { color: "--color-error", "left" } " skips it" }
                 }
                 HintLine { "Your top 10 for the decks you already build, best fit first. Swipe keeps going down the same ranking" }

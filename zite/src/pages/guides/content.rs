@@ -640,9 +640,9 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Three actions on a row"),
             Block::Bullets(&[
-                "`Start deck` opens the create screen with that commander already in the command zone and the format set to Commander.",
+                "`Create deck` opens the create screen with that commander already in the command zone and the format set to Commander.",
                 "`Maybeboard` saves it to your commander maybeboard for later.",
-                "`Not for me` hides it for a week and pulls the next commander up, so the list stays a full ten.",
+                "`Remove` hides it for a week and pulls the next commander up, so the list stays a full ten.",
             ]),
             Block::H2("Swipe deeper"),
             Block::P(
@@ -656,7 +656,7 @@ pub static GUIDES: &[Guide] = &[
             ]),
             Block::H2("Skips are not forever"),
             Block::P(
-                "Not for me and a left swipe both mean \"not right now\". A skipped commander comes back on its own after seven days, the same as a skipped card. To bring every one of them back at once, open More on the suggestions screen and tap Clear skips. It asks first.",
+                "Remove and a left swipe both mean \"not right now\". A skipped commander comes back on its own after seven days, the same as a skipped card. To bring every one of them back at once, open More on the suggestions screen and tap Clear skips. It asks first.",
             ),
             Block::Note(
                 "The ranking needs a deck with a commander and some cards in it to read from. Until you have one, the screen says so and shows no list.",
