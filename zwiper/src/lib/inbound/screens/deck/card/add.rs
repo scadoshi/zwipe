@@ -198,8 +198,9 @@ pub fn Add(deck_id: Uuid) -> Element {
         }
     });
 
-    // Pagination state
-    let mut current_offset = use_signal(|| 0_u32);
+    // Pagination state. Every request asks for offset 0: swiped cards leave
+    // the server's pool, so the next page is the top of what is left, and
+    // the dedup below drops cards still waiting in the stack.
     let mut is_loading_more = use_signal(|| false);
     let pagination_limit = 25_u32; // Matches backend default
     // Keep the buffer comfortably ahead of the STACK_DEPTH window so the
@@ -227,7 +228,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                 index,
                 history,
                 filter,
-                offset: *current_offset.peek(),
                 exhausted: *pagination_exhausted.peek(),
             },
         );
@@ -265,7 +265,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         let mut builder = filter_builder.read().clone();
         builder.set_is_token(false);
         builder.set_limit(pagination_limit);
-        builder.set_offset(current_offset());
+        builder.set_offset(0);
 
         let Ok(filter) = builder.build() else {
             is_loading_more.set(false);
@@ -308,9 +308,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                     // Append unique cards to existing list
                     if !unique_new_cards.is_empty() {
                         stack.append(unique_new_cards);
-
-                        // Update offset for next load
-                        current_offset.set(current_offset() + pagination_limit);
                     } else {
                         pagination_exhausted.set(true);
                     }
@@ -805,7 +802,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                 prev_b.set_limit(pagination_limit);
                 prev_b.set_offset(0);
                 if prev_b == builder && !parked.cards.is_empty() {
-                    current_offset.set(parked.offset);
                     pagination_exhausted.set(parked.exhausted);
                     last_search_filter.set(Some(parked.filter.clone()));
                     stack.restore(parked.cards, parked.index, parked.history);
@@ -824,7 +820,6 @@ pub fn Add(deck_id: Uuid) -> Element {
         // Fresh results ease in again, even previously seen images.
         reset_image_ease();
         last_search_filter.set(None);
-        current_offset.set(0);
         pagination_exhausted.set(false);
 
         // Gate (Search mode, once the deck is loaded): only auto-serve a
@@ -907,8 +902,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                     stack.replace(served);
                     // Record the filter that produced these results.
                     last_search_filter.set(Some(filter_snapshot));
-                    // Set offset for next page
-                    current_offset.set(pagination_limit);
                     is_loading_cards.set(false);
                 }
                 Err(_) => {
@@ -1440,7 +1433,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                             stack.reset();
                             reset_image_ease();
                             last_search_filter.set(None);
-                            current_offset.set(0);
                             pagination_exhausted.set(false);
                             is_loading_cards.set(true);
 
@@ -1470,7 +1462,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                                                 .collect(),
                                         );
                                         last_search_filter.set(Some(filter_snapshot));
-                                        current_offset.set(pagination_limit);
                                         is_loading_cards.set(false);
                                     }
                                     Err(_) => {

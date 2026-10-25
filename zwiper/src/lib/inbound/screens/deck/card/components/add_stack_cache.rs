@@ -31,8 +31,6 @@ pub struct ParkedStack {
     pub history: Vec<AddAction>,
     /// Filter that produced the stack; a change invalidates the park.
     pub filter: CardQueryBuilder,
-    /// Server pagination offset (not derivable from `cards` after trimming).
-    pub offset: u32,
     /// Whether pagination had already run dry.
     pub exhausted: bool,
 }
