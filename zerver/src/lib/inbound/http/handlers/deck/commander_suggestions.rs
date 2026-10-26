@@ -5,14 +5,15 @@ use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
 use zwipe_core::http::contracts::suggestions::{
-    DEFAULT_SUGGESTION_LIMIT, HttpClearedDismissals, HttpColorAffinity, HttpCommanderSuggestion,
-    HttpCommanderSuggestions, HttpDismissCommander, HttpSharedTag, HttpSuggestionReasons,
+    DEFAULT_SUGGESTION_LIMIT, HttpBuilderProfile, HttpClearedDismissals, HttpColorAffinity,
+    HttpColorIdentityCount, HttpCommanderSuggestion, HttpCommanderSuggestions,
+    HttpDismissCommander, HttpProfileTag, HttpSharedTag, HttpSuggestionReasons,
     MAX_SUGGESTION_LIMIT,
 };
 
 use crate::domain::deck::models::deck::commander_suggestions::{
-    CommanderDismissal, CommanderSuggestion, CommanderSuggestions, CommanderSuggestionsError,
-    InvalidCommanderDismissal,
+    BuilderProfile, ColorAffinity, CommanderDismissal, CommanderSuggestion, CommanderSuggestions,
+    CommanderSuggestionsError, InvalidCommanderDismissal,
 };
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
@@ -44,6 +45,42 @@ impl From<CommanderSuggestions> for HttpCommanderSuggestions {
                 .map(HttpCommanderSuggestion::from)
                 .collect(),
             deck_count: value.deck_count,
+            profile: value.profile.map(HttpBuilderProfile::from),
+        }
+    }
+}
+
+impl From<ColorAffinity> for HttpColorAffinity {
+    fn from(value: ColorAffinity) -> Self {
+        Self {
+            color: value.color,
+            decks: value.decks,
+        }
+    }
+}
+
+impl From<BuilderProfile> for HttpBuilderProfile {
+    fn from(value: BuilderProfile) -> Self {
+        Self {
+            deck_count: value.deck_count,
+            colors: value
+                .colors
+                .into_iter()
+                .map(HttpColorAffinity::from)
+                .collect(),
+            top_identity: value.top_identity.map(|top| HttpColorIdentityCount {
+                colors: top.colors,
+                decks: top.decks,
+            }),
+            tags: value
+                .tags
+                .into_iter()
+                .map(|tag| HttpProfileTag {
+                    slug: tag.slug,
+                    role: tag.role,
+                    decks: tag.decks,
+                })
+                .collect(),
         }
     }
 }
@@ -64,10 +101,7 @@ impl From<CommanderSuggestion> for HttpCommanderSuggestion {
                 colors: value
                     .colors
                     .into_iter()
-                    .map(|color| HttpColorAffinity {
-                        color: color.color,
-                        decks: color.decks,
-                    })
+                    .map(HttpColorAffinity::from)
                     .collect(),
             },
         }

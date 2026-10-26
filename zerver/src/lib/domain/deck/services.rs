@@ -577,6 +577,7 @@ where
             return Ok(CommanderSuggestions {
                 suggestions: vec![],
                 deck_count,
+                profile: None,
             });
         }
 
@@ -600,6 +601,14 @@ where
             .await
             .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
         profiles.resize(decks.len(), None);
+        let mut profile = commander_suggestions::summarize_profile(&decks, &profiles);
+        if let Some(profile) = profile.as_mut() {
+            let slugs: Vec<String> = profile.tags.iter().map(|t| t.slug.clone()).collect();
+            let mut roles = self.card_repo.tag_roles(&slugs).await?;
+            for tag in &mut profile.tags {
+                tag.role = roles.remove(&tag.slug);
+            }
+        }
         let deck_profiles: Vec<serde_json::Value> = decks
             .iter()
             .zip(profiles)
@@ -676,6 +685,7 @@ where
         Ok(CommanderSuggestions {
             suggestions,
             deck_count,
+            profile,
         })
     }
 

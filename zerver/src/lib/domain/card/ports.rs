@@ -4,6 +4,7 @@
 //! All card data originates from the Scryfall API and is synced to the local database
 //! for fast querying.
 
+use std::collections::HashMap;
 use std::future::Future;
 
 use chrono::{DateTime, Utc};
@@ -368,6 +369,14 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         exclude_oracle_ids: &[uuid::Uuid],
         limit: i64,
     ) -> impl Future<Output = Result<Vec<ScoredCommander>, CommanderSuggestionsError>> + Send;
+
+    /// The card role each of `slugs` falls under in the card display's own
+    /// membership, the first role alphabetically when under several. Slugs
+    /// under no role are absent from the map.
+    fn tag_roles(
+        &self,
+        slugs: &[String],
+    ) -> impl Future<Output = Result<HashMap<String, String>, CommanderSuggestionsError>> + Send;
 
     // == category derivation ==
 

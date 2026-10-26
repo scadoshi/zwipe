@@ -13,6 +13,8 @@ pub mod oracle_tag;
 /// Sync metrics JSONB codecs and database model.
 pub mod zervice_metrics;
 
+use std::collections::HashMap;
+
 use anyhow::Context;
 use chrono::{DateTime, Utc};
 use sqlx::query_builder::Separated;
@@ -2144,6 +2146,33 @@ impl CardRepository for MyPostgres {
                 })
             })
             .collect()
+    }
+
+    async fn tag_roles(
+        &self,
+        slugs: &[String],
+    ) -> Result<HashMap<String, String>, CommanderSuggestionsError> {
+        if slugs.is_empty() {
+            return Ok(HashMap::new());
+        }
+        // The SQL text is literals plus parameter numbers; the data is all
+        // bound.
+        let binds = RoleMembershipBinds::new();
+        let sql = format!(
+            "WITH RECURSIVE {}
+             SELECT slug, min(role) FROM membership
+             WHERE slug = ANY($7::text[])
+             GROUP BY slug",
+            role_membership_ctes(1)
+        );
+        let rows: Vec<(String, String)> = binds
+            .bind(sqlx::query(sqlx::AssertSqlSafe(sql)))
+            .bind(slugs)
+            .map(|row: sqlx::postgres::PgRow| (row.get(0), row.get(1)))
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
+        Ok(rows.into_iter().collect())
     }
 
     // == category derivation ==

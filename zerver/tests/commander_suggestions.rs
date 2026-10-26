@@ -208,7 +208,10 @@ async fn cold_start_is_empty_with_zero_decks(pool: sqlx::PgPool) {
     seed_profile(&pool, candidate_oid, json!({ "ramp": 1.0 })).await;
 
     let body = suggestions(&app, &token, 10).await;
-    assert_eq!(body, json!({ "suggestions": [], "deck_count": 0 }));
+    assert_eq!(
+        body,
+        json!({ "suggestions": [], "deck_count": 0, "profile": null })
+    );
 
     // A deck without a commander feeds nothing either.
     let (status, deck) = app
@@ -218,6 +221,7 @@ async fn cold_start_is_empty_with_zero_decks(pool: sqlx::PgPool) {
     let body = suggestions(&app, &token, 10).await;
     assert_eq!(body["deck_count"], 0);
     assert!(names(&body).is_empty());
+    assert_eq!(body["profile"], Value::Null);
 }
 
 #[sqlx::test]
@@ -247,6 +251,22 @@ async fn shared_tags_rank_first_with_reasons_and_exclusions(pool: sqlx::PgPool) 
     let stranger = &body["suggestions"][1]["reasons"];
     assert_eq!(stranger["tags"], json!([]), "no shared tags");
     assert_eq!(stranger["colors"], json!([]), "white decks: none");
+
+    // The profile summarizes the one red deck: the rare sacrifice tag
+    // outweighs the goblin tag in it, each carried by that one deck.
+    assert_eq!(
+        body["profile"],
+        json!({
+            "deck_count": 1,
+            "colors": [{ "color": "R", "decks": 1 }],
+            "top_identity": { "colors": ["R"], "decks": 1 },
+            "tags": [
+                { "slug": "sacrifice-outlet", "role": "sacrifice", "decks": 1 },
+                { "slug": "typal-goblin", "role": null, "decks": 1 },
+            ],
+        }),
+        "profile: {body}"
+    );
 }
 
 #[sqlx::test]
@@ -376,6 +396,27 @@ async fn color_identity_matches_as_a_set_not_an_average(pool: sqlx::PgPool) {
             { "color": "U", "decks": 2 },
         ]),
         "colors still count decks, most-used first"
+    );
+    // The profile counts the same decks: white and red in all three, blue in
+    // the two Jeskai decks, and Jeskai the identity built twice.
+    let profile = &body["profile"];
+    assert_eq!(profile["deck_count"], 3);
+    assert_eq!(
+        profile["colors"],
+        json!([
+            { "color": "W", "decks": 3 },
+            { "color": "R", "decks": 3 },
+            { "color": "U", "decks": 2 },
+        ])
+    );
+    assert_eq!(
+        profile["top_identity"],
+        json!({ "colors": ["W", "U", "R"], "decks": 2 })
+    );
+    assert_eq!(
+        profile["tags"],
+        json!([{ "slug": "tokens", "role": null, "decks": 3 }]),
+        "no oracle_tags row for the tag, so it falls under no role: {body}"
     );
 }
 

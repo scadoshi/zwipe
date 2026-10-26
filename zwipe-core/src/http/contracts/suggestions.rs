@@ -11,6 +11,10 @@ pub const DEFAULT_SUGGESTION_LIMIT: u32 = 10;
 /// Most suggestions one request returns; a larger `limit` is clamped to it.
 pub const MAX_SUGGESTION_LIMIT: u32 = 100;
 
+/// Oracle tags [`HttpBuilderProfile::tags`] carries: enough for a row or two
+/// of chips over the list without becoming a second list.
+pub const PROFILE_TAG_SHOWN: usize = 8;
+
 /// Response of `GET /api/commander/suggestions`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HttpCommanderSuggestions {
@@ -19,6 +23,50 @@ pub struct HttpCommanderSuggestions {
     /// Decks with a commander that fed the profile. 0 is the cold start, when
     /// `suggestions` is empty and the client shows its empty state.
     pub deck_count: u32,
+    /// What the user builds, summarized from the same decks. `None` at the
+    /// cold start, and absent from older servers' responses.
+    #[serde(default)]
+    pub profile: Option<HttpBuilderProfile>,
+}
+
+/// The colors and oracle tags across the user's commander decks, the profile
+/// the suggestions are ranked against.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HttpBuilderProfile {
+    /// Decks with a commander, the same count as
+    /// [`HttpCommanderSuggestions::deck_count`].
+    pub deck_count: u32,
+    /// Each color the user's commanders use, with how many decks use it, most
+    /// decks first and WUBRG order between equals. Colors no deck uses are
+    /// absent.
+    pub colors: Vec<HttpColorAffinity>,
+    /// The exact color identity the user builds most, with its deck count.
+    /// `None` when there is more than one deck and every identity is unique.
+    pub top_identity: Option<HttpColorIdentityCount>,
+    /// The user's strongest oracle tags across the profiled decks, strongest
+    /// first, at most [`PROFILE_TAG_SHOWN`].
+    pub tags: Vec<HttpProfileTag>,
+}
+
+/// How many of the user's commander decks share one exact color identity.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HttpColorIdentityCount {
+    /// The identity as `W`, `U`, `B`, `R`, `G` in WUBRG order; empty for
+    /// colorless.
+    pub colors: Vec<String>,
+    /// Commander decks whose commander has exactly this identity.
+    pub decks: u32,
+}
+
+/// An oracle tag the user's decks lean on.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HttpProfileTag {
+    /// The oracle tag slug.
+    pub slug: String,
+    /// The card role slug the tag falls under, as [`HttpSharedTag::role`].
+    pub role: Option<String>,
+    /// Profiled decks whose profile carries the tag, above 0.
+    pub decks: u32,
 }
 
 /// One suggested commander and why it fits.
@@ -112,11 +160,57 @@ mod tests {
         let cold = HttpCommanderSuggestions {
             suggestions: vec![],
             deck_count: 0,
+            profile: None,
         };
         let json = serde_json::to_string(&cold).unwrap();
-        assert_eq!(json, r#"{"suggestions":[],"deck_count":0}"#);
+        assert_eq!(json, r#"{"suggestions":[],"deck_count":0,"profile":null}"#);
         let back: HttpCommanderSuggestions = serde_json::from_str(&json).unwrap();
         assert_eq!(back, cold);
+    }
+
+    #[test]
+    fn old_shape_without_profile_parses_to_none() {
+        let back: HttpCommanderSuggestions =
+            serde_json::from_str(r#"{"suggestions":[],"deck_count":3}"#).unwrap();
+        assert_eq!(back.deck_count, 3);
+        assert_eq!(back.profile, None);
+    }
+
+    #[test]
+    fn profile_round_trip() {
+        let profile = HttpBuilderProfile {
+            deck_count: 7,
+            colors: vec![
+                HttpColorAffinity {
+                    color: "R".to_string(),
+                    decks: 5,
+                },
+                HttpColorAffinity {
+                    color: "W".to_string(),
+                    decks: 4,
+                },
+            ],
+            top_identity: Some(HttpColorIdentityCount {
+                colors: vec!["W".to_string(), "R".to_string()],
+                decks: 3,
+            }),
+            tags: vec![HttpProfileTag {
+                slug: "sacrifice-outlet".to_string(),
+                role: Some("sacrifice".to_string()),
+                decks: 6,
+            }],
+        };
+        let json = serde_json::to_string(&profile).unwrap();
+        assert_eq!(
+            json,
+            r#"{"deck_count":7,"colors":[{"color":"R","decks":5},{"color":"W","decks":4}],"top_identity":{"colors":["W","R"],"decks":3},"tags":[{"slug":"sacrifice-outlet","role":"sacrifice","decks":6}]}"#
+        );
+        let back: HttpBuilderProfile = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, profile);
+
+        let no_top = r#"{"deck_count":2,"colors":[],"top_identity":null,"tags":[]}"#;
+        let back: HttpBuilderProfile = serde_json::from_str(no_top).unwrap();
+        assert_eq!(back.top_identity, None);
     }
 
     #[test]
