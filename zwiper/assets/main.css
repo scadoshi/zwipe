@@ -2436,6 +2436,17 @@ button {
     padding: 1rem 1.25rem 0;
 }
 
+/* In the Playstyle Summary the podium is a row: the settings rows' divider
+   under it, separating it from Top color. */
+.summary-podium {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.summary-podium:last-child {
+    border-bottom: none;
+}
+
 .podium-step {
     display: flex;
     flex-direction: column;

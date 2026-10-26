@@ -683,7 +683,7 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                     span { class: "info-row-value", "{summary.decks}" }
                 }
                 if let Some(identities) = podium_identities {
-                    Podium { identities }
+                    div { class: "summary-podium", Podium { identities } }
                 } else if let Some(value) = summary.color_set {
                     SummaryIdentityRow { label: "Top colors", value }
                 }
