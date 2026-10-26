@@ -142,7 +142,7 @@ fn identity_key(identity: &[Color]) -> String {
 /// grammar, then `count` when given. A single color is its pip alone, since a
 /// pip already says which color it is; colorless is the name alone.
 #[component]
-fn IdentityPips(identity: Vec<Color>, count: Option<String>) -> Element {
+pub(crate) fn IdentityPips(identity: Vec<Color>, count: Option<String>) -> Element {
     let name = identity_label(&identity);
     rsx! {
         span { class: "identity-pips",

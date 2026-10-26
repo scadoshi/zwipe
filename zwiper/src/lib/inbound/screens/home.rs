@@ -18,6 +18,7 @@ use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
 use crate::inbound::components::auth::session_upkeep::FlavorCard;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::home_hero::HomeHero;
+use crate::inbound::components::home_play_style::HomePlayStyle;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::image_preview::ImagePreview;
@@ -177,6 +178,8 @@ pub fn Home() -> Element {
                 div { class: "screen-content centered",
                 HomeHero {}
 
+                HomePlayStyle {}
+
                 // Display random flavor text
                 div { class: "container-sm text-center flex-col home-flavor content-enter-delayed",
                     match &*flavor.read() {
@@ -232,7 +235,7 @@ pub fn Home() -> Element {
                 title: "Welcome to Zwipe",
                 HintBullets {
                     HintBullet { HintKey { "Decks" } " holds your decks" }
-                    HintBullet { HintKey { "My play style" } " reads your decks and suggests commanders" }
+                    HintBullet { HintKey { "My play style" } " shows your top color sets, and its Open button suggests commanders" }
                     HintBullet { HintKey { "Account" } " has your email, password and log out" }
                     HintBullet { HintKey { "Config" } " sets your theme and which cards show" }
                     HintBullet { HintColored { color: "--color-warning", "Verify your email" } " in Account for full deck and card limits" }
@@ -246,11 +249,6 @@ pub fn Home() -> Element {
                     onclick : move |_| {
                         navigator.push(Router::DeckList {} );
                     }, "Decks"
-                }
-                Button { variant: ButtonVariant::Action,
-                    onclick : move |_| {
-                        navigator.push(Router::SuggestedCommanders {} );
-                    }, "My play style"
                 }
                 Button { variant: ButtonVariant::Action,
                     onclick : move |_| {

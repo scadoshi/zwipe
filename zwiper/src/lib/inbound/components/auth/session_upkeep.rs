@@ -23,6 +23,7 @@ use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::catalog_cache::use_catalog_cache;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_hero::CachedCounts;
+use crate::inbound::components::home_play_style::CachedPlayStyle;
 use crate::inbound::components::telemetry::anonymous::record_anonymous_event;
 use crate::inbound::components::telemetry::flush_loop::{
     spawn_usage_flusher, spawn_visibility_flusher,
@@ -182,6 +183,11 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // shows numbers.
     let cached_counts: Signal<Option<CachedCounts>> = use_signal(CachedCounts::restored);
     use_context_provider(|| cached_counts);
+
+    // Home's play style panel: the last summary, kept above the router so a
+    // return to Home shows it while the refetch is out (see CachedPlayStyle).
+    let cached_play_style: Signal<Option<CachedPlayStyle>> = use_signal(|| None);
+    use_context_provider(|| cached_play_style);
 
     // Changelog: fetched once in the background at startup and cached above the
     // router for the session, so opening the Changelog screen is instant. The
