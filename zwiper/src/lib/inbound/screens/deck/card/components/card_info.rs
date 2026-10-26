@@ -131,6 +131,11 @@ pub(crate) fn CardDetailsSheet(
             open,
             title: name,
             footer: rsx! {
+                Button {
+                    variant: ButtonVariant::Action,
+                    onclick: move |_| open.set(false),
+                    "Back"
+                }
                 if face_count > 1 {
                     Button {
                         variant: ButtonVariant::Action,
@@ -144,11 +149,6 @@ pub(crate) fn CardDetailsSheet(
                         onclick: move |_| handler.call(()),
                         "Printings"
                     }
-                }
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| open.set(false),
-                    "Close"
                 }
             },
             // The sheet's content is the scroll container; `card-rules` only
