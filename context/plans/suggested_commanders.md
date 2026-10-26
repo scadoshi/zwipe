@@ -36,6 +36,15 @@ No raw percentages: a small profile makes them swing, and a named theme or a cou
 - **Score:** overlap of the user profile with each candidate's profile, plus a color-affinity term (how often the candidate's colors appear across the user's decks). Later: partial credit for sibling tags (shared `oracle_tags.parent_ids`; 3,671 of 4,588 tags have parents).
 - **Excluded:** commanders the user already has a deck with, has in the commander maybeboard, or dismissed.
 
+## Open: variety in the top 10 (noted 2026-10-25, not built)
+
+First on-device test with real profiles: Scotty's top 10 came back all mono-blue, though he builds mostly red-white-blue and a lot of red-white. The UI is settled; this is the engine's fine-tuning, and the fix is to correct the ranking rather than inject randomness, which would hide the bias instead of removing it. Two likely causes in the scoring as built:
+
+- The color-affinity term averages the user's share of each of the candidate's colors. A mono-blue candidate scores the full blue share, while a Jeskai candidate averages blue against red and white and lands lower, so mono-color candidates in the user's top color win every time. Score the candidate's color identity as a set against the identities the user builds, so a Jeskai candidate matches Jeskai decks outright.
+- The user profile merges every deck into one bag of tags. If the blue decks share more tags than the red-white ones, the merged profile skews blue and blue-tagged candidates rise. Score each candidate against each of the user's deck profiles and take its best match, so a red-white candidate ranks on how well it fits the red-white decks alone.
+
+Once the ranking is honest, add a variety rule on top: cap how many of the 10 share one exact color identity, so the list spans the user's real range without a coin flip deciding what is on it. Confirm against Scotty's own deck breakdown (count per color identity) before building, and re-test on device with his account.
+
 ## Commander profiles (decided 2026-10-25: the synergy worker writes them)
 
 The user profile is cheap per request (the deck tag profile query runs in ~30-50 ms locally), so it is computed live and never lags. Candidate profiles are not: each comes from a payload averaging 263 cards (production 2026-10-25: 1,527 cached payloads, 86 to 445 cards each). They are precomputed into `commander_tag_profiles(commander_oracle_id, profile jsonb, computed_at)`.
