@@ -2,13 +2,15 @@
 //! user's own decks, each with the reasons it ranked, styled like the
 //! commander maybeboard.
 //!
-//! The screen fetches the ranking 100 deep once and shows the first 10. An
-//! expanded row offers **Create deck** (seeds the create screen),
-//! **Maybeboard** (saves to the commander maybeboard) and **Remove** (hides it
-//! for a week). The action bar's Swipe opens the shared overlay in its
-//! suggested mode, which deals the same held list. Every action that removes
-//! a row fills from the held list and refetches only when fewer than ten
-//! remain, so the list stays a full top 10. Over the list, a panel
+//! The screen fetches the ranking 100 deep once and shows the first 10. A
+//! Show row over everything holds one chip per color identity among the 100;
+//! a tapped chip narrows the held list to that identity, and the Art chip
+//! toggles the row thumbnails. An expanded row offers **Create deck** (seeds
+//! the create screen), **Maybeboard** (saves to the commander maybeboard) and
+//! **Remove** (hides it for a week). The action bar's Swipe opens the shared
+//! overlay in its suggested mode, which deals the same held list. Every action
+//! that removes a row fills from the held list and refetches only when fewer
+//! than ten remain, so the list stays a full top 10. Over the list, a panel
 //! sums up what the user builds: the deck count with the most common color set
 //! and color, then charts of the colors, card roles and oracle tags across the
 //! decks, the profile the ranking reads. With no commander deck to read
@@ -29,6 +31,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_role::role_short_label;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
@@ -61,9 +64,87 @@ const LIST_SIZE: usize = 10;
 /// [`LIST_SIZE`] of them and Swipe deals them all.
 const HELD_SIZE: u32 = MAX_SUGGESTION_LIMIT;
 
-/// The first [`LIST_SIZE`] of the held list, the rows the screen shows.
+/// A commander's exact color identity in WUBRG order, each color once; empty
+/// is colorless.
+pub(crate) fn identity_of(colors: &[Color]) -> Vec<Color> {
+    Color::all()
+        .into_iter()
+        .filter(|c| colors.contains(c))
+        .collect()
+}
+
+/// A suggestion's colors, the identity the Show chips read.
+fn suggestion_colors(suggestion: &HttpCommanderSuggestion) -> &[Color] {
+    &suggestion.card.scryfall_data.color_identity
+}
+
+/// The distinct color identities among `colors` (one entry per commander), in
+/// the deck list's group order: fewest colors first, WUBRG order between
+/// identities of the same size, colorless last.
+pub(crate) fn identities_present<'a>(
+    colors: impl IntoIterator<Item = &'a [Color]>,
+) -> Vec<Vec<Color>> {
+    let mut identities: Vec<Vec<Color>> = Vec::new();
+    for commander in colors {
+        let identity = identity_of(commander);
+        if !identities.contains(&identity) {
+            identities.push(identity);
+        }
+    }
+    identities.sort_by_key(|identity| {
+        let order: Vec<usize> = identity
+            .iter()
+            .map(|c| Color::all().iter().position(|a| a == c).unwrap_or(0))
+            .collect();
+        (identity.is_empty(), identity.len(), order)
+    });
+    identities
+}
+
+/// The items whose `colors` are exactly `identity`, in the order given; every
+/// item when `identity` is `None` (the All chip). The server already spreads
+/// its 100 across identities (at most four of each keep their rank, the rest
+/// move behind, nothing dropped), so this is a plain predicate over that order
+/// and no cap is applied here.
+pub(crate) fn of_identity<T: Clone>(
+    items: &[T],
+    colors: impl Fn(&T) -> &[Color],
+    identity: Option<&[Color]>,
+) -> Vec<T> {
+    items
+        .iter()
+        .filter(|item| identity.is_none_or(|wanted| identity_of(colors(item)) == wanted))
+        .cloned()
+        .collect()
+}
+
+/// The first [`LIST_SIZE`] of a filtered list, the rows the screen shows.
 pub(crate) fn shown<T: Clone>(filtered: &[T]) -> Vec<T> {
     filtered.iter().take(LIST_SIZE).cloned().collect()
+}
+
+/// A chip's stable key: the identity's codes, `C` for colorless.
+fn identity_key(identity: &[Color]) -> String {
+    if identity.is_empty() {
+        "C".to_string()
+    } else {
+        identity.iter().map(Color::to_short_name).collect()
+    }
+}
+
+/// The pips of an identity, the deck list's group-header grammar.
+#[component]
+fn IdentityPips(identity: Vec<Color>) -> Element {
+    rsx! {
+        span { class: "identity-pips",
+            for color in identity.iter() {
+                i {
+                    key: "{color.to_short_name()}",
+                    class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                }
+            }
+        }
+    }
 }
 
 /// One line per color the user builds in, most decks first, in the order the
@@ -572,7 +653,8 @@ fn SuggestionRow(
 }
 
 /// Screen listing the user's top 10 suggested commanders with the reasons
-/// behind each, a Swipe overlay going deeper, and Clear skips under More.
+/// behind each, Show chips narrowing them to one color identity, a Swipe
+/// overlay going deeper, and Clear skips under More.
 #[component]
 pub fn SuggestedCommanders() -> Element {
     let navigator = use_navigator();
@@ -583,8 +665,9 @@ pub fn SuggestedCommanders() -> Element {
     let seed: CreateDeckCommanderSeed = use_context();
     // Auto-opens once per account, reopenable from the header "?".
     let hint_open = use_one_time_hint(HINT_SUGGESTED_COMMANDERS);
-    // Art-crop thumbnails on, as on the commander maybeboard.
-    let show_row_art = use_signal(|| true);
+    // Art-crop thumbnails on by default; the Show row's Art chip toggles
+    // them, as on the commander maybeboard.
+    let mut show_row_art = use_signal(|| true);
     use_context_provider(|| ShowRowArt(show_row_art));
 
     // Oracle-tag reveal inside expanded rows, wired the same way as the
@@ -666,20 +749,38 @@ pub fn SuggestedCommanders() -> Element {
         }
     });
 
-    // What Swipe deals: the held list, with the deck count the reasons count
-    // against.
+    // The Show chip in effect: `None` is All. The chips are the identities
+    // among the held list plus the chosen one, so a chip stays put after its
+    // last commander is removed and the empty state says so.
+    let mut active_identity: Signal<Option<Vec<Color>>> = use_signal(|| None);
+    let identities = use_memo(move || {
+        let held = entries();
+        let chosen = active_identity();
+        identities_present(held.iter().map(suggestion_colors).chain(chosen.as_deref()))
+    });
+    let filtered =
+        use_memo(move || of_identity(&entries(), suggestion_colors, active_identity().as_deref()));
+    // What Swipe deals: the same filtered list, with the deck count the
+    // reasons count against.
     let pile = use_memo(move || SuggestedPile {
-        suggestions: entries(),
+        suggestions: filtered(),
         deck_count: deck_count(),
     });
 
-    // Drops a row in place; the next held suggestion moves up, and the server
-    // is asked again only when the held list runs short of ten.
+    // Drops a row in place; the next held suggestion of that identity moves
+    // up, and the server is asked again only when the filtered list runs
+    // short of ten.
     let mut drop_row = move |oracle_id: Uuid| {
         entries
             .write()
             .retain(|s| s.card.scryfall_data.oracle_id != Some(oracle_id));
-        if entries.peek().len() < LIST_SIZE {
+        let remaining = of_identity(
+            &entries.peek(),
+            suggestion_colors,
+            active_identity.peek().as_deref(),
+        )
+        .len();
+        if remaining < LIST_SIZE {
             refetch();
         }
     };
@@ -780,7 +881,7 @@ pub fn SuggestedCommanders() -> Element {
 
     let cold_start = deck_count() == 0;
     let has_entries = !entries().is_empty();
-    let rows = shown(&entries());
+    let rows = shown(&filtered());
 
     rsx! {
         div { class: "screen",
@@ -830,12 +931,62 @@ pub fn SuggestedCommanders() -> Element {
                             span { class: "chip-note", "Build a deck and we'll suggest commanders that fit how you play." }
                         }
                     } else {
+                        // The commander maybeboard's Show row: the label, All,
+                        // one chip per identity among the held 100 (pips, or
+                        // the word for colorless), then the Art toggle. Single
+                        // select; the selected chip tapped again is All.
+                        div { class: "chip-row",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
+                            Chip {
+                                selected: active_identity().is_none(),
+                                onclick: move |_| active_identity.set(None),
+                                "All"
+                            }
+                            for identity in identities() {
+                                Chip {
+                                    key: "{identity_key(&identity)}",
+                                    selected: active_identity().as_deref() == Some(identity.as_slice()),
+                                    onclick: {
+                                        let identity = identity.clone();
+                                        move |_| {
+                                            if active_identity().as_deref() == Some(identity.as_slice()) {
+                                                active_identity.set(None);
+                                            } else {
+                                                active_identity.set(Some(identity.clone()));
+                                            }
+                                        }
+                                    },
+                                    if identity.is_empty() {
+                                        "Colorless"
+                                    } else {
+                                        IdentityPips { identity: identity.clone() }
+                                    }
+                                }
+                            }
+                            Chip {
+                                selected: show_row_art(),
+                                onclick: move |_| show_row_art.set(!show_row_art()),
+                                "Art"
+                            }
+                        }
                         if let Some(profile) = profile() {
                             BuilderProfilePanel { profile }
                         }
                         if !has_entries {
                             div { class: "message-empty",
                                 span { class: "chip-note", "No suggestions right now" }
+                            }
+                        } else if rows.is_empty() {
+                            div { class: "message-empty",
+                                span { class: "chip-note",
+                                    if let Some(identity) = active_identity().filter(|i| !i.is_empty()) {
+                                        "No "
+                                        IdentityPips { identity }
+                                        " commanders in your top 100"
+                                    } else {
+                                        "No colorless commanders in your top 100"
+                                    }
+                                }
                             }
                         } else {
                             div { class: "maybeboard-list card-group row-enter",
@@ -909,9 +1060,9 @@ pub fn SuggestedCommanders() -> Element {
                 "Commanders you skipped will be suggested again. This can't be undone."
             }
 
-            // The shared overlay in its suggested mode deals the held list:
-            // right seeds a new deck with the pick, up saves it, left
-            // dismisses it.
+            // The shared overlay in its suggested mode deals the held list as
+            // the Show chip narrows it: right seeds a new deck with the pick,
+            // up saves it, left dismisses it.
             SwipeSelect {
                 host_screen: screen::SUGGESTED_COMMANDERS,
                 open: swipe_open,
@@ -962,6 +1113,94 @@ mod tests {
     use zwipe_core::http::contracts::suggestions::HttpColorIdentityCount;
 
     use super::*;
+
+    /// A commander as the helpers see it: a name and its colors.
+    type Named = (&'static str, Vec<Color>);
+
+    fn commander(name: &'static str, colors: &[Color]) -> Named {
+        (name, colors.to_vec())
+    }
+
+    fn colors_of(commander: &Named) -> &[Color] {
+        &commander.1
+    }
+
+    fn names(commanders: &[Named]) -> Vec<&str> {
+        commanders.iter().map(|c| c.0).collect()
+    }
+
+    use Color::{Black, Blue, Green, Red, White};
+
+    #[test]
+    fn identity_of_runs_wubrg_once_each() {
+        assert_eq!(identity_of(&[Red, White, Red]), vec![White, Red]);
+        assert!(identity_of(&[]).is_empty());
+    }
+
+    #[test]
+    fn identities_present_are_distinct_fewest_colors_first_colorless_last() {
+        let held = [
+            commander("Narset", &[White, Blue, Red]),
+            commander("Karlov", &[Black, White]),
+            commander("Kozilek", &[]),
+            commander("Krenko", &[Red]),
+            commander("Talrand", &[Blue]),
+            commander("Ghired", &[Red, Green, White]),
+            commander("Thalia", &[White, Black]),
+            commander("Zada", &[Red]),
+        ];
+        assert_eq!(
+            identities_present(held.iter().map(colors_of)),
+            vec![
+                vec![Blue],
+                vec![Red],
+                vec![White, Black],
+                vec![White, Blue, Red],
+                vec![White, Red, Green],
+                vec![],
+            ]
+        );
+        assert!(identities_present(std::iter::empty()).is_empty());
+        let chosen: &[Color] = &[Green];
+        assert_eq!(
+            identities_present(held.iter().map(colors_of).chain([chosen])),
+            vec![
+                vec![Blue],
+                vec![Red],
+                vec![Green],
+                vec![White, Black],
+                vec![White, Blue, Red],
+                vec![White, Red, Green],
+                vec![],
+            ],
+            "a chosen identity without a commander still gets its chip"
+        );
+    }
+
+    #[test]
+    fn of_identity_keeps_server_order_and_all_passes_everything() {
+        let held = [
+            commander("Narset", &[White, Blue, Red]),
+            commander("Krenko", &[Red]),
+            commander("Kozilek", &[]),
+            commander("Zada", &[Red]),
+            commander("Ghired", &[Red, Green, White]),
+        ];
+        assert_eq!(
+            names(&of_identity(&held, colors_of, Some(&[Red]))),
+            vec!["Krenko", "Zada"]
+        );
+        assert_eq!(
+            names(&of_identity(&held, colors_of, Some(&[]))),
+            vec!["Kozilek"]
+        );
+        assert_eq!(
+            names(&of_identity(&held, colors_of, Some(&[Red, Green]))),
+            Vec::<&str>::new(),
+            "a superset identity is not a match"
+        );
+        assert_eq!(of_identity(&held, colors_of, None).len(), held.len());
+    }
 
     #[test]
     fn shown_is_the_first_ten() {
