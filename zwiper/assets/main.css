@@ -3302,10 +3302,17 @@ button {
     margin-bottom: 0;
 }
 
-.privacy-content .privacy-updated {
-    color: var(--text-muted);
-    font-size: 0.8rem;
-    padding: 0 0.25rem;
+/* The first panel's heading row: the title, then the revision chip. */
+.privacy-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.privacy-head h2 {
+    margin: 0;
 }
 
 .privacy-content h2 {

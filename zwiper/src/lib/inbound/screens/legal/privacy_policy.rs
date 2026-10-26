@@ -9,7 +9,7 @@
 use components::{ActionBar, Button, ButtonVariant};
 use dioxus::prelude::*;
 use zwipe_core::domain::site::{DISCORD_URL, SUPPORT_EMAIL};
-use zwipe_core::legal::{PRIVACY_LAST_UPDATED, PRIVACY_POLICY_HTML};
+use zwipe_core::legal::{PRIVACY_INTRO_HTML, PRIVACY_LAST_UPDATED, PRIVACY_POLICY_HTML};
 
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::outbound::open_url;
@@ -38,7 +38,16 @@ pub fn PrivacyPolicy() -> Element {
 
             div { class: "screen-content content-enter",
                 div { class: "privacy-content",
-                    p { class: "privacy-updated", "Last updated: {PRIVACY_LAST_UPDATED}" }
+                    // Headed like the website's first panel: the title with
+                    // the revision date as a chip, then the intro.
+                    div { class: "privacy-section",
+                        div { class: "privacy-head",
+                            h2 { "Privacy policy" }
+                            span { class: "stat-chip", "Last updated {PRIVACY_LAST_UPDATED}" }
+                        }
+                        hr {}
+                        div { dangerous_inner_html: PRIVACY_INTRO_HTML }
+                    }
 
                     for section in privacy_sections() {
                         div { class: "privacy-section", dangerous_inner_html: section }

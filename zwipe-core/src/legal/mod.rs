@@ -11,16 +11,18 @@
 //! `mailto:` anchor silently fails inside the mobile webview, so each app renders
 //! its own contact line. Inline `https://` links work in both apps for free.
 
-/// When the privacy policy was last revised, shown in each app's header.
+/// When the privacy policy was last revised, shown as a chip in each app's
+/// first panel.
 pub const PRIVACY_LAST_UPDATED: &str = "October 2026";
+
+/// The policy's opening paragraph. Each app renders it under its own
+/// "Privacy policy" heading, beside the [`PRIVACY_LAST_UPDATED`] chip.
+pub const PRIVACY_INTRO_HTML: &str = r#"<p>Zwipe is a <a href="https://magic.wizards.com/en" target="_blank" rel="noopener noreferrer">Magic: The Gathering</a> deck builder for mobile. This policy describes what data we collect, how we use it, and your rights.</p>"#;
 
 /// The privacy policy body as an HTML fragment: headings, paragraphs, lists, and
 /// inline `https://` links. Rendered via `dangerous_inner_html` in both apps. The
 /// contact line (support `mailto:`) is rendered per-app and is not part of this.
-pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>
-<p>Zwipe is a <a href="https://magic.wizards.com/en" target="_blank" rel="noopener noreferrer">Magic: The Gathering</a> deck builder for mobile. This policy describes what data we collect, how we use it, and your rights.</p>
-
-<h2>Data we collect</h2>
+pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Data we collect</h2>
 <ul>
 <li><strong>Account data</strong>: email address, username, and a hashed password (never stored in plaintext). When you change your email, the new address is kept as pending until you confirm it from that address, for up to 24 hours.</li>
 <li><strong>Deck data</strong>: the decks and card selections you create within the app, including cards you skip or remove per deck so they stop being suggested for that deck (you can clear this anytime from the deck's More menu).</li>

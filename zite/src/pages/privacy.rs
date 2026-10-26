@@ -1,6 +1,6 @@
 use components::Panel;
 use dioxus::prelude::*;
-use zwipe_core::legal::{PRIVACY_LAST_UPDATED, PRIVACY_POLICY_HTML};
+use zwipe_core::legal::{PRIVACY_INTRO_HTML, PRIVACY_LAST_UPDATED, PRIVACY_POLICY_HTML};
 
 use crate::components::PageMeta;
 use crate::{DISCORD_URL, Footer, Nav, SUPPORT_EMAIL};
@@ -29,8 +29,13 @@ pub fn Privacy() -> Element {
         Nav {}
         div { class: "page content-enter",
             div { class: "section",
-                Panel { title: "Privacy policy", title_h1: true,
-                    p { "Last updated: {PRIVACY_LAST_UPDATED}" }
+                Panel {
+                    title: "Privacy policy",
+                    title_h1: true,
+                    title_trailing: rsx! {
+                        span { class: "stat-chip", "Last updated {PRIVACY_LAST_UPDATED}" }
+                    },
+                    div { dangerous_inner_html: PRIVACY_INTRO_HTML }
                 }
             }
 
