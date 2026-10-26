@@ -2404,6 +2404,21 @@ button {
     margin: 0;
 }
 
+/* Home's panels center while they fit and scroll from the top once they
+   don't: the auto margins collapse to zero on overflow, where a centered
+   column would push its top out of reach. No panel shrinks to make room. */
+.home-content > * {
+    flex-shrink: 0;
+}
+
+.home-content > :first-child {
+    margin-top: auto;
+}
+
+.home-content > :last-child {
+    margin-bottom: auto;
+}
+
 .home-flavor {
     /* As wide as the hero panel above it, with a gap between the two. */
     width: calc(100% - 2rem);

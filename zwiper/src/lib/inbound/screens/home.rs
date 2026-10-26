@@ -175,7 +175,7 @@ pub fn Home() -> Element {
     rsx! {
             div { class: "screen",
                 ScreenHeader { title: "Home" }
-                div { class: "screen-content centered",
+                div { class: "screen-content home-content",
                 HomeHero {}
 
                 HomePlayStyle {}
