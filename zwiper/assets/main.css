@@ -2713,35 +2713,23 @@ button {
     color: var(--text-primary);
 }
 
-.profile-section {
-    margin-top: 0.6rem;
-}
-
-/* One segment per color, widened in proportion to its deck count (flex-grow
-   is set inline to the count), each carrying its pip and the number. */
-.profile-color-bar {
+/* The two "most common" facts under the deck count, a step quieter still. */
+.profile-fact {
     display: flex;
-    gap: 0.25rem;
-}
-
-.profile-color-segment {
-    flex: 1 1 0;
-    min-width: 0;
-    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: center;
-    gap: 0.3rem;
-    padding: 0.3rem 0.4rem;
-    border: 1px solid var(--border-muted);
-    border-radius: 0.6rem;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-.profile-tag-counts {
-    margin-top: 0.4rem;
+    gap: 0.35rem;
+    margin-top: 0.25rem;
     font-size: 0.7rem;
     color: var(--text-muted);
+}
+
+/* The three chart sections, spaced like the deck view's sections. */
+.profile-charts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    margin-top: 0.6rem;
 }
 
 /* The panel supplies the inset the row detail and footer carry themselves. */

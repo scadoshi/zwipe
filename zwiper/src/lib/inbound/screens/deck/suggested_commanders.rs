@@ -6,16 +6,18 @@
 //! (saves to the commander maybeboard) and **Remove** (hides it for a week). The action bar's Swipe opens the shared overlay in its suggested
 //! mode, which deals the same ranking down to 100. Every action that removes
 //! a row refetches when fewer than ten remain, so the list stays a full top 10.
-//! Over the list, a panel sums up what the user builds: the decks and their
-//! most-built identity, the colors sized by deck count, and the strongest
-//! oracle tags, the profile the ranking reads. With no commander deck to read
-//! from, the screen shows a single line instead of a list and no panel.
+//! Over the list, a panel sums up what the user builds: the deck count with
+//! the most common color set and color, then charts of the colors, card roles
+//! and oracle tags across the decks, the profile the ranking reads. With no
+//! commander deck to read from, the screen shows a single line instead of a
+//! list and no panel.
 
 use std::collections::BTreeMap;
 
 use components::{
-    ActionBar, AlertDialog, BottomSheet, Button, ButtonVariant, CardRoleChips, Chip, DialogAction,
-    HintBullet, HintBullets, HintDialog, HintKey, HintLine, TOAST_LONG, TOAST_QUICK,
+    ActionBar, AlertDialog, Bar, BarChart, BarOrientation, BottomSheet, Button, ButtonVariant,
+    CardRoleChips, Chip, DialogAction, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
+    LabelCase, TOAST_LONG, TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -23,14 +25,17 @@ use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::card_role::role_short_label;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
 use zwipe_core::http::contracts::suggestions::{
-    HttpBuilderProfile, HttpColorAffinity, HttpColorIdentityCount, HttpCommanderSuggestion,
+    HttpBuilderProfile, HttpColorAffinity, HttpCommanderSuggestion, HttpProfileRole,
     HttpProfileTag, HttpSharedTag, HttpSuggestionReasons,
 };
 
+use super::components::collapsible_section::CollapsibleSection;
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
@@ -102,164 +107,318 @@ pub(crate) fn group_shared_tags(
     (roles, by_role, other)
 }
 
-/// The profile panel's lead line in three parts: the words before the
-/// identity pips, the pips as WUBRG codes (empty when no pips follow), and
-/// the words after them.
+/// Pips with the words after them, one "most common" line of the profile
+/// panel's lead.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ProfileLead {
-    /// The text the line opens with.
-    pub text: String,
-    /// The top identity's colors, rendered as pips after `text`.
+pub(crate) struct LeadPips {
+    /// WUBRG codes drawn as pips; empty when `tail` names the identity.
     pub pips: Vec<String>,
-    /// The deck count after the pips, empty when the text already says it.
+    /// The deck count after the pips, "(4)", or "colorless (4)".
     pub tail: String,
 }
 
-/// Words the lead line: "7 decks, mostly" and pips with "(4)", "3 decks, all
-/// in" and pips, "1 deck in" and pips, or "7 decks, no two alike" when no
-/// identity repeats. A colorless identity is named instead of drawn.
-pub(crate) fn profile_lead(deck_count: u32, top: Option<&HttpColorIdentityCount>) -> ProfileLead {
-    let decks = if deck_count == 1 {
+/// The profile panel's lead: the deck count, then the most common color set
+/// and the most common color, each absent when the profile has none.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ProfileLead {
+    /// "11 decks" or "1 deck".
+    pub decks: String,
+    /// The top identity with its count; `None` when no identity repeats.
+    pub color_set: Option<LeadPips>,
+    /// The color in the most decks with its count; `None` when every deck is
+    /// colorless.
+    pub color: Option<LeadPips>,
+}
+
+/// Words the lead from the profile. The top identity's colorless case is
+/// named instead of drawn; the most common color is the first the server
+/// sent, which is the one in the most decks.
+pub(crate) fn profile_lead(profile: &HttpBuilderProfile) -> ProfileLead {
+    let decks = if profile.deck_count == 1 {
         "1 deck".to_string()
     } else {
-        format!("{deck_count} decks")
+        format!("{} decks", profile.deck_count)
     };
-    let Some(top) = top else {
-        return ProfileLead {
-            text: format!("{decks}, no two alike"),
-            pips: vec![],
-            tail: String::new(),
-        };
-    };
-    let colorless = top.colors.is_empty();
-    let (text, tail) = if deck_count == 1 {
-        (
-            if colorless {
-                format!("{decks}, colorless")
-            } else {
-                format!("{decks} in")
-            },
-            String::new(),
-        )
-    } else if top.decks >= deck_count {
-        (
-            if colorless {
-                format!("{decks}, all colorless")
-            } else {
-                format!("{decks}, all in")
-            },
-            String::new(),
-        )
-    } else if colorless {
-        (
-            format!("{decks}, mostly colorless ({})", top.decks),
-            String::new(),
-        )
-    } else {
-        (format!("{decks}, mostly"), format!("({})", top.decks))
-    };
-    ProfileLead {
-        text,
-        pips: if colorless {
-            vec![]
-        } else {
-            top.colors.clone()
-        },
-        tail,
-    }
-}
-
-/// Oracle tags named in the counts line under the profile's chips.
-const PROFILE_TAG_COUNTS_SHOWN: usize = 3;
-
-/// The deck counts of the strongest tags as one muted line, "sacrifice-outlet
-/// in 6 decks, treasure in 4, lifegain in 3". `None` with one deck, where
-/// every count is 1 and the line would say nothing.
-pub(crate) fn tag_count_line(tags: &[HttpProfileTag], deck_count: u32) -> Option<String> {
-    if deck_count < 2 {
-        return None;
-    }
-    let parts: Vec<String> = tags
-        .iter()
-        .take(PROFILE_TAG_COUNTS_SHOWN)
-        .enumerate()
-        .map(|(i, tag)| {
-            let decks = tag.decks;
-            let unit = if i == 0 {
-                if decks == 1 { " deck" } else { " decks" }
-            } else {
-                ""
-            };
-            format!("{} in {decks}{unit}", tag.slug)
-        })
-        .collect();
-    (!parts.is_empty()).then(|| parts.join(", "))
-}
-
-/// What the user builds, over the suggestions list: a lead line with the
-/// most-built identity, a row of the user's colors sized by deck count, and
-/// the strongest oracle tags grouped by card role the way the card's own
-/// chips are, with the deck counts of the top three under them. Open on
-/// entry, quieter than the rows beneath it.
-#[component]
-pub(crate) fn BuilderProfilePanel(profile: HttpBuilderProfile) -> Element {
-    let context_describe = try_use_context::<OtagDescribe>().map(|d| d.0);
-    let context_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
-    let lead = profile_lead(profile.deck_count, profile.top_identity.as_ref());
-    let shared: Vec<HttpSharedTag> = profile
-        .tags
-        .iter()
-        .map(|tag| HttpSharedTag {
-            slug: tag.slug.clone(),
-            role: tag.role.clone(),
-        })
-        .collect();
-    let (roles, tags_by_role, other_tags) = group_shared_tags(&shared);
-    let counts = tag_count_line(&profile.tags, profile.deck_count);
-    rsx! {
-        div { class: "screen-panel profile-panel",
-            div { class: "profile-lead",
-                span { "{lead.text}" }
-                if !lead.pips.is_empty() {
-                    span { class: "identity-pips",
-                        for code in lead.pips.iter() {
-                            i { key: "{code}", class: "ms ms-{code.to_lowercase()} ms-cost" }
-                        }
-                    }
-                }
-                if !lead.tail.is_empty() {
-                    span { "{lead.tail}" }
-                }
+    let color_set = profile.top_identity.as_ref().map(|top| {
+        if top.colors.is_empty() {
+            LeadPips {
+                pips: vec![],
+                tail: format!("colorless ({})", top.decks),
             }
-            if !profile.colors.is_empty() {
-                div { class: "profile-section",
-                    span { class: "chips-label", "Colors you build" }
-                    div { class: "profile-color-bar",
-                        for color in profile.colors.iter() {
-                            div {
-                                key: "{color.color}",
-                                class: "profile-color-segment",
-                                style: "flex-grow: {color.decks};",
-                                i { class: "ms ms-{color.color.to_lowercase()} ms-cost" }
-                                span { "{color.decks}" }
+        } else {
+            LeadPips {
+                pips: top.colors.clone(),
+                tail: format!("({})", top.decks),
+            }
+        }
+    });
+    let color = profile.colors.first().map(|c| LeadPips {
+        pips: vec![c.color.clone()],
+        tail: format!("({})", c.decks),
+    });
+    ProfileLead {
+        decks,
+        color_set,
+        color,
+    }
+}
+
+/// Max-normalized bar sizes, the deck charts' math.
+fn bars_from<T>(
+    items: &[T],
+    count: impl Fn(&T) -> usize,
+    bar: impl Fn(&T, u32) -> Bar,
+) -> Vec<Bar> {
+    let max = items.iter().map(&count).max().unwrap_or(0);
+    items
+        .iter()
+        .map(|item| bar(item, DeckMetrics::bar_pct(count(item), max)))
+        .collect()
+}
+
+/// A deck count as a bar size.
+fn decks_usize(decks: u32) -> usize {
+    usize::try_from(decks).unwrap_or(usize::MAX)
+}
+
+/// One bar per color in WUBRG order, labeled the way the deck color chart
+/// labels its bars and keyed by the color code. A code outside WUBRG is
+/// skipped.
+pub(crate) fn color_bars(colors: &[HttpColorAffinity]) -> Vec<Bar> {
+    let mut known: Vec<&HttpColorAffinity> = colors
+        .iter()
+        .filter(|c| color_name(&c.color).is_some())
+        .collect();
+    known.sort_by_key(|c| WUBRG.iter().position(|code| *code == c.color));
+    bars_from(
+        &known,
+        |c| decks_usize(c.decks),
+        |c, pct| Bar {
+            key: c.color.clone(),
+            label: color_name(&c.color).unwrap_or_default().to_string(),
+            count: decks_usize(c.decks),
+            pct,
+        },
+    )
+}
+
+/// The WUBRG codes in order.
+const WUBRG: [&str; 5] = ["W", "U", "B", "R", "G"];
+
+/// One bar per role in the order sent, labeled as the deck role chart labels
+/// the role and keyed by the role slug.
+pub(crate) fn role_bars(roles: &[HttpProfileRole]) -> Vec<Bar> {
+    bars_from(
+        roles,
+        |r| decks_usize(r.decks),
+        |r, pct| Bar {
+            key: r.role.clone(),
+            label: role_short_label(&r.role),
+            count: decks_usize(r.decks),
+            pct,
+        },
+    )
+}
+
+/// One bar per oracle tag in the order sent, the slug as label and key.
+pub(crate) fn tag_bars(tags: &[HttpProfileTag]) -> Vec<Bar> {
+    bars_from(
+        tags,
+        |t| decks_usize(t.decks),
+        |t, pct| Bar::new(t.slug.clone(), decks_usize(t.decks), pct),
+    )
+}
+
+/// The shown tags under `role`, strongest first.
+pub(crate) fn role_tags(tags: &[HttpProfileTag], role: &str) -> Vec<String> {
+    tags.iter()
+        .filter(|t| t.role.as_deref() == Some(role))
+        .map(|t| t.slug.clone())
+        .collect()
+}
+
+/// Width of the oracle tag chart's label column: room for a slug like
+/// `sacrifice-outlet` on one line, a longer one wraps at its hyphens.
+const TAG_LABEL_WIDTH: &str = "14ch";
+
+/// An oracle tag's description eased open under a chart, with its Examples
+/// button, through the screen's `OtagDescribe` and `OtagExamplesOpen`
+/// contexts. Collapsed while `slug` is `None`.
+#[component]
+fn OtagReveal(slug: Option<String>) -> Element {
+    let describe = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
+    let def = slug.as_ref().map(|s| {
+        describe
+            .and_then(|cb| cb.call(s.clone()))
+            .unwrap_or_else(|| "No description yet".to_string())
+    });
+    let reveal_class = if slug.is_some() {
+        "keyword-reveal open"
+    } else {
+        "keyword-reveal"
+    };
+    rsx! {
+        div { class: "{reveal_class}",
+            div { class: "keyword-reveal-inner",
+                if let Some(def) = def {
+                    div { class: "otag-def",
+                        p { class: "otag-def-text", "{def}" }
+                        if let (Some(handler), Some(slug)) = (examples, slug) {
+                            button {
+                                class: "otag-examples-btn",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    handler.call(slug.clone());
+                                },
+                                "Examples"
                             }
                         }
                     }
                 }
             }
-            if !profile.tags.is_empty() {
-                div { class: "profile-section",
-                    span { class: "chips-label", "Oracle tags you build with" }
-                    CardRoleChips {
-                        roles,
-                        tags_by_role,
-                        other_tags,
-                        describe_tag: context_describe,
-                        on_examples: context_examples,
-                        show_label: false,
+        }
+    }
+}
+
+/// A tapped role's oracle tags from the profile as chips under the role
+/// chart, each tappable for its description, the "Why this commander?"
+/// chips' reveal.
+#[component]
+fn RoleTagsReveal(tags: Vec<String>) -> Element {
+    let mut open_tag: Signal<Option<String>> = use_signal(|| None);
+    let reveal_class = if tags.is_empty() {
+        "keyword-reveal"
+    } else {
+        "keyword-reveal open"
+    };
+    let shown = open_tag().filter(|slug| tags.contains(slug));
+    rsx! {
+        div { class: "{reveal_class}",
+            div { class: "keyword-reveal-inner",
+                if !tags.is_empty() {
+                    div { class: "otag-reveal-block",
+                        div { class: "card-detail-meta card-detail-otags",
+                            for tag in tags.iter().cloned() {
+                                {
+                                    let slug = tag.clone();
+                                    rsx! {
+                                        button {
+                                            key: "{tag}",
+                                            class: if shown.as_deref() == Some(tag.as_str()) { "keyword-chip active" } else { "keyword-chip" },
+                                            onclick: move |evt| {
+                                                evt.stop_propagation();
+                                                if open_tag().as_deref() == Some(slug.as_str()) {
+                                                    open_tag.set(None);
+                                                } else {
+                                                    open_tag.set(Some(slug.clone()));
+                                                }
+                                            },
+                                            "{tag}"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        OtagReveal { slug: shown }
                     }
-                    if let Some(counts) = counts {
-                        div { class: "profile-tag-counts", "{counts}" }
+                }
+            }
+        }
+    }
+}
+
+/// What the user builds, over the suggestions list: the deck count with the
+/// most common color set and color under it, then three collapsible charts
+/// in the deck profile's grammar, all open on entry. Colors are columns in
+/// WUBRG order; card roles are rows like the deck profile's role chart, a
+/// tapped role revealing its oracle tags from the profile; oracle tags are
+/// rows, a tapped tag revealing its description and Examples. Quieter than
+/// the rows beneath it.
+#[component]
+pub(crate) fn BuilderProfilePanel(profile: HttpBuilderProfile) -> Element {
+    let lead = profile_lead(&profile);
+    // One signal per section so each folds on its own and all start open.
+    let colors_open: Signal<Option<String>> = use_signal(|| Some("Colors".to_string()));
+    let roles_open: Signal<Option<String>> = use_signal(|| Some("Card roles".to_string()));
+    let tags_open: Signal<Option<String>> = use_signal(|| Some("Oracle tags".to_string()));
+    let mut selected_role: Signal<Option<String>> = use_signal(|| None);
+    let mut selected_tag: Signal<Option<String>> = use_signal(|| None);
+    let colors = color_bars(&profile.colors);
+    let roles = role_bars(&profile.roles);
+    let tags = tag_bars(&profile.tags);
+    let revealed_role_tags = selected_role()
+        .map(|role| role_tags(&profile.tags, &role))
+        .unwrap_or_default();
+    let toggle_role = use_callback(move |key: String| {
+        if selected_role().as_deref() == Some(key.as_str()) {
+            selected_role.set(None);
+        } else {
+            selected_role.set(Some(key));
+        }
+    });
+    let toggle_tag = use_callback(move |key: String| {
+        if selected_tag().as_deref() == Some(key.as_str()) {
+            selected_tag.set(None);
+        } else {
+            selected_tag.set(Some(key));
+        }
+    });
+    rsx! {
+        div { class: "screen-panel profile-panel",
+            div { class: "profile-lead", span { "{lead.decks}" } }
+            if let Some(set) = lead.color_set.as_ref() {
+                div { class: "profile-fact",
+                    span { "Most common color set" }
+                    if !set.pips.is_empty() {
+                        span { class: "identity-pips",
+                            for code in set.pips.iter() {
+                                i { key: "{code}", class: "ms ms-{code.to_lowercase()} ms-cost" }
+                            }
+                        }
+                    }
+                    span { "{set.tail}" }
+                }
+            }
+            if let Some(color) = lead.color.as_ref() {
+                div { class: "profile-fact",
+                    span { "Most common color" }
+                    span { class: "identity-pips",
+                        for code in color.pips.iter() {
+                            i { key: "{code}", class: "ms ms-{code.to_lowercase()} ms-cost" }
+                        }
+                    }
+                    span { "{color.tail}" }
+                }
+            }
+            div { class: "profile-charts",
+                if !colors.is_empty() {
+                    CollapsibleSection { title: "Colors", open_section: colors_open,
+                        BarChart { bars: colors }
+                    }
+                }
+                if !roles.is_empty() {
+                    CollapsibleSection { title: "Card roles", open_section: roles_open,
+                        BarChart {
+                            bars: roles,
+                            orientation: BarOrientation::Horizontal,
+                            on_bar: toggle_role,
+                            selected: selected_role(),
+                        }
+                        RoleTagsReveal { tags: revealed_role_tags }
+                    }
+                }
+                if !tags.is_empty() {
+                    CollapsibleSection { title: "Oracle tags", open_section: tags_open,
+                        BarChart {
+                            bars: tags,
+                            orientation: BarOrientation::Horizontal,
+                            label_case: LabelCase::AsIs,
+                            label_width: TAG_LABEL_WIDTH,
+                            on_bar: toggle_tag,
+                            selected: selected_tag(),
+                        }
+                        OtagReveal { slug: selected_tag() }
                     }
                 }
             }
@@ -775,6 +934,8 @@ pub fn SuggestedCommanders() -> Element {
 
 #[cfg(test)]
 mod tests {
+    use zwipe_core::http::contracts::suggestions::HttpColorIdentityCount;
+
     use super::*;
 
     fn color(code: &str, decks: u32) -> HttpColorAffinity {
@@ -819,80 +980,134 @@ mod tests {
         }
     }
 
-    fn lead(text: &str, pips: &[&str], tail: &str) -> ProfileLead {
-        ProfileLead {
-            text: text.to_string(),
-            pips: pips.iter().map(|c| c.to_string()).collect(),
+    fn profile(
+        deck_count: u32,
+        colors: Vec<HttpColorAffinity>,
+        top: Option<HttpColorIdentityCount>,
+    ) -> HttpBuilderProfile {
+        HttpBuilderProfile {
+            deck_count,
+            colors,
+            top_identity: top,
+            tags: vec![],
+            roles: vec![],
+        }
+    }
+
+    fn pips(codes: &[&str], tail: &str) -> LeadPips {
+        LeadPips {
+            pips: codes.iter().map(|c| c.to_string()).collect(),
             tail: tail.to_string(),
         }
     }
 
     #[test]
-    fn profile_lead_words_the_deck_count_and_identity() {
+    fn profile_lead_counts_decks_and_names_the_most_common_set_and_color() {
+        let lead = profile_lead(&profile(
+            7,
+            vec![color("R", 5), color("W", 4)],
+            Some(top(&["W", "U", "R"], 4)),
+        ));
+        assert_eq!(lead.decks, "7 decks");
         assert_eq!(
-            profile_lead(7, Some(&top(&["W", "U", "R"], 4))),
-            lead("7 decks, mostly", &["W", "U", "R"], "(4)")
+            lead.color_set.as_ref(),
+            Some(&pips(&["W", "U", "R"], "(4)"))
         );
-        assert_eq!(
-            profile_lead(3, Some(&top(&["R"], 3))),
-            lead("3 decks, all in", &["R"], "")
-        );
-        assert_eq!(
-            profile_lead(1, Some(&top(&["B", "G"], 1))),
-            lead("1 deck in", &["B", "G"], "")
-        );
-        assert_eq!(
-            profile_lead(7, None),
-            lead("7 decks, no two alike", &[], "")
-        );
+        assert_eq!(lead.color.as_ref(), Some(&pips(&["R"], "(5)")));
+
+        let lead = profile_lead(&profile(1, vec![color("B", 1)], Some(top(&["B"], 1))));
+        assert_eq!(lead.decks, "1 deck");
+        assert_eq!(lead.color_set.as_ref(), Some(&pips(&["B"], "(1)")));
+        assert_eq!(lead.color.as_ref(), Some(&pips(&["B"], "(1)")));
     }
 
     #[test]
-    fn profile_lead_names_colorless_instead_of_drawing_it() {
-        assert_eq!(
-            profile_lead(1, Some(&top(&[], 1))),
-            lead("1 deck, colorless", &[], "")
-        );
-        assert_eq!(
-            profile_lead(5, Some(&top(&[], 2))),
-            lead("5 decks, mostly colorless (2)", &[], "")
-        );
-        assert_eq!(
-            profile_lead(2, Some(&top(&[], 2))),
-            lead("2 decks, all colorless", &[], "")
-        );
+    fn profile_lead_omits_what_the_profile_lacks_and_names_colorless() {
+        let lead = profile_lead(&profile(3, vec![color("U", 2)], None));
+        assert_eq!(lead.color_set, None, "no identity repeats");
+        assert_eq!(lead.color.as_ref(), Some(&pips(&["U"], "(2)")));
+
+        let lead = profile_lead(&profile(2, vec![], Some(top(&[], 2))));
+        assert_eq!(lead.color_set.as_ref(), Some(&pips(&[], "colorless (2)")));
+        assert_eq!(lead.color, None, "every deck colorless");
     }
 
-    fn profile_tag(slug: &str, decks: u32) -> HttpProfileTag {
+    fn profile_tag(slug: &str, role: Option<&str>, decks: u32) -> HttpProfileTag {
         HttpProfileTag {
             slug: slug.to_string(),
-            role: None,
+            role: role.map(str::to_string),
             decks,
         }
     }
 
+    fn bar(key: &str, label: &str, count: usize, pct: u32) -> Bar {
+        Bar {
+            key: key.to_string(),
+            label: label.to_string(),
+            count,
+            pct,
+        }
+    }
+
     #[test]
-    fn tag_count_line_names_the_top_three_with_one_unit() {
-        let tags = [
-            profile_tag("sacrifice-outlet", 6),
-            profile_tag("treasure", 4),
-            profile_tag("lifegain", 3),
-            profile_tag("ramp", 2),
+    fn color_bars_run_wubrg_with_the_deck_chart_labels_and_math() {
+        let bars = color_bars(&[color("R", 4), color("W", 2), color("C", 9), color("G", 1)]);
+        assert_eq!(
+            bars,
+            vec![
+                bar("W", "white", 2, 50),
+                bar("R", "red", 4, 100),
+                bar("G", "green", 1, 25),
+            ],
+            "WUBRG order, unknown code dropped, pct over the max"
+        );
+    }
+
+    #[test]
+    fn role_bars_keep_the_order_sent_and_abbreviate_like_the_deck_chart() {
+        let roles = [
+            HttpProfileRole {
+                role: "sacrifice".to_string(),
+                decks: 50,
+            },
+            HttpProfileRole {
+                role: "ramp".to_string(),
+                decks: 1,
+            },
         ];
         assert_eq!(
-            tag_count_line(&tags, 7).as_deref(),
-            Some("sacrifice-outlet in 6 decks, treasure in 4, lifegain in 3")
+            role_bars(&roles),
+            vec![
+                bar("sacrifice", "sacrf", 50, 100),
+                bar("ramp", "ramp", 1, 4)
+            ],
+            "a nonzero bar is at least the 4% sliver"
+        );
+    }
+
+    #[test]
+    fn tag_bars_and_role_tags_read_the_slugs() {
+        let tags = [
+            profile_tag("sacrifice-outlet", Some("sacrifice"), 6),
+            profile_tag("treasure", Some("ramp"), 3),
+            profile_tag("aristocrats", Some("sacrifice"), 3),
+            profile_tag("typal-goblin", None, 1),
+        ];
+        assert_eq!(
+            tag_bars(&tags),
+            vec![
+                bar("sacrifice-outlet", "sacrifice-outlet", 6, 100),
+                bar("treasure", "treasure", 3, 50),
+                bar("aristocrats", "aristocrats", 3, 50),
+                bar("typal-goblin", "typal-goblin", 1, 16),
+            ]
         );
         assert_eq!(
-            tag_count_line(&tags[..1], 7).as_deref(),
-            Some("sacrifice-outlet in 6 decks")
+            role_tags(&tags, "sacrifice"),
+            vec!["sacrifice-outlet", "aristocrats"]
         );
-        assert_eq!(
-            tag_count_line(&[profile_tag("ramp", 1)], 3).as_deref(),
-            Some("ramp in 1 deck")
-        );
-        assert_eq!(tag_count_line(&tags, 1), None, "one deck: every count is 1");
-        assert_eq!(tag_count_line(&[], 4), None);
+        assert!(role_tags(&tags, "draw").is_empty());
+        assert!(tag_bars(&[]).is_empty());
     }
 
     #[test]
