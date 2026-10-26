@@ -5,7 +5,7 @@
 //! (`pub use orangui::*`) so `zwiper` (the app) and `zite` (the site) keep one
 //! import path, and adds what needs `zwipe-core`: [`CardDetails`], [`CardRow`],
 //! [`CardRoleChips`], [`KeywordChips`], [`OracleText`], [`FlippableCardImage`],
-//! [`Changelog`], the deck charts ([`DeckCharts`], [`ManaCurve`],
+//! [`Changelog`], the deck charts ([`BarChart`], [`DeckCharts`], [`ManaCurve`],
 //! [`ManaFulfillment`], [`DrawOdds`], [`ChartLabel`]) and [`ZwipeArchitecture`].
 //!
 //! Styling ships as string constants to inline through `document::Style`.
@@ -41,7 +41,10 @@ pub use card_details::{CardDetails, card_face_count};
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
 pub use changelog::Changelog;
-pub use charts::{ChartLabel, DeckCharts, DrawOdds, ManaCurve, ManaFulfillment};
+pub use charts::{
+    Bar, BarChart, BarOrientation, ChartLabel, DeckCharts, DrawOdds, LabelCase, ManaCurve,
+    ManaFulfillment,
+};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use oracle_text::OracleText;

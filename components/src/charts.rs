@@ -26,8 +26,173 @@ pub fn ChartLabel(text: &'static str, hint: Option<Element>) -> Element {
     }
 }
 
+/// One bar of a [`BarChart`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Bar {
+    /// What `on_bar` reports when the label is tapped; the label unless the
+    /// host names something else (a slug behind an abbreviated label).
+    pub key: String,
+    /// The text under or beside the bar.
+    pub label: String,
+    /// Shown above (or beside) the bar when above 0.
+    pub count: usize,
+    /// The bar's size as a percentage of the chart's tallest bar, 0 to 100.
+    pub pct: u32,
+}
+
+impl Bar {
+    /// A bar whose key is its label.
+    #[must_use]
+    pub fn new(label: impl Into<String>, count: usize, pct: u32) -> Self {
+        let label = label.into();
+        Self {
+            key: label.clone(),
+            label,
+            count,
+            pct,
+        }
+    }
+}
+
+impl From<(&'static str, usize, u32)> for Bar {
+    fn from((label, count, pct): (&'static str, usize, u32)) -> Self {
+        Self::new(label, count, pct)
+    }
+}
+
+/// Which way a [`BarChart`] lays its bars.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum BarOrientation {
+    /// Columns in a row, counts above, labels in a row beneath.
+    #[default]
+    Vertical,
+    /// One row per bar: label, bar, count.
+    Horizontal,
+}
+
+/// How a [`BarChart`] cases its labels.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum LabelCase {
+    /// `text-transform:uppercase`, the deck charts' look.
+    #[default]
+    Upper,
+    /// As given, for slugs.
+    AsIs,
+}
+
+/// Width of a horizontal chart's label column unless the host sets one.
+const DEFAULT_LABEL_WIDTH: &str = "5ch";
+
+/// One count-based bar chart: an optional [`ChartLabel`] sub-heading, then
+/// the bars with their counts and labels.
+///
+/// With `on_bar` set, each label is tappable and reports its bar's key; the
+/// label whose key is `selected` reads in the accent color.
+#[component]
+pub fn BarChart(
+    /// The [`ChartLabel`] over the bars; none renders the bars alone.
+    #[props(default)]
+    label: Option<&'static str>,
+    bars: Vec<Bar>,
+    /// "?" beside the label.
+    #[props(default)]
+    hint: Option<Element>,
+    #[props(default)] orientation: BarOrientation,
+    #[props(default)] label_case: LabelCase,
+    /// Horizontal only: the label column's CSS width.
+    #[props(default = DEFAULT_LABEL_WIDTH)]
+    label_width: &'static str,
+    #[props(default)] on_bar: Option<Callback<String>>,
+    #[props(default)] selected: Option<String>,
+) -> Element {
+    let upper = match label_case {
+        LabelCase::Upper => "text-transform:uppercase;",
+        LabelCase::AsIs => "",
+    };
+    // The label's base style is the deck charts' exact string; a tappable
+    // label adds the pointer, and the selected one the accent, after it.
+    let label_style = |bar: &Bar| {
+        let base = match orientation {
+            BarOrientation::Vertical => format!(
+                "flex:1;text-align:center;font-size:0.65rem;color:var(--text-primary);opacity:0.85;{upper}"
+            ),
+            BarOrientation::Horizontal => format!(
+                "width:{label_width};font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;{upper}"
+            ),
+        };
+        if on_bar.is_none() {
+            return base;
+        }
+        let is_selected = selected.as_deref() == Some(bar.key.as_str());
+        if is_selected {
+            format!("{base}cursor:pointer;color:var(--accent-primary);opacity:1;")
+        } else {
+            format!("{base}cursor:pointer;")
+        }
+    };
+    let tap = move |key: String| {
+        move |evt: MouseEvent| {
+            if let Some(cb) = on_bar {
+                evt.stop_propagation();
+                cb.call(key.clone());
+            }
+        }
+    };
+    rsx! {
+        div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
+            if let Some(text) = label {
+                ChartLabel { text, hint }
+            }
+            match orientation {
+                BarOrientation::Vertical => rsx! {
+                    div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
+                        for bar in bars.iter() {
+                            div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
+                                if bar.count > 0 {
+                                    span { style: "font-size:0.6rem;color:var(--text-primary);opacity:0.85;line-height:1;", "{bar.count}" }
+                                }
+                                div { style: format!("width:100%;height:{}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem 0.15rem 0 0;", bar.pct) }
+                            }
+                        }
+                    }
+                    div { style: "display:flex;gap:0.25rem;",
+                        for bar in bars.iter() {
+                            span { style: label_style(bar), onclick: tap(bar.key.clone()), "{bar.label}" }
+                        }
+                    }
+                },
+                BarOrientation::Horizontal => rsx! {
+                    for bar in bars.iter() {
+                        div { style: "display:flex;align-items:center;gap:0.5rem;",
+                            span { style: label_style(bar), onclick: tap(bar.key.clone()),
+                                "{bar.label}"
+                            }
+                            div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
+                                div {
+                                    style: format!(
+                                        "height:100%;width:{}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;",
+                                        bar.pct
+                                    ),
+                                }
+                            }
+                            span { style: "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:3ch;text-align:right;flex-shrink:0;",
+                                "{bar.count}"
+                            }
+                        }
+                    }
+                },
+            }
+        }
+    }
+}
+
+/// `DeckMetrics` tuples as bars.
+fn tuple_bars(bars: &[(&'static str, usize, u32)]) -> Vec<Bar> {
+    bars.iter().copied().map(Bar::from).collect()
+}
+
 /// Count-based distribution charts (types, categories, colors), rendered as
-/// flat sub-blocks.
+/// flat sub-blocks: three [`BarChart`]s, the role one horizontal.
 #[component]
 pub fn DeckCharts(
     type_bars: Option<Vec<(&'static str, usize, u32)>>,
@@ -40,72 +205,31 @@ pub fn DeckCharts(
 ) -> Element {
     rsx! {
         if let Some(type_bars) = type_bars.as_ref() {
-            div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
-                ChartLabel { text: "Type distribution", hint: type_hint }
-                div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
-                    for (_label, count, pct) in type_bars.iter() {
-                        div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
-                            if *count > 0 {
-                                span { style: "font-size:0.6rem;color:var(--text-primary);opacity:0.85;line-height:1;", "{count}" }
-                            }
-                            div { style: format!("width:100%;height:{pct}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem 0.15rem 0 0;") }
-                        }
-                    }
-                }
-                div { style: "display:flex;gap:0.25rem;",
-                    for (label, _count, _pct) in type_bars.iter() {
-                        span { style: "flex:1;text-align:center;font-size:0.65rem;color:var(--text-primary);opacity:0.85;text-transform:uppercase;", "{label}" }
-                    }
-                }
+            BarChart {
+                label: "Type distribution",
+                bars: tuple_bars(type_bars),
+                hint: type_hint,
             }
         }
 
         if let Some(cat_bars) = category_bars.as_ref() {
             if !cat_bars.is_empty() {
-                div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
-                    ChartLabel { text: "Role distribution", hint: role_hint }
-                    for (label, count, pct) in cat_bars.iter() {
-                        div { style: "display:flex;align-items:center;gap:0.5rem;",
-                            span { style: "width:5ch;font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;text-transform:uppercase;",
-                                "{label}"
-                            }
-                            div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
-                                div {
-                                    style: format!(
-                                        "height:100%;width:{pct}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;"
-                                    ),
-                                }
-                            }
-                            span { style: "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:3ch;text-align:right;flex-shrink:0;",
-                                "{count}"
-                            }
-                        }
-                    }
+                BarChart {
+                    label: "Role distribution",
+                    bars: tuple_bars(cat_bars),
+                    hint: role_hint,
+                    orientation: BarOrientation::Horizontal,
                 }
             }
         }
 
         if let Some(color_bars) = color_bars.as_ref() {
-            div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
-                ChartLabel { text: "Color distribution", hint: color_hint }
-                div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
-                    for (_label, count, pct) in color_bars.iter() {
-                        div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
-                            if *count > 0 {
-                                span { style: "font-size:0.6rem;color:var(--text-primary);opacity:0.85;line-height:1;", "{count}" }
-                            }
-                            div { style: format!("width:100%;height:{pct}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem 0.15rem 0 0;") }
-                        }
-                    }
-                }
-                div { style: "display:flex;gap:0.25rem;",
-                    for (label, _count, _pct) in color_bars.iter() {
-                        span { style: "flex:1;text-align:center;font-size:0.65rem;color:var(--text-primary);opacity:0.85;text-transform:uppercase;", "{label}" }
-                    }
-                }
+            BarChart {
+                label: "Color distribution",
+                bars: tuple_bars(color_bars),
+                hint: color_hint,
             }
         }
-
     }
 }
 
