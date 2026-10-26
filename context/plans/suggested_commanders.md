@@ -1,6 +1,6 @@
 # Suggested commanders
 
-**Status: AGREED, not started (2026-10-25).** Shape settled with Scotty on 2026-10-25, including where commander profiles are computed (the synergy worker, see Commander profiles). Backlog origin: "Commanders You'd Like" in `../progress/backlog.md`, built on the tier-2 deck tag profile that shipped in `8deb24ed`.
+**Status: LIVE (2026-10-25), fine-tuning (2026-10-26).** The screen, the swipe mode, the reasons, dismissals and the profile summary header are in production; the variety ranking and the batched profile query shipped 2026-10-26. The one agreed item not yet built is the color chips that filter client-side, below. Shape settled with Scotty on 2026-10-25, including where commander profiles are computed (the synergy worker, see Commander profiles). Backlog origin: "Commanders You'd Like" in `../progress/backlog.md`, built on the tier-2 deck tag profile that shipped in `8deb24ed`.
 
 ## Problem
 
