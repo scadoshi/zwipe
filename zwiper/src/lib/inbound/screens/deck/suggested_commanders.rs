@@ -715,9 +715,10 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     }
 }
 
-/// The "Why this commander?" block under a suggestion's details, always open
-/// under a `chips-label` heading like the details' Keywords and Card roles:
-/// the shared oracle tags grouped by card role (the card's own role-chip grammar)
+/// The "Why this commander?" block under a suggestion's details: folded
+/// under a chip in a list row (`foldable`), or open under a `chips-label`
+/// heading like the details' Keywords and Card roles in the details sheet,
+/// over the shared oracle tags grouped by card role (the card's own role-chip grammar)
 /// and one bullet per shared color, each omitted when empty. Renders nothing
 /// at all when both are. A tapped tag shows its description and its examples
 /// button through `describe_tag` and `on_examples`; a host that leaves them
@@ -733,7 +734,12 @@ pub(crate) fn SuggestionReasons(
     /// Opens a shared tag's examples; falls back to the `OtagExamplesOpen` context.
     #[props(default)]
     on_examples: Option<Callback<String>>,
+    /// Folds the bullets under a "Why this commander?" chip, closed on mount,
+    /// where a list row keeps them; unset, they sit open under a heading.
+    #[props(default)]
+    foldable: bool,
 ) -> Element {
+    let mut reasons_open = use_signal(|| false);
     let context_describe = try_use_context::<OtagDescribe>().map(|d| d.0);
     let context_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let colors = color_lines(&reasons.colors, deck_count);
@@ -743,27 +749,50 @@ pub(crate) fn SuggestionReasons(
     let (roles, tags_by_role, other_tags) = group_shared_tags(&reasons.tags);
     let describe_tag = describe_tag.or(context_describe);
     let on_examples = on_examples.or(context_examples);
-    rsx! {
-        // Always open, headed like the details' Keywords and Card roles.
-        div { class: "card-detail-footer",
-            span { class: "chips-label", "Why this commander?" }
-            ul { class: "card-detail-bullets",
-                if !reasons.tags.is_empty() {
-                    li {
-                        "Shares oracle tags with your decks"
-                        CardRoleChips {
-                            roles,
-                            tags_by_role,
-                            other_tags,
-                            describe_tag,
-                            on_examples,
-                            show_label: false,
-                        }
+    let bullets = rsx! {
+        ul { class: "card-detail-bullets",
+            if !reasons.tags.is_empty() {
+                li {
+                    "Shares oracle tags with your decks"
+                    CardRoleChips {
+                        roles,
+                        tags_by_role,
+                        other_tags,
+                        describe_tag,
+                        on_examples,
+                        show_label: false,
                     }
                 }
-                for line in colors {
-                    li { key: "{line}", "{line}" }
+            }
+            for line in colors {
+                li { key: "{line}", "{line}" }
+            }
+        }
+    };
+    rsx! {
+        div { class: "card-detail-footer",
+            if foldable {
+                Chip {
+                    selected: reasons_open(),
+                    onclick: move |evt: MouseEvent| {
+                        evt.stop_propagation();
+                        reasons_open.set(!reasons_open());
+                    },
+                    "Why this commander?"
+                    // The card rows' disclosure arrow: sideways folded, down open.
+                    span {
+                        class: if reasons_open() { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
+                        "\u{25B8}"
+                    }
                 }
+                // The bullets stay mounted and ease open and closed under the chip.
+                div { class: if reasons_open() { "collapsible open" } else { "collapsible" },
+                    div { class: "collapsible-inner", {bullets} }
+                }
+            } else {
+                // Open, headed like the details' Keywords and Card roles.
+                span { class: "chips-label", "Why this commander?" }
+                {bullets}
             }
         }
     }
@@ -795,7 +824,7 @@ fn SuggestionRow(
             preview_dismissing,
             on_printing: move |c: Card| on_printing.call(c),
             footer: rsx! {
-                SuggestionReasons { reasons: suggestion.reasons, deck_count }
+                SuggestionReasons { reasons: suggestion.reasons, deck_count, foldable: true }
             },
             extra_actions: rsx! {
                 button {
