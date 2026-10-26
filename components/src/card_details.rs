@@ -84,7 +84,7 @@ fn build_rules(card: &Card) -> Option<Vec<FaceRules>> {
 /// Number of rules faces a card renders as in [`CardDetails`]: 1 for a normal
 /// card, >1 for DFC/split cards (shown one at a time behind Flip), 0 when there's
 /// nothing to show. Hosts that place their own Flip control outside the component
-/// (e.g. an eyeball dialog putting it in a footer bar) use this to decide whether
+/// (e.g. an eyeball sheet putting it in a footer bar) use this to decide whether
 /// to render it.
 pub fn card_face_count(card: &Card) -> usize {
     build_rules(card).map(|f| f.len()).unwrap_or(0)
@@ -102,7 +102,7 @@ pub fn card_face_count(card: &Card) -> usize {
 pub fn CardDetails(
     card: Card,
     /// Show the card name in the detail head. Off for hosts that show the name
-    /// elsewhere (the eyeball dialog's title).
+    /// elsewhere (the eyeball sheet's title).
     #[props(default = true)]
     show_name: bool,
     /// Show the mana cost in the detail head. Off for hosts that show it
@@ -120,7 +120,7 @@ pub fn CardDetails(
     /// mirror the shown side elsewhere (e.g. zite's image preview + hover stack).
     on_face_change: Option<EventHandler<usize>>,
     /// Controlled shown-face index. When `Some`, the host owns the face state so
-    /// it can drive Flip from its own chrome (e.g. a dialog footer); when `None`,
+    /// it can drive Flip from its own chrome (e.g. a sheet footer); when `None`,
     /// this component owns it internally. Pair with `show_flip: false`.
     #[props(default)]
     face: Option<Signal<usize>>,

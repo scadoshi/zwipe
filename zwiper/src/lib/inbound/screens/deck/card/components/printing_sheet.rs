@@ -134,9 +134,10 @@ pub(crate) fn PrintingSheet(
     use_overlay_back_action(open.into(), dismiss);
 
     rsx! {
-        // Modal backdrop
+        // Modal backdrop. `sheet-over` lifts the backdrop and sheet above a
+        // details sheet already open under them.
         div {
-            class: if open() { "sheet-backdrop show" } else { "sheet-backdrop" },
+            class: if open() { "sheet-backdrop sheet-over show" } else { "sheet-backdrop sheet-over" },
             onclick: move |_| {
                 if !read_only && has_changed {
                     toast.warning(
@@ -150,7 +151,7 @@ pub(crate) fn PrintingSheet(
 
         // Bottom sheet
         div {
-            class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
+            class: if open() { "bottom-sheet sheet-over show" } else { "bottom-sheet sheet-over" },
 
             // The same backdrop orangui's BottomSheet carries, since this sheet is
             // built by hand on the same classes.

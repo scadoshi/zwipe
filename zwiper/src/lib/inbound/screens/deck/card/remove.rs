@@ -17,7 +17,7 @@ use zwipe_core::domain::deck::{Board, DeckEntry};
 use zwipe_core::domain::user::models::hints::HINT_REMOVE_DECK_CARDS;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 
-use super::components::card_info::{CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton};
+use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton};
 use super::components::filter_store::{FilterScope, FilterStore};
 use super::components::printing_sheet::PrintingSheet;
 use crate::inbound::components::auth::authed::use_authed;
@@ -618,12 +618,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         }
 
                         if let Some(card) = current_card() {
-                            CardInfoDisplay { card: card.clone() }
-                            CardDetailsDialog {
-                                open: show_details,
-                                card,
-                                on_printings: move |_| printing_open.set(true),
-                            }
+                            CardInfoDisplay { card }
                         }
                     } else {
                         CardSkeleton {}
@@ -666,10 +661,16 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
             }
 
-            // Root-mounted so the bottom sheet covers the footer. View-only:
+            // Root-mounted so the bottom sheets cover the footer, the printing
+            // sheet after the details sheet so it draws over it. View-only:
             // browsing printings never changes the deck (remove keys on the
             // exact scryfall_data_id).
             if let Some(card) = current_card() {
+                CardDetailsSheet {
+                    open: show_details,
+                    card: card.clone(),
+                    on_printings: move |_| printing_open.set(true),
+                }
                 PrintingSheet {
                     host_screen: screen::DECK_CARD_REMOVE,
                     card,

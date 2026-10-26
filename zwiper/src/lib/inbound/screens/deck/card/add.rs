@@ -23,7 +23,7 @@ use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 use zwipe_core::http::contracts::metrics::PileEndKind;
 
-use super::components::card_info::{CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton};
+use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton};
 use super::components::printing_sheet::PrintingSheet;
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
@@ -139,7 +139,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Swipe vocabulary hint: auto-opens on this user's first visit, the
     // grayed "?" in the util bar reopens it on demand.
     let swipe_hint_open = use_one_time_hint(HINT_ADD_DECK_CARDS);
-    let show_details = use_signal(|| false);
+    let mut show_details = use_signal(|| false);
     let mut printing_open = use_signal(|| false);
 
     let mut deck_cards_ids = use_signal(HashSet::<Uuid>::new);
@@ -1332,12 +1332,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             }
 
                             if let Some(card) = current_card() {
-                                CardInfoDisplay { card: card.clone() }
-                                CardDetailsDialog {
-                                    open: show_details,
-                                    card,
-                                    on_printings: move |_| printing_open.set(true),
-                                }
+                                CardInfoDisplay { card }
                             }
                         } else if !stack.is_empty() {
                             // Cursor sits one past the last card. A prefetch
@@ -1419,8 +1414,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             }
 
                             if let Some(card) = mb_current_card() {
-                                CardInfoDisplay { card: card.clone() }
-                                CardDetailsDialog { open: show_details, card }
+                                CardInfoDisplay { card }
                             }
                         } else {
                             CardSkeleton {}
@@ -1550,15 +1544,33 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
             }
 
-            // Root-mounted (sibling of the ActionBar), so the bottom sheet's
-            // z-index covers the footer instead of stacking under it. Pick a
-            // printing → re-skin the focused card; swipe-right adds that printing.
+            // Root-mounted (siblings of the ActionBar), so the bottom sheets'
+            // z-index covers the footer instead of stacking under it. The
+            // maybeboard pile shows details without Printings.
+            if add_source() == AddSource::Maybeboard {
+                if let Some(card) = mb_current_card() {
+                    CardDetailsSheet { open: show_details, card }
+                }
+            } else if let Some(card) = current_card() {
+                CardDetailsSheet {
+                    open: show_details,
+                    card,
+                    on_printings: move |_| printing_open.set(true),
+                }
+            }
+
+            // After the details sheet so it draws over it. Pick a printing →
+            // re-skin the focused card and drop both sheets; swipe-right adds
+            // that printing.
             if let Some(card) = current_card() {
                 PrintingSheet {
                     host_screen: screen::DECK_CARD_ADD,
                     card,
                     open: printing_open,
-                    on_save: move |new_card: Card| stack.replace_current(new_card),
+                    on_save: move |new_card: Card| {
+                        stack.replace_current(new_card);
+                        show_details.set(false);
+                    },
                     saved_message: "Printing swapped",
                 }
             }

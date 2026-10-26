@@ -1891,9 +1891,9 @@ button {
     overflow-wrap: anywhere;
 }
 
-/* Card-rules dialog body: reuses the expanded card-row detail markup
+/* Card-rules sheet body: reuses the expanded card-row detail markup
    (card-detail-* classes) so mana/oracle symbols and chips render identically.
-   Scrolling is owned by the enclosing .alert-dialog-description (a single scroll
+   Scrolling is owned by the enclosing .sheet-content (a single scroll
    container); this stays a plain text-styling wrapper so the two don't nest. */
 .card-rules {
     text-align: left;
@@ -2819,11 +2819,23 @@ button {
    navigation::overlay_stack).
      base screen                              (default)
      modal backdrop / bottom sheet / filter   200–202
+     a sheet over a sheet (printings)         204–205
      swipe-select / oracle-tag-select         210
      dictionary overlay                       220
      examples overlay                         230
      toasts                                   (top, unchanged)
    ─────────────────────────────────────────────────────────────────────────── */
+
+/* The printing sheet opens over the card details sheet, so its backdrop and
+   sheet sit above both of the shared sheet layers; the backdrop dims the sheet
+   under it and a tap outside the printings lands on that backdrop. */
+.sheet-backdrop.sheet-over {
+    z-index: 204;
+}
+
+.bottom-sheet.sheet-over {
+    z-index: 205;
+}
 
 /* Dictionary + examples are opaque `.screen` overlays stacked above the picker
    (220) and above the dictionary (230). Fixed layers, no cross-fade — they mount

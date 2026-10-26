@@ -1,6 +1,4 @@
-use components::{
-    ActionButton, AlertDialog, Button, ButtonVariant, CardDetails, DialogAction, card_face_count,
-};
+use components::{BottomSheet, Button, ButtonVariant, CardDetails, card_face_count};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
@@ -8,7 +6,7 @@ use zwipe_core::domain::card::Card;
 use crate::inbound::components::catalog_cache::CatalogCache;
 
 /// Displays card metadata: prices, set, release date, artist. The card's oracle
-/// text and stats live in [`CardDetailsDialog`], opened from the header eyeball.
+/// text and stats live in [`CardDetailsSheet`], opened from the header eyeball.
 #[component]
 pub(crate) fn CardInfoDisplay(card: Card) -> Element {
     let has_prices = card.scryfall_data.prices.usd.is_some()
@@ -58,7 +56,7 @@ pub(crate) fn CardInfoDisplay(card: Card) -> Element {
     }
 }
 
-/// Util-bar button (eye icon) that toggles the [`CardDetailsDialog`] for the
+/// Util-bar button (eye icon) that toggles the [`CardDetailsSheet`] for the
 /// active swipe card via the shared `open` signal.
 #[component]
 pub(crate) fn RulesButton(open: Signal<bool>) -> Element {
@@ -78,19 +76,41 @@ pub(crate) fn RulesButton(open: Signal<bool>) -> Element {
     }
 }
 
-/// Dialog showing a card's full details (type, oracle text, stats, keywords,
-/// card roles), for printings whose image is text-light (Secret Lair, full-art,
-/// foreign-language). Opened from the action-bar [`RulesButton`] via the shared
-/// `open` signal. The body is the shared [`CardDetails`], opening on the shown
-/// face's mana cost since the dialog's title holds only text. The footer holds
-/// Flip for a multi-faced card (it leaves the dialog open), Close, and an
-/// optional view-only Printings.
+/// Resolves an oracle tag's description from the app-wide catalog cache, for
+/// the tappable tags in a card-role cluster. Warms the cache on mount so a cold
+/// cache still fills while the caller shows.
+pub(crate) fn use_describe_tag() -> Callback<String, Option<String>> {
+    let cache: CatalogCache = use_context();
+    let client: Signal<ZwipeClient> = use_context();
+    use_effect(move || {
+        cache.ensure_oracle_tags(client);
+    });
+    use_callback(move |slug: String| {
+        cache.oracle_tags.cell().read().loaded().and_then(|tags| {
+            tags.iter()
+                .find(|t| t.slug == slug)
+                .and_then(|t| t.description.clone())
+        })
+    })
+}
+
+/// Bottom sheet showing a card's full details (type, oracle text, stats,
+/// keywords, card roles), for printings whose image is text-light (Secret
+/// Lair, full-art, foreign-language). Opened from the action-bar
+/// [`RulesButton`] via the shared `open` signal. The body is the shared
+/// [`CardDetails`], opening on the shown face's mana cost since the sheet's
+/// title holds only text. The footer holds Flip for a multi-faced card (it
+/// leaves the sheet open), an optional Printings, and Close.
+///
+/// Printings leaves this sheet open: the host's printing sheet draws over it,
+/// and the host closes this one too when a printing is saved. Mount it at the
+/// screen root, beside the printing sheet, so the sheet covers the action bar.
 #[component]
-pub(crate) fn CardDetailsDialog(
-    open: Signal<bool>,
+pub(crate) fn CardDetailsSheet(
+    mut open: Signal<bool>,
     card: Card,
-    /// Opens the printings sheet. When set, a "Printings" action shows in the
-    /// dialog footer (mirrors the deck-view expand-row → Printing button).
+    /// Opens the printings sheet. When set, a "Printings" button shows in the
+    /// sheet footer (mirrors the deck-view expand-row → Printing button).
     #[props(default)]
     on_printings: Option<EventHandler<()>>,
     /// Host content under the details' chips, before the action bar.
@@ -102,49 +122,36 @@ pub(crate) fn CardDetailsDialog(
     // through the controlled `face` prop.
     let face_count = card_face_count(&card);
     let mut face = use_signal(|| 0usize);
-
-    // Tag definitions for the card-role cluster: tapping a tag reveals its
-    // description inline (same reveal as the deck view's expanded rows).
-    // Resolved from the app-wide catalog cache; warmed on mount so a cold cache
-    // still fills while the dialog is open.
-    let cache: CatalogCache = use_context();
-    let client: Signal<ZwipeClient> = use_context();
-    use_effect(move || {
-        cache.ensure_oracle_tags(client);
-    });
-    let describe_tag = use_callback(move |slug: String| {
-        cache.oracle_tags.cell().read().loaded().and_then(|tags| {
-            tags.iter()
-                .find(|t| t.slug == slug)
-                .and_then(|t| t.description.clone())
-        })
-    });
-
-    let mut actions = Vec::new();
-    if face_count > 1 {
-        actions.push(
-            ActionButton::new("Flip")
-                .stay_open(move || face.set((face() + 1) % face_count))
-                .into(),
-        );
-    }
-    actions.push(DialogAction::Dismiss("Close".into()));
-    if let Some(handler) = on_printings {
-        actions.push(DialogAction::Confirm {
-            label: "Printings".into(),
-            danger: false,
-            on_confirm: handler,
-        });
-    }
+    let describe_tag = use_describe_tag();
 
     rsx! {
-        AlertDialog {
+        BottomSheet {
             open,
             title: name,
-            actions,
-            // The description is the sole scroll container; `card-rules` only
+            footer: rsx! {
+                if face_count > 1 {
+                    Button {
+                        variant: ButtonVariant::Action,
+                        onclick: move |_| face.set((face() + 1) % face_count),
+                        "Flip"
+                    }
+                }
+                if let Some(handler) = on_printings {
+                    Button {
+                        variant: ButtonVariant::Action,
+                        onclick: move |_| handler.call(()),
+                        "Printings"
+                    }
+                }
+                Button {
+                    variant: ButtonVariant::Action,
+                    onclick: move |_| open.set(false),
+                    "Close"
+                }
+            },
+            // The sheet's content is the scroll container; `card-rules` only
             // styles the text.
-            div { class: "card-rules alert-dialog-long",
+            div { class: "card-rules",
                 CardDetails {
                     card,
                     show_name: false,

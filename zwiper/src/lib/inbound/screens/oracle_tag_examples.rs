@@ -34,7 +34,7 @@ use crate::inbound::screens::deck::card::components::action_history::{
     BrowseAction, MAX_CARDS_IN_STACK,
 };
 use crate::inbound::screens::deck::card::components::card_info::{
-    CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton,
+    CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton,
 };
 use crate::inbound::screens::deck::card::components::card_stack::use_card_stack;
 use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
@@ -69,9 +69,9 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
     // Gesture start point for the end-of-stack panel, which accepts a down-swipe
     // to step back into the pile (no card there, so no `SwipeStack`).
     let mut end_swipe_start: Signal<Option<(f64, f64)>> = use_signal(|| None);
-    // Eyeball → card details dialog (same util as Add/Remove swipe screens).
+    // Eyeball → card details sheet (same util as Add/Remove swipe screens).
     let show_details = use_signal(|| false);
-    // Printings browse from the details dialog. View-only: this browse is
+    // Printings browse from the details sheet. View-only: this browse is
     // deck-free, so switching printings changes nothing.
     let mut printing_open = use_signal(|| false);
 
@@ -208,12 +208,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                         }
 
                         if let Some(card) = current_card() {
-                            CardInfoDisplay { card: card.clone() }
-                            CardDetailsDialog {
-                                open: show_details,
-                                card,
-                                on_printings: move |_| printing_open.set(true),
-                            }
+                            CardInfoDisplay { card }
                         }
                     } else if !stack.is_empty() {
                         // Cursor past the last card. Still keep it down-swipeable
@@ -278,8 +273,15 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                 }
             }
 
-            // View-only printings browse (deck-free, so it never mutates anything).
+            // Root-mounted so the sheets cover the footer, the printing sheet
+            // after the details sheet so it draws over it. View-only printings
+            // browse (deck-free, so it never mutates anything).
             if let Some(card) = current_card() {
+                CardDetailsSheet {
+                    open: show_details,
+                    card: card.clone(),
+                    on_printings: move |_| printing_open.set(true),
+                }
                 PrintingSheet {
                     host_screen: screen::ORACLE_TAG_EXAMPLES,
                     card,

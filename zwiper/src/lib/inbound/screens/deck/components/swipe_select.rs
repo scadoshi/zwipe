@@ -11,7 +11,7 @@
 //!
 //! [`SwipeMode::Suggested`] deals a given ranking instead of a search: the
 //! suggested commanders, fetched 100 deep when the overlay opens. There a left
-//! swipe dismisses the commander for a week and the eyeball dialog carries the
+//! swipe dismisses the commander for a week and the eyeball sheet carries the
 //! reasons it was suggested. No filter applies.
 
 use std::collections::HashSet;
@@ -41,7 +41,7 @@ use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
 use crate::inbound::screens::deck::card::components::card_info::{
-    CardDetailsDialog, CardInfoDisplay, CardSkeleton, RulesButton,
+    CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton,
 };
 use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
@@ -171,7 +171,7 @@ pub(crate) fn SwipeSelect(
 
     let mut cards = use_signal(Vec::<Card>::new);
     // Suggested mode only: the reasons behind each card in the pile, keyed by
-    // scryfall id for the eyeball dialog, and the deck count they count against.
+    // scryfall id for the eyeball sheet, and the deck count they count against.
     let mut suggestions = use_signal(Vec::<HttpCommanderSuggestion>::new);
     let mut deck_count = use_signal(|| 0u32);
     let mut current_index = use_signal(|| 0usize);
@@ -193,7 +193,7 @@ pub(crate) fn SwipeSelect(
     // per account the first time the screen is opened (gated, since this stays
     // mounted while closed; a plain mount-time one-time hint would misfire).
     let hint_open = use_signal(|| false);
-    let show_details = use_signal(|| false);
+    let mut show_details = use_signal(|| false);
     let mut printing_open = use_signal(|| false);
     let mut hint_fired = use_signal(|| false);
     use_effect(move || {
@@ -490,7 +490,7 @@ pub(crate) fn SwipeSelect(
         mode().as_ref(),
         Some(SwipeMode::Commander(_) | SwipeMode::Partner | SwipeMode::Suggested)
     );
-    // The reasons behind the card on top, for the eyeball dialog's footer.
+    // The reasons behind the card on top, for the details sheet's footer.
     let current_reasons = current_card.as_ref().and_then(|card| {
         suggestions
             .read()
@@ -621,16 +621,8 @@ pub(crate) fn SwipeSelect(
                                 undo();
                             },
                         }
-                        if let Some(card) = current_card {
-                            CardInfoDisplay { card: card.clone() }
-                            CardDetailsDialog {
-                                open: show_details,
-                                card,
-                                on_printings: move |_| printing_open.set(true),
-                                footer: current_reasons.map(|reasons| rsx! {
-                                    SuggestionReasons { reasons, deck_count: deck_count() }
-                                }),
-                            }
+                        if let Some(card) = current_card.clone() {
+                            CardInfoDisplay { card }
                         }
                     } else if is_loading_cards() || is_loading_more() {
                         CardSkeleton { is_loading: true }
@@ -668,8 +660,21 @@ pub(crate) fn SwipeSelect(
                     }
                 }
 
-                // Root-mounted (sibling of the ActionBar) so the bottom sheet
-                // covers the footer. Pick a printing → swap the focused card;
+                // Root-mounted (siblings of the ActionBar) so the bottom sheets
+                // cover the footer, the printing sheet after the details sheet
+                // so it draws over it.
+                if let Some(card) = current_card {
+                    CardDetailsSheet {
+                        open: show_details,
+                        card,
+                        on_printings: move |_| printing_open.set(true),
+                        footer: current_reasons.map(|reasons| rsx! {
+                            SuggestionReasons { reasons, deck_count: deck_count() }
+                        }),
+                    }
+                }
+
+                // Pick a printing → swap the focused card and drop both sheets;
                 // swipe-right selects that printing (persisted as commander_id).
                 if let Some(card) = cards().get(current_index()).cloned() {
                     PrintingSheet {
@@ -681,6 +686,7 @@ pub(crate) fn SwipeSelect(
                             if let Some(slot) = cards.write().get_mut(idx) {
                                 *slot = new_card;
                             }
+                            show_details.set(false);
                         },
                     }
                 }
