@@ -2407,6 +2407,11 @@ button {
 /* Home's panels center while they fit and scroll from the top once they
    don't: the auto margins collapse to zero on overflow, where a centered
    column would push its top out of reach. No panel shrinks to make room. */
+.home-content {
+    /* Room under the last panel once the column scrolls, matching the top. */
+    padding-bottom: 1rem;
+}
+
 .home-content > * {
     flex-shrink: 0;
 }

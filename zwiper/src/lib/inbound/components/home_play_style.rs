@@ -1,5 +1,5 @@
-//! Home's Playstyle panel: the user's deck count and most built color
-//! sets, with a button that opens the full screen.
+//! Home's Playstyle panel: the user's top colors, with a button that opens
+//! the full screen.
 
 use components::{Button, ButtonVariant};
 use dioxus::prelude::*;
@@ -24,45 +24,34 @@ pub struct CachedPlayStyle {
     pub summary: HttpPlayStyleSummary,
 }
 
-/// The row labels for the identities, in the server's order.
-const SET_LABELS: [&str; 3] = ["Top set", "2nd set", "3rd set"];
-
-/// One identity row: its label, the pips drawn the way the Summary draws
-/// them, and the deck count after them.
+/// The panel's one row: the user's most built color identity, its pips drawn
+/// the way the Summary draws them, and the deck count after them.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct SetRow {
-    /// "Top set", "2nd set" or "3rd set".
-    pub label: &'static str,
+pub(crate) struct TopColors {
     /// The colors in WUBRG order; empty for colorless.
     pub pips: Vec<Color>,
     /// The deck count, "(4)".
     pub count: String,
 }
 
-/// The identity rows for the panel, one per identity the server sent and at
-/// most one per label. Color codes outside WUBRG are skipped.
-pub(crate) fn set_rows(identities: &[HttpColorIdentityCount]) -> Vec<SetRow> {
-    SET_LABELS
+/// The top colors from the server's identities, most built first. Color
+/// codes outside WUBRG are skipped; no identities is no row.
+pub(crate) fn top_colors(identities: &[HttpColorIdentityCount]) -> Option<TopColors> {
+    let identity = identities.first()?;
+    let parsed: Vec<Color> = identity
+        .colors
         .iter()
-        .zip(identities)
-        .map(|(label, identity)| {
-            let parsed: Vec<Color> = identity
-                .colors
-                .iter()
-                .filter_map(|code| Color::try_from(code.as_str()).ok())
-                .collect();
-            SetRow {
-                label,
-                pips: identity_of(&parsed),
-                count: format!("({})", identity.decks),
-            }
-        })
-        .collect()
+        .filter_map(|code| Color::try_from(code.as_str()).ok())
+        .collect();
+    Some(TopColors {
+        pips: identity_of(&parsed),
+        count: format!("({})", identity.decks),
+    })
 }
 
 /// The panel under the hero, a sibling of the featured flavor card: the
-/// title bar, then the Decks row and up to three color set rows in the
-/// Playstyle Summary's grammar, then an Open button. Before any deck has
+/// title bar, then a Top colors row in the Playstyle Summary's grammar, then
+/// an Open button. Before any deck has
 /// cards it shows one line instead of the rows; a failed fetch with nothing
 /// cached shows a muted line. The button is always there, so the screen
 /// stays reachable from Home.
@@ -112,17 +101,11 @@ pub fn HomePlayStyle() -> Element {
                             "Build a deck to see your playstyle"
                         }
                     } else {
-                        div { style: "display:flex;flex-direction:column;",
+                        if let Some(top) = top_colors(&summary.identities) {
                             div { class: "settings-row",
-                                span { class: "settings-row-label", "Decks" }
-                                span { class: "info-row-value", "{summary.deck_count}" }
-                            }
-                            for row in set_rows(&summary.identities) {
-                                div { key: "{row.label}", class: "settings-row",
-                                    span { class: "settings-row-label", "{row.label}" }
-                                    span { class: "info-row-value",
-                                        IdentityPips { identity: row.pips, count: row.count }
-                                    }
+                                span { class: "settings-row-label", "Top colors" }
+                                span { class: "info-row-value",
+                                    IdentityPips { identity: top.pips, count: top.count }
                                 }
                             }
                         }
@@ -139,18 +122,14 @@ pub fn HomePlayStyle() -> Element {
                     OpenRow { onclick: move |_| { navigator.push(Router::SuggestedCommanders {}); } }
                 },
                 None => rsx! {
-                    // Mirror the loaded panel: the title bar, the Decks row
-                    // and three set rows, then the button.
+                    // Mirror the loaded panel: the title bar, the Top
+                    // colors row, then the button.
                     div { class: "skeleton-card-header", style: "display: flex; justify-content: center;",
                         div { class: "skeleton-bar skeleton-section-label", style: "width: 45%; margin-bottom: 0;" }
                     }
-                    div { style: "display:flex;flex-direction:column;",
-                        for i in 0..4 {
-                            div { key: "{i}", class: "skeleton-info-row",
-                                div { class: "skeleton-bar skeleton-info-row-label" }
-                                div { class: "skeleton-bar skeleton-info-row-value" }
-                            }
-                        }
+                    div { class: "skeleton-info-row",
+                        div { class: "skeleton-bar skeleton-info-row-label" }
+                        div { class: "skeleton-bar skeleton-info-row-value" }
                     }
                     div { class: "flavor-buy-row",
                         div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
@@ -174,7 +153,7 @@ fn OpenRow(onclick: EventHandler<MouseEvent>) -> Element {
 
 #[cfg(test)]
 mod tests {
-    use Color::{Black, Blue, Green, Red, White};
+    use Color::{Black, Red, White};
 
     use super::*;
 
@@ -186,49 +165,27 @@ mod tests {
     }
 
     #[test]
-    fn set_rows_label_in_order_and_draw_wubrg_pips() {
-        let rows = set_rows(&[
-            identity(&["R", "W"], 4),
-            identity(&["U"], 2),
-            identity(&[], 1),
-        ]);
+    fn top_colors_take_the_first_identity_in_wubrg_order() {
+        let top = top_colors(&[identity(&["R", "W"], 4), identity(&["U"], 2)]);
         assert_eq!(
-            rows,
-            vec![
-                SetRow {
-                    label: "Top set",
-                    pips: vec![White, Red],
-                    count: "(4)".to_string(),
-                },
-                SetRow {
-                    label: "2nd set",
-                    pips: vec![Blue],
-                    count: "(2)".to_string(),
-                },
-                SetRow {
-                    label: "3rd set",
-                    pips: vec![],
-                    count: "(1)".to_string(),
-                },
-            ]
+            top,
+            Some(TopColors {
+                pips: vec![White, Red],
+                count: "(4)".to_string(),
+            })
         );
     }
 
     #[test]
-    fn set_rows_stop_at_three_and_skip_unknown_codes() {
-        let rows = set_rows(&[
-            identity(&["B", "X"], 3),
-            identity(&["G"], 2),
-            identity(&["W"], 1),
-            identity(&["U"], 1),
-        ]);
-        assert_eq!(rows.len(), 3, "a fourth identity has no label");
-        assert_eq!(rows.first().map(|r| r.pips.clone()), Some(vec![Black]));
-        assert_eq!(rows.get(1).map(|r| r.pips.clone()), Some(vec![Green]));
+    fn top_colors_skip_unknown_codes_and_keep_colorless() {
+        let top = top_colors(&[identity(&["B", "X"], 3)]);
+        assert_eq!(top.map(|t| t.pips), Some(vec![Black]));
+        let colorless = top_colors(&[identity(&[], 1)]);
+        assert_eq!(colorless.map(|t| t.pips), Some(vec![]));
     }
 
     #[test]
-    fn no_identities_is_no_rows() {
-        assert!(set_rows(&[]).is_empty());
+    fn no_identities_is_no_row() {
+        assert_eq!(top_colors(&[]), None);
     }
 }

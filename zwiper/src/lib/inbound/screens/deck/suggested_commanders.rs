@@ -13,8 +13,8 @@
 //! that removes a row fills from the held list and refetches only when fewer
 //! than ten remain, so the list stays a full top 10. Above the list, sections
 //! in the deck profile's grammar sum up what the user builds, the profile the
-//! ranking reads: a Summary table (the deck count, the most common color set
-//! and color), then charts of the colors and card roles and a table of the
+//! ranking reads: a Summary table (the deck count, the top colors and the
+//! top single color), then charts of the colors and card roles and a table of the
 //! oracle tags across the decks. They share one accordion with Summary open
 //! on entry; the list section folds on its own and starts open. With no deck
 //! that has cards to read from, the screen shows a single line instead of the
@@ -669,7 +669,7 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                     span { class: "info-row-value", "{summary.decks}" }
                 }
                 if let Some(value) = summary.color_set {
-                    SummaryIdentityRow { label: "Top set", value }
+                    SummaryIdentityRow { label: "Top colors", value }
                 }
                 if let Some(value) = summary.color {
                     SummaryIdentityRow { label: "Top color", value }
@@ -1198,9 +1198,9 @@ pub fn SuggestedCommanders() -> Element {
             ActionBar {
                 Button {
                     variant: ButtonVariant::Action,
-                    onclick: move |_| {
-                        navigator.push(Router::DeckList {});
-                    },
+                    // Back to wherever it opened from: Home's panel or the
+                    // Decks screen's More menu.
+                    onclick: move |_| navigator.go_back(),
                     "Back"
                 }
                 if !cold_start {
