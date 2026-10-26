@@ -162,11 +162,11 @@ const PROFILE_TAG_LIMIT: i64 = 40;
 
 // == suggested commanders ==
 
-/// Weight of the color-affinity term in a commander suggestion's score: the
-/// share of the user's commander decks using each of the candidate's colors,
-/// averaged over its colors (0..1), times this. Tag overlap is a sum of
-/// products of two profiles that each sum to 1, so it lands well under 1 and
-/// this keeps colors a tiebreak rather than the ranking.
+/// Weight of the color term in a commander suggestion's score: the best
+/// Jaccard match (0..1) of the candidate's color identity against the color
+/// identities of the user's commander decks, times this. Tag overlap is a sum
+/// of products of two profiles that each sum to 1, so it lands well under 1
+/// and this keeps colors a tiebreak rather than the ranking.
 const W_COLOR_AFFINITY: f64 = 0.15;
 
 /// Shared tags a suggestion carries as its reasons.
@@ -1946,56 +1946,73 @@ impl CardRepository for MyPostgres {
     async fn score_commander_suggestions(
         &self,
         user_id: uuid::Uuid,
-        user_profile: &serde_json::Value,
-        color_shares: &serde_json::Value,
+        decks: &serde_json::Value,
         exclude_oracle_ids: &[uuid::Uuid],
         limit: i64,
     ) -> Result<Vec<ScoredCommander>, CommanderSuggestionsError> {
-        // Score = Σ over shared tags of user weight × commander weight, plus
-        // W_COLOR_AFFINITY × the mean user share of the candidate's colors
-        // (0 for a colorless candidate). The reasons are the top shared tags
-        // by that product, each with the card role it falls under in the
-        // card display's own membership (the first role alphabetically when
-        // it falls under several; null when under none). The SQL text is
-        // literals plus parameter numbers; the data is all bound.
+        // Score = the best deck's Σ over shared tags of deck weight ×
+        // commander weight, plus W_COLOR_AFFINITY × the best deck's Jaccard
+        // match of color identities (|∩| / |∪|; colorless against colorless
+        // is 1, colorless against colored 0). The two bests may come from
+        // different decks. The reasons are the top tags shared with the
+        // best-tag deck by that product, each with the card role it falls
+        // under in the card display's own membership (the first role
+        // alphabetically when it falls under several; null when under none).
+        // The SQL text is literals plus parameter numbers; the data is all
+        // bound.
         let binds = RoleMembershipBinds::new();
         let sql = format!(
             "WITH RECURSIVE {},
-             user_profile AS (
-                 SELECT key AS oracle_tag, value::float8 AS w
-                 FROM jsonb_each_text($7::jsonb)
-             ),
-             user_colors AS (
-                 SELECT key AS color, value::float8 AS share
-                 FROM jsonb_each_text($8::jsonb)
+             decks AS (
+                 SELECT d.ord,
+                        ARRAY(SELECT jsonb_array_elements_text(d.value->'colors')) AS colors,
+                        COALESCE(d.value->'profile', '{{}}'::jsonb) AS profile
+                 FROM jsonb_array_elements($7::jsonb) WITH ORDINALITY d(value, ord)
              ),
              candidates AS (
-                 SELECT p.oracle_id, p.profile, lc.name, lc.color_identity
+                 SELECT p.oracle_id, p.profile, lc.name,
+                        COALESCE(lc.color_identity, '{{}}') AS color_identity
                  FROM commander_tag_profiles p
                  JOIN latest_cards lc ON lc.oracle_id = p.oracle_id
                  WHERE lc.layout <> 'token'
                    AND lc.legalities->>'commander' = 'legal'
-                   AND NOT (p.oracle_id = ANY($9::uuid[]))
+                   AND NOT (p.oracle_id = ANY($8::uuid[]))
                    AND NOT EXISTS (
                        SELECT 1 FROM user_commander_dismissals d
-                       WHERE d.user_id = $10 AND d.oracle_id = p.oracle_id
-                         AND d.dismissed_at > now() - make_interval(days => $11)
+                       WHERE d.user_id = $9 AND d.oracle_id = p.oracle_id
+                         AND d.dismissed_at > now() - make_interval(days => $10)
                    )
              ),
              overlap AS (
-                 SELECT c.oracle_id, t.key AS oracle_tag, up.w * t.value::float8 AS w
+                 SELECT c.oracle_id, d.ord AS deck, t.key AS oracle_tag,
+                        (d.profile->>t.key)::float8 * t.value::float8 AS w
                  FROM candidates c
+                 CROSS JOIN decks d
                  CROSS JOIN LATERAL jsonb_each_text(c.profile) t
-                 JOIN user_profile up ON up.oracle_tag = t.key
+                 WHERE d.profile ? t.key
              ),
-             tag_score AS (
-                 SELECT oracle_id, sum(w) AS s FROM overlap GROUP BY oracle_id
+             deck_tag_score AS (
+                 SELECT oracle_id, deck, sum(w) AS s FROM overlap GROUP BY oracle_id, deck
+             ),
+             best_deck AS (
+                 SELECT DISTINCT ON (oracle_id) oracle_id, deck, s
+                 FROM deck_tag_score
+                 ORDER BY oracle_id, s DESC, deck
              ),
              color_score AS (
-                 SELECT c.oracle_id, avg(COALESCE(uc.share, 0)) AS s
+                 SELECT c.oracle_id,
+                        max(CASE
+                            WHEN cardinality(c.color_identity) = 0 AND cardinality(d.colors) = 0
+                                THEN 1.0::float8
+                            WHEN cardinality(c.color_identity) = 0 OR cardinality(d.colors) = 0
+                                THEN 0.0::float8
+                            ELSE (SELECT count(*) FROM unnest(c.color_identity) x
+                                  WHERE x = ANY(d.colors))::float8
+                               / (SELECT count(DISTINCT x)
+                                  FROM unnest(c.color_identity || d.colors) x)::float8
+                        END) AS s
                  FROM candidates c
-                 LEFT JOIN LATERAL unnest(c.color_identity) AS ci(color) ON true
-                 LEFT JOIN user_colors uc ON uc.color = ci.color
+                 CROSS JOIN decks d
                  GROUP BY c.oracle_id
              ),
              tag_role AS (
@@ -2008,47 +2025,52 @@ impl CardRepository for MyPostgres {
                             ORDER BY o.w DESC, o.oracle_tag
                         ) AS tags
                  FROM (
-                     SELECT oracle_id, oracle_tag, w,
+                     SELECT o.oracle_id, o.oracle_tag, o.w,
                             row_number() OVER (
-                                PARTITION BY oracle_id ORDER BY w DESC, oracle_tag
+                                PARTITION BY o.oracle_id ORDER BY o.w DESC, o.oracle_tag
                             ) AS rn
-                     FROM overlap
+                     FROM overlap o
+                     JOIN best_deck bd ON bd.oracle_id = o.oracle_id AND bd.deck = o.deck
                  ) o
                  LEFT JOIN tag_role tr ON tr.slug = o.oracle_tag
-                 WHERE o.rn <= $12
+                 WHERE o.rn <= $11
                  GROUP BY o.oracle_id
              )
              SELECT c.oracle_id,
-                    COALESCE(ts.s, 0) + $13 * cs.s AS score,
+                    c.color_identity,
+                    COALESCE(bd.s, 0) + $12 * COALESCE(cs.s, 0) AS score,
                     COALESCE(st.tags, '[]'::jsonb) AS tags
              FROM candidates c
-             LEFT JOIN tag_score ts ON ts.oracle_id = c.oracle_id
-             JOIN color_score cs ON cs.oracle_id = c.oracle_id
+             LEFT JOIN best_deck bd ON bd.oracle_id = c.oracle_id
+             LEFT JOIN color_score cs ON cs.oracle_id = c.oracle_id
              LEFT JOIN shared_tags st ON st.oracle_id = c.oracle_id
              ORDER BY score DESC, c.name ASC, c.oracle_id
-             LIMIT $14",
+             LIMIT $13",
             role_membership_ctes(1)
         );
-        let rows: Vec<(uuid::Uuid, f64, serde_json::Value)> = binds
+        let rows: Vec<(uuid::Uuid, Vec<String>, f64, serde_json::Value)> = binds
             .bind(sqlx::query(sqlx::AssertSqlSafe(sql)))
-            .bind(user_profile)
-            .bind(color_shares)
+            .bind(decks)
             .bind(exclude_oracle_ids)
             .bind(user_id)
             .bind(DISMISSAL_TTL_DAYS)
             .bind(SUGGESTION_TAG_LIMIT)
             .bind(W_COLOR_AFFINITY)
             .bind(limit)
-            .map(|row: sqlx::postgres::PgRow| (row.get(0), row.get(1), row.get(2)))
+            .map(|row: sqlx::postgres::PgRow| (row.get(0), row.get(1), row.get(2), row.get(3)))
             .fetch_all(&self.pool)
             .await
             .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
         rows.into_iter()
-            .map(|(oracle_id, _score, tags)| {
+            .map(|(oracle_id, color_identity, _score, tags)| {
                 let tags: Vec<SharedTag> = serde_json::from_value(tags)
                     .context("commander suggestion tags")
                     .map_err(CommanderSuggestionsError::Database)?;
-                Ok(ScoredCommander { oracle_id, tags })
+                Ok(ScoredCommander {
+                    oracle_id,
+                    color_identity,
+                    tags,
+                })
             })
             .collect()
     }

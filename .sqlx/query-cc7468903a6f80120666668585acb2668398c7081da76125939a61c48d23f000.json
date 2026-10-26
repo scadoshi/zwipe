@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT s.oracle_id AS \"commander_oracle_id!\",\n                      s.color_identity AS commander_colors,\n                      COALESCE(array_agg(dc.oracle_id) FILTER (WHERE dc.board = 'deck'), '{}')\n                          AS \"mainboard_oracle_ids!: Vec<uuid::Uuid>\"\n               FROM decks d\n               JOIN scryfall_data s ON s.id = d.commander_id\n               LEFT JOIN deck_cards dc ON dc.deck_id = d.id\n               WHERE d.user_id = $1 AND s.oracle_id IS NOT NULL\n               GROUP BY d.id, s.oracle_id, s.color_identity",
+  "query": "SELECT s.oracle_id AS \"commander_oracle_id!\",\n                      s.color_identity AS commander_colors,\n                      COALESCE(array_agg(dc.oracle_id) FILTER (WHERE dc.board = 'deck'), '{}')\n                          AS \"mainboard_oracle_ids!: Vec<uuid::Uuid>\"\n               FROM decks d\n               JOIN scryfall_data s ON s.id = d.commander_id\n               LEFT JOIN deck_cards dc ON dc.deck_id = d.id\n               WHERE d.user_id = $1 AND s.oracle_id IS NOT NULL\n               GROUP BY d.id, s.oracle_id, s.color_identity\n               ORDER BY d.updated_at DESC, d.id",
   "describe": {
     "columns": [
       {
@@ -43,5 +43,5 @@
       null
     ]
   },
-  "hash": "b4bae33dc35ba5e7377552ceb824d1d2dc5e94b4a8dd328c23d3f1926355113f"
+  "hash": "cc7468903a6f80120666668585acb2668398c7081da76125939a61c48d23f000"
 }

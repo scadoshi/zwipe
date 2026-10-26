@@ -343,17 +343,19 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         lowercased_names: &[String],
     ) -> impl Future<Output = Result<Option<serde_json::Value>, SearchCardsError>> + Send;
 
-    /// Ranks the commanders in `commander_tag_profiles` against a user's tag
-    /// profile (otag → weight) and color shares (WUBRG letter → fraction of
-    /// the user's commander decks using it), best first, at most `limit`.
-    /// Leaves out `exclude_oracle_ids`, tokens, commanders not legal in
-    /// Commander, and the user's live dismissals. Each result carries its
-    /// strongest shared tags with catalog labels.
+    /// Ranks the commanders in `commander_tag_profiles` against a user's
+    /// commander decks, best first, at most `limit`. `decks` is a JSON array of
+    /// `{"colors": [WUBRG letters], "profile": {otag: weight} | null}`, one per
+    /// deck; a candidate's tag term is its best dot product over the deck
+    /// profiles and its color term the best Jaccard match of its color
+    /// identity against the deck colors. Leaves out `exclude_oracle_ids`,
+    /// tokens, commanders not legal in Commander, and the user's live
+    /// dismissals. Each result carries its strongest tags shared with the
+    /// best-matching deck.
     fn score_commander_suggestions(
         &self,
         user_id: uuid::Uuid,
-        user_profile: &serde_json::Value,
-        color_shares: &serde_json::Value,
+        decks: &serde_json::Value,
         exclude_oracle_ids: &[uuid::Uuid],
         limit: i64,
     ) -> impl Future<Output = Result<Vec<ScoredCommander>, CommanderSuggestionsError>> + Send;

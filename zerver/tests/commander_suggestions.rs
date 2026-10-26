@@ -1,6 +1,6 @@
 //! Suggested commanders: the user's commander decks scored against seeded
 //! `commander_tag_profiles` rows, with the reasons behind each pick, the
-//! exclusions, and the week-long dismissals.
+//! per-deck matching, the exclusions, and the week-long dismissals.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
@@ -315,6 +315,143 @@ async fn dismissals_hide_undo_clear_and_expire(pool: sqlx::PgPool) {
         names(&suggestions(&app, &token, 10).await),
         vec!["Krenko Match", "Lifegain Lord"],
         "an aged dismissal is ignored"
+    );
+}
+
+/// Writes one legal commander with the given color identity and profile.
+async fn seed_candidate(pool: &sqlx::PgPool, name: &str, colors: &str, profile: Value) {
+    let candidate = card(name).mono(colors).commander_legal();
+    let oid = candidate.oracle_id().unwrap();
+    seed_cards(pool, &[candidate]).await;
+    seed_profile(pool, oid, profile).await;
+}
+
+#[sqlx::test]
+async fn color_identity_matches_as_a_set_not_an_average(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("jeskai").await;
+    app.verify_email(&uid).await;
+
+    // Two Jeskai decks and a Boros one, every mainboard card a token maker.
+    let jeskai_a = card("Jeskai Lead A").mono("WUR").commander_legal();
+    let jeskai_b = card("Jeskai Lead B").mono("WUR").commander_legal();
+    let boros = card("Boros Lead").mono("WR").commander_legal();
+    let tokens = card("Token Maker").mono("W");
+    let other = card("Untracked Burn").mono("R");
+    let tokens_pair = (tokens.id(), tokens.oracle_id().unwrap());
+    let leads = [jeskai_a.id(), jeskai_b.id(), boros.id()];
+    seed_oracle_tags(
+        &pool,
+        &[
+            (tokens_pair.1, "tokens"),
+            // Keeps "tokens" short of every tagged card, so it carries weight.
+            (other.oracle_id().unwrap(), "burn"),
+        ],
+    )
+    .await;
+    seed_cards(&pool, &[jeskai_a, jeskai_b, boros, tokens, other]).await;
+    for (i, lead) in leads.into_iter().enumerate() {
+        build_commander_deck(&app, &token, &format!("Deck {i}"), lead, &[tokens_pair]).await;
+    }
+
+    // Same tags; the Jeskai candidate matches a Jeskai deck outright while
+    // mono-blue covers a third of it. Averaging the user's color shares would
+    // have put blue first, since every deck has blue's partners.
+    seed_candidate(&pool, "Jeskai Candidate", "WUR", json!({ "tokens": 1.0 })).await;
+    seed_candidate(&pool, "Blue Candidate", "U", json!({ "tokens": 1.0 })).await;
+
+    let body = suggestions(&app, &token, 10).await;
+    assert_eq!(body["deck_count"], 3);
+    assert_eq!(
+        names(&body),
+        vec!["Jeskai Candidate", "Blue Candidate"],
+        "the full set match outranks the partial one: {body}"
+    );
+    assert_eq!(
+        body["suggestions"][0]["reasons"]["colors"],
+        json!([
+            { "color": "W", "decks": 3 },
+            { "color": "R", "decks": 3 },
+            { "color": "U", "decks": 2 },
+        ]),
+        "colors still count decks, most-used first"
+    );
+}
+
+#[sqlx::test]
+async fn each_deck_is_matched_on_its_own(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("twodecks").await;
+    app.verify_email(&uid).await;
+
+    // A blue deck with four heavily tagged cards and a red-white deck with
+    // two lightly tagged ones. Merged, the blue tags would carry most of the
+    // profile's weight and bury the red-white match.
+    let blue_lead = card("Blue Lead").mono("U").commander_legal();
+    let boros_lead = card("Boros Lead").mono("WR").commander_legal();
+    let blue_cards: Vec<_> = (0..4)
+        .map(|i| card(&format!("Blue {i}")).mono("U"))
+        .collect();
+    let boros_cards: Vec<_> = (0..2)
+        .map(|i| card(&format!("Boros {i}")).mono("WR"))
+        .collect();
+    let mut tag_rows = Vec::new();
+    for c in &blue_cards {
+        for tag in ["draw", "counterspell", "mill", "flash", "scry"] {
+            tag_rows.push((c.oracle_id().unwrap(), tag));
+        }
+    }
+    for c in &boros_cards {
+        for tag in ["equipment", "lifegain"] {
+            tag_rows.push((c.oracle_id().unwrap(), tag));
+        }
+    }
+    seed_oracle_tags(&pool, &tag_rows).await;
+    let blue_main: Vec<_> = blue_cards
+        .iter()
+        .map(|c| (c.id(), c.oracle_id().unwrap()))
+        .collect();
+    let boros_main: Vec<_> = boros_cards
+        .iter()
+        .map(|c| (c.id(), c.oracle_id().unwrap()))
+        .collect();
+    let blue_sid = blue_lead.id();
+    let boros_sid = boros_lead.id();
+    let mut fixtures = vec![blue_lead, boros_lead];
+    fixtures.extend(blue_cards);
+    fixtures.extend(boros_cards);
+    seed_cards(&pool, &fixtures).await;
+    build_commander_deck(&app, &token, "Blue", blue_sid, &blue_main).await;
+    build_commander_deck(&app, &token, "Boros", boros_sid, &boros_main).await;
+
+    seed_candidate(
+        &pool,
+        "Blue Candidate",
+        "U",
+        json!({ "draw": 0.2, "counterspell": 0.2, "mill": 0.2, "flash": 0.2, "scry": 0.2 }),
+    )
+    .await;
+    seed_candidate(
+        &pool,
+        "Boros Candidate",
+        "WR",
+        json!({ "equipment": 0.6, "lifegain": 0.4 }),
+    )
+    .await;
+
+    let body = suggestions(&app, &token, 10).await;
+    assert_eq!(
+        names(&body),
+        vec!["Boros Candidate", "Blue Candidate"],
+        "the red-white candidate covers its deck fully, the blue one spreads thin: {body}"
+    );
+    assert_eq!(
+        body["suggestions"][0]["reasons"]["tags"],
+        json!([
+            { "slug": "equipment", "role": null },
+            { "slug": "lifegain", "role": null },
+        ]),
+        "reasons come from the red-white deck's overlap"
     );
 }
 

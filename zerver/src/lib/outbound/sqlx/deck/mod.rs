@@ -761,7 +761,8 @@ impl DeckRepository for Postgres {
                JOIN scryfall_data s ON s.id = d.commander_id
                LEFT JOIN deck_cards dc ON dc.deck_id = d.id
                WHERE d.user_id = $1 AND s.oracle_id IS NOT NULL
-               GROUP BY d.id, s.oracle_id, s.color_identity"#,
+               GROUP BY d.id, s.oracle_id, s.color_identity
+               ORDER BY d.updated_at DESC, d.id"#,
             user_id,
         )
         .fetch_all(&self.pool)

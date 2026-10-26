@@ -212,8 +212,9 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
 
     // == suggested commanders ==
 
-    /// The user's decks that have a commander, each with its commander's
-    /// oracle id and colors and its mainboard oracle ids.
+    /// The user's decks that have a commander, most recently updated first,
+    /// each with its commander's oracle id and colors and its mainboard oracle
+    /// ids.
     fn commander_decks(
         &self,
         user_id: uuid::Uuid,

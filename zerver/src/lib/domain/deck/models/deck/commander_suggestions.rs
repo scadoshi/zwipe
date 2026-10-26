@@ -6,6 +6,11 @@ use thiserror::Error;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 
+/// Decks whose tag profile a candidate is scored against: the user's most
+/// recently updated ones. Each profile is one query, so this bounds the work
+/// for a user with many decks; colors are read from every deck regardless.
+pub const MAX_PROFILED_DECKS: usize = 12;
+
 /// Errors while building suggestions or changing dismissals.
 #[derive(Debug, Error)]
 pub enum CommanderSuggestionsError {
@@ -76,11 +81,14 @@ pub struct ColorAffinity {
 }
 
 /// A candidate commander as the scoring query ranks it.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ScoredCommander {
     /// The commander's oracle id.
     pub oracle_id: Uuid,
-    /// The strongest shared tags, strongest first.
+    /// The commander's color identity as WUBRG short names.
+    pub color_identity: Vec<String>,
+    /// The strongest shared tags with the user's best-matching deck, strongest
+    /// first.
     pub tags: Vec<SharedTag>,
 }
 

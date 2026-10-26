@@ -31,7 +31,7 @@ use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
 use crate::domain::deck::models::deck::commander_suggestions::{
     ColorAffinity, CommanderDismissal, CommanderSuggestion, CommanderSuggestions,
-    CommanderSuggestionsError,
+    CommanderSuggestionsError, MAX_PROFILED_DECKS,
 };
 use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
 use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
@@ -580,24 +580,31 @@ where
             });
         }
 
-        // One profile over every commander deck: the commanders themselves
-        // plus every mainboard card, so a theme across decks weighs more
-        // than one deck's quirk.
-        let profile_oracle_ids: Vec<Uuid> = decks
-            .iter()
-            .flat_map(|deck| {
-                std::iter::once(deck.commander_oracle_id)
+        // One profile per deck (the commander plus its mainboard), so a
+        // candidate is scored on how well it fits the user's closest deck
+        // rather than an average of all of them. Decks past the most recent
+        // MAX_PROFILED_DECKS carry only their colors.
+        let mut deck_profiles: Vec<serde_json::Value> = Vec::with_capacity(decks.len());
+        for (index, deck) in decks.iter().enumerate() {
+            let profile = if index < MAX_PROFILED_DECKS {
+                let profile_oracle_ids: Vec<Uuid> = std::iter::once(deck.commander_oracle_id)
                     .chain(deck.mainboard_oracle_ids.iter().copied())
-            })
-            .collect::<HashSet<Uuid>>()
-            .into_iter()
-            .collect();
-        let user_profile = self
-            .card_repo
-            .deck_tag_profile(&profile_oracle_ids, &[])
-            .await
-            .map_err(|e| CommanderSuggestionsError::Database(e.into()))?
-            .unwrap_or_else(|| serde_json::json!({}));
+                    .collect::<HashSet<Uuid>>()
+                    .into_iter()
+                    .collect();
+                self.card_repo
+                    .deck_tag_profile(&profile_oracle_ids, &[])
+                    .await
+                    .map_err(|e| CommanderSuggestionsError::Database(e.into()))?
+            } else {
+                None
+            };
+            deck_profiles.push(serde_json::json!({
+                "colors": deck.commander_colors,
+                "profile": profile,
+            }));
+        }
+        let deck_profiles = serde_json::Value::Array(deck_profiles);
 
         // Decks per color: each deck counts once per color of its commander.
         let mut color_decks: HashMap<String, u32> = HashMap::new();
@@ -607,16 +614,6 @@ where
                 *color_decks.entry(color.clone()).or_default() += 1;
             }
         }
-        let color_shares: serde_json::Value = color_decks
-            .iter()
-            .map(|(color, decks)| {
-                (
-                    color.clone(),
-                    serde_json::json!(f64::from(*decks) / f64::from(deck_count)),
-                )
-            })
-            .collect::<serde_json::Map<String, serde_json::Value>>()
-            .into();
 
         let mut exclude_oracle_ids: Vec<Uuid> =
             decks.iter().map(|deck| deck.commander_oracle_id).collect();
@@ -631,8 +628,7 @@ where
             .card_repo
             .score_commander_suggestions(
                 user_id,
-                &user_profile,
-                &color_shares,
+                &deck_profiles,
                 &exclude_oracle_ids,
                 i64::from(limit),
             )
