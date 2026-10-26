@@ -634,6 +634,9 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Open it from the Decks screen: More, then Suggested commanders. The screen shows your top 10 as card rows, best fit first. A hint on your first visit explains the screen, and the question mark in the header reopens it: the list is your top 10, and Swipe goes further down the same ranking.",
             ),
+            Block::P(
+                "The Show row at the top holds one chip per color identity among your top 100: tap one to see only commanders of that identity, tap it again for All, and the Art chip hides or shows the row thumbnails. The list below sits in its own fold, open by default.",
+            ),
             Block::H2("What you build"),
             Block::P(
                 "A panel above the list sums up the decks the ranking read. It opens with how many decks, then your most common color set and most common color as pips with their deck counts. Under it sit three charts in the deck view's own grammar, each in its own fold: Colors, one bar per color by how many decks use it; Card roles, the ten roles your decks' tags fall under most, where tapping a role shows which of its tags your decks carry; and Oracle tags, your 25 strongest tags, where tapping one shows its description and an Examples button. Every bar carries its deck count. Nothing in it is a score, just what your decks already say.",
