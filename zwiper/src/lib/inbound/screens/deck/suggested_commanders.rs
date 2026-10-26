@@ -317,6 +317,7 @@ pub(crate) fn color_bars(colors: &[HttpColorAffinity]) -> Vec<Bar> {
             label: color_name(&c.color).unwrap_or_default().to_string(),
             count: decks_usize(c.decks),
             pct,
+            count_text: None,
         },
     )
 }
@@ -341,20 +342,37 @@ pub(crate) fn role_bars(roles: &[HttpProfileRole]) -> Vec<Bar> {
             label: role_short_label(&r.role),
             count: decks_usize(r.decks),
             pct,
+            count_text: None,
         },
     )
 }
 
-/// One bar per oracle tag in the order sent, the slug as label and key.
+/// A tag's score in millionths, the whole units `DeckMetrics::bar_pct`
+/// sizes bars from. A score is a sum of per-deck shares, at most the profiled
+/// deck count, so it fits; a negative or NaN score is 0.
+fn score_units(score: f64) -> usize {
+    (score.max(0.0) * 1_000_000.0).round() as usize
+}
+
+/// A tag's count cell: the decks carrying it, then its cards across them.
+pub(crate) fn tag_count_text(tag: &HttpProfileTag) -> String {
+    format!("{} · {}", tag.decks, tag.cards)
+}
+
+/// One bar per oracle tag in the order sent (highest score first), the slug
+/// as label and key, sized by score against the top tag's and counted as
+/// [`tag_count_text`].
 pub(crate) fn tag_bars(tags: &[HttpProfileTag]) -> Vec<Bar> {
     bars_from(
         tags,
-        |t| decks_usize(t.decks),
-        |t, pct| Bar::new(t.slug.clone(), decks_usize(t.decks), pct),
+        |t| score_units(t.score),
+        |t, pct| {
+            Bar::new(t.slug.clone(), decks_usize(t.decks), pct).with_count_text(tag_count_text(t))
+        },
     )
 }
 
-/// The shown tags under `role`, strongest first.
+/// The shown tags under `role`, highest score first.
 pub(crate) fn role_tags(tags: &[HttpProfileTag], role: &str) -> Vec<String> {
     tags.iter()
         .filter(|t| t.role.as_deref() == Some(role))
@@ -512,12 +530,16 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
             }
         }
         if !colors.is_empty() {
-            CollapsibleSection { title: COLORS_TITLE, open_section,
+            CollapsibleSection {
+                title: COLORS_TITLE,
+                open_section,
                 BarChart { bars: colors }
             }
         }
         if !roles.is_empty() {
-            CollapsibleSection { title: ROLES_TITLE, open_section,
+            CollapsibleSection {
+                title: ROLES_TITLE,
+                open_section,
                 BarChart {
                     bars: roles,
                     orientation: BarOrientation::Horizontal,
@@ -528,7 +550,9 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
             }
         }
         if !tags.is_empty() {
-            CollapsibleSection { title: TAGS_TITLE, open_section,
+            CollapsibleSection {
+                title: TAGS_TITLE,
+                open_section,
                 BarChart {
                     bars: tags,
                     orientation: BarOrientation::Horizontal,
@@ -1365,11 +1389,19 @@ mod tests {
         );
     }
 
-    fn profile_tag(slug: &str, role: Option<&str>, decks: u32) -> HttpProfileTag {
+    fn profile_tag(
+        slug: &str,
+        role: Option<&str>,
+        decks: u32,
+        cards: u32,
+        score: f64,
+    ) -> HttpProfileTag {
         HttpProfileTag {
             slug: slug.to_string(),
             role: role.map(str::to_string),
             decks,
+            cards,
+            score,
         }
     }
 
@@ -1379,6 +1411,7 @@ mod tests {
             label: label.to_string(),
             count,
             pct,
+            count_text: None,
         }
     }
 
@@ -1419,28 +1452,54 @@ mod tests {
     }
 
     #[test]
-    fn tag_bars_and_role_tags_read_the_slugs() {
+    fn tag_bars_size_by_score_against_the_top_tag_and_count_decks_and_cards() {
         let tags = [
-            profile_tag("sacrifice-outlet", Some("sacrifice"), 6),
-            profile_tag("treasure", Some("ramp"), 3),
-            profile_tag("aristocrats", Some("sacrifice"), 3),
-            profile_tag("typal-goblin", None, 1),
+            profile_tag("sacrifice-outlet", Some("sacrifice"), 6, 23, 1.6),
+            profile_tag("treasure", Some("ramp"), 3, 40, 0.8),
+            profile_tag("aristocrats", Some("sacrifice"), 3, 9, 0.4),
+            profile_tag("typal-goblin", None, 1, 2, 0.01),
         ];
+        let bars = tag_bars(&tags);
+        let got: Vec<(&str, u32, Option<&str>)> = bars
+            .iter()
+            .map(|b| (b.key.as_str(), b.pct, b.count_text.as_deref()))
+            .collect();
         assert_eq!(
-            tag_bars(&tags),
+            got,
             vec![
-                bar("sacrifice-outlet", "sacrifice-outlet", 6, 100),
-                bar("treasure", "treasure", 3, 50),
-                bar("aristocrats", "aristocrats", 3, 50),
-                bar("typal-goblin", "typal-goblin", 1, 16),
-            ]
+                ("sacrifice-outlet", 100, Some("6 · 23")),
+                ("treasure", 50, Some("3 · 40")),
+                ("aristocrats", 25, Some("3 · 9")),
+                ("typal-goblin", 4, Some("1 · 2")),
+            ],
+            "the order sent, score over the top score with the 4% sliver, cards not counted in the size"
         );
+        assert!(
+            bars.iter().all(|b| b.label == b.key),
+            "slugs label their own bars"
+        );
+        assert!(tag_bars(&[]).is_empty());
+    }
+
+    #[test]
+    fn tag_bars_with_no_score_draw_no_bar() {
+        let bars = tag_bars(&[profile_tag("treasure", None, 2, 5, 0.0)]);
+        assert_eq!(bars.first().map(|b| b.pct), Some(0));
+    }
+
+    #[test]
+    fn role_tags_keep_the_order_sent() {
+        let tags = [
+            profile_tag("sacrifice-outlet", Some("sacrifice"), 6, 23, 1.6),
+            profile_tag("treasure", Some("ramp"), 3, 40, 0.8),
+            profile_tag("aristocrats", Some("sacrifice"), 3, 9, 0.4),
+            profile_tag("typal-goblin", None, 1, 2, 0.01),
+        ];
         assert_eq!(
             role_tags(&tags, "sacrifice"),
             vec!["sacrifice-outlet", "aristocrats"]
         );
         assert!(role_tags(&tags, "draw").is_empty());
-        assert!(tag_bars(&[]).is_empty());
     }
 
     #[test]
