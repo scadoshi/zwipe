@@ -527,15 +527,15 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
             div { class: "tag-table-head",
                 span { class: "settings-row-label", "Tag" }
             }
-            div { class: "tag-table-head",
+            div { class: "tag-table-head tag-table-head-p3",
                 span { class: "settings-row-label", "Decks" }
                 InfoButton { topic: HintTopic::SuggestionTagDecks }
             }
-            div { class: "tag-table-head",
+            div { class: "tag-table-head tag-table-head-p5",
                 span { class: "settings-row-label", "Cards" }
                 InfoButton { topic: HintTopic::SuggestionTagCards }
             }
-            div { class: "tag-table-head",
+            div { class: "tag-table-head tag-table-head-p2",
                 span { class: "settings-row-label", "Impact" }
                 InfoButton { topic: HintTopic::SuggestionTagImpact }
             }
@@ -548,14 +548,14 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
                     }
                 }
                 span { class: "tag-table-num",
-                    span { class: "stat-chip", "{row.decks}" }
+                    span { class: "stat-chip stat-chip-p3", "{row.decks}" }
                 }
                 span { class: "tag-table-num",
-                    span { class: "stat-chip", "{row.cards}" }
+                    span { class: "stat-chip stat-chip-p5", "{row.cards}" }
                 }
                 span { class: "tag-table-num",
                     if let Some(impact) = row.impact {
-                        span { class: "stat-chip", "{impact}" }
+                        span { class: "stat-chip stat-chip-p2", "{impact}" }
                     }
                 }
                 // Mounted shut under every row so opening one is a class

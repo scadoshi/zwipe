@@ -2818,10 +2818,28 @@ button {
     padding: 0.175rem 0;
 }
 
+/* One line per tag, a long slug cut with an ellipsis, so every row is the
+   same height. Tapping the chip still reveals the tag's description. */
 .tag-table-tag .keyword-chip {
     max-width: 100%;
     text-align: left;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Each number column takes a palette slot; its header label and its stat
+   chips share it. */
+.tag-table-head-p3 .settings-row-label {
+    color: var(--palette-3);
+}
+
+.tag-table-head-p5 .settings-row-label {
+    color: var(--palette-5);
+}
+
+.tag-table-head-p2 .settings-row-label {
+    color: var(--palette-2);
 }
 
 /* Each number sits in a stat chip, the deck list's count box. */
