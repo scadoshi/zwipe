@@ -2824,10 +2824,8 @@ button {
     overflow-wrap: anywhere;
 }
 
+/* Each number sits in a stat chip, the deck list's count box. */
 .tag-table-num {
-    font-size: 0.75rem;
-    color: var(--text-primary);
-    opacity: 0.85;
     text-align: right;
     white-space: nowrap;
 }

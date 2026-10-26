@@ -528,11 +528,15 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
                         "{row.slug}"
                     }
                 }
-                span { class: "tag-table-num", "{row.decks}" }
-                span { class: "tag-table-num", "{row.cards}" }
+                span { class: "tag-table-num",
+                    span { class: "stat-chip", "{row.decks}" }
+                }
+                span { class: "tag-table-num",
+                    span { class: "stat-chip", "{row.cards}" }
+                }
                 span { class: "tag-table-num",
                     if let Some(impact) = row.impact {
-                        "{impact}"
+                        span { class: "stat-chip", "{impact}" }
                     }
                 }
                 // Mounted shut under every row so opening one is a class
