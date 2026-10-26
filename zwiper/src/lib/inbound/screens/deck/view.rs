@@ -376,10 +376,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 CollapsibleSection {
                                                     title: "Draw odds",
                                                     open_section: open_section,
+                                                    header_accessory: rsx! { InfoButton { topic: HintTopic::DrawOdds } },
                                                     DrawOdds {
                                                         deck_size: deck_size,
                                                         buckets: buckets,
-                                                        hint: rsx! { InfoButton { topic: HintTopic::DrawOdds } },
                                                     }
                                                 }
                                             }
