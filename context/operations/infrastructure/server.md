@@ -409,6 +409,8 @@ END $$;
 
 Build directly on the server; no cross-compilation needed:
 
+zerver links aws-lc-rs (jsonwebtoken's `aws_lc_rs` backend), so the build host needs a C compiler; cmake is a dependency of aws-lc-sys but its prebuilt bindings cover x86_64 linux, so cmake is not needed there.
+
 ```bash
 # Install build tools (gcc, make, etc.)
 sudo apt install -y build-essential

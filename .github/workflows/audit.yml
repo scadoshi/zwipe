@@ -30,6 +30,4 @@ jobs:
         with:
           tool: cargo-audit
       - name: Audit dependencies
-        # Ignore RUSTSEC-2023-0071 (rsa): we sign JWTs with HS256/HMAC, never RSA. rsa
-        # only rides in via jsonwebtoken's RustCrypto backend + sqlx's unbuilt mysql driver.
-        run: cargo audit --ignore RUSTSEC-2023-0071
+        run: cargo audit
