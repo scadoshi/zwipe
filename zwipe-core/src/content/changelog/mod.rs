@@ -47,7 +47,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Suggested commanders match the colors and themes of each deck you build, not an average of them",
         "Card details open in a bottom sheet with room for rules, tags and reasons",
         "Suggested commanders open with charts of the colors, card roles and oracle tags in your decks",
-        "Suggested commanders narrow to one color identity with Show chips, and the list folds",
+        "Suggested commanders filter by named color identities right above the list",
     ],
 }];
 
