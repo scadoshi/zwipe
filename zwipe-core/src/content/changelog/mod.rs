@@ -44,9 +44,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The changelog's version chips group patches under their minor version",
         "Swiping to add cards shows every recommended card before running out",
         "Card details open in a bottom sheet",
-        "Suggested commanders picked from your decks, with why each one fits",
-        "Suggested commanders sum up your decks' colors, card roles and top oracle tags",
-        "Suggested commanders filter by color identity",
+        "Suggested commanders",
     ],
 }];
 

@@ -8,6 +8,7 @@ The changelog lives in `zwipe-core/src/content/changelog/mod.rs` and is rendered
 - **No examples.** No "like Sol Ring", no "e.g.", no "such as", no list of the cards it affected. If the change needs an example to make sense, the guide is where that goes. `no_entry_gives_an_example` catches the common phrasings.
 - **Say what changed and move on.** One clause is the target. A second clause is allowed only when the entry means nothing without it: "Clearing a filter works; Apply used to refuse an empty filter". Never a second sentence that explains the reasoning, the rule behind it, or how it used to work in detail.
 - **No em dashes.** Use a semicolon, a comma, or a colon.
+- **A new feature is named, not explained.** One entry that it arrived, under its name in the app: `Suggested commanders`. What it does and how its parts work belong in the guide. Its later polish before release folds into that one entry.
 - **One entry per change.** Do not merge two changes into one entry with "and", and do not split one change across two entries.
 - **Proper nouns keep their case.** Screen and section names as they appear in the app (Profile, Deck tags, Oracle tags). Formats in Title Case. Otherwise sentence case, per `ui_text_conventions.md`.
 - **Shipped entries are history.** Reword them for these rules when you touch the file, but never change what they claim.
