@@ -34,6 +34,26 @@ pub(crate) fn DeckStatsSkeleton() -> Element {
     }
 }
 
+/// The suggested commanders' profile panel while the first load is in
+/// flight: a text line for the lead, then three open chart boxes, each a
+/// section title over a chart-height block.
+#[component]
+pub(crate) fn BuilderProfileSkeleton() -> Element {
+    rsx! {
+        div { class: "screen-panel profile-panel",
+            div { class: "skeleton-bar skeleton-bar-label" }
+            div { class: "profile-charts",
+                for i in 0..3 {
+                    div { key: "{i}", class: "skeleton-chart-box",
+                        div { class: "skeleton-bar skeleton-section-label" }
+                        div { class: "skeleton-bar skeleton-chart-area" }
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[component]
 pub(crate) fn DeckCardListSkeleton() -> Element {
     // Grouped rows only: the identity header and featured-cards ghosts render

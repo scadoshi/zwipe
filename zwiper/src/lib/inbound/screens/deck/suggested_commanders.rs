@@ -36,6 +36,7 @@ use zwipe_core::http::contracts::suggestions::{
 };
 
 use super::components::collapsible_section::CollapsibleSection;
+use super::components::skeletons::BuilderProfileSkeleton;
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
@@ -785,9 +786,12 @@ pub fn SuggestedCommanders() -> Element {
                     class: "flex-col",
                     style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                     if is_loading() {
-                        // The group and its header are static chrome, so they
-                        // render real while only the data rows ghost (the
-                        // closed-vocabulary skeleton rule).
+                        // First load only: a refetch keeps the data in place.
+                        // The panel ghosts as a lead line over three chart
+                        // boxes; the list group and its header are static
+                        // chrome, so they render real while only the data
+                        // rows ghost (the closed-vocabulary skeleton rule).
+                        BuilderProfileSkeleton {}
                         div { class: "maybeboard-list card-group row-enter",
                             div { class: "card-group-header", "Suggested commanders" }
                             for i in 0..6 {

@@ -1197,6 +1197,13 @@ button {
     height: 0.75rem;
 }
 
+/* A chart-height block inside an open skeleton-chart-box (the suggested
+   commanders' profile panel), the vertical deck chart's 6rem. */
+.skeleton-chart-area {
+    width: 100%;
+    height: 6rem;
+}
+
 /* Section label that sits above a skeleton-info-list. Matches .label. */
 .skeleton-section-label {
     width: 22%;
