@@ -51,7 +51,7 @@ pub fn Verify(token: String) -> Element {
                 Some(Err(None)) => rsx! {
                     div { class: "outcome-error",
                     Panel { title: "Link already used or expired", title_h1: true, centered: true,
-                        p { class: "card-summary", "If you already verified, you're all set. If not, tap " HintKey { "Resend" } " on " HintKey { "Profile" } " in the app for a new link." }
+                        p { class: "card-summary", "If you already verified, you're all set. If not, tap " HintKey { "Resend" } " on " HintKey { "Account" } " in the app for a new link." }
                     }
                     }
                 },
@@ -59,7 +59,7 @@ pub fn Verify(token: String) -> Element {
                     div { class: "outcome-error",
                     Panel { title: "Verification failed", title_h1: true, centered: true,
                         p { class: "card-summary", "{e}" }
-                        p { class: "card-summary", "Tap " HintKey { "Resend" } " on " HintKey { "Profile" } " in the app for a new link." }
+                        p { class: "card-summary", "Tap " HintKey { "Resend" } " on " HintKey { "Account" } " in the app for a new link." }
                     }
                     }
                 },

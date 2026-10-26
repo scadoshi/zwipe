@@ -62,7 +62,7 @@ pub fn ConfirmEmail(token: String) -> Element {
                 Some(Err(Failure::DeadLink)) => rsx! {
                     div { class: "outcome-error",
                     Panel { title: "Link already used or expired", title_h1: true, centered: true,
-                        p { class: "card-summary", "If you already confirmed, your new email is active. " HintKey { "Profile" } " in the app shows which email your account uses." }
+                        p { class: "card-summary", "If you already confirmed, your new email is active. " HintKey { "Account" } " in the app shows which email your account uses." }
                     }
                     }
                 },
@@ -77,7 +77,7 @@ pub fn ConfirmEmail(token: String) -> Element {
                     div { class: "outcome-error",
                     Panel { title: "Email not changed", title_h1: true, centered: true,
                         p { class: "card-summary", "{e}" }
-                        p { class: "card-summary", "To try again, tap " HintKey { "Change" } " next to your email on " HintKey { "Profile" } " in the app." }
+                        p { class: "card-summary", "To try again, tap " HintKey { "Change" } " next to your email on " HintKey { "Account" } " in the app." }
                     }
                     }
                 },

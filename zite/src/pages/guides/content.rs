@@ -621,18 +621,18 @@ pub static GUIDES: &[Guide] = &[
         ],
     },
     Guide {
-        slug: "your-play-style",
-        title: "Your play style",
+        slug: "my-play-style",
+        title: "My play style",
         summary: "What your decks say about how you play, and commanders ranked against them, with the reasons each one made the list.",
         tags: &["Commander"],
         related: &["commander-maybeboard", "synergy"],
         blocks: &[
             Block::Lead(
-                "Your decks already say what you like to play. Your play style reads every one of them, in any format, then ranks commanders you haven't built yet.",
+                "Your decks already say what you like to play. My play style, on the Home screen, reads every one of them, in any format, then ranks commanders you haven't built yet.",
             ),
             Block::H2("Finding it"),
             Block::Bullets(&[
-                "On the Decks screen, tap More, then Your play style.",
+                "On the Home screen, tap My play style. It's also on the Decks screen, under More.",
                 "Your colors, card roles and oracle tags come first.",
                 "Under them, your top 10 commanders show as card rows, best fit first.",
                 "Tap a color chip in the Show row to see only those colors. Tap it again to see them all.",
