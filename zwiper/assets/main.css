@@ -2676,6 +2676,30 @@ button {
     border-bottom: 1px solid var(--border-secondary);
 }
 
+/* A bottom sheet's sections (the card details sheet): the .card-group surface
+   with block padding instead of a list's rows, so the text sits in a container
+   over the sheet's grid. */
+.sheet-panel {
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.sheet-panel + .sheet-panel {
+    margin-top: var(--panel-gap);
+}
+
+/* The panel supplies the inset the row detail and footer carry themselves. */
+.sheet-panel .card-row-detail {
+    padding: 0;
+}
+
+.sheet-panel > .card-detail-footer {
+    margin: 0;
+}
+
 /* (The old `.deck-group-header` variant lived here: it stripped the header's
    bottom rule because deck-list headers floated over free-standing deck
    panels, where a rule read as a stray line. Deck rows now sit inside a

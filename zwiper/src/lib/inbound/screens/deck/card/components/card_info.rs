@@ -99,8 +99,10 @@ pub(crate) fn use_describe_tag() -> Callback<String, Option<String>> {
 /// Lair, full-art, foreign-language). Opened from the action-bar
 /// [`RulesButton`] via the shared `open` signal. The body is the shared
 /// [`CardDetails`], opening on the shown face's mana cost since the sheet's
-/// title holds only text. The footer holds Flip for a multi-faced card (it
-/// leaves the sheet open), an optional Printings, and Close.
+/// title holds only text. The details sit in one panel and the host's `footer`
+/// in a second, so neither lies straight on the sheet's grid. The sheet's own
+/// footer holds Flip for a multi-faced card (it leaves the sheet open), an
+/// optional Printings, and Close.
 ///
 /// Printings leaves this sheet open: the host's printing sheet draws over it,
 /// and the host closes this one too when a printing is saved. Mount it at the
@@ -113,7 +115,7 @@ pub(crate) fn CardDetailsSheet(
     /// sheet footer (mirrors the deck-view expand-row → Printing button).
     #[props(default)]
     on_printings: Option<EventHandler<()>>,
-    /// Host content under the details' chips, before the action bar.
+    /// Host content shown in its own panel under the details.
     #[props(default)]
     footer: Option<Element>,
 ) -> Element {
@@ -150,17 +152,22 @@ pub(crate) fn CardDetailsSheet(
                 }
             },
             // The sheet's content is the scroll container; `card-rules` only
-            // styles the text.
+            // styles the text. Each panel is the card-group surface, so the
+            // sheet reads like the list behind it.
             div { class: "card-rules",
-                CardDetails {
-                    card,
-                    show_name: false,
-                    show_cost: true,
-                    show_classification: true,
-                    show_flip: false,
-                    face: Some(face),
-                    describe_tag: Some(describe_tag),
-                    footer,
+                div { class: "sheet-panel",
+                    CardDetails {
+                        card,
+                        show_name: false,
+                        show_cost: true,
+                        show_classification: true,
+                        show_flip: false,
+                        face: Some(face),
+                        describe_tag: Some(describe_tag),
+                    }
+                }
+                if let Some(footer) = footer {
+                    div { class: "sheet-panel", {footer} }
                 }
             }
         }
