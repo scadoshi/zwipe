@@ -162,7 +162,7 @@ jobs:
         # Keep this matched to the workspace dioxus version (and the build
         # Macs' `dx --version`) — a mismatch is a warning today but dx treats
         # it as incompatible.
-        uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2
+        uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2
         with:
           tool: dioxus-cli@0.7.10
 
