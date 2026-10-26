@@ -48,6 +48,8 @@ use super::components::swipe_select::{SuggestedPile, SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
+use crate::inbound::components::hint_host::HintTopic;
+use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
 use crate::inbound::router::Router;
@@ -533,6 +535,9 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
             CollapsibleSection {
                 title: COLORS_TITLE,
                 open_section,
+                header_accessory: rsx! {
+                    InfoButton { topic: HintTopic::SuggestionColorChart }
+                },
                 BarChart { bars: colors }
             }
         }
@@ -540,6 +545,9 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
             CollapsibleSection {
                 title: ROLES_TITLE,
                 open_section,
+                header_accessory: rsx! {
+                    InfoButton { topic: HintTopic::SuggestionRoleChart }
+                },
                 BarChart {
                     bars: roles,
                     orientation: BarOrientation::Horizontal,
@@ -553,6 +561,9 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
             CollapsibleSection {
                 title: TAGS_TITLE,
                 open_section,
+                header_accessory: rsx! {
+                    InfoButton { topic: HintTopic::SuggestionTagChart }
+                },
                 BarChart {
                     bars: tags,
                     orientation: BarOrientation::Horizontal,

@@ -70,6 +70,12 @@ pub enum HintTopic {
     ManaFulfillment,
     /// Deck view: draw odds chart.
     DrawOdds,
+    /// Suggested commanders: the colors chart.
+    SuggestionColorChart,
+    /// Suggested commanders: the card roles chart.
+    SuggestionRoleChart,
+    /// Suggested commanders: the oracle tags chart and its impact score.
+    SuggestionTagChart,
 }
 
 impl HintTopic {
@@ -102,6 +108,9 @@ impl HintTopic {
             Self::ManaCurve => "Mana curve",
             Self::ManaFulfillment => "Mana cost fulfillment",
             Self::DrawOdds => "Draw odds",
+            Self::SuggestionColorChart => "Colors",
+            Self::SuggestionRoleChart => "Card roles",
+            Self::SuggestionTagChart => "Oracle tags",
         }
     }
 
@@ -209,6 +218,21 @@ impl HintTopic {
                 HintBullets {
                     HintBullet { "Chance of at least one card from each group in the opening hand, or by a turn. " HintKey { "-" } " and " HintKey { "+" } " step the turn" }
                     HintBullet { "Random draw only. Mulligans, tutors and card draw are not counted" }
+                }
+            },
+            Self::SuggestionColorChart => rsx! {
+                HintLine { "Your commander decks by color. A deck counts once for each color its commander has" }
+            },
+            Self::SuggestionRoleChart => rsx! {
+                HintLine { "How many of your decks have a tag in each role. Tap a role for its tags" }
+            },
+            Self::SuggestionTagChart => rsx! {
+                HintBullets {
+                    HintBullet { "Each bar is the tag's impact across your decks. The top tag fills its bar" }
+                    HintBullet { "In each deck, a tag counts for more the more of that deck's cards carry it and the rarer it is across all of Magic" }
+                    HintBullet { "A tag's impact adds up over every deck that has it" }
+                    HintBullet { "6 · 23 means 6 of your decks carry the tag, on 23 cards in all" }
+                    HintBullet { "Tap a tag to see what it means" }
                 }
             },
         }
