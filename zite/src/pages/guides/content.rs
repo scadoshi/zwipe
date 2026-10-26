@@ -634,6 +634,10 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Open it from the Decks screen: More, then Suggested commanders. The screen shows your top 10 as card rows, best fit first. A hint on your first visit explains the screen, and the question mark in the header reopens it: the list is your top 10, and Swipe goes further down the same ranking.",
             ),
+            Block::H2("What you build"),
+            Block::P(
+                "A panel above the list sums up the decks the ranking read. The first line says how many decks and the color identity you build most, as pips. Under \"Colors you build\", each of your colors gets a segment sized by how many decks use it. Under \"Oracle tags you build with\" sit your strongest oracle tags, grouped by card role like the card's own chips, with a line under them counting the decks the top three show up in. Nothing in it is a score, just what your decks already say.",
+            ),
             Block::H2("Why this commander"),
             Block::P(
                 "Expand a row and the details end with a short block headed \"Why this commander?\". Under \"Shares oracle tags with your decks\" sit the oracle tags the commander and your decks lean on, grouped by card role the same way the card's own \"Card roles\" chips are: tap a role to see its tags, tap a tag for its description and an Examples button, and tags under no role sit under Other. Then come the colors you keep coming back to, as in \"You build in red (3 of your 4 decks)\". No percentages: a named tag or a count says more than a score.",

@@ -46,6 +46,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Suggested commanders, picked from the decks you've built, with why each one fits",
         "Suggested commanders match the colors and themes of each deck you build, not an average of them",
         "Card details open in a bottom sheet with room for rules, tags and reasons",
+        "Suggested commanders open with a summary of the colors and oracle tags you build with",
     ],
 }];
 
