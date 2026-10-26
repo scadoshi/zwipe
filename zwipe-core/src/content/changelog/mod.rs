@@ -44,6 +44,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The changelog's version chips group patches under their minor version",
         "Swiping to add cards shows every recommended card before it runs out",
         "Suggested commanders, picked from the decks you've built, with why each one fits",
+        "Suggested commanders match the colors and themes of each deck you build, not an average of them",
     ],
 }];
 
