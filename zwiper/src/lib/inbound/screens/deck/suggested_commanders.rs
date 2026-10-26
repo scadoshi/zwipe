@@ -326,6 +326,10 @@ pub(crate) fn color_bars(colors: &[HttpColorAffinity]) -> Vec<Bar> {
 /// The WUBRG codes in order.
 const WUBRG: [&str; 5] = ["W", "U", "B", "R", "G"];
 
+/// The list's group header, the deck view's non-collapsible Commander
+/// header grammar.
+const LIST_TITLE: &str = "Suggested commanders";
+
 /// The profile sections' titles, also their accordion keys.
 const SUMMARY_TITLE: &str = "Summary";
 const COLORS_TITLE: &str = "Colors";
@@ -1043,7 +1047,7 @@ pub fn SuggestedCommanders() -> Element {
                     if is_loading() {
                         // First load only: a refetch keeps the data in place.
                         // The profile ghosts as its four sections, Summary open
-                        // on three rows; the list section and its title are
+                        // on three rows; the list's group and its header are
                         // static chrome, so they render real while the Show
                         // chips and the data rows ghost (the closed-vocabulary
                         // skeleton rule).
@@ -1051,6 +1055,7 @@ pub fn SuggestedCommanders() -> Element {
                             BuilderProfileSkeleton {}
                             ShowChipRowSkeleton {}
                             div { class: "maybeboard-list card-group row-enter",
+                                div { class: "card-group-header", "{LIST_TITLE}" }
                                 for i in 0..6 {
                                     div { key: "{i}", class: "skeleton-card-row",
                                         div { class: "skeleton-bar skeleton-card-thumb" }
@@ -1120,6 +1125,7 @@ pub fn SuggestedCommanders() -> Element {
                                 }
                             } else {
                                 div { class: "maybeboard-list card-group row-enter",
+                                    div { class: "card-group-header", "{LIST_TITLE}" }
                                     for suggestion in rows {
                                         SuggestionRow {
                                             key: "{suggestion.card.scryfall_data.id}",
