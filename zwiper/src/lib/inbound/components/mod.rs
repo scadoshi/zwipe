@@ -16,7 +16,7 @@ pub mod hint_dialog;
 pub mod hint_host;
 /// The mark with the public counters, on home and the auth screens.
 pub mod home_hero;
-/// Home's My play style panel: deck count and most built color sets.
+/// Home's Playstyle panel: deck count and most built color sets.
 pub mod home_play_style;
 /// Persistent, on-demand "?" help button (not one-time, no session dependency).
 pub mod info_button;

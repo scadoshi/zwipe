@@ -50,7 +50,7 @@ pub enum Router {
     // ── authed ── everything below requires a valid session (AuthGate
     // redirects to /login otherwise), so screens do not self-gate.
     #[layout(AuthGate)]
-    /// Landing screen: greeting, navigation to decks, play style, account and config.
+    /// Landing screen: greeting, navigation to decks, account and config.
     #[route("/")]
     Home {},
 
@@ -77,7 +77,7 @@ pub enum Router {
     /// up-swiping during commander Zwipe-select.
     #[route("/deck/commander-maybeboard")]
     CommanderMaybeboard {},
-    /// My play style: what the user builds across every deck, over the top
+    /// Playstyle: what the user builds across every deck, over the top
     /// 10 commanders ranked against those decks, with a Swipe overlay going
     /// deeper. The route keeps its suggested commanders path.
     #[route("/deck/suggested-commanders")]

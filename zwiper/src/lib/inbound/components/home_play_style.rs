@@ -1,4 +1,4 @@
-//! Home's My play style panel: the user's deck count and most built color
+//! Home's Playstyle panel: the user's deck count and most built color
 //! sets, with a button that opens the full screen.
 
 use components::{Button, ButtonVariant};
@@ -61,8 +61,8 @@ pub(crate) fn set_rows(identities: &[HttpColorIdentityCount]) -> Vec<SetRow> {
 }
 
 /// The panel under the hero, a sibling of the featured flavor card: the
-/// title bar, then the Decks row and up to three color set rows in the My
-/// play style Summary's grammar, then an Open button. Before any deck has
+/// title bar, then the Decks row and up to three color set rows in the
+/// Playstyle Summary's grammar, then an Open button. Before any deck has
 /// cards it shows one line instead of the rows; a failed fetch with nothing
 /// cached shows a muted line. The button is always there, so the screen
 /// stays reachable from Home.
@@ -105,11 +105,11 @@ pub fn HomePlayStyle() -> Element {
             match summary {
                 Some(summary) => rsx! {
                     div { class: "settings-list-header", style: "justify-content: center;",
-                        span { class: "settings-list-title", "My play style" }
+                        span { class: "settings-list-title", "Playstyle" }
                     }
                     if summary.deck_count == 0 {
                         div { class: "message-empty", style: "padding: 1rem;",
-                            "Build a deck to see your play style"
+                            "Build a deck to see your playstyle"
                         }
                     } else {
                         div { style: "display:flex;flex-direction:column;",
@@ -131,10 +131,10 @@ pub fn HomePlayStyle() -> Element {
                 },
                 None if failed() => rsx! {
                     div { class: "settings-list-header", style: "justify-content: center;",
-                        span { class: "settings-list-title", "My play style" }
+                        span { class: "settings-list-title", "Playstyle" }
                     }
                     div { class: "message-empty", style: "padding: 1rem;",
-                        "Could not load your play style"
+                        "Could not load your playstyle"
                     }
                     OpenRow { onclick: move |_| { navigator.push(Router::SuggestedCommanders {}); } }
                 },

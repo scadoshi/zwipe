@@ -16,7 +16,7 @@ pub mod export;
 pub mod import;
 /// Deck list screen showing all user's decks.
 pub mod list;
-/// My play style screen: the user's decks summed up over suggested
+/// Playstyle screen: the user's decks summed up over suggested
 /// commanders ranked against them.
 pub mod suggested_commanders;
 /// View deck details screen.

@@ -1,4 +1,4 @@
-//! My play style screen: what the user builds, read from every deck they
+//! Playstyle screen: what the user builds, read from every deck they
 //! own in any format, over the top 10 commanders ranked against those decks,
 //! each with the reasons it ranked, styled like the commander maybeboard.
 //!
@@ -858,7 +858,7 @@ fn SuggestionRow(
     }
 }
 
-/// Screen summing up the user's play style over their top 10 suggested
+/// Screen summing up the user's playstyle over their top 10 suggested
 /// commanders with the reasons behind each, Show chips narrowing them to one color identity, a Swipe
 /// overlay going deeper, and Clear skips under More.
 #[component]
@@ -1092,11 +1092,11 @@ pub fn SuggestedCommanders() -> Element {
 
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: "My play style", hint: hint_open }
+            ScreenHeader { title: "Playstyle", hint: hint_open }
 
             HintDialog {
                 open: hint_open,
-                title: "My play style",
+                title: "Playstyle",
                 HintLine { "Your colors, card roles and top oracle tags, read from every deck you own in any format" }
                 HintBullets {
                     HintBullet { HintKey { "Create deck" } " begins a deck with that commander" }
@@ -1141,7 +1141,7 @@ pub fn SuggestedCommanders() -> Element {
                         }
                     } else if cold_start {
                         div { class: "message-empty",
-                            span { class: "chip-note", "Add cards to a deck in any format to see your play style and the commanders that fit it." }
+                            span { class: "chip-note", "Add cards to a deck in any format to see your playstyle and the commanders that fit it." }
                         }
                     } else {
                         // The deck view's column of sibling sections.

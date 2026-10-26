@@ -621,18 +621,18 @@ pub static GUIDES: &[Guide] = &[
         ],
     },
     Guide {
-        slug: "my-play-style",
-        title: "My play style",
+        slug: "playstyle",
+        title: "Playstyle",
         summary: "What your decks say about how you play, and commanders ranked against them, with the reasons each one made the list.",
         tags: &["Commander"],
         related: &["commander-maybeboard", "synergy"],
         blocks: &[
             Block::Lead(
-                "Your decks already say what you like to play. My play style, on the Home screen, reads every one of them, in any format, then ranks commanders you haven't built yet.",
+                "Your decks already say what you like to play. Playstyle reads every one of them, in any format, then ranks commanders you haven't built yet.",
             ),
             Block::H2("Finding it"),
             Block::Bullets(&[
-                "The My play style panel on the Home screen shows your deck count and your top three color sets. Tap Open in it. It's also on the Decks screen, under More.",
+                "The Playstyle panel on the Home screen shows your deck count and your top three color sets. Tap Open for the rest. It's also on the Decks screen, under More.",
                 "Your colors, card roles and oracle tags come first.",
                 "Under them, your top 10 commanders show as card rows, best fit first.",
                 "Tap a color chip in the Show row to see only those colors. Tap it again to see them all.",
@@ -657,7 +657,7 @@ pub static GUIDES: &[Guide] = &[
             Block::P("There's a little more math under the hood, but that's the gist."),
             Block::H2("Why this commander"),
             Block::P(
-                "Expand a row to see why it made the list. You get the oracle tags it shares with your decks and the colors you keep building in.",
+                "Expand a row and tap Why this commander? to see why it made the list. You get the oracle tags it shares with your decks and the colors you keep building in. A card's details sheet shows the same reasons already open.",
             ),
             Block::H2("What you can do with one"),
             Block::Bullets(&[

@@ -196,7 +196,7 @@ pub fn Home() -> Element {
         (
             DEMO_PROFILE,
             "Switch themes and catch up on the changelog",
-            "Demo: Themes and profile",
+            "Demo: Themes and changelog",
         ),
     ];
     let total = demos.len();

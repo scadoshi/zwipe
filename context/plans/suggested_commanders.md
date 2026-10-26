@@ -78,6 +78,7 @@ Agreed with Scotty on 2026-10-26: tags in any deck show what a player likes, so 
 - zerver's `fetch_profiled_decks` returns `ProfiledDeck`s: every deck that has a commander or a mainboard card, most recently updated first. A deck with a commander profiles the commander plus its mainboard and takes the commander's color identity, as before. A deck without one profiles its mainboard and takes the union of its mainboard cards' color identities (`deck_colors`).
 - The cold start is a user with no deck that has a commander or a mainboard card. `deck_count` counts every profiled deck, in any format.
 - The guide moved to `/guides/your-play-style`; the router redirects the old `suggested-commanders` slug.
+- Later the same day the screen became **Playstyle** and the guide moved to `/guides/playstyle`, with redirects from `suggested-commanders`, `your-play-style` and `my-play-style`. Home shows a Playstyle panel with the deck count and top three color sets from `GET /api/deck/play-style`, and its bar is Decks, Account, Config.
 
 ## Commander profiles (decided 2026-10-25: the synergy worker writes them)
 

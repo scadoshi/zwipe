@@ -720,7 +720,7 @@ pub fn DeckList() -> Element {
                         show_more_sheet.set(false);
                         navigator.push(Router::SuggestedCommanders {});
                     },
-                    "My play style"
+                    "Playstyle"
                 }
             }
             }

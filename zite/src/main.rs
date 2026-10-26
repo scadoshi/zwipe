@@ -34,9 +34,10 @@ enum Route {
     Guides {},
     #[route("/guides/:slug")]
     GuidePage { slug: String },
-    // The My play style guide's earlier slugs, linked before each rename.
-    #[redirect("/guides/suggested-commanders", || Route::GuidePage { slug: "my-play-style".to_string() })]
-    #[redirect("/guides/your-play-style", || Route::GuidePage { slug: "my-play-style".to_string() })]
+    // The Playstyle guide's earlier slugs, linked before each rename.
+    #[redirect("/guides/suggested-commanders", || Route::GuidePage { slug: "playstyle".to_string() })]
+    #[redirect("/guides/your-play-style", || Route::GuidePage { slug: "playstyle".to_string() })]
+    #[redirect("/guides/my-play-style", || Route::GuidePage { slug: "playstyle".to_string() })]
     #[route("/about")]
     About {},
     #[route("/changelog")]
@@ -350,12 +351,16 @@ mod tests {
 
     #[test]
     fn the_old_play_style_guide_slugs_redirect_to_the_new_one() {
-        for old in ["/guides/suggested-commanders", "/guides/your-play-style"] {
+        for old in [
+            "/guides/suggested-commanders",
+            "/guides/your-play-style",
+            "/guides/my-play-style",
+        ] {
             let route: Route = old.parse().unwrap();
             assert!(
                 route
                     == Route::GuidePage {
-                        slug: "my-play-style".to_string()
+                        slug: "playstyle".to_string()
                     },
                 "{old} went to {route}"
             );
