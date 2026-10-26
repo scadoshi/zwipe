@@ -10,7 +10,9 @@ use serde::Deserialize;
 use thiserror::Error;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::http::contracts::suggestions::{PROFILE_ROLE_SHOWN, PROFILE_TAG_SENT};
+use zwipe_core::http::contracts::suggestions::{
+    PLAY_STYLE_IDENTITIES_SENT, PROFILE_ROLE_SHOWN, PROFILE_TAG_SENT,
+};
 
 /// Decks whose tag profile a candidate is scored against: the user's most
 /// recently updated ones. Each profile is one query, so this bounds the work
@@ -249,6 +251,51 @@ fn sorted_identity(colors: &[String]) -> Vec<String> {
     identity
 }
 
+/// Each exact color identity across `decks` with how many decks have it,
+/// most decks first, then more colors, then WUBRG order (white before blue
+/// and so on, color by color). The first entry is the profile's top identity.
+#[must_use]
+pub fn identity_counts(decks: &[ProfiledDeck]) -> Vec<ColorIdentityCount> {
+    let mut identity_decks: HashMap<Vec<String>, u32> = HashMap::new();
+    for deck in decks {
+        *identity_decks
+            .entry(sorted_identity(&deck.colors))
+            .or_default() += 1;
+    }
+    let mut counts: Vec<ColorIdentityCount> = identity_decks
+        .into_iter()
+        .map(|(colors, decks)| ColorIdentityCount { colors, decks })
+        .collect();
+    counts.sort_by_cached_key(|count| {
+        let order: Vec<usize> = count.colors.iter().map(|c| wubrg_index(c)).collect();
+        (Reverse(count.decks), Reverse(count.colors.len()), order)
+    });
+    counts
+}
+
+/// The user's deck count and most built identities, from
+/// [`identity_counts`] cut to [`PLAY_STYLE_IDENTITIES_SENT`].
+#[must_use]
+pub fn summarize_play_style(decks: &[ProfiledDeck]) -> PlayStyleSummary {
+    let mut identities = identity_counts(decks);
+    identities.truncate(PLAY_STYLE_IDENTITIES_SENT);
+    PlayStyleSummary {
+        deck_count: u32::try_from(decks.len()).unwrap_or(u32::MAX),
+        identities,
+    }
+}
+
+/// What Home's play style panel shows: the deck count and the most built
+/// exact identities.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PlayStyleSummary {
+    /// Decks read, in any format. 0 is the cold start.
+    pub deck_count: u32,
+    /// The most built identities in [`identity_counts`] order, at most
+    /// [`PLAY_STYLE_IDENTITIES_SENT`].
+    pub identities: Vec<ColorIdentityCount>,
+}
+
 /// Summarizes the user's decks: per color the decks using it,
 /// the most-built exact identity, the highest-scoring oracle tags across the
 /// deck profiles, and the card roles those tags fall under. `profiles` pairs with
@@ -274,13 +321,10 @@ pub fn summarize_profile(
     let deck_count = u32::try_from(decks.len()).unwrap_or(u32::MAX);
 
     let mut color_decks: HashMap<String, u32> = HashMap::new();
-    let mut identity_decks: HashMap<Vec<String>, u32> = HashMap::new();
     for deck in decks {
-        let identity = sorted_identity(&deck.colors);
-        for color in &identity {
-            *color_decks.entry(color.clone()).or_default() += 1;
+        for color in sorted_identity(&deck.colors) {
+            *color_decks.entry(color).or_default() += 1;
         }
-        *identity_decks.entry(identity).or_default() += 1;
     }
     let mut colors: Vec<ColorAffinity> = color_decks
         .into_iter()
@@ -289,15 +333,10 @@ pub fn summarize_profile(
         .collect();
     colors.sort_by_key(|c| (Reverse(c.decks), wubrg_index(&c.color)));
 
-    let top_identity = identity_decks
+    let top_identity = identity_counts(decks)
         .into_iter()
-        .max_by_key(|(identity, count)| {
-            let order: Vec<Reverse<usize>> =
-                identity.iter().map(|c| Reverse(wubrg_index(c))).collect();
-            (*count, identity.len(), order)
-        })
-        .filter(|(_, count)| decks.len() == 1 || *count > 1)
-        .map(|(colors, decks)| ColorIdentityCount { colors, decks });
+        .next()
+        .filter(|top| decks.len() == 1 || top.decks > 1);
 
     let mut tag_totals: HashMap<String, ProfileTag> = HashMap::new();
     let mut role_decks: HashMap<String, u32> = HashMap::new();
@@ -586,6 +625,89 @@ mod tests {
                 colors: vec!["B".to_string(), "G".to_string()],
                 decks: 1,
             })
+        );
+    }
+
+    fn count(colors: &[&str], decks: u32) -> ColorIdentityCount {
+        ColorIdentityCount {
+            colors: strings(colors),
+            decks,
+        }
+    }
+
+    #[test]
+    fn identity_counts_order_by_decks_then_more_colors_then_wubrg() {
+        let decks = vec![
+            deck(1, &["G", "R"]),
+            deck(2, &["U"]),
+            deck(3, &["R", "G"]),
+            deck(4, &["U"]),
+            deck(5, &["U", "W"]),
+            deck(6, &["W", "U"]),
+            deck(7, &[]),
+            deck(8, &["B"]),
+            deck(9, &["W", "U", "B", "R", "G"]),
+        ];
+        assert_eq!(
+            identity_counts(&decks),
+            vec![
+                count(&["W", "U"], 2),
+                count(&["R", "G"], 2),
+                count(&["U"], 2),
+                count(&["W", "U", "B", "R", "G"], 1),
+                count(&["B"], 1),
+                count(&[], 1),
+            ],
+            "two colors before one at two decks, WU before RG, then the singles"
+        );
+    }
+
+    #[test]
+    fn identity_counts_lead_with_the_top_identity() {
+        let decks = vec![
+            deck(1, &["U"]),
+            deck(2, &["U"]),
+            deck(3, &["R", "G"]),
+            deck(4, &["G", "R"]),
+            deck(5, &["W", "U"]),
+            deck(6, &["U", "W"]),
+        ];
+        let profile = summarize_profile(&decks, &[], &HashMap::new()).unwrap();
+        assert_eq!(
+            identity_counts(&decks).first(),
+            profile.top_identity.as_ref()
+        );
+    }
+
+    #[test]
+    fn play_style_keeps_the_top_three_and_counts_every_deck() {
+        let decks = vec![
+            deck(1, &["B"]),
+            deck(2, &["B"]),
+            deck(3, &["B"]),
+            deck(4, &["R"]),
+            deck(5, &["R"]),
+            deck(6, &["W", "U"]),
+            deck(7, &["G"]),
+            deck(8, &[]),
+        ];
+        assert_eq!(
+            summarize_play_style(&decks),
+            PlayStyleSummary {
+                deck_count: 8,
+                identities: vec![count(&["B"], 3), count(&["R"], 2), count(&["W", "U"], 1)],
+            }
+        );
+    }
+
+    #[test]
+    fn play_style_of_no_decks_is_empty() {
+        assert_eq!(
+            summarize_play_style(&[]),
+            PlayStyleSummary {
+                deck_count: 0,
+                identities: vec![],
+            }
         );
     }
 

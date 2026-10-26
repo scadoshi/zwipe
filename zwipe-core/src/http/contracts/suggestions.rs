@@ -19,6 +19,24 @@ pub const PROFILE_TAG_SENT: usize = 100;
 /// Card roles [`HttpBuilderProfile::roles`] carries, one bar each.
 pub const PROFILE_ROLE_SHOWN: usize = 10;
 
+/// Most color identities [`HttpPlayStyleSummary::identities`] carries.
+pub const PLAY_STYLE_IDENTITIES_SENT: usize = 3;
+
+/// Response of `GET /api/deck/play-style`: the user's most built color
+/// identities, a light read for Home that builds no tag profiles and scores
+/// no commanders.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HttpPlayStyleSummary {
+    /// Decks in any format with a commander or a mainboard card, the same
+    /// count as [`HttpCommanderSuggestions::deck_count`]. 0 is the cold start.
+    pub deck_count: u32,
+    /// The exact color identities across those decks, most decks first, then
+    /// more colors, then WUBRG order, at most [`PLAY_STYLE_IDENTITIES_SENT`].
+    /// The first is [`HttpBuilderProfile::top_identity`] whenever that is
+    /// `Some`.
+    pub identities: Vec<HttpColorIdentityCount>,
+}
+
 /// Response of `GET /api/commander/suggestions`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HttpCommanderSuggestions {
@@ -267,6 +285,30 @@ mod tests {
                 score: 0.0,
             }
         );
+    }
+
+    #[test]
+    fn play_style_summary_round_trip() {
+        let summary = HttpPlayStyleSummary {
+            deck_count: 5,
+            identities: vec![
+                HttpColorIdentityCount {
+                    colors: vec!["U".to_string(), "R".to_string()],
+                    decks: 3,
+                },
+                HttpColorIdentityCount {
+                    colors: vec![],
+                    decks: 2,
+                },
+            ],
+        };
+        let json = serde_json::to_string(&summary).unwrap();
+        assert_eq!(
+            json,
+            r#"{"deck_count":5,"identities":[{"colors":["U","R"],"decks":3},{"colors":[],"decks":2}]}"#
+        );
+        let back: HttpPlayStyleSummary = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, summary);
     }
 
     #[test]

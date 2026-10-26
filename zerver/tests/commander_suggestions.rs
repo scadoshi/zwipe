@@ -1,7 +1,7 @@
 //! Suggested commanders: the user's decks in every format scored against
 //! seeded `commander_tag_profiles` rows, with the reasons behind each pick, the
-//! per-deck matching, the color identity cap, the exclusions, and the
-//! week-long dismissals.
+//! per-deck matching, the color identity cap, the exclusions, the week-long
+//! dismissals, and the play style summary Home reads.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
@@ -14,7 +14,7 @@ use common::{TestApp, card, seed_cards};
 use serde_json::{Value, json};
 use uuid::Uuid;
 use zwipe_core::http::paths::{
-    COMMANDER_DISMISSALS_ROUTE, COMMANDER_SUGGESTIONS_ROUTE, DECK_ROUTE,
+    COMMANDER_DISMISSALS_ROUTE, COMMANDER_SUGGESTIONS_ROUTE, DECK_ROUTE, PLAY_STYLE_ROUTE,
     add_commander_maybeboard_card_route, get_deck_route, undismiss_commander_route,
 };
 
@@ -761,4 +761,51 @@ async fn every_route_needs_a_token(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     let (status, _) = app.delete(COMMANDER_DISMISSALS_ROUTE, None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let (status, _) = app.get(PLAY_STYLE_ROUTE, None).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[sqlx::test]
+async fn play_style_summary_counts_the_top_three_identities(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("playstyle").await;
+    app.verify_email(&uid).await;
+
+    let (status, body) = app.get(PLAY_STYLE_ROUTE, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(body, json!({ "deck_count": 0, "identities": [] }));
+
+    let white = card("Plains Walker").mono("W");
+    let red = card("Mountain Runner").mono("R");
+    let blue = card("Island Swimmer").mono("U");
+    let black = card("Swamp Crawler").mono("B");
+    let green = card("Forest Grower").mono("G");
+    let w = (white.id(), white.oracle_id().unwrap());
+    let r = (red.id(), red.oracle_id().unwrap());
+    let u = (blue.id(), blue.oracle_id().unwrap());
+    let b = (black.id(), black.oracle_id().unwrap());
+    let g = (green.id(), green.oracle_id().unwrap());
+    seed_cards(&pool, &[white, red, blue, black, green]).await;
+    build_deck(&app, &token, "Boros One", "standard", &[r, w]).await;
+    build_deck(&app, &token, "Boros Two", "pioneer", &[w, r]).await;
+    build_deck(&app, &token, "Elves", "standard", &[g]).await;
+    build_deck(&app, &token, "Fliers", "standard", &[u]).await;
+    build_deck(&app, &token, "Zombies", "standard", &[b]).await;
+    // An empty deck has no colors to read and is not counted.
+    build_deck(&app, &token, "Empty", "standard", &[]).await;
+
+    let (status, body) = app.get(PLAY_STYLE_ROUTE, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(
+        body,
+        json!({
+            "deck_count": 5,
+            "identities": [
+                { "colors": ["W", "R"], "decks": 2 },
+                { "colors": ["U"], "decks": 1 },
+                { "colors": ["B"], "decks": 1 },
+            ],
+        }),
+        "most decks first, WUBRG between the singles, green cut at three"
+    );
 }

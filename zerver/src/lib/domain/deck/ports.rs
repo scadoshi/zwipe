@@ -30,7 +30,8 @@ use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppres
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
 use crate::domain::deck::models::deck::commander_suggestions::{
-    CommanderDismissal, CommanderSuggestions, CommanderSuggestionsError, ProfiledDeck,
+    CommanderDismissal, CommanderSuggestions, CommanderSuggestionsError, PlayStyleSummary,
+    ProfiledDeck,
 };
 use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
 use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
@@ -418,6 +419,15 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         limit: u32,
     ) -> impl Future<Output = Result<CommanderSuggestions, CommanderSuggestionsError>> + Send;
 
+    /// The user's deck count and most built color identities, from the same
+    /// decks [`DeckService::commander_suggestions`] reads, without tag
+    /// profiles or scoring. A user with no such deck gets `deck_count` 0 and
+    /// no identities.
+    fn play_style_summary(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<PlayStyleSummary, CommanderSuggestionsError>> + Send;
+
     /// Hides a commander from the user's suggestions for a week.
     fn dismiss_commander(
         &self,
@@ -609,6 +619,12 @@ pub trait ErasedDeckService: Send + Sync + 'static {
         user_id: uuid::Uuid,
         limit: u32,
     ) -> BoxFuture<'_, Result<CommanderSuggestions, CommanderSuggestionsError>>;
+
+    /// See [`DeckService::play_style_summary`].
+    fn play_style_summary(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> BoxFuture<'_, Result<PlayStyleSummary, CommanderSuggestionsError>>;
 
     /// See [`DeckService::dismiss_commander`].
     fn dismiss_commander<'a>(
@@ -807,6 +823,13 @@ where
         limit: u32,
     ) -> BoxFuture<'_, Result<CommanderSuggestions, CommanderSuggestionsError>> {
         Box::pin(DeckService::commander_suggestions(self, user_id, limit))
+    }
+
+    fn play_style_summary(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> BoxFuture<'_, Result<PlayStyleSummary, CommanderSuggestionsError>> {
+        Box::pin(DeckService::play_style_summary(self, user_id))
     }
 
     fn dismiss_commander<'a>(

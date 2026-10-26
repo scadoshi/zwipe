@@ -5,12 +5,25 @@ use std::borrow::Cow;
 use uuid::Uuid;
 
 use crate::http::contracts::suggestions::{
-    HttpClearedDismissals, HttpCommanderSuggestions, HttpDismissCommander,
+    HttpClearedDismissals, HttpCommanderSuggestions, HttpDismissCommander, HttpPlayStyleSummary,
 };
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths::{
-    COMMANDER_DISMISSALS_ROUTE, COMMANDER_SUGGESTIONS_ROUTE, undismiss_commander_route,
+    COMMANDER_DISMISSALS_ROUTE, COMMANDER_SUGGESTIONS_ROUTE, PLAY_STYLE_ROUTE,
+    undismiss_commander_route,
 };
+
+/// The user's deck count and most built color identities, for Home's play
+/// style panel.
+pub struct GetPlayStyleSummary;
+impl Endpoint for GetPlayStyleSummary {
+    const METHOD: Method = Method::Get;
+    type Request = ();
+    type Response = HttpPlayStyleSummary;
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(PLAY_STYLE_ROUTE)
+    }
+}
 
 /// The user's ranked commander suggestions, at most this many. The server
 /// clamps the limit to `MAX_SUGGESTION_LIMIT`.
@@ -72,5 +85,11 @@ mod tests {
         let endpoint = GetCommanderSuggestions(100);
         assert_eq!(endpoint.path(), "/api/commander/suggestions");
         assert_eq!(endpoint.query().as_deref(), Some("limit=100"));
+    }
+
+    #[test]
+    fn play_style_summary_reads_the_deck_route() {
+        assert_eq!(GetPlayStyleSummary.path(), "/api/deck/play-style");
+        assert_eq!(GetPlayStyleSummary.query(), None);
     }
 }

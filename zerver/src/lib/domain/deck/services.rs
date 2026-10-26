@@ -32,7 +32,7 @@ use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboard
 use crate::domain::deck::models::deck::commander_suggestions::{
     self, ColorAffinity, CommanderDismissal, CommanderSuggestion, CommanderSuggestions,
     CommanderSuggestionsError, DeckTagProfile, MAX_PER_COLOR_IDENTITY, MAX_PROFILED_DECKS,
-    ProfiledDeck, SCORED_POOL,
+    PlayStyleSummary, ProfiledDeck, SCORED_POOL,
 };
 use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
 use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
@@ -690,6 +690,14 @@ where
             deck_count,
             profile,
         })
+    }
+
+    async fn play_style_summary(
+        &self,
+        user_id: Uuid,
+    ) -> Result<PlayStyleSummary, CommanderSuggestionsError> {
+        let decks = self.deck_repo.fetch_profiled_decks(user_id).await?;
+        Ok(commander_suggestions::summarize_play_style(&decks))
     }
 
     async fn dismiss_commander(

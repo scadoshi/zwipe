@@ -7,13 +7,13 @@ use serde::Deserialize;
 use zwipe_core::http::contracts::suggestions::{
     DEFAULT_SUGGESTION_LIMIT, HttpBuilderProfile, HttpClearedDismissals, HttpColorAffinity,
     HttpColorIdentityCount, HttpCommanderSuggestion, HttpCommanderSuggestions,
-    HttpDismissCommander, HttpProfileRole, HttpProfileTag, HttpSharedTag, HttpSuggestionReasons,
-    MAX_SUGGESTION_LIMIT,
+    HttpDismissCommander, HttpPlayStyleSummary, HttpProfileRole, HttpProfileTag, HttpSharedTag,
+    HttpSuggestionReasons, MAX_SUGGESTION_LIMIT,
 };
 
 use crate::domain::deck::models::deck::commander_suggestions::{
-    BuilderProfile, ColorAffinity, CommanderDismissal, CommanderSuggestion, CommanderSuggestions,
-    CommanderSuggestionsError, InvalidCommanderDismissal,
+    BuilderProfile, ColorAffinity, ColorIdentityCount, CommanderDismissal, CommanderSuggestion,
+    CommanderSuggestions, CommanderSuggestionsError, InvalidCommanderDismissal, PlayStyleSummary,
 };
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
@@ -59,6 +59,28 @@ impl From<ColorAffinity> for HttpColorAffinity {
     }
 }
 
+impl From<ColorIdentityCount> for HttpColorIdentityCount {
+    fn from(value: ColorIdentityCount) -> Self {
+        Self {
+            colors: value.colors,
+            decks: value.decks,
+        }
+    }
+}
+
+impl From<PlayStyleSummary> for HttpPlayStyleSummary {
+    fn from(value: PlayStyleSummary) -> Self {
+        Self {
+            deck_count: value.deck_count,
+            identities: value
+                .identities
+                .into_iter()
+                .map(HttpColorIdentityCount::from)
+                .collect(),
+        }
+    }
+}
+
 impl From<BuilderProfile> for HttpBuilderProfile {
     fn from(value: BuilderProfile) -> Self {
         Self {
@@ -68,10 +90,7 @@ impl From<BuilderProfile> for HttpBuilderProfile {
                 .into_iter()
                 .map(HttpColorAffinity::from)
                 .collect(),
-            top_identity: value.top_identity.map(|top| HttpColorIdentityCount {
-                colors: top.colors,
-                decks: top.decks,
-            }),
+            top_identity: value.top_identity.map(HttpColorIdentityCount::from),
             tags: value
                 .tags
                 .into_iter()
@@ -142,6 +161,20 @@ pub async fn get_commander_suggestions(
         .await
         .map_err(ApiError::from)
         .map(|suggestions| (StatusCode::OK, Json(suggestions.into())))
+}
+
+/// Returns the authenticated user's deck count and most built color
+/// identities, for Home's play style panel.
+pub async fn get_play_style_summary(
+    user: AuthenticatedUser,
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<HttpPlayStyleSummary>), ApiError> {
+    state
+        .deck_service
+        .play_style_summary(user.id)
+        .await
+        .map_err(ApiError::from)
+        .map(|summary| (StatusCode::OK, Json(summary.into())))
 }
 
 /// Hides a commander from the authenticated user's suggestions for a week.

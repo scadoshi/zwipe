@@ -71,6 +71,8 @@ pub const DECK_ROUTE: &str = "/api/deck";
 pub const CREATE_DECK_ROUTE: &str = DECK_ROUTE;
 pub const GET_DECK_PROFILES_ROUTE: &str = DECK_ROUTE;
 pub const GET_DECK_TAGS_ROUTE: &str = "/api/deck/tags";
+/// The user's deck count and most built color identities.
+pub const PLAY_STYLE_ROUTE: &str = "/api/deck/play-style";
 
 // == suggested commanders ==
 
@@ -229,6 +231,7 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Post, LOGOUT_ROUTE, true),
     (Method::Patch, MARK_HINT_SHOWN_ROUTE, true),
     (Method::Get, MIN_CLIENT_VERSION_ROUTE, false),
+    (Method::Get, PLAY_STYLE_ROUTE, true),
     (Method::Get, PREFERENCES_ROUTE, true),
     (Method::Patch, PREFERENCES_ROUTE, true),
     (Method::Get, PUBLIC_METRICS_ROUTE, false),
