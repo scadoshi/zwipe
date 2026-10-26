@@ -2425,13 +2425,13 @@ button {
 }
 
 /* Home's Playstyle podium: second, first and third standing side by side,
-   each step a bar in the deck charts' fill with its deck count on top and
+   each step a bar in the deck charts' fill with its deck count chip on top and
    its pips, name and place under it. Fixed heights, first tallest, so the
    podium reads as one whatever the counts are. */
 .podium {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-    align-items: end;
+    align-items: start;
     gap: 0.75rem;
     padding: 1rem 1.25rem 0;
 }
@@ -2442,6 +2442,18 @@ button {
     align-items: center;
     gap: 0.3rem;
     min-width: 0;
+}
+
+/* Tall enough for the first step and its count, the blocks resting on its
+   floor. */
+.podium-stand {
+    width: 100%;
+    height: 6.6rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.3rem;
 }
 
 .podium-block {
@@ -2462,13 +2474,6 @@ button {
 
 .podium-third {
     height: 2.25rem;
-}
-
-.podium-count {
-    font-size: 0.8rem;
-    color: var(--text-primary);
-    opacity: 0.85;
-    line-height: 1;
 }
 
 .podium-step .identity-pips {

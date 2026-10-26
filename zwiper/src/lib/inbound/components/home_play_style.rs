@@ -5,15 +5,13 @@ use components::{Button, ButtonVariant};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
+use zwipe_core::domain::card::scryfall_data::colors::{Color, identity_name};
 use zwipe_core::http::contracts::suggestions::{HttpColorIdentityCount, HttpPlayStyleSummary};
 
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::telemetry::vocabulary::Screen;
 use crate::inbound::router::Router;
-use crate::inbound::screens::deck::suggested_commanders::{
-    IdentityPips, identity_label, identity_of,
-};
+use crate::inbound::screens::deck::suggested_commanders::{IdentityPips, identity_of};
 
 /// The last summary fetched, kept above the router (as
 /// `Signal<Option<CachedPlayStyle>>`) so a return to Home shows it at once
@@ -137,12 +135,16 @@ pub(crate) fn Podium(identities: Vec<HttpColorIdentityCount>) -> Element {
         div { class: "podium",
             for step in steps {
                 div { key: "{step.place}", class: "podium-step",
-                    span { class: "podium-count", "{step.decks}" }
-                    div { class: step.class() }
-                    IdentityPips { identity: step.pips.clone(), show_name: false }
-                    if let Some(name) = identity_label(&step.pips) {
-                        span { class: "podium-name", "{name}" }
+                    // Count and block in a fixed-height stand, so every
+                    // block sits on the same floor whatever the labels hold.
+                    div { class: "podium-stand",
+                        span { class: "stat-chip", "{step.decks}" }
+                        div { class: step.class() }
                     }
+                    IdentityPips { identity: step.pips.clone(), show_name: false }
+                    // Every step is named, Mono-red included, so the three
+                    // read alike.
+                    span { class: "podium-name", "{identity_name(&step.pips)}" }
                     span { class: "podium-place", "{step.place_label()}" }
                 }
             }
@@ -195,7 +197,9 @@ pub fn HomePlayStyle() -> Element {
                     div { class: "podium",
                         for class in ["podium-block podium-second", "podium-block podium-first", "podium-block podium-third"] {
                             div { key: "{class}", class: "podium-step",
-                                div { class: "skeleton-bar {class}" }
+                                div { class: "podium-stand",
+                                    div { class: "skeleton-bar {class}" }
+                                }
                             }
                         }
                     }
