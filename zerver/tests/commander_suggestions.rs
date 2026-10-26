@@ -264,6 +264,7 @@ async fn shared_tags_rank_first_with_reasons_and_exclusions(pool: sqlx::PgPool) 
                 { "slug": "sacrifice-outlet", "role": "sacrifice", "decks": 1 },
                 { "slug": "typal-goblin", "role": null, "decks": 1 },
             ],
+            "roles": [{ "role": "sacrifice", "decks": 1 }],
         }),
         "profile: {body}"
     );
@@ -417,6 +418,11 @@ async fn color_identity_matches_as_a_set_not_an_average(pool: sqlx::PgPool) {
         profile["tags"],
         json!([{ "slug": "tokens", "role": null, "decks": 3 }]),
         "no oracle_tags row for the tag, so it falls under no role: {body}"
+    );
+    assert_eq!(
+        profile["roles"],
+        json!([]),
+        "a role-less tag counts no role"
     );
 }
 

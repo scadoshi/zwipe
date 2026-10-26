@@ -231,6 +231,14 @@ pub fn role_label(slug: &str) -> String {
         .unwrap_or_else(|_| prettify_role_slug(slug))
 }
 
+/// The chart label for a role slug: [`CardRole::to_short_name`] for a known
+/// role, the slug itself otherwise, so a role reads the same in every chart.
+pub fn role_short_label(slug: &str) -> String {
+    CardRole::try_from(slug)
+        .map(|r| r.to_short_name().to_string())
+        .unwrap_or_else(|_| slug.to_string())
+}
+
 /// Title-cases a `snake_case`/`kebab-case` slug (`future_role` → "Future Role").
 fn prettify_role_slug(slug: &str) -> String {
     slug.split(['_', '-'])
@@ -249,6 +257,13 @@ fn prettify_role_slug(slug: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn role_short_label_matches_the_chart_abbreviation() {
+        assert_eq!(role_short_label("sacrifice"), "sacrf");
+        assert_eq!(role_short_label("graveyard_hate"), "grvht");
+        assert_eq!(role_short_label("future_role"), "future_role");
+    }
 
     #[test]
     fn serde_round_trip() {

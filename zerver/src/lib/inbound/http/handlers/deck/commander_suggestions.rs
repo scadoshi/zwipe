@@ -7,7 +7,7 @@ use serde::Deserialize;
 use zwipe_core::http::contracts::suggestions::{
     DEFAULT_SUGGESTION_LIMIT, HttpBuilderProfile, HttpClearedDismissals, HttpColorAffinity,
     HttpColorIdentityCount, HttpCommanderSuggestion, HttpCommanderSuggestions,
-    HttpDismissCommander, HttpProfileTag, HttpSharedTag, HttpSuggestionReasons,
+    HttpDismissCommander, HttpProfileRole, HttpProfileTag, HttpSharedTag, HttpSuggestionReasons,
     MAX_SUGGESTION_LIMIT,
 };
 
@@ -79,6 +79,14 @@ impl From<BuilderProfile> for HttpBuilderProfile {
                     slug: tag.slug,
                     role: tag.role,
                     decks: tag.decks,
+                })
+                .collect(),
+            roles: value
+                .roles
+                .into_iter()
+                .map(|role| HttpProfileRole {
+                    role: role.role,
+                    decks: role.decks,
                 })
                 .collect(),
         }

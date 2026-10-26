@@ -11,9 +11,11 @@ pub const DEFAULT_SUGGESTION_LIMIT: u32 = 10;
 /// Most suggestions one request returns; a larger `limit` is clamped to it.
 pub const MAX_SUGGESTION_LIMIT: u32 = 100;
 
-/// Oracle tags [`HttpBuilderProfile::tags`] carries: enough for a row or two
-/// of chips over the list without becoming a second list.
-pub const PROFILE_TAG_SHOWN: usize = 8;
+/// Oracle tags [`HttpBuilderProfile::tags`] carries, one bar each.
+pub const PROFILE_TAG_SHOWN: usize = 25;
+
+/// Card roles [`HttpBuilderProfile::roles`] carries, one bar each.
+pub const PROFILE_ROLE_SHOWN: usize = 10;
 
 /// Response of `GET /api/commander/suggestions`.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -46,6 +48,21 @@ pub struct HttpBuilderProfile {
     /// The user's strongest oracle tags across the profiled decks, strongest
     /// first, at most [`PROFILE_TAG_SHOWN`].
     pub tags: Vec<HttpProfileTag>,
+    /// The card roles the profiled decks' tags fall under, most decks first
+    /// and role slug between equals, at most [`PROFILE_ROLE_SHOWN`]. Counted
+    /// over every tag in the profiles, not only the `tags` shown. Empty from
+    /// older servers.
+    #[serde(default)]
+    pub roles: Vec<HttpProfileRole>,
+}
+
+/// A card role the user's decks lean on.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HttpProfileRole {
+    /// The card role slug (`CardRole`'s snake_case form).
+    pub role: String,
+    /// Profiled decks with at least one oracle tag under the role, above 0.
+    pub decks: u32,
 }
 
 /// How many of the user's commander decks share one exact color identity.
@@ -199,11 +216,15 @@ mod tests {
                 role: Some("sacrifice".to_string()),
                 decks: 6,
             }],
+            roles: vec![HttpProfileRole {
+                role: "sacrifice".to_string(),
+                decks: 6,
+            }],
         };
         let json = serde_json::to_string(&profile).unwrap();
         assert_eq!(
             json,
-            r#"{"deck_count":7,"colors":[{"color":"R","decks":5},{"color":"W","decks":4}],"top_identity":{"colors":["W","R"],"decks":3},"tags":[{"slug":"sacrifice-outlet","role":"sacrifice","decks":6}]}"#
+            r#"{"deck_count":7,"colors":[{"color":"R","decks":5},{"color":"W","decks":4}],"top_identity":{"colors":["W","R"],"decks":3},"tags":[{"slug":"sacrifice-outlet","role":"sacrifice","decks":6}],"roles":[{"role":"sacrifice","decks":6}]}"#
         );
         let back: HttpBuilderProfile = serde_json::from_str(&json).unwrap();
         assert_eq!(back, profile);
@@ -211,6 +232,7 @@ mod tests {
         let no_top = r#"{"deck_count":2,"colors":[],"top_identity":null,"tags":[]}"#;
         let back: HttpBuilderProfile = serde_json::from_str(no_top).unwrap();
         assert_eq!(back.top_identity, None);
+        assert_eq!(back.roles, vec![], "old shape without roles parses");
     }
 
     #[test]

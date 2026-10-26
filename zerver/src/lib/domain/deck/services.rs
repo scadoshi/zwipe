@@ -601,14 +601,18 @@ where
             .await
             .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
         profiles.resize(decks.len(), None);
-        let mut profile = commander_suggestions::summarize_profile(&decks, &profiles);
-        if let Some(profile) = profile.as_mut() {
-            let slugs: Vec<String> = profile.tags.iter().map(|t| t.slug.clone()).collect();
-            let mut roles = self.card_repo.tag_roles(&slugs).await?;
-            for tag in &mut profile.tags {
-                tag.role = roles.remove(&tag.slug);
-            }
-        }
+        // Every slug across the profiles in one role lookup, so the summary's
+        // role counts cover tags beyond the ones it shows.
+        let slugs: Vec<String> = profiles
+            .iter()
+            .flatten()
+            .filter_map(|profile| profile.as_object())
+            .flat_map(|weights| weights.keys().cloned())
+            .collect::<HashSet<String>>()
+            .into_iter()
+            .collect();
+        let tag_roles = self.card_repo.tag_roles(&slugs).await?;
+        let profile = commander_suggestions::summarize_profile(&decks, &profiles, &tag_roles);
         let deck_profiles: Vec<serde_json::Value> = decks
             .iter()
             .zip(profiles)

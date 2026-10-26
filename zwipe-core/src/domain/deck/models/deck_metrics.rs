@@ -100,7 +100,7 @@ impl DeckMetrics {
 
     /// Max-normalized bar height for chart rendering: the tallest bar reads
     /// 100, any nonzero count reads at least 4 (a visible sliver), zero is 0.
-    fn bar_pct(count: usize, max: usize) -> u32 {
+    pub fn bar_pct(count: usize, max: usize) -> u32 {
         if max > 0 && count > 0 {
             (((count * 100) / max).max(4)) as u32
         } else {
