@@ -362,90 +362,76 @@ pub(crate) fn role_tags(tags: &[HttpProfileTag], role: &str) -> Vec<String> {
         .collect()
 }
 
-/// Width of the oracle tag chart's label column: room for a slug like
-/// `sacrifice-outlet` on one line, a longer one wraps at its hyphens.
-const TAG_LABEL_WIDTH: &str = "14ch";
-
-/// An oracle tag's description eased open under a chart, with its Examples
-/// button, through the screen's `OtagDescribe` and `OtagExamplesOpen`
-/// contexts. Collapsed while `slug` is `None`.
+/// An oracle tag's description with its Examples button, through the
+/// screen's `OtagDescribe` and `OtagExamplesOpen` contexts.
 #[component]
-fn OtagReveal(slug: Option<String>) -> Element {
+fn OtagDef(slug: String) -> Element {
     let describe = try_use_context::<OtagDescribe>().map(|d| d.0);
     let examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
-    let def = slug.as_ref().map(|s| {
-        describe
-            .and_then(|cb| cb.call(s.clone()))
-            .unwrap_or_else(|| "No description yet".to_string())
-    });
-    let reveal_class = if slug.is_some() {
-        "keyword-reveal open"
-    } else {
-        "keyword-reveal"
-    };
+    let def = describe
+        .and_then(|cb| cb.call(slug.clone()))
+        .unwrap_or_else(|| "No description yet".to_string());
     rsx! {
-        div { class: "{reveal_class}",
-            div { class: "keyword-reveal-inner",
-                if let Some(def) = def {
-                    div { class: "otag-def",
-                        p { class: "otag-def-text", "{def}" }
-                        if let (Some(handler), Some(slug)) = (examples, slug) {
-                            button {
-                                class: "otag-examples-btn",
-                                onclick: move |evt| {
-                                    evt.stop_propagation();
-                                    handler.call(slug.clone());
-                                },
-                                "Examples"
-                            }
-                        }
-                    }
+        div { class: "otag-def",
+            p { class: "otag-def-text", "{def}" }
+            if let Some(handler) = examples {
+                button {
+                    class: "otag-examples-btn",
+                    onclick: move |evt| {
+                        evt.stop_propagation();
+                        handler.call(slug.clone());
+                    },
+                    "Examples"
                 }
             }
         }
     }
 }
 
-/// A tapped role's oracle tags from the profile as chips under the role
-/// chart, each tappable for its description, the "Why this commander?"
-/// chips' reveal.
+/// A tapped role's oracle tags from the profile as chips, each tappable for
+/// its description eased open beneath them, the "Why this commander?" chips'
+/// reveal.
 #[component]
-fn RoleTagsReveal(tags: Vec<String>) -> Element {
+fn RoleTags(tags: Vec<String>) -> Element {
     let mut open_tag: Signal<Option<String>> = use_signal(|| None);
-    let reveal_class = if tags.is_empty() {
-        "keyword-reveal"
-    } else {
+    // The last opened tag, kept through a close so its description eases out.
+    let mut shown_tag: Signal<Option<String>> = use_signal(|| None);
+    let open = open_tag().filter(|slug| tags.contains(slug));
+    let shown = shown_tag().filter(|slug| tags.contains(slug));
+    let reveal_class = if open.is_some() {
         "keyword-reveal open"
+    } else {
+        "keyword-reveal"
     };
-    let shown = open_tag().filter(|slug| tags.contains(slug));
     rsx! {
-        div { class: "{reveal_class}",
-            div { class: "keyword-reveal-inner",
-                if !tags.is_empty() {
-                    div { class: "otag-reveal-block",
-                        div { class: "card-detail-meta card-detail-otags",
-                            for tag in tags.iter().cloned() {
-                                {
-                                    let slug = tag.clone();
-                                    rsx! {
-                                        button {
-                                            key: "{tag}",
-                                            class: if shown.as_deref() == Some(tag.as_str()) { "keyword-chip active" } else { "keyword-chip" },
-                                            onclick: move |evt| {
-                                                evt.stop_propagation();
-                                                if open_tag().as_deref() == Some(slug.as_str()) {
-                                                    open_tag.set(None);
-                                                } else {
-                                                    open_tag.set(Some(slug.clone()));
-                                                }
-                                            },
-                                            "{tag}"
-                                        }
+        div { class: "otag-reveal-block",
+            div { class: "card-detail-meta card-detail-otags",
+                for tag in tags.iter().cloned() {
+                    {
+                        let slug = tag.clone();
+                        rsx! {
+                            button {
+                                key: "{tag}",
+                                class: if open.as_deref() == Some(tag.as_str()) { "keyword-chip active" } else { "keyword-chip" },
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    if open_tag().as_deref() == Some(slug.as_str()) {
+                                        open_tag.set(None);
+                                    } else {
+                                        open_tag.set(Some(slug.clone()));
+                                        shown_tag.set(Some(slug.clone()));
                                     }
-                                }
+                                },
+                                "{tag}"
                             }
                         }
-                        OtagReveal { slug: shown }
+                    }
+                }
+            }
+            div { class: "{reveal_class}",
+                div { class: "keyword-reveal-inner",
+                    if let Some(slug) = shown {
+                        OtagDef { slug }
                     }
                 }
             }
@@ -471,9 +457,10 @@ fn SummaryIdentityRow(label: &'static str, value: SummaryValue) -> Element {
 /// profile's grammar: a Summary table (the deck count, the most common color
 /// set and color) in the Budget section's rows, then three charts. The four
 /// share one accordion with Summary open on entry. Colors are columns in
-/// WUBRG order; card roles are rows like the deck profile's role chart, a
-/// tapped role revealing its oracle tags from the profile; oracle tags are
-/// rows, a tapped tag revealing its description and Examples.
+/// WUBRG order; card roles are rows like the deck profile's role chart with
+/// chip labels, a tapped role revealing its oracle tags from the profile
+/// under its row; oracle tags are rows the same way, a tapped tag revealing
+/// its description and Examples under its row.
 #[component]
 pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     let summary = profile_summary(&profile);
@@ -483,9 +470,18 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     let colors = color_bars(&profile.colors);
     let roles = role_bars(&profile.roles);
     let tags = tag_bars(&profile.tags);
-    let revealed_role_tags = selected_role()
-        .map(|role| role_tags(&profile.tags, &role))
-        .unwrap_or_default();
+    let profile_tags = profile.tags;
+    let role_reveal = use_callback(move |role: String| {
+        let tags = role_tags(&profile_tags, &role);
+        rsx! {
+            RoleTags { tags }
+        }
+    });
+    let tag_reveal = use_callback(move |slug: String| {
+        rsx! {
+            OtagDef { slug }
+        }
+    });
     let toggle_role = use_callback(move |key: String| {
         if selected_role().as_deref() == Some(key.as_str()) {
             selected_role.set(None);
@@ -527,8 +523,8 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                     orientation: BarOrientation::Horizontal,
                     on_bar: toggle_role,
                     selected: selected_role(),
+                    reveal: role_reveal,
                 }
-                RoleTagsReveal { tags: revealed_role_tags }
             }
         }
         if !tags.is_empty() {
@@ -537,11 +533,10 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                     bars: tags,
                     orientation: BarOrientation::Horizontal,
                     label_case: LabelCase::AsIs,
-                    label_width: TAG_LABEL_WIDTH,
                     on_bar: toggle_tag,
                     selected: selected_tag(),
+                    reveal: tag_reveal,
                 }
-                OtagReveal { slug: selected_tag() }
             }
         }
     }
