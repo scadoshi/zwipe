@@ -77,7 +77,7 @@ pub enum Router {
     /// up-swiping during commander Zwipe-select.
     #[route("/deck/commander-maybeboard")]
     CommanderMaybeboard {},
-    /// Your play style: what the user builds across every deck, over the top
+    /// My play style: what the user builds across every deck, over the top
     /// 10 commanders ranked against those decks, with a Swipe overlay going
     /// deeper. The route keeps its suggested commanders path.
     #[route("/deck/suggested-commanders")]

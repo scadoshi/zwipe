@@ -65,7 +65,7 @@ pub enum Screen {
     /// Screens under `screens/account/` and `screens/config/`, logged
     /// under the profile keys.
     Profile(ProfileScreen),
-    /// The Your play style screen, logged under its suggested commanders key.
+    /// The My play style screen, logged under its suggested commanders key.
     SuggestedCommanders,
 }
 

@@ -1,4 +1,4 @@
-//! Your play style screen: what the user builds, read from every deck they
+//! My play style screen: what the user builds, read from every deck they
 //! own in any format, over the top 10 commanders ranked against those decks,
 //! each with the reasons it ranked, styled like the commander maybeboard.
 //!
@@ -1038,11 +1038,11 @@ pub fn SuggestedCommanders() -> Element {
 
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: "Your play style", hint: hint_open }
+            ScreenHeader { title: "My play style", hint: hint_open }
 
             HintDialog {
                 open: hint_open,
-                title: "Your play style",
+                title: "My play style",
                 HintLine { "Your colors, card roles and top oracle tags, read from every deck you own in any format" }
                 HintBullets {
                     HintBullet { HintKey { "Create deck" } " begins a deck with that commander" }

@@ -70,17 +70,17 @@ pub enum HintTopic {
     ManaFulfillment,
     /// Deck view: draw odds chart.
     DrawOdds,
-    /// Your play style: the colors chart.
+    /// My play style: the colors chart.
     SuggestionColorChart,
-    /// Your play style: the card roles chart.
+    /// My play style: the card roles chart.
     SuggestionRoleChart,
-    /// Your play style: the oracle tags table.
+    /// My play style: the oracle tags table.
     SuggestionTagChart,
-    /// Your play style: the oracle tags table's Decks column.
+    /// My play style: the oracle tags table's Decks column.
     SuggestionTagDecks,
-    /// Your play style: the oracle tags table's Cards column.
+    /// My play style: the oracle tags table's Cards column.
     SuggestionTagCards,
-    /// Your play style: the oracle tags table's Impact column.
+    /// My play style: the oracle tags table's Impact column.
     SuggestionTagImpact,
 }
 
