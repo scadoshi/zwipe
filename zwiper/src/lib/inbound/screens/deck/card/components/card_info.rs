@@ -99,10 +99,10 @@ pub(crate) fn use_describe_tag() -> Callback<String, Option<String>> {
 /// Lair, full-art, foreign-language). Opened from the action-bar
 /// [`RulesButton`] via the shared `open` signal. The body is the shared
 /// [`CardDetails`], opening on the shown face's mana cost since the sheet's
-/// title holds only text. The details sit in one panel and the host's `footer`
-/// in a second, so neither lies straight on the sheet's grid. The sheet's own
-/// footer holds Flip for a multi-faced card (it leaves the sheet open), an
-/// optional Printings, and Close.
+/// title holds only text. The details and the host's `footer` share one
+/// panel, so nothing lies straight on the sheet's grid. The sheet's own
+/// footer holds Back, then Flip for a multi-faced card (it leaves the sheet
+/// open) and an optional Printings.
 ///
 /// Printings leaves this sheet open: the host's printing sheet draws over it,
 /// and the host closes this one too when a printing is saved. Mount it at the
@@ -115,7 +115,7 @@ pub(crate) fn CardDetailsSheet(
     /// sheet footer (mirrors the deck-view expand-row → Printing button).
     #[props(default)]
     on_printings: Option<EventHandler<()>>,
-    /// Host content shown in its own panel under the details.
+    /// Host content shown under the details, in the same panel.
     #[props(default)]
     footer: Option<Element>,
 ) -> Element {
@@ -165,9 +165,9 @@ pub(crate) fn CardDetailsSheet(
                         face: Some(face),
                         describe_tag: Some(describe_tag),
                     }
-                }
-                if let Some(footer) = footer {
-                    div { class: "sheet-panel", {footer} }
+                    if let Some(footer) = footer {
+                        {footer}
+                    }
                 }
             }
         }
