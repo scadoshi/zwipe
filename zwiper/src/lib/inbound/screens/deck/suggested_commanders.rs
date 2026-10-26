@@ -2,15 +2,17 @@
 //! user's own decks, each with the reasons it ranked, styled like the
 //! commander maybeboard.
 //!
-//! An expanded row offers **Create deck** (seeds the create screen), **Maybeboard**
-//! (saves to the commander maybeboard) and **Remove** (hides it for a week). The action bar's Swipe opens the shared overlay in its suggested
-//! mode, which deals the same ranking down to 100. Every action that removes
-//! a row refetches when fewer than ten remain, so the list stays a full top 10.
-//! Over the list, a panel sums up what the user builds: the deck count with
-//! the most common color set and color, then charts of the colors, card roles
-//! and oracle tags across the decks, the profile the ranking reads. With no
-//! commander deck to read from, the screen shows a single line instead of a
-//! list and no panel.
+//! The screen fetches the ranking 100 deep once and shows the first 10. An
+//! expanded row offers **Create deck** (seeds the create screen),
+//! **Maybeboard** (saves to the commander maybeboard) and **Remove** (hides it
+//! for a week). The action bar's Swipe opens the shared overlay in its
+//! suggested mode, which deals the same held list. Every action that removes
+//! a row fills from the held list and refetches only when fewer than ten
+//! remain, so the list stays a full top 10. Over the list, a panel
+//! sums up what the user builds: the deck count with the most common color set
+//! and color, then charts of the colors, card roles and oracle tags across the
+//! decks, the profile the ranking reads. With no commander deck to read
+//! from, the screen shows a single line instead of a list and no panel.
 
 use std::collections::BTreeMap;
 
@@ -32,12 +34,12 @@ use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
 use zwipe_core::http::contracts::suggestions::{
     HttpBuilderProfile, HttpColorAffinity, HttpCommanderSuggestion, HttpProfileRole,
-    HttpProfileTag, HttpSharedTag, HttpSuggestionReasons,
+    HttpProfileTag, HttpSharedTag, HttpSuggestionReasons, MAX_SUGGESTION_LIMIT,
 };
 
 use super::components::collapsible_section::CollapsibleSection;
 use super::components::skeletons::BuilderProfileSkeleton;
-use super::components::swipe_select::{SwipeMode, SwipeSelect};
+use super::components::swipe_select::{SuggestedPile, SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
@@ -54,6 +56,15 @@ use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
 /// Suggestions the list shows; a shorter list after a dismissal refetches.
 const LIST_SIZE: usize = 10;
+
+/// Suggestions fetched and held, the server's maximum; the list shows the first
+/// [`LIST_SIZE`] of them and Swipe deals them all.
+const HELD_SIZE: u32 = MAX_SUGGESTION_LIMIT;
+
+/// The first [`LIST_SIZE`] of the held list, the rows the screen shows.
+pub(crate) fn shown<T: Clone>(filtered: &[T]) -> Vec<T> {
+    filtered.iter().take(LIST_SIZE).cloned().collect()
+}
 
 /// One line per color the user builds in, most decks first, in the order the
 /// server sent. A color code outside WUBRG is skipped.
@@ -608,10 +619,10 @@ pub fn SuggestedCommanders() -> Element {
     let mut show_more_sheet = use_signal(|| false);
     let mut show_clear_dialog = use_signal(|| false);
 
-    // Entries live in a plain signal so a dismissal can drop its row in place.
-    // `reload` refetches: after a dismissal leaves the list short, when the
-    // Swipe overlay closes, and after Clear skips. A refetch with entries
-    // present is silent (no skeleton flash).
+    // The held ranking, 100 deep, in a plain signal so a dismissal can drop
+    // its row in place. `reload` refetches: after a dismissal leaves the
+    // filtered list short, when the Swipe overlay closes, and after Clear
+    // skips. A refetch with entries present is silent (no skeleton flash).
     let mut entries: Signal<Vec<HttpCommanderSuggestion>> = use_signal(Vec::new);
     let mut deck_count = use_signal(|| 0u32);
     let mut profile: Signal<Option<HttpBuilderProfile>> = use_signal(|| None);
@@ -623,7 +634,7 @@ pub fn SuggestedCommanders() -> Element {
         spawn(async move {
             match authed
                 .try_run("load_suggestions", |c, s| async move {
-                    c.commander_suggestions(LIST_SIZE as u32, &s).await
+                    c.commander_suggestions(HELD_SIZE, &s).await
                 })
                 .await
             {
@@ -655,7 +666,15 @@ pub fn SuggestedCommanders() -> Element {
         }
     });
 
-    // Drops a row in place and tops the list back up to ten from the server.
+    // What Swipe deals: the held list, with the deck count the reasons count
+    // against.
+    let pile = use_memo(move || SuggestedPile {
+        suggestions: entries(),
+        deck_count: deck_count(),
+    });
+
+    // Drops a row in place; the next held suggestion moves up, and the server
+    // is asked again only when the held list runs short of ten.
     let mut drop_row = move |oracle_id: Uuid| {
         entries
             .write()
@@ -761,6 +780,7 @@ pub fn SuggestedCommanders() -> Element {
 
     let cold_start = deck_count() == 0;
     let has_entries = !entries().is_empty();
+    let rows = shown(&entries());
 
     rsx! {
         div { class: "screen",
@@ -820,7 +840,7 @@ pub fn SuggestedCommanders() -> Element {
                         } else {
                             div { class: "maybeboard-list card-group row-enter",
                                 div { class: "card-group-header", "Suggested commanders" }
-                                for suggestion in entries() {
+                                for suggestion in rows {
                                     SuggestionRow {
                                         key: "{suggestion.card.scryfall_data.id}",
                                         suggestion,
@@ -889,13 +909,14 @@ pub fn SuggestedCommanders() -> Element {
                 "Commanders you skipped will be suggested again. This can't be undone."
             }
 
-            // The shared overlay in its suggested mode deals this ranking down
-            // to 100: right seeds a new deck with the pick, up saves it, left
+            // The shared overlay in its suggested mode deals the held list:
+            // right seeds a new deck with the pick, up saves it, left
             // dismisses it.
             SwipeSelect {
                 host_screen: screen::SUGGESTED_COMMANDERS,
                 open: swipe_open,
                 mode: swipe_mode,
+                suggested_pile: Some(pile.into()),
                 on_select: move |card: Card| {
                     swipe_open.set(false);
                     create_with(card);
@@ -941,6 +962,16 @@ mod tests {
     use zwipe_core::http::contracts::suggestions::HttpColorIdentityCount;
 
     use super::*;
+
+    #[test]
+    fn shown_is_the_first_ten() {
+        let held: Vec<usize> = (0..25).collect();
+        let rows = shown(&held);
+        assert_eq!(rows.len(), LIST_SIZE);
+        assert_eq!(rows.first().copied(), Some(0));
+        assert_eq!(rows.last().copied(), Some(9));
+        assert_eq!(shown(&[1, 2, 3]).len(), 3, "a short list is shown whole");
+    }
 
     fn color(code: &str, decks: u32) -> HttpColorAffinity {
         HttpColorAffinity {

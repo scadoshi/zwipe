@@ -10,9 +10,9 @@
 //! partner modes only: the pile advances and selection continues).
 //!
 //! [`SwipeMode::Suggested`] deals a given ranking instead of a search: the
-//! suggested commanders, fetched 100 deep when the overlay opens. There a left
-//! swipe dismisses the commander for a week and the eyeball sheet carries the
-//! reasons it was suggested. No filter applies.
+//! host's held suggestions, read through `suggested_pile` each time the overlay
+//! opens. There a left swipe dismisses the commander for a week and the eyeball
+//! sheet carries the reasons it was suggested. No filter applies.
 
 use std::collections::HashSet;
 use std::time::Duration;
@@ -52,8 +52,15 @@ use crate::inbound::screens::deck::suggested_commanders::SuggestionReasons;
 const PAGE: u32 = 25;
 /// Prefetch the next page when this many or fewer cards remain ahead of the top.
 const LOAD_MORE_AT: usize = 5;
-/// Suggestions fetched for the suggested mode's pile, the server's maximum.
-const SUGGESTED_DEPTH: u32 = 100;
+
+/// The ranking a [`SwipeMode::Suggested`] overlay deals, held by its host.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub(crate) struct SuggestedPile {
+    /// Best fit first, as the list shows them.
+    pub suggestions: Vec<HttpCommanderSuggestion>,
+    /// Decks the reasons count against.
+    pub deck_count: u32,
+}
 
 /// Which command-zone slot a [`SwipeSelect`] is filling. Decides the always-on
 /// filter constraint applied on top of whatever the user sets in the sheet.
@@ -152,6 +159,11 @@ pub(crate) fn SwipeSelect(
     /// user goes to actually pick one.
     #[props(default)]
     exclude_oracle_ids: Option<ReadSignal<HashSet<Uuid>>>,
+    /// The ranking the suggested mode deals, snapshotted on each open so the
+    /// pile follows the host's own removes and filters. Without it the
+    /// suggested pile is empty.
+    #[props(default)]
+    suggested_pile: Option<ReadSignal<SuggestedPile>>,
 ) -> Element {
     // OS back gesture closes this overlay before touching the router.
     use_overlay_back(open);
@@ -281,8 +293,8 @@ pub(crate) fn SwipeSelect(
         };
         let mode_changed = last_mode.peek().as_ref() != Some(&current_mode);
         let suggested = current_mode == SwipeMode::Suggested;
-        // The suggested pile refetches on every open: the host's own actions
-        // dismiss and save commanders between opens, so a kept pile goes stale.
+        // The suggested pile is read again on every open: the host's own
+        // actions remove commanders between opens, so a kept pile goes stale.
         if !suggested
             && counter == *last_searched.peek()
             && !mode_changed
@@ -298,34 +310,13 @@ pub(crate) fn SwipeSelect(
         exhausted.set(false);
         swipe_history.set(Vec::new());
         if suggested {
-            let Some(session) = session.peek().clone() else {
-                return;
-            };
-            is_loading_cards.set(true);
+            let pile = suggested_pile
+                .map(|pile| pile.peek().clone())
+                .unwrap_or_default();
             exhausted.set(true);
-            spawn(async move {
-                match client()
-                    .commander_suggestions(SUGGESTED_DEPTH, &session)
-                    .await
-                {
-                    Ok(found) => {
-                        deck_count.set(found.deck_count);
-                        cards.set(found.suggestions.iter().map(|s| s.card.clone()).collect());
-                        suggestions.set(found.suggestions);
-                    }
-                    Err(e) => {
-                        tracing::warn!("suggested commanders fetch failed: {e}");
-                        usage_buffer.peek().report_error(
-                            host_screen,
-                            component::SWIPE_SELECT,
-                            "load_suggestions",
-                            &e,
-                        );
-                        toast.error(e.to_user_message(), ToastOptions::default());
-                    }
-                }
-                is_loading_cards.set(false);
-            });
+            deck_count.set(pile.deck_count);
+            cards.set(pile.suggestions.iter().map(|s| s.card.clone()).collect());
+            suggestions.set(pile.suggestions);
             return;
         }
         let builder = mode_filter(&current_mode, filter_builder.peek().clone(), 0);
