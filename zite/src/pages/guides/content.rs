@@ -623,50 +623,60 @@ pub static GUIDES: &[Guide] = &[
     Guide {
         slug: "suggested-commanders",
         title: "Suggested commanders",
-        summary: "Ten commanders ranked against the decks you already build, each with the reasons it made the list, and a swipe stack that goes 100 deep.",
+        summary: "Commanders ranked against the decks you already build, with the reasons each one made the list.",
         tags: &["Commander"],
         related: &["commander-maybeboard", "synergy"],
         blocks: &[
             Block::Lead(
-                "Your decks already say what you like to play. Suggested commanders reads them and ranks commanders you haven't built yet, with a plain reason next to each one.",
+                "Your decks already say what you like to play. Suggested commanders reads them and ranks commanders you haven't built yet.",
             ),
-            Block::H2("Where it lives"),
+            Block::H2("Finding it"),
+            Block::Bullets(&[
+                "On the Decks screen, tap More, then Suggested commanders.",
+                "Your top 10 show as card rows, best fit first.",
+                "Tap a color chip in the Show row to see only those colors. Tap it again to see them all.",
+            ]),
+            Block::H2("What your decks say"),
             Block::P(
-                "Open it from the Decks screen: More, then Suggested commanders. The screen shows your top 10 as card rows, best fit first. A hint on your first visit explains the screen, and the question mark in the header reopens it: the list is your top 10, and Swipe goes further down the same ranking.",
+                "Summary, at the top, shows how many decks were read, your top color set and your top color. Under it are three charts. Tap one to open it.",
             ),
-            Block::P(
-                "The Show row sits right above the list it narrows, with one chip per color identity among your top 100: a pair or more of colors shows its name and then its pips, like Jeskai, and a single color shows only its pip. Tap one to see only commanders of that identity, tap it again for All, and the Art chip hides or shows the row thumbnails.",
-            ),
-            Block::H2("What you build"),
-            Block::P(
-                "Four sections above the list sum up the decks the ranking read, folded like the deck view's. Summary is the one open when you arrive: a short table with how many decks, then your top set (its name and pips) and your top color (its pip), each with a deck count. The three charts under it stay closed until you tap one, and only one of the four is open at a time: Colors, one bar per color by how many decks use it; Card roles, the ten roles your decks' tags fall under most, where tapping a role shows which of its tags your decks carry; and Oracle tags, your 25 strongest tags, where tapping one shows its description and an Examples button. Every bar carries its deck count. Nothing in it is a score, just what your decks already say.",
-            ),
+            Block::Bullets(&[
+                "Colors shows which colors your commanders play.",
+                "Card roles shows the jobs your cards do, like ramp or removal. Tap a role to see its tags.",
+                "Oracle tags shows your 10 most impactful tags. Tap a tag to see what it means.",
+                "Each open chart has a question mark in its header that explains it.",
+            ]),
+            Block::H2("How a tag's impact adds up"),
+            Block::Bullets(&[
+                "A tag counts for more in a deck when more of that deck's cards carry it.",
+                "Rare tags count for more than ones every deck has.",
+                "Its score adds up over every deck that has it.",
+                "The numbers on each row, like 6 · 23, mean 6 decks and 23 cards.",
+            ]),
+            Block::P("There's a little more math under the hood, but that's the gist."),
             Block::H2("Why this commander"),
             Block::P(
-                "Expand a row and the details end with a short block headed \"Why this commander?\". Under \"Shares oracle tags with your decks\" sit the oracle tags the commander and your decks lean on, grouped by card role the same way the card's own \"Card roles\" chips are: tap a role to see its tags, tap a tag for its description and an Examples button, and tags under no role sit under Other. Then come the colors you keep coming back to, as in \"You build in red (3 of your 4 decks)\". No percentages: a named tag or a count says more than a score.",
+                "Expand a row to see why it made the list. You get the oracle tags it shares with your decks and the colors you keep building in.",
             ),
-            Block::H2("Three actions on a row"),
+            Block::H2("What you can do with one"),
             Block::Bullets(&[
-                "`Create deck` opens the create screen with that commander already in the command zone and the format set to Commander.",
-                "`Maybeboard` saves it to your commander maybeboard for later.",
-                "`Remove` hides it for a week and pulls the next commander up, so the list stays a full ten.",
+                "Create deck starts a new deck with it as your commander.",
+                "Maybeboard saves it for later.",
+                "Remove hides it for a week and pulls the next one up.",
             ]),
             Block::H2("Swipe deeper"),
-            Block::P(
-                "The Swipe button deals the same ranking as a stack, starting with your top 10 and continuing down to 100. The eye button shows the card's details with its reasons at the bottom.",
-            ),
+            Block::P("Swipe deals the same ranking as a stack, up to 100 deep."),
             Block::Swipe(&[
                 ("right", "start a new deck with this commander"),
                 ("left", "skip it for a week"),
                 ("up", "save it to your commander maybeboard"),
                 ("down", "undo your last swipe"),
             ]),
-            Block::H2("Skips are not forever"),
             Block::P(
-                "Remove and a left swipe both mean \"not right now\". A skipped commander comes back on its own after seven days, the same as a skipped card. To bring every one of them back at once, open More on the suggestions screen and tap Clear skips. It asks first.",
+                "Skipped commanders come back on their own after seven days. To bring them all back now, tap More, then Clear skips.",
             ),
             Block::Note(
-                "The ranking needs a deck with a commander and some cards in it to read from. Until you have one, the screen says so and shows no list.",
+                "You need a deck with a commander and some cards in it before anything shows up.",
             ),
         ],
     },
