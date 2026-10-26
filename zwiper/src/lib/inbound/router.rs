@@ -11,6 +11,7 @@ use crate::inbound::screens::auth::forgot_password::ForgotPassword;
 use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::auth::register::Register;
 use crate::inbound::screens::changelog::Changelog;
+use crate::inbound::screens::config::Config;
 use crate::inbound::screens::deck::card::add::Add as AddDeckCard;
 use crate::inbound::screens::deck::card::remove::Remove as RemoveDeckCard;
 use crate::inbound::screens::deck::card::view::View as ViewDeckCard;
@@ -56,6 +57,10 @@ pub enum Router {
     /// User profile overview: username/email/password edits, preferences, delete account.
     #[route("/user")]
     Profile {},
+
+    /// Appearance and card settings: theme, app icon, Universes Beyond.
+    #[route("/config")]
+    Config {},
 
     /// Privacy policy: shared legal copy, reached from Profile.
     #[route("/privacy")]

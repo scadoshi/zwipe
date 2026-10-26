@@ -1,6 +1,6 @@
 //! The App icon sheet: Match theme first, then every theme as a row, each with
 //! the icon drawn in that theme's colors in the mode the icon is in now
-//! (Profile's App icon row flips the mode), laid out like the theme sheet.
+//! (Config's App icon row flips the mode), laid out like the theme sheet.
 
 use components::{
     BottomSheet, Button, ButtonVariant, THEME_GROUPS, TOAST_NORMAL, TOAST_QUICK, ThemeConfig,

@@ -1,6 +1,6 @@
 //! Universes Beyond exceptions sheet: chip picker for the franchises still
-//! served while the profile's Universes Beyond setting is on Hide. The
-//! Show/Hide toggle itself lives on the profile screen; this sheet edits only
+//! served while the Universes Beyond setting is on Hide. The Show/Hide
+//! toggle itself lives on the Config screen; this sheet edits only
 //! the whitelist. The server applies both at serve time.
 
 use components::{BottomSheet, Button, ButtonVariant, HintDialog, HintLine, TOAST_QUICK};
@@ -29,7 +29,7 @@ fn same_set(a: &[String], b: &[String]) -> bool {
 /// Bottom sheet editing the exceptions whitelist. `exceptions` is the parent's
 /// saved list: the sheet copies it into a draft on open and writes it back on
 /// a successful Save; Back and the backdrop discard the draft. `hint_open` is
-/// owned by the profile screen so its row-level "?" opens the same explainer
+/// owned by the Config screen so its row-level "?" opens the same explainer
 /// as the sheet's own header "?".
 #[component]
 pub fn UniversesBeyondExceptionsSheet(

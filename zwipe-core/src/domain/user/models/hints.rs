@@ -31,9 +31,11 @@ pub const HINT_FIRST_DECK: &str = "first_deck";
 pub const HINT_DECK_CARDS: &str = "deck_cards";
 /// Account management dialog on the profile screen.
 pub const HINT_PROFILE: &str = "profile";
+/// Explainer for the Config screen (appearance and card settings).
+pub const HINT_CONFIG: &str = "config";
 /// Explainer for the shared card-filter bottom sheet (add/remove/view screens).
 pub const HINT_FILTER: &str = "filter";
-/// Explainer for the Universes Beyond exceptions sheet on the profile screen.
+/// Explainer for the Universes Beyond exceptions sheet on the Config screen.
 pub const HINT_UNIVERSES_BEYOND_EXCEPTIONS: &str = "universes_beyond_exceptions";
 /// Explainer for the import cards screen (source, add/replace, board).
 pub const HINT_IMPORT: &str = "import";
@@ -119,6 +121,7 @@ mod tests {
             HINT_FIRST_DECK,
             HINT_DECK_CARDS,
             HINT_PROFILE,
+            HINT_CONFIG,
             HINT_FILTER,
             HINT_IMPORT,
             HINT_EXPORT,

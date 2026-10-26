@@ -6,6 +6,8 @@
 pub mod auth;
 /// Release history screen (shared changelog).
 pub mod changelog;
+/// Appearance and card settings (theme, app icon, Universes Beyond).
+pub mod config;
 /// Deck builder and card management screens.
 pub mod deck;
 /// Home/landing page screen.
