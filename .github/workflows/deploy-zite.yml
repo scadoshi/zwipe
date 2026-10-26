@@ -7,6 +7,8 @@ on:
       - 'zite/**'
       - 'zwipe-core/**'
       - 'components/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
       - '.github/workflows/deploy-zite.yml'
   workflow_dispatch:
 
