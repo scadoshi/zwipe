@@ -123,8 +123,8 @@ pub(crate) fn use_play_style_summary(
 }
 
 /// The top color identities standing on a podium: second, first, third,
-/// each step with its deck count on top and its pips, name and place under
-/// it. Renders nothing without identities.
+/// each step with its deck count on top and its pips, then its name and
+/// place as tags, under it. Renders nothing without identities.
 #[component]
 pub(crate) fn Podium(identities: Vec<HttpColorIdentityCount>) -> Element {
     let steps = podium(&identities);
@@ -144,8 +144,8 @@ pub(crate) fn Podium(identities: Vec<HttpColorIdentityCount>) -> Element {
                     IdentityPips { identity: step.pips.clone(), show_name: false }
                     // Every step is named, Mono-red included, so the three
                     // read alike.
-                    span { class: "podium-name", "{identity_name(&step.pips)}" }
-                    span { class: "podium-place", "{step.place_label()}" }
+                    span { class: "stat-chip", "{identity_name(&step.pips)}" }
+                    span { class: "stat-chip stat-chip-muted", "{step.place_label()}" }
                 }
             }
         }
@@ -203,6 +203,7 @@ pub fn HomePlayStyle() -> Element {
                             }
                         }
                     }
+                    hr { class: "home-panel-rule" }
                     div { class: "flavor-buy-row",
                         div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
                     }
@@ -212,11 +213,12 @@ pub fn HomePlayStyle() -> Element {
     }
 }
 
-/// The panel's last row: the Open button, centered like the flavor card's
-/// name and price row.
+/// The panel's foot: a full-width rule, then the Open button centered like
+/// the flavor card's name and price row, as a dialog sets its actions apart.
 #[component]
 fn OpenRow(onclick: EventHandler<MouseEvent>) -> Element {
     rsx! {
+        hr { class: "home-panel-rule" }
         div { class: "flavor-buy-row",
             Button { variant: ButtonVariant::Action, onclick: move |e| onclick.call(e), "Open" }
         }

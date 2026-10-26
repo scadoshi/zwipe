@@ -2426,7 +2426,7 @@ button {
 
 /* Home's Playstyle podium: second, first and third standing side by side,
    each step a bar in the deck charts' fill with its deck count chip on top and
-   its pips, name and place under it. Fixed heights, first tallest, so the
+   its pips, then its name and place as tags, under it. Fixed heights, first tallest, so the
    podium reads as one whatever the counts are. */
 .podium {
     display: grid;
@@ -2500,14 +2500,13 @@ button {
     border-radius: 0.35rem;
 }
 
-.podium-name {
-    font-size: 0.75rem;
-    color: var(--text-primary);
-}
-
-.podium-place {
-    font-size: 0.65rem;
-    color: var(--text-muted);
+/* Home's Playstyle panel sets its Open button apart as a dialog does its
+   actions: a rule across the card's full width. */
+.home-panel-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 1rem 0 0;
+    width: 100%;
 }
 
 .home-flavor {
