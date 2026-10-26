@@ -666,7 +666,9 @@ pub static GUIDES: &[Guide] = &[
                 "Remove hides it for a week and pulls the next one up.",
             ]),
             Block::H2("Swipe deeper"),
-            Block::P("Swipe deals the same ranking as a stack, up to 100 deep."),
+            Block::P(
+                "Swipe deals the same ranking as a stack, up to 100 deep. Tap Filter while you swipe to narrow it to one color identity.",
+            ),
             Block::Swipe(&[
                 ("right", "start a new deck with this commander"),
                 ("left", "skip it for a week"),
