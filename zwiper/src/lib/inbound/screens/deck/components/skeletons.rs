@@ -34,33 +34,31 @@ pub(crate) fn DeckStatsSkeleton() -> Element {
     }
 }
 
-/// The suggested commanders' profile panel while the first load is in
-/// flight: a text line for the lead, then three open chart boxes, each a
-/// section title over a chart-height block.
+/// The suggested commanders' profile sections while the first load is in
+/// flight, in the deck view's skeleton grammar: the Summary section open on
+/// its three rows, then the three chart sections collapsed to their headers.
 #[component]
 pub(crate) fn BuilderProfileSkeleton() -> Element {
     rsx! {
-        div { class: "screen-panel profile-panel",
-            div { class: "skeleton-bar skeleton-bar-label" }
-            div { class: "profile-charts",
-                for i in 0..3 {
-                    div { key: "{i}", class: "skeleton-chart-box",
-                        div { class: "skeleton-bar skeleton-section-label" }
-                        div { class: "skeleton-bar skeleton-chart-area" }
-                    }
+        div { class: "skeleton-stats",
+            SkeletonInfoList { rows: 3 }
+            for i in 0..3 {
+                div { key: "{i}", class: "skeleton-chart-box",
+                    div { class: "skeleton-bar skeleton-section-label" }
                 }
             }
         }
     }
 }
 
-/// The suggested commanders' Show row while the first load is in flight: the
-/// label renders real (static chrome) and the chips ghost, since which
-/// identities appear is data.
+/// The suggested commanders' Show row while the first load is in flight, atop
+/// the list section's ghost rows and inset like the live row: the label
+/// renders real (static chrome) and the chips ghost, since which identities
+/// appear is data.
 #[component]
 pub(crate) fn ShowChipRowSkeleton() -> Element {
     rsx! {
-        div { class: "chip-row",
+        div { class: "chip-row", style: "padding:0 0.75rem;margin-bottom:0;",
             span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
             div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
             div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }

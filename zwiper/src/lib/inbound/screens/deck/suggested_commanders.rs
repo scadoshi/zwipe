@@ -931,19 +931,21 @@ pub fn SuggestedCommanders() -> Element {
                     style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                     if is_loading() {
                         // First load only: a refetch keeps the data in place.
-                        // The Show row ghosts as chips, the panel as a lead
-                        // line over three chart boxes; the list section and
-                        // its title are static chrome, so they render real
-                        // while only the data rows ghost (the closed-vocabulary
+                        // The profile ghosts as its four sections, Summary open
+                        // on three rows; the list section and its title are
+                        // static chrome, so they render real while the Show
+                        // chips and the data rows ghost (the closed-vocabulary
                         // skeleton rule).
-                        ShowChipRowSkeleton {}
-                        BuilderProfileSkeleton {}
-                        CollapsibleSection { title: LIST_TITLE, open_section: list_open,
-                            div { class: "maybeboard-list card-group row-enter",
-                                for i in 0..6 {
-                                    div { key: "{i}", class: "skeleton-card-row",
-                                        div { class: "skeleton-bar skeleton-card-thumb" }
-                                        div { class: "skeleton-bar skeleton-card-bar-row" }
+                        div { style: "width:100%;display:flex;flex-direction:column;gap:var(--panel-gap);",
+                            BuilderProfileSkeleton {}
+                            CollapsibleSection { title: LIST_TITLE, open_section: list_open,
+                                ShowChipRowSkeleton {}
+                                div { class: "maybeboard-list card-group row-enter",
+                                    for i in 0..6 {
+                                        div { key: "{i}", class: "skeleton-card-row",
+                                            div { class: "skeleton-bar skeleton-card-thumb" }
+                                            div { class: "skeleton-bar skeleton-card-bar-row" }
+                                        }
                                     }
                                 }
                             }

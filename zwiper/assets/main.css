@@ -1197,13 +1197,6 @@ button {
     height: 0.75rem;
 }
 
-/* A chart-height block inside an open skeleton-chart-box (the suggested
-   commanders' profile panel), the vertical deck chart's 6rem. */
-.skeleton-chart-area {
-    width: 100%;
-    height: 6rem;
-}
-
 /* Section label that sits above a skeleton-info-list. Matches .label. */
 .skeleton-section-label {
     width: 22%;
@@ -2696,25 +2689,6 @@ button {
 
 .sheet-panel + .sheet-panel {
     margin-top: var(--panel-gap);
-}
-
-/* The same surface standing in a screen column over a list, spaced below like
-   a .card-group (the suggested commanders' profile panel). */
-.screen-panel {
-    padding: 0.75rem 1rem;
-    margin-bottom: var(--panel-gap);
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    box-shadow: var(--shadow-sm);
-}
-
-/* The three chart sections, spaced like the deck view's sections. */
-.profile-charts {
-    display: flex;
-    flex-direction: column;
-    gap: var(--panel-gap);
-    margin-top: 0.6rem;
 }
 
 /* The panel supplies the inset the row detail and footer carry themselves. */
