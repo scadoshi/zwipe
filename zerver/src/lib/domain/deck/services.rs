@@ -1,8 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 
-use anyhow::Context;
-use tokio::task::JoinSet;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
@@ -585,32 +583,23 @@ where
         // One profile per deck (the commander plus its mainboard), so a
         // candidate is scored on how well it fits the user's closest deck
         // rather than an average of all of them. Decks past the most recent
-        // MAX_PROFILED_DECKS carry only their colors. The profile queries run
-        // concurrently and queue on the connection pool; the first failure
-        // drops the set, which aborts the rest.
-        let mut profile_tasks = JoinSet::new();
-        for (index, deck) in decks.iter().take(MAX_PROFILED_DECKS).enumerate() {
-            let profile_oracle_ids: Vec<Uuid> = std::iter::once(deck.commander_oracle_id)
-                .chain(deck.mainboard_oracle_ids.iter().copied())
-                .collect::<HashSet<Uuid>>()
-                .into_iter()
-                .collect();
-            let card_repo = self.card_repo.clone();
-            profile_tasks.spawn(async move {
-                let profile = card_repo.deck_tag_profile(&profile_oracle_ids, &[]).await;
-                (index, profile)
-            });
-        }
-        let mut profiles: Vec<Option<serde_json::Value>> = vec![None; decks.len()];
-        while let Some(joined) = profile_tasks.join_next().await {
-            let (index, profile) = joined
-                .context("deck tag profile task")
-                .map_err(CommanderSuggestionsError::Database)?;
-            let profile = profile.map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
-            if let Some(slot) = profiles.get_mut(index) {
-                *slot = profile;
-            }
-        }
+        // MAX_PROFILED_DECKS carry only their colors. All the profiles come
+        // from one query on one connection.
+        let profiled: Vec<Vec<Uuid>> = decks
+            .iter()
+            .take(MAX_PROFILED_DECKS)
+            .map(|deck| {
+                std::iter::once(deck.commander_oracle_id)
+                    .chain(deck.mainboard_oracle_ids.iter().copied())
+                    .collect()
+            })
+            .collect();
+        let mut profiles: Vec<Option<serde_json::Value>> = self
+            .card_repo
+            .deck_tag_profiles(&profiled)
+            .await
+            .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
+        profiles.resize(decks.len(), None);
         let deck_profiles: Vec<serde_json::Value> = decks
             .iter()
             .zip(profiles)
