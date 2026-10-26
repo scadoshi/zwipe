@@ -56,13 +56,17 @@ The suggestions are computed from a profile of the user's decks that was invisib
 
 Tests: unit tests on `summarize_profile` and the lead line, serde round trips including the old shape, and `zerver/tests/commander_suggestions.rs` asserting the profile for the goblin deck and the Jeskai and Boros decks.
 
-## Agreed, not built (2026-10-26): color chips that filter client-side
+## Agreed, not built (2026-10-26): the header row, with identity chips that filter client-side
 
-Asked for after the first real test, agreed in shape and sequenced after the variety fix has been retested on Scotty's account.
+Settled with Scotty on 2026-10-26 after the header shipped. The suggested commanders screen gets the same kind of header row the deck cards screen has (quick add, group by, boards, show), reduced to the two controls that mean something here: a Show control and the art toggle. Group by and boards are obsolete on this screen and are not offered.
 
-The screen fetches the full ranking once on entry (100, which Swipe already asks for) and shows the first 10 as the real top 10. A row of chips, one per color identity present in the user's own decks plus "Any", filters that held list; tapping Boros shows the Boros commanders within the overall top 100, and Swipe reads the same filtered list. No server parameter and no new query: the filter is a predicate over data the client already has, so fewer requests than today, not more. A thin result ("2 Boros picks") is honest and the summary explains it; re-ranking server-side within one identity would surface weaker picks to fill ten slots, which turns suggestions back into search. The variety cap applies only when no chip is active, since a chip has asked for one identity. A full filter sheet is deliberately not offered: text and type filters replace the ranking instead of sharpening it, and color is the one axis a player knows before seeing anything.
+**Show, as color-identity chips.** The screen fetches the full ranking once on entry (100, which Swipe already asks for) and shows the first 10 as the real top 10. The chips are the color identities present in that fetched 100, in the app's identity grammar (pips, "Colorless" as the one word): if Jeskai, Mardu, Azorius and mono-blue appear among the 100, those four chips show, and no others. Tapping one filters the held list to that identity; Swipe reads the same filtered list. The chips come from the fetched 100 rather than from the user's own decks so the filter only ever offers identities that have commanders behind them. No server parameter and no new query: the filter is a predicate over data the client already has. A thin result is honest; re-ranking server-side within one identity would surface weaker picks to fill ten slots, which turns suggestions back into search. The variety cap applies only when no chip is active, since a chip has asked for one identity. A full filter sheet is deliberately not offered: text and type filters replace the ranking instead of sharpening it, and color is the one axis a player knows before seeing anything.
 
-The chips attach to the profile panel's color row, so one element is both the summary and the filter, and the summary explains why the filter offers the identities it does. With the header built, first see whether the chips still need to filter once the top 10 spans the user's colors on its own; the filter adds a Swipe-mode wrinkle and earns its own step.
+**The art toggle** is the same Show art control the card rows carry on the other screens and the commander maybeboard's header has; the suggestion rows are the same `CardRow`, so it plugs in the same way.
+
+**The list is a collapsible section**, open by default, so the whole screen reads as one stack of collapsible blocks in the deck profile's grammar: the synopsis, the three charts, then the suggestions.
+
+Build order: after the three-chart header lands, since both touch the same screen file. App-only.
 
 ## Commander profiles (decided 2026-10-25: the synergy worker writes them)
 
