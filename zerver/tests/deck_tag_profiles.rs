@@ -1,6 +1,6 @@
 //! The batched deck tag profile equals the single-deck one: seeds two decks'
 //! worth of tagged cards, builds each profile both ways and compares them
-//! tag by tag, with a deck whose cards carry no usable tags and a deck with
+//! tag by tag along with the batched card counts, with a deck whose cards carry no usable tags and a deck with
 //! no cards both coming back `None`.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
@@ -114,8 +114,23 @@ async fn batched_profiles_match_the_single_deck_profile(pool: sqlx::PgPool) {
     );
 
     assert_eq!(batched.len(), 4);
-    assert_same_profile(&single_a, batched[0].as_ref().unwrap(), "deck a");
-    assert_same_profile(&single_b, batched[1].as_ref().unwrap(), "deck b");
+    let batched_a = batched.first().unwrap().as_ref().unwrap();
+    let batched_b = batched.get(1).unwrap().as_ref().unwrap();
+    assert_same_profile(&single_a, &batched_a.weights, "deck a");
+    assert_same_profile(&single_b, &batched_b.weights, "deck b");
+    let counts = |cards: &[(&str, u32)]| -> HashMap<String, u32> {
+        cards.iter().map(|(tag, n)| (tag.to_string(), *n)).collect()
+    };
+    assert_eq!(
+        batched_a.cards,
+        counts(&[("goblins", 2), ("treasure", 1), ("haste", 1)]),
+        "deck a: distinct cards per kept tag, the repeated a1 counted once"
+    );
+    assert_eq!(
+        batched_b.cards,
+        counts(&[("treasure", 1), ("lifegain", 2)]),
+        "deck b"
+    );
     assert!(
         batched[2].is_none(),
         "only cycle and universal tags: {:?}",

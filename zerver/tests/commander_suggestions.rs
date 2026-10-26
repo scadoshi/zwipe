@@ -92,6 +92,28 @@ async fn suggestions(app: &TestApp, token: &str, limit: u32) -> Value {
     body
 }
 
+/// A profile's tags with each `score` taken out, and the scores in order.
+fn split_scores(profile: &Value) -> (Value, Vec<f64>) {
+    let mut tags = profile["tags"].clone();
+    let scores = tags
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .map(|tag| {
+            tag.as_object_mut()
+                .unwrap()
+                .remove("score")
+                .and_then(|score| score.as_f64())
+                .unwrap()
+        })
+        .collect();
+    (tags, scores)
+}
+
+fn assert_close(got: f64, want: f64, what: &str) {
+    assert!((got - want).abs() < 1e-9, "{what}: got {got}, want {want}");
+}
+
 fn names(body: &Value) -> Vec<String> {
     body["suggestions"]
         .as_array()
@@ -252,22 +274,37 @@ async fn shared_tags_rank_first_with_reasons_and_exclusions(pool: sqlx::PgPool) 
     assert_eq!(stranger["tags"], json!([]), "no shared tags");
     assert_eq!(stranger["colors"], json!([]), "white decks: none");
 
-    // The profile summarizes the one red deck: the rare sacrifice tag
-    // outweighs the goblin tag in it, each carried by that one deck.
+    // The profile summarizes the one red deck: the rare sacrifice tag on one
+    // card outweighs the goblin tag on three, each carried by that one deck.
+    let profile = &body["profile"];
+    assert_eq!(profile["deck_count"], 1);
+    assert_eq!(profile["colors"], json!([{ "color": "R", "decks": 1 }]));
     assert_eq!(
-        body["profile"],
-        json!({
-            "deck_count": 1,
-            "colors": [{ "color": "R", "decks": 1 }],
-            "top_identity": { "colors": ["R"], "decks": 1 },
-            "tags": [
-                { "slug": "sacrifice-outlet", "role": "sacrifice", "decks": 1 },
-                { "slug": "typal-goblin", "role": null, "decks": 1 },
-            ],
-            "roles": [{ "role": "sacrifice", "decks": 1 }],
-        }),
+        profile["top_identity"],
+        json!({ "colors": ["R"], "decks": 1 })
+    );
+    assert_eq!(
+        profile["roles"],
+        json!([{ "role": "sacrifice", "decks": 1 }])
+    );
+    let (tags, scores) = split_scores(profile);
+    assert_eq!(
+        tags,
+        json!([
+            { "slug": "sacrifice-outlet", "role": "sacrifice", "decks": 1, "cards": 1 },
+            { "slug": "typal-goblin", "role": null, "decks": 1, "cards": 3 },
+        ]),
         "profile: {body}"
     );
+    // Four tagged cards in all: sacrifice-outlet weighs 1 × ln(4/1) and
+    // typal-goblin 3 × ln(4/3), normalized over the deck's two tags.
+    let sacrifice = 4_f64.ln();
+    let goblin = 3.0 * (4_f64 / 3.0).ln();
+    let total = sacrifice + goblin;
+    assert_eq!(scores.len(), 2);
+    for (got, want) in scores.iter().zip([sacrifice / total, goblin / total]) {
+        assert_close(*got, want, "one deck's normalized weight");
+    }
 }
 
 #[sqlx::test]
@@ -414,11 +451,16 @@ async fn color_identity_matches_as_a_set_not_an_average(pool: sqlx::PgPool) {
         profile["top_identity"],
         json!({ "colors": ["W", "U", "R"], "decks": 2 })
     );
+    let (tags, scores) = split_scores(profile);
     assert_eq!(
-        profile["tags"],
-        json!([{ "slug": "tokens", "role": null, "decks": 3 }]),
+        tags,
+        json!([{ "slug": "tokens", "role": null, "decks": 3, "cards": 3 }]),
         "no oracle_tags row for the tag, so it falls under no role: {body}"
     );
+    assert_eq!(scores.len(), 1);
+    for got in scores {
+        assert_close(got, 3.0, "the only tag in three decks scores 1 in each");
+    }
     assert_eq!(
         profile["roles"],
         json!([]),

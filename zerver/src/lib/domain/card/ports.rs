@@ -33,7 +33,7 @@ use crate::domain::card::requests::get_scryfall_data::{
 };
 use crate::domain::card::requests::get_sets::GetSetsError;
 use crate::domain::deck::models::deck::commander_suggestions::{
-    CommanderSuggestionsError, ScoredCommander,
+    CommanderSuggestionsError, DeckTagProfile, ScoredCommander,
 };
 use crate::inbound::external::scryfall::bulk::BulkEndpoint;
 use crate::inbound::external::scryfall::oracle_tag::OracleTag as ScryfallOracleTag;
@@ -347,11 +347,12 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// Builds one oracle-tag profile per deck in a single query. `decks` holds
     /// each deck's cards by oracle id (duplicates are fine); the result has one
     /// entry per deck in the same order, each the profile [`Self::deck_tag_profile`]
-    /// would build for those cards, or `None` when they carry no usable tags.
+    /// would build for those cards with each kept tag's card count, or `None`
+    /// when they carry no usable tags.
     fn deck_tag_profiles(
         &self,
         decks: &[Vec<uuid::Uuid>],
-    ) -> impl Future<Output = Result<Vec<Option<serde_json::Value>>, SearchCardsError>> + Send;
+    ) -> impl Future<Output = Result<Vec<Option<DeckTagProfile>>, SearchCardsError>> + Send;
 
     /// Ranks the commanders in `commander_tag_profiles` against a user's
     /// commander decks, best first, at most `limit`. `decks` is a JSON array of

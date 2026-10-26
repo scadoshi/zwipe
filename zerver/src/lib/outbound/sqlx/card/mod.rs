@@ -18,6 +18,7 @@ use std::collections::HashMap;
 use anyhow::Context;
 use chrono::{DateTime, Utc};
 use sqlx::query_builder::Separated;
+use sqlx::types::Json;
 use sqlx::{Postgres, QueryBuilder, Row, query_as, query_scalar};
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_profile::CardProfile;
@@ -50,7 +51,7 @@ use crate::domain::card::requests::get_scryfall_data::{
 };
 use crate::domain::card::requests::get_sets::GetSetsError;
 use crate::domain::deck::models::deck::commander_suggestions::{
-    CommanderSuggestionsError, ScoredCommander, SharedTag,
+    CommanderSuggestionsError, DeckTagProfile, ScoredCommander, SharedTag,
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::oracle_tag_groups::{
@@ -1948,14 +1949,15 @@ impl CardRepository for MyPostgres {
     async fn deck_tag_profiles(
         &self,
         decks: &[Vec<uuid::Uuid>],
-    ) -> Result<Vec<Option<serde_json::Value>>, SearchCardsError> {
+    ) -> Result<Vec<Option<DeckTagProfile>>, SearchCardsError> {
         // The same weighting as deck_tag_profile, computed for every deck in
         // one statement. The decks bind as two parallel arrays, one (deck
         // index, oracle id) pair per card, since a uuid[][] does not bind.
         // The tag frequencies over all tagged cards do not depend on the
         // deck, so they are counted once; the per-deck rank and the
-        // normalizing sum are window functions partitioned by deck. A deck
-        // whose cards carry no usable tags produces no row and stays None.
+        // normalizing sum are window functions partitioned by deck. Each kept
+        // tag's card count rides along as a second object. A deck whose cards
+        // carry no usable tags produces no row and stays None.
         let mut deck_indices: Vec<i32> = Vec::new();
         let mut oracle_ids: Vec<uuid::Uuid> = Vec::new();
         for (index, deck) in decks.iter().enumerate() {
@@ -1965,7 +1967,9 @@ impl CardRepository for MyPostgres {
             deck_indices.extend(std::iter::repeat_n(index, deck.len()));
             oracle_ids.extend_from_slice(deck);
         }
-        let rows: Vec<(i32, serde_json::Value)> = query_as(
+        /// Deck index, tag weights, and each kept tag's card count.
+        type ProfileRow = (i32, serde_json::Value, Json<HashMap<String, u32>>);
+        let rows: Vec<ProfileRow> = query_as(
             "WITH profile_cards AS (
                  SELECT DISTINCT deck, oracle_id
                  FROM unnest($1::int4[], $2::uuid[]) AS c(deck, oracle_id)
@@ -1983,20 +1987,22 @@ impl CardRepository for MyPostgres {
              ),
              total AS (SELECT count(DISTINCT oracle_id)::float8 AS n FROM card_oracle_tags),
              weighted AS (
-                 SELECT tf.deck, tf.oracle_tag, tf.n * ln(total.n / df.n) AS w
+                 SELECT tf.deck, tf.oracle_tag, tf.n AS cards, tf.n * ln(total.n / df.n) AS w
                  FROM tf JOIN df USING (oracle_tag) CROSS JOIN total
                  WHERE df.n < total.n
              ),
              ranked AS (
-                 SELECT deck, oracle_tag, w,
+                 SELECT deck, oracle_tag, cards, w,
                         row_number() OVER (PARTITION BY deck ORDER BY w DESC, oracle_tag) AS rn
                  FROM weighted
              ),
              normalized AS (
-                 SELECT deck, oracle_tag, w / sum(w) OVER (PARTITION BY deck) AS w
+                 SELECT deck, oracle_tag, cards, w / sum(w) OVER (PARTITION BY deck) AS w
                  FROM ranked WHERE rn <= $3
              )
-             SELECT deck, jsonb_object_agg(oracle_tag, w) FROM normalized GROUP BY deck",
+             SELECT deck, jsonb_object_agg(oracle_tag, w),
+                    jsonb_object_agg(oracle_tag, cards::int4)
+             FROM normalized GROUP BY deck",
         )
         .bind(&deck_indices)
         .bind(&oracle_ids)
@@ -2004,13 +2010,13 @@ impl CardRepository for MyPostgres {
         .fetch_all(&self.pool)
         .await
         .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
-        let mut profiles: Vec<Option<serde_json::Value>> = vec![None; decks.len()];
-        for (deck, profile) in rows {
+        let mut profiles: Vec<Option<DeckTagProfile>> = vec![None; decks.len()];
+        for (deck, weights, Json(cards)) in rows {
             let slot = usize::try_from(deck)
                 .ok()
                 .and_then(|index| profiles.get_mut(index));
             if let Some(slot) = slot {
-                *slot = Some(profile);
+                *slot = Some(DeckTagProfile { weights, cards });
             }
         }
         Ok(profiles)

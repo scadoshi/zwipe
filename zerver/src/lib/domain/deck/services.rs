@@ -31,7 +31,8 @@ use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
 use crate::domain::deck::models::deck::commander_suggestions::{
     self, ColorAffinity, CommanderDismissal, CommanderSuggestion, CommanderSuggestions,
-    CommanderSuggestionsError, MAX_PER_COLOR_IDENTITY, MAX_PROFILED_DECKS, SCORED_POOL,
+    CommanderSuggestionsError, DeckTagProfile, MAX_PER_COLOR_IDENTITY, MAX_PROFILED_DECKS,
+    SCORED_POOL,
 };
 use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
 use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
@@ -595,7 +596,7 @@ where
                     .collect()
             })
             .collect();
-        let mut profiles: Vec<Option<serde_json::Value>> = self
+        let mut profiles: Vec<Option<DeckTagProfile>> = self
             .card_repo
             .deck_tag_profiles(&profiled)
             .await
@@ -606,7 +607,7 @@ where
         let slugs: Vec<String> = profiles
             .iter()
             .flatten()
-            .filter_map(|profile| profile.as_object())
+            .filter_map(|profile| profile.weights.as_object())
             .flat_map(|weights| weights.keys().cloned())
             .collect::<HashSet<String>>()
             .into_iter()
@@ -619,7 +620,7 @@ where
             .map(|(deck, profile)| {
                 serde_json::json!({
                     "colors": deck.commander_colors,
-                    "profile": profile,
+                    "profile": profile.map(|profile| profile.weights),
                 })
             })
             .collect();

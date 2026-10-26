@@ -12,7 +12,7 @@ pub const DEFAULT_SUGGESTION_LIMIT: u32 = 10;
 pub const MAX_SUGGESTION_LIMIT: u32 = 100;
 
 /// Oracle tags [`HttpBuilderProfile::tags`] carries, one bar each.
-pub const PROFILE_TAG_SHOWN: usize = 25;
+pub const PROFILE_TAG_SHOWN: usize = 10;
 
 /// Card roles [`HttpBuilderProfile::roles`] carries, one bar each.
 pub const PROFILE_ROLE_SHOWN: usize = 10;
@@ -45,8 +45,9 @@ pub struct HttpBuilderProfile {
     /// The exact color identity the user builds most, with its deck count.
     /// `None` when there is more than one deck and every identity is unique.
     pub top_identity: Option<HttpColorIdentityCount>,
-    /// The user's strongest oracle tags across the profiled decks, strongest
-    /// first, at most [`PROFILE_TAG_SHOWN`].
+    /// The user's most impactful oracle tags across the profiled decks,
+    /// highest [`HttpProfileTag::score`] first and slug between equals, at
+    /// most [`PROFILE_TAG_SHOWN`].
     pub tags: Vec<HttpProfileTag>,
     /// The card roles the profiled decks' tags fall under, most decks first
     /// and role slug between equals, at most [`PROFILE_ROLE_SHOWN`]. Counted
@@ -84,6 +85,17 @@ pub struct HttpProfileTag {
     pub role: Option<String>,
     /// Profiled decks whose profile carries the tag, above 0.
     pub decks: u32,
+    /// Cards carrying the tag, summed over those decks, each card counted
+    /// once per deck. 0 from older servers.
+    #[serde(default)]
+    pub cards: u32,
+    /// The tag's impact: its share of each profiled deck's tag profile
+    /// (cards carrying it times how rare it is across all cards, over the
+    /// deck's top tags), summed over the decks. Between 0 and the deck count;
+    /// only its ratio to other tags' scores means anything. 0.0 from older
+    /// servers.
+    #[serde(default)]
+    pub score: f64,
 }
 
 /// One suggested commander and why it fits.
@@ -215,6 +227,8 @@ mod tests {
                 slug: "sacrifice-outlet".to_string(),
                 role: Some("sacrifice".to_string()),
                 decks: 6,
+                cards: 23,
+                score: 1.5,
             }],
             roles: vec![HttpProfileRole {
                 role: "sacrifice".to_string(),
@@ -224,7 +238,7 @@ mod tests {
         let json = serde_json::to_string(&profile).unwrap();
         assert_eq!(
             json,
-            r#"{"deck_count":7,"colors":[{"color":"R","decks":5},{"color":"W","decks":4}],"top_identity":{"colors":["W","R"],"decks":3},"tags":[{"slug":"sacrifice-outlet","role":"sacrifice","decks":6}],"roles":[{"role":"sacrifice","decks":6}]}"#
+            r#"{"deck_count":7,"colors":[{"color":"R","decks":5},{"color":"W","decks":4}],"top_identity":{"colors":["W","R"],"decks":3},"tags":[{"slug":"sacrifice-outlet","role":"sacrifice","decks":6,"cards":23,"score":1.5}],"roles":[{"role":"sacrifice","decks":6}]}"#
         );
         let back: HttpBuilderProfile = serde_json::from_str(&json).unwrap();
         assert_eq!(back, profile);
@@ -233,6 +247,22 @@ mod tests {
         let back: HttpBuilderProfile = serde_json::from_str(no_top).unwrap();
         assert_eq!(back.top_identity, None);
         assert_eq!(back.roles, vec![], "old shape without roles parses");
+    }
+
+    #[test]
+    fn old_tag_shape_without_cards_or_score_parses_to_zero() {
+        let back: HttpProfileTag =
+            serde_json::from_str(r#"{"slug":"treasure","role":null,"decks":3}"#).unwrap();
+        assert_eq!(
+            back,
+            HttpProfileTag {
+                slug: "treasure".to_string(),
+                role: None,
+                decks: 3,
+                cards: 0,
+                score: 0.0,
+            }
+        );
     }
 
     #[test]

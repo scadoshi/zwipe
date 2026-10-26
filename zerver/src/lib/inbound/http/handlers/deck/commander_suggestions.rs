@@ -79,6 +79,8 @@ impl From<BuilderProfile> for HttpBuilderProfile {
                     slug: tag.slug,
                     role: tag.role,
                     decks: tag.decks,
+                    cards: tag.cards,
+                    score: tag.score,
                 })
                 .collect(),
             roles: value

@@ -77,6 +77,16 @@ pub struct CommanderDeck {
     pub mainboard_oracle_ids: Vec<Uuid>,
 }
 
+/// One deck's oracle-tag profile with the card counts behind it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DeckTagProfile {
+    /// The otag to weight map the scoring query reads, weights summing to 1.
+    pub weights: serde_json::Value,
+    /// For each tag in `weights`, how many of the deck's distinct cards carry
+    /// it.
+    pub cards: HashMap<String, u32>,
+}
+
 /// An oracle tag the user's decks and a commander both lean on.
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct SharedTag {
@@ -154,7 +164,8 @@ pub struct ColorIdentityCount {
     pub decks: u32,
 }
 
-/// An oracle tag the user's decks lean on, with how many decks carry it.
+/// An oracle tag the user's decks lean on, with its impact and the counts
+/// behind it.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProfileTag {
     /// The oracle tag slug.
@@ -163,6 +174,10 @@ pub struct ProfileTag {
     pub role: Option<String>,
     /// Profiled decks whose profile carries the tag.
     pub decks: u32,
+    /// Cards carrying the tag, summed over those decks.
+    pub cards: u32,
+    /// The tag's weight summed over the deck profiles.
+    pub score: f64,
 }
 
 /// What the user builds, summarized from the decks the suggestions are
@@ -177,7 +192,7 @@ pub struct BuilderProfile {
     /// The most-built exact identity; `None` when every identity is unique
     /// across more than one deck.
     pub top_identity: Option<ColorIdentityCount>,
-    /// The strongest oracle tags, strongest first, at most
+    /// The highest-scoring oracle tags, highest first, at most
     /// [`PROFILE_TAG_SHOWN`].
     pub tags: Vec<ProfileTag>,
     /// The card roles the profiles' tags fall under, most decks first and
@@ -215,21 +230,22 @@ fn sorted_identity(colors: &[String]) -> Vec<String> {
 }
 
 /// Summarizes the user's commander decks: per color the decks using it,
-/// the most-built exact identity, the strongest oracle tags across the deck
-/// profiles, and the card roles those tags fall under. `profiles` pairs with
+/// the most-built exact identity, the highest-scoring oracle tags across the
+/// deck profiles, and the card roles those tags fall under. `profiles` pairs with
 /// `decks` by position (shorter is fine; the rest count as unprofiled).
 /// `tag_roles` maps a tag slug to its role; a slug absent from it is under
 /// no role. `None` when there are no decks.
 ///
-/// A tag's strength is the sum of its weight over the profiles that carry it;
+/// A tag's score is the sum of its weight over the profiles that carry it;
 /// weights are normalized per deck, so the sum is deck-weighted importance.
+/// Its cards are summed from the same profiles' card counts.
 /// A role counts a deck once however many of its tags the deck carries.
 /// The top identity breaks ties by more colors, then WUBRG order; it is
 /// `None` when more than one deck exists and no identity repeats.
 #[must_use]
 pub fn summarize_profile(
     decks: &[CommanderDeck],
-    profiles: &[Option<serde_json::Value>],
+    profiles: &[Option<DeckTagProfile>],
     tag_roles: &HashMap<String, String>,
 ) -> Option<BuilderProfile> {
     if decks.is_empty() {
@@ -263,18 +279,26 @@ pub fn summarize_profile(
         .filter(|(_, count)| decks.len() == 1 || *count > 1)
         .map(|(colors, decks)| ColorIdentityCount { colors, decks });
 
-    let mut tag_strength: HashMap<String, (f64, u32)> = HashMap::new();
+    let mut tag_totals: HashMap<String, ProfileTag> = HashMap::new();
     let mut role_decks: HashMap<String, u32> = HashMap::new();
     for profile in profiles.iter().flatten() {
-        let Some(weights) = profile.as_object() else {
+        let Some(weights) = profile.weights.as_object() else {
             continue;
         };
         let mut deck_roles: HashSet<&String> = HashSet::new();
         for (slug, weight) in weights {
-            let weight = weight.as_f64().unwrap_or_default();
-            let entry = tag_strength.entry(slug.clone()).or_default();
-            entry.0 += weight;
-            entry.1 += 1;
+            let total = tag_totals
+                .entry(slug.clone())
+                .or_insert_with(|| ProfileTag {
+                    slug: slug.clone(),
+                    role: tag_roles.get(slug).cloned(),
+                    decks: 0,
+                    cards: 0,
+                    score: 0.0,
+                });
+            total.score += weight.as_f64().unwrap_or_default();
+            total.decks += 1;
+            total.cards += profile.cards.get(slug).copied().unwrap_or_default();
             if let Some(role) = tag_roles.get(slug) {
                 deck_roles.insert(role);
             }
@@ -283,20 +307,13 @@ pub fn summarize_profile(
             *role_decks.entry(role.clone()).or_default() += 1;
         }
     }
-    let mut ranked: Vec<(String, f64, u32)> = tag_strength
-        .into_iter()
-        .map(|(slug, (strength, decks))| (slug, strength, decks))
-        .collect();
-    ranked.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
-    let tags = ranked
-        .into_iter()
-        .take(PROFILE_TAG_SHOWN)
-        .map(|(slug, _, decks)| ProfileTag {
-            role: tag_roles.get(&slug).cloned(),
-            slug,
-            decks,
-        })
-        .collect();
+    let mut tags: Vec<ProfileTag> = tag_totals.into_values().collect();
+    tags.sort_by(|a, b| {
+        b.score
+            .total_cmp(&a.score)
+            .then_with(|| a.slug.cmp(&b.slug))
+    });
+    tags.truncate(PROFILE_TAG_SHOWN);
     let mut roles: Vec<ProfileRole> = role_decks
         .into_iter()
         .map(|(role, decks)| ProfileRole { role, decks })
@@ -503,27 +520,107 @@ mod tests {
         );
     }
 
+    /// A deck profile from its weights, each tag carried by `cards` cards.
+    fn tag_profile(weights: serde_json::Value, cards: &[(&str, u32)]) -> DeckTagProfile {
+        DeckTagProfile {
+            weights,
+            cards: cards
+                .iter()
+                .map(|(slug, n)| (slug.to_string(), *n))
+                .collect(),
+        }
+    }
+
+    /// A deck profile whose tags each sit on one card.
+    fn weights_only(weights: serde_json::Value) -> DeckTagProfile {
+        let cards = weights
+            .as_object()
+            .map(|w| w.keys().map(|slug| (slug.clone(), 1)).collect())
+            .unwrap_or_default();
+        DeckTagProfile { weights, cards }
+    }
+
     #[test]
-    fn tags_sum_strength_across_decks_and_count_decks() {
+    fn tags_sum_score_and_cards_across_decks_and_count_decks() {
         let decks = vec![deck(1, &["R"]), deck(2, &["R"]), deck(3, &["R"])];
         let profiles = vec![
-            Some(serde_json::json!({ "treasure": 0.6, "sacrifice-outlet": 0.4 })),
-            Some(serde_json::json!({ "sacrifice-outlet": 0.5, "lifegain": 0.5 })),
+            Some(tag_profile(
+                serde_json::json!({ "treasure": 0.6, "sacrifice-outlet": 0.4 }),
+                &[("treasure", 9), ("sacrifice-outlet", 4)],
+            )),
+            Some(tag_profile(
+                serde_json::json!({ "sacrifice-outlet": 0.5, "lifegain": 0.5 }),
+                &[("sacrifice-outlet", 7), ("lifegain", 12)],
+            )),
             None,
         ];
         let profile = summarize_profile(&decks, &profiles, &HashMap::new()).unwrap();
-        let got: Vec<(&str, u32)> = profile
+        let got: Vec<(&str, u32, u32)> = profile
             .tags
             .iter()
-            .map(|t| (t.slug.as_str(), t.decks))
+            .map(|t| (t.slug.as_str(), t.decks, t.cards))
             .collect();
         assert_eq!(
             got,
-            vec![("sacrifice-outlet", 2), ("treasure", 1), ("lifegain", 1)],
-            "0.9 over two decks, then 0.6, then 0.5"
+            vec![
+                ("sacrifice-outlet", 2, 11),
+                ("treasure", 1, 9),
+                ("lifegain", 1, 12)
+            ],
+            "0.9 over two decks, then 0.6, then 0.5; cards add up across decks"
+        );
+        let scores: Vec<f64> = profile.tags.iter().map(|t| t.score).collect();
+        let want = [0.9, 0.6, 0.5];
+        assert_eq!(scores.len(), want.len());
+        for (got, want) in scores.iter().zip(want) {
+            assert!((got - want).abs() < 1e-9, "score {got} want {want}");
+        }
+        assert!(
+            scores.is_sorted_by(|a, b| a >= b),
+            "highest score first: {scores:?}"
         );
         assert!(profile.tags.iter().all(|t| t.role.is_none()));
         assert!(profile.roles.is_empty(), "no role map, no roles");
+    }
+
+    #[test]
+    fn score_orders_tags_not_cards_or_decks() {
+        let decks = vec![deck(1, &["R"]), deck(2, &["R"])];
+        // "common" sits in both decks on many cards but weighs little in
+        // each; "rare" sits on two cards in one deck and weighs the most.
+        let profiles = vec![
+            Some(tag_profile(
+                serde_json::json!({ "common": 0.2, "rare": 0.8 }),
+                &[("common", 20), ("rare", 2)],
+            )),
+            Some(tag_profile(
+                serde_json::json!({ "common": 0.3, "other": 0.7 }),
+                &[("common", 25), ("other", 3)],
+            )),
+        ];
+        let profile = summarize_profile(&decks, &profiles, &HashMap::new()).unwrap();
+        let got: Vec<(&str, u32, u32)> = profile
+            .tags
+            .iter()
+            .map(|t| (t.slug.as_str(), t.decks, t.cards))
+            .collect();
+        assert_eq!(
+            got,
+            vec![("rare", 1, 2), ("other", 1, 3), ("common", 2, 45)],
+            "0.8, 0.7, then 0.5 despite the most decks and cards"
+        );
+    }
+
+    #[test]
+    fn a_tag_missing_from_the_card_counts_adds_no_cards() {
+        let decks = vec![deck(1, &["R"])];
+        let profiles = vec![Some(tag_profile(
+            serde_json::json!({ "treasure": 1.0 }),
+            &[],
+        ))];
+        let profile = summarize_profile(&decks, &profiles, &HashMap::new()).unwrap();
+        let tag = profile.tags.first().unwrap();
+        assert_eq!((tag.decks, tag.cards), (1, 0));
     }
 
     fn roles(pairs: &[(&str, &str)]) -> HashMap<String, String> {
@@ -537,11 +634,13 @@ mod tests {
     fn roles_count_a_deck_once_and_tie_on_name() {
         let decks = vec![deck(1, &["R"]), deck(2, &["R"]), deck(3, &["R"])];
         let profiles = vec![
-            Some(
+            Some(weights_only(
                 serde_json::json!({ "treasure": 0.3, "sacrifice-outlet": 0.3, "aristocrats": 0.4 }),
-            ),
-            Some(serde_json::json!({ "sacrifice-outlet": 0.5, "lifegain": 0.5 })),
-            Some(serde_json::json!({ "lifegain": 1.0 })),
+            )),
+            Some(weights_only(
+                serde_json::json!({ "sacrifice-outlet": 0.5, "lifegain": 0.5 }),
+            )),
+            Some(weights_only(serde_json::json!({ "lifegain": 1.0 }))),
         ];
         let map = roles(&[
             ("sacrifice-outlet", "sacrifice"),
@@ -581,7 +680,7 @@ mod tests {
         let map: HashMap<String, String> = (0..40)
             .map(|i| (format!("tag-{i:02}"), format!("role-{i:02}")))
             .collect();
-        let profiles = vec![Some(serde_json::Value::Object(weights))];
+        let profiles = vec![Some(weights_only(serde_json::Value::Object(weights)))];
         let profile = summarize_profile(&decks, &profiles, &map).unwrap();
         assert_eq!(profile.tags.len(), PROFILE_TAG_SHOWN);
         assert_eq!(profile.roles.len(), PROFILE_ROLE_SHOWN);
@@ -601,11 +700,11 @@ mod tests {
         let weights: serde_json::Map<String, serde_json::Value> = (0..30)
             .map(|i| (format!("tag-{i:02}"), serde_json::json!(0.1)))
             .collect();
-        let profiles = vec![Some(serde_json::Value::Object(weights))];
+        let profiles = vec![Some(weights_only(serde_json::Value::Object(weights)))];
         let profile = summarize_profile(&decks, &profiles, &HashMap::new()).unwrap();
         let slugs: Vec<&str> = profile.tags.iter().map(|t| t.slug.as_str()).collect();
         assert_eq!(slugs.len(), PROFILE_TAG_SHOWN);
         assert_eq!(slugs.first(), Some(&"tag-00"));
-        assert_eq!(slugs.last(), Some(&"tag-24"));
+        assert_eq!(slugs.last(), Some(&"tag-09"));
     }
 }
