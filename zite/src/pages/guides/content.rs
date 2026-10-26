@@ -632,7 +632,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Finding it"),
             Block::Bullets(&[
-                "On the Home screen, tap My play style. It's also on the Decks screen, under More.",
+                "The My play style panel on the Home screen shows your deck count and your top three color sets. Tap Open in it. It's also on the Decks screen, under More.",
                 "Your colors, card roles and oracle tags come first.",
                 "Under them, your top 10 commanders show as card rows, best fit first.",
                 "Tap a color chip in the Show row to see only those colors. Tap it again to see them all.",
