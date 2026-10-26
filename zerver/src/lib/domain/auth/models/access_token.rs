@@ -327,6 +327,51 @@ mod tests {
 
     // == `AccessToken` validation tests ==
 
+    /// HS256 token minted by `encode` under jsonwebtoken 10.4.0 for the claims below with
+    /// [`COMPAT_SECRET`]. Pins the signature and validation bytes across crate upgrades.
+    const COMPAT_TOKEN_FROM_10: &str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoiMGY4ZmFkNWItZDljYi00NjlmLWExNjUtNzA4Njc3Mjg5NTBlIiwidXNlcm5hbWUiOiJjb21wYXR1c2VyIiwiZW1haWwiOiJjb21wYXRAZXhhbXBsZS5jb20iLCJleHAiOjQxMDI0NDQ4MDAsImlhdCI6MTcwMDAwMDAwMH0.BizyTi8ikubmx8ueIh3iyu0j8yMRKlcRgcojzqTaTvg";
+    const COMPAT_SECRET: &str = "compat-secret-that-is-long-enough-for-validation";
+
+    fn compat_claims() -> UserClaims {
+        UserClaims {
+            user_id: Uuid::parse_str("0f8fad5b-d9cb-469f-a165-70867728950e").unwrap(),
+            username: Username::new("compatuser").unwrap(),
+            email: Email::from_str("compat@example.com").unwrap(),
+            exp: 4_102_444_800,
+            iat: 1_700_000_000,
+        }
+    }
+
+    #[test]
+    fn test_validate_accepts_token_minted_by_jsonwebtoken_10() {
+        let secret = JwtSecret::new(COMPAT_SECRET).unwrap();
+        let token = Jwt::from_str(COMPAT_TOKEN_FROM_10).unwrap();
+
+        let claims = token.validate(&secret).unwrap();
+        assert_eq!(claims, compat_claims(), "token {COMPAT_TOKEN_FROM_10}");
+    }
+
+    #[test]
+    fn test_encode_reproduces_token_minted_by_jsonwebtoken_10() {
+        let secret = JwtSecret::new(COMPAT_SECRET).unwrap();
+
+        let token = encode(
+            &Header::default(),
+            &compat_claims(),
+            &EncodingKey::from_secret(secret.as_ref()),
+        )
+        .unwrap();
+        assert_eq!(token, COMPAT_TOKEN_FROM_10);
+    }
+
+    #[test]
+    fn test_validate_rejects_token_minted_by_jsonwebtoken_10_with_wrong_secret() {
+        let secret = JwtSecret::new("other-secret-that-is-long-enough-for-validation").unwrap();
+        let token = Jwt::from_str(COMPAT_TOKEN_FROM_10).unwrap();
+
+        assert!(token.validate(&secret).is_err());
+    }
+
     #[test]
     fn test_validate_access_token_success_returns_correct_claims() {
         let user = User::new(
