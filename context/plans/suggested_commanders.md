@@ -70,6 +70,15 @@ Settled with Scotty on 2026-10-26 after the header shipped, built the same day. 
 
 **Restructured the same day to the deck profile's grammar.** No outer panel: the screen is one column of sibling `CollapsibleSection`s spaced by `--panel-gap`, as in the deck view. The lead lines became a **Summary** section in the Budget section's rows (`settings-row` with `settings-row-label` and `info-row-value`): Decks, Most common color set (pips, name and count, "Jeskai (4)"), Most common color (pip, name and count, "Blue (5)"), each of the last two left out when the profile lacks it. Summary, Colors, Card roles and Oracle tags share one accordion signal opened on Summary, so the charts start closed; the list section keeps its own signal, open by default. The Show row moved inside the list section, above the rows it narrows, and every identity chip shows its pips and its name from `identity_name` in zwipe-core (guilds, shards, wedges, the four-color names, "Mono-red", "Colorless", "Five-color"); the empty state reads "No Jeskai commanders in your top 100". The skeleton follows: `BuilderProfileSkeleton` is the deck view's `skeleton-stats` grammar (an open `SkeletonInfoList` of three rows, then three header-only `skeleton-chart-box`es), and `ShowChipRowSkeleton` sits inside the list section above the ghost rows. `.screen-panel`, `.profile-lead`, `.profile-fact`, `.profile-charts` and `.skeleton-chart-area` are gone.
 
+## Done (2026-10-26): the screen is Your play style and reads every deck
+
+Agreed with Scotty on 2026-10-26: tags in any deck show what a player likes, so the screen reads every deck the user owns in any format, not only decks with a commander. A player who only builds Standard or other 60-card decks gets the same Summary, Colors, Card roles and Oracle tags sections and a full suggested commanders list ranked from those decks.
+
+- The screen title and the More actions entry are **Your play style**. The list keeps its "Suggested commanders" heading, and the route, the hint key and the telemetry key keep their suggested commanders names.
+- zerver's `fetch_profiled_decks` returns `ProfiledDeck`s: every deck that has a commander or a mainboard card, most recently updated first. A deck with a commander profiles the commander plus its mainboard and takes the commander's color identity, as before. A deck without one profiles its mainboard and takes the union of its mainboard cards' color identities (`deck_colors`).
+- The cold start is a user with no deck that has a commander or a mainboard card. `deck_count` counts every profiled deck, in any format.
+- The guide moved to `/guides/your-play-style`; the router redirects the old `suggested-commanders` slug.
+
 ## Commander profiles (decided 2026-10-25: the synergy worker writes them)
 
 The user profile is cheap per request (the deck tag profile query runs in ~30-50 ms locally), so it is computed live and never lags. Candidate profiles are not: each comes from a payload averaging 263 cards (production 2026-10-25: 1,527 cached payloads, 86 to 445 cards each). They are precomputed into `commander_tag_profiles(commander_oracle_id, profile jsonb, computed_at)`.
