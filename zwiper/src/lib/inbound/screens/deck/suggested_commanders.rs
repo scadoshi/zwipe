@@ -6,8 +6,10 @@
 //! (saves to the commander maybeboard) and **Remove** (hides it for a week). The action bar's Swipe opens the shared overlay in its suggested
 //! mode, which deals the same ranking down to 100. Every action that removes
 //! a row refetches when fewer than ten remain, so the list stays a full top 10.
-//! With no commander deck to read from, the screen shows a single line instead
-//! of a list.
+//! Over the list, a panel sums up what the user builds: the decks and their
+//! most-built identity, the colors sized by deck count, and the strongest
+//! oracle tags, the profile the ranking reads. With no commander deck to read
+//! from, the screen shows a single line instead of a list and no panel.
 
 use std::collections::BTreeMap;
 
@@ -25,7 +27,8 @@ use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
 use zwipe_core::http::contracts::suggestions::{
-    HttpColorAffinity, HttpCommanderSuggestion, HttpSharedTag, HttpSuggestionReasons,
+    HttpBuilderProfile, HttpColorAffinity, HttpColorIdentityCount, HttpCommanderSuggestion,
+    HttpProfileTag, HttpSharedTag, HttpSuggestionReasons,
 };
 
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
@@ -97,6 +100,171 @@ pub(crate) fn group_shared_tags(
         }
     }
     (roles, by_role, other)
+}
+
+/// The profile panel's lead line in three parts: the words before the
+/// identity pips, the pips as WUBRG codes (empty when no pips follow), and
+/// the words after them.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ProfileLead {
+    /// The text the line opens with.
+    pub text: String,
+    /// The top identity's colors, rendered as pips after `text`.
+    pub pips: Vec<String>,
+    /// The deck count after the pips, empty when the text already says it.
+    pub tail: String,
+}
+
+/// Words the lead line: "7 decks, mostly" and pips with "(4)", "3 decks, all
+/// in" and pips, "1 deck in" and pips, or "7 decks, no two alike" when no
+/// identity repeats. A colorless identity is named instead of drawn.
+pub(crate) fn profile_lead(deck_count: u32, top: Option<&HttpColorIdentityCount>) -> ProfileLead {
+    let decks = if deck_count == 1 {
+        "1 deck".to_string()
+    } else {
+        format!("{deck_count} decks")
+    };
+    let Some(top) = top else {
+        return ProfileLead {
+            text: format!("{decks}, no two alike"),
+            pips: vec![],
+            tail: String::new(),
+        };
+    };
+    let colorless = top.colors.is_empty();
+    let (text, tail) = if deck_count == 1 {
+        (
+            if colorless {
+                format!("{decks}, colorless")
+            } else {
+                format!("{decks} in")
+            },
+            String::new(),
+        )
+    } else if top.decks >= deck_count {
+        (
+            if colorless {
+                format!("{decks}, all colorless")
+            } else {
+                format!("{decks}, all in")
+            },
+            String::new(),
+        )
+    } else if colorless {
+        (
+            format!("{decks}, mostly colorless ({})", top.decks),
+            String::new(),
+        )
+    } else {
+        (format!("{decks}, mostly"), format!("({})", top.decks))
+    };
+    ProfileLead {
+        text,
+        pips: if colorless {
+            vec![]
+        } else {
+            top.colors.clone()
+        },
+        tail,
+    }
+}
+
+/// Oracle tags named in the counts line under the profile's chips.
+const PROFILE_TAG_COUNTS_SHOWN: usize = 3;
+
+/// The deck counts of the strongest tags as one muted line, "sacrifice-outlet
+/// in 6 decks, treasure in 4, lifegain in 3". `None` with one deck, where
+/// every count is 1 and the line would say nothing.
+pub(crate) fn tag_count_line(tags: &[HttpProfileTag], deck_count: u32) -> Option<String> {
+    if deck_count < 2 {
+        return None;
+    }
+    let parts: Vec<String> = tags
+        .iter()
+        .take(PROFILE_TAG_COUNTS_SHOWN)
+        .enumerate()
+        .map(|(i, tag)| {
+            let decks = tag.decks;
+            let unit = if i == 0 {
+                if decks == 1 { " deck" } else { " decks" }
+            } else {
+                ""
+            };
+            format!("{} in {decks}{unit}", tag.slug)
+        })
+        .collect();
+    (!parts.is_empty()).then(|| parts.join(", "))
+}
+
+/// What the user builds, over the suggestions list: a lead line with the
+/// most-built identity, a row of the user's colors sized by deck count, and
+/// the strongest oracle tags grouped by card role the way the card's own
+/// chips are, with the deck counts of the top three under them. Open on
+/// entry, quieter than the rows beneath it.
+#[component]
+pub(crate) fn BuilderProfilePanel(profile: HttpBuilderProfile) -> Element {
+    let context_describe = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let context_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
+    let lead = profile_lead(profile.deck_count, profile.top_identity.as_ref());
+    let shared: Vec<HttpSharedTag> = profile
+        .tags
+        .iter()
+        .map(|tag| HttpSharedTag {
+            slug: tag.slug.clone(),
+            role: tag.role.clone(),
+        })
+        .collect();
+    let (roles, tags_by_role, other_tags) = group_shared_tags(&shared);
+    let counts = tag_count_line(&profile.tags, profile.deck_count);
+    rsx! {
+        div { class: "screen-panel profile-panel",
+            div { class: "profile-lead",
+                span { "{lead.text}" }
+                if !lead.pips.is_empty() {
+                    span { class: "identity-pips",
+                        for code in lead.pips.iter() {
+                            i { key: "{code}", class: "ms ms-{code.to_lowercase()} ms-cost" }
+                        }
+                    }
+                }
+                if !lead.tail.is_empty() {
+                    span { "{lead.tail}" }
+                }
+            }
+            if !profile.colors.is_empty() {
+                div { class: "profile-section",
+                    span { class: "chips-label", "Colors you build" }
+                    div { class: "profile-color-bar",
+                        for color in profile.colors.iter() {
+                            div {
+                                key: "{color.color}",
+                                class: "profile-color-segment",
+                                style: "flex-grow: {color.decks};",
+                                i { class: "ms ms-{color.color.to_lowercase()} ms-cost" }
+                                span { "{color.decks}" }
+                            }
+                        }
+                    }
+                }
+            }
+            if !profile.tags.is_empty() {
+                div { class: "profile-section",
+                    span { class: "chips-label", "Oracle tags you build with" }
+                    CardRoleChips {
+                        roles,
+                        tags_by_role,
+                        other_tags,
+                        describe_tag: context_describe,
+                        on_examples: context_examples,
+                        show_label: false,
+                    }
+                    if let Some(counts) = counts {
+                        div { class: "profile-tag-counts", "{counts}" }
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// The "Why this commander?" block under a suggestion's details: a fold chip
@@ -286,6 +454,7 @@ pub fn SuggestedCommanders() -> Element {
     // present is silent (no skeleton flash).
     let mut entries: Signal<Vec<HttpCommanderSuggestion>> = use_signal(Vec::new);
     let mut deck_count = use_signal(|| 0u32);
+    let mut profile: Signal<Option<HttpBuilderProfile>> = use_signal(|| None);
     let mut is_loading = use_signal(|| true);
     let mut load_failed = use_signal(|| false);
     let mut reload = use_signal(|| 0u32);
@@ -300,6 +469,7 @@ pub fn SuggestedCommanders() -> Element {
             {
                 Ok(found) => {
                     deck_count.set(found.deck_count);
+                    profile.set(found.profile);
                     entries.set(found.suggestions);
                     load_failed.set(false);
                 }
@@ -476,28 +646,33 @@ pub fn SuggestedCommanders() -> Element {
                         div { class: "message-empty",
                             span { class: "chip-note", "Build a deck and we'll suggest commanders that fit how you play." }
                         }
-                    } else if !has_entries {
-                        div { class: "message-empty",
-                            span { class: "chip-note", "No suggestions right now" }
-                        }
                     } else {
-                        div { class: "maybeboard-list card-group row-enter",
-                            div { class: "card-group-header", "Suggested commanders" }
-                            for suggestion in entries() {
-                                SuggestionRow {
-                                    key: "{suggestion.card.scryfall_data.id}",
-                                    suggestion,
-                                    deck_count: deck_count(),
-                                    expanded_card,
-                                    preview_card,
-                                    preview_dismissing,
-                                    on_start,
-                                    on_maybe,
-                                    on_dismiss,
-                                    on_printing: move |c: Card| {
-                                        printing_card.set(Some(c));
-                                        printing_open.set(true);
-                                    },
+                        if let Some(profile) = profile() {
+                            BuilderProfilePanel { profile }
+                        }
+                        if !has_entries {
+                            div { class: "message-empty",
+                                span { class: "chip-note", "No suggestions right now" }
+                            }
+                        } else {
+                            div { class: "maybeboard-list card-group row-enter",
+                                div { class: "card-group-header", "Suggested commanders" }
+                                for suggestion in entries() {
+                                    SuggestionRow {
+                                        key: "{suggestion.card.scryfall_data.id}",
+                                        suggestion,
+                                        deck_count: deck_count(),
+                                        expanded_card,
+                                        preview_card,
+                                        preview_dismissing,
+                                        on_start,
+                                        on_maybe,
+                                        on_dismiss,
+                                        on_printing: move |c: Card| {
+                                            printing_card.set(Some(c));
+                                            printing_open.set(true);
+                                        },
+                                    }
                                 }
                             }
                         }
@@ -635,6 +810,89 @@ mod tests {
             slug: slug.to_string(),
             role: role.map(str::to_string),
         }
+    }
+
+    fn top(colors: &[&str], decks: u32) -> HttpColorIdentityCount {
+        HttpColorIdentityCount {
+            colors: colors.iter().map(|c| c.to_string()).collect(),
+            decks,
+        }
+    }
+
+    fn lead(text: &str, pips: &[&str], tail: &str) -> ProfileLead {
+        ProfileLead {
+            text: text.to_string(),
+            pips: pips.iter().map(|c| c.to_string()).collect(),
+            tail: tail.to_string(),
+        }
+    }
+
+    #[test]
+    fn profile_lead_words_the_deck_count_and_identity() {
+        assert_eq!(
+            profile_lead(7, Some(&top(&["W", "U", "R"], 4))),
+            lead("7 decks, mostly", &["W", "U", "R"], "(4)")
+        );
+        assert_eq!(
+            profile_lead(3, Some(&top(&["R"], 3))),
+            lead("3 decks, all in", &["R"], "")
+        );
+        assert_eq!(
+            profile_lead(1, Some(&top(&["B", "G"], 1))),
+            lead("1 deck in", &["B", "G"], "")
+        );
+        assert_eq!(
+            profile_lead(7, None),
+            lead("7 decks, no two alike", &[], "")
+        );
+    }
+
+    #[test]
+    fn profile_lead_names_colorless_instead_of_drawing_it() {
+        assert_eq!(
+            profile_lead(1, Some(&top(&[], 1))),
+            lead("1 deck, colorless", &[], "")
+        );
+        assert_eq!(
+            profile_lead(5, Some(&top(&[], 2))),
+            lead("5 decks, mostly colorless (2)", &[], "")
+        );
+        assert_eq!(
+            profile_lead(2, Some(&top(&[], 2))),
+            lead("2 decks, all colorless", &[], "")
+        );
+    }
+
+    fn profile_tag(slug: &str, decks: u32) -> HttpProfileTag {
+        HttpProfileTag {
+            slug: slug.to_string(),
+            role: None,
+            decks,
+        }
+    }
+
+    #[test]
+    fn tag_count_line_names_the_top_three_with_one_unit() {
+        let tags = [
+            profile_tag("sacrifice-outlet", 6),
+            profile_tag("treasure", 4),
+            profile_tag("lifegain", 3),
+            profile_tag("ramp", 2),
+        ];
+        assert_eq!(
+            tag_count_line(&tags, 7).as_deref(),
+            Some("sacrifice-outlet in 6 decks, treasure in 4, lifegain in 3")
+        );
+        assert_eq!(
+            tag_count_line(&tags[..1], 7).as_deref(),
+            Some("sacrifice-outlet in 6 decks")
+        );
+        assert_eq!(
+            tag_count_line(&[profile_tag("ramp", 1)], 3).as_deref(),
+            Some("ramp in 1 deck")
+        );
+        assert_eq!(tag_count_line(&tags, 1), None, "one deck: every count is 1");
+        assert_eq!(tag_count_line(&[], 4), None);
     }
 
     #[test]

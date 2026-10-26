@@ -2691,6 +2691,59 @@ button {
     margin-top: var(--panel-gap);
 }
 
+/* The same surface standing in a screen column over a list, spaced below like
+   a .card-group (the suggested commanders' profile panel). */
+.screen-panel {
+    padding: 0.75rem 1rem;
+    margin-bottom: var(--panel-gap);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+/* The profile panel is context over the rows, so its text sits a step
+   quieter than a row's. The lead wraps its words around the identity pips. */
+.profile-lead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.profile-section {
+    margin-top: 0.6rem;
+}
+
+/* One segment per color, widened in proportion to its deck count (flex-grow
+   is set inline to the count), each carrying its pip and the number. */
+.profile-color-bar {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.profile-color-segment {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.4rem;
+    border: 1px solid var(--border-muted);
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.profile-tag-counts {
+    margin-top: 0.4rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
 /* The panel supplies the inset the row detail and footer carry themselves. */
 .sheet-panel .card-row-detail {
     padding: 0;
