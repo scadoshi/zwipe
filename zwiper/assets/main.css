@@ -2700,6 +2700,12 @@ button {
     margin: 0;
 }
 
+/* The reasons bullets fold open under their chip; the gap rides inside the
+   clip so a folded block ends at the chip. */
+.card-detail-footer .collapsible-inner > .card-detail-bullets {
+    margin-top: 0.5rem;
+}
+
 /* (The old `.deck-group-header` variant lived here: it stripped the header's
    bottom rule because deck-list headers floated over free-standing deck
    panels, where a rule read as a stray line. Deck rows now sit inside a

@@ -12,7 +12,7 @@
 use std::collections::BTreeMap;
 
 use components::{
-    ActionBar, AlertDialog, BottomSheet, Button, ButtonVariant, CardRoleChips, DialogAction,
+    ActionBar, AlertDialog, BottomSheet, Button, ButtonVariant, CardRoleChips, Chip, DialogAction,
     HintBullet, HintBullets, HintDialog, HintKey, HintLine, TOAST_LONG, TOAST_QUICK,
 };
 use dioxus::prelude::*;
@@ -99,10 +99,11 @@ pub(crate) fn group_shared_tags(
     (roles, by_role, other)
 }
 
-/// The "Why this commander?" block under a suggestion's details: the shared
-/// oracle tags grouped by card role, in the card's own role-chip grammar, and
-/// one bullet per shared color, each omitted when empty. Renders nothing at
-/// all when both are. A tapped tag shows its description and its examples
+/// The "Why this commander?" block under a suggestion's details: a fold chip
+/// in the deck list's Tags chip grammar, closed on every mount, over the
+/// shared oracle tags grouped by card role (the card's own role-chip grammar)
+/// and one bullet per shared color, each omitted when empty. Renders nothing
+/// at all when both are. A tapped tag shows its description and its examples
 /// button through `describe_tag` and `on_examples`; a host that leaves them
 /// unset gets the `OtagDescribe` and `OtagExamplesOpen` contexts the card rows
 /// read, which resolve only inside the screen's own subtree.
@@ -119,6 +120,9 @@ pub(crate) fn SuggestionReasons(
 ) -> Element {
     let context_describe = try_use_context::<OtagDescribe>().map(|d| d.0);
     let context_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
+    // Closed on every mount: the sheet remounts per card and a list row on
+    // expand, so each gets a folded block.
+    let mut reasons_open = use_signal(|| false);
     let colors = color_lines(&reasons.colors, deck_count);
     if reasons.tags.is_empty() && colors.is_empty() {
         return rsx! {};
@@ -128,23 +132,40 @@ pub(crate) fn SuggestionReasons(
     let on_examples = on_examples.or(context_examples);
     rsx! {
         div { class: "card-detail-footer",
-            span { class: "chips-label", "Why this commander?" }
-            ul { class: "card-detail-bullets",
-                if !reasons.tags.is_empty() {
-                    li {
-                        "Shares oracle tags with your decks"
-                        CardRoleChips {
-                            roles,
-                            tags_by_role,
-                            other_tags,
-                            describe_tag,
-                            on_examples,
-                            show_label: false,
+            Chip {
+                selected: reasons_open(),
+                onclick: move |evt: MouseEvent| {
+                    evt.stop_propagation();
+                    reasons_open.set(!reasons_open());
+                },
+                "Why this commander?"
+                // The card rows' disclosure arrow: sideways folded, down open.
+                span {
+                    class: if reasons_open() { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
+                    "\u{25B8}"
+                }
+            }
+            // The bullets stay mounted and ease open and closed under the chip.
+            div { class: if reasons_open() { "collapsible open" } else { "collapsible" },
+                div { class: "collapsible-inner",
+                    ul { class: "card-detail-bullets",
+                        if !reasons.tags.is_empty() {
+                            li {
+                                "Shares oracle tags with your decks"
+                                CardRoleChips {
+                                    roles,
+                                    tags_by_role,
+                                    other_tags,
+                                    describe_tag,
+                                    on_examples,
+                                    show_label: false,
+                                }
+                            }
+                        }
+                        for line in colors {
+                            li { key: "{line}", "{line}" }
                         }
                     }
-                }
-                for line in colors {
-                    li { key: "{line}", "{line}" }
                 }
             }
         }
