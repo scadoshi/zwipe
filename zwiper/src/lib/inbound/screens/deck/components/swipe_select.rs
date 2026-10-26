@@ -12,14 +12,17 @@
 //! [`SwipeMode::Suggested`] deals a given ranking instead of a search: the
 //! host's held suggestions, read through `suggested_pile` each time the overlay
 //! opens. There a left swipe dismisses the commander for a week and the eyeball
-//! sheet carries the reasons it was suggested. No filter applies.
+//! sheet carries the reasons it was suggested. Its Filter opens a sheet holding
+//! the host's `suggested_filter` chips; when they change the pile mid-session,
+//! the stack re-deals through [`redeal`], keeping what was already swiped
+//! behind the top card so undo still walks back through it.
 
 use std::collections::HashSet;
 use std::time::Duration;
 
 use components::{
-    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    TOAST_QUICK, use_overlay_back,
+    ActionBar, BottomSheet, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey,
+    HintLine, TOAST_QUICK, use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -27,7 +30,7 @@ use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::colors::Colors;
+use zwipe_core::domain::card::scryfall_data::colors::{Color, Colors};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
@@ -46,7 +49,7 @@ use crate::inbound::screens::deck::card::components::card_info::{
 use crate::inbound::screens::deck::card::components::card_row::OtagExamplesOpen;
 use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
-use crate::inbound::screens::deck::suggested_commanders::SuggestionReasons;
+use crate::inbound::screens::deck::suggested_commanders::{SuggestionReasons, empty_identity_line};
 
 /// Cards fetched per page (matches the backend default).
 const PAGE: u32 = 25;
@@ -60,6 +63,38 @@ pub(crate) struct SuggestedPile {
     pub suggestions: Vec<HttpCommanderSuggestion>,
     /// Decks the reasons count against.
     pub deck_count: u32,
+    /// The color identity the host's Show chip narrows `suggestions` to;
+    /// `None` is All.
+    pub identity: Option<Vec<Color>>,
+}
+
+/// A suggested card's identity across printings: its oracle id, else its
+/// scryfall id.
+fn card_key(card: &Card) -> Uuid {
+    card.scryfall_data
+        .oracle_id
+        .unwrap_or(card.scryfall_data.id)
+}
+
+/// The pile re-dealt from a new ranking mid-session. The first `swiped` of
+/// `dealt` stay in front, so the top card's index and the undo history still
+/// line up with them; then every item of `fresh` whose key is not among them,
+/// in `fresh`'s order.
+pub(crate) fn redeal<T: Clone, K: PartialEq>(
+    dealt: &[T],
+    swiped: usize,
+    fresh: &[T],
+    key: impl Fn(&T) -> K,
+) -> Vec<T> {
+    let mut pile: Vec<T> = dealt.iter().take(swiped).cloned().collect();
+    let kept: Vec<K> = pile.iter().map(&key).collect();
+    pile.extend(
+        fresh
+            .iter()
+            .filter(|item| !kept.contains(&key(item)))
+            .cloned(),
+    );
+    pile
 }
 
 /// Which command-zone slot a [`SwipeSelect`] is filling. Decides the always-on
@@ -164,6 +199,10 @@ pub(crate) fn SwipeSelect(
     /// suggested pile is empty.
     #[props(default)]
     suggested_pile: Option<ReadSignal<SuggestedPile>>,
+    /// The chips the suggested mode's Filter sheet holds, bound to the same
+    /// state that narrows `suggested_pile`. Without it there is no Filter.
+    #[props(default)]
+    suggested_filter: Option<Element>,
 ) -> Element {
     // OS back gesture closes this overlay before touching the router.
     use_overlay_back(open);
@@ -202,6 +241,8 @@ pub(crate) fn SwipeSelect(
     // undo so it knows whether to also un-save a maybeboard entry.
     let mut swipe_history: Signal<Vec<SelectSwipe>> = use_signal(Vec::new);
     let mut filters_overlay_open = use_signal(|| false);
+    // The suggested mode's Filter sheet, holding the host's chips.
+    let mut suggested_filter_open = use_signal(|| false);
     // Swipe-vocabulary hint: the "?" button reopens it; it also auto-opens once
     // per account the first time the screen is opened (gated, since this stays
     // mounted while closed; a plain mount-time one-time hint would misfire).
@@ -359,6 +400,36 @@ pub(crate) fn SwipeSelect(
         });
     });
 
+    // The host's Filter chips changed the suggested pile mid-session: re-deal
+    // it under the cards already swiped, so the top card is the first of the
+    // new pile not yet swiped and undo still walks back through the old ones.
+    // A closed overlay waits for the open above, which deals afresh.
+    use_effect(move || {
+        let Some(pile) = suggested_pile else {
+            return;
+        };
+        let pile = pile();
+        if !*open.peek() || *mode.peek() != Some(SwipeMode::Suggested) {
+            return;
+        }
+        let fresh: Vec<Card> = pile.suggestions.iter().map(|s| s.card.clone()).collect();
+        let dealt = redeal(&cards.peek(), *current_index.peek(), &fresh, card_key);
+        cards.set(dealt);
+        // Keep the reasons of the cards behind the top for undo, and add the
+        // new pile's.
+        let mut reasons = suggestions.peek().clone();
+        for suggestion in pile.suggestions {
+            if !reasons
+                .iter()
+                .any(|s| s.card.scryfall_data.id == suggestion.card.scryfall_data.id)
+            {
+                reasons.push(suggestion);
+            }
+        }
+        suggestions.set(reasons);
+        deck_count.set(pile.deck_count);
+    });
+
     // Left = skip: advance, prefetch when running low.
     let mut advance = move || {
         let total = cards.peek().len();
@@ -500,6 +571,14 @@ pub(crate) fn SwipeSelect(
     } else {
         "Swipe select"
     };
+    // The suggested Filter: the chosen identity lights the button's dot, and
+    // one that matches nothing says so in the screen's own words.
+    let has_suggested_filter = suggested && suggested_filter.is_some();
+    let suggested_identity = suggested_pile.and_then(|pile| pile.read().identity.clone());
+    let suggested_empty_line = suggested_pile
+        .filter(|pile| suggested && pile.read().suggestions.is_empty())
+        .and(suggested_identity.as_deref())
+        .map(empty_identity_line);
     let mut directions = vec![Direction::Left, Direction::Right, Direction::Down];
     if maybe_enabled {
         directions.push(Direction::Up);
@@ -623,6 +702,10 @@ pub(crate) fn SwipeSelect(
                         }
                     } else if is_loading_cards() || is_loading_more() {
                         CardSkeleton { is_loading: true }
+                    } else if let Some(line) = suggested_empty_line {
+                        div { class: "message-empty",
+                            span { class: "chip-note", "{line}" }
+                        }
                     } else {
                         CardSkeleton {}
                     }
@@ -634,8 +717,18 @@ pub(crate) fn SwipeSelect(
                         onclick: move |_| on_close.call(()),
                         "Back"
                     }
-                    // The suggested ranking takes no filter.
-                    if !suggested {
+                    // The suggested ranking filters by the host's Show chips
+                    // alone; a chosen identity lights the dot.
+                    if has_suggested_filter {
+                        Button {
+                            variant: ButtonVariant::Action,
+                            onclick: move |_| suggested_filter_open.set(true),
+                            "Filter"
+                            if suggested_identity.is_some() {
+                                span { class: "filter-dot" }
+                            }
+                        }
+                    } else if !suggested {
                         Button {
                             variant: ButtonVariant::Action,
                             onclick: move |_| filters_overlay_open.set(true),
@@ -700,6 +793,23 @@ pub(crate) fn SwipeSelect(
                     on_clear: move |_| clear_filter(),
                 }
 
+                // A chip applies as it is tapped and the stack re-deals behind
+                // the sheet, so Back is its one button.
+                if let (true, Some(chips)) = (suggested, suggested_filter) {
+                    BottomSheet {
+                        open: suggested_filter_open,
+                        title: "Filter",
+                        footer: rsx! {
+                            Button {
+                                variant: ButtonVariant::Action,
+                                onclick: move |_| suggested_filter_open.set(false),
+                                "Back"
+                            }
+                        },
+                        {chips}
+                    }
+                }
+
                 HintDialog {
                     open: hint_open,
                     title,
@@ -716,11 +826,64 @@ pub(crate) fn SwipeSelect(
                     }
                     if suggested {
                         HintLine { "Best fit first, 100 deep. The eye shows why each one was suggested" }
+                        if has_suggested_filter {
+                            HintLine { HintKey { "Filter" } " narrows the stack to one color identity" }
+                        }
                     } else {
                         HintLine { "Most-played first. " HintKey { "Filter" } " narrows by color or anything else" }
                     }
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn key(name: &&'static str) -> &'static str {
+        name
+    }
+
+    #[test]
+    fn redeal_keeps_the_swiped_in_front_then_the_new_pile_without_them() {
+        let dealt = ["Krenko", "Narset", "Zada", "Ghired"];
+        let fresh = ["Zada", "Krenko", "Talrand"];
+        assert_eq!(
+            redeal(&dealt, 2, &fresh, key),
+            vec!["Krenko", "Narset", "Zada", "Talrand"],
+            "Krenko was swiped, so the new pile deals Zada then Talrand after the two"
+        );
+    }
+
+    #[test]
+    fn redeal_with_nothing_swiped_starts_at_the_top_of_the_new_pile() {
+        let dealt = ["Krenko", "Narset"];
+        let fresh = ["Talrand", "Narset"];
+        assert_eq!(redeal(&dealt, 0, &fresh, key), vec!["Talrand", "Narset"]);
+    }
+
+    #[test]
+    fn redeal_to_an_empty_pile_keeps_only_the_swiped() {
+        let dealt = ["Krenko", "Narset", "Zada"];
+        assert_eq!(redeal(&dealt, 1, &[], key), vec!["Krenko"]);
+        assert_eq!(
+            redeal(&dealt, 9, &["Talrand"], key),
+            vec!["Krenko", "Narset", "Zada", "Talrand"],
+            "a swiped count past the pile keeps the whole pile"
+        );
+    }
+
+    #[test]
+    fn redeal_after_an_undo_can_deal_the_undone_card_again() {
+        // Three swiped and one undone puts the index back at 2, so the third
+        // is no longer swiped and the new pile deals it.
+        let dealt = ["Krenko", "Narset", "Zada"];
+        let fresh = ["Zada", "Talrand"];
+        assert_eq!(
+            redeal(&dealt, 2, &fresh, key),
+            vec!["Krenko", "Narset", "Zada", "Talrand"]
+        );
     }
 }

@@ -8,7 +8,8 @@
 //! toggles the row thumbnails. An expanded row offers **Create deck** (seeds
 //! the create screen), **Maybeboard** (saves to the commander maybeboard) and
 //! **Remove** (hides it for a week). The action bar's Swipe opens the shared
-//! overlay in its suggested mode, which deals the same held list. Every action
+//! overlay in its suggested mode, which deals the same held list and whose
+//! Filter sheet holds the same Show chips over the same signal. Every action
 //! that removes a row fills from the held list and refetches only when fewer
 //! than ten remain, so the list stays a full top 10. Above the list, sections
 //! in the deck profile's grammar sum up what the user builds, the profile the
@@ -157,6 +158,48 @@ fn IdentityPips(identity: Vec<Color>, count: Option<String>) -> Element {
             if let Some(count) = count {
                 span { "{count}" }
             }
+        }
+    }
+}
+
+/// The Show chip row: the label, All, then one chip per identity in
+/// `identities` with its pips and name, then `children` (the screen's Art
+/// toggle). Single select over `active_identity`, `None` being All; the
+/// selected chip tapped again is All. The screen and the Swipe overlay's
+/// Filter sheet both render it over the same signal, so a tap in either
+/// filters both.
+#[component]
+pub(crate) fn ShowIdentityChips(
+    mut active_identity: Signal<Option<Vec<Color>>>,
+    identities: Vec<Vec<Color>>,
+    children: Element,
+) -> Element {
+    rsx! {
+        div { class: "chip-row",
+            span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
+            Chip {
+                selected: active_identity().is_none(),
+                onclick: move |_| active_identity.set(None),
+                "All"
+            }
+            for identity in identities {
+                Chip {
+                    key: "{identity_key(&identity)}",
+                    selected: active_identity().as_deref() == Some(identity.as_slice()),
+                    onclick: {
+                        let identity = identity.clone();
+                        move |_| {
+                            if active_identity().as_deref() == Some(identity.as_slice()) {
+                                active_identity.set(None);
+                            } else {
+                                active_identity.set(Some(identity.clone()));
+                            }
+                        }
+                    },
+                    IdentityPips { identity: identity.clone() }
+                }
+            }
+            {children}
         }
     }
 }
@@ -886,7 +929,7 @@ pub fn SuggestedCommanders() -> Element {
     // The Show chip in effect: `None` is All. The chips are the identities
     // among the held list plus the chosen one, so a chip stays put after its
     // last commander is removed and the empty state says so.
-    let mut active_identity: Signal<Option<Vec<Color>>> = use_signal(|| None);
+    let active_identity: Signal<Option<Vec<Color>>> = use_signal(|| None);
     let identities = use_memo(move || {
         let held = entries();
         let chosen = active_identity();
@@ -899,6 +942,7 @@ pub fn SuggestedCommanders() -> Element {
     let pile = use_memo(move || SuggestedPile {
         suggestions: filtered(),
         deck_count: deck_count(),
+        identity: active_identity(),
     });
 
     // Drops a row in place; the next held suggestion of that identity moves
@@ -1077,34 +1121,8 @@ pub fn SuggestedCommanders() -> Element {
                                 BuilderProfileSections { profile }
                             }
                             // The commander maybeboard's Show row on the grid, over
-                            // the rows it narrows: the label, All, one chip per
-                            // identity among the held 100 (its pips and name), then
-                            // the Art toggle. Single select; the selected chip tapped
-                            // again is All.
-                            div { class: "chip-row",
-                                span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
-                                Chip {
-                                    selected: active_identity().is_none(),
-                                    onclick: move |_| active_identity.set(None),
-                                    "All"
-                                }
-                                for identity in identities() {
-                                    Chip {
-                                        key: "{identity_key(&identity)}",
-                                        selected: active_identity().as_deref() == Some(identity.as_slice()),
-                                        onclick: {
-                                            let identity = identity.clone();
-                                            move |_| {
-                                                if active_identity().as_deref() == Some(identity.as_slice()) {
-                                                    active_identity.set(None);
-                                                } else {
-                                                    active_identity.set(Some(identity.clone()));
-                                                }
-                                            }
-                                        },
-                                        IdentityPips { identity: identity.clone() }
-                                    }
-                                }
+                            // the rows it narrows, the Art toggle at its end.
+                            ShowIdentityChips { active_identity, identities: identities(),
                                 Chip {
                                     selected: show_row_art(),
                                     onclick: move |_| show_row_art.set(!show_row_art()),
@@ -1196,12 +1214,16 @@ pub fn SuggestedCommanders() -> Element {
 
             // The shared overlay in its suggested mode deals the held list as
             // the Show chip narrows it: right seeds a new deck with the pick,
-            // up saves it, left dismisses it.
+            // up saves it, left dismisses it. Its Filter sheet holds the same
+            // Show chips over the same signal.
             SwipeSelect {
                 host_screen: screen::SUGGESTED_COMMANDERS,
                 open: swipe_open,
                 mode: swipe_mode,
                 suggested_pile: Some(pile.into()),
+                suggested_filter: rsx! {
+                    ShowIdentityChips { active_identity, identities: identities() }
+                },
                 on_select: move |card: Card| {
                     swipe_open.set(false);
                     create_with(card);
