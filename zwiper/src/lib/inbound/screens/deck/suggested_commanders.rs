@@ -51,6 +51,7 @@ use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::hint_host::HintTopic;
+use crate::inbound::components::home_play_style::{Podium, use_play_style_summary};
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
@@ -142,8 +143,15 @@ fn identity_key(identity: &[Color]) -> String {
 /// grammar, then `count` when given. A single color is its pip alone, since a
 /// pip already says which color it is; colorless is the name alone.
 #[component]
-pub(crate) fn IdentityPips(identity: Vec<Color>, count: Option<String>) -> Element {
-    let name = identity_label(&identity);
+pub(crate) fn IdentityPips(
+    identity: Vec<Color>,
+    count: Option<String>,
+    /// Leads with the identity's name; off where the host sets the name apart,
+    /// as Home's podium does under each step.
+    #[props(default = true)]
+    show_name: bool,
+) -> Element {
+    let name = identity_label(&identity).filter(|_| show_name);
     rsx! {
         span { class: "identity-pips",
             if let Some(name) = name {
@@ -642,6 +650,12 @@ fn SummaryIdentityRow(label: &'static str, value: SummaryValue) -> Element {
 #[component]
 pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     let summary = profile_summary(&profile);
+    // The top three color identities, shared with Home's panel, for the
+    // Summary's podium; the Top colors row stands in until they arrive.
+    let (play_style, _) = use_play_style_summary(Screen::SuggestedCommanders);
+    let podium_identities = play_style
+        .map(|summary| summary.identities)
+        .filter(|identities| !identities.is_empty());
     let open_section: Signal<Option<String>> = use_signal(|| Some(SUMMARY_TITLE.to_string()));
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
     let colors = color_bars(&profile.colors);
@@ -668,7 +682,9 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                     span { class: "settings-row-label", "Decks" }
                     span { class: "info-row-value", "{summary.decks}" }
                 }
-                if let Some(value) = summary.color_set {
+                if let Some(identities) = podium_identities {
+                    Podium { identities }
+                } else if let Some(value) = summary.color_set {
                     SummaryIdentityRow { label: "Top colors", value }
                 }
                 if let Some(value) = summary.color {

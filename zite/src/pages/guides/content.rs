@@ -632,14 +632,14 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Finding it"),
             Block::Bullets(&[
-                "The Playstyle panel on the Home screen shows your top colors. Tap Open for the rest. It's also on the Decks screen, under More.",
+                "The Playstyle panel on the Home screen stands your top three colors on a podium. Tap Open for the rest. It's also on the Decks screen, under More.",
                 "Your colors, card roles and oracle tags come first.",
                 "Under them, your top 10 commanders show as card rows, best fit first.",
                 "Tap a color chip in the Show row to see only those colors. Tap it again to see them all.",
             ]),
             Block::H2("What your decks say"),
             Block::P(
-                "Summary, at the top, shows how many decks were read, your top colors and your top single color. Under it are three more sections. Tap one to open it.",
+                "Summary, at the top, shows how many decks were read, the same podium and your top single color. Under it are three more sections. Tap one to open it.",
             ),
             Block::Bullets(&[
                 "Colors shows which colors your decks play.",
