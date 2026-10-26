@@ -102,18 +102,30 @@ pub(crate) fn group_shared_tags(
 /// The "Why this commander?" block under a suggestion's details: the shared
 /// oracle tags grouped by card role, in the card's own role-chip grammar, and
 /// one bullet per shared color, each omitted when empty. Renders nothing at
-/// all when both are. The tag reveal reads the same `OtagDescribe` and
-/// `OtagExamplesOpen` contexts as the card rows, so a tapped tag shows its
-/// description and its examples button.
+/// all when both are. A tapped tag shows its description and its examples
+/// button through `describe_tag` and `on_examples`; a host that leaves them
+/// unset gets the `OtagDescribe` and `OtagExamplesOpen` contexts the card rows
+/// read, which resolve only inside the screen's own subtree.
 #[component]
-pub(crate) fn SuggestionReasons(reasons: HttpSuggestionReasons, deck_count: u32) -> Element {
+pub(crate) fn SuggestionReasons(
+    reasons: HttpSuggestionReasons,
+    deck_count: u32,
+    /// Resolves a shared tag's description; falls back to the `OtagDescribe` context.
+    #[props(default)]
+    describe_tag: Option<Callback<String, Option<String>>>,
+    /// Opens a shared tag's examples; falls back to the `OtagExamplesOpen` context.
+    #[props(default)]
+    on_examples: Option<Callback<String>>,
+) -> Element {
+    let context_describe = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let context_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let colors = color_lines(&reasons.colors, deck_count);
     if reasons.tags.is_empty() && colors.is_empty() {
         return rsx! {};
     }
     let (roles, tags_by_role, other_tags) = group_shared_tags(&reasons.tags);
-    let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
-    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
+    let describe_tag = describe_tag.or(context_describe);
+    let on_examples = on_examples.or(context_examples);
     rsx! {
         div { class: "card-detail-footer",
             span { class: "chips-label", "Why this commander?" }

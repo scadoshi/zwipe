@@ -41,8 +41,9 @@ use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
 use crate::inbound::screens::deck::card::components::card_info::{
-    CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton,
+    CardDetailsSheet, CardInfoDisplay, CardSkeleton, RulesButton, use_describe_tag,
 };
+use crate::inbound::screens::deck::card::components::card_row::OtagExamplesOpen;
 use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 use crate::inbound::screens::deck::suggested_commanders::SuggestionReasons;
@@ -490,7 +491,12 @@ pub(crate) fn SwipeSelect(
         mode().as_ref(),
         Some(SwipeMode::Commander(_) | SwipeMode::Partner | SwipeMode::Suggested)
     );
-    // The reasons behind the card on top, for the details sheet's footer.
+    // The reasons behind the card on top, for the details sheet's footer. Its
+    // shared-tag chips take the sheet's own description lookup and the host's
+    // examples opener as props: the suggested commanders screen provides the
+    // opener, and its examples overlay draws over this screen and the sheet.
+    let describe_tag = use_describe_tag();
+    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let current_reasons = current_card.as_ref().and_then(|card| {
         suggestions
             .read()
@@ -669,7 +675,12 @@ pub(crate) fn SwipeSelect(
                         card,
                         on_printings: move |_| printing_open.set(true),
                         footer: current_reasons.map(|reasons| rsx! {
-                            SuggestionReasons { reasons, deck_count: deck_count() }
+                            SuggestionReasons {
+                                reasons,
+                                deck_count: deck_count(),
+                                describe_tag,
+                                on_examples,
+                            }
                         }),
                     }
                 }
