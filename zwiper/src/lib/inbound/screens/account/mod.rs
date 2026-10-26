@@ -1,6 +1,7 @@
-//! User profile management screen and its edit sheets.
+//! Account screen and its edit sheets.
 //!
-//! Provides the profile overview plus bottom sheets for updating user info.
+//! Shows username, email and password with bottom sheets to change them,
+//! plus the About rows, logging out and deleting the account.
 
 /// Change email bottom sheet.
 pub mod change_email;
@@ -8,7 +9,7 @@ pub mod change_email;
 pub mod change_password;
 /// Change username bottom sheet.
 pub mod change_username;
-/// Extracted components for the profile screen.
+/// Extracted components for the Account screen.
 mod components;
 
 use ::components::{
@@ -37,9 +38,9 @@ use crate::outbound::open_url;
 /// so users can report which build they're on.
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// User profile screen showing account details and management options.
+/// Account screen showing account details and management options.
 #[component]
-pub fn Profile() -> Element {
+pub fn Account() -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let mut show_logout_dialog = use_signal(|| false);
@@ -51,7 +52,7 @@ pub fn Profile() -> Element {
 
     // Account management hint: auto-opens on this user's first visit, the
     // grayed "?" in the header reopens it on demand.
-    let profile_hint_open = use_one_time_hint(HINT_PROFILE);
+    let account_hint_open = use_one_time_hint(HINT_PROFILE);
 
     // Refresh user on every open so email_verified_at is current without re-login.
     use_effect(move || {
@@ -68,7 +69,7 @@ pub fn Profile() -> Element {
                     }
                 }
                 Err(e) => {
-                    tracing::warn!("profile user fetch failed: {e}");
+                    tracing::warn!("account user fetch failed: {e}");
                 }
             }
         });
@@ -78,11 +79,11 @@ pub fn Profile() -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: "Profile", hint: profile_hint_open }
+                ScreenHeader { title: "Account", hint: account_hint_open }
 
                 HintDialog {
-                    open: profile_hint_open,
-                    title: "Your profile",
+                    open: account_hint_open,
+                    title: "Your account",
                     HintBullets {
                         HintBullet { "Tap a row's " HintKey { color: "--palette-6", "?" } " for what it does" }
                         HintBullet { HintKey { "More" } " deletes your account" }

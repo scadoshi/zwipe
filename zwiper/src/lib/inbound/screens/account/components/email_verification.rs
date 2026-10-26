@@ -20,7 +20,7 @@ const RESEND_COOLDOWN_SECS: u32 = 60;
 
 /// Email display line: address, verified/unverified badge, and the Change
 /// button. Verification actions live in [`VerificationActions`], rendered as
-/// its own profile row only while the email is unverified.
+/// its own Account row only while the email is unverified.
 #[component]
 pub(crate) fn EmailVerification(
     email: String,

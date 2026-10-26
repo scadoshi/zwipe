@@ -9,5 +9,5 @@
 pub mod components;
 /// Client-side routing configuration.
 pub mod router;
-/// Top-level page components (auth, deck builder, profile).
+/// Top-level page components (auth, deck builder, account, config).
 pub mod screens;

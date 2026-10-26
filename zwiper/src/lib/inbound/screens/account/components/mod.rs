@@ -1,4 +1,4 @@
-//! Extracted components for the profile screen.
+//! Extracted components for the Account screen.
 
 /// Delete account confirmation dialog with countdown and password.
 pub(crate) mod delete_account_dialog;

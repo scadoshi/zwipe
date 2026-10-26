@@ -7,6 +7,7 @@ use uuid::Uuid;
 
 use crate::inbound::components::auth::auth_gate::AuthGate;
 use crate::inbound::components::navigation::back_handler::BackHandlerLayout;
+use crate::inbound::screens::account::Account;
 use crate::inbound::screens::auth::forgot_password::ForgotPassword;
 use crate::inbound::screens::auth::login::Login;
 use crate::inbound::screens::auth::register::Register;
@@ -25,7 +26,6 @@ use crate::inbound::screens::deck::suggested_commanders::SuggestedCommanders;
 use crate::inbound::screens::deck::view::ViewDeck;
 use crate::inbound::screens::home::Home;
 use crate::inbound::screens::legal::privacy_policy::PrivacyPolicy;
-use crate::inbound::screens::profile::Profile;
 
 /// Application routes mapping URLs to screen components.
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -50,23 +50,23 @@ pub enum Router {
     // ── authed ── everything below requires a valid session (AuthGate
     // redirects to /login otherwise), so screens do not self-gate.
     #[layout(AuthGate)]
-    /// Landing screen: greeting, navigation to decks/profile.
+    /// Landing screen: greeting, navigation to decks, play style, account and config.
     #[route("/")]
     Home {},
 
-    /// User profile overview: username/email/password edits, preferences, delete account.
+    /// Account: username/email/password edits, About, log out, delete account.
     #[route("/user")]
-    Profile {},
+    Account {},
 
     /// Appearance and card settings: theme, app icon, Universes Beyond.
     #[route("/config")]
     Config {},
 
-    /// Privacy policy: shared legal copy, reached from Profile.
+    /// Privacy policy: shared legal copy, reached from Account.
     #[route("/privacy")]
     PrivacyPolicy {},
 
-    /// Release history: shared changelog, reached from Profile.
+    /// Release history: shared changelog, reached from Account.
     #[route("/changelog")]
     Changelog {},
 

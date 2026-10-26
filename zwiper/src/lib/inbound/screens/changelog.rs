@@ -1,7 +1,7 @@
 //! Changelog screen.
 //!
 //! Wraps the shared [`components::Changelog`] (the same release history
-//! shown on the website) in the app's screen chrome. Reached from Profile.
+//! shown on the website) in the app's screen chrome. Reached from Account.
 //!
 //! The changelog is fetched once in the background at startup and cached for
 //! the session (see [`crate::inbound::components::auth::session_upkeep`]).
@@ -19,7 +19,7 @@ use dioxus::prelude::*;
 use crate::inbound::components::auth::session_upkeep::ChangelogCache;
 use crate::inbound::components::screen_header::ScreenHeader;
 
-/// Full release history, reachable from the Profile screen.
+/// Full release history, reachable from the Account screen.
 #[component]
 pub fn Changelog() -> Element {
     let navigator = use_navigator();

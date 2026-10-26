@@ -2,6 +2,8 @@
 //!
 //! Each module represents a major section of the application with its own routing.
 
+/// Account screen and its sheets (username, email, password, delete).
+pub mod account;
 /// Authentication screens (login, register).
 pub mod auth;
 /// Release history screen (shared changelog).
@@ -18,5 +20,3 @@ pub mod legal;
 pub mod oracle_tag_dictionary;
 /// Oracle-tag example cards (deck-free swipe browse of a tag's cards).
 pub mod oracle_tag_examples;
-/// User profile management screens (change email, password, username).
-pub mod profile;

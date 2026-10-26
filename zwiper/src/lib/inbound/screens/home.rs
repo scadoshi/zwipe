@@ -18,7 +18,6 @@ use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
 use crate::inbound::components::auth::session_upkeep::FlavorCard;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::home_hero::HomeHero;
-use crate::inbound::components::logout_dialog::LogoutDialog;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::card::components::image_preview::ImagePreview;
@@ -37,7 +36,6 @@ pub fn Home() -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
 
-    let mut show_logout_dialog = use_signal(|| false);
     let toast = use_toast();
 
     // First-login welcome: auto-opens once per account.
@@ -234,8 +232,10 @@ pub fn Home() -> Element {
                 title: "Welcome to Zwipe",
                 HintBullets {
                     HintBullet { HintKey { "Decks" } " holds your decks" }
-                    HintBullet { HintKey { "Profile" } " is your account and theme" }
-                    HintBullet { HintColored { color: "--color-warning", "Verify your email" } " in Profile for full deck and card limits" }
+                    HintBullet { HintKey { "My play style" } " reads your decks and suggests commanders" }
+                    HintBullet { HintKey { "Account" } " has your email, password and log out" }
+                    HintBullet { HintKey { "Config" } " sets your theme and which cards show" }
+                    HintBullet { HintColored { color: "--color-warning", "Verify your email" } " in Account for full deck and card limits" }
                 }
             }
 
@@ -249,18 +249,20 @@ pub fn Home() -> Element {
                 }
                 Button { variant: ButtonVariant::Action,
                     onclick : move |_| {
-                        navigator.push(Router::Profile {} );
-                    }, "Profile"
+                        navigator.push(Router::SuggestedCommanders {} );
+                    }, "My play style"
                 }
-                Button {
-                    variant: ButtonVariant::Action,
-                    danger: true,
-                    onclick: move |_| show_logout_dialog.set(true),
-                    "Log out"
+                Button { variant: ButtonVariant::Action,
+                    onclick : move |_| {
+                        navigator.push(Router::Account {} );
+                    }, "Account"
+                }
+                Button { variant: ButtonVariant::Action,
+                    onclick : move |_| {
+                        navigator.push(Router::Config {} );
+                    }, "Config"
                 }
             }
-
-            LogoutDialog { open: show_logout_dialog }
 
             AlertDialog {
                 open: show_buy_sheet,

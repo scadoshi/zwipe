@@ -43,7 +43,7 @@ pub mod screen {
 
 /// Typed screen identity for the authed facade: the same closed vocabulary as
 /// [`screen`], carried as structured data instead of a bare string. Grouped
-/// the way the screens modules are (auth/, deck/, deck/card/, profile/), so a
+/// the way the screens modules are (auth/, deck/, deck/card/, account/, config/), so a
 /// failure site reads as where it lives. `as_str` maps every variant onto its
 /// [`screen`] constant byte-for-byte: the wire format and the server's
 /// `client_errors` dedupe keys never change, the enum only adds compile-time
@@ -62,7 +62,8 @@ pub enum Screen {
     Deck(DeckScreen),
     /// The oracle-tag dictionary screens.
     OracleTag(OracleTagScreen),
-    /// Screens under `screens/profile/`.
+    /// Screens under `screens/account/` and `screens/config/`, logged
+    /// under the profile keys.
     Profile(ProfileScreen),
     /// The Your play style screen, logged under its suggested commanders key.
     SuggestedCommanders,
@@ -100,7 +101,7 @@ pub enum OracleTagScreen {
     Examples,
 }
 
-/// `screens/profile/` members.
+/// `screens/account/` members, plus `Preferences` for `screens/config/`.
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProfileScreen {

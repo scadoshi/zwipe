@@ -27,7 +27,7 @@ fn privacy_sections() -> Vec<String> {
         .collect()
 }
 
-/// Full privacy policy, reachable from the Profile screen.
+/// Full privacy policy, reachable from the Account screen.
 #[component]
 pub fn PrivacyPolicy() -> Element {
     let navigator = use_navigator();
