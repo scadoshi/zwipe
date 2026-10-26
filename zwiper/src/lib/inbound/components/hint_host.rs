@@ -70,17 +70,17 @@ pub enum HintTopic {
     ManaFulfillment,
     /// Deck view: draw odds chart.
     DrawOdds,
-    /// Suggested commanders: the colors chart.
+    /// Your play style: the colors chart.
     SuggestionColorChart,
-    /// Suggested commanders: the card roles chart.
+    /// Your play style: the card roles chart.
     SuggestionRoleChart,
-    /// Suggested commanders: the oracle tags table.
+    /// Your play style: the oracle tags table.
     SuggestionTagChart,
-    /// Suggested commanders: the oracle tags table's Decks column.
+    /// Your play style: the oracle tags table's Decks column.
     SuggestionTagDecks,
-    /// Suggested commanders: the oracle tags table's Cards column.
+    /// Your play style: the oracle tags table's Cards column.
     SuggestionTagCards,
-    /// Suggested commanders: the oracle tags table's Impact column.
+    /// Your play style: the oracle tags table's Impact column.
     SuggestionTagImpact,
 }
 
@@ -230,7 +230,7 @@ impl HintTopic {
                 }
             },
             Self::SuggestionColorChart => rsx! {
-                HintLine { "Your commander decks by color. A deck counts once for each color its commander has" }
+                HintLine { "Your decks by color. A deck counts once for each color in it" }
             },
             Self::SuggestionRoleChart => rsx! {
                 HintLine { "How many of your decks have a tag in each role. Tap a role for its tags" }

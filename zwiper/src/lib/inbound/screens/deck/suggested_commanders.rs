@@ -1,6 +1,6 @@
-//! Suggested commanders screen: the top 10 commanders ranked against the
-//! user's own decks, each with the reasons it ranked, styled like the
-//! commander maybeboard.
+//! Your play style screen: what the user builds, read from every deck they
+//! own in any format, over the top 10 commanders ranked against those decks,
+//! each with the reasons it ranked, styled like the commander maybeboard.
 //!
 //! The screen fetches the ranking 100 deep once and shows the first 10. A
 //! Show row atop the list holds one chip per color identity among the 100,
@@ -15,8 +15,9 @@
 //! ranking reads: a Summary table (the deck count, the most common color set
 //! and color), then charts of the colors and card roles and a table of the
 //! oracle tags across the decks. They share one accordion with Summary open
-//! on entry; the list section folds on its own and starts open. With no commander deck to read from, the
-//! screen shows a single line instead of the sections.
+//! on entry; the list section folds on its own and starts open. With no deck
+//! that has cards to read from, the screen shows a single line instead of the
+//! sections and the list.
 
 use std::collections::BTreeMap;
 
@@ -804,8 +805,8 @@ fn SuggestionRow(
     }
 }
 
-/// Screen listing the user's top 10 suggested commanders with the reasons
-/// behind each, Show chips narrowing them to one color identity, a Swipe
+/// Screen summing up the user's play style over their top 10 suggested
+/// commanders with the reasons behind each, Show chips narrowing them to one color identity, a Swipe
 /// overlay going deeper, and Clear skips under More.
 #[component]
 pub fn SuggestedCommanders() -> Element {
@@ -1037,11 +1038,12 @@ pub fn SuggestedCommanders() -> Element {
 
     rsx! {
         div { class: "screen",
-            ScreenHeader { title: "Suggested commanders", hint: hint_open }
+            ScreenHeader { title: "Your play style", hint: hint_open }
 
             HintDialog {
                 open: hint_open,
-                title: "Suggested commanders",
+                title: "Your play style",
+                HintLine { "Your colors, card roles and top oracle tags, read from every deck you own in any format" }
                 HintBullets {
                     HintBullet { HintKey { "Create deck" } " begins a deck with that commander" }
                     HintBullet { HintKey { "Maybeboard" } " saves it to your commander maybeboard" }
@@ -1049,7 +1051,7 @@ pub fn SuggestedCommanders() -> Element {
                     HintBullet { HintKey { "Swipe" } " deals the same ranking: " HintColored { color: "--color-success", "right" } " starts a deck, " HintColored { color: "--color-warning", "up" } " saves, " HintColored { color: "--color-error", "left" } " skips it" }
                     HintBullet { HintKey { "Show" } " narrows the list to one color identity" }
                 }
-                HintLine { "Your top 10 for the decks you already build, best fit first. Swipe keeps going down the same ranking" }
+                HintLine { "Below them, your top 10 commanders ranked against all your decks, best fit first. Swipe keeps going down the same ranking" }
             }
 
             div { class: "screen-content",
@@ -1085,7 +1087,7 @@ pub fn SuggestedCommanders() -> Element {
                         }
                     } else if cold_start {
                         div { class: "message-empty",
-                            span { class: "chip-note", "Build a deck and we'll suggest commanders that fit how you play." }
+                            span { class: "chip-note", "Add cards to a deck in any format to see your play style and the commanders that fit it." }
                         }
                     } else {
                         // The deck view's column of sibling sections.

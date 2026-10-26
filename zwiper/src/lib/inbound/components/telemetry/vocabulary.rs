@@ -64,7 +64,7 @@ pub enum Screen {
     OracleTag(OracleTagScreen),
     /// Screens under `screens/profile/`.
     Profile(ProfileScreen),
-    /// The suggested commanders screen.
+    /// The Your play style screen, logged under its suggested commanders key.
     SuggestedCommanders,
 }
 

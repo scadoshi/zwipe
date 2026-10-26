@@ -45,7 +45,8 @@ pub const HINT_ORACLE_TAG_DICTIONARY: &str = "oracle_tag_dictionary";
 pub const HINT_OTAG_EXAMPLES: &str = "otag_examples";
 /// Explainer for the commander maybeboard screen (up-swipe origin, actions).
 pub const HINT_COMMANDER_MAYBEBOARD: &str = "commander_maybeboard";
-/// Explainer for the suggested commanders screen (row actions, Swipe, top 10).
+/// Explainer for the Your play style screen (the sections, row actions,
+/// Swipe, top 10). The key keeps its suggested commanders name.
 pub const HINT_SUGGESTED_COMMANDERS: &str = "suggested_commanders";
 
 /// Maximum length of a hint key.
