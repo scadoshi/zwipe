@@ -74,8 +74,14 @@ pub enum HintTopic {
     SuggestionColorChart,
     /// Suggested commanders: the card roles chart.
     SuggestionRoleChart,
-    /// Suggested commanders: the oracle tags chart and its impact score.
+    /// Suggested commanders: the oracle tags table.
     SuggestionTagChart,
+    /// Suggested commanders: the oracle tags table's Decks column.
+    SuggestionTagDecks,
+    /// Suggested commanders: the oracle tags table's Cards column.
+    SuggestionTagCards,
+    /// Suggested commanders: the oracle tags table's Impact column.
+    SuggestionTagImpact,
 }
 
 impl HintTopic {
@@ -111,6 +117,9 @@ impl HintTopic {
             Self::SuggestionColorChart => "Colors",
             Self::SuggestionRoleChart => "Card roles",
             Self::SuggestionTagChart => "Oracle tags",
+            Self::SuggestionTagDecks => "Decks",
+            Self::SuggestionTagCards => "Cards",
+            Self::SuggestionTagImpact => "Impact",
         }
     }
 
@@ -227,13 +236,16 @@ impl HintTopic {
                 HintLine { "How many of your decks have a tag in each role. Tap a role for its tags" }
             },
             Self::SuggestionTagChart => rsx! {
-                HintBullets {
-                    HintBullet { "Each bar is the tag's impact across your decks. The top tag fills its bar" }
-                    HintBullet { "In each deck, a tag counts for more the more of that deck's cards carry it and the rarer it is across all of Magic" }
-                    HintBullet { "A tag's impact adds up over every deck that has it" }
-                    HintBullet { "6 · 23 means 6 of your decks carry the tag, on 23 cards in all" }
-                    HintBullet { "Tap a tag to see what it means" }
-                }
+                HintLine { "Your 10 most impactful tags, highest first. Tap a tag to see what it means" }
+            },
+            Self::SuggestionTagDecks => rsx! {
+                HintLine { "How many of your decks have this tag. The more decks, the higher its impact" }
+            },
+            Self::SuggestionTagCards => rsx! {
+                HintLine { "How many cards carry this tag across those decks. The more cards, the higher its impact" }
+            },
+            Self::SuggestionTagImpact => rsx! {
+                HintLine { "Decks and cards together, with a rare tag worth more than one every deck has. Your top tag scores 100" }
             },
         }
     }

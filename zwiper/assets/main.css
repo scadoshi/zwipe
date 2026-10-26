@@ -2780,6 +2780,58 @@ button {
     align-self: stretch;
 }
 
+/* Suggested commanders' oracle tags table: the tag chip, then Decks, Cards
+   and Impact right-aligned. The chip column takes what the numbers leave, so
+   a long slug wraps inside its chip. Rows space by the chip cell's padding,
+   not a row gap, so the shut reveals add no height. */
+.tag-table {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    column-gap: 0.5rem;
+    align-items: center;
+    padding: 0 0.75rem;
+}
+
+.tag-table-head {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 0.25rem;
+}
+
+.tag-table-head:first-child {
+    justify-content: flex-start;
+}
+
+/* The Summary labels, sized down so three columns and their "?" fit a phone. */
+.tag-table-head .settings-row-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+}
+
+.tag-table-head .info-button {
+    margin-left: 0.2rem;
+}
+
+.tag-table-tag {
+    min-width: 0;
+    padding: 0.175rem 0;
+}
+
+.tag-table-tag .keyword-chip {
+    max-width: 100%;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.tag-table-num {
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    opacity: 0.85;
+    text-align: right;
+    white-space: nowrap;
+}
+
 .badge-verified {
     display: inline-block;
     padding: 0.15rem 0.4rem;

@@ -38,9 +38,6 @@ pub struct Bar {
     pub count: usize,
     /// The bar's size as a percentage of the chart's tallest bar, 0 to 100.
     pub pct: u32,
-    /// Horizontal only: shown in the count cell in place of `count`, for a
-    /// bar whose size is not one count. The cell widens to fit it.
-    pub count_text: Option<String>,
 }
 
 impl Bar {
@@ -53,15 +50,7 @@ impl Bar {
             label,
             count,
             pct,
-            count_text: None,
         }
-    }
-
-    /// The bar with `text` in its count cell instead of `count`.
-    #[must_use]
-    pub fn with_count_text(mut self, text: impl Into<String>) -> Self {
-        self.count_text = Some(text.into());
-        self
     }
 }
 
@@ -100,10 +89,6 @@ const CHIP_LABEL_MAX_WIDTH: &str = "50%";
 
 /// A horizontal row's count cell.
 const COUNT_CELL_STYLE: &str = "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:3ch;text-align:right;flex-shrink:0;";
-
-/// A horizontal row's count cell holding a [`Bar::count_text`]: the same
-/// cell, at least as wide, on one line.
-const COUNT_TEXT_CELL_STYLE: &str = "font-size:0.7rem;color:var(--text-primary);opacity:0.85;min-width:3ch;text-align:right;flex-shrink:0;white-space:nowrap;";
 
 /// How a [`BarChart`] lays its bars and labels out.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -281,11 +266,7 @@ pub fn BarChart(
                                     ),
                                 }
                             }
-                            if let Some(text) = bar.count_text.as_ref() {
-                                span { style: COUNT_TEXT_CELL_STYLE, "{text}" }
-                            } else {
-                                span { style: COUNT_CELL_STYLE, "{bar.count}" }
-                            }
+                            span { style: COUNT_CELL_STYLE, "{bar.count}" }
                         }
                     }
                 },
@@ -308,11 +289,7 @@ pub fn BarChart(
                                     ),
                                 }
                             }
-                            if let Some(text) = bar.count_text.as_ref() {
-                                span { style: COUNT_TEXT_CELL_STYLE, "{text}" }
-                            } else {
-                                span { style: COUNT_CELL_STYLE, "{bar.count}" }
-                            }
+                            span { style: COUNT_CELL_STYLE, "{bar.count}" }
                             // Mounted shut under every row so opening one is a class
                             // change the reveal can ease, not a fresh node.
                             div { class: reveal_class(bar), style: "grid-column:1 / -1;",

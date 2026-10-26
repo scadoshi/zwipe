@@ -13,9 +13,9 @@
 //! than ten remain, so the list stays a full top 10. Above the list, sections
 //! in the deck profile's grammar sum up what the user builds, the profile the
 //! ranking reads: a Summary table (the deck count, the most common color set
-//! and color), then charts of the colors, card roles and oracle tags across the
-//! decks. They share one accordion with Summary open on entry; the list section
-//! folds on its own and starts open. With no commander deck to read from, the
+//! and color), then charts of the colors and card roles and a table of the
+//! oracle tags across the decks. They share one accordion with Summary open
+//! on entry; the list section folds on its own and starts open. With no commander deck to read from, the
 //! screen shows a single line instead of the sections.
 
 use std::collections::BTreeMap;
@@ -23,7 +23,7 @@ use std::collections::BTreeMap;
 use components::{
     ActionBar, AlertDialog, Bar, BarChart, BarOrientation, BottomSheet, Button, ButtonVariant,
     CardRoleChips, Chip, DialogAction, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    LabelCase, TOAST_LONG, TOAST_QUICK,
+    TOAST_LONG, TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -319,7 +319,6 @@ pub(crate) fn color_bars(colors: &[HttpColorAffinity]) -> Vec<Bar> {
             label: color_name(&c.color).unwrap_or_default().to_string(),
             count: decks_usize(c.decks),
             pct,
-            count_text: None,
         },
     )
 }
@@ -344,34 +343,55 @@ pub(crate) fn role_bars(roles: &[HttpProfileRole]) -> Vec<Bar> {
             label: role_short_label(&r.role),
             count: decks_usize(r.decks),
             pct,
-            count_text: None,
         },
     )
 }
 
-/// A tag's score in millionths, the whole units `DeckMetrics::bar_pct`
-/// sizes bars from. A score is a sum of per-deck shares, at most the profiled
-/// deck count, so it fits; a negative or NaN score is 0.
-fn score_units(score: f64) -> usize {
-    (score.max(0.0) * 1_000_000.0).round() as usize
+/// The impact the top tag reads.
+const TOP_IMPACT: u32 = 100;
+
+/// One row of the oracle tags table.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct TagRow {
+    /// The oracle tag slug, the row's chip.
+    pub(crate) slug: String,
+    /// Profiled decks carrying the tag.
+    pub(crate) decks: u32,
+    /// Cards carrying the tag across those decks.
+    pub(crate) cards: u32,
+    /// The tag's score against the top tag's, rounded, the top tag reading
+    /// [`TOP_IMPACT`]. None when no tag scores above 0, as from an older
+    /// server.
+    pub(crate) impact: Option<u32>,
 }
 
-/// A tag's count cell: the decks carrying it, then its cards across them.
-pub(crate) fn tag_count_text(tag: &HttpProfileTag) -> String {
-    format!("{} · {}", tag.decks, tag.cards)
-}
-
-/// One bar per oracle tag in the order sent (highest score first), the slug
-/// as label and key, sized by score against the top tag's and counted as
-/// [`tag_count_text`].
-pub(crate) fn tag_bars(tags: &[HttpProfileTag]) -> Vec<Bar> {
-    bars_from(
-        tags,
-        |t| score_units(t.score),
-        |t, pct| {
-            Bar::new(t.slug.clone(), decks_usize(t.decks), pct).with_count_text(tag_count_text(t))
-        },
+/// `score` against `max` on a 0 to [`TOP_IMPACT`] scale, rounded. None when
+/// `max` is not above 0; a negative or NaN score reads 0.
+fn impact(score: f64, max: f64) -> Option<u32> {
+    if max.is_nan() || max <= 0.0 {
+        return None;
+    }
+    let scaled = (score.max(0.0) / max * f64::from(TOP_IMPACT)).round();
+    // No TryFrom from f64 to an integer, so find the whole number instead.
+    Some(
+        (0..=TOP_IMPACT)
+            .find(|n| f64::from(*n) >= scaled)
+            .unwrap_or(TOP_IMPACT),
     )
+}
+
+/// One row per oracle tag in the order sent (highest score first), its
+/// impact scaled so the top tag reads [`TOP_IMPACT`].
+pub(crate) fn tag_rows(tags: &[HttpProfileTag]) -> Vec<TagRow> {
+    let max = tags.iter().map(|t| t.score).fold(0.0, f64::max);
+    tags.iter()
+        .map(|t| TagRow {
+            slug: t.slug.clone(),
+            decks: t.decks,
+            cards: t.cards,
+            impact: impact(t.score, max),
+        })
+        .collect()
 }
 
 /// The shown tags under `role`, highest score first.
@@ -459,6 +479,78 @@ fn RoleTags(tags: Vec<String>) -> Element {
     }
 }
 
+/// The oracle tags as a table: a header row of column labels, each number
+/// column with its "?", then one row per tag with its chip and its Decks,
+/// Cards and Impact. A tapped chip eases its description and Examples open
+/// directly under its row in the deck charts' chip grammar, one row at a
+/// time; tapping the open chip closes it.
+#[component]
+fn TagTable(rows: Vec<TagRow>) -> Element {
+    let mut open_tag: Signal<Option<String>> = use_signal(|| None);
+    // The last opened tag, kept through a close so its description eases out.
+    let mut shown_tag: Signal<Option<String>> = use_signal(|| None);
+    let open = open_tag();
+    let shown = shown_tag();
+    let is_open = |slug: &str| open.as_deref() == Some(slug);
+    let tap = move |slug: String| {
+        move |evt: MouseEvent| {
+            evt.stop_propagation();
+            if open_tag().as_deref() == Some(slug.as_str()) {
+                open_tag.set(None);
+            } else {
+                open_tag.set(Some(slug.clone()));
+                shown_tag.set(Some(slug.clone()));
+            }
+        }
+    };
+    rsx! {
+        div { class: "tag-table",
+            div { class: "tag-table-head",
+                span { class: "settings-row-label", "Tag" }
+            }
+            div { class: "tag-table-head",
+                span { class: "settings-row-label", "Decks" }
+                InfoButton { topic: HintTopic::SuggestionTagDecks }
+            }
+            div { class: "tag-table-head",
+                span { class: "settings-row-label", "Cards" }
+                InfoButton { topic: HintTopic::SuggestionTagCards }
+            }
+            div { class: "tag-table-head",
+                span { class: "settings-row-label", "Impact" }
+                InfoButton { topic: HintTopic::SuggestionTagImpact }
+            }
+            for row in rows.iter() {
+                div { class: "tag-table-tag",
+                    button {
+                        class: if is_open(&row.slug) { "keyword-chip active" } else { "keyword-chip" },
+                        onclick: tap(row.slug.clone()),
+                        "{row.slug}"
+                    }
+                }
+                span { class: "tag-table-num", "{row.decks}" }
+                span { class: "tag-table-num", "{row.cards}" }
+                span { class: "tag-table-num",
+                    if let Some(impact) = row.impact {
+                        "{impact}"
+                    }
+                }
+                // Mounted shut under every row so opening one is a class
+                // change the reveal can ease, not a fresh node.
+                div {
+                    class: if is_open(&row.slug) { "keyword-reveal open" } else { "keyword-reveal" },
+                    style: "grid-column:1 / -1;",
+                    div { class: "keyword-reveal-inner",
+                        if shown.as_deref() == Some(row.slug.as_str()) {
+                            OtagDef { slug: row.slug.clone() }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// A Summary row whose value is an identity: the label, then the pips with
 /// the name and count after them.
 #[component]
@@ -475,21 +567,19 @@ fn SummaryIdentityRow(label: &'static str, value: SummaryValue) -> Element {
 
 /// What the user builds, as sections over the suggestions list in the deck
 /// profile's grammar: a Summary table (the deck count, the most common color
-/// set and color) in the Budget section's rows, then three charts. The four
-/// share one accordion with Summary open on entry. Colors are columns in
-/// WUBRG order; card roles are rows like the deck profile's role chart with
-/// chip labels, a tapped role revealing its oracle tags from the profile
-/// under its row; oracle tags are rows the same way, a tapped tag revealing
-/// its description and Examples under its row.
+/// set and color) in the Budget section's rows, then two charts and a table.
+/// The four share one accordion with Summary open on entry. Colors are
+/// columns in WUBRG order; card roles are rows like the deck profile's role
+/// chart with chip labels, a tapped role revealing its oracle tags from the
+/// profile under its row; oracle tags are a [`TagTable`].
 #[component]
 pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     let summary = profile_summary(&profile);
     let open_section: Signal<Option<String>> = use_signal(|| Some(SUMMARY_TITLE.to_string()));
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
-    let mut selected_tag: Signal<Option<String>> = use_signal(|| None);
     let colors = color_bars(&profile.colors);
     let roles = role_bars(&profile.roles);
-    let tags = tag_bars(&profile.tags);
+    let tags = tag_rows(&profile.tags);
     let profile_tags = profile.tags;
     let role_reveal = use_callback(move |role: String| {
         let tags = role_tags(&profile_tags, &role);
@@ -497,23 +587,11 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
             RoleTags { tags }
         }
     });
-    let tag_reveal = use_callback(move |slug: String| {
-        rsx! {
-            OtagDef { slug }
-        }
-    });
     let toggle_role = use_callback(move |key: String| {
         if selected_role().as_deref() == Some(key.as_str()) {
             selected_role.set(None);
         } else {
             selected_role.set(Some(key));
-        }
-    });
-    let toggle_tag = use_callback(move |key: String| {
-        if selected_tag().as_deref() == Some(key.as_str()) {
-            selected_tag.set(None);
-        } else {
-            selected_tag.set(Some(key));
         }
     });
     rsx! {
@@ -564,14 +642,7 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                 header_accessory: rsx! {
                     InfoButton { topic: HintTopic::SuggestionTagChart }
                 },
-                BarChart {
-                    bars: tags,
-                    orientation: BarOrientation::Horizontal,
-                    label_case: LabelCase::AsIs,
-                    on_bar: toggle_tag,
-                    selected: selected_tag(),
-                    reveal: tag_reveal,
-                }
+                TagTable { rows: tags }
             }
         }
     }
@@ -1422,7 +1493,6 @@ mod tests {
             label: label.to_string(),
             count,
             pct,
-            count_text: None,
         }
     }
 
@@ -1463,39 +1533,57 @@ mod tests {
     }
 
     #[test]
-    fn tag_bars_size_by_score_against_the_top_tag_and_count_decks_and_cards() {
+    fn tag_rows_keep_the_order_sent_and_scale_impact_to_the_top_tag() {
         let tags = [
             profile_tag("sacrifice-outlet", Some("sacrifice"), 6, 23, 1.6),
             profile_tag("treasure", Some("ramp"), 3, 40, 0.8),
             profile_tag("aristocrats", Some("sacrifice"), 3, 9, 0.4),
             profile_tag("typal-goblin", None, 1, 2, 0.01),
+            profile_tag("blink", None, 1, 1, 0.0),
         ];
-        let bars = tag_bars(&tags);
-        let got: Vec<(&str, u32, Option<&str>)> = bars
+        let rows = tag_rows(&tags);
+        let got: Vec<(&str, u32, u32, Option<u32>)> = rows
             .iter()
-            .map(|b| (b.key.as_str(), b.pct, b.count_text.as_deref()))
+            .map(|r| (r.slug.as_str(), r.decks, r.cards, r.impact))
             .collect();
         assert_eq!(
             got,
             vec![
-                ("sacrifice-outlet", 100, Some("6 · 23")),
-                ("treasure", 50, Some("3 · 40")),
-                ("aristocrats", 25, Some("3 · 9")),
-                ("typal-goblin", 4, Some("1 · 2")),
+                ("sacrifice-outlet", 6, 23, Some(100)),
+                ("treasure", 3, 40, Some(50)),
+                ("aristocrats", 3, 9, Some(25)),
+                ("typal-goblin", 1, 2, Some(1)),
+                ("blink", 1, 1, Some(0)),
             ],
-            "the order sent, score over the top score with the 4% sliver, cards not counted in the size"
+            "the order sent, impact rounded against the top score"
         );
-        assert!(
-            bars.iter().all(|b| b.label == b.key),
-            "slugs label their own bars"
-        );
-        assert!(tag_bars(&[]).is_empty());
+        assert!(tag_rows(&[]).is_empty());
     }
 
     #[test]
-    fn tag_bars_with_no_score_draw_no_bar() {
-        let bars = tag_bars(&[profile_tag("treasure", None, 2, 5, 0.0)]);
-        assert_eq!(bars.first().map(|b| b.pct), Some(0));
+    fn tag_rows_round_impact_to_the_nearest_whole() {
+        let rows = tag_rows(&[
+            profile_tag("a", None, 1, 1, 3.0),
+            profile_tag("b", None, 1, 1, 2.0),
+            profile_tag("c", None, 1, 1, 1.0),
+        ]);
+        let got: Vec<Option<u32>> = rows.iter().map(|r| r.impact).collect();
+        assert_eq!(got, vec![Some(100), Some(67), Some(33)]);
+    }
+
+    #[test]
+    fn tag_rows_with_no_score_show_no_impact() {
+        let rows = tag_rows(&[
+            profile_tag("treasure", None, 2, 5, 0.0),
+            profile_tag("blink", None, 1, 3, 0.0),
+        ]);
+        let got: Vec<(u32, u32, Option<u32>)> =
+            rows.iter().map(|r| (r.decks, r.cards, r.impact)).collect();
+        assert_eq!(
+            got,
+            vec![(2, 5, None), (1, 3, None)],
+            "an older server's rows keep their counts and leave impact empty"
+        );
     }
 
     #[test]
