@@ -3,8 +3,8 @@
 //! commander maybeboard.
 //!
 //! The screen fetches the ranking 100 deep once and shows the first 10. A
-//! Show row over everything holds one chip per color identity among the 100;
-//! a tapped chip narrows the held list to that identity, and the Art chip
+//! Show row atop the list holds one chip per color identity among the 100,
+//! each with its pips and name; a tapped chip narrows the held list to that identity, and the Art chip
 //! toggles the row thumbnails. An expanded row offers **Create deck** (seeds
 //! the create screen), **Maybeboard** (saves to the commander maybeboard) and
 //! **Remove** (hides it for a week). The action bar's Swipe opens the shared
@@ -134,9 +134,10 @@ fn identity_key(identity: &[Color]) -> String {
     }
 }
 
-/// The pips of an identity, the deck list's group-header grammar.
+/// An identity's pips, the deck list's group-header grammar, with `text`
+/// after them: a Show chip's name, or a Summary row's name and count.
 #[component]
-fn IdentityPips(identity: Vec<Color>) -> Element {
+fn IdentityPips(identity: Vec<Color>, text: String) -> Element {
     rsx! {
         span { class: "identity-pips",
             for color in identity.iter() {
@@ -145,8 +146,22 @@ fn IdentityPips(identity: Vec<Color>) -> Element {
                     class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
                 }
             }
+            span { "{text}" }
         }
     }
+}
+
+/// The list's empty state under a Show chip whose commanders are all gone,
+/// "No Jeskai commanders in your top 100". The names that describe rather
+/// than name (colorless, mono-color, five-color) go lowercase mid-sentence.
+pub(crate) fn empty_identity_line(identity: &[Color]) -> String {
+    let identity = identity_of(identity);
+    let name = identity_name(&identity);
+    let name = match identity.len() {
+        0 | 1 | 5 => name.to_lowercase(),
+        _ => name.to_string(),
+    };
+    format!("No {name} commanders in your top 100")
 }
 
 /// One line per color the user builds in, most decks first, in the order the
@@ -437,15 +452,7 @@ fn SummaryIdentityRow(label: &'static str, value: SummaryValue) -> Element {
         div { class: "settings-row",
             span { class: "settings-row-label", "{label}" }
             span { class: "info-row-value",
-                span { class: "identity-pips",
-                    for color in value.pips.iter() {
-                        i {
-                            key: "{color.to_short_name()}",
-                            class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                        }
-                    }
-                    span { "{value.text}" }
-                }
+                IdentityPips { identity: value.pips, text: value.text }
             }
         }
     }
@@ -950,50 +957,51 @@ pub fn SuggestedCommanders() -> Element {
                             span { class: "chip-note", "Build a deck and we'll suggest commanders that fit how you play." }
                         }
                     } else {
-                        // The commander maybeboard's Show row: the label, All,
-                        // one chip per identity among the held 100 (pips, or
-                        // the word for colorless), then the Art toggle. Single
-                        // select; the selected chip tapped again is All.
-                        div { class: "chip-row",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
-                            Chip {
-                                selected: active_identity().is_none(),
-                                onclick: move |_| active_identity.set(None),
-                                "All"
-                            }
-                            for identity in identities() {
-                                Chip {
-                                    key: "{identity_key(&identity)}",
-                                    selected: active_identity().as_deref() == Some(identity.as_slice()),
-                                    onclick: {
-                                        let identity = identity.clone();
-                                        move |_| {
-                                            if active_identity().as_deref() == Some(identity.as_slice()) {
-                                                active_identity.set(None);
-                                            } else {
-                                                active_identity.set(Some(identity.clone()));
-                                            }
-                                        }
-                                    },
-                                    if identity.is_empty() {
-                                        "Colorless"
-                                    } else {
-                                        IdentityPips { identity: identity.clone() }
-                                    }
-                                }
-                            }
-                            Chip {
-                                selected: show_row_art(),
-                                onclick: move |_| show_row_art.set(!show_row_art()),
-                                "Art"
-                            }
-                        }
                         // The deck view's column of sibling sections.
                         div { style: "width:100%;display:flex;flex-direction:column;gap:var(--panel-gap);",
                             if let Some(profile) = profile() {
                                 BuilderProfileSections { profile }
                             }
                             CollapsibleSection { title: LIST_TITLE, open_section: list_open,
+                                // The commander maybeboard's Show row over the rows it
+                                // narrows: the label, All, one chip per identity among
+                                // the held 100 (its pips and name), then the Art
+                                // toggle. Single select; the selected chip tapped again
+                                // is All. Inset like the charts, with the section
+                                // body's gap below it.
+                                div { class: "chip-row", style: "padding:0 0.75rem;margin-bottom:0;",
+                                    span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
+                                    Chip {
+                                        selected: active_identity().is_none(),
+                                        onclick: move |_| active_identity.set(None),
+                                        "All"
+                                    }
+                                    for identity in identities() {
+                                        Chip {
+                                            key: "{identity_key(&identity)}",
+                                            selected: active_identity().as_deref() == Some(identity.as_slice()),
+                                            onclick: {
+                                                let identity = identity.clone();
+                                                move |_| {
+                                                    if active_identity().as_deref() == Some(identity.as_slice()) {
+                                                        active_identity.set(None);
+                                                    } else {
+                                                        active_identity.set(Some(identity.clone()));
+                                                    }
+                                                }
+                                            },
+                                            IdentityPips {
+                                                identity: identity.clone(),
+                                                text: identity_name(&identity),
+                                            }
+                                        }
+                                    }
+                                    Chip {
+                                        selected: show_row_art(),
+                                        onclick: move |_| show_row_art.set(!show_row_art()),
+                                        "Art"
+                                    }
+                                }
                                 if !has_entries {
                                     div { class: "message-empty",
                                         span { class: "chip-note", "No suggestions right now" }
@@ -1001,13 +1009,7 @@ pub fn SuggestedCommanders() -> Element {
                                 } else if rows.is_empty() {
                                     div { class: "message-empty",
                                         span { class: "chip-note",
-                                            if let Some(identity) = active_identity().filter(|i| !i.is_empty()) {
-                                                "No "
-                                                IdentityPips { identity }
-                                                " commanders in your top 100"
-                                            } else {
-                                                "No colorless commanders in your top 100"
-                                            }
+                                            {empty_identity_line(&active_identity().unwrap_or_default())}
                                         }
                                     }
                                 } else {
@@ -1233,6 +1235,30 @@ mod tests {
         assert_eq!(rows.first().copied(), Some(0));
         assert_eq!(rows.last().copied(), Some(9));
         assert_eq!(shown(&[1, 2, 3]).len(), 3, "a short list is shown whole");
+    }
+
+    #[test]
+    fn empty_identity_line_names_the_identity() {
+        assert_eq!(
+            empty_identity_line(&[Red, White, Blue]),
+            "No Jeskai commanders in your top 100"
+        );
+        assert_eq!(
+            empty_identity_line(&[Blue, Black, Red, Green]),
+            "No Glint-Eye commanders in your top 100"
+        );
+        assert_eq!(
+            empty_identity_line(&[Green]),
+            "No mono-green commanders in your top 100"
+        );
+        assert_eq!(
+            empty_identity_line(&[]),
+            "No colorless commanders in your top 100"
+        );
+        assert_eq!(
+            empty_identity_line(&[White, Blue, Black, Red, Green]),
+            "No five-color commanders in your top 100"
+        );
     }
 
     fn color(code: &str, decks: u32) -> HttpColorAffinity {
