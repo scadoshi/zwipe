@@ -134,21 +134,34 @@ fn identity_key(identity: &[Color]) -> String {
     }
 }
 
-/// An identity's pips, the deck list's group-header grammar, with `text`
-/// after them: a Show chip's name, or a Summary row's name and count.
+/// An identity's name, then its pips in the deck list's group-header
+/// grammar, then `count` when given. A single color is its pip alone, since a
+/// pip already says which color it is; colorless is the name alone.
 #[component]
-fn IdentityPips(identity: Vec<Color>, text: String) -> Element {
+fn IdentityPips(identity: Vec<Color>, count: Option<String>) -> Element {
+    let name = identity_label(&identity);
     rsx! {
         span { class: "identity-pips",
+            if let Some(name) = name {
+                span { "{name}" }
+            }
             for color in identity.iter() {
                 i {
                     key: "{color.to_short_name()}",
                     class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
                 }
             }
-            span { "{text}" }
+            if let Some(count) = count {
+                span { "{count}" }
+            }
         }
     }
+}
+
+/// The name shown beside an identity's pips: none for a single color, the
+/// identity's name otherwise.
+pub(crate) fn identity_label(identity: &[Color]) -> Option<&'static str> {
+    (identity.len() != 1).then(|| identity_name(identity))
 }
 
 /// The list's empty state under a Show chip whose commanders are all gone,
@@ -217,32 +230,32 @@ pub(crate) fn group_shared_tags(
     (roles, by_role, other)
 }
 
-/// A Summary row's value: an identity's pips, then its name and deck count.
+/// A Summary row's value: an identity, drawn by [`IdentityPips`], and its
+/// deck count.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct SummaryValue {
     /// The colors drawn as pips in WUBRG order; empty for colorless.
     pub pips: Vec<Color>,
-    /// The words after the pips, "Jeskai (4)" or "Blue (5)".
-    pub text: String,
+    /// The deck count after the pips, "(4)".
+    pub count: String,
 }
 
 /// The Summary section's rows: the deck count, then the most common color
-/// set and the most common color, each absent when the profile has none.
+/// set and the top color, each absent when the profile has none.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ProfileSummary {
     /// The Decks row's value, the bare count.
     pub decks: String,
-    /// The top identity, named, with its count; `None` when no identity
-    /// repeats.
+    /// The top identity with its count; `None` when no identity repeats.
     pub color_set: Option<SummaryValue>,
-    /// The color in the most decks, named, with its count; `None` when every
-    /// deck is colorless.
+    /// The color in the most decks with its count; `None` when every deck is
+    /// colorless.
     pub color: Option<SummaryValue>,
 }
 
-/// The Summary rows from the profile. The most common color is the first
-/// WUBRG color the server sent, which is the one in the most decks; codes
-/// outside WUBRG are skipped.
+/// The Summary rows from the profile. The top color is the first WUBRG
+/// color the server sent, which is the one in the most decks; codes outside
+/// WUBRG are skipped.
 pub(crate) fn profile_summary(profile: &HttpBuilderProfile) -> ProfileSummary {
     let color_set = profile.top_identity.as_ref().map(|top| {
         let parsed: Vec<Color> = top
@@ -250,17 +263,16 @@ pub(crate) fn profile_summary(profile: &HttpBuilderProfile) -> ProfileSummary {
             .iter()
             .filter_map(|code| Color::try_from(code.as_str()).ok())
             .collect();
-        let pips = identity_of(&parsed);
         SummaryValue {
-            text: format!("{} ({})", identity_name(&pips), top.decks),
-            pips,
+            pips: identity_of(&parsed),
+            count: format!("({})", top.decks),
         }
     });
     let color = profile.colors.iter().find_map(|c| {
         let color = Color::try_from(c.color.as_str()).ok()?;
         Some(SummaryValue {
             pips: vec![color],
-            text: format!("{} ({})", color.to_long_name(), c.decks),
+            count: format!("({})", c.decks),
         })
     });
     ProfileSummary {
@@ -311,9 +323,6 @@ pub(crate) fn color_bars(colors: &[HttpColorAffinity]) -> Vec<Bar> {
 
 /// The WUBRG codes in order.
 const WUBRG: [&str; 5] = ["W", "U", "B", "R", "G"];
-
-/// The list section's title, also its open-state key.
-const LIST_TITLE: &str = "Suggested commanders";
 
 /// The profile sections' titles, also their accordion keys.
 const SUMMARY_TITLE: &str = "Summary";
@@ -452,7 +461,7 @@ fn SummaryIdentityRow(label: &'static str, value: SummaryValue) -> Element {
         div { class: "settings-row",
             span { class: "settings-row-label", "{label}" }
             span { class: "info-row-value",
-                IdentityPips { identity: value.pips, text: value.text }
+                IdentityPips { identity: value.pips, count: value.count }
             }
         }
     }
@@ -499,10 +508,10 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                     span { class: "info-row-value", "{summary.decks}" }
                 }
                 if let Some(value) = summary.color_set {
-                    SummaryIdentityRow { label: "Most common color set", value }
+                    SummaryIdentityRow { label: "Top set", value }
                 }
                 if let Some(value) = summary.color {
-                    SummaryIdentityRow { label: "Most common color", value }
+                    SummaryIdentityRow { label: "Top color", value }
                 }
             }
         }
@@ -901,9 +910,6 @@ pub fn SuggestedCommanders() -> Element {
     let cold_start = deck_count() == 0;
     let has_entries = !entries().is_empty();
     let rows = shown(&filtered());
-    // The list folds on its own, outside the profile's accordion, and starts
-    // open.
-    let list_open: Signal<Option<String>> = use_signal(|| Some(LIST_TITLE.to_string()));
 
     rsx! {
         div { class: "screen",
@@ -938,14 +944,12 @@ pub fn SuggestedCommanders() -> Element {
                         // skeleton rule).
                         div { style: "width:100%;display:flex;flex-direction:column;gap:var(--panel-gap);",
                             BuilderProfileSkeleton {}
-                            CollapsibleSection { title: LIST_TITLE, open_section: list_open,
-                                ShowChipRowSkeleton {}
-                                div { class: "maybeboard-list card-group row-enter",
-                                    for i in 0..6 {
-                                        div { key: "{i}", class: "skeleton-card-row",
-                                            div { class: "skeleton-bar skeleton-card-thumb" }
-                                            div { class: "skeleton-bar skeleton-card-bar-row" }
-                                        }
+                            ShowChipRowSkeleton {}
+                            div { class: "maybeboard-list card-group row-enter",
+                                for i in 0..6 {
+                                    div { key: "{i}", class: "skeleton-card-row",
+                                        div { class: "skeleton-bar skeleton-card-thumb" }
+                                        div { class: "skeleton-bar skeleton-card-bar-row" }
                                     }
                                 }
                             }
@@ -964,74 +968,68 @@ pub fn SuggestedCommanders() -> Element {
                             if let Some(profile) = profile() {
                                 BuilderProfileSections { profile }
                             }
-                            CollapsibleSection { title: LIST_TITLE, open_section: list_open,
-                                // The commander maybeboard's Show row over the rows it
-                                // narrows: the label, All, one chip per identity among
-                                // the held 100 (its pips and name), then the Art
-                                // toggle. Single select; the selected chip tapped again
-                                // is All. Inset like the charts, with the section
-                                // body's gap below it.
-                                div { class: "chip-row", style: "padding:0 0.75rem;margin-bottom:0;",
-                                    span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
+                            // The commander maybeboard's Show row on the grid, over
+                            // the rows it narrows: the label, All, one chip per
+                            // identity among the held 100 (its pips and name), then
+                            // the Art toggle. Single select; the selected chip tapped
+                            // again is All.
+                            div { class: "chip-row",
+                                span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
+                                Chip {
+                                    selected: active_identity().is_none(),
+                                    onclick: move |_| active_identity.set(None),
+                                    "All"
+                                }
+                                for identity in identities() {
                                     Chip {
-                                        selected: active_identity().is_none(),
-                                        onclick: move |_| active_identity.set(None),
-                                        "All"
-                                    }
-                                    for identity in identities() {
-                                        Chip {
-                                            key: "{identity_key(&identity)}",
-                                            selected: active_identity().as_deref() == Some(identity.as_slice()),
-                                            onclick: {
-                                                let identity = identity.clone();
-                                                move |_| {
-                                                    if active_identity().as_deref() == Some(identity.as_slice()) {
-                                                        active_identity.set(None);
-                                                    } else {
-                                                        active_identity.set(Some(identity.clone()));
-                                                    }
+                                        key: "{identity_key(&identity)}",
+                                        selected: active_identity().as_deref() == Some(identity.as_slice()),
+                                        onclick: {
+                                            let identity = identity.clone();
+                                            move |_| {
+                                                if active_identity().as_deref() == Some(identity.as_slice()) {
+                                                    active_identity.set(None);
+                                                } else {
+                                                    active_identity.set(Some(identity.clone()));
                                                 }
-                                            },
-                                            IdentityPips {
-                                                identity: identity.clone(),
-                                                text: identity_name(&identity),
                                             }
-                                        }
-                                    }
-                                    Chip {
-                                        selected: show_row_art(),
-                                        onclick: move |_| show_row_art.set(!show_row_art()),
-                                        "Art"
+                                        },
+                                        IdentityPips { identity: identity.clone() }
                                     }
                                 }
-                                if !has_entries {
-                                    div { class: "message-empty",
-                                        span { class: "chip-note", "No suggestions right now" }
+                                Chip {
+                                    selected: show_row_art(),
+                                    onclick: move |_| show_row_art.set(!show_row_art()),
+                                    "Art"
+                                }
+                            }
+                            if !has_entries {
+                                div { class: "message-empty",
+                                    span { class: "chip-note", "No suggestions right now" }
+                                }
+                            } else if rows.is_empty() {
+                                div { class: "message-empty",
+                                    span { class: "chip-note",
+                                        {empty_identity_line(&active_identity().unwrap_or_default())}
                                     }
-                                } else if rows.is_empty() {
-                                    div { class: "message-empty",
-                                        span { class: "chip-note",
-                                            {empty_identity_line(&active_identity().unwrap_or_default())}
-                                        }
-                                    }
-                                } else {
-                                    div { class: "maybeboard-list card-group row-enter",
-                                        for suggestion in rows {
-                                            SuggestionRow {
-                                                key: "{suggestion.card.scryfall_data.id}",
-                                                suggestion,
-                                                deck_count: deck_count(),
-                                                expanded_card,
-                                                preview_card,
-                                                preview_dismissing,
-                                                on_start,
-                                                on_maybe,
-                                                on_dismiss,
-                                                on_printing: move |c: Card| {
-                                                    printing_card.set(Some(c));
-                                                    printing_open.set(true);
-                                                },
-                                            }
+                                }
+                            } else {
+                                div { class: "maybeboard-list card-group row-enter",
+                                    for suggestion in rows {
+                                        SuggestionRow {
+                                            key: "{suggestion.card.scryfall_data.id}",
+                                            suggestion,
+                                            deck_count: deck_count(),
+                                            expanded_card,
+                                            preview_card,
+                                            preview_dismissing,
+                                            on_start,
+                                            on_maybe,
+                                            on_dismiss,
+                                            on_printing: move |c: Card| {
+                                                printing_card.set(Some(c));
+                                                printing_open.set(true);
+                                            },
                                         }
                                     }
                                 }
@@ -1319,15 +1317,22 @@ mod tests {
         }
     }
 
-    fn value(pips: &[Color], text: &str) -> SummaryValue {
+    fn value(pips: &[Color], count: &str) -> SummaryValue {
         SummaryValue {
             pips: pips.to_vec(),
-            text: text.to_string(),
+            count: count.to_string(),
         }
     }
 
     #[test]
-    fn profile_summary_counts_decks_and_names_the_most_common_set_and_color() {
+    fn a_single_color_is_its_pip_alone_and_others_are_named() {
+        assert_eq!(identity_label(&[Blue]), None);
+        assert_eq!(identity_label(&[White, Blue, Red]), Some("Jeskai"));
+        assert_eq!(identity_label(&[]), Some("Colorless"));
+    }
+
+    #[test]
+    fn profile_summary_counts_decks_with_the_top_set_and_color() {
         let summary = profile_summary(&profile(
             7,
             vec![color("U", 5), color("W", 4)],
@@ -1336,31 +1341,31 @@ mod tests {
         assert_eq!(summary.decks, "7");
         assert_eq!(
             summary.color_set,
-            Some(value(&[White, Blue, Red], "Jeskai (4)")),
+            Some(value(&[White, Blue, Red], "(4)")),
             "pips in WUBRG order whatever order the server sent"
         );
-        assert_eq!(summary.color, Some(value(&[Blue], "Blue (5)")));
+        assert_eq!(summary.color, Some(value(&[Blue], "(5)")));
 
         let summary = profile_summary(&profile(1, vec![color("B", 1)], Some(top(&["B"], 1))));
         assert_eq!(summary.decks, "1");
-        assert_eq!(summary.color_set, Some(value(&[Black], "Mono-black (1)")));
-        assert_eq!(summary.color, Some(value(&[Black], "Black (1)")));
+        assert_eq!(summary.color_set, Some(value(&[Black], "(1)")));
+        assert_eq!(summary.color, Some(value(&[Black], "(1)")));
     }
 
     #[test]
-    fn profile_summary_omits_what_the_profile_lacks_and_names_colorless() {
+    fn profile_summary_omits_what_the_profile_lacks() {
         let summary = profile_summary(&profile(3, vec![color("U", 2)], None));
         assert_eq!(summary.color_set, None, "no identity repeats");
-        assert_eq!(summary.color, Some(value(&[Blue], "Blue (2)")));
+        assert_eq!(summary.color, Some(value(&[Blue], "(2)")));
 
         let summary = profile_summary(&profile(2, vec![], Some(top(&[], 2))));
-        assert_eq!(summary.color_set, Some(value(&[], "Colorless (2)")));
+        assert_eq!(summary.color_set, Some(value(&[], "(2)")));
         assert_eq!(summary.color, None, "every deck colorless");
 
         let summary = profile_summary(&profile(2, vec![color("C", 2), color("G", 1)], None));
         assert_eq!(
             summary.color,
-            Some(value(&[Green], "Green (1)")),
+            Some(value(&[Green], "(1)")),
             "a code outside WUBRG is skipped"
         );
     }
