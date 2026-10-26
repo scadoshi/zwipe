@@ -1943,6 +1943,77 @@ impl CardRepository for MyPostgres {
         Ok(profile)
     }
 
+    async fn deck_tag_profiles(
+        &self,
+        decks: &[Vec<uuid::Uuid>],
+    ) -> Result<Vec<Option<serde_json::Value>>, SearchCardsError> {
+        // The same weighting as deck_tag_profile, computed for every deck in
+        // one statement. The decks bind as two parallel arrays, one (deck
+        // index, oracle id) pair per card, since a uuid[][] does not bind.
+        // The tag frequencies over all tagged cards do not depend on the
+        // deck, so they are counted once; the per-deck rank and the
+        // normalizing sum are window functions partitioned by deck. A deck
+        // whose cards carry no usable tags produces no row and stays None.
+        let mut deck_indices: Vec<i32> = Vec::new();
+        let mut oracle_ids: Vec<uuid::Uuid> = Vec::new();
+        for (index, deck) in decks.iter().enumerate() {
+            let index = i32::try_from(index)
+                .context("deck index")
+                .map_err(SearchScryfallDataError::Database)?;
+            deck_indices.extend(std::iter::repeat_n(index, deck.len()));
+            oracle_ids.extend_from_slice(deck);
+        }
+        let rows: Vec<(i32, serde_json::Value)> = query_as(
+            "WITH profile_cards AS (
+                 SELECT DISTINCT deck, oracle_id
+                 FROM unnest($1::int4[], $2::uuid[]) AS c(deck, oracle_id)
+             ),
+             tf AS (
+                 SELECT p.deck, t.oracle_tag, count(*)::float8 AS n
+                 FROM card_oracle_tags t JOIN profile_cards p USING (oracle_id)
+                 WHERE t.oracle_tag NOT LIKE 'cycle-%'
+                 GROUP BY p.deck, t.oracle_tag
+             ),
+             df AS (
+                 SELECT oracle_tag, count(*)::float8 AS n FROM card_oracle_tags
+                 WHERE oracle_tag IN (SELECT oracle_tag FROM tf)
+                 GROUP BY oracle_tag
+             ),
+             total AS (SELECT count(DISTINCT oracle_id)::float8 AS n FROM card_oracle_tags),
+             weighted AS (
+                 SELECT tf.deck, tf.oracle_tag, tf.n * ln(total.n / df.n) AS w
+                 FROM tf JOIN df USING (oracle_tag) CROSS JOIN total
+                 WHERE df.n < total.n
+             ),
+             ranked AS (
+                 SELECT deck, oracle_tag, w,
+                        row_number() OVER (PARTITION BY deck ORDER BY w DESC, oracle_tag) AS rn
+                 FROM weighted
+             ),
+             normalized AS (
+                 SELECT deck, oracle_tag, w / sum(w) OVER (PARTITION BY deck) AS w
+                 FROM ranked WHERE rn <= $3
+             )
+             SELECT deck, jsonb_object_agg(oracle_tag, w) FROM normalized GROUP BY deck",
+        )
+        .bind(&deck_indices)
+        .bind(&oracle_ids)
+        .bind(PROFILE_TAG_LIMIT)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
+        let mut profiles: Vec<Option<serde_json::Value>> = vec![None; decks.len()];
+        for (deck, profile) in rows {
+            let slot = usize::try_from(deck)
+                .ok()
+                .and_then(|index| profiles.get_mut(index));
+            if let Some(slot) = slot {
+                *slot = Some(profile);
+            }
+        }
+        Ok(profiles)
+    }
+
     async fn score_commander_suggestions(
         &self,
         user_id: uuid::Uuid,
