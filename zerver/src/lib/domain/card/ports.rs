@@ -355,7 +355,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<Vec<Option<DeckTagProfile>>, SearchCardsError>> + Send;
 
     /// Ranks the commanders in `commander_tag_profiles` against a user's
-    /// commander decks, best first, at most `limit`. `decks` is a JSON array of
+    /// decks, best first, at most `limit`. `decks` is a JSON array of
     /// `{"colors": [WUBRG letters], "profile": {otag: weight} | null}`, one per
     /// deck; a candidate's tag term is its best dot product over the deck
     /// profiles and its color term the best Jaccard match of its color

@@ -25,8 +25,9 @@ use zwipe_core::domain::deck::{Board, DeckCard, DeckName, DeckOtherTag, DeckTag}
 use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError;
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
+use crate::domain::deck::models::deck::commander_suggestions;
 use crate::domain::deck::models::deck::commander_suggestions::{
-    CommanderDeck, CommanderDismissal, CommanderSuggestionsError,
+    CommanderDismissal, CommanderSuggestionsError, ProfiledDeck,
 };
 use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
 use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
@@ -748,20 +749,29 @@ impl DeckRepository for Postgres {
         Ok(result.rows_affected())
     }
 
-    async fn commander_decks(
+    async fn fetch_profiled_decks(
         &self,
         user_id: uuid::Uuid,
-    ) -> Result<Vec<CommanderDeck>, CommanderSuggestionsError> {
+    ) -> Result<Vec<ProfiledDeck>, CommanderSuggestionsError> {
+        // card_colors is every color across the mainboard's identities, the
+        // same union the deck views compute; a deck with a commander takes
+        // the commander's identity instead.
         let rows = query!(
-            r#"SELECT s.oracle_id AS "commander_oracle_id!",
-                      s.color_identity AS commander_colors,
+            r#"SELECT s.oracle_id AS "commander_oracle_id?",
+                      s.color_identity AS "commander_colors?: Vec<String>",
+                      (SELECT array_agg(DISTINCT ci)
+                         FROM scryfall_data sci, unnest(sci.color_identity) AS ci
+                        WHERE sci.id IN (SELECT dc2.scryfall_data_id FROM deck_cards dc2
+                                          WHERE dc2.deck_id = d.id AND dc2.board = 'deck'))
+                          AS "card_colors?: Vec<String>",
                       COALESCE(array_agg(dc.oracle_id) FILTER (WHERE dc.board = 'deck'), '{}')
                           AS "mainboard_oracle_ids!: Vec<uuid::Uuid>"
                FROM decks d
-               JOIN scryfall_data s ON s.id = d.commander_id
+               LEFT JOIN scryfall_data s ON s.id = d.commander_id AND s.oracle_id IS NOT NULL
                LEFT JOIN deck_cards dc ON dc.deck_id = d.id
-               WHERE d.user_id = $1 AND s.oracle_id IS NOT NULL
+               WHERE d.user_id = $1
                GROUP BY d.id, s.oracle_id, s.color_identity
+               HAVING s.oracle_id IS NOT NULL OR bool_or(dc.board = 'deck')
                ORDER BY d.updated_at DESC, d.id"#,
             user_id,
         )
@@ -770,10 +780,18 @@ impl DeckRepository for Postgres {
         .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
         Ok(rows
             .into_iter()
-            .map(|row| CommanderDeck {
-                commander_oracle_id: row.commander_oracle_id,
-                commander_colors: row.commander_colors,
-                mainboard_oracle_ids: row.mainboard_oracle_ids,
+            .map(|row| {
+                let commander_colors = row
+                    .commander_oracle_id
+                    .map(|_| row.commander_colors.unwrap_or_default());
+                ProfiledDeck {
+                    commander_oracle_id: row.commander_oracle_id,
+                    colors: commander_suggestions::deck_colors(
+                        commander_colors,
+                        row.card_colors.unwrap_or_default(),
+                    ),
+                    mainboard_oracle_ids: row.mainboard_oracle_ids,
+                }
             })
             .collect())
     }

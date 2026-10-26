@@ -167,7 +167,7 @@ const PROFILE_TAG_LIMIT: i64 = 40;
 
 /// Weight of the color term in a commander suggestion's score: the best
 /// Jaccard match (0..1) of the candidate's color identity against the color
-/// identities of the user's commander decks, times this. Tag overlap is a sum
+/// identities of the user's decks, times this. Tag overlap is a sum
 /// of products of two profiles that each sum to 1, so it lands well under 1
 /// and this keeps colors a tiebreak rather than the ranking.
 const W_COLOR_AFFINITY: f64 = 0.15;

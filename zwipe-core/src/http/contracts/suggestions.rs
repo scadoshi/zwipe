@@ -24,7 +24,7 @@ pub const PROFILE_ROLE_SHOWN: usize = 10;
 pub struct HttpCommanderSuggestions {
     /// Ranked best first.
     pub suggestions: Vec<HttpCommanderSuggestion>,
-    /// Decks with a commander that fed the profile. 0 is the cold start, when
+    /// Decks in any format that fed the profile. 0 is the cold start, when
     /// `suggestions` is empty and the client shows its empty state.
     pub deck_count: u32,
     /// What the user builds, summarized from the same decks. `None` at the
@@ -33,14 +33,15 @@ pub struct HttpCommanderSuggestions {
     pub profile: Option<HttpBuilderProfile>,
 }
 
-/// The colors and oracle tags across the user's commander decks, the profile
+/// The colors and oracle tags across the user's decks in every format, the
+/// profile
 /// the suggestions are ranked against.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HttpBuilderProfile {
-    /// Decks with a commander, the same count as
+    /// Decks summarized, the same count as
     /// [`HttpCommanderSuggestions::deck_count`].
     pub deck_count: u32,
-    /// Each color the user's commanders use, with how many decks use it, most
+    /// Each color the user's decks use, with how many decks use it, most
     /// decks first and WUBRG order between equals. Colors no deck uses are
     /// absent.
     pub colors: Vec<HttpColorAffinity>,
@@ -68,13 +69,14 @@ pub struct HttpProfileRole {
     pub decks: u32,
 }
 
-/// How many of the user's commander decks share one exact color identity.
+/// How many of the user's decks share one exact color identity.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HttpColorIdentityCount {
     /// The identity as `W`, `U`, `B`, `R`, `G` in WUBRG order; empty for
     /// colorless.
     pub colors: Vec<String>,
-    /// Commander decks whose commander has exactly this identity.
+    /// Decks with exactly these colors: the commander's identity when the
+    /// deck has one, otherwise the union of its mainboard cards' identities.
     pub decks: u32,
 }
 
@@ -131,12 +133,12 @@ pub struct HttpSharedTag {
     pub role: Option<String>,
 }
 
-/// How many of the user's commander decks use one of the commander's colors.
+/// How many of the user's decks use one of the commander's colors.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HttpColorAffinity {
     /// One of `W`, `U`, `B`, `R`, `G`.
     pub color: String,
-    /// Commander decks whose commander's color identity includes it, above 0.
+    /// Decks whose colors include it, above 0.
     pub decks: u32,
 }
 

@@ -1,6 +1,7 @@
-//! Suggested commanders: the user's commander decks scored against the
-//! precomputed commander tag profiles, the variety cap over the ranking, and
-//! the dismissals that hide one.
+//! Suggested commanders: every deck the user owns, in any format, summarized
+//! into a play style and scored against the precomputed commander tag
+//! profiles, the variety cap over the ranking, and the dismissals that hide
+//! one.
 
 use std::cmp::Reverse;
 use std::collections::{HashMap, HashSet};
@@ -66,15 +67,34 @@ impl CommanderDismissal {
     }
 }
 
-/// One of the user's decks that has a commander, as the profile reads it.
+/// One of the user's decks, in any format, as the profile reads it.
 #[derive(Debug, Clone)]
-pub struct CommanderDeck {
-    /// The commander's oracle id.
-    pub commander_oracle_id: Uuid,
-    /// The commander's color identity as WUBRG short names.
-    pub commander_colors: Vec<String>,
+pub struct ProfiledDeck {
+    /// The commander's oracle id; `None` for a deck without one.
+    pub commander_oracle_id: Option<Uuid>,
+    /// The deck's colors as WUBRG short names, from [`deck_colors`].
+    pub colors: Vec<String>,
     /// Oracle ids of the deck's mainboard cards.
     pub mainboard_oracle_ids: Vec<Uuid>,
+}
+
+impl ProfiledDeck {
+    /// The oracle ids the deck's tag profile is built from: the commander,
+    /// when there is one, then the mainboard.
+    pub fn profile_oracle_ids(&self) -> Vec<Uuid> {
+        self.commander_oracle_id
+            .into_iter()
+            .chain(self.mainboard_oracle_ids.iter().copied())
+            .collect()
+    }
+}
+
+/// A deck's colors in WUBRG order: its commander's color identity when it has
+/// a commander, otherwise the union of its mainboard cards' color identities.
+/// `card_colors` may repeat a color; colors outside WUBRG sort last.
+#[must_use]
+pub fn deck_colors(commander_colors: Option<Vec<String>>, card_colors: Vec<String>) -> Vec<String> {
+    sorted_identity(&commander_colors.unwrap_or(card_colors))
 }
 
 /// One deck's oracle-tag profile with the card counts behind it.
@@ -97,12 +117,12 @@ pub struct SharedTag {
     pub role: Option<String>,
 }
 
-/// How many of the user's commander decks use one of a commander's colors.
+/// How many of the user's decks use one of a commander's colors.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ColorAffinity {
     /// One of `W`, `U`, `B`, `R`, `G`.
     pub color: String,
-    /// Commander decks whose commander's color identity includes it.
+    /// Decks whose colors include it.
     pub decks: u32,
 }
 
@@ -155,12 +175,12 @@ pub struct CommanderSuggestion {
     pub colors: Vec<ColorAffinity>,
 }
 
-/// How many of the user's commander decks share one exact color identity.
+/// How many of the user's decks share one exact color identity.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ColorIdentityCount {
     /// The identity in WUBRG order; empty for colorless.
     pub colors: Vec<String>,
-    /// Decks whose commander has exactly this identity.
+    /// Decks with exactly these colors.
     pub decks: u32,
 }
 
@@ -184,9 +204,9 @@ pub struct ProfileTag {
 /// ranked against.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BuilderProfile {
-    /// Decks with a commander.
+    /// Decks summarized, in any format.
     pub deck_count: u32,
-    /// Each color the commanders use with its deck count, most decks first,
+    /// Each color the decks use with its deck count, most decks first,
     /// WUBRG order between equals.
     pub colors: Vec<ColorAffinity>,
     /// The most-built exact identity; `None` when every identity is unique
@@ -229,7 +249,7 @@ fn sorted_identity(colors: &[String]) -> Vec<String> {
     identity
 }
 
-/// Summarizes the user's commander decks: per color the decks using it,
+/// Summarizes the user's decks: per color the decks using it,
 /// the most-built exact identity, the highest-scoring oracle tags across the
 /// deck profiles, and the card roles those tags fall under. `profiles` pairs with
 /// `decks` by position (shorter is fine; the rest count as unprofiled).
@@ -244,7 +264,7 @@ fn sorted_identity(colors: &[String]) -> Vec<String> {
 /// `None` when more than one deck exists and no identity repeats.
 #[must_use]
 pub fn summarize_profile(
-    decks: &[CommanderDeck],
+    decks: &[ProfiledDeck],
     profiles: &[Option<DeckTagProfile>],
     tag_roles: &HashMap<String, String>,
 ) -> Option<BuilderProfile> {
@@ -256,7 +276,7 @@ pub fn summarize_profile(
     let mut color_decks: HashMap<String, u32> = HashMap::new();
     let mut identity_decks: HashMap<Vec<String>, u32> = HashMap::new();
     for deck in decks {
-        let identity = sorted_identity(&deck.commander_colors);
+        let identity = sorted_identity(&deck.colors);
         for color in &identity {
             *color_decks.entry(color.clone()).or_default() += 1;
         }
@@ -335,7 +355,8 @@ pub fn summarize_profile(
 pub struct CommanderSuggestions {
     /// Ranked best first.
     pub suggestions: Vec<CommanderSuggestion>,
-    /// The user's decks with a commander. 0 means no profile could be built.
+    /// The user's decks summarized, in any format. 0 means no profile could
+    /// be built.
     pub deck_count: u32,
     /// The decks summarized; `None` at the cold start.
     pub profile: Option<BuilderProfile>,
@@ -415,12 +436,60 @@ mod tests {
         assert_eq!(ids(&out), vec![1, 3, 2]);
     }
 
-    fn deck(n: u128, colors: &[&str]) -> CommanderDeck {
-        CommanderDeck {
-            commander_oracle_id: Uuid::from_u128(n),
-            commander_colors: colors.iter().map(|c| c.to_string()).collect(),
+    fn deck(n: u128, colors: &[&str]) -> ProfiledDeck {
+        ProfiledDeck {
+            commander_oracle_id: Some(Uuid::from_u128(n)),
+            colors: colors.iter().map(|c| c.to_string()).collect(),
             mainboard_oracle_ids: vec![],
         }
+    }
+
+    fn strings(colors: &[&str]) -> Vec<String> {
+        colors.iter().map(|c| c.to_string()).collect()
+    }
+
+    #[test]
+    fn a_deck_without_a_commander_takes_its_cards_colors_in_wubrg_order() {
+        assert_eq!(
+            deck_colors(None, strings(&["G", "W", "G", "B", "W"])),
+            strings(&["W", "B", "G"]),
+            "the union of the mainboard's identities, deduplicated"
+        );
+        assert!(deck_colors(None, vec![]).is_empty(), "colorless cards");
+    }
+
+    #[test]
+    fn a_commander_decides_the_deck_colors() {
+        assert_eq!(
+            deck_colors(Some(strings(&["R", "W"])), strings(&["U", "R"])),
+            strings(&["W", "R"]),
+            "the commander's identity, not the cards'"
+        );
+        assert!(
+            deck_colors(Some(vec![]), strings(&["U"])).is_empty(),
+            "a colorless commander keeps the deck colorless"
+        );
+    }
+
+    #[test]
+    fn a_deck_without_a_commander_profiles_its_mainboard_only() {
+        let deck = ProfiledDeck {
+            commander_oracle_id: None,
+            colors: vec![],
+            mainboard_oracle_ids: vec![Uuid::from_u128(2), Uuid::from_u128(3)],
+        };
+        assert_eq!(
+            deck.profile_oracle_ids(),
+            vec![Uuid::from_u128(2), Uuid::from_u128(3)]
+        );
+        let led = ProfiledDeck {
+            commander_oracle_id: Some(Uuid::from_u128(1)),
+            ..deck
+        };
+        assert_eq!(
+            led.profile_oracle_ids(),
+            vec![Uuid::from_u128(1), Uuid::from_u128(2), Uuid::from_u128(3)]
+        );
     }
 
     fn affinity(color: &str, decks: u32) -> ColorAffinity {

@@ -30,7 +30,7 @@ use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppres
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
 use crate::domain::deck::models::deck::commander_suggestions::{
-    CommanderDeck, CommanderDismissal, CommanderSuggestions, CommanderSuggestionsError,
+    CommanderDismissal, CommanderSuggestions, CommanderSuggestionsError, ProfiledDeck,
 };
 use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
 use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
@@ -212,13 +212,13 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
 
     // == suggested commanders ==
 
-    /// The user's decks that have a commander, most recently updated first,
-    /// each with its commander's oracle id and colors and its mainboard oracle
-    /// ids.
-    fn commander_decks(
+    /// Every deck the user owns, in any format, that has a commander or a
+    /// mainboard card, most recently updated first, each with its commander's
+    /// oracle id when it has one, its colors and its mainboard oracle ids.
+    fn fetch_profiled_decks(
         &self,
         user_id: uuid::Uuid,
-    ) -> impl Future<Output = Result<Vec<CommanderDeck>, CommanderSuggestionsError>> + Send;
+    ) -> impl Future<Output = Result<Vec<ProfiledDeck>, CommanderSuggestionsError>> + Send;
 
     /// Records a dismissal, restarting its clock when one exists.
     fn dismiss_commander(
@@ -409,8 +409,9 @@ pub trait DeckService: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<u64, CommanderMaybeboardError>> + Send;
 
     /// Ranks commanders for the user from the decks they have built, at most
-    /// `limit`, each with the reasons behind it. A user with no commander deck
-    /// gets an empty list and `deck_count` 0.
+    /// `limit`, each with the reasons behind it. Decks in every format count.
+    /// A user with no deck that has a commander or a mainboard card gets an
+    /// empty list and `deck_count` 0.
     fn commander_suggestions(
         &self,
         user_id: uuid::Uuid,

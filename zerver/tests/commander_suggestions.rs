@@ -1,5 +1,5 @@
-//! Suggested commanders: the user's commander decks scored against seeded
-//! `commander_tag_profiles` rows, with the reasons behind each pick, the
+//! Suggested commanders: the user's decks in every format scored against
+//! seeded `commander_tag_profiles` rows, with the reasons behind each pick, the
 //! per-deck matching, the color identity cap, the exclusions, and the
 //! week-long dismissals.
 //!
@@ -66,6 +66,34 @@ async fn build_commander_deck(
         )
         .await;
     assert_eq!(status, StatusCode::OK, "set commander: {updated}");
+    add_mainboard(app, deck_id, mainboard).await;
+    deck_id
+}
+
+/// Creates a deck of `format` with no commander and puts `mainboard`
+/// (scryfall id, oracle id) on its mainboard.
+async fn build_deck(
+    app: &TestApp,
+    token: &str,
+    name: &str,
+    format: &str,
+    mainboard: &[(Uuid, Uuid)],
+) -> Uuid {
+    let (status, deck) = app
+        .post(
+            DECK_ROUTE,
+            json!({ "name": name, "format": format }),
+            Some(token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "create: {deck}");
+    let deck_id: Uuid = deck["id"].as_str().unwrap().parse().unwrap();
+    add_mainboard(app, deck_id, mainboard).await;
+    deck_id
+}
+
+/// Puts each (scryfall id, oracle id) on the deck's mainboard once.
+async fn add_mainboard(app: &TestApp, deck_id: Uuid, mainboard: &[(Uuid, Uuid)]) {
     for (scryfall_id, oracle_id) in mainboard {
         sqlx::query(
             "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board)
@@ -78,7 +106,6 @@ async fn build_commander_deck(
         .await
         .unwrap();
     }
-    deck_id
 }
 
 async fn suggestions(app: &TestApp, token: &str, limit: u32) -> Value {
@@ -235,15 +262,96 @@ async fn cold_start_is_empty_with_zero_decks(pool: sqlx::PgPool) {
         json!({ "suggestions": [], "deck_count": 0, "profile": null })
     );
 
-    // A deck without a commander feeds nothing either.
-    let (status, deck) = app
-        .post(DECK_ROUTE, json!({ "name": "Headless" }), Some(&token))
-        .await;
-    assert_eq!(status, StatusCode::CREATED, "create: {deck}");
+    // An empty deck without a commander feeds nothing either.
+    build_deck(&app, &token, "Headless", "standard", &[]).await;
     let body = suggestions(&app, &token, 10).await;
     assert_eq!(body["deck_count"], 0);
     assert!(names(&body).is_empty());
     assert_eq!(body["profile"], Value::Null);
+}
+
+#[sqlx::test]
+async fn decks_without_a_commander_build_the_profile_and_the_list(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("sixtycards").await;
+    app.verify_email(&uid).await;
+
+    // A Standard deck and a Pioneer deck, neither with a commander. The
+    // Standard deck is white and red treasure; the Pioneer one is green.
+    let treasure_w = card("Treasure White").mono("W");
+    let treasure_r = card("Treasure Red").mono("R");
+    let elf = card("Green Elf").mono("G");
+    let untracked = card("Untracked Card").mono("B");
+    let standard_main = [
+        (treasure_w.id(), treasure_w.oracle_id().unwrap()),
+        (treasure_r.id(), treasure_r.oracle_id().unwrap()),
+    ];
+    let pioneer_main = [(elf.id(), elf.oracle_id().unwrap())];
+    seed_oracle_tags(
+        &pool,
+        &[
+            (standard_main[0].1, "treasure"),
+            (standard_main[1].1, "treasure"),
+            (pioneer_main[0].1, "typal-elf"),
+            // Keeps each tag short of every tagged card, so it carries weight.
+            (untracked.oracle_id().unwrap(), "burn"),
+        ],
+    )
+    .await;
+    seed_cards(&pool, &[treasure_w, treasure_r, elf, untracked]).await;
+    build_deck(&app, &token, "Treasure", "standard", &standard_main).await;
+    build_deck(&app, &token, "Elves", "pioneer", &pioneer_main).await;
+
+    seed_candidate(&pool, "Boros Treasure", "WR", json!({ "treasure": 1.0 })).await;
+    seed_candidate(
+        &pool,
+        "Elf Lord",
+        "G",
+        json!({ "typal-elf": 0.5, "lifelink": 0.5 }),
+    )
+    .await;
+    seed_candidate(&pool, "Blue Stranger", "U", json!({ "flying": 1.0 })).await;
+
+    let body = suggestions(&app, &token, 10).await;
+    assert_eq!(body["deck_count"], 2, "both decks count: {body}");
+    let listed = names(&body);
+    assert!(!listed.is_empty(), "no commander deck still gets a list");
+    assert_eq!(
+        listed[..2],
+        ["Boros Treasure", "Elf Lord"],
+        "the candidate matching a deck's tags and colors leads: {body}"
+    );
+    assert_eq!(
+        body["suggestions"][0]["reasons"]["tags"],
+        json!([{ "slug": "treasure", "role": null }])
+    );
+    assert_eq!(
+        body["suggestions"][0]["reasons"]["colors"],
+        json!([{ "color": "W", "decks": 1 }, { "color": "R", "decks": 1 }]),
+        "a deck without a commander takes its cards' colors"
+    );
+
+    let profile = &body["profile"];
+    assert_eq!(profile["deck_count"], 2);
+    assert_eq!(
+        profile["colors"],
+        json!([
+            { "color": "W", "decks": 1 },
+            { "color": "R", "decks": 1 },
+            { "color": "G", "decks": 1 },
+        ])
+    );
+    let (tags, _) = split_scores(profile);
+    let slugs: Vec<&str> = tags
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["slug"].as_str().unwrap())
+        .collect();
+    assert!(
+        slugs.contains(&"treasure") && slugs.contains(&"typal-elf"),
+        "both decks' tags reach the profile: {body}"
+    );
 }
 
 #[sqlx::test]
