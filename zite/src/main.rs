@@ -34,6 +34,8 @@ enum Route {
     Guides {},
     #[route("/guides/:slug")]
     GuidePage { slug: String },
+    // The Your play style guide's first slug, linked before the rename.
+    #[redirect("/guides/suggested-commanders", || Route::GuidePage { slug: "your-play-style".to_string() })]
     #[route("/about")]
     About {},
     #[route("/changelog")]
@@ -343,6 +345,20 @@ pub fn Footer() -> Element {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    #[test]
+    fn the_old_play_style_guide_slug_redirects_to_the_new_one() {
+        let route: Route = "/guides/suggested-commanders".parse().unwrap();
+        assert!(
+            route
+                == Route::GuidePage {
+                    slug: "your-play-style".to_string()
+                },
+            "got {route}"
+        );
+    }
+
     #[test]
     fn the_first_paint_script_retires_the_themes_orangui_retires() {
         let html = include_str!("../index.html");

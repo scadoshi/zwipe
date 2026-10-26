@@ -621,19 +621,20 @@ pub static GUIDES: &[Guide] = &[
         ],
     },
     Guide {
-        slug: "suggested-commanders",
-        title: "Suggested commanders",
-        summary: "Commanders ranked against the decks you already build, with the reasons each one made the list.",
+        slug: "your-play-style",
+        title: "Your play style",
+        summary: "What your decks say about how you play, and commanders ranked against them, with the reasons each one made the list.",
         tags: &["Commander"],
         related: &["commander-maybeboard", "synergy"],
         blocks: &[
             Block::Lead(
-                "Your decks already say what you like to play. Suggested commanders reads them and ranks commanders you haven't built yet.",
+                "Your decks already say what you like to play. Your play style reads every one of them, in any format, then ranks commanders you haven't built yet.",
             ),
             Block::H2("Finding it"),
             Block::Bullets(&[
-                "On the Decks screen, tap More, then Suggested commanders.",
-                "Your top 10 show as card rows, best fit first.",
+                "On the Decks screen, tap More, then Your play style.",
+                "Your colors, card roles and oracle tags come first.",
+                "Under them, your top 10 commanders show as card rows, best fit first.",
                 "Tap a color chip in the Show row to see only those colors. Tap it again to see them all.",
             ]),
             Block::H2("What your decks say"),
@@ -641,7 +642,7 @@ pub static GUIDES: &[Guide] = &[
                 "Summary, at the top, shows how many decks were read, your top color set and your top color. Under it are three more sections. Tap one to open it.",
             ),
             Block::Bullets(&[
-                "Colors shows which colors your commanders play.",
+                "Colors shows which colors your decks play.",
                 "Card roles shows the jobs your cards do, like ramp or removal. Tap a role to see its tags.",
                 "Oracle tags lists your 10 most impactful tags. Tap a tag to see what it means.",
                 "Each open section has a question mark in its header that explains it.",
@@ -676,7 +677,7 @@ pub static GUIDES: &[Guide] = &[
                 "Skipped commanders come back on their own after seven days. To bring them all back now, tap More, then Clear skips.",
             ),
             Block::Note(
-                "You need a deck with a commander and some cards in it before anything shows up.",
+                "You need a deck with some cards in it before anything shows up. Any format counts.",
             ),
         ],
     },
