@@ -47,6 +47,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Playstyle",
         "Profile splits into Account and Config",
         "Log out moves to Account",
+        "Draw odds' ? sits in its section header",
     ],
 }];
 
