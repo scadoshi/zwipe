@@ -83,11 +83,56 @@ pub enum LabelCase {
 /// Width of a horizontal chart's label column unless the host sets one.
 const DEFAULT_LABEL_WIDTH: &str = "5ch";
 
+/// The widest a chip label column grows before its chips wrap, so the bar
+/// keeps room on a phone.
+const CHIP_LABEL_MAX_WIDTH: &str = "50%";
+
+/// How a [`BarChart`] lays its bars and labels out.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Layout {
+    Vertical,
+    /// Horizontal rows with plain text labels in a fixed-width column.
+    Rows,
+    /// Horizontal rows with tappable chip labels in a column as wide as the
+    /// widest chip, and a reveal under the open row.
+    ChipRows,
+}
+
+impl Layout {
+    fn new(orientation: BarOrientation, tappable: bool) -> Self {
+        match (orientation, tappable) {
+            (BarOrientation::Vertical, _) => Self::Vertical,
+            (BarOrientation::Horizontal, false) => Self::Rows,
+            (BarOrientation::Horizontal, true) => Self::ChipRows,
+        }
+    }
+}
+
+/// Where a chip chart's reveal sits: under the row whose key is `key`, eased
+/// open or shut.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct RevealAt<'k> {
+    key: &'k str,
+    open: bool,
+}
+
+/// The reveal follows `selected` and stays under the last opened row while
+/// it closes, so its content is still there for the collapse to ease out.
+fn reveal_at<'k>(selected: Option<&'k str>, shown: Option<&'k str>) -> Option<RevealAt<'k>> {
+    match selected {
+        Some(key) => Some(RevealAt { key, open: true }),
+        None => shown.map(|key| RevealAt { key, open: false }),
+    }
+}
+
 /// One count-based bar chart: an optional [`ChartLabel`] sub-heading, then
 /// the bars with their counts and labels.
 ///
-/// With `on_bar` set, each label is tappable and reports its bar's key; the
-/// label whose key is `selected` reads in the accent color.
+/// With `on_bar` set, each label is tappable and reports its bar's key, and
+/// the bar whose key is `selected` is the open one. A vertical chart tints
+/// that label in the accent color. A horizontal chart draws each label as a
+/// `.keyword-chip`, active when open, and eases `reveal`'s content open
+/// directly under the open row, one row at a time.
 #[component]
 pub fn BarChart(
     /// The [`ChartLabel`] over the bars; none renders the bars alone.
@@ -99,12 +144,23 @@ pub fn BarChart(
     hint: Option<Element>,
     #[props(default)] orientation: BarOrientation,
     #[props(default)] label_case: LabelCase,
-    /// Horizontal only: the label column's CSS width.
+    /// Horizontal only: the label column's CSS width. A chip column sizes to
+    /// its widest chip instead.
     #[props(default = DEFAULT_LABEL_WIDTH)]
     label_width: &'static str,
     #[props(default)] on_bar: Option<Callback<String>>,
     #[props(default)] selected: Option<String>,
+    /// Horizontal with `on_bar` only: the content under the open row, given
+    /// that row's key. It is also called for the row just closed while the
+    /// reveal eases shut.
+    #[props(default)]
+    reveal: Option<Callback<String, Element>>,
 ) -> Element {
+    let layout = Layout::new(orientation, on_bar.is_some());
+    // The last opened key, kept through a close so the reveal can ease out.
+    let mut shown: Signal<Option<String>> = use_signal(|| None);
+    let shown_key = shown();
+    let reveal_row = reveal_at(selected.as_deref(), shown_key.as_deref());
     let upper = match label_case {
         LabelCase::Upper => "text-transform:uppercase;",
         LabelCase::AsIs => "",
@@ -138,13 +194,45 @@ pub fn BarChart(
             }
         }
     };
+    let tap_chip = move |key: String| {
+        move |evt: MouseEvent| {
+            evt.stop_propagation();
+            shown.set(Some(key.clone()));
+            if let Some(cb) = on_bar {
+                cb.call(key.clone());
+            }
+        }
+    };
+    let chip_label = |bar: &Bar| match label_case {
+        LabelCase::Upper => bar.label.to_uppercase(),
+        LabelCase::AsIs => bar.label.clone(),
+    };
+    let chip_class = |bar: &Bar| {
+        if selected.as_deref() == Some(bar.key.as_str()) {
+            "keyword-chip active"
+        } else {
+            "keyword-chip"
+        }
+    };
+    let reveal_at_bar = |bar: &Bar| reveal_row.filter(|at| at.key == bar.key);
+    let reveal_class = |bar: &Bar| {
+        if reveal_at_bar(bar).is_some_and(|at| at.open) {
+            "keyword-reveal open"
+        } else {
+            "keyword-reveal"
+        }
+    };
+    let reveal_content = |bar: &Bar| {
+        reveal_at_bar(bar)?;
+        reveal.map(|r| r.call(bar.key.clone()))
+    };
     rsx! {
         div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
             if let Some(text) = label {
                 ChartLabel { text, hint }
             }
-            match orientation {
-                BarOrientation::Vertical => rsx! {
+            match layout {
+                Layout::Vertical => rsx! {
                     div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
                         for bar in bars.iter() {
                             div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
@@ -161,7 +249,7 @@ pub fn BarChart(
                         }
                     }
                 },
-                BarOrientation::Horizontal => rsx! {
+                Layout::Rows => rsx! {
                     for bar in bars.iter() {
                         div { style: "display:flex;align-items:center;gap:0.5rem;",
                             span { style: label_style(bar), onclick: tap(bar.key.clone()),
@@ -177,6 +265,40 @@ pub fn BarChart(
                             }
                             span { style: "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:3ch;text-align:right;flex-shrink:0;",
                                 "{bar.count}"
+                            }
+                        }
+                    }
+                },
+                // A grid rather than flex rows so the chip column is as wide as
+                // the widest chip on every row. Rows space by the label cell's
+                // padding, not a row gap, so the shut reveals add no height.
+                Layout::ChipRows => rsx! {
+                    div { style: format!("display:grid;grid-template-columns:fit-content({CHIP_LABEL_MAX_WIDTH}) minmax(0,1fr) auto;column-gap:0.5rem;align-items:center;"),
+                        for bar in bars.iter() {
+                            div { style: "padding:0.175rem 0;text-align:right;",
+                                button { class: chip_class(bar), onclick: tap_chip(bar.key.clone()),
+                                    "{chip_label(bar)}"
+                                }
+                            }
+                            div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
+                                div {
+                                    style: format!(
+                                        "height:100%;width:{}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;",
+                                        bar.pct
+                                    ),
+                                }
+                            }
+                            span { style: "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:3ch;text-align:right;flex-shrink:0;",
+                                "{bar.count}"
+                            }
+                            // Mounted shut under every row so opening one is a class
+                            // change the reveal can ease, not a fresh node.
+                            div { class: reveal_class(bar), style: "grid-column:1 / -1;",
+                                div { class: "keyword-reveal-inner",
+                                    if let Some(content) = reveal_content(bar) {
+                                        {content}
+                                    }
+                                }
                             }
                         }
                     }
@@ -357,5 +479,51 @@ pub fn ManaFulfillment(rows: Vec<ManaBalanceRow>, hint: Option<Element>) -> Elem
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reveal_follows_the_selected_row() {
+        assert_eq!(
+            reveal_at(Some("ramp"), Some("removal")),
+            Some(RevealAt {
+                key: "ramp",
+                open: true
+            }),
+            "a selection moves the reveal off the last shown row"
+        );
+    }
+
+    #[test]
+    fn reveal_stays_under_the_closed_row_while_shut() {
+        assert_eq!(
+            reveal_at(None, Some("ramp")),
+            Some(RevealAt {
+                key: "ramp",
+                open: false
+            })
+        );
+        assert_eq!(reveal_at(None, None), None, "nothing opened yet");
+    }
+
+    #[test]
+    fn only_a_horizontal_tappable_chart_draws_chips() {
+        assert_eq!(
+            Layout::new(BarOrientation::Horizontal, true),
+            Layout::ChipRows
+        );
+        assert_eq!(Layout::new(BarOrientation::Horizontal, false), Layout::Rows);
+        assert_eq!(
+            Layout::new(BarOrientation::Vertical, true),
+            Layout::Vertical
+        );
+        assert_eq!(
+            Layout::new(BarOrientation::Vertical, false),
+            Layout::Vertical
+        );
     }
 }
