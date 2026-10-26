@@ -54,6 +54,23 @@ pub(crate) fn BuilderProfileSkeleton() -> Element {
     }
 }
 
+/// The suggested commanders' Show row while the first load is in flight: the
+/// label renders real (static chrome) and the chips ghost, since which
+/// identities appear is data.
+#[component]
+pub(crate) fn ShowChipRowSkeleton() -> Element {
+    rsx! {
+        div { class: "chip-row",
+            span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
+            div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+            div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+            div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+            div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+            div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+        }
+    }
+}
+
 #[component]
 pub(crate) fn DeckCardListSkeleton() -> Element {
     // Grouped rows only: the identity header and featured-cards ghosts render

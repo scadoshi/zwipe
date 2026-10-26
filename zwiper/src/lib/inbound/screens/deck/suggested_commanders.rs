@@ -13,8 +13,9 @@
 //! than ten remain, so the list stays a full top 10. Over the list, a panel
 //! sums up what the user builds: the deck count with the most common color set
 //! and color, then charts of the colors, card roles and oracle tags across the
-//! decks, the profile the ranking reads. With no commander deck to read
-//! from, the screen shows a single line instead of a list and no panel.
+//! decks, the profile the ranking reads. The list itself folds like the
+//! charts. With no commander deck to read from, the screen shows a single line
+//! instead of a list and no panel.
 
 use std::collections::BTreeMap;
 
@@ -41,7 +42,7 @@ use zwipe_core::http::contracts::suggestions::{
 };
 
 use super::components::collapsible_section::CollapsibleSection;
-use super::components::skeletons::BuilderProfileSkeleton;
+use super::components::skeletons::{BuilderProfileSkeleton, ShowChipRowSkeleton};
 use super::components::swipe_select::{SuggestedPile, SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
@@ -297,6 +298,9 @@ pub(crate) fn color_bars(colors: &[HttpColorAffinity]) -> Vec<Bar> {
 
 /// The WUBRG codes in order.
 const WUBRG: [&str; 5] = ["W", "U", "B", "R", "G"];
+
+/// The list section's title, also its accordion key.
+const LIST_TITLE: &str = "Suggested commanders";
 
 /// One bar per role in the order sent, labeled as the deck role chart labels
 /// the role and keyed by the role slug.
@@ -882,6 +886,8 @@ pub fn SuggestedCommanders() -> Element {
     let cold_start = deck_count() == 0;
     let has_entries = !entries().is_empty();
     let rows = shown(&filtered());
+    // The list folds like the charts and starts open.
+    let list_open: Signal<Option<String>> = use_signal(|| Some(LIST_TITLE.to_string()));
 
     rsx! {
         div { class: "screen",
@@ -895,6 +901,7 @@ pub fn SuggestedCommanders() -> Element {
                     HintBullet { HintKey { "Maybeboard" } " saves it to your commander maybeboard" }
                     HintBullet { HintKey { color: "--color-error", "Remove" } " hides it for a week and pulls the next one up" }
                     HintBullet { HintKey { "Swipe" } " deals the same ranking: " HintColored { color: "--color-success", "right" } " starts a deck, " HintColored { color: "--color-warning", "up" } " saves, " HintColored { color: "--color-error", "left" } " skips it" }
+                    HintBullet { HintKey { "Show" } " narrows the list to one color identity" }
                 }
                 HintLine { "Your top 10 for the decks you already build, best fit first. Swipe keeps going down the same ranking" }
             }
@@ -908,17 +915,20 @@ pub fn SuggestedCommanders() -> Element {
                     style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                     if is_loading() {
                         // First load only: a refetch keeps the data in place.
-                        // The panel ghosts as a lead line over three chart
-                        // boxes; the list group and its header are static
-                        // chrome, so they render real while only the data
-                        // rows ghost (the closed-vocabulary skeleton rule).
+                        // The Show row ghosts as chips, the panel as a lead
+                        // line over three chart boxes; the list section and
+                        // its title are static chrome, so they render real
+                        // while only the data rows ghost (the closed-vocabulary
+                        // skeleton rule).
+                        ShowChipRowSkeleton {}
                         BuilderProfileSkeleton {}
-                        div { class: "maybeboard-list card-group row-enter",
-                            div { class: "card-group-header", "Suggested commanders" }
-                            for i in 0..6 {
-                                div { key: "{i}", class: "skeleton-card-row",
-                                    div { class: "skeleton-bar skeleton-card-thumb" }
-                                    div { class: "skeleton-bar skeleton-card-bar-row" }
+                        CollapsibleSection { title: LIST_TITLE, open_section: list_open,
+                            div { class: "maybeboard-list card-group row-enter",
+                                for i in 0..6 {
+                                    div { key: "{i}", class: "skeleton-card-row",
+                                        div { class: "skeleton-bar skeleton-card-thumb" }
+                                        div { class: "skeleton-bar skeleton-card-bar-row" }
+                                    }
                                 }
                             }
                         }
@@ -972,40 +982,41 @@ pub fn SuggestedCommanders() -> Element {
                         if let Some(profile) = profile() {
                             BuilderProfilePanel { profile }
                         }
-                        if !has_entries {
-                            div { class: "message-empty",
-                                span { class: "chip-note", "No suggestions right now" }
-                            }
-                        } else if rows.is_empty() {
-                            div { class: "message-empty",
-                                span { class: "chip-note",
-                                    if let Some(identity) = active_identity().filter(|i| !i.is_empty()) {
-                                        "No "
-                                        IdentityPips { identity }
-                                        " commanders in your top 100"
-                                    } else {
-                                        "No colorless commanders in your top 100"
+                        CollapsibleSection { title: LIST_TITLE, open_section: list_open,
+                            if !has_entries {
+                                div { class: "message-empty",
+                                    span { class: "chip-note", "No suggestions right now" }
+                                }
+                            } else if rows.is_empty() {
+                                div { class: "message-empty",
+                                    span { class: "chip-note",
+                                        if let Some(identity) = active_identity().filter(|i| !i.is_empty()) {
+                                            "No "
+                                            IdentityPips { identity }
+                                            " commanders in your top 100"
+                                        } else {
+                                            "No colorless commanders in your top 100"
+                                        }
                                     }
                                 }
-                            }
-                        } else {
-                            div { class: "maybeboard-list card-group row-enter",
-                                div { class: "card-group-header", "Suggested commanders" }
-                                for suggestion in rows {
-                                    SuggestionRow {
-                                        key: "{suggestion.card.scryfall_data.id}",
-                                        suggestion,
-                                        deck_count: deck_count(),
-                                        expanded_card,
-                                        preview_card,
-                                        preview_dismissing,
-                                        on_start,
-                                        on_maybe,
-                                        on_dismiss,
-                                        on_printing: move |c: Card| {
-                                            printing_card.set(Some(c));
-                                            printing_open.set(true);
-                                        },
+                            } else {
+                                div { class: "maybeboard-list card-group row-enter",
+                                    for suggestion in rows {
+                                        SuggestionRow {
+                                            key: "{suggestion.card.scryfall_data.id}",
+                                            suggestion,
+                                            deck_count: deck_count(),
+                                            expanded_card,
+                                            preview_card,
+                                            preview_dismissing,
+                                            on_start,
+                                            on_maybe,
+                                            on_dismiss,
+                                            on_printing: move |c: Card| {
+                                                printing_card.set(Some(c));
+                                                printing_open.set(true);
+                                            },
+                                        }
                                     }
                                 }
                             }
