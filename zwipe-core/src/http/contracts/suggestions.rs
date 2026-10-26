@@ -11,8 +11,10 @@ pub const DEFAULT_SUGGESTION_LIMIT: u32 = 10;
 /// Most suggestions one request returns; a larger `limit` is clamped to it.
 pub const MAX_SUGGESTION_LIMIT: u32 = 100;
 
-/// Oracle tags [`HttpBuilderProfile::tags`] carries, one bar each.
-pub const PROFILE_TAG_SHOWN: usize = 10;
+/// Most oracle tags [`HttpBuilderProfile::tags`] carries. The app's tag table
+/// shows only the first few, and each card role reveals its own tags from the
+/// whole list, so it runs deep enough that the top roles find theirs.
+pub const PROFILE_TAG_SENT: usize = 100;
 
 /// Card roles [`HttpBuilderProfile::roles`] carries, one bar each.
 pub const PROFILE_ROLE_SHOWN: usize = 10;
@@ -47,7 +49,7 @@ pub struct HttpBuilderProfile {
     pub top_identity: Option<HttpColorIdentityCount>,
     /// The user's most impactful oracle tags across the profiled decks,
     /// highest [`HttpProfileTag::score`] first and slug between equals, at
-    /// most [`PROFILE_TAG_SHOWN`].
+    /// most [`PROFILE_TAG_SENT`].
     pub tags: Vec<HttpProfileTag>,
     /// The card roles the profiled decks' tags fall under, most decks first
     /// and role slug between equals, at most [`PROFILE_ROLE_SHOWN`]. Counted

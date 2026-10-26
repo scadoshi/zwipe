@@ -38,6 +38,10 @@ pub struct Bar {
     pub count: usize,
     /// The bar's size as a percentage of the chart's tallest bar, 0 to 100.
     pub pct: u32,
+    /// Whether a chip chart draws the label as a tappable chip. False draws
+    /// it as plain text, the way a chart without `on_bar` does, for a bar
+    /// with nothing to reveal.
+    pub revealable: bool,
 }
 
 impl Bar {
@@ -50,6 +54,16 @@ impl Bar {
             label,
             count,
             pct,
+            revealable: true,
+        }
+    }
+
+    /// The same bar with a plain, untappable label in a chip chart.
+    #[must_use]
+    pub fn with_no_reveal(self) -> Self {
+        Self {
+            revealable: false,
+            ..self
         }
     }
 }
@@ -135,7 +149,9 @@ fn reveal_at<'k>(selected: Option<&'k str>, shown: Option<&'k str>) -> Option<Re
 /// the bar whose key is `selected` is the open one. A vertical chart tints
 /// that label in the accent color. A horizontal chart draws each label as a
 /// `.keyword-chip`, active when open, and eases `reveal`'s content open
-/// directly under the open row, one row at a time.
+/// directly under the open row, one row at a time. A bar that is not
+/// [`Bar::revealable`] keeps the plain label of a chart without `on_bar` there
+/// and reports no tap.
 #[component]
 pub fn BarChart(
     /// The [`ChartLabel`] over the bars; none renders the bars alone.
@@ -170,14 +186,15 @@ pub fn BarChart(
     };
     // The label's base style is the deck charts' exact string; a tappable
     // label adds the pointer, and the selected one the accent, after it.
+    let horizontal_label = format!(
+        "width:{label_width};font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;{upper}"
+    );
     let label_style = |bar: &Bar| {
         let base = match orientation {
             BarOrientation::Vertical => format!(
                 "flex:1;text-align:center;font-size:0.65rem;color:var(--text-primary);opacity:0.85;{upper}"
             ),
-            BarOrientation::Horizontal => format!(
-                "width:{label_width};font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;{upper}"
-            ),
+            BarOrientation::Horizontal => horizontal_label.clone(),
         };
         if on_bar.is_none() {
             return base;
@@ -277,8 +294,12 @@ pub fn BarChart(
                     div { style: format!("display:grid;grid-template-columns:fit-content({CHIP_LABEL_MAX_WIDTH}) minmax(0,1fr) auto;column-gap:0.5rem;align-items:center;"),
                         for bar in bars.iter() {
                             div { style: "padding:0.175rem 0;text-align:right;",
-                                button { class: chip_class(bar), onclick: tap_chip(bar.key.clone()),
-                                    "{chip_label(bar)}"
+                                if bar.revealable {
+                                    button { class: chip_class(bar), onclick: tap_chip(bar.key.clone()),
+                                        "{chip_label(bar)}"
+                                    }
+                                } else {
+                                    span { style: horizontal_label.clone(), "{bar.label}" }
                                 }
                             }
                             div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
@@ -484,6 +505,19 @@ pub fn ManaFulfillment(rows: Vec<ManaBalanceRow>, hint: Option<Element>) -> Elem
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_bar_reveals_unless_opted_out() {
+        let bar = Bar::new("ramp", 3, 100);
+        assert!(bar.revealable, "new bars reveal");
+        let plain = bar.clone().with_no_reveal();
+        assert!(!plain.revealable);
+        assert_eq!(
+            (plain.key, plain.label, plain.count, plain.pct),
+            (bar.key, bar.label, bar.count, bar.pct),
+            "only the reveal changes"
+        );
+    }
 
     #[test]
     fn reveal_follows_the_selected_row() {

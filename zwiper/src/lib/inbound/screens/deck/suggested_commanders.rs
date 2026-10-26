@@ -319,6 +319,7 @@ pub(crate) fn color_bars(colors: &[HttpColorAffinity]) -> Vec<Bar> {
             label: color_name(&c.color).unwrap_or_default().to_string(),
             count: decks_usize(c.decks),
             pct,
+            revealable: true,
         },
     )
 }
@@ -337,8 +338,9 @@ const ROLES_TITLE: &str = "Card roles";
 const TAGS_TITLE: &str = "Oracle tags";
 
 /// One bar per role in the order sent, labeled as the deck role chart labels
-/// the role and keyed by the role slug.
-pub(crate) fn role_bars(roles: &[HttpProfileRole]) -> Vec<Bar> {
+/// the role and keyed by the role slug. A role with none of `tags` under it
+/// has nothing to reveal, so its bar is not revealable.
+pub(crate) fn role_bars(roles: &[HttpProfileRole], tags: &[HttpProfileTag]) -> Vec<Bar> {
     bars_from(
         roles,
         |r| decks_usize(r.decks),
@@ -347,6 +349,9 @@ pub(crate) fn role_bars(roles: &[HttpProfileRole]) -> Vec<Bar> {
             label: role_short_label(&r.role),
             count: decks_usize(r.decks),
             pct,
+            revealable: tags
+                .iter()
+                .any(|t| t.role.as_deref() == Some(r.role.as_str())),
         },
     )
 }
@@ -384,11 +389,18 @@ fn impact(score: f64, max: f64) -> Option<u32> {
     )
 }
 
-/// One row per oracle tag in the order sent (highest score first), its
-/// impact scaled so the top tag reads [`TOP_IMPACT`].
+/// Rows the oracle tags table shows: the user's 10 most impactful tags, as
+/// the hint and the guide say. The profile sends more so each card role can
+/// reveal its own tags.
+const TAG_TABLE_ROWS: usize = 10;
+
+/// One row per oracle tag in the order sent (highest score first), the first
+/// [`TAG_TABLE_ROWS`] only, its impact scaled so the top tag reads
+/// [`TOP_IMPACT`].
 pub(crate) fn tag_rows(tags: &[HttpProfileTag]) -> Vec<TagRow> {
     let max = tags.iter().map(|t| t.score).fold(0.0, f64::max);
     tags.iter()
+        .take(TAG_TABLE_ROWS)
         .map(|t| TagRow {
             slug: t.slug.clone(),
             decks: t.decks,
@@ -398,7 +410,7 @@ pub(crate) fn tag_rows(tags: &[HttpProfileTag]) -> Vec<TagRow> {
         .collect()
 }
 
-/// The shown tags under `role`, highest score first.
+/// The profile's tags under `role`, highest score first.
 pub(crate) fn role_tags(tags: &[HttpProfileTag], role: &str) -> Vec<String> {
     tags.iter()
         .filter(|t| t.role.as_deref() == Some(role))
@@ -434,9 +446,12 @@ fn OtagDef(slug: String) -> Element {
 
 /// A tapped role's oracle tags from the profile as chips, each tappable for
 /// its description eased open beneath them, the "Why this commander?" chips'
-/// reveal.
+/// reveal. Renders nothing for an empty list, so no bare frame shows.
 #[component]
 fn RoleTags(tags: Vec<String>) -> Element {
+    if tags.is_empty() {
+        return rsx! {};
+    }
     let mut open_tag: Signal<Option<String>> = use_signal(|| None);
     // The last opened tag, kept through a close so its description eases out.
     let mut shown_tag: Signal<Option<String>> = use_signal(|| None);
@@ -586,7 +601,7 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     let open_section: Signal<Option<String>> = use_signal(|| Some(SUMMARY_TITLE.to_string()));
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
     let colors = color_bars(&profile.colors);
-    let roles = role_bars(&profile.roles);
+    let roles = role_bars(&profile.roles, &profile.tags);
     let tags = tag_rows(&profile.tags);
     let profile_tags = profile.tags;
     let role_reveal = use_callback(move |role: String| {
@@ -1503,6 +1518,7 @@ mod tests {
             label: label.to_string(),
             count,
             pct,
+            revealable: true,
         }
     }
 
@@ -1532,14 +1548,53 @@ mod tests {
                 decks: 1,
             },
         ];
+        let tags = [
+            profile_tag("sacrifice-outlet", Some("sacrifice"), 6, 23, 1.6),
+            profile_tag("treasure", Some("ramp"), 1, 4, 0.2),
+        ];
         assert_eq!(
-            role_bars(&roles),
+            role_bars(&roles, &tags),
             vec![
                 bar("sacrifice", "sacrf", 50, 100),
                 bar("ramp", "ramp", 1, 4)
             ],
             "a nonzero bar is at least the 4% sliver"
         );
+    }
+
+    #[test]
+    fn a_role_with_no_tags_sent_is_not_revealable() {
+        let roles = [
+            HttpProfileRole {
+                role: "sacrifice".to_string(),
+                decks: 2,
+            },
+            HttpProfileRole {
+                role: "ramp".to_string(),
+                decks: 1,
+            },
+        ];
+        let tags = [profile_tag("aristocrats", Some("sacrifice"), 2, 5, 0.4)];
+        let revealable: Vec<(String, bool)> = role_bars(&roles, &tags)
+            .into_iter()
+            .map(|b| (b.key, b.revealable))
+            .collect();
+        assert_eq!(
+            revealable,
+            vec![("sacrifice".to_string(), true), ("ramp".to_string(), false)]
+        );
+    }
+
+    #[test]
+    fn tag_rows_show_the_top_ten_while_roles_read_every_tag_sent() {
+        let mut tags: Vec<HttpProfileTag> = (0..20)
+            .map(|i| profile_tag(&format!("removal-{i:02}"), Some("removal"), 1, 1, 1.0))
+            .collect();
+        tags.push(profile_tag("mana-rock", Some("ramp"), 1, 1, 0.5));
+        let rows = tag_rows(&tags);
+        assert_eq!(rows.len(), TAG_TABLE_ROWS);
+        assert!(rows.iter().all(|r| r.slug.starts_with("removal-")));
+        assert_eq!(role_tags(&tags, "ramp"), vec!["mana-rock"]);
     }
 
     #[test]

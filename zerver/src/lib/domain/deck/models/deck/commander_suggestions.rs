@@ -9,7 +9,7 @@ use serde::Deserialize;
 use thiserror::Error;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::http::contracts::suggestions::{PROFILE_ROLE_SHOWN, PROFILE_TAG_SHOWN};
+use zwipe_core::http::contracts::suggestions::{PROFILE_ROLE_SHOWN, PROFILE_TAG_SENT};
 
 /// Decks whose tag profile a candidate is scored against: the user's most
 /// recently updated ones. Each profile is one query, so this bounds the work
@@ -193,7 +193,7 @@ pub struct BuilderProfile {
     /// across more than one deck.
     pub top_identity: Option<ColorIdentityCount>,
     /// The highest-scoring oracle tags, highest first, at most
-    /// [`PROFILE_TAG_SHOWN`].
+    /// [`PROFILE_TAG_SENT`].
     pub tags: Vec<ProfileTag>,
     /// The card roles the profiles' tags fall under, most decks first and
     /// role between equals, at most [`PROFILE_ROLE_SHOWN`]. Counted over
@@ -313,7 +313,7 @@ pub fn summarize_profile(
             .total_cmp(&a.score)
             .then_with(|| a.slug.cmp(&b.slug))
     });
-    tags.truncate(PROFILE_TAG_SHOWN);
+    tags.truncate(PROFILE_TAG_SENT);
     let mut roles: Vec<ProfileRole> = role_decks
         .into_iter()
         .map(|(role, decks)| ProfileRole { role, decks })
@@ -671,40 +671,74 @@ mod tests {
     }
 
     #[test]
-    fn roles_count_tags_beyond_the_shown_cap_and_are_capped() {
+    fn roles_count_tags_beyond_the_sent_cap_and_are_capped() {
         let decks = vec![deck(1, &["R"])];
-        // 40 tags, each under its own role; only PROFILE_TAG_SHOWN tags show.
-        let weights: serde_json::Map<String, serde_json::Value> = (0..40)
-            .map(|i| (format!("tag-{i:02}"), serde_json::json!(0.1)))
+        // 140 tags, each under its own role; only PROFILE_TAG_SENT tags go out.
+        let weights: serde_json::Map<String, serde_json::Value> = (0..140)
+            .map(|i| (format!("tag-{i:03}"), serde_json::json!(0.1)))
             .collect();
-        let map: HashMap<String, String> = (0..40)
-            .map(|i| (format!("tag-{i:02}"), format!("role-{i:02}")))
+        let map: HashMap<String, String> = (0..140)
+            .map(|i| (format!("tag-{i:03}"), format!("role-{i:03}")))
             .collect();
         let profiles = vec![Some(weights_only(serde_json::Value::Object(weights)))];
         let profile = summarize_profile(&decks, &profiles, &map).unwrap();
-        assert_eq!(profile.tags.len(), PROFILE_TAG_SHOWN);
+        assert_eq!(profile.tags.len(), PROFILE_TAG_SENT);
         assert_eq!(profile.roles.len(), PROFILE_ROLE_SHOWN);
         assert_eq!(
             profile.roles.first().map(|r| r.role.as_str()),
-            Some("role-00")
+            Some("role-000")
         );
         assert_eq!(
             profile.roles.last().map(|r| r.role.as_str()),
-            Some("role-09")
+            Some("role-009")
         );
     }
 
     #[test]
     fn tags_are_capped_and_tie_on_slug() {
         let decks = vec![deck(1, &["R"])];
-        let weights: serde_json::Map<String, serde_json::Value> = (0..30)
-            .map(|i| (format!("tag-{i:02}"), serde_json::json!(0.1)))
+        let weights: serde_json::Map<String, serde_json::Value> = (0..130)
+            .map(|i| (format!("tag-{i:03}"), serde_json::json!(0.1)))
             .collect();
         let profiles = vec![Some(weights_only(serde_json::Value::Object(weights)))];
         let profile = summarize_profile(&decks, &profiles, &HashMap::new()).unwrap();
         let slugs: Vec<&str> = profile.tags.iter().map(|t| t.slug.as_str()).collect();
-        assert_eq!(slugs.len(), PROFILE_TAG_SHOWN);
-        assert_eq!(slugs.first(), Some(&"tag-00"));
-        assert_eq!(slugs.last(), Some(&"tag-09"));
+        assert_eq!(slugs.len(), PROFILE_TAG_SENT);
+        assert_eq!(slugs.first(), Some(&"tag-000"));
+        assert_eq!(slugs.last(), Some(&"tag-099"));
+    }
+
+    #[test]
+    fn a_role_whose_tags_rank_below_the_top_ten_still_sends_them() {
+        let decks = vec![deck(1, &["G"])];
+        // 20 strong tags under one role, then two weak ramp tags.
+        let mut weights: serde_json::Map<String, serde_json::Value> = (0..20)
+            .map(|i| (format!("removal-{i:02}"), serde_json::json!(0.04)))
+            .collect();
+        weights.insert("mana-rock".to_string(), serde_json::json!(0.01));
+        weights.insert("land-ramp".to_string(), serde_json::json!(0.02));
+        let mut map: HashMap<String, String> = (0..20)
+            .map(|i| (format!("removal-{i:02}"), "removal".to_string()))
+            .collect();
+        map.insert("mana-rock".to_string(), "ramp".to_string());
+        map.insert("land-ramp".to_string(), "ramp".to_string());
+        let profiles = vec![Some(weights_only(serde_json::Value::Object(weights)))];
+        let profile = summarize_profile(&decks, &profiles, &map).unwrap();
+        assert!(
+            profile.roles.iter().any(|r| r.role == "ramp"),
+            "ramp is a top role"
+        );
+        let ramp: Vec<(usize, &str)> = profile
+            .tags
+            .iter()
+            .enumerate()
+            .filter(|(_, t)| t.role.as_deref() == Some("ramp"))
+            .map(|(i, t)| (i, t.slug.as_str()))
+            .collect();
+        assert_eq!(
+            ramp,
+            vec![(20, "land-ramp"), (21, "mana-rock")],
+            "both ramp tags sit past the top ten, strongest first"
+        );
     }
 }
