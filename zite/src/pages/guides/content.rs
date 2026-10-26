@@ -636,7 +636,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("What you build"),
             Block::P(
-                "A panel above the list sums up the decks the ranking read. The first line says how many decks and the color identity you build most, as pips. Under \"Colors you build\", each of your colors gets a segment sized by how many decks use it. Under \"Oracle tags you build with\" sit your strongest oracle tags, grouped by card role like the card's own chips, with a line under them counting the decks the top three show up in. Nothing in it is a score, just what your decks already say.",
+                "A panel above the list sums up the decks the ranking read. It opens with how many decks, then your most common color set and most common color as pips with their deck counts. Under it sit three charts in the deck view's own grammar, each in its own fold: Colors, one bar per color by how many decks use it; Card roles, the ten roles your decks' tags fall under most, where tapping a role shows which of its tags your decks carry; and Oracle tags, your 25 strongest tags, where tapping one shows its description and an Examples button. Every bar carries its deck count. Nothing in it is a score, just what your decks already say.",
             ),
             Block::H2("Why this commander"),
             Block::P(
