@@ -10,12 +10,13 @@
 //! **Remove** (hides it for a week). The action bar's Swipe opens the shared
 //! overlay in its suggested mode, which deals the same held list. Every action
 //! that removes a row fills from the held list and refetches only when fewer
-//! than ten remain, so the list stays a full top 10. Over the list, a panel
-//! sums up what the user builds: the deck count with the most common color set
-//! and color, then charts of the colors, card roles and oracle tags across the
-//! decks, the profile the ranking reads. The list itself folds like the
-//! charts. With no commander deck to read from, the screen shows a single line
-//! instead of a list and no panel.
+//! than ten remain, so the list stays a full top 10. Above the list, sections
+//! in the deck profile's grammar sum up what the user builds, the profile the
+//! ranking reads: a Summary table (the deck count, the most common color set
+//! and color), then charts of the colors, card roles and oracle tags across the
+//! decks. They share one accordion with Summary open on entry; the list section
+//! folds on its own and starts open. With no commander deck to read from, the
+//! screen shows a single line instead of the sections.
 
 use std::collections::BTreeMap;
 
@@ -32,7 +33,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_role::role_short_label;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
+use zwipe_core::domain::card::scryfall_data::colors::{Color, identity_name};
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
@@ -201,57 +202,54 @@ pub(crate) fn group_shared_tags(
     (roles, by_role, other)
 }
 
-/// Pips with the words after them, one "most common" line of the profile
-/// panel's lead.
+/// A Summary row's value: an identity's pips, then its name and deck count.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct LeadPips {
-    /// WUBRG codes drawn as pips; empty when `tail` names the identity.
-    pub pips: Vec<String>,
-    /// The deck count after the pips, "(4)", or "colorless (4)".
-    pub tail: String,
+pub(crate) struct SummaryValue {
+    /// The colors drawn as pips in WUBRG order; empty for colorless.
+    pub pips: Vec<Color>,
+    /// The words after the pips, "Jeskai (4)" or "Blue (5)".
+    pub text: String,
 }
 
-/// The profile panel's lead: the deck count, then the most common color set
-/// and the most common color, each absent when the profile has none.
+/// The Summary section's rows: the deck count, then the most common color
+/// set and the most common color, each absent when the profile has none.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct ProfileLead {
-    /// "11 decks" or "1 deck".
+pub(crate) struct ProfileSummary {
+    /// The Decks row's value, the bare count.
     pub decks: String,
-    /// The top identity with its count; `None` when no identity repeats.
-    pub color_set: Option<LeadPips>,
-    /// The color in the most decks with its count; `None` when every deck is
-    /// colorless.
-    pub color: Option<LeadPips>,
+    /// The top identity, named, with its count; `None` when no identity
+    /// repeats.
+    pub color_set: Option<SummaryValue>,
+    /// The color in the most decks, named, with its count; `None` when every
+    /// deck is colorless.
+    pub color: Option<SummaryValue>,
 }
 
-/// Words the lead from the profile. The top identity's colorless case is
-/// named instead of drawn; the most common color is the first the server
-/// sent, which is the one in the most decks.
-pub(crate) fn profile_lead(profile: &HttpBuilderProfile) -> ProfileLead {
-    let decks = if profile.deck_count == 1 {
-        "1 deck".to_string()
-    } else {
-        format!("{} decks", profile.deck_count)
-    };
+/// The Summary rows from the profile. The most common color is the first
+/// WUBRG color the server sent, which is the one in the most decks; codes
+/// outside WUBRG are skipped.
+pub(crate) fn profile_summary(profile: &HttpBuilderProfile) -> ProfileSummary {
     let color_set = profile.top_identity.as_ref().map(|top| {
-        if top.colors.is_empty() {
-            LeadPips {
-                pips: vec![],
-                tail: format!("colorless ({})", top.decks),
-            }
-        } else {
-            LeadPips {
-                pips: top.colors.clone(),
-                tail: format!("({})", top.decks),
-            }
+        let parsed: Vec<Color> = top
+            .colors
+            .iter()
+            .filter_map(|code| Color::try_from(code.as_str()).ok())
+            .collect();
+        let pips = identity_of(&parsed);
+        SummaryValue {
+            text: format!("{} ({})", identity_name(&pips), top.decks),
+            pips,
         }
     });
-    let color = profile.colors.first().map(|c| LeadPips {
-        pips: vec![c.color.clone()],
-        tail: format!("({})", c.decks),
+    let color = profile.colors.iter().find_map(|c| {
+        let color = Color::try_from(c.color.as_str()).ok()?;
+        Some(SummaryValue {
+            pips: vec![color],
+            text: format!("{} ({})", color.to_long_name(), c.decks),
+        })
     });
-    ProfileLead {
-        decks,
+    ProfileSummary {
+        decks: profile.deck_count.to_string(),
         color_set,
         color,
     }
@@ -299,8 +297,14 @@ pub(crate) fn color_bars(colors: &[HttpColorAffinity]) -> Vec<Bar> {
 /// The WUBRG codes in order.
 const WUBRG: [&str; 5] = ["W", "U", "B", "R", "G"];
 
-/// The list section's title, also its accordion key.
+/// The list section's title, also its open-state key.
 const LIST_TITLE: &str = "Suggested commanders";
+
+/// The profile sections' titles, also their accordion keys.
+const SUMMARY_TITLE: &str = "Summary";
+const COLORS_TITLE: &str = "Colors";
+const ROLES_TITLE: &str = "Card roles";
+const TAGS_TITLE: &str = "Oracle tags";
 
 /// One bar per role in the order sent, labeled as the deck role chart labels
 /// the role and keyed by the role slug.
@@ -425,20 +429,39 @@ fn RoleTagsReveal(tags: Vec<String>) -> Element {
     }
 }
 
-/// What the user builds, over the suggestions list: the deck count with the
-/// most common color set and color under it, then three collapsible charts
-/// in the deck profile's grammar, all open on entry. Colors are columns in
+/// A Summary row whose value is an identity: the label, then the pips with
+/// the name and count after them.
+#[component]
+fn SummaryIdentityRow(label: &'static str, value: SummaryValue) -> Element {
+    rsx! {
+        div { class: "settings-row",
+            span { class: "settings-row-label", "{label}" }
+            span { class: "info-row-value",
+                span { class: "identity-pips",
+                    for color in value.pips.iter() {
+                        i {
+                            key: "{color.to_short_name()}",
+                            class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                        }
+                    }
+                    span { "{value.text}" }
+                }
+            }
+        }
+    }
+}
+
+/// What the user builds, as sections over the suggestions list in the deck
+/// profile's grammar: a Summary table (the deck count, the most common color
+/// set and color) in the Budget section's rows, then three charts. The four
+/// share one accordion with Summary open on entry. Colors are columns in
 /// WUBRG order; card roles are rows like the deck profile's role chart, a
 /// tapped role revealing its oracle tags from the profile; oracle tags are
-/// rows, a tapped tag revealing its description and Examples. Quieter than
-/// the rows beneath it.
+/// rows, a tapped tag revealing its description and Examples.
 #[component]
-pub(crate) fn BuilderProfilePanel(profile: HttpBuilderProfile) -> Element {
-    let lead = profile_lead(&profile);
-    // One signal per section so each folds on its own and all start open.
-    let colors_open: Signal<Option<String>> = use_signal(|| Some("Colors".to_string()));
-    let roles_open: Signal<Option<String>> = use_signal(|| Some("Card roles".to_string()));
-    let tags_open: Signal<Option<String>> = use_signal(|| Some("Oracle tags".to_string()));
+pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
+    let summary = profile_summary(&profile);
+    let open_section: Signal<Option<String>> = use_signal(|| Some(SUMMARY_TITLE.to_string()));
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
     let mut selected_tag: Signal<Option<String>> = use_signal(|| None);
     let colors = color_bars(&profile.colors);
@@ -462,62 +485,47 @@ pub(crate) fn BuilderProfilePanel(profile: HttpBuilderProfile) -> Element {
         }
     });
     rsx! {
-        div { class: "screen-panel profile-panel",
-            div { class: "profile-lead", span { "{lead.decks}" } }
-            if let Some(set) = lead.color_set.as_ref() {
-                div { class: "profile-fact",
-                    span { "Most common color set" }
-                    if !set.pips.is_empty() {
-                        span { class: "identity-pips",
-                            for code in set.pips.iter() {
-                                i { key: "{code}", class: "ms ms-{code.to_lowercase()} ms-cost" }
-                            }
-                        }
-                    }
-                    span { "{set.tail}" }
+        CollapsibleSection { title: SUMMARY_TITLE, open_section,
+            div { style: "display:flex;flex-direction:column;",
+                div { class: "settings-row",
+                    span { class: "settings-row-label", "Decks" }
+                    span { class: "info-row-value", "{summary.decks}" }
+                }
+                if let Some(value) = summary.color_set {
+                    SummaryIdentityRow { label: "Most common color set", value }
+                }
+                if let Some(value) = summary.color {
+                    SummaryIdentityRow { label: "Most common color", value }
                 }
             }
-            if let Some(color) = lead.color.as_ref() {
-                div { class: "profile-fact",
-                    span { "Most common color" }
-                    span { class: "identity-pips",
-                        for code in color.pips.iter() {
-                            i { key: "{code}", class: "ms ms-{code.to_lowercase()} ms-cost" }
-                        }
-                    }
-                    span { "{color.tail}" }
-                }
+        }
+        if !colors.is_empty() {
+            CollapsibleSection { title: COLORS_TITLE, open_section,
+                BarChart { bars: colors }
             }
-            div { class: "profile-charts",
-                if !colors.is_empty() {
-                    CollapsibleSection { title: "Colors", open_section: colors_open,
-                        BarChart { bars: colors }
-                    }
+        }
+        if !roles.is_empty() {
+            CollapsibleSection { title: ROLES_TITLE, open_section,
+                BarChart {
+                    bars: roles,
+                    orientation: BarOrientation::Horizontal,
+                    on_bar: toggle_role,
+                    selected: selected_role(),
                 }
-                if !roles.is_empty() {
-                    CollapsibleSection { title: "Card roles", open_section: roles_open,
-                        BarChart {
-                            bars: roles,
-                            orientation: BarOrientation::Horizontal,
-                            on_bar: toggle_role,
-                            selected: selected_role(),
-                        }
-                        RoleTagsReveal { tags: revealed_role_tags }
-                    }
+                RoleTagsReveal { tags: revealed_role_tags }
+            }
+        }
+        if !tags.is_empty() {
+            CollapsibleSection { title: TAGS_TITLE, open_section,
+                BarChart {
+                    bars: tags,
+                    orientation: BarOrientation::Horizontal,
+                    label_case: LabelCase::AsIs,
+                    label_width: TAG_LABEL_WIDTH,
+                    on_bar: toggle_tag,
+                    selected: selected_tag(),
                 }
-                if !tags.is_empty() {
-                    CollapsibleSection { title: "Oracle tags", open_section: tags_open,
-                        BarChart {
-                            bars: tags,
-                            orientation: BarOrientation::Horizontal,
-                            label_case: LabelCase::AsIs,
-                            label_width: TAG_LABEL_WIDTH,
-                            on_bar: toggle_tag,
-                            selected: selected_tag(),
-                        }
-                        OtagReveal { slug: selected_tag() }
-                    }
-                }
+                OtagReveal { slug: selected_tag() }
             }
         }
     }
@@ -886,7 +894,8 @@ pub fn SuggestedCommanders() -> Element {
     let cold_start = deck_count() == 0;
     let has_entries = !entries().is_empty();
     let rows = shown(&filtered());
-    // The list folds like the charts and starts open.
+    // The list folds on its own, outside the profile's accordion, and starts
+    // open.
     let list_open: Signal<Option<String>> = use_signal(|| Some(LIST_TITLE.to_string()));
 
     rsx! {
@@ -979,43 +988,46 @@ pub fn SuggestedCommanders() -> Element {
                                 "Art"
                             }
                         }
-                        if let Some(profile) = profile() {
-                            BuilderProfilePanel { profile }
-                        }
-                        CollapsibleSection { title: LIST_TITLE, open_section: list_open,
-                            if !has_entries {
-                                div { class: "message-empty",
-                                    span { class: "chip-note", "No suggestions right now" }
-                                }
-                            } else if rows.is_empty() {
-                                div { class: "message-empty",
-                                    span { class: "chip-note",
-                                        if let Some(identity) = active_identity().filter(|i| !i.is_empty()) {
-                                            "No "
-                                            IdentityPips { identity }
-                                            " commanders in your top 100"
-                                        } else {
-                                            "No colorless commanders in your top 100"
+                        // The deck view's column of sibling sections.
+                        div { style: "width:100%;display:flex;flex-direction:column;gap:var(--panel-gap);",
+                            if let Some(profile) = profile() {
+                                BuilderProfileSections { profile }
+                            }
+                            CollapsibleSection { title: LIST_TITLE, open_section: list_open,
+                                if !has_entries {
+                                    div { class: "message-empty",
+                                        span { class: "chip-note", "No suggestions right now" }
+                                    }
+                                } else if rows.is_empty() {
+                                    div { class: "message-empty",
+                                        span { class: "chip-note",
+                                            if let Some(identity) = active_identity().filter(|i| !i.is_empty()) {
+                                                "No "
+                                                IdentityPips { identity }
+                                                " commanders in your top 100"
+                                            } else {
+                                                "No colorless commanders in your top 100"
+                                            }
                                         }
                                     }
-                                }
-                            } else {
-                                div { class: "maybeboard-list card-group row-enter",
-                                    for suggestion in rows {
-                                        SuggestionRow {
-                                            key: "{suggestion.card.scryfall_data.id}",
-                                            suggestion,
-                                            deck_count: deck_count(),
-                                            expanded_card,
-                                            preview_card,
-                                            preview_dismissing,
-                                            on_start,
-                                            on_maybe,
-                                            on_dismiss,
-                                            on_printing: move |c: Card| {
-                                                printing_card.set(Some(c));
-                                                printing_open.set(true);
-                                            },
+                                } else {
+                                    div { class: "maybeboard-list card-group row-enter",
+                                        for suggestion in rows {
+                                            SuggestionRow {
+                                                key: "{suggestion.card.scryfall_data.id}",
+                                                suggestion,
+                                                deck_count: deck_count(),
+                                                expanded_card,
+                                                preview_card,
+                                                preview_dismissing,
+                                                on_start,
+                                                on_maybe,
+                                                on_dismiss,
+                                                on_printing: move |c: Card| {
+                                                    printing_card.set(Some(c));
+                                                    printing_open.set(true);
+                                                },
+                                            }
                                         }
                                     }
                                 }
@@ -1279,42 +1291,50 @@ mod tests {
         }
     }
 
-    fn pips(codes: &[&str], tail: &str) -> LeadPips {
-        LeadPips {
-            pips: codes.iter().map(|c| c.to_string()).collect(),
-            tail: tail.to_string(),
+    fn value(pips: &[Color], text: &str) -> SummaryValue {
+        SummaryValue {
+            pips: pips.to_vec(),
+            text: text.to_string(),
         }
     }
 
     #[test]
-    fn profile_lead_counts_decks_and_names_the_most_common_set_and_color() {
-        let lead = profile_lead(&profile(
+    fn profile_summary_counts_decks_and_names_the_most_common_set_and_color() {
+        let summary = profile_summary(&profile(
             7,
-            vec![color("R", 5), color("W", 4)],
-            Some(top(&["W", "U", "R"], 4)),
+            vec![color("U", 5), color("W", 4)],
+            Some(top(&["R", "W", "U"], 4)),
         ));
-        assert_eq!(lead.decks, "7 decks");
+        assert_eq!(summary.decks, "7");
         assert_eq!(
-            lead.color_set.as_ref(),
-            Some(&pips(&["W", "U", "R"], "(4)"))
+            summary.color_set,
+            Some(value(&[White, Blue, Red], "Jeskai (4)")),
+            "pips in WUBRG order whatever order the server sent"
         );
-        assert_eq!(lead.color.as_ref(), Some(&pips(&["R"], "(5)")));
+        assert_eq!(summary.color, Some(value(&[Blue], "Blue (5)")));
 
-        let lead = profile_lead(&profile(1, vec![color("B", 1)], Some(top(&["B"], 1))));
-        assert_eq!(lead.decks, "1 deck");
-        assert_eq!(lead.color_set.as_ref(), Some(&pips(&["B"], "(1)")));
-        assert_eq!(lead.color.as_ref(), Some(&pips(&["B"], "(1)")));
+        let summary = profile_summary(&profile(1, vec![color("B", 1)], Some(top(&["B"], 1))));
+        assert_eq!(summary.decks, "1");
+        assert_eq!(summary.color_set, Some(value(&[Black], "Mono-black (1)")));
+        assert_eq!(summary.color, Some(value(&[Black], "Black (1)")));
     }
 
     #[test]
-    fn profile_lead_omits_what_the_profile_lacks_and_names_colorless() {
-        let lead = profile_lead(&profile(3, vec![color("U", 2)], None));
-        assert_eq!(lead.color_set, None, "no identity repeats");
-        assert_eq!(lead.color.as_ref(), Some(&pips(&["U"], "(2)")));
+    fn profile_summary_omits_what_the_profile_lacks_and_names_colorless() {
+        let summary = profile_summary(&profile(3, vec![color("U", 2)], None));
+        assert_eq!(summary.color_set, None, "no identity repeats");
+        assert_eq!(summary.color, Some(value(&[Blue], "Blue (2)")));
 
-        let lead = profile_lead(&profile(2, vec![], Some(top(&[], 2))));
-        assert_eq!(lead.color_set.as_ref(), Some(&pips(&[], "colorless (2)")));
-        assert_eq!(lead.color, None, "every deck colorless");
+        let summary = profile_summary(&profile(2, vec![], Some(top(&[], 2))));
+        assert_eq!(summary.color_set, Some(value(&[], "Colorless (2)")));
+        assert_eq!(summary.color, None, "every deck colorless");
+
+        let summary = profile_summary(&profile(2, vec![color("C", 2), color("G", 1)], None));
+        assert_eq!(
+            summary.color,
+            Some(value(&[Green], "Green (1)")),
+            "a code outside WUBRG is skipped"
+        );
     }
 
     fn profile_tag(slug: &str, role: Option<&str>, decks: u32) -> HttpProfileTag {

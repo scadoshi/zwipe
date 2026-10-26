@@ -2709,28 +2709,6 @@ button {
     box-shadow: var(--shadow-sm);
 }
 
-/* The profile panel is context over the rows, so its text sits a step
-   quieter than a row's. The lead wraps its words around the identity pips. */
-.profile-lead {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.85rem;
-    color: var(--text-primary);
-}
-
-/* The two "most common" facts under the deck count, a step quieter still. */
-.profile-fact {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.35rem;
-    margin-top: 0.25rem;
-    font-size: 0.7rem;
-    color: var(--text-muted);
-}
-
 /* The three chart sections, spaced like the deck view's sections. */
 .profile-charts {
     display: flex;
