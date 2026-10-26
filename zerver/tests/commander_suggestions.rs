@@ -1,6 +1,7 @@
 //! Suggested commanders: the user's commander decks scored against seeded
 //! `commander_tag_profiles` rows, with the reasons behind each pick, the
-//! per-deck matching, the exclusions, and the week-long dismissals.
+//! per-deck matching, the color identity cap, the exclusions, and the
+//! week-long dismissals.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
@@ -452,6 +453,63 @@ async fn each_deck_is_matched_on_its_own(pool: sqlx::PgPool) {
             { "slug": "lifegain", "role": null },
         ]),
         "reasons come from the red-white deck's overlap"
+    );
+}
+
+#[sqlx::test]
+async fn at_most_four_of_one_color_identity_lead_the_list(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("variety").await;
+    app.verify_email(&uid).await;
+
+    let lead = card("Blue Lead").mono("U").commander_legal();
+    let drawer = card("Drawer").mono("U");
+    let other = card("Untracked Burn").mono("R");
+    let drawer_pair = (drawer.id(), drawer.oracle_id().unwrap());
+    seed_oracle_tags(
+        &pool,
+        &[
+            (drawer_pair.1, "draw"),
+            (other.oracle_id().unwrap(), "burn"),
+        ],
+    )
+    .await;
+    let lead_sid = lead.id();
+    seed_cards(&pool, &[lead, drawer, other]).await;
+    build_commander_deck(&app, &token, "Blue", lead_sid, &[drawer_pair]).await;
+
+    // Six mono-blue candidates share the tag and the color; two others share
+    // the tag only, so every blue outscores them.
+    for i in 0..6 {
+        seed_candidate(&pool, &format!("Blue {i}"), "U", json!({ "draw": 1.0 })).await;
+    }
+    seed_candidate(&pool, "Green Other", "G", json!({ "draw": 1.0 })).await;
+    seed_candidate(&pool, "Red Other", "R", json!({ "draw": 1.0 })).await;
+
+    let capped = vec![
+        "Blue 0",
+        "Blue 1",
+        "Blue 2",
+        "Blue 3",
+        "Green Other",
+        "Red Other",
+        "Blue 4",
+        "Blue 5",
+    ];
+    assert_eq!(
+        names(&suggestions(&app, &token, 10).await),
+        capped,
+        "four blues lead, the others move up, the capped blues follow"
+    );
+    assert_eq!(
+        names(&suggestions(&app, &token, 100).await),
+        capped,
+        "a long list keeps every candidate, capped ones after the rest"
+    );
+    assert_eq!(
+        names(&suggestions(&app, &token, 5).await),
+        capped[..5],
+        "a short list is cut after the cap is applied"
     );
 }
 

@@ -30,8 +30,8 @@ use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppres
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
 use crate::domain::deck::models::deck::commander_suggestions::{
-    ColorAffinity, CommanderDismissal, CommanderSuggestion, CommanderSuggestions,
-    CommanderSuggestionsError, MAX_PROFILED_DECKS,
+    self, ColorAffinity, CommanderDismissal, CommanderSuggestion, CommanderSuggestions,
+    CommanderSuggestionsError, MAX_PER_COLOR_IDENTITY, MAX_PROFILED_DECKS, SCORED_POOL,
 };
 use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
 use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
@@ -624,15 +624,15 @@ where
                 .map_err(|e| CommanderSuggestionsError::Database(e.into()))?,
         );
 
+        // The whole pool is scored and capped before the limit applies, so a
+        // short list still has candidates of other identities to move up.
         let scored = self
             .card_repo
-            .score_commander_suggestions(
-                user_id,
-                &deck_profiles,
-                &exclude_oracle_ids,
-                i64::from(limit),
-            )
+            .score_commander_suggestions(user_id, &deck_profiles, &exclude_oracle_ids, SCORED_POOL)
             .await?;
+        let mut scored =
+            commander_suggestions::cap_color_identities(scored, MAX_PER_COLOR_IDENTITY);
+        scored.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
         let scored_oracle_ids: Vec<Uuid> = scored.iter().map(|s| s.oracle_id).collect();
         let mut cards_by_oracle: HashMap<Uuid, Card> = self
             .card_repo

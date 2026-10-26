@@ -1,5 +1,8 @@
 //! Suggested commanders: the user's commander decks scored against the
-//! precomputed commander tag profiles, and the dismissals that hide one.
+//! precomputed commander tag profiles, the variety cap over the ranking, and
+//! the dismissals that hide one.
+
+use std::collections::HashMap;
 
 use serde::Deserialize;
 use thiserror::Error;
@@ -10,6 +13,17 @@ use zwipe_core::domain::card::Card;
 /// recently updated ones. Each profile is one query, so this bounds the work
 /// for a user with many decks; colors are read from every deck regardless.
 pub const MAX_PROFILED_DECKS: usize = 12;
+
+/// Scored candidates the service pulls before capping, as many as the largest
+/// request, so a short list has candidates to move up once some are capped.
+pub const SCORED_POOL: i64 = 100;
+
+/// Most commanders of one exact color identity the ranking keeps in place
+/// before the rest of that identity fall behind every other candidate. A user
+/// whose decks share one strong theme would otherwise see ten commanders of
+/// the same identity; four leaves over half of a ten-row list to the user's
+/// other colors while still letting a favorite identity dominate.
+pub const MAX_PER_COLOR_IDENTITY: usize = 4;
 
 /// Errors while building suggestions or changing dismissals.
 #[derive(Debug, Error)]
@@ -92,6 +106,32 @@ pub struct ScoredCommander {
     pub tags: Vec<SharedTag>,
 }
 
+/// Reorders a ranking so that at most `cap` commanders of each exact color
+/// identity keep their place; every further commander of that identity moves
+/// behind the whole list, in its original order. Nothing is dropped, and
+/// commanders that stay keep their relative order, so a stable ranking stays
+/// stable.
+#[must_use]
+pub fn cap_color_identities(scored: Vec<ScoredCommander>, cap: usize) -> Vec<ScoredCommander> {
+    let mut kept_per_identity: HashMap<Vec<String>, usize> = HashMap::new();
+    let mut kept = Vec::with_capacity(scored.len());
+    let mut capped = Vec::new();
+    for commander in scored {
+        let mut identity = commander.color_identity.clone();
+        identity.sort_unstable();
+        identity.dedup();
+        let seen = kept_per_identity.entry(identity).or_default();
+        if *seen < cap {
+            *seen += 1;
+            kept.push(commander);
+        } else {
+            capped.push(commander);
+        }
+    }
+    kept.extend(capped);
+    kept
+}
+
 /// One suggestion with the terms behind it.
 #[derive(Debug, Clone)]
 pub struct CommanderSuggestion {
@@ -110,4 +150,79 @@ pub struct CommanderSuggestions {
     pub suggestions: Vec<CommanderSuggestion>,
     /// The user's decks with a commander. 0 means no profile could be built.
     pub deck_count: u32,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn scored(n: u128, identity: &[&str]) -> ScoredCommander {
+        ScoredCommander {
+            oracle_id: Uuid::from_u128(n),
+            color_identity: identity.iter().map(|c| c.to_string()).collect(),
+            tags: vec![],
+        }
+    }
+
+    fn ids(scored: &[ScoredCommander]) -> Vec<u128> {
+        scored.iter().map(|s| s.oracle_id.as_u128()).collect()
+    }
+
+    #[test]
+    fn empty_stays_empty() {
+        assert!(cap_color_identities(vec![], 4).is_empty());
+    }
+
+    #[test]
+    fn under_the_cap_keeps_the_order() {
+        let input = vec![scored(1, &["U"]), scored(2, &["U"]), scored(3, &["R", "W"])];
+        let out = cap_color_identities(input.clone(), 4);
+        assert_eq!(out, input);
+    }
+
+    #[test]
+    fn exactly_the_cap_keeps_the_order() {
+        let input: Vec<_> = (1..=4).map(|n| scored(n, &["U"])).collect();
+        let out = cap_color_identities(input.clone(), 4);
+        assert_eq!(out, input);
+    }
+
+    #[test]
+    fn over_the_cap_moves_the_rest_behind_everything_in_score_order() {
+        let input = vec![
+            scored(1, &["U"]),
+            scored(2, &["U"]),
+            scored(3, &["U"]),
+            scored(4, &["W", "R"]),
+            scored(5, &["U"]),
+            scored(6, &["G"]),
+            scored(7, &["R", "W"]),
+            scored(8, &["U"]),
+            scored(9, &["U"]),
+        ];
+        let out = cap_color_identities(input, 2);
+        assert_eq!(
+            ids(&out),
+            vec![1, 2, 4, 6, 7, 3, 5, 8, 9],
+            "two of each identity stay, the capped blues follow in their old order"
+        );
+    }
+
+    #[test]
+    fn identity_order_does_not_matter() {
+        let input = vec![
+            scored(1, &["W", "R"]),
+            scored(2, &["R", "W"]),
+            scored(3, &["R"]),
+        ];
+        let out = cap_color_identities(input, 1);
+        assert_eq!(ids(&out), vec![1, 3, 2]);
+    }
+
+    #[test]
+    fn colorless_is_an_identity_too() {
+        let input = vec![scored(1, &[]), scored(2, &[]), scored(3, &["B"])];
+        let out = cap_color_identities(input, 1);
+        assert_eq!(ids(&out), vec![1, 3, 2]);
+    }
 }
