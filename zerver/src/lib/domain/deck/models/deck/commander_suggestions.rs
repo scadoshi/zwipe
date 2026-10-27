@@ -17,9 +17,10 @@ use zwipe_core::http::contracts::suggestions::{
 };
 
 /// Decks whose tag profile a candidate is scored against: the user's most
-/// recently updated ones. Each profile is one query, so this bounds the work
-/// for a user with many decks; colors are read from every deck regardless.
-pub const MAX_PROFILED_DECKS: usize = 12;
+/// recently updated ones, as many as a verified account can own
+/// (`MAX_DECKS_PER_USER`), so every deck counts. The profiles come from one
+/// batched query; colors are read from every deck regardless.
+pub const MAX_PROFILED_DECKS: usize = 20;
 
 /// Scored candidates the service pulls before capping, as many as the largest
 /// request, so a short list has candidates to move up once some are capped.
