@@ -94,6 +94,8 @@ The user profile is cheap per request (the deck tag profile query runs in ~30-50
 
 Otag data changes nightly with the Scryfall sync, so a profile reflects the otags as of its payload's last fetch or refresh. That is fresh enough: profiles roll forward with the worker's payload refresh cycle.
 
+**The role rules live in zwipe-core (2026-10-27), shared with the synergy worker.** `CATEGORY_ROOTS`, `ROLE_TAG_OVERRIDES`, `ROLE_TAG_EXCLUSIONS` and their pair builders are in `zwipe-core/src/domain/card/models/card_role/role_tags.rs`; zerver re-exports them from `derive_categories.rs` and binds them into its `role_membership_ctes` SQL. The worker reads `SELECT id, slug, parent_ids FROM oracle_tags` into `OracleTagNode`s, builds `RoleMembership::from_hierarchy`, and passes `|slug| membership.has_role(slug)` as `profile_weights`' `has_role`, so its commander profiles keep the same tags the deck profiles do. `zerver/tests/role_membership_parity.rs` pins the Rust membership to the SQL one. The worker's role needs `SELECT` on `oracle_tags`, granted by `zcripts/synergy-worker/setup_role.sh`.
+
 ## Data and endpoints
 
 - `GET /api/commander/suggestions?limit=…` returns ranked suggestions, each with the card and its breakdown (top shared tags with labels and weights, color counts). The list asks for 10, Swipe for 100.
