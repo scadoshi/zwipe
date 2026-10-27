@@ -8,7 +8,7 @@ Orientation for AI assistants and returning contributors. This `context/` tree i
 |-----------|--------------|
 | [`product/`](product/) | What we're building: PRD, monetization, `premium/` feature catalog |
 | [`architecture/`](architecture/) | Why the app is built this way: structure, decisions, hosting, content delivery (compiled vs fetched) |
-| [`development/`](development/) | How to write code here: commit/doc standards, newtypes, Dioxus, UI-text conventions |
+| [`development/`](development/) | How to write code here: commit/doc standards, newtypes, Dioxus, UI-text conventions, loading skeletons |
 | [`operations/`](operations/) | How to build, deploy & ship: `infrastructure/`, `ios/`, `android/` |
 | [`marketing/`](marketing/) | Marketing material + tooling (business card, etc.) |
 | [`plans/`](plans/) | Implementation plans for upcoming / in-flight work |
@@ -20,6 +20,10 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 ## Where things stand
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
+
+## 2026-10-27: skeletons ghost everything
+
+The closed-vs-open-vocabulary skeleton rule from the 1.8.1 review round (static chrome renders real from the first frame) is superseded. A loading skeleton now ghosts every header, label, chip and control in the region, colored pieces keep their tint, and nothing tappable shows until the data lands. Home's Playstyle panel, the Playstyle screen, Decks, Deck cards, the commander maybeboard, Export and the oracle tag picker were changed to match. The rule is in [`development/skeletons.md`](development/skeletons.md).
 
 ## 2026-10-23: 1.14.0 submitted, Android session under the Keystore, enumeration closed
 
