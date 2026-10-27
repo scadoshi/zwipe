@@ -178,7 +178,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::Image {
                 file: "getting-started/01-create-deck.webp",
-                alt: "The Create Deck form with a name typed, the Commander format picked, and Krenko, Mob Boss as commander",
+                alt: "The Create deck form with a name typed, the Commander format picked, and Krenko, Mob Boss as commander",
                 caption: None,
             },
             Block::H2("Build by swiping"),
@@ -191,7 +191,7 @@ pub static GUIDES: &[Guide] = &[
             ]),
             Block::Image {
                 file: "getting-started/02-add-cards.webp",
-                alt: "The Add Deck Cards screen with a Goblin on top of the stack and the Search, Maybeboard, and Synergy chips above it",
+                alt: "The Add deck cards screen with a Goblin on top of the stack and the Search, Maybeboard, and Synergy chips above it",
                 caption: None,
             },
             Block::P(
@@ -220,7 +220,7 @@ pub static GUIDES: &[Guide] = &[
         related: &["remove-cards", "swipe-memory", "filtering"],
         blocks: &[
             Block::Lead(
-                "The Add Deck Cards screen deals cards as a stack, and you decide each with a flick.",
+                "The Add deck cards screen deals cards as a stack, and you decide each with a flick.",
             ),
             Block::H2("The four swipes"),
             Block::P(
@@ -253,7 +253,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Filter, sort, and the maybeboard"),
             Block::P(
-                "Filter decides which cards are dealt; a dot marks an active filter. Sorting reorders the current set only. The \"From:\" row swaps the stack to your Maybeboard, where a right swipe promotes a card into the deck. Each source keeps its own filter, and the Maybeboard starts unfiltered.",
+                "Filter decides which cards are dealt; a dot marks an active filter. Sorting reorders the current set only. The From row swaps the stack to your Maybeboard, where a right swipe promotes a card into the deck. Each source keeps its own filter, and the Maybeboard starts unfiltered.",
             ),
             Block::Image {
                 file: "swipe-to-build/02-filter-sheet.webp",
@@ -301,7 +301,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::Image {
                 file: "remove-cards/01-remove-swipe.webp",
-                alt: "The Remove Deck Cards screen mid-swipe, with the Boards row set to Main above the pile",
+                alt: "The Remove deck cards screen mid-swipe, with the Boards row set to Main above the pile",
                 caption: None,
             },
             Block::Note(
@@ -476,7 +476,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Where and how"),
             Block::P(
-                "The Synergy chip sits on the \"From:\" row of the Add Deck Cards screen whenever the source is Search and your deck has a commander. On, the stack starts with fitting cards, served best-first, 25 at a time, and shuffled within each batch per deck per day, so the same commander doesn't show an identical stack twice; off, you browse everything legal. It's on by default, and toggling it reloads the stack.",
+                "The Synergy chip sits on the From row of the Add deck cards screen whenever the source is Search and your deck has a commander. On, the stack starts with fitting cards, served best-first, 25 at a time, and shuffled within each batch per deck per day, so the same commander doesn't show an identical stack twice; off, you browse everything legal. It's on by default, and toggling it reloads the stack.",
             ),
             Block::Image {
                 file: "synergy/01-synergy-on.webp",
@@ -634,19 +634,19 @@ pub static GUIDES: &[Guide] = &[
             Block::Bullets(&[
                 "On the Home screen, tap Playstyle on the Color map panel. It's also on the Decks screen, under More.",
                 "Your colors, card roles and oracle tags come first.",
-                "Under them, your top 10 commanders show as card rows, best fit first.",
+                "Under them, Suggested commanders lists your top 10 as card rows, best fit first. Its question mark explains the ranking.",
                 "Tap a color chip in the Show row to see only those colors. Tap it again to see them all.",
-                "Staples, at the bottom, lists the cards that show up in the most of your decks, each with the share of your decks that run it. Basic lands are left out. Tap a type or color chip to narrow it.",
+                "Staples, at the bottom, lists the cards that show up in the most of your decks. Each row leads with the share of your decks that run it, and an expanded row gives the count, like 4 of 6 decks. Basic lands are left out. Tap a Type or Color chip to narrow it. It has a question mark too.",
             ]),
             Block::H2("What your decks say"),
             Block::P(
-                "Color map opens first. It grows a map of tiles from your cards, each color claiming ground in proportion to its cards, in a shape generated per player. It's the same map as on Home. Under it are three more sections. Tap one to open it.",
+                "Color map opens first. It grows a map of tiles from your cards, each color claiming ground in proportion to its cards, in a shape generated per player. Every color grows out from the middle and fades toward the edge. The key under it counts each color's cards, colorless too. It's the same map as on Home. Under it are three more sections. Tap one to open it.",
             ),
             Block::Bullets(&[
                 "Summary shows how many decks were read, your most built color combination and your top single color.",
-                "Card roles shows the jobs your cards do, like ramp or removal. Tap a role to see its tags.",
+                "Card roles shows how many of your decks fill each role, like ramp or removal. Tap a role to see its tags.",
                 "Oracle tags lists your 10 most impactful tags. Tap a tag to see what it means.",
-                "Each open section has a question mark in its header that explains it.",
+                "Color map, Card roles and Oracle tags each have a question mark in the header that explains them.",
             ]),
             Block::H2("How a tag's impact adds up"),
             Block::Bullets(&[
@@ -659,7 +659,7 @@ pub static GUIDES: &[Guide] = &[
             Block::P("There's a little more math under the hood, but that's the gist."),
             Block::H2("Why this commander"),
             Block::P(
-                "Expand a row and tap Why this commander? to see why it made the list. You get the oracle tags it shares with your decks and the colors you keep building in. A card's details sheet shows the same reasons already open.",
+                "Expand a row and tap Why this commander? to see why it made the list. You get the oracle tags it shares with your decks and the colors you keep building in. While you swipe, a card's details sheet shows the same reasons already open.",
             ),
             Block::H2("What you can do with one"),
             Block::Bullets(&[

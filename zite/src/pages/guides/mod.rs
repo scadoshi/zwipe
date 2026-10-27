@@ -265,7 +265,7 @@ pub fn Guides() -> Element {
             // One console row, the app's chip-row anatomy: inline label, the
             // search input with its clear button, then the tag chips.
             div { class: "guide-filter",
-                span { class: "guide-filter-label", "Filter:" }
+                span { class: "guide-filter-label", "Filter" }
                 input {
                     class: "guide-search-input",
                     r#type: "text",
