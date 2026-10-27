@@ -94,7 +94,11 @@ pub fn role_membership_ctes(first: usize) -> String {
          subtree(role, id, slug) AS (
              SELECT r.role, ot.id, ot.slug FROM roots r JOIN oracle_tags ot ON ot.slug = r.root_slug
              UNION
-             SELECT st.role, c.id, c.slug FROM subtree st JOIN oracle_tags c ON st.id = ANY(c.parent_ids)
+             -- unnested parents hash-join; `= ANY(parent_ids)` forces a nested loop
+             SELECT st.role, c.id, c.slug
+             FROM subtree st
+             JOIN (SELECT id, slug, unnest(parent_ids) AS parent FROM oracle_tags) c
+               ON c.parent = st.id
          ),
          membership(role, slug) AS (
              SELECT role, slug FROM (
