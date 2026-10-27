@@ -1,7 +1,7 @@
 //! Home's Playstyle panel: the user's top colors, with a button that opens
 //! the full screen.
 
-use components::{Button, ButtonVariant};
+use components::Chip;
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
@@ -37,7 +37,7 @@ pub(crate) struct PodiumStep {
 }
 
 impl PodiumStep {
-    /// "1st", "2nd" or "3rd".
+    /// "1st", "2nd" or "3rd", for the block's accessible label.
     pub(crate) fn place_label(&self) -> &'static str {
         match self.place {
             1 => "1st",
@@ -46,18 +46,9 @@ impl PodiumStep {
         }
     }
 
-    /// The place tag's class: a palette accent per place, the same on every
-    /// podium, since status colors would read as an outcome.
-    pub(crate) fn place_class(&self) -> &'static str {
-        match self.place {
-            1 => "stat-chip stat-chip-p2",
-            2 => "stat-chip stat-chip-p4",
-            _ => "stat-chip stat-chip-p6",
-        }
-    }
-
-    /// The step's class, which sets its fixed height: first tallest, so the
-    /// podium reads as one however lopsided the counts are.
+    /// The step's class: a fixed height, first tallest, so the podium reads
+    /// as one however lopsided the counts are, and a palette accent per
+    /// place (status colors would read as an outcome).
     pub(crate) fn class(&self) -> &'static str {
         match self.place {
             1 => "podium-block podium-first",
@@ -133,8 +124,8 @@ pub(crate) fn use_play_style_summary(
 }
 
 /// The top color identities standing on a podium: second, first, third,
-/// each step with its deck count on top and its pips, then its name and
-/// place as tags, under it. Renders nothing without identities.
+/// each step a block in its place's accent with the deck count inside and
+/// the pips and a name tag under it. Renders nothing without identities.
 #[component]
 pub(crate) fn Podium(identities: Vec<HttpColorIdentityCount>) -> Element {
     let steps = podium(&identities);
@@ -145,17 +136,19 @@ pub(crate) fn Podium(identities: Vec<HttpColorIdentityCount>) -> Element {
         div { class: "podium",
             for step in steps {
                 div { key: "{step.place}", class: "podium-step",
-                    // Count and block in a fixed-height stand, so every
-                    // block sits on the same floor whatever the labels hold.
+                    // The block, count inside, in a fixed-height stand, so
+                    // every block sits on the same floor.
                     div { class: "podium-stand",
-                        span { class: "stat-chip", "{step.decks}" }
-                        div { class: step.class() }
+                        div {
+                            class: step.class(),
+                            aria_label: "{step.place_label()}, {step.decks} decks",
+                            "{step.decks}"
+                        }
                     }
                     IdentityPips { identity: step.pips.clone(), show_name: false }
                     // Every step is named, Mono-red included, so the three
                     // read alike.
                     span { class: "stat-chip", "{identity_name(&step.pips)}" }
-                    span { class: step.place_class(), "{step.place_label()}" }
                 }
             }
         }
@@ -163,11 +156,10 @@ pub(crate) fn Podium(identities: Vec<HttpColorIdentityCount>) -> Element {
 }
 
 /// The panel under the hero, a sibling of the featured flavor card: the
-/// title bar, then the top three color identities as a podium (second,
-/// first, third, each step with its deck count on top), then an Open button. Before any deck has
-/// cards it shows one line instead of the rows; a failed fetch with nothing
-/// cached shows a muted line. The button is always there, so the screen
-/// stays reachable from Home.
+/// title bar with an Open chip, then the top three color identities as a
+/// podium. Before any deck has cards it shows one line instead; a failed
+/// fetch with nothing cached shows a muted line. The Open chip is always
+/// there, so the screen stays reachable from Home.
 #[component]
 pub fn HomePlayStyle() -> Element {
     let navigator = use_navigator();
@@ -177,9 +169,7 @@ pub fn HomePlayStyle() -> Element {
         div { class: "container-sm text-center flex-col home-flavor content-enter-delayed",
             match summary {
                 Some(summary) => rsx! {
-                    div { class: "settings-list-header", style: "justify-content: center;",
-                        span { class: "settings-list-title", "Playstyle" }
-                    }
+                    PanelHeader { onclick: move |_| { navigator.push(Router::SuggestedCommanders {}); } }
                     if summary.deck_count == 0 {
                         div { class: "message-empty", style: "padding: 1rem;",
                             "Build a deck to see your playstyle"
@@ -187,35 +177,27 @@ pub fn HomePlayStyle() -> Element {
                     } else {
                         Podium { identities: summary.identities }
                     }
-                    OpenRow { onclick: move |_| { navigator.push(Router::SuggestedCommanders {}); } }
                 },
                 None if failed() => rsx! {
-                    div { class: "settings-list-header", style: "justify-content: center;",
-                        span { class: "settings-list-title", "Playstyle" }
-                    }
+                    PanelHeader { onclick: move |_| { navigator.push(Router::SuggestedCommanders {}); } }
                     div { class: "message-empty", style: "padding: 1rem;",
                         "Could not load your playstyle"
                     }
-                    OpenRow { onclick: move |_| { navigator.push(Router::SuggestedCommanders {}); } }
                 },
                 None => rsx! {
-                    // Mirror the loaded panel: the title bar, the podium's
-                    // three steps, then the button.
+                    // Mirror the loaded panel: the title bar, then the
+                    // podium's three steps.
                     div { class: "skeleton-card-header", style: "display: flex; justify-content: center;",
                         div { class: "skeleton-bar skeleton-section-label", style: "width: 45%; margin-bottom: 0;" }
                     }
                     div { class: "podium",
-                        for class in ["podium-block podium-second", "podium-block podium-first", "podium-block podium-third"] {
+                        for class in ["podium-second", "podium-first", "podium-third"] {
                             div { key: "{class}", class: "podium-step",
                                 div { class: "podium-stand",
-                                    div { class: "skeleton-bar {class}" }
+                                    div { class: "skeleton-bar podium-skeleton {class}" }
                                 }
                             }
                         }
-                    }
-                    hr { class: "home-panel-rule" }
-                    div { class: "flavor-buy-row",
-                        div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
                     }
                 },
             }
@@ -223,14 +205,16 @@ pub fn HomePlayStyle() -> Element {
     }
 }
 
-/// The panel's foot: a full-width rule, then the Open button centered like
-/// the flavor card's name and price row, as a dialog sets its actions apart.
+/// The panel's title bar: Playstyle centered, Open as a chip at its right
+/// end, the way the deck view's Budget header carries its currency chips.
 #[component]
-fn OpenRow(onclick: EventHandler<MouseEvent>) -> Element {
+fn PanelHeader(onclick: EventHandler<MouseEvent>) -> Element {
     rsx! {
-        hr { class: "home-panel-rule" }
-        div { class: "flavor-buy-row",
-            Button { variant: ButtonVariant::Action, onclick: move |e| onclick.call(e), "Open" }
+        div { class: "settings-list-header home-panel-header",
+            span { class: "settings-list-title", "Playstyle" }
+            span { class: "home-panel-open",
+                Chip { selected: false, onclick: move |e| onclick.call(e), "Open" }
+            }
         }
     }
 }
@@ -282,16 +266,6 @@ mod tests {
         assert_eq!(
             steps.get(1).map(PodiumStep::class),
             Some("podium-block podium-first")
-        );
-        let tags: Vec<&str> = steps.iter().map(PodiumStep::place_class).collect();
-        assert_eq!(
-            tags,
-            vec![
-                "stat-chip stat-chip-p4",
-                "stat-chip stat-chip-p2",
-                "stat-chip stat-chip-p6"
-            ],
-            "each place keeps its own accent"
         );
     }
 }
