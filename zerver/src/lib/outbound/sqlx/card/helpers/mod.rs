@@ -1,5 +1,7 @@
 //! SQL generation helpers for card data operations.
 
+/// The commander suggestions scoring statement.
+pub mod commander_scoring;
 /// Derive `card_roles` from oracle-tag subtrees + `all_parts` (Phase 2).
 pub mod derive_categories;
 /// Our authored oracle-tag descriptions, overlaid onto the catalog each sync.

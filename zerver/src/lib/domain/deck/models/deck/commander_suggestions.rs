@@ -6,7 +6,6 @@
 use std::cmp::Reverse;
 use std::collections::{HashMap, HashSet};
 
-use serde::Deserialize;
 use thiserror::Error;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -145,7 +144,7 @@ pub struct DeckTagProfile {
 }
 
 /// An oracle tag the user's decks and a commander both lean on.
-#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SharedTag {
     /// The oracle tag slug.
     pub slug: String,
@@ -170,9 +169,22 @@ pub struct ScoredCommander {
     pub oracle_id: Uuid,
     /// The commander's color identity as WUBRG short names.
     pub color_identity: Vec<String>,
-    /// The strongest shared tags with the user's best-matching deck, strongest
-    /// first.
-    pub tags: Vec<SharedTag>,
+    /// The slugs of the strongest tags shared with the user's best-matching
+    /// deck, strongest first. Each is a key of that deck's tag profile.
+    pub tag_slugs: Vec<String>,
+}
+
+/// Pairs each shared tag slug with the card role `tag_roles` maps it to, in
+/// order. A slug missing from the map falls under no role.
+#[must_use]
+pub fn shared_tags(slugs: Vec<String>, tag_roles: &HashMap<String, String>) -> Vec<SharedTag> {
+    slugs
+        .into_iter()
+        .map(|slug| SharedTag {
+            role: tag_roles.get(&slug).cloned(),
+            slug,
+        })
+        .collect()
 }
 
 /// Reorders a ranking so that at most `cap` commanders of each exact color
@@ -619,7 +631,7 @@ mod tests {
         ScoredCommander {
             oracle_id: Uuid::from_u128(n),
             color_identity: identity.iter().map(|c| c.to_string()).collect(),
-            tags: vec![],
+            tag_slugs: vec![],
         }
     }
 

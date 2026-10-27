@@ -52,9 +52,10 @@ use crate::domain::card::requests::get_scryfall_data::{
 };
 use crate::domain::card::requests::get_sets::GetSetsError;
 use crate::domain::deck::models::deck::commander_suggestions::{
-    CommanderSuggestionsError, DeckTagProfile, ScoredCommander, SharedTag,
+    CommanderSuggestionsError, DeckTagProfile, ScoredCommander,
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
+use crate::outbound::sqlx::card::helpers::commander_scoring::SCORE_COMMANDER_SUGGESTIONS_SQL;
 use crate::outbound::sqlx::card::helpers::oracle_tag_groups::{
     RoleMembershipBinds, role_membership_ctes,
 };
@@ -2057,129 +2058,31 @@ impl CardRepository for MyPostgres {
         exclude_oracle_ids: &[uuid::Uuid],
         limit: i64,
     ) -> Result<Vec<ScoredCommander>, CommanderSuggestionsError> {
-        // Score = the best deck's Σ over shared tags of deck weight ×
-        // commander weight, plus W_COLOR_AFFINITY × the best deck's Jaccard
-        // match of color identities (|∩| / |∪|; colorless against colorless
-        // is 1, colorless against colored 0). The two bests may come from
-        // different decks. The reasons are the top tags shared with the
-        // best-tag deck by that product, each with the card role it falls
-        // under in the card display's own membership (the first role
-        // alphabetically when it falls under several; null when under none).
-        // The SQL text is literals plus parameter numbers; the data is all
-        // bound.
-        let binds = RoleMembershipBinds::new();
-        let sql = format!(
-            "WITH RECURSIVE {},
-             decks AS (
-                 SELECT d.ord,
-                        ARRAY(SELECT jsonb_array_elements_text(d.value->'colors')) AS colors,
-                        COALESCE(d.value->'profile', '{{}}'::jsonb) AS profile
-                 FROM jsonb_array_elements($7::jsonb) WITH ORDINALITY d(value, ord)
-             ),
-             candidates AS (
-                 SELECT p.oracle_id, p.profile, lc.name,
-                        COALESCE(lc.color_identity, '{{}}') AS color_identity
-                 FROM commander_tag_profiles p
-                 JOIN latest_cards lc ON lc.oracle_id = p.oracle_id
-                 WHERE lc.layout <> 'token'
-                   AND lc.legalities->>'commander' = 'legal'
-                   AND NOT (p.oracle_id = ANY($8::uuid[]))
-                   AND NOT EXISTS (
-                       SELECT 1 FROM user_commander_dismissals d
-                       WHERE d.user_id = $9 AND d.oracle_id = p.oracle_id
-                         AND d.dismissed_at > now() - make_interval(days => $10)
-                   )
-             ),
-             overlap AS (
-                 SELECT c.oracle_id, d.ord AS deck, t.key AS oracle_tag,
-                        (d.profile->>t.key)::float8 * t.value::float8 AS w
-                 FROM candidates c
-                 CROSS JOIN decks d
-                 CROSS JOIN LATERAL jsonb_each_text(c.profile) t
-                 WHERE d.profile ? t.key
-             ),
-             deck_tag_score AS (
-                 SELECT oracle_id, deck, sum(w) AS s FROM overlap GROUP BY oracle_id, deck
-             ),
-             best_deck AS (
-                 SELECT DISTINCT ON (oracle_id) oracle_id, deck, s
-                 FROM deck_tag_score
-                 ORDER BY oracle_id, s DESC, deck
-             ),
-             color_score AS (
-                 SELECT c.oracle_id,
-                        max(CASE
-                            WHEN cardinality(c.color_identity) = 0 AND cardinality(d.colors) = 0
-                                THEN 1.0::float8
-                            WHEN cardinality(c.color_identity) = 0 OR cardinality(d.colors) = 0
-                                THEN 0.0::float8
-                            ELSE (SELECT count(*) FROM unnest(c.color_identity) x
-                                  WHERE x = ANY(d.colors))::float8
-                               / (SELECT count(DISTINCT x)
-                                  FROM unnest(c.color_identity || d.colors) x)::float8
-                        END) AS s
-                 FROM candidates c
-                 CROSS JOIN decks d
-                 GROUP BY c.oracle_id
-             ),
-             tag_role AS (
-                 SELECT slug, min(role) AS role FROM membership GROUP BY slug
-             ),
-             shared_tags AS (
-                 SELECT o.oracle_id,
-                        jsonb_agg(
-                            jsonb_build_object('slug', o.oracle_tag, 'role', tr.role)
-                            ORDER BY o.w DESC, o.oracle_tag
-                        ) AS tags
-                 FROM (
-                     SELECT o.oracle_id, o.oracle_tag, o.w,
-                            row_number() OVER (
-                                PARTITION BY o.oracle_id ORDER BY o.w DESC, o.oracle_tag
-                            ) AS rn
-                     FROM overlap o
-                     JOIN best_deck bd ON bd.oracle_id = o.oracle_id AND bd.deck = o.deck
-                 ) o
-                 LEFT JOIN tag_role tr ON tr.slug = o.oracle_tag
-                 WHERE o.rn <= $11
-                 GROUP BY o.oracle_id
-             )
-             SELECT c.oracle_id,
-                    c.color_identity,
-                    COALESCE(bd.s, 0) + $12 * COALESCE(cs.s, 0) AS score,
-                    COALESCE(st.tags, '[]'::jsonb) AS tags
-             FROM candidates c
-             LEFT JOIN best_deck bd ON bd.oracle_id = c.oracle_id
-             LEFT JOIN color_score cs ON cs.oracle_id = c.oracle_id
-             LEFT JOIN shared_tags st ON st.oracle_id = c.oracle_id
-             ORDER BY score DESC, c.name ASC, c.oracle_id
-             LIMIT $13",
-            role_membership_ctes(1)
-        );
-        let rows: Vec<(uuid::Uuid, Vec<String>, f64, serde_json::Value)> = binds
-            .bind(sqlx::query(sqlx::AssertSqlSafe(sql)))
-            .bind(decks)
-            .bind(exclude_oracle_ids)
-            .bind(user_id)
-            .bind(DISMISSAL_TTL_DAYS)
-            .bind(SUGGESTION_TAG_LIMIT)
-            .bind(W_COLOR_AFFINITY)
-            .bind(limit)
-            .map(|row: sqlx::postgres::PgRow| (row.get(0), row.get(1), row.get(2), row.get(3)))
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
-        rows.into_iter()
-            .map(|(oracle_id, color_identity, _score, tags)| {
-                let tags: Vec<SharedTag> = serde_json::from_value(tags)
-                    .context("commander suggestion tags")
-                    .map_err(CommanderSuggestionsError::Database)?;
-                Ok(ScoredCommander {
+        // The statement and its scoring rules are documented on
+        // SCORE_COMMANDER_SUGGESTIONS_SQL.
+        let rows: Vec<(uuid::Uuid, Vec<String>, f64, Vec<String>)> =
+            sqlx::query(SCORE_COMMANDER_SUGGESTIONS_SQL)
+                .bind(decks)
+                .bind(exclude_oracle_ids)
+                .bind(user_id)
+                .bind(DISMISSAL_TTL_DAYS)
+                .bind(SUGGESTION_TAG_LIMIT)
+                .bind(W_COLOR_AFFINITY)
+                .bind(limit)
+                .map(|row: sqlx::postgres::PgRow| (row.get(0), row.get(1), row.get(2), row.get(3)))
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
+        Ok(rows
+            .into_iter()
+            .map(
+                |(oracle_id, color_identity, _score, tag_slugs)| ScoredCommander {
                     oracle_id,
                     color_identity,
-                    tags,
-                })
-            })
-            .collect()
+                    tag_slugs,
+                },
+            )
+            .collect())
     }
 
     async fn tag_roles(

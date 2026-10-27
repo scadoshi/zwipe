@@ -630,7 +630,8 @@ where
             .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
         profiles.resize(decks.len(), None);
         // Every slug across the profiles in one role lookup, so the summary's
-        // role counts cover tags beyond the ones it shows.
+        // role counts cover tags beyond the ones it shows. Every shared tag a
+        // suggestion gives is one of these slugs, so its role comes from here.
         let slugs: Vec<String> = profiles
             .iter()
             .flatten()
@@ -715,7 +716,7 @@ where
                 colors.sort_by_key(|color| std::cmp::Reverse(color.decks));
                 Some(CommanderSuggestion {
                     card,
-                    tags: scored.tags,
+                    tags: commander_suggestions::shared_tags(scored.tag_slugs, &tag_roles),
                     colors,
                 })
             })

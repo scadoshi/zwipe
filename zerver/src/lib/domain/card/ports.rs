@@ -363,8 +363,9 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// profiles and its color term the best Jaccard match of its color
     /// identity against the deck colors. Leaves out `exclude_oracle_ids`,
     /// tokens, commanders not legal in Commander, and the user's live
-    /// dismissals. Each result carries its strongest tags shared with the
-    /// best-matching deck.
+    /// dismissals. Each result carries the slugs of its strongest tags shared
+    /// with the best-matching deck, each a key of that deck's profile; their
+    /// roles come from [`Self::tag_roles`].
     fn score_commander_suggestions(
         &self,
         user_id: uuid::Uuid,
