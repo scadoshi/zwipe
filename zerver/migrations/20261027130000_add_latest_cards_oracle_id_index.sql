@@ -1,0 +1,13 @@
+-- Index latest_cards by oracle_id. The commander suggestions scoring joins its
+-- candidates on it and get_latest_cards_by_oracle_ids filters on it, and both
+-- seq-scanned the view.
+--
+-- Unique because the view is DISTINCT ON (COALESCE(oracle_id, id)), so no two
+-- rows share a non-null oracle_id; rows with a null one never collide in a
+-- unique index. Measured on dev 2026-10-27: 39000 rows, 39000 non-null, 39000
+-- distinct.
+--
+-- Index only, so ownership is untouched: no zervice footer needed. A later
+-- migration that drops and recreates latest_cards must recreate this index
+-- with the others.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_latest_cards_oracle_id ON latest_cards (oracle_id);

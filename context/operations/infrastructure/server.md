@@ -401,6 +401,8 @@ DO $$ BEGIN
 END $$;
 ```
 
+A recreate also drops every index on the view. Copy the index list from the newest recreate (`20260922120000_latest_cards_deprioritize_reversible.sql`) and add the indexes later migrations created on their own: `idx_latest_cards_oracle_id` (`20261027130000_add_latest_cards_oracle_id_index.sql`).
+
 (Considered and rejected 2026-08-15: pointing zervice at the main `zwipe` role. zervice parses ~1.7GB of untrusted Scryfall JSON nightly, so the scoped role caps that blast radius at card data and can never read session tokens; its worst failure mode is this loud, one-command-fix alert.)
 
 ---
