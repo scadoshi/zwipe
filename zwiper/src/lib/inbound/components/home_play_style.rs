@@ -125,7 +125,7 @@ pub(crate) fn use_play_style_summary(
 
 /// The top color identities standing on a podium: second, first, third,
 /// each step a block in its place's accent with the deck count inside and
-/// the pips and a name tag under it. Renders nothing without identities.
+/// the pips and a name tag standing on it, the steps joined on one floor. Renders nothing without identities.
 #[component]
 pub(crate) fn Podium(identities: Vec<HttpColorIdentityCount>) -> Element {
     let steps = podium(&identities);
@@ -136,19 +136,15 @@ pub(crate) fn Podium(identities: Vec<HttpColorIdentityCount>) -> Element {
         div { class: "podium",
             for step in steps {
                 div { key: "{step.place}", class: "podium-step",
-                    // The block, count inside, in a fixed-height stand, so
-                    // every block sits on the same floor.
-                    div { class: "podium-stand",
-                        div {
-                            class: step.class(),
-                            aria_label: "{step.place_label()}, {step.decks} decks",
-                            "{step.decks}"
-                        }
-                    }
+                    // The identity stands on its step: pips, then the name
+                    // tag, Mono-red included so the three read alike.
                     IdentityPips { identity: step.pips.clone(), show_name: false }
-                    // Every step is named, Mono-red included, so the three
-                    // read alike.
                     span { class: "stat-chip", "{identity_name(&step.pips)}" }
+                    div {
+                        class: step.class(),
+                        aria_label: "{step.place_label()}, {step.decks} decks",
+                        "{step.decks}"
+                    }
                 }
             }
         }
@@ -193,9 +189,7 @@ pub fn HomePlayStyle() -> Element {
                     div { class: "podium",
                         for class in ["podium-second", "podium-first", "podium-third"] {
                             div { key: "{class}", class: "podium-step",
-                                div { class: "podium-stand",
-                                    div { class: "skeleton-bar podium-skeleton {class}" }
-                                }
+                                div { class: "skeleton-bar podium-skeleton {class}" }
                             }
                         }
                     }
