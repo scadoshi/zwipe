@@ -43,8 +43,9 @@ fn has_anything(activity: &HttpActivity) -> bool {
 }
 
 /// The screen while its first fetch is out, in the deck view's skeleton
-/// grammar: the Activity section open on a block the heatmap's size, then
-/// Swipes and Rates collapsed to their headers.
+/// grammar: the Activity section open on a blank body the heatmap's height,
+/// which the grid then sweeps into, then Swipes and Rates collapsed to their
+/// headers.
 #[component]
 fn ActivitySkeleton() -> Element {
     rsx! {
@@ -54,7 +55,7 @@ fn ActivitySkeleton() -> Element {
                     div { class: "skeleton-bar skeleton-section-label" }
                     div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
                 }
-                div { class: "skeleton-bar activity-heat-ghost" }
+                div { class: "activity-heat-blank" }
             }
             for i in 0..2 {
                 div { key: "{i}", class: "skeleton-chart-box",

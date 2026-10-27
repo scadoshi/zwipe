@@ -3882,11 +3882,10 @@ button {
     padding: 0 0.75rem;
 }
 
-/* The heatmap's ghost while the Activity screen loads, the grid's height. */
-.activity-heat-ghost {
+/* The heatmap's place while the Activity screen loads: blank at the grid's
+   height, so the sweep is the only entrance and the swap does not jump. */
+.activity-heat-blank {
     height: 7rem;
-    margin: 0.5rem 0.75rem 0;
-    border-radius: 0.4rem;
 }
 
 /* The year's totals under the grid. */
