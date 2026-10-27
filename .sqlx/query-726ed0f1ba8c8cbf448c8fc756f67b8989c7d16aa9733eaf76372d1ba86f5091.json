@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT d.id AS deck_id, dc.oracle_id, dc.scryfall_data_id, s.name, s.type_line\n               FROM decks d\n               JOIN deck_cards dc ON dc.deck_id = d.id AND dc.board = 'deck'\n               JOIN scryfall_data s ON s.id = dc.scryfall_data_id\n               WHERE d.user_id = $1\n               ORDER BY d.updated_at DESC, d.id, dc.oracle_id, dc.scryfall_data_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "deck_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "oracle_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "deck_cards",
+            "name": "oracle_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "scryfall_data_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "deck_cards",
+            "name": "scryfall_data_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "scryfall_data",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "type_line",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "scryfall_data",
+            "name": "type_line"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "726ed0f1ba8c8cbf448c8fc756f67b8989c7d16aa9733eaf76372d1ba86f5091"
+}

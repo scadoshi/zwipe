@@ -8,7 +8,7 @@ use zwipe_core::http::contracts::suggestions::{
     DEFAULT_SUGGESTION_LIMIT, HttpBuilderProfile, HttpClearedDismissals, HttpColorAffinity,
     HttpColorIdentityCount, HttpCommanderSuggestion, HttpCommanderSuggestions,
     HttpDismissCommander, HttpPlayStyleSummary, HttpProfileRole, HttpProfileTag, HttpSharedTag,
-    HttpSuggestionReasons, MAX_SUGGESTION_LIMIT,
+    HttpStaple, HttpSuggestionReasons, MAX_SUGGESTION_LIMIT,
 };
 
 use crate::domain::deck::models::deck::commander_suggestions::{
@@ -108,6 +108,14 @@ impl From<BuilderProfile> for HttpBuilderProfile {
                 .map(|role| HttpProfileRole {
                     role: role.role,
                     decks: role.decks,
+                })
+                .collect(),
+            staples: value
+                .staples
+                .into_iter()
+                .map(|staple| HttpStaple {
+                    card: staple.card,
+                    decks: staple.decks,
                 })
                 .collect(),
         }

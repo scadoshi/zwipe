@@ -27,7 +27,7 @@ use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
 use crate::domain::deck::models::deck::commander_suggestions;
 use crate::domain::deck::models::deck::commander_suggestions::{
-    CommanderDismissal, CommanderSuggestionsError, ProfiledDeck,
+    CommanderDismissal, CommanderSuggestionsError, MainboardCard, ProfiledDeck,
 };
 use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
 use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
@@ -792,6 +792,34 @@ impl DeckRepository for Postgres {
                     ),
                     mainboard_oracle_ids: row.mainboard_oracle_ids,
                 }
+            })
+            .collect())
+    }
+
+    async fn fetch_mainboard_cards(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> Result<Vec<MainboardCard>, CommanderSuggestionsError> {
+        let rows = query!(
+            r#"SELECT d.id AS deck_id, dc.oracle_id, dc.scryfall_data_id, s.name, s.type_line
+               FROM decks d
+               JOIN deck_cards dc ON dc.deck_id = d.id AND dc.board = 'deck'
+               JOIN scryfall_data s ON s.id = dc.scryfall_data_id
+               WHERE d.user_id = $1
+               ORDER BY d.updated_at DESC, d.id, dc.oracle_id, dc.scryfall_data_id"#,
+            user_id,
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| CommanderSuggestionsError::Database(e.into()))?;
+        Ok(rows
+            .into_iter()
+            .map(|row| MainboardCard {
+                deck_id: row.deck_id,
+                oracle_id: row.oracle_id,
+                scryfall_data_id: row.scryfall_data_id,
+                name: row.name,
+                type_line: row.type_line,
             })
             .collect())
     }

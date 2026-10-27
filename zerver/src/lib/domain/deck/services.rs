@@ -22,6 +22,7 @@ use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_card::UpdateDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_profile::UpdateDeckProfile;
 use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, ImportMode};
+use zwipe_core::http::contracts::suggestions::STAPLE_MIN_DECKS;
 
 use crate::domain::card::models::synergy::SynergyPayload;
 use crate::domain::card::ports::{CardRepository, DeckServeContext};
@@ -32,7 +33,7 @@ use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboard
 use crate::domain::deck::models::deck::commander_suggestions::{
     self, ColorAffinity, CommanderDismissal, CommanderSuggestion, CommanderSuggestions,
     CommanderSuggestionsError, DeckTagProfile, MAX_PER_COLOR_IDENTITY, MAX_PROFILED_DECKS,
-    PlayStyleSummary, ProfiledDeck, SCORED_POOL,
+    PlayStyleSummary, ProfiledDeck, SCORED_POOL, Staple,
 };
 use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
 use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
@@ -93,6 +94,36 @@ where
             deck_repo,
             card_repo,
         }
+    }
+
+    /// The user's staples with their cards: every mainboard row ranked by
+    /// [`commander_suggestions::rank_staples`], then the chosen printings in
+    /// one batched fetch. A printing the fetch misses drops its staple.
+    async fn fetch_staples(&self, user_id: Uuid) -> Result<Vec<Staple>, CommanderSuggestionsError> {
+        let mainboard = self.deck_repo.fetch_mainboard_cards(user_id).await?;
+        let counts = commander_suggestions::rank_staples(&mainboard);
+        if counts.is_empty() {
+            return Ok(vec![]);
+        }
+        let ids: ScryfallDataIds = counts.iter().map(|c| c.scryfall_data_id).collect();
+        let mut cards: HashMap<Uuid, Card> = self
+            .card_repo
+            .get_cards(&ids)
+            .await
+            .map_err(|e| CommanderSuggestionsError::Database(e.into()))?
+            .into_iter()
+            .map(|card| (card.scryfall_data.id, card))
+            .collect();
+        Ok(counts
+            .into_iter()
+            .filter_map(|count| {
+                let card = cards.remove(&count.scryfall_data_id)?;
+                Some(Staple {
+                    card,
+                    decks: count.decks,
+                })
+            })
+            .collect())
     }
 }
 
@@ -609,7 +640,12 @@ where
             .into_iter()
             .collect();
         let tag_roles = self.card_repo.tag_roles(&slugs).await?;
-        let profile = commander_suggestions::summarize_profile(&decks, &profiles, &tag_roles);
+        let mut profile = commander_suggestions::summarize_profile(&decks, &profiles, &tag_roles);
+        if let Some(profile) = profile.as_mut()
+            && deck_count >= STAPLE_MIN_DECKS
+        {
+            profile.staples = self.fetch_staples(user_id).await?;
+        }
         let deck_profiles: Vec<serde_json::Value> = decks
             .iter()
             .zip(profiles)

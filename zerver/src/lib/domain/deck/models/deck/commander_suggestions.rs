@@ -10,8 +10,10 @@ use serde::Deserialize;
 use thiserror::Error;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::is_basic_land_type_line;
 use zwipe_core::http::contracts::suggestions::{
-    PLAY_STYLE_IDENTITIES_SENT, PROFILE_ROLE_SHOWN, PROFILE_TAG_SENT,
+    PLAY_STYLE_IDENTITIES_SENT, PROFILE_ROLE_SHOWN, PROFILE_STAPLES_SENT, PROFILE_TAG_SENT,
+    STAPLE_MIN_DECKS,
 };
 
 /// Decks whose tag profile a candidate is scored against: the user's most
@@ -221,6 +223,94 @@ pub struct BuilderProfile {
     /// role between equals, at most [`PROFILE_ROLE_SHOWN`]. Counted over
     /// every tag in the profiles, not only `tags`.
     pub roles: Vec<ProfileRole>,
+    /// The cards on the most decks' mainboards, in [`rank_staples`] order.
+    /// [`summarize_profile`] leaves it empty; the service fills it once the
+    /// cards are fetched.
+    pub staples: Vec<Staple>,
+}
+
+/// A card on several of the user's decks' mainboards.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Staple {
+    /// The printing [`StapleCount::scryfall_data_id`] names.
+    pub card: Card,
+    /// Decks with the card on their mainboard.
+    pub decks: u32,
+}
+
+/// One mainboard card of one of the user's decks, as [`rank_staples`] reads
+/// it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MainboardCard {
+    /// The deck the card is in.
+    pub deck_id: Uuid,
+    /// The card's oracle id, shared by every printing.
+    pub oracle_id: Uuid,
+    /// The printing the deck runs.
+    pub scryfall_data_id: Uuid,
+    /// The card's name, the tiebreak between equal deck counts.
+    pub name: String,
+    /// The printing's type line; `None` when Scryfall gives none.
+    pub type_line: Option<String>,
+}
+
+/// A staple before its card is fetched.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StapleCount {
+    /// The card's oracle id.
+    pub oracle_id: Uuid,
+    /// The printing to show: the one in the first deck, in input order, that
+    /// has the card.
+    pub scryfall_data_id: Uuid,
+    /// Distinct decks with the card on their mainboard.
+    pub decks: u32,
+}
+
+/// The user's staples from every mainboard card of every deck, the input in
+/// decks' most recently updated order. A card counts once per deck however
+/// many printings or copies the deck runs, and only cards in at least
+/// [`STAPLE_MIN_DECKS`] decks stay. Basic lands are left out. Sorted by
+/// decks, most first, then name, then oracle id, at most
+/// [`PROFILE_STAPLES_SENT`]. Each keeps the printing of the first row that
+/// names its oracle id, so with rows in recency order that is the printing in
+/// the most recently updated deck.
+#[must_use]
+pub fn rank_staples(cards: &[MainboardCard]) -> Vec<StapleCount> {
+    let mut by_oracle: HashMap<Uuid, (&MainboardCard, HashSet<Uuid>)> = HashMap::new();
+    for card in cards {
+        if card
+            .type_line
+            .as_deref()
+            .is_some_and(is_basic_land_type_line)
+        {
+            continue;
+        }
+        by_oracle
+            .entry(card.oracle_id)
+            .or_insert_with(|| (card, HashSet::new()))
+            .1
+            .insert(card.deck_id);
+    }
+    let mut ranked: Vec<(&MainboardCard, u32)> = by_oracle
+        .into_values()
+        .map(|(first, decks)| (first, u32::try_from(decks.len()).unwrap_or(u32::MAX)))
+        .filter(|(_, decks)| *decks >= STAPLE_MIN_DECKS)
+        .collect();
+    ranked.sort_by(|(a, a_decks), (b, b_decks)| {
+        b_decks
+            .cmp(a_decks)
+            .then_with(|| a.name.cmp(&b.name))
+            .then_with(|| a.oracle_id.cmp(&b.oracle_id))
+    });
+    ranked
+        .into_iter()
+        .take(PROFILE_STAPLES_SENT)
+        .map(|(first, decks)| StapleCount {
+            oracle_id: first.oracle_id,
+            scryfall_data_id: first.scryfall_data_id,
+            decks,
+        })
+        .collect()
 }
 
 /// A card role the user's decks lean on.
@@ -386,6 +476,7 @@ pub fn summarize_profile(
         top_identity,
         tags,
         roles,
+        staples: vec![],
     })
 }
 
@@ -930,6 +1021,142 @@ mod tests {
             ramp,
             vec![(20, "land-ramp"), (21, "mana-rock")],
             "both ramp tags sit past the top ten, strongest first"
+        );
+    }
+
+    /// A mainboard row: deck `deck`, oracle `oracle`, printing `printing`.
+    fn row(deck: u128, oracle: u128, printing: u128, name: &str) -> MainboardCard {
+        MainboardCard {
+            deck_id: Uuid::from_u128(deck),
+            oracle_id: Uuid::from_u128(oracle),
+            scryfall_data_id: Uuid::from_u128(printing),
+            name: name.to_string(),
+            type_line: Some("Artifact".to_string()),
+        }
+    }
+
+    fn staple_ids(staples: &[StapleCount]) -> Vec<(u128, u32)> {
+        staples
+            .iter()
+            .map(|s| (s.oracle_id.as_u128(), s.decks))
+            .collect()
+    }
+
+    #[test]
+    fn no_rows_is_no_staples() {
+        assert!(rank_staples(&[]).is_empty());
+    }
+
+    #[test]
+    fn a_card_in_one_deck_is_not_a_staple() {
+        let rows = vec![
+            row(1, 10, 100, "Sol Ring"),
+            row(2, 11, 110, "Arcane Signet"),
+        ];
+        assert!(rank_staples(&rows).is_empty(), "each card is in one deck");
+    }
+
+    #[test]
+    fn a_card_counts_once_per_deck() {
+        let rows = vec![
+            row(1, 10, 100, "Sol Ring"),
+            row(1, 10, 101, "Sol Ring"),
+            row(1, 10, 100, "Sol Ring"),
+            row(2, 11, 110, "Arcane Signet"),
+            row(3, 11, 110, "Arcane Signet"),
+        ];
+        assert_eq!(
+            staple_ids(&rank_staples(&rows)),
+            vec![(11, 2)],
+            "three Sol Ring rows in one deck are one deck"
+        );
+    }
+
+    #[test]
+    fn staples_sort_by_decks_then_name_then_oracle() {
+        let rows = vec![
+            row(1, 30, 300, "Zebra"),
+            row(2, 30, 300, "Zebra"),
+            row(1, 20, 200, "Apple"),
+            row(2, 20, 200, "Apple"),
+            row(1, 21, 210, "Apple"),
+            row(2, 21, 210, "Apple"),
+            row(1, 40, 400, "Middle"),
+            row(2, 40, 400, "Middle"),
+            row(3, 40, 400, "Middle"),
+        ];
+        assert_eq!(
+            staple_ids(&rank_staples(&rows)),
+            vec![(40, 3), (20, 2), (21, 2), (30, 2)],
+            "most decks first, then name, then oracle id"
+        );
+    }
+
+    #[test]
+    fn at_most_ten_staples() {
+        let rows: Vec<MainboardCard> = (0..15u128)
+            .flat_map(|n| {
+                let name = format!("Card {n:02}");
+                [row(1, n, n, &name), row(2, n, n, &name)]
+            })
+            .collect();
+        let staples = rank_staples(&rows);
+        assert_eq!(staples.len(), PROFILE_STAPLES_SENT);
+        assert_eq!(
+            staple_ids(&staples),
+            (0..10u128).map(|n| (n, 2)).collect::<Vec<_>>(),
+            "the first ten by name"
+        );
+    }
+
+    #[test]
+    fn the_first_deck_with_the_card_picks_the_printing() {
+        let rows = vec![
+            row(1, 10, 101, "Sol Ring"),
+            row(2, 10, 102, "Sol Ring"),
+            row(3, 10, 103, "Sol Ring"),
+        ];
+        let staples = rank_staples(&rows);
+        assert_eq!(
+            staples
+                .iter()
+                .map(|s| s.scryfall_data_id.as_u128())
+                .collect::<Vec<_>>(),
+            vec![101],
+            "rows arrive most recent deck first"
+        );
+    }
+
+    #[test]
+    fn basic_lands_are_left_out() {
+        let basics = [
+            "Basic Land — Forest",
+            "Basic Snow Land — Island",
+            "Basic Land",
+        ];
+        let mut rows = Vec::new();
+        for (n, type_line) in (50u128..).zip(basics) {
+            for deck in 1..=3 {
+                rows.push(MainboardCard {
+                    type_line: Some(type_line.to_string()),
+                    ..row(deck, n, n, type_line)
+                });
+            }
+        }
+        for deck in 1..=2 {
+            rows.push(MainboardCard {
+                type_line: Some("Snow Land — Forest".to_string()),
+                ..row(deck, 60, 60, "Snow Dual")
+            });
+            rows.push(MainboardCard {
+                type_line: None,
+                ..row(deck, 61, 61, "No Type")
+            });
+        }
+        assert_eq!(
+            staple_ids(&rank_staples(&rows)),
+            vec![(61, 2), (60, 2)],
+            "basics, snow basics and Wastes drop; a nonbasic snow land stays"
         );
     }
 }

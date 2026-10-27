@@ -1,7 +1,8 @@
 //! Suggested commanders: the user's decks in every format scored against
 //! seeded `commander_tag_profiles` rows, with the reasons behind each pick, the
 //! per-deck matching, the color identity cap, the exclusions, the week-long
-//! dismissals, and the play style summary Home reads.
+//! dismissals, the staples on the profile, and the play style summary Home
+//! reads.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
@@ -808,4 +809,91 @@ async fn play_style_summary_counts_the_top_three_identities(pool: sqlx::PgPool) 
         }),
         "most decks first, WUBRG between the singles, green cut at three"
     );
+}
+
+/// Sets a deck's `updated_at` so tests control which deck is most recent.
+async fn set_updated_at(pool: &sqlx::PgPool, deck_id: Uuid, minutes_ago: i32) {
+    sqlx::query("UPDATE decks SET updated_at = now() - make_interval(mins => $2) WHERE id = $1")
+        .bind(deck_id)
+        .bind(minutes_ago)
+        .execute(pool)
+        .await
+        .unwrap();
+}
+
+#[sqlx::test]
+async fn staples_count_decks_skip_basics_and_show_the_recent_printing(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("staples").await;
+    app.verify_email(&uid).await;
+
+    let ring_old = card("Sol Ring").type_line("Artifact");
+    let ring_oid = ring_old.oracle_id().unwrap();
+    let ring_new = card("Sol Ring")
+        .type_line("Artifact")
+        .oracle(Some(ring_oid));
+    let signet = card("Arcane Signet").type_line("Artifact");
+    let forest = card("Forest").mono("G").type_line("Basic Land — Forest");
+    let snow = card("Snow-Covered Island")
+        .mono("U")
+        .type_line("Basic Snow Land — Island");
+    let wastes = card("Wastes").type_line("Basic Land");
+    let lonely = card("Lonely Card").type_line("Creature");
+    let old = (ring_old.id(), ring_oid);
+    let new = (ring_new.id(), ring_oid);
+    let sig = (signet.id(), signet.oracle_id().unwrap());
+    let f = (forest.id(), forest.oracle_id().unwrap());
+    let s = (snow.id(), snow.oracle_id().unwrap());
+    let w = (wastes.id(), wastes.oracle_id().unwrap());
+    let l = (lonely.id(), lonely.oracle_id().unwrap());
+    seed_cards(
+        &pool,
+        &[ring_old, ring_new, signet, forest, snow, wastes, lonely],
+    )
+    .await;
+
+    let one = build_deck(&app, &token, "One", "standard", &[old, sig, f, s, w, l]).await;
+    let two = build_deck(&app, &token, "Two", "pioneer", &[old, sig, f, s, w]).await;
+    let three = build_deck(&app, &token, "Three", "modern", &[new, f, s, w]).await;
+    set_updated_at(&pool, one, 30).await;
+    set_updated_at(&pool, two, 20).await;
+    set_updated_at(&pool, three, 10).await;
+
+    let body = suggestions(&app, &token, 10).await;
+    let staples: Vec<(String, Uuid, u64)> = body["profile"]["staples"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|staple| {
+            let data = &staple["card"]["scryfall_data"];
+            (
+                data["name"].as_str().unwrap().to_string(),
+                data["id"].as_str().unwrap().parse().unwrap(),
+                staple["decks"].as_u64().unwrap(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        staples,
+        vec![
+            ("Sol Ring".to_string(), new.0, 3),
+            ("Arcane Signet".to_string(), sig.0, 2),
+        ],
+        "basics drop, a card in one deck drops, the newest deck's printing shows: {body}"
+    );
+}
+
+#[sqlx::test]
+async fn one_deck_has_no_staples(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("onedeck").await;
+    app.verify_email(&uid).await;
+
+    let ring = card("Sol Ring").type_line("Artifact");
+    let r = (ring.id(), ring.oracle_id().unwrap());
+    seed_cards(&pool, &[ring]).await;
+    build_deck(&app, &token, "Only", "standard", &[r]).await;
+
+    let body = suggestions(&app, &token, 10).await;
+    assert_eq!(body["profile"]["staples"], json!([]), "{body}");
 }

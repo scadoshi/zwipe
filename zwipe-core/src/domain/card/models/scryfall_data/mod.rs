@@ -309,6 +309,20 @@ pub struct ScryfallData {
     pub preview_source: Option<String>,
 }
 
+/// Whether a type line is a basic land's: `Basic Land — Forest`, a snow
+/// basic's `Basic Snow Land — Plains`, or Wastes' bare `Basic Land`. Only the
+/// supertypes and types before the subtype dash are read, so an intervening
+/// supertype like `Snow` still matches.
+#[must_use]
+pub fn is_basic_land_type_line(type_line: &str) -> bool {
+    let types = type_line
+        .split('—')
+        .next()
+        .unwrap_or(type_line)
+        .to_lowercase();
+    types.contains("basic") && types.contains("land")
+}
+
 impl ScryfallData {
     /// Fills a missing top-level `oracle_id` from the card's faces.
     ///
@@ -333,12 +347,9 @@ impl ScryfallData {
     /// Returns `true` if this card is a basic land (e.g. Forest, Island, Mountain,
     /// or a snow basic like Snow-Covered Plains, whose type line is "Basic Snow Land — Plains").
     pub fn is_basic_land(&self) -> bool {
-        self.type_line.as_deref().is_some_and(|tl| {
-            // Match on the supertype/type portion (before the subtype em dash) so an
-            // intervening supertype like "Snow" doesn't break a contiguous "basic land" check.
-            let types = tl.split('—').next().unwrap_or(tl).to_lowercase();
-            types.contains("basic") && types.contains("land")
-        })
+        self.type_line
+            .as_deref()
+            .is_some_and(is_basic_land_type_line)
     }
 
     /// Returns `true` if this card is any kind of land (basic, nonbasic, fetch, etc.).
@@ -527,6 +538,11 @@ mod tests {
         // so a contiguous "basic land" substring check would miss them.
         assert!(is_basic_land(Some("Basic Snow Land — Plains")));
         assert!(is_basic_land(Some("Basic Snow Land — Mountain")));
+    }
+
+    #[test]
+    fn wastes_is_basic() {
+        assert!(is_basic_land(Some("Basic Land")));
     }
 
     #[test]

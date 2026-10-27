@@ -30,8 +30,8 @@ use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppres
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
 use crate::domain::deck::models::deck::commander_suggestions::{
-    CommanderDismissal, CommanderSuggestions, CommanderSuggestionsError, PlayStyleSummary,
-    ProfiledDeck,
+    CommanderDismissal, CommanderSuggestions, CommanderSuggestionsError, MainboardCard,
+    PlayStyleSummary, ProfiledDeck,
 };
 use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
 use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
@@ -220,6 +220,15 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         &self,
         user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<ProfiledDeck>, CommanderSuggestionsError>> + Send;
+
+    /// Every mainboard card of every deck the user owns, in any format, with
+    /// the printing the deck runs, its name and its type line. Rows come
+    /// grouped by deck, most recently updated deck first, the same deck order
+    /// as [`Self::fetch_profiled_decks`].
+    fn fetch_mainboard_cards(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<Vec<MainboardCard>, CommanderSuggestionsError>> + Send;
 
     /// Records a dismissal, restarting its clock when one exists.
     fn dismiss_commander(

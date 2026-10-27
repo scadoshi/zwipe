@@ -19,6 +19,12 @@ pub const PROFILE_TAG_SENT: usize = 100;
 /// Card roles [`HttpBuilderProfile::roles`] carries, one bar each.
 pub const PROFILE_ROLE_SHOWN: usize = 10;
 
+/// Most staples [`HttpBuilderProfile::staples`] carries.
+pub const PROFILE_STAPLES_SENT: usize = 10;
+
+/// Fewest of the user's decks a card must be in to count as a staple.
+pub const STAPLE_MIN_DECKS: u32 = 2;
+
 /// Most color identities [`HttpPlayStyleSummary::identities`] carries.
 pub const PLAY_STYLE_IDENTITIES_SENT: usize = 3;
 
@@ -76,6 +82,22 @@ pub struct HttpBuilderProfile {
     /// older servers.
     #[serde(default)]
     pub roles: Vec<HttpProfileRole>,
+    /// The cards on the most profiled decks' mainboards, at least
+    /// [`STAPLE_MIN_DECKS`] each, most decks first, then name, then oracle
+    /// id, at most [`PROFILE_STAPLES_SENT`]. Basic lands are left out. Empty
+    /// when no card repeats, and from older servers.
+    #[serde(default)]
+    pub staples: Vec<HttpStaple>,
+}
+
+/// A card on several of the user's decks' mainboards.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HttpStaple {
+    /// The printing on the most recently updated deck that has the card.
+    pub card: Card,
+    /// Profiled decks with the card on their mainboard, counted once per
+    /// deck however many copies it runs, at least [`STAPLE_MIN_DECKS`].
+    pub decks: u32,
 }
 
 /// A card role the user's decks lean on.
@@ -256,11 +278,12 @@ mod tests {
                 role: "sacrifice".to_string(),
                 decks: 6,
             }],
+            staples: vec![],
         };
         let json = serde_json::to_string(&profile).unwrap();
         assert_eq!(
             json,
-            r#"{"deck_count":7,"colors":[{"color":"R","decks":5},{"color":"W","decks":4}],"top_identity":{"colors":["W","R"],"decks":3},"tags":[{"slug":"sacrifice-outlet","role":"sacrifice","decks":6,"cards":23,"score":1.5}],"roles":[{"role":"sacrifice","decks":6}]}"#
+            r#"{"deck_count":7,"colors":[{"color":"R","decks":5},{"color":"W","decks":4}],"top_identity":{"colors":["W","R"],"decks":3},"tags":[{"slug":"sacrifice-outlet","role":"sacrifice","decks":6,"cards":23,"score":1.5}],"roles":[{"role":"sacrifice","decks":6}],"staples":[]}"#
         );
         let back: HttpBuilderProfile = serde_json::from_str(&json).unwrap();
         assert_eq!(back, profile);
@@ -269,6 +292,32 @@ mod tests {
         let back: HttpBuilderProfile = serde_json::from_str(no_top).unwrap();
         assert_eq!(back.top_identity, None);
         assert_eq!(back.roles, vec![], "old shape without roles parses");
+        assert_eq!(back.staples, vec![], "old shape without staples parses");
+    }
+
+    #[test]
+    fn staples_round_trip() {
+        let profile = HttpBuilderProfile {
+            deck_count: 3,
+            colors: vec![],
+            top_identity: None,
+            tags: vec![],
+            roles: vec![],
+            staples: vec![
+                HttpStaple {
+                    card: crate::test_utils::make_card("Sol Ring"),
+                    decks: 3,
+                },
+                HttpStaple {
+                    card: crate::test_utils::make_card("Arcane Signet"),
+                    decks: 2,
+                },
+            ],
+        };
+        let json = serde_json::to_string(&profile).unwrap();
+        let back: HttpBuilderProfile = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, profile);
+        assert!(json.contains(r#""decks":3}"#), "{json}");
     }
 
     #[test]
