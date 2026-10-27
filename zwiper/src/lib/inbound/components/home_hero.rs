@@ -88,7 +88,7 @@ fn use_public_counts() -> (Option<HttpPublicMetrics>, bool) {
     });
     let value = cache.read();
     let metrics = value.as_ref().map(|c| c.metrics.clone());
-    // "live" only for an answer from this launch, not a restored copy.
+    // "Live" only for an answer from this launch, not a restored copy.
     let live = value.as_ref().is_some_and(|c| c.fetched_at.is_some());
     (metrics, live)
 }
@@ -182,7 +182,7 @@ pub fn HomeHero() -> Element {
             source: rsx! {
                 span { class: "stat-chip", "{CountScope::AllUsers.label()}" }
                 if live {
-                    span { class: "stat-chip", "live" }
+                    span { class: "stat-chip", "Live" }
                 }
             },
         }
@@ -190,11 +190,11 @@ pub fn HomeHero() -> Element {
 }
 
 /// Home's hero: [`HomeHero`] with an Activity button opening the Activity
-/// screen, and its "All players" tag as a button after the "live" tag that
+/// screen, and its "All players" tag as a button after the "Live" tag that
 /// switches the figures to the user's own counts ("Only me") and back. The
 /// choice is saved, so Home opens on the last one. Every switch rolls the
 /// figures to the other counts, rolling on while the user's are fetched the
-/// first time, and fades the button's label in; "live" shows once the
+/// first time, and fades the button's label in; "Live" shows once the
 /// figures on screen come from this launch.
 #[component]
 pub fn HomeHeroScoped() -> Element {
@@ -213,7 +213,7 @@ pub fn HomeHeroScoped() -> Element {
             roll_key: label,
             source: rsx! {
                 if live {
-                    span { class: "stat-chip", "live" }
+                    span { class: "stat-chip", "Live" }
                 }
                 button {
                     class: "card-action-btn hero-scope",
