@@ -3901,19 +3901,8 @@ button {
     margin-top: 1rem;
 }
 
-/* A tapped day's swipes, searches and date as tags in the totals' place,
-   centered and wrapping. */
-.activity-day-tags {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.4rem;
-}
-
-/* The year's totals under the grid, or a tapped day's tag, at one height so
-   the swap does not move the rest of the section. */
+/* A section's one-line note, such as a rate with nothing to show. */
 .activity-total {
-    min-height: 1.6rem;
     padding: 0.5rem 0.75rem 0;
     font-size: 0.7rem;
     color: var(--text-muted);

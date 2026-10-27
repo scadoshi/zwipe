@@ -9,8 +9,9 @@ use std::collections::HashMap;
 
 use chrono::{Datelike, Duration, NaiveDate};
 use components::{
-    Bar, BarChart, BarOrientation, Chip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit,
-    OtagDef, RoleTags, heat_span, peak_indices, with_separators,
+    Bar, BarChart, BarOrientation, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid,
+    HeatHit, HeatReadout, OtagDef, RoleTags, heat_span, peak_indices, use_heat_pick,
+    with_separators,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -171,7 +172,7 @@ fn day_tags(cell: &DayCell) -> [String; 3] {
     ]
 }
 
-/// The line under the heatmap: the year's swipes and searches.
+/// The heatmap's year in words, its description for screen readers.
 fn year_line(days: &[HttpActivityDay]) -> String {
     let swipes = days
         .iter()
@@ -186,6 +187,23 @@ fn year_line(days: &[HttpActivityDay]) -> String {
         counted(swipes, "swipe", "swipes"),
         counted(searches, "search", "searches")
     )
+}
+
+/// The heatmap's resting tags: the year's swipes, searches and span.
+fn year_tags(days: &[HttpActivityDay]) -> [String; 3] {
+    let swipes = days
+        .iter()
+        .map(|d| d.swipes)
+        .fold(0u32, u32::saturating_add);
+    let searches = days
+        .iter()
+        .map(|d| d.searches)
+        .fold(0u32, u32::saturating_add);
+    [
+        counted(swipes, "swipe", "swipes"),
+        counted(searches, "search", "searches"),
+        "Last year".to_string(),
+    ]
 }
 
 /// The four outcomes as columns: added, skipped, saved and removed, each
@@ -362,13 +380,14 @@ fn tag_rate_bars(kind: RateKind, tags: &[HttpTagRates]) -> Vec<Bar> {
 /// The year as a heatmap: weekday labels down the left, month labels over
 /// the top, a cell per day shaded by its swipes and searches in orangui's
 /// [`HeatGrid`]. Wider than a phone, it scrolls sideways and opens on the
-/// latest week. Under it, the year's totals, or a tapped day's swipes,
-/// searches and date as tags in their place until the same day is tapped
-/// again; under the grid rather than over it, they are never cut off by the
-/// scroll.
+/// latest week. Under it, orangui's [`HeatReadout`]: the year's swipes,
+/// searches and span as tags, which a tapped day's take over for a few
+/// seconds on a touch or narrow screen. A hover device with room names the
+/// day under the pointer in a floating chip instead.
 #[component]
 fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
-    let mut picked: Signal<Option<usize>> = use_signal(|| None);
+    let pick = use_heat_pick();
+    let mut hover: Signal<Option<(String, f64, f64)>> = use_signal(|| None);
     let layout = heat_layout(through, &days);
     let width = LEFT + heat_span(layout.columns);
     let height = TOP + heat_span(HEAT_ROWS);
@@ -384,14 +403,19 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
             key: cell.date.to_string(),
         })
         .collect();
-    let pick = move |hit: HeatHit| {
-        if picked() == Some(hit.index) {
-            picked.set(None);
-        } else {
-            picked.set(Some(hit.index));
+    let tap_tags = tags.clone();
+    let on_tap = move |hit: HeatHit| {
+        if let Some(day) = tap_tags.get(hit.index) {
+            pick.show(day.to_vec());
         }
     };
-    let day = picked().and_then(|i| tags.get(i).cloned());
+    let on_enter = move |hit: HeatHit| {
+        if let Some(day) = tags.get(hit.index) {
+            let x = (hit.x + HEAT_CELL / 2.0) / width * 100.0;
+            let y = hit.y / height * 100.0;
+            hover.set(Some((day.join(", "), x, y)));
+        }
+    };
     rsx! {
         div {
             class: "chart-scroll scroll-fade-x activity-scroll",
@@ -401,7 +425,10 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
                     ScrollBehavior::Instant,
                 ).await;
             },
-            div { class: "activity-plot", style: "width:{width}px;",
+            div {
+                class: "activity-plot",
+                style: "width:{width}px;",
+                onmouseleave: move |_| hover.set(None),
                 svg {
                     class: "heat-grid",
                     style: "width:{width}px;",
@@ -430,22 +457,16 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
                         cells: grid,
                         left: LEFT,
                         top: TOP,
-                        on_tap: pick,
+                        on_enter,
+                        on_tap,
                     }
+                }
+                if let Some((text, left, top)) = hover() {
+                    ChartTip { text, left, top, class: "tag heat-float" }
                 }
             }
         }
-        div { class: "activity-total",
-            if let Some(day) = day {
-                div { class: "activity-day-tags",
-                    for tag in day {
-                        span { class: "tag", "{tag}" }
-                    }
-                }
-            } else {
-                "{year_line(&days)}"
-            }
-        }
+        HeatReadout { rest: year_tags(&days).to_vec(), pick }
     }
 }
 
@@ -762,6 +783,17 @@ mod tests {
             assert!(pair[1].0 >= pair[0].0 + LABEL_SPAN, "{:?}", layout.months);
         }
         assert_eq!(layout.months.last().unwrap().1, "Oct");
+    }
+
+    #[test]
+    fn the_year_rests_as_its_totals_and_span() {
+        let on = date(2026, 10, 3);
+        let days = [day(on, 1200, 2), day(on, 34, 0)];
+        assert_eq!(
+            year_tags(&days),
+            ["1,234 swipes", "2 searches", "Last year"]
+        );
+        assert_eq!(year_tags(&[]), ["0 swipes", "0 searches", "Last year"]);
     }
 
     #[test]
