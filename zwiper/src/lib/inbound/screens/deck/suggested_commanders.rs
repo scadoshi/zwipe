@@ -853,7 +853,10 @@ fn StaplesPanel(
             }
         } else {
             div { class: "maybeboard-list card-group row-enter",
-                div { class: "card-group-header", "{STAPLES_TITLE}" }
+                div { class: "card-group-header card-group-header-with-hint",
+                    span { "{STAPLES_TITLE}" }
+                    InfoButton { topic: HintTopic::SuggestionStaples }
+                }
                 for staple in rows {
                     StapleRow {
                         key: "{staple.card.scryfall_data.id}",
@@ -1397,8 +1400,9 @@ pub fn SuggestedCommanders() -> Element {
                             BuilderProfileSkeleton {}
                             ShowChipRowSkeleton {}
                             div { class: "maybeboard-list card-group row-enter",
-                                div { class: "card-group-header",
+                                div { class: "card-group-header card-group-header-with-hint",
                                     div { class: "skeleton-bar skeleton-card-bar-header-wide" }
+                                    div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
                                 }
                                 for i in 0..6 {
                                     div { key: "{i}", class: "skeleton-card-row",
@@ -1443,7 +1447,10 @@ pub fn SuggestedCommanders() -> Element {
                                 }
                             } else {
                                 div { class: "maybeboard-list card-group row-enter",
-                                    div { class: "card-group-header", "{LIST_TITLE}" }
+                                    div { class: "card-group-header card-group-header-with-hint",
+                                        span { "{LIST_TITLE}" }
+                                        InfoButton { topic: HintTopic::SuggestionList }
+                                    }
                                     for suggestion in rows {
                                         SuggestionRow {
                                             key: "{suggestion.card.scryfall_data.id}",

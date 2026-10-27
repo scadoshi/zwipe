@@ -84,6 +84,10 @@ pub enum HintTopic {
     SuggestionTagCards,
     /// Playstyle: the oracle tags table's Impact column.
     SuggestionTagImpact,
+    /// Playstyle: the suggested commanders list.
+    SuggestionList,
+    /// Playstyle: the staples list.
+    SuggestionStaples,
 }
 
 impl HintTopic {
@@ -123,6 +127,8 @@ impl HintTopic {
             Self::SuggestionTagDecks => "Decks",
             Self::SuggestionTagCards => "Cards",
             Self::SuggestionTagImpact => "Impact",
+            Self::SuggestionList => "Suggested commanders",
+            Self::SuggestionStaples => "Staples",
         }
     }
 
@@ -258,6 +264,18 @@ impl HintTopic {
             },
             Self::SuggestionTagImpact => rsx! {
                 HintLine { "How much more your decks lean on this tag than Magic cards do overall. Your top tag scores 100" }
+            },
+            Self::SuggestionList => rsx! {
+                HintBullets {
+                    HintBullet { "Commanders you haven't built, ranked against all your decks, best fit first" }
+                    HintBullet { "Tap a row to see why it fits. " HintKey { "Swipe" } " goes further down the same ranking" }
+                }
+            },
+            Self::SuggestionStaples => rsx! {
+                HintBullets {
+                    HintBullet { "The cards in the most of your decks, with the share of your decks that run each" }
+                    HintBullet { "Basic lands are left out. Tap a Type or Color chip to narrow it" }
+                }
             },
         }
     }

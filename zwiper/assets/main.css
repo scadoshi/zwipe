@@ -2766,6 +2766,27 @@ button {
     border-bottom: 1px solid var(--border-secondary);
 }
 
+/* A group header with a "?" at its right end. The button's negative block
+   margin keeps the header the height of a plain one. */
+.card-group-header-with-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.card-group-header-with-hint .info-button,
+.card-group-header-with-hint .skeleton-info-button {
+    margin: -0.25rem 0;
+}
+
+/* The "?" button's ghost, its size as a bare chip. */
+.skeleton-info-button {
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
 /* A bottom sheet's sections (the card details sheet): the .card-group surface
    with block padding instead of a list's rows, so the text sits in a container
    over the sheet's grid. */
