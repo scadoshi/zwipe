@@ -95,6 +95,7 @@ Otag data changes nightly with the Scryfall sync, so a profile reflects the otag
 - `GET /api/commander/suggestions?limit=…` returns ranked suggestions, each with the card and its breakdown (top shared tags with labels and weights, color counts). The list asks for 10, Swipe for 100.
 - Dismissals: `user_commander_dismissals(user_id, oracle_id, dismissed_at)` with a 7-day TTL like deck skips, read at query time, plus routes to dismiss, undo one, and clear all.
 - Start deck reuses deck creation with `commander_id`; Maybeboard reuses the commander maybeboard's save route.
+- Staples ride on the profile (`HttpBuilderProfile::staples`, added 2026-10-27): mainboard cards in at least 2 decks, counted once per deck by oracle id, basic lands out, top 10 by decks then name. Each shows the printing from the most recently updated deck that has it, fetched in one batch. The app shows them as a Staples accordion section of shared card rows after Oracle tags, the deck count in the row's count slot.
 
 ## Build order
 

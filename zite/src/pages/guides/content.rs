@@ -639,12 +639,13 @@ pub static GUIDES: &[Guide] = &[
             ]),
             Block::H2("What your decks say"),
             Block::P(
-                "Summary, at the top, shows how many decks were read, the same podium and your top single color. Under it are three more sections. Tap one to open it.",
+                "Summary, at the top, shows how many decks were read, the same podium and your top single color. Under it are four more sections. Tap one to open it.",
             ),
             Block::Bullets(&[
                 "Colors shows which colors your decks play.",
                 "Card roles shows the jobs your cards do, like ramp or removal. Tap a role to see its tags.",
                 "Oracle tags lists your 10 most impactful tags. Tap a tag to see what it means.",
+                "Staples lists up to 10 cards that show up in the most of your decks, with how many decks run each. Basic lands are left out.",
                 "Each open section has a question mark in its header that explains it.",
             ]),
             Block::H2("How a tag's impact adds up"),
