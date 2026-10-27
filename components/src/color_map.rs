@@ -20,6 +20,11 @@
 //! give the same map. A few more cards for one color let it take a few more
 //! cells at the end of its growth, so the map changes by a few tiles instead
 //! of redrawing.
+//!
+//! Each tile also carries a shade and a ring. The shade is one of orangui's
+//! four heat levels, full at the middle of the tile's own color and fading
+//! toward the panel with distance from it. The ring is the tile's band of
+//! distance from the map's middle, which sets when it sweeps in.
 
 use dioxus::html::geometry::PixelsVector2D;
 use dioxus::prelude::*;
@@ -67,6 +72,18 @@ const HOME_DEGREES: [f64; 5] = [-90.0, -18.0, 54.0, 126.0, 198.0];
 /// order.
 const STARTS: [(i32, i32); 5] = [(0, -2), (2, -1), (1, 2), (-1, 2), (-2, -1)];
 
+/// The bands of distance from the map's middle the entrance sweeps in, one
+/// after another.
+pub const SWEEP_RINGS: u32 = 7;
+/// The wait between one ring's sweep and the next, in milliseconds. With
+/// orangui's 0.4s `heat-sweep`, the last ring lands about 700ms after mount.
+pub const SWEEP_STEP_MS: u32 = 50;
+/// The full shade, a color's own mana fill.
+pub const FULL_SHADE: u8 = 4;
+/// Each shade's share of the mana fill over the panel, faintest first, the
+/// way orangui's `.heat-1` through `.heat-4` mix the accent.
+const SHADE_PERCENTS: [u8; 4] = [30, 55, 80, 100];
+
 /// Salt for the step costs.
 const COST_SALT: u64 = 0x636f_7374;
 
@@ -108,6 +125,12 @@ pub struct Tile {
     pub column: i32,
     /// The tile's row from the map's top edge.
     pub row: i32,
+    /// The tile's shade, 1 (faintest) to [`FULL_SHADE`]: full at the middle
+    /// of its color's ground, fainter toward that ground's far edge.
+    pub shade: u8,
+    /// The tile's band of distance from the map's middle, 0 at the middle
+    /// to `SWEEP_RINGS - 1` at the farthest tile.
+    pub ring: u32,
 }
 
 /// Everything a [`ColorMap`] draws, computed once from its counts and seed.
@@ -385,6 +408,101 @@ fn label(counts: &ColorMapCounts) -> String {
     label
 }
 
+/// How many of `steps` evenly spaced marks above 0 `ratio` reaches, where
+/// `ratio` runs from 0 to 1: 0 for a ratio under the first mark, `steps - 1`
+/// at 1.
+fn band(ratio: f64, steps: u32) -> u32 {
+    let reached = (1..steps)
+        .filter(|&k| ratio * f64::from(steps) >= f64::from(k))
+        .count();
+    u32::try_from(reached).unwrap_or(0)
+}
+
+/// The straight-line distance between two cells.
+fn distance((ax, ay): (f64, f64), (bx, by): (f64, f64)) -> f64 {
+    (ax - bx).hypot(ay - by)
+}
+
+/// A cell as a point.
+fn point((x, y): (i32, i32)) -> (f64, f64) {
+    (f64::from(x), f64::from(y))
+}
+
+/// Sets each tile's shade. A color's core is its tile nearest the mean of its
+/// tiles, ties to the lowest cell; the core is full, and the rest fade with
+/// their distance from it over the distance to that color's farthest tile,
+/// in quarters, so a small ground and a large one both have a full middle
+/// and faint edges.
+fn shade(tiles: &mut [Tile]) {
+    for color in Color::all() {
+        let own: Vec<(f64, f64)> = tiles
+            .iter()
+            .filter(|t| t.color == color)
+            .map(|t| point(t.cell))
+            .collect();
+        let Ok(count) = u32::try_from(own.len()) else {
+            continue;
+        };
+        if count == 0 {
+            continue;
+        }
+        let n = f64::from(count);
+        let mean = (
+            own.iter().map(|p| p.0).sum::<f64>() / n,
+            own.iter().map(|p| p.1).sum::<f64>() / n,
+        );
+        let Some(core) = own.iter().copied().min_by(|&a, &b| {
+            distance(a, mean)
+                .total_cmp(&distance(b, mean))
+                .then(a.1.total_cmp(&b.1))
+                .then(a.0.total_cmp(&b.0))
+        }) else {
+            continue;
+        };
+        let reach = own.iter().map(|&p| distance(p, core)).fold(0.0, f64::max);
+        let steps = u32::from(FULL_SHADE);
+        for tile in tiles.iter_mut().filter(|t| t.color == color) {
+            let ratio = if reach > 0.0 {
+                distance(point(tile.cell), core) / reach
+            } else {
+                0.0
+            };
+            let faded = u8::try_from(band(ratio, steps)).unwrap_or(0);
+            tile.shade = FULL_SHADE.saturating_sub(faded);
+        }
+    }
+}
+
+/// Sets each tile's ring: its distance from the middle of the map's
+/// `columns` by `rows` box over the farthest tile's, in [`SWEEP_RINGS`]
+/// bands.
+fn ring(tiles: &mut [Tile], columns: i32, rows: i32) {
+    let middle = (f64::from(columns - 1) / 2.0, f64::from(rows - 1) / 2.0);
+    let spot = |t: &Tile| distance((f64::from(t.column), f64::from(t.row)), middle);
+    let reach = tiles.iter().map(spot).fold(0.0, f64::max);
+    for tile in tiles.iter_mut() {
+        let ratio = if reach > 0.0 { spot(tile) / reach } else { 0.0 };
+        tile.ring = band(ratio, SWEEP_RINGS);
+    }
+}
+
+/// A tile's fill: its color's mana fill mixed over the panel background at
+/// its shade's share, the full fill at [`FULL_SHADE`].
+#[must_use]
+pub fn tile_fill(tile: &Tile) -> String {
+    let var = mana_var(tile.color);
+    let percent = usize::from(tile.shade)
+        .checked_sub(1)
+        .and_then(|i| SHADE_PERCENTS.get(i))
+        .copied()
+        .unwrap_or(100);
+    if percent >= 100 {
+        format!("var({var})")
+    } else {
+        format!("color-mix(in srgb, var({var}) {percent}%, var(--bg-primary))")
+    }
+}
+
 /// "1 card" or "`n` cards".
 fn counted(n: u32) -> String {
     if n == 1 {
@@ -413,7 +531,7 @@ impl ColorMapModel {
         let (min_x, columns) = bounds(|c| c.0.0);
         let (min_y, rows) = bounds(|c| c.0.1);
         let palette = Color::all();
-        let tiles = claimed
+        let mut tiles: Vec<Tile> = claimed
             .into_iter()
             .filter_map(|(cell, color)| {
                 Some(Tile {
@@ -421,9 +539,13 @@ impl ColorMapModel {
                     cell,
                     column: cell.0 - min_x,
                     row: cell.1 - min_y,
+                    shade: FULL_SHADE,
+                    ring: 0,
                 })
             })
             .collect();
+        shade(&mut tiles);
+        ring(&mut tiles, columns, rows);
         Self {
             tiles,
             columns,
@@ -469,6 +591,10 @@ async fn center(viewport: std::rc::Rc<MountedData>) {
 /// map's shape: pass the same one for the same player, such as
 /// [`seed_from_id`] of their id.
 ///
+/// The tiles sweep in from the map's middle out, a ring at a time, in
+/// orangui's heat grid sweep, and each color fades from full at its middle
+/// toward the panel at its edges. The key's pips stay at full color.
+///
 /// Tiles keep [`PITCH_PX`] at any size. The map sits in a viewport as wide
 /// as its container up to about 15.5rem and as tall, centered when it fits
 /// and otherwise scrolling both ways, opened on the map's middle. Under it,
@@ -505,12 +631,13 @@ pub fn ColorMap(counts: ColorMapCounts, seed: u64) -> Element {
                         for tile in model.tiles.iter() {
                             rect {
                                 key: "{tile.cell.0},{tile.cell.1}",
+                                class: "color-map-tile",
                                 x: "{f64::from(tile.column) + inset:.2}",
                                 y: "{f64::from(tile.row) + inset:.2}",
                                 width: "{size:.2}",
                                 height: "{size:.2}",
                                 rx: "{corner:.2}",
-                                style: "fill:var({mana_var(tile.color)});",
+                                style: "fill:{tile_fill(tile)};animation-delay:{tile.ring * SWEEP_STEP_MS}ms;",
                             }
                         }
                     }
@@ -775,6 +902,138 @@ mod tests {
         assert_eq!(
             ColorMapModel::new(&ColorMapCounts::default(), SEED).label,
             "Color map. No colored cards yet"
+        );
+    }
+
+    /// A sample of counts, small to capped, for the shade and ring tests.
+    fn spread() -> Vec<ColorMapCounts> {
+        [
+            sample().cards,
+            [30, 12, 0, 44, 8],
+            [0, 0, 0, 1, 0],
+            [500, 3, 2, 1, 900],
+            [9000, 9000, 9000, 9000, 9000],
+        ]
+        .into_iter()
+        .map(|cards| ColorMapCounts {
+            cards,
+            colorless: 0,
+        })
+        .collect()
+    }
+
+    /// `color`'s tiles and its core: the tile nearest their mean, ties to
+    /// the lowest cell.
+    fn ground(model: &ColorMapModel, color: Color) -> Option<(Vec<&Tile>, &Tile)> {
+        let own: Vec<&Tile> = model.tiles.iter().filter(|t| t.color == color).collect();
+        let n = f64::from(u32::try_from(own.len()).unwrap());
+        let mean = (
+            own.iter().map(|t| f64::from(t.cell.0)).sum::<f64>() / n,
+            own.iter().map(|t| f64::from(t.cell.1)).sum::<f64>() / n,
+        );
+        let core = own.iter().copied().min_by(|a, b| {
+            distance(point(a.cell), mean)
+                .total_cmp(&distance(point(b.cell), mean))
+                .then(a.cell.1.cmp(&b.cell.1))
+                .then(a.cell.0.cmp(&b.cell.0))
+        })?;
+        Some((own, core))
+    }
+
+    #[test]
+    fn each_color_is_full_at_its_core_and_faintest_at_its_edge() {
+        for seed in SEEDS {
+            for counts in spread() {
+                let model = ColorMapModel::new(&counts, seed);
+                for color in Color::all() {
+                    let Some((own, core)) = ground(&model, color) else {
+                        continue;
+                    };
+                    assert_eq!(
+                        core.shade, FULL_SHADE,
+                        "{color:?} core, seed {seed}, cards {:?}",
+                        counts.cards
+                    );
+                    if own.len() > 1 {
+                        let far = |t: &Tile| distance(point(t.cell), point(core.cell));
+                        let reach = own.iter().map(|t| far(t)).fold(0.0, f64::max);
+                        for tile in own.iter().filter(|t| far(t) >= reach) {
+                            assert_eq!(
+                                tile.shade, 1,
+                                "{color:?} edge {:?}, seed {seed}",
+                                tile.cell
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn shades_fade_with_distance_from_the_core() {
+        for seed in SEEDS {
+            for counts in spread() {
+                let model = ColorMapModel::new(&counts, seed);
+                for color in Color::all() {
+                    let Some((own, core)) = ground(&model, color) else {
+                        continue;
+                    };
+                    let mut by_distance: Vec<(f64, u8)> = own
+                        .iter()
+                        .map(|t| (distance(point(t.cell), point(core.cell)), t.shade))
+                        .collect();
+                    by_distance.sort_by(|a, b| a.0.total_cmp(&b.0));
+                    assert!(
+                        by_distance.is_sorted_by(|a, b| a.1 >= b.1),
+                        "{color:?} fades outward, seed {seed}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn every_tile_has_a_shade_and_a_ring() {
+        for seed in SEEDS {
+            for counts in spread() {
+                let model = ColorMapModel::new(&counts, seed);
+                assert!(
+                    model
+                        .tiles
+                        .iter()
+                        .all(|t| (1..=FULL_SHADE).contains(&t.shade))
+                );
+                assert!(model.tiles.iter().all(|t| t.ring < SWEEP_RINGS));
+                assert_eq!(
+                    model.tiles.iter().map(|t| t.ring).max(),
+                    Some(SWEEP_RINGS - 1),
+                    "the farthest tile sweeps last, cards {:?}",
+                    counts.cards
+                );
+                assert_eq!(model, ColorMapModel::new(&counts, seed));
+            }
+        }
+    }
+
+    #[test]
+    fn fills_mix_over_the_panel_by_shade() {
+        let tile = |shade| Tile {
+            color: Color::Red,
+            cell: (0, 0),
+            column: 0,
+            row: 0,
+            shade,
+            ring: 0,
+        };
+        assert_eq!(tile_fill(&tile(4)), "var(--mana-red)");
+        assert_eq!(
+            tile_fill(&tile(3)),
+            "color-mix(in srgb, var(--mana-red) 80%, var(--bg-primary))"
+        );
+        assert_eq!(
+            tile_fill(&tile(1)),
+            "color-mix(in srgb, var(--mana-red) 30%, var(--bg-primary))"
         );
     }
 

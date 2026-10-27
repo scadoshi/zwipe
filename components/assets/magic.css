@@ -1199,6 +1199,22 @@ i.ms.ms-cost.ms-gp {
     margin: auto;
 }
 
+/* Tiles sweep in on orangui's `heat-sweep`, a ring at a time from the middle
+   out, on the delay each carries. The keyframes' brightness is a CSS filter,
+   which iOS Safari skips on SVG children, so there the tiles only fade and
+   scale. */
+.color-map-tile {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: heat-sweep 0.4s ease-out backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .color-map-tile {
+        animation: none;
+    }
+}
+
 .color-map-key {
     display: flex;
     flex-wrap: wrap;
