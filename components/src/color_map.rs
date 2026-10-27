@@ -35,15 +35,15 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::http::contracts::suggestions::HttpColorMap;
 
 /// The fewest tiles a map with any colored card draws.
-pub const MIN_TILES: u32 = 32;
+pub const MIN_TILES: u32 = 26;
 /// The most tiles a map draws: the curve's value at 6,400 colored cards, so
 /// the cap and the curve meet with no step.
-pub const MAX_TILES: u32 = 416;
+pub const MAX_TILES: u32 = 330;
 /// Tenths of a tile per square root of the colored cards, past
-/// [`MIN_TILES`]: 4.8 tiles, about 180 tiles for 1,000 cards and 290 for
-/// 3,000. The square root over 6,400 is 80, and `32 + 4.8 * 80` is
+/// [`MIN_TILES`]: 3.8 tiles, about 145 tiles for 1,000 cards and 235 for
+/// 3,000. The square root over 6,400 is 80, and `26 + 3.8 * 80` is
 /// [`MAX_TILES`].
-pub const TILES_PER_ROOT_TENTHS: u32 = 48;
+pub const TILES_PER_ROOT_TENTHS: u32 = 38;
 /// One tile's pitch on screen, in CSS pixels: tiles keep this size and a
 /// map larger than the viewport scrolls.
 pub const PITCH_PX: f64 = 12.0;
@@ -84,14 +84,8 @@ pub const SWEEP_RINGS: u32 = 7;
 /// The wait between one ring's sweep and the next, in milliseconds. With
 /// orangui's 0.4s `heat-sweep`, the last ring lands about 700ms after mount.
 pub const SWEEP_STEP_MS: u32 = 50;
-/// orangui's `heat-sweep` length, in milliseconds.
-const SWEEP_MS: u32 = 400;
 /// The ghost blob's reach from its middle, in grid steps.
 pub const GHOST_REACH: i32 = 3;
-/// The wait between one ring's turn in the ghost's loading wave and the
-/// next, in milliseconds: the wave crosses the rings in about a third of its
-/// 1.8s cycle.
-pub const GHOST_WAVE_STEP_MS: u32 = 100;
 /// The full shade, a color's own mana fill.
 pub const FULL_SHADE: u8 = 4;
 /// Each shade's share of the mana fill over the panel, faintest first, the
@@ -764,11 +758,29 @@ pub fn ghost_cells() -> Vec<((i32, i32), u32)> {
         .collect()
 }
 
+/// A ghost tile's twinkle pace and offset as inline custom properties,
+/// spread over 0.9 to 1.6s and 0 to 1.2s by the cell's position so
+/// neighbors drift apart without randomness.
+fn twinkle(x: i32, y: i32) -> String {
+    let spot = x
+        .wrapping_mul(7)
+        .wrapping_add(y.wrapping_mul(13))
+        .rem_euclid(8);
+    let pace = 900 + spot * 100;
+    let offset = x
+        .wrapping_mul(5)
+        .wrapping_sub(y.wrapping_mul(3))
+        .rem_euclid(7)
+        * 170;
+    format!("--twinkle-ms:{pace}ms;--twinkle-delay:{offset}ms;")
+}
+
 /// A [`ColorMap`]'s viewport while its counts load: a small blob of ghost
 /// tiles at the map's pitch, in the middle of a box as tall as a map of
 /// about 1,000 colored cards, so the swap to the real map stays in place.
-/// The tiles sweep in ring by ring from the middle like a map's, then a
-/// slow wave keeps running outward through the rings until the data lands.
+/// The tiles flower out ring by ring from the middle and fold back in on a
+/// loop until the data lands, dimmer toward the edge, each one twinkling at
+/// its own pace.
 /// The look is the app's `.color-map-ghost*` skeleton rules; it carries no
 /// key, which the caller ghosts as chips.
 #[component]
@@ -777,7 +789,6 @@ pub fn ColorMapGhost() -> Element {
     let side = 2 * GHOST_REACH + 1;
     let length = f64::from(side) * PITCH_PX;
     let (inset, size, corner) = (GAP_SHARE / 2.0, 1.0 - GAP_SHARE, CORNER_SHARE);
-    let wave_start = (SWEEP_RINGS - 1) * SWEEP_STEP_MS + SWEEP_MS;
     rsx! {
         div { class: "color-map-viewport color-map-ghost",
             svg {
@@ -789,13 +800,13 @@ pub fn ColorMapGhost() -> Element {
                 for ((x, y), ring) in cells {
                     rect {
                         key: "{x},{y}",
-                        class: "color-map-ghost-tile",
+                        class: "color-map-ghost-tile color-map-ghost-ring-{ring}",
+                        style: "{twinkle(x, y)}",
                         x: "{f64::from(x + GHOST_REACH) + inset:.2}",
                         y: "{f64::from(y + GHOST_REACH) + inset:.2}",
                         width: "{size:.2}",
                         height: "{size:.2}",
                         rx: "{corner:.2}",
-                        style: "animation-delay:{ring * SWEEP_STEP_MS}ms,{wave_start + ring * GHOST_WAVE_STEP_MS}ms;",
                     }
                 }
             }
@@ -873,13 +884,13 @@ mod tests {
     #[test]
     fn tiles_grow_slowly_with_cards_within_the_clamp() {
         assert_eq!(tile_total(0), 0);
-        assert_eq!(tile_total(1), 36);
-        assert_eq!(tile_total(100), 80);
-        assert_eq!(tile_total(720), 160);
-        assert_eq!(tile_total(900), 176);
-        assert_eq!(tile_total(1000), 183);
-        assert_eq!(tile_total(3000), 294);
-        assert_eq!(tile_total(6399), 415);
+        assert_eq!(tile_total(1), 29);
+        assert_eq!(tile_total(100), 64);
+        assert_eq!(tile_total(720), 127);
+        assert_eq!(tile_total(900), 140);
+        assert_eq!(tile_total(1000), 146);
+        assert_eq!(tile_total(3000), 234);
+        assert_eq!(tile_total(6399), 329);
         assert_eq!(tile_total(6400), MAX_TILES);
         assert_eq!(tile_total(10_000), MAX_TILES);
         assert_eq!(tile_total(u64::MAX), MAX_TILES);
@@ -887,12 +898,12 @@ mod tests {
             cards: [3, 0, 0, 1, 0],
             colorless: 0,
         };
-        assert_eq!(ColorMapModel::new(&small, SEED).tiles.len(), 41);
+        assert_eq!(ColorMapModel::new(&small, SEED).tiles.len(), 33);
         let huge = ColorMapCounts {
             cards: [9000, 9000, 9000, 9000, 9000],
             colorless: 0,
         };
-        assert_eq!(ColorMapModel::new(&huge, SEED).tiles.len(), 416);
+        assert_eq!(ColorMapModel::new(&huge, SEED).tiles.len(), 330);
     }
 
     #[test]
@@ -977,8 +988,10 @@ mod tests {
                         .keys()
                         .filter(|cell| !before.contains_key(cell))
                         .count();
+                // A tile stands for more cards on the smaller map, so five more
+                // cards can move a few more of them.
                 assert!(
-                    changed <= 12,
+                    changed <= 16,
                     "{changed} tiles changed for seed {seed}, color {i}"
                 );
             }
