@@ -642,7 +642,7 @@ pub static GUIDES: &[Guide] = &[
                 "Summary, at the top, shows how many decks were read, the same podium and your top single color. Under it are four more sections. Tap one to open it.",
             ),
             Block::Bullets(&[
-                "Colors shows which colors your decks play.",
+                "Colors maps your colors on a pentagon, each corner glowing with how many of your cards are that color and each line with how many of your decks play both colors.",
                 "Card roles shows the jobs your cards do, like ramp or removal. Tap a role to see its tags.",
                 "Oracle tags lists your 10 most impactful tags. Tap a tag to see what it means.",
                 "Staples lists up to 10 cards that show up in the most of your decks, with how many decks run each. Basic lands are left out.",

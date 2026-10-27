@@ -80,6 +80,10 @@ Agreed with Scotty on 2026-10-26: tags in any deck show what a player likes, so 
 - The guide moved to `/guides/your-play-style`; the router redirects the old `suggested-commanders` slug.
 - Later the same day the screen became **Playstyle** and the guide moved to `/guides/playstyle`, with redirects from `suggested-commanders`, `your-play-style` and `my-play-style`. Home shows a Playstyle panel with the deck count and top three color sets from `GET /api/deck/play-style`, and its bar is Decks, Account, Config.
 
+## Done (2026-10-27): Colors is a color map
+
+The Colors section draws `components::ColorMap`, a WUBRG pentagon in color pie order (W top, then U, B, R, G clockwise) in place of the bar chart. Each corner is the app's mana pip over a glow in `--mana-white` through `--mana-green` (`:root` fallbacks in `magic.css` hold mana-font's fills; a theme may override them), its area growing with the color's cards against the top color, with a thin `--text-muted` outline so a corner reads when its color matches the background. All ten pairs are lines in `--text-primary`, width and opacity growing with the decks that play both against the top pair; a pair with none stays a faint guide. Colorless cards show as a `stat-chip` under the map. The data is `HttpBuilderProfile.color_map` (`#[serde(default)]`, `None` from older servers, when the section falls back to the bars): per color the distinct mainboard cards per deck whose identity holds it, summed across decks, the colorless count, and per pair the decks whose identity holds both. The card counts come from one subquery in `fetch_profiled_decks`, so no extra round trip.
+
 ## Commander profiles (decided 2026-10-25: the synergy worker writes them)
 
 The user profile is cheap per request (the deck tag profile query runs in ~30-50 ms locally), so it is computed live and never lags. Candidate profiles are not: each comes from a payload averaging 263 cards (production 2026-10-25: 1,527 cached payloads, 86 to 445 cards each). They are precomputed into `commander_tag_profiles(commander_oracle_id, profile jsonb, computed_at)`.
