@@ -190,7 +190,7 @@ pub fn HomeHero() -> Element {
 }
 
 /// Home's hero: [`HomeHero`] with an Activity button opening the Activity
-/// screen, and its "All players" tag as a button after the "Live" tag that
+/// screen, and its "Everybody" tag as a button after the "Live" tag that
 /// switches the figures to the user's own counts ("Only me") and back. The
 /// choice is saved, so Home opens on the last one. Every switch rolls the
 /// figures to the other counts, rolling on while the user's are fetched the
@@ -217,6 +217,9 @@ pub fn HomeHeroScoped() -> Element {
                 }
                 button {
                     class: "card-action-btn hero-scope",
+                    // Sized to its label, one monospace character a `ch`, so
+                    // a switch eases between the two labels' widths.
+                    style: "width:calc({label.chars().count()}ch + 1.2rem + 2px);",
                     onclick: move |_| {
                         let next = scope.peek().toggled();
                         next.infallible_save();

@@ -48,8 +48,8 @@ pub fn StatsStrip() -> Element {
     // Keyed on its text, so the live chip arrives with the ease rather than
     // the as-of chip changing its words in place.
     let label = match (live.is_some(), as_of) {
-        (true, _) => Some("live".to_string()),
-        (false, Some(day)) => Some(format!("as of {day}")),
+        (true, _) => Some("Live".to_string()),
+        (false, Some(day)) => Some(format!("As of {day}")),
         (false, None) => None,
     };
 
@@ -62,7 +62,7 @@ pub fn StatsStrip() -> Element {
             ],
             // Where the numbers come from, as chips under the strip.
             source: rsx! {
-                span { class: "tag", "all users" }
+                span { class: "tag", "Everybody" }
                 if let Some(label) = label {
                     span { key: "{label}", class: "tag chip-in", "{label}" }
                 }

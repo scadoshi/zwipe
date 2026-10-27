@@ -1711,15 +1711,23 @@ button {
     margin-top: 0;
 }
 
-/* Home's buttons take the row's height, level with the live tag, and the
-   scope button keeps one width for both labels so a switch does not shift
-   the row. */
+/* Home's buttons take the row's height, level with the Live tag, and the
+   scope button eases to its new label's width on a switch. */
 .home-hero .stats-source > .card-action-btn {
     align-self: stretch;
 }
 
 .home-hero .stats-source > .hero-scope {
-    min-width: 6.5rem;
+    transition:
+        width 0.25s ease,
+        border-color 0.15s,
+        color 0.15s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-hero .stats-source > .hero-scope {
+        transition: none;
+    }
 }
 
 /* Each label fades in as it mounts, and so does the live tag. */
