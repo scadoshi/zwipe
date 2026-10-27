@@ -7,7 +7,7 @@ use zwipe_core::http::endpoints::suggestions::GetPlayStyleSummary;
 use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
-    /// Reads the user's deck count and most built color identities.
+    /// Reads the user's deck count and color map.
     pub async fn play_style_summary(
         &self,
         session: &Session,

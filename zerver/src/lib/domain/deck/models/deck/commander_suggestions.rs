@@ -11,8 +11,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::is_basic_land_type_line;
 use zwipe_core::http::contracts::suggestions::{
-    PLAY_STYLE_IDENTITIES_SENT, PROFILE_ROLE_SHOWN, PROFILE_STAPLES_SENT, PROFILE_TAG_SENT,
-    STAPLE_MIN_DECKS,
+    PROFILE_ROLE_SHOWN, PROFILE_STAPLES_SENT, PROFILE_TAG_SENT, STAPLE_MIN_DECKS,
 };
 
 /// Decks whose tag profile a candidate is scored against: the user's most
@@ -493,27 +492,23 @@ pub fn identity_counts(decks: &[ProfiledDeck]) -> Vec<ColorIdentityCount> {
     counts
 }
 
-/// The user's deck count and most built identities, from
-/// [`identity_counts`] cut to [`PLAY_STYLE_IDENTITIES_SENT`].
+/// The user's deck count and the [`color_map`] of `decks`, the same map the
+/// builder profile carries.
 #[must_use]
 pub fn summarize_play_style(decks: &[ProfiledDeck]) -> PlayStyleSummary {
-    let mut identities = identity_counts(decks);
-    identities.truncate(PLAY_STYLE_IDENTITIES_SENT);
     PlayStyleSummary {
         deck_count: u32::try_from(decks.len()).unwrap_or(u32::MAX),
-        identities,
+        color_map: color_map(decks),
     }
 }
 
-/// What Home's play style panel shows: the deck count and the most built
-/// exact identities.
-#[derive(Debug, Clone, PartialEq)]
+/// What Home's play style panel shows: the deck count and the color map.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlayStyleSummary {
     /// Decks read, in any format. 0 is the cold start.
     pub deck_count: u32,
-    /// The most built identities in [`identity_counts`] order, at most
-    /// [`PLAY_STYLE_IDENTITIES_SENT`].
-    pub identities: Vec<ColorIdentityCount>,
+    /// The [`color_map`] of the same decks.
+    pub color_map: ColorMap,
 }
 
 /// Summarizes the user's decks: per color the decks using it, the
@@ -904,35 +899,27 @@ mod tests {
     }
 
     #[test]
-    fn play_style_keeps_the_top_three_and_counts_every_deck() {
+    fn play_style_counts_every_deck_and_carries_the_profile_color_map() {
         let decks = vec![
-            deck(1, &["B"]),
-            deck(2, &["B"]),
-            deck(3, &["B"]),
-            deck(4, &["R"]),
-            deck(5, &["R"]),
-            deck(6, &["W", "U"]),
-            deck(7, &["G"]),
-            deck(8, &[]),
+            counted(1, &["B"], [0, 0, 20, 0, 0], 3),
+            counted(2, &["W", "U"], [9, 11, 0, 0, 0], 0),
+            deck(3, &[]),
         ];
+        let summary = summarize_play_style(&decks);
+        assert_eq!(summary.deck_count, 3);
+        let profile = summarize_profile(&decks, &[], &HashMap::new()).unwrap();
         assert_eq!(
-            summarize_play_style(&decks),
-            PlayStyleSummary {
-                deck_count: 8,
-                identities: vec![count(&["B"], 3), count(&["R"], 2), count(&["W", "U"], 1)],
-            }
+            summary.color_map, profile.color_map,
+            "home and the profile draw the same map"
         );
     }
 
     #[test]
     fn play_style_of_no_decks_is_empty() {
-        assert_eq!(
-            summarize_play_style(&[]),
-            PlayStyleSummary {
-                deck_count: 0,
-                identities: vec![],
-            }
-        );
+        let summary = summarize_play_style(&[]);
+        assert_eq!(summary.deck_count, 0);
+        assert!(summary.color_map.colors.iter().all(|c| c.cards == 0));
+        assert_eq!(summary.color_map.colorless_cards, 0);
     }
 
     /// A deck profile from its weights, each tag carried by `cards` cards.

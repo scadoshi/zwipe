@@ -73,11 +73,7 @@ impl From<PlayStyleSummary> for HttpPlayStyleSummary {
     fn from(value: PlayStyleSummary) -> Self {
         Self {
             deck_count: value.deck_count,
-            identities: value
-                .identities
-                .into_iter()
-                .map(HttpColorIdentityCount::from)
-                .collect(),
+            color_map: Some(HttpColorMap::from(value.color_map)),
         }
     }
 }
@@ -197,8 +193,8 @@ pub async fn get_commander_suggestions(
         .map(|suggestions| (StatusCode::OK, Json(suggestions.into())))
 }
 
-/// Returns the authenticated user's deck count and most built color
-/// identities, for Home's play style panel.
+/// Returns the authenticated user's deck count and color map, for Home's
+/// play style panel.
 pub async fn get_play_style_summary(
     user: AuthenticatedUser,
     State(state): State<AppState>,

@@ -812,48 +812,63 @@ async fn every_route_needs_a_token(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
-async fn play_style_summary_counts_the_top_three_identities(pool: sqlx::PgPool) {
+async fn play_style_summary_sends_the_color_map(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, uid) = app.register("playstyle").await;
     app.verify_email(&uid).await;
 
     let (status, body) = app.get(PLAY_STYLE_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "{body}");
-    assert_eq!(body, json!({ "deck_count": 0, "identities": [] }));
+    assert_eq!(body["deck_count"], 0, "{body}");
+    assert!(
+        body["color_map"]["colors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|c| c["cards"] == 0),
+        "no decks, a map of zeros: {body}"
+    );
 
     let white = card("Plains Walker").mono("W");
     let red = card("Mountain Runner").mono("R");
     let blue = card("Island Swimmer").mono("U");
-    let black = card("Swamp Crawler").mono("B");
-    let green = card("Forest Grower").mono("G");
     let w = (white.id(), white.oracle_id().unwrap());
     let r = (red.id(), red.oracle_id().unwrap());
     let u = (blue.id(), blue.oracle_id().unwrap());
-    let b = (black.id(), black.oracle_id().unwrap());
-    let g = (green.id(), green.oracle_id().unwrap());
-    seed_cards(&pool, &[white, red, blue, black, green]).await;
+    seed_cards(&pool, &[white, red, blue]).await;
     build_deck(&app, &token, "Boros One", "standard", &[r, w]).await;
     build_deck(&app, &token, "Boros Two", "pioneer", &[w, r]).await;
-    build_deck(&app, &token, "Elves", "standard", &[g]).await;
     build_deck(&app, &token, "Fliers", "standard", &[u]).await;
-    build_deck(&app, &token, "Zombies", "standard", &[b]).await;
     // An empty deck has no colors to read and is not counted.
     build_deck(&app, &token, "Empty", "standard", &[]).await;
 
     let (status, body) = app.get(PLAY_STYLE_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(body["deck_count"], 3, "{body}");
+    assert!(body.get("identities").is_none(), "{body}");
+
+    let (status, suggestions) = app.get(COMMANDER_SUGGESTIONS_ROUTE, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "{suggestions}");
     assert_eq!(
-        body,
-        json!({
-            "deck_count": 5,
-            "identities": [
-                { "colors": ["W", "R"], "decks": 2 },
-                { "colors": ["U"], "decks": 1 },
-                { "colors": ["B"], "decks": 1 },
-            ],
-        }),
-        "most decks first, WUBRG between the singles, green cut at three"
+        body["color_map"], suggestions["profile"]["color_map"],
+        "home draws the same map as the profile"
     );
+    let cards: Vec<(String, u64)> = body["color_map"]["colors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| {
+            (
+                c["color"].as_str().unwrap().to_string(),
+                c["cards"].as_u64().unwrap(),
+            )
+        })
+        .collect();
+    let want: Vec<(String, u64)> = [("W", 2), ("U", 1), ("B", 0), ("R", 2), ("G", 0)]
+        .iter()
+        .map(|(color, cards)| (color.to_string(), *cards))
+        .collect();
+    assert_eq!(cards, want, "a card counts once per deck it is in");
 }
 
 /// Sets a deck's `updated_at` so tests control which deck is most recent.

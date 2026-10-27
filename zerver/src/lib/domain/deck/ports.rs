@@ -428,10 +428,10 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         limit: u32,
     ) -> impl Future<Output = Result<CommanderSuggestions, CommanderSuggestionsError>> + Send;
 
-    /// The user's deck count and most built color identities, from the same
-    /// decks [`DeckService::commander_suggestions`] reads, without tag
-    /// profiles or scoring. A user with no such deck gets `deck_count` 0 and
-    /// no identities.
+    /// The user's deck count and color map, from the same decks
+    /// [`DeckService::commander_suggestions`] reads, without tag profiles or
+    /// scoring. A user with no such deck gets `deck_count` 0 and a map of
+    /// zeros.
     fn play_style_summary(
         &self,
         user_id: uuid::Uuid,

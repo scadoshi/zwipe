@@ -13,7 +13,7 @@ use crate::http::paths::{
     undismiss_commander_route,
 };
 
-/// The user's deck count and most built color identities, for Home's play
+/// The user's deck count and color map, for Home's play
 /// style panel.
 pub struct GetPlayStyleSummary;
 impl Endpoint for GetPlayStyleSummary {

@@ -71,7 +71,7 @@ pub const DECK_ROUTE: &str = "/api/deck";
 pub const CREATE_DECK_ROUTE: &str = DECK_ROUTE;
 pub const GET_DECK_PROFILES_ROUTE: &str = DECK_ROUTE;
 pub const GET_DECK_TAGS_ROUTE: &str = "/api/deck/tags";
-/// The user's deck count and most built color identities.
+/// The user's deck count and color map.
 pub const PLAY_STYLE_ROUTE: &str = "/api/deck/play-style";
 
 // == suggested commanders ==

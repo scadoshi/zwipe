@@ -25,22 +25,20 @@ pub const PROFILE_STAPLES_SENT: usize = 100;
 /// Fewest of the user's decks a card must be in to count as a staple.
 pub const STAPLE_MIN_DECKS: u32 = 2;
 
-/// Most color identities [`HttpPlayStyleSummary::identities`] carries.
-pub const PLAY_STYLE_IDENTITIES_SENT: usize = 3;
-
-/// Response of `GET /api/deck/play-style`: the user's most built color
-/// identities, a light read for Home that builds no tag profiles and scores
-/// no commanders.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+/// Response of `GET /api/deck/play-style`: the user's deck count and color
+/// map, a light read for Home that builds no tag profiles and scores no
+/// commanders.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct HttpPlayStyleSummary {
     /// Decks in any format with a commander or a mainboard card, the same
     /// count as [`HttpCommanderSuggestions::deck_count`]. 0 is the cold start.
     pub deck_count: u32,
-    /// The exact color identities across those decks, most decks first, then
-    /// more colors, then WUBRG order, at most [`PLAY_STYLE_IDENTITIES_SENT`].
-    /// The first is [`HttpBuilderProfile::top_identity`] whenever that is
-    /// `Some`.
-    pub identities: Vec<HttpColorIdentityCount>,
+    /// The same color map as [`HttpBuilderProfile::color_map`], summed from
+    /// the same decks, so Home draws the shape the Playstyle screen does.
+    /// Every color and pair is present, zeros included. `None` from older
+    /// servers.
+    #[serde(default)]
+    pub color_map: Option<HttpColorMap>,
 }
 
 /// Response of `GET /api/commander/suggestions`.
@@ -417,24 +415,26 @@ mod tests {
     fn play_style_summary_round_trip() {
         let summary = HttpPlayStyleSummary {
             deck_count: 5,
-            identities: vec![
-                HttpColorIdentityCount {
-                    colors: vec!["U".to_string(), "R".to_string()],
-                    decks: 3,
-                },
-                HttpColorIdentityCount {
-                    colors: vec![],
-                    decks: 2,
-                },
-            ],
+            color_map: Some(HttpColorMap {
+                colors: vec![HttpColorCards {
+                    color: "U".to_string(),
+                    cards: 30,
+                }],
+                colorless_cards: 2,
+                pairs: vec![],
+            }),
         };
         let json = serde_json::to_string(&summary).unwrap();
         assert_eq!(
             json,
-            r#"{"deck_count":5,"identities":[{"colors":["U","R"],"decks":3},{"colors":[],"decks":2}]}"#
+            r#"{"deck_count":5,"color_map":{"colors":[{"color":"U","cards":30}],"colorless_cards":2,"pairs":[]}}"#
         );
         let back: HttpPlayStyleSummary = serde_json::from_str(&json).unwrap();
         assert_eq!(back, summary);
+
+        let old: HttpPlayStyleSummary =
+            serde_json::from_str(r#"{"deck_count":3,"identities":[]}"#).unwrap();
+        assert_eq!(old.color_map, None, "an older server's summary parses");
     }
 
     #[test]
