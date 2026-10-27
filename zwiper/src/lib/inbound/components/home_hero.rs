@@ -188,7 +188,8 @@ pub fn HomeHero() -> Element {
     }
 }
 
-/// Home's hero: [`HomeHero`] with its "all users" tag as a button that
+/// Home's hero: [`HomeHero`] with its "all users" tag as a button after the
+/// "live" tag that
 /// switches the figures to the user's own counts ("just me") and back. The
 /// choice is saved, so Home opens on the last one. Every switch rolls the
 /// figures to the other counts, rolling on while the user's are fetched the
@@ -209,6 +210,9 @@ pub fn HomeHeroScoped() -> Element {
             figures,
             roll_key: label,
             source: rsx! {
+                if live {
+                    span { class: "stat-chip", "live" }
+                }
                 button {
                     class: "card-action-btn hero-scope",
                     onclick: move |_| {
@@ -220,9 +224,6 @@ pub fn HomeHeroScoped() -> Element {
                     for label in [label] {
                         span { key: "{label}", class: "hero-scope-label", "{label}" }
                     }
-                }
-                if live {
-                    span { class: "stat-chip", "live" }
                 }
             },
         }
