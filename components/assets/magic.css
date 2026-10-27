@@ -1178,16 +1178,25 @@ i.ms.ms-cost.ms-gp {
     padding: 0.25rem 0.75rem 0.5rem;
 }
 
-/* The SVG keeps its view box's shape, as wide as the section allows. */
-.color-map-plot {
+/* Tiles keep their size, so a map larger than the box scrolls both ways
+   inside it. A flex child with auto margins centers when it fits and starts
+   at the edge when it does not, so every part stays reachable. The scroll
+   stays in the box instead of carrying on to the page. */
+.color-map-viewport {
+    display: flex;
     width: 100%;
     max-width: 15.5rem;
+    max-height: 15.5rem;
+    overflow: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
 }
 
 .color-map-svg {
     display: block;
-    width: 100%;
-    height: auto;
+    flex: none;
+    margin: auto;
 }
 
 .color-map-key {

@@ -643,7 +643,7 @@ pub static GUIDES: &[Guide] = &[
                 "Summary, at the top, shows how many decks were read, the same podium and your top single color. Under it are three more sections. Tap one to open it.",
             ),
             Block::Bullets(&[
-                "Colors turns your cards into a map of tiles where each color claims ground in proportion to its cards, in a shape that's yours and grows as you build.",
+                "Colors grows a map of tiles from your cards, each color claiming ground in proportion to its cards, in a shape that's yours alone. A big map scrolls inside its box.",
                 "Card roles shows the jobs your cards do, like ramp or removal. Tap a role to see its tags.",
                 "Oracle tags lists your 10 most impactful tags. Tap a tag to see what it means.",
                 "Each open section has a question mark in its header that explains it.",

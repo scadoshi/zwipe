@@ -240,8 +240,8 @@ impl HintTopic {
             },
             Self::SuggestionColorChart => rsx! {
                 HintBullets {
-                    HintBullet { "Each tile is a few of your cards. Colors with more cards claim more of the map" }
-                    HintBullet { "Your map's shape is yours and grows as you build. Colorless cards are in the key below" }
+                    HintBullet { "Colors with more of your cards claim more of the map. It grows slowly as you build, so drag to see all of a big one" }
+                    HintBullet { "The shape is yours alone. Colorless cards are in the key below" }
                 }
             },
             Self::SuggestionRoleChart => rsx! {
