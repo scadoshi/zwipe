@@ -13,10 +13,10 @@
 //! that removes a row fills from the held list and refetches only when fewer
 //! than ten remain, so the list stays a full top 10. Above the list, sections
 //! in the deck profile's grammar sum up what the user builds, the profile the
-//! ranking reads: a Summary table (the deck count, the top colors and the
-//! top single color), then a color territory map of the cards, a chart
-//! of the card roles and a table of the oracle tags across the decks. They
-//! share one accordion with Summary open on entry. Below the list, the staples
+//! ranking reads: a color territory map of the cards, a Summary table (the
+//! deck count, the top colors and the top single color), a chart of the
+//! card roles and a table of the oracle tags across the decks. They share
+//! one accordion with the color map open on entry. Below the list, the staples
 //! (up to 100 cards in the most decks) show as the shared card rows in the
 //! list's group grammar, the first 10 that match their own Type and Color chip
 //! rows, which the Show row does not touch. With no deck that has cards to
