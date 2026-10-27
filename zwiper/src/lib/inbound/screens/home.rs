@@ -203,9 +203,6 @@ pub fn Home() -> Element {
                                         if let Some(price) = usd_price.as_ref() {
                                             span { class: "flavor-price", "{price}" }
                                         }
-                                    }
-                                    hr { class: "card-row-rule card-row-rule-muted" }
-                                    div { class: "home-panel-actions",
                                         button {
                                             class: "card-action-btn",
                                             onclick: move |_| preview_card.set(Some((sd.clone(), 0))),
@@ -226,8 +223,9 @@ pub fn Home() -> Element {
                         }
                         None => rsx! {
                             // Mirror the loaded card: a "Featured flavor" title
-                            // bar + divider, the quote lines, then the rule
-                            // and a ghost for each of its buttons.
+                            // bar + divider, the quote lines, then a chip
+                            // ghost for each tag and button on the row under
+                            // them.
                             div { class: "skeleton-card-header", style: "display: flex; justify-content: center;",
                                 div { class: "skeleton-bar skeleton-section-label", style: "width: 45%; margin-bottom: 0;" }
                             }
@@ -235,12 +233,12 @@ pub fn Home() -> Element {
                                 div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-1" }
                                 div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-2" }
                                 div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-3" }
-                                div { class: "skeleton-bar skeleton-flavor-source" }
                             }
-                            hr { class: "card-row-rule card-row-rule-muted" }
-                            div { class: "home-panel-actions",
-                                div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
-                                div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                            div { class: "flavor-buy-row",
+                                div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
+                                for i in 0..3 {
+                                    div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                                }
                             }
                         },
                     }

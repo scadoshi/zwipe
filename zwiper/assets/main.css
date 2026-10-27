@@ -1282,12 +1282,6 @@ button {
     width: 55%;
 }
 
-.skeleton-flavor-source {
-    width: 35%;
-    height: 0.65rem;
-    margin-top: 0.5rem;
-}
-
 /* Deck list skeleton (deck list screen) */
 /* Mirrors the live list: one container, decks as rows inside it (see
    .card-group / .deck-row). */
@@ -2769,8 +2763,9 @@ button {
     }
 }
 
-/* Card name + price tag, centered on their own line below the quote. Wraps
-   the price tag to its own line before the name is forced to wrap internally. */
+/* Card name and price tags, then the Image and Buy buttons, centered on
+   their own lines below the quote. Wraps the rest to a new line before the
+   name is forced to wrap internally. */
 .flavor-buy-row {
     display: flex;
     flex-wrap: wrap;
@@ -2820,7 +2815,12 @@ button {
     font-variant-numeric: tabular-nums;
 }
 
-/* A Home panel's buttons, centered under a full-bleed rule or a line. */
+/* A button on the row takes its line's height, level with the tags. */
+.flavor-buy-row > .card-action-btn {
+    align-self: stretch;
+}
+
+/* A Home panel's buttons, centered under a line. */
 .home-panel-actions {
     display: flex;
     flex-wrap: wrap;
