@@ -8,8 +8,6 @@ Only open, actionable items live here. When something ships, its outcome moves t
 
 ## Next Up
 
-- [ ] **Sunset `/api/deck/play-style` after 1.16.0.** The server answers both spellings and 1.16.0 calls `/api/deck/playstyle`. Once 1.16.0 has been out a while, raise `MIN_CLIENT_VERSION` to 1.16.0, then rebase and merge the pushed `sunset-play-style-route` branch with the full gate. Steps and checks in [`../plans/playstyle_route_rename.md`](../plans/playstyle_route_rename.md).
-
 - [x] ~~**Close the email enumeration oracle.**~~ DONE 2026-10-23: with the floor at 1.13.0, Phase 4 of [`../plans/archive/verify_first_registration.md`](../plans/archive/verify_first_registration.md) and [`../plans/archive/confirm_first_email_change.md`](../plans/archive/confirm_first_email_change.md) is on main. The old register and change-email paths and both flags are gone, and PR #32's 409s came in with it. Left: one live registration from the shipped app with a new address and one with a taken one.
 
 - [x] ~~**Small leftovers from the email work.**~~ DONE 2026-10-23. zervice's nightly upkeep prunes expired `email_change_requests` rows (the grant it needs was applied on the box first), and `zcripts/metrics/funnel.sql` has a signed-in step that counts new accounts with a first login, since register no longer starts a session. Profile's Pending row says when the confirmation link expires: zerver sends an additive `pending_email_expires_at` on `User` now, and the app reads it from 1.14.0.
