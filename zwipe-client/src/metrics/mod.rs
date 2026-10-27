@@ -1,5 +1,7 @@
 //! User metrics API client operations.
 
+/// The caller's own lifetime counters endpoint.
+pub mod my_metrics;
 /// Public marketing counts endpoint.
 pub mod public_metrics;
 /// Pre-auth funnel event endpoint (unauthenticated).

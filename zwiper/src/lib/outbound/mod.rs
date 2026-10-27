@@ -13,6 +13,8 @@ pub mod android_keystore;
 pub mod app_icon;
 /// URL construction for external card retailer bulk-buy tools.
 pub mod buy_links;
+/// Whether the home hero shows everyone's counts or the user's own.
+pub mod count_scope_store;
 /// Local cache of the public counters so a launch without signal still shows them.
 pub mod counts_store;
 /// Crash capture: panic hook writes to disk, next launch posts + clears.

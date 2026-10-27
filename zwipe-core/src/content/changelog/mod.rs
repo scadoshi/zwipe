@@ -40,6 +40,7 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "Home's Playstyle button sits at the end of the color map's key",
         "Featured flavor's Image and Buy are buttons beside its card name and price",
+        "Home's counts switch between all users and just you",
     ],
 }];
 

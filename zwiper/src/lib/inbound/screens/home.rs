@@ -18,7 +18,7 @@ use zwipe_core::domain::user::preferences::PipStyle;
 
 use crate::inbound::components::auth::session_upkeep::FlavorCard;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
-use crate::inbound::components::home_hero::HomeHero;
+use crate::inbound::components::home_hero::HomeHeroScoped;
 use crate::inbound::components::home_play_style::HomePlayStyle;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::router::Router;
@@ -179,7 +179,7 @@ pub fn Home() -> Element {
             div { class: "screen",
                 ScreenHeader { title: "Home" }
                 div { class: "screen-content home-content",
-                HomeHero {}
+                HomeHeroScoped {}
 
                 HomePlayStyle {}
 

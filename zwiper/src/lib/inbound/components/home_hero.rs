@@ -1,14 +1,20 @@
-//! The mark in a panel with the three public counters, on home and the auth
-//! screens.
+//! The mark in a panel with the three counters, on home and the auth
+//! screens. The auth screens show everyone's counts; home's scope button
+//! switches between everyone's and the user's own.
 
 use std::time::{Duration, Instant};
 
 use components::{Decode, Panel, StatsStrip};
 use dioxus::prelude::*;
+use uuid::Uuid;
 use zwipe_client::ZwipeClient;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::logo;
-use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
+use zwipe_core::http::contracts::metrics::{HttpLifetimeCounters, HttpPublicMetrics};
 
+use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::telemetry::vocabulary::Screen;
+use crate::outbound::count_scope_store::CountScope;
 use crate::outbound::counts_store::PersistCounts;
 
 /// How long a fetched set of counters serves before the next screen asks
@@ -43,17 +49,25 @@ impl CachedCounts {
     }
 }
 
-/// The mark above the cards swiped, searches run and decks created across
-/// everyone, with chips saying where they come from. Unauthenticated; the
-/// figures roll until they arrive. A failed ask keeps the copy on screen,
-/// restored from the last launch if need be, and is only logged: these
-/// numbers are decoration, not something the user asked for.
-#[component]
-pub fn HomeHero() -> Element {
+/// The user's own counters as last fetched, kept above the router (as
+/// `Signal<Option<CachedMyCounts>>`) beside [`CachedCounts`] on the same
+/// minute. Never saved across launches.
+#[derive(Clone)]
+pub struct CachedMyCounts {
+    /// The user the counts belong to; another user's copy is never shown.
+    pub user_id: Uuid,
+    /// What zerver answered.
+    pub metrics: HttpLifetimeCounters,
+    /// When it answered.
+    pub fetched_at: Instant,
+}
+
+/// Everyone's counters from the cache above the router, refetched when
+/// stale, with whether the copy came from this launch. A stale copy keeps
+/// showing while the refetch is out and is only replaced on success.
+fn use_public_counts() -> (Option<HttpPublicMetrics>, bool) {
     let client: Signal<ZwipeClient> = use_context();
     let mut cache: Signal<Option<CachedCounts>> = use_context();
-    // A fresh copy is reused; a stale one keeps showing while the refetch is
-    // out and is only replaced on success.
     use_effect(move || {
         if cache.peek().as_ref().is_some_and(|c| !c.is_stale()) {
             return;
@@ -71,35 +85,192 @@ pub fn HomeHero() -> Element {
             }
         });
     });
-
     let value = cache.read();
-    let metrics = value.as_ref().map(|c| &c.metrics);
-    let count = |n: Option<i64>| n.map(|n| u64::try_from(n).unwrap_or(0));
-    let figures = vec![
-        (count(metrics.map(|m| m.decks_created)), "Decks created"),
-        (count(metrics.map(|m| m.searches)), "Searches run"),
-        (count(metrics.map(|m| m.cards_swiped)), "Cards swiped"),
-    ];
+    let metrics = value.as_ref().map(|c| c.metrics.clone());
     // "live" only for an answer from this launch, not a restored copy.
     let live = value.as_ref().is_some_and(|c| c.fetched_at.is_some());
+    (metrics, live)
+}
+
+/// The signed-in user's counters from the cache above the router, fetched
+/// while `scope` is [`CountScope::JustMe`] and the copy is missing, another
+/// user's or older than `COUNTS_FRESH`. A failed fetch is only logged.
+fn use_my_counts(scope: Signal<CountScope>) -> Option<HttpLifetimeCounters> {
+    let session: Signal<Option<Session>> = use_context();
+    let mut cache: Signal<Option<CachedMyCounts>> = use_context();
+    let authed = use_authed(Screen::Home);
+    let user_id = session.peek().as_ref().map(|s| s.user.id);
+    use_effect(move || {
+        if scope() != CountScope::JustMe {
+            return;
+        }
+        let Some(user_id) = user_id else {
+            return;
+        };
+        let fresh = cache
+            .peek()
+            .as_ref()
+            .is_some_and(|c| c.user_id == user_id && c.fetched_at.elapsed() < COUNTS_FRESH);
+        if fresh {
+            return;
+        }
+        spawn(async move {
+            if let Some(metrics) = authed
+                .run_quiet("my_metrics", |c, s| async move { c.my_metrics(&s).await })
+                .await
+            {
+                cache.set(Some(CachedMyCounts {
+                    user_id,
+                    metrics,
+                    fetched_at: Instant::now(),
+                }));
+            }
+        });
+    });
+    cache
+        .read()
+        .as_ref()
+        .filter(|c| Some(c.user_id) == user_id)
+        .map(|c| c.metrics.clone())
+}
+
+/// The three figures in the strip's order, `None` while a count is out.
+fn figures(
+    decks: Option<i64>,
+    searches: Option<i64>,
+    swiped: Option<i64>,
+) -> Vec<(Option<u64>, &'static str)> {
+    let count = |n: Option<i64>| n.map(|n| u64::try_from(n).unwrap_or(0));
+    vec![
+        (count(decks), "Decks created"),
+        (count(searches), "Searches run"),
+        (count(swiped), "Cards swiped"),
+    ]
+}
+
+/// Everyone's figures, `None` each while they load.
+fn public_figures(metrics: Option<&HttpPublicMetrics>) -> Vec<(Option<u64>, &'static str)> {
+    figures(
+        metrics.map(|m| m.decks_created),
+        metrics.map(|m| m.searches),
+        metrics.map(|m| m.cards_swiped),
+    )
+}
+
+/// The user's own figures, cards swiped being every direction together.
+fn my_figures(metrics: Option<&HttpLifetimeCounters>) -> Vec<(Option<u64>, &'static str)> {
+    figures(
+        metrics.map(|m| i64::from(m.decks_created)),
+        metrics.map(|m| m.searches),
+        metrics.map(|m| m.swipes_right + m.swipes_left + m.swipes_up + m.swipes_down),
+    )
+}
+
+/// The mark above the cards swiped, searches run and decks created across
+/// everyone, with tags saying where they come from. Unauthenticated, for the
+/// auth screens; the figures roll until they arrive. A failed ask keeps the
+/// copy on screen, restored from the last launch if need be, and is only
+/// logged: these numbers are decoration, not something the user asked for.
+#[component]
+pub fn HomeHero() -> Element {
+    let (metrics, live) = use_public_counts();
+    rsx! {
+        HeroPanel {
+            figures: public_figures(metrics.as_ref()),
+            source: rsx! {
+                span { class: "stat-chip", "{CountScope::AllUsers.label()}" }
+                if live {
+                    span { class: "stat-chip", "live" }
+                }
+            },
+        }
+    }
+}
+
+/// Home's hero: [`HomeHero`] with its "all users" tag as a button that
+/// switches the figures to the user's own counts ("just me") and back. The
+/// choice is saved, so Home opens on the last one. The user's counts are
+/// fetched on the first switch and roll in like everyone's; "live" shows
+/// once the figures on screen come from this launch.
+#[component]
+pub fn HomeHeroScoped() -> Element {
+    let mut scope: Signal<CountScope> = use_context();
+    let (public, public_live) = use_public_counts();
+    let mine = use_my_counts(scope);
+    let (figures, live) = match scope() {
+        CountScope::AllUsers => (public_figures(public.as_ref()), public_live),
+        CountScope::JustMe => (my_figures(mine.as_ref()), mine.is_some()),
+    };
+    let label = scope().label();
+    rsx! {
+        HeroPanel {
+            figures,
+            source: rsx! {
+                button {
+                    class: "card-action-btn",
+                    onclick: move |_| {
+                        let next = scope.peek().toggled();
+                        next.infallible_save();
+                        scope.set(next);
+                    },
+                    "{label}"
+                }
+                if live {
+                    span { class: "stat-chip", "live" }
+                }
+            },
+        }
+    }
+}
+
+/// The panel both heroes draw: the mark over the strip, with `source`
+/// under it.
+#[component]
+fn HeroPanel(figures: Vec<(Option<u64>, &'static str)>, source: Element) -> Element {
     rsx! {
         div { class: "home-hero",
             Panel {
                 div { class: "hero-head",
                     div { class: "logo", Decode { text: logo::ZWIPE } }
-                    StatsStrip {
-                        figures,
-                        compact: true,
-                        // Where the numbers come from, as chips under the strip.
-                        source: rsx! {
-                            span { class: "stat-chip", "all users" }
-                            if live {
-                                span { class: "stat-chip", "live" }
-                            }
-                        },
-                    }
+                    StatsStrip { figures, compact: true, source }
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::Utc;
+
+    use super::*;
+
+    #[test]
+    fn my_cards_swiped_counts_every_direction() {
+        let mine = HttpLifetimeCounters {
+            user_id: Uuid::nil(),
+            swipes_right: 1,
+            swipes_left: 2,
+            swipes_up: 3,
+            swipes_down: 4,
+            searches: 5,
+            decks_created: 6,
+            decks_completed: 0,
+            updated_at: Utc::now(),
+        };
+        assert_eq!(
+            my_figures(Some(&mine)),
+            vec![
+                (Some(6), "Decks created"),
+                (Some(5), "Searches run"),
+                (Some(10), "Cards swiped"),
+            ]
+        );
+    }
+
+    #[test]
+    fn figures_wait_while_counts_load() {
+        assert!(my_figures(None).iter().all(|(n, _)| n.is_none()));
+        assert!(public_figures(None).iter().all(|(n, _)| n.is_none()));
     }
 }

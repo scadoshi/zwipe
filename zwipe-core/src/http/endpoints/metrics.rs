@@ -3,11 +3,12 @@
 use std::borrow::Cow;
 
 use crate::http::contracts::metrics::{
-    HttpAnonymousEvent, HttpCrashReport, HttpPublicMetrics, HttpUsageBatch,
+    HttpAnonymousEvent, HttpCrashReport, HttpLifetimeCounters, HttpPublicMetrics, HttpUsageBatch,
 };
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths::{
-    PUBLIC_METRICS_ROUTE, RECORD_ANONYMOUS_EVENT_ROUTE, RECORD_CRASH_ROUTE, RECORD_USAGE_ROUTE,
+    GET_MY_METRICS_ROUTE, PUBLIC_METRICS_ROUTE, RECORD_ANONYMOUS_EVENT_ROUTE, RECORD_CRASH_ROUTE,
+    RECORD_USAGE_ROUTE,
 };
 
 /// Flush a batch of buffered usage counters.
@@ -65,5 +66,27 @@ impl Endpoint for PublicMetrics {
     type Response = HttpPublicMetrics;
     fn path(&self) -> Cow<'static, str> {
         Cow::Borrowed(PUBLIC_METRICS_ROUTE)
+    }
+}
+
+/// The caller's own lifetime counters, the per-user rows the public counts
+/// sum.
+pub struct GetMyMetrics;
+impl Endpoint for GetMyMetrics {
+    const METHOD: Method = Method::Get;
+    type Request = ();
+    type Response = HttpLifetimeCounters;
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(GET_MY_METRICS_ROUTE)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn my_metrics_reads_the_user_route() {
+        assert_eq!(GetMyMetrics.path(), "/api/user/metrics");
     }
 }

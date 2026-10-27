@@ -1711,6 +1711,11 @@ button {
     margin-top: 0;
 }
 
+/* Home's scope button takes the row's height, level with the live tag. */
+.home-hero .stats-source > .card-action-btn {
+    align-self: stretch;
+}
+
 .home-hero .stat-label {
     font-size: 0.65rem;
     letter-spacing: 0.04em;

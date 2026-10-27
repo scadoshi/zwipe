@@ -23,7 +23,7 @@ use crate::config::Config;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::catalog_cache::use_catalog_cache;
 use crate::inbound::components::hint_host::HintTopic;
-use crate::inbound::components::home_hero::CachedCounts;
+use crate::inbound::components::home_hero::{CachedCounts, CachedMyCounts};
 use crate::inbound::components::home_play_style::CachedPlayStyle;
 use crate::inbound::components::telemetry::anonymous::record_anonymous_event;
 use crate::inbound::components::telemetry::flush_loop::{
@@ -38,6 +38,7 @@ use crate::inbound::screens::deck::card::components::filter_store::use_filter_st
 use crate::inbound::screens::deck::card::components::undo_log::use_undo_store;
 use crate::inbound::screens::deck::create::CreateDeckCommanderSeed;
 use crate::outbound::app_icon;
+use crate::outbound::count_scope_store::CountScope;
 use crate::outbound::session::Persist;
 use crate::outbound::theme_store::PersistTheme;
 
@@ -193,6 +194,13 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // shows numbers.
     let cached_counts: Signal<Option<CachedCounts>> = use_signal(CachedCounts::restored);
     use_context_provider(|| cached_counts);
+
+    // Home's hero scope (everyone's counts or the user's own), restored from
+    // the last launch, and the user's counts for it beside the public ones.
+    let count_scope: Signal<CountScope> = use_signal(CountScope::restored);
+    use_context_provider(|| count_scope);
+    let cached_my_counts: Signal<Option<CachedMyCounts>> = use_signal(|| None);
+    use_context_provider(|| cached_my_counts);
 
     // Home's Color map panel: the last summary, kept above the router so a
     // return to Home shows it while the refetch is out (see CachedPlayStyle).
