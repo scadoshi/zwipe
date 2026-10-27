@@ -233,18 +233,18 @@ pub(crate) fn empty_identity_line(identity: &[Color]) -> String {
     format!("No {name} commanders in your top 100")
 }
 
-/// A staple's share of the user's decks for its row header, the percent
-/// rounded half up and then the fraction, "67% · 4/6". With no decks to count
-/// against it is the fraction alone.
-pub(crate) fn staple_share(decks: u32, deck_count: u32) -> String {
+/// A staple's share of the user's decks as its row header's tags, the percent
+/// rounded half up and then the fraction, "67%" and "4/6". With no decks to
+/// count against it is the fraction alone.
+pub(crate) fn staple_share(decks: u32, deck_count: u32) -> Vec<String> {
     let fraction = format!("{decks}/{deck_count}");
     let percent = u64::from(decks)
         .checked_mul(200)
         .and_then(|doubled| doubled.checked_add(u64::from(deck_count)))
         .and_then(|sum| sum.checked_div(u64::from(deck_count).checked_mul(2)?));
     match percent {
-        Some(percent) => format!("{percent}% · {fraction}"),
-        None => fraction,
+        Some(percent) => vec![format!("{percent}%"), fraction],
+        None => vec![fraction],
     }
 }
 
@@ -612,7 +612,7 @@ fn StapleRow(
         CardRow {
             card: staple.card,
             qty: i32::try_from(staple.decks).unwrap_or(i32::MAX),
-            qty_tag: staple_share(staple.decks, deck_count),
+            qty_tags: staple_share(staple.decks, deck_count),
             expanded_card,
             preview_card,
             preview_dismissing,
@@ -1776,12 +1776,12 @@ mod tests {
 
     #[test]
     fn staple_share_rounds_the_percent_and_keeps_the_fraction() {
-        assert_eq!(staple_share(2, 3), "67% · 2/3");
-        assert_eq!(staple_share(4, 6), "67% · 4/6");
-        assert_eq!(staple_share(1, 3), "33% · 1/3");
-        assert_eq!(staple_share(1, 8), "13% · 1/8", "12.5 rounds up");
-        assert_eq!(staple_share(6, 6), "100% · 6/6");
-        assert_eq!(staple_share(2, 0), "2/0", "no decks to count against");
+        assert_eq!(staple_share(2, 3), ["67%", "2/3"]);
+        assert_eq!(staple_share(4, 6), ["67%", "4/6"]);
+        assert_eq!(staple_share(1, 3), ["33%", "1/3"]);
+        assert_eq!(staple_share(1, 8), ["13%", "1/8"], "12.5 rounds up");
+        assert_eq!(staple_share(6, 6), ["100%", "6/6"]);
+        assert_eq!(staple_share(2, 0), ["2/0"], "no decks to count against");
     }
 
     /// A staple as the filter sees it: a name, its type line and its color
