@@ -12,4 +12,9 @@ The changelog no longer shapes the numbers. zite's and the app's Changelog group
 
 History note: numbers through 1.13.0 were chosen under older rules (feature-carrying patches before 1.8.0, then minor bumps sized to keep the per-minor-line changelog tabs balanced). They are not renumbered. The plain rule applies from 1.14.0.
 
-Mechanics stay unchanged: the version lives in the workspace `Cargo.toml` (`[workspace.package]`), bumps at cut time with the changelog move (`UPCOMING` → `RELEASES`, which also gives the release its date), and iOS build numbers / Android versionCodes increment independently per upload (see the submission `history.md` files).
+## At cut time
+
+- Bump the version in the workspace `Cargo.toml` (`[workspace.package]`).
+- Move the changelog block from `UPCOMING` to `RELEASES`, which also gives the release its date.
+- iOS build numbers and Android versionCodes increment on their own per upload (see the submission `history.md` files).
+- Optional: bump zynergy's zwipe-core pin in the same sitting. In the zynergy checkout, run `cargo update -p zwipe-core`, build and test with `--locked`, commit `Cargo.lock` and push, which deploys the synergy worker. Its weekly pin check goes red whenever zwipe-core has moved past the pin, so bumping at each release keeps it green. Check that the shared synergy payload type and `scryfall_data`'s serde fields didn't change shape; a renamed field still compiles but stops matching stored rows.
