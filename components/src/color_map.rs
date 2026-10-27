@@ -677,7 +677,7 @@ async fn center(viewport: std::rc::Rc<MountedData>) {
 /// scrolling, opened on the map's middle. It scrolls in two nested boxes,
 /// up and down in orangui's `scroll-fade-y` and across in its
 /// `scroll-fade-x`, so an edge with more map past it fades out. Under it, a
-/// key of chips gives each color's pip and card count, then the colorless
+/// key of six chips gives every color's pip and card count, zero included, then the colorless
 /// cards, which the map leaves out.
 #[component]
 pub fn ColorMap(counts: ColorMapCounts, seed: u64) -> Element {
@@ -686,10 +686,7 @@ pub fn ColorMap(counts: ColorMapCounts, seed: u64) -> Element {
     let height = f64::from(model.rows) * PITCH_PX;
     let view_box = format!("0 0 {} {}", model.columns, model.rows);
     let (inset, size, corner) = (GAP_SHARE / 2.0, 1.0 - GAP_SHARE, CORNER_SHARE);
-    let key = Color::all()
-        .into_iter()
-        .zip(counts.cards)
-        .filter(|(_, n)| *n > 0);
+    let key = Color::all().into_iter().zip(counts.cards);
     let colorless = counts.colorless;
     rsx! {
         div { class: "color-map",
@@ -737,11 +734,9 @@ pub fn ColorMap(counts: ColorMapCounts, seed: u64) -> Element {
                         "{cards}"
                     }
                 }
-                if colorless > 0 {
-                    span { class: "stat-chip color-map-chip",
-                        i { class: "ms ms-c ms-cost" }
-                        "Colorless {colorless}"
-                    }
+                span { class: "stat-chip color-map-chip",
+                    i { class: "ms ms-c ms-cost" }
+                    "Colorless {colorless}"
                 }
             }
         }
