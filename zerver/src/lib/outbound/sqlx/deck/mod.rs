@@ -930,7 +930,10 @@ impl DeckRepository for Postgres {
         // the first by name when it sits under several. Every other
         // player's swipes on the tag come from the pooled table, which
         // holds the user's too, from every deck; theirs come off, floored at
-        // zero.
+        // zero. The pool is summed once, then read through a lateral
+        // aggregate, one row per tag whatever the plan, so the columns'
+        // nullability reads the same on every database `sqlx prepare
+        // --check` describes it against.
         let excluded = format!("{PROFILE_EXCLUDED_TAG_PREFIX}%");
         let tags = query!(
             r#"WITH tagged AS (
@@ -971,7 +974,12 @@ impl DeckRepository for Postgres {
                       GREATEST(COALESCE(p.maybed, 0) - m.maybed, 0)::int8 AS "all_maybed!",
                       GREATEST(COALESCE(p.removed, 0) - m.removed, 0)::int8 AS "all_removed!"
                FROM mine m
-               LEFT JOIN pooled p USING (tag)"#,
+               CROSS JOIN LATERAL (
+                   SELECT SUM(o.added) AS added, SUM(o.skipped) AS skipped,
+                          SUM(o.maybed) AS maybed, SUM(o.removed) AS removed
+                   FROM pooled o
+                   WHERE o.tag = m.tag
+               ) p"#,
             user_id,
             excluded,
             i64::try_from(ACTIVITY_MIN_SEEN).unwrap_or(i64::MAX),
@@ -995,7 +1003,8 @@ impl DeckRepository for Postgres {
         // swipes are skips, so the user's skip rate is 1 and the lift is the
         // inverse of the others' rate, smoothed toward the overall rate by
         // PASS_BASELINE_WEIGHT dealt cards. A card needs PASS_MIN_SCORE, so
-        // one the others skip about as often takes many skips to show.
+        // one the others skip about as often takes many skips to show. The
+        // pool is read through a lateral aggregate, as the tags' is.
         let passes = query!(
             r#"WITH mine AS (
                    SELECT card_oracle_id,
@@ -1028,7 +1037,11 @@ impl DeckRepository for Postgres {
                           ) AS score
                    FROM mine m
                    CROSS JOIN overall o
-                   LEFT JOIN pooled p USING (card_oracle_id)
+                   CROSS JOIN LATERAL (
+                       SELECT SUM(q.skipped) AS skipped, SUM(q.seen) AS seen
+                       FROM pooled q
+                       WHERE q.card_oracle_id = m.card_oracle_id
+                   ) p
                )
                SELECT card_oracle_id AS "card_oracle_id!",
                       skipped::int8 AS "skipped!",

@@ -1,0 +1,89 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH tagged AS (\n                   SELECT s.commander_oracle_id, s.card_oracle_id, t.tag, MIN(r.role) AS role,\n                          MIN(s.added) AS added, MIN(s.skipped) AS skipped,\n                          MIN(s.maybed) AS maybed, MIN(s.removed) AS removed\n                   FROM user_card_signal s\n                   JOIN latest_cards lc ON lc.oracle_id = s.card_oracle_id\n                   JOIN card_profiles cp ON cp.scryfall_data_id = lc.id\n                   CROSS JOIN LATERAL jsonb_each(COALESCE(cp.oracle_tags_by_role, '{}'::jsonb)) AS r(role, slugs)\n                   CROSS JOIN LATERAL jsonb_array_elements_text(r.slugs) AS t(tag)\n                   WHERE s.user_id = $1 AND t.tag NOT LIKE $2\n                   GROUP BY s.commander_oracle_id, s.card_oracle_id, t.tag\n               ),\n               mine AS (\n                   SELECT tag, MIN(role) AS role,\n                          SUM(added) AS added, SUM(skipped) AS skipped,\n                          SUM(maybed) AS maybed, SUM(removed) AS removed\n                   FROM tagged\n                   GROUP BY tag\n                   HAVING SUM(added + skipped + maybed)::int8 >= $3::int8\n                   ORDER BY SUM(added + skipped + maybed) DESC, tag\n                   LIMIT $4\n               ),\n               pooled AS (\n                   SELECT oracle_tag AS tag,\n                          SUM(added) AS added, SUM(skipped) AS skipped,\n                          SUM(maybed) AS maybed, SUM(removed) AS removed\n                   FROM otag_context_signal\n                   WHERE oracle_tag IN (SELECT tag FROM mine)\n                   GROUP BY oracle_tag\n               )\n               SELECT m.tag AS \"tag!\", m.role AS \"role!\",\n                      m.added::int8 AS \"added!\", m.skipped::int8 AS \"skipped!\",\n                      m.maybed::int8 AS \"maybed!\", m.removed::int8 AS \"removed!\",\n                      GREATEST(COALESCE(p.added, 0) - m.added, 0)::int8 AS \"all_added!\",\n                      GREATEST(COALESCE(p.skipped, 0) - m.skipped, 0)::int8 AS \"all_skipped!\",\n                      GREATEST(COALESCE(p.maybed, 0) - m.maybed, 0)::int8 AS \"all_maybed!\",\n                      GREATEST(COALESCE(p.removed, 0) - m.removed, 0)::int8 AS \"all_removed!\"\n               FROM mine m\n               CROSS JOIN LATERAL (\n                   SELECT SUM(o.added) AS added, SUM(o.skipped) AS skipped,\n                          SUM(o.maybed) AS maybed, SUM(o.removed) AS removed\n                   FROM pooled o\n                   WHERE o.tag = m.tag\n               ) p",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "tag!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "role!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "added!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "skipped!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "maybed!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "removed!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "all_added!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "all_skipped!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "all_maybed!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "all_removed!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "99a549ffcd432ffe093f166d548d5e5ea0b9d032cf76ed678dbf54ddc6d3d09a"
+}
