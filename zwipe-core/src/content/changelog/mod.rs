@@ -44,7 +44,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The changelog's version chips group patches under their minor version",
         "Swiping to add cards shows every recommended card before running out",
         "Card details open in a bottom sheet",
-        "Playstyle",
+        "Playstyle, a new Home screen with your top colors, card roles and suggested commanders",
         "Profile splits into Account and Config",
         "Log out moves to Account",
         "Draw odds' ? sits in its section header",
