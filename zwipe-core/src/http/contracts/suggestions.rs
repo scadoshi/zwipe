@@ -461,9 +461,12 @@ pub const ACTIVITY_DAYS: i64 = 371;
 /// Card roles [`HttpActivity::roles`] carries, the most seen first.
 pub const ACTIVITY_ROLES_SENT: usize = 10;
 
-/// A role needs this many kept and passed cards between them to be sent, so
-/// a role seen twice does not read 100%.
-pub const ACTIVITY_ROLE_MIN_SEEN: u64 = 10;
+/// A role or tag needs this many dealt cards (added, skipped and saved
+/// together) to be sent, so one seen twice does not read 100%.
+pub const ACTIVITY_MIN_SEEN: u64 = 10;
+
+/// Oracle tags [`HttpActivity::tags`] carries, the most seen first.
+pub const ACTIVITY_TAGS_SENT: usize = 100;
 
 /// Most cards [`HttpActivity::passes`] carries.
 pub const ACTIVITY_PASSES_SENT: usize = 10;
@@ -480,9 +483,13 @@ pub struct HttpActivity {
     pub days: Vec<HttpActivityDay>,
     /// Every card swiped on, across all of the user's decks.
     pub outcomes: HttpSwipeOutcomes,
-    /// Kept and passed cards per card role, in decks with a commander, at
+    /// What dealt cards came to per card role, in decks with a commander, at
     /// most [`ACTIVITY_ROLES_SENT`], the most seen first.
-    pub roles: Vec<HttpRoleKeep>,
+    pub roles: Vec<HttpRoleRates>,
+    /// What dealt cards came to per oracle tag under a card role, in decks
+    /// with a commander, with every other player's counts for the same tag,
+    /// at most [`ACTIVITY_TAGS_SENT`], the most seen first.
+    pub tags: Vec<HttpTagRates>,
     /// The cards skipped most and never kept or saved, in decks with a
     /// commander, at most [`ACTIVITY_PASSES_SENT`], the most skipped first.
     pub passes: Vec<HttpHardPass>,
@@ -512,15 +519,27 @@ pub struct HttpSwipeOutcomes {
     pub removed: u64,
 }
 
-/// One card role's kept and passed cards.
+/// What one card role's dealt cards came to.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct HttpRoleKeep {
+pub struct HttpRoleRates {
     /// The card role slug (`CardRole`'s snake_case form).
     pub role: String,
-    /// Cards with the role added to a deck.
-    pub kept: u64,
-    /// Cards with the role skipped.
-    pub passed: u64,
+    /// Its cards' outcomes.
+    pub outcomes: HttpSwipeOutcomes,
+}
+
+/// What one oracle tag's dealt cards came to, for the user and for every
+/// other player.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct HttpTagRates {
+    /// The oracle tag slug.
+    pub tag: String,
+    /// The card role slug it falls under, the first by name when several.
+    pub role: String,
+    /// The user's outcomes on cards with the tag.
+    pub outcomes: HttpSwipeOutcomes,
+    /// Every other player's outcomes on cards with the tag.
+    pub everyone: HttpSwipeOutcomes,
 }
 
 /// A card the user keeps passing on.

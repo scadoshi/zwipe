@@ -144,21 +144,22 @@ async fn activity_reads_the_year_the_outcomes_the_roles_and_the_passes(pool: sql
     assert_eq!(body["outcomes"]["maybed"], 2, "{body}");
     assert_eq!(body["outcomes"]["removed"], 1, "{body}");
 
-    // ramp 8 kept and 3 passed, 11 seen; removal 1 and 9, 10 seen; draw 2
-    // seen, under the floor.
-    let roles: Vec<(&str, u64, u64)> = body["roles"]
+    // ramp 8 added and 3 skipped, 11 seen; removal 1 added, 9 skipped and 1
+    // saved, 11 seen; draw 2 seen, under the floor.
+    let roles: Vec<(&str, u64, u64, u64)> = body["roles"]
         .as_array()
         .unwrap()
         .iter()
         .map(|r| {
             (
                 r["role"].as_str().unwrap(),
-                r["kept"].as_u64().unwrap(),
-                r["passed"].as_u64().unwrap(),
+                r["outcomes"]["added"].as_u64().unwrap(),
+                r["outcomes"]["skipped"].as_u64().unwrap(),
+                r["outcomes"]["maybed"].as_u64().unwrap(),
             )
         })
         .collect();
-    assert_eq!(roles, [("ramp", 8, 3), ("removal", 1, 9)], "{body}");
+    assert_eq!(roles, [("ramp", 8, 3, 0), ("removal", 1, 9, 1)], "{body}");
 
     let passes = body["passes"].as_array().unwrap();
     assert_eq!(
@@ -231,4 +232,66 @@ async fn hard_passes_weigh_skips_against_other_players(pool: sqlx::PgPool) {
         ["Others Keep"],
         "a card everyone skips needs many more skips than six: {body}"
     );
+}
+
+#[sqlx::test]
+async fn tag_rates_count_each_card_once_and_carry_everyone_elses(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("tagger").await;
+    app.verify_email(&uid).await;
+    let user = Uuid::parse_str(&uid).unwrap();
+
+    let rock = card("Plain Rock");
+    let ritual = card("Quick Ritual");
+    let (rock_id, ritual_id) = (rock.oracle_id().unwrap(), ritual.oracle_id().unwrap());
+    let (rock_print, ritual_print) = (rock.id(), ritual.id());
+    seed_cards(&pool, &[rock, ritual]).await;
+    // mana-rock sits under two roles on the rock; cycle- tags never count.
+    for (print, by_role) in [
+        (
+            rock_print,
+            r#"{"ramp": ["mana-rock", "cycle-x"], "tokens": ["mana-rock"]}"#,
+        ),
+        (ritual_print, r#"{"ramp": ["ritual"]}"#),
+    ] {
+        sqlx::query(
+            "UPDATE card_profiles SET oracle_tags_by_role = $2::jsonb WHERE scryfall_data_id = $1",
+        )
+        .bind(print)
+        .bind(by_role)
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+    let commander = Uuid::new_v4();
+    seed_signal(&pool, user, commander, rock_id, (6, 6, 0)).await;
+    seed_signal(&pool, user, commander, ritual_id, (1, 2, 0)).await;
+    sqlx::query(
+        "INSERT INTO otag_context_signal (context_key, oracle_tag, shown, added, skipped)
+         VALUES ('commander:x', 'mana-rock', 40, 26, 14)",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let (status, body) = app.get(PLAYSTYLE_ACTIVITY_ROUTE, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    let tags = body["tags"].as_array().unwrap();
+    assert_eq!(
+        tags.len(),
+        1,
+        "ritual is seen 3 times, under the floor: {body}"
+    );
+    assert_eq!(tags[0]["tag"], "mana-rock", "{body}");
+    assert_eq!(tags[0]["role"], "ramp", "the first role by name: {body}");
+    assert_eq!(
+        tags[0]["outcomes"]["added"], 6,
+        "counted once though under two roles: {body}"
+    );
+    assert_eq!(tags[0]["outcomes"]["skipped"], 6, "{body}");
+    assert_eq!(
+        tags[0]["everyone"]["added"], 20,
+        "the pool less the user's own: {body}"
+    );
+    assert_eq!(tags[0]["everyone"]["skipped"], 8, "{body}");
 }

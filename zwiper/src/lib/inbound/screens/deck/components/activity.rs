@@ -1,6 +1,6 @@
 //! The Playstyle screen's activity: a heatmap of the user's swipes and
-//! searches over the last year, what their swipes came to, the keep rate per
-//! card role, and the cards they keep passing on. The first three are
+//! searches over the last year, what their swipes came to, their rates per
+//! card role and oracle tag, and the cards they keep passing on. The first three are
 //! sections in the profile's accordion; the hard passes are a card group
 //! under Staples in its grammar.
 
@@ -9,8 +9,8 @@ use std::collections::HashMap;
 
 use chrono::{Datelike, Duration, NaiveDate};
 use components::{
-    Bar, BarChart, BarOrientation, ChartTip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit,
-    RoleTags, heat_span, peak_indices, with_separators,
+    Bar, BarChart, BarOrientation, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid,
+    HeatHit, OtagDef, RoleTags, heat_span, peak_indices, with_separators,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -18,8 +18,8 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_role::role_short_label;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::http::contracts::suggestions::{
-    ACTIVITY_DAYS, HttpActivity, HttpActivityDay, HttpHardPass, HttpProfileTag, HttpRoleKeep,
-    HttpSwipeOutcomes,
+    ACTIVITY_DAYS, HttpActivity, HttpActivityDay, HttpHardPass, HttpRoleRates, HttpSwipeOutcomes,
+    HttpTagRates,
 };
 
 use super::collapsible_section::CollapsibleSection;
@@ -28,14 +28,13 @@ use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::screens::deck::card::components::card_row::{
     CardRow, OtagDescribe, OtagExamplesOpen,
 };
-use crate::inbound::screens::deck::suggested_commanders::role_tags;
 
 /// The accordion title of the heatmap section.
 pub(crate) const ACTIVITY_TITLE: &str = "Activity";
 /// The accordion title of the swipe outcomes section.
 const SWIPES_TITLE: &str = "Swipes";
-/// The accordion title of the keep rate section.
-const KEEP_RATE_TITLE: &str = "Keep rate";
+/// The accordion title of the rates section.
+const RATES_TITLE: &str = "Rates";
 /// The hard passes group's header.
 const PASSES_TITLE: &str = "Hard passes";
 
@@ -219,20 +218,83 @@ fn has_outcomes(outcomes: &HttpSwipeOutcomes) -> bool {
     outcomes.added > 0 || outcomes.skipped > 0 || outcomes.maybed > 0 || outcomes.removed > 0
 }
 
-/// A role's kept cards as a whole percent of those it was dealt.
-fn keep_rate(role: &HttpRoleKeep) -> u32 {
-    let seen = role.kept.saturating_add(role.passed);
-    if seen == 0 {
-        return 0;
-    }
-    u32::try_from(role.kept.saturating_mul(100) / seen).unwrap_or(100)
+/// Which share of dealt cards the Rates section shows, picked from its
+/// chip row.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RateKind {
+    /// Added to a deck.
+    Added,
+    /// Skipped.
+    Skipped,
+    /// Saved to a maybeboard.
+    Maybed,
+    /// Added and later taken out.
+    Removed,
 }
 
-/// One row per role, labeled like the Card roles chart, its bar and count
-/// the keep rate, highest first and then in the server's order. A role with
-/// any of `tags` under it reveals them, as on the Card roles chart.
-fn keep_rate_bars(roles: &[HttpRoleKeep], tags: &[HttpProfileTag]) -> Vec<Bar> {
-    let mut rated: Vec<(&HttpRoleKeep, u32)> = roles.iter().map(|r| (r, keep_rate(r))).collect();
+impl RateKind {
+    /// The chip row's order.
+    const ALL: [Self; 4] = [Self::Added, Self::Skipped, Self::Maybed, Self::Removed];
+
+    /// The chip's label, the Swipes section's column name.
+    fn label(self) -> &'static str {
+        match self {
+            Self::Added => "Added",
+            Self::Skipped => "Skipped",
+            Self::Maybed => "Maybeboard",
+            Self::Removed => "Removed",
+        }
+    }
+
+    /// The outcome counted and what it is a share of: the cards dealt, or
+    /// for Removed the cards added.
+    fn parts(self, outcomes: &HttpSwipeOutcomes) -> (u64, u64) {
+        let dealt = outcomes
+            .added
+            .saturating_add(outcomes.skipped)
+            .saturating_add(outcomes.maybed);
+        match self {
+            Self::Added => (outcomes.added, dealt),
+            Self::Skipped => (outcomes.skipped, dealt),
+            Self::Maybed => (outcomes.maybed, dealt),
+            Self::Removed => (outcomes.removed.min(outcomes.added), outcomes.added),
+        }
+    }
+
+    /// The share as a whole percent, rounded down; `None` with nothing to
+    /// take a share of.
+    fn percent(self, outcomes: &HttpSwipeOutcomes) -> Option<u32> {
+        let (count, of) = self.parts(outcomes);
+        (of > 0).then(|| u32::try_from(count.saturating_mul(100) / of).unwrap_or(100))
+    }
+}
+
+/// How many cards' worth of the overall rate a tag's rate among other
+/// players starts from, so a tag few others have been dealt sits near the
+/// overall rate. The server's hard passes weigh the same way.
+const TAG_BASELINE_WEIGHT: f64 = 10.0;
+
+/// The lift a tag needs to be shown: the user's count times the log of how
+/// much their rate exceeds other players'. A tag others pass on as often
+/// takes many more cards to get there.
+const TAG_MIN_SCORE: f64 = 1.0;
+
+/// Rows on the Oracle tags chart.
+const TAG_ROWS: usize = 10;
+
+/// A count as a float, capped at `u32::MAX`, far past any real count.
+fn float(n: u64) -> f64 {
+    f64::from(u32::try_from(n).unwrap_or(u32::MAX))
+}
+
+/// One row per role with a share to take, labeled like the Card roles
+/// chart, its bar and count the share as a percent, highest first and then
+/// in the server's order. A role with any of `tags` under it reveals them.
+fn role_rate_bars(kind: RateKind, roles: &[HttpRoleRates], tags: &[HttpTagRates]) -> Vec<Bar> {
+    let mut rated: Vec<(&HttpRoleRates, u32)> = roles
+        .iter()
+        .filter_map(|r| kind.percent(&r.outcomes).map(|rate| (r, rate)))
+        .collect();
     rated.sort_by_key(|(_, rate)| Reverse(*rate));
     rated
         .into_iter()
@@ -241,9 +303,64 @@ fn keep_rate_bars(roles: &[HttpRoleKeep], tags: &[HttpProfileTag]) -> Vec<Bar> {
             label: role_short_label(&role.role),
             count: usize::try_from(rate).unwrap_or(100),
             pct: rate,
-            revealable: tags
-                .iter()
-                .any(|t| t.role.as_deref() == Some(role.role.as_str())),
+            revealable: tags.iter().any(|t| t.role == role.role),
+        })
+        .collect()
+}
+
+/// Other players' share across every tag sent, the rate a tag few of them
+/// have been dealt starts from. Even odds with nothing to go on.
+fn baseline(kind: RateKind, tags: &[HttpTagRates]) -> f64 {
+    let (count, of) = tags.iter().fold((0u64, 0u64), |(count, of), t| {
+        let (c, o) = kind.parts(&t.everyone);
+        (count.saturating_add(c), of.saturating_add(o))
+    });
+    if of == 0 {
+        0.5
+    } else {
+        float(count) / float(of)
+    }
+}
+
+/// How much a tag's share stands out for the user: their count times the
+/// log of their rate over other players', the others' rate smoothed toward
+/// `baseline` by [`TAG_BASELINE_WEIGHT`] cards. `None` when the user's rate
+/// is no higher.
+fn lift_score(kind: RateKind, tag: &HttpTagRates, baseline: f64) -> Option<f64> {
+    let (count, of) = kind.parts(&tag.outcomes);
+    if count == 0 || of == 0 {
+        return None;
+    }
+    let (theirs, their_of) = kind.parts(&tag.everyone);
+    let mine = float(count) / float(of);
+    let others =
+        (float(theirs) + TAG_BASELINE_WEIGHT * baseline) / (float(their_of) + TAG_BASELINE_WEIGHT);
+    (others > 0.0 && mine > others).then(|| float(count) * (mine / others).ln())
+}
+
+/// The [`TAG_ROWS`] tags whose share stands out most from other players',
+/// each at [`TAG_MIN_SCORE`] or more, most first, labeled by slug, the bar
+/// and count the user's own share as a percent.
+fn tag_rate_bars(kind: RateKind, tags: &[HttpTagRates]) -> Vec<Bar> {
+    let base = baseline(kind, tags);
+    let mut scored: Vec<(&HttpTagRates, f64)> = tags
+        .iter()
+        .filter_map(|t| lift_score(kind, t, base).map(|score| (t, score)))
+        .filter(|(_, score)| *score >= TAG_MIN_SCORE)
+        .collect();
+    scored.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.tag.cmp(&b.0.tag)));
+    scored
+        .into_iter()
+        .take(TAG_ROWS)
+        .filter_map(|(tag, _)| {
+            let rate = kind.percent(&tag.outcomes)?;
+            Some(Bar {
+                key: tag.tag.clone(),
+                label: tag.tag.clone(),
+                count: usize::try_from(rate).unwrap_or(100),
+                pct: rate,
+                revealable: true,
+            })
         })
         .collect()
 }
@@ -328,15 +445,16 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
 
 /// The activity's three sections in the profile's accordion: Activity, the
 /// year's heatmap with its totals under it; Swipes, what the user's swipes
-/// came to as columns; Keep rate, the share of each card role's dealt cards
-/// they added, as rows with role chips that reveal the profile's oracle
-/// `tags` under each role, one row at a time, as the Card roles chart does.
-/// Each is left out when it has nothing to show. The heatmap mounts afresh
-/// each time its section opens, so its sweep plays in view.
+/// came to as columns; Rates, a chip row picking Added, Skipped, Maybeboard
+/// or Removed over two charts of that share, Card roles with role chips
+/// revealing the oracle tags swiped under each, and Oracle tags with the
+/// tags that stand out most from other players, each revealing its
+/// description. Each section is left out when it has nothing to show. The
+/// heatmap mounts afresh each time its section opens, so its sweep plays in
+/// view.
 #[component]
 pub(crate) fn ActivitySections(
     activity: HttpActivity,
-    tags: Vec<HttpProfileTag>,
     open_section: Signal<Option<String>>,
 ) -> Element {
     let open = open_section().as_deref() == Some(ACTIVITY_TITLE);
@@ -347,16 +465,30 @@ pub(crate) fn ActivitySections(
             opens.set(next);
         }
     }));
+    let mut kind = use_signal(|| RateKind::Added);
     let has_days = !activity.days.is_empty();
     let outcomes = activity.outcomes;
-    let keep = keep_rate_bars(&activity.roles, &tags);
+    let swipe_tags = activity.tags.clone();
+    let role_bars = role_rate_bars(kind(), &activity.roles, &activity.tags);
+    let tag_bars = tag_rate_bars(kind(), &activity.tags);
+    let has_rates = !activity.roles.is_empty() || !activity.tags.is_empty();
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
+    let mut selected_tag: Signal<Option<String>> = use_signal(|| None);
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let role_reveal = use_callback(move |role: String| {
-        let tags = role_tags(&tags, &role);
+        let tags: Vec<String> = swipe_tags
+            .iter()
+            .filter(|t| t.role == role)
+            .map(|t| t.tag.clone())
+            .collect();
         rsx! {
             RoleTags { tags, describe_tag, on_examples }
+        }
+    });
+    let tag_reveal = use_callback(move |slug: String| {
+        rsx! {
+            OtagDef { slug, describe_tag, on_examples }
         }
     });
     let toggle_role = use_callback(move |key: String| {
@@ -364,6 +496,13 @@ pub(crate) fn ActivitySections(
             selected_role.set(None);
         } else {
             selected_role.set(Some(key));
+        }
+    });
+    let toggle_tag = use_callback(move |key: String| {
+        if selected_tag().as_deref() == Some(key.as_str()) {
+            selected_tag.set(None);
+        } else {
+            selected_tag.set(Some(key));
         }
     });
     rsx! {
@@ -394,20 +533,50 @@ pub(crate) fn ActivitySections(
                 BarChart { bars: outcome_bars(&outcomes) }
             }
         }
-        if !keep.is_empty() {
+        if has_rates {
             CollapsibleSection {
-                title: KEEP_RATE_TITLE,
+                title: RATES_TITLE,
                 open_section,
                 header_accessory: rsx! {
-                    InfoButton { topic: HintTopic::KeepRate }
+                    InfoButton { topic: HintTopic::Rates }
                 },
-                BarChart {
-                    bars: keep,
-                    orientation: BarOrientation::Horizontal,
-                    on_bar: toggle_role,
-                    selected: selected_role(),
-                    reveal: role_reveal,
-                    count_suffix: "%",
+                div { class: "activity-rates",
+                    div { class: "chip-row activity-rate-chips",
+                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Rate" }
+                        for choice in RateKind::ALL {
+                            Chip {
+                                key: "{choice.label()}",
+                                selected: kind() == choice,
+                                onclick: move |_| kind.set(choice),
+                                "{choice.label()}"
+                            }
+                        }
+                    }
+                    if role_bars.is_empty() && tag_bars.is_empty() {
+                        div { class: "activity-total", "Nothing to show for this rate yet" }
+                    }
+                    if !role_bars.is_empty() {
+                        BarChart {
+                            label: "Card roles",
+                            bars: role_bars,
+                            orientation: BarOrientation::Horizontal,
+                            on_bar: toggle_role,
+                            selected: selected_role(),
+                            reveal: role_reveal,
+                            count_suffix: "%",
+                        }
+                    }
+                    if !tag_bars.is_empty() {
+                        BarChart {
+                            label: "Oracle tags",
+                            bars: tag_bars,
+                            orientation: BarOrientation::Horizontal,
+                            on_bar: toggle_tag,
+                            selected: selected_tag(),
+                            reveal: tag_reveal,
+                            count_suffix: "%",
+                        }
+                    }
                 }
             }
         }
@@ -580,42 +749,112 @@ mod tests {
         );
     }
 
+    fn outcomes(added: u64, skipped: u64, maybed: u64, removed: u64) -> HttpSwipeOutcomes {
+        HttpSwipeOutcomes {
+            added,
+            skipped,
+            maybed,
+            removed,
+        }
+    }
+
+    fn tag(
+        slug: &str,
+        role: &str,
+        mine: HttpSwipeOutcomes,
+        everyone: HttpSwipeOutcomes,
+    ) -> HttpTagRates {
+        HttpTagRates {
+            tag: slug.to_string(),
+            role: role.to_string(),
+            outcomes: mine,
+            everyone,
+        }
+    }
+
     #[test]
-    fn keep_rate_rounds_down_and_sorts_highest_first() {
-        let role = |slug: &str, kept, passed| HttpRoleKeep {
-            role: slug.to_string(),
-            kept,
-            passed,
-        };
-        let bars = keep_rate_bars(&[role("ramp", 1, 2), role("removal", 9, 1)], &[]);
-        let rates: Vec<(String, usize)> = bars.into_iter().map(|b| (b.key, b.count)).collect();
+    fn removed_is_a_share_of_the_added_cards_and_the_rest_of_the_dealt() {
+        let o = outcomes(4, 5, 1, 1);
+        assert_eq!(RateKind::Added.percent(&o), Some(40));
+        assert_eq!(RateKind::Skipped.percent(&o), Some(50));
+        assert_eq!(RateKind::Maybed.percent(&o), Some(10));
+        assert_eq!(RateKind::Removed.percent(&o), Some(25));
         assert_eq!(
-            rates,
-            [("removal".to_string(), 90), ("ramp".to_string(), 33)]
+            RateKind::Removed.percent(&outcomes(0, 9, 0, 0)),
+            None,
+            "nothing added"
         );
     }
 
     #[test]
-    fn a_keep_rate_role_reveals_only_when_the_profile_has_its_tags() {
-        let role = |slug: &str| HttpRoleKeep {
+    fn role_rates_sort_highest_first_and_reveal_only_swiped_tags() {
+        let role = |slug: &str, o| HttpRoleRates {
             role: slug.to_string(),
-            kept: 5,
-            passed: 5,
+            outcomes: o,
         };
-        let tags = [HttpProfileTag {
-            slug: "mana-rock".to_string(),
-            role: Some("ramp".to_string()),
-            decks: 1,
-            cards: 1,
-            score: 1.0,
-        }];
-        let bars = keep_rate_bars(&[role("ramp"), role("draw")], &tags);
-        let revealable: Vec<(String, bool)> =
-            bars.into_iter().map(|b| (b.key, b.revealable)).collect();
-        assert_eq!(
-            revealable,
-            [("ramp".to_string(), true), ("draw".to_string(), false)]
+        let swiped = [tag(
+            "mana-rock",
+            "ramp",
+            outcomes(5, 5, 0, 0),
+            outcomes(0, 0, 0, 0),
+        )];
+        let bars = role_rate_bars(
+            RateKind::Added,
+            &[
+                role("ramp", outcomes(1, 2, 0, 0)),
+                role("removal", outcomes(9, 1, 0, 0)),
+            ],
+            &swiped,
         );
+        let rows: Vec<(String, usize, bool)> = bars
+            .into_iter()
+            .map(|b| (b.key, b.count, b.revealable))
+            .collect();
+        assert_eq!(
+            rows,
+            [
+                ("removal".to_string(), 90, false),
+                ("ramp".to_string(), 33, true)
+            ]
+        );
+    }
+
+    #[test]
+    fn a_tag_everyone_passes_on_needs_far_more_skips_than_one_others_keep() {
+        let common = tag(
+            "generic",
+            "ramp",
+            outcomes(1, 9, 0, 0),
+            outcomes(10, 90, 0, 0),
+        );
+        let standout = tag(
+            "mana-rock",
+            "ramp",
+            outcomes(1, 9, 0, 0),
+            outcomes(80, 20, 0, 0),
+        );
+        let bars = tag_rate_bars(RateKind::Skipped, &[common, standout]);
+        let keys: Vec<String> = bars.into_iter().map(|b| b.key).collect();
+        assert_eq!(
+            keys,
+            ["mana-rock"],
+            "skipping what everyone skips is no news"
+        );
+    }
+
+    #[test]
+    fn the_tag_chart_shows_at_most_its_rows() {
+        let tags: Vec<HttpTagRates> = (0..20)
+            .map(|i| {
+                tag(
+                    &format!("t{i:02}"),
+                    "ramp",
+                    outcomes(0, 20, 0, 0),
+                    outcomes(90, 10, 0, 0),
+                )
+            })
+            .collect();
+        assert_eq!(tag_rate_bars(RateKind::Skipped, &tags).len(), TAG_ROWS);
     }
 
     #[test]

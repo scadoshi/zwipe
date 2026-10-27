@@ -92,8 +92,8 @@ pub enum HintTopic {
     Activity,
     /// Playstyle: the Swipes section's outcome columns.
     SwipeOutcomes,
-    /// Playstyle: the Keep rate section's role rows.
-    KeepRate,
+    /// Playstyle: the Rates section's chip row and charts.
+    Rates,
     /// Playstyle: the Hard passes group.
     HardPasses,
 }
@@ -139,7 +139,7 @@ impl HintTopic {
             Self::SuggestionStaples => "Staples",
             Self::Activity => "Activity",
             Self::SwipeOutcomes => "Swipes",
-            Self::KeepRate => "Keep rate",
+            Self::Rates => "Rates",
             Self::HardPasses => "Hard passes",
         }
     }
@@ -303,11 +303,12 @@ impl HintTopic {
                     HintBullet { "Added and Maybeboard are cards you kept, Skipped ones you passed on, and Removed ones you later took out" }
                 }
             },
-            Self::KeepRate => rsx! {
+            Self::Rates => rsx! {
                 HintBullets {
-                    HintBullet { "How often you add a card of each role when it's dealt" }
-                    HintBullet { "From your decks with a commander, for roles you've seen at least 10 times" }
-                    HintBullet { "Tap a role to see its tags from your decks" }
+                    HintBullet { "Pick a rate. Added, Skipped and Maybeboard are shares of the cards dealt to you, and Removed is the share of added cards you later took out" }
+                    HintBullet { "Card roles shows your rate for each role. Tap one to see the tags you swiped under it" }
+                    HintBullet { "Oracle tags shows where your rate stands out most from other players'. A tag everyone passes on shows only after a lot of skips" }
+                    HintBullet { "From your decks with a commander, for roles and tags dealt at least 10 times" }
                 }
             },
             Self::HardPasses => rsx! {

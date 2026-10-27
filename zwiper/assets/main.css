@@ -3867,6 +3867,17 @@ button {
     max-width: none;
 }
 
+/* The Rates section: its chip row inset like the charts under it. */
+.activity-rates {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.activity-rate-chips {
+    padding: 0 0.75rem;
+}
+
 /* The year's totals under the grid. */
 .activity-total {
     padding: 0.5rem 0.75rem 0;

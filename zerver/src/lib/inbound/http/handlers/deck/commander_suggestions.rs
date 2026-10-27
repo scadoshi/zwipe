@@ -8,12 +8,13 @@ use zwipe_core::http::contracts::suggestions::{
     DEFAULT_SUGGESTION_LIMIT, HttpActivity, HttpActivityDay, HttpBuilderProfile,
     HttpClearedDismissals, HttpColorAffinity, HttpColorCards, HttpColorIdentityCount, HttpColorMap,
     HttpColorPair, HttpCommanderSuggestion, HttpCommanderSuggestions, HttpDismissCommander,
-    HttpHardPass, HttpPlayStyleSummary, HttpProfileRole, HttpProfileTag, HttpRoleKeep,
-    HttpSharedTag, HttpStaple, HttpSuggestionReasons, HttpSwipeOutcomes, MAX_SUGGESTION_LIMIT,
+    HttpHardPass, HttpPlayStyleSummary, HttpProfileRole, HttpProfileTag, HttpRoleRates,
+    HttpSharedTag, HttpStaple, HttpSuggestionReasons, HttpSwipeOutcomes, HttpTagRates,
+    MAX_SUGGESTION_LIMIT,
 };
 
 use crate::domain::deck::models::deck::activity::{
-    Activity, ActivityDay, HardPass, RoleKeep, SwipeOutcomes,
+    Activity, ActivityDay, HardPass, RoleRates, SwipeOutcomes, TagRates,
 };
 use crate::domain::deck::models::deck::commander_suggestions::{
     BuilderProfile, ColorAffinity, ColorIdentityCount, ColorMap, CommanderDismissal,
@@ -79,7 +80,8 @@ impl From<Activity> for HttpActivity {
             through: value.through,
             days: value.days.into_iter().map(HttpActivityDay::from).collect(),
             outcomes: value.outcomes.into(),
-            roles: value.roles.into_iter().map(HttpRoleKeep::from).collect(),
+            roles: value.roles.into_iter().map(HttpRoleRates::from).collect(),
+            tags: value.tags.into_iter().map(HttpTagRates::from).collect(),
             passes: value.passes.into_iter().map(HttpHardPass::from).collect(),
         }
     }
@@ -106,12 +108,22 @@ impl From<SwipeOutcomes> for HttpSwipeOutcomes {
     }
 }
 
-impl From<RoleKeep> for HttpRoleKeep {
-    fn from(value: RoleKeep) -> Self {
+impl From<RoleRates> for HttpRoleRates {
+    fn from(value: RoleRates) -> Self {
         Self {
             role: value.role,
-            kept: value.kept,
-            passed: value.passed,
+            outcomes: value.outcomes.into(),
+        }
+    }
+}
+
+impl From<TagRates> for HttpTagRates {
+    fn from(value: TagRates) -> Self {
+        Self {
+            tag: value.tag,
+            role: value.role,
+            outcomes: value.outcomes.into(),
+            everyone: value.everyone.into(),
         }
     }
 }

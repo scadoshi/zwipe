@@ -769,6 +769,7 @@ where
             days: counts.days,
             outcomes: counts.outcomes,
             roles: activity::rank_roles(counts.roles),
+            tags: activity::rank_tags(counts.tags),
             passes,
         })
     }

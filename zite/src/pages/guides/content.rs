@@ -662,7 +662,7 @@ pub static GUIDES: &[Guide] = &[
             Block::Bullets(&[
                 "Activity is a heatmap of the last year, a square per day, darker the more you swiped and searched. Your biggest days are lit. Tap a square for its counts.",
                 "Swipes shows what the cards dealt to your decks came to: added, skipped, saved to a maybeboard, or added and later removed.",
-                "Keep rate shows how often you add a card of each role when it's dealt, like 40% of ramp and 8% of counterspells. It reads your decks with a commander, for roles you've seen at least 10 times. Tap a role to see its tags, the same as Card roles.",
+                "Rates has a chip row to pick a rate: Added, Skipped and Maybeboard are shares of the cards dealt to you, and Removed is the share of cards you added and later took out. Card roles shows your rate for each role. Tap one to see the tags you swiped under it. Oracle tags lists the tags where your rate stands out most from other players', so a tag everyone passes on only shows up after a lot of skips. Both read your decks with a commander, for roles and tags dealt at least 10 times.",
                 "Hard passes lists cards you skip and never add or save, with how many times you skipped each. It weighs your skips against other players', so a card most people pass on only shows up after a lot of skips, while one they usually keep shows up after two.",
             ]),
             Block::H2("Why this commander"),

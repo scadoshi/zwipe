@@ -1,0 +1,51 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT r.role AS \"role!\",\n                      SUM(s.added)::int8 AS \"added!\",\n                      SUM(s.skipped)::int8 AS \"skipped!\",\n                      SUM(s.maybed)::int8 AS \"maybed!\",\n                      SUM(s.removed)::int8 AS \"removed!\"\n               FROM user_card_signal s\n               JOIN latest_cards lc ON lc.oracle_id = s.card_oracle_id\n               JOIN card_profiles cp ON cp.scryfall_data_id = lc.id\n               CROSS JOIN LATERAL jsonb_array_elements_text(COALESCE(cp.card_roles, '[]'::jsonb)) AS r(role)\n               WHERE s.user_id = $1\n               GROUP BY r.role\n               HAVING SUM(s.added + s.skipped + s.maybed) > 0",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "role!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "added!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "skipped!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "maybed!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "removed!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "4caa4a1b6e97bf04996e83fe59471589ef3d45060c5955c96dd136a5e97040c9"
+}

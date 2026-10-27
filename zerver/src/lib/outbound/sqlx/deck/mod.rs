@@ -20,12 +20,15 @@ use zwipe_core::domain::deck::requests::get_deck_profiles::GetDeckProfiles;
 use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_card::UpdateDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_profile::UpdateDeckProfile;
+use zwipe_core::domain::deck::tag_profile::PROFILE_EXCLUDED_TAG_PREFIX;
 use zwipe_core::domain::deck::{Board, DeckCard, DeckName, DeckOtherTag, DeckTag};
-use zwipe_core::http::contracts::suggestions::{ACTIVITY_DAYS, ACTIVITY_PASSES_SENT};
+use zwipe_core::http::contracts::suggestions::{
+    ACTIVITY_DAYS, ACTIVITY_MIN_SEEN, ACTIVITY_PASSES_SENT, ACTIVITY_TAGS_SENT,
+};
 
 use crate::domain::deck::models::deck::activity::{
-    ActivityCounts, ActivityDay, PASS_BASELINE_WEIGHT, PASS_MIN_SCORE, PassCount, RoleKeep,
-    SwipeOutcomes,
+    ActivityCounts, ActivityDay, PASS_BASELINE_WEIGHT, PASS_MIN_SCORE, PassCount, RoleRates,
+    SwipeOutcomes, TagRates,
 };
 use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError;
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
@@ -901,25 +904,88 @@ impl DeckRepository for Postgres {
         .map_err(db)?;
         let roles = query!(
             r#"SELECT r.role AS "role!",
-                      SUM(s.added)::int8 AS "kept!",
-                      SUM(s.skipped)::int8 AS "passed!"
+                      SUM(s.added)::int8 AS "added!",
+                      SUM(s.skipped)::int8 AS "skipped!",
+                      SUM(s.maybed)::int8 AS "maybed!",
+                      SUM(s.removed)::int8 AS "removed!"
                FROM user_card_signal s
                JOIN latest_cards lc ON lc.oracle_id = s.card_oracle_id
                JOIN card_profiles cp ON cp.scryfall_data_id = lc.id
                CROSS JOIN LATERAL jsonb_array_elements_text(COALESCE(cp.card_roles, '[]'::jsonb)) AS r(role)
                WHERE s.user_id = $1
                GROUP BY r.role
-               HAVING SUM(s.added) + SUM(s.skipped) > 0"#,
+               HAVING SUM(s.added + s.skipped + s.maybed) > 0"#,
             user_id,
         )
         .fetch_all(&mut *tx)
         .await
         .map_err(db)?
         .into_iter()
-        .map(|row| RoleKeep {
+        .map(|row| RoleRates {
             role: row.role,
-            kept: u64::try_from(row.kept).unwrap_or(0),
-            passed: u64::try_from(row.passed).unwrap_or(0),
+            outcomes: outcomes_of(row.added, row.skipped, row.maybed, row.removed),
+        })
+        .collect();
+        // Each signal row counts once per tag under a role, the tag's role
+        // the first by name when it sits under several. Every other
+        // player's swipes on the tag come from the pooled table, which
+        // holds the user's too, from every deck; theirs come off, floored at
+        // zero.
+        let excluded = format!("{PROFILE_EXCLUDED_TAG_PREFIX}%");
+        let tags = query!(
+            r#"WITH tagged AS (
+                   SELECT s.commander_oracle_id, s.card_oracle_id, t.tag, MIN(r.role) AS role,
+                          MIN(s.added) AS added, MIN(s.skipped) AS skipped,
+                          MIN(s.maybed) AS maybed, MIN(s.removed) AS removed
+                   FROM user_card_signal s
+                   JOIN latest_cards lc ON lc.oracle_id = s.card_oracle_id
+                   JOIN card_profiles cp ON cp.scryfall_data_id = lc.id
+                   CROSS JOIN LATERAL jsonb_each(COALESCE(cp.oracle_tags_by_role, '{}'::jsonb)) AS r(role, slugs)
+                   CROSS JOIN LATERAL jsonb_array_elements_text(r.slugs) AS t(tag)
+                   WHERE s.user_id = $1 AND t.tag NOT LIKE $2
+                   GROUP BY s.commander_oracle_id, s.card_oracle_id, t.tag
+               ),
+               mine AS (
+                   SELECT tag, MIN(role) AS role,
+                          SUM(added) AS added, SUM(skipped) AS skipped,
+                          SUM(maybed) AS maybed, SUM(removed) AS removed
+                   FROM tagged
+                   GROUP BY tag
+                   HAVING SUM(added + skipped + maybed)::int8 >= $3::int8
+                   ORDER BY SUM(added + skipped + maybed) DESC, tag
+                   LIMIT $4
+               ),
+               pooled AS (
+                   SELECT oracle_tag AS tag,
+                          SUM(added) AS added, SUM(skipped) AS skipped,
+                          SUM(maybed) AS maybed, SUM(removed) AS removed
+                   FROM otag_context_signal
+                   WHERE oracle_tag IN (SELECT tag FROM mine)
+                   GROUP BY oracle_tag
+               )
+               SELECT m.tag AS "tag!", m.role AS "role!",
+                      m.added::int8 AS "added!", m.skipped::int8 AS "skipped!",
+                      m.maybed::int8 AS "maybed!", m.removed::int8 AS "removed!",
+                      GREATEST(COALESCE(p.added, 0) - m.added, 0)::int8 AS "all_added!",
+                      GREATEST(COALESCE(p.skipped, 0) - m.skipped, 0)::int8 AS "all_skipped!",
+                      GREATEST(COALESCE(p.maybed, 0) - m.maybed, 0)::int8 AS "all_maybed!",
+                      GREATEST(COALESCE(p.removed, 0) - m.removed, 0)::int8 AS "all_removed!"
+               FROM mine m
+               LEFT JOIN pooled p USING (tag)"#,
+            user_id,
+            excluded,
+            i64::try_from(ACTIVITY_MIN_SEEN).unwrap_or(i64::MAX),
+            i64::try_from(ACTIVITY_TAGS_SENT).unwrap_or(i64::MAX),
+        )
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(db)?
+        .into_iter()
+        .map(|row| TagRates {
+            tag: row.tag,
+            role: row.role,
+            outcomes: outcomes_of(row.added, row.skipped, row.maybed, row.removed),
+            everyone: outcomes_of(row.all_added, row.all_skipped, row.all_maybed, row.all_removed),
         })
         .collect();
         // Skipped more than once and never added or saved, under any
@@ -990,13 +1056,14 @@ impl DeckRepository for Postgres {
         Ok(ActivityCounts {
             through,
             days,
-            outcomes: SwipeOutcomes {
-                added: u64::try_from(outcomes.added).unwrap_or(0),
-                skipped: u64::try_from(outcomes.skipped).unwrap_or(0),
-                maybed: u64::try_from(outcomes.maybed).unwrap_or(0),
-                removed: u64::try_from(outcomes.removed).unwrap_or(0),
-            },
+            outcomes: outcomes_of(
+                outcomes.added,
+                outcomes.skipped,
+                outcomes.maybed,
+                outcomes.removed,
+            ),
             roles,
+            tags,
             passes,
         })
     }
@@ -1323,6 +1390,17 @@ impl DeckRepository for Postgres {
         .fetch_optional(&self.pool)
         .await?;
         Ok(row.map(|r| (r.id, r.user_id)))
+    }
+}
+
+/// Four database sums as outcomes, each 0 below zero.
+fn outcomes_of(added: i64, skipped: i64, maybed: i64, removed: i64) -> SwipeOutcomes {
+    let count = |n: i64| u64::try_from(n).unwrap_or(0);
+    SwipeOutcomes {
+        added: count(added),
+        skipped: count(skipped),
+        maybed: count(maybed),
+        removed: count(removed),
     }
 }
 

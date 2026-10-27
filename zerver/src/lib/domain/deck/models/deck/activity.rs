@@ -4,7 +4,9 @@
 use chrono::NaiveDate;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::http::contracts::suggestions::{ACTIVITY_ROLE_MIN_SEEN, ACTIVITY_ROLES_SENT};
+use zwipe_core::http::contracts::suggestions::{
+    ACTIVITY_MIN_SEEN, ACTIVITY_ROLES_SENT, ACTIVITY_TAGS_SENT,
+};
 
 /// How many dealt cards' worth of the overall skip rate a card's baseline
 /// starts from before other players' swipes on it count. A card few others
@@ -40,22 +42,37 @@ pub struct SwipeOutcomes {
     pub removed: u64,
 }
 
-/// One card role's kept and passed cards, in decks with a commander.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RoleKeep {
-    /// The card role slug.
-    pub role: String,
-    /// Cards with the role added to a deck.
-    pub kept: u64,
-    /// Cards with the role skipped.
-    pub passed: u64,
+impl SwipeOutcomes {
+    /// Cards dealt and acted on: added, skipped and saved together.
+    #[must_use]
+    pub fn seen(&self) -> u64 {
+        self.added
+            .saturating_add(self.skipped)
+            .saturating_add(self.maybed)
+    }
 }
 
-impl RoleKeep {
-    /// Kept and passed together.
-    fn seen(&self) -> u64 {
-        self.kept.saturating_add(self.passed)
-    }
+/// What one card role's dealt cards came to, in decks with a commander.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RoleRates {
+    /// The card role slug.
+    pub role: String,
+    /// Its cards' outcomes.
+    pub outcomes: SwipeOutcomes,
+}
+
+/// What one oracle tag's dealt cards came to, for the user and every other
+/// player, in decks with a commander.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TagRates {
+    /// The oracle tag slug.
+    pub tag: String,
+    /// The card role it falls under, the first by name when several.
+    pub role: String,
+    /// The user's outcomes on cards with the tag.
+    pub outcomes: SwipeOutcomes,
+    /// Every other player's outcomes on cards with the tag.
+    pub everyone: SwipeOutcomes,
 }
 
 /// A card skipped and never kept or saved, before its card is fetched. The
@@ -82,8 +99,10 @@ pub struct ActivityCounts {
     pub days: Vec<ActivityDay>,
     /// Every card swiped on.
     pub outcomes: SwipeOutcomes,
-    /// Every role with a kept or passed card, in any order.
-    pub roles: Vec<RoleKeep>,
+    /// Every role with a dealt card, in any order.
+    pub roles: Vec<RoleRates>,
+    /// Every tag under a role with a dealt card, in any order.
+    pub tags: Vec<TagRates>,
     /// The most skipped cards never kept or saved, the most skipped first.
     pub passes: Vec<PassCount>,
 }
@@ -109,31 +128,68 @@ pub struct Activity {
     /// Every card swiped on.
     pub outcomes: SwipeOutcomes,
     /// The roles [`rank_roles`] keeps.
-    pub roles: Vec<RoleKeep>,
+    pub roles: Vec<RoleRates>,
+    /// The tags [`rank_tags`] keeps.
+    pub tags: Vec<TagRates>,
     /// The hard passes, the most skipped first.
     pub passes: Vec<HardPass>,
 }
 
-/// The roles worth a keep rate: each seen at least [`ACTIVITY_ROLE_MIN_SEEN`]
-/// times, the [`ACTIVITY_ROLES_SENT`] most seen, most seen first and then by
-/// slug.
+/// The roles worth a rate: each dealt at least [`ACTIVITY_MIN_SEEN`] times,
+/// the [`ACTIVITY_ROLES_SENT`] most seen, most seen first and then by slug.
 #[must_use]
-pub fn rank_roles(mut roles: Vec<RoleKeep>) -> Vec<RoleKeep> {
-    roles.retain(|r| r.seen() >= ACTIVITY_ROLE_MIN_SEEN);
-    roles.sort_by(|a, b| b.seen().cmp(&a.seen()).then_with(|| a.role.cmp(&b.role)));
+pub fn rank_roles(mut roles: Vec<RoleRates>) -> Vec<RoleRates> {
+    roles.retain(|r| r.outcomes.seen() >= ACTIVITY_MIN_SEEN);
+    roles.sort_by(|a, b| {
+        b.outcomes
+            .seen()
+            .cmp(&a.outcomes.seen())
+            .then_with(|| a.role.cmp(&b.role))
+    });
     roles.truncate(ACTIVITY_ROLES_SENT);
     roles
+}
+
+/// The tags worth a rate: each dealt at least [`ACTIVITY_MIN_SEEN`] times,
+/// the [`ACTIVITY_TAGS_SENT`] most seen, most seen first and then by slug.
+#[must_use]
+pub fn rank_tags(mut tags: Vec<TagRates>) -> Vec<TagRates> {
+    tags.retain(|t| t.outcomes.seen() >= ACTIVITY_MIN_SEEN);
+    tags.sort_by(|a, b| {
+        b.outcomes
+            .seen()
+            .cmp(&a.outcomes.seen())
+            .then_with(|| a.tag.cmp(&b.tag))
+    });
+    tags.truncate(ACTIVITY_TAGS_SENT);
+    tags
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn role(role: &str, kept: u64, passed: u64) -> RoleKeep {
-        RoleKeep {
+    fn outcomes(added: u64, skipped: u64) -> SwipeOutcomes {
+        SwipeOutcomes {
+            added,
+            skipped,
+            ..SwipeOutcomes::default()
+        }
+    }
+
+    fn role(role: &str, added: u64, skipped: u64) -> RoleRates {
+        RoleRates {
             role: role.to_string(),
-            kept,
-            passed,
+            outcomes: outcomes(added, skipped),
+        }
+    }
+
+    fn tag(tag: &str, added: u64, skipped: u64) -> TagRates {
+        TagRates {
+            tag: tag.to_string(),
+            role: "ramp".to_string(),
+            outcomes: outcomes(added, skipped),
+            everyone: SwipeOutcomes::default(),
         }
     }
 
@@ -153,5 +209,32 @@ mod tests {
     fn at_most_the_sent_number_of_roles_go() {
         let roles = (0..20).map(|i| role(&format!("r{i:02}"), 10, i)).collect();
         assert_eq!(rank_roles(roles).len(), ACTIVITY_ROLES_SENT);
+    }
+
+    #[test]
+    fn tags_rank_like_roles_and_stop_at_the_sent_number() {
+        let ranked = rank_tags(vec![
+            tag("mana-rock", 6, 6),
+            tag("rare", 1, 0),
+            tag("ramp-land", 9, 9),
+        ]);
+        let order: Vec<&str> = ranked.iter().map(|t| t.tag.as_str()).collect();
+        assert_eq!(order, ["ramp-land", "mana-rock"]);
+        let many = (0..150).map(|i| tag(&format!("t{i:03}"), 10, 0)).collect();
+        assert_eq!(rank_tags(many).len(), ACTIVITY_TAGS_SENT);
+    }
+
+    #[test]
+    fn a_saved_card_counts_as_seen() {
+        let saved = SwipeOutcomes {
+            maybed: 3,
+            removed: 2,
+            ..SwipeOutcomes::default()
+        };
+        assert_eq!(
+            saved.seen(),
+            3,
+            "removed cards were already counted as added"
+        );
     }
 }
