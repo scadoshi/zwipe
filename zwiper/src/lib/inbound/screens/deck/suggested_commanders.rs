@@ -620,7 +620,7 @@ fn StapleRow(
             preview_dismissing,
             on_printing: move |c: Card| on_printing.call(c),
             footer: rsx! {
-                div { class: "card-detail-stats",
+                div { class: "keyword-chips",
                     span { class: "detail-chip detail-chip-pt", "{decks_label}" }
                 }
             },
@@ -1102,6 +1102,7 @@ fn SuggestionRow(
             preview_dismissing,
             on_printing: move |c: Card| on_printing.call(c),
             footer: rsx! {
+                hr { class: "card-row-rule card-row-rule-muted" }
                 SuggestionReasons { reasons: suggestion.reasons, deck_count, foldable: true }
             },
             extra_actions: rsx! {
