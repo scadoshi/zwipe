@@ -897,3 +897,88 @@ async fn one_deck_has_no_staples(pool: sqlx::PgPool) {
     let body = suggestions(&app, &token, 10).await;
     assert_eq!(body["profile"]["staples"], json!([]), "{body}");
 }
+
+#[sqlx::test]
+async fn the_profile_maps_cards_per_color_and_decks_per_pair(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("colormap").await;
+    app.verify_email(&uid).await;
+
+    let boss = card("Abzan Boss")
+        .mono("WBG")
+        .type_line("Legendary Creature — Human")
+        .commander_legal();
+    let orzhov = card("Orzhov Card").mono("WB");
+    let elf = card("Green Elf").mono("G");
+    let rock = card("Mind Stone");
+    let rock_reprint = card("Mind Stone").with_ids(Uuid::new_v4(), rock.oracle_id());
+    let goblin = card("Red Goblin").mono("R");
+    let orzhov_main = (orzhov.id(), orzhov.oracle_id().unwrap());
+    let elf_main = (elf.id(), elf.oracle_id().unwrap());
+    let rock_main = (rock.id(), rock.oracle_id().unwrap());
+    let reprint_main = (rock_reprint.id(), rock.oracle_id().unwrap());
+    let goblin_main = (goblin.id(), goblin.oracle_id().unwrap());
+    let boss_id = boss.id();
+    seed_cards(&pool, &[boss, orzhov, elf, rock, rock_reprint, goblin]).await;
+    // The commander sets the deck's colors.
+    build_commander_deck(
+        &app,
+        &token,
+        "Abzan",
+        boss_id,
+        &[orzhov_main, elf_main, rock_main],
+    )
+    .await;
+    // Without a commander, the cards' union: red, the rock adding nothing.
+    build_deck(
+        &app,
+        &token,
+        "Burn",
+        "standard",
+        &[goblin_main, reprint_main],
+    )
+    .await;
+
+    let body = suggestions(&app, &token, 10).await;
+    let map = &body["profile"]["color_map"];
+    assert_eq!(
+        map["colors"],
+        json!([
+            { "color": "W", "cards": 1 },
+            { "color": "U", "cards": 0 },
+            { "color": "B", "cards": 1 },
+            { "color": "R", "cards": 1 },
+            { "color": "G", "cards": 1 },
+        ]),
+        "a two-color card counts toward both, the commander not at all: {body}"
+    );
+    assert_eq!(
+        map["colorless_cards"], 2,
+        "the rock once in each deck, whichever printing"
+    );
+    let pairs: Vec<(String, u64)> = map["pairs"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|p| {
+            let colors: Vec<&str> = p["colors"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|c| c.as_str().unwrap())
+                .collect();
+            (colors.concat(), p["decks"].as_u64().unwrap())
+        })
+        .collect();
+    assert_eq!(pairs.len(), 10, "every pair is sent: {map}");
+    let lit: Vec<(String, u64)> = pairs.into_iter().filter(|(_, decks)| *decks > 0).collect();
+    assert_eq!(
+        lit,
+        vec![
+            ("WB".to_string(), 1),
+            ("WG".to_string(), 1),
+            ("BG".to_string(), 1),
+        ],
+        "the three-color deck lights its three pairs, the mono deck none"
+    );
+}

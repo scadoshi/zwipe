@@ -80,6 +80,36 @@ pub struct ProfiledDeck {
     pub colors: Vec<String>,
     /// Oracle ids of the deck's mainboard cards.
     pub mainboard_oracle_ids: Vec<Uuid>,
+    /// The deck's distinct mainboard cards counted by color identity.
+    pub card_colors: CardColorCounts,
+}
+
+/// One deck's distinct mainboard cards (by oracle id) counted by color
+/// identity. A multicolored card counts toward each of its colors.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct CardColorCounts {
+    /// Cards whose identity includes each color, in WUBRG order.
+    pub colors: [u32; 5],
+    /// Cards with an empty identity.
+    pub colorless: u32,
+}
+
+impl CardColorCounts {
+    /// Reads the six counts the profiled decks query returns: W, U, B, R, G,
+    /// then colorless. A missing or negative count reads 0.
+    #[must_use]
+    pub fn from_counts(counts: &[i64]) -> Self {
+        let count = |i: usize| {
+            counts
+                .get(i)
+                .and_then(|n| u32::try_from(*n).ok())
+                .unwrap_or_default()
+        };
+        Self {
+            colors: [count(0), count(1), count(2), count(3), count(4)],
+            colorless: count(5),
+        }
+    }
 }
 
 impl ProfiledDeck {
@@ -227,6 +257,8 @@ pub struct BuilderProfile {
     /// [`summarize_profile`] leaves it empty; the service fills it once the
     /// cards are fetched.
     pub staples: Vec<Staple>,
+    /// The cards and decks behind the color map.
+    pub color_map: ColorMap,
 }
 
 /// A card on several of the user's decks' mainboards.
@@ -313,6 +345,89 @@ pub fn rank_staples(cards: &[MainboardCard]) -> Vec<StapleCount> {
         .collect()
 }
 
+/// How the user's cards and decks spread over the colors and color pairs,
+/// summed across every profiled deck.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ColorMap {
+    /// All five colors in WUBRG order with their cards.
+    pub colors: Vec<ColorCards>,
+    /// Cards with an empty color identity.
+    pub colorless_cards: u32,
+    /// All ten color pairs in WUBRG order with their decks.
+    pub pairs: Vec<ColorPairDecks>,
+}
+
+/// One color's cards across the user's decks.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ColorCards {
+    /// One of `W`, `U`, `B`, `R`, `G`.
+    pub color: String,
+    /// Mainboard cards whose identity includes the color, each counted once
+    /// per deck.
+    pub cards: u32,
+}
+
+/// One color pair's decks.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ColorPairDecks {
+    /// The two colors in WUBRG order.
+    pub colors: [String; 2],
+    /// Decks whose color identity includes both.
+    pub decks: u32,
+}
+
+/// The color map of `decks`: per color the cards summed over every deck's
+/// [`CardColorCounts`], the colorless cards apart, and per color pair the
+/// decks whose colors hold both, so a three-color deck counts toward three
+/// pairs. Every color and pair is present, zeros included.
+#[must_use]
+pub fn color_map(decks: &[ProfiledDeck]) -> ColorMap {
+    let mut cards = [0_u32; 5];
+    let mut colorless_cards = 0_u32;
+    for deck in decks {
+        for (total, count) in cards.iter_mut().zip(deck.card_colors.colors) {
+            *total = total.saturating_add(count);
+        }
+        colorless_cards = colorless_cards.saturating_add(deck.card_colors.colorless);
+    }
+    let colors = WUBRG
+        .iter()
+        .zip(cards)
+        .map(|(color, cards)| ColorCards {
+            color: (*color).to_string(),
+            cards,
+        })
+        .collect();
+    let pairs = WUBRG
+        .iter()
+        .enumerate()
+        .flat_map(|(i, first)| {
+            WUBRG
+                .iter()
+                .skip(i.saturating_add(1))
+                .map(move |second| (*first, *second))
+        })
+        .map(|(first, second)| {
+            let holding = decks
+                .iter()
+                .filter(|deck| {
+                    deck.colors.iter().any(|c| c == first)
+                        && deck.colors.iter().any(|c| c == second)
+                })
+                .count();
+            ColorPairDecks {
+                colors: [first.to_string(), second.to_string()],
+                decks: u32::try_from(holding).unwrap_or(u32::MAX),
+            }
+        })
+        .collect();
+    ColorMap {
+        colors,
+        colorless_cards,
+        pairs,
+    }
+}
+
 /// A card role the user's decks lean on.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProfileRole {
@@ -386,8 +501,8 @@ pub struct PlayStyleSummary {
     pub identities: Vec<ColorIdentityCount>,
 }
 
-/// Summarizes the user's decks: per color the decks using it,
-/// the most-built exact identity, the highest-scoring oracle tags across the
+/// Summarizes the user's decks: per color the decks using it, the
+/// [`color_map`], the most-built exact identity, the highest-scoring oracle tags across the
 /// deck profiles, and the card roles those tags fall under. `profiles` pairs with
 /// `decks` by position (shorter is fine; the rest count as unprofiled).
 /// `tag_roles` maps a tag slug to its role; a slug absent from it is under
@@ -477,6 +592,7 @@ pub fn summarize_profile(
         tags,
         roles,
         staples: vec![],
+        color_map: color_map(decks),
     })
 }
 
@@ -571,6 +687,7 @@ mod tests {
             commander_oracle_id: Some(Uuid::from_u128(n)),
             colors: colors.iter().map(|c| c.to_string()).collect(),
             mainboard_oracle_ids: vec![],
+            card_colors: CardColorCounts::default(),
         }
     }
 
@@ -607,6 +724,7 @@ mod tests {
             commander_oracle_id: None,
             colors: vec![],
             mainboard_oracle_ids: vec![Uuid::from_u128(2), Uuid::from_u128(3)],
+            card_colors: CardColorCounts::default(),
         };
         assert_eq!(
             deck.profile_oracle_ids(),
@@ -1158,5 +1276,109 @@ mod tests {
             vec![(61, 2), (60, 2)],
             "basics, snow basics and Wastes drop; a nonbasic snow land stays"
         );
+    }
+
+    fn counted(n: u128, colors: &[&str], cards: [u32; 5], colorless: u32) -> ProfiledDeck {
+        ProfiledDeck {
+            card_colors: CardColorCounts {
+                colors: cards,
+                colorless,
+            },
+            ..deck(n, colors)
+        }
+    }
+
+    fn pair_decks(map: &ColorMap) -> Vec<(String, u32)> {
+        map.pairs
+            .iter()
+            .map(|p| (p.colors.concat(), p.decks))
+            .collect()
+    }
+
+    #[test]
+    fn color_map_sums_cards_and_keeps_colorless_apart() {
+        let decks = vec![
+            counted(1, &["W", "R"], [10, 0, 0, 12, 0], 5),
+            counted(2, &["R"], [0, 0, 0, 30, 0], 7),
+        ];
+        let map = color_map(&decks);
+        let cards: Vec<(&str, u32)> = map
+            .colors
+            .iter()
+            .map(|c| (c.color.as_str(), c.cards))
+            .collect();
+        assert_eq!(
+            cards,
+            vec![("W", 10), ("U", 0), ("B", 0), ("R", 42), ("G", 0)],
+            "every color in WUBRG order, zeros kept"
+        );
+        assert_eq!(
+            map.colorless_cards, 12,
+            "colorless sums apart from the corners"
+        );
+    }
+
+    #[test]
+    fn color_map_counts_every_pair_a_deck_holds() {
+        let decks = vec![
+            deck(1, &["W", "B", "G"]),
+            deck(2, &["W", "G"]),
+            deck(3, &["U"]),
+            deck(4, &[]),
+        ];
+        let map = color_map(&decks);
+        let want: Vec<(String, u32)> = [
+            ("WU", 0),
+            ("WB", 1),
+            ("WR", 0),
+            ("WG", 2),
+            ("UB", 0),
+            ("UR", 0),
+            ("UG", 0),
+            ("BR", 0),
+            ("BG", 1),
+            ("RG", 0),
+        ]
+        .iter()
+        .map(|(pair, decks)| (pair.to_string(), *decks))
+        .collect();
+        assert_eq!(
+            pair_decks(&map),
+            want,
+            "a three-color deck counts toward its three pairs, a mono or colorless deck toward none"
+        );
+    }
+
+    #[test]
+    fn five_color_decks_light_all_ten_pairs() {
+        let map = color_map(&[deck(1, &WUBRG)]);
+        assert_eq!(map.pairs.len(), 10);
+        assert!(map.pairs.iter().all(|p| p.decks == 1), "{map:?}");
+    }
+
+    #[test]
+    fn card_color_counts_read_the_query_order() {
+        assert_eq!(
+            CardColorCounts::from_counts(&[1, 2, 3, 4, 5, 6]),
+            CardColorCounts {
+                colors: [1, 2, 3, 4, 5],
+                colorless: 6,
+            }
+        );
+        assert_eq!(
+            CardColorCounts::from_counts(&[-1, 2]),
+            CardColorCounts {
+                colors: [0, 2, 0, 0, 0],
+                colorless: 0,
+            },
+            "a short or negative row reads 0"
+        );
+    }
+
+    #[test]
+    fn the_profile_carries_the_color_map() {
+        let decks = vec![counted(1, &["U", "R"], [0, 9, 0, 8, 0], 2)];
+        let profile = summarize_profile(&decks, &[], &HashMap::new()).unwrap();
+        assert_eq!(profile.color_map, color_map(&decks));
     }
 }

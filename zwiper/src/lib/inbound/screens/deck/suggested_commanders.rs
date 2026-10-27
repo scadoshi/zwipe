@@ -1511,6 +1511,7 @@ mod tests {
             tags: vec![],
             roles: vec![],
             staples: vec![],
+            color_map: None,
         }
     }
 

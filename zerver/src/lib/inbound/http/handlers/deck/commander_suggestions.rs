@@ -6,14 +6,15 @@ use axum::http::StatusCode;
 use serde::Deserialize;
 use zwipe_core::http::contracts::suggestions::{
     DEFAULT_SUGGESTION_LIMIT, HttpBuilderProfile, HttpClearedDismissals, HttpColorAffinity,
-    HttpColorIdentityCount, HttpCommanderSuggestion, HttpCommanderSuggestions,
-    HttpDismissCommander, HttpPlayStyleSummary, HttpProfileRole, HttpProfileTag, HttpSharedTag,
-    HttpStaple, HttpSuggestionReasons, MAX_SUGGESTION_LIMIT,
+    HttpColorCards, HttpColorIdentityCount, HttpColorMap, HttpColorPair, HttpCommanderSuggestion,
+    HttpCommanderSuggestions, HttpDismissCommander, HttpPlayStyleSummary, HttpProfileRole,
+    HttpProfileTag, HttpSharedTag, HttpStaple, HttpSuggestionReasons, MAX_SUGGESTION_LIMIT,
 };
 
 use crate::domain::deck::models::deck::commander_suggestions::{
-    BuilderProfile, ColorAffinity, ColorIdentityCount, CommanderDismissal, CommanderSuggestion,
-    CommanderSuggestions, CommanderSuggestionsError, InvalidCommanderDismissal, PlayStyleSummary,
+    BuilderProfile, ColorAffinity, ColorIdentityCount, ColorMap, CommanderDismissal,
+    CommanderSuggestion, CommanderSuggestions, CommanderSuggestionsError,
+    InvalidCommanderDismissal, PlayStyleSummary,
 };
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
@@ -81,6 +82,30 @@ impl From<PlayStyleSummary> for HttpPlayStyleSummary {
     }
 }
 
+impl From<ColorMap> for HttpColorMap {
+    fn from(value: ColorMap) -> Self {
+        Self {
+            colors: value
+                .colors
+                .into_iter()
+                .map(|c| HttpColorCards {
+                    color: c.color,
+                    cards: c.cards,
+                })
+                .collect(),
+            colorless_cards: value.colorless_cards,
+            pairs: value
+                .pairs
+                .into_iter()
+                .map(|p| HttpColorPair {
+                    colors: p.colors,
+                    decks: p.decks,
+                })
+                .collect(),
+        }
+    }
+}
+
 impl From<BuilderProfile> for HttpBuilderProfile {
     fn from(value: BuilderProfile) -> Self {
         Self {
@@ -118,6 +143,7 @@ impl From<BuilderProfile> for HttpBuilderProfile {
                     decks: staple.decks,
                 })
                 .collect(),
+            color_map: Some(HttpColorMap::from(value.color_map)),
         }
     }
 }

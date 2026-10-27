@@ -27,7 +27,7 @@ use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
 use crate::domain::deck::models::deck::commander_suggestions;
 use crate::domain::deck::models::deck::commander_suggestions::{
-    CommanderDismissal, CommanderSuggestionsError, MainboardCard, ProfiledDeck,
+    CardColorCounts, CommanderDismissal, CommanderSuggestionsError, MainboardCard, ProfiledDeck,
 };
 use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
 use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
@@ -755,7 +755,9 @@ impl DeckRepository for Postgres {
     ) -> Result<Vec<ProfiledDeck>, CommanderSuggestionsError> {
         // card_colors is every color across the mainboard's identities, the
         // same union the deck views compute; a deck with a commander takes
-        // the commander's identity instead.
+        // the commander's identity instead. card_color_counts is the
+        // mainboard's distinct oracle ids whose identity holds W, U, B, R and
+        // G, then those with an empty identity.
         let rows = query!(
             r#"SELECT s.oracle_id AS "commander_oracle_id?",
                       s.color_identity AS "commander_colors?: Vec<String>",
@@ -764,6 +766,17 @@ impl DeckRepository for Postgres {
                         WHERE sci.id IN (SELECT dc2.scryfall_data_id FROM deck_cards dc2
                                           WHERE dc2.deck_id = d.id AND dc2.board = 'deck'))
                           AS "card_colors?: Vec<String>",
+                      (SELECT ARRAY[
+                                  COUNT(DISTINCT cc.oracle_id) FILTER (WHERE 'W' = ANY(cs.color_identity)),
+                                  COUNT(DISTINCT cc.oracle_id) FILTER (WHERE 'U' = ANY(cs.color_identity)),
+                                  COUNT(DISTINCT cc.oracle_id) FILTER (WHERE 'B' = ANY(cs.color_identity)),
+                                  COUNT(DISTINCT cc.oracle_id) FILTER (WHERE 'R' = ANY(cs.color_identity)),
+                                  COUNT(DISTINCT cc.oracle_id) FILTER (WHERE 'G' = ANY(cs.color_identity)),
+                                  COUNT(DISTINCT cc.oracle_id) FILTER (WHERE cardinality(cs.color_identity) = 0)]
+                         FROM deck_cards cc
+                         JOIN scryfall_data cs ON cs.id = cc.scryfall_data_id
+                        WHERE cc.deck_id = d.id AND cc.board = 'deck')
+                          AS "card_color_counts!: Vec<i64>",
                       COALESCE(array_agg(dc.oracle_id) FILTER (WHERE dc.board = 'deck'), '{}')
                           AS "mainboard_oracle_ids!: Vec<uuid::Uuid>"
                FROM decks d
@@ -791,6 +804,7 @@ impl DeckRepository for Postgres {
                         row.card_colors.unwrap_or_default(),
                     ),
                     mainboard_oracle_ids: row.mainboard_oracle_ids,
+                    card_colors: CardColorCounts::from_counts(&row.card_color_counts),
                 }
             })
             .collect())

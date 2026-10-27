@@ -88,6 +88,44 @@ pub struct HttpBuilderProfile {
     /// when no card repeats, and from older servers.
     #[serde(default)]
     pub staples: Vec<HttpStaple>,
+    /// How the user's cards and decks spread over the five colors and the
+    /// ten color pairs. `None` from older servers.
+    #[serde(default)]
+    pub color_map: Option<HttpColorMap>,
+}
+
+/// The cards and decks behind the color map, summed across the user's decks.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct HttpColorMap {
+    /// All five colors in WUBRG order, each with the mainboard cards whose
+    /// color identity includes it. A card counts once per deck it is in, so
+    /// a two-color card counts toward both its colors.
+    pub colors: Vec<HttpColorCards>,
+    /// Mainboard cards with an empty color identity, counted the same way.
+    pub colorless_cards: u32,
+    /// All ten color pairs, each with the decks whose color identity
+    /// includes both colors, in WUBRG order (`WU`, `WB`, `WR`, `WG`, `UB`,
+    /// `UR`, `UG`, `BR`, `BG`, `RG`). A deck of three or more colors counts
+    /// toward every pair it holds.
+    pub pairs: Vec<HttpColorPair>,
+}
+
+/// One color's cards in the color map.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct HttpColorCards {
+    /// One of `W`, `U`, `B`, `R`, `G`.
+    pub color: String,
+    /// Mainboard cards whose color identity includes the color, 0 or more.
+    pub cards: u32,
+}
+
+/// One color pair's decks in the color map.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct HttpColorPair {
+    /// The two colors in WUBRG order.
+    pub colors: [String; 2],
+    /// Decks whose color identity includes both colors, 0 or more.
+    pub decks: u32,
 }
 
 /// A card on several of the user's decks' mainboards.
@@ -279,11 +317,12 @@ mod tests {
                 decks: 6,
             }],
             staples: vec![],
+            color_map: None,
         };
         let json = serde_json::to_string(&profile).unwrap();
         assert_eq!(
             json,
-            r#"{"deck_count":7,"colors":[{"color":"R","decks":5},{"color":"W","decks":4}],"top_identity":{"colors":["W","R"],"decks":3},"tags":[{"slug":"sacrifice-outlet","role":"sacrifice","decks":6,"cards":23,"score":1.5}],"roles":[{"role":"sacrifice","decks":6}],"staples":[]}"#
+            r#"{"deck_count":7,"colors":[{"color":"R","decks":5},{"color":"W","decks":4}],"top_identity":{"colors":["W","R"],"decks":3},"tags":[{"slug":"sacrifice-outlet","role":"sacrifice","decks":6,"cards":23,"score":1.5}],"roles":[{"role":"sacrifice","decks":6}],"staples":[],"color_map":null}"#
         );
         let back: HttpBuilderProfile = serde_json::from_str(&json).unwrap();
         assert_eq!(back, profile);
@@ -293,6 +332,41 @@ mod tests {
         assert_eq!(back.top_identity, None);
         assert_eq!(back.roles, vec![], "old shape without roles parses");
         assert_eq!(back.staples, vec![], "old shape without staples parses");
+        assert_eq!(back.color_map, None, "old shape without a color map parses");
+    }
+
+    #[test]
+    fn color_map_round_trip() {
+        let map = HttpColorMap {
+            colors: vec![
+                HttpColorCards {
+                    color: "W".to_string(),
+                    cards: 12,
+                },
+                HttpColorCards {
+                    color: "R".to_string(),
+                    cards: 0,
+                },
+            ],
+            colorless_cards: 4,
+            pairs: vec![HttpColorPair {
+                colors: ["W".to_string(), "R".to_string()],
+                decks: 2,
+            }],
+        };
+        let json = serde_json::to_string(&map).unwrap();
+        assert_eq!(
+            json,
+            r#"{"colors":[{"color":"W","cards":12},{"color":"R","cards":0}],"colorless_cards":4,"pairs":[{"colors":["W","R"],"decks":2}]}"#
+        );
+        let back: HttpColorMap = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, map);
+
+        let profile = format!(
+            r#"{{"deck_count":2,"colors":[],"top_identity":null,"tags":[],"roles":[],"color_map":{json}}}"#
+        );
+        let back: HttpBuilderProfile = serde_json::from_str(&profile).unwrap();
+        assert_eq!(back.color_map, Some(map), "a profile carries its color map");
     }
 
     #[test]
@@ -313,6 +387,7 @@ mod tests {
                     decks: 2,
                 },
             ],
+            color_map: None,
         };
         let json = serde_json::to_string(&profile).unwrap();
         let back: HttpBuilderProfile = serde_json::from_str(&json).unwrap();
