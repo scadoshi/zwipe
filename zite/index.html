@@ -106,6 +106,12 @@
                         document.body.className = "theme-" + name + "-" + (stored.is_dark ? "dark" : "light");
                     }
                 } catch (e) {}
+                try {
+                    // zite's pip_store: "natural" puts back the classic pips.
+                    if (JSON.parse(localStorage.getItem("zwipe.pips")) === "natural") {
+                        document.body.classList.add("pips-natural");
+                    }
+                } catch (e) {}
             })();
         </script>
     </body>

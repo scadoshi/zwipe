@@ -4,10 +4,12 @@ use ::components::{
 };
 use dioxus::document::eval;
 use dioxus::prelude::*;
+use zwipe_core::domain::user::preferences::PipStyle;
 
 mod api;
 mod components;
 mod pages;
+mod pip_store;
 use pages::{
     About, Android, Changelog, Community, ConfirmEmail, Contribute, GuidePage, Guides, Home, Ios,
     NotFound, Privacy, Reset, SharedDeck, Verify,
@@ -141,6 +143,9 @@ fn App() -> Element {
     // on it, so nothing visible changes.
     let theme = ::components::use_persisted_theme("zwipe.theme");
     use_context_provider(|| theme);
+    // The pip style, kept the same way under its own key.
+    let pip_style = pip_store::use_persisted_pip_style();
+    use_context_provider(|| pip_style);
     use_context_provider(|| Replay(Signal::new(0u32)));
     // Closed until the splash starts to fade, so the hero's entrances run as
     // it leaves. index.html decides before first paint whether this load gets
@@ -201,6 +206,19 @@ fn App() -> Element {
         });
     });
 
+    // The pip style's class sits on <body> beside the theme's, where magic.css
+    // looks for it.
+    use_effect(move || {
+        let natural = pip_style() == PipStyle::Natural;
+        let class = ::components::pip_style_class(PipStyle::Natural);
+        spawn(async move {
+            let _ = eval(&format!(
+                "document.body.classList.toggle('{class}', {natural});"
+            ))
+            .await;
+        });
+    });
+
     rsx! {
         document::Meta { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" }
         // Tells Dark Reader to leave the site alone: theming is first-class
@@ -240,6 +258,7 @@ fn App() -> Element {
 #[component]
 pub fn Nav() -> Element {
     let (theme, shown) = use_theme_wipe(use_context::<Signal<ThemeConfig>>(), "body");
+    let pip_style = use_context::<Signal<PipStyle>>();
     let mut open = use_signal(|| false);
     let mut replay = use_context::<Replay>().0;
     let mut hovering = use_signal(|| false);
@@ -312,7 +331,10 @@ pub fn Nav() -> Element {
                 }
             },
             trailing: rsx! {
-                ThemePicker { theme, shown }
+                div { class: "theme-controls",
+                    ThemePicker { theme, shown }
+                    components::PipToggle { style: pip_style }
+                }
             },
         }
     }

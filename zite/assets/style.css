@@ -1394,7 +1394,46 @@ code {
  ==================== */
 
 /* The theme picker (switcher, dropdown, mode toggle) and its in-nav-panel
-   overrides live in orangui (components.css). */
+   overrides live in orangui (components.css). The site adds the pip toggle
+   after it, so the two sit in one row: `.theme-controls` spaces them as the
+   picker spaces its own pair, and in the hamburger panel it takes over the
+   picker's divider so the toggle shares that row. */
+.theme-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* The pip stands in for the mode icon, sized to the label text. */
+.pip-toggle i.ms.ms-cost {
+    font-size: 0.85em;
+}
+
+@media (max-width: 60rem) {
+    .nav-panel .theme-controls {
+        justify-content: center;
+        flex-wrap: wrap;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border-primary);
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
+    }
+    .nav-panel .theme-controls .theme-picker {
+        padding-top: 0;
+        border-top: none;
+        margin-left: 0;
+        margin-right: 0;
+    }
+}
+
+@media (max-width: 60rem) and (max-height: 30rem) {
+    .nav-panel .theme-controls {
+        padding-top: 0.5rem;
+    }
+    .nav-panel .theme-controls .theme-picker {
+        padding-top: 0;
+    }
+}
 
 /* ==================
         footer

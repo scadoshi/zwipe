@@ -1,8 +1,10 @@
 mod featured_flavor;
 mod page_meta;
+mod pip_toggle;
 mod stats_strip;
 pub use featured_flavor::{FeaturedFlavor, dismiss_flavor_overlay};
 pub use page_meta::PageMeta;
+pub use pip_toggle::PipToggle;
 pub use stats_strip::StatsStrip;
 
 /// Browser `setTimeout` as a future. No-op off wasm (the server render never
