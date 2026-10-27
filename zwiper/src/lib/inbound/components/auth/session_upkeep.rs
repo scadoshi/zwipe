@@ -121,12 +121,21 @@ impl UpgradeRequired {
 /// blocking update screen.
 pub fn spawn_upkeeper() -> UpgradeRequired {
     tracing::debug!("upkeeper spawned");
-    let session = use_signal(Session::infallible_load);
+    // Owned by the root scope rather than this component's: token refresh
+    // writes the session from a `spawn_forever` task, which runs in the root
+    // scope, and a signal must be owned by a parent of every scope using it.
+    let session = use_hook(|| Signal::new_in_scope(Session::infallible_load(), ScopeId::ROOT));
     use_context_provider(|| session);
 
     // The client crate reads no environment: zwiper supplies the base URL from
     // its build-time config, which is what lets a debug build point at prod.
-    let client = use_signal(|| ZwipeClient::new(Config::from_env().backend_url));
+    // Root-owned for the same reason as the session.
+    let client = use_hook(|| {
+        Signal::new_in_scope(
+            ZwipeClient::new(Config::from_env().backend_url),
+            ScopeId::ROOT,
+        )
+    });
     use_context_provider(|| client);
 
     // Registration hands its email to the login form through this.
