@@ -34,28 +34,29 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: "1.15.0",
-    date: None,
-    entries: &[
-        "Skipped cards return to a deck's swipe pile after a week, removed cards after a month",
-        "Returning skipped cards come after cards you haven't seen",
-        "Synergy moves on to related cards once your commander's picks run out",
-        "The changelog's version chips group patches under their minor version",
-        "Swiping to add cards shows every recommended card before running out",
-        "Card details open in a bottom sheet",
-        "Playstyle, a new screen with your color map, card roles, staples and suggested commanders",
-        "Home shows your color map",
-        "Profile splits into Account and Config",
-        "Log out moves to Account",
-        "Draw odds' ? sits in its section header",
-        "The deck view's Role distribution reveals each role's tags",
-        "Mana symbols follow your theme's colors, with a Config setting to keep the classic ones",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: "1.15.0",
+        date: NaiveDate::from_ymd_opt(2026, 10, 27),
+        entries: &[
+            "Skipped cards return to a deck's swipe pile after a week, removed cards after a month",
+            "Returning skipped cards come after cards you haven't seen",
+            "Synergy moves on to related cards once your commander's picks run out",
+            "The changelog's version chips group patches under their minor version",
+            "Swiping to add cards shows every recommended card before running out",
+            "Card details open in a bottom sheet",
+            "Playstyle, a new screen with your color map, card roles, staples and suggested commanders",
+            "Home shows your color map",
+            "Profile splits into Account and Config",
+            "Log out moves to Account",
+            "Draw odds' ? sits in its section header",
+            "The deck view's Role distribution reveals each role's tags",
+            "Mana symbols follow your theme's colors, with a Config setting to keep the classic ones",
+        ],
+    },
     Release {
         version: "1.14.0",
         date: NaiveDate::from_ymd_opt(2026, 10, 23),
