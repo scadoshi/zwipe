@@ -492,13 +492,17 @@ async fn synergy_pool_runs_out_into_related_cards(pool: sqlx::PgPool) {
     let (status, body) = app
         .post(
             &search_deck_cards_route(did.parse().unwrap()),
-            json!({ "synergy": true, "limit": 25 }),
+            // One past the client's 25: the pool card plus the whole first
+            // related band. Within a band, order is a (card, deck, day) hash,
+            // so a 25 page holds 24 of the band's 25 and the tag-sharing card
+            // would miss it one deck in 25.
+            json!({ "synergy": true, "limit": 26 }),
             Some(&token),
         )
         .await;
     assert_eq!(status, StatusCode::OK, "serve: {body}");
     let served = deck_search_names(&body);
-    assert_eq!(served.len(), 25, "the page fills past the pool: {served:?}");
+    assert_eq!(served.len(), 26, "the page fills past the pool: {served:?}");
     assert_eq!(
         served.first().map(String::as_str),
         Some("Pool Card"),
