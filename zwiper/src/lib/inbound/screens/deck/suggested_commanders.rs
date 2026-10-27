@@ -629,11 +629,20 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
 /// A Summary row whose value is an identity: the label, then the pips with
 /// the name and count after them.
 #[component]
-fn SummaryIdentityRow(label: &'static str, value: SummaryValue) -> Element {
+fn SummaryIdentityRow(
+    label: &'static str,
+    value: SummaryValue,
+    /// A name before the pips where they draw none: the single top color's.
+    #[props(default)]
+    name: Option<String>,
+) -> Element {
     rsx! {
         div { class: "settings-row",
             span { class: "settings-row-label", "{label}" }
-            span { class: "info-row-value",
+            span { class: "info-row-value identity-pips",
+                if let Some(name) = name {
+                    span { "{name}" }
+                }
                 IdentityPips { identity: value.pips, count: value.count }
             }
         }
@@ -688,7 +697,11 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                     SummaryIdentityRow { label: "Top colors", value }
                 }
                 if let Some(value) = summary.color {
-                    SummaryIdentityRow { label: "Top color", value }
+                    SummaryIdentityRow {
+                        label: "Top color",
+                        name: value.pips.first().map(Color::to_long_name),
+                        value,
+                    }
                 }
             }
         }

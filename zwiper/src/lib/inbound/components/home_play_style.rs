@@ -46,6 +46,16 @@ impl PodiumStep {
         }
     }
 
+    /// The place tag's class: a palette accent per place, the same on every
+    /// podium, since status colors would read as an outcome.
+    pub(crate) fn place_class(&self) -> &'static str {
+        match self.place {
+            1 => "stat-chip stat-chip-p2",
+            2 => "stat-chip stat-chip-p4",
+            _ => "stat-chip stat-chip-p6",
+        }
+    }
+
     /// The step's class, which sets its fixed height: first tallest, so the
     /// podium reads as one however lopsided the counts are.
     pub(crate) fn class(&self) -> &'static str {
@@ -145,7 +155,7 @@ pub(crate) fn Podium(identities: Vec<HttpColorIdentityCount>) -> Element {
                     // Every step is named, Mono-red included, so the three
                     // read alike.
                     span { class: "stat-chip", "{identity_name(&step.pips)}" }
-                    span { class: "stat-chip stat-chip-muted", "{step.place_label()}" }
+                    span { class: step.place_class(), "{step.place_label()}" }
                 }
             }
         }
@@ -272,6 +282,16 @@ mod tests {
         assert_eq!(
             steps.get(1).map(PodiumStep::class),
             Some("podium-block podium-first")
+        );
+        let tags: Vec<&str> = steps.iter().map(PodiumStep::place_class).collect();
+        assert_eq!(
+            tags,
+            vec![
+                "stat-chip stat-chip-p4",
+                "stat-chip stat-chip-p2",
+                "stat-chip stat-chip-p6"
+            ],
+            "each place keeps its own accent"
         );
     }
 }
