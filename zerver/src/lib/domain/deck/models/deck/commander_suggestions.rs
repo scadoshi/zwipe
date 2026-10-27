@@ -134,7 +134,9 @@ pub fn deck_colors(commander_colors: Option<Vec<String>>, card_colors: Vec<Strin
 /// One deck's oracle-tag profile with the card counts behind it.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DeckTagProfile {
-    /// The otag to weight map the scoring query reads, weights summing to 1.
+    /// The otag to weight map the scoring query reads, built by the lift steps
+    /// in [`zwipe_core::domain::deck::tag_profile`], weights summing to 1.
+    /// Every tag in it falls under a card role.
     pub weights: serde_json::Value,
     /// For each tag in `weights`, how many of the deck's distinct cards carry
     /// it.

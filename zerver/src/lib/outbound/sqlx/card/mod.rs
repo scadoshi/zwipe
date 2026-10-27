@@ -30,6 +30,7 @@ use zwipe_core::domain::card::search_card::card_filter::criteria::PLAYABLE_LAYOU
 use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDirection;
 use zwipe_core::domain::deck::Format;
 use zwipe_core::domain::deck::requests::import_deck_cards::entry_front_face;
+use zwipe_core::domain::deck::tag_profile::{PROFILE_EXCLUDED_TAG_PREFIX, PROFILE_TAG_LIMIT};
 
 use crate::domain::card::models::helpers::SleeveCardProfile;
 use crate::domain::card::models::search_card::error::SearchCardsError;
@@ -160,8 +161,9 @@ const W_NEIGHBOR: f64 = 0.4;
 /// Lift for the most popular card overall, fading with Scryfall's rank.
 const W_POPULAR: f64 = 0.05;
 
-/// The deck tag profile keeps its strongest this-many tags.
-const PROFILE_TAG_LIMIT: i64 = 40;
+/// The serve-time deck tag profile that ranks related cards keeps its
+/// strongest this-many tags.
+const SERVE_PROFILE_TAG_LIMIT: i64 = 40;
 
 // == suggested commanders ==
 
@@ -1907,7 +1909,7 @@ impl CardRepository for MyPostgres {
         // cards with the tag), so a shared rare tag counts far more than a
         // common one. Cycle tags group cards by print run, not by what they
         // do, so they carry no synergy and are left out. The strongest
-        // PROFILE_TAG_LIMIT tags are kept, normalized to sum to 1.
+        // SERVE_PROFILE_TAG_LIMIT tags are kept, normalized to sum to 1.
         let profile: Option<serde_json::Value> = sqlx::query_scalar(
             "WITH profile_cards AS (
                  SELECT unnest($1::uuid[]) AS oracle_id
@@ -1939,7 +1941,7 @@ impl CardRepository for MyPostgres {
         )
         .bind(oracle_ids)
         .bind(lowercased_names)
-        .bind(PROFILE_TAG_LIMIT)
+        .bind(SERVE_PROFILE_TAG_LIMIT)
         .fetch_one(&self.pool)
         .await
         .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
@@ -1950,14 +1952,19 @@ impl CardRepository for MyPostgres {
         &self,
         decks: &[Vec<uuid::Uuid>],
     ) -> Result<Vec<Option<DeckTagProfile>>, SearchCardsError> {
-        // The same weighting as deck_tag_profile, computed for every deck in
-        // one statement. The decks bind as two parallel arrays, one (deck
-        // index, oracle id) pair per card, since a uuid[][] does not bind.
-        // The tag frequencies over all tagged cards do not depend on the
-        // deck, so they are counted once; the per-deck rank and the
-        // normalizing sum are window functions partitioned by deck. Each kept
-        // tag's card count rides along as a second object. A deck whose cards
-        // carry no usable tags produces no row and stays None.
+        // Lift weighting, the steps in zwipe_core::domain::deck::tag_profile
+        // run for every deck in one statement. The decks bind as two parallel
+        // arrays, one (deck index, oracle id) pair per card, since a
+        // uuid[][] does not bind. Only tags under a card role (the shared
+        // membership CTEs, the same lookup tag_roles reads) and outside the
+        // excluded prefix count. A deck's tagged cards and the corpus's
+        // tagged cards both count cards with any oracle tag. The lift test
+        // compares the cross products, which are exact in float8 for these
+        // counts, so it agrees with lift_weight. The corpus counts do not
+        // depend on the deck, so they are counted once; the per-deck rank and
+        // the normalizing sum are window functions partitioned by deck. Each
+        // kept tag's card count rides along as a second object. A deck whose
+        // cards carry no usable tags produces no row and stays None.
         let mut deck_indices: Vec<i32> = Vec::new();
         let mut oracle_ids: Vec<uuid::Uuid> = Vec::new();
         for (index, deck) in decks.iter().enumerate() {
@@ -1967,17 +1974,27 @@ impl CardRepository for MyPostgres {
             deck_indices.extend(std::iter::repeat_n(index, deck.len()));
             oracle_ids.extend_from_slice(deck);
         }
-        /// Deck index, tag weights, and each kept tag's card count.
-        type ProfileRow = (i32, serde_json::Value, Json<HashMap<String, u32>>);
-        let rows: Vec<ProfileRow> = query_as(
-            "WITH profile_cards AS (
+        let excluded = format!("{PROFILE_EXCLUDED_TAG_PREFIX}%");
+        // The SQL text is literals plus parameter numbers; the data is all
+        // bound.
+        let binds = RoleMembershipBinds::new();
+        let sql = format!(
+            "WITH RECURSIVE {},
+             profile_cards AS (
                  SELECT DISTINCT deck, oracle_id
-                 FROM unnest($1::int4[], $2::uuid[]) AS c(deck, oracle_id)
+                 FROM unnest($7::int4[], $8::uuid[]) AS c(deck, oracle_id)
+             ),
+             deck_tagged AS (
+                 SELECT p.deck, count(*)::float8 AS n
+                 FROM profile_cards p
+                 WHERE EXISTS (SELECT 1 FROM card_oracle_tags t WHERE t.oracle_id = p.oracle_id)
+                 GROUP BY p.deck
              ),
              tf AS (
                  SELECT p.deck, t.oracle_tag, count(*)::float8 AS n
                  FROM card_oracle_tags t JOIN profile_cards p USING (oracle_id)
-                 WHERE t.oracle_tag NOT LIKE 'cycle-%'
+                 WHERE t.oracle_tag NOT LIKE $10
+                   AND t.oracle_tag IN (SELECT slug FROM membership)
                  GROUP BY p.deck, t.oracle_tag
              ),
              df AS (
@@ -1987,9 +2004,13 @@ impl CardRepository for MyPostgres {
              ),
              total AS (SELECT count(DISTINCT oracle_id)::float8 AS n FROM card_oracle_tags),
              weighted AS (
-                 SELECT tf.deck, tf.oracle_tag, tf.n AS cards, tf.n * ln(total.n / df.n) AS w
-                 FROM tf JOIN df USING (oracle_tag) CROSS JOIN total
-                 WHERE df.n < total.n
+                 SELECT tf.deck, tf.oracle_tag, tf.n AS cards,
+                        tf.n * ln((tf.n / dt.n) / (df.n / total.n)) AS w
+                 FROM tf
+                 JOIN df USING (oracle_tag)
+                 JOIN deck_tagged dt USING (deck)
+                 CROSS JOIN total
+                 WHERE tf.n * total.n > df.n * dt.n
              ),
              ranked AS (
                  SELECT deck, oracle_tag, cards, w,
@@ -1998,18 +2019,25 @@ impl CardRepository for MyPostgres {
              ),
              normalized AS (
                  SELECT deck, oracle_tag, cards, w / sum(w) OVER (PARTITION BY deck) AS w
-                 FROM ranked WHERE rn <= $3
+                 FROM ranked WHERE rn <= $9
              )
              SELECT deck, jsonb_object_agg(oracle_tag, w),
                     jsonb_object_agg(oracle_tag, cards::int4)
              FROM normalized GROUP BY deck",
-        )
-        .bind(&deck_indices)
-        .bind(&oracle_ids)
-        .bind(PROFILE_TAG_LIMIT)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
+            role_membership_ctes(1)
+        );
+        /// Deck index, tag weights, and each kept tag's card count.
+        type ProfileRow = (i32, serde_json::Value, Json<HashMap<String, u32>>);
+        let rows: Vec<ProfileRow> = binds
+            .bind(sqlx::query(sqlx::AssertSqlSafe(sql)))
+            .bind(&deck_indices)
+            .bind(&oracle_ids)
+            .bind(i64::from(PROFILE_TAG_LIMIT))
+            .bind(&excluded)
+            .map(|row: sqlx::postgres::PgRow| (row.get(0), row.get(1), row.get(2)))
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
         let mut profiles: Vec<Option<DeckTagProfile>> = vec![None; decks.len()];
         for (deck, weights, Json(cards)) in rows {
             let slot = usize::try_from(deck)

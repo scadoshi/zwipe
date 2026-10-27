@@ -346,9 +346,11 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 
     /// Builds one oracle-tag profile per deck in a single query. `decks` holds
     /// each deck's cards by oracle id (duplicates are fine); the result has one
-    /// entry per deck in the same order, each the profile [`Self::deck_tag_profile`]
-    /// would build for those cards with each kept tag's card count, or `None`
-    /// when they carry no usable tags.
+    /// entry per deck in the same order, each an otag → weight map built by
+    /// the lift steps in [`zwipe_core::domain::deck::tag_profile`] (tags under
+    /// a card role only) with each kept tag's card count, or `None` when they
+    /// carry no usable tags. Unlike [`Self::deck_tag_profile`], which ranks
+    /// related cards, these profiles are what commander suggestions score.
     fn deck_tag_profiles(
         &self,
         decks: &[Vec<uuid::Uuid>],

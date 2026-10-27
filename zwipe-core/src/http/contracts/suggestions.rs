@@ -172,8 +172,10 @@ pub struct HttpProfileTag {
     #[serde(default)]
     pub cards: u32,
     /// The tag's impact: its share of each profiled deck's tag profile
-    /// (cards carrying it times how rare it is across all cards, over the
-    /// deck's top tags), summed over the decks. Between 0 and the deck count;
+    /// (cards carrying it times the log of how much more the deck leans on it
+    /// than all cards do, over the deck's top tags; see
+    /// [`crate::domain::deck::tag_profile`]), summed over the decks. Between
+    /// 0 and the deck count;
     /// only its ratio to other tags' scores means anything. 0.0 from older
     /// servers.
     #[serde(default)]

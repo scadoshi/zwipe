@@ -41,6 +41,18 @@ async fn seed_oracle_tags(pool: &sqlx::PgPool, rows: &[(Uuid, &str)]) {
     }
 }
 
+/// Writes catalog rows for role root slugs, so the tags fall under a card
+/// role and count in the deck tag profiles.
+async fn seed_role_roots(pool: &sqlx::PgPool, slugs: &[&str]) {
+    for slug in slugs {
+        sqlx::query("INSERT INTO oracle_tags (id, slug, label) VALUES (gen_random_uuid(), $1, $1)")
+            .bind(slug)
+            .execute(pool)
+            .await
+            .unwrap();
+    }
+}
+
 /// Creates a Commander deck led by `commander_scryfall_id` and puts
 /// `mainboard` (scryfall id, oracle id) on its mainboard.
 async fn build_commander_deck(
@@ -167,7 +179,7 @@ async fn goblin_user(app: &TestApp) -> (String, Uuid, Uuid) {
         .mono("R")
         .type_line("Legendary Creature — Goblin")
         .commander_legal()
-        .oracle_tags(&["typal-goblin"]);
+        .oracle_tags(&["gives-haste"]);
     let goblin_a = card("Goblin A").mono("R");
     let goblin_b = card("Goblin B").mono("R");
     let matching = card("Krenko Match")
@@ -199,39 +211,33 @@ async fn goblin_user(app: &TestApp) -> (String, Uuid, Uuid) {
     seed_oracle_tags(
         &app.pool,
         &[
-            (cmd_oid, "typal-goblin"),
-            (a.1, "typal-goblin"),
+            (cmd_oid, "gives-haste"),
+            (a.1, "gives-haste"),
             (a.1, "sacrifice-outlet"),
-            (b.1, "typal-goblin"),
-            // A tag on every tagged card carries no information, so a card
-            // outside the deck keeps the goblin tags informative.
+            (b.1, "gives-haste"),
+            // A tag on every tagged card is never over-represented, so a
+            // card outside the deck keeps the goblin deck's tags above the
+            // corpus rate.
             (stranger_oid, "lifegain"),
         ],
     )
     .await;
-    // sacrifice-outlet is a root of the sacrifice role, so it groups under it
-    // once the catalog carries the row; typal-goblin falls under no role.
-    sqlx::query(
-        "INSERT INTO oracle_tags (id, slug, label) VALUES \
-         ($1, 'sacrifice-outlet', 'Sacrifice outlet'), ($2, 'typal-goblin', 'Goblin typal')",
-    )
-    .bind(Uuid::from_u128(0x7a5))
-    .bind(Uuid::from_u128(0x7a6))
-    .execute(&app.pool)
-    .await
-    .unwrap();
+    // gives-haste and sacrifice-outlet are role roots, so they count once the
+    // catalog carries their rows. lifegain has no row and falls under no role.
+    seed_role_roots(&app.pool, &["gives-haste", "sacrifice-outlet"]).await;
 
-    // The rare sacrifice tag outweighs the goblin tag in the user's profile,
-    // so the candidate's own lean decides which tag comes first.
+    // The haste tag on three cards outweighs the sacrifice tag on one in the
+    // user's profile, so the candidate's own lean toward sacrifice decides
+    // which tag comes first.
     seed_profile(
         &app.pool,
         match_oid,
-        json!({ "typal-goblin": 0.8, "sacrifice-outlet": 0.2 }),
+        json!({ "gives-haste": 0.2, "sacrifice-outlet": 0.8 }),
     )
     .await;
     seed_profile(&app.pool, stranger_oid, json!({ "lifegain": 1.0 })).await;
-    seed_profile(&app.pool, cmd_oid, json!({ "typal-goblin": 1.0 })).await;
-    seed_profile(&app.pool, maybe_oid, json!({ "typal-goblin": 1.0 })).await;
+    seed_profile(&app.pool, cmd_oid, json!({ "gives-haste": 1.0 })).await;
+    seed_profile(&app.pool, maybe_oid, json!({ "gives-haste": 1.0 })).await;
 
     build_commander_deck(app, &token, "Gobbos", cmd_sid, &[a, b]).await;
     let (status, body) = app
@@ -291,24 +297,25 @@ async fn decks_without_a_commander_build_the_profile_and_the_list(pool: sqlx::Pg
     seed_oracle_tags(
         &pool,
         &[
-            (standard_main[0].1, "treasure"),
-            (standard_main[1].1, "treasure"),
-            (pioneer_main[0].1, "typal-elf"),
-            // Keeps each tag short of every tagged card, so it carries weight.
+            (standard_main[0].1, "ramp"),
+            (standard_main[1].1, "ramp"),
+            (pioneer_main[0].1, "tutor"),
+            // Keeps each deck's tag above its corpus rate, so it carries weight.
             (untracked.oracle_id().unwrap(), "burn"),
         ],
     )
     .await;
+    seed_role_roots(&pool, &["ramp", "tutor"]).await;
     seed_cards(&pool, &[treasure_w, treasure_r, elf, untracked]).await;
     build_deck(&app, &token, "Treasure", "standard", &standard_main).await;
     build_deck(&app, &token, "Elves", "pioneer", &pioneer_main).await;
 
-    seed_candidate(&pool, "Boros Treasure", "WR", json!({ "treasure": 1.0 })).await;
+    seed_candidate(&pool, "Boros Treasure", "WR", json!({ "ramp": 1.0 })).await;
     seed_candidate(
         &pool,
         "Elf Lord",
         "G",
-        json!({ "typal-elf": 0.5, "lifelink": 0.5 }),
+        json!({ "tutor": 0.5, "lifelink": 0.5 }),
     )
     .await;
     seed_candidate(&pool, "Blue Stranger", "U", json!({ "flying": 1.0 })).await;
@@ -324,7 +331,7 @@ async fn decks_without_a_commander_build_the_profile_and_the_list(pool: sqlx::Pg
     );
     assert_eq!(
         body["suggestions"][0]["reasons"]["tags"],
-        json!([{ "slug": "treasure", "role": null }])
+        json!([{ "slug": "ramp", "role": "ramp" }])
     );
     assert_eq!(
         body["suggestions"][0]["reasons"]["colors"],
@@ -350,7 +357,7 @@ async fn decks_without_a_commander_build_the_profile_and_the_list(pool: sqlx::Pg
         .map(|t| t["slug"].as_str().unwrap())
         .collect();
     assert!(
-        slugs.contains(&"treasure") && slugs.contains(&"typal-elf"),
+        slugs.contains(&"ramp") && slugs.contains(&"tutor"),
         "both decks' tags reach the profile: {body}"
     );
 }
@@ -372,10 +379,10 @@ async fn shared_tags_rank_first_with_reasons_and_exclusions(pool: sqlx::PgPool) 
     assert_eq!(
         reasons["tags"],
         json!([
-            { "slug": "typal-goblin", "role": null },
             { "slug": "sacrifice-outlet", "role": "sacrifice" },
+            { "slug": "gives-haste", "role": "aggression" },
         ]),
-        "shared tags strongest first, each under the card display's role or none"
+        "shared tags strongest first by deck weight times the candidate's, each under the card display's role"
     );
     assert_eq!(reasons["colors"], json!([{ "color": "R", "decks": 1 }]));
 
@@ -383,8 +390,8 @@ async fn shared_tags_rank_first_with_reasons_and_exclusions(pool: sqlx::PgPool) 
     assert_eq!(stranger["tags"], json!([]), "no shared tags");
     assert_eq!(stranger["colors"], json!([]), "white decks: none");
 
-    // The profile summarizes the one red deck: the rare sacrifice tag on one
-    // card outweighs the goblin tag on three, each carried by that one deck.
+    // The profile summarizes the one red deck. Both tags sit at the same lift,
+    // so the haste tag on three cards outweighs the sacrifice tag on one.
     let profile = &body["profile"];
     assert_eq!(profile["deck_count"], 1);
     assert_eq!(profile["colors"], json!([{ "color": "R", "decks": 1 }]));
@@ -394,24 +401,29 @@ async fn shared_tags_rank_first_with_reasons_and_exclusions(pool: sqlx::PgPool) 
     );
     assert_eq!(
         profile["roles"],
-        json!([{ "role": "sacrifice", "decks": 1 }])
+        json!([
+            { "role": "aggression", "decks": 1 },
+            { "role": "sacrifice", "decks": 1 },
+        ])
     );
     let (tags, scores) = split_scores(profile);
     assert_eq!(
         tags,
         json!([
+            { "slug": "gives-haste", "role": "aggression", "decks": 1, "cards": 3 },
             { "slug": "sacrifice-outlet", "role": "sacrifice", "decks": 1, "cards": 1 },
-            { "slug": "typal-goblin", "role": null, "decks": 1, "cards": 3 },
         ]),
         "profile: {body}"
     );
-    // Four tagged cards in all: sacrifice-outlet weighs 1 × ln(4/1) and
-    // typal-goblin 3 × ln(4/3), normalized over the deck's two tags.
-    let sacrifice = 4_f64.ln();
-    let goblin = 3.0 * (4_f64 / 3.0).ln();
-    let total = sacrifice + goblin;
+    // Three tagged deck cards in four tagged cards overall. gives-haste is on
+    // 3 of 3 against 3 of 4, sacrifice-outlet on 1 of 3 against 1 of 4: both
+    // at lift 4/3, weighing 3 × ln(4/3) and 1 × ln(4/3), so 3/4 and 1/4.
+    let lift = 4_f64 / 3.0;
+    let haste = 3.0 * lift.ln();
+    let sacrifice = lift.ln();
+    let total = haste + sacrifice;
     assert_eq!(scores.len(), 2);
-    for (got, want) in scores.iter().zip([sacrifice / total, goblin / total]) {
+    for (got, want) in scores.iter().zip([haste / total, sacrifice / total]) {
         assert_close(*got, want, "one deck's normalized weight");
     }
 }
@@ -511,12 +523,13 @@ async fn color_identity_matches_as_a_set_not_an_average(pool: sqlx::PgPool) {
     seed_oracle_tags(
         &pool,
         &[
-            (tokens_pair.1, "tokens"),
-            // Keeps "tokens" short of every tagged card, so it carries weight.
+            (tokens_pair.1, "repeatable-token-generator"),
+            // Keeps the token tag above its corpus rate, so it carries weight.
             (other.oracle_id().unwrap(), "burn"),
         ],
     )
     .await;
+    seed_role_roots(&pool, &["repeatable-token-generator"]).await;
     seed_cards(&pool, &[jeskai_a, jeskai_b, boros, tokens, other]).await;
     for (i, lead) in leads.into_iter().enumerate() {
         build_commander_deck(&app, &token, &format!("Deck {i}"), lead, &[tokens_pair]).await;
@@ -525,8 +538,20 @@ async fn color_identity_matches_as_a_set_not_an_average(pool: sqlx::PgPool) {
     // Same tags; the Jeskai candidate matches a Jeskai deck outright while
     // mono-blue covers a third of it. Averaging the user's color shares would
     // have put blue first, since every deck has blue's partners.
-    seed_candidate(&pool, "Jeskai Candidate", "WUR", json!({ "tokens": 1.0 })).await;
-    seed_candidate(&pool, "Blue Candidate", "U", json!({ "tokens": 1.0 })).await;
+    seed_candidate(
+        &pool,
+        "Jeskai Candidate",
+        "WUR",
+        json!({ "repeatable-token-generator": 1.0 }),
+    )
+    .await;
+    seed_candidate(
+        &pool,
+        "Blue Candidate",
+        "U",
+        json!({ "repeatable-token-generator": 1.0 }),
+    )
+    .await;
 
     let body = suggestions(&app, &token, 10).await;
     assert_eq!(body["deck_count"], 3);
@@ -563,8 +588,8 @@ async fn color_identity_matches_as_a_set_not_an_average(pool: sqlx::PgPool) {
     let (tags, scores) = split_scores(profile);
     assert_eq!(
         tags,
-        json!([{ "slug": "tokens", "role": null, "decks": 3, "cards": 3 }]),
-        "no oracle_tags row for the tag, so it falls under no role: {body}"
+        json!([{ "slug": "repeatable-token-generator", "role": "tokens", "decks": 3, "cards": 3 }]),
+        "profile: {body}"
     );
     assert_eq!(scores.len(), 1);
     for got in scores {
@@ -572,8 +597,8 @@ async fn color_identity_matches_as_a_set_not_an_average(pool: sqlx::PgPool) {
     }
     assert_eq!(
         profile["roles"],
-        json!([]),
-        "a role-less tag counts no role"
+        json!([{ "role": "tokens", "decks": 3 }]),
+        "the tag's role counts each deck once"
     );
 }
 
@@ -596,16 +621,29 @@ async fn each_deck_is_matched_on_its_own(pool: sqlx::PgPool) {
         .collect();
     let mut tag_rows = Vec::new();
     for c in &blue_cards {
-        for tag in ["draw", "counterspell", "mill", "flash", "scry"] {
+        for tag in ["pure-draw", "counterspell", "mill", "flicker", "tutor"] {
             tag_rows.push((c.oracle_id().unwrap(), tag));
         }
     }
     for c in &boros_cards {
-        for tag in ["equipment", "lifegain"] {
+        for tag in ["burn", "lifegain"] {
             tag_rows.push((c.oracle_id().unwrap(), tag));
         }
     }
     seed_oracle_tags(&pool, &tag_rows).await;
+    seed_role_roots(
+        &pool,
+        &[
+            "pure-draw",
+            "counterspell",
+            "mill",
+            "flicker",
+            "tutor",
+            "burn",
+            "lifegain",
+        ],
+    )
+    .await;
     let blue_main: Vec<_> = blue_cards
         .iter()
         .map(|c| (c.id(), c.oracle_id().unwrap()))
@@ -627,14 +665,14 @@ async fn each_deck_is_matched_on_its_own(pool: sqlx::PgPool) {
         &pool,
         "Blue Candidate",
         "U",
-        json!({ "draw": 0.2, "counterspell": 0.2, "mill": 0.2, "flash": 0.2, "scry": 0.2 }),
+        json!({ "pure-draw": 0.2, "counterspell": 0.2, "mill": 0.2, "flicker": 0.2, "tutor": 0.2 }),
     )
     .await;
     seed_candidate(
         &pool,
         "Boros Candidate",
         "WR",
-        json!({ "equipment": 0.6, "lifegain": 0.4 }),
+        json!({ "burn": 0.6, "lifegain": 0.4 }),
     )
     .await;
 
@@ -647,8 +685,8 @@ async fn each_deck_is_matched_on_its_own(pool: sqlx::PgPool) {
     assert_eq!(
         body["suggestions"][0]["reasons"]["tags"],
         json!([
-            { "slug": "equipment", "role": null },
-            { "slug": "lifegain", "role": null },
+            { "slug": "burn", "role": "burn" },
+            { "slug": "lifegain", "role": "lifegain" },
         ]),
         "reasons come from the red-white deck's overlap"
     );
@@ -667,11 +705,12 @@ async fn at_most_four_of_one_color_identity_lead_the_list(pool: sqlx::PgPool) {
     seed_oracle_tags(
         &pool,
         &[
-            (drawer_pair.1, "draw"),
+            (drawer_pair.1, "pure-draw"),
             (other.oracle_id().unwrap(), "burn"),
         ],
     )
     .await;
+    seed_role_roots(&pool, &["pure-draw"]).await;
     let lead_sid = lead.id();
     seed_cards(&pool, &[lead, drawer, other]).await;
     build_commander_deck(&app, &token, "Blue", lead_sid, &[drawer_pair]).await;
@@ -679,10 +718,16 @@ async fn at_most_four_of_one_color_identity_lead_the_list(pool: sqlx::PgPool) {
     // Six mono-blue candidates share the tag and the color; two others share
     // the tag only, so every blue outscores them.
     for i in 0..6 {
-        seed_candidate(&pool, &format!("Blue {i}"), "U", json!({ "draw": 1.0 })).await;
+        seed_candidate(
+            &pool,
+            &format!("Blue {i}"),
+            "U",
+            json!({ "pure-draw": 1.0 }),
+        )
+        .await;
     }
-    seed_candidate(&pool, "Green Other", "G", json!({ "draw": 1.0 })).await;
-    seed_candidate(&pool, "Red Other", "R", json!({ "draw": 1.0 })).await;
+    seed_candidate(&pool, "Green Other", "G", json!({ "pure-draw": 1.0 })).await;
+    seed_candidate(&pool, "Red Other", "R", json!({ "pure-draw": 1.0 })).await;
 
     let capped = vec![
         "Blue 0",
