@@ -1,7 +1,7 @@
 //! Home's Color map panel: the user's color territory map, with a Playstyle
 //! button that opens the full screen.
 
-use components::{Chip, ColorMap, ColorMapCounts, ColorMapGhost, seed_from_id};
+use components::{ColorMap, ColorMapCounts, ColorMapGhost, seed_from_id};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
@@ -61,15 +61,15 @@ fn use_play_style_summary() -> (Option<HttpPlayStyleSummary>, Signal<bool>) {
 }
 
 /// The panel under the hero, a sibling of the featured flavor card: the
-/// title bar with a Playstyle chip, then the user's [`ColorMap`], seeded by their
-/// id so it draws the same shape as the Playstyle screen's Color map section.
-/// Before any deck has colored cards it shows one line instead; a failed
-/// fetch with nothing cached shows a muted line. Once the fetch settles the
-/// Playstyle chip is always there, so the screen stays reachable from Home; while
-/// it is out the whole panel is a ghost.
+/// title bar, then the user's [`ColorMap`], seeded by their id so it draws
+/// the same shape as the Playstyle screen's Color map section, with a
+/// Playstyle button at the end of its key. Before any deck has colored cards
+/// it shows one line instead; a failed fetch with nothing cached shows a
+/// muted line. Either line has the Playstyle button under it, so the screen
+/// stays reachable from Home; while the fetch is out the whole panel is a
+/// ghost.
 #[component]
 pub fn HomePlayStyle() -> Element {
-    let navigator = use_navigator();
     let (summary, failed) = use_play_style_summary();
     let session: Signal<Option<Session>> = use_context();
     let seed = session
@@ -88,34 +88,39 @@ pub fn HomePlayStyle() -> Element {
                         .filter(color_map_has_data)
                         .filter(|_| summary.deck_count > 0);
                     rsx! {
-                        PanelHeader { onclick: move |_| { navigator.push(Router::SuggestedCommanders {}); } }
+                        PanelHeader {}
                         if let Some(counts) = counts {
-                            ColorMap { counts, seed }
+                            ColorMap {
+                                counts,
+                                seed,
+                                key_action: rsx! {
+                                    PlaystyleButton {}
+                                },
+                            }
                         } else {
                             ColorMapEmpty {}
+                            div { class: "home-panel-actions", PlaystyleButton {} }
                         }
                     }
                 }
                 None if failed() => rsx! {
-                    PanelHeader { onclick: move |_| { navigator.push(Router::SuggestedCommanders {}); } }
+                    PanelHeader {}
                     div { class: "message-empty", style: "padding: 1rem;",
                         "Could not load your playstyle"
                     }
+                    div { class: "home-panel-actions", PlaystyleButton {} }
                 },
                 None => rsx! {
                     // Everything ghosts until the summary lands: the title as
-                    // a bar, the "?" and Playstyle as bare chips their size,
-                    // then the map's ghost.
+                    // a bar, the "?" as a bare chip its size, then the map's
+                    // ghost with the Playstyle button's at the key's end.
                     div { class: "skeleton-card-header home-panel-header", style: "display: flex;",
                         span { class: "home-panel-hint",
                             div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
                         }
                         div { class: "skeleton-bar skeleton-section-label", style: "width: 30%; margin-bottom: 0;" }
-                        span { class: "home-panel-open",
-                            div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
-                        }
                     }
-                    ColorMapSkeleton {}
+                    ColorMapSkeleton { key_action: true }
                 },
             }
         }
@@ -124,9 +129,10 @@ pub fn HomePlayStyle() -> Element {
 
 /// A [`ColorMap`] while its counts load: a [`ColorMapGhost`] of skeleton
 /// tiles sweeping out from the middle in the map's own box, then a bare
-/// chip for each of the key's five colors and a wider one for colorless.
+/// chip for each of the key's five colors and a wider one for colorless,
+/// and with `key_action` one more for the button at the key's end.
 #[component]
-pub(crate) fn ColorMapSkeleton() -> Element {
+pub(crate) fn ColorMapSkeleton(#[props(default)] key_action: bool) -> Element {
     rsx! {
         div { class: "color-map",
             ColorMapGhost {}
@@ -135,6 +141,9 @@ pub(crate) fn ColorMapSkeleton() -> Element {
                     div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-md" }
                 }
                 div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
+                if key_action {
+                    div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
+                }
             }
         }
     }
@@ -149,20 +158,31 @@ pub(crate) fn ColorMapEmpty() -> Element {
     }
 }
 
-/// The panel's title bar: Color map centered, Playstyle as a chip at the
-/// left end and its "?" at the right end, where the app's other headers keep
-/// theirs.
+/// The panel's title bar: Color map centered and its "?" at the right end,
+/// where the app's other headers keep theirs.
 #[component]
-fn PanelHeader(onclick: EventHandler<MouseEvent>) -> Element {
+fn PanelHeader() -> Element {
     rsx! {
         div { class: "settings-list-header home-panel-header",
             span { class: "home-panel-hint",
                 InfoButton { topic: HintTopic::ColorMap }
             }
             span { class: "settings-list-title", "Color map" }
-            span { class: "home-panel-open",
-                Chip { selected: false, onclick: move |e| onclick.call(e), "Playstyle" }
-            }
+        }
+    }
+}
+
+/// Opens the Playstyle screen, in the card details bar's button grammar.
+#[component]
+fn PlaystyleButton() -> Element {
+    let navigator = use_navigator();
+    rsx! {
+        button {
+            class: "card-action-btn",
+            onclick: move |_| {
+                navigator.push(Router::SuggestedCommanders {});
+            },
+            "Playstyle"
         }
     }
 }

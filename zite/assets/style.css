@@ -850,7 +850,7 @@ code {
     margin-top: 0.8rem;
 }
 
-/* Card-name tag, matching the app home's .flavor-source-link pill. */
+/* Card-name tag, matching the app home's .flavor-name pill. */
 .ff-name {
     display: inline-block;
     max-width: 100%;

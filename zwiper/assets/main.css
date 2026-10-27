@@ -2638,15 +2638,8 @@ button {
     justify-content: center;
 }
 
-.home-panel-open {
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-/* The "?" at the right end, mirroring the Playstyle chip, out of the flow so
-   the header keeps its height. */
+/* The "?" at the right end, out of the flow so the header keeps its
+   height. */
 .home-panel-hint {
     position: absolute;
     right: 0.75rem;
@@ -2776,10 +2769,6 @@ button {
     }
 }
 
-.flavor-source {
-    color: var(--accent-tertiary);
-}
-
 /* Card name + price tag, centered on their own line below the quote. Wraps
    the price tag to its own line before the name is forced to wrap internally. */
 .flavor-buy-row {
@@ -2792,8 +2781,8 @@ button {
     padding: 0 1rem;
 }
 
-/* Tag fills, but sized like the util buttons so they read as buttons. */
-.flavor-source-link,
+/* The card's name and USD price as tags, under the quote. */
+.flavor-name,
 .flavor-price {
     display: inline-flex;
     align-items: center;
@@ -2802,16 +2791,14 @@ button {
     padding: 0.4rem 0.8rem;
     font-size: 0.8rem;
     border-radius: 0.5rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
     animation: flavor-enter 0.3s ease-out 0.15s backwards;
 }
 
 /* Cap the width and let a long name wrap. Give wrapped lines a comfortable
    line-height so descenders never touch the line below, then trim the vertical
-   padding by the same amount the taller line-box adds — so a single-line name
-   stays the exact height of the price tag while wrapped names just grow taller. */
-.flavor-source-link {
+   padding by the same amount the taller line-box adds, so a single-line name
+   stays the exact height of the price tag while wrapped names grow taller. */
+.flavor-name {
     display: inline-block;
     max-width: 100%;
     flex-shrink: 0;
@@ -2824,7 +2811,7 @@ button {
     border: 1px solid color-mix(in srgb, var(--palette-1) 35%, transparent);
 }
 
-/* USD price in the theme's money color; opens the buy dialog. */
+/* USD price in the theme's money color. */
 .flavor-price {
     flex-shrink: 0;
     color: var(--color-money);
@@ -2833,9 +2820,14 @@ button {
     font-variant-numeric: tabular-nums;
 }
 
-.flavor-source-link:active,
-.flavor-price:active {
-    transform: scale(0.97);
+/* A Home panel's buttons, centered under a full-bleed rule or a line. */
+.home-panel-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding: 0 1rem;
 }
 
 /* =========================

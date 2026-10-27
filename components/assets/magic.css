@@ -1250,3 +1250,9 @@ i.ms.ms-cost.ms-gp {
     align-items: center;
     gap: 0.35rem;
 }
+
+/* A button at the key's end takes its line's height, so it sits level with
+   the chips. */
+.color-map-key > .card-action-btn {
+    align-self: stretch;
+}

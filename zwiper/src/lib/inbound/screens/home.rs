@@ -46,10 +46,10 @@ pub fn Home() -> Element {
     let mut theme_config: Signal<ThemeConfig> = use_context();
     let mut pip_style: Signal<PipStyle> = use_context();
 
-    // Tap the card name in the flavor quote to preview that card's image.
+    // The flavor card's Image button previews that card's image.
     let mut preview_card: Signal<Option<(ScryfallData, usize)>> = use_signal(|| None);
     let preview_dismissing: Signal<bool> = use_signal(|| false);
-    // Tap the flavor card's price tag to open its buy sheet (TCGplayer / CK).
+    // The flavor card's Buy button opens its buy sheet (TCGplayer / CK).
     let mut show_buy_sheet = use_signal(|| false);
 
     // Refresh user on mount so email_verified_at is current without re-login,
@@ -199,16 +199,23 @@ pub fn Home() -> Element {
                                         "{flavor_text} "
                                     }
                                     div { class: "flavor-buy-row",
-                                        span {
-                                            class: "flavor-source flavor-source-link",
-                                            onclick: move |_| preview_card.set(Some((sd.clone(), 0))),
-                                            "{entry.card.scryfall_data.name}"
+                                        span { class: "flavor-name", "{entry.card.scryfall_data.name}" }
+                                        if let Some(price) = usd_price.as_ref() {
+                                            span { class: "flavor-price", "{price}" }
                                         }
-                                        if let Some(price) = usd_price {
-                                            span {
-                                                class: "flavor-price",
+                                    }
+                                    hr { class: "card-row-rule card-row-rule-muted" }
+                                    div { class: "home-panel-actions",
+                                        button {
+                                            class: "card-action-btn",
+                                            onclick: move |_| preview_card.set(Some((sd.clone(), 0))),
+                                            "Image"
+                                        }
+                                        if usd_price.is_some() {
+                                            button {
+                                                class: "card-action-btn",
                                                 onclick: move |_| show_buy_sheet.set(true),
-                                                "{price}"
+                                                "Buy"
                                             }
                                         }
                                     }
@@ -219,7 +226,8 @@ pub fn Home() -> Element {
                         }
                         None => rsx! {
                             // Mirror the loaded card: a "Featured flavor" title
-                            // bar + divider, then the quote lines.
+                            // bar + divider, the quote lines, then the rule
+                            // and a ghost for each of its buttons.
                             div { class: "skeleton-card-header", style: "display: flex; justify-content: center;",
                                 div { class: "skeleton-bar skeleton-section-label", style: "width: 45%; margin-bottom: 0;" }
                             }
@@ -228,6 +236,11 @@ pub fn Home() -> Element {
                                 div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-2" }
                                 div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-3" }
                                 div { class: "skeleton-bar skeleton-flavor-source" }
+                            }
+                            hr { class: "card-row-rule card-row-rule-muted" }
+                            div { class: "home-panel-actions",
+                                div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                                div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
                             }
                         },
                     }

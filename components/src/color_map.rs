@@ -680,9 +680,16 @@ async fn center(viewport: std::rc::Rc<MountedData>) {
 /// up and down in orangui's `scroll-fade-y` and across in its
 /// `scroll-fade-x`, so an edge with more map past it fades out. Under it, a
 /// key of six chips gives every color's pip and card count, zero included, then the colorless
-/// cards, which the map leaves out.
+/// cards, which the map leaves out. A host's `key_action` sits at the key's
+/// end, wrapping with its chips.
 #[component]
-pub fn ColorMap(counts: ColorMapCounts, seed: u64) -> Element {
+pub fn ColorMap(
+    counts: ColorMapCounts,
+    seed: u64,
+    /// A control drawn after the key's chips, on their lines.
+    #[props(default)]
+    key_action: Option<Element>,
+) -> Element {
     let model = ColorMapModel::new(&counts, seed);
     let width = f64::from(model.columns) * PITCH_PX;
     let height = f64::from(model.rows) * PITCH_PX;
@@ -742,6 +749,7 @@ pub fn ColorMap(counts: ColorMapCounts, seed: u64) -> Element {
                     i { class: "ms ms-c ms-cost" }
                     "Colorless {colorless}"
                 }
+                {key_action}
             }
         }
     }

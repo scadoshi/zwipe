@@ -34,7 +34,14 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: "1.15.1",
+    date: None,
+    entries: &[
+        "Home's Playstyle button sits at the end of the color map's key",
+        "Featured flavor's Image and Buy are buttons at the bottom of its panel",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
