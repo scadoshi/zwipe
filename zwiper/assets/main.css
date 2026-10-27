@@ -2800,7 +2800,8 @@ button {
    with block padding instead of a list's rows, so the text sits in a container
    over the sheet's grid. */
 .sheet-panel {
-    padding: 0.75rem 1rem;
+    --sheet-panel-pad-x: 1rem;
+    padding: 0.75rem var(--sheet-panel-pad-x);
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
@@ -2811,8 +2812,10 @@ button {
     margin-top: var(--panel-gap);
 }
 
-/* The panel supplies the inset the row detail and footer carry themselves. */
+/* The panel supplies the inset the row detail and footer carry themselves,
+   so a rule inside the detail pulls out by the panel's padding instead. */
 .sheet-panel .card-row-detail {
+    --card-row-detail-pad-x: var(--sheet-panel-pad-x);
     padding: 0;
 }
 

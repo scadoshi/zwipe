@@ -271,7 +271,8 @@
 }
 
 .card-row-detail {
-    padding: 0.5rem 1rem 0.25rem;
+    --card-row-detail-pad-x: 1rem;
+    padding: 0.5rem var(--card-row-detail-pad-x) 0.25rem;
     font-size: 0.75rem;
     color: var(--text-muted);
     max-width: 100%;
@@ -314,6 +315,13 @@
     border: none;
     border-top: 1px solid var(--border-secondary);
     margin: 0.5rem 0 0 0;
+}
+
+/* The footer rule sits inside the padded detail; pull it out by that padding
+   so it spans the row edge to edge like the rules around it. */
+.card-row-detail > .card-row-rule {
+    margin-left: calc(-1 * var(--card-row-detail-pad-x));
+    margin-right: calc(-1 * var(--card-row-detail-pad-x));
 }
 
 /* Emphasis marks the expanded row, so the bottom rule is redundant. */
