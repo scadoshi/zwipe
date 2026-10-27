@@ -12,6 +12,7 @@ set -euo pipefail
 #   decks                 read-only          (demand discovery)
 #   scryfall_data         read-only          (commander identity resolution)
 #   card_oracle_tags      read-only          (the tags a commander profile is built from)
+#   oracle_tags           read-only          (the tag hierarchy the role filter walks)
 # nothing else — no users, sessions, deck_cards, etc. a compromised or buggy
 # worker cannot read accounts or touch deck contents.
 #
@@ -83,6 +84,9 @@ GRANT SELECT, INSERT, UPDATE ON commander_tag_profiles TO $ROLE;
 GRANT SELECT ON decks, scryfall_data TO $ROLE;
 -- the per-card oracle tags a commander profile is built from, read-only
 GRANT SELECT ON card_oracle_tags TO $ROLE;
+-- the oracle tag hierarchy (id, slug, parent_ids) that zwipe-core's role rules
+-- expand, so profiles keep only tags under a card role, read-only
+GRANT SELECT ON oracle_tags TO $ROLE;
 SQL
 
 echo
