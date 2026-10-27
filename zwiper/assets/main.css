@@ -1613,6 +1613,12 @@ button {
     padding: 0 1rem;
 }
 
+/* A tighter foot than the panel's default, so the source chips don't sit
+   in a band of empty space. */
+.home-hero .panel-card {
+    padding-bottom: 1rem;
+}
+
 .home-hero .panel-card:hover {
     border-color: var(--border-secondary);
 }
@@ -1664,12 +1670,13 @@ button {
     font-size: 1.25rem;
 }
 
+/* The source chips sit one column gap under the strip, nothing more. */
 .home-hero .stats-source {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.4rem;
-    margin-top: 0.75rem;
+    margin-top: 0;
 }
 
 .home-hero .stat-label {
