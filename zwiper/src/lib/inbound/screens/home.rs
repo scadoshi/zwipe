@@ -14,6 +14,7 @@ use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::card_price;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
+use zwipe_core::domain::user::preferences::PipStyle;
 
 use crate::inbound::components::auth::session_upkeep::FlavorCard;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
@@ -43,6 +44,7 @@ pub fn Home() -> Element {
     let first_login_hint_open = use_one_time_hint(HINT_FIRST_LOGIN);
 
     let mut theme_config: Signal<ThemeConfig> = use_context();
+    let mut pip_style: Signal<PipStyle> = use_context();
 
     // Tap the card name in the flavor quote to preview that card's image.
     let mut preview_card: Signal<Option<(ScryfallData, usize)>> = use_signal(|| None);
@@ -113,6 +115,7 @@ pub fn Home() -> Element {
                     let theme = theme_from_preferences(&prefs);
                     app_icon::follow(&theme);
                     theme_config.set(theme);
+                    pip_style.set(prefs.pip_style);
                 }
                 Err(e) => {
                     tracing::warn!("preferences fetch failed: {e}");

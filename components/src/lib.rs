@@ -55,7 +55,7 @@ pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use oracle_text::OracleText;
 pub use orangui::*;
 pub use role_tags::{OtagDef, RoleTags};
-pub use theme::theme_from_preferences;
+pub use theme::{pip_style_class, theme_from_preferences};
 
 /// The Magic rules: oracle text, keyword chips, card rows, the flippable card
 /// image, the changelog and the mana glyph inside a chip. Load it after

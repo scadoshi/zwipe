@@ -2,6 +2,7 @@ use components::{DialogHostView, ThemeConfig, ToastStack, use_dialog_host};
 use dioxus::prelude::*;
 use tracing_subscriber::EnvFilter;
 use zwipe_core::domain::logo;
+use zwipe_core::domain::user::preferences::PipStyle;
 use zwiper::config::Config;
 use zwiper::inbound::components::auth::session_upkeep::spawn_upkeeper;
 use zwiper::inbound::components::hint_host::HintHost;
@@ -70,8 +71,9 @@ fn ThemeWrapper(children: Element) -> Element {
     // discarded pick.
     use_context_provider(|| follow);
     let class = follow.shown.read().css_class();
+    let pips = components::pip_style_class(use_context::<Signal<PipStyle>>()());
     rsx! {
-        div { class: "app-shell {class}",
+        div { class: "app-shell {class} {pips}",
             // In place from the start; the splash is what rains.
             components::GridCells { still: true }
             // The opening: the field rains in under the mark, then fades to

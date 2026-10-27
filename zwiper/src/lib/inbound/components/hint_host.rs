@@ -50,6 +50,8 @@ pub enum HintTopic {
     Verification,
     /// Profile: theme row, with its dark/light toggle.
     Theme,
+    /// Profile: pips row, theme or natural colors.
+    Pips,
     /// Profile: app icon row.
     AppIcon,
     /// Profile: Universes Beyond row.
@@ -104,6 +106,7 @@ impl HintTopic {
             Self::Email => "Email",
             Self::Verification => "Verification",
             Self::Theme => "Theme",
+            Self::Pips => "Pips",
             Self::AppIcon => "App icon",
             Self::UniversesBeyond => "Universes Beyond",
             Self::Website => "Website",
@@ -185,6 +188,12 @@ impl HintTopic {
                     HintBullet { "The app's palette. Picks preview as you tap" }
                     HintBullet { "The last four are color blind modes" }
                     HintBullet { HintKey { ModeIcon { dark: false } " light" } " " HintKey { ModeIcon { dark: true } " dark" } " switches between the theme's two palettes" }
+                }
+            },
+            Self::Pips => rsx! {
+                HintBullets {
+                    HintBullet { HintKey { "Theme" } " draws mana symbols in your theme's colors" }
+                    HintBullet { HintKey { "Natural" } " keeps Magic's classic colors on every theme" }
                 }
             },
             Self::AppIcon => rsx! {

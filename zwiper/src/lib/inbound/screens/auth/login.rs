@@ -7,6 +7,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::user::preferences::PipStyle;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 
 use crate::inbound::components::home_hero::HomeHero;
@@ -27,6 +28,7 @@ pub fn Login() -> Element {
 
     let mut session: Signal<Option<Session>> = use_context();
     let auth_client: Signal<ZwipeClient> = use_context();
+    let mut pip_style: Signal<PipStyle> = use_context();
 
     let mut username_or_email = use_signal(String::new);
     let mut password = use_signal(String::new);
@@ -73,6 +75,7 @@ pub fn Login() -> Element {
                     let picked = theme_from_preferences(&new_session.preferences);
                     app_icon::follow(&picked);
                     theme.set(picked);
+                    pip_style.set(new_session.preferences.pip_style);
                     session.set(Some(new_session));
                     // The password has done its job; the signal outlives the
                     // screen in the router cache.

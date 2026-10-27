@@ -7,7 +7,7 @@
 //! join two foreign types (the orphan rule), so the conversion is a function.
 
 use orangui::ThemeConfig;
-use zwipe_core::domain::user::models::preferences::UserPreferences;
+use zwipe_core::domain::user::models::preferences::{PipStyle, UserPreferences};
 
 /// The theme a user's saved preferences select. A retired slug moves to its
 /// replacement, and one this build does not know (a theme added after it)
@@ -22,9 +22,30 @@ pub fn theme_from_preferences(prefs: &UserPreferences) -> ThemeConfig {
     .unwrap_or_default()
 }
 
+/// The class a pip style adds beside the theme class: `pips-natural` puts
+/// back the classic fills in `magic.css`, and the theme's own colors need no
+/// class.
+#[must_use]
+pub const fn pip_style_class(style: PipStyle) -> &'static str {
+    match style {
+        PipStyle::Theme => "",
+        PipStyle::Natural => "pips-natural",
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use zwipe_core::domain::user::preferences as core;
+
+    #[test]
+    fn the_natural_pip_class_is_styled() {
+        let class = super::pip_style_class(core::PipStyle::Natural);
+        assert!(
+            crate::MAGIC_CSS.contains(&format!(".{class} {{")),
+            "magic.css has no .{class} rule"
+        );
+        assert_eq!(super::pip_style_class(core::PipStyle::Theme), "");
+    }
 
     #[test]
     fn core_theme_list_matches_orangui() {

@@ -1,5 +1,5 @@
-//! Config screen and its sheets: how the app looks (theme, app icon) and
-//! which cards it serves (Universes Beyond and its exceptions).
+//! Config screen and its sheets: how the app looks (theme, pips, app icon)
+//! and which cards it serves (Universes Beyond and its exceptions).
 
 /// App icon bottom sheet.
 pub mod app_icon_sheet;
@@ -17,9 +17,10 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use preferences::PreferencesSheet;
 use universes_beyond::UniversesBeyondExceptionsSheet;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::universe::franchise_by_slug;
 use zwipe_core::domain::user::models::hints::HINT_CONFIG;
-use zwipe_core::domain::user::preferences::display_theme_name;
+use zwipe_core::domain::user::preferences::{PipStyle, display_theme_name};
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
 use crate::inbound::components::auth::authed::use_authed;
@@ -29,13 +30,16 @@ use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{ProfileScreen, Screen};
 use crate::outbound::app_icon;
+use crate::outbound::session::Persist;
 
-/// Config screen: the account's appearance and card preferences. Theme and
-/// Universes Beyond save through the preferences API; the app icon is a
+/// Config screen: the account's appearance and card preferences. Theme, pips
+/// and Universes Beyond save through the preferences API; the app icon is a
 /// device setting and only shows where the platform supports it.
 #[component]
 pub fn Config() -> Element {
     let mut theme_config: Signal<ThemeConfig> = use_context();
+    let mut pip_style: Signal<PipStyle> = use_context();
+    let mut session: Signal<Option<Session>> = use_context();
     let authed = use_authed(Screen::Profile(ProfileScreen::Preferences));
     let toast = use_toast();
     let navigator = use_navigator();
@@ -108,6 +112,7 @@ pub fn Config() -> Element {
                 ub_hide.set(prefs.exclude_universes_beyond);
                 ub_exceptions.set(prefs.universes_beyond_exceptions);
                 ub_loaded.set(true);
+                pip_style.set(prefs.pip_style);
             }
         });
     });
@@ -143,6 +148,47 @@ pub fn Config() -> Element {
                     });
                 }
                 Err(_) => ub_hide.set(prev),
+            }
+        });
+    };
+
+    // Theme/Natural toggle for pips: recolors every pip at once, persists
+    // immediately and reverts on failure. The stored session keeps the
+    // saved style so the next launch opens with it.
+    let mut toggle_pip_style = move || {
+        let prev = *pip_style.peek();
+        let next = prev.toggled();
+        pip_style.set(next);
+        let request = HttpUpdatePreferences {
+            theme: None,
+            dark_mode: None,
+            exclude_universes_beyond: None,
+            universes_beyond_exceptions: None,
+            pip_style: Some(next),
+        };
+        spawn(async move {
+            // try_run: the facade reports and toasts; the Err back here only
+            // drives the optimistic revert.
+            match authed
+                .try_run("update_preferences", |c, s| async move {
+                    c.update_preferences(request, &s).await
+                })
+                .await
+            {
+                Ok(prefs) => {
+                    pip_style.set(prefs.pip_style);
+                    let current = session.peek().clone();
+                    if let Some(mut current) = current {
+                        current.preferences.pip_style = prefs.pip_style;
+                        current.infallible_save();
+                        session.set(Some(current));
+                    }
+                    said.call(match prefs.pip_style {
+                        PipStyle::Theme => "Pips in theme colors",
+                        PipStyle::Natural => "Pips in natural colors",
+                    });
+                }
+                Err(_) => pip_style.set(prev),
             }
         });
     };
@@ -226,6 +272,24 @@ pub fn Config() -> Element {
                                         variant: ButtonVariant::Action,
                                         onclick: move |_| preferences_open.set(true),
                                         "Change"
+                                    }
+                                }
+                            }
+
+                            div {
+                                class: "settings-row",
+                                span { style: "display:flex;align-items:center;",
+                                    span { class: "settings-row-label", "Pips" }
+                                    InfoButton { topic: HintTopic::Pips }
+                                }
+                                div { class: "settings-row-value",
+                                    Button {
+                                        variant: ButtonVariant::Action,
+                                        onclick: move |_| toggle_pip_style(),
+                                        match pip_style() {
+                                            PipStyle::Theme => "Theme",
+                                            PipStyle::Natural => "Natural",
+                                        }
                                     }
                                 }
                             }

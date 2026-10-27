@@ -2,7 +2,7 @@
 //!
 //! Periodically keeps the access token fresh via the single-flight
 //! [`EnsureFresh`](crate::inbound::components::auth::ensure_session::EnsureFresh) helper, and initializes the app-wide Dioxus context
-//! (session, client, card search state, theme, telemetry buffer).
+//! (session, client, card search state, theme, pip style, telemetry buffer).
 
 use std::time::Duration;
 
@@ -14,6 +14,7 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::user::preferences::PipStyle;
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_core::version::version_at_least;
@@ -258,6 +259,18 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // Persist every theme change at one point (login, prefs update, picker), so
     // the choice survives logout and themes the next launch's pre-auth screens.
     use_effect(move || theme.read().infallible_save());
+
+    // Pip style: the stored session's preferences, which the Config toggle
+    // keeps current, else the default. Login and the preference fetches set
+    // it from the server.
+    let pip_style: Signal<PipStyle> = use_signal(|| {
+        session
+            .peek()
+            .as_ref()
+            .map(|s| s.preferences.pip_style)
+            .unwrap_or_default()
+    });
+    use_context_provider(|| pip_style);
 
     // An icon a retired theme drew switches to its replacement, once a launch.
     use_hook(app_icon::replace_retired);
