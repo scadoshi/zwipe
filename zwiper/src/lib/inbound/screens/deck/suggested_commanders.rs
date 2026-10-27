@@ -14,8 +14,9 @@
 //! than ten remain, so the list stays a full top 10. Above the list, sections
 //! in the deck profile's grammar sum up what the user builds, the profile the
 //! ranking reads: a Summary table (the deck count, the top colors and the
-//! top single color), then charts of the colors and card roles and a table of the
-//! oracle tags across the decks. They share one accordion with Summary open
+//! top single color), then charts of the colors and card roles, a table of the
+//! oracle tags across the decks, and the staples, the cards in the most decks
+//! as the shared card rows. They share one accordion with Summary open
 //! on entry; the list section folds on its own and starts open. With no deck
 //! that has cards to read from, the screen shows a single line instead of the
 //! sections and the list.
@@ -41,7 +42,7 @@ use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
 use zwipe_core::http::contracts::suggestions::{
     HttpBuilderProfile, HttpColorAffinity, HttpCommanderSuggestion, HttpProfileRole,
-    HttpProfileTag, HttpSharedTag, HttpSuggestionReasons, MAX_SUGGESTION_LIMIT,
+    HttpProfileTag, HttpSharedTag, HttpStaple, HttpSuggestionReasons, MAX_SUGGESTION_LIMIT,
 };
 
 use super::components::collapsible_section::CollapsibleSection;
@@ -231,6 +232,13 @@ pub(crate) fn empty_identity_line(identity: &[Color]) -> String {
     format!("No {name} commanders in your top 100")
 }
 
+/// A staple's footer line, its deck count against all the user's decks in
+/// [`color_lines`]' wording. A staple is in at least two decks, so both
+/// counts read plural.
+pub(crate) fn staple_line(decks: u32, deck_count: u32) -> String {
+    format!("In {decks} of your {deck_count} decks")
+}
+
 /// One line per color the user builds in, most decks first, in the order the
 /// server sent. A color code outside WUBRG is skipped.
 pub(crate) fn color_lines(colors: &[HttpColorAffinity], deck_count: u32) -> Vec<String> {
@@ -388,6 +396,7 @@ const SUMMARY_TITLE: &str = "Summary";
 const COLORS_TITLE: &str = "Colors";
 const ROLES_TITLE: &str = "Card roles";
 const TAGS_TITLE: &str = "Oracle tags";
+const STAPLES_TITLE: &str = "Staples";
 
 /// One bar per role in the order sent, labeled as the deck role chart labels
 /// the role and keyed by the role slug. A role with none of `tags` under it
@@ -571,15 +580,54 @@ fn SummaryIdentityRow(
     }
 }
 
+/// One staple: the shared expandable card row with its deck count in the
+/// row's count slot, where a deck list puts copies, and the count against
+/// every deck in its footer. No actions beyond the row's own Printing.
+#[component]
+fn StapleRow(
+    staple: HttpStaple,
+    deck_count: u32,
+    expanded_card: Signal<Option<Uuid>>,
+    preview_card: Signal<Option<(ScryfallData, usize)>>,
+    preview_dismissing: Signal<bool>,
+    on_printing: EventHandler<Card>,
+) -> Element {
+    let line = staple_line(staple.decks, deck_count);
+    rsx! {
+        CardRow {
+            card: staple.card,
+            qty: i32::try_from(staple.decks).unwrap_or(i32::MAX),
+            expanded_card,
+            preview_card,
+            preview_dismissing,
+            on_printing: move |c: Card| on_printing.call(c),
+            footer: rsx! {
+                div { class: "card-detail-footer",
+                    ul { class: "card-detail-bullets",
+                        li { "{line}" }
+                    }
+                }
+            },
+        }
+    }
+}
+
 /// What the user builds, as sections over the suggestions list in the deck
 /// profile's grammar: a Summary table (the deck count, the most common color
-/// set and color) in the Budget section's rows, then two charts and a table.
-/// The four share one accordion with Summary open on entry. Colors are
-/// columns in WUBRG order; card roles are rows like the deck profile's role
-/// chart with chip labels, a tapped role revealing its oracle tags from the
-/// profile under its row; oracle tags are a [`TagTable`].
+/// set and color) in the Budget section's rows, then two charts, a table and
+/// the staples. The five share one accordion with Summary open on entry.
+/// Colors are columns in WUBRG order; card roles are rows like the deck
+/// profile's role chart with chip labels, a tapped role revealing its oracle
+/// tags from the profile under its row; oracle tags are a [`TagTable`];
+/// staples are [`StapleRow`]s, the section absent when there are none.
 #[component]
-pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
+pub(crate) fn BuilderProfileSections(
+    profile: HttpBuilderProfile,
+    expanded_card: Signal<Option<Uuid>>,
+    preview_card: Signal<Option<(ScryfallData, usize)>>,
+    preview_dismissing: Signal<bool>,
+    on_printing: EventHandler<Card>,
+) -> Element {
     let summary = profile_summary(&profile);
     // The top three color identities, shared with Home's panel, for the
     // Summary's podium; the Top colors row stands in until they arrive.
@@ -592,6 +640,8 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     let colors = color_bars(&profile.colors);
     let roles = role_bars(&profile.roles, &profile.tags);
     let tags = tag_rows(&profile.tags);
+    let deck_count = profile.deck_count;
+    let staples = profile.staples;
     let profile_tags = profile.tags;
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
@@ -663,6 +713,30 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                     InfoButton { topic: HintTopic::SuggestionTagChart }
                 },
                 TagTable { rows: tags }
+            }
+        }
+        if !staples.is_empty() {
+            CollapsibleSection {
+                title: STAPLES_TITLE,
+                open_section,
+                header_accessory: rsx! {
+                    InfoButton { topic: HintTopic::SuggestionStaples }
+                },
+                // One child, so the section body's gap stays out from between
+                // the rows; each row brings its own inset and divider.
+                div {
+                    for staple in staples {
+                        StapleRow {
+                            key: "{staple.card.scryfall_data.id}",
+                            staple,
+                            deck_count,
+                            expanded_card,
+                            preview_card,
+                            preview_dismissing,
+                            on_printing,
+                        }
+                    }
+                }
             }
         }
     }
@@ -1070,7 +1144,7 @@ pub fn SuggestedCommanders() -> Element {
                     style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                     if is_loading() {
                         // First load only: a refetch keeps the data in place.
-                        // The profile ghosts as its four sections, Summary open
+                        // The profile ghosts as its five sections, Summary open
                         // on three rows; the list's group and its header are
                         // static chrome, so they render real while the Show
                         // chips and the data rows ghost (the closed-vocabulary
@@ -1100,7 +1174,16 @@ pub fn SuggestedCommanders() -> Element {
                         // The deck view's column of sibling sections.
                         div { style: "width:100%;display:flex;flex-direction:column;gap:var(--panel-gap);",
                             if let Some(profile) = profile() {
-                                BuilderProfileSections { profile }
+                                BuilderProfileSections {
+                                    profile,
+                                    expanded_card,
+                                    preview_card,
+                                    preview_dismissing,
+                                    on_printing: move |c: Card| {
+                                        printing_card.set(Some(c));
+                                        printing_open.set(true);
+                                    },
+                                }
                             }
                             // The commander maybeboard's Show row on the grid, over
                             // the rows it narrows, the Art toggle at its end.
@@ -1427,7 +1510,14 @@ mod tests {
             top_identity: top,
             tags: vec![],
             roles: vec![],
+            staples: vec![],
         }
+    }
+
+    #[test]
+    fn staple_line_counts_against_every_deck() {
+        assert_eq!(staple_line(3, 7), "In 3 of your 7 decks");
+        assert_eq!(staple_line(2, 2), "In 2 of your 2 decks");
     }
 
     fn value(pips: &[Color], count: &str) -> SummaryValue {

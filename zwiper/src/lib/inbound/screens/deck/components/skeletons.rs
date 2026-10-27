@@ -36,13 +36,14 @@ pub(crate) fn DeckStatsSkeleton() -> Element {
 
 /// The suggested commanders' profile sections while the first load is in
 /// flight, in the deck view's skeleton grammar: the Summary section open on
-/// its three rows, then the three chart sections collapsed to their headers.
+/// its three rows, then the three chart sections and Staples collapsed to
+/// their headers.
 #[component]
 pub(crate) fn BuilderProfileSkeleton() -> Element {
     rsx! {
         div { class: "skeleton-stats",
             SkeletonInfoList { rows: 3 }
-            for i in 0..3 {
+            for i in 0..4 {
                 div { key: "{i}", class: "skeleton-chart-box",
                     div { class: "skeleton-bar skeleton-section-label" }
                 }
