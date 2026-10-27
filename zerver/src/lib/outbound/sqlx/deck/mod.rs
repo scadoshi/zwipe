@@ -755,9 +755,10 @@ impl DeckRepository for Postgres {
     ) -> Result<Vec<ProfiledDeck>, CommanderSuggestionsError> {
         // card_colors is every color across the mainboard's identities, the
         // same union the deck views compute; a deck with a commander takes
-        // the commander's identity instead. card_color_counts is the
-        // mainboard's distinct oracle ids whose identity holds W, U, B, R and
-        // G, then those with an empty identity.
+        // the commander's identity instead. card_color_counts is the distinct
+        // oracle ids across the mainboard and the command zone (commander,
+        // partner, background) whose identity holds W, U, B, R and G, then
+        // those with an empty identity.
         let rows = query!(
             r#"SELECT s.oracle_id AS "commander_oracle_id?",
                       s.color_identity AS "commander_colors?: Vec<String>",
@@ -767,15 +768,21 @@ impl DeckRepository for Postgres {
                                           WHERE dc2.deck_id = d.id AND dc2.board = 'deck'))
                           AS "card_colors?: Vec<String>",
                       (SELECT ARRAY[
-                                  COUNT(DISTINCT cc.oracle_id) FILTER (WHERE 'W' = ANY(cs.color_identity)),
-                                  COUNT(DISTINCT cc.oracle_id) FILTER (WHERE 'U' = ANY(cs.color_identity)),
-                                  COUNT(DISTINCT cc.oracle_id) FILTER (WHERE 'B' = ANY(cs.color_identity)),
-                                  COUNT(DISTINCT cc.oracle_id) FILTER (WHERE 'R' = ANY(cs.color_identity)),
-                                  COUNT(DISTINCT cc.oracle_id) FILTER (WHERE 'G' = ANY(cs.color_identity)),
-                                  COUNT(DISTINCT cc.oracle_id) FILTER (WHERE cardinality(cs.color_identity) = 0)]
-                         FROM deck_cards cc
-                         JOIN scryfall_data cs ON cs.id = cc.scryfall_data_id
-                        WHERE cc.deck_id = d.id AND cc.board = 'deck')
+                                  COUNT(DISTINCT m.oracle_id) FILTER (WHERE 'W' = ANY(m.color_identity)),
+                                  COUNT(DISTINCT m.oracle_id) FILTER (WHERE 'U' = ANY(m.color_identity)),
+                                  COUNT(DISTINCT m.oracle_id) FILTER (WHERE 'B' = ANY(m.color_identity)),
+                                  COUNT(DISTINCT m.oracle_id) FILTER (WHERE 'R' = ANY(m.color_identity)),
+                                  COUNT(DISTINCT m.oracle_id) FILTER (WHERE 'G' = ANY(m.color_identity)),
+                                  COUNT(DISTINCT m.oracle_id) FILTER (WHERE cardinality(m.color_identity) = 0)]
+                         FROM (SELECT cc.oracle_id, cs.color_identity
+                                 FROM deck_cards cc
+                                 JOIN scryfall_data cs ON cs.id = cc.scryfall_data_id
+                                WHERE cc.deck_id = d.id AND cc.board = 'deck'
+                               UNION ALL
+                               SELECT cz.oracle_id, cz.color_identity
+                                 FROM scryfall_data cz
+                                WHERE cz.id IN (d.commander_id, d.partner_commander_id, d.background_id)
+                                  AND cz.oracle_id IS NOT NULL) AS m)
                           AS "card_color_counts!: Vec<i64>",
                       COALESCE(array_agg(dc.oracle_id) FILTER (WHERE dc.board = 'deck'), '{}')
                           AS "mainboard_oracle_ids!: Vec<uuid::Uuid>"

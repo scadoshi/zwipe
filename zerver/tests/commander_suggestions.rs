@@ -871,6 +871,77 @@ async fn play_style_summary_sends_the_color_map(pool: sqlx::PgPool) {
     assert_eq!(cards, want, "a card counts once per deck it is in");
 }
 
+/// The color map's per-color cards from a play style or profile body, in
+/// WUBRG order, with the colorless count last.
+fn color_map_cards(map: &Value) -> Vec<u64> {
+    let mut cards: Vec<u64> = map["colors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["cards"].as_u64().unwrap())
+        .collect();
+    cards.push(map["colorless_cards"].as_u64().unwrap());
+    cards
+}
+
+/// The play style color map and the suggestions profile's, after checking
+/// they agree.
+async fn both_color_maps(app: &TestApp, token: &str) -> Vec<u64> {
+    let (status, body) = app.get(PLAY_STYLE_ROUTE, Some(token)).await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    let (status, suggestions) = app.get(COMMANDER_SUGGESTIONS_ROUTE, Some(token)).await;
+    assert_eq!(status, StatusCode::OK, "{suggestions}");
+    assert_eq!(
+        body["color_map"], suggestions["profile"]["color_map"],
+        "home draws the same map as the profile"
+    );
+    color_map_cards(&body["color_map"])
+}
+
+#[sqlx::test]
+async fn the_color_map_counts_a_commander_only_deck(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("cmdonly").await;
+    app.verify_email(&uid).await;
+
+    let commander = card("Azorius Lone Lead")
+        .mono("WU")
+        .type_line("Legendary Creature — Human Wizard")
+        .commander_legal();
+    let lead = commander.id();
+    seed_cards(&pool, &[commander]).await;
+    build_commander_deck(&app, &token, "Just the lead", lead, &[]).await;
+
+    assert_eq!(
+        both_color_maps(&app, &token).await,
+        [1, 1, 0, 0, 0, 0],
+        "the commander counts toward its colors with nothing on the mainboard"
+    );
+}
+
+#[sqlx::test]
+async fn the_color_map_counts_a_commander_on_its_mainboard_once(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("cmdtwice").await;
+    app.verify_email(&uid).await;
+
+    let commander = card("Golgari Twice Seen")
+        .mono("BG")
+        .type_line("Legendary Creature — Elf")
+        .commander_legal();
+    let red = card("Mountain Runner").mono("R");
+    let lead = (commander.id(), commander.oracle_id().unwrap());
+    let r = (red.id(), red.oracle_id().unwrap());
+    seed_cards(&pool, &[commander, red]).await;
+    build_commander_deck(&app, &token, "Lead in the 99", lead.0, &[lead, r]).await;
+
+    assert_eq!(
+        both_color_maps(&app, &token).await,
+        [0, 0, 1, 1, 1, 0],
+        "the commander counts once though it is also on the mainboard"
+    );
+}
+
 /// Sets a deck's `updated_at` so tests control which deck is most recent.
 async fn set_updated_at(pool: &sqlx::PgPool, deck_id: Uuid, minutes_ago: i32) {
     sqlx::query("UPDATE decks SET updated_at = now() - make_interval(mins => $2) WHERE id = $1")
@@ -1004,13 +1075,13 @@ async fn the_profile_maps_cards_per_color_and_decks_per_pair(pool: sqlx::PgPool)
     assert_eq!(
         map["colors"],
         json!([
-            { "color": "W", "cards": 1 },
+            { "color": "W", "cards": 2 },
             { "color": "U", "cards": 0 },
-            { "color": "B", "cards": 1 },
+            { "color": "B", "cards": 2 },
             { "color": "R", "cards": 1 },
-            { "color": "G", "cards": 1 },
+            { "color": "G", "cards": 2 },
         ]),
-        "a two-color card counts toward both, the commander not at all: {body}"
+        "a two-color card counts toward both, and the commander toward its own: {body}"
     );
     assert_eq!(
         map["colorless_cards"], 2,

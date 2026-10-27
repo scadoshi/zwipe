@@ -95,11 +95,12 @@ pub struct HttpBuilderProfile {
 /// The cards and decks behind the color map, summed across the user's decks.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct HttpColorMap {
-    /// All five colors in WUBRG order, each with the mainboard cards whose
-    /// color identity includes it. A card counts once per deck it is in, so
+    /// All five colors in WUBRG order, each with the mainboard and command
+    /// zone cards whose color identity includes it. A card counts once per deck it is in, so
     /// a two-color card counts toward both its colors.
     pub colors: Vec<HttpColorCards>,
-    /// Mainboard cards with an empty color identity, counted the same way.
+    /// Mainboard and command zone cards with an empty color identity,
+    /// counted the same way.
     pub colorless_cards: u32,
     /// All ten color pairs, each with the decks whose color identity
     /// includes both colors, in WUBRG order (`WU`, `WB`, `WR`, `WG`, `UB`,
@@ -113,7 +114,8 @@ pub struct HttpColorMap {
 pub struct HttpColorCards {
     /// One of `W`, `U`, `B`, `R`, `G`.
     pub color: String,
-    /// Mainboard cards whose color identity includes the color, 0 or more.
+    /// Mainboard and command zone cards whose color identity includes the
+    /// color, 0 or more.
     pub cards: u32,
 }
 

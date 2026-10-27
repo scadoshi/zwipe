@@ -79,12 +79,14 @@ pub struct ProfiledDeck {
     pub colors: Vec<String>,
     /// Oracle ids of the deck's mainboard cards.
     pub mainboard_oracle_ids: Vec<Uuid>,
-    /// The deck's distinct mainboard cards counted by color identity.
+    /// The deck's distinct mainboard and command zone cards counted by color
+    /// identity.
     pub card_colors: CardColorCounts,
 }
 
-/// One deck's distinct mainboard cards (by oracle id) counted by color
-/// identity. A multicolored card counts toward each of its colors.
+/// One deck's distinct mainboard and command zone cards (by oracle id)
+/// counted by color identity. A multicolored card counts toward each of its
+/// colors.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct CardColorCounts {
     /// Cards whose identity includes each color, in WUBRG order.
@@ -376,8 +378,8 @@ pub struct ColorMap {
 pub struct ColorCards {
     /// One of `W`, `U`, `B`, `R`, `G`.
     pub color: String,
-    /// Mainboard cards whose identity includes the color, each counted once
-    /// per deck.
+    /// Mainboard and command zone cards whose identity includes the color,
+    /// each counted once per deck.
     pub cards: u32,
 }
 

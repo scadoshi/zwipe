@@ -55,6 +55,7 @@ use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::hint_host::HintTopic;
+use crate::inbound::components::home_play_style::ColorMapEmpty;
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
@@ -371,31 +372,6 @@ fn bars_from<T>(
 fn decks_usize(decks: u32) -> usize {
     usize::try_from(decks).unwrap_or(usize::MAX)
 }
-
-/// One bar per color in WUBRG order, labeled the way the deck color chart
-/// labels its bars and keyed by the color code. A code outside WUBRG is
-/// skipped.
-pub(crate) fn color_bars(colors: &[HttpColorAffinity]) -> Vec<Bar> {
-    let mut known: Vec<&HttpColorAffinity> = colors
-        .iter()
-        .filter(|c| color_name(&c.color).is_some())
-        .collect();
-    known.sort_by_key(|c| WUBRG.iter().position(|code| *code == c.color));
-    bars_from(
-        &known,
-        |c| decks_usize(c.decks),
-        |c, pct| Bar {
-            key: c.color.clone(),
-            label: color_name(&c.color).unwrap_or_default().to_string(),
-            count: decks_usize(c.decks),
-            pct,
-            revealable: true,
-        },
-    )
-}
-
-/// The WUBRG codes in order.
-const WUBRG: [&str; 5] = ["W", "U", "B", "R", "G"];
 
 /// The list's group header, the deck view's non-collapsible Commander
 /// header grammar.
@@ -884,10 +860,8 @@ fn StaplesPanel(
 /// profile's grammar: a color territory map seeded by the user's id, then a
 /// Summary table (the deck count, the most common color set and color) in
 /// the Budget section's rows, a chart and a table. The four share one
-/// accordion with Color map open on entry, or Summary when there are no
-/// colors to show. Colors are a [`ColorMap`], or
-/// columns in WUBRG order from a server that sends no color map or a map
-/// with nothing on it; card roles are rows like the deck
+/// accordion with Color map open on entry. Colors are a [`ColorMap`], or
+/// Home's empty line when the map has nothing on it; card roles are rows like the deck
 /// profile's role chart with chip labels, a tapped role revealing its oracle
 /// tags from the profile under its row; oracle tags are a [`TagTable`].
 #[component]
@@ -900,19 +874,12 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
         .as_ref()
         .map_or(0, |s| seed_from_id(s.user.id.as_u128()));
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
-    let colors = color_bars(&profile.colors);
     let color_map = profile
         .color_map
         .as_ref()
         .map(ColorMapCounts::from)
         .filter(color_map_has_data);
-    let has_colors = color_map.is_some() || !colors.is_empty();
-    let first_open = if has_colors {
-        COLORS_TITLE
-    } else {
-        SUMMARY_TITLE
-    };
-    let open_section: Signal<Option<String>> = use_signal(|| Some(first_open.to_string()));
+    let open_section: Signal<Option<String>> = use_signal(|| Some(COLORS_TITLE.to_string()));
     let roles = role_bars(&profile.roles, &profile.tags);
     let tags = tag_rows(&profile.tags);
     let profile_tags = profile.tags;
@@ -932,18 +899,16 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
         }
     });
     rsx! {
-        if has_colors {
-            CollapsibleSection {
-                title: COLORS_TITLE,
-                open_section,
-                header_accessory: rsx! {
-                    InfoButton { topic: HintTopic::ColorMap }
-                },
-                if let Some(counts) = color_map {
-                    ColorMap { counts, seed: map_seed }
-                } else {
-                    BarChart { bars: colors }
-                }
+        CollapsibleSection {
+            title: COLORS_TITLE,
+            open_section,
+            header_accessory: rsx! {
+                InfoButton { topic: HintTopic::ColorMap }
+            },
+            if let Some(counts) = color_map {
+                ColorMap { counts, seed: map_seed }
+            } else {
+                ColorMapEmpty {}
             }
         }
         CollapsibleSection { title: SUMMARY_TITLE, open_section,
@@ -2048,7 +2013,7 @@ mod tests {
     }
 
     #[test]
-    fn an_empty_color_map_falls_back_to_the_bars() {
+    fn a_color_map_has_data_with_any_colored_or_colorless_card() {
         assert!(!color_map_has_data(&ColorMapCounts::default()));
         assert!(color_map_has_data(&ColorMapCounts {
             colorless: 1,
@@ -2058,20 +2023,6 @@ mod tests {
             cards: [0, 0, 0, 0, 2],
             ..ColorMapCounts::default()
         }));
-    }
-
-    #[test]
-    fn color_bars_run_wubrg_with_the_deck_chart_labels_and_math() {
-        let bars = color_bars(&[color("R", 4), color("W", 2), color("C", 9), color("G", 1)]);
-        assert_eq!(
-            bars,
-            vec![
-                bar("W", "white", 2, 50),
-                bar("R", "red", 4, 100),
-                bar("G", "green", 1, 25),
-            ],
-            "WUBRG order, unknown code dropped, pct over the max"
-        );
     }
 
     #[test]

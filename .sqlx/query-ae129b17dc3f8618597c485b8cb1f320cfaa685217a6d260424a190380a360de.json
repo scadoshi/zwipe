@@ -1,0 +1,61 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.oracle_id AS \"commander_oracle_id?\",\n                      s.color_identity AS \"commander_colors?: Vec<String>\",\n                      (SELECT array_agg(DISTINCT ci)\n                         FROM scryfall_data sci, unnest(sci.color_identity) AS ci\n                        WHERE sci.id IN (SELECT dc2.scryfall_data_id FROM deck_cards dc2\n                                          WHERE dc2.deck_id = d.id AND dc2.board = 'deck'))\n                          AS \"card_colors?: Vec<String>\",\n                      (SELECT ARRAY[\n                                  COUNT(DISTINCT m.oracle_id) FILTER (WHERE 'W' = ANY(m.color_identity)),\n                                  COUNT(DISTINCT m.oracle_id) FILTER (WHERE 'U' = ANY(m.color_identity)),\n                                  COUNT(DISTINCT m.oracle_id) FILTER (WHERE 'B' = ANY(m.color_identity)),\n                                  COUNT(DISTINCT m.oracle_id) FILTER (WHERE 'R' = ANY(m.color_identity)),\n                                  COUNT(DISTINCT m.oracle_id) FILTER (WHERE 'G' = ANY(m.color_identity)),\n                                  COUNT(DISTINCT m.oracle_id) FILTER (WHERE cardinality(m.color_identity) = 0)]\n                         FROM (SELECT cc.oracle_id, cs.color_identity\n                                 FROM deck_cards cc\n                                 JOIN scryfall_data cs ON cs.id = cc.scryfall_data_id\n                                WHERE cc.deck_id = d.id AND cc.board = 'deck'\n                               UNION ALL\n                               SELECT cz.oracle_id, cz.color_identity\n                                 FROM scryfall_data cz\n                                WHERE cz.id IN (d.commander_id, d.partner_commander_id, d.background_id)\n                                  AND cz.oracle_id IS NOT NULL) AS m)\n                          AS \"card_color_counts!: Vec<i64>\",\n                      COALESCE(array_agg(dc.oracle_id) FILTER (WHERE dc.board = 'deck'), '{}')\n                          AS \"mainboard_oracle_ids!: Vec<uuid::Uuid>\"\n               FROM decks d\n               LEFT JOIN scryfall_data s ON s.id = d.commander_id AND s.oracle_id IS NOT NULL\n               LEFT JOIN deck_cards dc ON dc.deck_id = d.id\n               WHERE d.user_id = $1\n               GROUP BY d.id, s.oracle_id, s.color_identity\n               HAVING s.oracle_id IS NOT NULL OR bool_or(dc.board = 'deck')\n               ORDER BY d.updated_at DESC, d.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "commander_oracle_id?",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "scryfall_data",
+            "name": "oracle_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "commander_colors?: Vec<String>",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "scryfall_data",
+            "name": "color_identity"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "card_colors?: Vec<String>",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "card_color_counts!: Vec<i64>",
+        "type_info": "Int8Array",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "mainboard_oracle_ids!: Vec<uuid::Uuid>",
+        "type_info": "UuidArray",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "ae129b17dc3f8618597c485b8cb1f320cfaa685217a6d260424a190380a360de"
+}

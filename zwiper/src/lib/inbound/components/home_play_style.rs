@@ -92,9 +92,7 @@ pub fn HomePlayStyle() -> Element {
                         if let Some(counts) = counts {
                             ColorMap { counts, seed }
                         } else {
-                            div { class: "message-empty", style: "padding: 1rem;",
-                                "Build a deck to see your playstyle"
-                            }
+                            ColorMapEmpty {}
                         }
                     }
                 }
@@ -139,6 +137,15 @@ pub(crate) fn ColorMapSkeleton() -> Element {
                 div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
             }
         }
+    }
+}
+
+/// What a color map shows in its place before any deck has colored cards, on
+/// Home and in Playstyle's Color map section.
+#[component]
+pub(crate) fn ColorMapEmpty() -> Element {
+    rsx! {
+        div { class: "message-empty", style: "padding: 1rem;", "Build a deck to see your playstyle" }
     }
 }
 
