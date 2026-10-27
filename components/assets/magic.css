@@ -1182,7 +1182,7 @@ i.ms.ms-cost.ms-gp {
 
 /* Tiles keep their size, so a map larger than the box scrolls inside it:
    up and down here, across in .color-map-across inside, each box with
-   orangui's edge fade for its axis. 14rem holds a map of about 1,000
+   orangui's edge fade for its axis. 14rem holds a map of about 2,200
    colored cards. The scroll stays in the box instead of carrying on to the
    page. */
 .color-map-viewport {

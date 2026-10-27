@@ -35,15 +35,15 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::http::contracts::suggestions::HttpColorMap;
 
 /// The fewest tiles a map with any colored card draws.
-pub const MIN_TILES: u32 = 26;
+pub const MIN_TILES: u32 = 23;
 /// The most tiles a map draws: the curve's value at 6,400 colored cards, so
 /// the cap and the curve meet with no step.
-pub const MAX_TILES: u32 = 330;
+pub const MAX_TILES: u32 = 295;
 /// Tenths of a tile per square root of the colored cards, past
-/// [`MIN_TILES`]: 3.8 tiles, about 145 tiles for 1,000 cards and 235 for
-/// 3,000. The square root over 6,400 is 80, and `26 + 3.8 * 80` is
+/// [`MIN_TILES`]: 3.4 tiles, about 130 tiles for 1,000 cards and 210 for
+/// 3,000. The square root over 6,400 is 80, and `23 + 3.4 * 80` is
 /// [`MAX_TILES`].
-pub const TILES_PER_ROOT_TENTHS: u32 = 38;
+pub const TILES_PER_ROOT_TENTHS: u32 = 34;
 /// One tile's pitch on screen, in CSS pixels: tiles keep this size and a
 /// map larger than the viewport scrolls.
 pub const PITCH_PX: f64 = 12.0;
@@ -777,7 +777,7 @@ fn twinkle(x: i32, y: i32) -> String {
 
 /// A [`ColorMap`]'s viewport while its counts load: a small blob of ghost
 /// tiles at the map's pitch, in the middle of a box as tall as a map of
-/// about 1,000 colored cards, so the swap to the real map stays in place.
+/// about 2,200 colored cards, so the swap to the real map stays in place.
 /// The tiles flower out ring by ring from the middle and fold back in on a
 /// loop until the data lands, dimmer toward the edge, each one twinkling at
 /// its own pace.
@@ -884,13 +884,13 @@ mod tests {
     #[test]
     fn tiles_grow_slowly_with_cards_within_the_clamp() {
         assert_eq!(tile_total(0), 0);
-        assert_eq!(tile_total(1), 29);
-        assert_eq!(tile_total(100), 64);
-        assert_eq!(tile_total(720), 127);
-        assert_eq!(tile_total(900), 140);
-        assert_eq!(tile_total(1000), 146);
-        assert_eq!(tile_total(3000), 234);
-        assert_eq!(tile_total(6399), 329);
+        assert_eq!(tile_total(1), 26);
+        assert_eq!(tile_total(100), 57);
+        assert_eq!(tile_total(720), 114);
+        assert_eq!(tile_total(900), 125);
+        assert_eq!(tile_total(1000), 130);
+        assert_eq!(tile_total(3000), 209);
+        assert_eq!(tile_total(6399), 294);
         assert_eq!(tile_total(6400), MAX_TILES);
         assert_eq!(tile_total(10_000), MAX_TILES);
         assert_eq!(tile_total(u64::MAX), MAX_TILES);
@@ -898,12 +898,12 @@ mod tests {
             cards: [3, 0, 0, 1, 0],
             colorless: 0,
         };
-        assert_eq!(ColorMapModel::new(&small, SEED).tiles.len(), 33);
+        assert_eq!(ColorMapModel::new(&small, SEED).tiles.len(), 29);
         let huge = ColorMapCounts {
             cards: [9000, 9000, 9000, 9000, 9000],
             colorless: 0,
         };
-        assert_eq!(ColorMapModel::new(&huge, SEED).tiles.len(), 330);
+        assert_eq!(ColorMapModel::new(&huge, SEED).tiles.len(), 295);
     }
 
     #[test]

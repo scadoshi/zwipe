@@ -125,17 +125,18 @@ pub fn HomePlayStyle() -> Element {
 }
 
 /// A [`ColorMap`] while its counts load: a [`ColorMapGhost`] of skeleton
-/// tiles sweeping out from the middle in the map's own box, then bare chips
-/// for the key.
+/// tiles sweeping out from the middle in the map's own box, then a bare
+/// chip for each of the key's five colors and a wider one for colorless.
 #[component]
 pub(crate) fn ColorMapSkeleton() -> Element {
     rsx! {
         div { class: "color-map",
             ColorMapGhost {}
             div { class: "color-map-key",
-                for i in 0..3 {
-                    div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                for i in 0..5 {
+                    div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-md" }
                 }
+                div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
             }
         }
     }
