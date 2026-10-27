@@ -1,5 +1,5 @@
-//! Home's Playstyle panel: the user's color territory map, with a button that
-//! opens the full screen.
+//! Home's Color map panel: the user's color territory map, with a Playstyle
+//! button that opens the full screen.
 
 use components::{Chip, ColorMap, ColorMapCounts, seed_from_id};
 use dioxus::prelude::*;
@@ -59,11 +59,11 @@ fn use_play_style_summary() -> (Option<HttpPlayStyleSummary>, Signal<bool>) {
 }
 
 /// The panel under the hero, a sibling of the featured flavor card: the
-/// title bar with an Open chip, then the user's [`ColorMap`], seeded by their
+/// title bar with a Playstyle chip, then the user's [`ColorMap`], seeded by their
 /// id so it draws the same shape as the Playstyle screen's Colors section.
 /// Before any deck has colored cards it shows one line instead; a failed
 /// fetch with nothing cached shows a muted line. Once the fetch settles the
-/// Open chip is always there, so the screen stays reachable from Home; while
+/// Playstyle chip is always there, so the screen stays reachable from Home; while
 /// it is out the whole panel is a ghost.
 #[component]
 pub fn HomePlayStyle() -> Element {
@@ -104,11 +104,11 @@ pub fn HomePlayStyle() -> Element {
                 },
                 None => rsx! {
                     // Everything ghosts until the summary lands: the title as
-                    // a bar, Open as a bare chip, then the map's ghost.
+                    // a bar, Playstyle as a bare chip its width, then the map's ghost.
                     div { class: "skeleton-card-header home-panel-header", style: "display: flex;",
                         div { class: "skeleton-bar skeleton-section-label", style: "width: 30%; margin-bottom: 0;" }
                         span { class: "home-panel-open",
-                            div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                            div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
                         }
                     }
                     ColorMapSkeleton {}
@@ -134,15 +134,15 @@ pub(crate) fn ColorMapSkeleton() -> Element {
     }
 }
 
-/// The panel's title bar: Playstyle centered, Open as a chip at its right
+/// The panel's title bar: Color map centered, Playstyle as a chip at its right
 /// end, the way the deck view's Budget header carries its currency chips.
 #[component]
 fn PanelHeader(onclick: EventHandler<MouseEvent>) -> Element {
     rsx! {
         div { class: "settings-list-header home-panel-header",
-            span { class: "settings-list-title", "Playstyle" }
+            span { class: "settings-list-title", "Color map" }
             span { class: "home-panel-open",
-                Chip { selected: false, onclick: move |e| onclick.call(e), "Open" }
+                Chip { selected: false, onclick: move |e| onclick.call(e), "Playstyle" }
             }
         }
     }

@@ -238,7 +238,7 @@ pub fn Home() -> Element {
                 title: "Welcome to Zwipe",
                 HintBullets {
                     HintBullet { HintKey { "Decks" } " holds your decks" }
-                    HintBullet { HintKey { "Playstyle" } " maps your colors, and its Open button suggests commanders" }
+                    HintBullet { HintKey { "Color map" } " grows from your decks' colors. Tap Playstyle for suggested commanders" }
                     HintBullet { HintKey { "Account" } " has your email, password and log out" }
                     HintBullet { HintKey { "Config" } " sets your theme and which cards show" }
                     HintBullet { HintColored { color: "--color-warning", "Verify your email" } " in Account for full deck and card limits" }

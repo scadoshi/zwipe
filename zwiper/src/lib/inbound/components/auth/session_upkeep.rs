@@ -194,7 +194,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     let cached_counts: Signal<Option<CachedCounts>> = use_signal(CachedCounts::restored);
     use_context_provider(|| cached_counts);
 
-    // Home's Playstyle panel: the last summary, kept above the router so a
+    // Home's Color map panel: the last summary, kept above the router so a
     // return to Home shows it while the refetch is out (see CachedPlayStyle).
     let cached_play_style: Signal<Option<CachedPlayStyle>> = use_signal(|| None);
     use_context_provider(|| cached_play_style);

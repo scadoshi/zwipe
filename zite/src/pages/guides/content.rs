@@ -632,7 +632,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Finding it"),
             Block::Bullets(&[
-                "The Playstyle panel on the Home screen shows your color map. Tap Open for the rest. It's also on the Decks screen, under More.",
+                "On the Home screen, tap Playstyle on the Color map panel. It's also on the Decks screen, under More.",
                 "Your colors, card roles and oracle tags come first.",
                 "Under them, your top 10 commanders show as card rows, best fit first.",
                 "Tap a color chip in the Show row to see only those colors. Tap it again to see them all.",

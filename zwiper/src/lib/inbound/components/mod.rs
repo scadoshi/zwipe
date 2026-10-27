@@ -16,7 +16,7 @@ pub mod hint_dialog;
 pub mod hint_host;
 /// The mark with the public counters, on home and the auth screens.
 pub mod home_hero;
-/// Home's Playstyle panel: the user's top colors.
+/// Home's Color map panel: the user's color territory map.
 pub mod home_play_style;
 /// Persistent, on-demand "?" help button (not one-time, no session dependency).
 pub mod info_button;
