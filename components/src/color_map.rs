@@ -31,6 +31,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use dioxus::html::geometry::PixelsVector2D;
 use dioxus::prelude::*;
+use orangui::SplashGate;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::http::contracts::suggestions::HttpColorMap;
 
@@ -669,7 +670,8 @@ async fn center(viewport: std::rc::Rc<MountedData>) {
 /// [`seed_from_id`] of their id.
 ///
 /// The tiles sweep in from the map's middle out, a ring at a time, in
-/// orangui's heat grid sweep, and every color fades from full at the map's
+/// orangui's heat grid sweep, held under a splash until its [`SplashGate`]
+/// opens, and every color fades from full at the map's
 /// middle toward the panel at its edges. The key's pips stay at full color.
 ///
 /// Tiles keep [`PITCH_PX`] at any size. The map runs the full width of its
@@ -688,6 +690,8 @@ pub fn ColorMap(counts: ColorMapCounts, seed: u64) -> Element {
     let (inset, size, corner) = (GAP_SHARE / 2.0, 1.0 - GAP_SHARE, CORNER_SHARE);
     let key = Color::all().into_iter().zip(counts.cards);
     let colorless = counts.colorless;
+    // The sweep holds under a splash and runs as it leaves.
+    let held = try_consume_context::<SplashGate>().is_some_and(|gate| !gate.0());
     rsx! {
         div { class: "color-map",
             if !model.tiles.is_empty() {
@@ -704,7 +708,7 @@ pub fn ColorMap(counts: ColorMapCounts, seed: u64) -> Element {
                             spawn(center(event.data()));
                         },
                         svg {
-                            class: "color-map-svg",
+                            class: if held { "color-map-svg held" } else { "color-map-svg" },
                             view_box: "{view_box}",
                             width: "{width}",
                             height: "{height}",

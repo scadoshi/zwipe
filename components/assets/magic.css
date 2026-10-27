@@ -1226,6 +1226,11 @@ i.ms.ms-cost.ms-gp {
     animation: heat-sweep 0.4s ease-out backwards;
 }
 
+/* Hidden at the sweep's start until the splash opens its gate. */
+.color-map-svg.held .color-map-tile {
+    animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .color-map-tile {
         animation: none;
