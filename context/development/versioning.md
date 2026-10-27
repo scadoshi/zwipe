@@ -17,4 +17,3 @@ History note: numbers through 1.13.0 were chosen under older rules (feature-carr
 - Bump the version in the workspace `Cargo.toml` (`[workspace.package]`).
 - Move the changelog block from `UPCOMING` to `RELEASES`, which also gives the release its date.
 - iOS build numbers and Android versionCodes increment on their own per upload (see the submission `history.md` files).
-- Optional: bump zynergy's zwipe-core pin in the same sitting. In the zynergy checkout, run `cargo update -p zwipe-core`, build and test with `--locked`, commit `Cargo.lock` and push, which deploys the synergy worker. Its weekly pin check goes red whenever zwipe-core has moved past the pin, so bumping at each release keeps it green. Check that the shared synergy payload type and `scryfall_data`'s serde fields didn't change shape; a renamed field still compiles but stops matching stored rows.
