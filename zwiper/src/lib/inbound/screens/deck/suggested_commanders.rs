@@ -233,19 +233,20 @@ pub(crate) fn empty_identity_line(identity: &[Color]) -> String {
     format!("No {name} commanders in your top 100")
 }
 
-/// A staple's share of the user's decks as its row header's tags, the percent
-/// rounded half up and then the fraction, "67%" and "4/6". With no decks to
-/// count against it is the fraction alone.
-pub(crate) fn staple_share(decks: u32, deck_count: u32) -> Vec<String> {
-    let fraction = format!("{decks}/{deck_count}");
-    let percent = u64::from(decks)
+/// A staple's share of the user's decks for its row header, rounded half
+/// up, "67%". `None` with no decks to count against.
+pub(crate) fn staple_percent(decks: u32, deck_count: u32) -> Option<String> {
+    u64::from(decks)
         .checked_mul(200)
         .and_then(|doubled| doubled.checked_add(u64::from(deck_count)))
-        .and_then(|sum| sum.checked_div(u64::from(deck_count).checked_mul(2)?));
-    match percent {
-        Some(percent) => vec![format!("{percent}%"), fraction],
-        None => vec![fraction],
-    }
+        .and_then(|sum| sum.checked_div(u64::from(deck_count).checked_mul(2)?))
+        .map(|percent| format!("{percent}%"))
+}
+
+/// A staple's deck count for its expanded detail, "4 of 6 decks".
+pub(crate) fn staple_decks(decks: u32, deck_count: u32) -> String {
+    let noun = if deck_count == 1 { "deck" } else { "decks" };
+    format!("{decks} of {deck_count} {noun}")
 }
 
 /// One line per color the user builds in, most decks first, in the order the
@@ -596,9 +597,9 @@ fn SummaryIdentityRow(
     }
 }
 
-/// One staple: the shared expandable card row with its share of the user's
-/// decks as a tag where a deck list puts copies. No footer and no actions
-/// beyond the row's own Printing.
+/// One staple: the shared expandable card row with its percent of the user's
+/// decks as a tag where a deck list puts copies, and the deck count under its
+/// roles when expanded. No actions beyond the row's own Printing.
 #[component]
 fn StapleRow(
     staple: HttpStaple,
@@ -608,15 +609,21 @@ fn StapleRow(
     preview_dismissing: Signal<bool>,
     on_printing: EventHandler<Card>,
 ) -> Element {
+    let decks_label = staple_decks(staple.decks, deck_count);
     rsx! {
         CardRow {
             card: staple.card,
             qty: i32::try_from(staple.decks).unwrap_or(i32::MAX),
-            qty_tags: staple_share(staple.decks, deck_count),
+            qty_tags: staple_percent(staple.decks, deck_count).into_iter().collect::<Vec<String>>(),
             expanded_card,
             preview_card,
             preview_dismissing,
             on_printing: move |c: Card| on_printing.call(c),
+            footer: rsx! {
+                div { class: "card-detail-stats",
+                    span { class: "detail-chip detail-chip-pt", "{decks_label}" }
+                }
+            },
         }
     }
 }
@@ -1775,13 +1782,22 @@ mod tests {
     }
 
     #[test]
-    fn staple_share_rounds_the_percent_and_keeps_the_fraction() {
-        assert_eq!(staple_share(2, 3), ["67%", "2/3"]);
-        assert_eq!(staple_share(4, 6), ["67%", "4/6"]);
-        assert_eq!(staple_share(1, 3), ["33%", "1/3"]);
-        assert_eq!(staple_share(1, 8), ["13%", "1/8"], "12.5 rounds up");
-        assert_eq!(staple_share(6, 6), ["100%", "6/6"]);
-        assert_eq!(staple_share(2, 0), ["2/0"], "no decks to count against");
+    fn staple_percent_rounds_half_up() {
+        assert_eq!(staple_percent(2, 3).as_deref(), Some("67%"));
+        assert_eq!(staple_percent(1, 3).as_deref(), Some("33%"));
+        assert_eq!(
+            staple_percent(1, 8).as_deref(),
+            Some("13%"),
+            "12.5 rounds up"
+        );
+        assert_eq!(staple_percent(6, 6).as_deref(), Some("100%"));
+        assert_eq!(staple_percent(2, 0), None, "no decks to count against");
+    }
+
+    #[test]
+    fn staple_decks_counts_against_the_total() {
+        assert_eq!(staple_decks(11, 13), "11 of 13 decks");
+        assert_eq!(staple_decks(1, 1), "1 of 1 deck");
     }
 
     /// A staple as the filter sees it: a name, its type line and its color

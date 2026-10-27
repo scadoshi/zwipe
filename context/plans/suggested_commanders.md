@@ -106,7 +106,7 @@ Otag data changes nightly with the Scryfall sync, so a profile reflects the otag
 - Dismissals: `user_commander_dismissals(user_id, oracle_id, dismissed_at)` with a 7-day TTL like deck skips, read at query time, plus routes to dismiss, undo one, and clear all.
 - Start deck reuses deck creation with `commander_id`; Maybeboard reuses the commander maybeboard's save route.
 - Staples ride on the profile (`HttpBuilderProfile::staples`, added 2026-10-27): mainboard cards in at least 2 decks, counted once per deck by oracle id, basic lands out, top 10 by decks then name. Each shows the printing from the most recently updated deck that has it, fetched in one batch. The app shows them as a Staples accordion section of shared card rows after Oracle tags, the deck count in the row's count slot.
-- Staples moved out of the accordion (2026-10-27): the server sends the top 100, and the app shows the first 10 in their own group under the suggestions list, filtered by Type and Color chip rows (a color chip keeps cards whose identity includes it). Each row leads with its share of the decks as two tags, "67%" and "4/6", and has no footer.
+- Staples moved out of the accordion (2026-10-27): the server sends the top 100, and the app shows the first 10 in their own group under the suggestions list, filtered by Type and Color chip rows (a color chip keeps cards whose identity includes it). Each row leads with its share of the decks as a tag, "67%", and the expanded row shows the count, "4 of 6 decks".
 
 ## Build order
 
