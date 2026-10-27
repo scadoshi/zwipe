@@ -1170,27 +1170,44 @@ i.ms.ms-cost.ms-gp {
 
 /* The tiles and pips read `--mana-white` through `--mana-green`, so the map
    follows the pip style like every other pip. */
+/* No side padding, so the map runs to the panel's edges; the key below
+   carries its own. */
 .color-map {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.25rem 0.75rem 0.5rem;
+    padding: 0.25rem 0 0.5rem;
 }
 
-/* Tiles keep their size, so a map larger than the box scrolls both ways
-   inside it. A flex child with auto margins centers when it fits and starts
-   at the edge when it does not, so every part stays reachable. The scroll
-   stays in the box instead of carrying on to the page. */
+/* Tiles keep their size, so a map larger than the box scrolls inside it:
+   up and down here, across in .color-map-across inside, each box with
+   orangui's edge fade for its axis. 14rem holds a map of about 1,000
+   colored cards. The scroll stays in the box instead of carrying on to the
+   page. */
 .color-map-viewport {
     display: flex;
-    width: 100%;
-    max-width: 15.5rem;
-    max-height: 15.5rem;
-    overflow: auto;
+    flex-direction: column;
+    align-self: stretch;
+    max-height: 14rem;
+    overflow-x: hidden;
+    overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
+    scrollbar-width: none;
+}
+
+/* A flex child with auto margins centers when it fits and starts at the
+   edge when it does not, so every part stays reachable. */
+.color-map-across {
+    display: flex;
+    flex: none;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
 }
 
 .color-map-svg {
@@ -1217,6 +1234,7 @@ i.ms.ms-cost.ms-gp {
 
 .color-map-key {
     display: flex;
+    padding: 0 0.75rem;
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.4rem;

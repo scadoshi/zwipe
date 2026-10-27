@@ -21,10 +21,13 @@
 //! cells at the end of its growth, so the map changes by a few tiles instead
 //! of redrawing.
 //!
-//! Each tile also carries a shade and a ring. The shade is one of orangui's
-//! four heat levels, full at the middle of the tile's own color and fading
-//! toward the panel with distance from it. The ring is the tile's band of
-//! distance from the map's middle, which sets when it sweeps in.
+//! Each tile also carries a shade and a ring, both read from its distance
+//! from the map's middle over the farthest tile's. The shade is one of
+//! orangui's four heat levels, full at the middle and fading toward the panel
+//! out to the map's edge, the same for every color. The ring is the band of
+//! that distance that sets when the tile sweeps in.
+
+use std::collections::{BTreeMap, BTreeSet};
 
 use dioxus::html::geometry::PixelsVector2D;
 use dioxus::prelude::*;
@@ -32,12 +35,15 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::http::contracts::suggestions::HttpColorMap;
 
 /// The fewest tiles a map with any colored card draws.
-pub const MIN_TILES: u32 = 40;
-/// The most tiles a map draws.
-pub const MAX_TILES: u32 = 520;
-/// Tiles per square root of the colored cards, past [`MIN_TILES`]: about 200
-/// tiles for 700 cards and 370 for 3,000.
-pub const TILES_PER_ROOT: u32 = 6;
+pub const MIN_TILES: u32 = 32;
+/// The most tiles a map draws: the curve's value at 6,400 colored cards, so
+/// the cap and the curve meet with no step.
+pub const MAX_TILES: u32 = 416;
+/// Tenths of a tile per square root of the colored cards, past
+/// [`MIN_TILES`]: 4.8 tiles, about 180 tiles for 1,000 cards and 290 for
+/// 3,000. The square root over 6,400 is 80, and `32 + 4.8 * 80` is
+/// [`MAX_TILES`].
+pub const TILES_PER_ROOT_TENTHS: u32 = 48;
 /// One tile's pitch on screen, in CSS pixels: tiles keep this size and a
 /// map larger than the viewport scrolls.
 pub const PITCH_PX: f64 = 12.0;
@@ -78,11 +84,23 @@ pub const SWEEP_RINGS: u32 = 7;
 /// The wait between one ring's sweep and the next, in milliseconds. With
 /// orangui's 0.4s `heat-sweep`, the last ring lands about 700ms after mount.
 pub const SWEEP_STEP_MS: u32 = 50;
+/// orangui's `heat-sweep` length, in milliseconds.
+const SWEEP_MS: u32 = 400;
+/// The ghost blob's reach from its middle, in grid steps.
+pub const GHOST_REACH: i32 = 3;
+/// The wait between one ring's turn in the ghost's loading wave and the
+/// next, in milliseconds: the wave crosses the rings in about a third of its
+/// 1.8s cycle.
+pub const GHOST_WAVE_STEP_MS: u32 = 100;
 /// The full shade, a color's own mana fill.
 pub const FULL_SHADE: u8 = 4;
 /// Each shade's share of the mana fill over the panel, faintest first, the
 /// way orangui's `.heat-1` through `.heat-4` mix the accent.
 const SHADE_PERCENTS: [u8; 4] = [30, 55, 80, 100];
+
+/// The most passes [`close_pockets`] makes. One pass fills every pocket in
+/// the tested maps; the rest are a guard for a pocket a pass leaves.
+const POCKET_PASSES: u32 = 4;
 
 /// Salt for the step costs.
 const COST_SALT: u64 = 0x636f_7374;
@@ -125,8 +143,8 @@ pub struct Tile {
     pub column: i32,
     /// The tile's row from the map's top edge.
     pub row: i32,
-    /// The tile's shade, 1 (faintest) to [`FULL_SHADE`]: full at the middle
-    /// of its color's ground, fainter toward that ground's far edge.
+    /// The tile's shade, 1 (faintest) to [`FULL_SHADE`]: full at the map's
+    /// middle, fainter toward its far edge, whatever the tile's color.
     pub shade: u8,
     /// The tile's band of distance from the map's middle, 0 at the middle
     /// to `SWEEP_RINGS - 1` at the farthest tile.
@@ -174,7 +192,8 @@ fn unit(h: u64) -> f64 {
 }
 
 /// The map's tile count for `colored` cards: [`MIN_TILES`] plus
-/// [`TILES_PER_ROOT`] per square root of the cards, rounded down, at most
+/// [`TILES_PER_ROOT_TENTHS`] tenths per square root of the cards, rounded
+/// down, at most
 /// [`MAX_TILES`]; none without colored cards. The square root keeps a big
 /// collection from spreading the map far.
 #[must_use]
@@ -182,8 +201,8 @@ pub fn tile_total(colored: u64) -> u32 {
     if colored == 0 {
         return 0;
     }
-    let per_root = u64::from(TILES_PER_ROOT);
-    let grown = (per_root * per_root).saturating_mul(colored).isqrt();
+    let per_root = u64::from(TILES_PER_ROOT_TENTHS);
+    let grown = (per_root * per_root).saturating_mul(colored).isqrt() / 10;
     u32::try_from(grown)
         .unwrap_or(MAX_TILES)
         .saturating_add(MIN_TILES)
@@ -377,6 +396,109 @@ fn grow(seed: u64, quotas: [u32; 5]) -> Vec<((i32, i32), usize)> {
     claimed
 }
 
+/// The empty cells around a map's tiles, split by whether they reach the
+/// outside.
+#[derive(Debug)]
+struct EmptyCells {
+    /// Empty cells in the tiles' bounds, one cell out on every side, that a
+    /// walk over empty cells from that frame's edge reaches.
+    open: BTreeSet<(i32, i32)>,
+    /// Empty cells inside the bounds the walk never reaches, in row order.
+    walled: Vec<(i32, i32)>,
+}
+
+/// Sorts the empty cells around `owner`'s tiles into open and walled.
+fn empty_cells(owner: &BTreeMap<(i32, i32), usize>) -> EmptyCells {
+    let mut open = BTreeSet::new();
+    let (Some(low_x), Some(high_x), Some(low_y), Some(high_y)) = (
+        owner.keys().map(|c| c.0).min(),
+        owner.keys().map(|c| c.0).max(),
+        owner.keys().map(|c| c.1).min(),
+        owner.keys().map(|c| c.1).max(),
+    ) else {
+        return EmptyCells {
+            open,
+            walled: Vec::new(),
+        };
+    };
+    let (frame_x, frame_y) = ((low_x - 1)..=(high_x + 1), (low_y - 1)..=(high_y + 1));
+    let mut stack: Vec<(i32, i32)> = frame_x
+        .clone()
+        .flat_map(|x| [(x, low_y - 1), (x, high_y + 1)])
+        .chain(
+            frame_y
+                .clone()
+                .flat_map(|y| [(low_x - 1, y), (high_x + 1, y)]),
+        )
+        .collect();
+    while let Some(cell) = stack.pop() {
+        let inside = frame_x.contains(&cell.0) && frame_y.contains(&cell.1);
+        if !inside || owner.contains_key(&cell) || !open.insert(cell) {
+            continue;
+        }
+        stack.extend(neighbors(cell));
+    }
+    let walled = (low_y..=high_y)
+        .flat_map(|y| (low_x..=high_x).map(move |x| (x, y)))
+        .filter(|cell| !owner.contains_key(cell) && !open.contains(cell))
+        .collect();
+    EmptyCells { open, walled }
+}
+
+/// Fills the pockets the growth leaves: empty cells walled in by tiles, which
+/// read as holes in a color's ground. Each pocket cell, in row order, takes
+/// the color most of its neighbors hold (ties in WUBRG order), and that color
+/// gives up one tile on its outer edge to pay for it, the one with the most
+/// open sides and then the farthest from the middle, so every quota stays
+/// exact and the branching outline stays. A color with no outer tile leaves
+/// the pocket for the next color around it. Stops when no pocket is left or
+/// after [`POCKET_PASSES`] passes, the same result for the same tiles.
+fn close_pockets(claimed: &mut Vec<((i32, i32), usize)>) {
+    let mut owner: BTreeMap<(i32, i32), usize> = claimed.iter().copied().collect();
+    for _ in 0..POCKET_PASSES {
+        let EmptyCells {
+            mut open,
+            walled: pockets,
+        } = empty_cells(&owner);
+        if pockets.is_empty() {
+            break;
+        }
+        for pocket in pockets {
+            let mut around = [0_u32; 5];
+            for next in neighbors(pocket) {
+                if let Some(slot) = owner.get(&next).and_then(|&c| around.get_mut(c)) {
+                    *slot += 1;
+                }
+            }
+            let mut colors: Vec<usize> = (0..5).filter(|&c| around.get(c) > Some(&0)).collect();
+            colors.sort_by_key(|&c| (std::cmp::Reverse(around.get(c).copied()), c));
+            let open_sides =
+                |cell: (i32, i32)| neighbors(cell).iter().filter(|n| open.contains(n)).count();
+            let donor = colors.into_iter().find_map(|color| {
+                owner
+                    .iter()
+                    .filter(|&(&cell, &c)| c == color && open_sides(cell) > 0)
+                    .map(|(&cell, _)| cell)
+                    .max_by(|&a, &b| {
+                        let far = |(x, y): (i32, i32)| x * x + y * y;
+                        open_sides(a)
+                            .cmp(&open_sides(b))
+                            .then(far(a).cmp(&far(b)))
+                            .then(b.cmp(&a))
+                    })
+                    .map(|cell| (cell, color))
+            });
+            let Some((donor, color)) = donor else {
+                continue;
+            };
+            owner.remove(&donor);
+            open.insert(donor);
+            owner.insert(pocket, color);
+        }
+    }
+    *claimed = owner.into_iter().collect();
+}
+
 /// Each colored share, largest first with WUBRG breaking ties, as "Blue 31
 /// percent, red 29 percent", then the colorless count.
 fn label(counts: &ColorMapCounts) -> String {
@@ -423,65 +545,19 @@ fn distance((ax, ay): (f64, f64), (bx, by): (f64, f64)) -> f64 {
     (ax - bx).hypot(ay - by)
 }
 
-/// A cell as a point.
-fn point((x, y): (i32, i32)) -> (f64, f64) {
-    (f64::from(x), f64::from(y))
-}
-
-/// Sets each tile's shade. A color's core is its tile nearest the mean of its
-/// tiles, ties to the lowest cell; the core is full, and the rest fade with
-/// their distance from it over the distance to that color's farthest tile,
-/// in quarters, so a small ground and a large one both have a full middle
-/// and faint edges.
-fn shade(tiles: &mut [Tile]) {
-    for color in Color::all() {
-        let own: Vec<(f64, f64)> = tiles
-            .iter()
-            .filter(|t| t.color == color)
-            .map(|t| point(t.cell))
-            .collect();
-        let Ok(count) = u32::try_from(own.len()) else {
-            continue;
-        };
-        if count == 0 {
-            continue;
-        }
-        let n = f64::from(count);
-        let mean = (
-            own.iter().map(|p| p.0).sum::<f64>() / n,
-            own.iter().map(|p| p.1).sum::<f64>() / n,
-        );
-        let Some(core) = own.iter().copied().min_by(|&a, &b| {
-            distance(a, mean)
-                .total_cmp(&distance(b, mean))
-                .then(a.1.total_cmp(&b.1))
-                .then(a.0.total_cmp(&b.0))
-        }) else {
-            continue;
-        };
-        let reach = own.iter().map(|&p| distance(p, core)).fold(0.0, f64::max);
-        let steps = u32::from(FULL_SHADE);
-        for tile in tiles.iter_mut().filter(|t| t.color == color) {
-            let ratio = if reach > 0.0 {
-                distance(point(tile.cell), core) / reach
-            } else {
-                0.0
-            };
-            let faded = u8::try_from(band(ratio, steps)).unwrap_or(0);
-            tile.shade = FULL_SHADE.saturating_sub(faded);
-        }
-    }
-}
-
-/// Sets each tile's ring: its distance from the middle of the map's
-/// `columns` by `rows` box over the farthest tile's, in [`SWEEP_RINGS`]
-/// bands.
-fn ring(tiles: &mut [Tile], columns: i32, rows: i32) {
+/// Sets each tile's shade and ring from one measure: its distance from the
+/// middle of the map's `columns` by `rows` box over the farthest tile's. The
+/// shade fades from [`FULL_SHADE`] at the middle to 1 at the farthest tiles
+/// in quarters of that ratio, and the ring is its band of [`SWEEP_RINGS`].
+fn shade_and_ring(tiles: &mut [Tile], columns: i32, rows: i32) {
     let middle = (f64::from(columns - 1) / 2.0, f64::from(rows - 1) / 2.0);
     let spot = |t: &Tile| distance((f64::from(t.column), f64::from(t.row)), middle);
     let reach = tiles.iter().map(spot).fold(0.0, f64::max);
+    let steps = u32::from(FULL_SHADE);
     for tile in tiles.iter_mut() {
         let ratio = if reach > 0.0 { spot(tile) / reach } else { 0.0 };
+        let faded = u8::try_from(band(ratio, steps)).unwrap_or(0);
+        tile.shade = FULL_SHADE.saturating_sub(faded);
         tile.ring = band(ratio, SWEEP_RINGS);
     }
 }
@@ -521,6 +597,7 @@ impl ColorMapModel {
         let colored: u64 = counts.cards.iter().map(|&n| u64::from(n)).sum();
         let quotas = quotas(counts.cards, tile_total(colored));
         let mut claimed = grow(seed, quotas);
+        close_pockets(&mut claimed);
         claimed.sort_by_key(|&((x, y), _)| (y, x));
 
         let bounds = |pick: fn(&((i32, i32), usize)) -> i32| {
@@ -544,8 +621,7 @@ impl ColorMapModel {
                 })
             })
             .collect();
-        shade(&mut tiles);
-        ring(&mut tiles, columns, rows);
+        shade_and_ring(&mut tiles, columns, rows);
         Self {
             tiles,
             columns,
@@ -592,13 +668,15 @@ async fn center(viewport: std::rc::Rc<MountedData>) {
 /// [`seed_from_id`] of their id.
 ///
 /// The tiles sweep in from the map's middle out, a ring at a time, in
-/// orangui's heat grid sweep, and each color fades from full at its middle
-/// toward the panel at its edges. The key's pips stay at full color.
+/// orangui's heat grid sweep, and every color fades from full at the map's
+/// middle toward the panel at its edges. The key's pips stay at full color.
 ///
-/// Tiles keep [`PITCH_PX`] at any size. The map sits in a viewport as wide
-/// as its container up to about 15.5rem and as tall, centered when it fits
-/// and otherwise scrolling both ways, opened on the map's middle. Under it,
-/// a key of chips gives each color's pip and card count, then the colorless
+/// Tiles keep [`PITCH_PX`] at any size. The map runs the full width of its
+/// container and up to 14rem tall, centered when it fits and otherwise
+/// scrolling, opened on the map's middle. It scrolls in two nested boxes,
+/// up and down in orangui's `scroll-fade-y` and across in its
+/// `scroll-fade-x`, so an edge with more map past it fades out. Under it, a
+/// key of chips gives each color's pip and card count, then the colorless
 /// cards, which the map leaves out.
 #[component]
 pub fn ColorMap(counts: ColorMapCounts, seed: u64) -> Element {
@@ -616,28 +694,34 @@ pub fn ColorMap(counts: ColorMapCounts, seed: u64) -> Element {
         div { class: "color-map",
             if !model.tiles.is_empty() {
                 div {
-                    class: "color-map-viewport",
+                    class: "color-map-viewport scroll-fade-y",
                     role: "img",
                     aria_label: "{model.label}",
                     onmounted: move |event| {
                         spawn(center(event.data()));
                     },
-                    svg {
-                        class: "color-map-svg",
-                        view_box: "{view_box}",
-                        width: "{width}",
-                        height: "{height}",
-                        "aria-hidden": "true",
-                        for tile in model.tiles.iter() {
-                            rect {
-                                key: "{tile.cell.0},{tile.cell.1}",
-                                class: "color-map-tile",
-                                x: "{f64::from(tile.column) + inset:.2}",
-                                y: "{f64::from(tile.row) + inset:.2}",
-                                width: "{size:.2}",
-                                height: "{size:.2}",
-                                rx: "{corner:.2}",
-                                style: "fill:{tile_fill(tile)};animation-delay:{tile.ring * SWEEP_STEP_MS}ms;",
+                    div {
+                        class: "color-map-across scroll-fade-x",
+                        onmounted: move |event| {
+                            spawn(center(event.data()));
+                        },
+                        svg {
+                            class: "color-map-svg",
+                            view_box: "{view_box}",
+                            width: "{width}",
+                            height: "{height}",
+                            "aria-hidden": "true",
+                            for tile in model.tiles.iter() {
+                                rect {
+                                    key: "{tile.cell.0},{tile.cell.1}",
+                                    class: "color-map-tile",
+                                    x: "{f64::from(tile.column) + inset:.2}",
+                                    y: "{f64::from(tile.row) + inset:.2}",
+                                    width: "{size:.2}",
+                                    height: "{size:.2}",
+                                    rx: "{corner:.2}",
+                                    style: "fill:{tile_fill(tile)};animation-delay:{tile.ring * SWEEP_STEP_MS}ms;",
+                                }
                             }
                         }
                     }
@@ -663,10 +747,64 @@ pub fn ColorMap(counts: ColorMapCounts, seed: u64) -> Element {
     }
 }
 
+/// The cells of a [`ColorMapGhost`], each with its ring, in row order: every
+/// cell within [`GHOST_REACH`] steps of the middle along the grid, a round
+/// blob of 25. The ring is the cell's band of straight-line distance from the
+/// middle over the farthest cell's, in [`SWEEP_RINGS`] bands like a map's.
+#[must_use]
+pub fn ghost_cells() -> Vec<((i32, i32), u32)> {
+    let reach = f64::from(GHOST_REACH);
+    (-GHOST_REACH..=GHOST_REACH)
+        .flat_map(|y| (-GHOST_REACH..=GHOST_REACH).map(move |x| (x, y)))
+        .filter(|&(x, y)| x.abs() + y.abs() <= GHOST_REACH)
+        .map(|cell| {
+            let spot = (f64::from(cell.0), f64::from(cell.1));
+            (cell, band(distance(spot, (0.0, 0.0)) / reach, SWEEP_RINGS))
+        })
+        .collect()
+}
+
+/// A [`ColorMap`]'s viewport while its counts load: a small blob of ghost
+/// tiles at the map's pitch, in the middle of a box as tall as a map of
+/// about 1,000 colored cards, so the swap to the real map stays in place.
+/// The tiles sweep in ring by ring from the middle like a map's, then a
+/// slow wave keeps running outward through the rings until the data lands.
+/// The look is the app's `.color-map-ghost*` skeleton rules; it carries no
+/// key, which the caller ghosts as chips.
+#[component]
+pub fn ColorMapGhost() -> Element {
+    let cells = ghost_cells();
+    let side = 2 * GHOST_REACH + 1;
+    let length = f64::from(side) * PITCH_PX;
+    let (inset, size, corner) = (GAP_SHARE / 2.0, 1.0 - GAP_SHARE, CORNER_SHARE);
+    let wave_start = (SWEEP_RINGS - 1) * SWEEP_STEP_MS + SWEEP_MS;
+    rsx! {
+        div { class: "color-map-viewport color-map-ghost",
+            svg {
+                class: "color-map-svg",
+                view_box: "0 0 {side} {side}",
+                width: "{length}",
+                height: "{length}",
+                "aria-hidden": "true",
+                for ((x, y), ring) in cells {
+                    rect {
+                        key: "{x},{y}",
+                        class: "color-map-ghost-tile",
+                        x: "{f64::from(x + GHOST_REACH) + inset:.2}",
+                        y: "{f64::from(y + GHOST_REACH) + inset:.2}",
+                        width: "{size:.2}",
+                        height: "{size:.2}",
+                        rx: "{corner:.2}",
+                        style: "animation-delay:{ring * SWEEP_STEP_MS}ms,{wave_start + ring * GHOST_WAVE_STEP_MS}ms;",
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
-
     use zwipe_core::http::contracts::suggestions::HttpColorCards;
 
     use super::*;
@@ -735,22 +873,26 @@ mod tests {
     #[test]
     fn tiles_grow_slowly_with_cards_within_the_clamp() {
         assert_eq!(tile_total(0), 0);
-        assert_eq!(tile_total(1), 46);
-        assert_eq!(tile_total(720), 200);
-        assert_eq!(tile_total(900), 220);
-        assert_eq!(tile_total(3000), 368);
+        assert_eq!(tile_total(1), 36);
+        assert_eq!(tile_total(100), 80);
+        assert_eq!(tile_total(720), 160);
+        assert_eq!(tile_total(900), 176);
+        assert_eq!(tile_total(1000), 183);
+        assert_eq!(tile_total(3000), 294);
+        assert_eq!(tile_total(6399), 415);
         assert_eq!(tile_total(6400), MAX_TILES);
+        assert_eq!(tile_total(10_000), MAX_TILES);
         assert_eq!(tile_total(u64::MAX), MAX_TILES);
         let small = ColorMapCounts {
             cards: [3, 0, 0, 1, 0],
             colorless: 0,
         };
-        assert_eq!(ColorMapModel::new(&small, SEED).tiles.len(), 52);
+        assert_eq!(ColorMapModel::new(&small, SEED).tiles.len(), 41);
         let huge = ColorMapCounts {
             cards: [9000, 9000, 9000, 9000, 9000],
             colorless: 0,
         };
-        assert_eq!(ColorMapModel::new(&huge, SEED).tiles.len(), 520);
+        assert_eq!(ColorMapModel::new(&huge, SEED).tiles.len(), 416);
     }
 
     #[test]
@@ -922,48 +1064,39 @@ mod tests {
         .collect()
     }
 
-    /// `color`'s tiles and its core: the tile nearest their mean, ties to
-    /// the lowest cell.
-    fn ground(model: &ColorMapModel, color: Color) -> Option<(Vec<&Tile>, &Tile)> {
-        let own: Vec<&Tile> = model.tiles.iter().filter(|t| t.color == color).collect();
-        let n = f64::from(u32::try_from(own.len()).unwrap());
-        let mean = (
-            own.iter().map(|t| f64::from(t.cell.0)).sum::<f64>() / n,
-            own.iter().map(|t| f64::from(t.cell.1)).sum::<f64>() / n,
+    /// Each tile's distance from the middle of `model`'s box, with its
+    /// shade, nearest first.
+    fn shades_by_distance(model: &ColorMapModel) -> Vec<(f64, u8)> {
+        let middle = (
+            f64::from(model.columns - 1) / 2.0,
+            f64::from(model.rows - 1) / 2.0,
         );
-        let core = own.iter().copied().min_by(|a, b| {
-            distance(point(a.cell), mean)
-                .total_cmp(&distance(point(b.cell), mean))
-                .then(a.cell.1.cmp(&b.cell.1))
-                .then(a.cell.0.cmp(&b.cell.0))
-        })?;
-        Some((own, core))
+        let mut by_distance: Vec<(f64, u8)> = model
+            .tiles
+            .iter()
+            .map(|t| {
+                let spot = (f64::from(t.column), f64::from(t.row));
+                (distance(spot, middle), t.shade)
+            })
+            .collect();
+        by_distance.sort_by(|a, b| a.0.total_cmp(&b.0));
+        by_distance
     }
 
     #[test]
-    fn each_color_is_full_at_its_core_and_faintest_at_its_edge() {
+    fn the_middle_is_full_and_the_far_edge_faintest() {
         for seed in SEEDS {
             for counts in spread() {
                 let model = ColorMapModel::new(&counts, seed);
-                for color in Color::all() {
-                    let Some((own, core)) = ground(&model, color) else {
-                        continue;
-                    };
-                    assert_eq!(
-                        core.shade, FULL_SHADE,
-                        "{color:?} core, seed {seed}, cards {:?}",
-                        counts.cards
-                    );
-                    if own.len() > 1 {
-                        let far = |t: &Tile| distance(point(t.cell), point(core.cell));
-                        let reach = own.iter().map(|t| far(t)).fold(0.0, f64::max);
-                        for tile in own.iter().filter(|t| far(t) >= reach) {
-                            assert_eq!(
-                                tile.shade, 1,
-                                "{color:?} edge {:?}, seed {seed}",
-                                tile.cell
-                            );
-                        }
+                let by_distance = shades_by_distance(&model);
+                let (nearest, _) = by_distance.first().copied().unwrap();
+                let (farthest, _) = by_distance.last().copied().unwrap();
+                for &(d, shade) in &by_distance {
+                    if d <= nearest {
+                        assert_eq!(shade, FULL_SHADE, "middle, seed {seed}, {counts:?}");
+                    }
+                    if d >= farthest && farthest > nearest {
+                        assert_eq!(shade, 1, "far edge, seed {seed}, {counts:?}");
                     }
                 }
             }
@@ -971,24 +1104,51 @@ mod tests {
     }
 
     #[test]
-    fn shades_fade_with_distance_from_the_core() {
+    fn shades_never_rise_with_distance_from_the_middle() {
         for seed in SEEDS {
             for counts in spread() {
                 let model = ColorMapModel::new(&counts, seed);
-                for color in Color::all() {
-                    let Some((own, core)) = ground(&model, color) else {
-                        continue;
-                    };
-                    let mut by_distance: Vec<(f64, u8)> = own
-                        .iter()
-                        .map(|t| (distance(point(t.cell), point(core.cell)), t.shade))
-                        .collect();
-                    by_distance.sort_by(|a, b| a.0.total_cmp(&b.0));
-                    assert!(
-                        by_distance.is_sorted_by(|a, b| a.1 >= b.1),
-                        "{color:?} fades outward, seed {seed}"
-                    );
-                }
+                assert!(
+                    shades_by_distance(&model).is_sorted_by(|a, b| a.1 >= b.1),
+                    "fades outward, seed {seed}, {counts:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_ghost_is_a_round_blob_that_sweeps_out() {
+        let cells = ghost_cells();
+        assert_eq!(cells.len(), 25);
+        assert_eq!(cells, ghost_cells(), "the same cells every time");
+        let middle = cells.iter().find(|(cell, _)| *cell == (0, 0)).unwrap();
+        assert_eq!(middle.1, 0, "the middle sweeps first");
+        assert_eq!(
+            cells.iter().map(|&(_, ring)| ring).max(),
+            Some(SWEEP_RINGS - 1),
+            "the tips sweep last"
+        );
+        for &((x, y), _) in &cells {
+            assert!(
+                cells.iter().any(|&(c, _)| c == (-x, -y)),
+                "symmetric at {x},{y}"
+            );
+            assert!(
+                cells.iter().any(|&(c, _)| c == (y, x)),
+                "symmetric at {x},{y}"
+            );
+        }
+    }
+
+    #[test]
+    fn no_empty_cell_is_walled_in() {
+        for seed in SEEDS {
+            for counts in spread() {
+                let model = ColorMapModel::new(&counts, seed);
+                let owner: BTreeMap<(i32, i32), usize> =
+                    model.tiles.iter().map(|t| (t.cell, 0)).collect();
+                let walled = empty_cells(&owner).walled;
+                assert_eq!(walled, [], "seed {seed}, cards {:?}", counts.cards);
             }
         }
     }

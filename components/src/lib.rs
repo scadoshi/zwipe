@@ -49,7 +49,7 @@ pub use charts::{
     Bar, BarChart, BarOrientation, ChartLabel, DeckCharts, DrawOdds, LabelCase, ManaCurve,
     ManaFulfillment,
 };
-pub use color_map::{ColorMap, ColorMapCounts, ColorMapModel, seed_from_id};
+pub use color_map::{ColorMap, ColorMapCounts, ColorMapGhost, ColorMapModel, seed_from_id};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use oracle_text::OracleText;
