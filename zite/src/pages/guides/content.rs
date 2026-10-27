@@ -652,7 +652,8 @@ pub static GUIDES: &[Guide] = &[
             Block::Bullets(&[
                 "Decks is how many of your decks have the tag. More decks, more impact.",
                 "Cards is how many cards carry it across those decks. More cards, more impact.",
-                "Impact adds those up, and rare tags count for more than ones every deck has. Your top tag scores 100.",
+                "Impact is how much more your decks lean on a tag than Magic cards do overall. Your top tag scores 100.",
+                "A tag your decks use no more often than other Magic cards do doesn't show up at all.",
                 "Each column has its own question mark, too.",
             ]),
             Block::P("There's a little more math under the hood, but that's the gist."),

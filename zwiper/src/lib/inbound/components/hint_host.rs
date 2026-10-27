@@ -251,7 +251,7 @@ impl HintTopic {
                 HintLine { "How many cards carry this tag across those decks. The more cards, the higher its impact" }
             },
             Self::SuggestionTagImpact => rsx! {
-                HintLine { "Decks and cards together, with a rare tag worth more than one every deck has. Your top tag scores 100" }
+                HintLine { "How much more your decks lean on this tag than Magic cards do overall. Your top tag scores 100" }
             },
             Self::SuggestionStaples => rsx! {
                 HintLine { "Cards in the most of your decks, each with how many. Basic lands are left out" }
