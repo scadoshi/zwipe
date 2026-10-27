@@ -549,6 +549,6 @@ pub struct HttpHardPass {
     pub card: Card,
     /// Times skipped, across every commander.
     pub skipped: u32,
-    /// Commanders it was skipped under.
-    pub commanders: u32,
+    /// The names of the commanders it was skipped under, by name.
+    pub commanders: Vec<String>,
 }

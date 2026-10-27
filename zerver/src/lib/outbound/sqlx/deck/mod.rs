@@ -1009,7 +1009,7 @@ impl DeckRepository for Postgres {
             r#"WITH mine AS (
                    SELECT card_oracle_id,
                           SUM(skipped)::float8 AS skipped,
-                          COUNT(*) FILTER (WHERE skipped > 0) AS commanders
+                          array_agg(commander_oracle_id) FILTER (WHERE skipped > 0) AS commander_ids
                    FROM user_card_signal
                    WHERE user_id = $1
                    GROUP BY card_oracle_id
@@ -1029,7 +1029,7 @@ impl DeckRepository for Postgres {
                    GROUP BY c.card_oracle_id
                ),
                scored AS (
-                   SELECT m.card_oracle_id, m.skipped, m.commanders,
+                   SELECT m.card_oracle_id, m.skipped, m.commander_ids,
                           m.skipped * ln(
                               (GREATEST(COALESCE(p.seen, 0) - m.skipped, 0) + $3::float8)
                               / NULLIF(GREATEST(COALESCE(p.skipped, 0) - m.skipped, 0)
@@ -1043,12 +1043,15 @@ impl DeckRepository for Postgres {
                        WHERE q.card_oracle_id = m.card_oracle_id
                    ) p
                )
-               SELECT card_oracle_id AS "card_oracle_id!",
-                      skipped::int8 AS "skipped!",
-                      commanders::int8 AS "commanders!"
-               FROM scored
-               WHERE score >= $4
-               ORDER BY score DESC, skipped DESC, card_oracle_id
+               SELECT s.card_oracle_id AS "card_oracle_id!",
+                      s.skipped::int8 AS "skipped!",
+                      COALESCE((SELECT array_agg(lc.name ORDER BY lc.name)
+                                FROM latest_cards lc
+                                WHERE lc.oracle_id = ANY(s.commander_ids)), '{}')
+                          AS "commanders!: Vec<String>"
+               FROM scored s
+               WHERE s.score >= $4
+               ORDER BY s.score DESC, s.skipped DESC, s.card_oracle_id
                LIMIT $2"#,
             user_id,
             i64::try_from(ACTIVITY_PASSES_SENT).unwrap_or(i64::MAX),
@@ -1062,7 +1065,7 @@ impl DeckRepository for Postgres {
         .map(|row| PassCount {
             oracle_id: row.card_oracle_id,
             skipped: saturating_u32(row.skipped),
-            commanders: saturating_u32(row.commanders),
+            commanders: row.commanders,
         })
         .collect();
         tx.commit().await.map_err(db)?;

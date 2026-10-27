@@ -3893,8 +3893,15 @@ button {
     margin-top: 1rem;
 }
 
-/* The year's totals under the grid. */
+/* A tapped day's counts in the totals' place, centered on its line. */
+.activity-day-tag {
+    display: inline-block;
+}
+
+/* The year's totals under the grid, or a tapped day's tag, at one height so
+   the swap does not move the rest of the section. */
 .activity-total {
+    min-height: 1.6rem;
     padding: 0.5rem 0.75rem 0;
     font-size: 0.7rem;
     color: var(--text-muted);

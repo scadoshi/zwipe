@@ -706,7 +706,7 @@ pub static GUIDES: &[Guide] = &[
                 "Card roles shows your rate for each role. Tap one to see the tags you swiped under it.",
                 "Oracle tags lists the tags where your rate stands out most from other players', so a tag everyone passes on only shows up after a lot of skips. Tap a tag to see what it means.",
                 "Both read your decks with a commander, for roles and tags dealt at least 10 times.",
-                "Hard passes lists cards you skip and never add or save, with how many times you skipped each. It weighs your skips against other players', so a card most people pass on only shows up after a lot of skips, while one they usually keep shows up after two.",
+                "Hard passes lists cards you skip and never add or save, with how many times you skipped each and, in an open row, the commanders you skipped it under. It weighs your skips against other players', so a card most people pass on only shows up after a lot of skips, while one they usually keep shows up after two.",
             ]),
         ],
     },

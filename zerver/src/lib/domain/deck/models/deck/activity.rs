@@ -79,14 +79,14 @@ pub struct TagRates {
 /// repository ranks them by lift, the user's skips times the log of how much
 /// more often they skip it than other players do, so a card everyone passes
 /// on makes the list only after many skips.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PassCount {
     /// The card's oracle id.
     pub oracle_id: Uuid,
     /// Times skipped, across every commander.
     pub skipped: u32,
-    /// Commanders it was skipped under.
-    pub commanders: u32,
+    /// The names of the commanders it was skipped under, by name.
+    pub commanders: Vec<String>,
 }
 
 /// What the repository reads for [`Activity`], with the hard passes as
@@ -114,8 +114,8 @@ pub struct HardPass {
     pub card: Card,
     /// Times skipped, across every commander.
     pub skipped: u32,
-    /// Commanders it was skipped under.
-    pub commanders: u32,
+    /// The names of the commanders it was skipped under, by name.
+    pub commanders: Vec<String>,
 }
 
 /// The Activity screen's data.

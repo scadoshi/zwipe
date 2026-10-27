@@ -315,7 +315,7 @@ impl HintTopic {
             Self::HardPasses => rsx! {
                 HintBullets {
                     HintBullet { "Cards you skip and never add or save, when other players usually keep them" }
-                    HintBullet { "A card everyone passes on shows only after a lot of skips. The tag counts yours" }
+                    HintBullet { "A card everyone passes on shows only after a lot of skips. The tag counts yours, and an open row names the commanders you skipped it under" }
                     HintBullet { "From your decks with a commander" }
                 }
             },

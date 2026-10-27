@@ -9,8 +9,8 @@ use std::collections::HashMap;
 
 use chrono::{Datelike, Duration, NaiveDate};
 use components::{
-    Bar, BarChart, BarOrientation, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid,
-    HeatHit, OtagDef, RoleTags, heat_span, peak_indices, with_separators,
+    Bar, BarChart, BarOrientation, Chip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit,
+    OtagDef, RoleTags, heat_span, peak_indices, with_separators,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -367,11 +367,13 @@ fn tag_rate_bars(kind: RateKind, tags: &[HttpTagRates]) -> Vec<Bar> {
 
 /// The year as a heatmap: weekday labels down the left, month labels over
 /// the top, a cell per day shaded by its swipes and searches in orangui's
-/// [`HeatGrid`], and a chip with the day's counts on a tap. Wider than a
-/// phone, it scrolls sideways and opens on the latest week.
+/// [`HeatGrid`]. Wider than a phone, it scrolls sideways and opens on the
+/// latest week. Under it, the year's totals, or a tapped day's counts as a
+/// tag in their place until the same day is tapped again; under the grid
+/// rather than over it, the tag is never cut off by the scroll.
 #[component]
 fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
-    let mut tip: Signal<Option<(String, f64, f64)>> = use_signal(|| None);
+    let mut picked: Signal<Option<usize>> = use_signal(|| None);
     let layout = heat_layout(through, &days);
     let width = LEFT + heat_span(layout.columns);
     let height = TOP + heat_span(HEAT_ROWS);
@@ -387,13 +389,14 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
             key: cell.date.to_string(),
         })
         .collect();
-    let show = move |hit: HeatHit| {
-        if let Some(text) = texts.get(hit.index) {
-            let x = (hit.x + HEAT_CELL / 2.0) / width * 100.0;
-            let y = hit.y / height * 100.0;
-            tip.set(Some((text.clone(), x, y)));
+    let pick = move |hit: HeatHit| {
+        if picked() == Some(hit.index) {
+            picked.set(None);
+        } else {
+            picked.set(Some(hit.index));
         }
     };
+    let day = picked().and_then(|i| texts.get(i).cloned());
     rsx! {
         div {
             class: "chart-scroll scroll-fade-x activity-scroll",
@@ -432,12 +435,16 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
                         cells: grid,
                         left: LEFT,
                         top: TOP,
-                        on_tap: show,
+                        on_tap: pick,
                     }
                 }
-                if let Some((text, left, top)) = tip() {
-                    ChartTip { text, left, top }
-                }
+            }
+        }
+        div { class: "activity-total",
+            if let Some(text) = day {
+                span { class: "tag activity-day-tag", "{text}" }
+            } else {
+                "{year_line(&days)}"
             }
         }
     }
@@ -520,7 +527,6 @@ pub(crate) fn ActivitySections(
                             days: activity.days.clone(),
                         }
                     }
-                    div { class: "activity-total", "{year_line(&activity.days)}" }
                 }
                 if has_outcomes(&outcomes) {
                     div { class: "activity-outcomes",
@@ -612,8 +618,9 @@ fn RateChips(mut kind: Signal<RateKind>) -> Element {
 }
 
 /// One hard pass: the shared expandable card row with its skips as a tag
-/// where a deck list puts copies, and how many commanders it was skipped
-/// under when expanded. No actions beyond the row's own Printing.
+/// where a deck list puts copies and, when expanded, the commanders it was
+/// skipped under as chips under a "Skipped under" label, in the Card roles
+/// label's grammar. No actions beyond the row's own Printing.
 #[component]
 fn HardPassRow(
     pass: HttpHardPass,
@@ -623,10 +630,7 @@ fn HardPassRow(
     on_printing: EventHandler<Card>,
 ) -> Element {
     let skips = counted(pass.skipped, "skip", "skips");
-    let under = format!(
-        "Under {}",
-        counted(pass.commanders, "commander", "commanders")
-    );
+    let commanders = pass.commanders;
     rsx! {
         CardRow {
             card: pass.card,
@@ -637,8 +641,13 @@ fn HardPassRow(
             preview_dismissing,
             on_printing: move |c: Card| on_printing.call(c),
             footer: rsx! {
-                div { class: "keyword-chips",
-                    span { class: "detail-chip detail-chip-pt", "{under}" }
+                if !commanders.is_empty() {
+                    span { class: "chips-label", "Skipped under" }
+                    div { class: "keyword-chips",
+                        for name in commanders {
+                            span { key: "{name}", class: "detail-chip detail-chip-pt", "{name}" }
+                        }
+                    }
                 }
             },
         }

@@ -115,7 +115,10 @@ async fn activity_reads_the_year_the_outcomes_the_roles_and_the_passes(pool: sql
         .map(|c| c.oracle_id().unwrap())
         .collect();
     seed_cards(&pool, &[ramp, removal, rare, passed, once]).await;
-    let (a, b) = (Uuid::new_v4(), Uuid::new_v4());
+    let alpha = card("Alpha Leader").commander_legal();
+    let beta = card("Beta Leader").commander_legal();
+    let (a, b) = (alpha.oracle_id().unwrap(), beta.oracle_id().unwrap());
+    seed_cards(&pool, &[alpha, beta]).await;
     seed_signal(&pool, user, a, ids[0], (8, 2, 0)).await;
     seed_signal(&pool, user, a, ids[1], (1, 4, 1)).await;
     seed_signal(&pool, user, a, ids[2], (1, 1, 0)).await;
@@ -172,7 +175,11 @@ async fn activity_reads_the_year_the_outcomes_the_roles_and_the_passes(pool: sql
         "{body}"
     );
     assert_eq!(passes[0]["skipped"], 5, "{body}");
-    assert_eq!(passes[0]["commanders"], 2, "{body}");
+    assert_eq!(
+        passes[0]["commanders"],
+        serde_json::json!(["Alpha Leader", "Beta Leader"]),
+        "the commanders it was skipped under, by name: {body}"
+    );
 }
 
 /// Writes every player's swipes on one card under one commander, the pooled

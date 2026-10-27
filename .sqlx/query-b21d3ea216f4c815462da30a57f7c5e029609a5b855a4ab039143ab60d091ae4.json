@@ -1,0 +1,45 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH mine AS (\n                   SELECT card_oracle_id,\n                          SUM(skipped)::float8 AS skipped,\n                          array_agg(commander_oracle_id) FILTER (WHERE skipped > 0) AS commander_ids\n                   FROM user_card_signal\n                   WHERE user_id = $1\n                   GROUP BY card_oracle_id\n                   HAVING SUM(added) = 0 AND SUM(maybed) = 0 AND SUM(skipped) > 1\n               ),\n               overall AS (\n                   SELECT COALESCE(SUM(skipped)::float8\n                                   / NULLIF(SUM(added + skipped + maybed), 0)::float8, 0.5) AS rate\n                   FROM commander_card_signal\n               ),\n               pooled AS (\n                   SELECT c.card_oracle_id,\n                          SUM(c.skipped)::float8 AS skipped,\n                          SUM(c.added + c.skipped + c.maybed)::float8 AS seen\n                   FROM commander_card_signal c\n                   WHERE c.card_oracle_id IN (SELECT card_oracle_id FROM mine)\n                   GROUP BY c.card_oracle_id\n               ),\n               scored AS (\n                   SELECT m.card_oracle_id, m.skipped, m.commander_ids,\n                          m.skipped * ln(\n                              (GREATEST(COALESCE(p.seen, 0) - m.skipped, 0) + $3::float8)\n                              / NULLIF(GREATEST(COALESCE(p.skipped, 0) - m.skipped, 0)\n                                       + $3::float8 * o.rate, 0)\n                          ) AS score\n                   FROM mine m\n                   CROSS JOIN overall o\n                   CROSS JOIN LATERAL (\n                       SELECT SUM(q.skipped) AS skipped, SUM(q.seen) AS seen\n                       FROM pooled q\n                       WHERE q.card_oracle_id = m.card_oracle_id\n                   ) p\n               )\n               SELECT s.card_oracle_id AS \"card_oracle_id!\",\n                      s.skipped::int8 AS \"skipped!\",\n                      COALESCE((SELECT array_agg(lc.name ORDER BY lc.name)\n                                FROM latest_cards lc\n                                WHERE lc.oracle_id = ANY(s.commander_ids)), '{}')\n                          AS \"commanders!: Vec<String>\"\n               FROM scored s\n               WHERE s.score >= $4\n               ORDER BY s.score DESC, s.skipped DESC, s.card_oracle_id\n               LIMIT $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "card_oracle_id!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "user_card_signal",
+            "name": "card_oracle_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "skipped!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "commanders!: Vec<String>",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Float8",
+        "Float8"
+      ]
+    },
+    "nullable": [
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "b21d3ea216f4c815462da30a57f7c5e029609a5b855a4ab039143ab60d091ae4"
+}
