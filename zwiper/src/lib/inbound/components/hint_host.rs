@@ -209,7 +209,7 @@ impl HintTopic {
                 HintLine { "Mainboard cards by type" }
             },
             Self::RoleChart => rsx! {
-                HintLine { "Mainboard cards by role, like ramp or removal. Cards with no role are left out" }
+                HintLine { "Mainboard cards by role, like ramp or removal. Cards with no role are left out. Tap a role to see its tags" }
             },
             Self::ColorChart => rsx! {
                 HintLine { "Mainboard cards by color" }

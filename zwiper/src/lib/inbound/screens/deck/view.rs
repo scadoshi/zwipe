@@ -28,6 +28,7 @@ use super::components::deck_warnings::DeckWarnings;
 use super::components::more_buttons::MoreButtons;
 use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
 use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::use_one_time_hint;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
@@ -35,6 +36,7 @@ use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
 use crate::inbound::router::Router;
+use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 use crate::outbound::buy_links;
 
 type DeckResult = Result<(Vec<DeckEntry>, Vec<DeckWarning>, Vec<Card>), ClientError>;
@@ -104,6 +106,27 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             );
         }
         Some(Ok(None)) | None => (),
+    });
+
+    // The Role distribution chart's tags: a description lookup from the
+    // shared catalog cache and an examples-browse opener, as on the deck
+    // cards view, with the examples overlay owned here.
+    let cache: CatalogCache = use_context();
+    use_effect(move || {
+        cache.ensure_oracle_tags(client);
+    });
+    let describe_tag = use_callback(move |slug: String| {
+        cache.oracle_tags.cell().read().loaded().and_then(|tags| {
+            tags.iter()
+                .find(|t| t.slug == slug)
+                .and_then(|t| t.description.clone())
+        })
+    });
+    let mut otag_examples_open = use_signal(|| false);
+    let mut otag_examples_slug = use_signal(String::new);
+    let open_examples = use_callback(move |slug: String| {
+        otag_examples_slug.set(slug);
+        otag_examples_open.set(true);
     });
 
     // First-deck tour: auto-opens once per account on first opening any
@@ -221,6 +244,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let color_bars: Option<Vec<(&str, usize, u32)>> = chart_metrics.map(|m| m.color_bars());
     let category_bars: Option<Vec<(&str, usize, u32)>> =
         chart_metrics.and_then(|m| m.card_role_bars());
+    let role_tags = chart_metrics.map(|m| m.card_role_tags.clone());
 
     let draw_odds_data: Option<(u32, Vec<(&'static str, u32)>)> =
         chart_metrics.map(|m| m.draw_odds_buckets());
@@ -326,6 +350,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                         type_bars: type_bars.clone(),
                                                         category_bars: category_bars.clone(),
                                                         color_bars: color_bars.clone(),
+                                                        role_tags: role_tags.clone(),
+                                                        describe_tag,
+                                                        on_examples: open_examples,
                                                         type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
                                                         role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
                                                         color_hint: rsx! { InfoButton { topic: HintTopic::ColorChart } },
@@ -531,6 +558,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     .map(|p| format!("{} (clone)", p.name))
                     .unwrap_or_default(),
                 open: show_clone_dialog,
+            }
+
+            if otag_examples_open() {
+                OracleTagExamples { open: otag_examples_open, slug: otag_examples_slug() }
             }
 
             HintDialog {

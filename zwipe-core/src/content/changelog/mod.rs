@@ -48,6 +48,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Profile splits into Account and Config",
         "Log out moves to Account",
         "Draw odds' ? sits in its section header",
+        "The deck view's Role distribution reveals each role's tags",
     ],
 }];
 

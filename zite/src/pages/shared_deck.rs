@@ -814,6 +814,8 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                             type_bars: Some(metrics.type_bars()),
                             category_bars: metrics.card_role_bars(),
                             color_bars: Some(metrics.color_bars()),
+                            role_tags: Some(metrics.card_role_tags.clone()),
+                            describe_tag,
                         }
                     }
                 },

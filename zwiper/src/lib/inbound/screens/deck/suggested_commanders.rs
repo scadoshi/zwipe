@@ -25,7 +25,7 @@ use std::collections::BTreeMap;
 use components::{
     ActionBar, AlertDialog, Bar, BarChart, BarOrientation, BottomSheet, Button, ButtonVariant,
     CardRoleChips, Chip, DialogAction, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    TOAST_LONG, TOAST_QUICK,
+    OtagDef, RoleTags, TOAST_LONG, TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -470,86 +470,6 @@ pub(crate) fn role_tags(tags: &[HttpProfileTag], role: &str) -> Vec<String> {
         .collect()
 }
 
-/// An oracle tag's description with its Examples button, through the
-/// screen's `OtagDescribe` and `OtagExamplesOpen` contexts.
-#[component]
-fn OtagDef(slug: String) -> Element {
-    let describe = try_use_context::<OtagDescribe>().map(|d| d.0);
-    let examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
-    let def = describe
-        .and_then(|cb| cb.call(slug.clone()))
-        .unwrap_or_else(|| "No description yet".to_string());
-    rsx! {
-        div { class: "otag-def",
-            p { class: "otag-def-text", "{def}" }
-            if let Some(handler) = examples {
-                button {
-                    class: "otag-examples-btn",
-                    onclick: move |evt| {
-                        evt.stop_propagation();
-                        handler.call(slug.clone());
-                    },
-                    "Examples"
-                }
-            }
-        }
-    }
-}
-
-/// A tapped role's oracle tags from the profile as chips, each tappable for
-/// its description eased open beneath them, the "Why this commander?" chips'
-/// reveal. Renders nothing for an empty list, so no bare frame shows.
-#[component]
-fn RoleTags(tags: Vec<String>) -> Element {
-    if tags.is_empty() {
-        return rsx! {};
-    }
-    let mut open_tag: Signal<Option<String>> = use_signal(|| None);
-    // The last opened tag, kept through a close so its description eases out.
-    let mut shown_tag: Signal<Option<String>> = use_signal(|| None);
-    let open = open_tag().filter(|slug| tags.contains(slug));
-    let shown = shown_tag().filter(|slug| tags.contains(slug));
-    let reveal_class = if open.is_some() {
-        "keyword-reveal open"
-    } else {
-        "keyword-reveal"
-    };
-    rsx! {
-        div { class: "otag-reveal-block",
-            div { class: "card-detail-meta card-detail-otags",
-                for tag in tags.iter().cloned() {
-                    {
-                        let slug = tag.clone();
-                        rsx! {
-                            button {
-                                key: "{tag}",
-                                class: if open.as_deref() == Some(tag.as_str()) { "keyword-chip active" } else { "keyword-chip" },
-                                onclick: move |evt| {
-                                    evt.stop_propagation();
-                                    if open_tag().as_deref() == Some(slug.as_str()) {
-                                        open_tag.set(None);
-                                    } else {
-                                        open_tag.set(Some(slug.clone()));
-                                        shown_tag.set(Some(slug.clone()));
-                                    }
-                                },
-                                "{tag}"
-                            }
-                        }
-                    }
-                }
-            }
-            div { class: "{reveal_class}",
-                div { class: "keyword-reveal-inner",
-                    if let Some(slug) = shown {
-                        OtagDef { slug }
-                    }
-                }
-            }
-        }
-    }
-}
-
 /// The oracle tags as a table: a header row of column labels, each number
 /// column with its "?", then one row per tag with its chip and its Decks,
 /// Cards and Impact. A tapped chip eases its description and Examples open
@@ -557,6 +477,8 @@ fn RoleTags(tags: Vec<String>) -> Element {
 /// time; tapping the open chip closes it.
 #[component]
 fn TagTable(rows: Vec<TagRow>) -> Element {
+    let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let mut open_tag: Signal<Option<String>> = use_signal(|| None);
     // The last opened tag, kept through a close so its description eases out.
     let mut shown_tag: Signal<Option<String>> = use_signal(|| None);
@@ -617,7 +539,7 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
                     style: "grid-column:1 / -1;",
                     div { class: "keyword-reveal-inner",
                         if shown.as_deref() == Some(row.slug.as_str()) {
-                            OtagDef { slug: row.slug.clone() }
+                            OtagDef { slug: row.slug.clone(), describe_tag, on_examples }
                         }
                     }
                 }
@@ -671,10 +593,12 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     let roles = role_bars(&profile.roles, &profile.tags);
     let tags = tag_rows(&profile.tags);
     let profile_tags = profile.tags;
+    let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let role_reveal = use_callback(move |role: String| {
         let tags = role_tags(&profile_tags, &role);
         rsx! {
-            RoleTags { tags }
+            RoleTags { tags, describe_tag, on_examples }
         }
     });
     let toggle_role = use_callback(move |key: String| {

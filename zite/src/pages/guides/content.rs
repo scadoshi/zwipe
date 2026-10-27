@@ -886,7 +886,7 @@ pub static GUIDES: &[Guide] = &[
             },
             Block::H2("Role distribution"),
             Block::P(
-                "The deck view's Distributions section includes a Role distribution chart, the same roles as the card chips, but counted across your whole deck, so you can see at a glance where it's thin.",
+                "The deck view's Distributions section includes a Role distribution chart, the same roles as the card chips, but counted across your whole deck, so you can see at a glance where it's thin. Tap a role to see the oracle tags your deck's cards carry under it.",
             ),
         ],
     },

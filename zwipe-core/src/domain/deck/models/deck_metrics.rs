@@ -4,6 +4,8 @@
 //! color distribution, and summary stats. Supports both `Vec<Card>` (each card
 //! counted once) and `Vec<DeckEntry>` (each card counted by its quantity).
 
+use std::collections::BTreeMap;
+
 use crate::domain::card::Card;
 use crate::domain::card::card_role::CardRole;
 use crate::domain::card::scryfall_data::ScryfallData;
@@ -61,6 +63,11 @@ pub struct DeckMetrics {
     pub avg_price_tix: Option<f64>,
     /// Non-empty mechanical category counts, sorted by count descending.
     pub card_role_counts: Vec<(&'static str, usize)>,
+    /// Each charted role's oracle tags across the mainboard, keyed by the
+    /// role's short label as in `card_role_counts`. Tags rank by the copies
+    /// carrying them under that role, most first, ties by slug. A role whose
+    /// cards carry no tags under it is absent.
+    pub card_role_tags: BTreeMap<&'static str, Vec<String>>,
     /// Average numeric power over cards that have one (front face for
     /// multi-face cards; `*`/`X` sides skipped). `None` if no card qualified.
     pub avg_power: Option<f64>,
@@ -238,6 +245,8 @@ impl DeckMetrics {
         let mut pip_produced = [0usize; 5];
         let all_cats = CardRole::all();
         let mut cat_buckets = vec![0usize; all_cats.len()];
+        let mut cat_tag_counts: Vec<BTreeMap<String, usize>> =
+            vec![BTreeMap::new(); all_cats.len()];
         let mut usd_sum = 0.0f64;
         let mut usd_count = 0usize;
         let mut eur_sum = 0.0f64;
@@ -286,6 +295,17 @@ impl DeckMetrics {
                     && let Some(slot) = cat_buckets.get_mut(idx)
                 {
                     *slot += qty;
+                }
+            }
+            for (slug, tags) in &card.card_profile.oracle_tags_by_role {
+                if let Some(idx) = all_cats
+                    .iter()
+                    .position(|c| c.to_string().as_str() == slug.as_str())
+                    && let Some(counts) = cat_tag_counts.get_mut(idx)
+                {
+                    for tag in tags {
+                        *counts.entry(tag.clone()).or_insert(0) += qty;
+                    }
                 }
             }
 
@@ -433,6 +453,12 @@ impl DeckMetrics {
             .map(|(cat, &count)| (cat.to_short_name(), count))
             .collect();
         card_role_counts.sort_by_key(|a| std::cmp::Reverse(a.1));
+        let card_role_tags: BTreeMap<&'static str, Vec<String>> = all_cats
+            .iter()
+            .zip(cat_tag_counts)
+            .filter(|(_, counts)| !counts.is_empty())
+            .map(|(cat, counts)| (cat.to_short_name(), ranked_tags(counts)))
+            .collect();
 
         let total_price_usd = if usd_count > 0 { Some(usd_sum) } else { None };
         let avg_price_usd = if usd_count > 0 {
@@ -479,10 +505,19 @@ impl DeckMetrics {
             total_price_tix,
             avg_price_tix,
             card_role_counts,
+            card_role_tags,
             avg_power,
             avg_toughness,
         }
     }
+}
+
+/// Tag slugs by count, most first, ties by slug.
+fn ranked_tags(counts: BTreeMap<String, usize>) -> Vec<String> {
+    let mut ranked: Vec<(String, usize)> = counts.into_iter().collect();
+    // Stable over the map's slug order, so equal counts stay alphabetical.
+    ranked.sort_by_key(|(_, count)| std::cmp::Reverse(*count));
+    ranked.into_iter().map(|(slug, _)| slug).collect()
 }
 
 /// Numeric stat for averaging: the top-level value, falling back to the front
@@ -816,6 +851,60 @@ mod tests {
         assert_eq!(metrics.cmc_histogram, [0, 4, 0, 0, 0, 0, 0]); // lands excluded
         assert_eq!(metrics.type_counts, vec![("lands", 10), ("instants", 4)]);
         assert_eq!(metrics.color_counts, vec![("red", 4), ("green", 10)]);
+    }
+
+    fn tagged(name: &str, qty: i32, by_role: &[(&str, &[&str])]) -> DeckEntry {
+        let mut entry = make_entry(name, qty);
+        entry.card.scryfall_data.type_line = Some("Instant".to_string());
+        let profile = &mut entry.card.card_profile;
+        for (role, tags) in by_role {
+            profile.card_roles.push((*role).to_string());
+            profile.oracle_tags_by_role.insert(
+                (*role).to_string(),
+                tags.iter().map(|t| (*t).to_string()).collect(),
+            );
+        }
+        entry
+    }
+
+    #[test]
+    fn role_tags_rank_by_copies_then_slug() {
+        let bolt = tagged("Lightning Bolt", 4, &[("removal", &["burn-creature"])]);
+        let doom = tagged("Doom Blade", 1, &[("removal", &["destroy-creature"])]);
+        let path = tagged(
+            "Path to Exile",
+            1,
+            &[("removal", &["exile-creature", "destroy-creature"])],
+        );
+        let metrics = DeckMetrics::from_entries(&[doom, path, bolt]);
+        assert_eq!(
+            metrics.card_role_tags.get("remov"),
+            Some(&vec![
+                "burn-creature".to_string(),
+                "destroy-creature".to_string(),
+                "exile-creature".to_string(),
+            ]),
+            "four copies lead, two cards next, then one, keyed like the role chart"
+        );
+    }
+
+    #[test]
+    fn role_tags_skip_unknown_roles_and_empty_roles() {
+        let ring = tagged("Sol Ring", 1, &[("ramp", &[]), ("future_role", &["x"])]);
+        let metrics = DeckMetrics::from_entries(&[ring]);
+        assert_eq!(metrics.card_role_counts, vec![("ramp", 1)]);
+        assert!(
+            metrics.card_role_tags.is_empty(),
+            "a role with no tags and an uncharted role add nothing"
+        );
+    }
+
+    #[test]
+    fn role_tags_skip_other_boards() {
+        let mut side = tagged("Negate", 1, &[("counterspell", &["counter-noncreature"])]);
+        side.deck_card.board = crate::domain::deck::Board::Sideboard;
+        let metrics = DeckMetrics::from_entries(&[side]);
+        assert!(metrics.card_role_tags.is_empty());
     }
 
     #[test]

@@ -7,9 +7,13 @@
 //! the same picture; the interactive pieces (draw odds, mana fulfillment) are
 //! used by the app only.
 
+use std::collections::BTreeMap;
+
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::deck_metrics::ManaBalanceRow;
 use zwipe_core::domain::deck::draw_odds::p_at_least_one;
+
+use crate::role_tags::RoleTags;
 
 /// Sentence-case accent sub-heading shown above each flattened chart block.
 ///
@@ -333,8 +337,32 @@ fn tuple_bars(bars: &[(&'static str, usize, u32)]) -> Vec<Bar> {
     bars.iter().copied().map(Bar::from).collect()
 }
 
+/// Role bars whose roles reveal their tags: a role with none in
+/// `role_tags` is a plain label.
+fn role_bars(
+    bars: &[(&'static str, usize, u32)],
+    role_tags: &BTreeMap<&'static str, Vec<String>>,
+) -> Vec<Bar> {
+    bars.iter()
+        .copied()
+        .map(|(label, count, pct)| {
+            let bar = Bar::new(label, count, pct);
+            if role_tags.get(label).is_some_and(|tags| !tags.is_empty()) {
+                bar
+            } else {
+                bar.with_no_reveal()
+            }
+        })
+        .collect()
+}
+
 /// Count-based distribution charts (types, categories, colors), rendered as
 /// flat sub-blocks: three [`BarChart`]s, the role one horizontal.
+///
+/// With `role_tags` set, the role chart's labels are chips and a tapped role
+/// eases its tags open under its row as [`RoleTags`], one role at a time, the
+/// way the Playstyle screen's Card roles chart does. `describe_tag` and
+/// `on_examples` go to those tags.
 #[component]
 pub fn DeckCharts(
     type_bars: Option<Vec<(&'static str, usize, u32)>>,
@@ -344,7 +372,28 @@ pub fn DeckCharts(
     type_hint: Option<Element>,
     role_hint: Option<Element>,
     color_hint: Option<Element>,
+    /// Each role's oracle tags, keyed by the role bar's label
+    /// (`DeckMetrics::card_role_tags`).
+    #[props(default)]
+    role_tags: Option<BTreeMap<&'static str, Vec<String>>>,
+    #[props(default)] describe_tag: Option<Callback<String, Option<String>>>,
+    #[props(default)] on_examples: Option<Callback<String>>,
 ) -> Element {
+    let mut selected_role: Signal<Option<String>> = use_signal(|| None);
+    let reveal_tags = role_tags.clone().unwrap_or_default();
+    let role_reveal = use_callback(move |role: String| {
+        let tags = reveal_tags.get(role.as_str()).cloned().unwrap_or_default();
+        rsx! {
+            RoleTags { tags, describe_tag, on_examples }
+        }
+    });
+    let toggle_role = use_callback(move |key: String| {
+        if selected_role().as_deref() == Some(key.as_str()) {
+            selected_role.set(None);
+        } else {
+            selected_role.set(Some(key));
+        }
+    });
     rsx! {
         if let Some(type_bars) = type_bars.as_ref() {
             BarChart {
@@ -356,11 +405,23 @@ pub fn DeckCharts(
 
         if let Some(cat_bars) = category_bars.as_ref() {
             if !cat_bars.is_empty() {
-                BarChart {
-                    label: "Role distribution",
-                    bars: tuple_bars(cat_bars),
-                    hint: role_hint,
-                    orientation: BarOrientation::Horizontal,
+                if let Some(role_tags) = role_tags.as_ref() {
+                    BarChart {
+                        label: "Role distribution",
+                        bars: role_bars(cat_bars, role_tags),
+                        hint: role_hint,
+                        orientation: BarOrientation::Horizontal,
+                        on_bar: toggle_role,
+                        selected: selected_role(),
+                        reveal: role_reveal,
+                    }
+                } else {
+                    BarChart {
+                        label: "Role distribution",
+                        bars: tuple_bars(cat_bars),
+                        hint: role_hint,
+                        orientation: BarOrientation::Horizontal,
+                    }
                 }
             }
         }
@@ -541,6 +602,31 @@ mod tests {
             })
         );
         assert_eq!(reveal_at(None, None), None, "nothing opened yet");
+    }
+
+    #[test]
+    fn a_role_reveals_only_with_tags() {
+        let role_tags = BTreeMap::from([
+            ("ramp", vec!["mana-rock".to_string()]),
+            ("draw", Vec::new()),
+        ]);
+        let bars = role_bars(
+            &[("ramp", 5, 100), ("draw", 3, 60), ("remov", 2, 40)],
+            &role_tags,
+        );
+        let got: Vec<(&str, usize, u32, bool)> = bars
+            .iter()
+            .map(|b| (b.key.as_str(), b.count, b.pct, b.revealable))
+            .collect();
+        assert_eq!(
+            got,
+            vec![
+                ("ramp", 5, 100, true),
+                ("draw", 3, 60, false),
+                ("remov", 2, 40, false)
+            ],
+            "the bars keep their order and sizes"
+        );
     }
 
     #[test]

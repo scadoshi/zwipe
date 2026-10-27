@@ -4,9 +4,10 @@
 //! effects and the app and site kits. This crate re-exports all of it
 //! (`pub use orangui::*`) so `zwiper` (the app) and `zite` (the site) keep one
 //! import path, and adds what needs `zwipe-core`: [`CardDetails`], [`CardRow`],
-//! [`CardRoleChips`], [`KeywordChips`], [`OracleText`], [`FlippableCardImage`],
-//! [`Changelog`], the deck charts ([`BarChart`], [`DeckCharts`], [`ManaCurve`],
-//! [`ManaFulfillment`], [`DrawOdds`], [`ChartLabel`]) and [`ZwipeArchitecture`].
+//! [`CardRoleChips`], [`RoleTags`], [`OtagDef`], [`KeywordChips`],
+//! [`OracleText`], [`FlippableCardImage`], [`Changelog`], the deck charts
+//! ([`BarChart`], [`DeckCharts`], [`ManaCurve`], [`ManaFulfillment`],
+//! [`DrawOdds`], [`ChartLabel`]) and [`ZwipeArchitecture`].
 //!
 //! Styling ships as string constants to inline through `document::Style`.
 //! orangui's sheets come through as they are; [`MAGIC_CSS`] holds this crate's
@@ -34,6 +35,7 @@ mod charts;
 mod flippable_card_image;
 mod keyword_chips;
 mod oracle_text;
+mod role_tags;
 mod theme;
 
 pub use architecture::ZwipeArchitecture;
@@ -49,6 +51,7 @@ pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use oracle_text::OracleText;
 pub use orangui::*;
+pub use role_tags::{OtagDef, RoleTags};
 pub use theme::theme_from_preferences;
 
 /// The Magic rules: oracle text, keyword chips, card rows, the flippable card
