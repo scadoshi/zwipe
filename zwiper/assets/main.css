@@ -1711,9 +1711,36 @@ button {
     margin-top: 0;
 }
 
-/* Home's scope button takes the row's height, level with the live tag. */
-.home-hero .stats-source > .card-action-btn {
+/* Home's scope button takes the row's height, level with the live tag, and
+   one width for both labels so a switch does not shift the row. */
+.home-hero .stats-source > .hero-scope {
     align-self: stretch;
+    min-width: 5.5rem;
+}
+
+/* Each label fades in as it mounts, and so does the live tag. */
+.home-hero .hero-scope-label,
+.home-hero .stats-source > .stat-chip {
+    display: inline-block;
+    animation: hero-scope-in 0.25s ease-out;
+}
+
+@keyframes hero-scope-in {
+    from {
+        opacity: 0;
+        transform: translateY(2px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-hero .hero-scope-label,
+    .home-hero .stats-source > .stat-chip {
+        animation: none;
+    }
 }
 
 .home-hero .stat-label {

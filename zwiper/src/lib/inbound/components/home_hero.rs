@@ -177,6 +177,7 @@ pub fn HomeHero() -> Element {
     rsx! {
         HeroPanel {
             figures: public_figures(metrics.as_ref()),
+            roll_key: "all",
             source: rsx! {
                 span { class: "stat-chip", "{CountScope::AllUsers.label()}" }
                 if live {
@@ -189,9 +190,10 @@ pub fn HomeHero() -> Element {
 
 /// Home's hero: [`HomeHero`] with its "all users" tag as a button that
 /// switches the figures to the user's own counts ("just me") and back. The
-/// choice is saved, so Home opens on the last one. The user's counts are
-/// fetched on the first switch and roll in like everyone's; "live" shows
-/// once the figures on screen come from this launch.
+/// choice is saved, so Home opens on the last one. Every switch rolls the
+/// figures to the other counts, rolling on while the user's are fetched the
+/// first time, and fades the button's label in; "live" shows once the
+/// figures on screen come from this launch.
 #[component]
 pub fn HomeHeroScoped() -> Element {
     let mut scope: Signal<CountScope> = use_context();
@@ -205,15 +207,19 @@ pub fn HomeHeroScoped() -> Element {
     rsx! {
         HeroPanel {
             figures,
+            roll_key: label,
             source: rsx! {
                 button {
-                    class: "card-action-btn",
+                    class: "card-action-btn hero-scope",
                     onclick: move |_| {
                         let next = scope.peek().toggled();
                         next.infallible_save();
                         scope.set(next);
                     },
-                    "{label}"
+                    // Keyed, so each label mounts fresh and fades in.
+                    for label in [label] {
+                        span { key: "{label}", class: "hero-scope-label", "{label}" }
+                    }
                 }
                 if live {
                     span { class: "stat-chip", "live" }
@@ -224,15 +230,29 @@ pub fn HomeHeroScoped() -> Element {
 }
 
 /// The panel both heroes draw: the mark over the strip, with `source`
-/// under it.
+/// under it. A new `roll_key` mounts the strip afresh, so its figures roll
+/// to the new counts; a counter that has landed does not roll again on a
+/// changed value by itself.
 #[component]
-fn HeroPanel(figures: Vec<(Option<u64>, &'static str)>, source: Element) -> Element {
+fn HeroPanel(
+    figures: Vec<(Option<u64>, &'static str)>,
+    roll_key: &'static str,
+    source: Element,
+) -> Element {
     rsx! {
         div { class: "home-hero",
             Panel {
                 div { class: "hero-head",
                     div { class: "logo", Decode { text: logo::ZWIPE } }
-                    StatsStrip { figures, compact: true, source }
+                    // Keyed, since a key only takes effect on a list item.
+                    for roll_key in [roll_key] {
+                        StatsStrip {
+                            key: "{roll_key}",
+                            figures: figures.clone(),
+                            compact: true,
+                            source: source.clone(),
+                        }
+                    }
                 }
             }
         }
