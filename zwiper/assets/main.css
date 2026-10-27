@@ -2424,8 +2424,9 @@ button {
     margin-bottom: auto;
 }
 
-/* The Playstyle podium: second, first and third steps joined on one floor,
-   each tinted in its place's palette accent with the deck count inside,
+/* The Playstyle podium: second, first and third steps side by side on one
+   floor, each tinted and outlined in its place's palette accent, its flat
+   bottom edge included, with the deck count inside,
    and the identity standing on top (pips, then a name tag). Fixed heights,
    first tallest, so it reads as a podium whatever the counts are. The
    columns align to their bottoms, so the steps share the floor and the
@@ -2438,7 +2439,6 @@ button {
     width: calc(100% - 2rem);
     max-width: 20rem;
     margin: 1rem auto 0;
-    border-bottom: 1px solid var(--border-secondary);
 }
 
 /* In the Playstyle Summary the podium is a row: the settings rows' divider
@@ -2472,7 +2472,6 @@ button {
     color: var(--tone);
     background-color: color-mix(in srgb, var(--tone) 18%, transparent);
     border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
-    border-bottom: none;
     border-radius: 0.5rem 0.5rem 0 0;
 }
 
