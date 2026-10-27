@@ -17,11 +17,13 @@
 
 use anyhow::Context;
 use sqlx::PgPool;
+use zwipe_core::domain::card::card_role::role_tags::{exclusion_pairs, override_pairs, root_pairs};
 use zwipe_core::domain::card::oracle_tag::NOISE_ORACLE_TAG_SLUGS;
 
-use super::derive_categories::{CATEGORY_ROOTS, exclusion_pairs, override_pairs};
-
-/// The six parallel arrays [`role_membership_ctes`] reads, in bind order.
+/// The six parallel arrays [`role_membership_ctes`] reads, in bind order, built
+/// from zwipe-core's role rules (`domain::card::card_role::role_tags`).
+/// `RoleMembership::from_hierarchy` there computes the same membership in Rust.
+#[derive(Debug, Clone)]
 pub struct RoleMembershipBinds {
     /// Role per root slug.
     pub roles: Vec<String>,
@@ -40,14 +42,7 @@ pub struct RoleMembershipBinds {
 impl RoleMembershipBinds {
     /// Flattens the role tables for `unnest`.
     pub fn new() -> Self {
-        let mut roles: Vec<String> = Vec::new();
-        let mut root_slugs: Vec<String> = Vec::new();
-        for (role, roots) in CATEGORY_ROOTS {
-            for root in *roots {
-                roles.push((*role).to_string());
-                root_slugs.push((*root).to_string());
-            }
-        }
+        let (roles, root_slugs) = root_pairs();
         let (override_roles, override_slugs) = override_pairs();
         let (exclusion_roles, exclusion_slugs) = exclusion_pairs();
         Self {
@@ -115,7 +110,7 @@ pub fn role_membership_ctes(first: usize) -> String {
 }
 
 /// Rebuilds `card_profiles.oracle_tags_by_role` and `.other_oracle_tags` from the
-/// tag hierarchy + [`CATEGORY_ROOTS`]. Returns rows affected.
+/// tag hierarchy + `CATEGORY_ROOTS`. Returns rows affected.
 pub async fn refresh_oracle_tag_groups(pool: &PgPool) -> anyhow::Result<u64> {
     let binds = RoleMembershipBinds::new();
     let noise: Vec<String> = NOISE_ORACLE_TAG_SLUGS

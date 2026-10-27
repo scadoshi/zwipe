@@ -4,6 +4,7 @@
 //! Lightning Bolt = Burn + Removal).
 
 mod oracle_tag_gaps;
+pub mod role_tags;
 
 use std::fmt;
 
