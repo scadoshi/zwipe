@@ -1,8 +1,9 @@
 /* The Magic rules for the components crate, on top of orangui's COMPONENTS_CSS.
  * Inlined by zwiper and zite through the MAGIC_CSS constant, after orangui's
- * THEMES_CSS and COMPONENTS_CSS. Rules reference theme CSS variables only,
- * never color literals, so a component resolves to whichever theme the host
- * has active. */
+ * THEMES_CSS and COMPONENTS_CSS. Rules reference theme CSS variables, so a
+ * component resolves to whichever theme the host has active. The one set of
+ * color literals is the mana pips' classic look (`.pips-natural` and the
+ * colorless ink). */
 
 /* ---- Chip (orangui::Chip): the mana glyph inside a chip ---- */
 
@@ -393,6 +394,20 @@
     padding: 0;
 }
 
+/* ---- Mana pips: every `i.ms.ms-cost`, plus the color map ---- */
+
+/* Pips draw in the five `--mana-*` colors each theme block sets from its own
+   palette. `pips-natural`, on the element that carries the theme class,
+   puts back mana-font's classic fills instead. It comes after the themes in
+   the cascade, so on the same element it wins. */
+.pips-natural {
+    --mana-white: #f0f2c0;
+    --mana-blue: #b5cde3;
+    --mana-black: #aca29a;
+    --mana-red: #db8664;
+    --mana-green: #93b483;
+}
+
 /* Squircle every mana pip so it shares the app's rounded-rect grammar (buttons,
    mana filter boxes) instead of mana-font's default circle. The element+two-class
    selector outranks mana-font's own border-radius; box-shadow follows the radius. */
@@ -402,36 +417,121 @@ i.ms.ms-cost {
     justify-content: center;
     line-height: 1;
     border-radius: 0.3em;
-    /* Outline + glyph in the pip's own mana color, 70% darker than mana-font's
-       fill, as fixed hex so they stay recognizable across every theme (replaces
-       the old theme border, which clashed with the fixed fill). Base is MTG's
-       colorless gray for {C}/generic numerals; the five colors override below. */
-    border: 1px solid #393835;
-    color: #393835;
+    /* The ink is the outline and glyph. MTG's colorless gray stays the ink
+       for {C} and the generic numerals; a colored pip derives its own below. */
+    --pip-ink: #393835;
+    --pip-ink-2: #393835;
+    border: 1px solid var(--pip-ink);
+    color: var(--pip-ink);
     padding: 0 1px;
     /* Override mana-font's hard double `.ms-cost.ms-shadow` offset with a plain
        soft drop shadow that follows the squircle. */
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    /* mana-font paints hybrid halves from these, so a hybrid takes the same
+       five colors as a single pip. Colorless (`--ms-mana-c`) keeps its own. */
+    --ms-mana-w: var(--mana-white);
+    --ms-mana-u: var(--mana-blue);
+    --ms-mana-b: var(--mana-black);
+    --ms-mana-r: var(--mana-red);
+    --ms-mana-g: var(--mana-green);
 }
-i.ms.ms-cost.ms-w {
-    border-color: #48493a;
-    color: #48493a;
+
+/* Each colored pip names its fill, the `--mana-*` color the theme (or
+   `.pips-natural`) sets. A hybrid's fill is its first half and
+   `--pip-fill-2` its second; a twobrid ({2/W}) names only the second. */
+i.ms.ms-cost:is(.ms-w, .ms-wp, .ms-wu, .ms-wb, .ms-wup, .ms-wbp) {
+    --pip-fill: var(--mana-white);
 }
-i.ms.ms-cost.ms-u {
-    border-color: #363e44;
-    color: #363e44;
+i.ms.ms-cost:is(.ms-u, .ms-up, .ms-ub, .ms-ur, .ms-ubp, .ms-urp) {
+    --pip-fill: var(--mana-blue);
 }
-i.ms.ms-cost.ms-b {
-    border-color: #34312e;
-    color: #34312e;
+i.ms.ms-cost:is(.ms-b, .ms-bp, .ms-br, .ms-bg, .ms-brp, .ms-bgp) {
+    --pip-fill: var(--mana-black);
 }
-i.ms.ms-cost.ms-r {
-    border-color: #42281e;
-    color: #42281e;
+i.ms.ms-cost:is(.ms-r, .ms-rp, .ms-rw, .ms-rg, .ms-rwp, .ms-rgp) {
+    --pip-fill: var(--mana-red);
 }
-i.ms.ms-cost.ms-g {
-    border-color: #2c3627;
-    color: #2c3627;
+i.ms.ms-cost:is(.ms-g, .ms-gp, .ms-gw, .ms-gu, .ms-gwp, .ms-gup) {
+    --pip-fill: var(--mana-green);
+}
+i.ms.ms-cost:is(.ms-rw, .ms-gw, .ms-2w, .ms-cw, .ms-rwp, .ms-gwp) {
+    --pip-fill-2: var(--mana-white);
+}
+i.ms.ms-cost:is(.ms-wu, .ms-gu, .ms-2u, .ms-cu, .ms-wup, .ms-gup) {
+    --pip-fill-2: var(--mana-blue);
+}
+i.ms.ms-cost:is(.ms-wb, .ms-ub, .ms-2b, .ms-cb, .ms-wbp, .ms-ubp) {
+    --pip-fill-2: var(--mana-black);
+}
+i.ms.ms-cost:is(.ms-ur, .ms-br, .ms-2r, .ms-cr, .ms-urp, .ms-brp) {
+    --pip-fill-2: var(--mana-red);
+}
+i.ms.ms-cost:is(.ms-bg, .ms-rg, .ms-2g, .ms-cg, .ms-bgp, .ms-rgp) {
+    --pip-fill-2: var(--mana-green);
+}
+
+/* A single-color pip, Phyrexian included, is filled with its color in place
+   of mana-font's fixed fill. */
+i.ms.ms-cost:is(.ms-w, .ms-u, .ms-b, .ms-r, .ms-g, .ms-wp, .ms-up, .ms-bp, .ms-rp, .ms-gp) {
+    background-color: var(--pip-fill);
+}
+
+/* The ink is the fill mixed 42% into black, which lands on the classic
+   pips' own outline colors. Where relative colors work, a fill darker than
+   OKLab lightness 0.55 (black on a dark theme, the deeper colors on a light
+   one) takes a light ink instead, the fill mixed 30% into white, so the
+   glyph keeps at least 3:1 against its fill on every theme. The clamp is
+   that switch: 1 for a dark fill, 0 otherwise. A fill that matches the
+   background (white on a light theme, black on some dark ones) is still
+   edged by its ink, which contrasts with both. */
+i.ms.ms-cost:is(.ms-w, .ms-u, .ms-b, .ms-r, .ms-g, .ms-wp, .ms-up, .ms-bp, .ms-rp, .ms-gp),
+i.ms.ms-cost:is(.ms-wu, .ms-wb, .ms-ub, .ms-ur, .ms-br, .ms-bg, .ms-rw, .ms-rg, .ms-gw, .ms-gu),
+i.ms.ms-cost:is(.ms-wup, .ms-wbp, .ms-ubp, .ms-urp, .ms-brp, .ms-bgp, .ms-rwp, .ms-rgp, .ms-gwp, .ms-gup) {
+    --pip-ink: color-mix(in oklab, var(--pip-fill) 42%, black);
+}
+i.ms.ms-cost:is(.ms-wu, .ms-wb, .ms-ub, .ms-ur, .ms-br, .ms-bg, .ms-rw, .ms-rg, .ms-gw, .ms-gu),
+i.ms.ms-cost:is(.ms-wup, .ms-wbp, .ms-ubp, .ms-urp, .ms-brp, .ms-bgp, .ms-rwp, .ms-rgp, .ms-gwp, .ms-gup),
+i.ms.ms-cost:is(.ms-2w, .ms-2u, .ms-2b, .ms-2r, .ms-2g, .ms-cw, .ms-cu, .ms-cb, .ms-cr, .ms-cg) {
+    --pip-ink-2: color-mix(in oklab, var(--pip-fill-2) 42%, black);
+}
+@supports (color: oklab(from red calc(l * 0.42 + clamp(0, (0.55 - l) * 1000, 1)) a b)) {
+    i.ms.ms-cost:is(.ms-w, .ms-u, .ms-b, .ms-r, .ms-g, .ms-wp, .ms-up, .ms-bp, .ms-rp, .ms-gp),
+    i.ms.ms-cost:is(.ms-wu, .ms-wb, .ms-ub, .ms-ur, .ms-br, .ms-bg, .ms-rw, .ms-rg, .ms-gw, .ms-gu),
+    i.ms.ms-cost:is(.ms-wup, .ms-wbp, .ms-ubp, .ms-urp, .ms-brp, .ms-bgp, .ms-rwp, .ms-rgp, .ms-gwp, .ms-gup) {
+        --pip-ink: oklab(
+            from var(--pip-fill)
+            calc(l * 0.42 + clamp(0, (0.55 - l) * 1000, 1) * (0.7 - l * 0.12))
+            calc(a * (0.42 - clamp(0, (0.55 - l) * 1000, 1) * 0.12))
+            calc(b * (0.42 - clamp(0, (0.55 - l) * 1000, 1) * 0.12))
+        );
+    }
+    i.ms.ms-cost:is(.ms-wu, .ms-wb, .ms-ub, .ms-ur, .ms-br, .ms-bg, .ms-rw, .ms-rg, .ms-gw, .ms-gu),
+    i.ms.ms-cost:is(.ms-wup, .ms-wbp, .ms-ubp, .ms-urp, .ms-brp, .ms-bgp, .ms-rwp, .ms-rgp, .ms-gwp, .ms-gup),
+    i.ms.ms-cost:is(.ms-2w, .ms-2u, .ms-2b, .ms-2r, .ms-2g, .ms-cw, .ms-cu, .ms-cb, .ms-cr, .ms-cg) {
+        --pip-ink-2: oklab(
+            from var(--pip-fill-2)
+            calc(l * 0.42 + clamp(0, (0.55 - l) * 1000, 1) * (0.7 - l * 0.12))
+            calc(a * (0.42 - clamp(0, (0.55 - l) * 1000, 1) * 0.12))
+            calc(b * (0.42 - clamp(0, (0.55 - l) * 1000, 1) * 0.12))
+        );
+    }
+}
+
+/* A hybrid's two glyphs each take their own half's ink, and the outline
+   around the pair stays colorless. */
+i.ms.ms-cost:is(.ms-wu, .ms-wb, .ms-ub, .ms-ur, .ms-br, .ms-bg, .ms-rw, .ms-rg, .ms-gw, .ms-gu),
+i.ms.ms-cost:is(.ms-wup, .ms-wbp, .ms-ubp, .ms-urp, .ms-brp, .ms-bgp, .ms-rwp, .ms-rgp, .ms-gwp, .ms-gup),
+i.ms.ms-cost:is(.ms-2w, .ms-2u, .ms-2b, .ms-2r, .ms-2g, .ms-cw, .ms-cu, .ms-cb, .ms-cr, .ms-cg) {
+    border-color: #393835;
+}
+i.ms.ms-cost:is(.ms-wu, .ms-wb, .ms-ub, .ms-ur, .ms-br, .ms-bg, .ms-rw, .ms-rg, .ms-gw, .ms-gu)::before,
+i.ms.ms-cost:is(.ms-wup, .ms-wbp, .ms-ubp, .ms-urp, .ms-brp, .ms-bgp, .ms-rwp, .ms-rgp, .ms-gwp, .ms-gup)::before {
+    color: var(--pip-ink);
+}
+i.ms.ms-cost:is(.ms-wu, .ms-wb, .ms-ub, .ms-ur, .ms-br, .ms-bg, .ms-rw, .ms-rg, .ms-gw, .ms-gu)::after,
+i.ms.ms-cost:is(.ms-wup, .ms-wbp, .ms-ubp, .ms-urp, .ms-brp, .ms-bgp, .ms-rwp, .ms-rgp, .ms-gwp, .ms-gup)::after,
+i.ms.ms-cost:is(.ms-2w, .ms-2u, .ms-2b, .ms-2r, .ms-2g, .ms-cw, .ms-cu, .ms-cb, .ms-cr, .ms-cg)::after {
+    color: var(--pip-ink-2);
 }
 
 /* Colorless/generic pips render a numeral that crowds the squircle border.
@@ -1060,16 +1160,8 @@ i.ms.ms-cost.ms-gp {
 
 /* ---- ColorMap (components::ColorMap) ---- */
 
-/* The five mana fills, mana-font's own `.ms-cost.ms-*` background colors. A
-   theme may set its own on `.screen`, which overrides these. */
-:root {
-    --mana-white: #f0f2c0;
-    --mana-blue: #b5cde3;
-    --mana-black: #aca29a;
-    --mana-red: #db8664;
-    --mana-green: #93b483;
-}
-
+/* The glows and pips read `--mana-white` through `--mana-green`, so the map
+   follows the pip style like every other pip. */
 .color-map {
     display: flex;
     flex-direction: column;
