@@ -2469,15 +2469,44 @@ button {
     margin-bottom: auto;
 }
 
-/* A color map while it loads: one block the size of its full viewport, so
-   the swap to the tiles stays in place. Comes after .skeleton-bar so its
-   height wins. */
+/* A color map while it loads: a blob of ghost tiles in the middle of a box
+   as tall as the map's own at its 14rem cap, which a map of about 1,000
+   colored cards reaches, so the swap to the real tiles stays in place. */
 .color-map-ghost {
-    width: 100%;
-    max-width: 15.5rem;
-    height: auto;
-    aspect-ratio: 1;
-    border-radius: 0.5rem;
+    height: 14rem;
+    justify-content: center;
+}
+
+/* Ghost tiles in the skeleton fill. They sweep in on orangui's heat-sweep a
+   ring at a time like the real tiles, then a slow wave runs outward through
+   the rings on the second delay each carries, until the data lands. */
+.color-map-ghost-tile {
+    fill: var(--border-muted);
+    transform-box: fill-box;
+    transform-origin: center;
+    animation:
+        heat-sweep 0.4s ease-out backwards,
+        color-map-ghost-wave 1.8s ease-in-out infinite;
+}
+
+@keyframes color-map-ghost-wave {
+    0%,
+    60%,
+    100% {
+        opacity: 1;
+        transform: none;
+    }
+    30% {
+        opacity: 0.4;
+        transform: scale(0.82);
+    }
+}
+
+/* Reduced motion shows the ghost tiles still. */
+@media (prefers-reduced-motion: reduce) {
+    .color-map-ghost-tile {
+        animation: none;
+    }
 }
 
 /* Home's Playstyle title bar: the title centered, Open as a chip pinned to
@@ -2492,6 +2521,16 @@ button {
     right: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
+}
+
+/* The "?" at the left end, mirroring the Playstyle chip, out of the flow so
+   the header keeps its height. */
+.home-panel-hint {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
 }
 
 .home-flavor {

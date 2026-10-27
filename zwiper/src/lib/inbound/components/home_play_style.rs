@@ -1,13 +1,15 @@
 //! Home's Color map panel: the user's color territory map, with a Playstyle
 //! button that opens the full screen.
 
-use components::{Chip, ColorMap, ColorMapCounts, seed_from_id};
+use components::{Chip, ColorMap, ColorMapCounts, ColorMapGhost, seed_from_id};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 
 use crate::inbound::components::auth::authed::use_authed;
+use crate::inbound::components::hint_host::HintTopic;
+use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::telemetry::vocabulary::Screen;
 use crate::inbound::router::Router;
 use crate::inbound::screens::deck::suggested_commanders::color_map_has_data;
@@ -60,7 +62,7 @@ fn use_play_style_summary() -> (Option<HttpPlayStyleSummary>, Signal<bool>) {
 
 /// The panel under the hero, a sibling of the featured flavor card: the
 /// title bar with a Playstyle chip, then the user's [`ColorMap`], seeded by their
-/// id so it draws the same shape as the Playstyle screen's Colors section.
+/// id so it draws the same shape as the Playstyle screen's Color map section.
 /// Before any deck has colored cards it shows one line instead; a failed
 /// fetch with nothing cached shows a muted line. Once the fetch settles the
 /// Playstyle chip is always there, so the screen stays reachable from Home; while
@@ -104,8 +106,12 @@ pub fn HomePlayStyle() -> Element {
                 },
                 None => rsx! {
                     // Everything ghosts until the summary lands: the title as
-                    // a bar, Playstyle as a bare chip its width, then the map's ghost.
+                    // a bar, the "?" and Playstyle as bare chips their size,
+                    // then the map's ghost.
                     div { class: "skeleton-card-header home-panel-header", style: "display: flex;",
+                        span { class: "home-panel-hint",
+                            div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
+                        }
                         div { class: "skeleton-bar skeleton-section-label", style: "width: 30%; margin-bottom: 0;" }
                         span { class: "home-panel-open",
                             div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
@@ -118,13 +124,14 @@ pub fn HomePlayStyle() -> Element {
     }
 }
 
-/// A [`ColorMap`] while its counts load: one block the size of the map's
-/// full viewport, with no tiles, then bare chips for the key.
+/// A [`ColorMap`] while its counts load: a [`ColorMapGhost`] of skeleton
+/// tiles sweeping out from the middle in the map's own box, then bare chips
+/// for the key.
 #[component]
 pub(crate) fn ColorMapSkeleton() -> Element {
     rsx! {
         div { class: "color-map",
-            div { class: "skeleton-bar color-map-ghost" }
+            ColorMapGhost {}
             div { class: "color-map-key",
                 for i in 0..3 {
                     div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
@@ -134,12 +141,16 @@ pub(crate) fn ColorMapSkeleton() -> Element {
     }
 }
 
-/// The panel's title bar: Color map centered, Playstyle as a chip at its right
-/// end, the way the deck view's Budget header carries its currency chips.
+/// The panel's title bar: Color map centered, its "?" at the left end and
+/// Playstyle as a chip at the right end, the way the deck view's Budget
+/// header carries its currency chips.
 #[component]
 fn PanelHeader(onclick: EventHandler<MouseEvent>) -> Element {
     rsx! {
         div { class: "settings-list-header home-panel-header",
+            span { class: "home-panel-hint",
+                InfoButton { topic: HintTopic::ColorMap }
+            }
             span { class: "settings-list-title", "Color map" }
             span { class: "home-panel-open",
                 Chip { selected: false, onclick: move |e| onclick.call(e), "Playstyle" }

@@ -72,8 +72,8 @@ pub enum HintTopic {
     ManaFulfillment,
     /// Deck view: draw odds chart.
     DrawOdds,
-    /// Playstyle: the colors chart.
-    SuggestionColorChart,
+    /// Home and Playstyle: the color map.
+    ColorMap,
     /// Playstyle: the card roles chart.
     SuggestionRoleChart,
     /// Playstyle: the oracle tags table.
@@ -121,7 +121,7 @@ impl HintTopic {
             Self::ManaCurve => "Mana curve",
             Self::ManaFulfillment => "Mana cost fulfillment",
             Self::DrawOdds => "Draw odds",
-            Self::SuggestionColorChart => "Colors",
+            Self::ColorMap => "Color map",
             Self::SuggestionRoleChart => "Card roles",
             Self::SuggestionTagChart => "Oracle tags",
             Self::SuggestionTagDecks => "Decks",
@@ -244,10 +244,12 @@ impl HintTopic {
                     HintBullet { "Random draw only. Mulligans, tutors and card draw are not counted" }
                 }
             },
-            Self::SuggestionColorChart => rsx! {
+            Self::ColorMap => rsx! {
                 HintBullets {
-                    HintBullet { "Colors with more of your cards claim more of the map. It grows slowly as you build, so drag to see all of a big one" }
-                    HintBullet { "The shape is yours alone. Colorless cards are in the key below" }
+                    HintBullet { "Each tile stands for a share of the colored cards across your decks" }
+                    HintBullet { "Every color grows out from the middle, and the color with the most cards claims the most ground" }
+                    HintBullet { "The shape is generated per player" }
+                    HintBullet { "Colorless cards are in the key below" }
                 }
             },
             Self::SuggestionRoleChart => rsx! {

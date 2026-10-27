@@ -37,7 +37,7 @@ pub(crate) fn DeckStatsSkeleton() -> Element {
 }
 
 /// The suggested commanders' profile sections while the first load is in
-/// flight, in the deck view's skeleton grammar: the Colors section open on
+/// flight, in the deck view's skeleton grammar: the Color map section open on
 /// its map's ghost, then Summary and the two chart sections collapsed to
 /// their headers.
 #[component]
@@ -45,8 +45,9 @@ pub(crate) fn BuilderProfileSkeleton() -> Element {
     rsx! {
         div { class: "skeleton-stats",
             div { class: "skeleton-info-list",
-                div { class: "skeleton-card-header",
+                div { class: "skeleton-card-header card-group-header-with-hint",
                     div { class: "skeleton-bar skeleton-section-label" }
+                    div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
                 }
                 ColorMapSkeleton {}
             }

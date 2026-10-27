@@ -403,7 +403,7 @@ const LIST_TITLE: &str = "Suggested commanders";
 
 /// The profile sections' titles, also their accordion keys.
 const SUMMARY_TITLE: &str = "Summary";
-const COLORS_TITLE: &str = "Colors";
+const COLORS_TITLE: &str = "Color map";
 const ROLES_TITLE: &str = "Card roles";
 const TAGS_TITLE: &str = "Oracle tags";
 
@@ -884,8 +884,8 @@ fn StaplesPanel(
 /// profile's grammar: a color territory map seeded by the user's id, then a
 /// Summary table (the deck count, the most common color set and color) in
 /// the Budget section's rows, a chart and a table. The four share one
-/// accordion with Colors open on entry, or Summary when there are no colors
-/// to show. Colors are a [`ColorMap`], or
+/// accordion with Color map open on entry, or Summary when there are no
+/// colors to show. Colors are a [`ColorMap`], or
 /// columns in WUBRG order from a server that sends no color map or a map
 /// with nothing on it; card roles are rows like the deck
 /// profile's role chart with chip labels, a tapped role revealing its oracle
@@ -937,7 +937,7 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                 title: COLORS_TITLE,
                 open_section,
                 header_accessory: rsx! {
-                    InfoButton { topic: HintTopic::SuggestionColorChart }
+                    InfoButton { topic: HintTopic::ColorMap }
                 },
                 if let Some(counts) = color_map {
                     ColorMap { counts, seed: map_seed }

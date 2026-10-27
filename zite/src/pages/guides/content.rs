@@ -640,7 +640,7 @@ pub static GUIDES: &[Guide] = &[
             ]),
             Block::H2("What your decks say"),
             Block::P(
-                "Colors opens first. It grows a map of tiles from your cards, each color claiming ground in proportion to its cards, in a shape that's yours alone. It's the same map as on Home, and a big one scrolls inside its box. Under it are three more sections. Tap one to open it.",
+                "Color map opens first. It grows a map of tiles from your cards, each color claiming ground in proportion to its cards, in a shape generated per player. It's the same map as on Home. Under it are three more sections. Tap one to open it.",
             ),
             Block::Bullets(&[
                 "Summary shows how many decks were read, your most built color combination and your top single color.",
