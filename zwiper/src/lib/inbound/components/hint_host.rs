@@ -82,8 +82,6 @@ pub enum HintTopic {
     SuggestionTagCards,
     /// Playstyle: the oracle tags table's Impact column.
     SuggestionTagImpact,
-    /// Playstyle: the staples section.
-    SuggestionStaples,
 }
 
 impl HintTopic {
@@ -122,7 +120,6 @@ impl HintTopic {
             Self::SuggestionTagDecks => "Decks",
             Self::SuggestionTagCards => "Cards",
             Self::SuggestionTagImpact => "Impact",
-            Self::SuggestionStaples => "Staples",
         }
     }
 
@@ -252,9 +249,6 @@ impl HintTopic {
             },
             Self::SuggestionTagImpact => rsx! {
                 HintLine { "How much more your decks lean on this tag than Magic cards do overall. Your top tag scores 100" }
-            },
-            Self::SuggestionStaples => rsx! {
-                HintLine { "Cards in the most of your decks, each with how many. Basic lands are left out" }
             },
         }
     }

@@ -49,6 +49,9 @@ pub(crate) fn CardRow(
     /// Host content under the expanded detail's chips, before its action bar.
     #[props(default)]
     footer: Option<Element>,
+    /// Text in place of the leading qty, forwarded to the shared row.
+    #[props(default)]
+    qty_tag: Option<String>,
 ) -> Element {
     let scryfall_data_for_preview = card.scryfall_data.clone();
     // Which face the expanded detail is flipped to (0 = front), so the fullscreen
@@ -88,6 +91,7 @@ pub(crate) fn CardRow(
             on_toggle_mvp,
             extra_actions,
             footer,
+            qty_tag,
             price_currency,
             show_classification: true,
             describe_tag,

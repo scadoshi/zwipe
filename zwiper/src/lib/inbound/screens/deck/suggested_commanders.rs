@@ -15,12 +15,13 @@
 //! in the deck profile's grammar sum up what the user builds, the profile the
 //! ranking reads: a Summary table (the deck count, the top colors and the
 //! top single color), then a color map of the cards and color pairs, a chart
-//! of the card roles, a table of the oracle tags across the decks, and the
-//! staples, the cards in the most decks as the shared card rows. They share
-//! one accordion with Summary open
-//! on entry; the list section folds on its own and starts open. With no deck
-//! that has cards to read from, the screen shows a single line instead of the
-//! sections and the list.
+//! of the card roles and a table of the oracle tags across the decks. They
+//! share one accordion with Summary open on entry. Below the list, the staples
+//! (up to 100 cards in the most decks) show as the shared card rows in the
+//! list's group grammar, the first 10 that match their own Type and Color chip
+//! rows, which the Show row does not touch. With no deck that has cards to
+//! read from, the screen shows a single line instead of the sections and the
+//! list.
 
 use std::collections::BTreeMap;
 
@@ -38,6 +39,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_role::role_short_label;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::scryfall_data::colors::{Color, identity_name};
+use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
@@ -233,11 +235,19 @@ pub(crate) fn empty_identity_line(identity: &[Color]) -> String {
     format!("No {name} commanders in your top 100")
 }
 
-/// A staple's footer line, its deck count against all the user's decks in
-/// [`color_lines`]' wording. A staple is in at least two decks, so both
-/// counts read plural.
-pub(crate) fn staple_line(decks: u32, deck_count: u32) -> String {
-    format!("In {decks} of your {deck_count} decks")
+/// A staple's share of the user's decks for its row header, the percent
+/// rounded half up and then the fraction, "67% · 4/6". With no decks to count
+/// against it is the fraction alone.
+pub(crate) fn staple_share(decks: u32, deck_count: u32) -> String {
+    let fraction = format!("{decks}/{deck_count}");
+    let percent = u64::from(decks)
+        .checked_mul(200)
+        .and_then(|doubled| doubled.checked_add(u64::from(deck_count)))
+        .and_then(|sum| sum.checked_div(u64::from(deck_count).checked_mul(2)?));
+    match percent {
+        Some(percent) => format!("{percent}% · {fraction}"),
+        None => fraction,
+    }
 }
 
 /// One line per color the user builds in, most decks first, in the order the
@@ -397,6 +407,8 @@ const SUMMARY_TITLE: &str = "Summary";
 const COLORS_TITLE: &str = "Colors";
 const ROLES_TITLE: &str = "Card roles";
 const TAGS_TITLE: &str = "Oracle tags";
+
+/// The Staples panel's group header, in the list's header grammar.
 const STAPLES_TITLE: &str = "Staples";
 
 /// Whether a color map has anything to draw: a card or a deck pair.
@@ -588,9 +600,9 @@ fn SummaryIdentityRow(
     }
 }
 
-/// One staple: the shared expandable card row with its deck count in the
-/// row's count slot, where a deck list puts copies, and the count against
-/// every deck in its footer. No actions beyond the row's own Printing.
+/// One staple: the shared expandable card row with its share of the user's
+/// decks as a tag where a deck list puts copies. No footer and no actions
+/// beyond the row's own Printing.
 #[component]
 fn StapleRow(
     staple: HttpStaple,
@@ -600,44 +612,274 @@ fn StapleRow(
     preview_dismissing: Signal<bool>,
     on_printing: EventHandler<Card>,
 ) -> Element {
-    let line = staple_line(staple.decks, deck_count);
     rsx! {
         CardRow {
             card: staple.card,
             qty: i32::try_from(staple.decks).unwrap_or(i32::MAX),
+            qty_tag: staple_share(staple.decks, deck_count),
             expanded_card,
             preview_card,
             preview_dismissing,
             on_printing: move |c: Card| on_printing.call(c),
-            footer: rsx! {
-                div { class: "card-detail-footer",
-                    ul { class: "card-detail-bullets",
-                        li { "{line}" }
+        }
+    }
+}
+
+/// The Staples Type row's card types, in the row's fixed order.
+const STAPLE_TYPES: [CardType; 7] = [
+    CardType::Creature,
+    CardType::Artifact,
+    CardType::Enchantment,
+    CardType::Instant,
+    CardType::Sorcery,
+    CardType::Planeswalker,
+    CardType::Land,
+];
+
+/// A chip on the Staples Color row: one color, or colorless.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum StapleColor {
+    /// Cards whose color identity includes the color.
+    Of(Color),
+    /// Cards with an empty color identity.
+    Colorless,
+}
+
+impl StapleColor {
+    /// Every chip in the row's order: WUBRG, then colorless.
+    fn all() -> [Self; 6] {
+        let [w, u, b, r, g] = Color::all();
+        [
+            Self::Of(w),
+            Self::Of(u),
+            Self::Of(b),
+            Self::Of(r),
+            Self::Of(g),
+            Self::Colorless,
+        ]
+    }
+
+    /// Whether `identity` falls under the chip. A multicolor identity falls
+    /// under each of its colors.
+    fn matches(self, identity: &[Color]) -> bool {
+        match self {
+            Self::Of(color) => identity.contains(&color),
+            Self::Colorless => identity.is_empty(),
+        }
+    }
+
+    /// What [`IdentityPips`] draws: the color's one pip, or no pips, which it
+    /// names "Colorless".
+    fn pips(self) -> Vec<Color> {
+        match self {
+            Self::Of(color) => vec![color],
+            Self::Colorless => vec![],
+        }
+    }
+}
+
+/// The front face of a type line. Scryfall joins a multi-faced card's faces
+/// with `" // "`; a single-faced line comes back whole.
+fn front_face(type_line: &str) -> &str {
+    type_line
+        .split_once(" // ")
+        .map_or(type_line, |(front, _)| front)
+}
+
+/// Whether the front face of `type_line` has `card_type` as one of its words,
+/// so "Artifact Creature" has both Artifact and Creature.
+pub(crate) fn has_type(type_line: Option<&str>, card_type: CardType) -> bool {
+    let word = card_type.to_string();
+    type_line.is_some_and(|line| front_face(line).split_whitespace().any(|w| w == word))
+}
+
+/// A staple's type line, its first face's where the card has no top-level one.
+fn staple_type_line(staple: &HttpStaple) -> Option<&str> {
+    let data = &staple.card.scryfall_data;
+    data.type_line
+        .as_deref()
+        .or_else(|| data.card_faces.as_ref()?.first()?.type_line.as_deref())
+}
+
+/// A staple's color identity, what the Color row reads.
+fn staple_identity(staple: &HttpStaple) -> &[Color] {
+    &staple.card.scryfall_data.color_identity
+}
+
+/// The Type row's chips: each of [`STAPLE_TYPES`] that at least one item
+/// has, in that fixed order.
+pub(crate) fn staple_types_present<T>(
+    items: &[T],
+    type_line: impl Fn(&T) -> Option<&str>,
+) -> Vec<CardType> {
+    STAPLE_TYPES
+        .into_iter()
+        .filter(|card_type| {
+            items
+                .iter()
+                .any(|item| has_type(type_line(item), *card_type))
+        })
+        .collect()
+}
+
+/// The Color row's chips: each of [`StapleColor::all`] that at least one
+/// item falls under, in that fixed order.
+pub(crate) fn staple_colors_present<T>(
+    items: &[T],
+    colors: impl Fn(&T) -> &[Color],
+) -> Vec<StapleColor> {
+    StapleColor::all()
+        .into_iter()
+        .filter(|chip| items.iter().any(|item| chip.matches(colors(item))))
+        .collect()
+}
+
+/// The first [`LIST_SIZE`] items with `card_type` and under `color`, in the
+/// order given; `None` on either row is All, and the two rows combine.
+pub(crate) fn matching_staples<T: Clone>(
+    items: &[T],
+    type_line: impl Fn(&T) -> Option<&str>,
+    colors: impl Fn(&T) -> &[Color],
+    card_type: Option<CardType>,
+    color: Option<StapleColor>,
+) -> Vec<T> {
+    items
+        .iter()
+        .filter(|item| {
+            card_type.is_none_or(|wanted| has_type(type_line(item), wanted))
+                && color.is_none_or(|chip| chip.matches(colors(item)))
+        })
+        .take(LIST_SIZE)
+        .cloned()
+        .collect()
+}
+
+/// The Staples Type row in the Show row's grammar: the label, All, then one
+/// chip per type in `types`. Single select over `active_type`, `None` being
+/// All; the selected chip tapped again is All.
+#[component]
+fn StapleTypeChips(mut active_type: Signal<Option<CardType>>, types: Vec<CardType>) -> Element {
+    rsx! {
+        div { class: "chip-row",
+            span { class: "stat-chip stat-chip-p1 chip-row-label", "Type" }
+            Chip {
+                selected: active_type().is_none(),
+                onclick: move |_| active_type.set(None),
+                "All"
+            }
+            for card_type in types {
+                Chip {
+                    key: "{card_type}",
+                    selected: active_type() == Some(card_type),
+                    onclick: move |_| {
+                        if active_type() == Some(card_type) {
+                            active_type.set(None);
+                        } else {
+                            active_type.set(Some(card_type));
+                        }
+                    },
+                    "{card_type}"
+                }
+            }
+        }
+    }
+}
+
+/// The Staples Color row in the Show row's grammar: the label, All, then one
+/// chip per entry in `colors`, a color as its pip and colorless by name.
+/// Single select over `active_color`, `None` being All; the selected chip
+/// tapped again is All.
+#[component]
+fn StapleColorChips(
+    mut active_color: Signal<Option<StapleColor>>,
+    colors: Vec<StapleColor>,
+) -> Element {
+    rsx! {
+        div { class: "chip-row",
+            span { class: "stat-chip stat-chip-p1 chip-row-label", "Color" }
+            Chip {
+                selected: active_color().is_none(),
+                onclick: move |_| active_color.set(None),
+                "All"
+            }
+            for chip in colors {
+                Chip {
+                    key: "{identity_key(&chip.pips())}",
+                    selected: active_color() == Some(chip),
+                    onclick: move |_| {
+                        if active_color() == Some(chip) {
+                            active_color.set(None);
+                        } else {
+                            active_color.set(Some(chip));
+                        }
+                    },
+                    IdentityPips { identity: chip.pips() }
+                }
+            }
+        }
+    }
+}
+
+/// The staples under the suggestions list: the Type and Color rows, then the
+/// first [`LIST_SIZE`] staples they match as [`StapleRow`]s in a group headed
+/// like the list's, or the empty line when none match. The filter lives here
+/// and resets when the screen does.
+#[component]
+fn StaplesPanel(
+    staples: Vec<HttpStaple>,
+    deck_count: u32,
+    expanded_card: Signal<Option<Uuid>>,
+    preview_card: Signal<Option<(ScryfallData, usize)>>,
+    preview_dismissing: Signal<bool>,
+    on_printing: EventHandler<Card>,
+) -> Element {
+    let active_type: Signal<Option<CardType>> = use_signal(|| None);
+    let active_color: Signal<Option<StapleColor>> = use_signal(|| None);
+    let types = staple_types_present(&staples, staple_type_line);
+    let colors = staple_colors_present(&staples, staple_identity);
+    let rows = matching_staples(
+        &staples,
+        staple_type_line,
+        staple_identity,
+        active_type(),
+        active_color(),
+    );
+    rsx! {
+        StapleTypeChips { active_type, types }
+        StapleColorChips { active_color, colors }
+        if rows.is_empty() {
+            div { class: "message-empty",
+                span { class: "chip-note", "No staples match" }
+            }
+        } else {
+            div { class: "maybeboard-list card-group row-enter",
+                div { class: "card-group-header", "{STAPLES_TITLE}" }
+                for staple in rows {
+                    StapleRow {
+                        key: "{staple.card.scryfall_data.id}",
+                        staple,
+                        deck_count,
+                        expanded_card,
+                        preview_card,
+                        preview_dismissing,
+                        on_printing,
                     }
                 }
-            },
+            }
         }
     }
 }
 
 /// What the user builds, as sections over the suggestions list in the deck
 /// profile's grammar: a Summary table (the deck count, the most common color
-/// set and color) in the Budget section's rows, then a color map, a chart, a
-/// table and the staples. The five share one accordion with Summary open on
-/// entry. Colors are a [`ColorMap`], or columns in WUBRG order from a server
-/// that sends no color map or a map with nothing on it; card roles are rows
-/// like the deck profile's role chart with chip labels, a tapped role
-/// revealing its oracle tags from the profile under its row; oracle tags are
-/// a [`TagTable`]; staples are [`StapleRow`]s, the section absent when there
-/// are none.
+/// set and color) in the Budget section's rows, then a color map, a chart and
+/// a table. The four share one accordion with Summary open on entry. Colors
+/// are a [`ColorMap`], or columns in WUBRG order from a server that sends no
+/// color map or a map with nothing on it; card roles are rows like the deck
+/// profile's role chart with chip labels, a tapped role revealing its oracle
+/// tags from the profile under its row; oracle tags are a [`TagTable`].
 #[component]
-pub(crate) fn BuilderProfileSections(
-    profile: HttpBuilderProfile,
-    expanded_card: Signal<Option<Uuid>>,
-    preview_card: Signal<Option<(ScryfallData, usize)>>,
-    preview_dismissing: Signal<bool>,
-    on_printing: EventHandler<Card>,
-) -> Element {
+pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     let summary = profile_summary(&profile);
     // The top three color identities, shared with Home's panel, for the
     // Summary's podium; the Top colors row stands in until they arrive.
@@ -655,8 +897,6 @@ pub(crate) fn BuilderProfileSections(
         .filter(color_map_has_data);
     let roles = role_bars(&profile.roles, &profile.tags);
     let tags = tag_rows(&profile.tags);
-    let deck_count = profile.deck_count;
-    let staples = profile.staples;
     let profile_tags = profile.tags;
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
@@ -732,30 +972,6 @@ pub(crate) fn BuilderProfileSections(
                     InfoButton { topic: HintTopic::SuggestionTagChart }
                 },
                 TagTable { rows: tags }
-            }
-        }
-        if !staples.is_empty() {
-            CollapsibleSection {
-                title: STAPLES_TITLE,
-                open_section,
-                header_accessory: rsx! {
-                    InfoButton { topic: HintTopic::SuggestionStaples }
-                },
-                // One child, so the section body's gap stays out from between
-                // the rows; each row brings its own inset and divider.
-                div {
-                    for staple in staples {
-                        StapleRow {
-                            key: "{staple.card.scryfall_data.id}",
-                            staple,
-                            deck_count,
-                            expanded_card,
-                            preview_card,
-                            preview_dismissing,
-                            on_printing,
-                        }
-                    }
-                }
             }
         }
     }
@@ -1135,6 +1351,11 @@ pub fn SuggestedCommanders() -> Element {
     let cold_start = deck_count() == 0;
     let has_entries = !entries().is_empty();
     let rows = shown(&filtered());
+    let staples: Vec<HttpStaple> = profile
+        .read()
+        .as_ref()
+        .map(|p| p.staples.clone())
+        .unwrap_or_default();
 
     rsx! {
         div { class: "screen",
@@ -1193,16 +1414,7 @@ pub fn SuggestedCommanders() -> Element {
                         // The deck view's column of sibling sections.
                         div { style: "width:100%;display:flex;flex-direction:column;gap:var(--panel-gap);",
                             if let Some(profile) = profile() {
-                                BuilderProfileSections {
-                                    profile,
-                                    expanded_card,
-                                    preview_card,
-                                    preview_dismissing,
-                                    on_printing: move |c: Card| {
-                                        printing_card.set(Some(c));
-                                        printing_open.set(true);
-                                    },
-                                }
+                                BuilderProfileSections { profile }
                             }
                             // The commander maybeboard's Show row on the grid, over
                             // the rows it narrows, the Art toggle at its end.
@@ -1243,6 +1455,21 @@ pub fn SuggestedCommanders() -> Element {
                                             },
                                         }
                                     }
+                                }
+                            }
+                            // Below the list in its group grammar, outside the
+                            // Show filter, with its own Type and Color rows.
+                            if !staples.is_empty() {
+                                StaplesPanel {
+                                    staples,
+                                    deck_count: deck_count(),
+                                    expanded_card,
+                                    preview_card,
+                                    preview_dismissing,
+                                    on_printing: move |c: Card| {
+                                        printing_card.set(Some(c));
+                                        printing_open.set(true);
+                                    },
                                 }
                             }
                         }
@@ -1535,9 +1762,180 @@ mod tests {
     }
 
     #[test]
-    fn staple_line_counts_against_every_deck() {
-        assert_eq!(staple_line(3, 7), "In 3 of your 7 decks");
-        assert_eq!(staple_line(2, 2), "In 2 of your 2 decks");
+    fn staple_share_rounds_the_percent_and_keeps_the_fraction() {
+        assert_eq!(staple_share(2, 3), "67% · 2/3");
+        assert_eq!(staple_share(4, 6), "67% · 4/6");
+        assert_eq!(staple_share(1, 3), "33% · 1/3");
+        assert_eq!(staple_share(1, 8), "13% · 1/8", "12.5 rounds up");
+        assert_eq!(staple_share(6, 6), "100% · 6/6");
+        assert_eq!(staple_share(2, 0), "2/0", "no decks to count against");
+    }
+
+    /// A staple as the filter sees it: a name, its type line and its color
+    /// identity.
+    type Staple = (&'static str, Option<&'static str>, Vec<Color>);
+
+    fn staple(name: &'static str, type_line: &'static str, colors: &[Color]) -> Staple {
+        (name, Some(type_line), colors.to_vec())
+    }
+
+    fn type_line_of(staple: &Staple) -> Option<&str> {
+        staple.1
+    }
+
+    fn identity_of_staple(staple: &Staple) -> &[Color] {
+        &staple.2
+    }
+
+    fn staple_names(staples: &[Staple]) -> Vec<&str> {
+        staples.iter().map(|s| s.0).collect()
+    }
+
+    fn matching(
+        staples: &[Staple],
+        card_type: Option<CardType>,
+        color: Option<StapleColor>,
+    ) -> Vec<&'static str> {
+        matching_staples(staples, type_line_of, identity_of_staple, card_type, color)
+            .iter()
+            .map(|s| s.0)
+            .collect()
+    }
+
+    #[test]
+    fn has_type_reads_every_word_of_the_front_face() {
+        let line = Some("Legendary Artifact Creature — Golem");
+        assert!(has_type(line, CardType::Artifact));
+        assert!(has_type(line, CardType::Creature));
+        assert!(!has_type(line, CardType::Enchantment));
+        let modal = Some("Sorcery // Land");
+        assert!(has_type(modal, CardType::Sorcery));
+        assert!(
+            !has_type(modal, CardType::Land),
+            "the back face is not read"
+        );
+        assert!(!has_type(None, CardType::Creature));
+        assert!(
+            !has_type(Some("Snow Artifacts"), CardType::Artifact),
+            "a whole word, not a prefix"
+        );
+    }
+
+    #[test]
+    fn a_color_chip_keeps_identities_that_include_it() {
+        let staples = [
+            staple("Llanowar Elves", "Creature — Elf Druid", &[Green]),
+            staple("Sol Ring", "Artifact", &[]),
+            staple("Assassin's Trophy", "Instant", &[Black, Green]),
+            staple("Swords to Plowshares", "Instant", &[White]),
+        ];
+        assert_eq!(
+            matching(&staples, None, Some(StapleColor::Of(Green))),
+            vec!["Llanowar Elves", "Assassin's Trophy"],
+            "a multicolor card shows under each of its colors"
+        );
+        assert_eq!(
+            matching(&staples, None, Some(StapleColor::Of(Black))),
+            vec!["Assassin's Trophy"]
+        );
+        assert_eq!(
+            matching(&staples, None, Some(StapleColor::Colorless)),
+            vec!["Sol Ring"]
+        );
+        assert_eq!(
+            matching(&staples, None, None),
+            staple_names(&staples),
+            "All on both rows keeps everything"
+        );
+    }
+
+    #[test]
+    fn the_type_and_color_rows_combine() {
+        let staples = [
+            staple("Llanowar Elves", "Creature — Elf Druid", &[Green]),
+            staple("Beast Within", "Instant", &[Green]),
+            staple("Solemn Simulacrum", "Artifact Creature — Golem", &[]),
+            staple("Thassa's Oracle", "Creature — Merfolk Wizard", &[Blue]),
+            staple("Sylvan Library", "Enchantment", &[Green]),
+        ];
+        assert_eq!(
+            matching(
+                &staples,
+                Some(CardType::Creature),
+                Some(StapleColor::Of(Green))
+            ),
+            vec!["Llanowar Elves"]
+        );
+        assert_eq!(
+            matching(&staples, Some(CardType::Creature), None),
+            vec!["Llanowar Elves", "Solemn Simulacrum", "Thassa's Oracle"]
+        );
+        assert_eq!(
+            matching(&staples, Some(CardType::Artifact), None),
+            vec!["Solemn Simulacrum"],
+            "an artifact creature counts as an artifact too"
+        );
+        assert!(
+            matching(
+                &staples,
+                Some(CardType::Instant),
+                Some(StapleColor::Of(Blue))
+            )
+            .is_empty(),
+            "no blue instant, so nothing matches"
+        );
+    }
+
+    #[test]
+    fn matching_staples_keeps_order_and_cuts_to_ten() {
+        let names: [&'static str; 12] =
+            ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"];
+        let mut staples: Vec<Staple> = names
+            .iter()
+            .map(|name| staple(name, "Creature", &[Red]))
+            .collect();
+        staples.insert(3, staple("Sol Ring", "Artifact", &[]));
+        assert_eq!(
+            matching(&staples, Some(CardType::Creature), None),
+            names.iter().take(LIST_SIZE).copied().collect::<Vec<_>>(),
+            "the first ten matches in the order sent"
+        );
+        assert_eq!(matching(&staples, None, None).len(), LIST_SIZE);
+    }
+
+    #[test]
+    fn only_matched_chips_are_listed_in_fixed_order() {
+        let staples = [
+            staple("Command Tower", "Land", &[]),
+            staple("Beast Within", "Instant", &[Green]),
+            staple("Solemn Simulacrum", "Artifact Creature — Golem", &[]),
+            staple("Lightning Helix", "Instant", &[Red, White]),
+        ];
+        assert_eq!(
+            staple_types_present(&staples, type_line_of),
+            vec![
+                CardType::Creature,
+                CardType::Artifact,
+                CardType::Instant,
+                CardType::Land
+            ]
+        );
+        assert_eq!(
+            staple_colors_present(&staples, identity_of_staple),
+            vec![
+                StapleColor::Of(White),
+                StapleColor::Of(Red),
+                StapleColor::Of(Green),
+                StapleColor::Colorless
+            ]
+        );
+        let colored = [staple("Beast Within", "Instant", &[Green])];
+        assert_eq!(
+            staple_colors_present(&colored, identity_of_staple),
+            vec![StapleColor::Of(Green)],
+            "no colorless chip without a colorless staple"
+        );
+        assert!(staple_types_present::<Staple>(&[], type_line_of).is_empty());
     }
 
     fn value(pips: &[Color], count: &str) -> SummaryValue {
