@@ -31,10 +31,10 @@ use crate::inbound::screens::deck::components::collapsible_section::CollapsibleS
 
 /// The accordion title of the heatmap section.
 pub(crate) const ACTIVITY_TITLE: &str = "Activity";
-/// The accordion title of the swipe outcomes section.
-const SWIPES_TITLE: &str = "Swipes";
-/// The accordion title of the rates section.
-const RATES_TITLE: &str = "Rates";
+/// The accordion title of the role rates section.
+const ROLES_TITLE: &str = "Card roles";
+/// The accordion title of the tag rates section.
+const TAGS_TITLE: &str = "Oracle tags";
 /// The hard passes group's header.
 const PASSES_TITLE: &str = "Hard passes";
 
@@ -443,13 +443,13 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
     }
 }
 
-/// The screen's three sections in one accordion: Activity, the
-/// year's heatmap with its totals under it; Swipes, what the user's swipes
-/// came to as columns; Rates, a chip row picking Added, Skipped, Maybeboard
-/// or Removed over two charts of that share, Card roles with role chips
-/// revealing the oracle tags swiped under each, and Oracle tags with the
-/// tags that stand out most from other players, each revealing its
-/// description. Each section is left out when it has nothing to show. The
+/// The screen's three sections in one accordion: Activity, the year's
+/// heatmap with its totals under it and what the user's swipes came to as
+/// columns; Card roles, the picked share per role, its chips revealing
+/// the oracle tags swiped under each; and Oracle tags, the tags whose share
+/// stands out most from other players', each revealing its description. The
+/// last two share one [`RateChips`] pick of Added, Skipped, Maybeboard or
+/// Removed. Each section is left out when it has nothing to show. The
 /// heatmap mounts afresh each time its section opens, so its sweep plays in
 /// view.
 #[component]
@@ -465,13 +465,12 @@ pub(crate) fn ActivitySections(
             opens.set(next);
         }
     }));
-    let mut kind = use_signal(|| RateKind::Added);
+    let kind = use_signal(|| RateKind::Added);
     let has_days = !activity.days.is_empty();
     let outcomes = activity.outcomes;
     let swipe_tags = activity.tags.clone();
     let role_bars = role_rate_bars(kind(), &activity.roles, &activity.tags);
     let tag_bars = tag_rate_bars(kind(), &activity.tags);
-    let has_rates = !activity.roles.is_empty() || !activity.tags.is_empty();
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
     let mut selected_tag: Signal<Option<String>> = use_signal(|| None);
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
@@ -506,77 +505,106 @@ pub(crate) fn ActivitySections(
         }
     });
     rsx! {
-        if has_days {
+        if has_days || has_outcomes(&outcomes) {
             CollapsibleSection {
                 title: ACTIVITY_TITLE,
                 open_section,
                 header_accessory: rsx! {
                     InfoButton { topic: HintTopic::Activity }
                 },
-                for run in [opens()] {
-                    ActivityHeatmap {
-                        key: "{run}",
-                        through: activity.through,
-                        days: activity.days.clone(),
+                if has_days {
+                    for run in [opens()] {
+                        ActivityHeatmap {
+                            key: "{run}",
+                            through: activity.through,
+                            days: activity.days.clone(),
+                        }
+                    }
+                    div { class: "activity-total", "{year_line(&activity.days)}" }
+                }
+                if has_outcomes(&outcomes) {
+                    div { class: "activity-outcomes",
+                        BarChart { label: "Swipes", bars: outcome_bars(&outcomes) }
                     }
                 }
-                div { class: "activity-total", "{year_line(&activity.days)}" }
             }
         }
-        if has_outcomes(&outcomes) {
+        if !activity.roles.is_empty() {
             CollapsibleSection {
-                title: SWIPES_TITLE,
+                title: ROLES_TITLE,
                 open_section,
                 header_accessory: rsx! {
-                    InfoButton { topic: HintTopic::SwipeOutcomes }
-                },
-                BarChart { bars: outcome_bars(&outcomes) }
-            }
-        }
-        if has_rates {
-            CollapsibleSection {
-                title: RATES_TITLE,
-                open_section,
-                header_accessory: rsx! {
-                    InfoButton { topic: HintTopic::Rates }
+                    InfoButton { topic: HintTopic::RoleRates }
                 },
                 div { class: "activity-rates",
-                    div { class: "chip-row activity-rate-chips",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Rate" }
-                        for choice in RateKind::ALL {
-                            Chip {
-                                key: "{choice.label()}",
-                                selected: kind() == choice,
-                                onclick: move |_| kind.set(choice),
-                                "{choice.label()}"
+                    RateChips { kind }
+                    // Keyed on the rate, so a switch mounts a fresh chart:
+                    // patched in place, rows that re-sort and flip between a
+                    // chip and a plain label kept stale bar widths.
+                    for rate in [kind().label()] {
+                        div { key: "{rate}",
+                            if role_bars.is_empty() {
+                                div { class: "activity-total", "Nothing to show for this rate yet" }
+                            } else {
+                                BarChart {
+                                    bars: role_bars.clone(),
+                                    orientation: BarOrientation::Horizontal,
+                                    on_bar: toggle_role,
+                                    selected: selected_role(),
+                                    reveal: role_reveal,
+                                    count_suffix: "%",
+                                }
                             }
                         }
                     }
-                    if role_bars.is_empty() && tag_bars.is_empty() {
-                        div { class: "activity-total", "Nothing to show for this rate yet" }
-                    }
-                    if !role_bars.is_empty() {
-                        BarChart {
-                            label: "Card roles",
-                            bars: role_bars,
-                            orientation: BarOrientation::Horizontal,
-                            on_bar: toggle_role,
-                            selected: selected_role(),
-                            reveal: role_reveal,
-                            count_suffix: "%",
+                }
+            }
+        }
+        if !activity.tags.is_empty() {
+            CollapsibleSection {
+                title: TAGS_TITLE,
+                open_section,
+                header_accessory: rsx! {
+                    InfoButton { topic: HintTopic::TagRates }
+                },
+                div { class: "activity-rates",
+                    RateChips { kind }
+                    for rate in [kind().label()] {
+                        div { key: "{rate}",
+                            if tag_bars.is_empty() {
+                                div { class: "activity-total", "Nothing to show for this rate yet" }
+                            } else {
+                                BarChart {
+                                    bars: tag_bars.clone(),
+                                    orientation: BarOrientation::Horizontal,
+                                    on_bar: toggle_tag,
+                                    selected: selected_tag(),
+                                    reveal: tag_reveal,
+                                    count_suffix: "%",
+                                }
+                            }
                         }
                     }
-                    if !tag_bars.is_empty() {
-                        BarChart {
-                            label: "Oracle tags",
-                            bars: tag_bars,
-                            orientation: BarOrientation::Horizontal,
-                            on_bar: toggle_tag,
-                            selected: selected_tag(),
-                            reveal: tag_reveal,
-                            count_suffix: "%",
-                        }
-                    }
+                }
+            }
+        }
+    }
+}
+
+/// The Rate chip row over the role and tag charts: Added, Skipped,
+/// Maybeboard or Removed, one always picked. Both sections render it over
+/// the same signal, so a pick in either switches both.
+#[component]
+fn RateChips(mut kind: Signal<RateKind>) -> Element {
+    rsx! {
+        div { class: "chip-row activity-rate-chips",
+            span { class: "stat-chip stat-chip-p1 chip-row-label", "Rate" }
+            for choice in RateKind::ALL {
+                Chip {
+                    key: "{choice.label()}",
+                    selected: kind() == choice,
+                    onclick: move |_| kind.set(choice),
+                    "{choice.label()}"
                 }
             }
         }

@@ -6,7 +6,9 @@
 /// The screen's accordion sections and hard passes group.
 pub(crate) mod sections;
 
-use components::{ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintLine};
+use components::{
+    ActionBar, Button, ButtonVariant, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
+};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
@@ -44,8 +46,8 @@ fn has_anything(activity: &HttpActivity) -> bool {
 
 /// The screen while its first fetch is out, in the deck view's skeleton
 /// grammar: the Activity section open on a blank body the heatmap's height,
-/// which the grid then sweeps into, then Swipes and Rates collapsed to their
-/// headers.
+/// which the grid then sweeps into, then Card roles and Oracle tags collapsed
+/// to their headers.
 #[component]
 fn ActivitySkeleton() -> Element {
     rsx! {
@@ -66,8 +68,8 @@ fn ActivitySkeleton() -> Element {
     }
 }
 
-/// How the user picks: the Activity, Swipes and Rates sections in one
-/// accordion with Activity open on entry, then their hard passes as card
+/// How the user picks: the Activity, Card roles and Oracle tags sections in
+/// one accordion with Activity open on entry, then their hard passes as card
 /// rows. A failed first fetch says so; an account with nothing swiped yet
 /// gets one line.
 #[component]
@@ -134,10 +136,9 @@ pub fn Activity() -> Element {
                 title: "Activity",
                 HintLine { "How you pick, read from your swipes" }
                 HintBullets {
-                    HintBullet { "Activity maps your swipes and searches over the last year" }
-                    HintBullet { "Swipes shows what the cards dealt to your decks came to" }
-                    HintBullet { "Rates shows how often you add, skip, save or remove each card role and oracle tag" }
-                    HintBullet { "Hard passes lists cards you skip that other players usually keep" }
+                    HintBullet { HintKey { "Activity" } " maps your swipes and searches over the last year, and what the cards dealt to your decks came to" }
+                    HintBullet { HintKey { "Card roles" } " and " HintKey { "Oracle tags" } " show how often you add, skip, save or remove each one" }
+                    HintBullet { HintKey { "Hard passes" } " lists cards you skip that other players usually keep" }
                 }
                 HintLine { "Each section's ? explains it" }
             }

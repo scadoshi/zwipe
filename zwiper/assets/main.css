@@ -3888,6 +3888,11 @@ button {
     height: 7rem;
 }
 
+/* The swipe columns under the year's totals, a panel gap below them. */
+.activity-outcomes {
+    margin-top: 1rem;
+}
+
 /* The year's totals under the grid. */
 .activity-total {
     padding: 0.5rem 0.75rem 0;

@@ -88,12 +88,12 @@ pub enum HintTopic {
     SuggestionList,
     /// Playstyle: the staples list.
     SuggestionStaples,
-    /// Playstyle: the Activity section's heatmap.
+    /// Activity: the Activity section's heatmap and swipe columns.
     Activity,
-    /// Playstyle: the Swipes section's outcome columns.
-    SwipeOutcomes,
-    /// Playstyle: the Rates section's chip row and charts.
-    Rates,
+    /// Activity: the Card roles section's rate chart.
+    RoleRates,
+    /// Activity: the Oracle tags section's rate chart.
+    TagRates,
     /// Playstyle: the Hard passes group.
     HardPasses,
 }
@@ -138,8 +138,8 @@ impl HintTopic {
             Self::SuggestionList => "Suggested commanders",
             Self::SuggestionStaples => "Staples",
             Self::Activity => "Activity",
-            Self::SwipeOutcomes => "Swipes",
-            Self::Rates => "Rates",
+            Self::RoleRates => "Card roles",
+            Self::TagRates => "Oracle tags",
             Self::HardPasses => "Hard passes",
         }
     }
@@ -295,20 +295,21 @@ impl HintTopic {
                 HintBullets {
                     HintBullet { "Your swipes and searches each day over the last year, a darker square for a busier day" }
                     HintBullet { "A lit square is one of your biggest days. Tap a square to see its counts" }
+                    HintBullet { HintKey { "Swipes" } " is what the cards dealt to your decks came to: " HintKey { "Added" } " and " HintKey { "Maybeboard" } " you kept, " HintKey { "Skipped" } " you passed on, and " HintKey { "Removed" } " you later took out" }
                 }
             },
-            Self::SwipeOutcomes => rsx! {
+            Self::RoleRates => rsx! {
                 HintBullets {
-                    HintBullet { "What happened to the cards dealt to your decks" }
-                    HintBullet { "Added and Maybeboard are cards you kept, Skipped ones you passed on, and Removed ones you later took out" }
+                    HintBullet { "Your rate for each card role. Pick a " HintKey { "Rate" } ": " HintKey { "Added" } ", " HintKey { "Skipped" } " and " HintKey { "Maybeboard" } " are shares of the cards dealt to you, and " HintKey { "Removed" } " is the share of added cards you later took out" }
+                    HintBullet { "Tap a role to see the tags you swiped under it" }
+                    HintBullet { "From your decks with a commander, for roles dealt at least 10 times" }
                 }
             },
-            Self::Rates => rsx! {
+            Self::TagRates => rsx! {
                 HintBullets {
-                    HintBullet { "Pick a rate. Added, Skipped and Maybeboard are shares of the cards dealt to you, and Removed is the share of added cards you later took out" }
-                    HintBullet { "Card roles shows your rate for each role. Tap one to see the tags you swiped under it" }
-                    HintBullet { "Oracle tags shows where your rate stands out most from other players'. A tag everyone passes on shows only after a lot of skips" }
-                    HintBullet { "From your decks with a commander, for roles and tags dealt at least 10 times" }
+                    HintBullet { "The tags where your rate stands out most from other players', with your own rate" }
+                    HintBullet { "A tag everyone passes on shows only after a lot of skips. Tap a tag to see what it means" }
+                    HintBullet { "From your decks with a commander, for tags dealt at least 10 times" }
                 }
             },
             Self::HardPasses => rsx! {
