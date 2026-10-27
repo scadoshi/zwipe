@@ -307,6 +307,7 @@ impl HintTopic {
                 HintBullets {
                     HintBullet { "How often you add a card of each role when it's dealt" }
                     HintBullet { "From your decks with a commander, for roles you've seen at least 10 times" }
+                    HintBullet { "Tap a role to see its tags from your decks" }
                 }
             },
             Self::HardPasses => rsx! {

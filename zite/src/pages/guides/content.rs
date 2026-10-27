@@ -662,7 +662,7 @@ pub static GUIDES: &[Guide] = &[
             Block::Bullets(&[
                 "Activity is a heatmap of the last year, a square per day, darker the more you swiped and searched. Your biggest days are lit. Tap a square for its counts.",
                 "Swipes shows what the cards dealt to your decks came to: added, skipped, saved to a maybeboard, or added and later removed.",
-                "Keep rate shows how often you add a card of each role when it's dealt, like 40% of ramp and 8% of counterspells. It reads your decks with a commander, for roles you've seen at least 10 times.",
+                "Keep rate shows how often you add a card of each role when it's dealt, like 40% of ramp and 8% of counterspells. It reads your decks with a commander, for roles you've seen at least 10 times. Tap a role to see its tags, the same as Card roles.",
                 "Hard passes lists cards you skip and never add or save, with how many times you skipped each. It weighs your skips against other players', so a card most people pass on only shows up after a lot of skips, while one they usually keep shows up after two.",
             ]),
             Block::H2("Why this commander"),

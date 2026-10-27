@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use chrono::{Datelike, Duration, NaiveDate};
 use components::{
     Bar, BarChart, BarOrientation, ChartTip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit,
-    heat_span, peak_indices, with_separators,
+    RoleTags, heat_span, peak_indices, with_separators,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -18,13 +18,17 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_role::role_short_label;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::http::contracts::suggestions::{
-    ACTIVITY_DAYS, HttpActivity, HttpActivityDay, HttpHardPass, HttpRoleKeep, HttpSwipeOutcomes,
+    ACTIVITY_DAYS, HttpActivity, HttpActivityDay, HttpHardPass, HttpProfileTag, HttpRoleKeep,
+    HttpSwipeOutcomes,
 };
 
 use super::collapsible_section::CollapsibleSection;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
-use crate::inbound::screens::deck::card::components::card_row::CardRow;
+use crate::inbound::screens::deck::card::components::card_row::{
+    CardRow, OtagDescribe, OtagExamplesOpen,
+};
+use crate::inbound::screens::deck::suggested_commanders::role_tags;
 
 /// The accordion title of the heatmap section.
 pub(crate) const ACTIVITY_TITLE: &str = "Activity";
@@ -225,8 +229,9 @@ fn keep_rate(role: &HttpRoleKeep) -> u32 {
 }
 
 /// One row per role, labeled like the Card roles chart, its bar and count
-/// the keep rate, highest first and then in the server's order.
-fn keep_rate_bars(roles: &[HttpRoleKeep]) -> Vec<Bar> {
+/// the keep rate, highest first and then in the server's order. A role with
+/// any of `tags` under it reveals them, as on the Card roles chart.
+fn keep_rate_bars(roles: &[HttpRoleKeep], tags: &[HttpProfileTag]) -> Vec<Bar> {
     let mut rated: Vec<(&HttpRoleKeep, u32)> = roles.iter().map(|r| (r, keep_rate(r))).collect();
     rated.sort_by_key(|(_, rate)| Reverse(*rate));
     rated
@@ -236,7 +241,9 @@ fn keep_rate_bars(roles: &[HttpRoleKeep]) -> Vec<Bar> {
             label: role_short_label(&role.role),
             count: usize::try_from(rate).unwrap_or(100),
             pct: rate,
-            revealable: false,
+            revealable: tags
+                .iter()
+                .any(|t| t.role.as_deref() == Some(role.role.as_str())),
         })
         .collect()
 }
@@ -322,12 +329,14 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
 /// The activity's three sections in the profile's accordion: Activity, the
 /// year's heatmap with its totals under it; Swipes, what the user's swipes
 /// came to as columns; Keep rate, the share of each card role's dealt cards
-/// they added, as rows. Each is left out when it has nothing to show. The
-/// heatmap mounts afresh each time its section opens, so its sweep plays in
-/// view.
+/// they added, as rows with role chips that reveal the profile's oracle
+/// `tags` under each role, one row at a time, as the Card roles chart does.
+/// Each is left out when it has nothing to show. The heatmap mounts afresh
+/// each time its section opens, so its sweep plays in view.
 #[component]
 pub(crate) fn ActivitySections(
     activity: HttpActivity,
+    tags: Vec<HttpProfileTag>,
     open_section: Signal<Option<String>>,
 ) -> Element {
     let open = open_section().as_deref() == Some(ACTIVITY_TITLE);
@@ -340,7 +349,23 @@ pub(crate) fn ActivitySections(
     }));
     let has_days = !activity.days.is_empty();
     let outcomes = activity.outcomes;
-    let keep = keep_rate_bars(&activity.roles);
+    let keep = keep_rate_bars(&activity.roles, &tags);
+    let mut selected_role: Signal<Option<String>> = use_signal(|| None);
+    let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
+    let role_reveal = use_callback(move |role: String| {
+        let tags = role_tags(&tags, &role);
+        rsx! {
+            RoleTags { tags, describe_tag, on_examples }
+        }
+    });
+    let toggle_role = use_callback(move |key: String| {
+        if selected_role().as_deref() == Some(key.as_str()) {
+            selected_role.set(None);
+        } else {
+            selected_role.set(Some(key));
+        }
+    });
     rsx! {
         if has_days {
             CollapsibleSection {
@@ -379,6 +404,9 @@ pub(crate) fn ActivitySections(
                 BarChart {
                     bars: keep,
                     orientation: BarOrientation::Horizontal,
+                    on_bar: toggle_role,
+                    selected: selected_role(),
+                    reveal: role_reveal,
                     count_suffix: "%",
                 }
             }
@@ -559,11 +587,34 @@ mod tests {
             kept,
             passed,
         };
-        let bars = keep_rate_bars(&[role("ramp", 1, 2), role("removal", 9, 1)]);
+        let bars = keep_rate_bars(&[role("ramp", 1, 2), role("removal", 9, 1)], &[]);
         let rates: Vec<(String, usize)> = bars.into_iter().map(|b| (b.key, b.count)).collect();
         assert_eq!(
             rates,
             [("removal".to_string(), 90), ("ramp".to_string(), 33)]
+        );
+    }
+
+    #[test]
+    fn a_keep_rate_role_reveals_only_when_the_profile_has_its_tags() {
+        let role = |slug: &str| HttpRoleKeep {
+            role: slug.to_string(),
+            kept: 5,
+            passed: 5,
+        };
+        let tags = [HttpProfileTag {
+            slug: "mana-rock".to_string(),
+            role: Some("ramp".to_string()),
+            decks: 1,
+            cards: 1,
+            score: 1.0,
+        }];
+        let bars = keep_rate_bars(&[role("ramp"), role("draw")], &tags);
+        let revealable: Vec<(String, bool)> =
+            bars.into_iter().map(|b| (b.key, b.revealable)).collect();
+        assert_eq!(
+            revealable,
+            [("ramp".to_string(), true), ("draw".to_string(), false)]
         );
     }
 

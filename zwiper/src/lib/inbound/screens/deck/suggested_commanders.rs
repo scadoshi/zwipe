@@ -888,6 +888,7 @@ pub(crate) fn BuilderProfileSections(
     let roles = role_bars(&profile.roles, &profile.tags);
     let tags = tag_rows(&profile.tags);
     let profile_tags = profile.tags;
+    let activity_tags = profile_tags.clone();
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let role_reveal = use_callback(move |role: String| {
@@ -961,7 +962,7 @@ pub(crate) fn BuilderProfileSections(
             }
         }
         if let Some(activity) = activity {
-            ActivitySections { activity, open_section }
+            ActivitySections { activity, tags: activity_tags, open_section }
         }
     }
 }
