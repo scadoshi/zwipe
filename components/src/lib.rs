@@ -7,12 +7,13 @@
 //! [`CardRoleChips`], [`RoleTags`], [`OtagDef`], [`KeywordChips`],
 //! [`OracleText`], [`FlippableCardImage`], [`Changelog`], the deck charts
 //! ([`BarChart`], [`DeckCharts`], [`ManaCurve`], [`ManaFulfillment`],
-//! [`DrawOdds`], [`ChartLabel`]) and [`ZwipeArchitecture`].
+//! [`DrawOdds`], [`ChartLabel`]), the [`ColorMap`] and [`ZwipeArchitecture`].
 //!
 //! Styling ships as string constants to inline through `document::Style`.
 //! orangui's sheets come through as they are; [`MAGIC_CSS`] holds this crate's
 //! own rules (oracle text, keyword chips, card rows, the flippable card image,
-//! the changelog and the mana glyph inside a chip). **CSS cascade order
+//! the changelog, the color map, the mana colors and the mana glyph inside a
+//! chip). **CSS cascade order
 //! matters:** `THEMES_CSS`, then `COMPONENTS_CSS`, then `MAGIC_CSS`, then
 //! `APP_CSS` or `SITE_CSS`, then the host's own stylesheet, so component rules
 //! resolve theme variables and host rules override shared defaults at equal
@@ -32,6 +33,7 @@ mod card_role_chips;
 mod card_row;
 mod changelog;
 mod charts;
+mod color_map;
 mod flippable_card_image;
 mod keyword_chips;
 mod oracle_text;
@@ -47,6 +49,7 @@ pub use charts::{
     Bar, BarChart, BarOrientation, ChartLabel, DeckCharts, DrawOdds, LabelCase, ManaCurve,
     ManaFulfillment,
 };
+pub use color_map::{ColorMap, ColorMapCounts, ColorMapModel};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use oracle_text::OracleText;

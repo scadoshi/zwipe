@@ -233,7 +233,10 @@ impl HintTopic {
                 }
             },
             Self::SuggestionColorChart => rsx! {
-                HintLine { "Your decks by color. A deck counts once for each color in it" }
+                HintBullets {
+                    HintBullet { "Each corner glows with how many of your cards are that color" }
+                    HintBullet { "Each line glows with how many of your decks play both colors. Colorless cards sit below" }
+                }
             },
             Self::SuggestionRoleChart => rsx! {
                 HintLine { "How many of your decks have a tag in each role. Tap a role for its tags" }

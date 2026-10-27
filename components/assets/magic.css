@@ -1057,3 +1057,66 @@ i.ms.ms-cost.ms-gp {
     color: var(--accent-primary);
 }
 
+
+/* ---- ColorMap (components::ColorMap) ---- */
+
+/* The five mana fills, mana-font's own `.ms-cost.ms-*` background colors. A
+   theme may set its own on `.screen`, which overrides these. */
+:root {
+    --mana-white: #f0f2c0;
+    --mana-blue: #b5cde3;
+    --mana-black: #aca29a;
+    --mana-red: #db8664;
+    --mana-green: #93b483;
+}
+
+.color-map {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem 0.5rem;
+}
+
+/* The SVG fills the box and the pips sit over it by percentage, so the box
+   keeps the view box's 240 by 224 shape at any width. */
+.color-map-plot {
+    position: relative;
+    width: 100%;
+    max-width: 15.5rem;
+    aspect-ratio: 240 / 224;
+}
+
+.color-map-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    color: var(--text-primary);
+}
+
+/* Width and opacity come from the decks on each line. */
+.color-map-line {
+    stroke: currentColor;
+    stroke-linecap: round;
+}
+
+/* Marks each glow's edge so a corner reads when its mana color matches the
+   background. */
+.color-map-outline {
+    fill: none;
+    stroke: var(--text-muted);
+    stroke-width: 1;
+    stroke-opacity: 0.6;
+}
+
+.color-map-pip {
+    position: absolute;
+    transform: translate(-50%, -50%);
+}
+
+.color-map-colorless {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}

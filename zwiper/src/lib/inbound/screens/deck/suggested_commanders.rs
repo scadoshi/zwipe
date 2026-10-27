@@ -14,9 +14,10 @@
 //! than ten remain, so the list stays a full top 10. Above the list, sections
 //! in the deck profile's grammar sum up what the user builds, the profile the
 //! ranking reads: a Summary table (the deck count, the top colors and the
-//! top single color), then charts of the colors and card roles, a table of the
-//! oracle tags across the decks, and the staples, the cards in the most decks
-//! as the shared card rows. They share one accordion with Summary open
+//! top single color), then a color map of the cards and color pairs, a chart
+//! of the card roles, a table of the oracle tags across the decks, and the
+//! staples, the cards in the most decks as the shared card rows. They share
+//! one accordion with Summary open
 //! on entry; the list section folds on its own and starts open. With no deck
 //! that has cards to read from, the screen shows a single line instead of the
 //! sections and the list.
@@ -25,8 +26,8 @@ use std::collections::BTreeMap;
 
 use components::{
     ActionBar, AlertDialog, Bar, BarChart, BarOrientation, BottomSheet, Button, ButtonVariant,
-    CardRoleChips, Chip, DialogAction, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    OtagDef, RoleTags, TOAST_LONG, TOAST_QUICK,
+    CardRoleChips, Chip, ColorMap, ColorMapCounts, DialogAction, HintBullet, HintBullets,
+    HintDialog, HintKey, HintLine, OtagDef, RoleTags, TOAST_LONG, TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -398,6 +399,13 @@ const ROLES_TITLE: &str = "Card roles";
 const TAGS_TITLE: &str = "Oracle tags";
 const STAPLES_TITLE: &str = "Staples";
 
+/// Whether a color map has anything to draw: a card or a deck pair.
+fn color_map_has_data(counts: &ColorMapCounts) -> bool {
+    counts.colorless > 0
+        || counts.cards.iter().any(|n| *n > 0)
+        || counts.pairs.iter().any(|n| *n > 0)
+}
+
 /// One bar per role in the order sent, labeled as the deck role chart labels
 /// the role and keyed by the role slug. A role with none of `tags` under it
 /// has nothing to reveal, so its bar is not revealable.
@@ -614,12 +622,14 @@ fn StapleRow(
 
 /// What the user builds, as sections over the suggestions list in the deck
 /// profile's grammar: a Summary table (the deck count, the most common color
-/// set and color) in the Budget section's rows, then two charts, a table and
-/// the staples. The five share one accordion with Summary open on entry.
-/// Colors are columns in WUBRG order; card roles are rows like the deck
-/// profile's role chart with chip labels, a tapped role revealing its oracle
-/// tags from the profile under its row; oracle tags are a [`TagTable`];
-/// staples are [`StapleRow`]s, the section absent when there are none.
+/// set and color) in the Budget section's rows, then a color map, a chart, a
+/// table and the staples. The five share one accordion with Summary open on
+/// entry. Colors are a [`ColorMap`], or columns in WUBRG order from a server
+/// that sends no color map or a map with nothing on it; card roles are rows
+/// like the deck profile's role chart with chip labels, a tapped role
+/// revealing its oracle tags from the profile under its row; oracle tags are
+/// a [`TagTable`]; staples are [`StapleRow`]s, the section absent when there
+/// are none.
 #[component]
 pub(crate) fn BuilderProfileSections(
     profile: HttpBuilderProfile,
@@ -638,6 +648,11 @@ pub(crate) fn BuilderProfileSections(
     let open_section: Signal<Option<String>> = use_signal(|| Some(SUMMARY_TITLE.to_string()));
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
     let colors = color_bars(&profile.colors);
+    let color_map = profile
+        .color_map
+        .as_ref()
+        .map(ColorMapCounts::from)
+        .filter(color_map_has_data);
     let roles = role_bars(&profile.roles, &profile.tags);
     let tags = tag_rows(&profile.tags);
     let deck_count = profile.deck_count;
@@ -679,14 +694,18 @@ pub(crate) fn BuilderProfileSections(
                 }
             }
         }
-        if !colors.is_empty() {
+        if color_map.is_some() || !colors.is_empty() {
             CollapsibleSection {
                 title: COLORS_TITLE,
                 open_section,
                 header_accessory: rsx! {
                     InfoButton { topic: HintTopic::SuggestionColorChart }
                 },
-                BarChart { bars: colors }
+                if let Some(counts) = color_map {
+                    ColorMap { counts }
+                } else {
+                    BarChart { bars: colors }
+                }
             }
         }
         if !roles.is_empty() {
@@ -1598,6 +1617,19 @@ mod tests {
             pct,
             revealable: true,
         }
+    }
+
+    #[test]
+    fn an_empty_color_map_falls_back_to_the_bars() {
+        assert!(!color_map_has_data(&ColorMapCounts::default()));
+        assert!(color_map_has_data(&ColorMapCounts {
+            colorless: 1,
+            ..ColorMapCounts::default()
+        }));
+        assert!(color_map_has_data(&ColorMapCounts {
+            pairs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            ..ColorMapCounts::default()
+        }));
     }
 
     #[test]
