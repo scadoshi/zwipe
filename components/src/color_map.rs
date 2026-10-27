@@ -61,8 +61,8 @@ pub struct ColorMapCounts {
     pub cards: [u32; 5],
     /// Cards with an empty color identity, shown apart from the pentagon.
     pub colorless: u32,
-    /// Decks whose identity includes both colors of each pair, in [`PAIRS`]
-    /// order.
+    /// Decks whose identity includes both colors of each pair, in WUBRG
+    /// order: `WU`, `WB`, `WR`, `WG`, `UB`, `UR`, `UG`, `BR`, `BG`, `RG`.
     pub pairs: [u32; 10],
 }
 
