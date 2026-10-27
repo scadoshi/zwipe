@@ -76,6 +76,11 @@ pub fn CardRow(
     /// action bar. Forwarded to `CardDetails`.
     #[props(default)]
     footer: Option<Element>,
+    /// Text drawn in place of the leading `qty`, as a tag in the P/T tag's
+    /// grammar (Playstyle's staples show their deck share there). `None`
+    /// (default) keeps the plain qty.
+    #[props(default)]
+    qty_tag: Option<String>,
 ) -> Element {
     let card_id = card.scryfall_data.id;
     let is_expanded = expanded_card() == Some(card_id);
@@ -155,7 +160,11 @@ pub fn CardRow(
                     }
                 }
                 span { class: "card-row-arrow", "▸" }
-                span { class: "card-row-qty", "{qty}" }
+                if let Some(tag) = qty_tag {
+                    span { class: "card-row-stat", "{tag}" }
+                } else {
+                    span { class: "card-row-qty", "{qty}" }
+                }
                 span { class: "card-row-name",
                     // MVP star: indicator only, rendered solely on starred
                     // rows (an outline star on every row is 97% noise).
