@@ -845,8 +845,12 @@ fn StaplesPanel(
         active_color(),
     );
     rsx! {
-        StapleTypeChips { active_type, types }
-        StapleColorChips { active_color, colors }
+        // One block, so the two rows stack at the chip rows' own spacing
+        // instead of the screen column's panel gap.
+        div {
+            StapleTypeChips { active_type, types }
+            StapleColorChips { active_color, colors }
+        }
         if rows.is_empty() {
             div { class: "message-empty",
                 span { class: "chip-note", "No staples match" }
