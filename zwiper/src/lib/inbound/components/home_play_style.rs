@@ -181,15 +181,17 @@ pub fn HomePlayStyle() -> Element {
                     }
                 },
                 None => rsx! {
-                    // Mirror the loaded panel: the title bar, then the
-                    // podium's three steps.
-                    div { class: "skeleton-card-header", style: "display: flex; justify-content: center;",
-                        div { class: "skeleton-bar skeleton-section-label", style: "width: 45%; margin-bottom: 0;" }
-                    }
+                    // The panel draws the same every time, so it renders for
+                    // real; only what depends on the player's colors (the
+                    // pips and name tag standing on each step, and the step's
+                    // count) waits on the fetch.
+                    PanelHeader { onclick: move |_| { navigator.push(Router::SuggestedCommanders {}); } }
                     div { class: "podium",
-                        for class in ["podium-second", "podium-first", "podium-third"] {
+                        for class in ["podium-block podium-second", "podium-block podium-first", "podium-block podium-third"] {
                             div { key: "{class}", class: "podium-step",
-                                div { class: "skeleton-bar podium-skeleton {class}" }
+                                div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                                div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                                div { class: "{class}" }
                             }
                         }
                     }
