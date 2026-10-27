@@ -1719,7 +1719,7 @@ button {
 }
 
 .home-hero .stats-source > .hero-scope {
-    min-width: 5.5rem;
+    min-width: 6.5rem;
 }
 
 /* Each label fades in as it mounts, and so does the live tag. */

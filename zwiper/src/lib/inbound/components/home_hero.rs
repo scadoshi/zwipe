@@ -190,8 +190,8 @@ pub fn HomeHero() -> Element {
 }
 
 /// Home's hero: [`HomeHero`] with an Activity button opening the Activity
-/// screen, and its "all users" tag as a button after the "live" tag that
-/// switches the figures to the user's own counts ("just me") and back. The
+/// screen, and its "All players" tag as a button after the "live" tag that
+/// switches the figures to the user's own counts ("Only me") and back. The
 /// choice is saved, so Home opens on the last one. Every switch rolls the
 /// figures to the other counts, rolling on while the user's are fetched the
 /// first time, and fades the button's label in; "live" shows once the

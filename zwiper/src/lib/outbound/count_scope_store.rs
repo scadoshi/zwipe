@@ -31,8 +31,8 @@ impl CountScope {
     #[must_use]
     pub fn label(self) -> &'static str {
         match self {
-            Self::AllUsers => "all users",
-            Self::JustMe => "just me",
+            Self::AllUsers => "All players",
+            Self::JustMe => "Only me",
         }
     }
 

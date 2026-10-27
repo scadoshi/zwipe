@@ -43,7 +43,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Activity lists your hard passes, the cards you skip and never keep",
         "Home's Playstyle button sits at the end of the color map's key",
         "Featured flavor's Image and Buy are buttons beside its card name and price",
-        "Home's counts switch between all users and just you",
+        "Home's counts switch between all players and only you",
     ],
 }];
 
