@@ -1,5 +1,6 @@
 //! Suggested commanders: the ranked list and its dismissals.
 
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -25,7 +26,7 @@ pub const PROFILE_STAPLES_SENT: usize = 100;
 /// Fewest of the user's decks a card must be in to count as a staple.
 pub const STAPLE_MIN_DECKS: u32 = 2;
 
-/// Response of `GET /api/deck/play-style`: the user's deck count and color
+/// Response of `GET /api/deck/playstyle`: the user's deck count and color
 /// map, a light read for Home that builds no tag profiles and scores no
 /// commanders.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -451,4 +452,84 @@ mod tests {
         let cleared: HttpClearedDismissals = serde_json::from_str(r#"{"cleared":4}"#).unwrap();
         assert_eq!(cleared, HttpClearedDismissals { cleared: 4 });
     }
+}
+
+/// Days [`HttpActivity::days`] reaches back, counting the last one: 53
+/// weeks, so the heatmap fills its first column whatever the weekday.
+pub const ACTIVITY_DAYS: i64 = 371;
+
+/// Card roles [`HttpActivity::roles`] carries, the most seen first.
+pub const ACTIVITY_ROLES_SENT: usize = 10;
+
+/// A role needs this many kept and passed cards between them to be sent, so
+/// a role seen twice does not read 100%.
+pub const ACTIVITY_ROLE_MIN_SEEN: u64 = 10;
+
+/// Most cards [`HttpActivity::passes`] carries.
+pub const ACTIVITY_PASSES_SENT: usize = 10;
+
+/// What the user did in the app and with the cards it dealt them: daily
+/// swipes and searches over the last [`ACTIVITY_DAYS`], what the swipes
+/// came to, the keep rate per card role, and the cards they pass on most.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HttpActivity {
+    /// The server's UTC date, the last day of the heatmap.
+    pub through: NaiveDate,
+    /// Days with any swipe or search from `through` back over
+    /// [`ACTIVITY_DAYS`], oldest first. A day with none is left out.
+    pub days: Vec<HttpActivityDay>,
+    /// Every card swiped on, across all of the user's decks.
+    pub outcomes: HttpSwipeOutcomes,
+    /// Kept and passed cards per card role, in decks with a commander, at
+    /// most [`ACTIVITY_ROLES_SENT`], the most seen first.
+    pub roles: Vec<HttpRoleKeep>,
+    /// The cards skipped most and never kept or saved, in decks with a
+    /// commander, at most [`ACTIVITY_PASSES_SENT`], the most skipped first.
+    pub passes: Vec<HttpHardPass>,
+}
+
+/// One day's activity, by the server's UTC calendar.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub struct HttpActivityDay {
+    /// The UTC date.
+    pub day: NaiveDate,
+    /// Swipes in any direction on any screen.
+    pub swipes: u32,
+    /// Searches run.
+    pub searches: u32,
+}
+
+/// What the user's swipes on dealt cards came to.
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct HttpSwipeOutcomes {
+    /// Added to a deck.
+    pub added: u64,
+    /// Skipped.
+    pub skipped: u64,
+    /// Saved to a maybeboard.
+    pub maybed: u64,
+    /// Taken back out of a deck.
+    pub removed: u64,
+}
+
+/// One card role's kept and passed cards.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct HttpRoleKeep {
+    /// The card role slug (`CardRole`'s snake_case form).
+    pub role: String,
+    /// Cards with the role added to a deck.
+    pub kept: u64,
+    /// Cards with the role skipped.
+    pub passed: u64,
+}
+
+/// A card the user keeps passing on.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HttpHardPass {
+    /// The card's most recent normal printing.
+    pub card: Card,
+    /// Times skipped, across every commander.
+    pub skipped: u32,
+    /// Commanders it was skipped under.
+    pub commanders: u32,
 }

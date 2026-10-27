@@ -1,0 +1,49 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT day,\n                      (swipes_right + swipes_left + swipes_up + swipes_down)::int8 AS \"swipes!\",\n                      searches::int8 AS \"searches!\"\n               FROM user_daily_activity\n               WHERE user_id = $1\n                 AND day > $2::date - $3::int4\n                 AND swipes_right + swipes_left + swipes_up + swipes_down + searches > 0\n               ORDER BY day",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "day",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "user_daily_activity",
+            "name": "day"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "swipes!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "searches!",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "user_daily_activity",
+            "name": "searches"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      null,
+      false
+    ]
+  },
+  "hash": "943c038b054314623f6d515d2b6dace9e6c12c12b2f3d3ce687a30136a9d010a"
+}

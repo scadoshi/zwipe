@@ -35,9 +35,12 @@ pub struct Release {
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[Release {
-    version: "1.15.1",
+    version: "1.16.0",
     date: None,
     entries: &[
+        "Playstyle's Activity section maps your swipes and searches over the last year",
+        "Playstyle shows what your swipes came to and how often you keep each card role",
+        "Playstyle lists your hard passes, the cards you skip and never keep",
         "Home's Playstyle button sits at the end of the color map's key",
         "Featured flavor's Image and Buy are buttons beside its card name and price",
         "Home's counts switch between all users and just you",

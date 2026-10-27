@@ -12,6 +12,12 @@ What might get built next. The app has been live since June 2026, so nothing her
 
 ---
 
+## Playstyle player comparisons (noted 2026-10-27, after the Activity sections)
+
+Playstyle's Activity sections describe one player. The next step compares them with everyone else, in remarks like "You've skipped this card more than any other player" or "You keep ramp twice as often as most players". The data is mostly there already: `commander_card_signal` pools every player's added, skipped and saved counts per card with no user ids, and hard passes already weigh a player's skips against it (lift, `PASS_MIN_SCORE`). What's missing is volume: with about 40 active players, a "more than anyone" line is usually true by accident, so wait until the pooled counts are deep enough that a comparison means something. When it's built, keep it to concrete numbers about the player's own swipes, not personality labels, and check every remark against a minimum number of other players so one heavy user can't set the baseline. It pairs with the shareable Playstyle page on the roadmap.
+
+---
+
 ## Commanders You'd Like (noted 2026-10-25, after tier-2 synergy)
 
 **Promoted to a plan 2026-10-25 as "Suggested commanders": [`../plans/suggested_commanders.md`](../plans/suggested_commanders.md). This section stays as the original idea.**

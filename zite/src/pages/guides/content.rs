@@ -637,10 +637,11 @@ pub static GUIDES: &[Guide] = &[
                 "Under them, Suggested commanders lists your top 10 as card rows, best fit first. Its question mark explains the ranking.",
                 "Tap a color chip in the Show row to see only those colors. Tap it again to see them all.",
                 "Staples, at the bottom, lists the cards that show up in the most of your decks. Each row leads with the share of your decks that run it, and an expanded row gives the count, like 4 of 6 decks. Basic lands are left out. Tap a Type or Color chip to narrow it. It has a question mark too.",
+                "Hard passes, after Staples, lists the cards you keep skipping and never keep.",
             ]),
             Block::H2("What your decks say"),
             Block::P(
-                "Color map opens first. It grows a map of tiles from your cards, each color claiming ground in proportion to its cards, in a shape generated per player. Every color grows out from the middle and fades toward the edge. The key under it counts each color's cards, colorless too. It's the same map as on Home. Under it are three more sections. Tap one to open it.",
+                "Color map opens first. It grows a map of tiles from your cards, each color claiming ground in proportion to its cards, in a shape generated per player. Every color grows out from the middle and fades toward the edge. The key under it counts each color's cards, colorless too. It's the same map as on Home. Under it are more sections. Tap one to open it.",
             ),
             Block::Bullets(&[
                 "Summary shows how many decks were read, your most built color combination and your top single color.",
@@ -657,6 +658,13 @@ pub static GUIDES: &[Guide] = &[
                 "Each column has its own question mark, too.",
             ]),
             Block::P("There's a little more math under the hood, but that's the gist."),
+            Block::H2("What your swipes say"),
+            Block::Bullets(&[
+                "Activity is a heatmap of the last year, a square per day, darker the more you swiped and searched. Your biggest days are lit. Tap a square for its counts.",
+                "Swipes shows what the cards dealt to your decks came to: added, skipped, saved to a maybeboard, or added and later removed.",
+                "Keep rate shows how often you add a card of each role when it's dealt, like 40% of ramp and 8% of counterspells. It reads your decks with a commander, for roles you've seen at least 10 times.",
+                "Hard passes lists cards you skip and never add or save, with how many times you skipped each. It weighs your skips against other players', so a card most people pass on only shows up after a lot of skips, while one they usually keep shows up after two.",
+            ]),
             Block::H2("Why this commander"),
             Block::P(
                 "Expand a row and tap Why this commander? to see why it made the list. You get the oracle tags it shares with your decks and the colors you keep building in. While you swipe, a card's details sheet shows the same reasons already open.",

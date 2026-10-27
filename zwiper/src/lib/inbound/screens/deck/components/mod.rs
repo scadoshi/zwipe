@@ -1,5 +1,7 @@
 //! Extracted components for deck screens.
 
+/// The Playstyle screen's activity sections and hard passes.
+pub(crate) mod activity;
 /// Clone deck dialog with text input for the new deck name.
 pub(crate) mod clone_deck_dialog;
 /// Collapsible titled card wrapper for deck-view sections.

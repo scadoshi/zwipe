@@ -21,7 +21,12 @@ use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_card::UpdateDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_profile::UpdateDeckProfile;
 use zwipe_core::domain::deck::{Board, DeckCard, DeckName, DeckOtherTag, DeckTag};
+use zwipe_core::http::contracts::suggestions::{ACTIVITY_DAYS, ACTIVITY_PASSES_SENT};
 
+use crate::domain::deck::models::deck::activity::{
+    ActivityCounts, ActivityDay, PASS_BASELINE_WEIGHT, PASS_MIN_SCORE, PassCount, RoleKeep,
+    SwipeOutcomes,
+};
 use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError;
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
@@ -845,6 +850,157 @@ impl DeckRepository for Postgres {
             .collect())
     }
 
+    async fn fetch_activity_counts(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> Result<ActivityCounts, CommanderSuggestionsError> {
+        let db = |e: sqlx::Error| CommanderSuggestionsError::Database(e.into());
+        let reach = i32::try_from(ACTIVITY_DAYS).unwrap_or(i32::MAX);
+        let mut tx = self.pool.begin().await.map_err(db)?;
+        let through = query_scalar!(r#"SELECT (now() AT TIME ZONE 'UTC')::date AS "through!""#)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(db)?;
+        // A day counts every swipe direction on every screen.
+        let days = query!(
+            r#"SELECT day,
+                      (swipes_right + swipes_left + swipes_up + swipes_down)::int8 AS "swipes!",
+                      searches::int8 AS "searches!"
+               FROM user_daily_activity
+               WHERE user_id = $1
+                 AND day > $2::date - $3::int4
+                 AND swipes_right + swipes_left + swipes_up + swipes_down + searches > 0
+               ORDER BY day"#,
+            user_id,
+            through,
+            reach,
+        )
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(db)?
+        .into_iter()
+        .map(|row| ActivityDay {
+            day: row.day,
+            swipes: saturating_u32(row.swipes),
+            searches: saturating_u32(row.searches),
+        })
+        .collect();
+        // The weekly scalars cover every deck; the per-card signals below
+        // cover only decks with a commander.
+        let outcomes = query!(
+            r#"SELECT COALESCE(SUM(added), 0)::int8 AS "added!",
+                      COALESCE(SUM(skipped), 0)::int8 AS "skipped!",
+                      COALESCE(SUM(maybed), 0)::int8 AS "maybed!",
+                      COALESCE(SUM(removed), 0)::int8 AS "removed!"
+               FROM user_week_signal
+               WHERE user_id = $1"#,
+            user_id,
+        )
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(db)?;
+        let roles = query!(
+            r#"SELECT r.role AS "role!",
+                      SUM(s.added)::int8 AS "kept!",
+                      SUM(s.skipped)::int8 AS "passed!"
+               FROM user_card_signal s
+               JOIN latest_cards lc ON lc.oracle_id = s.card_oracle_id
+               JOIN card_profiles cp ON cp.scryfall_data_id = lc.id
+               CROSS JOIN LATERAL jsonb_array_elements_text(COALESCE(cp.card_roles, '[]'::jsonb)) AS r(role)
+               WHERE s.user_id = $1
+               GROUP BY r.role
+               HAVING SUM(s.added) + SUM(s.skipped) > 0"#,
+            user_id,
+        )
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(db)?
+        .into_iter()
+        .map(|row| RoleKeep {
+            role: row.role,
+            kept: u64::try_from(row.kept).unwrap_or(0),
+            passed: u64::try_from(row.passed).unwrap_or(0),
+        })
+        .collect();
+        // Skipped more than once and never added or saved, under any
+        // commander, ranked by lift against other players. The pooled table
+        // holds every player's swipes on each card, the user's included, so
+        // theirs come off to leave everyone else's. Every candidate's own
+        // swipes are skips, so the user's skip rate is 1 and the lift is the
+        // inverse of the others' rate, smoothed toward the overall rate by
+        // PASS_BASELINE_WEIGHT dealt cards. A card needs PASS_MIN_SCORE, so
+        // one the others skip about as often takes many skips to show.
+        let passes = query!(
+            r#"WITH mine AS (
+                   SELECT card_oracle_id,
+                          SUM(skipped)::float8 AS skipped,
+                          COUNT(*) FILTER (WHERE skipped > 0) AS commanders
+                   FROM user_card_signal
+                   WHERE user_id = $1
+                   GROUP BY card_oracle_id
+                   HAVING SUM(added) = 0 AND SUM(maybed) = 0 AND SUM(skipped) > 1
+               ),
+               overall AS (
+                   SELECT COALESCE(SUM(skipped)::float8
+                                   / NULLIF(SUM(added + skipped + maybed), 0)::float8, 0.5) AS rate
+                   FROM commander_card_signal
+               ),
+               pooled AS (
+                   SELECT c.card_oracle_id,
+                          SUM(c.skipped)::float8 AS skipped,
+                          SUM(c.added + c.skipped + c.maybed)::float8 AS seen
+                   FROM commander_card_signal c
+                   WHERE c.card_oracle_id IN (SELECT card_oracle_id FROM mine)
+                   GROUP BY c.card_oracle_id
+               ),
+               scored AS (
+                   SELECT m.card_oracle_id, m.skipped, m.commanders,
+                          m.skipped * ln(
+                              (GREATEST(COALESCE(p.seen, 0) - m.skipped, 0) + $3::float8)
+                              / NULLIF(GREATEST(COALESCE(p.skipped, 0) - m.skipped, 0)
+                                       + $3::float8 * o.rate, 0)
+                          ) AS score
+                   FROM mine m
+                   CROSS JOIN overall o
+                   LEFT JOIN pooled p USING (card_oracle_id)
+               )
+               SELECT card_oracle_id AS "card_oracle_id!",
+                      skipped::int8 AS "skipped!",
+                      commanders::int8 AS "commanders!"
+               FROM scored
+               WHERE score >= $4
+               ORDER BY score DESC, skipped DESC, card_oracle_id
+               LIMIT $2"#,
+            user_id,
+            i64::try_from(ACTIVITY_PASSES_SENT).unwrap_or(i64::MAX),
+            PASS_BASELINE_WEIGHT,
+            PASS_MIN_SCORE,
+        )
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(db)?
+        .into_iter()
+        .map(|row| PassCount {
+            oracle_id: row.card_oracle_id,
+            skipped: saturating_u32(row.skipped),
+            commanders: saturating_u32(row.commanders),
+        })
+        .collect();
+        tx.commit().await.map_err(db)?;
+        Ok(ActivityCounts {
+            through,
+            days,
+            outcomes: SwipeOutcomes {
+                added: u64::try_from(outcomes.added).unwrap_or(0),
+                skipped: u64::try_from(outcomes.skipped).unwrap_or(0),
+                maybed: u64::try_from(outcomes.maybed).unwrap_or(0),
+                removed: u64::try_from(outcomes.removed).unwrap_or(0),
+            },
+            roles,
+            passes,
+        })
+    }
+
     async fn dismiss_commander(
         &self,
         request: &CommanderDismissal,
@@ -1168,4 +1324,9 @@ impl DeckRepository for Postgres {
         .await?;
         Ok(row.map(|r| (r.id, r.user_id)))
     }
+}
+
+/// A count from the database as a `u32`: 0 below zero and `u32::MAX` past it.
+fn saturating_u32(n: i64) -> u32 {
+    u32::try_from(n.max(0)).unwrap_or(u32::MAX)
 }

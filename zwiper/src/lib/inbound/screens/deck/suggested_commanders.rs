@@ -44,10 +44,11 @@ use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::user::models::hints::HINT_SUGGESTED_COMMANDERS;
 use zwipe_core::http::contracts::suggestions::{
-    HttpBuilderProfile, HttpColorAffinity, HttpCommanderSuggestion, HttpProfileRole,
+    HttpActivity, HttpBuilderProfile, HttpColorAffinity, HttpCommanderSuggestion, HttpProfileRole,
     HttpProfileTag, HttpSharedTag, HttpStaple, HttpSuggestionReasons, MAX_SUGGESTION_LIMIT,
 };
 
+use super::components::activity::{ActivitySections, HardPassesPanel};
 use super::components::collapsible_section::CollapsibleSection;
 use super::components::skeletons::{BuilderProfileSkeleton, ShowChipRowSkeleton};
 use super::components::swipe_select::{SuggestedPile, SwipeMode, SwipeSelect};
@@ -864,8 +865,12 @@ fn StaplesPanel(
 /// Home's empty line when the map has nothing on it; card roles are rows like the deck
 /// profile's role chart with chip labels, a tapped role revealing its oracle
 /// tags from the profile under its row; oracle tags are a [`TagTable`].
+/// With `activity`, its [`ActivitySections`] follow in the same accordion.
 #[component]
-pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
+pub(crate) fn BuilderProfileSections(
+    profile: HttpBuilderProfile,
+    #[props(default)] activity: Option<HttpActivity>,
+) -> Element {
     let summary = profile_summary(&profile);
     // Seeds the color map from the signed-in user, so its shape stays theirs.
     let session: Signal<Option<Session>> = use_context();
@@ -954,6 +959,9 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                 },
                 TagTable { rows: tags }
             }
+        }
+        if let Some(activity) = activity {
+            ActivitySections { activity, open_section }
         }
     }
 }
@@ -1159,11 +1167,22 @@ pub fn SuggestedCommanders() -> Element {
     let mut entries: Signal<Vec<HttpCommanderSuggestion>> = use_signal(Vec::new);
     let mut deck_count = use_signal(|| 0u32);
     let mut profile: Signal<Option<HttpBuilderProfile>> = use_signal(|| None);
+    // The Activity sections and hard passes, fetched beside the suggestions
+    // on the same reload; a failure leaves them out.
+    let mut activity: Signal<Option<HttpActivity>> = use_signal(|| None);
     let mut is_loading = use_signal(|| true);
     let mut load_failed = use_signal(|| false);
     let mut reload = use_signal(|| 0u32);
     use_effect(move || {
         let _tick = reload();
+        spawn(async move {
+            if let Some(found) = authed
+                .run_quiet("load_activity", |c, s| async move { c.activity(&s).await })
+                .await
+            {
+                activity.set(Some(found));
+            }
+        });
         spawn(async move {
             match authed
                 .try_run("load_suggestions", |c, s| async move {
@@ -1346,7 +1365,7 @@ pub fn SuggestedCommanders() -> Element {
             HintDialog {
                 open: hint_open,
                 title: "Playstyle",
-                HintLine { "Your colors, card roles and top oracle tags, read from every deck you own in any format" }
+                HintLine { "Your colors, card roles and top oracle tags, read from every deck you own in any format, then what your swipes say" }
                 HintBullets {
                     HintBullet { HintKey { "Create deck" } " begins a deck with that commander" }
                     HintBullet { HintKey { "Maybeboard" } " saves it to your commander maybeboard" }
@@ -1397,7 +1416,7 @@ pub fn SuggestedCommanders() -> Element {
                         // The deck view's column of sibling sections.
                         div { style: "width:100%;display:flex;flex-direction:column;gap:var(--panel-gap);",
                             if let Some(profile) = profile() {
-                                BuilderProfileSections { profile }
+                                BuilderProfileSections { profile, activity: activity() }
                             }
                             // The commander maybeboard's Show row on the grid, over
                             // the rows it narrows, the Art toggle at its end.
@@ -1457,6 +1476,18 @@ pub fn SuggestedCommanders() -> Element {
                                         printing_open.set(true);
                                     },
                                 }
+                            }
+                            // The cards the user keeps passing on, after Staples
+                            // in its group grammar.
+                            HardPassesPanel {
+                                passes: activity().map(|a| a.passes).unwrap_or_default(),
+                                expanded_card,
+                                preview_card,
+                                preview_dismissing,
+                                on_printing: move |c: Card| {
+                                    printing_card.set(Some(c));
+                                    printing_open.set(true);
+                                },
                             }
                         }
                     }

@@ -88,6 +88,14 @@ pub enum HintTopic {
     SuggestionList,
     /// Playstyle: the staples list.
     SuggestionStaples,
+    /// Playstyle: the Activity section's heatmap.
+    Activity,
+    /// Playstyle: the Swipes section's outcome columns.
+    SwipeOutcomes,
+    /// Playstyle: the Keep rate section's role rows.
+    KeepRate,
+    /// Playstyle: the Hard passes group.
+    HardPasses,
 }
 
 impl HintTopic {
@@ -129,6 +137,10 @@ impl HintTopic {
             Self::SuggestionTagImpact => "Impact",
             Self::SuggestionList => "Suggested commanders",
             Self::SuggestionStaples => "Staples",
+            Self::Activity => "Activity",
+            Self::SwipeOutcomes => "Swipes",
+            Self::KeepRate => "Keep rate",
+            Self::HardPasses => "Hard passes",
         }
     }
 
@@ -277,6 +289,31 @@ impl HintTopic {
                 HintBullets {
                     HintBullet { "The cards in the most of your decks, with the share of your decks that run each" }
                     HintBullet { "Basic lands are left out. Tap a Type or Color chip to narrow it" }
+                }
+            },
+            Self::Activity => rsx! {
+                HintBullets {
+                    HintBullet { "Your swipes and searches each day over the last year, a darker square for a busier day" }
+                    HintBullet { "A lit square is one of your biggest days. Tap a square to see its counts" }
+                }
+            },
+            Self::SwipeOutcomes => rsx! {
+                HintBullets {
+                    HintBullet { "What happened to the cards dealt to your decks" }
+                    HintBullet { "Added and Maybeboard are cards you kept, Skipped ones you passed on, and Removed ones you later took out" }
+                }
+            },
+            Self::KeepRate => rsx! {
+                HintBullets {
+                    HintBullet { "How often you add a card of each role when it's dealt" }
+                    HintBullet { "From your decks with a commander, for roles you've seen at least 10 times" }
+                }
+            },
+            Self::HardPasses => rsx! {
+                HintBullets {
+                    HintBullet { "Cards you skip and never add or save, when other players usually keep them" }
+                    HintBullet { "A card everyone passes on shows only after a lot of skips. The tag counts yours" }
+                    HintBullet { "From your decks with a commander" }
                 }
             },
         }

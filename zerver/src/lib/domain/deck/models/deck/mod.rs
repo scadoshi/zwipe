@@ -2,6 +2,8 @@
 //!
 //! Domain types (Deck, DeckEntry, DeckProfile, etc.) live in zwipe-core.
 
+/// The Playstyle screen's activity.
+pub mod activity;
 /// Clear deck suppressions operation.
 pub mod clear_deck_suppressions;
 /// Clone deck operation.

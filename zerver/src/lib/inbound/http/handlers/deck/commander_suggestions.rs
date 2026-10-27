@@ -5,12 +5,16 @@ use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
 use zwipe_core::http::contracts::suggestions::{
-    DEFAULT_SUGGESTION_LIMIT, HttpBuilderProfile, HttpClearedDismissals, HttpColorAffinity,
-    HttpColorCards, HttpColorIdentityCount, HttpColorMap, HttpColorPair, HttpCommanderSuggestion,
-    HttpCommanderSuggestions, HttpDismissCommander, HttpPlayStyleSummary, HttpProfileRole,
-    HttpProfileTag, HttpSharedTag, HttpStaple, HttpSuggestionReasons, MAX_SUGGESTION_LIMIT,
+    DEFAULT_SUGGESTION_LIMIT, HttpActivity, HttpActivityDay, HttpBuilderProfile,
+    HttpClearedDismissals, HttpColorAffinity, HttpColorCards, HttpColorIdentityCount, HttpColorMap,
+    HttpColorPair, HttpCommanderSuggestion, HttpCommanderSuggestions, HttpDismissCommander,
+    HttpHardPass, HttpPlayStyleSummary, HttpProfileRole, HttpProfileTag, HttpRoleKeep,
+    HttpSharedTag, HttpStaple, HttpSuggestionReasons, HttpSwipeOutcomes, MAX_SUGGESTION_LIMIT,
 };
 
+use crate::domain::deck::models::deck::activity::{
+    Activity, ActivityDay, HardPass, RoleKeep, SwipeOutcomes,
+};
 use crate::domain::deck::models::deck::commander_suggestions::{
     BuilderProfile, ColorAffinity, ColorIdentityCount, ColorMap, CommanderDismissal,
     CommanderSuggestion, CommanderSuggestions, CommanderSuggestionsError,
@@ -65,6 +69,59 @@ impl From<ColorIdentityCount> for HttpColorIdentityCount {
         Self {
             colors: value.colors,
             decks: value.decks,
+        }
+    }
+}
+
+impl From<Activity> for HttpActivity {
+    fn from(value: Activity) -> Self {
+        Self {
+            through: value.through,
+            days: value.days.into_iter().map(HttpActivityDay::from).collect(),
+            outcomes: value.outcomes.into(),
+            roles: value.roles.into_iter().map(HttpRoleKeep::from).collect(),
+            passes: value.passes.into_iter().map(HttpHardPass::from).collect(),
+        }
+    }
+}
+
+impl From<ActivityDay> for HttpActivityDay {
+    fn from(value: ActivityDay) -> Self {
+        Self {
+            day: value.day,
+            swipes: value.swipes,
+            searches: value.searches,
+        }
+    }
+}
+
+impl From<SwipeOutcomes> for HttpSwipeOutcomes {
+    fn from(value: SwipeOutcomes) -> Self {
+        Self {
+            added: value.added,
+            skipped: value.skipped,
+            maybed: value.maybed,
+            removed: value.removed,
+        }
+    }
+}
+
+impl From<RoleKeep> for HttpRoleKeep {
+    fn from(value: RoleKeep) -> Self {
+        Self {
+            role: value.role,
+            kept: value.kept,
+            passed: value.passed,
+        }
+    }
+}
+
+impl From<HardPass> for HttpHardPass {
+    fn from(value: HardPass) -> Self {
+        Self {
+            card: value.card,
+            skipped: value.skipped,
+            commanders: value.commanders,
         }
     }
 }
@@ -205,6 +262,19 @@ pub async fn get_play_style_summary(
         .await
         .map_err(ApiError::from)
         .map(|summary| (StatusCode::OK, Json(summary.into())))
+}
+
+/// Returns the authenticated user's activity for the Playstyle screen.
+pub async fn get_activity(
+    user: AuthenticatedUser,
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<HttpActivity>), ApiError> {
+    state
+        .deck_service
+        .activity(user.id)
+        .await
+        .map_err(ApiError::from)
+        .map(|activity| (StatusCode::OK, Json(activity.into())))
 }
 
 /// Hides a commander from the authenticated user's suggestions for a week.

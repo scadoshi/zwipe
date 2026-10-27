@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COALESCE(SUM(added), 0)::int8 AS \"added!\",\n                      COALESCE(SUM(skipped), 0)::int8 AS \"skipped!\",\n                      COALESCE(SUM(maybed), 0)::int8 AS \"maybed!\",\n                      COALESCE(SUM(removed), 0)::int8 AS \"removed!\"\n               FROM user_week_signal\n               WHERE user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "added!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "skipped!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "maybed!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "removed!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "04d3028879f46a7a44ba8fbd291f031cf9e4efbb3aec0de02434b9895800cd53"
+}

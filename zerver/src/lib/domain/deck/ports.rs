@@ -26,6 +26,7 @@ use zwipe_core::domain::deck::requests::update_deck_profile::UpdateDeckProfile;
 use zwipe_core::domain::deck::{Deck, DeckCard, DeckName};
 
 use crate::domain::BoxFuture;
+use crate::domain::deck::models::deck::activity::{Activity, ActivityCounts};
 use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError;
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
@@ -229,6 +230,15 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         &self,
         user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<MainboardCard>, CommanderSuggestionsError>> + Send;
+
+    /// The user's daily swipes and searches from the database's UTC date
+    /// back over `ACTIVITY_DAYS`, their swipe outcomes across every deck,
+    /// kept and passed cards per card role and the most skipped cards never
+    /// kept or saved, both from decks with a commander.
+    fn fetch_activity_counts(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<ActivityCounts, CommanderSuggestionsError>> + Send;
 
     /// Records a dismissal, restarting its clock when one exists.
     fn dismiss_commander(
@@ -437,6 +447,15 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<PlayStyleSummary, CommanderSuggestionsError>> + Send;
 
+    /// The user's activity for the Playstyle screen: the repository's
+    /// counts, the roles narrowed by `activity::rank_roles`, and each hard
+    /// pass with its most recent normal printing. A pass whose card the
+    /// fetch misses is dropped.
+    fn activity(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<Activity, CommanderSuggestionsError>> + Send;
+
     /// Hides a commander from the user's suggestions for a week.
     fn dismiss_commander(
         &self,
@@ -634,6 +653,12 @@ pub trait ErasedDeckService: Send + Sync + 'static {
         &self,
         user_id: uuid::Uuid,
     ) -> BoxFuture<'_, Result<PlayStyleSummary, CommanderSuggestionsError>>;
+
+    /// See [`DeckService::activity`].
+    fn activity(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> BoxFuture<'_, Result<Activity, CommanderSuggestionsError>>;
 
     /// See [`DeckService::dismiss_commander`].
     fn dismiss_commander<'a>(
@@ -839,6 +864,13 @@ where
         user_id: uuid::Uuid,
     ) -> BoxFuture<'_, Result<PlayStyleSummary, CommanderSuggestionsError>> {
         Box::pin(DeckService::play_style_summary(self, user_id))
+    }
+
+    fn activity(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> BoxFuture<'_, Result<Activity, CommanderSuggestionsError>> {
+        Box::pin(DeckService::activity(self, user_id))
     }
 
     fn dismiss_commander<'a>(

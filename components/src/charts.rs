@@ -108,6 +108,9 @@ const CHIP_LABEL_MAX_WIDTH: &str = "50%";
 /// A horizontal row's count cell.
 const COUNT_CELL_STYLE: &str = "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:3ch;text-align:right;flex-shrink:0;";
 
+/// [`COUNT_CELL_STYLE`] a character wider, for a count with a suffix.
+const SUFFIXED_COUNT_CELL_STYLE: &str = "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:4ch;text-align:right;flex-shrink:0;";
+
 /// How a [`BarChart`] lays its bars and labels out.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Layout {
@@ -178,8 +181,17 @@ pub fn BarChart(
     /// reveal eases shut.
     #[props(default)]
     reveal: Option<Callback<String, Element>>,
+    /// Printed after every count, such as `%` for a chart of rates. Empty
+    /// prints the bare count.
+    #[props(default)]
+    count_suffix: &'static str,
 ) -> Element {
     let layout = Layout::new(orientation, on_bar.is_some());
+    let count_style = if count_suffix.is_empty() {
+        COUNT_CELL_STYLE
+    } else {
+        SUFFIXED_COUNT_CELL_STYLE
+    };
     // The last opened key, kept through a close so the reveal can ease out.
     let mut shown: Signal<Option<String>> = use_signal(|| None);
     let shown_key = shown();
@@ -261,7 +273,7 @@ pub fn BarChart(
                         for bar in bars.iter() {
                             div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
                                 if bar.count > 0 {
-                                    span { style: "font-size:0.6rem;color:var(--text-primary);opacity:0.85;line-height:1;", "{bar.count}" }
+                                    span { style: "font-size:0.6rem;color:var(--text-primary);opacity:0.85;line-height:1;", "{bar.count}{count_suffix}" }
                                 }
                                 div { style: format!("width:100%;height:{}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem 0.15rem 0 0;", bar.pct) }
                             }
@@ -287,7 +299,7 @@ pub fn BarChart(
                                     ),
                                 }
                             }
-                            span { style: COUNT_CELL_STYLE, "{bar.count}" }
+                            span { style: count_style, "{bar.count}{count_suffix}" }
                         }
                     }
                 },
@@ -314,7 +326,7 @@ pub fn BarChart(
                                     ),
                                 }
                             }
-                            span { style: COUNT_CELL_STYLE, "{bar.count}" }
+                            span { style: count_style, "{bar.count}{count_suffix}" }
                             // Mounted shut under every row so opening one is a class
                             // change the reveal can ease, not a fresh node.
                             div { class: reveal_class(bar), style: "grid-column:1 / -1;",

@@ -5,12 +5,13 @@ use std::borrow::Cow;
 use uuid::Uuid;
 
 use crate::http::contracts::suggestions::{
-    HttpClearedDismissals, HttpCommanderSuggestions, HttpDismissCommander, HttpPlayStyleSummary,
+    HttpActivity, HttpClearedDismissals, HttpCommanderSuggestions, HttpDismissCommander,
+    HttpPlayStyleSummary,
 };
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths::{
-    COMMANDER_DISMISSALS_ROUTE, COMMANDER_SUGGESTIONS_ROUTE, PLAY_STYLE_ROUTE,
-    undismiss_commander_route,
+    COMMANDER_DISMISSALS_ROUTE, COMMANDER_SUGGESTIONS_ROUTE, PLAYSTYLE_ACTIVITY_ROUTE,
+    PLAYSTYLE_ROUTE, undismiss_commander_route,
 };
 
 /// The user's deck count and color map, for Home's play
@@ -21,7 +22,19 @@ impl Endpoint for GetPlayStyleSummary {
     type Request = ();
     type Response = HttpPlayStyleSummary;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Borrowed(PLAY_STYLE_ROUTE)
+        Cow::Borrowed(PLAYSTYLE_ROUTE)
+    }
+}
+
+/// The user's swiping, searching, keep rate by role and hard passes, for the
+/// Playstyle screen's Activity sections.
+pub struct GetActivity;
+impl Endpoint for GetActivity {
+    const METHOD: Method = Method::Get;
+    type Request = ();
+    type Response = HttpActivity;
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(PLAYSTYLE_ACTIVITY_ROUTE)
     }
 }
 
@@ -88,8 +101,13 @@ mod tests {
     }
 
     #[test]
-    fn play_style_summary_reads_the_deck_route() {
-        assert_eq!(GetPlayStyleSummary.path(), "/api/deck/play-style");
+    fn play_style_summary_reads_the_playstyle_route() {
+        assert_eq!(GetPlayStyleSummary.path(), "/api/deck/playstyle");
         assert_eq!(GetPlayStyleSummary.query(), None);
+    }
+
+    #[test]
+    fn activity_reads_under_the_playstyle_route() {
+        assert_eq!(GetActivity.path(), "/api/deck/playstyle/activity");
     }
 }

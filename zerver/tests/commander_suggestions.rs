@@ -15,7 +15,7 @@ use common::{TestApp, card, seed_cards};
 use serde_json::{Value, json};
 use uuid::Uuid;
 use zwipe_core::http::paths::{
-    COMMANDER_DISMISSALS_ROUTE, COMMANDER_SUGGESTIONS_ROUTE, DECK_ROUTE, PLAY_STYLE_ROUTE,
+    COMMANDER_DISMISSALS_ROUTE, COMMANDER_SUGGESTIONS_ROUTE, DECK_ROUTE, PLAYSTYLE_ROUTE,
     add_commander_maybeboard_card_route, get_deck_route, undismiss_commander_route,
 };
 
@@ -807,7 +807,7 @@ async fn every_route_needs_a_token(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     let (status, _) = app.delete(COMMANDER_DISMISSALS_ROUTE, None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
-    let (status, _) = app.get(PLAY_STYLE_ROUTE, None).await;
+    let (status, _) = app.get(PLAYSTYLE_ROUTE, None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
 
@@ -817,7 +817,7 @@ async fn play_style_summary_sends_the_color_map(pool: sqlx::PgPool) {
     let (token, uid) = app.register("playstyle").await;
     app.verify_email(&uid).await;
 
-    let (status, body) = app.get(PLAY_STYLE_ROUTE, Some(&token)).await;
+    let (status, body) = app.get(PLAYSTYLE_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "{body}");
     assert_eq!(body["deck_count"], 0, "{body}");
     assert!(
@@ -842,7 +842,7 @@ async fn play_style_summary_sends_the_color_map(pool: sqlx::PgPool) {
     // An empty deck has no colors to read and is not counted.
     build_deck(&app, &token, "Empty", "standard", &[]).await;
 
-    let (status, body) = app.get(PLAY_STYLE_ROUTE, Some(&token)).await;
+    let (status, body) = app.get(PLAYSTYLE_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "{body}");
     assert_eq!(body["deck_count"], 3, "{body}");
     assert!(body.get("identities").is_none(), "{body}");
@@ -887,7 +887,7 @@ fn color_map_cards(map: &Value) -> Vec<u64> {
 /// The play style color map and the suggestions profile's, after checking
 /// they agree.
 async fn both_color_maps(app: &TestApp, token: &str) -> Vec<u64> {
-    let (status, body) = app.get(PLAY_STYLE_ROUTE, Some(token)).await;
+    let (status, body) = app.get(PLAYSTYLE_ROUTE, Some(token)).await;
     assert_eq!(status, StatusCode::OK, "{body}");
     let (status, suggestions) = app.get(COMMANDER_SUGGESTIONS_ROUTE, Some(token)).await;
     assert_eq!(status, StatusCode::OK, "{suggestions}");

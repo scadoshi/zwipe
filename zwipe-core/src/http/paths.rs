@@ -72,7 +72,14 @@ pub const CREATE_DECK_ROUTE: &str = DECK_ROUTE;
 pub const GET_DECK_PROFILES_ROUTE: &str = DECK_ROUTE;
 pub const GET_DECK_TAGS_ROUTE: &str = "/api/deck/tags";
 /// The user's deck count and color map.
-pub const PLAY_STYLE_ROUTE: &str = "/api/deck/play-style";
+pub const PLAYSTYLE_ROUTE: &str = "/api/deck/playstyle";
+/// [`PLAYSTYLE_ROUTE`]'s first spelling, served beside it until the client
+/// floor reaches 1.16.0, the first app on the new path. See
+/// `context/plans/playstyle_route_rename.md`.
+pub const LEGACY_PLAY_STYLE_ROUTE: &str = "/api/deck/play-style";
+/// The user's swiping and searching over the last year, and what they keep
+/// and pass on.
+pub const PLAYSTYLE_ACTIVITY_ROUTE: &str = "/api/deck/playstyle/activity";
 
 // == suggested commanders ==
 
@@ -231,7 +238,9 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Post, LOGOUT_ROUTE, true),
     (Method::Patch, MARK_HINT_SHOWN_ROUTE, true),
     (Method::Get, MIN_CLIENT_VERSION_ROUTE, false),
-    (Method::Get, PLAY_STYLE_ROUTE, true),
+    (Method::Get, PLAYSTYLE_ROUTE, true),
+    (Method::Get, LEGACY_PLAY_STYLE_ROUTE, true),
+    (Method::Get, PLAYSTYLE_ACTIVITY_ROUTE, true),
     (Method::Get, PREFERENCES_ROUTE, true),
     (Method::Patch, PREFERENCES_ROUTE, true),
     (Method::Get, PUBLIC_METRICS_ROUTE, false),

@@ -48,7 +48,7 @@ use crate::inbound::http::handlers::client::get_min_client_version;
 use crate::inbound::http::handlers::deck::clear_deck_suppressions::clear_deck_suppressions;
 use crate::inbound::http::handlers::deck::clone_deck::clone_deck;
 use crate::inbound::http::handlers::deck::commander_suggestions::{
-    clear_commander_dismissals, dismiss_commander, get_commander_suggestions,
+    clear_commander_dismissals, dismiss_commander, get_activity, get_commander_suggestions,
     get_play_style_summary, undismiss_commander,
 };
 use crate::inbound::http::handlers::deck::create_deck_profile::create_deck_profile;
@@ -653,7 +653,11 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                     Router::new()
                         .route("/", get(get_deck_profiles).post(create_deck_profile))
                         .route("/tags", get(get_deck_tags))
+                        .route("/playstyle", get(get_play_style_summary))
+                        // The first spelling, for apps before 1.16.0, until
+                        // the client floor passes them.
                         .route("/play-style", get(get_play_style_summary))
+                        .route("/playstyle/activity", get(get_activity))
                         .route(
                             "/{deck_id}/import/archidekt",
                             post(import_archidekt_deck).layer(

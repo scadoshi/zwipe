@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (now() AT TIME ZONE 'UTC')::date AS \"through!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "through!",
+        "type_info": "Date",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "95beb38d0cbac4ab3220f010b5f815ac385d3586df0a288cd75e8bcf6f570ab6"
+}

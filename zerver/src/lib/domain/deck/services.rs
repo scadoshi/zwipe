@@ -27,6 +27,7 @@ use zwipe_core::http::contracts::suggestions::STAPLE_MIN_DECKS;
 use crate::domain::card::models::synergy::SynergyPayload;
 use crate::domain::card::ports::{CardRepository, DeckServeContext};
 use crate::domain::card::requests::get_scryfall_data::ScryfallDataIds;
+use crate::domain::deck::models::deck::activity::{self, Activity, HardPass};
 use crate::domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError;
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::commander_maybeboard::CommanderMaybeboardError;
@@ -735,6 +736,41 @@ where
     ) -> Result<PlayStyleSummary, CommanderSuggestionsError> {
         let decks = self.deck_repo.fetch_profiled_decks(user_id).await?;
         Ok(commander_suggestions::summarize_play_style(&decks))
+    }
+
+    async fn activity(&self, user_id: Uuid) -> Result<Activity, CommanderSuggestionsError> {
+        let counts = self.deck_repo.fetch_activity_counts(user_id).await?;
+        let oracle_ids: Vec<Uuid> = counts.passes.iter().map(|p| p.oracle_id).collect();
+        let mut cards: HashMap<Uuid, Card> = if oracle_ids.is_empty() {
+            HashMap::new()
+        } else {
+            self.card_repo
+                .get_latest_cards_by_oracle_ids(&oracle_ids)
+                .await
+                .map_err(|e| CommanderSuggestionsError::Database(e.into()))?
+                .into_iter()
+                .filter_map(|card| Some((card.scryfall_data.oracle_id?, card)))
+                .collect()
+        };
+        let passes = counts
+            .passes
+            .into_iter()
+            .filter_map(|pass| {
+                let card = cards.remove(&pass.oracle_id)?;
+                Some(HardPass {
+                    card,
+                    skipped: pass.skipped,
+                    commanders: pass.commanders,
+                })
+            })
+            .collect();
+        Ok(Activity {
+            through: counts.through,
+            days: counts.days,
+            outcomes: counts.outcomes,
+            roles: activity::rank_roles(counts.roles),
+            passes,
+        })
     }
 
     async fn dismiss_commander(
