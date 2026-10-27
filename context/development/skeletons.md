@@ -6,7 +6,7 @@ A loading skeleton never renders real text, real chips or working controls. Whil
 
 - Text (titles, group headers, row labels like "Show") becomes a `skeleton-bar` the size of the text. Inside a live `.card-group-header` the bar pads itself to the text line's height.
 - A chip with text becomes a bare `skeleton-chip` (`skeleton-chip-sm`, `-md`, `-lg`, `-xl` for width).
-- A colored chip or block keeps its color. Add `skeleton-tinted` next to the class that sets `--tone` (`stat-chip-p1`, `podium-first`) and drop the text; on a bare `.skeleton-chip` it paints the stat-chip's tinted fill and edge. Without a tone class it takes the bare stat-chip's `--accent-primary`.
+- A colored chip or block keeps its color. Add `skeleton-tinted` next to the class that sets `--tone` (`stat-chip-p1`) and drop the text; on a bare `.skeleton-chip` it paints the stat-chip's tinted fill and edge. Without a tone class it takes the bare stat-chip's `--accent-primary`.
 - Controls ghost too: chip rows (`ChipRowSkeleton`, its label a p1-tinted chip), Quick add (`QuickAddSkeleton`), export and filter rows. Nothing tappable shows until the data lands.
 - Every ghost keeps its element's shape, size and place, so the swap to real content doesn't jump.
 

@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+use crate::inbound::components::home_play_style::ColorMapSkeleton;
+
 /// One bordered "settings-list"-shaped skeleton with `rows` row placeholders inside.
 #[component]
 fn SkeletonInfoList(rows: usize) -> Element {
@@ -35,13 +37,19 @@ pub(crate) fn DeckStatsSkeleton() -> Element {
 }
 
 /// The suggested commanders' profile sections while the first load is in
-/// flight, in the deck view's skeleton grammar: the Summary section open on
-/// its three rows, then the three chart sections collapsed to their headers.
+/// flight, in the deck view's skeleton grammar: the Colors section open on
+/// its map's ghost, then Summary and the two chart sections collapsed to
+/// their headers.
 #[component]
 pub(crate) fn BuilderProfileSkeleton() -> Element {
     rsx! {
         div { class: "skeleton-stats",
-            SkeletonInfoList { rows: 3 }
+            div { class: "skeleton-info-list",
+                div { class: "skeleton-card-header",
+                    div { class: "skeleton-bar skeleton-section-label" }
+                }
+                ColorMapSkeleton {}
+            }
             for i in 0..3 {
                 div { key: "{i}", class: "skeleton-chart-box",
                     div { class: "skeleton-bar skeleton-section-label" }

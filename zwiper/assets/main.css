@@ -1233,7 +1233,7 @@ button {
 }
 
 /* A ghost that keeps its element's tint: pair it with the class that sets
-   --tone (stat-chip-pN, podium-first...) and drop the text. On a bare
+   --tone (stat-chip-pN...) and drop the text. On a bare
    .skeleton-chip it paints the stat-chip's tinted fill and edge. */
 .skeleton-tinted {
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -2469,83 +2469,15 @@ button {
     margin-bottom: auto;
 }
 
-/* The Playstyle podium: second, first and third steps side by side on one
-   floor, each tinted and outlined in its place's palette accent, its flat
-   bottom edge included, with the deck count inside,
-   and the identity standing on top (pips, then a name tag). Fixed heights,
-   first tallest, so it reads as a podium whatever the counts are. The
-   columns align to their bottoms, so the steps share the floor and the
-   labels rise with them. */
-.podium {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-    align-items: end;
-    column-gap: 0.15rem;
-    width: calc(100% - 2rem);
-    max-width: 20rem;
-    margin: 1rem auto 0;
-}
-
-/* In the Playstyle Summary the podium is a row: the settings rows' divider
-   under it, separating it from Top color. */
-.summary-podium {
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border-secondary);
-}
-
-.summary-podium:last-child {
-    border-bottom: none;
-}
-
-.podium-step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.35rem;
-    min-width: 0;
-}
-
-.podium-block {
-    --tone: var(--accent-primary);
-    box-sizing: border-box;
+/* A color map while it loads: one block the size of its full viewport, so
+   the swap to the tiles stays in place. Comes after .skeleton-bar so its
+   height wins. */
+.color-map-ghost {
     width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--tone);
-    background-color: color-mix(in srgb, var(--tone) 18%, transparent);
-    border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
-    border-radius: 0.5rem 0.5rem 0 0;
-}
-
-.podium-first {
-    --tone: var(--palette-2);
-    height: 3.2rem;
-}
-
-.podium-second {
-    --tone: var(--palette-4);
-    height: 2.2rem;
-}
-
-.podium-third {
-    --tone: var(--palette-6);
-    height: 1.4rem;
-}
-
-.podium-step .identity-pips {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.15rem;
-}
-
-.podium-step .identity-pips i.ms.ms-cost {
-    width: 1.2rem;
-    height: 1.2rem;
-    font-size: 0.8rem;
-    border-radius: 0.35rem;
+    max-width: 15.5rem;
+    height: auto;
+    aspect-ratio: 1;
+    border-radius: 0.5rem;
 }
 
 /* Home's Playstyle title bar: the title centered, Open as a chip pinned to

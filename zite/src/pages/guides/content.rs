@@ -632,7 +632,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Finding it"),
             Block::Bullets(&[
-                "The Playstyle panel on the Home screen stands your top three colors on a podium. Tap Open for the rest. It's also on the Decks screen, under More.",
+                "The Playstyle panel on the Home screen shows your color map. Tap Open for the rest. It's also on the Decks screen, under More.",
                 "Your colors, card roles and oracle tags come first.",
                 "Under them, your top 10 commanders show as card rows, best fit first.",
                 "Tap a color chip in the Show row to see only those colors. Tap it again to see them all.",
@@ -640,10 +640,10 @@ pub static GUIDES: &[Guide] = &[
             ]),
             Block::H2("What your decks say"),
             Block::P(
-                "Summary, at the top, shows how many decks were read, the same podium and your top single color. Under it are three more sections. Tap one to open it.",
+                "Colors opens first. It grows a map of tiles from your cards, each color claiming ground in proportion to its cards, in a shape that's yours alone. It's the same map as on Home, and a big one scrolls inside its box. Under it are three more sections. Tap one to open it.",
             ),
             Block::Bullets(&[
-                "Colors grows a map of tiles from your cards, each color claiming ground in proportion to its cards, in a shape that's yours alone. A big map scrolls inside its box.",
+                "Summary shows how many decks were read, your most built color combination and your top single color.",
                 "Card roles shows the jobs your cards do, like ramp or removal. Tap a role to see its tags.",
                 "Oracle tags lists your 10 most impactful tags. Tap a tag to see what it means.",
                 "Each open section has a question mark in its header that explains it.",

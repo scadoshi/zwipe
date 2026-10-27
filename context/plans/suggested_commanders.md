@@ -86,6 +86,8 @@ The Colors section draws `components::ColorMap`, a WUBRG pentagon in color pie o
 
 Later on 2026-10-27 the pentagon became a color territory map: square tiles (40 plus 6 per square root of the colored cards, at most 520), each owned by one color in proportion to its cards. The colors grow at once from beside the middle over seeded step costs (the seed is the user's id), so the shape stays theirs, flowers out in petals and shifts a few tiles as counts change. Tiles keep a 12px pitch and a big map scrolls inside a 15.5rem box that opens on its middle. Colorless shows only in the key of pip chips under it, and the pair counts are no longer drawn.
 
+The map is now the Playstyle identity: Colors sits first and opens on entry, the Home panel draws the same map from `color_map` on `GET /api/deck/play-style` (its `identities` are gone), and the podium is removed, so Summary is plain rows again.
+
 ## Commander profiles (decided 2026-10-25: the synergy worker writes them)
 
 The user profile is cheap per request (the deck tag profile query runs in ~30-50 ms locally), so it is computed live and never lags. Candidate profiles are not: each comes from a payload averaging 263 cards (production 2026-10-25: 1,527 cached payloads, 86 to 445 cards each). They are precomputed into `commander_tag_profiles(commander_oracle_id, profile jsonb, computed_at)`.

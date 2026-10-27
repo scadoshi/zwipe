@@ -55,7 +55,6 @@ use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::hint_host::HintTopic;
-use crate::inbound::components::home_play_style::{Podium, PodiumSkeleton, use_play_style_summary};
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
@@ -150,8 +149,7 @@ fn identity_key(identity: &[Color]) -> String {
 pub(crate) fn IdentityPips(
     identity: Vec<Color>,
     count: Option<String>,
-    /// Leads with the identity's name; off where the host sets the name apart,
-    /// as Home's podium does under each step.
+    /// Leads with the identity's name; off where the host sets the name apart.
     #[props(default = true)]
     show_name: bool,
 ) -> Element {
@@ -412,7 +410,7 @@ const TAGS_TITLE: &str = "Oracle tags";
 const STAPLES_TITLE: &str = "Staples";
 
 /// Whether a color map has anything to draw: a colored or colorless card.
-fn color_map_has_data(counts: &ColorMapCounts) -> bool {
+pub(crate) fn color_map_has_data(counts: &ColorMapCounts) -> bool {
     counts.colorless > 0 || counts.cards.iter().any(|n| *n > 0)
 }
 
@@ -873,10 +871,11 @@ fn StaplesPanel(
 }
 
 /// What the user builds, as sections over the suggestions list in the deck
-/// profile's grammar: a Summary table (the deck count, the most common color
-/// set and color) in the Budget section's rows, then a color territory map
-/// seeded by the user's id, a chart and a table. The four share one
-/// accordion with Summary open on entry. Colors are a [`ColorMap`], or
+/// profile's grammar: a color territory map seeded by the user's id, then a
+/// Summary table (the deck count, the most common color set and color) in
+/// the Budget section's rows, a chart and a table. The four share one
+/// accordion with Colors open on entry, or Summary when there are no colors
+/// to show. Colors are a [`ColorMap`], or
 /// columns in WUBRG order from a server that sends no color map or a map
 /// with nothing on it; card roles are rows like the deck
 /// profile's role chart with chip labels, a tapped role revealing its oracle
@@ -884,21 +883,12 @@ fn StaplesPanel(
 #[component]
 pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     let summary = profile_summary(&profile);
-    // The top three color identities, shared with Home's panel, for the
-    // Summary's podium. It ghosts while they load, and the Top colors row
-    // stands in when the fetch fails or comes back without identities.
-    let (play_style, play_style_failed) = use_play_style_summary(Screen::SuggestedCommanders);
-    let podium_pending = play_style.is_none() && !play_style_failed();
     // Seeds the color map from the signed-in user, so its shape stays theirs.
     let session: Signal<Option<Session>> = use_context();
     let map_seed = session
         .peek()
         .as_ref()
         .map_or(0, |s| seed_from_id(s.user.id.as_u128()));
-    let podium_identities = play_style
-        .map(|summary| summary.identities)
-        .filter(|identities| !identities.is_empty());
-    let open_section: Signal<Option<String>> = use_signal(|| Some(SUMMARY_TITLE.to_string()));
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
     let colors = color_bars(&profile.colors);
     let color_map = profile
@@ -906,6 +896,13 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
         .as_ref()
         .map(ColorMapCounts::from)
         .filter(color_map_has_data);
+    let has_colors = color_map.is_some() || !colors.is_empty();
+    let first_open = if has_colors {
+        COLORS_TITLE
+    } else {
+        SUMMARY_TITLE
+    };
+    let open_section: Signal<Option<String>> = use_signal(|| Some(first_open.to_string()));
     let roles = role_bars(&profile.roles, &profile.tags);
     let tags = tag_rows(&profile.tags);
     let profile_tags = profile.tags;
@@ -925,29 +922,7 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
         }
     });
     rsx! {
-        CollapsibleSection { title: SUMMARY_TITLE, open_section,
-            div { style: "display:flex;flex-direction:column;",
-                div { class: "settings-row",
-                    span { class: "settings-row-label", "Decks" }
-                    span { class: "info-row-value", "{summary.decks}" }
-                }
-                if let Some(identities) = podium_identities {
-                    div { class: "summary-podium", Podium { identities } }
-                } else if podium_pending {
-                    div { class: "summary-podium", PodiumSkeleton {} }
-                } else if let Some(value) = summary.color_set {
-                    SummaryIdentityRow { label: "Top colors", value }
-                }
-                if let Some(value) = summary.color {
-                    SummaryIdentityRow {
-                        label: "Top color",
-                        name: value.pips.first().map(Color::to_long_name),
-                        value,
-                    }
-                }
-            }
-        }
-        if color_map.is_some() || !colors.is_empty() {
+        if has_colors {
             CollapsibleSection {
                 title: COLORS_TITLE,
                 open_section,
@@ -958,6 +933,24 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                     ColorMap { counts, seed: map_seed }
                 } else {
                     BarChart { bars: colors }
+                }
+            }
+        }
+        CollapsibleSection { title: SUMMARY_TITLE, open_section,
+            div { style: "display:flex;flex-direction:column;",
+                div { class: "settings-row",
+                    span { class: "settings-row-label", "Decks" }
+                    span { class: "info-row-value", "{summary.decks}" }
+                }
+                if let Some(value) = summary.color_set {
+                    SummaryIdentityRow { label: "Top colors", value }
+                }
+                if let Some(value) = summary.color {
+                    SummaryIdentityRow {
+                        label: "Top color",
+                        name: value.pips.first().map(Color::to_long_name),
+                        value,
+                    }
                 }
             }
         }
