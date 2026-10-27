@@ -1,7 +1,7 @@
 //! A card role's oracle tags as chips, each tappable for its description and
 //! Examples button eased open beneath them. Shared by the role charts that
 //! reveal tags under a tapped role: the Playstyle screen's Card roles, the
-//! deck view's Role distribution and the shared deck page's.
+//! deck view's Roles chart and the shared deck page's.
 
 use dioxus::prelude::*;
 

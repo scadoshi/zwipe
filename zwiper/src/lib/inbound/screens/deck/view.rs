@@ -20,7 +20,7 @@ use super::components::clone_deck_dialog::CloneDeckDialog;
 use super::components::collapsible_section::CollapsibleSection;
 use super::components::deck_budget_section::{DeckBudgetSection, has_budget};
 use super::components::deck_charts::{
-    DeckCharts, DrawOdds, ManaBalanceRow, ManaCurve, ManaFulfillment,
+    ColorChart, DeckCharts, DrawOdds, ManaBalanceRow, ManaCurve, ManaFulfillment,
 };
 use super::components::deck_profile::DeckProfileSection;
 use super::components::deck_tags_section::{DeckTagsSection, has_any_tags, total_tag_count};
@@ -108,7 +108,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         Some(Ok(None)) | None => (),
     });
 
-    // The Role distribution chart's tags: a description lookup from the
+    // The Roles chart's tags: a description lookup from the
     // shared catalog cache and an examples-browse opener, as on the deck
     // cards view, with the examples overlay owned here.
     let cache: CatalogCache = use_context();
@@ -349,13 +349,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                     DeckCharts {
                                                         type_bars: type_bars.clone(),
                                                         category_bars: category_bars.clone(),
-                                                        color_bars: color_bars.clone(),
                                                         role_tags: role_tags.clone(),
                                                         describe_tag,
                                                         on_examples: open_examples,
                                                         type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
                                                         role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
-                                                        color_hint: rsx! { InfoButton { topic: HintTopic::ColorChart } },
                                                     }
                                                 }
                                             }
@@ -389,6 +387,12 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                     ManaCurve {
                                                         mana_curve_bars: *mana_curve_bars,
                                                         hint: rsx! { InfoButton { topic: HintTopic::ManaCurve } },
+                                                    }
+                                                }
+                                                if let Some(color_bars) = color_bars.clone() {
+                                                    ColorChart {
+                                                        color_bars,
+                                                        hint: rsx! { InfoButton { topic: HintTopic::ColorChart } },
                                                     }
                                                 }
                                                 if let Some(rows) = mana_balance_rows {

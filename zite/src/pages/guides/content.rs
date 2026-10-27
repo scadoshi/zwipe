@@ -886,9 +886,9 @@ pub static GUIDES: &[Guide] = &[
                 alt: "An expanded card row with its Card roles chips, one opened to the oracle tags beneath it and a description",
                 caption: None,
             },
-            Block::H2("Role distribution"),
+            Block::H2("Roles"),
             Block::P(
-                "The deck view's Distributions section includes a Role distribution chart, the same roles as the card chips, but counted across your whole deck, so you can see at a glance where it's thin. Tap a role to see the oracle tags your deck's cards carry under it.",
+                "The deck view's Distributions section includes a Roles chart, the same roles as the card chips, but counted across your whole deck, so you can see at a glance where it's thin. Tap a role to see the oracle tags your deck's cards carry under it.",
             ),
         ],
     },
@@ -1030,7 +1030,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::H2("Charts"),
             Block::P(
-                "Distributions cover card type, strategic role, and color. Role distribution reads on the same roles shown as chips on each card. Mana holds your Lands against their target, Average mana value, the mana curve (nonland cards by cost, 0 to 6+), and mana fulfillment (whether your mana base makes enough of each color, with a ✔ when covered).",
+                "Distributions cover card type and strategic role, in the Types and Roles charts. Roles reads on the same roles shown as chips on each card. Mana holds your Lands against their target, Average mana value, the mana curve (nonland cards by cost, 0 to 6+), the Colors chart, and mana fulfillment (whether your mana base makes enough of each color, with a ✔ when covered).",
             ),
             Block::Image {
                 file: "deck-stats/01-distributions.webp",

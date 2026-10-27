@@ -356,8 +356,8 @@ fn role_bars(
         .collect()
 }
 
-/// Count-based distribution charts (types, categories, colors), rendered as
-/// flat sub-blocks: three [`BarChart`]s, the role one horizontal.
+/// Count-based distribution charts (types, roles), rendered as flat
+/// sub-blocks: two [`BarChart`]s, the role one horizontal.
 ///
 /// With `role_tags` set, the role chart's labels are chips and a tapped role
 /// eases its tags open under its row as [`RoleTags`], one role at a time, the
@@ -367,11 +367,9 @@ fn role_bars(
 pub fn DeckCharts(
     type_bars: Option<Vec<(&'static str, usize, u32)>>,
     category_bars: Option<Vec<(&'static str, usize, u32)>>,
-    color_bars: Option<Vec<(&'static str, usize, u32)>>,
     /// "?" beside each label; the site passes none.
     type_hint: Option<Element>,
     role_hint: Option<Element>,
-    color_hint: Option<Element>,
     /// Each role's oracle tags, keyed by the role bar's label
     /// (`DeckMetrics::card_role_tags`).
     #[props(default)]
@@ -397,7 +395,7 @@ pub fn DeckCharts(
     rsx! {
         if let Some(type_bars) = type_bars.as_ref() {
             BarChart {
-                label: "Type distribution",
+                label: "Types",
                 bars: tuple_bars(type_bars),
                 hint: type_hint,
             }
@@ -407,7 +405,7 @@ pub fn DeckCharts(
             if !cat_bars.is_empty() {
                 if let Some(role_tags) = role_tags.as_ref() {
                     BarChart {
-                        label: "Role distribution",
+                        label: "Roles",
                         bars: role_bars(cat_bars, role_tags),
                         hint: role_hint,
                         orientation: BarOrientation::Horizontal,
@@ -417,7 +415,7 @@ pub fn DeckCharts(
                     }
                 } else {
                     BarChart {
-                        label: "Role distribution",
+                        label: "Roles",
                         bars: tuple_bars(cat_bars),
                         hint: role_hint,
                         orientation: BarOrientation::Horizontal,
@@ -425,14 +423,14 @@ pub fn DeckCharts(
                 }
             }
         }
+    }
+}
 
-        if let Some(color_bars) = color_bars.as_ref() {
-            BarChart {
-                label: "Color distribution",
-                bars: tuple_bars(color_bars),
-                hint: color_hint,
-            }
-        }
+/// The deck's cards per color as vertical bars, shown in the Mana section.
+#[component]
+pub fn ColorChart(color_bars: Vec<(&'static str, usize, u32)>, hint: Option<Element>) -> Element {
+    rsx! {
+        BarChart { label: "Colors", bars: tuple_bars(&color_bars), hint }
     }
 }
 

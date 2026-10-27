@@ -3,5 +3,5 @@
 //! comes from `DeckMetrics` methods in core. This module only re-exports so
 //! screen imports stay stable.
 
-pub(crate) use components::{DeckCharts, DrawOdds, ManaCurve, ManaFulfillment};
+pub(crate) use components::{ColorChart, DeckCharts, DrawOdds, ManaCurve, ManaFulfillment};
 pub(crate) use zwipe_core::domain::deck::deck_metrics::ManaBalanceRow;

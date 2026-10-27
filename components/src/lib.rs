@@ -6,7 +6,7 @@
 //! import path, and adds what needs `zwipe-core`: [`CardDetails`], [`CardRow`],
 //! [`CardRoleChips`], [`RoleTags`], [`OtagDef`], [`KeywordChips`],
 //! [`OracleText`], [`FlippableCardImage`], [`Changelog`], the deck charts
-//! ([`BarChart`], [`DeckCharts`], [`ManaCurve`], [`ManaFulfillment`],
+//! ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
 //! [`DrawOdds`], [`ChartLabel`]), the [`ColorMap`] and [`ZwipeArchitecture`].
 //!
 //! Styling ships as string constants to inline through `document::Style`.
@@ -46,8 +46,8 @@ pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
 pub use changelog::Changelog;
 pub use charts::{
-    Bar, BarChart, BarOrientation, ChartLabel, DeckCharts, DrawOdds, LabelCase, ManaCurve,
-    ManaFulfillment,
+    Bar, BarChart, BarOrientation, ChartLabel, ColorChart, DeckCharts, DrawOdds, LabelCase,
+    ManaCurve, ManaFulfillment,
 };
 pub use color_map::{ColorMap, ColorMapCounts, ColorMapGhost, ColorMapModel, seed_from_id};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};

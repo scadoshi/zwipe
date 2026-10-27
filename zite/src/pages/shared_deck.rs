@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use components::{
-    CardRow as SharedCardRow, Chip, DeckCharts, DrawOdds, FlippableCardImage, ManaCurve,
-    ManaFulfillment, Panel,
+    CardRow as SharedCardRow, Chip, ColorChart, DeckCharts, DrawOdds, FlippableCardImage,
+    ManaCurve, ManaFulfillment, Panel,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -801,7 +801,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             };
             panels.push((
                 "Distributions",
-                12 + role_rows,
+                7 + role_rows,
                 rsx! {
                     div { class: "sd-chart-body",
                         if let Some(value) = avg_pt {
@@ -813,7 +813,6 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                         DeckCharts {
                             type_bars: Some(metrics.type_bars()),
                             category_bars: metrics.card_role_bars(),
-                            color_bars: Some(metrics.color_bars()),
                             role_tags: Some(metrics.card_role_tags.clone()),
                             describe_tag,
                         }
@@ -825,7 +824,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             let balance_rows = metrics.mana_balance_rows();
             panels.push((
                 "Mana",
-                10 + balance_rows.len(),
+                15 + balance_rows.len(),
                 rsx! {
                     div { class: "sd-chart-body",
                         div { class: "info-row",
@@ -846,6 +845,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                             span { class: "info-row-value", "{metrics.avg_cmc:.1}" }
                         }
                         ManaCurve { mana_curve_bars: metrics.mana_curve_bars() }
+                        ColorChart { color_bars: metrics.color_bars() }
                         ManaFulfillment { rows: balance_rows }
                     }
                 },

@@ -60,11 +60,11 @@ pub enum HintTopic {
     Website,
     /// Profile: version row, with the changelog button.
     Version,
-    /// Deck view: type distribution chart.
+    /// Deck view: the Types chart.
     TypeChart,
-    /// Deck view: role distribution chart.
+    /// Deck view: the Roles chart.
     RoleChart,
-    /// Deck view: color distribution chart.
+    /// Deck view: the Colors chart, in the Mana section.
     ColorChart,
     /// Deck view: mana curve chart.
     ManaCurve,
@@ -115,9 +115,9 @@ impl HintTopic {
             Self::UniversesBeyond => "Universes Beyond",
             Self::Website => "Website",
             Self::Version => "Version",
-            Self::TypeChart => "Type distribution",
-            Self::RoleChart => "Role distribution",
-            Self::ColorChart => "Color distribution",
+            Self::TypeChart => "Types",
+            Self::RoleChart => "Roles",
+            Self::ColorChart => "Colors",
             Self::ManaCurve => "Mana curve",
             Self::ManaFulfillment => "Mana cost fulfillment",
             Self::DrawOdds => "Draw odds",
