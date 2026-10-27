@@ -1410,7 +1410,7 @@ pub fn SuggestedCommanders() -> Element {
                         }
                     } else if cold_start {
                         div { class: "message-empty",
-                            span { class: "chip-note", "Add cards to a deck in any format to see your playstyle and the commanders that fit it." }
+                            span { class: "chip-note", "Build a deck to see your playstyle" }
                         }
                     } else {
                         // The deck view's column of sibling sections.
