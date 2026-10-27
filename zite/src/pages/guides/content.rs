@@ -636,16 +636,16 @@ pub static GUIDES: &[Guide] = &[
                 "Your colors, card roles and oracle tags come first.",
                 "Under them, your top 10 commanders show as card rows, best fit first.",
                 "Tap a color chip in the Show row to see only those colors. Tap it again to see them all.",
+                "Staples, at the bottom, lists the cards that show up in the most of your decks, each with the share of your decks that run it. Basic lands are left out. Tap a type or color chip to narrow it.",
             ]),
             Block::H2("What your decks say"),
             Block::P(
-                "Summary, at the top, shows how many decks were read, the same podium and your top single color. Under it are four more sections. Tap one to open it.",
+                "Summary, at the top, shows how many decks were read, the same podium and your top single color. Under it are three more sections. Tap one to open it.",
             ),
             Block::Bullets(&[
                 "Colors maps your colors on a pentagon, each corner glowing with how many of your cards are that color and each line with how many of your decks play both colors.",
                 "Card roles shows the jobs your cards do, like ramp or removal. Tap a role to see its tags.",
                 "Oracle tags lists your 10 most impactful tags. Tap a tag to see what it means.",
-                "Staples lists up to 10 cards that show up in the most of your decks, with how many decks run each. Basic lands are left out.",
                 "Each open section has a question mark in its header that explains it.",
             ]),
             Block::H2("How a tag's impact adds up"),
