@@ -10,7 +10,8 @@ use chrono::{DateTime, Utc};
 pub use email::{Email, InvalidEmail};
 pub use hints::{InvalidHintKey, MarkHintShown};
 pub use preferences::{
-    ALLOWED_THEMES, InvalidUpdatePreferences, UpdatePreferences, UserPreferences,
+    ALLOWED_THEMES, InvalidUpdatePreferences, ParsePipStyleError, PipStyle, UpdatePreferences,
+    UserPreferences,
 };
 use serde::{Deserialize, Serialize};
 pub use username::{InvalidUsername, Username};

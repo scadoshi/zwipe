@@ -2,6 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::domain::user::preferences::PipStyle;
+
 /// HTTP request body for updating preferences.
 ///
 /// Uses `Option<T>` for partial update semantics: absent fields are unchanged.
@@ -19,6 +21,10 @@ pub struct HttpUpdatePreferences {
     /// unchanged.
     #[serde(default)]
     pub universes_beyond_exceptions: Option<Vec<String>>,
+    /// Pip style, or absent to leave unchanged. serde defaults keep payloads
+    /// from clients that predate the field.
+    #[serde(default)]
+    pub pip_style: Option<PipStyle>,
 }
 
 /// HTTP request body for marking a one-time UI hint as shown.

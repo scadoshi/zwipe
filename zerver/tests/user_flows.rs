@@ -443,6 +443,52 @@ async fn universes_beyond_preference_round_trips(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
+async fn pip_style_preference_round_trips(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("pipuser").await;
+
+    // Default: the theme's colors.
+    let (status, prefs) = app.get(PREFERENCES_ROUTE, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "get preferences: {prefs}");
+    assert_eq!(prefs["pip_style"], "theme");
+
+    let (status, updated) = app
+        .patch(
+            PREFERENCES_ROUTE,
+            json!({ "pip_style": "natural" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "update: {updated}");
+    assert_eq!(updated["pip_style"], "natural");
+
+    // An old client's payload, without the field, leaves it alone.
+    let (status, updated) = app
+        .patch(
+            PREFERENCES_ROUTE,
+            json!({ "theme": "dracula", "dark_mode": false }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "theme-only update: {updated}");
+    assert_eq!(updated["pip_style"], "natural");
+
+    let (status, prefs) = app.get(PREFERENCES_ROUTE, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "get preferences: {prefs}");
+    assert_eq!(prefs["pip_style"], "natural");
+
+    // A style that does not exist is rejected.
+    let (status, body) = app
+        .patch(
+            PREFERENCES_ROUTE,
+            json!({ "pip_style": "classic" }),
+            Some(&token),
+        )
+        .await;
+    assert!(status.is_client_error(), "unknown style: {status} {body}");
+}
+
+#[sqlx::test]
 async fn visual_studio_moves_to_vs_code(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, _) = app.register("vsuser").await;

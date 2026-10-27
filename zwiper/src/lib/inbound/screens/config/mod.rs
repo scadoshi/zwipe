@@ -123,6 +123,7 @@ pub fn Config() -> Element {
             dark_mode: None,
             exclude_universes_beyond: Some(next),
             universes_beyond_exceptions: None,
+            pip_style: None,
         };
         spawn(async move {
             // try_run: the facade reports and toasts; the Err back here only
@@ -160,6 +161,7 @@ pub fn Config() -> Element {
             dark_mode: Some(next.is_dark),
             exclude_universes_beyond: None,
             universes_beyond_exceptions: None,
+            pip_style: None,
         };
         spawn(async move {
             // try_run: reporting and toasts live in the facade; Err drives

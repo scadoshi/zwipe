@@ -24,6 +24,7 @@ pub fn PreferencesSheet(open: Signal<bool>) -> Element {
             dark_mode: Some(picked.is_dark),
             exclude_universes_beyond: None,
             universes_beyond_exceptions: None,
+            pip_style: None,
         };
         spawn(async move {
             if let Some(prefs) = authed

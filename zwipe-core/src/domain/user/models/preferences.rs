@@ -1,7 +1,10 @@
-//! User display preferences (theme, dark mode).
+//! User display preferences (theme, dark mode, pip style).
 //!
 //! Preferences are stored per-user and embedded in JWT claims for instant
 //! application on login. Users without a preferences row get defaults.
+
+use std::fmt;
+use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -104,6 +107,60 @@ pub fn display_theme_name(slug: &str) -> String {
         .join(" ")
 }
 
+/// How mana pips are colored, app-wide.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PipStyle {
+    /// Pips in the current theme's own five mana colors.
+    #[default]
+    Theme,
+    /// Pips in Magic's classic fills, the same on every theme.
+    Natural,
+}
+
+impl PipStyle {
+    /// The stored and wire name: `theme` or `natural`.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Theme => "theme",
+            Self::Natural => "natural",
+        }
+    }
+
+    /// The other style, for a two-state toggle.
+    #[must_use]
+    pub const fn toggled(self) -> Self {
+        match self {
+            Self::Theme => Self::Natural,
+            Self::Natural => Self::Theme,
+        }
+    }
+}
+
+impl fmt::Display for PipStyle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// A pip style name that is neither `theme` nor `natural`.
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[error("unknown pip style")]
+pub struct ParsePipStyleError;
+
+impl FromStr for PipStyle {
+    type Err = ParsePipStyleError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "theme" => Ok(Self::Theme),
+            "natural" => Ok(Self::Natural),
+            _ => Err(ParsePipStyleError),
+        }
+    }
+}
+
 /// User display preferences.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UserPreferences {
@@ -121,6 +178,10 @@ pub struct UserPreferences {
     /// is toggled off so re-enabling restores the whitelist.
     #[serde(default)]
     pub universes_beyond_exceptions: Vec<String>,
+    /// How mana pips are colored. serde(default) reads claims and payloads
+    /// from before the field as [`PipStyle::Theme`].
+    #[serde(default)]
+    pub pip_style: PipStyle,
 }
 
 impl Default for UserPreferences {
@@ -130,6 +191,7 @@ impl Default for UserPreferences {
             dark_mode: true,
             exclude_universes_beyond: false,
             universes_beyond_exceptions: Vec::new(),
+            pip_style: PipStyle::Theme,
         }
     }
 }
@@ -150,6 +212,8 @@ pub struct UpdatePreferences {
     /// New exception whitelist (replaces the whole list), or `None` to leave
     /// unchanged. Slugs are validated against `universe::FRANCHISES`.
     pub universes_beyond_exceptions: Option<Vec<String>>,
+    /// New pip style, or `None` to leave unchanged.
+    pub pip_style: Option<PipStyle>,
 }
 
 impl UpdatePreferences {
@@ -160,6 +224,7 @@ impl UpdatePreferences {
         dark_mode: Option<bool>,
         exclude_universes_beyond: Option<bool>,
         universes_beyond_exceptions: Option<Vec<String>>,
+        pip_style: Option<PipStyle>,
     ) -> Result<Self, InvalidUpdatePreferences> {
         let theme = theme.map(|t| {
             RENAMED_THEMES
@@ -185,6 +250,7 @@ impl UpdatePreferences {
             dark_mode,
             exclude_universes_beyond,
             universes_beyond_exceptions,
+            pip_style,
         })
     }
 }
@@ -305,14 +371,15 @@ mod tests {
     fn accepts_all_allowed_themes() {
         let id = Uuid::new_v4();
         for theme in ALLOWED_THEMES {
-            let result = UpdatePreferences::new(id, Some(theme), Some(true), None, None);
+            let result = UpdatePreferences::new(id, Some(theme), Some(true), None, None, None);
             assert!(result.is_ok(), "should accept theme: {theme}");
         }
     }
 
     #[test]
     fn an_old_slug_updates_to_its_current_theme() {
-        let result = UpdatePreferences::new(Uuid::new_v4(), Some("ristretto"), None, None, None);
+        let result =
+            UpdatePreferences::new(Uuid::new_v4(), Some("ristretto"), None, None, None, None);
         assert_eq!(
             result.unwrap().theme.as_deref(),
             Some("monokai-pro-ristretto")
@@ -321,15 +388,27 @@ mod tests {
 
     #[test]
     fn a_removed_theme_updates_to_its_closest_one() {
-        let result =
-            UpdatePreferences::new(Uuid::new_v4(), Some("visual-studio"), None, None, None);
+        let result = UpdatePreferences::new(
+            Uuid::new_v4(),
+            Some("visual-studio"),
+            None,
+            None,
+            None,
+            None,
+        );
         assert_eq!(result.unwrap().theme.as_deref(), Some("vscode"));
     }
 
     #[test]
     fn rejects_unknown_theme() {
-        let result =
-            UpdatePreferences::new(Uuid::new_v4(), Some("not-a-theme"), Some(true), None, None);
+        let result = UpdatePreferences::new(
+            Uuid::new_v4(),
+            Some("not-a-theme"),
+            Some(true),
+            None,
+            None,
+            None,
+        );
         assert!(matches!(
             result,
             Err(InvalidUpdatePreferences::InvalidTheme)
@@ -338,7 +417,7 @@ mod tests {
 
     #[test]
     fn rejects_empty_theme() {
-        let result = UpdatePreferences::new(Uuid::new_v4(), Some(""), Some(true), None, None);
+        let result = UpdatePreferences::new(Uuid::new_v4(), Some(""), Some(true), None, None, None);
         assert!(matches!(
             result,
             Err(InvalidUpdatePreferences::InvalidTheme)
@@ -349,7 +428,8 @@ mod tests {
 
     #[test]
     fn none_theme_passes_through() {
-        let result = UpdatePreferences::new(Uuid::new_v4(), None, Some(false), None, None).unwrap();
+        let result =
+            UpdatePreferences::new(Uuid::new_v4(), None, Some(false), None, None, None).unwrap();
         assert!(result.theme.is_none());
         assert_eq!(result.dark_mode, Some(false));
     }
@@ -357,14 +437,15 @@ mod tests {
     #[test]
     fn none_dark_mode_passes_through() {
         let result =
-            UpdatePreferences::new(Uuid::new_v4(), Some("dracula"), None, None, None).unwrap();
+            UpdatePreferences::new(Uuid::new_v4(), Some("dracula"), None, None, None, None)
+                .unwrap();
         assert_eq!(result.theme.as_deref(), Some("dracula"));
         assert!(result.dark_mode.is_none());
     }
 
     #[test]
     fn both_none_is_valid() {
-        let result = UpdatePreferences::new(Uuid::new_v4(), None, None, None, None).unwrap();
+        let result = UpdatePreferences::new(Uuid::new_v4(), None, None, None, None, None).unwrap();
         assert!(result.theme.is_none());
         assert!(result.dark_mode.is_none());
     }
@@ -382,6 +463,7 @@ mod tests {
                 "middle-earth".to_string(),
                 "final-fantasy".to_string(),
             ]),
+            None,
         )
         .unwrap();
         assert_eq!(result.exclude_universes_beyond, Some(true));
@@ -402,6 +484,7 @@ mod tests {
             None,
             Some(true),
             Some(vec!["not-a-franchise".to_string()]),
+            None,
         );
         assert!(matches!(
             result,
@@ -416,5 +499,39 @@ mod tests {
             serde_json::from_str(r#"{"theme":"gruvbox","dark_mode":true}"#).unwrap();
         assert!(!prefs.exclude_universes_beyond);
         assert!(prefs.universes_beyond_exceptions.is_empty());
+        assert_eq!(prefs.pip_style, PipStyle::Theme);
+    }
+
+    // == pip style ==
+
+    #[test]
+    fn pip_style_round_trips_through_its_name() {
+        for style in [PipStyle::Theme, PipStyle::Natural] {
+            assert_eq!(style.as_str().parse::<PipStyle>(), Ok(style));
+            let json = serde_json::to_string(&style).unwrap();
+            assert_eq!(json, format!("\"{style}\""));
+            assert_eq!(serde_json::from_str::<PipStyle>(&json).unwrap(), style);
+        }
+        assert_eq!("classic".parse::<PipStyle>(), Err(ParsePipStyleError));
+    }
+
+    #[test]
+    fn pip_style_toggles_between_the_two() {
+        assert_eq!(PipStyle::Theme.toggled(), PipStyle::Natural);
+        assert_eq!(PipStyle::Natural.toggled(), PipStyle::Theme);
+    }
+
+    #[test]
+    fn pip_style_passes_through_the_update() {
+        let result = UpdatePreferences::new(
+            Uuid::new_v4(),
+            None,
+            None,
+            None,
+            None,
+            Some(PipStyle::Natural),
+        )
+        .unwrap();
+        assert_eq!(result.pip_style, Some(PipStyle::Natural));
     }
 }

@@ -10,7 +10,9 @@ use uuid::Uuid;
 use zwipe_core::domain::Email;
 use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::models::hints::MarkHintShown;
-use zwipe_core::domain::user::preferences::{UpdatePreferences, UserPreferences};
+use zwipe_core::domain::user::preferences::{
+    ParsePipStyleError, PipStyle, UpdatePreferences, UserPreferences,
+};
 
 use crate::domain::user::models::get_user::GetUserError;
 use crate::domain::user::models::hints::MarkHintShownError;
@@ -28,16 +30,20 @@ struct DatabaseUserPreferences {
     dark_mode: bool,
     exclude_universes_beyond: bool,
     universes_beyond_exceptions: Vec<String>,
+    pip_style: String,
 }
 
-impl From<DatabaseUserPreferences> for UserPreferences {
-    fn from(db: DatabaseUserPreferences) -> Self {
-        Self {
+impl TryFrom<DatabaseUserPreferences> for UserPreferences {
+    type Error = ParsePipStyleError;
+
+    fn try_from(db: DatabaseUserPreferences) -> Result<Self, Self::Error> {
+        Ok(Self {
             theme: db.theme,
             dark_mode: db.dark_mode,
             exclude_universes_beyond: db.exclude_universes_beyond,
             universes_beyond_exceptions: db.universes_beyond_exceptions,
-        }
+            pip_style: db.pip_style.parse()?,
+        })
     }
 }
 
@@ -105,15 +111,19 @@ impl UserRepository for Postgres {
     async fn get_preferences(&self, user_id: Uuid) -> Result<UserPreferences, GetPreferencesError> {
         let result = query_as!(
             DatabaseUserPreferences,
-            "SELECT user_id, theme, dark_mode, exclude_universes_beyond, universes_beyond_exceptions \
-             FROM user_preferences WHERE user_id = $1",
+            "SELECT user_id, theme, dark_mode, exclude_universes_beyond, universes_beyond_exceptions, \
+             pip_style FROM user_preferences WHERE user_id = $1",
             user_id
         )
         .fetch_optional(&self.pool)
         .await
         .map_err(|e: sqlx::Error| GetPreferencesError::Database(e.into()))?;
 
-        Ok(result.map(UserPreferences::from).unwrap_or_default())
+        result
+            .map(UserPreferences::try_from)
+            .transpose()
+            .map(Option::unwrap_or_default)
+            .map_err(|e| GetPreferencesError::Database(e.into()))
     }
 
     async fn update_preferences(
@@ -130,9 +140,10 @@ impl UserRepository for Postgres {
             DatabaseUserPreferences,
             r#"INSERT INTO user_preferences
                    (user_id, theme, dark_mode, exclude_universes_beyond,
-                    universes_beyond_exceptions, updated_at)
+                    universes_beyond_exceptions, pip_style, updated_at)
                VALUES ($1, COALESCE($2, 'zwipe'), COALESCE($3, true),
-                       COALESCE($4, false), COALESCE($5::text[], '{}'::text[]), NOW())
+                       COALESCE($4, false), COALESCE($5::text[], '{}'::text[]),
+                       COALESCE($6, 'theme'), NOW())
                ON CONFLICT (user_id)
                DO UPDATE SET
                    theme = COALESCE($2, user_preferences.theme),
@@ -141,14 +152,16 @@ impl UserRepository for Postgres {
                        COALESCE($4, user_preferences.exclude_universes_beyond),
                    universes_beyond_exceptions =
                        COALESCE($5::text[], user_preferences.universes_beyond_exceptions),
+                   pip_style = COALESCE($6, user_preferences.pip_style),
                    updated_at = NOW()
                RETURNING user_id, theme, dark_mode, exclude_universes_beyond,
-                         universes_beyond_exceptions"#,
+                         universes_beyond_exceptions, pip_style"#,
             request.user_id,
             request.theme,
             request.dark_mode,
             request.exclude_universes_beyond,
-            request.universes_beyond_exceptions.as_deref()
+            request.universes_beyond_exceptions.as_deref(),
+            request.pip_style.map(PipStyle::as_str)
         )
         .fetch_one(&mut *tx)
         .await
@@ -158,6 +171,8 @@ impl UserRepository for Postgres {
             .await
             .map_err(|e: sqlx::Error| UpdatePreferencesError::Database(e.into()))?;
 
-        Ok(result.into())
+        result
+            .try_into()
+            .map_err(|e: ParsePipStyleError| UpdatePreferencesError::Database(e.into()))
     }
 }

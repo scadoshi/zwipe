@@ -37,6 +37,7 @@ pub async fn update_preferences(
         body.dark_mode,
         body.exclude_universes_beyond,
         body.universes_beyond_exceptions,
+        body.pip_style,
     )
     .map_err(ApiError::from)?;
 

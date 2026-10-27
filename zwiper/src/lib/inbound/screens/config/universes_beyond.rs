@@ -86,6 +86,7 @@ pub fn UniversesBeyondExceptionsSheet(
             dark_mode: None,
             exclude_universes_beyond: None,
             universes_beyond_exceptions: Some(list),
+            pip_style: None,
         };
         open.set(false);
         spawn(async move {
