@@ -20,7 +20,7 @@ pub const PROFILE_TAG_SENT: usize = 100;
 pub const PROFILE_ROLE_SHOWN: usize = 10;
 
 /// Most staples [`HttpBuilderProfile::staples`] carries.
-pub const PROFILE_STAPLES_SENT: usize = 10;
+pub const PROFILE_STAPLES_SENT: usize = 100;
 
 /// Fewest of the user's decks a card must be in to count as a staple.
 pub const STAPLE_MIN_DECKS: u32 = 2;

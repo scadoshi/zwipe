@@ -1213,10 +1213,10 @@ mod tests {
     }
 
     #[test]
-    fn at_most_ten_staples() {
-        let rows: Vec<MainboardCard> = (0..15u128)
+    fn at_most_a_hundred_staples() {
+        let rows: Vec<MainboardCard> = (0..105u128)
             .flat_map(|n| {
-                let name = format!("Card {n:02}");
+                let name = format!("Card {n:03}");
                 [row(1, n, n, &name), row(2, n, n, &name)]
             })
             .collect();
@@ -1224,8 +1224,8 @@ mod tests {
         assert_eq!(staples.len(), PROFILE_STAPLES_SENT);
         assert_eq!(
             staple_ids(&staples),
-            (0..10u128).map(|n| (n, 2)).collect::<Vec<_>>(),
-            "the first ten by name"
+            (0..100u128).map(|n| (n, 2)).collect::<Vec<_>>(),
+            "the first hundred by name"
         );
     }
 
