@@ -2479,15 +2479,14 @@ button {
     color: var(--tone);
     background-color: color-mix(in srgb, var(--tone) 18%, transparent);
     border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
-    border-bottom: none;
-    border-radius: 0.5rem 0.5rem 0 0;
+    border-radius: 0.5rem;
 }
 
 .podium-skeleton {
     width: 100%;
     max-width: 5rem;
     margin: 0;
-    border-radius: 0.5rem 0.5rem 0 0;
+    border-radius: 0.5rem;
 }
 
 .podium-first {
