@@ -240,8 +240,8 @@ impl HintTopic {
             },
             Self::SuggestionColorChart => rsx! {
                 HintBullets {
-                    HintBullet { "Each corner glows with how many of your cards are that color" }
-                    HintBullet { "Each line glows with how many of your decks play both colors. Colorless cards sit below" }
+                    HintBullet { "Each tile is a few of your cards. Colors with more cards claim more of the map" }
+                    HintBullet { "Your map's shape is yours and grows as you build. Colorless cards are in the key below" }
                 }
             },
             Self::SuggestionRoleChart => rsx! {

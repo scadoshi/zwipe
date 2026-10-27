@@ -14,7 +14,7 @@
 //! than ten remain, so the list stays a full top 10. Above the list, sections
 //! in the deck profile's grammar sum up what the user builds, the profile the
 //! ranking reads: a Summary table (the deck count, the top colors and the
-//! top single color), then a color map of the cards and color pairs, a chart
+//! top single color), then a color territory map of the cards, a chart
 //! of the card roles and a table of the oracle tags across the decks. They
 //! share one accordion with Summary open on entry. Below the list, the staples
 //! (up to 100 cards in the most decks) show as the shared card rows in the
@@ -28,7 +28,7 @@ use std::collections::BTreeMap;
 use components::{
     ActionBar, AlertDialog, Bar, BarChart, BarOrientation, BottomSheet, Button, ButtonVariant,
     CardRoleChips, Chip, ColorMap, ColorMapCounts, DialogAction, HintBullet, HintBullets,
-    HintDialog, HintKey, HintLine, OtagDef, RoleTags, TOAST_LONG, TOAST_QUICK,
+    HintDialog, HintKey, HintLine, OtagDef, RoleTags, TOAST_LONG, TOAST_QUICK, seed_from_id,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -411,11 +411,9 @@ const TAGS_TITLE: &str = "Oracle tags";
 /// The Staples panel's group header, in the list's header grammar.
 const STAPLES_TITLE: &str = "Staples";
 
-/// Whether a color map has anything to draw: a card or a deck pair.
+/// Whether a color map has anything to draw: a colored or colorless card.
 fn color_map_has_data(counts: &ColorMapCounts) -> bool {
-    counts.colorless > 0
-        || counts.cards.iter().any(|n| *n > 0)
-        || counts.pairs.iter().any(|n| *n > 0)
+    counts.colorless > 0 || counts.cards.iter().any(|n| *n > 0)
 }
 
 /// One bar per role in the order sent, labeled as the deck role chart labels
@@ -876,10 +874,11 @@ fn StaplesPanel(
 
 /// What the user builds, as sections over the suggestions list in the deck
 /// profile's grammar: a Summary table (the deck count, the most common color
-/// set and color) in the Budget section's rows, then a color map, a chart and
-/// a table. The four share one accordion with Summary open on entry. Colors
-/// are a [`ColorMap`], or columns in WUBRG order from a server that sends no
-/// color map or a map with nothing on it; card roles are rows like the deck
+/// set and color) in the Budget section's rows, then a color territory map
+/// seeded by the user's id, a chart and a table. The four share one
+/// accordion with Summary open on entry. Colors are a [`ColorMap`], or
+/// columns in WUBRG order from a server that sends no color map or a map
+/// with nothing on it; card roles are rows like the deck
 /// profile's role chart with chip labels, a tapped role revealing its oracle
 /// tags from the profile under its row; oracle tags are a [`TagTable`].
 #[component]
@@ -890,6 +889,12 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     // stands in when the fetch fails or comes back without identities.
     let (play_style, play_style_failed) = use_play_style_summary(Screen::SuggestedCommanders);
     let podium_pending = play_style.is_none() && !play_style_failed();
+    // Seeds the color map from the signed-in user, so its shape stays theirs.
+    let session: Signal<Option<Session>> = use_context();
+    let map_seed = session
+        .peek()
+        .as_ref()
+        .map_or(0, |s| seed_from_id(s.user.id.as_u128()));
     let podium_identities = play_style
         .map(|summary| summary.identities)
         .filter(|identities| !identities.is_empty());
@@ -950,7 +955,7 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                     InfoButton { topic: HintTopic::SuggestionColorChart }
                 },
                 if let Some(counts) = color_map {
-                    ColorMap { counts }
+                    ColorMap { counts, seed: map_seed }
                 } else {
                     BarChart { bars: colors }
                 }
@@ -2033,7 +2038,7 @@ mod tests {
             ..ColorMapCounts::default()
         }));
         assert!(color_map_has_data(&ColorMapCounts {
-            pairs: [0, 0, 0, 0, 0, 0, 0, 0, 0, 2],
+            cards: [0, 0, 0, 0, 2],
             ..ColorMapCounts::default()
         }));
     }

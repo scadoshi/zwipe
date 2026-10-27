@@ -1,74 +1,103 @@
-//! The color map: the five colors on the color pie's pentagon, each corner
-//! glowing with its share of the cards and each of the ten color pairs a line
-//! as strong as the decks that play both.
+//! The color map: a field of square tiles, each owned by one of the five
+//! colors, so the colors read as territories pushing into each other.
 //!
-//! The geometry and the scaling live in [`ColorMapModel`], a pure value the
-//! tests pin; [`ColorMap`] draws it as an inline SVG with the app's mana pips
-//! laid over the corners. The look is the `.color-map*` rules in `magic.css`,
-//! which read the five colors from `--mana-white` through `--mana-green`.
+//! The layout lives in [`ColorMapModel`], a pure value the tests pin;
+//! [`ColorMap`] draws it as an inline SVG with a key of mana pips and card
+//! counts below. The look is the `.color-map*` rules in `magic.css`, and each
+//! tile's fill is one of `--mana-white` through `--mana-green`.
+//!
+//! The model is stable: the same seed and counts always give the same map,
+//! and a small change in the counts moves only a few tiles.
+//!
+//! 1. The active cells are the cells of a fixed square grid nearest its
+//!    center, ranked by distance stretched by a smooth seeded noise field.
+//!    The ranking does not depend on the tile count, so a larger map is the
+//!    smaller one plus a ring of new cells, and its edge comes out ragged and
+//!    roughly round.
+//! 2. Each color has an anchor out from the center toward its home on the
+//!    color pie: W top, then U, B, R and G clockwise. A cell's affinity for a
+//!    color is minus its distance to that anchor, measured from the cell
+//!    moved by a smooth seeded warp that every color shares, so borders bend
+//!    and interlock while each region stays in one piece. A faint noise per
+//!    color roughens the borders.
+//! 3. Cells go to colors by an optimal assignment: the one with the highest
+//!    total affinity that gives every color exactly its quota. A greedy fill
+//!    starts it and cycle canceling finishes it. An optimal assignment moves
+//!    continuously with its quotas, so a color gaining a tile pushes its
+//!    borders out by a tile instead of redrawing the map.
+
+use std::f64::consts::PI;
 
 use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::http::contracts::suggestions::HttpColorMap;
 
-/// The SVG's width, in SVG units.
+/// The SVG's width, in SVG units. Its height follows the map's rows.
 pub const VIEW_WIDTH: f64 = 240.0;
-/// The SVG's height, in SVG units. Shorter than the width because the
-/// pentagon's lower corners sit closer to its center than the top one.
-pub const VIEW_HEIGHT: f64 = 224.0;
-/// The pentagon's center.
-const CENTER: Point = Point { x: 120.0, y: 118.0 };
-/// From the center to each corner.
-const RADIUS: f64 = 80.0;
-/// Each corner's angle in degrees, clockwise from the right in SVG's
-/// downward y, for W at the top then U, B, R and G clockwise: the standard
-/// color pie.
-const CORNER_DEGREES: [f64; 5] = [-90.0, -18.0, 54.0, 126.0, 198.0];
+/// Cards per tile.
+pub const CARDS_PER_TILE: u32 = 4;
+/// The fewest tiles a map with any colored card draws.
+pub const MIN_TILES: u32 = 40;
+/// The most tiles a map draws.
+pub const MAX_TILES: u32 = 520;
+/// A map narrower than this many cells keeps the tile size this span gives,
+/// so a small collection draws a smaller map; a wider one shrinks its tiles
+/// to fit [`VIEW_WIDTH`].
+pub const MIN_SPAN: i32 = 16;
+/// The gap between tiles, as a share of the tile pitch.
+const GAP_SHARE: f64 = 0.12;
+/// The tile corner radius, as a share of the tile pitch.
+const CORNER_SHARE: f64 = 0.18;
 
-/// A corner's glow radius for the fewest cards above 0, just past the pip.
-pub const GLOW_MIN_RADIUS: f64 = 16.0;
-/// A corner's glow radius for the color with the most cards.
-pub const GLOW_MAX_RADIUS: f64 = 34.0;
+/// The candidate grid runs from `-GRID_REACH` to `GRID_REACH` on both axes,
+/// room for [`MAX_TILES`] cells with the edge noise at its widest.
+const GRID_REACH: i32 = 18;
+/// How far the edge noise stretches a cell's distance from the center, as a
+/// share of that distance.
+const EDGE_WOBBLE: f64 = 0.12;
+/// The edge noise's lattice spacing, in cells.
+const EDGE_PERIOD: i32 = 5;
+/// Each anchor's distance from the center, as a share of the map's radius.
+const ANCHOR_SHARE: f64 = 0.6;
+/// How far the warp moves a cell before its distance to each anchor is
+/// measured, as a share of the map's radius. Every color sees the same warp,
+/// so borders bend and interlock while each region stays in one piece.
+const WARP: f64 = 0.3;
+/// The warp's lattice spacing, in cells.
+const WARP_PERIOD: i32 = 8;
+/// How far each color's own noise moves its affinity, as a share of the
+/// map's radius.
+const BORDER_NOISE: f64 = 0.05;
+/// The border noise's lattice spacing, in cells.
+const BORDER_PERIOD: i32 = 3;
+/// A per-cell jitter, small enough only to break ties.
+const TIE_JITTER: f64 = 1e-4;
+/// Each color's home on the color pie, in degrees clockwise from the right
+/// in SVG's downward y, in WUBRG order: W at the top, then clockwise.
+const HOME_DEGREES: [f64; 5] = [-90.0, -18.0, 54.0, 126.0, 198.0];
+/// A stop for cycle canceling, far past what a map of [`MAX_TILES`] needs.
+const MAX_IMPROVEMENTS: usize = 20_000;
 
-/// A pair line's stroke width with no decks: the faint guide.
-pub const GUIDE_WIDTH: f64 = 1.0;
-/// A pair line's stroke width for the pair with the most decks.
-pub const LINE_MAX_WIDTH: f64 = 6.0;
-/// A pair line's opacity with no decks: the faint guide.
-pub const GUIDE_OPACITY: f64 = 0.2;
-/// A pair line's opacity for the pair with the most decks.
-pub const LINE_MAX_OPACITY: f64 = 0.9;
-
-/// The ten color pairs in WUBRG order: `WU`, `WB`, `WR`, `WG`, `UB`, `UR`,
-/// `UG`, `BR`, `BG`, `RG`. [`ColorMapCounts::pairs`] follows it.
-pub const PAIRS: [(Color, Color); 10] = [
-    (Color::White, Color::Blue),
-    (Color::White, Color::Black),
-    (Color::White, Color::Red),
-    (Color::White, Color::Green),
-    (Color::Blue, Color::Black),
-    (Color::Blue, Color::Red),
-    (Color::Blue, Color::Green),
-    (Color::Black, Color::Red),
-    (Color::Black, Color::Green),
-    (Color::Red, Color::Green),
-];
+/// Salts that keep the noise fields independent.
+const EDGE_SALT: u64 = 0x6564_6765;
+const EDGE_JITTER_SALT: u64 = 0x6a69_7474;
+const BORDER_SALT: u64 = 0x626f_7264;
+const WARP_X_SALT: u64 = 0x7761_7278;
+const WARP_Y_SALT: u64 = 0x7761_7279;
+const TIE_SALT: u64 = 0x7469_6573;
 
 /// The counts a [`ColorMap`] draws.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ColorMapCounts {
     /// Cards whose color identity includes each color, in WUBRG order.
     pub cards: [u32; 5],
-    /// Cards with an empty color identity, shown apart from the pentagon.
+    /// Cards with an empty color identity, shown only in the key.
     pub colorless: u32,
-    /// Decks whose identity includes both colors of each pair, in WUBRG
-    /// order: `WU`, `WB`, `WR`, `WG`, `UB`, `UR`, `UG`, `BR`, `BG`, `RG`.
-    pub pairs: [u32; 10],
 }
 
 impl From<&HttpColorMap> for ColorMapCounts {
-    /// Reads each color and pair by name, so the order sent does not matter
-    /// and a color or pair missing from `map` reads 0.
+    /// Reads each color by name, so the order sent does not matter and a
+    /// color missing from `map` reads 0.
     fn from(map: &HttpColorMap) -> Self {
         let cards = Color::all().map(|color| {
             let short = color.to_short_name();
@@ -77,222 +106,392 @@ impl From<&HttpColorMap> for ColorMapCounts {
                 .find(|c| c.color == short)
                 .map_or(0, |c| c.cards)
         });
-        let pairs = PAIRS.map(|(first, second)| {
-            let (first, second) = (first.to_short_name(), second.to_short_name());
-            map.pairs
-                .iter()
-                .find(|p| {
-                    let [a, b] = &p.colors;
-                    (*a == first && *b == second) || (*a == second && *b == first)
-                })
-                .map_or(0, |p| p.decks)
-        });
         Self {
             cards,
             colorless: map.colorless_cards,
-            pairs,
         }
     }
 }
 
-/// A position in SVG units.
+/// One tile of the map.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Point {
-    /// From the left edge.
+pub struct Tile {
+    /// The color that owns the tile.
+    pub color: Color,
+    /// The tile's grid cell, column then row, with the grid's center at 0.
+    pub cell: (i32, i32),
+    /// The tile's left edge, in SVG units.
     pub x: f64,
-    /// From the top edge.
+    /// The tile's top edge, in SVG units.
     pub y: f64,
 }
 
-impl Point {
-    /// The point as percentages of the view box, for laying HTML over it.
-    #[must_use]
-    pub fn percent(self) -> (f64, f64) {
-        (self.x / VIEW_WIDTH * 100.0, self.y / VIEW_HEIGHT * 100.0)
-    }
-}
-
-/// One color's corner of the pentagon.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Corner {
-    /// The corner's color.
-    pub color: Color,
-    /// Where the corner sits.
-    pub at: Point,
-    /// Its cards against the color with the most, 0 to 1.
-    pub strength: f64,
-    /// The glow's radius: area grows with `strength`, from
-    /// [`GLOW_MIN_RADIUS`] to [`GLOW_MAX_RADIUS`]; [`GLOW_MIN_RADIUS`] with
-    /// no cards, when the glow is not drawn and only its outline shows.
-    pub glow_radius: f64,
-}
-
-impl Corner {
-    /// Whether the corner's color has any cards, and so a glow.
-    #[must_use]
-    pub fn glows(&self) -> bool {
-        self.strength > 0.0
-    }
-}
-
-/// One color pair's line.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PairLine {
-    /// The pair in WUBRG order.
-    pub colors: (Color, Color),
-    /// The first color's corner.
-    pub from: Point,
-    /// The second color's corner.
-    pub to: Point,
-    /// Neighbors on the pie, a rim edge; otherwise an enemy pair, a line of
-    /// the inner star.
-    pub allied: bool,
-    /// Its decks against the pair with the most, 0 to 1.
-    pub strength: f64,
-    /// From [`GUIDE_WIDTH`] to [`LINE_MAX_WIDTH`] with `strength`.
-    pub width: f64,
-    /// From [`GUIDE_OPACITY`] to [`LINE_MAX_OPACITY`] with `strength`.
-    pub opacity: f64,
-}
-
-/// Everything a [`ColorMap`] draws, computed once from its counts.
+/// Everything a [`ColorMap`] draws, computed once from its counts and seed.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ColorMapModel {
-    /// The five corners in WUBRG order.
-    pub corners: Vec<Corner>,
-    /// The ten pair lines, weakest first so the strongest draw on top.
-    pub lines: Vec<PairLine>,
-    /// Cards with an empty color identity.
-    pub colorless: u32,
-    /// What a screen reader hears: the color with the most cards and the
-    /// pair with the most decks.
+    /// Every tile, in grid order (by row, then column).
+    pub tiles: Vec<Tile>,
+    /// Each tile's side, in SVG units; the same for every tile in the map.
+    pub tile_size: f64,
+    /// Each tile's corner radius, in SVG units.
+    pub corner: f64,
+    /// The SVG's height, in SVG units: the map's rows and no more.
+    pub height: f64,
+    /// What a screen reader hears: each color's share of the colored cards.
     pub label: String,
 }
 
-/// `count` against `max`, 0 to 1; 0 when `max` is 0.
-fn ratio(count: u32, max: u32) -> f64 {
-    if max == 0 {
-        0.0
-    } else {
-        f64::from(count) / f64::from(max)
-    }
+/// splitmix64's finalizer: a strong mix of `z`'s bits.
+fn mix(mut z: u64) -> u64 {
+    z = z.wrapping_add(0x9e37_79b9_7f4a_7c15);
+    z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+    z ^ (z >> 31)
 }
 
-/// The corner of `color`.
+/// A seed for [`ColorMap`] from a 128-bit id such as a user's UUID.
 #[must_use]
-pub fn corner_point(color: Color) -> Point {
-    let degrees = Color::all()
-        .into_iter()
-        .zip(CORNER_DEGREES)
-        .find(|(c, _)| *c == color)
-        .map_or(0.0, |(_, degrees)| degrees);
-    let radians = degrees.to_radians();
-    Point {
-        x: CENTER.x + RADIUS * radians.cos(),
-        y: CENTER.y + RADIUS * radians.sin(),
-    }
+pub fn seed_from_id(id: u128) -> u64 {
+    let high = u64::try_from(id >> 64).unwrap_or(0);
+    let low = u64::try_from(id & u128::from(u64::MAX)).unwrap_or(0);
+    mix(high ^ mix(low))
 }
 
-/// Whether `first` and `second` sit side by side on the color pie.
-fn allied(first: Color, second: Color) -> bool {
-    let place = |color: Color| Color::all().iter().position(|c| *c == color);
-    match (place(first), place(second)) {
-        (Some(a), Some(b)) => matches!(a.abs_diff(b), 1 | 4),
-        _ => false,
-    }
+/// A hash of the seed, a salt and a grid point.
+fn hash(seed: u64, salt: u64, x: i32, y: i32) -> u64 {
+    let point = (u64::from(x.cast_unsigned()) << 32) | u64::from(y.cast_unsigned());
+    mix(seed ^ mix(salt ^ mix(point)))
 }
 
-/// The first of `items` with the largest count above 0, earlier winning ties.
-fn leader<T: Copy>(items: impl IntoIterator<Item = (T, u32)>) -> Option<(T, u32)> {
-    items
-        .into_iter()
-        .filter(|(_, count)| *count > 0)
-        .fold(None, |best, (item, count)| match best {
-            Some((_, top)) if top >= count => best,
-            _ => Some((item, count)),
+/// `h` as a number from 0 up to 1.
+fn unit(h: u64) -> f64 {
+    f64::from(u32::try_from(h >> 32).unwrap_or(0)) / 4_294_967_296.0
+}
+
+/// Smooth value noise from 0 to 1 at cell `(x, y)`: seeded values on a
+/// lattice `period` cells apart, blended between with a smoothstep.
+fn value_noise(seed: u64, salt: u64, x: i32, y: i32, period: i32) -> f64 {
+    let (ix, iy) = (x.div_euclid(period), y.div_euclid(period));
+    let span = f64::from(period);
+    let smooth = |t: f64| t * t * (3.0 - 2.0 * t);
+    let tx = smooth(f64::from(x.rem_euclid(period)) / span);
+    let ty = smooth(f64::from(y.rem_euclid(period)) / span);
+    let at = |dx: i32, dy: i32| unit(hash(seed, salt, ix + dx, iy + dy));
+    let top = at(0, 0) + (at(1, 0) - at(0, 0)) * tx;
+    let bottom = at(0, 1) + (at(1, 1) - at(0, 1)) * tx;
+    top + (bottom - top) * ty
+}
+
+/// The map's tile count for `colored` cards: one tile per
+/// [`CARDS_PER_TILE`] cards, rounded, from [`MIN_TILES`] to [`MAX_TILES`];
+/// none without colored cards.
+#[must_use]
+pub fn tile_total(colored: u64) -> u32 {
+    if colored == 0 {
+        return 0;
+    }
+    let tiles = (colored + u64::from(CARDS_PER_TILE / 2)) / u64::from(CARDS_PER_TILE);
+    u32::try_from(tiles)
+        .unwrap_or(MAX_TILES)
+        .clamp(MIN_TILES, MAX_TILES)
+}
+
+/// Each color's tiles out of `total`, in proportion to `cards` by largest
+/// remainder, so they sum to `total`. Ties for a leftover tile go in WUBRG
+/// order.
+#[must_use]
+pub fn quotas(cards: [u32; 5], total: u32) -> [u32; 5] {
+    let sum: u64 = cards.iter().map(|&n| u64::from(n)).sum();
+    if sum == 0 {
+        return [0; 5];
+    }
+    let share = |n: u32| u64::from(total) * u64::from(n);
+    let mut quotas = cards.map(|n| u32::try_from(share(n) / sum).unwrap_or(0));
+    let given: u32 = quotas.iter().sum();
+    let mut order: Vec<usize> = (0..5).collect();
+    order.sort_by_key(|&i| {
+        let remainder = cards.get(i).map_or(0, |&n| share(n) % sum);
+        (std::cmp::Reverse(remainder), i)
+    });
+    let leftover = usize::try_from(total.saturating_sub(given)).unwrap_or(0);
+    for i in order.into_iter().take(leftover) {
+        if let Some(q) = quotas.get_mut(i) {
+            *q += 1;
+        }
+    }
+    quotas
+}
+
+/// The `total` cells nearest the grid's center, ranked by distance stretched
+/// by the seed's edge noise, in rank order. The ranking is fixed per seed,
+/// so a larger `total` keeps every cell a smaller one picks.
+fn active_cells(seed: u64, total: usize) -> Vec<(i32, i32)> {
+    let mut ranked: Vec<(f64, (i32, i32))> = (-GRID_REACH..=GRID_REACH)
+        .flat_map(|y| (-GRID_REACH..=GRID_REACH).map(move |x| (x, y)))
+        .map(|(x, y)| {
+            let distance = f64::from(x).hypot(f64::from(y));
+            let wobble = 2.0 * value_noise(seed, EDGE_SALT, x, y, EDGE_PERIOD) - 1.0;
+            let jitter = 0.35 * unit(hash(seed, EDGE_JITTER_SALT, x, y));
+            (distance * (1.0 + EDGE_WOBBLE * wobble) + jitter, (x, y))
         })
+        .collect();
+    ranked.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
+    ranked
+        .into_iter()
+        .take(total)
+        .map(|(_, cell)| cell)
+        .collect()
 }
 
-/// "1 card" or "`n` cards", and the same for any noun.
-fn counted(n: u32, noun: &str) -> String {
-    if n == 1 {
-        format!("1 {noun}")
+/// Each cell's affinity for each color: minus the distance from the warped
+/// cell to the color's anchor, plus the color's border noise, both as shares
+/// of the map's radius.
+fn affinities(seed: u64, cells: &[(i32, i32)], radius: f64) -> Vec<[f64; 5]> {
+    let anchors = HOME_DEGREES.map(|degrees| {
+        let radians = f64::to_radians(degrees);
+        (
+            ANCHOR_SHARE * radius * radians.cos(),
+            ANCHOR_SHARE * radius * radians.sin(),
+        )
+    });
+    cells
+        .iter()
+        .map(|&(x, y)| {
+            let warp = |salt: u64| {
+                WARP * radius * (2.0 * value_noise(seed, salt, x, y, WARP_PERIOD) - 1.0)
+            };
+            let (wx, wy) = (
+                f64::from(x) + warp(WARP_X_SALT),
+                f64::from(y) + warp(WARP_Y_SALT),
+            );
+            let mut row = [0.0; 5];
+            for ((color, slot), (ax, ay)) in (0_u64..).zip(row.iter_mut()).zip(anchors) {
+                let reach = (wx - ax).hypot(wy - ay) / radius;
+                let salt = BORDER_SALT ^ mix(color);
+                let noise = 2.0 * value_noise(seed, salt, x, y, BORDER_PERIOD) - 1.0;
+                let tie = TIE_JITTER * unit(hash(seed, TIE_SALT ^ color, x, y));
+                *slot = -reach + BORDER_NOISE * noise + tie;
+            }
+            row
+        })
+        .collect()
+}
+
+/// Each cell's color index, the assignment with the highest total affinity
+/// that gives each color exactly its quota. `quotas` sums to the cell count.
+fn assign(scores: &[[f64; 5]], quotas: [u32; 5]) -> Vec<usize> {
+    // Greedy start: every (cell, color) pair by affinity, best first, each
+    // cell to the first color in that order that has room left.
+    let mut pairs: Vec<(usize, usize)> = (0..scores.len())
+        .flat_map(|cell| (0..5).map(move |color| (cell, color)))
+        .filter(|&(_, color)| quotas.get(color).is_some_and(|&q| q > 0))
+        .collect();
+    let score = |cell: usize, color: usize| {
+        scores
+            .get(cell)
+            .and_then(|row| row.get(color))
+            .copied()
+            .unwrap_or(f64::NEG_INFINITY)
+    };
+    pairs.sort_by(|a, b| score(b.0, b.1).total_cmp(&score(a.0, a.1)).then(a.cmp(b)));
+    let mut room = quotas;
+    let mut owner: Vec<Option<usize>> = vec![None; scores.len()];
+    for (cell, color) in pairs {
+        let (Some(slot), Some(left)) = (owner.get_mut(cell), room.get_mut(color)) else {
+            continue;
+        };
+        if slot.is_none() && *left > 0 {
+            *slot = Some(color);
+            *left -= 1;
+        }
+    }
+    let mut owner: Vec<usize> = owner.into_iter().map(|o| o.unwrap_or(0)).collect();
+
+    // Cycle canceling: while moving one cell along each edge of some cycle
+    // of colors raises the total affinity, move them. Quotas hold because
+    // every color on a cycle gives one cell and takes one.
+    for _ in 0..MAX_IMPROVEMENTS {
+        let Some(moves) = best_cycle(scores, &owner) else {
+            break;
+        };
+        for (cell, to) in moves {
+            if let Some(slot) = owner.get_mut(cell) {
+                *slot = to;
+            }
+        }
+    }
+    owner
+}
+
+/// The cycle of colors whose best moves raise the total affinity most, as
+/// (cell, new color) moves, or `None` when no cycle raises it.
+fn best_cycle(scores: &[[f64; 5]], owner: &[usize]) -> Option<Vec<(usize, usize)>> {
+    // best[from][to]: the cell of `from` that gains most by moving to `to`.
+    let mut best: [[Option<(f64, usize)>; 5]; 5] = [[None; 5]; 5];
+    for (cell, (row, &from)) in scores.iter().zip(owner).enumerate() {
+        let Some(own) = row.get(from) else { continue };
+        let Some(edges) = best.get_mut(from) else {
+            continue;
+        };
+        for (to, (edge, theirs)) in edges.iter_mut().zip(row).enumerate() {
+            let gain = theirs - own;
+            if to != from && edge.is_none_or(|(g, _)| gain > g) {
+                *edge = Some((gain, cell));
+            }
+        }
+    }
+    let edge = |from: usize, to: usize| {
+        best.get(from)
+            .and_then(|row| row.get(to))
+            .copied()
+            .flatten()
+    };
+
+    let mut top: Option<(f64, Vec<usize>)> = None;
+    let mut path = Vec::with_capacity(5);
+    for start in 0..5 {
+        path.clear();
+        path.push(start);
+        extend_cycles(&edge, &mut path, 0.0, &mut top);
+    }
+    let (gain, cycle) = top?;
+    if gain <= 1e-12 {
+        return None;
+    }
+    let moves = cycle
+        .iter()
+        .zip(cycle.iter().cycle().skip(1))
+        .filter_map(|(&from, &to)| edge(from, to).map(|(_, cell)| (cell, to)))
+        .collect();
+    Some(moves)
+}
+
+/// Walks every simple cycle that starts at `path`'s first color and only
+/// visits higher colors after it, keeping the one with the largest gain.
+fn extend_cycles(
+    edge: &impl Fn(usize, usize) -> Option<(f64, usize)>,
+    path: &mut Vec<usize>,
+    gain: f64,
+    top: &mut Option<(f64, Vec<usize>)>,
+) {
+    let (Some(&start), Some(&last)) = (path.first(), path.last()) else {
+        return;
+    };
+    if path.len() > 1
+        && let Some((back, _)) = edge(last, start)
+    {
+        let total = gain + back;
+        if top.as_ref().is_none_or(|(g, _)| total > *g) {
+            *top = Some((total, path.clone()));
+        }
+    }
+    for next in (start + 1)..5 {
+        if path.contains(&next) {
+            continue;
+        }
+        let Some((step, _)) = edge(last, next) else {
+            continue;
+        };
+        path.push(next);
+        extend_cycles(edge, path, gain + step, top);
+        path.pop();
+    }
+}
+
+/// Each colored share, largest first with WUBRG breaking ties, as "Blue 31
+/// percent, red 29 percent", then the colorless count.
+fn label(counts: &ColorMapCounts) -> String {
+    let sum: u64 = counts.cards.iter().map(|&n| u64::from(n)).sum();
+    let mut shares: Vec<(Color, u32)> = Color::all()
+        .into_iter()
+        .zip(counts.cards)
+        .filter(|(_, n)| *n > 0)
+        .collect();
+    shares.sort_by_key(|&(_, n)| std::cmp::Reverse(n));
+    let parts: Vec<String> = shares
+        .into_iter()
+        .enumerate()
+        .map(|(i, (color, n))| {
+            let percent = (u64::from(n) * 100 + sum / 2) / sum.max(1);
+            let name = color.to_long_name();
+            let name = if i == 0 { name } else { name.to_lowercase() };
+            format!("{name} {percent} percent")
+        })
+        .collect();
+    let mut label = if parts.is_empty() {
+        "Color map. No colored cards yet".to_string()
     } else {
-        format!("{n} {noun}s")
+        format!("Color map. {}", parts.join(", "))
+    };
+    if counts.colorless > 0 {
+        label.push_str(&format!(". Colorless {}", counted(counts.colorless)));
+    }
+    label
+}
+
+/// "1 card" or "`n` cards".
+fn counted(n: u32) -> String {
+    if n == 1 {
+        "1 card".to_string()
+    } else {
+        format!("{n} cards")
     }
 }
 
 impl ColorMapModel {
-    /// Lays out `counts`: each corner's glow scaled against the color with
-    /// the most cards, each line against the pair with the most decks.
+    /// Lays out `counts` for `seed`: one tile per few colored cards, shared
+    /// out by color in proportion, the same map for the same inputs.
     #[must_use]
-    pub fn new(counts: &ColorMapCounts) -> Self {
-        let max_cards = counts.cards.iter().copied().max().unwrap_or(0);
-        let corners = Color::all()
-            .into_iter()
-            .zip(counts.cards)
-            .map(|(color, cards)| {
-                let strength = ratio(cards, max_cards);
-                let min_area = GLOW_MIN_RADIUS * GLOW_MIN_RADIUS;
-                let max_area = GLOW_MAX_RADIUS * GLOW_MAX_RADIUS;
-                Corner {
-                    color,
-                    at: corner_point(color),
-                    strength,
-                    glow_radius: (min_area + (max_area - min_area) * strength).sqrt(),
-                }
-            })
-            .collect();
+    pub fn new(counts: &ColorMapCounts, seed: u64) -> Self {
+        let colored: u64 = counts.cards.iter().map(|&n| u64::from(n)).sum();
+        let total = tile_total(colored);
+        let quotas = quotas(counts.cards, total);
+        let mut cells = active_cells(seed, usize::try_from(total).unwrap_or(0));
+        cells.sort_by_key(|&(x, y)| (y, x));
+        let radius = (f64::from(total) / PI).sqrt().max(1.0);
+        let scores = affinities(seed, &cells, radius);
+        let owner = assign(&scores, quotas);
 
-        let max_decks = counts.pairs.iter().copied().max().unwrap_or(0);
-        let mut lines: Vec<PairLine> = PAIRS
-            .into_iter()
-            .zip(counts.pairs)
-            .map(|((first, second), decks)| {
-                let strength = ratio(decks, max_decks);
-                PairLine {
-                    colors: (first, second),
-                    from: corner_point(first),
-                    to: corner_point(second),
-                    allied: allied(first, second),
-                    strength,
-                    width: GUIDE_WIDTH + (LINE_MAX_WIDTH - GUIDE_WIDTH) * strength,
-                    opacity: GUIDE_OPACITY + (LINE_MAX_OPACITY - GUIDE_OPACITY) * strength,
-                }
-            })
-            .collect();
-        lines.sort_by(|a, b| a.strength.total_cmp(&b.strength));
-
-        let top_color = leader(Color::all().into_iter().zip(counts.cards));
-        let top_pair = leader(PAIRS.into_iter().zip(counts.pairs));
-        let label = match (top_color, top_pair) {
-            (None, _) => "Color map. No colored cards yet".to_string(),
-            (Some((color, cards)), None) => format!(
-                "Color map. {} leads with {}",
-                color.to_long_name(),
-                counted(cards, "card"),
-            ),
-            (Some((color, cards)), Some(((first, second), decks))) => format!(
-                "Color map. {} leads with {}. {} and {} lead the pairs with {}",
-                color.to_long_name(),
-                counted(cards, "card"),
-                first.to_long_name(),
-                second.to_long_name().to_lowercase(),
-                counted(decks, "deck"),
-            ),
+        let bounds = |pick: fn(&(i32, i32)) -> i32| {
+            let low = cells.iter().map(pick).min().unwrap_or(0);
+            let high = cells.iter().map(pick).max().unwrap_or(0);
+            (low, high - low + 1)
         };
-
+        let (min_x, span_x) = bounds(|c| c.0);
+        let (min_y, span_y) = bounds(|c| c.1);
+        let pitch = VIEW_WIDTH / f64::from(span_x.max(span_y).max(MIN_SPAN));
+        let gap = pitch * GAP_SHARE;
+        let offset_x = (VIEW_WIDTH - f64::from(span_x) * pitch) / 2.0;
+        let palette = Color::all();
+        let tiles = cells
+            .iter()
+            .zip(owner)
+            .filter_map(|(&(x, y), color)| {
+                Some(Tile {
+                    color: *palette.get(color)?,
+                    cell: (x, y),
+                    x: offset_x + f64::from(x - min_x) * pitch + gap / 2.0,
+                    y: f64::from(y - min_y) * pitch + gap / 2.0,
+                })
+            })
+            .collect();
         Self {
-            corners,
-            lines,
-            colorless: counts.colorless,
-            label,
+            tiles,
+            tile_size: pitch - gap,
+            corner: pitch * CORNER_SHARE,
+            height: if cells.is_empty() {
+                0.0
+            } else {
+                f64::from(span_y) * pitch
+            },
+            label: label(counts),
         }
     }
 }
 
 /// The CSS custom property holding `color`'s mana fill.
-fn mana_var(color: Color) -> &'static str {
+#[must_use]
+pub fn mana_var(color: Color) -> &'static str {
     match color {
         Color::White => "--mana-white",
         Color::Blue => "--mana-blue",
@@ -302,102 +501,64 @@ fn mana_var(color: Color) -> &'static str {
     }
 }
 
-/// The color pie as a heat map. Corners W at the top, then U, B, R and G
-/// clockwise, each with the app's mana pip over a soft glow in its color
-/// whose area grows with the color's cards. All ten pairs are lines (allied
-/// pairs the rim, enemy pairs the inner star) in the theme's text color,
-/// wider and stronger with the decks that play both colors; a pair with none
-/// stays a faint guide so the pentagon always reads. Each glow also carries a
-/// thin muted outline, so a corner reads even when its mana color matches
-/// the background. Below, a chip counts the colorless cards when there are
-/// any. Scales to its container up to about 15.5rem wide, centered.
+/// The color territory map. Square tiles, each filled with one color's mana
+/// fill, one tile per few cards and each color's share in proportion to its
+/// cards, every color growing out from its home on the color pie (W at the
+/// top, then U, B, R and G clockwise). `seed` fixes the map's shape: pass the
+/// same one for the same player, such as [`seed_from_id`] of their id. Under
+/// the map, a key of chips gives each color's pip and card count, then the
+/// colorless cards, which the map leaves out. Scales to its container up to
+/// about 15.5rem wide, centered.
 #[component]
-pub fn ColorMap(counts: ColorMapCounts) -> Element {
-    let model = ColorMapModel::new(&counts);
-    let view_box = format!("0 0 {VIEW_WIDTH} {VIEW_HEIGHT}");
-    let colorless = model.colorless;
+pub fn ColorMap(counts: ColorMapCounts, seed: u64) -> Element {
+    let model = ColorMapModel::new(&counts, seed);
+    let view_box = format!("0 0 {VIEW_WIDTH} {:.2}", model.height);
+    let size = format!("{:.2}", model.tile_size);
+    let corner = format!("{:.2}", model.corner);
+    let key = Color::all()
+        .into_iter()
+        .zip(counts.cards)
+        .filter(|(_, n)| *n > 0);
+    let colorless = counts.colorless;
     rsx! {
         div { class: "color-map",
-            div {
-                class: "color-map-plot",
-                role: "img",
-                aria_label: "{model.label}",
-                svg {
-                    class: "color-map-svg",
-                    view_box: "{view_box}",
-                    "aria-hidden": "true",
-                    defs {
-                        for corner in model.corners.iter() {
-                            radialGradient {
-                                key: "{corner.color.to_short_name()}",
-                                id: "color-map-glow-{corner.color.to_short_name()}",
-                                stop {
-                                    offset: "0%",
-                                    style: "stop-color:var({mana_var(corner.color)});stop-opacity:0.95;",
-                                }
-                                stop {
-                                    offset: "55%",
-                                    style: "stop-color:var({mana_var(corner.color)});stop-opacity:0.55;",
-                                }
-                                stop {
-                                    offset: "100%",
-                                    style: "stop-color:var({mana_var(corner.color)});stop-opacity:0;",
-                                }
-                            }
-                        }
-                    }
-                    for line in model.lines.iter() {
-                        line {
-                            key: "{line.colors.0.to_short_name()}{line.colors.1.to_short_name()}",
-                            class: if line.allied { "color-map-line color-map-rim" } else { "color-map-line color-map-star" },
-                            x1: "{line.from.x:.2}",
-                            y1: "{line.from.y:.2}",
-                            x2: "{line.to.x:.2}",
-                            y2: "{line.to.y:.2}",
-                            stroke_width: "{line.width:.2}",
-                            stroke_opacity: "{line.opacity:.2}",
-                        }
-                    }
-                    for corner in model.corners.iter() {
-                        g { key: "{corner.color.to_short_name()}",
-                            if corner.glows() {
-                                circle {
-                                    class: "color-map-glow",
-                                    cx: "{corner.at.x:.2}",
-                                    cy: "{corner.at.y:.2}",
-                                    r: "{corner.glow_radius:.2}",
-                                    fill: "url(#color-map-glow-{corner.color.to_short_name()})",
-                                }
-                            }
-                            circle {
-                                class: "color-map-outline",
-                                cx: "{corner.at.x:.2}",
-                                cy: "{corner.at.y:.2}",
-                                r: "{corner.glow_radius:.2}",
-                            }
-                        }
-                    }
-                }
-                for corner in model.corners.iter() {
-                    {
-                        let (left, top) = corner.at.percent();
-                        let short = corner.color.to_short_name();
-                        let class = format!("ms ms-{} ms-cost", short.to_lowercase());
-                        rsx! {
-                            span {
-                                key: "{short}",
-                                class: "identity-pips color-map-pip",
-                                style: "left:{left:.3}%;top:{top:.3}%;",
-                                i { class: "{class}" }
+            if !model.tiles.is_empty() {
+                div {
+                    class: "color-map-plot",
+                    role: "img",
+                    aria_label: "{model.label}",
+                    svg {
+                        class: "color-map-svg",
+                        view_box: "{view_box}",
+                        "aria-hidden": "true",
+                        for tile in model.tiles.iter() {
+                            rect {
+                                key: "{tile.cell.0},{tile.cell.1}",
+                                x: "{tile.x:.2}",
+                                y: "{tile.y:.2}",
+                                width: "{size}",
+                                height: "{size}",
+                                rx: "{corner}",
+                                style: "fill:var({mana_var(tile.color)});",
                             }
                         }
                     }
                 }
             }
-            if colorless > 0 {
-                span { class: "stat-chip color-map-colorless",
-                    i { class: "ms ms-c ms-cost" }
-                    "Colorless {counted(colorless, \"card\")}"
+            div { class: "color-map-key",
+                for (color, cards) in key {
+                    span {
+                        key: "{color.to_short_name()}",
+                        class: "stat-chip color-map-chip",
+                        i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
+                        "{cards}"
+                    }
+                }
+                if colorless > 0 {
+                    span { class: "stat-chip color-map-chip",
+                        i { class: "ms ms-c ms-cost" }
+                        "Colorless {colorless}"
+                    }
                 }
             }
         }
@@ -406,152 +567,257 @@ pub fn ColorMap(counts: ColorMapCounts) -> Element {
 
 #[cfg(test)]
 mod tests {
-    use zwipe_core::http::contracts::suggestions::{HttpColorCards, HttpColorPair};
+    use std::collections::BTreeMap;
+
+    use zwipe_core::http::contracts::suggestions::HttpColorCards;
 
     use super::*;
 
-    fn close(a: f64, b: f64) -> bool {
-        (a - b).abs() < 1e-9
+    const SEED: u64 = 0x5eed_c0de_1234_5678;
+
+    fn sample() -> ColorMapCounts {
+        ColorMapCounts {
+            cards: [180, 200, 70, 190, 80],
+            colorless: 189,
+        }
     }
 
-    fn line(model: &ColorMapModel, first: Color, second: Color) -> PairLine {
-        *model
-            .lines
-            .iter()
-            .find(|l| l.colors == (first, second))
-            .unwrap()
+    fn by_cell(model: &ColorMapModel) -> BTreeMap<(i32, i32), Color> {
+        model.tiles.iter().map(|t| (t.cell, t.color)).collect()
+    }
+
+    fn tally(model: &ColorMapModel) -> [u32; 5] {
+        Color::all().map(|color| {
+            u32::try_from(model.tiles.iter().filter(|t| t.color == color).count()).unwrap()
+        })
+    }
+
+    /// Tiles outside their color's largest 4-connected region.
+    fn strays(model: &ColorMapModel) -> usize {
+        let cells = by_cell(model);
+        let mut seen: BTreeMap<(i32, i32), ()> = BTreeMap::new();
+        let mut largest = [0_usize; 5];
+        for (&start, &color) in &cells {
+            if seen.contains_key(&start) {
+                continue;
+            }
+            let mut stack = vec![start];
+            seen.insert(start, ());
+            let mut size = 0;
+            while let Some((x, y)) = stack.pop() {
+                size += 1;
+                for next in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)] {
+                    if cells.get(&next) == Some(&color) && !seen.contains_key(&next) {
+                        seen.insert(next, ());
+                        stack.push(next);
+                    }
+                }
+            }
+            let i = Color::all().iter().position(|c| *c == color).unwrap();
+            let best = largest.get_mut(i).unwrap();
+            *best = (*best).max(size);
+        }
+        tally(model)
+            .into_iter()
+            .zip(largest)
+            .map(|(n, best)| usize::try_from(n).unwrap() - best)
+            .sum()
     }
 
     #[test]
-    fn corners_run_clockwise_from_white_at_the_top() {
-        let w = corner_point(Color::White);
-        let u = corner_point(Color::Blue);
-        let b = corner_point(Color::Black);
-        let r = corner_point(Color::Red);
-        let g = corner_point(Color::Green);
-        assert!(
-            close(w.x, CENTER.x) && close(w.y, CENTER.y - RADIUS),
-            "W top"
+    fn the_same_seed_and_counts_draw_the_same_map() {
+        assert_eq!(
+            ColorMapModel::new(&sample(), SEED),
+            ColorMapModel::new(&sample(), SEED)
         );
-        assert!(u.x > CENTER.x && u.y < CENTER.y, "U upper right");
-        assert!(b.x > CENTER.x && b.y > CENTER.y, "B lower right");
-        assert!(r.x < CENTER.x && r.y > CENTER.y, "R lower left");
-        assert!(g.x < CENTER.x && g.y < CENTER.y, "G upper left");
-        assert!(
-            close(u.y, g.y) && close(b.y, r.y),
-            "mirrored across the middle"
+        assert_ne!(
+            by_cell(&ColorMapModel::new(&sample(), SEED)),
+            by_cell(&ColorMapModel::new(&sample(), SEED + 1)),
+            "another seed draws another shape"
         );
-        assert!(close(u.x - CENTER.x, CENTER.x - g.x));
-        for p in [w, u, b, r, g] {
-            let reach = GLOW_MAX_RADIUS;
-            assert!(
-                p.x - reach >= 0.0
-                    && p.x + reach <= VIEW_WIDTH
-                    && p.y - reach >= 0.0
-                    && p.y + reach <= VIEW_HEIGHT,
-                "the widest glow at {p:?} stays inside the view box"
-            );
+    }
+
+    #[test]
+    fn tiles_follow_cards_within_the_clamp() {
+        assert_eq!(tile_total(0), 0);
+        assert_eq!(tile_total(1), MIN_TILES);
+        assert_eq!(tile_total(720), 180);
+        assert_eq!(tile_total(722), 181, "rounds half up");
+        assert_eq!(tile_total(1_000_000), MAX_TILES);
+        let small = ColorMapCounts {
+            cards: [3, 0, 0, 1, 0],
+            colorless: 0,
+        };
+        assert_eq!(ColorMapModel::new(&small, SEED).tiles.len(), 40);
+        let huge = ColorMapCounts {
+            cards: [9000, 9000, 9000, 9000, 9000],
+            colorless: 0,
+        };
+        assert_eq!(ColorMapModel::new(&huge, SEED).tiles.len(), 520);
+    }
+
+    #[test]
+    fn quotas_are_exact_by_largest_remainder() {
+        assert_eq!(quotas([1, 1, 1, 0, 0], 40), [14, 13, 13, 0, 0]);
+        assert_eq!(quotas([180, 200, 70, 190, 80], 180), [45, 50, 18, 47, 20]);
+        for (cards, seed) in [
+            (sample().cards, SEED),
+            ([30, 12, 0, 44, 8], 7),
+            ([0, 0, 0, 1, 0], 9),
+            ([500, 3, 2, 1, 900], 11),
+        ] {
+            let counts = ColorMapCounts {
+                cards,
+                colorless: 0,
+            };
+            let model = ColorMapModel::new(&counts, seed);
+            let total = tile_total(cards.iter().map(|&n| u64::from(n)).sum());
+            assert_eq!(tally(&model), quotas(cards, total), "cards {cards:?}");
+            assert_eq!(quotas(cards, total).iter().sum::<u32>(), total);
         }
     }
 
     #[test]
-    fn allied_pairs_are_the_rim_and_enemy_pairs_the_star() {
-        let model = ColorMapModel::new(&ColorMapCounts::default());
-        let rim: Vec<(Color, Color)> = PAIRS
-            .into_iter()
-            .filter(|(a, b)| line(&model, *a, *b).allied)
-            .collect();
-        assert_eq!(
-            rim,
-            vec![
-                (Color::White, Color::Blue),
-                (Color::White, Color::Green),
-                (Color::Blue, Color::Black),
-                (Color::Black, Color::Red),
-                (Color::Red, Color::Green),
-            ]
-        );
+    fn colors_hold_together() {
+        for seed in [SEED, 1, 2, 3, 42, 99] {
+            for cards in [
+                sample().cards,
+                [30, 12, 0, 44, 8],
+                [100, 100, 100, 100, 100],
+            ] {
+                let model = ColorMapModel::new(
+                    &ColorMapCounts {
+                        cards,
+                        colorless: 0,
+                    },
+                    seed,
+                );
+                let strays = strays(&model);
+                assert!(
+                    strays * 50 <= model.tiles.len().max(150),
+                    "{strays} stray tiles of {} for seed {seed}, cards {cards:?}",
+                    model.tiles.len()
+                );
+            }
+        }
     }
 
     #[test]
-    fn a_pair_with_no_decks_stays_a_faint_guide() {
-        let counts = ColorMapCounts {
-            pairs: [4, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            ..ColorMapCounts::default()
-        };
-        let model = ColorMapModel::new(&counts);
-        let guide = line(&model, Color::Red, Color::Green);
-        assert!(close(guide.width, GUIDE_WIDTH) && close(guide.opacity, GUIDE_OPACITY));
-        assert!(guide.opacity > 0.0, "a guide is never invisible");
-        assert_eq!(model.lines.len(), 10, "every pair draws");
-
-        let empty = ColorMapModel::new(&ColorMapCounts::default());
-        assert!(
-            empty
-                .lines
-                .iter()
-                .all(|l| close(l.width, GUIDE_WIDTH) && close(l.opacity, GUIDE_OPACITY)),
-            "with no decks at all, every line is a guide"
-        );
+    fn a_small_change_moves_a_few_tiles() {
+        for seed in [SEED, 1, 2, 3, 42, 99] {
+            for i in 0..5 {
+                let before = ColorMapModel::new(&sample(), seed);
+                let mut grown = sample();
+                *grown.cards.get_mut(i).unwrap() += 5;
+                let after = ColorMapModel::new(&grown, seed);
+                let (before, after) = (by_cell(&before), by_cell(&after));
+                assert!(
+                    before.keys().all(|cell| after.contains_key(cell)),
+                    "a larger map keeps every cell"
+                );
+                let moved = before
+                    .iter()
+                    .filter(|(cell, c)| after.get(cell) != Some(c))
+                    .count();
+                assert!(
+                    moved <= 12,
+                    "{moved} tiles moved for seed {seed}, color {i}"
+                );
+            }
+        }
     }
 
     #[test]
-    fn the_strongest_pair_and_corner_are_full() {
+    fn colors_lean_toward_their_home_on_the_pie() {
         let counts = ColorMapCounts {
-            cards: [10, 0, 5, 40, 20],
+            cards: [100; 5],
             colorless: 0,
-            pairs: [0, 0, 6, 0, 0, 0, 0, 3, 0, 0],
         };
-        let model = ColorMapModel::new(&counts);
-        let boros = line(&model, Color::White, Color::Red);
-        assert!(close(boros.strength, 1.0));
-        assert!(close(boros.width, LINE_MAX_WIDTH) && close(boros.opacity, LINE_MAX_OPACITY));
-        let rakdos = line(&model, Color::Black, Color::Red);
-        assert!(close(rakdos.strength, 0.5), "half the top pair's decks");
-        assert_eq!(
-            model.lines.last().map(|l| l.colors),
-            Some((Color::White, Color::Red)),
-            "the strongest line draws last, on top"
-        );
-
-        let strengths: Vec<f64> = model.corners.iter().map(|c| c.strength).collect();
-        assert_eq!(strengths, vec![0.25, 0.0, 0.125, 1.0, 0.5]);
-        let red = model.corners.get(3).unwrap();
-        assert!(close(red.glow_radius, GLOW_MAX_RADIUS));
-        let blue = model.corners.get(1).unwrap();
-        assert!(!blue.glows() && close(blue.glow_radius, GLOW_MIN_RADIUS));
-        let green = model.corners.get(4).unwrap();
-        let area = |r: f64| r * r - GLOW_MIN_RADIUS * GLOW_MIN_RADIUS;
-        assert!(
-            close(area(green.glow_radius), area(GLOW_MAX_RADIUS) / 2.0),
-            "glow area past the pip grows with the share"
-        );
+        for seed in [SEED, 1, 2] {
+            let model = ColorMapModel::new(&counts, seed);
+            let center = |color: Color| {
+                let own: Vec<&Tile> = model.tiles.iter().filter(|t| t.color == color).collect();
+                let n = f64::from(u32::try_from(own.len()).unwrap());
+                let x: f64 = own.iter().map(|t| f64::from(t.cell.0)).sum::<f64>() / n;
+                let y: f64 = own.iter().map(|t| f64::from(t.cell.1)).sum::<f64>() / n;
+                (x, y)
+            };
+            let (w, u, b, r, g) = (
+                center(Color::White),
+                center(Color::Blue),
+                center(Color::Black),
+                center(Color::Red),
+                center(Color::Green),
+            );
+            assert!(w.1 < -2.0, "W top, seed {seed}");
+            assert!(u.0 > 2.0 && u.1 < 0.0, "U upper right, seed {seed}");
+            assert!(b.0 > 0.0 && b.1 > 2.0, "B lower right, seed {seed}");
+            assert!(r.0 < 0.0 && r.1 > 2.0, "R lower left, seed {seed}");
+            assert!(g.0 < -2.0 && g.1 < 0.0, "G upper left, seed {seed}");
+        }
     }
 
     #[test]
-    fn the_label_names_the_top_color_and_pair() {
-        let counts = ColorMapCounts {
-            cards: [10, 0, 5, 40, 20],
-            colorless: 3,
-            pairs: [0, 0, 6, 0, 0, 0, 0, 6, 0, 0],
-        };
+    fn tiles_share_one_size_and_fit_the_view() {
+        let small = ColorMapModel::new(
+            &ColorMapCounts {
+                cards: [30, 12, 0, 44, 8],
+                colorless: 26,
+            },
+            SEED,
+        );
+        let large = ColorMapModel::new(
+            &ColorMapCounts {
+                cards: sample().cards.map(|n| n * 3),
+                colorless: 0,
+            },
+            SEED,
+        );
+        assert!(
+            small.tile_size > large.tile_size,
+            "a big map shrinks its tiles"
+        );
+        for model in [&small, &large] {
+            for tile in &model.tiles {
+                assert!(tile.x >= 0.0 && tile.x + model.tile_size <= VIEW_WIDTH);
+                assert!(tile.y >= 0.0 && tile.y + model.tile_size <= model.height);
+            }
+        }
+        let empty = ColorMapModel::new(
+            &ColorMapCounts {
+                cards: [0; 5],
+                colorless: 4,
+            },
+            SEED,
+        );
+        assert!(empty.tiles.is_empty(), "colorless never takes a tile");
+    }
+
+    #[test]
+    fn the_label_gives_each_share() {
         assert_eq!(
-            ColorMapModel::new(&counts).label,
-            "Color map. Red leads with 40 cards. White and red lead the pairs with 6 decks",
-            "WUBRG order breaks the tie"
+            ColorMapModel::new(&sample(), SEED).label,
+            "Color map. Blue 28 percent, red 26 percent, white 25 percent, green 11 percent, black 10 percent. Colorless 189 cards"
         );
         let mono = ColorMapCounts {
             cards: [0, 1, 0, 0, 0],
-            ..ColorMapCounts::default()
+            colorless: 1,
         };
         assert_eq!(
-            ColorMapModel::new(&mono).label,
-            "Color map. Blue leads with 1 card"
+            ColorMapModel::new(&mono, SEED).label,
+            "Color map. Blue 100 percent. Colorless 1 card"
         );
         assert_eq!(
-            ColorMapModel::new(&ColorMapCounts::default()).label,
+            ColorMapModel::new(&ColorMapCounts::default(), SEED).label,
             "Color map. No colored cards yet"
         );
+    }
+
+    #[test]
+    fn seeds_differ_by_id() {
+        assert_eq!(seed_from_id(7), seed_from_id(7));
+        assert_ne!(seed_from_id(7), seed_from_id(8));
+        assert_ne!(seed_from_id(1 << 64), seed_from_id(1));
     }
 
     #[test]
@@ -568,19 +834,15 @@ mod tests {
                 },
             ],
             colorless_cards: 2,
-            pairs: vec![HttpColorPair {
-                colors: ["G".to_string(), "U".to_string()],
-                decks: 3,
-            }],
+            pairs: Vec::new(),
         };
         assert_eq!(
             ColorMapCounts::from(&map),
             ColorMapCounts {
                 cards: [4, 0, 0, 9, 0],
                 colorless: 2,
-                pairs: [0, 0, 0, 0, 0, 0, 3, 0, 0, 0],
             },
-            "missing entries read 0 and a reversed pair still matches"
+            "missing colors read 0"
         );
     }
 }

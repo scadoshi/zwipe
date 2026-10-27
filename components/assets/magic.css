@@ -1168,7 +1168,7 @@ i.ms.ms-cost.ms-gp {
 
 /* ---- ColorMap (components::ColorMap) ---- */
 
-/* The glows and pips read `--mana-white` through `--mana-green`, so the map
+/* The tiles and pips read `--mana-white` through `--mana-green`, so the map
    follows the pip style like every other pip. */
 .color-map {
     display: flex;
@@ -1178,44 +1178,26 @@ i.ms.ms-cost.ms-gp {
     padding: 0.25rem 0.75rem 0.5rem;
 }
 
-/* The SVG fills the box and the pips sit over it by percentage, so the box
-   keeps the view box's 240 by 224 shape at any width. */
+/* The SVG keeps its view box's shape, as wide as the section allows. */
 .color-map-plot {
-    position: relative;
     width: 100%;
     max-width: 15.5rem;
-    aspect-ratio: 240 / 224;
 }
 
 .color-map-svg {
-    position: absolute;
-    inset: 0;
+    display: block;
     width: 100%;
-    height: 100%;
-    color: var(--text-primary);
+    height: auto;
 }
 
-/* Width and opacity come from the decks on each line. */
-.color-map-line {
-    stroke: currentColor;
-    stroke-linecap: round;
+.color-map-key {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem;
 }
 
-/* Marks each glow's edge so a corner reads when its mana color matches the
-   background. */
-.color-map-outline {
-    fill: none;
-    stroke: var(--text-muted);
-    stroke-width: 1;
-    stroke-opacity: 0.6;
-}
-
-.color-map-pip {
-    position: absolute;
-    transform: translate(-50%, -50%);
-}
-
-.color-map-colorless {
+.color-map-chip {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
