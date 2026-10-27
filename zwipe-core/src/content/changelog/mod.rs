@@ -49,6 +49,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Log out moves to Account",
         "Draw odds' ? sits in its section header",
         "The deck view's Role distribution reveals each role's tags",
+        "Mana symbols follow your theme's colors, with a Config setting to keep the classic ones",
     ],
 }];
 
