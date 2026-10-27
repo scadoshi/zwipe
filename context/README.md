@@ -21,6 +21,12 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
+## 2026-10-27: 1.15.0 submitted
+
+1.15.0 went to review on both stores, iOS build 108 and Android vc70, with notes at [`operations/store-submissions/1.15.0/whats_new.md`](operations/store-submissions/1.15.0/whats_new.md). It brings Playstyle: a screen with the user's color map, card roles, staples and suggested commanders, and the color map on Home. Skipped and removed cards return to the swipe pile after a week and a month, card details open in a bottom sheet, Profile splits into Account and Config, and mana symbols follow the theme.
+
+Late changes that went in with the cut: the color map sweep waits for the splash to leave, the deck charts are titled Types, Roles and Colors with Colors moved into the Mana section, and Playstyle's bar chart fallback is gone, so an empty map shows Home's line instead. The server's color map counts the commander, partner and background once per deck, so a commander-only deck draws a map. That part is server-side and deployed with `acff0882`.
+
 ## 2026-10-27: skeletons ghost everything
 
 The closed-vs-open-vocabulary skeleton rule from the 1.8.1 review round (static chrome renders real from the first frame) is superseded. A loading skeleton now ghosts every header, label, chip and control in the region, colored pieces keep their tint, and nothing tappable shows until the data lands. Home's Playstyle panel, the Playstyle screen, Decks, Deck cards, the commander maybeboard, Export and the oracle tag picker were changed to match. The rule is in [`development/skeletons.md`](development/skeletons.md).
