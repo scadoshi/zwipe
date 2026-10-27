@@ -197,7 +197,10 @@ pub(crate) fn OracleTagSelect(
 
                     div { class: "tag-grid",
                         if tags.is_empty() {
-                            div { class: "chip-unselected", "Loading tags\u{2026}" }
+                            // Bare chips of mixed widths, like a page of tags.
+                            for (i , size) in ["lg", "md", "xl", "sm", "md", "lg", "md", "sm", "xl", "md", "lg", "sm"].iter().enumerate() {
+                                div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
+                            }
                         } else if results.is_empty() {
                             div { class: "chip-unselected", "No results" }
                         } else {

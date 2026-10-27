@@ -55,7 +55,7 @@ use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::{HintColored, use_one_time_hint};
 use crate::inbound::components::hint_host::HintTopic;
-use crate::inbound::components::home_play_style::{Podium, use_play_style_summary};
+use crate::inbound::components::home_play_style::{Podium, PodiumSkeleton, use_play_style_summary};
 use crate::inbound::components::info_button::InfoButton;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
@@ -886,8 +886,10 @@ fn StaplesPanel(
 pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     let summary = profile_summary(&profile);
     // The top three color identities, shared with Home's panel, for the
-    // Summary's podium; the Top colors row stands in until they arrive.
-    let (play_style, _) = use_play_style_summary(Screen::SuggestedCommanders);
+    // Summary's podium. It ghosts while they load, and the Top colors row
+    // stands in when the fetch fails or comes back without identities.
+    let (play_style, play_style_failed) = use_play_style_summary(Screen::SuggestedCommanders);
+    let podium_pending = play_style.is_none() && !play_style_failed();
     let podium_identities = play_style
         .map(|summary| summary.identities)
         .filter(|identities| !identities.is_empty());
@@ -926,6 +928,8 @@ pub(crate) fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
                 }
                 if let Some(identities) = podium_identities {
                     div { class: "summary-podium", Podium { identities } }
+                } else if podium_pending {
+                    div { class: "summary-podium", PodiumSkeleton {} }
                 } else if let Some(value) = summary.color_set {
                     SummaryIdentityRow { label: "Top colors", value }
                 }
@@ -1389,15 +1393,15 @@ pub fn SuggestedCommanders() -> Element {
                     if is_loading() {
                         // First load only: a refetch keeps the data in place.
                         // The profile ghosts as its five sections, Summary open
-                        // on three rows; the list's group and its header are
-                        // static chrome, so they render real while the Show
-                        // chips and the data rows ghost (the closed-vocabulary
-                        // skeleton rule).
+                        // on three rows, then the Show row and the list, its
+                        // header title a bar.
                         div { style: "width:100%;display:flex;flex-direction:column;gap:var(--panel-gap);",
                             BuilderProfileSkeleton {}
                             ShowChipRowSkeleton {}
                             div { class: "maybeboard-list card-group row-enter",
-                                div { class: "card-group-header", "{LIST_TITLE}" }
+                                div { class: "card-group-header",
+                                    div { class: "skeleton-bar skeleton-card-bar-header-wide" }
+                                }
                                 for i in 0..6 {
                                     div { key: "{i}", class: "skeleton-card-row",
                                         div { class: "skeleton-bar skeleton-card-thumb" }

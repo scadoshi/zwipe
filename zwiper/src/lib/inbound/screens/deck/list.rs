@@ -28,7 +28,7 @@ use crate::inbound::components::hint_dialog::open_and_record_hint;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::router::Router;
-use crate::inbound::screens::deck::components::skeletons::DeckListSkeleton;
+use crate::inbound::screens::deck::components::skeletons::{ChipRowSkeleton, DeckListSkeleton};
 
 /// Grouping dimensions for the deck list.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -506,13 +506,11 @@ pub fn DeckList() -> Element {
                         let errored = matches!(&*deck_profiles_resource.read(), Some(Err(_)));
                         let loading = !errored && profiles.is_none();
 
-                        // Static chrome renders real from the first frame, and the
-                        // rule is closed vs open vocabularies: Group by's options
-                        // and the five colors are closed sets, so they render
-                        // permanently (a color with no matching decks just yields
-                        // "No decks match", never a selected chip that vanishes).
-                        // Tags are open and deck-derived, so they load folded
-                        // behind the Tags chip; the deck tiles below stay skeleton.
+                        // While the decks load the whole console ghosts with the
+                        // list. Once loaded, the five colors always show (a color
+                        // with no matching decks just yields "No decks match",
+                        // never a selected chip that vanishes), and the
+                        // deck-derived tags fold behind the Tags chip.
                         let colors_shown: Vec<Color> = Color::all().to_vec();
                         let tags_present: Vec<(String, String)> = profiles
                             .as_ref()
@@ -537,11 +535,15 @@ pub fn DeckList() -> Element {
                             kept.sort_by_key(|p| p.name.to_lowercase());
                             kept
                         });
-                        // Hide the chrome only when there is nothing it could act
+                        // Hide the console when there is nothing it could act
                         // on: a loaded-and-empty list, or a load error.
-                        let show_rows = loading || profiles.as_ref().is_some_and(|p| !p.is_empty());
+                        let show_rows = profiles.as_ref().is_some_and(|p| !p.is_empty());
                         rsx! {
-                            if show_rows {
+                            if loading {
+                                // Group by, then Show: All, the five pips, Tags.
+                                ChipRowSkeleton { label: "md", chips: vec!["sm", "md", "sm", "sm"] }
+                                ChipRowSkeleton { label: "sm", chips: vec!["sm", "sm", "sm", "sm", "sm", "sm", "md"] }
+                            } else if show_rows {
                                 div { class: "chip-row",
                                     span { class: "stat-chip stat-chip-p1 chip-row-label", "Group by" }
                                     for option in DeckGroupBy::all() {
@@ -576,9 +578,8 @@ pub fn DeckList() -> Element {
                                             i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
                                         }
                                     }
-                                    // The Tags fold chip renders while loading and leaves
-                                    // once the list lands with no tags.
-                                    if loading || !tags_present.is_empty() {
+                                    // The Tags fold chip shows only when some deck has a tag.
+                                    if !tags_present.is_empty() {
                                         Chip {
                                             selected: tags_open(),
                                             onclick: move |_| tags_open.set(!tags_open()),
@@ -605,7 +606,7 @@ pub fn DeckList() -> Element {
                                     }
                                 }
                                 // The full tag row folds open and closed under the Show row.
-                                if !loading && !tags_present.is_empty() {
+                                if !tags_present.is_empty() {
                                     div { class: if tags_open() { "collapsible open" } else { "collapsible" },
                                         div { class: "collapsible-inner",
                                             div { class: "chip-row",

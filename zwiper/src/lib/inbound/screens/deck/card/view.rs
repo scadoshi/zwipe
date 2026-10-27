@@ -46,7 +46,9 @@ use crate::inbound::screens::deck::card::filter::card_filter_sheet::{
 };
 use crate::inbound::screens::deck::card::filter::deck_cards::DeckCards;
 use crate::inbound::screens::deck::components::featured_cards::FeaturedCards;
-use crate::inbound::screens::deck::components::skeletons::DeckCardListSkeleton;
+use crate::inbound::screens::deck::components::skeletons::{
+    ChipRowSkeleton, DeckCardListSkeleton, QuickAddSkeleton,
+};
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
 /// Per-card render metadata (quantity, board, MVP flag) indexed by printing id
@@ -1159,8 +1161,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
                     } else if !deck_loaded() {
                         // Identity ghost in the header's own spot until the
-                        // profile lands (the chip rows below render real,
-                        // they're static chrome, not data).
+                        // profile lands.
                         div { class: "deck-cards-header",
                             div { class: "skeleton-bar skeleton-deck-list-title" }
                             div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
@@ -1184,96 +1185,102 @@ pub fn View(deck_id: Uuid) -> Element {
                         },
                     }
 
-                    // Quick-add: type a name, add straight to the mainboard.
-                    QuickAdd { deck_id, deck_entries }
+                    // The controls ghost with the list until the deck lands: nothing
+                    // here is usable before then.
+                    if deck_loaded() {
+                        // Quick-add: type a name, add straight to the mainboard.
+                        QuickAdd { deck_id, deck_entries }
 
-                    // Group-by row
-                    div { class: "chip-row",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Group by" }
-                        for option in GroupByOption::all() {
-                            Chip {
-                                key: "{option}",
-                                selected: group_by_option() == option,
-                                onclick: move |_| {
-                                    should_collapse_expanded.set(true);
-                                    group_by_option.set(option);
-                                },
-                                "{option}"
+                        // Group-by row
+                        div { class: "chip-row",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Group by" }
+                            for option in GroupByOption::all() {
+                                Chip {
+                                    key: "{option}",
+                                    selected: group_by_option() == option,
+                                    onclick: move |_| {
+                                        should_collapse_expanded.set(true);
+                                        group_by_option.set(option);
+                                    },
+                                    "{option}"
+                                }
                             }
                         }
-                    }
 
-                    // Board filter row (multi-select, at least one must be on)
-                    div { class: "chip-row",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Boards" }
-                        Chip {
-                            selected: show_deck(),
-                            onclick: move |_| {
-                                let new_val = !show_deck();
-                                show_deck.set(new_val);
-                                // If nothing is on, snap deck back on
-                                if !new_val && !show_maybe() && !show_side() {
-                                    show_deck.set(true);
-                                }
-                                should_collapse_expanded.set(true);
-                                let current = *filter_reset_counter.peek();
-                                filter_reset_counter.set(current + 1);
-                            },
-                            "Main"
+                        // Board filter row (multi-select, at least one must be on)
+                        div { class: "chip-row",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Boards" }
+                            Chip {
+                                selected: show_deck(),
+                                onclick: move |_| {
+                                    let new_val = !show_deck();
+                                    show_deck.set(new_val);
+                                    // If nothing is on, snap deck back on
+                                    if !new_val && !show_maybe() && !show_side() {
+                                        show_deck.set(true);
+                                    }
+                                    should_collapse_expanded.set(true);
+                                    let current = *filter_reset_counter.peek();
+                                    filter_reset_counter.set(current + 1);
+                                },
+                                "Main"
+                            }
+                            Chip {
+                                selected: show_maybe(),
+                                disabled: !has_maybe && !show_maybe(),
+                                onclick: move |_| {
+                                    let new_val = !show_maybe();
+                                    show_maybe.set(new_val);
+                                    if !show_deck() && !new_val && !show_side() {
+                                        show_deck.set(true);
+                                    }
+                                    should_collapse_expanded.set(true);
+                                    let current = *filter_reset_counter.peek();
+                                    filter_reset_counter.set(current + 1);
+                                },
+                                "Maybe"
+                            }
+                            Chip {
+                                selected: show_side(),
+                                disabled: !has_side && !show_side(),
+                                onclick: move |_| {
+                                    let new_val = !show_side();
+                                    show_side.set(new_val);
+                                    if !show_deck() && !show_maybe() && !new_val {
+                                        show_deck.set(true);
+                                    }
+                                    should_collapse_expanded.set(true);
+                                    let current = *filter_reset_counter.peek();
+                                    filter_reset_counter.set(current + 1);
+                                },
+                                "Side"
+                            }
                         }
-                        Chip {
-                            selected: show_maybe(),
-                            disabled: !has_maybe && !show_maybe(),
-                            onclick: move |_| {
-                                let new_val = !show_maybe();
-                                show_maybe.set(new_val);
-                                if !show_deck() && !new_val && !show_side() {
-                                    show_deck.set(true);
-                                }
-                                should_collapse_expanded.set(true);
-                                let current = *filter_reset_counter.peek();
-                                filter_reset_counter.set(current + 1);
-                            },
-                            "Maybe"
-                        }
-                        Chip {
-                            selected: show_side(),
-                            disabled: !has_side && !show_side(),
-                            onclick: move |_| {
-                                let new_val = !show_side();
-                                show_side.set(new_val);
-                                if !show_deck() && !show_maybe() && !new_val {
-                                    show_deck.set(true);
-                                }
-                                should_collapse_expanded.set(true);
-                                let current = *filter_reset_counter.peek();
-                                filter_reset_counter.set(current + 1);
-                            },
-                            "Side"
-                        }
-                    }
 
-                    // Show toggles row
-                    div { class: "chip-row",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
-                        Chip {
-                            selected: show_tokens(),
-                            onclick: move |_| show_tokens.set(!show_tokens()),
-                            "Tokens"
+                        // Show toggles row
+                        div { class: "chip-row",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
+                            Chip {
+                                selected: show_tokens(),
+                                onclick: move |_| show_tokens.set(!show_tokens()),
+                                "Tokens"
+                            }
+                            Chip {
+                                selected: show_command_zone(),
+                                onclick: move |_| show_command_zone.set(!show_command_zone()),
+                                "Command zone"
+                            }
+                            Chip {
+                                selected: show_row_art(),
+                                onclick: move |_| show_row_art.set(!show_row_art()),
+                                "Art"
+                            }
                         }
-                        Chip {
-                            selected: show_command_zone(),
-                            onclick: move |_| show_command_zone.set(!show_command_zone()),
-                            "Command zone"
-                        }
-                        Chip {
-                            selected: show_row_art(),
-                            onclick: move |_| show_row_art.set(!show_row_art()),
-                            "Art"
-                        }
-                    }
-
-                    if !deck_loaded() {
+                    } else {
+                        QuickAddSkeleton {}
+                        ChipRowSkeleton { label: "md", chips: vec!["sm", "lg", "md", "lg"] }
+                        ChipRowSkeleton { label: "md", chips: vec!["sm", "md", "sm"] }
+                        ChipRowSkeleton { label: "sm", chips: vec!["md", "lg", "sm"] }
                         DeckCardListSkeleton {}
                     }
 

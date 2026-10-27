@@ -151,11 +151,30 @@ pub(crate) fn Podium(identities: Vec<HttpColorIdentityCount>) -> Element {
     }
 }
 
+/// The [`Podium`] while its identities load: each step a block in its place's
+/// tint, with no count, and a ghost of the pips and of the tinted name tag
+/// standing on it.
+#[component]
+pub(crate) fn PodiumSkeleton() -> Element {
+    rsx! {
+        div { class: "podium",
+            for class in ["podium-block podium-second", "podium-block podium-first", "podium-block podium-third"] {
+                div { key: "{class}", class: "podium-step",
+                    div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                    div { class: "skeleton-bar skeleton-chip skeleton-chip-md skeleton-tinted" }
+                    div { class: "{class} skeleton-tinted" }
+                }
+            }
+        }
+    }
+}
+
 /// The panel under the hero, a sibling of the featured flavor card: the
 /// title bar with an Open chip, then the top three color identities as a
 /// podium. Before any deck has cards it shows one line instead; a failed
-/// fetch with nothing cached shows a muted line. The Open chip is always
-/// there, so the screen stays reachable from Home.
+/// fetch with nothing cached shows a muted line. Once the fetch settles the
+/// Open chip is always there, so the screen stays reachable from Home; while
+/// it is out the whole panel is a ghost.
 #[component]
 pub fn HomePlayStyle() -> Element {
     let navigator = use_navigator();
@@ -181,20 +200,15 @@ pub fn HomePlayStyle() -> Element {
                     }
                 },
                 None => rsx! {
-                    // The panel draws the same every time, so it renders for
-                    // real; only what depends on the player's colors (the
-                    // pips and name tag standing on each step, and the step's
-                    // count) waits on the fetch.
-                    PanelHeader { onclick: move |_| { navigator.push(Router::SuggestedCommanders {}); } }
-                    div { class: "podium",
-                        for class in ["podium-block podium-second", "podium-block podium-first", "podium-block podium-third"] {
-                            div { key: "{class}", class: "podium-step",
-                                div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
-                                div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
-                                div { class: "{class}" }
-                            }
+                    // Everything ghosts until the summary lands: the title as
+                    // a bar, Open as a bare chip, then the podium's ghost.
+                    div { class: "skeleton-card-header home-panel-header", style: "display: flex;",
+                        div { class: "skeleton-bar skeleton-section-label", style: "width: 30%; margin-bottom: 0;" }
+                        span { class: "home-panel-open",
+                            div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
                         }
                     }
+                    PodiumSkeleton {}
                 },
             }
         }

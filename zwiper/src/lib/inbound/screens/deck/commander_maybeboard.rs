@@ -37,6 +37,7 @@ use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_COMMANDER_MAYBEBOARD;
 
+use super::components::skeletons::{ChipRowSkeleton, QuickAddSkeleton};
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::use_authed;
 use crate::inbound::components::catalog_cache::CatalogCache;
@@ -448,92 +449,15 @@ pub fn CommanderMaybeboard() -> Element {
                 div {
                     class: "flex-col",
                     style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
-                    // Console rows render statically (closed vocabulary): the
-                    // search input and all five pips are always valid.
-                    div { class: "chip-row",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Quick add" }
-                        input {
-                            class: "input input-compact",
-                            style: "flex: 1; margin-bottom: 0;",
-                            id: "commander-maybeboard-search",
-                            r#type: "text",
-                            placeholder: "Search a commander to add",
-                            value: "{query}",
-                            autocapitalize: "none",
-                            autocorrect: "off",
-                            spellcheck: "false",
-                            oninput: move |event| query.set(event.value()),
-                        }
-                        if !query().is_empty() {
-                            button {
-                                class: "clear-btn",
-                                onclick: move |_| query.set(String::new()),
-                                "\u{00d7}"
-                            }
-                        }
-                    }
-                    // Catalog results float below the bar, over the Show row
-                    // and list: the shared search-float chips, hung downward
-                    // (this console is the top of the page, so down is the
-                    // only direction with room). Tap a chip to save it.
-                    if searching_catalog {
-                        div { class: "search-float-anchor",
-                            if is_searching() {
-                                div { class: "search-float-results search-float-below",
-                                    div { class: "chip-unselected search-float-chip", "Searching..." }
-                                }
-                            } else if shown_results.is_empty() {
-                                div { class: "search-float-results search-float-below",
-                                    div { class: "chip-unselected search-float-chip", "No results" }
-                                }
-                            } else {
-                                div { class: "search-float-results search-float-below",
-                                    for (i, card) in shown_results.iter().cloned().enumerate() {
-                                        div {
-                                            key: "{card.scryfall_data.id}",
-                                            class: "chip-unselected search-float-chip",
-                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
-                                            onclick: move |_| add_from_search(card.clone()),
-                                            "{card.scryfall_data.name}"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    div { class: "chip-row",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
-                        Chip {
-                            selected: all_on,
-                            onclick: move |_| selected_colors.write().clear(),
-                            "All"
-                        }
-                        for color in Color::all() {
-                            Chip {
-                                key: "{color.to_short_name()}",
-                                selected: selected_colors().contains(&color),
-                                onclick: move |_| {
-                                    let mut colors = selected_colors.write();
-                                    if !colors.remove(&color) {
-                                        colors.insert(color);
-                                    }
-                                },
-                                i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
-                            }
-                        }
-                        Chip {
-                            selected: show_row_art(),
-                            onclick: move |_| show_row_art.set(!show_row_art()),
-                            "Art"
-                        }
-                    }
-
+                    // The whole page ghosts on the first load: the Quick add and Show
+                    // rows as their shapes, the list with its header title as a bar.
                     if is_loading() {
-                        // The group and its header are static chrome, so they
-                        // render real while only the data rows ghost (the
-                        // closed-vocabulary skeleton rule).
+                        QuickAddSkeleton {}
+                        ChipRowSkeleton { label: "sm", chips: vec!["sm", "sm", "sm", "sm", "sm", "sm", "sm"] }
                         div { class: "maybeboard-list card-group row-enter",
-                            div { class: "card-group-header", "Commanders" }
+                            div { class: "card-group-header",
+                                div { class: "skeleton-bar skeleton-card-bar-header" }
+                            }
                             for i in 0..6 {
                                 div { key: "{i}", class: "skeleton-card-row",
                                     div { class: "skeleton-bar skeleton-card-thumb" }
@@ -541,36 +465,116 @@ pub fn CommanderMaybeboard() -> Element {
                                 }
                             }
                         }
-                    } else if load_failed() {
-                        div { class: "message-empty",
-                            span { class: "chip-note", "Could not load your commander maybeboard" }
-                        }
-                    } else if !has_entries {
-                        div { class: "message-empty",
-                            span { class: "chip-note", "No commanders" }
-                        }
-                    } else if filtered.is_empty() {
-                        div { class: "message-empty",
-                            span { class: "chip-note", "No commanders match" }
-                        }
                     } else {
-                        // Same bordered container the deck cards list wraps
-                        // its rows in.
-                        div { class: "maybeboard-list card-group row-enter",
-                            div { class: "card-group-header", "Commanders" }
-                            for card in filtered {
-                                MaybeboardRow {
-                                    key: "{card.scryfall_data.id}",
-                                    card,
-                                    expanded_card,
-                                    preview_card,
-                                    preview_dismissing,
-                                    on_create,
-                                    on_remove,
-                                    on_printing: move |c: Card| {
-                                        printing_card.set(Some(c));
-                                        printing_open.set(true);
+                        div { class: "chip-row",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Quick add" }
+                            input {
+                                class: "input input-compact",
+                                style: "flex: 1; margin-bottom: 0;",
+                                id: "commander-maybeboard-search",
+                                r#type: "text",
+                                placeholder: "Search a commander to add",
+                                value: "{query}",
+                                autocapitalize: "none",
+                                autocorrect: "off",
+                                spellcheck: "false",
+                                oninput: move |event| query.set(event.value()),
+                            }
+                            if !query().is_empty() {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |_| query.set(String::new()),
+                                    "\u{00d7}"
+                                }
+                            }
+                        }
+                        // Catalog results float below the bar, over the Show row
+                        // and list: the shared search-float chips, hung downward
+                        // (this console is the top of the page, so down is the
+                        // only direction with room). Tap a chip to save it.
+                        if searching_catalog {
+                            div { class: "search-float-anchor",
+                                if is_searching() {
+                                    div { class: "search-float-results search-float-below",
+                                        div { class: "chip-unselected search-float-chip", "Searching..." }
+                                    }
+                                } else if shown_results.is_empty() {
+                                    div { class: "search-float-results search-float-below",
+                                        div { class: "chip-unselected search-float-chip", "No results" }
+                                    }
+                                } else {
+                                    div { class: "search-float-results search-float-below",
+                                        for (i, card) in shown_results.iter().cloned().enumerate() {
+                                            div {
+                                                key: "{card.scryfall_data.id}",
+                                                class: "chip-unselected search-float-chip",
+                                                style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                                onclick: move |_| add_from_search(card.clone()),
+                                                "{card.scryfall_data.name}"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        div { class: "chip-row",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
+                            Chip {
+                                selected: all_on,
+                                onclick: move |_| selected_colors.write().clear(),
+                                "All"
+                            }
+                            for color in Color::all() {
+                                Chip {
+                                    key: "{color.to_short_name()}",
+                                    selected: selected_colors().contains(&color),
+                                    onclick: move |_| {
+                                        let mut colors = selected_colors.write();
+                                        if !colors.remove(&color) {
+                                            colors.insert(color);
+                                        }
                                     },
+                                    i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
+                                }
+                            }
+                            Chip {
+                                selected: show_row_art(),
+                                onclick: move |_| show_row_art.set(!show_row_art()),
+                                "Art"
+                            }
+                        }
+
+                        if load_failed() {
+                            div { class: "message-empty",
+                                span { class: "chip-note", "Could not load your commander maybeboard" }
+                            }
+                        } else if !has_entries {
+                            div { class: "message-empty",
+                                span { class: "chip-note", "No commanders" }
+                            }
+                        } else if filtered.is_empty() {
+                            div { class: "message-empty",
+                                span { class: "chip-note", "No commanders match" }
+                            }
+                        } else {
+                            // Same bordered container the deck cards list wraps
+                            // its rows in.
+                            div { class: "maybeboard-list card-group row-enter",
+                                div { class: "card-group-header", "Commanders" }
+                                for card in filtered {
+                                    MaybeboardRow {
+                                        key: "{card.scryfall_data.id}",
+                                        card,
+                                        expanded_card,
+                                        preview_card,
+                                        preview_dismissing,
+                                        on_create,
+                                        on_remove,
+                                        on_printing: move |c: Card| {
+                                            printing_card.set(Some(c));
+                                            printing_open.set(true);
+                                        },
+                                    }
                                 }
                             }
                         }

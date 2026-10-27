@@ -1011,6 +1011,12 @@ button {
     width: 60%;
 }
 
+/* A ghost title in a live .card-group-header, padded to the height of the
+   header's text line. */
+.card-group-header > .skeleton-bar {
+    margin: 0.2rem 0;
+}
+
 /* Printing sheet skeleton */
 .skeleton-printing {
     display: flex;
@@ -1226,6 +1232,33 @@ button {
     border-color: var(--palette-6);
 }
 
+/* A ghost that keeps its element's tint: pair it with the class that sets
+   --tone (stat-chip-pN, podium-first...) and drop the text. On a bare
+   .skeleton-chip it paints the stat-chip's tinted fill and edge. */
+.skeleton-tinted {
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* The bare stat-chip's tone, at zero specificity so any tone class wins. */
+:where(.skeleton-tinted) {
+    --tone: var(--accent-primary);
+}
+
+.skeleton-chip.skeleton-tinted {
+    background-color: color-mix(in srgb, var(--tone) 12%, transparent);
+    border-color: color-mix(in srgb, var(--tone) 35%, transparent);
+}
+
+/* An empty .input-compact filling the rest of its chip row. */
+.skeleton-input-compact {
+    flex: 1;
+    height: 2.2rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /* Home screen flavor text skeleton */
 .skeleton-flavor {
     display: flex;
@@ -1266,6 +1299,11 @@ button {
    The header is inert while loading: nothing to fold until the decks land. */
 .skeleton-deck-list-header {
     cursor: default;
+}
+
+/* The header's arrow and "All" as one bar. */
+.skeleton-deck-list-header-title {
+    width: 2.5rem;
 }
 
 /* Stands in for the command zone art crop (matches .deck-row-art-img). */

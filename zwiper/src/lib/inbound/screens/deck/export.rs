@@ -16,6 +16,7 @@ use crate::inbound::components::hint_dialog::use_one_time_hint;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::router::Router;
+use crate::inbound::screens::deck::components::skeletons::ChipRowSkeleton;
 
 #[component]
 pub fn ExportDeck(deck_id: Uuid) -> Element {
@@ -123,6 +124,8 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
         Some(lines.join("\n"))
     });
 
+    let export_loading = deck_resource.read().is_none();
+
     rsx! {
             div { class: "screen",
                 ScreenHeader { title: "Export", hint: export_hint }
@@ -141,42 +144,47 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     // .import-scroll wrapper below owns the scrolling, so the
                     // decklist slides under the console (dictionary pattern).
                     div { class: "import-controls",
-                        div { class: "chip-row",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Export" }
-                            Chip {
-                                selected: include_deck(),
-                                onclick: move |_| {
-                                    let new_val = !include_deck();
-                                    if !new_val && !include_maybeboard() && !include_sideboard() {
-                                        return;
-                                    }
-                                    include_deck.set(new_val);
-                                },
-                                "Deck"
-                            }
-                            Chip {
-                                selected: include_maybeboard(),
-                                onclick: move |_| {
-                                    let new_val = !include_maybeboard();
-                                    include_maybeboard.set(new_val);
-                                    if new_val && !include_deck() && !include_sideboard() {
-                                        // at least one is on, fine
-                                    } else if !new_val && !include_deck() && !include_sideboard() {
-                                        include_deck.set(true);
-                                    }
-                                },
-                                "Maybe"
-                            }
-                            Chip {
-                                selected: include_sideboard(),
-                                onclick: move |_| {
-                                    let new_val = !include_sideboard();
-                                    include_sideboard.set(new_val);
-                                    if !new_val && !include_deck() && !include_maybeboard() {
-                                        include_deck.set(true);
-                                    }
-                                },
-                                "Side"
+                        // The Export row ghosts with the decklist until the deck lands.
+                        if export_loading {
+                            ChipRowSkeleton { label: "md", chips: vec!["sm", "md", "sm"] }
+                        } else {
+                            div { class: "chip-row",
+                                span { class: "stat-chip stat-chip-p1 chip-row-label", "Export" }
+                                Chip {
+                                    selected: include_deck(),
+                                    onclick: move |_| {
+                                        let new_val = !include_deck();
+                                        if !new_val && !include_maybeboard() && !include_sideboard() {
+                                            return;
+                                        }
+                                        include_deck.set(new_val);
+                                    },
+                                    "Deck"
+                                }
+                                Chip {
+                                    selected: include_maybeboard(),
+                                    onclick: move |_| {
+                                        let new_val = !include_maybeboard();
+                                        include_maybeboard.set(new_val);
+                                        if new_val && !include_deck() && !include_sideboard() {
+                                            // at least one is on, fine
+                                        } else if !new_val && !include_deck() && !include_sideboard() {
+                                            include_deck.set(true);
+                                        }
+                                    },
+                                    "Maybe"
+                                }
+                                Chip {
+                                    selected: include_sideboard(),
+                                    onclick: move |_| {
+                                        let new_val = !include_sideboard();
+                                        include_sideboard.set(new_val);
+                                        if !new_val && !include_deck() && !include_maybeboard() {
+                                            include_deck.set(true);
+                                        }
+                                    },
+                                    "Side"
+                                }
                             }
                         }
                     }
